@@ -14,6 +14,8 @@ This project contains a makefile, to get up and running you will need to build t
 
 To build the API.
 
+requirements.txt is used in the base image. If you make changes to requirements.txt you will need to run `make build.base` followed by `make build.dev`
+
 ### Running Standalone
 
 This project contains a docker-compose.yml file that is intended to run the api standalone. In this configuration it *does not* share codecov.io's development database; so don't expect parity there. 
