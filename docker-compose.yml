@@ -1,0 +1,37 @@
+version: "3"
+
+services:
+  api:
+    image: codecov/api-dev:latest
+    volumes:
+        - ./../codecov-api:/app
+    networks:
+      - codecovapi
+    ports:
+      - "5100:8000"
+    labels:
+      - "traefik.tags=api"
+      - "traefik.backend=api"
+      - "traefik.port=5100"
+  postgres:
+    image: postgres:9.6-alpine
+    volumes:
+      - postgres-volume:/var/lib/postgresql/data
+    networks:
+      - codecovapi
+    ports:
+      - "5432:5432"
+  redis:
+    image: redis:4.0-alpine
+    volumes:
+      - redis-volume:/data
+    networks:
+      - codecovapi
+
+volumes:
+  postgres-volume:
+  redis-volume:
+
+networks:
+  codecovapi:
+    driver: bridge
