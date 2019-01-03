@@ -36,14 +36,14 @@ class Owner(models.Model):
     did_trial = models.BooleanField(null=True)
     free = models.SmallIntegerField()
     invoice_details = models.TextField(null=True)
-    errors = ArrayField(models.TextField(null=True))
+    errors = ArrayField(models.TextField(null=True), null=True)
     delinquent = models.BooleanField(null=True)
     yaml = JSONField(null=True)
     updatestamp = models.DateTimeField(auto_now=True)
-    organizations = ArrayField(models.IntegerField(null=True))
-    admins = ArrayField(models.IntegerField(null=True))
+    organizations = ArrayField(models.IntegerField(null=True), null=True)
+    admins = ArrayField(models.IntegerField(null=True), null=True)
     integration_id = models.IntegerField(null=True)
-    permission = ArrayField(models.IntegerField(null=True))
+    permission = ArrayField(models.IntegerField(null=True), null=True)
     bot = models.IntegerField(null=True)
 
     @property
@@ -56,6 +56,9 @@ class Owner(models.Model):
 
 
 class Session(models.Model):
+
+    class Meta:
+        db_table = 'sessions'
 
     sessionid = models.AutoField(primary_key=True)
     token = models.UUIDField(default=uuid.uuid4, editable=False)

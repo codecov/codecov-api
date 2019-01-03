@@ -1,21 +1,21 @@
+from codecov_auth.models import Session
 from rest_framework import authentication
 from rest_framework import exceptions
 
-from codecov_auth.models import Session
 
+class CodecovSessionAuthentication(authentication.BaseAuthentication):
 
-class CodecovAuthentication(authentication.BaseAuthentication):
     def authenticate(self, request):
-        for service_name in self.available_services():
-            cookie_name = f"{service_name}-token"
-            cookie_value = request.META.get(cookie_name)
-            if cookie_value:
-                try:
-                    session = Session.objects.get(oauth_token=cookie_value)
-                    user = session.ownerid
-                except Exception:
-                    raise exceptions.AuthenticationFailed('No such user')
-                return (user, cookie_value)
-
-    def available_services(self):
-        return ['github', 'gitlab', 'bitbucket']
+        authorization = request.META.get('HTTP_AUTHORIZATION', '')
+        if not authorization:
+            return None
+        if ' ' not in authorization:
+            return None
+        val, token = authorization.split(' ')
+        if val != 'token':
+            return None
+        try:
+            session = Session.objects.get(token=token)
+        except Session.DoesNotExist:
+            raise exceptions.AuthenticationFailed('No such user')
+        return (session.owner, session)
