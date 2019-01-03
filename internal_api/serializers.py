@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from core.models import Pull, Commit, Repository
+from archive.services import get_session_report
 
 
 class PullSerializer(serializers.Serializer):
@@ -28,11 +29,24 @@ class CommitSerializer(serializers.Serializer):
     repository = serializers.SlugRelatedField(
         read_only=True,
         slug_field='repoid'
-     )
+    )
+    sessions = serializers.SerializerMethodField()
+
+    def get_sessions(self, obj):
+        res = []
+        for sess in obj.sessions:
+            sess['content'] = get_session_report(sess)
+            del sess['a']
+            res.append(sess)
+        return res
 
     class Meta:
         model = Commit
         fields = '__all__'
+
+
+class CommitSessionSerializer(serializers.Serializer):
+    pass
 
 
 class RepoSerializer(serializers.Serializer):

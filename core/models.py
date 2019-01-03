@@ -20,6 +20,15 @@ class Commit(models.Model):
     totals = JSONField()
     report = JSONField()
 
+    @property
+    def minio_report_path(self):
+        return self.sessions[-1]['a']
+
+    @property
+    def sessions(self):
+        sessions = sorted(self.report['sessions'].items(), key=lambda a: int(a[0]))
+        return [s[1] for s in sessions]
+
   # timestamp               timestamp not null,
   # branch                  text,
   # pullid                  int,
