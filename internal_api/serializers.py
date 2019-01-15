@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from core.models import Pull, Commit, Repository
-from archive.services import get_session_report
+
+from archive.services import ArchiveService
+from repo_providers.services import RepoProviderService
 
 
 class PullSerializer(serializers.Serializer):
@@ -18,31 +20,48 @@ class PullSerializer(serializers.Serializer):
         fields = '__all__'
 
 
+class ReportFileSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    lines = serializers.SerializerMethodField()
+
+    def get_lines(self, obj):
+        return list(self.get_lines_iterator(obj))
+
+    def get_lines_iterator(self, obj):
+        for line_number, line in obj.lines:
+            coverage, line_type, sessions, messages, complexity = line
+            sessions = [list(s) for s in sessions]
+            yield (line_number, coverage, line_type, sessions, messages, complexity)
+
+
+class ReportSerializer(serializers.Serializer):
+    totals = serializers.JSONField()
+    files = ReportFileSerializer(source='file_reports', many=True)
+
+
 class CommitSerializer(serializers.Serializer):
 
     commitid = serializers.CharField()
     timestamp = serializers.DateTimeField()
     updatestamp = serializers.DateTimeField()
     ci_passed = serializers.BooleanField()
-    totals = serializers.JSONField()
-    report = serializers.JSONField()
+    report = serializers.SerializerMethodField()
+    src = serializers.SerializerMethodField()
     repository = serializers.SlugRelatedField(
         read_only=True,
         slug_field='repoid'
     )
-    sessions = serializers.SerializerMethodField()
 
-    def get_sessions(self, obj):
-        res = []
-        for sess in obj.sessions:
-            sess['content'] = get_session_report(sess)
-            del sess['a']
-            res.append(sess)
-        return res
+    def get_report(self, obj):
+        report = ArchiveService().build_report_from_commit(obj)
+        return ReportSerializer(instance=report).data
+
+    def get_src(self, obj):
+        return RepoProviderService().get_adapter(obj.repository).get_commit_diff(obj.commitid)
 
     class Meta:
         model = Commit
-        fields = '__all__'
+        fields = ['commitid', 'timestamp', 'updatestamp', 'ci_passed', 'report', 'repository']
 
 
 class CommitSessionSerializer(serializers.Serializer):

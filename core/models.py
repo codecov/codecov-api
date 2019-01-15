@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.postgres.fields import JSONField, CITextField
+from django.utils.functional import cached_property
+from urllib.parse import urlparse
 
 
 class Branch(models.Model):
@@ -16,29 +18,30 @@ class Commit(models.Model):
     updatestamp = models.DateTimeField(auto_now=True)
     author = models.ForeignKey('codecov_auth.Owner', db_column='author', on_delete=models.CASCADE,)
     ci_passed = models.BooleanField()
-    repository = models.ForeignKey('Repository', db_column='repoid', on_delete=models.CASCADE, related_name='commits')
+    repository = models.ForeignKey(
+        'Repository', db_column='repoid', on_delete=models.CASCADE, related_name='commits')
     totals = JSONField()
     report = JSONField()
-
-    @property
-    def minio_report_path(self):
-        return self.sessions[-1]['a']
+    merged = models.NullBooleanField()
+    deleted = models.NullBooleanField()
+    notified = models.NullBooleanField()
+    branch = models.TextField()
+    pullid = models.IntegerField()
+    message = models.TextField()
+    parent_commit_id = models.TextField(db_column='parent')
+    state = models.CharField(256)
 
     @property
     def sessions(self):
         sessions = sorted(self.report['sessions'].items(), key=lambda a: int(a[0]))
         return [s[1] for s in sessions]
 
-  # timestamp               timestamp not null,
-  # branch                  text,
-  # pullid                  int,
-  # message                 text,
-  # state                   commit_state,
-  # merged                  boolean,
-  # deleted                 boolean,
-  # notified                boolean,
-  # version                 smallint,  -- will be removed after migrations
-  # parent                  text,
+    @cached_property
+    def repo_hash(self):
+        for sess_key, sess in self.report['sessions'].items():
+            link = sess['a']
+            return urlparse(link).path.split('/')[3]
+        return None
 
     class Meta:
         db_table = 'commits'
@@ -74,6 +77,14 @@ class Repository(models.Model):
     name = CITextField()
     private = models.BooleanField()
     updatestamp = models.DateTimeField(auto_now=True)
+
+    @cached_property
+    def archive_hash(self):
+        for commit in self.commits.all():
+            hash_result = commit.repo_hash
+            if hash_result:
+                return hash_result
+        return None
 
     class Meta:
         db_table = 'repos'
