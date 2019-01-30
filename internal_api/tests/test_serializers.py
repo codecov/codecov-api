@@ -51,7 +51,22 @@ class TestSerializers(object):
                                 (12, 1, None, [[0, 1, None, None, None]], None, None),
                                 (15, 1, None, [[0, 1, None, None, None]], None, None),
                                 (16, 0, None, [[0, 0, None, None, None]], None, None)
-                            ]
+                            ],
+                            'totals': {
+                                'files': 0,
+                                'lines': 10,
+                                'hits': 8,
+                                'misses': 2,
+                                'partials': 0,
+                                'coverage': '80.00000',
+                                'branches': 0,
+                                'methods': 0,
+                                'messages': 0,
+                                'sessions': 0,
+                                'complexity': 0,
+                                'complexity_total': 0,
+                                'diff': 0
+                            }
                         }),
                         {
                             'name': 'tests/__init__.py',
@@ -59,7 +74,22 @@ class TestSerializers(object):
                                 (1, 1, None, [[0, 1, None, None, None]], None, None),
                                 (4, 1, None, [[0, 1, None, None, None]], None, None),
                                 (5, 0, None, [[0, 0, None, None, None]], None, None)
-                            ]
+                            ],
+                            'totals': {
+                                'files': 0,
+                                'lines': 3,
+                                'hits': 2,
+                                'misses': 1,
+                                'partials': 0,
+                                'coverage': '66.66667',
+                                'branches': 0,
+                                'methods': 0,
+                                'messages': 0,
+                                'sessions': 0,
+                                'complexity': 0,
+                                'complexity_total': 0,
+                                'diff': 0
+                            }
                         },
                         {
                             'name': 'tests/test_sample.py',
@@ -71,10 +101,39 @@ class TestSerializers(object):
                                 (9, 1, None, [[0, 1, None, None, None]], None, None),
                                 (12, 1, None, [[0, 1, None, None, None]], None, None),
                                 (13, 1, None, [[0, 1, None, None, None]], None, None)
-                            ]
+                            ],
+                            'totals': {
+                                'files': 0,
+                                'lines': 7,
+                                'hits': 7,
+                                'misses': 0,
+                                'partials': 0,
+                                'coverage': '100',
+                                'branches': 0,
+                                'methods': 0,
+                                'messages': 0,
+                                'sessions': 0,
+                                'complexity': 0,
+                                'complexity_total': 0,
+                                'diff': 0
+                            }
                         }
                     ],
-                    'totals': dict(files=3, lines=20, hits=17, misses=3, partials=0, coverage='85.00000', branches=0, methods=0, messages=0, sessions=1, complexity=0, complexity_total=0, diff=[1, 2, 1, 1, 0, '50.00000', 0, 0, 0, 0, 0, 0, 0])
+                    'totals': {
+                        'files': 3,
+                        'lines': 20,
+                        'hits': 17,
+                        'misses': 3,
+                        'partials': 0,
+                        'coverage': '85.00000',
+                        'branches': 0,
+                        'methods': 0,
+                        'messages': 0,
+                        'sessions': 1,
+                        'complexity': 0,
+                        'complexity_total': 0,
+                        'diff': [1, 2, 1, 1, 0, '50.00000', 0, 0, 0, 0, 0, 0, 0]
+                    }
                 },
                 'src': {
                     'files': {

@@ -25,6 +25,7 @@ class PullSerializer(serializers.Serializer):
 class ReportFileSerializer(serializers.Serializer):
     name = serializers.CharField()
     lines = serializers.SerializerMethodField()
+    totals = serializers.JSONField(source='totals._asdict')
 
     def get_lines(self, obj):
         return list(self.get_lines_iterator(obj))
