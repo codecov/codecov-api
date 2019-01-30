@@ -2,6 +2,17 @@ import factory
 from core import models
 from hashlib import sha1
 from factory.django import DjangoModelFactory
+from codecov_auth.tests.factories import OwnerFactory
+
+
+class RepositoryFactory(DjangoModelFactory):
+    class Meta:
+        model = models.Repository
+
+    private = True
+    name = 'example-python'
+
+    owner = factory.SubFactory(OwnerFactory)
 
 
 class CommitFactory(DjangoModelFactory):
@@ -9,6 +20,10 @@ class CommitFactory(DjangoModelFactory):
         model = models.Commit
 
     commitid = factory.LazyAttribute(lambda o: sha1(o.message.encode('utf-8')).hexdigest())
+    ci_passed = True
+    pullid = 1
+    author = factory.SubFactory(OwnerFactory)
+    repository = factory.SubFactory(RepositoryFactory)
     totals = {
         'C': 0,
         'M': 0,

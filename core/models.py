@@ -29,7 +29,7 @@ class Commit(models.Model):
     pullid = models.IntegerField()
     message = models.TextField()
     parent_commit_id = models.TextField(db_column='parent')
-    state = models.CharField(256)
+    state = models.CharField(max_length=256)
 
     @property
     def sessions(self):
@@ -42,6 +42,10 @@ class Commit(models.Model):
             link = sess['a']
             return urlparse(link).path.split('/')[3]
         return None
+
+    @cached_property
+    def parent_commit(self):
+        return Commit.objects.filter(repository=self.repository, commitid=self.parent_commit_id).first()
 
     class Meta:
         db_table = 'commits'
@@ -71,7 +75,7 @@ class Pull(models.Model):
 
 class Repository(models.Model):
 
-    repoid = models.IntegerField(primary_key=True)
+    repoid = models.AutoField(primary_key=True)
     owner = models.ForeignKey('codecov_auth.Owner', db_column='ownerid', on_delete=models.CASCADE,)
     service_id = models.TextField()
     name = CITextField()

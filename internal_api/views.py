@@ -14,6 +14,11 @@ class CommitList(generics.ListCreateAPIView):
     queryset = Commit.objects.all()
     serializer_class = CommitSerializer
 
+    def get_serializer_context(self):
+        return {
+            'user': self.request.user
+        }
+
 
 class RepoPullRequestList(generics.ListCreateAPIView):
     queryset = Pull.objects.all()

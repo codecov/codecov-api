@@ -1,3 +1,5 @@
+import asyncio
+
 from rest_framework import serializers
 from core.models import Pull, Commit, Repository
 
@@ -35,11 +37,11 @@ class ReportFileSerializer(serializers.Serializer):
 
 
 class ReportSerializer(serializers.Serializer):
-    totals = serializers.JSONField()
+    totals = serializers.JSONField(source='totals._asdict')
     files = ReportFileSerializer(source='file_reports', many=True)
 
 
-class CommitSerializer(serializers.Serializer):
+class ParentlessCommitSerializer(serializers.Serializer):
 
     commitid = serializers.CharField()
     timestamp = serializers.DateTimeField()
@@ -57,15 +59,27 @@ class CommitSerializer(serializers.Serializer):
         return ReportSerializer(instance=report).data
 
     def get_src(self, obj):
-        return RepoProviderService().get_adapter(obj.repository).get_commit_diff(obj.commitid)
+        loop = asyncio.get_event_loop()
+        user = self.context.get("user")
+        task = RepoProviderService().get_adapter(user, obj.repository).get_commit_diff(obj.commitid)
+        return loop.run_until_complete(task)
 
     class Meta:
         model = Commit
-        fields = ['commitid', 'timestamp', 'updatestamp', 'ci_passed', 'report', 'repository']
+        fields = (
+            'src', 'commitid', 'timestamp', 'updatestamp', 'ci_passed', 'report', 'repository')
 
 
-class CommitSessionSerializer(serializers.Serializer):
-    pass
+class CommitSerializer(ParentlessCommitSerializer):
+
+    parent = ParentlessCommitSerializer(source='parent_commit')
+
+    class Meta:
+        model = Commit
+        fields = (
+            'src', 'commitid', 'timestamp', 'updatestamp', 'ci_passed',
+            'report', 'repository', 'parent'
+        )
 
 
 class RepoSerializer(serializers.Serializer):

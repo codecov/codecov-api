@@ -1,7 +1,17 @@
 from torngit import get
+from utils.encryption import decrypt_token
 
 
 class RepoProviderService(object):
 
-    def get_adapter(self, repo):
-        return get('github', repo=repo.service_id, owner=repo.owner.username, token=None)
+    def get_adapter(self, owner, repo):
+        print(decrypt_token(owner.oauth_token))
+        adapter_params = dict(
+            repo=dict(name=repo.name),
+            owner=dict(username=repo.owner.username),
+            token=decrypt_token(owner.oauth_token)
+        )
+        return get(
+            'github',
+            **adapter_params
+        )

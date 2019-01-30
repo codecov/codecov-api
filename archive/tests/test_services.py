@@ -78,11 +78,11 @@ def test_report_generator():
     assert len(res._chunks) == 3
 
 
-def test_build_report_from_commit():
+def test_build_report_from_commit(db):
     with patch('archive.services.download_content') as mocked:
         f = open(current_file.parent / 'samples' / 'chunks.txt', 'r')
         mocked.return_value = f.read()
-        commit = CommitFactory.create(message='aaaaa')
+        commit = CommitFactory.create(message='aaaaa', commitid='abf6d4d')
         res = ArchiveService().build_report_from_commit(commit)
         assert len(res._chunks) == 3
         assert len(res.files) == 3
@@ -90,4 +90,4 @@ def test_build_report_from_commit():
         assert file_1.name == 'awesome/__init__.py'
         assert file_2.name == 'tests/__init__.py'
         assert file_3.name == 'tests/test_sample.py'
-        mocked.assert_called_with('codecov.s3.amazonaws.com/v4/repos/4434BC2A2EC4FCA57F77B473D83F928C/commits/df51e37c269aa94d38f93e537bf6e2020b21406c/chunks.txt')
+        mocked.assert_called_with('codecov.s3.amazonaws.com/v4/repos/4434BC2A2EC4FCA57F77B473D83F928C/commits/abf6d4d/chunks.txt')
