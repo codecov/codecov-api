@@ -1,7 +1,7 @@
 from unittest.mock import patch
 from pathlib import Path
 
-from archive.services import build_report, ArchiveService
+from archive.services import build_report, ArchiveService, MinioEndpoints
 from core.tests.factories import CommitFactory
 
 current_file = Path(__file__)
@@ -90,4 +90,9 @@ def test_build_report_from_commit(db):
         assert file_1.name == 'awesome/__init__.py'
         assert file_2.name == 'tests/__init__.py'
         assert file_3.name == 'tests/test_sample.py'
-        mocked.assert_called_with('codecov.s3.amazonaws.com/v4/repos/4434BC2A2EC4FCA57F77B473D83F928C/commits/abf6d4d/chunks.txt')
+        mocked.assert_called_with(
+                MinioEndpoints.chunks,
+                commitid='abf6d4d',
+                repo_hash='4434BC2A2EC4FCA57F77B473D83F928C',
+                version='v4'
+            )

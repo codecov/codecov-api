@@ -3,7 +3,8 @@ from pathlib import Path
 
 from internal_api.serializers import ParentlessCommitSerializer
 from core.tests.factories import CommitFactory, RepositoryFactory
-from json import loads, dumps
+from archive.services import MinioEndpoints
+
 current_file = Path(__file__)
 
 
@@ -11,13 +12,15 @@ class TestSerializers(object):
 
     def test_commit_serializer(self, db, codecov_vcr):
         with patch('archive.services.download_content') as mocked:
-            f = open(current_file.parent.parent.parent / 'archive/tests/samples' / 'chunks.txt', 'r')
+            f = open(
+                current_file.parent.parent.parent / 'archive/tests/samples' / 'chunks.txt',
+                'r'
+            )
             mocked.return_value = f.read()
             repo = RepositoryFactory.create(
                 owner__unencrypted_oauth_token='testqmit3okrgutcoyzscveipor3toi3nsmb927v',
                 owner__username='ThiagoCodecov'
             )
-            print(repo.owner.oauth_token)
             parent_commit = CommitFactory.create(
                 message='test_report_serializer',
                 commitid='c5b6730',
@@ -212,5 +215,8 @@ class TestSerializers(object):
             }
             assert expected_result == res
             mocked.assert_called_with(
-                f'/v4/repos/4434BC2A2EC4FCA57F77B473D83F928C/commits/{commit.commitid}/chunks.txt'
+                MinioEndpoints.chunks,
+                commitid='abf6d4df662c47e32460020ab14abf9303581429',
+                repo_hash='4434BC2A2EC4FCA57F77B473D83F928C',
+                version='v4'
             )

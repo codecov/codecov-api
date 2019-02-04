@@ -31,17 +31,43 @@ def build_report(chunks, files, sessions, totals):
     return SerializableReport(chunks=chunks, files=files, sessions=sessions, totals=totals)
 
 
-def download_content(path):
+def download_content(minio_endpoint, **kwargs):
+    """Downloads the content from minio service on endpoint `minio_endpoint`
+
+    Args:
+        minio_endpoint (MinioEndpoints): The endpoint we want to use
+        **kwargs : The params of the above endpoint (filled with .format method)
+
+    Returns:
+        The content of the specific key on Minio
+        str
+    """
+    path = minio_endpoint.get_path(**kwargs)
     return get_minio_client().get_object(path)
 
 
 class ArchiveService(object):
+    """
+    Class that centralizes all the high-level archive-related logic.
+
+    Examples of responsabilities it has:
+        - Fetch a report for a specific commit
+    """
 
     def build_report_from_commit(self, commit):
+        """Builds a `covreports.resources.Report` from a given commit
+
+        Args:
+            commit (core.models.Commit): The commit we want to see the report about
+
+        Returns:
+            SerializableReport: A report with all information from such commit
+        """
         repo_hash = commit.repo_hash
         commitid = commit.commitid
-        url = MinioEndpoints.chunks.get_path(version='v4', repo_hash=repo_hash, commitid=commitid)
-        chunks = download_content(url)
+        chunks = download_content(
+            MinioEndpoints.chunks, version='v4', repo_hash=repo_hash, commitid=commitid
+        )
         files = commit.report['files']
         sessions = commit.report['sessions']
         totals = commit.totals
