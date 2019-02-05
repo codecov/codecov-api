@@ -25,6 +25,12 @@ class TestAuthentication(BaseTestCase):
         assert user == session.owner
         assert token == session
 
+    def test_decode_token_from_cookie(self):
+        val = '2|1:0|10:1546487835|12:github-token|48:MDZlZDQwNmQtM2ZlNS00ZmY0LWJhYmEtMzQ5NzM5NzMyYjZh|f520039bc6cfb111e4cfc5c3e44fc4fa5921402918547b54383939da803948f4'
+        expected_response = "06ed406d-3fe5-4ff4-baba-349739732b6a"
+        authenticator = CodecovSessionAuthentication()
+        assert expected_response == authenticator.decode_token_from_cookie(val)
+
     def test_auth_no_token(self, db):
         SessionFactory.create()
         token = uuid4()
