@@ -1,0 +1,2 @@
+class BaseTestCase(object):
+    pass
