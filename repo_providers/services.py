@@ -5,7 +5,6 @@ from utils.encryption import decrypt_token
 class RepoProviderService(object):
 
     def get_adapter(self, owner, repo):
-        print(decrypt_token(owner.oauth_token))
         adapter_params = dict(
             repo=dict(name=repo.name),
             owner=dict(username=repo.owner.username),

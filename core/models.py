@@ -31,18 +31,6 @@ class Commit(models.Model):
     parent_commit_id = models.TextField(db_column='parent')
     state = models.CharField(max_length=256)
 
-    @property
-    def sessions(self):
-        sessions = sorted(self.report['sessions'].items(), key=lambda a: int(a[0]))
-        return [s[1] for s in sessions]
-
-    @cached_property
-    def repo_hash(self):
-        for sess_key, sess in self.report['sessions'].items():
-            link = sess['a']
-            return urlparse(link).path.split('/')[3]
-        return None
-
     @cached_property
     def parent_commit(self):
         return Commit.objects.filter(repository=self.repository, commitid=self.parent_commit_id).first()
@@ -78,17 +66,10 @@ class Repository(models.Model):
     repoid = models.AutoField(primary_key=True)
     owner = models.ForeignKey('codecov_auth.Owner', db_column='ownerid', on_delete=models.CASCADE,)
     service_id = models.TextField()
+    service = models.TextField()
     name = CITextField()
     private = models.BooleanField()
     updatestamp = models.DateTimeField(auto_now=True)
-
-    @cached_property
-    def archive_hash(self):
-        for commit in self.commits.all():
-            hash_result = commit.repo_hash
-            if hash_result:
-                return hash_result
-        return None
 
     class Meta:
         db_table = 'repos'

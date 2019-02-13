@@ -3,7 +3,7 @@ import asyncio
 from rest_framework import serializers
 from core.models import Pull, Commit, Repository
 
-from archive.services import ArchiveService
+from archive.services import ReportService
 from repo_providers.services import RepoProviderService
 
 
@@ -56,7 +56,7 @@ class ParentlessCommitSerializer(serializers.Serializer):
     )
 
     def get_report(self, obj):
-        report = ArchiveService().build_report_from_commit(obj)
+        report = ReportService().build_report_from_commit(obj)
         return ReportSerializer(instance=report).data
 
     def get_src(self, obj):
