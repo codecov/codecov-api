@@ -26,7 +26,8 @@ SECRET_KEY = 'edj+31p-b0#5b4z163d4uyzf9*s7juwgy^lx^!-2=v+y_xadz5'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+if DEBUG:
+    ALLOWED_HOSTS = ["api.localhost"]
 
 AUTH_USER_MODEL = 'codecov_auth.Owner'
 
