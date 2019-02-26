@@ -161,3 +161,10 @@ LOGGING = {
         }
     }
 }
+
+MINIO_ACCESS_KEY = ''
+MINIO_SECRET_KEY = ''
+MINIO_LOCATION = 'codecov.s3.amazonaws.com'
+MINIO_HASH_KEY = ''
+ARCHIVE_BUCKET_NAME = 'codecov'
+ENCRYPTION_SECRET = ''

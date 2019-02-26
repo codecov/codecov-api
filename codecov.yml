@@ -1,0 +1,87 @@
+setup:
+  codecov_url: https://codecov.io
+  debug: no
+  loglvl: INFO
+  encryption_secret: "zp^P9*i8aR3"
+  media:
+    assets: https://codecov-cdn.storage.googleapis.com/4.4.4-fd6aa1e
+    dependancies: https://codecov-cdn.storage.googleapis.com/4.4.4-fd6aa1e
+  http:
+    force_https: yes
+    cookie_secret: Z1353^dggqdbc,kp0)661
+    timeouts:
+      connect: 10
+      receive: 15
+  tasks:
+    celery:
+      soft_timelimit: 200
+      hard_timelimit: 240
+    upload:
+      queue: uploads
+  cache:
+    yaml: 600  # 10 minutes
+    tree: 600  # 10 minutes
+    diff: 300  # 5 minutes
+    chunks: 300  # 5 minutes
+    uploads: 86400  # 1 day
+
+services:
+  redis_url: redis://redis:@localhost:6379/
+  minio:
+    hash_key: 88f572f4726e4971827415efa8867978  # never change this
+    bucket: codecov
+    periodic_callback_ms: false
+    access_key_id: testobtiw2l2eaqpssi7
+    secret_access_key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+    verify_ssl: false
+  sentry:
+    server_dsn: https://e15a77ae50f9454c8255dee12e764186@sentry.io/1260170
+  google_analytics_key: UA-63027104-1
+  circleci_token: testquyiqktx1o6in8zutfdwikzwe0kgclxy9j27
+
+github:
+  bot:
+    username: codecov-io
+  integration:
+    id: 254
+    pem: src/certs/github.pem
+
+bitbucket:
+  bot:
+    username: codecov-io
+
+gitlab:
+  bot:
+    username: codecov-io
+
+site:
+  codecov:
+    require_ci_to_pass: yes
+
+  coverage:
+    precision: 2
+    round: down
+    range: "70...100"
+
+    status:
+      project: yes
+      patch: yes
+      changes: no
+
+  parsers:
+    gcov:
+      branch_detection:
+        conditional: yes
+        loop: yes
+        method: no
+        macro: no
+
+    javascript:
+      enable_partials: no
+
+  comment:
+    layout: "reach, diff, flags, files, footer"
+    behavior: default
+    require_changes: no
+    require_base: no
+    require_head: yes
