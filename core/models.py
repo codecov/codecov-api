@@ -73,6 +73,10 @@ class Repository(models.Model):
     class Meta:
         db_table = 'repos'
 
+    @property
+    def service(self):
+        return self.owner.service
+
 
 class YamlHistory(models.Model):
 

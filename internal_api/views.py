@@ -1,6 +1,6 @@
 from rest_framework import generics
 from core.models import Pull, Commit, Repository
-from internal_api.serializers import PullSerializer, CommitSerializer, RepoSerializer
+from internal_api.serializers import PullSerializer, CommitSerializer, RepoSerializer, ShortParentlessCommitSerializer
 from django.shortcuts import Http404
 
 class BaseInternalAPIView(object):
@@ -18,7 +18,7 @@ class PullRequestList(BaseInternalAPIView, generics.ListCreateAPIView):
 
 class CommitList(BaseInternalAPIView, generics.ListCreateAPIView):
     queryset = Commit.objects.all()
-    serializer_class = CommitSerializer
+    serializer_class = ShortParentlessCommitSerializer
 
 
 class RepoPullRequestList(BaseInternalAPIView, generics.ListCreateAPIView):
@@ -42,8 +42,8 @@ class RepoCommmitDetail(BaseInternalAPIView, generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         queryset = self.get_queryset()
-        repoid = None
-        commitid = None
+        repoid = self.kwargs['repoid']
+        commitid = self.kwargs['commitid']
         queryset = queryset.filter(repository_id=repoid)
         queryset = queryset.filter(commitid=commitid)
         try:

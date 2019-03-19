@@ -57,19 +57,27 @@ class ReportSerializer(serializers.Serializer):
     files = ReportFileSerializer(source='file_reports', many=True)
 
 
-class ParentlessCommitSerializer(serializers.ModelSerializer):
-
+class ShortParentlessCommitSerializer(serializers.ModelSerializer):
     commitid = serializers.CharField()
     timestamp = serializers.DateTimeField()
     updatestamp = serializers.DateTimeField()
     ci_passed = serializers.BooleanField()
     author = AuthorSerializer()
-    report = serializers.SerializerMethodField()
-    src = serializers.SerializerMethodField()
     repository = serializers.SlugRelatedField(
         read_only=True,
         slug_field='repoid'
     )
+
+    class Meta:
+        model = Commit
+        fields = (
+            'commitid', 'timestamp', 'updatestamp', 'ci_passed', 'repository', 'author', 'message'
+        )
+
+
+class ParentlessCommitSerializer(ShortParentlessCommitSerializer):
+    report = serializers.SerializerMethodField()
+    src = serializers.SerializerMethodField()
 
     def get_report(self, obj):
         report = ReportService().build_report_from_commit(obj)
@@ -86,7 +94,7 @@ class ParentlessCommitSerializer(serializers.ModelSerializer):
     class Meta:
         model = Commit
         fields = (
-            'src', 'commitid', 'timestamp', 'updatestamp', 'ci_passed', 'report', 'repository', 'author'
+            'src', 'commitid', 'timestamp', 'updatestamp', 'ci_passed', 'report', 'repository', 'author', 'message'
         )
 
 

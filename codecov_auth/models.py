@@ -1,9 +1,10 @@
 import uuid
+import logging
 
 from django.db import models
 from django.contrib.postgres.fields import CITextField, JSONField, ArrayField
 
-# Create your models here.
+log = logging.getLogger(__name__)
 
 
 class Owner(models.Model):
@@ -15,14 +16,13 @@ class Owner(models.Model):
     USERNAME_FIELD = 'username'
 
     ownerid = models.AutoField(primary_key=True)
-    # service
+    service = models.CharField(max_length=256)
     username = CITextField(null=True, unique=True)
     email = models.TextField(null=True)
     name = models.TextField(null=True)
     oauth_token = models.TextField(null=True)
     stripe_customer_id = models.TextField(null=True)
     stripe_subscription_id = models.TextField(null=True)
-    trial = models.BooleanField(null=True)
     createstamp = models.DateTimeField(auto_now_add=True)
     service_id = models.TextField()
     private_access = models.BooleanField(null=True)
@@ -36,7 +36,6 @@ class Owner(models.Model):
     did_trial = models.BooleanField(null=True)
     free = models.SmallIntegerField()
     invoice_details = models.TextField(null=True)
-    errors = ArrayField(models.TextField(null=True), null=True)
     delinquent = models.BooleanField(null=True)
     yaml = JSONField(null=True)
     updatestamp = models.DateTimeField(auto_now=True)
@@ -53,6 +52,10 @@ class Owner(models.Model):
     @property
     def is_authenticated(self):
         return False
+
+    def has_perms(self, *args, **kwargs):
+        # TODO : Implement real permissioning system
+        return True
 
 
 class Session(models.Model):

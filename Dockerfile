@@ -17,4 +17,6 @@ COPY . /app
 
 WORKDIR /app
 
+ENV CODECOV_YML='codecov.yml'
+
 ENTRYPOINT ["./api.sh"]
