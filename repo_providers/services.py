@@ -1,5 +1,5 @@
 from torngit import get
-from utils.encryption import decrypt_token
+from utils.encryption import encryptor
 
 
 class RepoProviderService(object):
@@ -8,7 +8,7 @@ class RepoProviderService(object):
         adapter_params = dict(
             repo=dict(name=repo.name),
             owner=dict(username=repo.owner.username),
-            token=decrypt_token(owner.oauth_token)
+            token=encryptor.decrypt_token(owner.oauth_token)
         )
         return get(
             'github',

@@ -1,9 +1,10 @@
+-e git+https://74b2d36cf710afef720fbf3dc0472241da04ceaf:x-oauth-basic@github.com/codecov/report.git@0df9d33d9035a0bc1e52663a0394649e84b85c4b#egg=covreports
+-e git+https://74b2d36cf710afef720fbf3dc0472241da04ceaf:x-oauth-basic@github.com/codecov/torngit.git@python-3-master#egg=torngit
 atomicwrites==1.2.1
 attrs==18.2.0
 certifi==2018.11.29
 chardet==3.0.4
 colour==0.1.5
--e git+ssh://git@github.com/codecov/report.git@fad03991b8bed53c5e1030c0ece1ff9025ab3d39#egg=covreports
 dj-database-url==0.5.0
 Django==2.1.3
 djangorestframework==3.9.0
@@ -18,7 +19,6 @@ minio==4.0.8
 more-itertools==5.0.0
 oauth2==1.9.0.post1
 oauthlib==3.0.0
-pkg-resources==0.0.0
 pluggy==0.8.1
 psycopg2==2.7.6.1
 py==1.7.0
@@ -33,5 +33,8 @@ six==1.12.0
 text-unidecode==1.2
 tlslite-ng==0.7.5
 tornado==5.1.1
--e git+ssh://git@github.com/codecov/torngit.git@228282b1b6cea79da9f83d8eaf34ddcf26eac93e#egg=torngit
 urllib3==1.24.1
+pycrypto==2.6.1
+vcrpy==2.0.1
+pytest-mock==1.10.1
+PyYAML==3.13

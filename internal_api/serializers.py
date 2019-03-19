@@ -1,13 +1,28 @@
 import asyncio
+import logging
 
 from rest_framework import serializers
 from core.models import Pull, Commit, Repository
+from codecov_auth.models import Owner
 
 from archive.services import ReportService
 from repo_providers.services import RepoProviderService
 
+log = logging.getLogger(__name__)
 
-class PullSerializer(serializers.Serializer):
+
+class AuthorSerializer(serializers.ModelSerializer):
+
+    username = serializers.CharField()
+    email = serializers.CharField()
+    name = serializers.CharField()
+
+    class Meta:
+        model = Owner
+        fields = ('username', 'email', 'name')
+
+
+class PullSerializer(serializers.ModelSerializer):
 
     state = serializers.CharField()
     title = serializers.CharField()
@@ -42,12 +57,13 @@ class ReportSerializer(serializers.Serializer):
     files = ReportFileSerializer(source='file_reports', many=True)
 
 
-class ParentlessCommitSerializer(serializers.Serializer):
+class ParentlessCommitSerializer(serializers.ModelSerializer):
 
     commitid = serializers.CharField()
     timestamp = serializers.DateTimeField()
     updatestamp = serializers.DateTimeField()
     ci_passed = serializers.BooleanField()
+    author = AuthorSerializer()
     report = serializers.SerializerMethodField()
     src = serializers.SerializerMethodField()
     repository = serializers.SlugRelatedField(
@@ -60,7 +76,9 @@ class ParentlessCommitSerializer(serializers.Serializer):
         return ReportSerializer(instance=report).data
 
     def get_src(self, obj):
-        loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        log.info("Starting loop %s", loop)
         user = self.context.get("user")
         task = RepoProviderService().get_adapter(user, obj.repository).get_commit_diff(obj.commitid)
         return loop.run_until_complete(task)
@@ -68,7 +86,8 @@ class ParentlessCommitSerializer(serializers.Serializer):
     class Meta:
         model = Commit
         fields = (
-            'src', 'commitid', 'timestamp', 'updatestamp', 'ci_passed', 'report', 'repository')
+            'src', 'commitid', 'timestamp', 'updatestamp', 'ci_passed', 'report', 'repository', 'author'
+        )
 
 
 class CommitSerializer(ParentlessCommitSerializer):
@@ -79,11 +98,11 @@ class CommitSerializer(ParentlessCommitSerializer):
         model = Commit
         fields = (
             'src', 'commitid', 'timestamp', 'updatestamp', 'ci_passed',
-            'report', 'repository', 'parent'
+            'report', 'repository', 'parent', 'author'
         )
 
 
-class RepoSerializer(serializers.Serializer):
+class RepoSerializer(serializers.ModelSerializer):
     repoid = serializers.CharField()
     service_id = serializers.CharField()
     name = serializers.CharField()

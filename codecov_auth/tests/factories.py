@@ -5,7 +5,7 @@ from factory.django import DjangoModelFactory
 from codecov_auth import models
 from django.utils import timezone
 
-from utils.encryption import encode
+from utils.encryption import encryptor
 
 
 class OwnerFactory(DjangoModelFactory):
@@ -22,7 +22,7 @@ class OwnerFactory(DjangoModelFactory):
     free = 0
     unencrypted_oauth_token = factory.LazyFunction(lambda: uuid4().hex)
 
-    oauth_token = factory.LazyAttribute(lambda o: encode(o.unencrypted_oauth_token))
+    oauth_token = factory.LazyAttribute(lambda o: encryptor.encode(o.unencrypted_oauth_token))
 
 
 class SessionFactory(DjangoModelFactory):

@@ -27,7 +27,7 @@ SECRET_KEY = 'edj+31p-b0#5b4z163d4uyzf9*s7juwgy^lx^!-2=v+y_xadz5'
 DEBUG = True
 
 if DEBUG:
-    ALLOWED_HOSTS = ["api.localhost"]
+    ALLOWED_HOSTS = ["api.localhost", "localhost"]
 
 AUTH_USER_MODEL = 'codecov_auth.Owner'
 

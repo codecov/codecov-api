@@ -2,9 +2,7 @@ version: "3"
 
 services:
   api:
-    image: codecov/api-dev:latest
-    volumes:
-        - ./../codecov-api:/app
+    image: codecov/api:latest
     networks:
       - codecovapi
     ports:
@@ -13,6 +11,9 @@ services:
       - "traefik.tags=api"
       - "traefik.backend=api"
       - "traefik.port=5100"
+    depends_on:
+      - postgres
+      - redis
   postgres:
     image: postgres:9.6-alpine
     volumes:
