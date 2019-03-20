@@ -11,7 +11,6 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 """
 
 import os
-import dj_database_url
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -117,7 +116,6 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'codecov_auth.authentication.CodecovSessionAuthentication',
-        'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ),
@@ -155,10 +153,21 @@ LOGGING = {
         }
     },
     'loggers': {
-        'django.db.backends': {
+        'django': {
+            'level': 'INFO',
+            'handlers': ['console'],
+            'propagate': True
+        },
+        'core': {
             'level': 'DEBUG',
             'handlers': ['console'],
-        }
+            'propagate': True
+        },
+        'internal_api': {
+            'level': 'DEBUG',
+            'handlers': ['console'],
+            'propagate': True
+        },
     }
 }
 

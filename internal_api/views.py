@@ -1,7 +1,13 @@
+import logging
+import asyncio
+
 from rest_framework import generics
 from core.models import Pull, Commit, Repository
 from internal_api.serializers import PullSerializer, CommitSerializer, RepoSerializer, ShortParentlessCommitSerializer
 from django.shortcuts import Http404
+
+log = logging.getLogger(__name__)
+
 
 class BaseInternalAPIView(object):
 
@@ -42,6 +48,7 @@ class RepoCommmitDetail(BaseInternalAPIView, generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         queryset = self.get_queryset()
+        asyncio.set_event_loop(asyncio.new_event_loop())
         repoid = self.kwargs['repoid']
         commitid = self.kwargs['commitid']
         queryset = queryset.filter(repository_id=repoid)
