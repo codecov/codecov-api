@@ -51,7 +51,7 @@ class Owner(models.Model):
 
     @property
     def is_authenticated(self):
-        return False
+        return True
 
     def has_perms(self, *args, **kwargs):
         # TODO : Implement real permissioning system
