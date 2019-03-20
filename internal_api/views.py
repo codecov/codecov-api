@@ -51,8 +51,11 @@ class RepoCommmitDetail(BaseInternalAPIView, generics.RetrieveUpdateAPIView):
         asyncio.set_event_loop(asyncio.new_event_loop())
         repoid = self.kwargs['repoid']
         commitid = self.kwargs['commitid']
-        queryset = queryset.filter(repository_id=repoid)
-        queryset = queryset.filter(commitid=commitid)
+        queryset = queryset.filter(
+            repository_id=repoid,
+            repository__owner=self.request.user,
+            commitid=commitid
+        )
         try:
             obj = queryset.get()
         except Commit.DoesNotExist:
