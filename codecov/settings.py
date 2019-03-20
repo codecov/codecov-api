@@ -11,11 +11,10 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 """
 
 import os
-import dj_database_url
+from utils.config import get_config
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
@@ -27,7 +26,7 @@ SECRET_KEY = 'edj+31p-b0#5b4z163d4uyzf9*s7juwgy^lx^!-2=v+y_xadz5'
 DEBUG = True
 
 if DEBUG:
-    ALLOWED_HOSTS = ["api.localhost"]
+    ALLOWED_HOSTS = ["api.localhost", "localhost"]
 
 AUTH_USER_MODEL = 'codecov_auth.Owner'
 
@@ -110,14 +109,11 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 REST_FRAMEWORK = {
-    # Use Django's standard `django.contrib.auth` permissions,
-    # or allow read-only access for unauthenticated users.
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
-    ],
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'codecov_auth.authentication.CodecovSessionAuthentication',
-        'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ),
@@ -155,16 +151,27 @@ LOGGING = {
         }
     },
     'loggers': {
-        'django.db.backends': {
+        'django': {
+            'level': 'INFO',
+            'handlers': ['console'],
+            'propagate': True
+        },
+        'core': {
             'level': 'DEBUG',
             'handlers': ['console'],
-        }
+            'propagate': True
+        },
+        'internal_api': {
+            'level': 'DEBUG',
+            'handlers': ['console'],
+            'propagate': True
+        },
     }
 }
 
-MINIO_ACCESS_KEY = ''
-MINIO_SECRET_KEY = ''
+MINIO_ACCESS_KEY = get_config('services', 'minio', 'access_key_id')
+MINIO_SECRET_KEY = get_config('services', 'minio', 'secret_access_key')
 MINIO_LOCATION = 'codecov.s3.amazonaws.com'
-MINIO_HASH_KEY = ''
+MINIO_HASH_KEY = get_config('services', 'minio', 'hash_key')
 ARCHIVE_BUCKET_NAME = 'codecov'
 ENCRYPTION_SECRET = ''

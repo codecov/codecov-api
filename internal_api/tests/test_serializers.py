@@ -35,6 +35,11 @@ class TestSerializers(object):
         res = ParentlessCommitSerializer(instance=commit, context={'user': repo.owner}).data
         expected_result = {
             'ci_passed': True,
+            'author': {
+                'username': commit.author.username,
+                'email': commit.author.email,
+                'name': commit.author.name,
+            },
             'commitid': 'abf6d4df662c47e32460020ab14abf9303581429',
             'repository': commit.repository.repoid,
             'timestamp': commit.timestamp.isoformat()[:-6] + 'Z',

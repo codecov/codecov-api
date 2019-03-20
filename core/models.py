@@ -66,13 +66,16 @@ class Repository(models.Model):
     repoid = models.AutoField(primary_key=True)
     owner = models.ForeignKey('codecov_auth.Owner', db_column='ownerid', on_delete=models.CASCADE,)
     service_id = models.TextField()
-    service = models.TextField()
     name = CITextField()
     private = models.BooleanField()
     updatestamp = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'repos'
+
+    @property
+    def service(self):
+        return self.owner.service
 
 
 class YamlHistory(models.Model):

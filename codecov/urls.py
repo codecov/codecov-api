@@ -25,4 +25,5 @@ urlpatterns = [
     path('api/repos/', internal_api.views.RepositoryList.as_view()),
     path('api/repos/<int:repoid>/pulls', internal_api.views.RepoPullRequestList.as_view()),
     path('api/repos/<int:repoid>/commits', internal_api.views.RepoCommitList.as_view()),
+    path('api/repos/<int:repoid>/commits/<commitid>', internal_api.views.RepoCommmitDetail.as_view()),
 ]
