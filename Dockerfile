@@ -20,27 +20,26 @@ RUN             git config --global url."git@github.com:".insteadOf "https://git
 RUN             pip download -r /requirements.txt
 
 # RUNTIME STAGE - Copy packages from build stage and install runtime dependencies
-FROM python:3.7-alpine
+FROM            python:3.7-alpine
 
-RUN \
- apk add --no-cache postgresql-libs && \
- apk add --no-cache --virtual .build-deps gcc \ 
- musl-dev \ 
- postgresql-dev \ 
- python3-dev \
- git
+RUN             apk add --no-cache postgresql-libs && \
+                apk add --no-cache --virtual .build-deps gcc \ 
+                musl-dev \ 
+                postgresql-dev \ 
+                python3-dev \
+                git
 
 WORKDIR         /pip-packages/
 COPY            --from=build /pip-packages/ /pip-packages/
 RUN             rm -rf /pip-packages/src
 RUN             pip install --no-index --find-links=/pip-packages/ /pip-packages/*
 
-EXPOSE 8000
+EXPOSE          8000
 
-COPY . /app
+COPY            . /app
 
-WORKDIR /app
+WORKDIR         /app
 
-ENV CODECOV_YML='codecov.yml'
+ENV             CODECOV_YML='codecov.yml'
 
-ENTRYPOINT ["./api.sh"]
+ENTRYPOINT      ["./api.sh"]
