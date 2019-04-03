@@ -28,11 +28,10 @@ setup:
 services:
   redis_url: redis://redis:@localhost:6379/
   minio:
-    hash_key: 88f572f4726e4971827415efa8867978  # never change this
-    bucket: codecov
+    hash_key: testixik8qdauiab1yiffydimvi72ekq  # never change this
     periodic_callback_ms: false
-    access_key_id: testobtiw2l2eaqpssi7
-    secret_access_key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+    access_key_id: codecov-default-key
+    secret_access_key: codecov-default-secret
     verify_ssl: false
   sentry:
     server_dsn: https://e15a77ae50f9454c8255dee12e764186@sentry.io/1260170

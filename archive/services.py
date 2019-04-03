@@ -1,3 +1,5 @@
+import logging
+
 from django.conf import settings
 from enum import Enum
 from minio import Minio
@@ -9,6 +11,8 @@ from base64 import b16encode
 
 from utils.config import get_config
 from archive.storage import StorageService
+
+log = logging.getLogger(__name__)
 
 
 class MinioEndpoints(Enum):
@@ -162,7 +166,7 @@ class ArchiveService(object):
     """
     def read_file(self, path):
         contents = self.storage.read_file(self.root, path)
-        return contents
+        return contents.decode()
 
     """
     Generic method to delete a file from the archive.
@@ -187,7 +191,7 @@ class ArchiveService(object):
             repo_hash=self.storage_hash,
             commitid=commit_sha
         )
-
+        log.info("Downloading chunks from path %s for commit %s", path, commit_sha)
         return self.read_file(path)
 
     """

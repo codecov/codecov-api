@@ -166,6 +166,11 @@ LOGGING = {
             'handlers': ['console'],
             'propagate': True
         },
+        'archive': {
+            'level': 'DEBUG',
+            'handlers': ['console'],
+            'propagate': True
+        },
     }
 }
 
