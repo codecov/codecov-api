@@ -16,14 +16,16 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
-import internal_api.views
+import internal_api.repo.views
+import internal_api.pull.views
+import internal_api.commit.views
+import internal_api.branch.views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/pulls/', internal_api.views.PullRequestList.as_view()),
-    path('api/commits/', internal_api.views.CommitList.as_view()),
-    path('api/repos/', internal_api.views.RepositoryList.as_view()),
-    path('api/repos/<int:repoid>/pulls', internal_api.views.RepoPullRequestList.as_view()),
-    path('api/repos/<int:repoid>/commits', internal_api.views.RepoCommitList.as_view()),
-    path('api/repos/<int:repoid>/commits/<commitid>', internal_api.views.RepoCommmitDetail.as_view()),
+    path('api/<str:orgid>/repos', internal_api.repo.views.RepoView.as_view()),
+    path('api/<int:repoid>/pulls', internal_api.pull.views.RepoPullsView.as_view()),
+    path('api/<int:repoid>/commits', internal_api.commit.views.RepoCommitsView.as_view()),
+    path('api/<int:repoid>/branches', internal_api.branch.views.RepoBranchesView.as_view()),
+    # path('api/<str:org>/<str:repo>/commits/<commitid>', internal_api.views.RepoCommmitDetail.as_view()),
 ]

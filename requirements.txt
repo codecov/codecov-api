@@ -14,3 +14,4 @@ tlslite-ng==0.7.5
 vcrpy==2.0.1
 pytest-mock==1.10.1
 PyYAML==3.13
+django-cors-headers==2.5.2

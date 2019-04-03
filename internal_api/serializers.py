@@ -2,7 +2,7 @@ import asyncio
 import logging
 
 from rest_framework import serializers
-from core.models import Pull, Commit, Repository
+from core.models import Pull, Commit, Repository, Branch
 from codecov_auth.models import Owner
 
 from archive.services import ReportService
@@ -11,8 +11,7 @@ from repo_providers.services import RepoProviderService
 log = logging.getLogger(__name__)
 
 
-class AuthorSerializer(serializers.ModelSerializer):
-
+class NestedAuthorSerializer(serializers.ModelSerializer):
     username = serializers.CharField()
     email = serializers.CharField()
     name = serializers.CharField()
@@ -22,18 +21,16 @@ class AuthorSerializer(serializers.ModelSerializer):
         fields = ('username', 'email', 'name')
 
 
-class PullSerializer(serializers.ModelSerializer):
-
-    state = serializers.CharField()
-    title = serializers.CharField()
-    base = serializers.CharField()
-    compared_to = serializers.CharField()
-    head = serializers.CharField()
-    diff = serializers.JSONField()
-    flare = serializers.JSONField()
+class RepoSerializer(serializers.ModelSerializer):
+    repoid = serializers.CharField()
+    service_id = serializers.CharField()
+    name = serializers.CharField()
+    private = serializers.BooleanField()
+    updatestamp = serializers.DateTimeField()
+    author = NestedAuthorSerializer()
 
     class Meta:
-        model = Pull
+        model = Repository
         fields = '__all__'
 
 
@@ -57,66 +54,9 @@ class ReportSerializer(serializers.Serializer):
     files = ReportFileSerializer(source='file_reports', many=True)
 
 
-class ShortParentlessCommitSerializer(serializers.ModelSerializer):
-    commitid = serializers.CharField()
-    timestamp = serializers.DateTimeField()
-    updatestamp = serializers.DateTimeField()
-    ci_passed = serializers.BooleanField()
-    author = AuthorSerializer()
-    repository = serializers.SlugRelatedField(
-        read_only=True,
-        slug_field='repoid'
-    )
-
-    class Meta:
-        model = Commit
-        fields = (
-            'commitid', 'timestamp', 'updatestamp', 'ci_passed', 'repository', 'author', 'message'
-        )
 
 
-class ParentlessCommitSerializer(ShortParentlessCommitSerializer):
-    report = serializers.SerializerMethodField()
-    src = serializers.SerializerMethodField()
-
-    def get_report(self, obj):
-        log.info("Prep - Doing report")
-        report = ReportService().build_report_from_commit(obj)
-        log.info("Loaded report")
-        return ReportSerializer(instance=report).data
-
-    def get_src(self, obj):
-        loop = asyncio.get_event_loop()
-        user = self.context.get("user")
-        task = RepoProviderService().get_adapter(user, obj.repository).get_commit_diff(obj.commitid)
-        return loop.run_until_complete(task)
-
-    class Meta:
-        model = Commit
-        fields = (
-            'src', 'commitid', 'timestamp', 'updatestamp', 'ci_passed', 'repository', 'author', 'message'
-        )
 
 
-class CommitSerializer(ParentlessCommitSerializer):
-
-    parent = ParentlessCommitSerializer(source='parent_commit')
-
-    class Meta:
-        model = Commit
-        fields = (
-            'src', 'commitid', 'timestamp', 'updatestamp', 'ci_passed',
-            'report', 'repository', 'parent', 'author'
-        )
 
 
-class RepoSerializer(serializers.ModelSerializer):
-    repoid = serializers.CharField()
-    service_id = serializers.CharField()
-    name = serializers.CharField()
-    private = serializers.BooleanField()
-    updatestamp = serializers.DateTimeField()
-
-    class Meta:
-        model = Repository
-        fields = '__all__'
