@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 
 
 # Service class for interfacing with codecov's underlying storage layer, minio
-class   StorageService(object):
+class StorageService(object):
 
     def __init__(self, in_config=None):
         # init minio
