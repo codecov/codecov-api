@@ -1,3 +1,5 @@
+import logging
+
 import os
 import sys
 import gzip
@@ -7,6 +9,8 @@ from minio.error import (ResponseError, BucketAlreadyOwnedByYou,
 from io import BytesIO
 
 from utils.config import get_config
+
+log = logging.getLogger(__name__)
 
 
 # Service class for interfacing with codecov's underlying storage layer, minio
@@ -42,7 +46,7 @@ class StorageService(object):
     def create_root_storage(self, bucket='archive', region='us-east-1'):
         try:
             self.minio_client.make_bucket(bucket, location=region)
-            self.minio_client.set_bucket_policy(bucket, '*', minio.policy.Policy.READ_ONLY)
+            self.minio_client.set_bucket_policy(bucket, '*', "readonly")
 
         # todo should only pass or raise
         except BucketAlreadyOwnedByYou:
@@ -100,6 +104,9 @@ class StorageService(object):
             return data.getvalue()
 
         except ResponseError:
+            raise
+        except minio.error.NoSuchKey:
+            log.exception("Cannot find object %s in bucket %s", url, bucket)
             raise
 
     """

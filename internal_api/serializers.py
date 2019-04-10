@@ -76,13 +76,14 @@ class ShortParentlessCommitSerializer(serializers.ModelSerializer):
 
 
 class ParentlessCommitSerializer(ShortParentlessCommitSerializer):
-    # report = serializers.SerializerMethodField()
+    report = serializers.SerializerMethodField()
     src = serializers.SerializerMethodField()
 
-    # def get_report(self, obj):
-    #     log.info("Prep - Doiing report")
-    #     report = ReportService().build_report_from_commit(obj)
-    #     return ReportSerializer(instance=report).data
+    def get_report(self, obj):
+        log.info("Prep - Doing report")
+        report = ReportService().build_report_from_commit(obj)
+        log.info("Loaded report")
+        return ReportSerializer(instance=report).data
 
     def get_src(self, obj):
         loop = asyncio.get_event_loop()

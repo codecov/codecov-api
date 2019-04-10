@@ -41,6 +41,11 @@ class RepositoryList(BaseInternalAPIView, generics.ListCreateAPIView):
     queryset = Repository.objects.all()
     serializer_class = RepoSerializer
 
+    def get_queryset(self):
+        return Repository.objects.filter(
+            repository__owner=self.request.user,
+        )
+
 
 class RepoCommmitDetail(BaseInternalAPIView, generics.RetrieveUpdateAPIView):
     queryset = Commit.objects.all()
@@ -53,7 +58,6 @@ class RepoCommmitDetail(BaseInternalAPIView, generics.RetrieveUpdateAPIView):
         commitid = self.kwargs['commitid']
         queryset = queryset.filter(
             repository_id=repoid,
-            repository__owner=self.request.user,
             commitid=commitid
         )
         try:
