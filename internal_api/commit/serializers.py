@@ -31,13 +31,14 @@ class ShortParentlessCommitSerializer(serializers.ModelSerializer):
     ci_passed = serializers.BooleanField()
     author = CommitAuthorSerializer()
     repository = CommitRepoSerializer()
+    branch = serializers.CharField()
+    totals = serializers.JSONField()
 
     class Meta:
         model = Commit
         fields = (
-            'commitid', 'timestamp', 'updatestamp', 'ci_passed', 'repository', 'author', 'message'
+            'commitid', 'timestamp', 'updatestamp', 'ci_passed', 'repository', 'author', 'message', 'branch', 'totals'
         )
-
 
 class ParentlessCommitSerializer(ShortParentlessCommitSerializer):
     # report = serializers.SerializerMethodField()
@@ -62,7 +63,6 @@ class ParentlessCommitSerializer(ShortParentlessCommitSerializer):
 
 
 class CommitSerializer(ParentlessCommitSerializer):
-
     parent = ParentlessCommitSerializer(source='parent_commit')
 
     class Meta:

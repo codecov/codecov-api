@@ -9,6 +9,7 @@ from .serializers import CommitSerializer, ShortParentlessCommitSerializer
 class RepoCommitsView(RepoFilter, generics.ListCreateAPIView):
     queryset = Commit.objects.all()
     serializer_class = ShortParentlessCommitSerializer
+    filterset_fields = ('-timestamp', '-updatestamp')
 
 
 class RepoCommmitDetail(generics.RetrieveUpdateAPIView):

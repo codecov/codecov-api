@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Branch
 from codecov_auth.models import Owner
+from internal_api.commit.models import Commit
 
 
 class BranchAuthorSerializer(serializers.ModelSerializer):
@@ -12,12 +13,22 @@ class BranchAuthorSerializer(serializers.ModelSerializer):
         model = Owner
         fields = ('username', 'email', 'name')
 
+class BranchCommitSerializer(serializers.ModelSerializer):
+    author = BranchAuthorSerializer()
+    totals = serializers.JSONField()
+    updatestamp = serializers.DateTimeField()
+
+    class Meta:
+        model = Commit
+        fields = ('author', 'totals', 'updatestamp')
+
 class BranchSerializer(serializers.ModelSerializer):
     name = serializers.CharField()
-    author = BranchAuthorSerializer()
-    repository = serializers.CharField()
-    head = serializers.CharField()
+    head = BranchCommitSerializer()
     updatestamp = serializers.DateTimeField()
+    # default = serializers.BooleanField()
+    # author = BranchAuthorSerializer()
+    # repository = serializers.CharField()
 
     class Meta:
         model = Branch
