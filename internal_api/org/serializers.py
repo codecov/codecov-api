@@ -11,29 +11,31 @@ class OrgActiveReposSerializer(serializers.ModelSerializer):
 
 
 class OrgOrgsSerializer(serializers.ModelSerializer):
-    ownerid = serializers.CharField()
+    ownerid = serializers.IntegerField()
     service = serializers.CharField()
     username = serializers.CharField()
     email = serializers.CharField()
     name = serializers.CharField()
+    cache = serializers.JSONField()
     active_repos = OrgActiveReposSerializer(many=True)
 
     class Meta:
         model = Owner
         fields = ('ownerid', 'service', 'username',
-                  'email', 'name', 'active_repos')
+                  'email', 'name', 'cache', 'active_repos')
 
 
 class OrgSerializer(serializers.ModelSerializer):
-    ownerid = serializers.CharField()
+    ownerid = serializers.IntegerField()
     service = serializers.CharField()
     username = serializers.CharField()
     email = serializers.CharField()
     name = serializers.CharField()
+    cache = serializers.JSONField()
     active_repos = OrgActiveReposSerializer(many=True)
     orgs = OrgOrgsSerializer(many=True)
 
     class Meta:
         model = Owner
         fields = ('ownerid', 'service', 'username',
-                  'email', 'name', 'active_repos', 'orgs')
+                  'email', 'name', 'cache', 'active_repos', 'orgs')

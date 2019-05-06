@@ -15,7 +15,7 @@ class RepoAuthorSerializer(serializers.ModelSerializer):
 
 
 class RepoSerializer(serializers.ModelSerializer):
-    repoid = serializers.CharField()
+    repoid = serializers.IntegerField()
     service_id = serializers.CharField()
     name = serializers.CharField()
     private = serializers.BooleanField()
@@ -24,4 +24,5 @@ class RepoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Repository
-        fields = '__all__'
+        fields = ('repoid', 'service_id', 'name',
+                  'private', 'updatestamp', 'author')

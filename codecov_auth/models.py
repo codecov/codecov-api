@@ -56,12 +56,13 @@ class Owner(models.Model):
                 for ownerid in self.organizations:
                     org = Owner.objects.get(ownerid=ownerid)
                     orgs.append(org)
-        
+
         return orgs
 
     @property
     def active_repos(self):
-        active_repos = Repository.objects.filter(active=True, author=self.ownerid).order_by('-updatestamp')
+        active_repos = Repository.objects.filter(
+            active=True, author=self.ownerid).order_by('-updatestamp')
 
         if len(active_repos):
             return active_repos
@@ -89,6 +90,7 @@ class Session(models.Model):
     name = models.TextField()
     useragent = models.TextField()
     ip = models.TextField()
-    owner = models.ForeignKey(Owner, db_column='ownerid', on_delete=models.CASCADE)
+    owner = models.ForeignKey(
+        Owner, db_column='ownerid', on_delete=models.CASCADE)
     lastseen = models.DateTimeField()
     # type

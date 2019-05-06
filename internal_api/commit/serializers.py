@@ -14,8 +14,9 @@ class CommitAuthorSerializer(serializers.ModelSerializer):
         model = Owner
         fields = ('username', 'email', 'name')
 
+
 class CommitRepoSerializer(serializers.ModelSerializer):
-    repoid = serializers.CharField()
+    repoid = serializers.IntegerField()
     service_id = serializers.CharField()
     name = serializers.CharField()
     private = serializers.BooleanField()
@@ -24,6 +25,7 @@ class CommitRepoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Repository
         fields = '__all__'
+
 
 class ShortParentlessCommitSerializer(serializers.ModelSerializer):
     commitid = serializers.CharField()
@@ -41,6 +43,7 @@ class ShortParentlessCommitSerializer(serializers.ModelSerializer):
             'commitid', 'timestamp', 'updatestamp', 'ci_passed', 'repository', 'message', 'branch', 'totals'
         )
 
+
 class ParentlessCommitSerializer(ShortParentlessCommitSerializer):
     # report = serializers.SerializerMethodField()
     src = serializers.SerializerMethodField()
@@ -53,7 +56,8 @@ class ParentlessCommitSerializer(ShortParentlessCommitSerializer):
     def get_src(self, obj):
         loop = asyncio.get_event_loop()
         user = self.context.get("user")
-        task = RepoProviderService().get_adapter(user, obj.repository).get_commit_diff(obj.commitid)
+        task = RepoProviderService().get_adapter(
+            user, obj.repository).get_commit_diff(obj.commitid)
         return loop.run_until_complete(task)
 
     class Meta:
@@ -72,4 +76,3 @@ class CommitSerializer(ParentlessCommitSerializer):
             'src', 'commitid', 'timestamp', 'updatestamp', 'ci_passed',
             'report', 'repository', 'parent', 'author'
         )
-
