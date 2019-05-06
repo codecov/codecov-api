@@ -12,6 +12,7 @@ class RepoAuthorSerializer(serializers.ModelSerializer):
         model = Owner
         fields = ('username', 'email', 'name')
 
+
 class RepoSerializer(serializers.ModelSerializer):
     repoid = serializers.CharField()
     service_id = serializers.CharField()

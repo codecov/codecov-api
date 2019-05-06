@@ -1,9 +1,11 @@
-from rest_framework import generics
-from internal_api.views import RepoFilter
+from rest_framework import generics, filters
+from internal_api.mixins import RepoFilterMixin
 from .models import Pull
 from .serializers import PullSerializer
 
 
-class RepoPullsView(RepoFilter, generics.ListCreateAPIView):
+class RepoPullsView(RepoFilterMixin, generics.ListCreateAPIView):
     queryset = Pull.objects.all()
     serializer_class = PullSerializer
+    filter_backends = (filters.OrderingFilter,)
+    ordering = '-updatestamp'

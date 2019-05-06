@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'codecov_auth',
     'internal_api',
+    'internal_api.org',
     'internal_api.repo',
     'internal_api.branch',
     'internal_api.commit',

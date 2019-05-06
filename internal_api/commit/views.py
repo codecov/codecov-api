@@ -1,15 +1,18 @@
 import asyncio
-from rest_framework import generics
+from rest_framework import generics, filters
 from django.shortcuts import Http404
-from internal_api.views import RepoFilter
+from internal_api.mixins import RepoFilterMixin
 from .models import Commit
 from .serializers import CommitSerializer, ShortParentlessCommitSerializer
 
 
-class RepoCommitsView(RepoFilter, generics.ListCreateAPIView):
+class RepoCommitsView(RepoFilterMixin, generics.ListCreateAPIView):
     queryset = Commit.objects.all()
     serializer_class = ShortParentlessCommitSerializer
-    filterset_fields = ('-timestamp', '-updatestamp')
+
+    def filter_queryset(self, queryset):
+        queryset = super(RepoCommitsView, self).filter_queryset(queryset)
+        return queryset.order_by('-timestamp')
 
 
 class RepoCommmitDetail(generics.RetrieveUpdateAPIView):

@@ -1,7 +1,8 @@
 from rest_framework import serializers
+
 from .models import Branch
-from codecov_auth.models import Owner
 from internal_api.commit.models import Commit
+from codecov_auth.models import Owner
 
 
 class BranchAuthorSerializer(serializers.ModelSerializer):

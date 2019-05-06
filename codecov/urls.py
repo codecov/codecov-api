@@ -16,6 +16,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
+import internal_api.org.views
 import internal_api.repo.views
 import internal_api.pull.views
 import internal_api.commit.views
@@ -23,9 +24,9 @@ import internal_api.branch.views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/<str:orgid>/repos', internal_api.repo.views.RepoView.as_view()),
+    path('api/orgs', internal_api.org.views.OrgsView.as_view()),
+    path('api/<str:ownerid>/repos', internal_api.repo.views.RepoView.as_view()),
     path('api/<int:repoid>/pulls', internal_api.pull.views.RepoPullsView.as_view()),
     path('api/<int:repoid>/commits', internal_api.commit.views.RepoCommitsView.as_view()),
-    path('api/<int:repoid>/branches', internal_api.branch.views.RepoBranchesView.as_view()),
-    # path('api/<str:org>/<str:repo>/commits/<commitid>', internal_api.views.RepoCommmitDetail.as_view()),
+    path('api/<int:repoid>/branches', internal_api.branch.views.RepoBranchesView.as_view())
 ]

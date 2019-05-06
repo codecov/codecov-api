@@ -4,6 +4,8 @@ import logging
 from django.db import models
 from django.contrib.postgres.fields import CITextField, JSONField, ArrayField
 
+from internal_api.repo.models import Repository
+
 log = logging.getLogger(__name__)
 
 
@@ -46,6 +48,25 @@ class Owner(models.Model):
     bot = models.IntegerField(null=True)
 
     @property
+    def orgs(self):
+        orgs = []
+
+        if self.organizations is not None:
+            if len(self.organizations):
+                for ownerid in self.organizations:
+                    org = Owner.objects.get(ownerid=ownerid)
+                    orgs.append(org)
+        
+        return orgs
+
+    @property
+    def active_repos(self):
+        active_repos = Repository.objects.filter(active=True, author=self.ownerid).order_by('-updatestamp')
+
+        if len(active_repos):
+            return active_repos
+
+    @property
     def is_anonymous(self):
         return False
 
@@ -68,6 +89,6 @@ class Session(models.Model):
     name = models.TextField()
     useragent = models.TextField()
     ip = models.TextField()
-    owner = models.ForeignKey('Owner', db_column='ownerid', on_delete=models.CASCADE)
+    owner = models.ForeignKey(Owner, db_column='ownerid', on_delete=models.CASCADE)
     lastseen = models.DateTimeField()
     # type

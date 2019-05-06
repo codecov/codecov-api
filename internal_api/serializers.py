@@ -2,36 +2,36 @@ import asyncio
 import logging
 
 from rest_framework import serializers
-from core.models import Pull, Commit, Repository, Branch
-from codecov_auth.models import Owner
+# from core.models import Pull, Commit, Repository, Branch
+# from codecov_auth.models import Owner
 
 from archive.services import ReportService
 from repo_providers.services import RepoProviderService
 
-log = logging.getLogger(__name__)
+# log = logging.getLogger(__name__)
 
 
-class NestedAuthorSerializer(serializers.ModelSerializer):
-    username = serializers.CharField()
-    email = serializers.CharField()
-    name = serializers.CharField()
+# class NestedAuthorSerializer(serializers.ModelSerializer):
+#     username = serializers.CharField()
+#     email = serializers.CharField()
+#     name = serializers.CharField()
 
-    class Meta:
-        model = Owner
-        fields = ('username', 'email', 'name')
+#     class Meta:
+#         model = Owner
+#         fields = ('username', 'email', 'name')
 
 
-class RepoSerializer(serializers.ModelSerializer):
-    repoid = serializers.CharField()
-    service_id = serializers.CharField()
-    name = serializers.CharField()
-    private = serializers.BooleanField()
-    updatestamp = serializers.DateTimeField()
-    author = NestedAuthorSerializer()
+# class RepoSerializer(serializers.ModelSerializer):
+#     repoid = serializers.CharField()
+#     service_id = serializers.CharField()
+#     name = serializers.CharField()
+#     private = serializers.BooleanField()
+#     updatestamp = serializers.DateTimeField()
+#     author = NestedAuthorSerializer()
 
-    class Meta:
-        model = Repository
-        fields = '__all__'
+#     class Meta:
+#         model = Repository
+#         fields = '__all__'
 
 
 class ReportFileSerializer(serializers.Serializer):
