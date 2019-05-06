@@ -1,7 +1,8 @@
 from rest_framework import serializers
-from .models import Commit
+
 from internal_api.repo.models import Repository
 from codecov_auth.models import Owner
+from .models import Commit
 
 
 class CommitAuthorSerializer(serializers.ModelSerializer):
