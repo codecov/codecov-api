@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.postgres.fields import ArrayField
 
 from internal_api.repo.models import Repository
-from internal_api.co,mmit.models import Commit
+from internal_api.commit.models import Commit
 
 
 class Branch(models.Model):
