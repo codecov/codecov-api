@@ -3,7 +3,7 @@ from rest_framework import generics, filters
 from django.shortcuts import Http404
 from internal_api.mixins import RepoFilterMixin
 from .models import Commit
-from .serializers import CommitSerializer, ShortParentlessCommitSerializer
+from .serializers import CommitSerializer, ShortParentlessCommitSerializer, ParentlessCommitSerializer
 
 
 class RepoCommitsView(RepoFilterMixin, generics.ListCreateAPIView):
@@ -32,6 +32,7 @@ class RepoCommmitDetail(generics.RetrieveUpdateAPIView):
         try:
             obj = queryset.get()
         except Commit.DoesNotExist:
-            raise Http404('No %s matches the given query.' % queryset.model._meta.object_name)
+            raise Http404('No %s matches the given query.' %
+                          queryset.model._meta.object_name)
         self.check_object_permissions(self.request, obj)
         return obj

@@ -14,6 +14,7 @@ class BranchAuthorSerializer(serializers.ModelSerializer):
         model = Owner
         fields = ('username', 'email', 'name')
 
+
 class BranchCommitSerializer(serializers.ModelSerializer):
     author = BranchAuthorSerializer()
     totals = serializers.JSONField()
@@ -23,12 +24,13 @@ class BranchCommitSerializer(serializers.ModelSerializer):
         model = Commit
         fields = ('author', 'totals', 'updatestamp')
 
+
 class BranchSerializer(serializers.ModelSerializer):
     name = serializers.CharField()
     head = BranchCommitSerializer()
     updatestamp = serializers.DateTimeField()
+    # authors = BranchAuthorSerializer(many=True)
     # default = serializers.BooleanField()
-    # author = BranchAuthorSerializer()
     # repository = serializers.CharField()
 
     class Meta:
