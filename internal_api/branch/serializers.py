@@ -6,13 +6,14 @@ from codecov_auth.models import Owner
 
 
 class BranchAuthorSerializer(serializers.ModelSerializer):
+    ownerid = serializers.CharField()
     username = serializers.CharField()
     email = serializers.CharField()
     name = serializers.CharField()
 
     class Meta:
         model = Owner
-        fields = ('username', 'email', 'name')
+        fields = ('ownerid', 'username', 'email', 'name')
 
 
 class BranchCommitSerializer(serializers.ModelSerializer):
