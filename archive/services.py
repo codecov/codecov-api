@@ -198,9 +198,6 @@ class ArchiveService(object):
     """
 
     def read_chunks(self, commit_sha):
-        log.info("========================================")
-        log.info("READ_CHUNKS")
-        log.info("========================================")
         path = MinioEndpoints.chunks.get_path(
             version='v4',
             repo_hash=self.storage_hash,
@@ -239,14 +236,8 @@ class ReportService(object):
         Returns:
             SerializableReport: A report with all information from such commit
         """
-        log.info("========================================")
-        log.info("BUILD_REPORT_FROM_COMMIT")
-        log.info("========================================")
         commitid = commit.commitid
         chunks = ArchiveService(commit.repository).read_chunks(commitid)
-        log.info("========================================")
-        log.info("BUILD_REPORT_FROM_COMMIT V2")
-        log.info("========================================")
         files = commit.report['files']
         sessions = commit.report['sessions']
         totals = commit.totals
