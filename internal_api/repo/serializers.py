@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from codecov_auth.models import Owner
-from .models import Repository
+from core.models import Repository
 
 
 class RepoAuthorSerializer(serializers.ModelSerializer):

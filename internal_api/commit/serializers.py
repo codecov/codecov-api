@@ -5,9 +5,8 @@ from rest_framework import serializers
 
 from archive.services import ReportService
 from repo_providers.services import RepoProviderService
-from internal_api.repo.models import Repository
+from core.models import Repository, Commit
 from codecov_auth.models import Owner
-from .models import Commit
 
 log = logging.getLogger(__name__)
 

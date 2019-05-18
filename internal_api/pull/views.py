@@ -2,7 +2,7 @@ from rest_framework import generics, filters
 from django_filters.rest_framework import DjangoFilterBackend
 
 from internal_api.mixins import RepoFilterMixin
-from .models import Pull
+from core.models import Pull
 from .serializers import PullSerializer
 
 

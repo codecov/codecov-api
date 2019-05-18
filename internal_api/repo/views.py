@@ -1,7 +1,7 @@
 from rest_framework import generics
 
 from internal_api.mixins import OwnerFilterMixin
-from .models import Repository
+from core.models import Repository
 from .serializers import RepoSerializer
 
 

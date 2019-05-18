@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from internal_api.repo.models import Repository
+from core.models import Repository
 from codecov_auth.models import Owner
 
 

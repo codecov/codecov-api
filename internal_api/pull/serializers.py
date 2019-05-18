@@ -1,7 +1,6 @@
 from rest_framework import serializers
 
-from .models import Pull
-from internal_api.commit.models import Commit
+from core.models import Pull, Commit
 from codecov_auth.models import Owner
 
 

@@ -4,7 +4,7 @@ import logging
 from django.db import models
 from django.contrib.postgres.fields import CITextField, JSONField, ArrayField
 
-from internal_api.repo.models import Repository
+from core.models import Repository
 
 log = logging.getLogger(__name__)
 

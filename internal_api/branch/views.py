@@ -3,7 +3,7 @@ from django_filters import FilterSet, BaseCSVFilter, CharFilter
 from django_filters.rest_framework import DjangoFilterBackend
 
 from internal_api.mixins import RepoFilterMixin
-from .models import Branch
+from core.models import Branch
 from .serializers import BranchSerializer
 
 
