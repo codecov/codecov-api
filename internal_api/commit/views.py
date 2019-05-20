@@ -2,7 +2,7 @@ import asyncio
 from rest_framework import generics, filters
 from django.shortcuts import Http404
 from internal_api.mixins import RepoFilterMixin
-from .models import Commit
+from core.models import Commit
 from .serializers import CommitSerializer, ShortParentlessCommitSerializer, ParentlessCommitSerializer
 
 

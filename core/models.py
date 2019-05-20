@@ -24,11 +24,11 @@ class Repository(models.Model):
 class Branch(models.Model):
     name = models.TextField(primary_key=True, db_column='branch')
     repository = models.ForeignKey(
-        Repository, db_column='repoid', on_delete=models.CASCADE, related_name='branches')
+        'core.Repository', db_column='repoid', on_delete=models.CASCADE, related_name='branches')
     authors = ArrayField(models.IntegerField(
         null=True, blank=True), null=True, blank=True, db_column='authors')
     head = models.ForeignKey(
-        Commit, db_column='head', related_name='branch_head', on_delete=models.CASCADE,)
+        'core.Commit', db_column='head', related_name='branch_head', on_delete=models.CASCADE,)
     updatestamp = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -43,7 +43,7 @@ class Commit(models.Model):
     author = models.ForeignKey(
         'codecov_auth.Owner', db_column='author', on_delete=models.CASCADE,)
     repository = models.ForeignKey(
-        Repository, db_column='repoid', on_delete=models.CASCADE, related_name='commits')
+        'core.Repository', db_column='repoid', on_delete=models.CASCADE, related_name='commits')
     ci_passed = models.BooleanField()
     totals = JSONField()
     report = JSONField()
@@ -67,17 +67,17 @@ class Commit(models.Model):
 
 class Pull(models.Model):
     repository = models.ForeignKey(
-        Repository, db_column='repoid', on_delete=models.CASCADE, related_name='pull_requests')
+        'core.Repository', db_column='repoid', on_delete=models.CASCADE, related_name='pull_requests')
     pullid = models.IntegerField(primary_key=True)
     issueid = models.IntegerField()
     state = models.CharField(max_length=100)
     title = models.CharField(max_length=100)
-    base = models.ForeignKey(Commit, db_column='base',
+    base = models.ForeignKey('core.Commit', db_column='base',
                              related_name='pull_base', on_delete=models.CASCADE,)
-    head = models.ForeignKey(Commit, db_column='head',
+    head = models.ForeignKey('core.Commit', db_column='head',
                              related_name='pull_head', on_delete=models.CASCADE,)
     compared_to = models.ForeignKey(
-        Commit, db_column='compared_to', related_name='compared_to', on_delete=models.CASCADE,)
+        'core.Commit', db_column='compared_to', related_name='compared_to', on_delete=models.CASCADE,)
     commentid = models.CharField(max_length=100)
     author = models.ForeignKey(
         'codecov_auth.Owner', db_column='author', on_delete=models.CASCADE,)
