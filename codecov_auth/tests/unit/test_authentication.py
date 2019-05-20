@@ -14,8 +14,8 @@ from codecov_auth.authentication import CodecovSessionAuthentication
 class TestAuthentication(BaseTestCase):
 
     def test_auth(self, db):
-        a = '2|1:0|10:1546487835|12:github-token|48:MDZlZDQwNmQtM2ZlNS00ZmY0LWJhYmEtMzQ5NzM5NzMyYjZh|f520039bc6cfb111e4cfc5c3e44fc4fa5921402918547b54383939da803948f4'
-        session = SessionFactory.create(token="06ed406d-3fe5-4ff4-baba-349739732b6a")
+        a = "2|1:0|10:1557329312|15:bitbucket-token|48:OGY5YmM2Y2ItZmQxNC00M2JjLWJiYjUtYmUxZTdjOTQ4ZjM0|459669157b19d2e220f461e02c07c377a455bc532ad0c2b8b69b2648cfbe3914"
+        session = SessionFactory.create(token="8f9bc6cb-fd14-43bc-bbb5-be1e7c948f34")
         request_factory = APIRequestFactory()
         request = request_factory.post('/notes/', {'title': 'new idea'}, HTTP_AUTHORIZATION=f'frontend {a}')
         authenticator = CodecovSessionAuthentication()
@@ -26,10 +26,17 @@ class TestAuthentication(BaseTestCase):
         assert token == session
 
     def test_decode_token_from_cookie(self):
-        val = '2|1:0|10:1546487835|12:github-token|48:MDZlZDQwNmQtM2ZlNS00ZmY0LWJhYmEtMzQ5NzM5NzMyYjZh|f520039bc6cfb111e4cfc5c3e44fc4fa5921402918547b54383939da803948f4'
-        expected_response = "06ed406d-3fe5-4ff4-baba-349739732b6a"
+        val = "2|1:0|10:1557329312|15:bitbucket-token|48:OGY5YmM2Y2ItZmQxNC00M2JjLWJiYjUtYmUxZTdjOTQ4ZjM0|459669157b19d2e220f461e02c07c377a455bc532ad0c2b8b69b2648cfbe3914"
+        expected_response = "8f9bc6cb-fd14-43bc-bbb5-be1e7c948f34"
         authenticator = CodecovSessionAuthentication()
         assert expected_response == authenticator.decode_token_from_cookie(val)
+
+    def test_decode_token_bad_signature(self):
+        val = "2|1:0|10:1557329312|15:bitbucket-token|48:OGY5YmM2Y2ItZmQxNC00M2JjLWJiYjUtYmUxZTdjOTQ4ZjM0|aaaaaaaa7baad2e220faaae02c07c377aaaabca32ad0c2b8baab2aa8cfbe3aaa"
+        expected_response = "8f9bc6cb-fd14-43bc-bbb5-be1e7c948f34"
+        authenticator = CodecovSessionAuthentication()
+        with pytest.raises(rest_framework.exceptions.AuthenticationFailed):
+            authenticator.decode_token_from_cookie(val)
 
     def test_auth_no_token(self, db):
         SessionFactory.create()

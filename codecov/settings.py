@@ -44,12 +44,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'core',
     'codecov_auth',
-    'internal_api',
-    'internal_api.org',
-    'internal_api.repo',
-    'internal_api.branch',
-    'internal_api.commit',
-    'internal_api.pull'
+    'internal_api'
 ]
 
 MIDDLEWARE = [

@@ -12,7 +12,7 @@ class RepositoryFactory(DjangoModelFactory):
     private = True
     name = 'example-python'
 
-    owner = factory.SubFactory(OwnerFactory)
+    author = factory.SubFactory(OwnerFactory)
 
 
 class CommitFactory(DjangoModelFactory):

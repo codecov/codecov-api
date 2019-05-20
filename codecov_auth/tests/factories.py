@@ -16,7 +16,6 @@ class OwnerFactory(DjangoModelFactory):
     name = factory.Faker('name')
     username = factory.Faker('user_name')
     plan_activated_users = []
-    errors = []
     admins = []
     permission = []
     free = 0
