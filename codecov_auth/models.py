@@ -49,15 +49,7 @@ class Owner(models.Model):
 
     @property
     def orgs(self):
-        orgs = []
-
-        if self.organizations is not None:
-            if len(self.organizations):
-                for ownerid in self.organizations:
-                    org = Owner.objects.get(ownerid=ownerid)
-                    orgs.append(org)
-
-        return orgs
+        return Owner.objects.filter(ownerid__in=self.organizations)
 
     @property
     def active_repos(self):
