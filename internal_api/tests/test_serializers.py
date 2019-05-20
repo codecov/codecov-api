@@ -40,8 +40,13 @@ class TestSerializers(object):
                 'email': commit.author.email,
                 'name': commit.author.name,
             },
+            'message': 'test_report_serializer',
             'commitid': 'abf6d4df662c47e32460020ab14abf9303581429',
-            'repository': commit.repository.repoid,
+            'repository': {
+                'repoid': commit.repository.repoid,
+                'name': 'example-python',
+                'updatestamp': commit.repository.updatestamp.isoformat()[:-6] + 'Z'
+            },
             'timestamp': commit.timestamp.isoformat()[:-6] + 'Z',
             'updatestamp': commit.updatestamp.isoformat()[:-6] + 'Z',
             'report': {
@@ -218,6 +223,8 @@ class TestSerializers(object):
                 }
             },
         }
+        assert expected_result['src'] == res['src']
+        assert expected_result['report'] == res['report']
         assert expected_result == res
         mocked.assert_called_with(
             'abf6d4df662c47e32460020ab14abf9303581429'
