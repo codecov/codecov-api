@@ -40,15 +40,22 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
     'rest_framework',
-    'codecov_auth',
     'core',
-    'internal_api'
+    'codecov_auth',
+    'internal_api',
+    'internal_api.org',
+    'internal_api.repo',
+    'internal_api.branch',
+    'internal_api.commit',
+    'internal_api.pull'
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -108,6 +115,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
@@ -117,8 +125,9 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ),
-    'DEFAULT_PAGINATION_CLASS': 'internal_api.pagination.CodecovCursorPagination',
-    'PAGE_SIZE': 5
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',),
+    'PAGE_SIZE': 20
 }
 
 
@@ -180,3 +189,6 @@ MINIO_LOCATION = 'codecov.s3.amazonaws.com'
 MINIO_HASH_KEY = get_config('services', 'minio', 'hash_key')
 ARCHIVE_BUCKET_NAME = 'codecov'
 ENCRYPTION_SECRET = ''
+
+# cors
+CORS_ORIGIN_ALLOW_ALL = True

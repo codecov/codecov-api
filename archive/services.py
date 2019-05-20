@@ -69,8 +69,10 @@ class ArchiveService(object):
     enterprise = False
 
     def __init__(self, repository):
-        self.root = get_config('services', 'minio', 'bucket', default='archive')
-        self.region = get_config('services', 'minio', 'region', default='us-east-1')
+        self.root = get_config('services', 'minio',
+                               'bucket', default='archive')
+        self.region = get_config(
+            'services', 'minio', 'region', default='us-east-1')
         self.enterprise = bool(get_config('setup', 'enterprise_license'))
 
         self.storage = StorageService()
@@ -87,12 +89,14 @@ class ArchiveService(object):
     Accessor for underlying StorageService. You typically shouldn't need
     this for anything.
     """
+
     def storage_client(self):
         return self.storage
 
     """
     Getter. Returns true if the current configuration is enterprise.
     """
+
     def is_enterprise(self):
         return self.enterprise
 
@@ -117,6 +121,7 @@ class ArchiveService(object):
     Grabs path from storage, adds data to path object
     writes back to path, overwriting the original contents
     """
+
     def update_archive(self, path, data):
         self.storage.append_to_file(self.root, path, data)
 
@@ -125,6 +130,7 @@ class ArchiveService(object):
     not use this in lieu of the convenience methods write_raw_upload and
     write_chunks
     """
+
     def write_file(self, path, data, reduced_redundancy=False, gzipped=False):
         self.storage.write_file(
             self.root, path, data, reduced_redundancy=reduced_redundancy, gzipped=gzipped)
@@ -133,6 +139,7 @@ class ArchiveService(object):
     Convenience write method, writes a raw upload to a destination.
     Returns the path it writes.
     """
+
     def write_raw_upload(self, commit_sha, report_id, data, gzipped=False):
         # create a custom report path for a raw upload.
         # write the file.
@@ -151,6 +158,7 @@ class ArchiveService(object):
     """
     Convenience method to write a chunks.txt file to storage.
     """
+
     def write_chunks(self, commit_sha, data):
         path = MinioEndpoints.chunks.get_path(
             version='v4',
@@ -164,6 +172,7 @@ class ArchiveService(object):
     """
     Generic method to read a file from the archive
     """
+
     def read_file(self, path):
         contents = self.storage.read_file(self.root, path)
         return contents.decode()
@@ -171,12 +180,14 @@ class ArchiveService(object):
     """
     Generic method to delete a file from the archive.
     """
+
     def delete_file(self, path):
         self.storage.delete_file(self.root, path)
 
     """
     Deletes an entire repository's contents
     """
+
     def delete_repo_files(self):
         path = 'v4/repos/{}'.format(self.storage_hash)
         objects = self.storage.list_folder_contents(self.root, path)
@@ -185,18 +196,21 @@ class ArchiveService(object):
     """
     Convenience method to read a chunks file from the archive.
     """
+
     def read_chunks(self, commit_sha):
         path = MinioEndpoints.chunks.get_path(
             version='v4',
             repo_hash=self.storage_hash,
             commitid=commit_sha
         )
-        log.info("Downloading chunks from path %s for commit %s", path, commit_sha)
+        log.info("Downloading chunks from path %s for commit %s",
+                 path, commit_sha)
         return self.read_file(path)
 
     """
     Delete a chunk file from the archive
     """
+
     def delete_chunk_from_archive(self, commit_sha):
         path = 'v4/repos/{}/commits/{}/chunks.txt'.format(
             self.storage_hash, commit_sha
