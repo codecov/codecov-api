@@ -5,12 +5,12 @@ from django.shortcuts import Http404
 from archive.services import ReportService
 from internal_api.mixins import RepoFilterMixin, RepoSlugUrlMixin
 from core.models import Commit
-from .serializers import CommitSerializer, ShortParentlessCommitSerializer, FlagSerializer
+from .serializers import CommitWithParentSerializer, CommitSerializer, FlagSerializer
 
 
 class RepoCommitList(RepoFilterMixin, generics.ListAPIView):
     queryset = Commit.objects.all()
-    serializer_class = ShortParentlessCommitSerializer
+    serializer_class = CommitSerializer
 
     def filter_queryset(self, queryset):
         queryset = super(RepoCommitList, self).filter_queryset(queryset)
@@ -19,7 +19,7 @@ class RepoCommitList(RepoFilterMixin, generics.ListAPIView):
 
 class RepoCommmitDetail(generics.RetrieveAPIView):
     queryset = Commit.objects.all()
-    serializer_class = CommitSerializer
+    serializer_class = CommitWithParentSerializer
 
     def get_object(self):
         queryset = self.get_queryset()
