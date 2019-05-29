@@ -52,6 +52,10 @@ class Owner(models.Model):
         return Owner.objects.filter(ownerid__in=self.organizations)
 
     @property
+    def is_active(self):
+        return True
+
+    @property
     def active_repos(self):
         active_repos = Repository.objects.filter(
             active=True, author=self.ownerid).order_by('-updatestamp')

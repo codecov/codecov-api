@@ -16,6 +16,15 @@ To build the API.
 
 requirements.txt is used in the base image. If you make changes to requirements.txt you will need to run `make build.base` followed by `make build.dev`
 
+### Testing
+
+The easiest way to run tests (that doesn't require installing postgres and other dependencies) is to run inside of docker:
+
+    docker-compose up
+    docker exec -it codecovio_api_1 pytest
+
+If you want to run the test locally, you can also just run `pytest` locally, but you'll have to install the requirements.txt and change the DATABASE host to point to something local in the `codecov/settings.py`.
+
 ### Running Standalone
 
 This project contains a docker-compose.yml file that is intended to run the api standalone. In this configuration it *does not* share codecov.io's development database; so don't expect parity there. 

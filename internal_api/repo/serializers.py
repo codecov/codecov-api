@@ -25,4 +25,4 @@ class RepoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Repository
         fields = ('repoid', 'service_id', 'name',
-                  'private', 'updatestamp', 'author')
+                  'private', 'updatestamp', 'author', 'active')

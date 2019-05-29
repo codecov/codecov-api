@@ -8,8 +8,8 @@ import internal_api.branch.views
 
 
 urlpatterns = [
-    path('<int:ownerid>/orgs', internal_api.org.views.OrgsView.as_view()),
-    path('<int:ownerid>/repos', internal_api.repo.views.RepoView.as_view()),
+    path('orgs', internal_api.org.views.OrgsView.as_view()),
+    path('<str:orgName>/repos', internal_api.repo.views.RepositoryList.as_view()),
     path('<int:repoid>/pulls', internal_api.pull.views.RepoPullsView.as_view()),
     path('<int:repoid>/commits',
          internal_api.commit.views.RepoCommitsView.as_view()),

@@ -1,14 +1,15 @@
 from rest_framework import generics
 
-from internal_api.mixins import OwnerFilterMixin
 from codecov_auth.models import Owner
 from .serializers import OrgSerializer
 
 
-class OrgsView(generics.ListCreateAPIView):
+class OrgsView(generics.RetrieveAPIView):
+    lookup_field = 'ownerid'
     queryset = Owner.objects.all()
     serializer_class = OrgSerializer
 
-    def filter_queryset(self, queryset):
-        ownerid = self.kwargs.get('ownerid')
-        return queryset.filter(ownerid=ownerid)
+    def get_object(self):
+        queryset = self.filter_queryset(self.get_queryset())
+        obj = queryset.get(ownerid=self.request.user.ownerid)
+        return obj
