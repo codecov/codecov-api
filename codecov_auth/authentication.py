@@ -1,9 +1,12 @@
 from base64 import b64decode
+import hmac
+import hashlib
 
-from codecov_auth.models import Session
 from rest_framework import authentication
 from rest_framework import exceptions
 
+from codecov_auth.models import Session
+from utils.config import get_config
 
 class CodecovSessionAuthentication(authentication.BaseAuthentication):
     """Authenticates based on the user cookie from the old codecov.io tornado system
@@ -20,6 +23,8 @@ class CodecovSessionAuthentication(authentication.BaseAuthentication):
         The cookie comes in the format:
 
             2|1:0|10:1546487835|12:github-token|48:MDZlZDQwNmQtM2ZlNS00ZmY0LWJhYmEtMzQ5NzM5NzMyYjZh|f520039bc6cfb111e4cfc5c3e44fc4fa5921402918547b54383939da803948f4
+
+        We first validate the string, to make sure the last field is the proper signature to the rest
 
         We then parse it and take the 5th pipe-delimited value
 
@@ -52,11 +57,22 @@ class CodecovSessionAuthentication(authentication.BaseAuthentication):
         return (session.owner, session)
 
     def decode_token_from_cookie(self, encoded_cookie):
+        secret = get_config('setup', 'http', 'cookie_secret')
         cookie_fields = encoded_cookie.split('|')
-        if len(cookie_fields) < 5:
+        if len(cookie_fields) < 6:
             raise exceptions.AuthenticationFailed('No correct token format')
+        cookie_value, cookie_signature = "|".join(cookie_fields[:5]) + "|", cookie_fields[5]
+        expected_sig = self.create_signature(secret, cookie_value)
+        if not hmac.compare_digest(cookie_signature, expected_sig):
+            raise exceptions.AuthenticationFailed('Signature doesnt match')
         splitted = cookie_fields[4].split(':')
         if len(splitted) != 2:
             raise exceptions.AuthenticationFailed('No correct token format')
         _, encoded_token = splitted
         return b64decode(encoded_token).decode()
+
+
+    def create_signature(self, secret: str, s: str) -> bytes:
+        hash = hmac.new(secret.encode(), digestmod=hashlib.sha256)
+        hash.update(s.encode())
+        return hash.hexdigest()

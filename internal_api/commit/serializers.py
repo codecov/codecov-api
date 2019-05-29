@@ -49,25 +49,22 @@ class ShortParentlessCommitSerializer(serializers.ModelSerializer):
 
 class ParentlessCommitSerializer(ShortParentlessCommitSerializer):
     report = serializers.SerializerMethodField()
-    # src = serializers.SerializerMethodField()
+    src = serializers.SerializerMethodField()
 
     def get_report(self, obj):
-        log.info("========================================")
-        log.info("GET_REPORT")
-        log.info("========================================")
         report = ReportService().build_report_from_commit(obj)
         return ReportSerializer(instance=report).data
 
-    # def get_src(self, obj):
-    #     loop = asyncio.get_event_loop()
-    #     user = self.context.get("user")
-    #     task = RepoProviderService().get_adapter(
-    #         user, obj.repository).get_commit_diff(obj.commitid)
-    #     return loop.run_until_complete(task)
+    def get_src(self, obj):
+        loop = asyncio.get_event_loop()
+        user = self.context.get("user")
+        task = RepoProviderService().get_adapter(
+            user, obj.repository).get_commit_diff(obj.commitid)
+        return loop.run_until_complete(task)
 
     class Meta:
         model = Commit
-        fields = ('report', 'commitid', 'timestamp', 'updatestamp',
+        fields = ('src', 'report', 'commitid', 'timestamp', 'updatestamp',
                   'ci_passed', 'repository', 'author', 'message')
 
 

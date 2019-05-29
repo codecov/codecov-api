@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from internal_api.serializers import ParentlessCommitSerializer
+from internal_api.commit.serializers import ParentlessCommitSerializer
 from core.tests.factories import CommitFactory, RepositoryFactory
 from archive.services import ArchiveService
 
@@ -18,8 +18,8 @@ class TestSerializers(object):
         mocker.patch.object(ArchiveService, 'create_root_storage')
         mocked.return_value = f.read()
         repo = RepositoryFactory.create(
-            owner__unencrypted_oauth_token='testqmit3okrgutcoyzscveipor3toi3nsmb927v',
-            owner__username='ThiagoCodecov'
+            author__unencrypted_oauth_token='testqmit3okrgutcoyzscveipor3toi3nsmb927v',
+            author__username='ThiagoCodecov'
         )
         parent_commit = CommitFactory.create(
             message='test_report_serializer',
@@ -32,7 +32,7 @@ class TestSerializers(object):
             parent_commit_id=parent_commit.commitid,
             repository=repo,
         )
-        res = ParentlessCommitSerializer(instance=commit, context={'user': repo.owner}).data
+        res = ParentlessCommitSerializer(instance=commit, context={'user': repo.author}).data
         expected_result = {
             'ci_passed': True,
             'author': {
@@ -40,8 +40,13 @@ class TestSerializers(object):
                 'email': commit.author.email,
                 'name': commit.author.name,
             },
+            'message': 'test_report_serializer',
             'commitid': 'abf6d4df662c47e32460020ab14abf9303581429',
-            'repository': commit.repository.repoid,
+            'repository': {
+                'repoid': commit.repository.repoid,
+                'name': 'example-python',
+                'updatestamp': commit.repository.updatestamp.isoformat()[:-6] + 'Z'
+            },
             'timestamp': commit.timestamp.isoformat()[:-6] + 'Z',
             'updatestamp': commit.updatestamp.isoformat()[:-6] + 'Z',
             'report': {
@@ -218,6 +223,8 @@ class TestSerializers(object):
                 }
             },
         }
+        assert expected_result['src'] == res['src']
+        assert expected_result['report'] == res['report']
         assert expected_result == res
         mocked.assert_called_with(
             'abf6d4df662c47e32460020ab14abf9303581429'
