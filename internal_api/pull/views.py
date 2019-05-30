@@ -6,7 +6,7 @@ from core.models import Pull
 from .serializers import PullSerializer
 
 
-class RepoPullsView(generics.ListCreateAPIView):
+class RepoPullList(RepoFilterMixin, generics.ListAPIView):
     queryset = Pull.objects.all()
     serializer_class = PullSerializer
     filter_backends = (DjangoFilterBackend, filters.OrderingFilter)

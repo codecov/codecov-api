@@ -1,4 +1,8 @@
+import random
+
 import factory
+from rest_framework.fields import JSONField
+
 from core import models
 from hashlib import sha1
 from factory.django import DjangoModelFactory
@@ -20,6 +24,7 @@ class CommitFactory(DjangoModelFactory):
         model = models.Commit
 
     commitid = factory.LazyAttribute(lambda o: sha1(o.message.encode('utf-8')).hexdigest())
+    message = factory.Faker('sentence', nb_words=7)
     ci_passed = True
     pullid = 1
     author = factory.SubFactory(OwnerFactory)
@@ -90,3 +95,51 @@ class CommitFactory(DjangoModelFactory):
     }
     parent_commit_id = factory.LazyAttribute(lambda o: sha1((o.message + "parent").encode('utf-8')).hexdigest())
     state = 'complete'
+
+
+class PullFactory(DjangoModelFactory):
+    class Meta:
+        model = models.Pull
+
+    issueid = random.randint(1, 1000)
+    commentid = factory.LazyAttribute(lambda o: sha1(o.title.encode('utf-8')).hexdigest())
+    flare = {
+            "name": "",
+            "color": "#e05d44",
+            "lines": 14,
+            "_class": None,
+            "children": [{
+                    "name": "tests.py",
+                    "color": "#baaf1b",
+                    "lines": 7,
+                    "_class": None,
+                    "coverage": "85.71429"
+            }]
+    }
+    diff = [
+        2,
+        3,
+        0,
+        3,
+        0,
+        "0",
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+    ]
+    title = factory.Faker('sentence', nb_words=7)
+    base = factory.SubFactory(CommitFactory)
+    head = factory.SubFactory(CommitFactory)
+    compared_to = factory.SubFactory(CommitFactory)
+
+
+class BranchFactory(DjangoModelFactory):
+    class Meta:
+        model = models.Branch
+
+    name = factory.Faker('sentence', nb_words=1)
+    head = factory.SubFactory(CommitFactory)

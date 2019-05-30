@@ -6,16 +6,16 @@ from core.models import Commit
 from .serializers import CommitSerializer, ShortParentlessCommitSerializer, ParentlessCommitSerializer
 
 
-class RepoCommitsView(RepoFilterMixin, generics.ListCreateAPIView):
+class RepoCommitList(RepoFilterMixin, generics.ListAPIView):
     queryset = Commit.objects.all()
     serializer_class = ShortParentlessCommitSerializer
 
     def filter_queryset(self, queryset):
-        queryset = super(RepoCommitsView, self).filter_queryset(queryset)
+        queryset = super(RepoCommitList, self).filter_queryset(queryset)
         return queryset.order_by('-timestamp')
 
 
-class RepoCommmitDetail(generics.RetrieveUpdateAPIView):
+class RepoCommmitDetail(generics.RetrieveAPIView):
     queryset = Commit.objects.all()
     serializer_class = CommitSerializer
 
