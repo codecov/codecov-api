@@ -47,6 +47,13 @@ class RepoViewTest(TestCase):
         content = json_content(response)
         self.assertEqual(len(content['results']), 2, "got the wrong number of repos: {}".format(content['results']))
 
+    def test_get_inactive_repos(self):
+        self.client.force_login(user=self.user)
+        response = self.client.get('/internal/codecov/repos?active=False')
+        self.assertEqual(response.status_code, 200)
+        content = json_content(response)
+        self.assertEqual(len(content['results']), 1, "got the wrong number of repos: {}".format(content['results']))
+
     def test_get_all_repos(self):
         self.client.force_login(user=self.user)
         response = self.client.get('/internal/codecov/repos')
