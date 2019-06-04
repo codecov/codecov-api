@@ -16,8 +16,13 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from internal_api.constants import INTERNAL_API_PREFIX
+import codecov.views as views
+from django.conf import settings
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path(INTERNAL_API_PREFIX, include('internal_api.urls'))
+    path('health/', views.health),
 ]
+
+if settings.DEBUG:
+    urlpatterns.append(path(INTERNAL_API_PREFIX, include('internal_api.urls')))
