@@ -3,6 +3,12 @@ from django.contrib.postgres.fields import JSONField, CITextField, ArrayField
 from django.utils.functional import cached_property
 
 
+class Version(models.Model):
+    version = models.TextField(primary_key=True)
+
+    class Meta:
+        db_table = 'version'
+
 class Repository(models.Model):
     repoid = models.AutoField(primary_key=True)
     name = CITextField()

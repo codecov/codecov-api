@@ -1,4 +1,7 @@
 from django.http import HttpResponse
 
+from core.models import Version
+
 def health(request):
-    return HttpResponse("I'm alive!")
+    version = Version.objects.last()
+    return HttpResponse("%s is live!" % version.version)
