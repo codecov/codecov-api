@@ -26,6 +26,10 @@ class Repository(models.Model):
     def service(self):
         return self.author.ownerid
 
+    @property
+    def latest_commit(self):
+        return Commit.objects.filter(repository=self.repoid).order_by('-timestamp').first()
+
 
 class Branch(models.Model):
     name = models.TextField(primary_key=True, db_column='branch')
