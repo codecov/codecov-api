@@ -10,9 +10,9 @@ import internal_api.branch.views
 urlpatterns = [
     path('orgs', internal_api.org.views.OrgsView.as_view()),
     path('<str:orgName>/repos', internal_api.repo.views.RepositoryList.as_view()),
-    path('<int:repoid>/pulls', internal_api.pull.views.RepoPullsView.as_view()),
-    path('<int:repoid>/commits',
-         internal_api.commit.views.RepoCommitsView.as_view()),
-    path('<int:repoid>/branches',
-         internal_api.branch.views.RepoBranchesView.as_view())
+    path('<str:orgName>/<str:repoName>/pulls', internal_api.pull.views.RepoPullList.as_view()),
+    path('<str:orgName>/<str:repoName>/commits',
+         internal_api.commit.views.RepoCommitList.as_view()),
+    path('<str:orgName>/<str:repoName>/branches',
+         internal_api.branch.views.RepoBranchList.as_view())
 ]
