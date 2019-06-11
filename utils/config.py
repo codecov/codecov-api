@@ -103,9 +103,3 @@ def get_config(*path, default=None):
     except MissingConfigException:
         return default
 
-
-def get_verify_ssl(service):
-    verify = get_config(service, 'verify_ssl')
-    if verify is False:
-        return False
-    return get_config(service, 'ssl_pem') or os.getenv('REQUESTS_CA_BUNDLE')
