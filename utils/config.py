@@ -1,8 +1,14 @@
 import os
 import logging
+from copy import deepcopy
 
 from yaml import load as yaml_load
 import collections
+
+
+class MissingConfigException(Exception):
+    pass
+
 
 log = logging.getLogger(__name__)
 
@@ -26,23 +32,13 @@ default_config = {
             },
             'cookie_secret': 'abc123'
         },
-        'tasks': {
-            'celery': {
-                'prefetch': 4,
-                'soft_timelimit': 400,
-                'hard_timelimit': 480,
-                'default_queue': 'celery'
-            }
-        },
         'encryption_secret': ''
     }
 }
 
-class NotSetConfig(Exception):
-    pass
-
 
 def update(d, u):
+    d = deepcopy(d)
     for k, v in u.items():
         if isinstance(v, collections.Mapping):
             d[k] = update(d.get(k, {}), v)
@@ -56,29 +52,38 @@ class ConfigHelper(object):
     def __init__(self):
         self._params = None
 
+    def load_env_var(self):
+        val = {}
+        for env_var in os.environ:
+            multiple_level_vars = env_var.split('__')
+            if len(multiple_level_vars) > 1:
+                current = val
+                for c in multiple_level_vars[:-1]:
+                    current = current.setdefault(c, {})
+                current[multiple_level_vars[-1]] = os.getenv(env_var)
+        return val
+
     @property
     def params(self):
         if self._params is None:
             content = self.yaml_content()
-            content = self.update_from_env(content)
-            final_result = update(default_config, content)
+            env_vars = self.load_env_var()
+            temp_result = update(default_config, content)
+            final_result = update(temp_result, env_vars)
             self.set_params(final_result)
         return self._params
-
-    def update_from_env(self, content):
-        return content
 
     def set_params(self, val):
         self._params = val
 
     def get(self, *args, **kwargs):
         current_p = self.params
-        try:
-            for el in args:
+        for el in args:
+            try:
                 current_p = current_p[el]
-            return current_p
-        except KeyError:
-            raise NotSetConfig()
+            except KeyError:
+                raise MissingConfigException(args)
+        return current_p
 
     def yaml_content(self):
         yaml_path = os.getenv('CODECOV_YML', '/config/codecov.yml')
@@ -95,5 +100,12 @@ config = ConfigHelper()
 def get_config(*path, default=None):
     try:
         return config.get(*path)
-    except NotSetConfig:
+    except MissingConfigException:
         return default
+
+
+def get_verify_ssl(service):
+    verify = get_config(service, 'verify_ssl')
+    if verify is False:
+        return False
+    return get_config(service, 'ssl_pem') or os.getenv('REQUESTS_CA_BUNDLE')
