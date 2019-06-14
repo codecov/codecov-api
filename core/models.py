@@ -9,6 +9,7 @@ class Version(models.Model):
     class Meta:
         db_table = 'version'
 
+
 class Repository(models.Model):
     repoid = models.AutoField(primary_key=True)
     name = CITextField()
@@ -18,6 +19,10 @@ class Repository(models.Model):
     private = models.BooleanField()
     updatestamp = models.DateTimeField(auto_now=True)
     active = models.NullBooleanField()
+    language = models.TextField()
+    fork = models.ForeignKey('core.Repository', db_column='forkid', on_delete=models.DO_NOTHING)
+    branch = models.TextField()
+    upload_token = models.UUIDField()
 
     class Meta:
         db_table = 'repos'

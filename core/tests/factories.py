@@ -158,3 +158,8 @@ class BranchFactory(DjangoModelFactory):
 
     name = factory.Faker('sentence', nb_words=1)
     head = factory.SubFactory(CommitFactory)
+
+
+class VersionFactory(DjangoModelFactory):
+    class Meta:
+        model = models.Version

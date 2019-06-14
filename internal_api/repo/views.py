@@ -1,9 +1,13 @@
+import asyncio
+
 from rest_framework import generics
 from rest_framework import filters
 from django_filters import rest_framework as django_filters, BooleanFilter
+
 from codecov_auth.models import Owner
-from core.models import Repository
-from .serializers import RepoSerializer
+from core.models import Repository, Commit
+from internal_api.repo.repository_accessors import get_repo_details, get_repo_permissions
+from .serializers import RepoSerializer, RepoPermissionsSerializer
 
 
 class RepositoryFilter(django_filters.FilterSet):
@@ -32,5 +36,27 @@ class RepositoryList(generics.ListAPIView):
         org_name = self.kwargs.get('orgName')
         owner = self.request.user
         organization = Owner.objects.get(username=org_name, service=self.request.user.service)
-        queryset = queryset.filter(author=organization, repoid__in=owner.permission)
+        queryset = queryset.filter(author=organization)
         return queryset
+
+
+class RepositoryDetails(generics.RetrieveAPIView):
+    queryset = Repository.objects.all()
+    serializer_class = RepoPermissionsSerializer
+
+    def get_object(self):
+        repo_name = self.kwargs.get('repoName')
+        org_name = self.kwargs.get('orgName')
+        repo = get_repo_details(self.request.user, repo_name, org_name)
+        return repo
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        repo = self.get_object()
+        can_view, can_edit = get_repo_permissions(self.request.user, repo.name, repo.author.username)
+        has_uploads = Commit.objects.filter(repository=repo).exists()
+        context['can_view'] = can_view
+        context['can_edit'] = can_edit
+        context['has_uploads'] = has_uploads
+        return context
+
