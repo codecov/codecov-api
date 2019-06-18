@@ -1,12 +1,11 @@
 import json
 
-from django.test import TestCase
-
+from codecov.tests.base_test import InternalAPITest
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory, PullFactory, CommitFactory, BranchFactory
 
 
-class OrgsViewTest(TestCase):
+class OrgsViewTest(InternalAPITest):
 
     def setUp(self):
         org = OwnerFactory(username='Codecov')
@@ -26,7 +25,7 @@ class OrgsViewTest(TestCase):
         self.assertEqual(response.status_code, 403)
 
 
-class RepoViewTest(TestCase):
+class RepoViewTest(InternalAPITest):
     def setUp(self):
         org = OwnerFactory(username='codecov', service='github')
         # Create different types of repos
@@ -62,7 +61,7 @@ class RepoViewTest(TestCase):
         self.assertEqual(len(content['results']), 3, "got the wrong number of repos: {}".format(content['results']))
 
 
-class RepoPullList(TestCase):
+class RepoPullList(InternalAPITest):
     def setUp(self):
         org = OwnerFactory(username='codecov', service='github')
         other_org = OwnerFactory(username='other_org')
@@ -100,7 +99,7 @@ class RepoPullList(TestCase):
         self.assertEqual(response.status_code, 404, "got unexpected response: {}".format(content))
 
 
-class RepoCommitList(TestCase):
+class RepoCommitList(InternalAPITest):
     def setUp(self):
         org = OwnerFactory(username='codecov', service='github')
         other_org = OwnerFactory(username='other_org')
@@ -131,7 +130,7 @@ class RepoCommitList(TestCase):
         self.assertEqual(response.status_code, 404, "got unexpected response: {}".format(content))
 
 
-class RepoBranchList(TestCase):
+class RepoBranchList(InternalAPITest):
     def setUp(self):
         org = OwnerFactory(username='codecov', service='github')
         other_org = OwnerFactory(username='other_org')
