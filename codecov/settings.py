@@ -81,13 +81,19 @@ WSGI_APPLICATION = 'codecov.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
+
+DATABASE_USER = get_config('services', 'database', 'username')
+DATABASE_NAME = get_config('services', 'database', 'name')
+DATABASE_PASSWORD = get_config('services', 'database', 'password')
+DATABASE_HOST = get_config('services', 'database', 'host')
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'postgres',
-        'USER': 'postgres',
-        'PASSWORD': 'postgres',
-        'HOST': 'postgres',
+        'NAME': DATABASE_NAME,
+        'USER': DATABASE_USER,
+        'PASSWORD': DATABASE_PASSWORD,
+        'HOST': DATABASE_HOST,
         'PORT': '5432',
     }
 }

@@ -48,6 +48,5 @@ jobs:
           name: codecov
           command: |
             . venv/bin/activate
-            pip install codecov
-            codecov
+            bash <(curl -s https://codecov.io/bash)
 
