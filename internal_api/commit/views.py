@@ -1,9 +1,11 @@
 import asyncio
-from rest_framework import generics, filters
+from rest_framework import generics
 from django.shortcuts import Http404
-from internal_api.mixins import RepoFilterMixin
+
+from archive.services import ReportService
+from internal_api.mixins import RepoFilterMixin, RepoSlugUrlMixin
 from core.models import Commit
-from .serializers import CommitSerializer, ShortParentlessCommitSerializer, ParentlessCommitSerializer
+from .serializers import CommitSerializer, ShortParentlessCommitSerializer, FlagSerializer
 
 
 class RepoCommitList(RepoFilterMixin, generics.ListAPIView):
@@ -36,3 +38,28 @@ class RepoCommmitDetail(generics.RetrieveAPIView):
                           queryset.model._meta.object_name)
         self.check_object_permissions(self.request, obj)
         return obj
+
+
+class RepoCommitFlags(RepoSlugUrlMixin, generics.ListCreateAPIView):
+    serializer_class = FlagSerializer
+
+    def get_commit(self):
+        asyncio.set_event_loop(asyncio.new_event_loop())
+        commitid = self.kwargs['commitid']
+        repo = self.get_repo()
+        queryset = Commit.objects.filter(
+            repository_id=repo.repoid,
+            commitid=commitid
+        )
+        try:
+            obj = queryset.get()
+        except Commit.DoesNotExist:
+            raise Http404('No %s matches the given query.' %
+                          queryset.model._meta.object_name)
+        self.check_object_permissions(self.request, obj)
+        return obj
+
+    def get_queryset(self):
+        commit = self.get_commit()
+        report = ReportService().build_report_from_commit(commit)
+        return list(report.flags.values())

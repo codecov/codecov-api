@@ -5,19 +5,25 @@ from django.core.exceptions import ObjectDoesNotExist
 from core.models import Repository
 
 
-class RepoFilterMixin(object):
+class RepoSlugUrlMixin(object):
+
+    def get_repo(self):
+        repo_name = self.kwargs.get('repoName')
+        org_name = self.kwargs.get('orgName')
+        try:
+            owner = Owner.objects.get(service=self.request.user.service, username=org_name)
+            return Repository.objects.get(name=repo_name, author=owner)
+        except ObjectDoesNotExist:
+            raise NotFound(detail="Repository {} for org {} not found ".format(repo_name, org_name))
+
+
+class RepoFilterMixin(RepoSlugUrlMixin):
     """ Repository filter for commits/branches/pulls that uses the args:
         orgName, repoName, and permissions of the authenticated user """
 
     def filter_queryset(self, queryset):
         queryset = super().filter_queryset(queryset)
-        repo_name = self.kwargs.get('repoName')
-        org_name = self.kwargs.get('orgName')
-        try:
-            owner = Owner.objects.get(service=self.request.user.service, username=org_name)
-            repo = Repository.objects.get(name=repo_name, author=owner)
-        except ObjectDoesNotExist:
-            raise NotFound(detail="Repository {} for org {} not found ".format(repo_name, org_name))
+        repo = self.get_repo()
 
         # TODO: Verify the user has permissions by calling Provider (and update db)
         # 1. handle logic based on if the repo is public or private

@@ -95,3 +95,8 @@ class ReportFileSerializer(serializers.Serializer):
 class ReportSerializer(serializers.Serializer):
     totals = serializers.JSONField(source='totals._asdict')
     files = ReportFileSerializer(source='file_reports', many=True)
+
+
+class FlagSerializer(serializers.Serializer):
+    report = ReportSerializer()
+    name = serializers.CharField()

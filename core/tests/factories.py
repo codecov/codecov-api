@@ -82,7 +82,22 @@ class CommitFactory(DjangoModelFactory):
                 'c': None,
                 'd': 1547084427,
                 'e': None,
-                'f': None,
+                'f': ['unittests'],
+                'j': None,
+                'n': None,
+                'p': None,
+                't': [
+                    3, 20, 17, 3, 0, '85.00000', 0, 0, 0, 0, 0, 0, 0
+                ],
+                '': None
+            },
+            '1': {
+                'N': None,
+                'a': 'v4/raw/2019-01-10/4434BC2A2EC4FCA57F77B473D83F928C/abf6d4df662c47e32460020ab14abf9303581429/9ccc55a1-8b41-4bb1-a946-ee7a33a7fb56.txt',
+                'c': None,
+                'd': 1547084427,
+                'e': None,
+                'f': ['integrations'],
                 'j': None,
                 'n': None,
                 'p': None,
