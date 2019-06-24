@@ -1,7 +1,10 @@
 from pathlib import Path
+from json import loads, dumps
 
 from internal_api.commit.serializers import ParentlessCommitSerializerWithDiff
+from internal_api.serializers import AuthorSerializer
 from core.tests.factories import CommitFactory, RepositoryFactory
+from codecov_auth.tests.factories import OwnerFactory
 from archive.services import ArchiveService
 
 current_file = Path(__file__)
@@ -36,6 +39,7 @@ class TestSerializers(object):
         expected_result = {
             'ci_passed': True,
             'author': {
+                'ownerid': commit.author.ownerid,
                 'username': commit.author.username,
                 'email': commit.author.email,
                 'name': commit.author.name,
@@ -223,10 +227,6 @@ class TestSerializers(object):
                 }
             },
         }
-        assert expected_result['src'] == res['src']
-        assert expected_result['report']['files'][2]['lines'] == res['report']['files'][2]['lines']
-        assert expected_result['report'] == res['report']
+
         assert expected_result == res
-        mocked.assert_called_with(
-            'abf6d4df662c47e32460020ab14abf9303581429'
-        )
+        mocked.assert_called_with('abf6d4df662c47e32460020ab14abf9303581429')
