@@ -10,10 +10,10 @@ from archive.services import ArchiveService
 current_file = Path(__file__)
 
 
-class TestSerializers(object):
+class TestFlagsView(object):
 
     @override_settings(DEBUG=True)
-    def test_commit_serializer(self, mocker, db, client, codecov_vcr):
+    def test_commit_flag_view(self, mocker, db, client, codecov_vcr):
         mocked = mocker.patch.object(ArchiveService, 'read_chunks')
         f = open(
             current_file.parent.parent.parent.parent.parent / 'archive/tests/samples' / 'chunks.txt',

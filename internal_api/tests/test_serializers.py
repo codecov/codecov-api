@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from internal_api.commit.serializers import ParentlessCommitSerializer
+from internal_api.commit.serializers import ParentlessCommitSerializerWithDiff
 from core.tests.factories import CommitFactory, RepositoryFactory
 from archive.services import ArchiveService
 
@@ -32,7 +32,7 @@ class TestSerializers(object):
             parent_commit_id=parent_commit.commitid,
             repository=repo,
         )
-        res = ParentlessCommitSerializer(instance=commit, context={'user': repo.author}).data
+        res = ParentlessCommitSerializerWithDiff(instance=commit, context={'user': repo.author}).data
         expected_result = {
             'ci_passed': True,
             'author': {
@@ -54,16 +54,16 @@ class TestSerializers(object):
                     ({
                         'name': 'awesome/__init__.py',
                         'lines': [
-                            (1, 1, None, [[0, 1, None, None, None]], None, None),
-                            (2, 1, None, [[0, 1, None, None, None]], None, None),
-                            (5, 1, None, [[0, 1, None, None, None]], None, None),
-                            (6, 0, None, [[0, 0, None, None, None]], None, None),
-                            (9, 1, None, [[0, 1, None, None, None]], None, None),
-                            (10, 1, None, [[0, 1, None, None, None]], None, None),
-                            (11, 1, None, [[0, 1, None, None, None]], None, None),
-                            (12, 1, None, [[0, 1, None, None, None]], None, None),
-                            (15, 1, None, [[0, 1, None, None, None]], None, None),
-                            (16, 0, None, [[0, 0, None, None, None]], None, None)
+                            (1, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
+                            (2, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
+                            (5, 1, None, [[0, 1, None, None, None], [1, 1, None, None, None]], None, None),
+                            (6, 1, None, [[0, 0, None, None, None], [1, 0, None, None, None]], None, None),
+                            (9, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
+                            (10, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
+                            (11, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
+                            (12, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
+                            (15, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
+                            (16, 0, None, [[0, 0, None, None, None], [1, 0, None, None, None]], None, None)
                         ],
                         'totals': {
                             'files': 0,
@@ -84,9 +84,9 @@ class TestSerializers(object):
                     {
                         'name': 'tests/__init__.py',
                         'lines': [
-                            (1, 1, None, [[0, 1, None, None, None]], None, None),
-                            (4, 1, None, [[0, 1, None, None, None]], None, None),
-                            (5, 0, None, [[0, 0, None, None, None]], None, None)
+                            (1, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
+                            (4, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
+                            (5, 0, None, [[0, 0, None, None, None], [1, 0, None, None, None]], None, None)
                         ],
                         'totals': {
                             'files': 0,
@@ -107,13 +107,13 @@ class TestSerializers(object):
                     {
                         'name': 'tests/test_sample.py',
                         'lines': [
-                            (1, 1, None, [[0, 1, None, None, None]], None, None),
-                            (4, 1, None, [[0, 1, None, None, None]], None, None),
-                            (5, 1, None, [[0, 1, None, None, None]], None, None),
-                            (8, 1, None, [[0, 1, None, None, None]], None, None),
-                            (9, 1, None, [[0, 1, None, None, None]], None, None),
-                            (12, 1, None, [[0, 1, None, None, None]], None, None),
-                            (13, 1, None, [[0, 1, None, None, None]], None, None)
+                            (1, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
+                            (4, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
+                            (5, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
+                            (8, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
+                            (9, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
+                            (12, 1, None, [[0, 1, None, None, None], [1, 1, None, None, None]], None, None),
+                            (13, 1, None, [[0, 1, None, None, None], [1, 1, None, None, None]], None, None)
                         ],
                         'totals': {
                             'files': 0,
@@ -224,6 +224,7 @@ class TestSerializers(object):
             },
         }
         assert expected_result['src'] == res['src']
+        assert expected_result['report']['files'][2]['lines'] == res['report']['files'][2]['lines']
         assert expected_result['report'] == res['report']
         assert expected_result == res
         mocked.assert_called_with(

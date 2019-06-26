@@ -82,10 +82,10 @@ WSGI_APPLICATION = 'codecov.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
 
-DATABASE_USER = get_config('services', 'database', 'username')
-DATABASE_NAME = get_config('services', 'database', 'name')
-DATABASE_PASSWORD = get_config('services', 'database', 'password')
-DATABASE_HOST = get_config('services', 'database', 'host')
+DATABASE_USER = get_config('services', 'database', 'username', default='postgres')
+DATABASE_NAME = get_config('services', 'database', 'name', default='postgres')
+DATABASE_PASSWORD = get_config('services', 'database', 'password', default='postgres')
+DATABASE_HOST = get_config('services', 'database', 'host', default='postgres')
 
 DATABASES = {
     'default': {
