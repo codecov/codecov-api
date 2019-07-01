@@ -39,9 +39,6 @@ services:
     access_key_id: codecov-default-key
     secret_access_key: codecov-default-secret
     verify_ssl: false
-  sentry:
-    server_dsn: https://e15a77ae50f9454c8255dee12e764186@sentry.io/1260170
-  google_analytics_key: UA-63027104-1
   circleci_token: testquyiqktx1o6in8zutfdwikzwe0kgclxy9j27
 
 github:
