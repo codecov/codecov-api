@@ -11,15 +11,21 @@ def get_comparison_from_pull_request(pull_request):
 
 class Comparison(object):
 
-    def __init__(self, base_commit, head_commit):
+    def __init__(self, base_commit, head_commit, user):
+        self.user = user
         self.base_commit = base_commit
         self.head_commit = head_commit
         self.report_service = ReportService()
+        self._base_report = None
+        self._git_diff = None
+        self._head_report = None
 
     @property
     def git_diff(self):
         if self._git_diff is None:
             self._git_diff = self._calculate_git_diff()
+            import pprint
+            pprint.pprint(self._git_diff)
         return self._git_diff
 
     @property
@@ -36,11 +42,10 @@ class Comparison(object):
 
     def _calculate_git_diff(self):
         loop = asyncio.get_event_loop()
-        user = self.context.get("user")
         base_commit_sha = self.base_commit.commitid
         head_commit_sha = self.head_commit.commitid
         task = RepoProviderService().get_adapter(
-            user, self.base_commit.repository).get_commit_diff(base_commit_sha, head_commit_sha)
+            self.user, self.base_commit.repository).get_compare(base_commit_sha, head_commit_sha)
         return loop.run_until_complete(task)
 
     def _calculate_base_report(self):
@@ -60,6 +65,14 @@ class FlagComparison(object):
         self.flag_name = flag_name
 
     @property
+    def head_report(self):
+        return self.comparison.head_report.flags[self.flag_name]
+
+    @property
+    def base_report(self):
+        return self.comparison.base_report.flags[self.flag_name]
+
+    @property
     def diff_totals(self):
         git_diff = self.comparison.git_diff
-        return self.comparison.head_report.flag(self.flag_name).apply_diff(git_diff)
+        return self.head_report.apply_diff(git_diff['diff'])
