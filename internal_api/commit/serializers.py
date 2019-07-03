@@ -49,11 +49,19 @@ class ShortParentlessCommitSerializer(serializers.ModelSerializer):
 
 class ParentlessCommitSerializer(ShortParentlessCommitSerializer):
     report = serializers.SerializerMethodField()
-    src = serializers.SerializerMethodField()
 
     def get_report(self, obj):
         report = ReportService().build_report_from_commit(obj)
         return ReportSerializer(instance=report).data
+
+    class Meta:
+        model = Commit
+        fields = ('report', 'commitid', 'timestamp', 'updatestamp',
+                  'ci_passed', 'repository', 'author', 'message')
+
+
+class ParentlessCommitSerializerWithDiff(ParentlessCommitSerializer):
+    src = serializers.SerializerMethodField()
 
     def get_src(self, obj):
         loop = asyncio.get_event_loop()
@@ -68,8 +76,8 @@ class ParentlessCommitSerializer(ShortParentlessCommitSerializer):
                   'ci_passed', 'repository', 'author', 'message')
 
 
-class CommitSerializer(ParentlessCommitSerializer):
-    parent = ParentlessCommitSerializer(source='parent_commit')
+class CommitSerializer(ParentlessCommitSerializerWithDiff):
+    parent = ParentlessCommitSerializerWithDiff(source='parent_commit')
 
     class Meta:
         model = Commit
@@ -95,3 +103,13 @@ class ReportFileSerializer(serializers.Serializer):
 class ReportSerializer(serializers.Serializer):
     totals = serializers.JSONField(source='totals._asdict')
     files = ReportFileSerializer(source='file_reports', many=True)
+
+
+class ComparisonSerializer(serializers.Serializer):
+    # TODO: build
+    pass
+
+
+class FlagSerializer(serializers.Serializer):
+    report = ReportSerializer()
+    name = serializers.CharField()

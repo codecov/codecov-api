@@ -4,6 +4,7 @@ from django.conf import settings
 from enum import Enum
 from minio import Minio
 from covreports.resources import Report
+from covreports.helpers.flag import Flag
 
 from datetime import datetime
 from hashlib import md5
@@ -28,6 +29,17 @@ class SerializableReport(Report):
     def file_reports(self):
         for f in self.files:
             yield self.get(f)
+
+    @property
+    def flags(self):
+        """returns dict(:name=<Flag>)
+        """
+        flags_dict = {}
+        for sid, session in self.sessions.items():
+            if session.flags is not None:
+                for flag in session.flags:
+                    flags_dict[flag] = Flag(self, flag)
+        return flags_dict
 
 
 def get_minio_client():

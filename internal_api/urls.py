@@ -13,6 +13,8 @@ urlpatterns = [
     path('<str:orgName>/<str:repoName>/pulls', internal_api.pull.views.RepoPullList.as_view()),
     path('<str:orgName>/<str:repoName>/commits',
          internal_api.commit.views.RepoCommitList.as_view()),
+    path('<str:orgName>/<str:repoName>/commits/<str:commitid>/flags',
+         internal_api.commit.views.RepoCommitFlags.as_view()),
     path('<str:orgName>/<str:repoName>/branches',
          internal_api.branch.views.RepoBranchList.as_view())
 ]
