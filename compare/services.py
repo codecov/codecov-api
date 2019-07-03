@@ -4,9 +4,8 @@ from archive.services import ReportService
 from repo_providers.services import RepoProviderService
 
 
-def get_comparison_from_pull_request(pull_request):
-    # TODO (build)
-    pass
+def get_comparison_from_pull_request(pull_request, user):
+    return Comparison(pull_request.base, pull_request.head, user)
 
 
 class Comparison(object):
@@ -24,8 +23,6 @@ class Comparison(object):
     def git_diff(self):
         if self._git_diff is None:
             self._git_diff = self._calculate_git_diff()
-            import pprint
-            pprint.pprint(self._git_diff)
         return self._git_diff
 
     @property
@@ -57,6 +54,10 @@ class Comparison(object):
     def flag_comparison(self, flag_name):
         return FlagComparison(self, flag_name)
 
+    @property
+    def available_flags(self):
+        return self.head_report.flags.keys()
+
 
 class FlagComparison(object):
 
@@ -66,13 +67,15 @@ class FlagComparison(object):
 
     @property
     def head_report(self):
-        return self.comparison.head_report.flags[self.flag_name]
+        return self.comparison.head_report.flags.get(self.flag_name)
 
     @property
     def base_report(self):
-        return self.comparison.base_report.flags[self.flag_name]
+        return self.comparison.base_report.flags.get(self.flag_name)
 
     @property
     def diff_totals(self):
+        if self.head_report is None:
+            return None
         git_diff = self.comparison.git_diff
         return self.head_report.apply_diff(git_diff['diff'])
