@@ -1,4 +1,5 @@
 from unittest.mock import patch
+import json
 
 from codecov.tests.base_test import InternalAPITest
 from codecov_auth.tests.factories import OwnerFactory
@@ -89,3 +90,27 @@ class RepoViewTest(InternalAPITest):
         self.assertEqual(response.status_code, 403)
         content = self.json_content(response)
         assert 'upload_token' not in content
+
+    def test_update_default_branch(self, mock_provider):
+        mock_provider.return_value = True, True
+        self.client.force_login(user=self.user)
+        response = self.client.patch('/internal/codecov/repo1/default-branch', data=json.dumps({'branch': 'dev'}), content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+        content = self.json_content(response)
+        self.assertEqual(content['branch'], 'dev', "got unexpected response: {}".format(content['branch']))
+
+    def test_update_default_branch_doesnt_update_other_field(self, mock_provider):
+        mock_provider.return_value = True, True
+        self.client.force_login(user=self.user)
+        response = self.client.patch('/internal/codecov/repo1/default-branch', data=json.dumps({'private': False}), content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+        content = self.json_content(response)
+        self.assertEqual(content['private'], True, "got unexpected response: {}".format(content['private']))
+
+    def test_update_default_branch_not_allowed(self, mock_provider):
+        mock_provider.return_value = False, False
+        self.client.force_login(user=self.user)
+        response = self.client.patch('/internal/codecov/repo1/default-branch', data=json.dumps({'branch': 'dev'}), content_type='application/json')
+        self.assertEqual(response.status_code, 403)
+        content = self.json_content(response)
+        assert 'branch' not in content
