@@ -1,3 +1,5 @@
+import asyncio
+
 from rest_framework import generics, filters
 from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import Http404
@@ -21,6 +23,7 @@ class RepoPullFlagsList(RepoSlugUrlMixin, generics.ListCreateAPIView):
     serializer_class = FlagComparisonSerializer
 
     def get_comparison(self):
+        asyncio.set_event_loop(asyncio.new_event_loop())
         user = self.request.user
         repo = self.get_repo()
         pullid = self.kwargs['pullid']
