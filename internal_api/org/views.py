@@ -1,13 +1,13 @@
 from rest_framework import generics
 
 from codecov_auth.models import Owner
-from .serializers import OrgSerializer
+from .serializers import OwnerSerializer
 
 
 class OrgsView(generics.RetrieveAPIView):
     lookup_field = 'ownerid'
     queryset = Owner.objects.all()
-    serializer_class = OrgSerializer
+    serializer_class = OwnerSerializer
 
     def get_object(self):
         queryset = self.filter_queryset(self.get_queryset())

@@ -4,38 +4,35 @@ from core.models import Repository
 from codecov_auth.models import Owner
 
 
-class OrgActiveReposSerializer(serializers.ModelSerializer):
+class OwnerActiveReposSerializer(serializers.ModelSerializer):
     class Meta:
         model = Repository
         fields = ('repoid', 'name')
 
 
-class OrgOrgsSerializer(serializers.ModelSerializer):
+class OwnerSerializer(serializers.ModelSerializer):
     ownerid = serializers.IntegerField()
     service = serializers.CharField()
     username = serializers.CharField()
     email = serializers.CharField()
     name = serializers.CharField()
-    cache = serializers.JSONField()
-    active_repos = OrgActiveReposSerializer(many=True)
+    active_repos = OwnerActiveReposSerializer(many=True)
+    stats = serializers.SerializerMethodField()
+
+    def get_stats(self, obj):
+        if obj.cache['stats']:
+            return obj.cache['stats']
 
     class Meta:
         model = Owner
         fields = ('ownerid', 'service', 'username',
-                  'email', 'name', 'cache', 'active_repos')
+                  'email', 'name', 'stats', 'active_repos')
 
 
-class OrgSerializer(serializers.ModelSerializer):
-    ownerid = serializers.IntegerField()
-    service = serializers.CharField()
-    username = serializers.CharField()
-    email = serializers.CharField()
-    name = serializers.CharField()
-    cache = serializers.JSONField()
-    active_repos = OrgActiveReposSerializer(many=True)
-    orgs = OrgOrgsSerializer(many=True)
+class OwnerListSerializer(OwnerSerializer):
+    orgs = OwnerSerializer(many=True)
 
     class Meta:
         model = Owner
         fields = ('ownerid', 'service', 'username',
-                  'email', 'name', 'cache', 'active_repos', 'orgs')
+                  'email', 'name', 'stats', 'active_repos', 'orgs')
