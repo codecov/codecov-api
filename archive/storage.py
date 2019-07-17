@@ -23,13 +23,19 @@ class StorageService(object):
         else:
             self.minio_config = in_config
 
+        if 'host' not in self.minio_config:
+            self.minio_config['host'] = 'minio'
+        if 'port' not in self.minio_config:
+            self.minio_config['port'] = 9000
+
         self.minio_client = self.init_minio_client(
-            os.getenv('MINIO_PORT_9000_TCP_ADDR', '172.17.0.2'),
-            os.getenv('MINIO_PORT_9000_TCP_PORT', '9000'),
+            self.minio_config['host'],
+            self.minio_config['port'],
             self.minio_config['access_key_id'],
             self.minio_config['secret_access_key'],
             self.minio_config['verify_ssl']
         )
+        log.info("----- created minio_client: ---- ")
 
     def client(self):
         return self.minio_client if self.minio_client else None
@@ -47,7 +53,6 @@ class StorageService(object):
         try:
             self.minio_client.make_bucket(bucket, location=region)
             self.minio_client.set_bucket_policy(bucket, '*', "readonly")
-
         # todo should only pass or raise
         except BucketAlreadyOwnedByYou:
             pass

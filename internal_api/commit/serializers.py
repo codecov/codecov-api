@@ -72,10 +72,13 @@ class CommitWithParentSerializer(CommitWithSrcSerializer):
         fields = ('src', 'commitid', 'timestamp', 'ci_passed', 'report', 'repository', 'parent', 'author')
 
 
-class ReportFileSerializer(serializers.Serializer):
+class ReportFileWithoutLinesSerializer(serializers.Serializer):
     name = serializers.CharField()
-    lines = serializers.SerializerMethodField()
     totals = serializers.JSONField(source='totals._asdict')
+
+
+class ReportFileSerializer(ReportFileWithoutLinesSerializer):
+    lines = serializers.SerializerMethodField()
 
     def get_lines(self, obj):
         return list(self.get_lines_iterator(obj))
@@ -90,6 +93,21 @@ class ReportFileSerializer(serializers.Serializer):
 class ReportSerializer(serializers.Serializer):
     totals = serializers.JSONField(source='totals._asdict')
     files = ReportFileSerializer(source='file_reports', many=True)
+
+
+class ReportWithoutLinesSerializer(serializers.Serializer):
+    totals = serializers.JSONField(source='totals._asdict')
+    files = ReportFileWithoutLinesSerializer(source='file_reports', many=True)
+
+
+class ComparisonLineCoverageSerializer(serializers.Serializer):
+    base = ReportSerializer()
+    head = ReportSerializer()
+
+
+class ComparisonFilesSerializer(serializers.Serializer):
+    base = ReportWithoutLinesSerializer()
+    head = ReportWithoutLinesSerializer()
 
 
 class ComparisonSerializer(serializers.Serializer):

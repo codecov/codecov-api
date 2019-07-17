@@ -21,4 +21,8 @@ urlpatterns = [
          internal_api.branch.views.RepoBranchList.as_view()),
     path('<str:orgName>/<str:repoName>/compare/<str:base>...<str:head>/commits',
          internal_api.compare.views.CompareCommits.as_view()),
+    path('<str:orgName>/<str:repoName>/compare/<str:base>...<str:head>/files',
+         internal_api.compare.views.CompareFiles.as_view(), {'coverage_level': 'files'}),
+    path('<str:orgName>/<str:repoName>/compare/<str:base>...<str:head>/lines',
+         internal_api.compare.views.CompareFiles.as_view(), {'coverage_level': 'lines'}),
 ]
