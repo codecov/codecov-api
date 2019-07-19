@@ -6,19 +6,9 @@ from rest_framework import serializers
 from archive.services import ReportService
 from repo_providers.services import RepoProviderService
 from core.models import Repository, Commit
-from codecov_auth.models import Owner
+from internal_api.serializers import AuthorSerializer
 
 log = logging.getLogger(__name__)
-
-
-class CommitAuthorSerializer(serializers.ModelSerializer):
-    username = serializers.CharField()
-    email = serializers.CharField()
-    name = serializers.CharField()
-
-    class Meta:
-        model = Owner
-        fields = ('username', 'email', 'name')
 
 
 class CommitRepoSerializer(serializers.ModelSerializer):
@@ -36,7 +26,7 @@ class ShortParentlessCommitSerializer(serializers.ModelSerializer):
     message = serializers.CharField()
     timestamp = serializers.DateTimeField()
     ci_passed = serializers.BooleanField()
-    author = CommitAuthorSerializer()
+    author = AuthorSerializer()
     repository = CommitRepoSerializer()
     branch = serializers.CharField()
     totals = serializers.JSONField()

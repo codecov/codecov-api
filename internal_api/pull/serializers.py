@@ -2,20 +2,11 @@ from rest_framework import serializers
 
 from core.models import Pull, Commit
 from codecov_auth.models import Owner
-
-
-class PullAuthorSerializer(serializers.ModelSerializer):
-    username = serializers.CharField()
-    email = serializers.CharField()
-    name = serializers.CharField()
-
-    class Meta:
-        model = Owner
-        fields = ('username', 'email', 'name')
+from internal_api.serializers import AuthorSerializer
 
 
 class PullCommitSerializer(serializers.ModelSerializer):
-    author = PullAuthorSerializer()
+    author = AuthorSerializer()
     totals = serializers.JSONField()
     updatestamp = serializers.DateTimeField()
 
@@ -26,7 +17,7 @@ class PullCommitSerializer(serializers.ModelSerializer):
 
 class PullSerializer(serializers.ModelSerializer):
     title = serializers.CharField()
-    author = PullAuthorSerializer()
+    author = AuthorSerializer()
     base = PullCommitSerializer()
     head = PullCommitSerializer()
     compared_to = PullCommitSerializer()
