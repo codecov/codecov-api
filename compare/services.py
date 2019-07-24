@@ -1,6 +1,7 @@
 import asyncio
 
 from archive.services import ReportService
+from core.models import Commit
 from repo_providers.services import RepoProviderService
 
 
@@ -16,28 +17,57 @@ class Comparison(object):
         self.head_commit = head_commit
         self.report_service = ReportService()
         self._base_report = None
-        self._git_diff = None
+        self._git_comparison = None
         self._head_report = None
+        self._git_commits = None
+        self._upload_commits = None
 
     @property
-    def git_diff(self):
-        if self._git_diff is None:
-            self._git_diff = self._calculate_git_diff()
-        return self._git_diff
+    def git_comparison(self):
+        if self._git_comparison is None:
+            self._git_comparison = self._calculate_git_comparison()
+        return self._git_comparison
 
     @property
     def base_report(self):
         if self._base_report is None:
-            self._base_report = self.report_service.build_report_from_commit(self.base_commit)
+            self._base_report = self._calculate_base_report()
         return self._base_report
 
     @property
     def head_report(self):
         if self._head_report is None:
-            self._head_report = self.report_service.build_report_from_commit(self.head_commit)
+            self._head_report = self._calculate_head_report()
         return self._head_report
 
-    def _calculate_git_diff(self):
+    @property
+    def git_commits(self):
+        """
+            Returns the complete git commits between base and head.
+            :return: list of commit info with objects
+        """
+        if self._git_commits is None:
+            self._calculate_git_commits()
+        return self._git_commits
+
+    @property
+    def upload_commits(self):
+        """
+            Returns the commits that have uploads between base and head.
+            :return: Queryset of core.models.Commit objects
+        """
+        commit_ids = [commit['commitid'] for commit in self.git_commits]
+        commits_queryset = Commit.objects.filter(commitid__in=commit_ids,
+                                                 repository=self.base_commit.repository)
+        commits_queryset.exclude(deleted=True)
+        return commits_queryset
+
+    def _calculate_git_commits(self):
+        commits = self.git_comparison['commits']
+        self._git_commits = commits
+        return self._git_commits
+
+    def _calculate_git_comparison(self):
         loop = asyncio.get_event_loop()
         base_commit_sha = self.base_commit.commitid
         head_commit_sha = self.head_commit.commitid
@@ -77,5 +107,5 @@ class FlagComparison(object):
     def diff_totals(self):
         if self.head_report is None:
             return None
-        git_diff = self.comparison.git_diff
-        return self.head_report.apply_diff(git_diff['diff'])
+        git_comparison = self.comparison.git_comparison
+        return self.head_report.apply_diff(git_comparison['diff'])

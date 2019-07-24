@@ -5,6 +5,7 @@ import internal_api.repo.views
 import internal_api.pull.views
 import internal_api.commit.views
 import internal_api.branch.views
+import internal_api.compare.views
 
 
 urlpatterns = [
@@ -16,5 +17,7 @@ urlpatterns = [
     path('<str:orgName>/<str:repoName>/commits/<str:commitid>/flags',
          internal_api.commit.views.RepoCommitFlags.as_view()),
     path('<str:orgName>/<str:repoName>/branches',
-         internal_api.branch.views.RepoBranchList.as_view())
+         internal_api.branch.views.RepoBranchList.as_view()),
+    path('<str:orgName>/<str:repoName>/compare/<str:base>...<str:head>/commits',
+         internal_api.compare.views.CompareCommits.as_view()),
 ]
