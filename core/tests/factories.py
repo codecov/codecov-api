@@ -1,7 +1,7 @@
 import random
+import uuid
 
 import factory
-from rest_framework.fields import JSONField
 
 from core import models
 from hashlib import sha1
@@ -17,6 +17,10 @@ class RepositoryFactory(DjangoModelFactory):
     name = 'example-python'
 
     author = factory.SubFactory(OwnerFactory)
+    language = factory.Faker('word')
+    fork = None
+    branch = 'master'
+    upload_token = uuid.uuid4()
 
 
 class CommitFactory(DjangoModelFactory):

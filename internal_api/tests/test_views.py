@@ -1,9 +1,11 @@
 import json
+from unittest.mock import Mock, patch
 
 from codecov.tests.base_test import InternalAPITest
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory, PullFactory, CommitFactory, BranchFactory
 
+get_permissions_method = "internal_api.repo.repository_accessors.RepoAccessors.get_repo_permissions"
 
 class OrgsViewTest(InternalAPITest):
 
@@ -25,6 +27,7 @@ class OrgsViewTest(InternalAPITest):
         self.assertEqual(response.status_code, 403)
 
 
+@patch(get_permissions_method)
 class RepoPullList(InternalAPITest):
     def setUp(self):
         org = OwnerFactory(username='codecov', service='github')
@@ -42,27 +45,31 @@ class RepoPullList(InternalAPITest):
         PullFactory(pullid=12, author=other_org, repository=other_repo)
         pass
 
-    def test_get_pulls(self):
+    def test_get_pulls(self, mock_provider):
+        mock_provider.return_value = True, True
         self.client.force_login(user=self.user)
         response = self.client.get('/internal/codecov/testRepoName/pulls')
         self.assertEqual(response.status_code, 200)
-        content = json_content(response)
+        content = self.json_content(response)
         self.assertEqual(len(content['results']), 2, "got the wrong number of pulls: {}".format(content['results']))
 
-    def test_get_pulls_filter_state(self):
+    def test_get_pulls_filter_state(self, mock_provider):
+        mock_provider.return_value = True, True
         self.client.force_login(user=self.user)
         response = self.client.get('/internal/codecov/testRepoName/pulls?state=open')
         self.assertEqual(response.status_code, 200)
-        content = json_content(response)
+        content = self.json_content(response)
         self.assertEqual(len(content['results']), 1, "got the wrong number of open pulls: {}".format(content['results']))
 
-    def test_get_pull_wrong_org(self):
+    def test_get_pull_wrong_org(self, mock_provider):
+        mock_provider.return_value = True, True
         self.client.force_login(user=self.user)
         response = self.client.get('/internal/codecov/otherRepoName/pulls')
-        content = json_content(response)
+        content = self.json_content(response)
         self.assertEqual(response.status_code, 404, "got unexpected response: {}".format(content))
 
 
+@patch(get_permissions_method)
 class RepoCommitList(InternalAPITest):
     def setUp(self):
         org = OwnerFactory(username='codecov', service='github')
@@ -80,26 +87,28 @@ class RepoCommitList(InternalAPITest):
         CommitFactory(author=other_org, repository=other_repo)
         pass
 
-    def test_get_commits(self):
+    def test_get_commits(self, mock_provider):
+        mock_provider.return_value = True, True
         self.client.force_login(user=self.user)
         response = self.client.get('/internal/codecov/testRepoName/commits')
         self.assertEqual(response.status_code, 200)
-        content = json_content(response)
+        content = self.json_content(response)
         self.assertEqual(len(content['results']), 2, "got the wrong number of commits: {}".format(content['results']))
 
-    def test_get_commits_wrong_org(self):
+    def test_get_commits_wrong_org(self, mock_provider):
         self.client.force_login(user=self.user)
         response = self.client.get('/internal/codecov/otherRepoName/commits')
-        content = json_content(response)
+        content = self.json_content(response)
         self.assertEqual(response.status_code, 404, "got unexpected response: {}".format(content))
 
 
+@patch(get_permissions_method)
 class RepoBranchList(InternalAPITest):
     def setUp(self):
         org = OwnerFactory(username='codecov', service='github')
         other_org = OwnerFactory(username='other_org')
         # Create different types of repos / branches
-        repo = RepositoryFactory(author=org, name='testRepoName', active=True)
+        repo = RepositoryFactory(author=org, name='testRepoName', active=True, private=True)
         other_repo = RepositoryFactory(author=other_org, name='otherRepoName', active=True)
         repo_with_permission = [repo.repoid]
         self.user = OwnerFactory(username='codecov-user',
@@ -111,19 +120,23 @@ class RepoBranchList(InternalAPITest):
         BranchFactory(authors=[other_org.ownerid], repository=other_repo)
         pass
 
-    def test_get_branches(self):
+    def test_get_branches(self, mock_provider):
+        mock_provider.return_value = True, True
         self.client.force_login(user=self.user)
         response = self.client.get('/internal/codecov/testRepoName/branches')
         self.assertEqual(response.status_code, 200)
-        content = json_content(response)
+        content = self.json_content(response)
         self.assertEqual(len(content['results']), 2, "got the wrong number of pulls: {}".format(content['results']))
 
-    def test_get_branches_wrong_org(self):
+    def test_get_branches_without_permission(self, mock_provider):
+        mock_provider.return_value = False, False
+        self.client.force_login(user=self.user)
+        response = self.client.get('/internal/codecov/testRepoName/branches')
+        self.assertEqual(response.status_code, 403)
+
+    def test_get_branches_wrong_org(self, mock_provider):
         self.client.force_login(user=self.user)
         response = self.client.get('/internal/codecov/otherRepoName/branches')
-        content = json_content(response)
+        content = self.json_content(response)
         self.assertEqual(response.status_code, 404, "got unexpected response: {}".format(content))
 
-
-def json_content(response):
-    return json.loads(response.content.decode())

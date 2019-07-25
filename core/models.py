@@ -1,3 +1,5 @@
+import uuid
+
 from django.db import models
 from django.contrib.postgres.fields import JSONField, CITextField, ArrayField
 from django.utils.functional import cached_property
@@ -19,17 +21,17 @@ class Repository(models.Model):
     private = models.BooleanField()
     updatestamp = models.DateTimeField(auto_now=True)
     active = models.NullBooleanField()
-    language = models.TextField()
-    fork = models.ForeignKey('core.Repository', db_column='forkid', on_delete=models.DO_NOTHING)
-    branch = models.TextField()
-    upload_token = models.UUIDField()
+    language = models.TextField(null=True, blank=True)
+    fork = models.ForeignKey('core.Repository', db_column='forkid', on_delete=models.DO_NOTHING, null=True, blank=True)
+    branch = models.TextField(null=True, blank=True)
+    upload_token = models.UUIDField(default=uuid.uuid4)
 
     class Meta:
         db_table = 'repos'
 
     @property
     def service(self):
-        return self.author.ownerid
+        return self.author.service
 
     @property
     def latest_commit(self):

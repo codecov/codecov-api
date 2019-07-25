@@ -24,7 +24,7 @@ class RepoSerializer(serializers.ModelSerializer):
                   'latest_commit', 'language', 'branch', 'fork')
 
 
-class RepoPermissionsSerializer(RepoSerializer):
+class RepoDetailsSerializer(RepoSerializer):
     fork = RepoSerializer()
 
     def to_representation(self, repo):

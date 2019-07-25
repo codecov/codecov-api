@@ -5,7 +5,7 @@ from rest_framework.exceptions import NotFound, PermissionDenied
 from codecov_auth.models import Owner
 from django.core.exceptions import ObjectDoesNotExist
 from core.models import Repository
-from internal_api.repo.repository_accessors import get_repo_permissions
+from internal_api.repo.repository_accessors import RepoAccessors
 
 
 class RepoSlugUrlMixin(object):
@@ -29,7 +29,7 @@ class RepoFilterMixin(RepoSlugUrlMixin):
         repo = self.get_repo()
 
         if repo.private:
-            can_view, can_edit = get_repo_permissions(self.request.user, repo.name, repo.author.username)
+            can_view, can_edit = RepoAccessors().get_repo_permissions(self.request.user, repo.name, repo.author.username)
             if not can_view:
                 raise PermissionDenied(detail="Do not have permissions to view this repo")
         # TODO:
