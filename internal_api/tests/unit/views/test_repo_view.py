@@ -9,14 +9,24 @@ from core.tests.factories import RepositoryFactory
 class RepoViewTest(InternalAPITest):
     def setUp(self):
         org = OwnerFactory(username='codecov', service='github')
-        # Create different types of repos
-        repo_with_permission = [RepositoryFactory(author=org, active=True, private=True, name='repo-with-permissions').repoid,
-                                RepositoryFactory(author=org, active=True, private=True, name='repo-no-permissions').repoid,
-                                RepositoryFactory(author=org).repoid]
-        self.user = OwnerFactory(username='codecov-user',
-                                 service='github',
-                                 organizations=[org.ownerid],
-                                 permission=repo_with_permission)
+
+        self.repo1 = RepositoryFactory(author=org, active=True, private=True, name='repo1')
+        self.repo2 = RepositoryFactory(author=org, active=True, private=True, name='repo2')
+        self.repo3 = RepositoryFactory(author=org, name='repo3')
+
+        repos_with_permission = [
+            self.repo1.repoid,
+            self.repo2.repoid,
+            self.repo3.repoid,
+        ]
+
+        self.user = OwnerFactory(
+            username='codecov-user',
+            service='github',
+            organizations=[org.ownerid],
+            permission=repos_with_permission
+        )
+
         RepositoryFactory(author=OwnerFactory(), active=True)
         pass
 
@@ -44,7 +54,7 @@ class RepoViewTest(InternalAPITest):
     def test_repo_details_with_permissions(self, mock_provider):
         mock_provider.return_value = True, True
         self.client.force_login(user=self.user)
-        response = self.client.get('/internal/codecov/repo-with-permissions/details')
+        response = self.client.get('/internal/codecov/repo1/details')
         self.assertEqual(response.status_code, 200)
         content = self.json_content(response)
         assert 'upload_token' in content
@@ -52,7 +62,7 @@ class RepoViewTest(InternalAPITest):
     def test_repo_details_without_write_permissions(self, mock_provider):
         mock_provider.return_value = True, False
         self.client.force_login(user=self.user)
-        response = self.client.get('/internal/codecov/repo-with-permissions/details')
+        response = self.client.get('/internal/codecov/repo1/details')
         self.assertEqual(response.status_code, 200)
         content = self.json_content(response)
         assert not content['can_edit']
@@ -61,5 +71,21 @@ class RepoViewTest(InternalAPITest):
     def test_repo_details_without_read_permissions(self, mock_provider):
         mock_provider.return_value = False, False
         self.client.force_login(user=self.user)
-        response = self.client.get('/internal/codecov/repo-no-permissions/details')
-        assert response.status_code == 403
+        response = self.client.get('/internal/codecov/repo1/details')
+        self.assertEqual(response.status_code, 403)
+
+    def test_repo_regenerate_upload_token(self, mock_provider):
+        mock_provider.return_value = True, True
+        self.client.force_login(user=self.user)
+        response = self.client.patch('/internal/codecov/repo1/regenerate-upload-token', data={}, content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+        content = self.json_content(response)
+        assert content['upload_token'] is not self.repo1.upload_token
+
+    def test_repo_regenerate_upload_token_not_allowed(self, mock_provider):
+        mock_provider.return_value = False, False
+        self.client.force_login(user=self.user)
+        response = self.client.patch('/internal/codecov/repo1/regenerate-upload-token', data={}, content_type='application/json')
+        self.assertEqual(response.status_code, 403)
+        content = self.json_content(response)
+        assert 'upload_token' not in content

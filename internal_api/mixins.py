@@ -68,7 +68,7 @@ class RepoFilterMixin(RepoSlugUrlMixin):
         if repo.private:
             can_view, can_edit = RepoAccessors().get_repo_permissions(self.request.user, repo.name, repo.author.username)
             if not can_view:
-                raise PermissionDenied(detail="Do not have permissions to view this repo")
+                raise PermissionDenied(detail="You do not have permissions to view this repo")
         # TODO:
         # 1. handle if it's delayed auth
         # 2. check logic on handling activated repos or if enterprise

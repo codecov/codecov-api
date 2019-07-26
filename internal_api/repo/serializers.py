@@ -1,3 +1,5 @@
+import uuid
+
 from rest_framework import serializers
 
 from codecov_auth.models import Owner
@@ -35,3 +37,16 @@ class RepoDetailsSerializer(RepoSerializer):
         if self.context['can_edit']:
             representation['upload_token'] = repo.upload_token
         return representation
+
+
+class RepoNewUploadTokenSerializer(serializers.ModelSerializer):
+    upload_token = serializers.UUIDField()
+
+    class Meta:
+        model = Repository
+        fields = ('upload_token',)
+
+    def update(self, instance, validated_data):
+        instance.upload_token = uuid.uuid4()
+        instance.save()
+        return instance
