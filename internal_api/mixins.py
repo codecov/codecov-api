@@ -1,8 +1,12 @@
-from rest_framework.exceptions import NotFound
+import asyncio
+
+from rest_framework.exceptions import NotFound, PermissionDenied
 
 from codecov_auth.models import Owner
 from django.core.exceptions import ObjectDoesNotExist
 from core.models import Repository, Commit, Branch
+from internal_api.repo.repository_accessors import RepoAccessors
+
 
 
 class RepoSlugUrlMixin(object):
@@ -61,9 +65,12 @@ class RepoFilterMixin(RepoSlugUrlMixin):
         queryset = super().filter_queryset(queryset)
         repo = self.get_repo()
 
-        # TODO: Verify the user has permissions by calling Provider (and update db)
-        # 1. handle logic based on if the repo is public or private
-        # 2. handle if it's delayed auth
+        if repo.private:
+            can_view, can_edit = RepoAccessors().get_repo_permissions(self.request.user, repo.name, repo.author.username)
+            if not can_view:
+                raise PermissionDenied(detail="Do not have permissions to view this repo")
+        # TODO:
+        # 1. handle if it's delayed auth
         # 2. check logic on handling activated repos or if enterprise
         # https://github.com/codecov/codecov.io/blob/master/app/handlers/base.py#L648-L753
         return queryset.filter(repository=repo)

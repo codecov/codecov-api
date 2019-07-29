@@ -11,6 +11,7 @@ import internal_api.compare.views
 urlpatterns = [
     path('orgs', internal_api.org.views.OrgsView.as_view()),
     path('<str:orgName>/repos', internal_api.repo.views.RepositoryList.as_view()),
+    path('<str:orgName>/<str:repoName>/details', internal_api.repo.views.RepositoryDetails.as_view()),
     path('<str:orgName>/<str:repoName>/pulls', internal_api.pull.views.RepoPullList.as_view()),
     path('<str:orgName>/<str:repoName>/commits',
          internal_api.commit.views.RepoCommitList.as_view()),

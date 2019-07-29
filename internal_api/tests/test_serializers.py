@@ -22,7 +22,8 @@ class TestSerializers(object):
         mocked.return_value = f.read()
         repo = RepositoryFactory.create(
             author__unencrypted_oauth_token='testqmit3okrgutcoyzscveipor3toi3nsmb927v',
-            author__username='ThiagoCodecov'
+            author__username='ThiagoCodecov',
+            author__service='github'
         )
         parent_commit = CommitFactory.create(
             message='test_report_serializer',

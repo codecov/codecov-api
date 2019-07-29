@@ -27,7 +27,8 @@ class TestFlagSerializers(object):
         mocked.side_effect = lambda x: head_f.read() if x == head_commit_sha else base_f.read()
         repo = RepositoryFactory.create(
             author__unencrypted_oauth_token='testaaft3ituvli790m1yajovjv5eg0r4j0264iw',
-            author__username='ThiagoCodecov'
+            author__username='ThiagoCodecov',
+            author__service='github'
         )
         base_commit = CommitFactory.create(
             message='test_report_serializer',
