@@ -4,8 +4,9 @@ from rest_framework.exceptions import NotFound, PermissionDenied
 
 from codecov_auth.models import Owner
 from django.core.exceptions import ObjectDoesNotExist
-from core.models import Repository
+from core.models import Repository, Commit, Branch
 from internal_api.repo.repository_accessors import RepoAccessors
+
 
 
 class RepoSlugUrlMixin(object):
@@ -18,6 +19,42 @@ class RepoSlugUrlMixin(object):
             return Repository.objects.get(name=repo_name, author=owner)
         except ObjectDoesNotExist:
             raise NotFound(detail="Repository {} for org {} not found ".format(repo_name, org_name))
+
+
+def get_commit(commit_or_branch, repo):
+    """
+    :param commit_or_branch: a 40 character sha or branch name
+    :param repo: core.models.Repository
+    :return: core.models.Commit
+    """
+    # carrying over logic from:
+    # https://github.com/codecov/codecov.io/blob/master/src/sql/main/functions/get_commit.sql#L20-L23
+    if len(commit_or_branch) == 40:
+        try:
+            return Commit.objects.get(repository_id=repo.repoid,commitid=commit_or_branch)
+        except ObjectDoesNotExist:
+            raise NotFound(detail="Corresponding commit not found for: {}".format(commit_or_branch))
+    else:
+        try:
+            branch = Branch.objects.get(repository=repo, name=commit_or_branch)
+            return branch.head
+        except ObjectDoesNotExist:
+            raise NotFound(detail="Corresponding commit not found for: {}".format(commit_or_branch))
+
+
+class CompareSlugMixin(RepoSlugUrlMixin):
+
+    def get_commits(self):
+        base = self.kwargs.get('base')
+        head = self.kwargs.get('head')
+        repo = self.get_repo()
+        try:
+            base = get_commit(base, repo=repo)
+            head = get_commit(head, repo=repo)
+        except ObjectDoesNotExist:
+            raise NotFound(detail="Corresponding commit not found ")
+        return base, head
+
 
 
 class RepoFilterMixin(RepoSlugUrlMixin):

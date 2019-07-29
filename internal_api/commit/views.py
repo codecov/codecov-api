@@ -40,7 +40,7 @@ class RepoCommmitDetail(generics.RetrieveAPIView):
         return obj
 
 
-class RepoCommitFlags(RepoSlugUrlMixin, generics.ListCreateAPIView):
+class RepoCommitFlags(RepoSlugUrlMixin, generics.ListAPIView):
     serializer_class = FlagSerializer
 
     def get_commit(self):
