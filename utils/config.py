@@ -59,8 +59,8 @@ class ConfigHelper(object):
             if len(multiple_level_vars) > 1:
                 current = val
                 for c in multiple_level_vars[:-1]:
-                    current = current.setdefault(c, {})
-                current[multiple_level_vars[-1]] = os.getenv(env_var)
+                    current = current.setdefault(c.lower(), {})
+                current[multiple_level_vars[-1].lower()] = os.getenv(env_var)
         return val
 
     @property
