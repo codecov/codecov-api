@@ -39,5 +39,3 @@ EXPOSE          8000
 COPY            . /app
 
 WORKDIR         /app
-
-ENTRYPOINT      ["./api.sh"]
