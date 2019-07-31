@@ -2,8 +2,8 @@ from rest_framework import serializers
 
 from codecov_auth.models import Owner
 from core.models import Repository
-from internal_api.commit.serializers import ShortParentlessCommitSerializer
 from internal_api.serializers import AuthorSerializer
+from internal_api.commit.serializers import CommitSerializer
 
 
 class RepoSerializer(serializers.ModelSerializer):
@@ -13,9 +13,9 @@ class RepoSerializer(serializers.ModelSerializer):
     private = serializers.BooleanField()
     updatestamp = serializers.DateTimeField()
     author = AuthorSerializer()
-    latest_commit = ShortParentlessCommitSerializer()
     language = serializers.CharField()
     branch = serializers.CharField()
+    latest_commit = CommitSerializer()
 
     class Meta:
         model = Repository

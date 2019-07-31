@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from internal_api.commit.serializers import ShortParentlessCommitSerializer
+from internal_api.commit.serializers import CommitSerializer
 
 
 class FlagComparisonSerializer(serializers.Serializer):
@@ -10,5 +10,5 @@ class FlagComparisonSerializer(serializers.Serializer):
 
 
 class CommitsComparisonSerializer(serializers.Serializer):
-    commit_uploads = ShortParentlessCommitSerializer(many=True)
+    commit_uploads = CommitSerializer(many=True)
     git_commits = serializers.JSONField()

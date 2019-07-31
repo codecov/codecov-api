@@ -1,11 +1,16 @@
+import asyncio
 from pathlib import Path
 from json import loads, dumps
+import json
+from mock import patch
 
-from internal_api.commit.serializers import ParentlessCommitSerializerWithDiff
 from internal_api.serializers import AuthorSerializer
+from internal_api.commit.serializers import CommitSerializer, CommitWithSrcSerializer
 from core.tests.factories import CommitFactory, RepositoryFactory
 from codecov_auth.tests.factories import OwnerFactory
 from archive.services import ArchiveService
+
+from .utils import TestUtils
 
 current_file = Path(__file__)
 
@@ -13,6 +18,54 @@ current_file = Path(__file__)
 class TestSerializers(object):
 
     def test_commit_serializer(self, mocker, db, codecov_vcr):
+        repo = RepositoryFactory.create(
+            author__unencrypted_oauth_token='testqmit3okrgutcoyzscveipor3toi3nsmb927v',
+            author__username='ThiagoCodecov'
+        )
+        parent_commit = CommitFactory.create(
+            message='test_report_serializer',
+            commitid='c5b6730',
+            repository=repo,
+        )
+        commit = CommitFactory.create(
+            message='test_report_serializer',
+            commitid='abf6d4df662c47e32460020ab14abf9303581429',
+            parent_commit_id=parent_commit.commitid,
+            repository=repo,
+        )
+
+        
+        response = CommitSerializer(instance=commit).data
+
+        expected_result = {
+            'ci_passed': True,
+            'author': {
+                'ownerid': commit.author.ownerid,
+                'username': commit.author.username,
+                'email': commit.author.email,
+                'name': commit.author.name,
+            },
+            'message': 'test_report_serializer',
+            'commitid': 'abf6d4df662c47e32460020ab14abf9303581429',
+            'repository': {
+                'repoid': commit.repository.repoid,
+                'name': 'example-python',
+                'updatestamp': commit.repository.updatestamp.isoformat()[:-6] + 'Z'
+            },
+            'branch': 'master',
+            'timestamp': commit.timestamp.isoformat()[:-6] + 'Z',
+            'totals': commit.totals,
+            'report': commit.report
+        }
+
+
+        response = loads(dumps(response))
+        expected_result = loads(dumps(expected_result))
+        assert expected_result == response
+
+    @patch('torngit.github.Github.get_commit_diff', TestUtils.get_mock_coro(json.load(open(current_file.parent / f'samples/get_commit_diff-response.json'))))
+    def test_commit_serializer_with_src(self, mocker, db, codecov_vcr):
+
         mocked = mocker.patch.object(ArchiveService, 'read_chunks')
         f = open(
             current_file.parent.parent.parent / 'archive/tests/samples' / 'chunks.txt',
@@ -20,6 +73,7 @@ class TestSerializers(object):
         )
         mocker.patch.object(ArchiveService, 'create_root_storage')
         mocked.return_value = f.read()
+
         repo = RepositoryFactory.create(
             author__unencrypted_oauth_token='testqmit3okrgutcoyzscveipor3toi3nsmb927v',
             author__username='ThiagoCodecov',
@@ -36,7 +90,9 @@ class TestSerializers(object):
             parent_commit_id=parent_commit.commitid,
             repository=repo,
         )
-        res = ParentlessCommitSerializerWithDiff(instance=commit, context={'user': repo.author}).data
+
+        response = CommitWithSrcSerializer(instance=commit, context={'user': repo.author}).data
+
         expected_result = {
             'ci_passed': True,
             'author': {
@@ -52,8 +108,9 @@ class TestSerializers(object):
                 'name': 'example-python',
                 'updatestamp': commit.repository.updatestamp.isoformat()[:-6] + 'Z'
             },
+            'branch': 'master',
             'timestamp': commit.timestamp.isoformat()[:-6] + 'Z',
-            'updatestamp': commit.updatestamp.isoformat()[:-6] + 'Z',
+            'totals': commit.totals,
             'report': {
                 'files': [
                     ({
@@ -156,27 +213,27 @@ class TestSerializers(object):
             'src': {
                 'files': {
                     'awesome/__init__.py': {
-                        'before': None,
+                        'before': 'None',
                         'segments': [
                             {
                                 'header': ['10', '3', '10', '7'],
                                 'lines': [
-                                    '     if n '
+                                    '     if n ',
                                     '< 2:',
-                                    '         '
+                                    '         ',
                                     'return 1',
-                                    '     '
-                                    'return '
-                                    'fib(n - 2) '
-                                    '+ fib(n - '
+                                    '     ',
+                                    'return ',
+                                    'fib(n - 2) ',
+                                    '+ fib(n - ',
                                     '1)',
                                     '+',
                                     '+',
-                                    '+def '
+                                    '+def ',
                                     'coala(k):',
-                                    '+    '
-                                    'return k * '
-                                    'k'
+                                    '+    ',
+                                    'return k * ',
+                                    'k',
                                 ]
                             }
                         ],
@@ -184,39 +241,39 @@ class TestSerializers(object):
                         'type': 'modified'
                     },
                     'coverage.xml': {
-                        'before': None,
+                        'before': 'None',
                         'segments': [
                             {
                                 'header': ['1', '5', '1', '5'],
                                 'lines': [
-                                    ' <?xml '
+                                    ' <?xml ',
                                     'version="1.0" ?>',
-                                    '-<coverage '
-                                    'branch-rate="0" '
-                                    'branches-covered="0" '
-                                    'branches-valid="0" '
-                                    'complexity="0" '
-                                    'line-rate="0.8889" '
-                                    'lines-covered="16" '
-                                    'lines-valid="18" '
-                                    'timestamp="1547083947227" '
+                                    '-<coverage ',
+                                    'branch-rate="0" ',
+                                    'branches-covered="0" ',
+                                    'branches-valid="0" ',
+                                    'complexity="0" ',
+                                    'line-rate="0.8889" ',
+                                    'lines-covered="16" ',
+                                    'lines-valid="18" ',
+                                    'timestamp="1547083947227" ',
                                     'version="4.5.1">',
-                                    '+<coverage '
-                                    'branch-rate="0" '
-                                    'branches-covered="0" '
-                                    'branches-valid="0" '
-                                    'complexity="0" '
-                                    'line-rate="0.8889" '
-                                    'lines-covered="16" '
-                                    'lines-valid="18" '
-                                    'timestamp="1547084360935" '
+                                    '+<coverage ',
+                                    'branch-rate="0" ',
+                                    'branches-covered="0" ',
+                                    'branches-valid="0" ',
+                                    'complexity="0" ',
+                                    'line-rate="0.8889" ',
+                                    'lines-covered="16" ',
+                                    'lines-valid="18" ',
+                                    'timestamp="1547084360935" ',
                                     'version="4.5.1">',
-                                    ' \t<!-- Generated '
-                                    'by coverage.py: '
-                                    'https://coverage.readthedocs.io '
+                                    ' \t<!-- Generated ',
+                                    'by coverage.py: ',
+                                    'https://coverage.readthedocs.io ',
                                     '-->',
-                                    ' \t<!-- Based on '
-                                    'https://raw.githubusercontent.com/cobertura/web/master/htdocs/xml/coverage-04.dtd '
+                                    ' \t<!-- Based on ',
+                                    'https://raw.githubusercontent.com/cobertura/web/master/htdocs/xml/coverage-04.dtd ',
                                     '-->',
                                     ' \t<sources>'
                                 ]
@@ -229,5 +286,8 @@ class TestSerializers(object):
             },
         }
 
-        assert expected_result == res
+        response = loads(dumps(response))
+        expected_result = loads(dumps(expected_result))
+
+        assert expected_result == response
         mocked.assert_called_with('abf6d4df662c47e32460020ab14abf9303581429')

@@ -21,7 +21,7 @@ class CommitRepoSerializer(serializers.ModelSerializer):
         fields = ('repoid', 'name', 'updatestamp')
 
 
-class ShortParentlessCommitSerializer(serializers.ModelSerializer):
+class CommitSerializer(serializers.ModelSerializer):
     commitid = serializers.CharField()
     message = serializers.CharField()
     timestamp = serializers.DateTimeField()
@@ -30,14 +30,14 @@ class ShortParentlessCommitSerializer(serializers.ModelSerializer):
     repository = CommitRepoSerializer()
     branch = serializers.CharField()
     totals = serializers.JSONField()
+    report = serializers.JSONField()
 
     class Meta:
         model = Commit
-        fields = ('commitid', 'message', 'timestamp', 'ci_passed',
-                  'author', 'repository', 'branch', 'totals')
+        fields = ('commitid', 'message', 'timestamp', 'ci_passed', 'author', 'repository', 'branch', 'totals', 'report')
 
 
-class ParentlessCommitSerializer(ShortParentlessCommitSerializer):
+class CommitWithReportSerializer(CommitSerializer):
     report = serializers.SerializerMethodField()
 
     def get_report(self, obj):
@@ -46,11 +46,10 @@ class ParentlessCommitSerializer(ShortParentlessCommitSerializer):
 
     class Meta:
         model = Commit
-        fields = ('report', 'commitid', 'timestamp', 'updatestamp',
-                  'ci_passed', 'repository', 'author', 'message')
+        fields = ('report', 'commitid', 'timestamp', 'ci_passed', 'repository', 'author', 'message')
 
 
-class ParentlessCommitSerializerWithDiff(ParentlessCommitSerializer):
+class CommitWithSrcSerializer(CommitWithReportSerializer):
     src = serializers.SerializerMethodField()
 
     def get_src(self, obj):
@@ -62,17 +61,15 @@ class ParentlessCommitSerializerWithDiff(ParentlessCommitSerializer):
 
     class Meta:
         model = Commit
-        fields = ('src', 'report', 'commitid', 'timestamp', 'updatestamp',
-                  'ci_passed', 'repository', 'author', 'message')
+        fields = ('src', 'report', 'commitid', 'timestamp', 'ci_passed', 'repository', 'branch', 'author', 'totals', 'message')
 
 
-class CommitSerializer(ParentlessCommitSerializerWithDiff):
-    parent = ParentlessCommitSerializerWithDiff(source='parent_commit')
+class CommitWithParentSerializer(CommitWithSrcSerializer):
+    parent = CommitWithSrcSerializer(source='parent_commit')
 
     class Meta:
         model = Commit
-        fields = ('src', 'commitid', 'timestamp', 'updatestamp',
-                  'ci_passed', 'report', 'repository', 'parent', 'author')
+        fields = ('src', 'commitid', 'timestamp', 'ci_passed', 'report', 'repository', 'parent', 'author')
 
 
 class ReportFileSerializer(serializers.Serializer):

@@ -1,0 +1,90 @@
+{
+    "files": {
+        "awesome/__init__.py": {
+            "before": "None",
+            "segments": [
+                {
+                    "header": [
+                        "10",
+                        "3",
+                        "10",
+                        "7"
+                    ],
+                    "lines": [
+                        "     if n ",
+                        "< 2:",
+                        "         ",
+                        "return 1",
+                        "     ",
+                        "return ",
+                        "fib(n - 2) ",
+                        "+ fib(n - ",
+                        "1)",
+                        "+",
+                        "+",
+                        "+def ",
+                        "coala(k):",
+                        "+    ",
+                        "return k * ",
+                        "k"
+                    ]
+                }
+            ],
+            "stats": {
+                "added": 4,
+                "removed": 0
+            },
+            "type": "modified"
+        },
+        "coverage.xml": {
+            "before": "None",
+            "segments": [
+                {
+                    "header": [
+                        "1",
+                        "5",
+                        "1",
+                        "5"
+                    ],
+                    "lines": [
+                        " <?xml ",
+                        "version=\"1.0\" ?>",
+                        "-<coverage ",
+                        "branch-rate=\"0\" ",
+                        "branches-covered=\"0\" ",
+                        "branches-valid=\"0\" ",
+                        "complexity=\"0\" ",
+                        "line-rate=\"0.8889\" ",
+                        "lines-covered=\"16\" ",
+                        "lines-valid=\"18\" ",
+                        "timestamp=\"1547083947227\" ",
+                        "version=\"4.5.1\">",
+                        "+<coverage ",
+                        "branch-rate=\"0\" ",
+                        "branches-covered=\"0\" ",
+                        "branches-valid=\"0\" ",
+                        "complexity=\"0\" ",
+                        "line-rate=\"0.8889\" ",
+                        "lines-covered=\"16\" ",
+                        "lines-valid=\"18\" ",
+                        "timestamp=\"1547084360935\" ",
+                        "version=\"4.5.1\">",
+                        " \t<!-- Generated ",
+                        "by coverage.py: ",
+                        "https://coverage.readthedocs.io ",
+                        "-->",
+                        " \t<!-- Based on ",
+                        "https://raw.githubusercontent.com/cobertura/web/master/htdocs/xml/coverage-04.dtd ",
+                        "-->",
+                        " \t<sources>"
+                    ]
+                }
+            ],
+            "stats": {
+                "added": 1,
+                "removed": 1
+            },
+            "type": "modified"
+        }
+    }
+}
