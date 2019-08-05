@@ -20,7 +20,9 @@ default_config = {
             'verify_ssl': False,
             'hash_key': None,
             'bucket': 'archive',
-            'region': 'us-east-1'
+            'region': 'us-east-1',
+            'host': 'minio',
+            'port': 9000
         },
         'database_url': 'postgres://postgres:@postgres:5432/postgres'
     },
