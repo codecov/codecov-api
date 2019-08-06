@@ -8,7 +8,7 @@ from rest_framework.exceptions import PermissionDenied
 from codecov_auth.models import Owner
 from core.models import Repository, Commit
 from internal_api.repo.repository_accessors import RepoAccessors
-from .serializers import RepoSerializer, RepoDetailsSerializer
+from .serializers import RepoSerializer, RepoDetailsSerializer, RepoNewUploadTokenSerializer
 
 
 class RepositoryFilter(django_filters.FilterSet):
@@ -56,10 +56,22 @@ class RepositoryDetails(generics.RetrieveAPIView):
         repo = self.get_object()
         can_view, can_edit = RepoAccessors().get_repo_permissions(self.request.user, repo.name, repo.author.username)
         if repo.private and not can_view:
-            raise PermissionDenied(detail="Do not have permissions to view this repo")
+            raise PermissionDenied(detail="You do not have permissions to view this repo")
         has_uploads = Commit.objects.filter(repository=repo).exists()
         context['can_view'] = can_view
         context['can_edit'] = can_edit
         context['has_uploads'] = has_uploads
         return context
 
+
+class RepositoryRegenerateUploadToken(generics.RetrieveUpdateAPIView):
+    serializer_class = RepoNewUploadTokenSerializer
+
+    def get_object(self):
+        repo_name = self.kwargs.get('repoName')
+        org_name = self.kwargs.get('orgName')
+        repo = RepoAccessors().get_repo_details(self.request.user, repo_name, org_name)
+        can_view, can_edit = RepoAccessors().get_repo_permissions(self.request.user, repo.name, repo.author.username)
+        if not can_edit:
+            raise PermissionDenied(detail="You do not have permissions to edit this repo")
+        return repo
