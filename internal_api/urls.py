@@ -14,6 +14,7 @@ urlpatterns = [
     path('<str:orgName>/<str:repoName>/details', internal_api.repo.views.RepositoryDetails.as_view()),
     path('<str:orgName>/<str:repoName>/regenerate-upload-token', internal_api.repo.views.RepositoryRegenerateUploadToken.as_view()),
     path('<str:orgName>/<str:repoName>/pulls', internal_api.pull.views.RepoPullList.as_view()),
+    path('<str:orgName>/<str:repoName>/pulls/<str:pullid>/flags', internal_api.pull.views.RepoPullFlagsList.as_view()),
     path('<str:orgName>/<str:repoName>/commits',
          internal_api.commit.views.RepoCommitList.as_view()),
     path('<str:orgName>/<str:repoName>/commits/<str:commitid>/flags',

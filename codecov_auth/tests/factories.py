@@ -21,7 +21,7 @@ class OwnerFactory(DjangoModelFactory):
     free = 0
     unencrypted_oauth_token = factory.LazyFunction(lambda: uuid4().hex)
     cache = { "stats": { "repos": 1, "members": 2 }}
-    oauth_token = factory.LazyAttribute(lambda o: encryptor.encode(o.unencrypted_oauth_token))
+    oauth_token = factory.LazyAttribute(lambda o: encryptor.encode(o.unencrypted_oauth_token).decode())
 
 
 class SessionFactory(DjangoModelFactory):

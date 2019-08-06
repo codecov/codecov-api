@@ -48,6 +48,7 @@ class TestFlagSerializers(object):
         flag_comparison = comparison.flag_comparison('flagtwo')
         res = FlagComparisonSerializer(instance=flag_comparison, context={'user': repo.author}).data
         expected_result = {
+            'name': 'flagtwo',
             'base_report_totals': {
                 'branches': 0,
                 'complexity': 0,
@@ -104,6 +105,7 @@ class TestFlagSerializers(object):
         second_flag_comparison = comparison.flag_comparison('flagone')
         second_res = FlagComparisonSerializer(instance=second_flag_comparison, context={'user': repo.author}).data
         second_expected_result = {
+            'name': 'flagone',
             'base_report_totals': {
                 'branches': 0,
                 'complexity': 0,
