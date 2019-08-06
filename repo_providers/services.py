@@ -4,11 +4,13 @@ from codecov_auth.models import Owner
 from core.models import Repository
 from utils.encryption import encryptor
 
+
 class TorngitInitializationFailed(Exception):
     """
         Exception when initializing the torngit provider object.
     """
     pass
+
 
 class RepoProviderService(object):
     def get_adapter(self, owner: Owner, repo: Repository):
@@ -45,13 +47,13 @@ class RepoProviderService(object):
             adapter_params
         )
 
-    @staticmethod
-    def _get_provider(service, adapter_params):
-        provider =  get(
+    @classmethod
+    def _get_provider(cls, service, adapter_params):
+        provider = get(
             service,
             **adapter_params
         )
         if provider:
             return provider
         else:
-            raise TorngitInitializationFailed
+            raise TorngitInitializationFailed()

@@ -198,7 +198,8 @@ class TestFlagsView(object):
         mocked.side_effect = lambda x: head_f.read() if x == head_commit_sha else base_f.read()
         repo = RepositoryFactory.create(
             author__unencrypted_oauth_token='testaaft3ituvli790m1yajovjv5eg0r4j0264iw',
-            author__username='ThiagoCodecov'
+            author__username='ThiagoCodecov',
+            author__service='github'
         )
         parent_commit = CommitFactory.create(
             message='test_report_serializer',
@@ -335,3 +336,32 @@ class TestFlagsView(object):
         mocked.assert_any_call(
             base_commit_sha
         )
+
+    @override_settings(DEBUG=True)
+    def test_pull_request_flags_view_not_found(self, mocker, db, client, codecov_vcr):
+        head_commit_sha = '68946ef98daec68c7798459150982fc799c87d85'
+        base_commit_sha = '00c7b4b49778b3c79427f9c4c13a8612a376ff19'
+        mocked = mocker.patch.object(ArchiveService, 'read_chunks')
+        head_f = open(
+            current_file.parent.parent / f'samples/{head_commit_sha}_chunks.txt',
+            'r'
+        )
+        base_f = open(
+            current_file.parent.parent / f'samples/{base_commit_sha}_chunks.txt',
+            'r'
+        )
+        mocker.patch.object(ArchiveService, 'create_root_storage')
+        mocked.side_effect = lambda x: head_f.read() if x == head_commit_sha else base_f.read()
+        repo = RepositoryFactory.create(
+            author__unencrypted_oauth_token='testaaft3ituvli790m1yajovjv5eg0r4j0264iw',
+            author__username='ThiagoCodecov',
+            author__service='github'
+        )
+        client.force_login(user=repo.author)
+        url = f'/internal/{repo.author.username}/{repo.name}/pulls/123498765/flags'
+        response = client.get(url)
+        assert response.status_code == 404
+        content = json.loads(response.content.decode())
+        expected_result = {'detail': 'Not found.'}
+        assert content == expected_result
+        mocked.assert_not_called()
