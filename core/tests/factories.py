@@ -15,6 +15,7 @@ class RepositoryFactory(DjangoModelFactory):
 
     private = True
     name = 'example-python'
+    branch = 'master'
     author = factory.SubFactory(OwnerFactory)
     language = factory.Faker('word')
     fork = None

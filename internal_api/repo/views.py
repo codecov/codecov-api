@@ -1,10 +1,9 @@
 import asyncio
 
-from rest_framework import generics
-from rest_framework import filters
+from rest_framework import generics, filters, mixins
 from django_filters import rest_framework as django_filters, BooleanFilter
 from rest_framework.exceptions import PermissionDenied
-
+from internal_api.mixins import FilterByRepoMixin, RepoSlugUrlMixin
 from codecov_auth.models import Owner
 from core.models import Repository, Commit
 from internal_api.repo.repository_accessors import RepoAccessors
@@ -74,4 +73,17 @@ class RepositoryRegenerateUploadToken(generics.RetrieveUpdateAPIView):
         can_view, can_edit = RepoAccessors().get_repo_permissions(self.request.user, repo.name, repo.author.username)
         if not can_edit:
             raise PermissionDenied(detail="You do not have permissions to edit this repo")
+        return repo
+
+
+class RepositoryDefaultBranch(generics.RetrieveUpdateAPIView):
+    serializer_class = RepoSerializer
+
+    def get_object(self):
+        repo_name = self.kwargs.get('repoName')
+        org_name = self.kwargs.get('orgName')
+        repo = RepoAccessors().get_repo_details(self.request.user, repo_name, org_name)
+        can_view, can_edit = RepoAccessors().get_repo_permissions(self.request.user, repo.name, repo.author.username)
+        if not can_edit:
+            raise PermissionDenied(detail="Do not have permissions to edit this repo")
         return repo

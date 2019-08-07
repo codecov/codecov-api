@@ -29,7 +29,7 @@ class RepoAccessors(object):
             repo = Repository.objects.get(name=repo_name, author=owner)
         except ObjectDoesNotExist:
             print("Not found locally - let's check with the provider... ")
-            repo = fetch_repo(user, repo_name, org_name)
+            repo = self.fetch_repo(user, repo_name, org_name)
             # raise NotFound(detail="Repository {} for org {} not found ".format(repo_name, org_name))
         return repo
 

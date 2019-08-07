@@ -12,18 +12,23 @@ class RepoSerializer(serializers.ModelSerializer):
     repoid = serializers.IntegerField()
     service_id = serializers.CharField()
     name = serializers.CharField()
+    branch = serializers.CharField()
     private = serializers.BooleanField()
     updatestamp = serializers.DateTimeField()
     author = AuthorSerializer()
     language = serializers.CharField()
-    branch = serializers.CharField()
     latest_commit = CommitSerializer()
 
     class Meta:
         model = Repository
-        fields = ('repoid', 'service_id', 'name',
+        fields = ('repoid', 'service_id', 'name', 'branch',
                   'private', 'updatestamp', 'author', 'active',
-                  'latest_commit', 'language', 'branch', 'fork')
+                  'latest_commit', 'language', 'fork')
+
+    def update(self, instance, validated_data):
+        instance.branch = validated_data.get('branch', instance.branch)
+        instance.save()
+        return instance
 
 
 class RepoDetailsSerializer(RepoSerializer):

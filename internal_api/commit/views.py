@@ -3,12 +3,12 @@ from rest_framework import generics
 from django.shortcuts import Http404
 
 from archive.services import ReportService
-from internal_api.mixins import RepoFilterMixin, RepoSlugUrlMixin
+from internal_api.mixins import FilterByRepoMixin, RepoSlugUrlMixin
 from core.models import Commit
 from .serializers import CommitWithParentSerializer, CommitSerializer, FlagSerializer
 
 
-class RepoCommitList(RepoFilterMixin, generics.ListAPIView):
+class RepoCommitList(FilterByRepoMixin, generics.ListAPIView):
     queryset = Commit.objects.all()
     serializer_class = CommitSerializer
 

@@ -57,11 +57,11 @@ class CompareSlugMixin(RepoSlugUrlMixin):
 
 
 
-class RepoFilterMixin(RepoSlugUrlMixin):
+class FilterByRepoMixin(RepoSlugUrlMixin):
     """ Repository filter for commits/branches/pulls that uses the args:
         orgName, repoName, and permissions of the authenticated user """
 
-    def filter_queryset(self, queryset):
+    def filter_queryset(self, queryset, lookup_field = 'repository'):
         queryset = super().filter_queryset(queryset)
         repo = self.get_repo()
 
@@ -73,4 +73,4 @@ class RepoFilterMixin(RepoSlugUrlMixin):
         # 1. handle if it's delayed auth
         # 2. check logic on handling activated repos or if enterprise
         # https://github.com/codecov/codecov.io/blob/master/app/handlers/base.py#L648-L753
-        return queryset.filter(repository=repo)
+        return queryset.filter(**{ lookup_field: repo })

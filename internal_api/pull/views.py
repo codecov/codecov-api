@@ -4,14 +4,14 @@ from rest_framework import generics, filters
 from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import Http404
 
-from internal_api.mixins import RepoFilterMixin, RepoSlugUrlMixin
+from internal_api.mixins import FilterByRepoMixin, RepoSlugUrlMixin
 from internal_api.compare.serializers import FlagComparisonSerializer
 from compare.services import get_comparison_from_pull_request
 from core.models import Pull
 from .serializers import PullSerializer
 
 
-class RepoPullList(RepoFilterMixin, generics.ListAPIView):
+class RepoPullList(FilterByRepoMixin, generics.ListAPIView):
     queryset = Pull.objects.all()
     serializer_class = PullSerializer
     filter_backends = (DjangoFilterBackend, filters.OrderingFilter)
