@@ -100,21 +100,6 @@ class ReportWithoutLinesSerializer(serializers.Serializer):
     files = ReportFileWithoutLinesSerializer(source='file_reports', many=True)
 
 
-class ComparisonLineCoverageSerializer(serializers.Serializer):
-    base = ReportSerializer()
-    head = ReportSerializer()
-
-
-class ComparisonFilesSerializer(serializers.Serializer):
-    base = ReportWithoutLinesSerializer()
-    head = ReportWithoutLinesSerializer()
-
-
-class ComparisonSerializer(serializers.Serializer):
-    # TODO: build
-    pass
-
-
 class FlagSerializer(serializers.Serializer):
     report = ReportSerializer()
     name = serializers.CharField()
