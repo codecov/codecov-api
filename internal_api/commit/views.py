@@ -5,7 +5,7 @@ from django.shortcuts import Http404
 from archive.services import ReportService
 from internal_api.mixins import FilterByRepoMixin, RepoSlugUrlMixin
 from core.models import Commit
-from .serializers import CommitWithParentSerializer, CommitSerializer, FlagSerializer
+from .serializers import CommitWithParentSerializer, FlagSerializer, CommitSerializer
 
 
 class RepoCommitList(FilterByRepoMixin, generics.ListAPIView):

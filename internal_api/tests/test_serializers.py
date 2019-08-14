@@ -55,7 +55,6 @@ class TestSerializers(object):
             'branch': 'master',
             'timestamp': commit.timestamp.isoformat()[:-6] + 'Z',
             'totals': commit.totals,
-            'report': commit.report
         }
 
 

@@ -5,7 +5,7 @@ from rest_framework import serializers
 from codecov_auth.models import Owner
 from core.models import Repository
 from internal_api.serializers import AuthorSerializer
-from internal_api.commit.serializers import CommitSerializer
+from internal_api.commit.serializers import CommitSerializer, CommitWithFileLevelReportSerializer
 
 
 class RepoSerializer(serializers.ModelSerializer):
@@ -33,6 +33,7 @@ class RepoSerializer(serializers.ModelSerializer):
 
 class RepoDetailsSerializer(RepoSerializer):
     fork = RepoSerializer()
+    latest_commit = CommitWithFileLevelReportSerializer()
 
     def to_representation(self, repo):
         representation = super().to_representation(repo)
