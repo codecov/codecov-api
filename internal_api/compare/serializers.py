@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from internal_api.commit.serializers import CommitSerializer
+from internal_api.commit.serializers import CommitSerializer, ReportSerializer, ReportWithoutLinesSerializer
 
 
 class FlagComparisonSerializer(serializers.Serializer):
@@ -11,5 +11,21 @@ class FlagComparisonSerializer(serializers.Serializer):
 
 
 class CommitsComparisonSerializer(serializers.Serializer):
-    commit_uploads = CommitSerializer(many=True)
+    commit_uploads = CommitSerializer(many=True, source='upload_commits')
     git_commits = serializers.JSONField()
+
+
+class ComparisonLineCoverageSerializer(serializers.Serializer):
+    base = ReportSerializer()
+    head = ReportSerializer()
+
+
+class ComparisonFilesSerializer(serializers.Serializer):
+    base = ReportWithoutLinesSerializer()
+    head = ReportWithoutLinesSerializer()
+
+
+class ComparisonFullSrcSerializer(serializers.Serializer):
+    base = ReportSerializer(source='base_report')
+    head = ReportSerializer(source='head_report')
+    src_diff = serializers.JSONField(source='git_comparison.diff')
