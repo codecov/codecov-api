@@ -30,11 +30,10 @@ class CommitSerializer(serializers.ModelSerializer):
     repository = CommitRepoSerializer()
     branch = serializers.CharField()
     totals = serializers.JSONField()
-    report = serializers.JSONField()
 
     class Meta:
         model = Commit
-        fields = ('commitid', 'message', 'timestamp', 'ci_passed', 'author', 'repository', 'branch', 'totals', 'report')
+        fields = ('commitid', 'message', 'timestamp', 'ci_passed', 'author', 'repository', 'branch', 'totals')
 
 
 class CommitWithReportSerializer(CommitSerializer):
@@ -43,6 +42,18 @@ class CommitWithReportSerializer(CommitSerializer):
     def get_report(self, obj):
         report = ReportService().build_report_from_commit(obj)
         return ReportSerializer(instance=report).data
+
+    class Meta:
+        model = Commit
+        fields = ('report', 'commitid', 'timestamp', 'ci_passed', 'repository', 'author', 'message')
+
+
+class CommitWithFileLevelReportSerializer(CommitSerializer):
+    report = serializers.SerializerMethodField()
+
+    def get_report(self, obj):
+        report = ReportService().build_report_from_commit(obj)
+        return ReportWithoutLinesSerializer(instance=report).data
 
     class Meta:
         model = Commit

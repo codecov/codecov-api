@@ -1,13 +1,18 @@
 from unittest.mock import patch
 import json
 
+from covreports.utils.tuples import ReportTotals
+from django.test import override_settings
+
 from codecov.tests.base_test import InternalAPITest
 from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import RepositoryFactory
+from core.tests.factories import RepositoryFactory, CommitFactory
+from internal_api.repo.repository_accessors import RepoAccessors
+from internal_api.tests.unit.views.test_compare_view import build_mocked_report_archive
 
 
 @patch("internal_api.repo.repository_accessors.RepoAccessors.get_repo_permissions")
-class RepoViewTest(InternalAPITest):
+class TestRepoView(InternalAPITest):
     def setUp(self):
         org = OwnerFactory(username='codecov', service='github')
 
@@ -114,3 +119,28 @@ class RepoViewTest(InternalAPITest):
         self.assertEqual(response.status_code, 403)
         content = self.json_content(response)
         assert 'branch' not in content
+
+
+class TestRepoDetailsView(object):
+
+    @override_settings(DEBUG=True)
+    def test_repo_details_with_latest_commit_files(self, mocker, db, client, codecov_vcr):
+        mock_repo_accessor = mocker.patch.object(RepoAccessors, 'get_repo_permissions')
+        mock_repo_accessor.return_value = True, True
+        user = OwnerFactory(username='codecov', service='github')
+        client.force_login(user=user)
+        repo = RepositoryFactory(author=user, active=True, private=True, name='repo1')
+        commit = CommitFactory.create(
+            message='test_commits_base',
+            commitid='9193232a8fe3429496956ba82b5fed2583d1b5eb',
+            repository=repo,
+        )
+        expected_report_result = build_mocked_report_archive(mocker)
+
+        response = client.get('/internal/codecov/repo1/details')
+        content = json.loads(response.content.decode())
+        print(content)
+        assert content['can_edit']
+        assert content['latest_commit']
+        assert content['latest_commit']['commitid'] == commit.commitid
+        assert content['latest_commit']['report']['totals'] == expected_report_result['totals']
