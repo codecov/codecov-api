@@ -29,3 +29,7 @@ class ComparisonFullSrcSerializer(serializers.Serializer):
     base = ReportSerializer(source='base_report')
     head = ReportSerializer(source='head_report')
     src_diff = serializers.JSONField(source='git_comparison.diff')
+
+
+class SingleFileSourceSerializer(serializers.Serializer):
+    src = serializers.JSONField(source='sources')
