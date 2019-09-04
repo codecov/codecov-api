@@ -1,0 +1,284 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Host: ['minio:9000']
+      User-Agent: [Minio (Linux; x86_64) minio-py/4.0.8]
+      X-Amz-Content-Sha256: [e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855]
+      X-Amz-Date: [20190905T001803Z]
+    method: PUT
+    uri: http://minio:9000/archive/
+  response:
+    body: {string: '<?xml version="1.0" encoding="UTF-8"?>
+
+        <Error><Code>BucketAlreadyOwnedByYou</Code><Message>Your previous request
+        to create the named bucket succeeded and you already own it.</Message><Resource>/archive/</Resource><RequestId>15C162B704D10487</RequestId><HostId>3L137</HostId></Error>'}
+    headers:
+      Accept-Ranges: [bytes]
+      Content-Security-Policy: [block-all-mixed-content]
+      Content-Type: [application/xml]
+      Date: ['Thu, 05 Sep 2019 00:18:03 GMT']
+      Server: [Minio/RELEASE.2018-08-02T23-11-36Z (linux; amd64)]
+      Transfer-Encoding: [chunked]
+      Vary: [Origin]
+      X-Amz-Request-Id: [15C162B704D10487]
+      X-Xss-Protection: [1; mode=block]
+    status: {code: 409, message: Conflict}
+- request:
+    body: null
+    headers:
+      Host: ['minio:9000']
+      X-Amz-Content-Sha256: [e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855]
+      X-Amz-Date: [20190905T001803Z]
+    method: GET
+    uri: http://minio:9000/archive?location=
+  response:
+    body: {string: '<?xml version="1.0" encoding="UTF-8"?>
+
+        <LocationConstraint xmlns="http://s3.amazonaws.com/doc/2006-03-01/"></LocationConstraint>'}
+    headers:
+      Accept-Ranges: [bytes]
+      Content-Security-Policy: [block-all-mixed-content]
+      Content-Type: [application/xml]
+      Date: ['Thu, 05 Sep 2019 00:18:03 GMT']
+      Server: [Minio/RELEASE.2018-08-02T23-11-36Z (linux; amd64)]
+      Transfer-Encoding: [chunked]
+      Vary: [Origin]
+      X-Amz-Request-Id: [15C162B70554C1E3]
+      X-Xss-Protection: [1; mode=block]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      host: ['minio:9000']
+      user-agent: [Minio (Linux; x86_64) minio-py/4.0.8]
+      x-amz-content-sha256: [e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855]
+      x-amz-date: [20190905T001803Z]
+    method: GET
+    uri: http://minio:9000/archive/v4/repos/4A3A4B0C7B00EAEA3F77AA7EB90BE4AB/commits/f64b22e6af4bbe3917ac4a7c346feb03493c2b67/chunks.txt
+  response:
+    body:
+      string: !!binary |
+        H4sIAL1NcF0C/6uu5Yo21FHIK83J0VGIjjbQUTCMjY3FKkZ9hTYgoJCalxKfnxafnFGal61gBwJc
+        1SS4apDaRorKQeBZog0mXrMBipjBwCchGA9BxgKlDLHLYHMEqQZQ7ACuYeAHih2Alo5w6jfAqh8A
+        cgvCLOEEAAA=
+    headers:
+      Accept-Ranges: [bytes]
+      Content-Encoding: [gzip]
+      Content-Length: ['122']
+      Content-Security-Policy: [block-all-mixed-content]
+      Content-Type: [text/plain]
+      Date: ['Thu, 05 Sep 2019 00:18:03 GMT']
+      Etag: ['"180b2a6bec0d780532c1325abb194d2b"']
+      Expires: ['1567641031']
+      Last-Modified: ['Wed, 04 Sep 2019 23:50:21 GMT']
+      Server: [Minio/RELEASE.2018-08-02T23-11-36Z (linux; amd64)]
+      Vary: [Origin]
+      X-Amz-Request-Id: [15C162B7059F0616]
+      X-Xss-Protection: [1; mode=block]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Host: ['minio:9000']
+      User-Agent: [Minio (Linux; x86_64) minio-py/4.0.8]
+      X-Amz-Content-Sha256: [e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855]
+      X-Amz-Date: [20190905T001803Z]
+    method: PUT
+    uri: http://minio:9000/archive/
+  response:
+    body: {string: '<?xml version="1.0" encoding="UTF-8"?>
+
+        <Error><Code>BucketAlreadyOwnedByYou</Code><Message>Your previous request
+        to create the named bucket succeeded and you already own it.</Message><Resource>/archive/</Resource><RequestId>15C162B70687A2B6</RequestId><HostId>3L137</HostId></Error>'}
+    headers:
+      Accept-Ranges: [bytes]
+      Content-Security-Policy: [block-all-mixed-content]
+      Content-Type: [application/xml]
+      Date: ['Thu, 05 Sep 2019 00:18:03 GMT']
+      Server: [Minio/RELEASE.2018-08-02T23-11-36Z (linux; amd64)]
+      Transfer-Encoding: [chunked]
+      Vary: [Origin]
+      X-Amz-Request-Id: [15C162B70687A2B6]
+      X-Xss-Protection: [1; mode=block]
+    status: {code: 409, message: Conflict}
+- request:
+    body: null
+    headers:
+      Host: ['minio:9000']
+      X-Amz-Content-Sha256: [e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855]
+      X-Amz-Date: [20190905T001803Z]
+    method: GET
+    uri: http://minio:9000/archive?location=
+  response:
+    body: {string: '<?xml version="1.0" encoding="UTF-8"?>
+
+        <LocationConstraint xmlns="http://s3.amazonaws.com/doc/2006-03-01/"></LocationConstraint>'}
+    headers:
+      Accept-Ranges: [bytes]
+      Content-Security-Policy: [block-all-mixed-content]
+      Content-Type: [application/xml]
+      Date: ['Thu, 05 Sep 2019 00:18:03 GMT']
+      Server: [Minio/RELEASE.2018-08-02T23-11-36Z (linux; amd64)]
+      Transfer-Encoding: [chunked]
+      Vary: [Origin]
+      X-Amz-Request-Id: [15C162B706FC72D1]
+      X-Xss-Protection: [1; mode=block]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      host: ['minio:9000']
+      user-agent: [Minio (Linux; x86_64) minio-py/4.0.8]
+      x-amz-content-sha256: [e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855]
+      x-amz-date: [20190905T001803Z]
+    method: GET
+    uri: http://minio:9000/archive/v4/repos/4A3A4B0C7B00EAEA3F77AA7EB90BE4AB/commits/791886122b02a2e52e5dd09e8be5f92e09e83f0b/chunks.txt
+  response:
+    body:
+      string: !!binary |
+        H4sIAJtNcF0C/6uu5Yo21FHIK83J0VGIjjbQUTCMjY3FKsZFC5UDabkNCCik5qXE56fFJ2eU5mUr
+        2IEAV3UtDTxAK1cRbTB9nE8Tf8J4CDIWKGWEXQabI0g1gGIHcA0CPxig6DfAqd8Aq34AlB3chhoE
+        AAA=
+    headers:
+      Accept-Ranges: [bytes]
+      Content-Encoding: [gzip]
+      Content-Length: ['116']
+      Content-Security-Policy: [block-all-mixed-content]
+      Content-Type: [text/plain]
+      Date: ['Thu, 05 Sep 2019 00:18:03 GMT']
+      Etag: ['"bfff7fc195a10dac78557114a7938e8b"']
+      Expires: ['1567640997']
+      Last-Modified: ['Wed, 04 Sep 2019 23:49:47 GMT']
+      Server: [Minio/RELEASE.2018-08-02T23-11-36Z (linux; amd64)]
+      Vary: [Origin]
+      X-Amz-Request-Id: [15C162B707483511]
+      X-Xss-Protection: [1; mode=block]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: [application/json]
+      User-Agent: [Default]
+    method: GET
+    uri: https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/compare/791886122b02a2e52e5dd09e8be5f92e09e83f0b...f64b22e6af4bbe3917ac4a7c346feb03493c2b67
+  response:
+    body: {string: '{"url":"https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/compare/791886122b02a2e52e5dd09e8be5f92e09e83f0b...f64b22e6af4bbe3917ac4a7c346feb03493c2b67","html_url":"https://github.com/eyoel-cov/codecov-assume-flag-test/compare/791886122b02a2e52e5dd09e8be5f92e09e83f0b...f64b22e6af4bbe3917ac4a7c346feb03493c2b67","permalink_url":"https://github.com/eyoel-cov/codecov-assume-flag-test/compare/eyoel-cov:7918861...eyoel-cov:f64b22e","diff_url":"https://github.com/eyoel-cov/codecov-assume-flag-test/compare/791886122b02a2e52e5dd09e8be5f92e09e83f0b...f64b22e6af4bbe3917ac4a7c346feb03493c2b67.diff","patch_url":"https://github.com/eyoel-cov/codecov-assume-flag-test/compare/791886122b02a2e52e5dd09e8be5f92e09e83f0b...f64b22e6af4bbe3917ac4a7c346feb03493c2b67.patch","base_commit":{"sha":"791886122b02a2e52e5dd09e8be5f92e09e83f0b","node_id":"MDY6Q29tbWl0MTkxMjUxNjE2Ojc5MTg4NjEyMmIwMmEyZTUyZTVkZDA5ZThiZTVmOTJlMDllODNmMGI=","commit":{"author":{"name":"Eli
+        Hooten","email":"elir.hooten@gmail.com","date":"2019-05-28T12:12:04Z"},"committer":{"name":"Eli
+        Hooten","email":"elir.hooten@gmail.com","date":"2019-05-28T12:12:04Z"},"message":"More
+        Azure Fixes","tree":{"sha":"344335c51781e11ec8421c3974bf4aceecc0fe74","url":"https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/git/trees/344335c51781e11ec8421c3974bf4aceecc0fe74"},"url":"https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/git/commits/791886122b02a2e52e5dd09e8be5f92e09e83f0b","comment_count":0,"verification":{"verified":false,"reason":"unsigned","signature":null,"payload":null}},"url":"https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/commits/791886122b02a2e52e5dd09e8be5f92e09e83f0b","html_url":"https://github.com/eyoel-cov/codecov-assume-flag-test/commit/791886122b02a2e52e5dd09e8be5f92e09e83f0b","comments_url":"https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/commits/791886122b02a2e52e5dd09e8be5f92e09e83f0b/comments","author":{"login":"hootener","id":1566985,"node_id":"MDQ6VXNlcjE1NjY5ODU=","avatar_url":"https://avatars0.githubusercontent.com/u/1566985?v=4","gravatar_id":"","url":"https://api.github.com/users/hootener","html_url":"https://github.com/hootener","followers_url":"https://api.github.com/users/hootener/followers","following_url":"https://api.github.com/users/hootener/following{/other_user}","gists_url":"https://api.github.com/users/hootener/gists{/gist_id}","starred_url":"https://api.github.com/users/hootener/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/hootener/subscriptions","organizations_url":"https://api.github.com/users/hootener/orgs","repos_url":"https://api.github.com/users/hootener/repos","events_url":"https://api.github.com/users/hootener/events{/privacy}","received_events_url":"https://api.github.com/users/hootener/received_events","type":"User","site_admin":false},"committer":{"login":"hootener","id":1566985,"node_id":"MDQ6VXNlcjE1NjY5ODU=","avatar_url":"https://avatars0.githubusercontent.com/u/1566985?v=4","gravatar_id":"","url":"https://api.github.com/users/hootener","html_url":"https://github.com/hootener","followers_url":"https://api.github.com/users/hootener/followers","following_url":"https://api.github.com/users/hootener/following{/other_user}","gists_url":"https://api.github.com/users/hootener/gists{/gist_id}","starred_url":"https://api.github.com/users/hootener/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/hootener/subscriptions","organizations_url":"https://api.github.com/users/hootener/orgs","repos_url":"https://api.github.com/users/hootener/repos","events_url":"https://api.github.com/users/hootener/events{/privacy}","received_events_url":"https://api.github.com/users/hootener/received_events","type":"User","site_admin":false},"parents":[{"sha":"7bc5fa7bc1f9fcb631a803d6c4b714f0c582b496","url":"https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/commits/7bc5fa7bc1f9fcb631a803d6c4b714f0c582b496","html_url":"https://github.com/eyoel-cov/codecov-assume-flag-test/commit/7bc5fa7bc1f9fcb631a803d6c4b714f0c582b496"}]},"merge_base_commit":{"sha":"791886122b02a2e52e5dd09e8be5f92e09e83f0b","node_id":"MDY6Q29tbWl0MTkxMjUxNjE2Ojc5MTg4NjEyMmIwMmEyZTUyZTVkZDA5ZThiZTVmOTJlMDllODNmMGI=","commit":{"author":{"name":"Eli
+        Hooten","email":"elir.hooten@gmail.com","date":"2019-05-28T12:12:04Z"},"committer":{"name":"Eli
+        Hooten","email":"elir.hooten@gmail.com","date":"2019-05-28T12:12:04Z"},"message":"More
+        Azure Fixes","tree":{"sha":"344335c51781e11ec8421c3974bf4aceecc0fe74","url":"https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/git/trees/344335c51781e11ec8421c3974bf4aceecc0fe74"},"url":"https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/git/commits/791886122b02a2e52e5dd09e8be5f92e09e83f0b","comment_count":0,"verification":{"verified":false,"reason":"unsigned","signature":null,"payload":null}},"url":"https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/commits/791886122b02a2e52e5dd09e8be5f92e09e83f0b","html_url":"https://github.com/eyoel-cov/codecov-assume-flag-test/commit/791886122b02a2e52e5dd09e8be5f92e09e83f0b","comments_url":"https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/commits/791886122b02a2e52e5dd09e8be5f92e09e83f0b/comments","author":{"login":"hootener","id":1566985,"node_id":"MDQ6VXNlcjE1NjY5ODU=","avatar_url":"https://avatars0.githubusercontent.com/u/1566985?v=4","gravatar_id":"","url":"https://api.github.com/users/hootener","html_url":"https://github.com/hootener","followers_url":"https://api.github.com/users/hootener/followers","following_url":"https://api.github.com/users/hootener/following{/other_user}","gists_url":"https://api.github.com/users/hootener/gists{/gist_id}","starred_url":"https://api.github.com/users/hootener/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/hootener/subscriptions","organizations_url":"https://api.github.com/users/hootener/orgs","repos_url":"https://api.github.com/users/hootener/repos","events_url":"https://api.github.com/users/hootener/events{/privacy}","received_events_url":"https://api.github.com/users/hootener/received_events","type":"User","site_admin":false},"committer":{"login":"hootener","id":1566985,"node_id":"MDQ6VXNlcjE1NjY5ODU=","avatar_url":"https://avatars0.githubusercontent.com/u/1566985?v=4","gravatar_id":"","url":"https://api.github.com/users/hootener","html_url":"https://github.com/hootener","followers_url":"https://api.github.com/users/hootener/followers","following_url":"https://api.github.com/users/hootener/following{/other_user}","gists_url":"https://api.github.com/users/hootener/gists{/gist_id}","starred_url":"https://api.github.com/users/hootener/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/hootener/subscriptions","organizations_url":"https://api.github.com/users/hootener/orgs","repos_url":"https://api.github.com/users/hootener/repos","events_url":"https://api.github.com/users/hootener/events{/privacy}","received_events_url":"https://api.github.com/users/hootener/received_events","type":"User","site_admin":false},"parents":[{"sha":"7bc5fa7bc1f9fcb631a803d6c4b714f0c582b496","url":"https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/commits/7bc5fa7bc1f9fcb631a803d6c4b714f0c582b496","html_url":"https://github.com/eyoel-cov/codecov-assume-flag-test/commit/7bc5fa7bc1f9fcb631a803d6c4b714f0c582b496"}]},"status":"ahead","ahead_by":1,"behind_by":0,"total_commits":1,"commits":[{"sha":"f64b22e6af4bbe3917ac4a7c346feb03493c2b67","node_id":"MDY6Q29tbWl0MTkxMjUxNjE2OmY2NGIyMmU2YWY0YmJlMzkxN2FjNGE3YzM0NmZlYjAzNDkzYzJiNjc=","commit":{"author":{"name":"Eyoel
+        Asfaw","email":"easfaw@iit.edu","date":"2019-08-28T00:00:27Z"},"committer":{"name":"Eyoel
+        Asfaw","email":"easfaw@iit.edu","date":"2019-08-28T02:16:58Z"},"message":"renaming
+        adder, subtractor and removing test from subtractor","tree":{"sha":"520b07b1bf2f4698a2415114fd36a1de5386dbb2","url":"https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/git/trees/520b07b1bf2f4698a2415114fd36a1de5386dbb2"},"url":"https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/git/commits/f64b22e6af4bbe3917ac4a7c346feb03493c2b67","comment_count":0,"verification":{"verified":false,"reason":"unsigned","signature":null,"payload":null}},"url":"https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/commits/f64b22e6af4bbe3917ac4a7c346feb03493c2b67","html_url":"https://github.com/eyoel-cov/codecov-assume-flag-test/commit/f64b22e6af4bbe3917ac4a7c346feb03493c2b67","comments_url":"https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/commits/f64b22e6af4bbe3917ac4a7c346feb03493c2b67/comments","author":null,"committer":null,"parents":[{"sha":"791886122b02a2e52e5dd09e8be5f92e09e83f0b","url":"https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/commits/791886122b02a2e52e5dd09e8be5f92e09e83f0b","html_url":"https://github.com/eyoel-cov/codecov-assume-flag-test/commit/791886122b02a2e52e5dd09e8be5f92e09e83f0b"}]}],"files":[{"sha":"0e949ad4302ff0b9bbc8a6bc5d33a2b66eda2524","filename":"src/adder/adders.py","status":"renamed","additions":3,"deletions":0,"changes":3,"blob_url":"https://github.com/eyoel-cov/codecov-assume-flag-test/blob/f64b22e6af4bbe3917ac4a7c346feb03493c2b67/src/adder/adders.py","raw_url":"https://github.com/eyoel-cov/codecov-assume-flag-test/raw/f64b22e6af4bbe3917ac4a7c346feb03493c2b67/src/adder/adders.py","contents_url":"https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/contents/src/adder/adders.py?ref=f64b22e6af4bbe3917ac4a7c346feb03493c2b67","patch":"@@
+        -9,3 +9,6 @@ def add(self, x, y):\n         \n     def multiply(self, x, y):\n         return
+        x * y\n+    \n+    def add2(self, x):\n+        return x + 2\n\\ No newline
+        at end of file","previous_filename":"src/adder/adder.py"},{"sha":"a5cb2c547e4775eb7db83da48130af59f022054d","filename":"src/main.py","status":"modified","additions":4,"deletions":4,"changes":8,"blob_url":"https://github.com/eyoel-cov/codecov-assume-flag-test/blob/f64b22e6af4bbe3917ac4a7c346feb03493c2b67/src/main.py","raw_url":"https://github.com/eyoel-cov/codecov-assume-flag-test/raw/f64b22e6af4bbe3917ac4a7c346feb03493c2b67/src/main.py","contents_url":"https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/contents/src/main.py?ref=f64b22e6af4bbe3917ac4a7c346feb03493c2b67","patch":"@@
+        -1,4 +1,4 @@\n-from adder.adder import Adder\n+from adder.adders import Adder\n
+        from subtractor.subtractor import Subtractor\n \n \n@@ -8,11 +8,11 @@ def
+        main():\n     sum = Adder().add(x, y)\n     diff = Subtractor().subtract(x,
+        y)\n     product = Adder().multiply(x, y)\n-    quotient = Subtractor().divide(x,
+        y)\n     fraction = Subtractor().fractionate(x)\n     half = Subtractor().half(x)\n-    print(\"Given:
+        {} and {}. The sum: {}. The difference: {}. The product: {}. The quotient:
+        {}. The fraction: {}. The half: {}\").format(\n-        x, y, sum, diff, product,
+        quotient, fraction, half)\n+    print(\"Given: {} and {}. The sum: {}. The
+        difference: {}. The product: {}. The fraction: {}. The half: {}\").format(\n+        x,
+        y, sum, diff, product, fraction, half)\n+    return half\n \n \n if __name__
+        == \"__main__\":"},{"sha":"d97bfbb7b97ed9b41ff5204653ec0774440c982c","filename":"tests/unit/adder/test_adder.py","status":"modified","additions":1,"deletions":1,"changes":2,"blob_url":"https://github.com/eyoel-cov/codecov-assume-flag-test/blob/f64b22e6af4bbe3917ac4a7c346feb03493c2b67/tests/unit/adder/test_adder.py","raw_url":"https://github.com/eyoel-cov/codecov-assume-flag-test/raw/f64b22e6af4bbe3917ac4a7c346feb03493c2b67/tests/unit/adder/test_adder.py","contents_url":"https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/contents/tests/unit/adder/test_adder.py?ref=f64b22e6af4bbe3917ac4a7c346feb03493c2b67","patch":"@@
+        -1,5 +1,5 @@\n import pytest\n-from src.adder.adder import Adder\n+from src.adder.adders
+        import Adder\n \n def test_sum_two_plus_two_is_four():\n     assert Adder().add(3,3)
+        == 6"},{"sha":"3abd5d6c6d10782e9f02a903b71b128db0057018","filename":"tests/unit/subtractor/test_subtractor.py","status":"modified","additions":0,"deletions":2,"changes":2,"blob_url":"https://github.com/eyoel-cov/codecov-assume-flag-test/blob/f64b22e6af4bbe3917ac4a7c346feb03493c2b67/tests/unit/subtractor/test_subtractor.py","raw_url":"https://github.com/eyoel-cov/codecov-assume-flag-test/raw/f64b22e6af4bbe3917ac4a7c346feb03493c2b67/tests/unit/subtractor/test_subtractor.py","contents_url":"https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/contents/tests/unit/subtractor/test_subtractor.py?ref=f64b22e6af4bbe3917ac4a7c346feb03493c2b67","patch":"@@
+        -9,8 +9,6 @@ def test_sum_two_minus_one_is_one():\n def test_sum_two_minus_two_is_not_one():\n     assert
+        Subtractor().subtract(2, 2) != 1\n \n-def test_four_divided_by_two_is_two():\n-        assert
+        Subtractor().divide(4, 2) == 2.0\n \n \n def test_half():"},{"sha":"8967cccc5e8577d12f5778e2efec18163c86dbda","filename":"tests/unit/test_main.py","status":"added","additions":6,"deletions":0,"changes":6,"blob_url":"https://github.com/eyoel-cov/codecov-assume-flag-test/blob/f64b22e6af4bbe3917ac4a7c346feb03493c2b67/tests/unit/test_main.py","raw_url":"https://github.com/eyoel-cov/codecov-assume-flag-test/raw/f64b22e6af4bbe3917ac4a7c346feb03493c2b67/tests/unit/test_main.py","contents_url":"https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/contents/tests/unit/test_main.py?ref=f64b22e6af4bbe3917ac4a7c346feb03493c2b67","patch":"@@
+        -0,0 +1,6 @@\n+import pytest\n+from src.main import main\n+\n+\n+def test_main_function():\n+\tassert  main()
+        == 1\n\\ No newline at end of file"}]}'}
+    headers:
+    - !!python/tuple
+      - Date
+      - ['Thu, 05 Sep 2019 00:18:03 GMT']
+    - !!python/tuple
+      - Content-Type
+      - [application/json; charset=utf-8]
+    - !!python/tuple
+      - Transfer-Encoding
+      - [chunked]
+    - !!python/tuple
+      - Connection
+      - [close]
+    - !!python/tuple
+      - Server
+      - [GitHub.com]
+    - !!python/tuple
+      - Status
+      - [200 OK]
+    - !!python/tuple
+      - X-Ratelimit-Limit
+      - ['5000']
+    - !!python/tuple
+      - X-Ratelimit-Remaining
+      - ['4971']
+    - !!python/tuple
+      - X-Ratelimit-Reset
+      - ['1567646283']
+    - !!python/tuple
+      - Cache-Control
+      - ['private, max-age=60, s-maxage=60']
+    - !!python/tuple
+      - Vary
+      - ['Accept, Authorization, Cookie, X-GitHub-OTP', Accept-Encoding]
+    - !!python/tuple
+      - Etag
+      - [W/"bbacd81904a4d7ce91fd4543c24512be"]
+    - !!python/tuple
+      - Last-Modified
+      - ['Wed, 28 Aug 2019 02:16:58 GMT']
+    - !!python/tuple
+      - X-Oauth-Scopes
+      - ['read:org, repo, user:email, write:repo_hook']
+    - !!python/tuple
+      - X-Accepted-Oauth-Scopes
+      - ['']
+    - !!python/tuple
+      - X-Oauth-Client-Id
+      - [3d44be0e772666136a13]
+    - !!python/tuple
+      - X-Github-Media-Type
+      - [github.v3]
+    - !!python/tuple
+      - Access-Control-Expose-Headers
+      - ['ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+          X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval,
+          X-GitHub-Media-Type']
+    - !!python/tuple
+      - Access-Control-Allow-Origin
+      - ['*']
+    - !!python/tuple
+      - Strict-Transport-Security
+      - [max-age=31536000; includeSubdomains; preload]
+    - !!python/tuple
+      - X-Frame-Options
+      - [deny]
+    - !!python/tuple
+      - X-Content-Type-Options
+      - [nosniff]
+    - !!python/tuple
+      - X-Xss-Protection
+      - [1; mode=block]
+    - !!python/tuple
+      - Referrer-Policy
+      - ['origin-when-cross-origin, strict-origin-when-cross-origin']
+    - !!python/tuple
+      - Content-Security-Policy
+      - [default-src 'none']
+    - !!python/tuple
+      - X-Github-Request-Id
+      - ['D063:98E6:28F7B1:30FE12:5D70543B']
+    - !!python/tuple
+      - X-Consumed-Content-Encoding
+      - [gzip]
+    status: {code: 200, message: OK}
+    url: https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/compare/791886122b02a2e52e5dd09e8be5f92e09e83f0b...f64b22e6af4bbe3917ac4a7c346feb03493c2b67
+version: 1
