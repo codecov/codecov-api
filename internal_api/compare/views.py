@@ -5,7 +5,7 @@ from rest_framework import generics
 from archive.services import ReportService
 from compare.services import Comparison
 from internal_api.compare.serializers import CommitsComparisonSerializer, ComparisonLineCoverageSerializer, \
-    ComparisonFilesSerializer, ComparisonFullSrcSerializer
+    ComparisonFilesSerializer, ComparisonFullSrcSerializer, SingleFileSourceSerializer
 from internal_api.mixins import CompareSlugMixin
 
 
@@ -45,3 +45,15 @@ class CompareFullSource(CompareSlugMixin, generics.RetrieveAPIView):
         base, head = self.get_commits()
         report = Comparison(base_commit=base, head_commit=head, user=self.request.user)
         return report
+
+
+class CompareSingleFileSource(CompareSlugMixin, generics.RetrieveAPIView):
+    serializer_class = SingleFileSourceSerializer
+
+    def get_object(self):
+        base, head = self.get_commits()
+        file_path = self.kwargs.get('file_path')
+        before = self.request.query_params.get('before')
+        report = Comparison(base_commit=base, head_commit=head, user=self.request.user)
+        file_changes = report.file_source(file_path=file_path, before_path=before)
+        return asyncio.run(file_changes)

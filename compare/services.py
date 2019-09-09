@@ -62,6 +62,23 @@ class Comparison(object):
         commits_queryset.exclude(deleted=True)
         return commits_queryset
 
+    async def file_source(self, file_path, before_path=None):
+        provider = RepoProviderService().get_adapter(self.user, self.base_commit.repository)
+        assert file_path in self.head_commit.report['files'], (404, 'File not found on head commit.')
+        # get full src at head
+        head_source = await provider.get_source(file_path, self.head_commit.commitid)
+
+        if before_path:
+            # File name changed in between base & head
+            assert before_path in self.base_commit.report['files'], (404, 'File/folder was not found on base commit.')
+            base_source = await provider.get_source(before_path, self.base_commit.commitid)
+            return dict(sources=dict(base=base_source['content'].splitlines(),
+                                     head=head_source['content'].splitlines()))
+        else:
+            # the file hasn't changed, return head source
+            return dict(sources=dict(base=None,
+                                     head=head_source['content'].splitlines()))
+
     def _calculate_git_commits(self):
         commits = self.git_comparison['commits']
         self._git_commits = commits

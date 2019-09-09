@@ -1,0 +1,251 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept: [application/json]
+      User-Agent: [Default]
+    method: GET
+    uri: https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/contents/src/subtractor/subtractor.py?ref=f64b22e6af4bbe3917ac4a7c346feb03493c2b67
+  response:
+    body: {string: '{"name":"subtractor.py","path":"src/subtractor/subtractor.py","sha":"75e0c8aabc2ff179e022d8262aa32ab844a1a12c","size":277,"url":"https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/contents/src/subtractor/subtractor.py?ref=f64b22e6af4bbe3917ac4a7c346feb03493c2b67","html_url":"https://github.com/eyoel-cov/codecov-assume-flag-test/blob/f64b22e6af4bbe3917ac4a7c346feb03493c2b67/src/subtractor/subtractor.py","git_url":"https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/git/blobs/75e0c8aabc2ff179e022d8262aa32ab844a1a12c","download_url":"https://raw.githubusercontent.com/eyoel-cov/codecov-assume-flag-test/f64b22e6af4bbe3917ac4a7c346feb03493c2b67/src/subtractor/subtractor.py?token=testv485nsrwfeixy8agrq8k3s64j","type":"file","content":"aW1wb3J0IG1hdGgKCmNsYXNzIFN1YnRyYWN0b3Iob2JqZWN0KToKICAgIGRl\nZiBzdWJ0cmFjdChzZWxmLCB4LCB5KToKICAgICAgICByZXR1cm4geCAtIHkK\nICAgIAogICAgZGVmIGRpdmlkZShzZWxmLCB4LCB5KToKICAgICAgICByZXR1\ncm4gZmxvYXQoeCkgLyBmbG9hdCh5KQogICAgCiAgICBkZWYgZnJhY3Rpb25h\ndGUoc2VsZiwgeCk6CiAgICAgICAgcmV0dXJuIDEgLyBmbG9hdCh4KQogICAg\nCiAgICBkZWYgaGFsZihzZWxmLCB4KToKICAgICAgICByZXR1cm4gZmxvYXQo\neCkgLyAyCg==\n","encoding":"base64","_links":{"self":"https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/contents/src/subtractor/subtractor.py?ref=f64b22e6af4bbe3917ac4a7c346feb03493c2b67","git":"https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/git/blobs/75e0c8aabc2ff179e022d8262aa32ab844a1a12c","html":"https://github.com/eyoel-cov/codecov-assume-flag-test/blob/f64b22e6af4bbe3917ac4a7c346feb03493c2b67/src/subtractor/subtractor.py"}}'}
+    headers:
+    - !!python/tuple
+      - Date
+      - ['Wed, 28 Aug 2019 06:00:52 GMT']
+    - !!python/tuple
+      - Content-Type
+      - [application/json; charset=utf-8]
+    - !!python/tuple
+      - Transfer-Encoding
+      - [chunked]
+    - !!python/tuple
+      - Connection
+      - [close]
+    - !!python/tuple
+      - Server
+      - [GitHub.com]
+    - !!python/tuple
+      - Status
+      - [200 OK]
+    - !!python/tuple
+      - X-Ratelimit-Limit
+      - ['5000']
+    - !!python/tuple
+      - X-Ratelimit-Remaining
+      - ['4871']
+    - !!python/tuple
+      - X-Ratelimit-Reset
+      - ['1566975458']
+    - !!python/tuple
+      - Cache-Control
+      - ['private, max-age=60, s-maxage=60']
+    - !!python/tuple
+      - Vary
+      - ['Accept, Authorization, Cookie, X-GitHub-OTP', Accept-Encoding]
+    - !!python/tuple
+      - Etag
+      - [W/"75e0c8aabc2ff179e022d8262aa32ab844a1a12c"]
+    - !!python/tuple
+      - Last-Modified
+      - ['Wed, 28 Aug 2019 02:16:58 GMT']
+    - !!python/tuple
+      - X-Oauth-Scopes
+      - ['read:org, repo, user:email, write:repo_hook']
+    - !!python/tuple
+      - X-Accepted-Oauth-Scopes
+      - ['']
+    - !!python/tuple
+      - X-Oauth-Client-Id
+      - [3d44be0e772666136a13]
+    - !!python/tuple
+      - X-Github-Media-Type
+      - [github.v3]
+    - !!python/tuple
+      - Access-Control-Expose-Headers
+      - ['ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+          X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval,
+          X-GitHub-Media-Type']
+    - !!python/tuple
+      - Access-Control-Allow-Origin
+      - ['*']
+    - !!python/tuple
+      - Strict-Transport-Security
+      - [max-age=31536000; includeSubdomains; preload]
+    - !!python/tuple
+      - X-Frame-Options
+      - [deny]
+    - !!python/tuple
+      - X-Content-Type-Options
+      - [nosniff]
+    - !!python/tuple
+      - X-Xss-Protection
+      - [1; mode=block]
+    - !!python/tuple
+      - Referrer-Policy
+      - ['origin-when-cross-origin, strict-origin-when-cross-origin']
+    - !!python/tuple
+      - Content-Security-Policy
+      - [default-src 'none']
+    - !!python/tuple
+      - X-Github-Request-Id
+      - ['E5CF:467C:37F6F6:427F28:5D661893']
+    - !!python/tuple
+      - X-Consumed-Content-Encoding
+      - [gzip]
+    status: {code: 200, message: OK}
+    url: https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/contents/src/subtractor/subtractor.py?ref=f64b22e6af4bbe3917ac4a7c346feb03493c2b67
+- request:
+    body: null
+    headers:
+      Host: ['minio:9000']
+      User-Agent: [Minio (Linux; x86_64) minio-py/4.0.8]
+      X-Amz-Content-Sha256: [e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855]
+      X-Amz-Date: [20190828T060051Z]
+    method: PUT
+    uri: http://minio:9000/archive/
+  response:
+    body: {string: '<?xml version="1.0" encoding="UTF-8"?>
+
+        <Error><Code>BucketAlreadyOwnedByYou</Code><Message>Your previous request
+        to create the named bucket succeeded and you already own it.</Message><Resource>/archive/</Resource><RequestId>15BF00C75F7EF990</RequestId><HostId>3L137</HostId></Error>'}
+    headers:
+      Accept-Ranges: [bytes]
+      Content-Security-Policy: [block-all-mixed-content]
+      Content-Type: [application/xml]
+      Date: ['Wed, 28 Aug 2019 06:00:51 GMT']
+      Server: [Minio/RELEASE.2018-08-02T23-11-36Z (linux; amd64)]
+      Transfer-Encoding: [chunked]
+      Vary: [Origin]
+      X-Amz-Request-Id: [15BF00C75F7EF990]
+      X-Xss-Protection: [1; mode=block]
+    status: {code: 409, message: Conflict}
+- request:
+    body: null
+    headers:
+      Host: ['minio:9000']
+      X-Amz-Content-Sha256: [e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855]
+      X-Amz-Date: [20190828T060051Z]
+    method: GET
+    uri: http://minio:9000/archive?location=
+  response:
+    body: {string: '<?xml version="1.0" encoding="UTF-8"?>
+
+        <LocationConstraint xmlns="http://s3.amazonaws.com/doc/2006-03-01/"></LocationConstraint>'}
+    headers:
+      Accept-Ranges: [bytes]
+      Content-Security-Policy: [block-all-mixed-content]
+      Content-Type: [application/xml]
+      Date: ['Wed, 28 Aug 2019 06:00:51 GMT']
+      Server: [Minio/RELEASE.2018-08-02T23-11-36Z (linux; amd64)]
+      Transfer-Encoding: [chunked]
+      Vary: [Origin]
+      X-Amz-Request-Id: [15BF00C75FFEDAAC]
+      X-Xss-Protection: [1; mode=block]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      host: ['minio:9000']
+      user-agent: [Minio (Linux; x86_64) minio-py/4.0.8]
+      x-amz-content-sha256: [e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855]
+      x-amz-date: [20190828T060051Z]
+    method: GET
+    uri: http://minio:9000/archive/v4/repos/4A3A4B0C7B00EAEA3F77AA7EB90BE4AB/commits/791886122b02a2e52e5dd09e8be5f92e09e83f0b/chunks.txt
+  response:
+    body:
+      string: !!binary |
+        H4sIAAkPZl0C/6uu5Yo21FHIK83J0VGIjjbQUTCMjY3FKsZFC5UDabkNCCik5qXE56fFJ2eU5mUr
+        2IEAV3UtDTxAK1cRbTB9nD/w/sSRArDrN0ARMwCKAQAa5Y0UEgMAAA==
+    headers:
+      Accept-Ranges: [bytes]
+      Content-Encoding: [gzip]
+      Content-Length: ['97']
+      Content-Security-Policy: [block-all-mixed-content]
+      Content-Type: [text/plain]
+      Date: ['Wed, 28 Aug 2019 06:00:51 GMT']
+      Etag: ['"018949c5c5d6b0fbf4f15fc9b51f07b7"']
+      Expires: ['1566969619']
+      Last-Modified: ['Wed, 28 Aug 2019 05:20:09 GMT']
+      Server: [Minio/RELEASE.2018-08-02T23-11-36Z (linux; amd64)]
+      Vary: [Origin]
+      X-Amz-Request-Id: [15BF00C760610E20]
+      X-Xss-Protection: [1; mode=block]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Host: ['minio:9000']
+      User-Agent: [Minio (Linux; x86_64) minio-py/4.0.8]
+      X-Amz-Content-Sha256: [e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855]
+      X-Amz-Date: [20190828T060051Z]
+    method: PUT
+    uri: http://minio:9000/archive/
+  response:
+    body: {string: '<?xml version="1.0" encoding="UTF-8"?>
+
+        <Error><Code>BucketAlreadyOwnedByYou</Code><Message>Your previous request
+        to create the named bucket succeeded and you already own it.</Message><Resource>/archive/</Resource><RequestId>15BF00C7616075B8</RequestId><HostId>3L137</HostId></Error>'}
+    headers:
+      Accept-Ranges: [bytes]
+      Content-Security-Policy: [block-all-mixed-content]
+      Content-Type: [application/xml]
+      Date: ['Wed, 28 Aug 2019 06:00:51 GMT']
+      Server: [Minio/RELEASE.2018-08-02T23-11-36Z (linux; amd64)]
+      Transfer-Encoding: [chunked]
+      Vary: [Origin]
+      X-Amz-Request-Id: [15BF00C7616075B8]
+      X-Xss-Protection: [1; mode=block]
+    status: {code: 409, message: Conflict}
+- request:
+    body: null
+    headers:
+      Host: ['minio:9000']
+      X-Amz-Content-Sha256: [e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855]
+      X-Amz-Date: [20190828T060051Z]
+    method: GET
+    uri: http://minio:9000/archive?location=
+  response:
+    body: {string: '<?xml version="1.0" encoding="UTF-8"?>
+
+        <LocationConstraint xmlns="http://s3.amazonaws.com/doc/2006-03-01/"></LocationConstraint>'}
+    headers:
+      Accept-Ranges: [bytes]
+      Content-Security-Policy: [block-all-mixed-content]
+      Content-Type: [application/xml]
+      Date: ['Wed, 28 Aug 2019 06:00:51 GMT']
+      Server: [Minio/RELEASE.2018-08-02T23-11-36Z (linux; amd64)]
+      Transfer-Encoding: [chunked]
+      Vary: [Origin]
+      X-Amz-Request-Id: [15BF00C761D9DCA0]
+      X-Xss-Protection: [1; mode=block]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      host: ['minio:9000']
+      user-agent: [Minio (Linux; x86_64) minio-py/4.0.8]
+      x-amz-content-sha256: [e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855]
+      x-amz-date: [20190828T060051Z]
+    method: GET
+    uri: http://minio:9000/archive/v4/repos/4A3A4B0C7B00EAEA3F77AA7EB90BE4AB/commits/f64b22e6af4bbe3917ac4a7c346feb03493c2b67/chunks.txt
+  response:
+    body:
+      string: !!binary |
+        H4sIALMUZl0C/6uu5Yo21FHIK83J0VGIjjbQUTCMjY3FKkZ9hTYgoJCalxKfnxafnFGal61gBwJc
+        1SS4apDaRorKQeBZog0mXrMBipjB4EhClMYKsV4FAFtPdXVYAwAA
+    headers:
+      Accept-Ranges: [bytes]
+      Content-Encoding: [gzip]
+      Content-Length: ['96']
+      Content-Security-Policy: [block-all-mixed-content]
+      Content-Type: [text/plain]
+      Date: ['Wed, 28 Aug 2019 06:00:51 GMT']
+      Etag: ['"75e94db29362b38856098010597b4c55"']
+      Expires: ['1566971069']
+      Last-Modified: ['Wed, 28 Aug 2019 05:44:19 GMT']
+      Server: [Minio/RELEASE.2018-08-02T23-11-36Z (linux; amd64)]
+      Vary: [Origin]
+      X-Amz-Request-Id: [15BF00C7623B1EAC]
+      X-Xss-Protection: [1; mode=block]
+    status: {code: 200, message: OK}
+version: 1
