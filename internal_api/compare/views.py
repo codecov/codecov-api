@@ -2,10 +2,9 @@ import asyncio
 
 from rest_framework import generics
 
-from archive.services import ReportService
 from compare.services import Comparison
-from internal_api.compare.serializers import CommitsComparisonSerializer, ComparisonLineCoverageSerializer, \
-    ComparisonFilesSerializer, ComparisonFullSrcSerializer, FlagComparisonSerializer, SingleFileSourceSerializer
+from internal_api.compare.serializers import CommitsComparisonSerializer, \
+    ComparisonDetailsSerializer, ComparisonFullSrcSerializer, FlagComparisonSerializer, SingleFileSourceSerializer
 from internal_api.mixins import CompareSlugMixin
 
 
@@ -19,22 +18,14 @@ class CompareCommits(CompareSlugMixin, generics.RetrieveAPIView):
         return report
 
 
-class CompareFiles(CompareSlugMixin, generics.RetrieveAPIView):
+class CompareDetails(CompareSlugMixin, generics.RetrieveAPIView):
+    serializer_class = ComparisonDetailsSerializer
 
     def get_object(self):
+        asyncio.set_event_loop(asyncio.new_event_loop())
         base, head = self.get_commits()
-        obj = {
-            'base': ReportService().build_report_from_commit(base),
-            'head': ReportService().build_report_from_commit(head)
-        }
-        return obj
-
-    def get_serializer_class(self):
-        coverage_type = self.kwargs.get('coverage_level')
-        if coverage_type == 'lines':
-            return ComparisonLineCoverageSerializer
-        else:
-            return ComparisonFilesSerializer
+        report = Comparison(base_commit=base, head_commit=head, user=self.request.user)
+        return report
 
 
 class CompareFullSource(CompareSlugMixin, generics.RetrieveAPIView):

@@ -1,0 +1,73 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept: [application/json]
+      User-Agent: [Default]
+    method: GET
+    uri: https://api.github.com/repos/ThiagoCodecov/example-python/compare/9193232a8fe3429496956ba82b5fed2583d1b5eb...abf6d4df662c47e32460020ab14abf9303581429
+  response:
+    body: {string: '{"message":"Bad credentials","documentation_url":"https://developer.github.com/v3"}'}
+    headers:
+    - !!python/tuple
+      - Server
+      - [GitHub.com]
+    - !!python/tuple
+      - Date
+      - ['Mon, 16 Sep 2019 18:36:06 GMT']
+    - !!python/tuple
+      - Content-Type
+      - [application/json; charset=utf-8]
+    - !!python/tuple
+      - Content-Length
+      - ['83']
+    - !!python/tuple
+      - Connection
+      - [close]
+    - !!python/tuple
+      - Status
+      - [401 Unauthorized]
+    - !!python/tuple
+      - X-Github-Media-Type
+      - [github.v3]
+    - !!python/tuple
+      - X-Ratelimit-Limit
+      - ['60']
+    - !!python/tuple
+      - X-Ratelimit-Remaining
+      - ['57']
+    - !!python/tuple
+      - X-Ratelimit-Reset
+      - ['1568662022']
+    - !!python/tuple
+      - Access-Control-Expose-Headers
+      - ['ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+          X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval,
+          X-GitHub-Media-Type']
+    - !!python/tuple
+      - Access-Control-Allow-Origin
+      - ['*']
+    - !!python/tuple
+      - Strict-Transport-Security
+      - [max-age=31536000; includeSubdomains; preload]
+    - !!python/tuple
+      - X-Frame-Options
+      - [deny]
+    - !!python/tuple
+      - X-Content-Type-Options
+      - [nosniff]
+    - !!python/tuple
+      - X-Xss-Protection
+      - [1; mode=block]
+    - !!python/tuple
+      - Referrer-Policy
+      - ['origin-when-cross-origin, strict-origin-when-cross-origin']
+    - !!python/tuple
+      - Content-Security-Policy
+      - [default-src 'none']
+    - !!python/tuple
+      - X-Github-Request-Id
+      - ['F95D:3B2F:6A7076:BDB881:5D7FD616']
+    status: {code: 401, message: Unauthorized}
+    url: https://api.github.com/repos/ThiagoCodecov/example-python/compare/9193232a8fe3429496956ba82b5fed2583d1b5eb...abf6d4df662c47e32460020ab14abf9303581429
+version: 1

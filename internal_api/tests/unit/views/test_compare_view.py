@@ -1,9 +1,7 @@
 import json
 from pathlib import Path
-from unittest.mock import patch, Mock
+from unittest.mock import patch
 
-from covreports.utils.migrate import migrate_totals
-from covreports.utils.tuples import ReportTotals
 from django.test import override_settings
 
 from archive.services import ArchiveService
@@ -103,131 +101,30 @@ class TestCompareCommitsView(InternalAPITest):
         assert content['commit_uploads'][1]['totals'] == commit_base.totals
 
 
-@patch("archive.services.ReportService.build_report_from_commit")
-class TestCompareFilesView(InternalAPITest):
-
-    def setUp(self):
-        org = OwnerFactory(username='Codecov')
-        RepositoryFactory(author=org)
-        self.user = OwnerFactory(username='codecov-user',
-                                 email='codecov-user@codecov.io',
-                                 organizations=[org.ownerid])
-    pass
-
-    def test_compare_file_coverage_view(self, mocked_archive_service):
-        repo, commit_base, commit_head = build_commits(client=self.client)
-
-        file_awesome_name = 'awesome/__init__.py'
-        file_awesome_totals = {
-            'files': 0,
-            'lines': 10,
-            'hits': 8,
-            'misses': 2,
-            'partials': 0,
-            'coverage': '80.00000',
-            'branches': 0,
-            'methods': 0,
-            'messages': 0,
-            'sessions': 0,
-            'complexity': 0,
-            'complexity_total': 0,
-            'diff': 0
-        }
-        file_awesome_line_coverage = [
-            (1, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
-            (2, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
-            (5, 1, None, [[0, 1, None, None, None], [1, 1, None, None, None]], None, None),
-            (6, 1, None, [[0, 0, None, None, None], [1, 0, None, None, None]], None, None),
-            (9, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
-            (10, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
-            (11, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
-            (12, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
-            (15, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
-            (16, 0, None, [[0, 0, None, None, None], [1, 0, None, None, None]], None, None)
-        ]
-        file_test_sample_name = 'tests/test_sample.py'
-        file_test_sample_line_coverage = [
-            (1, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
-            (4, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
-            (5, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
-            (8, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
-            (9, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
-            (12, 1, None, [[0, 1, None, None, None], [1, 1, None, None, None]], None, None),
-            (13, 1, None, [[0, 1, None, None, None], [1, 1, None, None, None]], None, None)
-        ]
-        file_test_sample_totals = {
-            'files': 0,
-            'lines': 7,
-            'hits': 7,
-            'misses': 0,
-            'partials': 0,
-            'coverage': '100',
-            'branches': 0,
-            'methods': 0,
-            'messages': 0,
-            'sessions': 0,
-            'complexity': 0,
-            'complexity_total': 0,
-            'diff': 0
-        }
-        report = {
-            'file_reports': [
-                {
-                    'lines': file_awesome_line_coverage,
-                    'name': file_awesome_name,
-                    'totals': ReportTotals(**file_awesome_totals)
-                },
-                {
-                    'lines': file_test_sample_line_coverage,
-                    'name': file_test_sample_name,
-                    'totals': ReportTotals(**file_test_sample_totals)
-                }
-            ],
-            'totals': ReportTotals(**{
-                'branches': 0,
-                'complexity': 0,
-                'complexity_total': 0,
-                'coverage': '85.00000',
-                'diff': 0,
-                'files': 3,
-                'hits': 17,
-                'lines': 20,
-                'messages': 0,
-                'methods': 0,
-                'misses': 3,
-                'partials': 0,
-                'sessions': 2
-            })
-        }
-        mocked_archive_service.return_value = report
-        
-        url = f'/internal/{repo.author.username}/{repo.name}/compare/{commit_base.commitid}...{commit_head.commitid}/files'
-        print("request url: ", url)
-        response = self.client.get(url)
-        assert response.status_code == 200
-        content = json.loads(response.content.decode())
-        print("this is the response: ", content)
-        assert content['base']['files'][0]['name'] == file_awesome_name
-        assert 'lines' not in content['base']['files'][0]
-        assert content['base']['files'][0]['totals'] == file_awesome_totals
-        assert content['base']['files'][1]['name'] == file_test_sample_name
-
-
-class TestCompareLinesView(object):
+class TestCompareDetailsView(object):
 
     @override_settings(DEBUG=True)
-    def test_compare_line_coverage_view(self, mocker, db, client, codecov_vcr):
+    def test_compare_details_view(self, mocker, db, client, codecov_vcr):
         repo, commit_base, commit_head = build_commits(client=client)
         expected_report_result = build_mocked_report_archive(mocker)
-        url = f'/internal/{repo.author.username}/{repo.name}/compare/{commit_base.commitid}...{commit_head.commitid}/lines'
+        url = f'/internal/{repo.author.username}/{repo.name}/compare/{commit_base.commitid}...{commit_head.commitid}/details'
         print("request url: ", url)
+        mocked_comparison = mocker.patch.object(Comparison, '_calculate_git_comparison')
+        org = OwnerFactory(username='Codecov')
+        user = OwnerFactory(username='codecov-user',
+                            email='codecov-user@codecov.io',
+                            organizations=[org.ownerid])
+        git_commits, src_diff = build_mocked_compare_commits(mocked_comparison, user, commit_base, commit_head)
         response = client.get(url)
         assert response.status_code == 200
         content = json.loads(response.content.decode())
-        assert content['head']['totals'] == expected_report_result['totals']
-        assert content['head']['files'][0]['name'] == expected_report_result['files'][0]['name']
-        assert 'lines' in content['head']['files'][0]
-
+        assert content['head_report']['totals'] == expected_report_result['totals']
+        assert content['head_report']['files'][0]['name'] == expected_report_result['files'][0]['name']
+        assert 'lines' not in content['head_report']['files'][0]
+        assert 'git_commits' in content
+        assert content['base_commit'] == commit_base.commitid
+        assert content['head_commit'] == commit_head.commitid
+        assert content['git_commits'] == git_commits
 
     @override_settings(DEBUG=True)
     def test_compare_line_coverage_withsrc_view(self, mocker, db, client, codecov_vcr):
@@ -241,11 +138,10 @@ class TestCompareLinesView(object):
         response = client.get(url)
         assert response.status_code == 200
         content = json.loads(response.content.decode())
-        assert content['head']['totals'] == expected_report_result['totals']
-        assert content['head']['files'][0]['name'] == expected_report_result['files'][0]['name']
-        assert 'lines' in content['head']['files'][0]
+        assert content['head_report']['totals'] == expected_report_result['totals']
+        assert content['head_report']['files'][0]['name'] == expected_report_result['files'][0]['name']
+        assert 'lines' in content['head_report']['files'][0]
         assert 'src_diff' in content
-
 
 
 def build_commits(client):
@@ -278,6 +174,7 @@ def build_commits(client):
     )
     client.force_login(user=repo.author)
     return repo, commit_base, commit_head
+
 
 def build_mocked_report_archive(mocker):
     mocked = mocker.patch.object(ArchiveService, 'read_chunks')

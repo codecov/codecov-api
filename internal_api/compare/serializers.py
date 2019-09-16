@@ -9,25 +9,25 @@ class FlagComparisonSerializer(serializers.Serializer):
     head_report_totals = serializers.JSONField(source='head_report.totals._asdict')
     diff_totals = serializers.JSONField(source='diff_totals._asdict')
 
-
+    
 class CommitsComparisonSerializer(serializers.Serializer):
     commit_uploads = CommitSerializer(many=True, source='upload_commits')
     git_commits = serializers.JSONField()
 
 
-class ComparisonLineCoverageSerializer(serializers.Serializer):
-    base = ReportSerializer()
-    head = ReportSerializer()
-
-
-class ComparisonFilesSerializer(serializers.Serializer):
-    base = ReportWithoutLinesSerializer()
-    head = ReportWithoutLinesSerializer()
+class ComparisonDetailsSerializer(serializers.Serializer):
+    base_commit = serializers.CharField(source='base_commit.commitid')
+    head_commit = serializers.CharField(source='head_commit.commitid')
+    base_report = ReportWithoutLinesSerializer()
+    head_report = ReportWithoutLinesSerializer()
+    git_commits = serializers.JSONField()
 
 
 class ComparisonFullSrcSerializer(serializers.Serializer):
-    base = ReportSerializer(source='base_report')
-    head = ReportSerializer(source='head_report')
+    base_commit = serializers.CharField(source='base_commit.commitid')
+    head_commit = serializers.CharField(source='head_commit.commitid')
+    base_report = ReportSerializer()
+    head_report = ReportSerializer()
     src_diff = serializers.JSONField(source='git_comparison.diff')
 
 
