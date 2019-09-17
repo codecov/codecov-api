@@ -5,7 +5,7 @@ from rest_framework import serializers
 from codecov_auth.models import Owner
 from core.models import Repository
 from internal_api.serializers import AuthorSerializer
-from internal_api.commit.serializers import CommitSerializer, CommitWithFileLevelReportSerializer
+from internal_api.commit.serializers import CommitWithReportSerializer, CommitWithFileLevelReportSerializer
 
 
 class RepoSerializer(serializers.ModelSerializer):
@@ -17,7 +17,7 @@ class RepoSerializer(serializers.ModelSerializer):
     updatestamp = serializers.DateTimeField()
     author = AuthorSerializer()
     language = serializers.CharField()
-    latest_commit = CommitSerializer()
+    latest_commit = CommitWithReportSerializer()
 
     class Meta:
         model = Repository
