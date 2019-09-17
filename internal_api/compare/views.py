@@ -3,8 +3,8 @@ import asyncio
 from rest_framework import generics
 
 from compare.services import Comparison
-from internal_api.compare.serializers import CommitsComparisonSerializer, \
-    ComparisonDetailsSerializer, ComparisonFullSrcSerializer, FlagComparisonSerializer, SingleFileSourceSerializer
+from internal_api.compare.serializers import CommitsComparisonSerializer, ComparisonDetailsSerializer, \
+    ComparisonFullSrcSerializer, FlagComparisonSerializer, SingleFileSourceSerializer, SingleFileDiffSerializer
 from internal_api.mixins import CompareSlugMixin
 
 
@@ -48,6 +48,18 @@ class CompareSingleFileSource(CompareSlugMixin, generics.RetrieveAPIView):
         report = Comparison(base_commit=base, head_commit=head, user=self.request.user)
         file_changes = report.file_source(file_path=file_path, before_path=before)
         return asyncio.run(file_changes)
+
+
+class CompareSingleFileDiff(CompareSlugMixin, generics.RetrieveAPIView):
+    serializer_class = SingleFileDiffSerializer
+
+    def get_object(self):
+        asyncio.set_event_loop(asyncio.new_event_loop())
+        base, head = self.get_commits()
+        file_path = self.kwargs.get('file_path')
+        report = Comparison(base_commit=base, head_commit=head, user=self.request.user)
+        file_changes = report.file_diff(file_path=file_path)
+        return file_changes
 
 
 class CompareFlagsList(CompareSlugMixin, generics.ListAPIView):

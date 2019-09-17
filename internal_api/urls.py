@@ -33,4 +33,6 @@ urlpatterns = [
          internal_api.compare.views.CompareFullSource.as_view()),
     path('<str:orgName>/<str:repoName>/compare/<path:base>...<path:head>/src_file/<path:file_path>',
          internal_api.compare.views.CompareSingleFileSource.as_view()),
+    path('<str:orgName>/<str:repoName>/compare/<path:base>...<path:head>/diff_file/<path:file_path>',
+         internal_api.compare.views.CompareSingleFileDiff.as_view())
 ]
