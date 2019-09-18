@@ -27,9 +27,10 @@ class RepositoryFilter(django_filters.FilterSet):
 class RepositoryList(generics.ListAPIView):
     queryset = Repository.objects.all()
     serializer_class = RepoSerializer
-    filter_backends = (django_filters.DjangoFilterBackend, filters.SearchFilter)
+    filter_backends = (django_filters.DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
     filterset_class = RepositoryFilter
     search_fields = ('name',)
+    ordering_fields = ('updatestamp',)
 
     def filter_queryset(self, queryset):
         queryset = super().filter_queryset(queryset)
