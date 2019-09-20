@@ -143,6 +143,47 @@ class TestCompareDetailsView(object):
         assert 'lines' in content['head_report']['files'][0]
         assert 'src_diff' in content
 
+    @override_settings(DEBUG=True)
+    def test_compare_single_file_diff_view(self, mocker, db, client, codecov_vcr):
+        repo, commit_base, commit_head = build_commits(client=client)
+        build_mocked_report_archive(mocker)
+        mocked_comparison = mocker.patch.object(Comparison, '_calculate_git_comparison')
+        build_mocked_compare_commits(mocked_comparison, repo.author, commit_base, commit_head)
+
+        url = f'/internal/{repo.author.username}/{repo.name}/compare/{commit_base.commitid}...{commit_head.commitid}/diff_file/src/adder/adder.py'
+        print("request url: ", url)
+        response = client.get(url)
+        assert response.status_code == 200
+        content = json.loads(response.content.decode())
+        assert 'src_diff' in content
+        assert content['src_diff'] == {
+            "type": "modified",
+            "before": None,
+            "segments": [
+                {
+                    "header": [
+                        "9",
+                        "3",
+                        "9",
+                        "6"
+                    ],
+                    "lines": [
+                        "         ",
+                        "     def multiply(self, x, y):",
+                        "         return x * y",
+                        "+    ",
+                        "+    def double(self, x):",
+                        "+        return 2 * x"
+                    ]
+                }
+            ],
+            "stats": {
+                "added": 3,
+                "removed": 0
+            }
+        }
+        assert 'base_coverage' in content
+        assert 'head_coverage' in content
 
 def build_commits(client):
     """
@@ -285,6 +326,7 @@ def build_mocked_report_archive(mocker):
         }
     }
     return expected_report_result
+
 
 def build_mocked_compare_commits(mocked_comparison, user, commit_base, commit_head):
     """

@@ -62,6 +62,13 @@ class Comparison(object):
         commits_queryset.exclude(deleted=True)
         return commits_queryset
 
+    def file_diff(self, file_path):
+        diff = self.git_comparison['diff']['files']
+        if file_path in diff:
+            return dict(src_diff=diff[file_path],
+                        base_coverage=self.base_report.get(filename=file_path, _else=None),
+                        head_coverage=self.head_report.get(filename=file_path, _else=None))
+
     async def file_source(self, file_path, before_path=None):
         provider = RepoProviderService().get_adapter(self.user, self.base_commit.repository)
         assert file_path in self.head_commit.report['files'], (404, 'File not found on head commit.')

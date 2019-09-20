@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
-from internal_api.commit.serializers import CommitSerializer, ReportSerializer, ReportWithoutLinesSerializer
+from internal_api.commit.serializers import CommitSerializer, ReportSerializer, ReportWithoutLinesSerializer, \
+    ReportFileSerializer
 
 
 class FlagComparisonSerializer(serializers.Serializer):
@@ -33,3 +34,10 @@ class ComparisonFullSrcSerializer(serializers.Serializer):
 
 class SingleFileSourceSerializer(serializers.Serializer):
     src = serializers.JSONField(source='sources')
+
+
+class SingleFileDiffSerializer(serializers.Serializer):
+    src_diff = serializers.JSONField()
+    base_coverage = ReportFileSerializer()
+    head_coverage = ReportFileSerializer()
+
