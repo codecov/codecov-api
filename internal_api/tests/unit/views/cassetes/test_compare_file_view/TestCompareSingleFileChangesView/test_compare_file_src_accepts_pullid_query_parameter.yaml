@@ -1,0 +1,97 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept: [application/json]
+      User-Agent: [Default]
+    method: GET
+    uri: https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/contents/tests/unit/adder/test_adder.py?ref=48a4883890d71d777794ed998a1ad4d24a9ebab5
+  response:
+    body: {string: '{"name":"test_adder.py","path":"tests/unit/adder/test_adder.py","sha":"abf2ea13871a916997281e1273d28b3c3c72e818","size":251,"url":"https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/contents/tests/unit/adder/test_adder.py?ref=48a4883890d71d777794ed998a1ad4d24a9ebab5","html_url":"https://github.com/eyoel-cov/codecov-assume-flag-test/blob/48a4883890d71d777794ed998a1ad4d24a9ebab5/tests/unit/adder/test_adder.py","git_url":"https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/git/blobs/abf2ea13871a916997281e1273d28b3c3c72e818","download_url":"https://raw.githubusercontent.com/eyoel-cov/codecov-assume-flag-test/48a4883890d71d777794ed998a1ad4d24a9ebab5/tests/unit/adder/test_adder.py?token=test1f92hh3qe9dbdpw0bgqfu4l1s","type":"file","content":"aW1wb3J0IHB5dGVzdApmcm9tIHNyYy5hZGRlci5hZGRlcnMgaW1wb3J0IEFk\nZGVyCgpkZWYgdGVzdF9zdW1fdHdvX3BsdXNfdHdvX2lzX2ZvdXIoKToKICAg\nIGFzc2VydCBBZGRlcigpLmFkZCgzLDMpID09IDYKCmRlZiB0ZXN0X3N1bV90\nd29fcGx1c190d29faXNfbm90X2ZpdmUoKToKICAgIGFzc2VydCBBZGRlcigp\nLmFkZCgzLDQpICE9IDYKCmRlZiB0ZXN0X2FkZDJfd2l0aF9mb3VyKCk6Cglh\nc3NlcnQgQWRkZXIoKS5hZGQyKDQpID09IDY=\n","encoding":"base64","_links":{"self":"https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/contents/tests/unit/adder/test_adder.py?ref=48a4883890d71d777794ed998a1ad4d24a9ebab5","git":"https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/git/blobs/abf2ea13871a916997281e1273d28b3c3c72e818","html":"https://github.com/eyoel-cov/codecov-assume-flag-test/blob/48a4883890d71d777794ed998a1ad4d24a9ebab5/tests/unit/adder/test_adder.py"}}'}
+    headers:
+    - !!python/tuple
+      - Date
+      - ['Tue, 17 Sep 2019 23:50:24 GMT']
+    - !!python/tuple
+      - Content-Type
+      - [application/json; charset=utf-8]
+    - !!python/tuple
+      - Transfer-Encoding
+      - [chunked]
+    - !!python/tuple
+      - Connection
+      - [close]
+    - !!python/tuple
+      - Server
+      - [GitHub.com]
+    - !!python/tuple
+      - Status
+      - [200 OK]
+    - !!python/tuple
+      - X-Ratelimit-Limit
+      - ['5000']
+    - !!python/tuple
+      - X-Ratelimit-Remaining
+      - ['4999']
+    - !!python/tuple
+      - X-Ratelimit-Reset
+      - ['1568767823']
+    - !!python/tuple
+      - Cache-Control
+      - ['private, max-age=60, s-maxage=60']
+    - !!python/tuple
+      - Vary
+      - ['Accept, Authorization, Cookie, X-GitHub-OTP', Accept-Encoding]
+    - !!python/tuple
+      - Etag
+      - [W/"abf2ea13871a916997281e1273d28b3c3c72e818"]
+    - !!python/tuple
+      - Last-Modified
+      - ['Wed, 28 Aug 2019 02:06:22 GMT']
+    - !!python/tuple
+      - X-Oauth-Scopes
+      - ['read:org, repo, user:email, write:repo_hook']
+    - !!python/tuple
+      - X-Accepted-Oauth-Scopes
+      - ['']
+    - !!python/tuple
+      - X-Oauth-Client-Id
+      - [3d44be0e772666136a13]
+    - !!python/tuple
+      - X-Github-Media-Type
+      - [github.v3]
+    - !!python/tuple
+      - Access-Control-Expose-Headers
+      - ['ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+          X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval,
+          X-GitHub-Media-Type']
+    - !!python/tuple
+      - Access-Control-Allow-Origin
+      - ['*']
+    - !!python/tuple
+      - Strict-Transport-Security
+      - [max-age=31536000; includeSubdomains; preload]
+    - !!python/tuple
+      - X-Frame-Options
+      - [deny]
+    - !!python/tuple
+      - X-Content-Type-Options
+      - [nosniff]
+    - !!python/tuple
+      - X-Xss-Protection
+      - [1; mode=block]
+    - !!python/tuple
+      - Referrer-Policy
+      - ['origin-when-cross-origin, strict-origin-when-cross-origin']
+    - !!python/tuple
+      - Content-Security-Policy
+      - [default-src 'none']
+    - !!python/tuple
+      - X-Github-Request-Id
+      - ['CCB3:2D00:9AFF35:10BD1F8:5D81713F']
+    - !!python/tuple
+      - X-Consumed-Content-Encoding
+      - [gzip]
+    status: {code: 200, message: OK}
+    url: https://api.github.com/repos/eyoel-cov/codecov-assume-flag-test/contents/tests/unit/adder/test_adder.py?ref=48a4883890d71d777794ed998a1ad4d24a9ebab5
+version: 1

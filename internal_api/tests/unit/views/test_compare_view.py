@@ -4,11 +4,20 @@ from unittest.mock import patch
 
 from django.test import override_settings
 
+from rest_framework import status
+from rest_framework.reverse import reverse
+
+
 from archive.services import ArchiveService
 from codecov.tests.base_test import InternalAPITest
 from codecov_auth.tests.factories import OwnerFactory
 from compare.services import Comparison
-from core.tests.factories import RepositoryFactory, CommitFactory, BranchFactory
+from core.tests.factories import (
+    RepositoryFactory,
+    CommitFactory,
+    BranchFactory,
+    PullFactory,
+)
 
 current_file = Path(__file__)
 
@@ -17,51 +26,70 @@ class TestCompareCommitsView(InternalAPITest):
 
     def setUp(self):
         org = OwnerFactory(username='Codecov')
-        RepositoryFactory(author=org)
         self.user = OwnerFactory(username='codecov-user',
                                  email='codecov-user@codecov.io',
                                  organizations=[org.ownerid])
-        pass
+        self.repo = RepositoryFactory(author=self.user)
+
+        self.client.force_login(user=self.user)
+
+    def _get_commits_comparison(self, kwargs, query_params):
+        return self.client.get(reverse('compare-commits', kwargs=kwargs), data=query_params)
 
     def test_compare_commits_bad_commit(self):
-        self.client.force_login(user=self.user)
-        repo = RepositoryFactory(author=self.user)
         parent_commit = CommitFactory.create(
             message='test_compare_commits_parent',
             commitid='c5b6730',
-            repository=repo,
+            repository=self.repo,
         )
         commit_base = CommitFactory.create(
             message='test_compare_commits_base',
             commitid='9193232a8fe3429496956ba82b5fed2583d1b5eb',
             parent_commit_id=parent_commit.commitid,
-            repository=repo,
+            repository=self.repo,
         )
+
         bad_commitid = "9193232a8fe3429496123ba82b5fed2583d1b5eb"
-        url = f'/internal/{repo.author.username}/{repo.name}/compare/{commit_base.commitid}...{bad_commitid}/commits'
-        print("request url: ", url)
-        response = self.client.get(url)
+        response = self._get_commits_comparison(
+            kwargs={
+                "orgName": self.repo.author.username,
+                "repoName": self.repo.name
+            },
+            query_params={
+                "base": commit_base.commitid,
+                "head": bad_commitid
+            }
+        )
         assert response.status_code == 404
 
     def test_compare_commits_bad_branch(self):
-        self.client.force_login(user=self.user)
-        repo = RepositoryFactory(author=self.user)
         parent_commit = CommitFactory.create(
             message='test_compare_commits_parent',
             commitid='c5b6730',
-            repository=repo,
+            repository=self.repo,
         )
         commit_base = CommitFactory.create(
             message='test_compare_commits_base',
             commitid='9193232a8fe3429496956ba82b5fed2583d1b5eb',
             parent_commit_id=parent_commit.commitid,
-            repository=repo,
+            repository=self.repo,
         )
+
         bad_branch = "bad-branch"
-        branch_base = BranchFactory.create(head=commit_base, repository=commit_base.repository)
-        url = f'/internal/{repo.author.username}/{repo.name}/compare/{branch_base.name}...{bad_branch}/commits'
-        print("request url: ", url)
-        response = self.client.get(url)
+        branch_base = BranchFactory.create(
+            head=commit_base,
+            repository=self.repo
+        )
+        response = self._get_commits_comparison(
+            kwargs={
+                "orgName": self.repo.author.username,
+                "repoName": self.repo.name
+            },
+            query_params={
+                "base": branch_base.name,
+                "head": bad_branch
+            }
+        )
         assert response.status_code == 404
 
     @patch("compare.services.Comparison._calculate_git_comparison")
@@ -71,13 +99,20 @@ class TestCompareCommitsView(InternalAPITest):
         branch_base = BranchFactory.create(head=commit_base, repository=commit_base.repository)
         branch_head = BranchFactory.create(head=commit_head, repository=commit_head.repository)
 
-        url = f'/internal/{repo.author.username}/{repo.name}/compare/{branch_base.name}...{branch_head.name}/commits'
-        print("request url: ", url)
-        response = self.client.get(url)
+        response = self._get_commits_comparison(
+            kwargs={
+                "orgName": repo.author.username,
+                "repoName": repo.name
+            },
+            query_params={
+                "base": branch_base.name,
+                "head": branch_head.name
+            }
+        )
+
         assert response.status_code == 200
         content = json.loads(response.content.decode())
         assert content['git_commits'] == git_commits
-        print("this is the response: ", content)
         assert content['commit_uploads'][0]['commitid'] == commit_head.commitid
         assert content['commit_uploads'][0]['totals'] == commit_head.totals
         assert content['commit_uploads'][1]['commitid'] == commit_base.commitid
@@ -88,54 +123,83 @@ class TestCompareCommitsView(InternalAPITest):
         repo, commit_base, commit_head = build_commits(client=self.client)
         git_commits, src_diff = build_mocked_compare_commits(mocked_comparison, self.user, commit_base, commit_head)
 
-        url = f'/internal/{repo.author.username}/{repo.name}/compare/{commit_base.commitid}...{commit_head.commitid}/commits'
-        print("request url: ", url)
-        response = self.client.get(url)
+        response = self._get_commits_comparison(
+            kwargs={
+                "orgName": repo.author.username,
+                "repoName": repo.name
+            },
+            query_params={
+                "base": commit_base.commitid,
+                "head": commit_head.commitid
+            }
+        )
+
         assert response.status_code == 200
         content = json.loads(response.content.decode())
         assert content['git_commits'] == git_commits
-        print("this is the response: ", content)
         assert content['commit_uploads'][0]['commitid'] == commit_head.commitid
         assert content['commit_uploads'][0]['totals'] == commit_head.totals
         assert content['commit_uploads'][1]['commitid'] == commit_base.commitid
         assert content['commit_uploads'][1]['totals'] == commit_base.totals
 
+    @patch("compare.services.Comparison._calculate_git_comparison")
+    def test_compare_commits_view_with_pullid(self, mocked_comparison):
+        repo, base, head = build_commits(self.client)
+
+        pull = PullFactory(
+            pullid=2,
+            repository=repo,
+            author=repo.author,
+            base=base,
+            head=head
+        )
+
+        git_commits, _ = build_mocked_compare_commits(
+            mocked_comparison,
+            pull.repository.author,
+            pull.base,
+            pull.head
+        )
+
+        response = self._get_commits_comparison(
+            kwargs={
+                "orgName": repo.author.username,
+                "repoName": repo.name
+            },
+            query_params={
+                "pullid": pull.pullid
+            }
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        assert response.data['git_commits'] == git_commits
+        assert response.data['commit_uploads'][0]['commitid'] == head.commitid
+        assert response.data['commit_uploads'][0]['totals'] == head.totals
+        assert response.data['commit_uploads'][1]['commitid'] == base.commitid
+        assert response.data['commit_uploads'][1]['totals'] == base.totals
+
 
 class TestCompareDetailsView(object):
 
-    @override_settings(DEBUG=True)
-    def test_compare_details_view(self, mocker, db, client, codecov_vcr):
-        repo, commit_base, commit_head = build_commits(client=client)
-        expected_report_result = build_mocked_report_archive(mocker)
-        url = f'/internal/{repo.author.username}/{repo.name}/compare/{commit_base.commitid}...{commit_head.commitid}/details'
-        print("request url: ", url)
-        mocked_comparison = mocker.patch.object(Comparison, '_calculate_git_comparison')
-        org = OwnerFactory(username='Codecov')
-        user = OwnerFactory(username='codecov-user',
-                            email='codecov-user@codecov.io',
-                            organizations=[org.ownerid])
-        git_commits, src_diff = build_mocked_compare_commits(mocked_comparison, user, commit_base, commit_head)
-        response = client.get(url)
+    def _get_compare_details(self, client, kwargs, query_params):
+        return client.get(reverse('compare-details', kwargs=kwargs), data=query_params)
+
+    def _get_compare_src(self, client, kwargs, query_params):
+        return client.get(reverse('compare-src-full', kwargs=kwargs), data=query_params)
+
+    def verify_details_output(self, response, expected_report_result, git_commits):
         assert response.status_code == 200
         content = json.loads(response.content.decode())
         assert content['head_report']['totals'] == expected_report_result['totals']
         assert content['head_report']['files'][0]['name'] == expected_report_result['files'][0]['name']
         assert 'lines' not in content['head_report']['files'][0]
         assert 'git_commits' in content
-        assert content['base_commit'] == commit_base.commitid
-        assert content['head_commit'] == commit_head.commitid
+        assert content['base_commit'] == git_commits[0]['commitid']
+        assert content['head_commit'] == git_commits[-1]['commitid']
         assert content['git_commits'] == git_commits
 
-    @override_settings(DEBUG=True)
-    def test_compare_line_coverage_withsrc_view(self, mocker, db, client, codecov_vcr):
-        repo, commit_base, commit_head = build_commits(client=client)
-        expected_report_result = build_mocked_report_archive(mocker)
-        mocked_comparison = mocker.patch.object(Comparison, '_calculate_git_comparison')
-        git_commits, src_diff = build_mocked_compare_commits(mocked_comparison, repo.author, commit_base, commit_head)
-
-        url = f'/internal/{repo.author.username}/{repo.name}/compare/{commit_base.commitid}...{commit_head.commitid}/src'
-        print("request url: ", url)
-        response = client.get(url)
+    def verify_src_output(self, response, expected_report_result):
         assert response.status_code == 200
         content = json.loads(response.content.decode())
         assert content['head_report']['totals'] == expected_report_result['totals']
@@ -144,15 +208,128 @@ class TestCompareDetailsView(object):
         assert 'src_diff' in content
 
     @override_settings(DEBUG=True)
+    def test_compare_details_view(self, mocker, db, client, codecov_vcr):
+        repo, commit_base, commit_head = build_commits(client=client)
+        expected_report_result = build_mocked_report_archive(mocker)
+        mocked_comparison = mocker.patch.object(Comparison, '_calculate_git_comparison')
+        org = OwnerFactory(username='Codecov')
+        user = OwnerFactory(username='codecov-user',
+                            email='codecov-user@codecov.io',
+                            organizations=[org.ownerid])
+        git_commits, src_diff = build_mocked_compare_commits(mocked_comparison, user, commit_base, commit_head)
+
+        response = self._get_compare_details(
+            client,
+            kwargs={
+                "orgName": repo.author.username,
+                "repoName": repo.name
+            },
+            query_params={
+                "base": commit_base.commitid,
+                "head": commit_head.commitid
+            }
+        )
+
+        self.verify_details_output(response, expected_report_result, git_commits)
+
+    @override_settings(DEBUG=True)
+    def test_compare_line_coverage_withsrc_view(self, mocker, db, client, codecov_vcr):
+        repo, commit_base, commit_head = build_commits(client=client)
+        expected_report_result = build_mocked_report_archive(mocker)
+        mocked_comparison = mocker.patch.object(Comparison, '_calculate_git_comparison')
+        git_commits, src_diff = build_mocked_compare_commits(mocked_comparison, repo.author, commit_base, commit_head)
+
+        response = self._get_compare_src(
+            client,
+            kwargs={
+                "orgName": repo.author.username,
+                "repoName": repo.name
+            },
+            query_params={
+                "base": commit_base.commitid,
+                "head": commit_head.commitid
+            }
+        )
+
+        self.verify_src_output(response, expected_report_result)
+
+    @override_settings(DEBUG=True)
+    def test_compare_details_accepts_pullid_query_param(self, mocker, db, client, codecov_vcr):
+        repo, commit_base, commit_head = build_commits(client=client)
+        expected_report_result = build_mocked_report_archive(mocker)
+        mocked_comparison = mocker.patch.object(Comparison, '_calculate_git_comparison')
+        git_commits, src_diff = build_mocked_compare_commits(mocked_comparison, repo.author, commit_base, commit_head)
+
+        response = self._get_compare_details(
+            client,
+            kwargs={
+                "orgName": repo.author.username,
+                "repoName": repo.name
+            },
+            query_params={
+                "pullid": PullFactory(
+                    base=commit_base,
+                    head=commit_head,
+                    pullid=2,
+                    author=commit_head.author,
+                    repository=repo
+                ).pullid
+            }
+        )
+
+        self.verify_details_output(response, expected_report_result, git_commits)
+
+    @override_settings(DEBUG=True)
+    def test_compare_src_accepts_pullid_query_param(self, mocker, db, client, codecov_vcr):
+        repo, commit_base, commit_head = build_commits(client=client)
+        expected_report_result = build_mocked_report_archive(mocker)
+        mocked_comparison = mocker.patch.object(Comparison, '_calculate_git_comparison')
+        git_commits, src_diff = build_mocked_compare_commits(mocked_comparison, repo.author, commit_base, commit_head)
+
+        response = self._get_compare_src(
+            client,
+            kwargs={
+                "orgName": repo.author.username,
+                "repoName": repo.name
+            },
+            query_params={
+                "pullid": PullFactory(
+                    base=commit_base,
+                    head=commit_head,
+                    pullid=2,
+                    author=commit_head.author,
+                    repository=commit_head.repository
+                ).pullid
+            }
+        )
+
+        self.verify_src_output(response, expected_report_result)
+
+
+class TestCompareSingleFileDiffView:
+    def _get_single_file_diff(self, client, kwargs, query_params):
+        return client.get(reverse('compare-diff-file', kwargs=kwargs), data=query_params)
+
+    @override_settings(DEBUG=True)
     def test_compare_single_file_diff_view(self, mocker, db, client, codecov_vcr):
         repo, commit_base, commit_head = build_commits(client=client)
         build_mocked_report_archive(mocker)
         mocked_comparison = mocker.patch.object(Comparison, '_calculate_git_comparison')
         build_mocked_compare_commits(mocked_comparison, repo.author, commit_base, commit_head)
 
-        url = f'/internal/{repo.author.username}/{repo.name}/compare/{commit_base.commitid}...{commit_head.commitid}/diff_file/src/adder/adder.py'
-        print("request url: ", url)
-        response = client.get(url)
+        response = self._get_single_file_diff(
+            client,
+            kwargs={
+                "orgName": repo.author.username,
+                "repoName": repo.name,
+                "file_path": "src/adder/adder.py"
+            },
+            query_params={
+                "head": commit_head.commitid,
+                "base": commit_base.commitid
+            }
+        )
+
         assert response.status_code == 200
         content = json.loads(response.content.decode())
         assert 'src_diff' in content
@@ -184,6 +361,7 @@ class TestCompareDetailsView(object):
         }
         assert 'base_coverage' in content
         assert 'head_coverage' in content
+
 
 def build_commits(client):
     """

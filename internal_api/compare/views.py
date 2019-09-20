@@ -1,11 +1,19 @@
 import asyncio
 
 from rest_framework import generics
+from django.shortcuts import get_object_or_404
 
 from compare.services import Comparison
-from internal_api.compare.serializers import CommitsComparisonSerializer, ComparisonDetailsSerializer, \
-    ComparisonFullSrcSerializer, FlagComparisonSerializer, SingleFileSourceSerializer, SingleFileDiffSerializer
-from internal_api.mixins import CompareSlugMixin
+from internal_api.compare.serializers import (
+    CommitsComparisonSerializer,
+    ComparisonFullSrcSerializer,
+    SingleFileSourceSerializer,
+    FlagComparisonSerializer,
+    ComparisonDetailsSerializer,
+    SingleFileDiffSerializer,
+)
+from internal_api.mixins import CompareSlugMixin, RepoSlugUrlMixin
+from core.models import Pull
 
 
 class CompareCommits(CompareSlugMixin, generics.RetrieveAPIView):

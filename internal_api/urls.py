@@ -1,38 +1,63 @@
-from django.urls import path
+from django.urls import path, include
 
-import internal_api.org.views
-import internal_api.repo.views
-import internal_api.pull.views
-import internal_api.commit.views
-import internal_api.branch.views
-import internal_api.compare.views
+from internal_api.org.views import OrgsView
+from internal_api.pull.views import RepoPullList, RepoPullFlagsList
+
+from internal_api.commit.views import RepoCommitList, RepoCommitFlags
+from internal_api.branch.views import RepoBranchList
+
+from internal_api.repo.views import (
+    RepositoryList,
+    RepositoryDetails,
+    RepositoryRegenerateUploadToken,
+    RepositoryDefaultBranch,
+)
+
+from internal_api.compare.views import (
+    CompareCommits,
+    CompareFlagsList,
+    CompareFullSource,
+    CompareDetails,
+    CompareSingleFileSource,
+    CompareSingleFileDiff
+)
+
+
+repo_patterns = [
+    path('details', RepositoryDetails.as_view(), name='details'),
+    path('branches', RepoBranchList.as_view(), name='branches'),
+    path('default-branch', RepositoryDefaultBranch.as_view(), name='default-branch'),
+    path('regenerate-upload-token', RepositoryRegenerateUploadToken.as_view(), name='regen-upload-token'),
+]
+
+
+commits_patterns = [
+    path('', RepoCommitList.as_view(), name='commits-list'),
+    path('/<str:commitid>/flags', RepoCommitFlags.as_view(), name='commits-flags-list'),
+]
+
+
+pulls_patterns = [
+    path('', RepoPullList.as_view(), name='pulls-list'),
+    path('/<str:pullid>/flags', RepoPullFlagsList.as_view(), name='pulls-flags-list'),
+]
+
+
+compare_patterns = [
+    path('commits', CompareCommits.as_view(), name='compare-commits'),
+    path('flags', CompareFlagsList.as_view(), name='compare-flags'),
+    path('src', CompareFullSource.as_view(), name='compare-src-full'),
+    path('details', CompareDetails.as_view(), name='compare-details'),
+    path('src_file/<path:file_path>', CompareSingleFileSource.as_view(), name='compare-src-file'),
+    path('diff_file/<path:file_path>', CompareSingleFileDiff.as_view(), name='compare-diff-file'),
+]
 
 
 urlpatterns = [
-    path('orgs', internal_api.org.views.OrgsView.as_view()),
-    path('<str:orgName>/repos', internal_api.repo.views.RepositoryList.as_view()),
-    path('<str:orgName>/<str:repoName>/details', internal_api.repo.views.RepositoryDetails.as_view()),
-    path('<str:orgName>/<str:repoName>/regenerate-upload-token', internal_api.repo.views.RepositoryRegenerateUploadToken.as_view()),
-    path('<str:orgName>/<str:repoName>/pulls', internal_api.pull.views.RepoPullList.as_view()),
-    path('<str:orgName>/<str:repoName>/pulls/<str:pullid>/flags', internal_api.pull.views.RepoPullFlagsList.as_view()),
-    path('<str:orgName>/<str:repoName>/commits',
-         internal_api.commit.views.RepoCommitList.as_view()),
-    path('<str:orgName>/<str:repoName>/commits/<str:commitid>/flags',
-         internal_api.commit.views.RepoCommitFlags.as_view()),
-    path('<str:orgName>/<str:repoName>/branches',
-         internal_api.branch.views.RepoBranchList.as_view()),
-    path('<str:orgName>/<str:repoName>/default-branch',
-         internal_api.repo.views.RepositoryDefaultBranch.as_view()),
-    path('<str:orgName>/<str:repoName>/compare/<path:base>...<path:head>/commits',
-         internal_api.compare.views.CompareCommits.as_view()),
-    path('<str:orgName>/<str:repoName>/compare/<str:base>...<str:head>/flags',
-         internal_api.compare.views.CompareFlagsList.as_view()),
-    path('<str:orgName>/<str:repoName>/compare/<str:base>...<str:head>/details',
-         internal_api.compare.views.CompareDetails.as_view()),
-    path('<str:orgName>/<str:repoName>/compare/<path:base>...<path:head>/src',
-         internal_api.compare.views.CompareFullSource.as_view()),
-    path('<str:orgName>/<str:repoName>/compare/<path:base>...<path:head>/src_file/<path:file_path>',
-         internal_api.compare.views.CompareSingleFileSource.as_view()),
-    path('<str:orgName>/<str:repoName>/compare/<path:base>...<path:head>/diff_file/<path:file_path>',
-         internal_api.compare.views.CompareSingleFileDiff.as_view())
+    path('orgs', OrgsView.as_view()),
+    path('<str:orgName>/repos', RepositoryList.as_view()),
+    path('<str:orgName>/<str:repoName>/', include(repo_patterns)),
+    path('<str:orgName>/<str:repoName>/pulls', include(pulls_patterns)),
+    path('<str:orgName>/<str:repoName>/commits', include(commits_patterns)),
+    path('<str:orgName>/<str:repoName>/compare/', include(compare_patterns))
 ]

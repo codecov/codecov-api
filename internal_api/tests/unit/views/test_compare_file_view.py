@@ -2,17 +2,30 @@ import json
 
 from django.test import override_settings
 
-from core.tests.factories import RepositoryFactory, CommitFactory
+from core.tests.factories import RepositoryFactory, CommitFactory, PullFactory
+
+from rest_framework.reverse import reverse
 
 
-class TestCompareSingleFileChangesView(object):
+class TestCompareSingleFileChangesView:
+    def _get_single_file_changes(self, client, kwargs, query_params):
+        return client.get(reverse('compare-src-file', kwargs=kwargs), data=query_params)
 
     @override_settings(DEBUG=True)
     def test_fetch_file_cov_decrease___success(self, mocker, db, client, codecov_vcr):
         repo, commit_base, commit_head, change_commit = build_commits_with_changes(client=client)
-        url = f'/internal/{repo.author.username}/{repo.name}/compare/{commit_base.commitid}...{commit_head.commitid}/src_file/src/subtractor/subtractor.py'
-        print("request url: ", url)
-        response = client.get(url)
+        response = self._get_single_file_changes(
+            client,
+            kwargs={
+                "orgName": repo.author.username,
+                "repoName": repo.name,
+                "file_path": "src/subtractor/subtractor.py"
+            },
+            query_params={
+                "base": commit_base.commitid,
+                "head": commit_head.commitid
+            }
+        )
         assert response.status_code == 200
         content = json.loads(response.content.decode())
         assert content['src'] == {
@@ -38,9 +51,19 @@ class TestCompareSingleFileChangesView(object):
     @override_settings(DEBUG=True)
     def test_fetch_file_with_filename_change(self, mocker, db, client, codecov_vcr):
         repo, commit_base, commit_head, change_commit = build_commits_with_changes(client=client)
-        url = f'/internal/{repo.author.username}/{repo.name}/compare/{commit_base.commitid}...{commit_head.commitid}/src_file/src/adder/adders.py?before=src/adder/adder.py'
-        print("request url: ", url)
-        response = client.get(url)
+        response = self._get_single_file_changes(
+            client,
+            kwargs={
+                "orgName": repo.author.username,
+                "repoName": repo.name,
+                "file_path": "src/adder/adders.py"
+            },
+            query_params={
+                "base": commit_base.commitid,
+                "head": commit_head.commitid,
+                "before": "src/adder/adder.py"
+            }
+        )
         assert response.status_code == 200
         content = json.loads(response.content.decode())
         assert content == {
@@ -80,9 +103,60 @@ class TestCompareSingleFileChangesView(object):
     @override_settings(DEBUG=True)
     def test_fetch_file_with_diff_change(self, mocker, db, client, codecov_vcr):
         repo, commit_base, commit_head, change_commit = build_commits_with_changes(client=client)
-        url = f'/internal/{repo.author.username}/{repo.name}/compare/{commit_base.commitid}...{change_commit.commitid}/src_file/tests/unit/adder/test_adder.py'
-        print("request url: ", url)
-        response = client.get(url)
+        response = self._get_single_file_changes(
+            client,
+            kwargs={
+                "orgName": repo.author.username,
+                "repoName": repo.name,
+                "file_path": "tests/unit/adder/test_adder.py"
+            },
+            query_params={
+                "base": commit_base.commitid,
+                "head": change_commit.commitid
+            }
+        )
+        assert response.status_code == 200
+        content = json.loads(response.content.decode())
+        assert content == {
+            "src": {
+                "base": None,
+                "head": [
+                    "import pytest",
+                    "from src.adder.adders import Adder",
+                    "",
+                    "def test_sum_two_plus_two_is_four():",
+                    "    assert Adder().add(3,3) == 6",
+                    "",
+                    "def test_sum_two_plus_two_is_not_five():",
+                    "    assert Adder().add(3,4) != 6",
+                    "",
+                    "def test_add2_with_four():",
+                    "\tassert Adder().add2(4) == 6"
+                ]
+            }
+        }
+
+    @override_settings(DEBUG=True)
+    def test_compare_file_src_accepts_pullid_query_parameter(self, mocker, db, client, codecov_vcr):
+        repo, commit_base, commit_head, change_commit = build_commits_with_changes(client=client)
+        response = self._get_single_file_changes(
+            client,
+            kwargs={
+                "orgName": repo.author.username,
+                "repoName": repo.name,
+                "file_path": "tests/unit/adder/test_adder.py"
+            },
+            query_params={
+                "pullid": PullFactory(
+                    base=commit_base,
+                    head=change_commit,
+                    pullid=1,
+                    author=commit_head.author,
+                    repository=commit_head.repository
+                ).pullid
+            }
+        )
+
         assert response.status_code == 200
         content = json.loads(response.content.decode())
         assert content == {
