@@ -23,16 +23,12 @@ class CommitsComparisonSerializer(serializers.Serializer):
 class ComparisonDetailsSerializer(serializers.Serializer):
     base_commit = serializers.CharField(source='base_commit.commitid')
     head_commit = serializers.CharField(source='head_commit.commitid')
-    base_report = ReportWithoutLinesSerializer()
-    head_report = ReportWithoutLinesSerializer()
+    base_report = ReportSerializer()
+    head_report = ReportSerializer()
     git_commits = serializers.JSONField()
 
 
 class ComparisonFullSrcSerializer(serializers.Serializer):
-    base_commit = serializers.CharField(source='base_commit.commitid')
-    head_commit = serializers.CharField(source='head_commit.commitid')
-    base_report = ReportSerializer()
-    head_report = ReportSerializer()
     src_diff = serializers.SerializerMethodField()
 
     def get_src_diff(self, obj):
