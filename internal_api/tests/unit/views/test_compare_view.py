@@ -185,9 +185,6 @@ class TestCompareDetailsView(object):
     def _get_compare_details(self, client, kwargs, query_params):
         return client.get(reverse('compare-details', kwargs=kwargs), data=query_params)
 
-    def _get_compare_src(self, client, kwargs, query_params):
-        return client.get(reverse('compare-src-full', kwargs=kwargs), data=query_params)
-
     def verify_details_output(self, response, expected_report_result, git_commits):
         assert response.status_code == 200
         content = json.loads(response.content.decode())
@@ -198,14 +195,6 @@ class TestCompareDetailsView(object):
         assert content['base_commit'] == git_commits[0]['commitid']
         assert content['head_commit'] == git_commits[-1]['commitid']
         assert content['git_commits'] == git_commits
-
-    def verify_src_output(self, response, expected_report_result):
-        assert response.status_code == 200
-        content = json.loads(response.content.decode())
-        assert content['head_report']['totals'] == expected_report_result['totals']
-        assert content['head_report']['files'][0]['name'] == expected_report_result['files'][0]['name']
-        assert 'lines' in content['head_report']['files'][0]
-        assert 'src_diff' in content
 
     @override_settings(DEBUG=True)
     def test_compare_details_view(self, mocker, db, client, codecov_vcr):
@@ -233,27 +222,6 @@ class TestCompareDetailsView(object):
         self.verify_details_output(response, expected_report_result, git_commits)
 
     @override_settings(DEBUG=True)
-    def test_compare_line_coverage_withsrc_view(self, mocker, db, client, codecov_vcr):
-        repo, commit_base, commit_head = build_commits(client=client)
-        expected_report_result = build_mocked_report_archive(mocker)
-        mocked_comparison = mocker.patch.object(Comparison, '_calculate_git_comparison')
-        git_commits, src_diff = build_mocked_compare_commits(mocked_comparison, repo.author, commit_base, commit_head)
-
-        response = self._get_compare_src(
-            client,
-            kwargs={
-                "orgName": repo.author.username,
-                "repoName": repo.name
-            },
-            query_params={
-                "base": commit_base.commitid,
-                "head": commit_head.commitid
-            }
-        )
-
-        self.verify_src_output(response, expected_report_result)
-
-    @override_settings(DEBUG=True)
     def test_compare_details_accepts_pullid_query_param(self, mocker, db, client, codecov_vcr):
         repo, commit_base, commit_head = build_commits(client=client)
         expected_report_result = build_mocked_report_archive(mocker)
@@ -278,32 +246,6 @@ class TestCompareDetailsView(object):
         )
 
         self.verify_details_output(response, expected_report_result, git_commits)
-
-    @override_settings(DEBUG=True)
-    def test_compare_src_accepts_pullid_query_param(self, mocker, db, client, codecov_vcr):
-        repo, commit_base, commit_head = build_commits(client=client)
-        expected_report_result = build_mocked_report_archive(mocker)
-        mocked_comparison = mocker.patch.object(Comparison, '_calculate_git_comparison')
-        git_commits, src_diff = build_mocked_compare_commits(mocked_comparison, repo.author, commit_base, commit_head)
-
-        response = self._get_compare_src(
-            client,
-            kwargs={
-                "orgName": repo.author.username,
-                "repoName": repo.name
-            },
-            query_params={
-                "pullid": PullFactory(
-                    base=commit_base,
-                    head=commit_head,
-                    pullid=2,
-                    author=commit_head.author,
-                    repository=commit_head.repository
-                ).pullid
-            }
-        )
-
-        self.verify_src_output(response, expected_report_result)
 
 
 class TestCompareSingleFileDiffView:
@@ -361,6 +303,121 @@ class TestCompareSingleFileDiffView:
         }
         assert 'base_coverage' in content
         assert 'head_coverage' in content
+
+
+class TestCompareFullSrcView:
+    def _get_compare_src(self, client, kwargs, query_params):
+        return client.get(reverse('compare-src-full', kwargs=kwargs), data=query_params)
+
+    def verify_src_output(self, response, expected_report_result):
+        assert response.status_code == 200
+        content = json.loads(response.content.decode())
+        assert content['head_report']['totals'] == expected_report_result['totals']
+        assert content['head_report']['files'][0]['name'] == expected_report_result['files'][0]['name']
+        assert 'lines' in content['head_report']['files'][0]
+        assert 'src_diff' in content
+
+    @override_settings(DEBUG=True)
+    def test_basic_return_with_commit_refs(self, mocker, db, client, codecov_vcr):
+        repo, commit_base, commit_head = build_commits(client=client)
+        expected_report_result = build_mocked_report_archive(mocker)
+        mocked_comparison = mocker.patch.object(Comparison, '_calculate_git_comparison')
+        git_commits, src_diff = build_mocked_compare_commits(
+            mocked_comparison,
+            repo.author,
+            commit_base,
+            commit_head
+        )
+
+        response = self._get_compare_src(
+            client,
+            kwargs={
+                "orgName": repo.author.username,
+                "repoName": repo.name
+            },
+            query_params={
+                "base": commit_base.commitid,
+                "head": commit_head.commitid
+            }
+        )
+
+        self.verify_src_output(response, expected_report_result)
+
+    @override_settings(DEBUG=True)
+    def test_accepts_pullid_query_param(self, mocker, db, client, codecov_vcr):
+        repo, commit_base, commit_head = build_commits(client=client)
+        expected_report_result = build_mocked_report_archive(mocker)
+        mocked_comparison = mocker.patch.object(Comparison, '_calculate_git_comparison')
+        git_commits, src_diff = build_mocked_compare_commits(
+            mocked_comparison,
+            repo.author,
+            commit_base,
+            commit_head
+        )
+
+        response = self._get_compare_src(
+            client,
+            kwargs={
+                "orgName": repo.author.username,
+                "repoName": repo.name
+            },
+            query_params={
+                "pullid": PullFactory(
+                    base=commit_base,
+                    head=commit_head,
+                    pullid=2,
+                    author=commit_head.author,
+                    repository=commit_head.repository
+                ).pullid
+            }
+        )
+
+        self.verify_src_output(response, expected_report_result)
+
+    @override_settings(DEBUG=True)
+    def test_omits_line_data_after_first_five_files(self, mocker, db, client, codecov_vcr):
+        repo, commit_base, commit_head = build_commits(client=client)
+        expected_report_result = build_mocked_report_archive(mocker)
+        mocked_comparison = mocker.patch.object(Comparison, '_calculate_git_comparison')
+        git_commits, src_diff = build_mocked_compare_commits(
+            mocked_comparison,
+            repo.author,
+            commit_base,
+            commit_head
+        )
+
+        # Make src_diff long enough to trigger line data omission
+        # I'm just adding copies of 'main.py' with dummy names
+        src_diff["files"] = src_diff["files"]
+        for i in range(5):
+            # using json library to deep-copy the dict,
+            # but there might be a better way
+            src_diff["files"][f"main{i}.py"] = json.loads(
+                json.dumps(src_diff["files"]["src/main.py"])
+            )
+
+        assert len(mocked_comparison.return_value["diff"]["files"]) > 5
+
+        response = self._get_compare_src(
+            client,
+            kwargs={
+                "orgName": repo.author.username,
+                "repoName": repo.name
+            },
+            query_params={
+                "head": commit_head.commitid,
+                "base": commit_base.commitid
+            }
+        )
+
+        # there should be exactly five files with a non-empty list for "lines"
+        files_with_lines = 0
+        content = json.loads(response.content.decode())
+        for _, diff_data in content["src_diff"]["files"].items():
+            if diff_data["segments"][0]["lines"]:
+                files_with_lines += 1
+
+        assert files_with_lines == 5
 
 
 def build_commits(client):
