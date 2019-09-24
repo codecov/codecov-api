@@ -190,7 +190,7 @@ class TestCompareDetailsView(object):
         content = json.loads(response.content.decode())
         assert content['head_report']['totals'] == expected_report_result['totals']
         assert content['head_report']['files'][0]['name'] == expected_report_result['files'][0]['name']
-        assert 'lines' not in content['head_report']['files'][0]
+        assert 'lines' in content['head_report']['files'][0]
         assert 'git_commits' in content
         assert content['base_commit'] == git_commits[0]['commitid']
         assert content['head_commit'] == git_commits[-1]['commitid']
@@ -312,9 +312,6 @@ class TestCompareFullSrcView:
     def verify_src_output(self, response, expected_report_result):
         assert response.status_code == 200
         content = json.loads(response.content.decode())
-        assert content['head_report']['totals'] == expected_report_result['totals']
-        assert content['head_report']['files'][0]['name'] == expected_report_result['files'][0]['name']
-        assert 'lines' in content['head_report']['files'][0]
         assert 'src_diff' in content
 
     @override_settings(DEBUG=True)
