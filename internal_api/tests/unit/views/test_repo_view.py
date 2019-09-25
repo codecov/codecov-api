@@ -1,6 +1,8 @@
 from unittest.mock import patch
 import json
 
+from rest_framework.reverse import reverse
+
 from covreports.utils.tuples import ReportTotals
 from django.test import override_settings
 
@@ -9,6 +11,106 @@ from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory, CommitFactory
 from internal_api.repo.repository_accessors import RepoAccessors
 from internal_api.tests.unit.views.test_compare_view import build_mocked_report_archive
+
+
+@patch("internal_api.repo.repository_accessors.RepoAccessors.get_repo_permissions")
+class TestRepositoryListView(InternalAPITest):
+    def setUp(self):
+        self.org = OwnerFactory(username='codecov', service='github')
+
+        self.repo1 = RepositoryFactory(author=self.org, active=True, private=True, name='A')
+        self.repo2 = RepositoryFactory(author=self.org, active=True, private=True, name='B')
+
+        repos_with_permission = [
+            self.repo1.repoid,
+            self.repo2.repoid,
+        ]
+
+        self.user = OwnerFactory(
+            username='codecov-user',
+            service='github',
+            organizations=[self.org.ownerid],
+            permission=repos_with_permission
+        )
+
+        self.client.force_login(user=self.user)
+
+    def _get_repos(self, query_params):
+        return self.client.get(
+            reverse('repos-list', kwargs={"orgName": self.org.username}),
+            data=query_params
+        )
+
+    def test_order_by_updatestamp(self, _):
+        response = self._get_repos(query_params={'ordering': 'updatestamp'})
+
+        assert response.data["results"][0]["repoid"] == self.repo1.repoid
+        assert response.data["results"][1]["repoid"] == self.repo2.repoid
+
+        reverse_response = self._get_repos(query_params={'ordering': '-updatestamp'})
+
+        assert reverse_response.data["results"][0]["repoid"] == self.repo2.repoid
+        assert reverse_response.data["results"][1]["repoid"] == self.repo1.repoid
+
+    def test_order_by_name(self, _):
+        response = self._get_repos(query_params={'ordering': 'name'})
+
+        assert response.data["results"][0]["repoid"] == self.repo1.repoid
+        assert response.data["results"][1]["repoid"] == self.repo2.repoid
+
+        reverse_response = self._get_repos(query_params={'ordering': '-name'})
+
+        assert reverse_response.data["results"][0]["repoid"] == self.repo2.repoid
+        assert reverse_response.data["results"][1]["repoid"] == self.repo1.repoid
+
+    @patch("archive.services.ArchiveService.create_root_storage")
+    @patch("archive.services.ArchiveService.read_chunks")
+    def test_order_by_coverage(self, read_chunks_mock, *args):
+        read_chunks_mock.return_value = []
+
+        CommitFactory(repository=self.repo1, totals={"c": 25})
+        CommitFactory(repository=self.repo1, totals={"c": 41})
+        CommitFactory(repository=self.repo2, totals={"c": 32})
+
+        response = self._get_repos(query_params={'ordering': 'coverage'})
+
+        assert response.data["results"][0]["repoid"] == self.repo2.repoid
+        assert response.data["results"][1]["repoid"] == self.repo1.repoid
+
+        reverse_response = self._get_repos(query_params={'ordering': '-coverage'})
+
+        assert reverse_response.data["results"][0]["repoid"] == self.repo1.repoid
+        assert reverse_response.data["results"][1]["repoid"] == self.repo2.repoid
+
+    def test_get_active_repos(self, _):
+        RepositoryFactory(author=self.org, name='C')
+        response = self._get_repos({'active': True})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            len(response.data['results']),
+            2,
+            "got the wrong number of repos: {}".format(len(response.data['results']))
+        )
+
+    def test_get_inactive_repos(self, _):
+        RepositoryFactory(author=self.org, name='C')
+        response = self._get_repos({'active': False})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            len(response.data['results']),
+            1,
+            "got the wrong number of repos: {}".format(len(response.data['results']))
+        )
+
+    def test_get_all_repos(self, mock_provider):
+        RepositoryFactory(author=self.org, name='C')
+        response = self._get_repos({})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            len(response.data['results']),
+            3,
+            "got the wrong number of repos: {}".format(len(response.data['results']))
+        )
 
 
 @patch("internal_api.repo.repository_accessors.RepoAccessors.get_repo_permissions")
@@ -34,28 +136,6 @@ class TestRepoView(InternalAPITest):
         )
 
         RepositoryFactory(author=OwnerFactory(), active=True)
-        pass
-
-    def test_get_active_repos(self, mock_provider):
-        self.client.force_login(user=self.user)
-        response = self.client.get('/internal/codecov/repos?active=True')
-        self.assertEqual(response.status_code, 200)
-        content = self.json_content(response)
-        self.assertEqual(len(content['results']), 2, "got the wrong number of repos: {}".format(content['results']))
-
-    def test_get_inactive_repos(self, mock_provider):
-        self.client.force_login(user=self.user)
-        response = self.client.get('/internal/codecov/repos?active=False')
-        self.assertEqual(response.status_code, 200)
-        content = self.json_content(response)
-        self.assertEqual(len(content['results']), 1, "got the wrong number of repos: {}".format(content['results']))
-
-    def test_get_all_repos(self, mock_provider):
-        self.client.force_login(user=self.user)
-        response = self.client.get('/internal/codecov/repos')
-        self.assertEqual(response.status_code, 200)
-        content = self.json_content(response)
-        self.assertEqual(len(content['results']), 3, "got the wrong number of repos: {}".format(content['results']))
 
     def test_repo_details_with_permissions(self, mock_provider):
         mock_provider.return_value = True, True

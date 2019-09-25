@@ -1,16 +1,21 @@
-import asyncio
+from django.db.models import Subquery, OuterRef
+
+from django.shortcuts import get_object_or_404
 
 from rest_framework import generics, filters, mixins
-from django_filters import rest_framework as django_filters, BooleanFilter
 from rest_framework.exceptions import PermissionDenied
+
+from django_filters import rest_framework as django_filters, BooleanFilter
+
 from internal_api.mixins import FilterByRepoMixin, RepoSlugUrlMixin
 from codecov_auth.models import Owner
 from core.models import Repository, Commit
-from internal_api.repo.repository_accessors import RepoAccessors
+
+from .repository_accessors import RepoAccessors
 from .serializers import RepoSerializer, RepoDetailsSerializer, RepoNewUploadTokenSerializer
 
 
-class RepositoryFilter(django_filters.FilterSet):
+class RepositoryFilters(django_filters.FilterSet):
     """Filter for active repositories"""
     active = BooleanFilter(field_name='active', method='filter_active')
 
@@ -25,20 +30,25 @@ class RepositoryFilter(django_filters.FilterSet):
 
 
 class RepositoryList(generics.ListAPIView):
-    queryset = Repository.objects.all()
     serializer_class = RepoSerializer
     filter_backends = (django_filters.DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
-    filterset_class = RepositoryFilter
+    filterset_class = RepositoryFilters
     search_fields = ('name',)
-    ordering_fields = ('updatestamp',)
+    ordering_fields = ('updatestamp', 'name', 'coverage',)
 
-    def filter_queryset(self, queryset):
-        queryset = super().filter_queryset(queryset)
-        org_name = self.kwargs.get('orgName')
-        owner = self.request.user
-        organization = Owner.objects.get(username=org_name, service=owner.service)
-        queryset = queryset.filter(author=organization)
-        return queryset
+    def get_queryset(self):
+        owner = get_object_or_404(
+            Owner,
+            username=self.kwargs.get("orgName"),
+            service=self.request.user.service
+        )
+        return owner.repository_set.annotate(
+            coverage=Subquery(
+                Commit.objects.filter(
+                    repository_id=OuterRef('repoid')
+                ).order_by('-timestamp').values('totals__c')[:1]
+            )
+        )
 
 
 class RepositoryDetails(generics.RetrieveAPIView):

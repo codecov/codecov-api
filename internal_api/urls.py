@@ -55,7 +55,7 @@ compare_patterns = [
 
 urlpatterns = [
     path('orgs', OrgsView.as_view()),
-    path('<str:orgName>/repos', RepositoryList.as_view()),
+    path('<str:orgName>/repos', RepositoryList.as_view(), name='repos-list'),
     path('<str:orgName>/<str:repoName>/', include(repo_patterns)),
     path('<str:orgName>/<str:repoName>/pulls', include(pulls_patterns)),
     path('<str:orgName>/<str:repoName>/commits', include(commits_patterns)),
