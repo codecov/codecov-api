@@ -7,14 +7,13 @@ A private Django REST Framework API intended to serve codecov's front end.
 
 ### Building
 
-This project contains a makefile, to get up and running you will need to build the base image and the development image. Run:
+This project contains a makefile. Run:
 
-    make build.base
-    make build.dev
+    make build
 
 To build the API.
 
-requirements.txt is used in the base image. If you make changes to requirements.txt you will need to run `make build.base` followed by `make build.dev`
+requirements.txt is used in the base image. If you make changes to requirements.txt you will need to run `make build` again.
 
 ### Testing
 
