@@ -28,5 +28,5 @@ class PullSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Pull
-        fields = ('title', 'author', 'base', 'head',
+        fields = ('pullid', 'title', 'author', 'base', 'head',
                   'compared_to', 'updatestamp', 'state', 'diff', 'flare')

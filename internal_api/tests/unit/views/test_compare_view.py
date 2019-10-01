@@ -411,10 +411,39 @@ class TestCompareFullSrcView:
         files_with_lines = 0
         content = json.loads(response.content.decode())
         for _, diff_data in content["src_diff"]["files"].items():
-            if diff_data["segments"][0]["lines"]:
+            if diff_data["segments"]:
                 files_with_lines += 1
 
         assert files_with_lines == 5
+
+    @override_settings(DEBUG=True)
+    def test_allows_diff_without_segments(self, mocker, db, client, codecov_vcr):
+        repo, commit_base, commit_head = build_commits(client=client)
+        expected_report_result = build_mocked_report_archive(mocker)
+        mocked_comparison = mocker.patch.object(Comparison, '_calculate_git_comparison')
+        git_commits, src_diff = build_mocked_compare_commits(
+            mocked_comparison,
+            repo.author,
+            commit_base,
+            commit_head
+        )
+
+        src_diff["files"] = src_diff["files"]
+        del src_diff["files"]["src/main.py"]["segments"]
+
+        response = self._get_compare_src(
+            client,
+            kwargs={
+                "orgName": repo.author.username,
+                "repoName": repo.name
+            },
+            query_params={
+                "head": commit_head.commitid,
+                "base": commit_base.commitid
+            }
+        )
+
+        self.verify_src_output(response, expected_report_result)
 
 
 def build_commits(client):
