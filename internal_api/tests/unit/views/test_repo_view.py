@@ -8,13 +8,41 @@ from django.test import override_settings
 
 from codecov.tests.base_test import InternalAPITest
 from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import RepositoryFactory, CommitFactory
+from core.tests.factories import RepositoryFactory, CommitFactory, PullFactory, BranchFactory
+from core.models import Repository
 from internal_api.repo.repository_accessors import RepoAccessors
 from internal_api.tests.unit.views.test_compare_view import build_mocked_report_archive
 
 
+class RepositoryViewSetTestSuite(InternalAPITest):
+    def _list(self, kwargs, query_params={}):
+        return self.client.get(
+            reverse('repos-list', kwargs={"orgName": self.org.username}),
+            data=query_params
+        )
+
+    def _retrieve(self, kwargs):
+        return self.client.get(reverse('repos-detail', kwargs=kwargs))
+
+    def _update(self, kwargs, data={}):
+        return self.client.patch(
+            reverse('repos-detail', kwargs=kwargs),
+            data=data,
+            content_type="application/json"
+        )
+
+    def _destroy(self, kwargs):
+        return self.client.delete(reverse('repos-detail', kwargs=kwargs))
+
+    def _regenerate_upload_token(self, kwargs):
+        return self.client.patch(reverse('repos-regenerate-upload-token', kwargs=kwargs))
+
+    def _erase(self, kwargs):
+        return self.client.patch(reverse('repos-erase', kwargs=kwargs))
+
+
 @patch("internal_api.repo.repository_accessors.RepoAccessors.get_repo_permissions")
-class TestRepositoryListView(InternalAPITest):
+class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
     def setUp(self):
         self.org = OwnerFactory(username='codecov', service='github')
 
@@ -35,30 +63,36 @@ class TestRepositoryListView(InternalAPITest):
 
         self.client.force_login(user=self.user)
 
-    def _get_repos(self, query_params):
-        return self.client.get(
-            reverse('repos-list', kwargs={"orgName": self.org.username}),
-            data=query_params
-        )
-
     def test_order_by_updatestamp(self, _):
-        response = self._get_repos(query_params={'ordering': 'updatestamp'})
+        response = self._list(
+            kwargs={"orgName": self.org.username},
+            query_params={'ordering': 'updatestamp'}
+        )
 
         assert response.data["results"][0]["repoid"] == self.repo1.repoid
         assert response.data["results"][1]["repoid"] == self.repo2.repoid
 
-        reverse_response = self._get_repos(query_params={'ordering': '-updatestamp'})
+        reverse_response = self._list(
+            kwargs={"orgName": self.org.username},
+            query_params={'ordering': '-updatestamp'}
+        )
 
         assert reverse_response.data["results"][0]["repoid"] == self.repo2.repoid
         assert reverse_response.data["results"][1]["repoid"] == self.repo1.repoid
 
     def test_order_by_name(self, _):
-        response = self._get_repos(query_params={'ordering': 'name'})
+        response = self._list(
+            kwargs={"orgName": self.org.username},
+            query_params={'ordering': 'name'}
+        )
 
         assert response.data["results"][0]["repoid"] == self.repo1.repoid
         assert response.data["results"][1]["repoid"] == self.repo2.repoid
 
-        reverse_response = self._get_repos(query_params={'ordering': '-name'})
+        reverse_response = self._list(
+            kwargs={"orgName": self.org.username},
+            query_params={'ordering': '-name'}
+        )
 
         assert reverse_response.data["results"][0]["repoid"] == self.repo2.repoid
         assert reverse_response.data["results"][1]["repoid"] == self.repo1.repoid
@@ -72,19 +106,28 @@ class TestRepositoryListView(InternalAPITest):
         CommitFactory(repository=self.repo1, totals={"c": 41})
         CommitFactory(repository=self.repo2, totals={"c": 32})
 
-        response = self._get_repos(query_params={'ordering': 'coverage'})
+        response = self._list(
+            kwargs={"orgName": self.org.username},
+            query_params={'ordering': 'coverage'}
+        )
 
         assert response.data["results"][0]["repoid"] == self.repo2.repoid
         assert response.data["results"][1]["repoid"] == self.repo1.repoid
 
-        reverse_response = self._get_repos(query_params={'ordering': '-coverage'})
+        reverse_response = self._list(
+            kwargs={"orgName": self.org.username},
+            query_params={'ordering': '-coverage'}
+        )
 
         assert reverse_response.data["results"][0]["repoid"] == self.repo1.repoid
         assert reverse_response.data["results"][1]["repoid"] == self.repo2.repoid
 
     def test_get_active_repos(self, _):
         RepositoryFactory(author=self.org, name='C')
-        response = self._get_repos({'active': True})
+        response = self._list(
+            kwargs={"orgName": self.org.username},
+            query_params={'active': True}
+        )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             len(response.data['results']),
@@ -94,7 +137,10 @@ class TestRepositoryListView(InternalAPITest):
 
     def test_get_inactive_repos(self, _):
         RepositoryFactory(author=self.org, name='C')
-        response = self._get_repos({'active': False})
+        response = self._list(
+            kwargs={"orgName": self.org.username},
+            query_params={'active': False}
+        )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             len(response.data['results']),
@@ -104,7 +150,7 @@ class TestRepositoryListView(InternalAPITest):
 
     def test_get_all_repos(self, mock_provider):
         RepositoryFactory(author=self.org, name='C')
-        response = self._get_repos({})
+        response = self._list(kwargs={"orgName": self.org.username})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             len(response.data['results']),
@@ -114,97 +160,130 @@ class TestRepositoryListView(InternalAPITest):
 
 
 @patch("internal_api.repo.repository_accessors.RepoAccessors.get_repo_permissions")
-class TestRepoView(InternalAPITest):
+class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
     def setUp(self):
-        org = OwnerFactory(username='codecov', service='github')
-
-        self.repo1 = RepositoryFactory(author=org, active=True, private=True, name='repo1')
-        self.repo2 = RepositoryFactory(author=org, active=True, private=True, name='repo2')
-        self.repo3 = RepositoryFactory(author=org, name='repo3')
-
-        repos_with_permission = [
-            self.repo1.repoid,
-            self.repo2.repoid,
-            self.repo3.repoid,
-        ]
+        self.org = OwnerFactory(username='codecov', service='github')
+        self.repo = RepositoryFactory(author=self.org, active=True, private=True, name='repo1')
 
         self.user = OwnerFactory(
             username='codecov-user',
             service='github',
-            organizations=[org.ownerid],
-            permission=repos_with_permission
+            organizations=[self.org.ownerid]
         )
 
-        RepositoryFactory(author=OwnerFactory(), active=True)
-
-    def test_repo_details_with_permissions(self, mock_provider):
-        mock_provider.return_value = True, True
         self.client.force_login(user=self.user)
-        response = self.client.get('/internal/codecov/repo1/details')
+
+    def test_retrieve_with_view_and_edit_permissions_succeeds(self, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, True
+        response = self._retrieve(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
         self.assertEqual(response.status_code, 200)
-        content = self.json_content(response)
-        assert 'upload_token' in content
+        assert 'upload_token' in response.data
 
-    def test_repo_details_without_write_permissions(self, mock_provider):
-        mock_provider.return_value = True, False
-        self.client.force_login(user=self.user)
-        response = self.client.get('/internal/codecov/repo1/details')
-        self.assertEqual(response.status_code, 200)
-        content = self.json_content(response)
-        assert not content['can_edit']
-        assert 'upload_token' not in content
+    def test_retrieve_without_read_permissions_returns_403(self, mocked_get_permissions):
+        mocked_get_permissions.return_value = False, False
+        response = self._retrieve(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
+        assert response.status_code == 403
 
-    def test_repo_details_without_read_permissions(self, mock_provider):
-        mock_provider.return_value = False, False
-        self.client.force_login(user=self.user)
-        response = self.client.get('/internal/codecov/repo1/details')
+    def test_retrieve_without_edit_permissions_returns_detail_view_without_upload_token(self, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, False
+        response = self._retrieve(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
+        assert response.status_code == 200
+        assert "upload_token" not in response.data
+
+    def test_destroy_repo_with_write_permissions_succeeds(self, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, True
+        response = self._destroy(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
+        assert response.status_code == 204
+        assert not Repository.objects.filter(name="repo1").exists()
+
+    def test_destroy_repo_without_write_permissions_returns_403(self, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, False
+        response = self._destroy(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
+        assert response.status_code == 403
+        assert Repository.objects.filter(name="repo1").exists()
+
+    def test_regenerate_upload_token_with_permissions_succeeds(self, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, True
+        old_upload_token = self.repo.upload_token
+
+        response = self._regenerate_upload_token(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
+
+        assert response.status_code == 200
+        self.repo.refresh_from_db()
+        assert str(self.repo.upload_token) == response.data["upload_token"]
+        assert str(self.repo.upload_token) != old_upload_token
+
+    def test_regenerate_upload_token_without_permissions_returns_403(self, mocked_get_permissions):
+        mocked_get_permissions.return_value = False, False
+        response = self._regenerate_upload_token(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
         self.assertEqual(response.status_code, 403)
 
-    def test_repo_regenerate_upload_token(self, mock_provider):
-        mock_provider.return_value = True, True
-        self.client.force_login(user=self.user)
-        response = self.client.patch('/internal/codecov/repo1/regenerate-upload-token', data={}, content_type='application/json')
-        self.assertEqual(response.status_code, 200)
-        content = self.json_content(response)
-        assert content['upload_token'] is not self.repo1.upload_token
+    def test_update_default_branch_with_permissions_succeeds(self, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, True
+        new_default_branch = "dev"
 
-    def test_repo_regenerate_upload_token_not_allowed(self, mock_provider):
-        mock_provider.return_value = False, False
-        self.client.force_login(user=self.user)
-        response = self.client.patch('/internal/codecov/repo1/regenerate-upload-token', data={}, content_type='application/json')
+        response = self._update(
+            kwargs={"orgName": self.org.username, "repoName": self.repo.name},
+            data={'branch': new_default_branch}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['branch'], 'dev', "got unexpected response: {}".format(response.data['branch']))
+        self.repo.refresh_from_db()
+        assert self.repo.branch == new_default_branch
+
+    def test_update_default_branch_without_write_permissions_returns_403(self, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, False
+        new_default_branch = "no_write_permissions"
+
+        response = self._update(
+            kwargs={"orgName": self.org.username, "repoName": self.repo.name},
+            data={'branch': 'dev'}
+        )
         self.assertEqual(response.status_code, 403)
-        content = self.json_content(response)
-        assert 'upload_token' not in content
 
-    def test_update_default_branch(self, mock_provider):
-        mock_provider.return_value = True, True
-        self.client.force_login(user=self.user)
-        response = self.client.patch('/internal/codecov/repo1/default-branch', data=json.dumps({'branch': 'dev'}), content_type='application/json')
-        self.assertEqual(response.status_code, 200)
-        content = self.json_content(response)
-        self.assertEqual(content['branch'], 'dev', "got unexpected response: {}".format(content['branch']))
+    def test_erase_deletes_related_content_and_clears_cache_and_yaml(self, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, True
 
-    def test_update_default_branch_doesnt_update_other_field(self, mock_provider):
-        mock_provider.return_value = True, True
-        self.client.force_login(user=self.user)
-        response = self.client.patch('/internal/codecov/repo1/default-branch', data=json.dumps({'private': False}), content_type='application/json')
-        self.assertEqual(response.status_code, 200)
-        content = self.json_content(response)
-        self.assertEqual(content['private'], True, "got unexpected response: {}".format(content['private']))
+        CommitFactory(
+            message='test_commits_base',
+            commitid='9193232a8fe3429496956ba82b5fed2583d1b5eb',
+            repository=self.repo,
+        )
 
-    def test_update_default_branch_not_allowed(self, mock_provider):
-        mock_provider.return_value = False, False
-        self.client.force_login(user=self.user)
-        response = self.client.patch('/internal/codecov/repo1/default-branch', data=json.dumps({'branch': 'dev'}), content_type='application/json')
-        self.assertEqual(response.status_code, 403)
-        content = self.json_content(response)
-        assert 'branch' not in content
+        PullFactory(
+            pullid=2,
+            repository=self.repo,
+            author=self.repo.author,
+        )
+
+        BranchFactory(authors=[self.org.ownerid], repository=self.repo)
+
+        self.repo.cache = {"cache": "val"}
+        self.repo.yaml = {"yaml": "val"}
+        self.repo.save()
+
+        response = self._erase(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
+        assert response.status_code == 200
+
+        assert not self.repo.commits.exists()
+        assert not self.repo.pull_requests.exists()
+        assert not self.repo.branches.exists()
+
+        self.repo.refresh_from_db()
+        assert self.repo.yaml == None
+        assert self.repo.cache == None
+
+    def test_erase_without_write_permissions_returns_403(self, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, False
+        response = self._erase(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
+        assert response.status_code == 403
 
 
-class TestRepoDetailsView(object):
+class TestRepositoryViewSetVCR(object):
 
     @override_settings(DEBUG=True)
-    def test_repo_details_with_latest_commit_files(self, mocker, db, client, codecov_vcr):
+    def test_retrieve_with_latest_commit_files(self, mocker, db, client, codecov_vcr):
         mock_repo_accessor = mocker.patch.object(RepoAccessors, 'get_repo_permissions')
         mock_repo_accessor.return_value = True, True
         user = OwnerFactory(username='codecov', service='github')
@@ -217,7 +296,7 @@ class TestRepoDetailsView(object):
         )
         expected_report_result = build_mocked_report_archive(mocker)
 
-        response = client.get('/internal/codecov/repo1/details')
+        response = client.get('/internal/codecov/repos/repo1/')
         content = json.loads(response.content.decode())
         print(content)
         assert content['can_edit']

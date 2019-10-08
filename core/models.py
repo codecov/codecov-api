@@ -25,6 +25,8 @@ class Repository(models.Model):
     fork = models.ForeignKey('core.Repository', db_column='forkid', on_delete=models.DO_NOTHING, null=True, blank=True)
     branch = models.TextField(null=True, blank=True)
     upload_token = models.UUIDField(default=uuid.uuid4)
+    yaml = JSONField(null=True)
+    cache = JSONField(null=True)
 
     class Meta:
         db_table = 'repos'
@@ -36,6 +38,14 @@ class Repository(models.Model):
     @property
     def latest_commit(self):
         return Commit.objects.filter(repository=self.repoid).order_by('-timestamp').first()
+
+    def flush(self):
+        self.commits.all().delete()
+        self.branches.all().delete()
+        self.pull_requests.all().delete()
+        self.yaml = None
+        self.cache = None
+        self.save()
 
 
 class Branch(models.Model):
@@ -50,7 +60,6 @@ class Branch(models.Model):
 
     class Meta:
         db_table = 'branches'
-    pass
 
 
 class Commit(models.Model):
@@ -79,7 +88,6 @@ class Commit(models.Model):
 
     class Meta:
         db_table = 'commits'
-    pass
 
 
 class Pull(models.Model):
@@ -104,4 +112,3 @@ class Pull(models.Model):
 
     class Meta:
         db_table = 'pulls'
-    pass

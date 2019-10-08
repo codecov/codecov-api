@@ -6,12 +6,7 @@ from internal_api.pull.views import RepoPullList, RepoPullFlagsList
 from internal_api.commit.views import RepoCommitList, RepoCommitFlags
 from internal_api.branch.views import RepoBranchList
 
-from internal_api.repo.views import (
-    RepositoryList,
-    RepositoryDetails,
-    RepositoryRegenerateUploadToken,
-    RepositoryDefaultBranch,
-)
+from internal_api.repo.views import RepositoryViewSet
 
 from internal_api.compare.views import (
     CompareCommits,
@@ -22,14 +17,11 @@ from internal_api.compare.views import (
     CompareSingleFileDiff
 )
 
+from rest_framework.routers import DefaultRouter
 
-repo_patterns = [
-    path('details', RepositoryDetails.as_view(), name='details'),
-    path('branches', RepoBranchList.as_view(), name='branches'),
-    path('default-branch', RepositoryDefaultBranch.as_view(), name='default-branch'),
-    path('regenerate-upload-token', RepositoryRegenerateUploadToken.as_view(), name='regen-upload-token'),
-]
 
+repos_router = DefaultRouter()
+repos_router.register(r'', RepositoryViewSet, base_name='repos')
 
 commits_patterns = [
     path('', RepoCommitList.as_view(), name='commits-list'),
@@ -55,8 +47,10 @@ compare_patterns = [
 
 urlpatterns = [
     path('orgs', OrgsView.as_view()),
-    path('<str:orgName>/repos', RepositoryList.as_view(), name='repos-list'),
-    path('<str:orgName>/<str:repoName>/', include(repo_patterns)),
+
+    path('<str:orgName>/repos/', include(repos_router.urls)),
+
+    path('<str:orgName>/<str:repoName>/branches', RepoBranchList.as_view(), name="branches"),
     path('<str:orgName>/<str:repoName>/pulls', include(pulls_patterns)),
     path('<str:orgName>/<str:repoName>/commits', include(commits_patterns)),
     path('<str:orgName>/<str:repoName>/compare/', include(compare_patterns))
