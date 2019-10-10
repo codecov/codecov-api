@@ -36,7 +36,7 @@ class ComparisonFullSrcSerializer(serializers.Serializer):
         for i, file_diff in enumerate(git_diff["files"].items()):
             _, diff_data = file_diff
             if i >= 5:
-                diff_data["segments"][0]["lines"] = []
+                diff_data["segments"] = None
         return git_diff
 
 
