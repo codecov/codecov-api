@@ -279,6 +279,17 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         response = self._erase(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
         assert response.status_code == 403
 
+    def test_retrieve_returns_yaml(self, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, False
+
+        yaml = {"yaml": "val"}
+        self.repo.yaml = yaml
+        self.repo.save()
+
+        response = self._retrieve(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
+        assert response.status_code == 200
+        assert response.data["yaml"] == yaml
+
 
 class TestRepositoryViewSetVCR(object):
 
