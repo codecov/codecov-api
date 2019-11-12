@@ -40,6 +40,9 @@ class RepositoryViewSetTestSuite(InternalAPITest):
     def _erase(self, kwargs):
         return self.client.patch(reverse('repos-erase', kwargs=kwargs))
 
+    def _encode(self, kwargs, data):
+        return self.client.post(reverse('repos-encode', kwargs=kwargs), data=data)
+
 
 @patch("internal_api.repo.repository_accessors.RepoAccessors.get_repo_permissions")
 class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
@@ -162,8 +165,8 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
 @patch("internal_api.repo.repository_accessors.RepoAccessors.get_repo_permissions")
 class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
     def setUp(self):
-        self.org = OwnerFactory(username='codecov', service='github')
-        self.repo = RepositoryFactory(author=self.org, active=True, private=True, name='repo1')
+        self.org = OwnerFactory(username='codecov', service='github', service_id="5767537")
+        self.repo = RepositoryFactory(author=self.org, active=True, private=True, name='repo1', service_id="201298242")
 
         self.user = OwnerFactory(
             username='codecov-user',
@@ -289,6 +292,52 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         response = self._retrieve(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
         assert response.status_code == 200
         assert response.data["yaml"] == yaml
+
+    def test_encode_returns_200_on_success(self, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, True
+
+        to_encode = {'value': "hjrok"}
+        response = self._encode(
+            kwargs={'orgName': self.org.username, 'repoName': self.repo.name},
+            data=to_encode
+        )
+
+        assert response.status_code == 201
+
+    @patch('internal_api.repo.views.encode_secret_string')
+    def test_encode_returns_encoded_string_on_success(self, encoder_mock, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, True
+        encrypted_string = "string:encrypted string"
+        encoder_mock.return_value = encrypted_string
+
+        to_encode = {'value': "hjrok"}
+        response = self._encode(
+            kwargs={'orgName': self.org.username, 'repoName': self.repo.name},
+            data=to_encode
+        )
+
+        assert response.status_code == 201
+        assert response.data["value"] == encrypted_string
+
+    def test_encode_secret_string_encodes_with_right_key(self, _):
+        from internal_api.repo.utils import encode_secret_string
+
+        string_arg = "hi there"
+        to_encode = '/'.join(( # this is the format expected by the key
+            self.org.service,
+            self.org.service_id,
+            self.repo.service_id,
+            string_arg
+        ))
+
+        from covreports.encryption import StandardEncryptor
+        check_encryptor = StandardEncryptor()
+        check_encryptor.key = b']\xbb\x13\xf9}\xb3\xb7\x03)*0Kv\xb2\xcet'
+
+        encoded = encode_secret_string(to_encode)
+
+        # we slice to take off the word "secret" prepended by the util
+        assert check_encryptor.decode(encoded[7:]) == to_encode
 
 
 class TestRepositoryViewSetVCR(object):

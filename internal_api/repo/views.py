@@ -8,6 +8,7 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import SAFE_METHODS # ['GET', 'HEAD', 'OPTIONS']
+from rest_framework import status
 
 from django_filters import rest_framework as django_filters, BooleanFilter
 
@@ -16,7 +17,9 @@ from codecov_auth.models import Owner
 from core.models import Repository, Commit
 
 from .repository_accessors import RepoAccessors
-from .serializers import RepoSerializer, RepoDetailsSerializer
+from .serializers import RepoSerializer, RepoDetailsSerializer, SecretStringPayloadSerializer
+
+from .utils import encode_secret_string
 
 
 class RepositoryFilters(django_filters.FilterSet):
@@ -112,3 +115,24 @@ class RepositoryViewSet(
         repo = self.get_object()
         repo.flush()
         return Response(self.get_serializer(repo).data)
+
+    @action(detail=True, methods=['post'])
+    def encode(self, request, *args, **kwargs):
+        serializer = SecretStringPayloadSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        owner, repo = self._get_owner(), self.get_object()
+
+        to_encode = '/'.join((
+            owner.service,
+            owner.service_id,
+            repo.service_id,
+            serializer.validated_data['value']
+        ))
+
+        return Response(
+            SecretStringPayloadSerializer(
+                {"value": encode_secret_string(to_encode)}
+            ).data,
+            status=status.HTTP_201_CREATED
+        )

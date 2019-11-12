@@ -57,3 +57,7 @@ class RepoDetailsSerializer(RepoSerializer):
         if not rep.get("can_edit"):
             del rep["upload_token"]
         return rep
+
+
+class SecretStringPayloadSerializer(serializers.Serializer):
+    value = serializers.CharField(required=True)
