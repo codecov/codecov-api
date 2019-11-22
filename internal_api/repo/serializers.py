@@ -49,7 +49,8 @@ class RepoDetailsSerializer(RepoSerializer):
             'upload_token',
             'can_edit',
             'can_view',
-            'yaml'
+            'yaml',
+            'image_token',
         ) + RepoSerializer.Meta.fields
 
     def to_representation(self, repo):

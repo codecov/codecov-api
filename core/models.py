@@ -1,4 +1,6 @@
 import uuid
+import string
+import random
 
 from django.db import models
 from django.contrib.postgres.fields import JSONField, CITextField, ArrayField
@@ -11,6 +13,8 @@ class Version(models.Model):
     class Meta:
         db_table = 'version'
 
+def _gen_image_token():
+    return "".join(random.choice(string.ascii_letters + string.digits) for _ in range(10))
 
 class Repository(models.Model):
     repoid = models.AutoField(primary_key=True)
@@ -27,6 +31,7 @@ class Repository(models.Model):
     upload_token = models.UUIDField(default=uuid.uuid4)
     yaml = JSONField(null=True)
     cache = JSONField(null=True)
+    image_token = models.CharField(max_length=10, default=_gen_image_token)
 
     class Meta:
         db_table = 'repos'
