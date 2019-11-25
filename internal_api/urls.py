@@ -8,6 +8,8 @@ from internal_api.branch.views import RepoBranchList
 
 from internal_api.repo.views import RepositoryViewSet
 
+from internal_api.account.views import AccountViewSet
+
 from internal_api.compare.views import (
     CompareCommits,
     CompareFlagsList,
@@ -22,6 +24,11 @@ from rest_framework.routers import DefaultRouter
 
 repos_router = DefaultRouter()
 repos_router.register(r'', RepositoryViewSet, base_name='repos')
+
+# Account
+
+accounts_router = DefaultRouter()
+accounts_router.register(r'', AccountViewSet, base_name='accounts')
 
 commits_patterns = [
     path('', RepoCommitList.as_view(), name='commits-list'),
@@ -49,6 +56,8 @@ urlpatterns = [
     path('orgs', OrgsView.as_view()),
 
     path('<str:orgName>/repos/', include(repos_router.urls)),
+
+    path('<str:orgName>/accounts/', include(accounts_router.urls)),
 
     path('<str:orgName>/<str:repoName>/branches', RepoBranchList.as_view(), name="branches"),
     path('<str:orgName>/<str:repoName>/pulls', include(pulls_patterns)),
