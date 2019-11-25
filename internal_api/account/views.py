@@ -13,5 +13,5 @@ class AccountViewSet(
         mixins.UpdateModelMixin,
         viewsets.GenericViewSet
     ):
-    queryset = Owner.objects.all
+    queryset = Owner.objects.all()
     serializer_class = AccountSerializer
