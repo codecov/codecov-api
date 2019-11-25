@@ -28,7 +28,7 @@ repos_router.register(r'', RepositoryViewSet, base_name='repos')
 # Account
 
 accounts_router = DefaultRouter()
-accounts_router.register(r'', AccountViewSet, base_name='accounts')
+accounts_router.register(r'accounts', AccountViewSet, base_name='accounts')
 
 commits_patterns = [
     path('', RepoCommitList.as_view(), name='commits-list'),
@@ -57,7 +57,7 @@ urlpatterns = [
 
     path('<str:orgName>/repos/', include(repos_router.urls)),
 
-    path('<str:orgName>/accounts/', include(accounts_router.urls)),
+    path('', include(accounts_router.urls)),
 
     path('<str:orgName>/<str:repoName>/branches', RepoBranchList.as_view(), name="branches"),
     path('<str:orgName>/<str:repoName>/pulls', include(pulls_patterns)),
