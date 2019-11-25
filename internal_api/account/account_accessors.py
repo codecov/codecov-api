@@ -1,2 +1,0 @@
-class AccountAccessors(object):
-    pass
