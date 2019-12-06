@@ -293,6 +293,25 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         assert response.status_code == 200
         assert response.data["yaml"] == yaml
 
+    def test_activation_checks_if_credits_available_for_legacy_users(self, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, True
+
+        self.org.plan = 'v4-5m'
+        self.org.save()
+
+        for i in range(4): # including the one used by other tests, should be 5 total
+            RepositoryFactory(name=str(i) + "random", author=self.org, private=True, active=True)
+
+        inactive_repo = RepositoryFactory(author=self.org, private=True, active=False)
+
+        activation_data = {'active': True}
+        response = self._update(
+            kwargs={"orgName": self.org.username, "repoName": inactive_repo.name},
+            data=activation_data
+        )
+
+        assert response.status_code == 403
+
     def test_encode_returns_200_on_success(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, True
 

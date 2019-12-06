@@ -30,7 +30,7 @@ class Owner(models.Model):
     private_access = models.BooleanField(null=True)
     staff = models.BooleanField(null=True, default=False)
     cache = JSONField(null=True)
-    # plan
+    plan = models.CharField(max_length=10, null=True)
     # plan_provider
     plan_user_count = models.SmallIntegerField(null=True)
     plan_auto_activate = models.BooleanField(null=True)
@@ -46,6 +46,24 @@ class Owner(models.Model):
     integration_id = models.IntegerField(null=True)
     permission = ArrayField(models.IntegerField(null=True), null=True)
     bot = models.IntegerField(null=True)
+
+    @property
+    def has_legacy_plan(self):
+        return not self.plan.startswith('users')
+
+    @property
+    def repo_credits(self):
+        # Returns the number of private repo credits remaining
+        # Only meaningful for legacy plans
+        V4_PLAN_PREFIX = 'v4-'
+
+        if not self.has_legacy_plan:
+            return float('inf')
+        if self.plan.startswith(V4_PLAN_PREFIX):
+            repos = self.plan[3:-1]
+        else:
+            repos = self.plan[:-1]
+        return int(repos) - self.repository_set.filter(active=True, private=True).count()
 
     @property
     def orgs(self):

@@ -103,6 +103,14 @@ class RepositoryViewSet(
         self.check_object_permissions(self.request, repo)
         return repo
 
+    def perform_update(self, serializer):
+        # Check repo limits for users with legacy plans
+        owner = self._get_owner()
+        if serializer.validated_data.get('active'):
+            if owner.has_legacy_plan and owner.repo_credits <= 0:
+                raise PermissionDenied("Private repository limit reached.")
+        return super().perform_update(serializer)
+
     @action(detail=True, methods=['patch'], url_path='regenerate-upload-token')
     def regenerate_upload_token(self, request, *args, **kwargs):
         repo = self.get_object()
