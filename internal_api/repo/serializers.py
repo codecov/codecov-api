@@ -10,7 +10,6 @@ from internal_api.commit.serializers import (
 
 class RepoSerializer(serializers.ModelSerializer):
     author = AuthorSerializer()
-    latest_commit = CommitWithReportSerializer()
 
     class Meta:
         model = Repository
@@ -24,7 +23,6 @@ class RepoSerializer(serializers.ModelSerializer):
             'author',
             'active',
             'language',
-            'latest_commit',
         )
 
 
@@ -49,6 +47,7 @@ class RepoDetailsSerializer(RepoSerializer):
             'upload_token',
             'can_edit',
             'can_view',
+            'latest_commit',
             'yaml',
             'image_token',
         ) + RepoSerializer.Meta.fields

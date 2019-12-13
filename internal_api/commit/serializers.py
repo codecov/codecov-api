@@ -22,18 +22,22 @@ class CommitRepoSerializer(serializers.ModelSerializer):
 
 
 class CommitSerializer(serializers.ModelSerializer):
-    commitid = serializers.CharField()
-    message = serializers.CharField()
-    timestamp = serializers.DateTimeField()
-    ci_passed = serializers.BooleanField()
     author = AuthorSerializer()
     repository = CommitRepoSerializer()
-    branch = serializers.CharField()
-    totals = serializers.JSONField()
 
     class Meta:
         model = Commit
-        fields = ('commitid', 'message', 'timestamp', 'ci_passed', 'author', 'repository', 'branch', 'totals')
+        fields = (
+            'commitid',
+            'message',
+            'timestamp',
+            'ci_passed',
+            'author',
+            'repository',
+            'branch',
+            'totals',
+            'state',
+        )
 
 
 class CommitWithReportSerializer(CommitSerializer):

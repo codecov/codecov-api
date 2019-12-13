@@ -358,6 +358,15 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         # we slice to take off the word "secret" prepended by the util
         assert check_encryptor.decode(encoded[7:]) == to_encode
 
+    def test_retrieve_with_no_commits_doesnt_crash(self, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, True
+
+        self.repo.commits.all().delete()
+
+        response = self._retrieve(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
+        assert response.status_code == 200
+
+
 
 class TestRepositoryViewSetVCR(object):
 

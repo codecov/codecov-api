@@ -7,6 +7,7 @@ from mock import patch
 from internal_api.serializers import AuthorSerializer
 from internal_api.commit.serializers import CommitSerializer, CommitWithSrcSerializer
 from core.tests.factories import CommitFactory, RepositoryFactory
+from core.models import Commit
 from codecov_auth.tests.factories import OwnerFactory
 from archive.services import ArchiveService
 
@@ -34,7 +35,6 @@ class TestSerializers(object):
             repository=repo,
         )
 
-        
         response = CommitSerializer(instance=commit).data
 
         expected_result = {
@@ -55,6 +55,7 @@ class TestSerializers(object):
             'branch': 'master',
             'timestamp': commit.timestamp.isoformat()[:-6] + 'Z',
             'totals': commit.totals,
+            'state': Commit.CommitStates.COMPLETE
         }
 
 

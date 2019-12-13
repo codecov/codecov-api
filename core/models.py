@@ -42,7 +42,9 @@ class Repository(models.Model):
 
     @property
     def latest_commit(self):
-        return Commit.objects.filter(repository=self.repoid).order_by('-timestamp').first()
+        return self.commits.filter(
+            state=Commit.CommitStates.COMPLETE
+        ).order_by('-timestamp').first()
 
     def flush(self):
         self.commits.all().delete()
@@ -68,6 +70,12 @@ class Branch(models.Model):
 
 
 class Commit(models.Model):
+    class CommitStates:
+        COMPLETE = 'complete'
+        PENDING = 'pending'
+        ERROR = 'error'
+        SKIPPED = 'skipped'
+
     commitid = models.TextField(primary_key=True)
     timestamp = models.DateTimeField(auto_now_add=True)
     updatestamp = models.DateTimeField(auto_now=True)
