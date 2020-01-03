@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from codecov_auth.models import Owner
 from core.models import Repository
 from internal_api.serializers import AuthorSerializer
 from internal_api.commit.serializers import (
@@ -29,16 +30,11 @@ class RepoSerializer(serializers.ModelSerializer):
 class RepoDetailsSerializer(RepoSerializer):
     fork = RepoSerializer()
     latest_commit = CommitWithFileLevelReportSerializer()
+    bot = serializers.SerializerMethodField()
 
     ## Permissions
     can_view = serializers.SerializerMethodField()
     can_edit = serializers.SerializerMethodField()
-
-    def get_can_view(self, _):
-        return self.context.get("can_view")
-
-    def get_can_edit(self, _):
-        return self.context.get("can_edit")
 
     class Meta:
         model = Repository
@@ -50,7 +46,18 @@ class RepoDetailsSerializer(RepoSerializer):
             'latest_commit',
             'yaml',
             'image_token',
+            'bot'
         ) + RepoSerializer.Meta.fields
+
+    def get_bot(self, repo):
+        if repo.bot:
+            return repo.bot.username
+
+    def get_can_view(self, _):
+        return self.context.get("can_view")
+
+    def get_can_edit(self, _):
+        return self.context.get("can_edit")
 
     def to_representation(self, repo):
         rep = super().to_representation(repo)

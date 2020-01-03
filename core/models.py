@@ -32,6 +32,7 @@ class Repository(models.Model):
     yaml = JSONField(null=True)
     cache = JSONField(null=True)
     image_token = models.CharField(max_length=10, default=_gen_image_token)
+    bot = models.ForeignKey('codecov_auth.Owner', db_column="bot", null=True, on_delete=models.SET_NULL, related_name="bot_repos") 
 
     class Meta:
         db_table = 'repos'
