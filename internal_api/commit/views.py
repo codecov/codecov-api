@@ -6,9 +6,11 @@ from archive.services import ReportService
 from internal_api.mixins import FilterByRepoMixin, RepoSlugUrlMixin
 from core.models import Commit
 from .serializers import CommitWithParentSerializer, FlagSerializer, CommitSerializer
+from .filters import CommitFilters
 
 
 class RepoCommitList(FilterByRepoMixin, generics.ListAPIView):
+    filterset_class = CommitFilters
     queryset = Commit.objects.all()
     serializer_class = CommitSerializer
 

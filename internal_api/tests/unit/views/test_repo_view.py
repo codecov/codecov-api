@@ -3,10 +3,8 @@ import json
 
 from rest_framework.reverse import reverse
 
-from covreports.utils.tuples import ReportTotals
-from django.test import override_settings
-
 from codecov.tests.base_test import InternalAPITest
+from django.test import TestCase
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory, CommitFactory, PullFactory, BranchFactory
 from core.models import Repository
@@ -380,26 +378,64 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         assert response.status_code == 200
 
 
-class TestRepositoryViewSetVCR(object):
+class TestRepositoryViewSet:
 
-    @override_settings(DEBUG=True)
-    def test_retrieve_with_latest_commit_files(self, mocker, db, client, codecov_vcr):
+    def test_retrieve_with_latest_commit_files(self, mocker, db, client):
         mock_repo_accessor = mocker.patch.object(RepoAccessors, 'get_repo_permissions')
         mock_repo_accessor.return_value = True, True
         user = OwnerFactory(username='codecov', service='github')
         client.force_login(user=user)
         repo = RepositoryFactory(author=user, active=True, private=True, name='repo1')
-        commit = CommitFactory.create(
+        CommitFactory.create(
             message='test_commits_base',
             commitid='9193232a8fe3429496956ba82b5fed2583d1b5eb',
             repository=repo,
+        )
+        commit = CommitFactory.create(
+            message='another_commit_not_on_master',
+            commitid='ddcc232a8fe3429496956ba82b5fed2583d1b5eb',
+            repository=repo,
+            branch="other-branch"
         )
         expected_report_result = build_mocked_report_archive(mocker)
 
         response = client.get('/internal/codecov/repos/repo1/')
         content = json.loads(response.content.decode())
-        print(content)
         assert content['can_edit']
         assert content['latest_commit']
         assert content['latest_commit']['commitid'] == commit.commitid
         assert content['latest_commit']['report']['totals'] == expected_report_result['totals']
+
+    def test_retrieve_repo_non_default_branch(self, mocker, db, client):
+        mock_repo_accessor = mocker.patch.object(RepoAccessors, 'get_repo_permissions')
+        mock_repo_accessor.return_value = True, True
+        user = OwnerFactory(username='codecov', service='github')
+        client.force_login(user=user)
+        repo = RepositoryFactory(author=user, active=True, private=False, name='meh')
+        CommitFactory.create(
+            message='first',
+            commitid='1111112a8fe3429496956ba82b5fed2511111111',
+            repository=repo,
+            branch=repo.branch)
+        expected_non_default_commit = CommitFactory.create(
+            message='new branch first',
+            commitid='aaaaaaaa8fe3429496956ba82b5fed2522222222',
+            repository=repo,
+            branch="subz/test")
+        expected_default_commit = CommitFactory.create(
+            message='second default branch',
+            commitid='2222222a8fe3429496956ba82b5fed2522222222',
+            repository=repo,
+            branch=repo.branch)
+
+        expected_report_result = build_mocked_report_archive(mocker)
+        response = client.get('/internal/codecov/repos/meh/')
+
+        content = json.loads(response.content.decode())
+        assert content['latest_commit']
+        assert content['latest_commit']['commitid'] == expected_default_commit.commitid
+
+        response = client.get('/internal/codecov/repos/meh/', {'branch': 'subz/test'})
+        content = json.loads(response.content.decode())
+        assert content['latest_commit']
+        assert content['latest_commit']['commitid'] == expected_non_default_commit.commitid

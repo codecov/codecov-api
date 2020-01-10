@@ -49,7 +49,8 @@ class CommitWithReportSerializer(CommitSerializer):
 
     class Meta:
         model = Commit
-        fields = ('report', 'commitid', 'timestamp', 'ci_passed', 'repository', 'author', 'message')
+        fields = ('report', 'commitid', 'timestamp',
+                  'ci_passed', 'repository', 'author', 'message')
 
 
 class CommitWithFileLevelReportSerializer(CommitSerializer):
@@ -61,7 +62,8 @@ class CommitWithFileLevelReportSerializer(CommitSerializer):
 
     class Meta:
         model = Commit
-        fields = ('report', 'commitid', 'timestamp', 'ci_passed', 'repository', 'author', 'message')
+        fields = ('report', 'commitid', 'timestamp',
+                  'ci_passed', 'repository', 'author', 'message')
 
 
 class CommitWithSrcSerializer(CommitWithReportSerializer):
@@ -76,7 +78,8 @@ class CommitWithSrcSerializer(CommitWithReportSerializer):
 
     class Meta:
         model = Commit
-        fields = ('src', 'report', 'commitid', 'timestamp', 'ci_passed', 'repository', 'branch', 'author', 'totals', 'message')
+        fields = ('src', 'report', 'commitid', 'timestamp', 'ci_passed',
+                  'repository', 'branch', 'author', 'totals', 'message')
 
 
 class CommitWithParentSerializer(CommitWithSrcSerializer):
@@ -84,7 +87,8 @@ class CommitWithParentSerializer(CommitWithSrcSerializer):
 
     class Meta:
         model = Commit
-        fields = ('src', 'commitid', 'timestamp', 'ci_passed', 'report', 'repository', 'parent', 'author')
+        fields = ('src', 'commitid', 'timestamp', 'ci_passed',
+                  'report', 'repository', 'parent', 'author')
 
 
 class ReportFileWithoutLinesSerializer(serializers.Serializer):

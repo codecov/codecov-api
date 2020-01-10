@@ -22,7 +22,8 @@ from django.conf import settings
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('health/', views.health),
+    path('', views.health),
 ]
 
-if settings.DEBUG:
-    urlpatterns.append(path(INTERNAL_API_PREFIX, include('internal_api.urls')))
+
+urlpatterns.append(path(INTERNAL_API_PREFIX, include('internal_api.urls')))

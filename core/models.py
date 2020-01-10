@@ -13,8 +13,10 @@ class Version(models.Model):
     class Meta:
         db_table = 'version'
 
+
 def _gen_image_token():
     return "".join(random.choice(string.ascii_letters + string.digits) for _ in range(10))
+
 
 class Repository(models.Model):
     repoid = models.AutoField(primary_key=True)
@@ -26,13 +28,15 @@ class Repository(models.Model):
     updatestamp = models.DateTimeField(auto_now=True)
     active = models.NullBooleanField()
     language = models.TextField(null=True, blank=True)
-    fork = models.ForeignKey('core.Repository', db_column='forkid', on_delete=models.DO_NOTHING, null=True, blank=True)
+    fork = models.ForeignKey('core.Repository', db_column='forkid',
+                             on_delete=models.DO_NOTHING, null=True, blank=True)
     branch = models.TextField(null=True, blank=True)
     upload_token = models.UUIDField(default=uuid.uuid4)
     yaml = JSONField(null=True)
     cache = JSONField(null=True)
     image_token = models.CharField(max_length=10, default=_gen_image_token)
-    bot = models.ForeignKey('codecov_auth.Owner', db_column="bot", null=True, on_delete=models.SET_NULL, related_name="bot_repos") 
+    bot = models.ForeignKey('codecov_auth.Owner', db_column="bot",
+                            null=True, on_delete=models.SET_NULL, related_name="bot_repos")
 
     class Meta:
         db_table = 'repos'
@@ -40,12 +44,6 @@ class Repository(models.Model):
     @property
     def service(self):
         return self.author.service
-
-    @property
-    def latest_commit(self):
-        return self.commits.filter(
-            state=Commit.CommitStates.COMPLETE
-        ).order_by('-timestamp').first()
 
     def flush(self):
         self.commits.all().delete()
