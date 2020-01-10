@@ -191,7 +191,7 @@ MINIO_SECRET_KEY = get_config('services', 'minio', 'secret_access_key')
 MINIO_LOCATION = 'codecov.s3.amazonaws.com'
 MINIO_HASH_KEY = get_config('services', 'minio', 'hash_key')
 ARCHIVE_BUCKET_NAME = 'codecov'
-ENCRYPTION_SECRET = ''
+ENCRYPTION_SECRET = get_config('setup', 'encryption_secret')
 
 # cors
 CORS_ORIGIN_ALLOW_ALL = True
