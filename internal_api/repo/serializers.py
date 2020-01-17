@@ -55,12 +55,12 @@ class RepoDetailsSerializer(RepoSerializer):
             return repo.bot.username
 
     def get_latest_commit(self, repo):
-        
         commits_queryset = repo.commits.filter(state=Commit.CommitStates.COMPLETE,
                                    ).order_by('-timestamp')
         branch_param = self.context['request'].query_params.get('branch', None)
-        if branch_param is not None:
-            commits_queryset = commits_queryset.filter(branch=branch_param)
+
+        commits_queryset = commits_queryset.filter(branch=branch_param or repo.branch)
+
         commit = commits_queryset.first()
         return CommitWithFileLevelReportSerializer(commit).data
 

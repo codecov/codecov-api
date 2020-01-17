@@ -380,62 +380,59 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
 
 class TestRepositoryViewSet:
 
-    def test_retrieve_with_latest_commit_files(self, mocker, db, client):
+    def test_retrieve_repo_with_latest_commit(self, mocker, db, client):
         mock_repo_accessor = mocker.patch.object(RepoAccessors, 'get_repo_permissions')
         mock_repo_accessor.return_value = True, True
         user = OwnerFactory(username='codecov', service='github')
         client.force_login(user=user)
         repo = RepositoryFactory(author=user, active=True, private=True, name='repo1')
         CommitFactory.create(
-            message='test_commits_base',
-            commitid='9193232a8fe3429496956ba82b5fed2583d1b5eb',
+            message='commit from default branch',
             repository=repo,
         )
-        commit = CommitFactory.create(
-            message='another_commit_not_on_master',
-            commitid='ddcc232a8fe3429496956ba82b5fed2583d1b5eb',
+        latest_commit_from_default_branch = CommitFactory.create(
+            message='latest commit from default branch',
+            repository=repo,
+        )
+        CommitFactory.create(
+            message='commit not from default branch',
             repository=repo,
             branch="other-branch"
         )
-        expected_report_result = build_mocked_report_archive(mocker)
+
+        build_mocked_report_archive(mocker)
 
         response = client.get('/internal/codecov/repos/repo1/')
         content = json.loads(response.content.decode())
-        assert content['can_edit']
         assert content['latest_commit']
-        assert content['latest_commit']['commitid'] == commit.commitid
-        assert content['latest_commit']['report']['totals'] == expected_report_result['totals']
+        assert content['latest_commit']['commitid'] == latest_commit_from_default_branch.commitid
 
-    def test_retrieve_repo_non_default_branch(self, mocker, db, client):
+    def test_retrieve_repo_with_latest_commit_by_branch_param(self, mocker, db, client):
         mock_repo_accessor = mocker.patch.object(RepoAccessors, 'get_repo_permissions')
         mock_repo_accessor.return_value = True, True
         user = OwnerFactory(username='codecov', service='github')
         client.force_login(user=user)
-        repo = RepositoryFactory(author=user, active=True, private=False, name='meh')
+        repo = RepositoryFactory(author=user, active=True, private=True, name='repo1')
         CommitFactory.create(
-            message='first',
-            commitid='1111112a8fe3429496956ba82b5fed2511111111',
+            message='commit from default branch',
             repository=repo,
-            branch=repo.branch)
-        expected_non_default_commit = CommitFactory.create(
-            message='new branch first',
-            commitid='aaaaaaaa8fe3429496956ba82b5fed2522222222',
+            branch="other-branch"
+        )
+        latest_commit_from_other_branch = CommitFactory.create(
+            message='commit not from default branch',
             repository=repo,
-            branch="subz/test")
-        expected_default_commit = CommitFactory.create(
-            message='second default branch',
-            commitid='2222222a8fe3429496956ba82b5fed2522222222',
+            branch="other-branch"
+        )
+        CommitFactory.create(
+            message='another commit from default branch',
             repository=repo,
-            branch=repo.branch)
+        )
 
-        expected_report_result = build_mocked_report_archive(mocker)
-        response = client.get('/internal/codecov/repos/meh/')
+        build_mocked_report_archive(mocker)
 
+        response = client.get('/internal/codecov/repos/repo1/', data={
+            'branch': 'other-branch'
+        })
         content = json.loads(response.content.decode())
         assert content['latest_commit']
-        assert content['latest_commit']['commitid'] == expected_default_commit.commitid
-
-        response = client.get('/internal/codecov/repos/meh/', {'branch': 'subz/test'})
-        content = json.loads(response.content.decode())
-        assert content['latest_commit']
-        assert content['latest_commit']['commitid'] == expected_non_default_commit.commitid
+        assert content['latest_commit']['commitid'] == latest_commit_from_other_branch.commitid
