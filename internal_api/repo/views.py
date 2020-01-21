@@ -97,11 +97,7 @@ class RepositoryViewSet(
         return queryset
 
     def check_object_permissions(self, request, repo):
-        self.can_view, self.can_edit = self.accessors.get_repo_permissions(
-            self.request.user,
-            self.kwargs.get('repoName'),
-            self.kwargs.get('orgName')
-        )
+        self.can_view, self.can_edit = self.accessors.get_repo_permissions(self.request.user, repo)
         if self.request.method not in SAFE_METHODS and not self.can_edit:
             raise PermissionDenied()
         if not self.can_view:

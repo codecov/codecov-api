@@ -7,28 +7,31 @@ from core.models import Repository
 from repo_providers.services import RepoProviderService
 
 
-class RepoAccessors(object):
-
-    def get_repo_permissions(self, user, repo_name, org_name):
+class RepoAccessors:
+    """
+    Easily mockable wrappers for running torngit coroutines.
+    """
+    def get_repo_permissions(self, user, repo):
         """
-            Returns repo permissions information from the provider
+        Returns repo permissions information from the provider
+
         :param repo_name:
         :param org_name:
         :return:
         """
-        can_view, can_edit = asyncio.run(RepoProviderService().get_by_name(user, repo_name=repo_name,
-                                                                           repo_owner=org_name).get_authenticated())
-        return can_view, can_edit
+        return asyncio.run(RepoProviderService().get_adapter(
+            owner=user,
+            repo=repo
+        ).get_authenticated())
 
     def get_repo_details(self, user, repo_name, org_name):
         """
-            Check if the repo exists in codecov db to return repo stats
+        Checks if repo exists in DB, and if it doesn't, tries to fetch it from provider.
         """
         try:
             owner = Owner.objects.get(service=user.service, username=org_name)
             repo = Repository.objects.get(name=repo_name, author=owner)
         except ObjectDoesNotExist:
-            print("Not found locally - let's check with the provider... ")
             repo = self.fetch_repo(user, repo_name, org_name)
             # raise NotFound(detail="Repository {} for org {} not found ".format(repo_name, org_name))
         return repo

@@ -15,7 +15,8 @@ class TorngitInitializationFailed(Exception):
 class RepoProviderService(object):
     def get_adapter(self, owner: Owner, repo: Repository):
         """
-            Return the corresponding implementation for calling the repository provider
+        Return the corresponding implementation for calling the repository provider
+
         :param owner: :class:`codecov_auth.models.Owner`
         :param repo: :class:`core.models.Repository`
         :return:
@@ -34,7 +35,8 @@ class RepoProviderService(object):
 
     def get_by_name(self, owner, repo_name, repo_owner):
         """
-            Return the corresponding implementation for calling the repository provider
+        Return the corresponding implementation for calling the repository provider
+
         :param owner:
         :param repo_name:
         :param repo_owner:
