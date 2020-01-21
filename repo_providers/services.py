@@ -22,7 +22,11 @@ class RepoProviderService(object):
         :raises: TorngitInitializationFailed
         """
         adapter_params = dict(
-            repo=dict(name=repo.name),
+            repo=dict(
+                name=repo.name,
+                using_integration=repo.using_integration or False,
+                service_id=repo.service_id
+            ),
             owner=dict(username=repo.author.username),
             token=encryptor.decrypt_token(owner.oauth_token)
         )
@@ -57,3 +61,4 @@ class RepoProviderService(object):
             return provider
         else:
             raise TorngitInitializationFailed()
+

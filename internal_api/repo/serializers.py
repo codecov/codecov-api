@@ -24,6 +24,7 @@ class RepoSerializer(serializers.ModelSerializer):
             'author',
             'active',
             'language',
+            "hookid",
         )
 
 

@@ -10,6 +10,7 @@ from core.tests.factories import RepositoryFactory, CommitFactory, PullFactory, 
 from core.models import Repository
 from internal_api.repo.repository_accessors import RepoAccessors
 from internal_api.tests.unit.views.test_compare_view import build_mocked_report_archive
+from torngit.exceptions import TorngitClientError
 
 
 class RepositoryViewSetTestSuite(InternalAPITest):
@@ -40,6 +41,9 @@ class RepositoryViewSetTestSuite(InternalAPITest):
 
     def _encode(self, kwargs, data):
         return self.client.post(reverse('repos-encode', kwargs=kwargs), data=data)
+
+    def _reset_webhook(self, kwargs):
+        return self.client.put(reverse('repos-reset-webhook', kwargs=kwargs))
 
 
 @patch("internal_api.repo.repository_accessors.RepoAccessors.get_repo_permissions")
@@ -376,6 +380,87 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
 
         response = self._retrieve(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
         assert response.status_code == 200
+
+    @patch('internal_api.repo.views.delete_webhook_on_provider')
+    @patch('internal_api.repo.views.create_webhook_on_provider')
+    def test_reset_webhook_unsets_original_hookid_and_sets_new_if_hookid_exists(
+        self,
+        create_webhook_mock,
+        delete_webhook_mock,
+        mocked_get_permissions
+    ):
+        mocked_get_permissions.return_value = True, True
+
+        old_webhook_id, new_webhook_id = "123", "456"
+
+        self.repo.hookid = old_webhook_id
+        self.repo.save()
+
+        create_webhook_mock.return_value = new_webhook_id
+
+        response = self._reset_webhook(
+            kwargs={"orgName": self.org.username, "repoName": self.repo.name},
+        )
+
+        assert response.status_code == 200
+
+        self.repo.refresh_from_db()
+
+        assert self.repo.hookid == new_webhook_id
+
+    @patch('internal_api.repo.views.delete_webhook_on_provider')
+    @patch('internal_api.repo.views.create_webhook_on_provider')
+    def test_reset_webhook_doesnt_delete_if_no_hookid(
+        self,
+        create_webhook_mock,
+        delete_webhook_mock,
+        mocked_get_permissions
+    ):
+        mocked_get_permissions.return_value = True, True
+        create_webhook_mock.return_value = "irrelevant"
+
+        # Make delete function throw exception, so if it's called this test fails
+        delete_webhook_mock.side_effect = Exception("Attempted to delete nonexistent webhook")
+
+        response = self._reset_webhook(
+            kwargs={"orgName": self.org.username, "repoName": self.repo.name},
+        )
+
+    @patch('internal_api.repo.views.delete_webhook_on_provider')
+    @patch('internal_api.repo.views.create_webhook_on_provider')
+    def test_reset_webhook_creates_new_webhook_even_if_no_hookid(
+        self,
+        create_webhook_mock,
+        delete_webhook_mock,
+        mocked_get_permissions
+    ):
+        mocked_get_permissions.return_value = True, True
+        new_webhook_id = "123"
+        create_webhook_mock.return_value = new_webhook_id
+
+        response = self._reset_webhook(
+            kwargs={"orgName": self.org.username, "repoName": self.repo.name},
+        )
+
+        self.repo.refresh_from_db()
+        assert self.repo.hookid == new_webhook_id
+
+    @patch('internal_api.repo.views.delete_webhook_on_provider')
+    @patch('internal_api.repo.views.create_webhook_on_provider')
+    def test_reset_webhook_returns_401_if_TorgitClientError_raised_on_create(
+        self,
+        create_webhook_mock,
+        delete_webhook_mock,
+        mocked_get_permissions
+    ):
+        mocked_get_permissions.return_value = True, True
+        create_webhook_mock.side_effect = TorngitClientError(code=2000, response=None, message=None)
+
+        response = self._reset_webhook(
+            kwargs={"orgName": self.org.username, "repoName": self.repo.name},
+        )
+
+        assert response.status_code == 401
 
 
 class TestRepositoryViewSet:

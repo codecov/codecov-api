@@ -1,4 +1,10 @@
 import uuid
+import asyncio
+import logging
+
+from torngit.exceptions import TorngitClientError
+
+from django.db.models import Subquery, OuterRef
 
 from django.db.models import Subquery, OuterRef
 from django.shortcuts import get_object_or_404
@@ -20,6 +26,10 @@ from .repository_accessors import RepoAccessors
 from .serializers import RepoSerializer, RepoDetailsSerializer, SecretStringPayloadSerializer
 
 from .utils import encode_secret_string
+
+from repo_providers.services import RepoProviderService
+
+from .repository_actions import delete_webhook_on_provider, create_webhook_on_provider
 
 
 class RepositoryFilters(django_filters.FilterSet):
@@ -143,4 +153,26 @@ class RepositoryViewSet(
                 {"value": encode_secret_string(to_encode)}
             ).data,
             status=status.HTTP_201_CREATED
+        )
+
+    @action(detail=True, methods=['put'], url_path='reset-webhook')
+    def reset_webhook(self, request, *args, **kwargs):
+        repo = self.get_object()
+        repository_service = RepoProviderService().get_adapter(self.request.user, repo)
+
+        if repo.hookid:
+            delete_webhook_on_provider(repository_service, repo)
+
+        try:
+            repo.hookid = create_webhook_on_provider(repository_service, repo)
+            repo.save()
+        except TorngitClientError:
+            return Response(
+                data={"message": f"Authorization declined by {repo.author.service} to create a webhook"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        return Response(
+            self.get_serializer(repo).data,
+            status=status.HTTP_200_OK
         )
