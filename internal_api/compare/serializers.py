@@ -10,9 +10,13 @@ from internal_api.commit.serializers import (
 
 class FlagComparisonSerializer(serializers.Serializer):
     name = serializers.CharField(source='flag_name')
-    base_report_totals = serializers.JSONField(source='base_report.totals._asdict')
+    base_report_totals = serializers.SerializerMethodField()
     head_report_totals = serializers.JSONField(source='head_report.totals._asdict')
     diff_totals = serializers.JSONField(source='diff_totals._asdict')
+
+    def get_base_report_totals(self, obj):
+        if obj.base_report:
+            return obj.base_report.totals._asdict()
 
 
 class CommitsComparisonSerializer(serializers.Serializer):
