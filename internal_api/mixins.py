@@ -49,7 +49,7 @@ class FilterByRepoMixin(RepoSlugUrlMixin):
         repo = self.get_repo()
 
         if repo.private:
-            can_view, can_edit = RepoAccessors().get_repo_permissions(self.request.user, repo.name, repo.author.username)
+            can_view, can_edit = RepoAccessors().get_repo_permissions(self.request.user, repo)
             if not can_view:
                 raise PermissionDenied(detail="You do not have permissions to view this repo")
         # TODO:
