@@ -20,11 +20,11 @@ class OrgsViewTest(InternalAPITest):
 
     def test_get_orgs_for_valid_user(self):
         self.client.force_login(user=self.user)
-        response = self.client.get('/internal/orgs')
+        response = self.client.get('/internal/profile')
         self.assertEqual(response.status_code, 200)
 
     def test_get_orgs_for_invalid_user(self):
-        response = self.client.get('/internal/orgs')
+        response = self.client.get('/internal/profile')
         self.assertEqual(response.status_code, 403)
 
 
@@ -125,8 +125,6 @@ class RepoCommitList(InternalAPITest):
         )
 
         response = self.client.get('/internal/codecov-user/banana/commits')
-        print(response)
-        print(response.content)
         content = json.loads(response.content.decode())
         assert len(content['results']) == 2
         assert content['results'][0]['commitid'] == commit_non_master.commitid

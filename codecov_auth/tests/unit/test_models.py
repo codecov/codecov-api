@@ -1,12 +1,29 @@
 from django.test import TestCase
-from codecov_auth.models import Owner
+
+from unittest.mock import patch, MagicMock
+
+from codecov_auth.models import (
+    Owner,
+    SERVICE_GITHUB,
+    SERVICE_GITHUB_ENTERPRISE,
+    SERVICE_BITBUCKET,
+    SERVICE_BITBUCKET_SERVER,
+    SERVICE_GITLAB,
+    SERVICE_CODECOV_ENTERPRISE,
+)
+
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
 
 
-class OwnerUnitTests(TestCase):
+class TestOwnerModel(TestCase):
     def setUp(self):
-        self.owner = OwnerFactory()
+        self.owner = OwnerFactory(
+            username="codecov_name",
+            service_id="1234",
+            email="name@codecov.io",
+            ownerid="4",
+        )
 
     def test_repo_credits_returns_correct_repos_for_legacy_plan(self):
         self.owner.plan = '5m'
@@ -35,3 +52,101 @@ class OwnerUnitTests(TestCase):
             self.owner.plan = plan
             assert self.owner.repo_credits == float('inf')
 
+    @patch("codecov_auth.models.get_config")
+    def test_main_avatar_url_services(self, mock_get_config):
+        test_cases=[
+           {'service': SERVICE_GITHUB, 'get_config': None, 'expected': 'https://avatars0.githubusercontent.com/u/1234?v=3&s=50'},
+           {'service': SERVICE_GITHUB_ENTERPRISE, 'get_config': 'github_enterprise', 'expected': 'github_enterprise/avatars/u/1234?v=3&s=50'},
+           {'service': SERVICE_BITBUCKET, 'get_config': None, 'expected': 'https://bitbucket.org/account/codecov_name/avatar/50'},
+        ]
+        for i in range(0, len(test_cases)):
+            with self.subTest(i=i):
+                mock_get_config.return_value = test_cases[i]['get_config']
+                self.owner.service = test_cases[i]['service']
+                self.assertEqual(self.owner.avatar_url, test_cases[i]['expected'])
+
+    @patch("codecov_auth.models.get_config")
+    def test_bitbucket_without_u_url(self, mock_get_config):
+        def side_effect(*args):
+            if (len(args) == 2 and args[0] == SERVICE_BITBUCKET_SERVER and
+                args[1] == 'url'):
+                return SERVICE_BITBUCKET_SERVER
+
+        mock_get_config.side_effect = side_effect
+        self.owner.service = SERVICE_BITBUCKET_SERVER
+        self.assertEqual(self.owner.avatar_url, 'bitbucket_server/projects/codecov_name/avatar.png?s=50')
+
+    @patch("codecov_auth.models.get_config")
+    def test_bitbucket_with_u_url(self, mock_get_config):
+        def side_effect(*args):
+            if (len(args) == 2 and args[0] == SERVICE_BITBUCKET_SERVER and
+                args[1] == 'url'):
+                return SERVICE_BITBUCKET_SERVER
+
+        mock_get_config.side_effect = side_effect
+        self.owner.service = SERVICE_BITBUCKET_SERVER
+        self.owner.service_id = 'U1234'
+        self.assertEqual(self.owner.avatar_url, 'bitbucket_server/users/codecov_name/avatar.png?s=50')
+
+    @patch("codecov_auth.models.get_gitlab_url")
+    def test_gitlab_service(self, mock_gitlab_url):
+        mock_gitlab_url.return_value = 'gitlab_url'
+        self.owner.service = 'gitlab'
+        self.assertEqual(self.owner.avatar_url, 'gitlab_url')
+        self.assertTrue(mock_gitlab_url.called_once())
+
+    @patch("codecov_auth.models.get_config")
+    def test_gravatar_url(self, mock_get_config):
+        def side_effect(*args):
+            if (len(args) == 2 and args[0] == 'services' and
+                args[1] == 'gravatar'):
+                return 'gravatar'
+
+        mock_get_config.side_effect = side_effect
+        self.owner.service = None
+        self.assertEqual(self.owner.avatar_url, 'https://www.gravatar.com/avatar/9a74a018e6162103a2845e22ec5d88ef?s=50')
+
+    @patch("codecov_auth.models.get_config")
+    def test_avatario_url(self, mock_get_config):
+        def side_effect(*args):
+            if (len(args) == 2 and args[0] == 'services' and
+                args[1] == 'avatars.io'):
+                return 'avatars.io'
+
+        mock_get_config.side_effect = side_effect
+        self.owner.service = None
+        self.assertEqual(self.owner.avatar_url, 'https://avatars.io/avatar/9a74a018e6162103a2845e22ec5d88ef/50')
+
+    @patch("codecov_auth.models.get_config")
+    def test_ownerid_url(self, mock_get_config):
+        def side_effect(*args):
+            if (len(args) == 2 and args[0] == 'setup' and
+                args[1] == 'codecov_url'):
+                return 'codecov_url'
+        mock_get_config.side_effect = side_effect
+        self.owner.service = None
+        self.assertEqual(self.owner.avatar_url, 'codecov_url/users/4.png?size=50')
+
+    @patch("codecov_auth.models.get_config")
+    @patch("codecov_auth.models.os.getenv")
+    def test_service_codecov_enterprise_url(self, mock_getenv, mock_get_config):
+        def side_effect(*args):
+            if (len(args) == 2 and args[0] == 'setup' and
+                args[1] == 'codecov_url'):
+                return 'codecov_url'
+        mock_get_config.side_effect = side_effect
+        mock_getenv.return_value = SERVICE_CODECOV_ENTERPRISE
+        self.owner.service = None
+        self.owner.ownerid = None
+        self.assertEqual(self.owner.avatar_url, 'codecov_url/media/images/gafsi/avatar.svg')
+
+    @patch("codecov_auth.models.get_config")
+    def test_service_codecov_media_url(self, mock_get_config):
+        def side_effect(*args):
+            if (len(args) == 3 and args[0] == 'setup' and
+                args[1] == 'media' and args[2] == 'assets'):
+                return 'codecov_url_media'
+        mock_get_config.side_effect = side_effect
+        self.owner.service = None
+        self.owner.ownerid = None
+        self.assertEqual(self.owner.avatar_url, 'codecov_url_media/media/images/gafsi/avatar.svg')

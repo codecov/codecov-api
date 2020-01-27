@@ -4,35 +4,26 @@ from json import loads, dumps
 import json
 from mock import patch
 
-from internal_api.serializers import AuthorSerializer
 from internal_api.commit.serializers import CommitSerializer, CommitWithSrcSerializer
-from core.tests.factories import CommitFactory, RepositoryFactory
-from core.models import Commit
+from internal_api.owner.serializers import OwnerSerializer, OwnerDetailsSerializer
+from core.tests.factories import RepositoryFactory, CommitFactory
 from codecov_auth.tests.factories import OwnerFactory
+from core.models import Commit
 from archive.services import ArchiveService
 
-from .utils import TestUtils
+from internal_api.tests.utils import TestUtils
 
 current_file = Path(__file__)
 
 
-class TestSerializers(object):
-
-    def test_commit_serializer(self, mocker, db, codecov_vcr):
-        repo = RepositoryFactory.create(
-            author__unencrypted_oauth_token='testqmit3okrgutcoyzscveipor3toi3nsmb927v',
-            author__username='ThiagoCodecov'
-        )
-        parent_commit = CommitFactory.create(
-            message='test_report_serializer',
-            commitid='c5b6730',
+class TestCommitSerializers(object):
+    def test_serializer(self, mocker, db, codecov_vcr):
+        repo = RepositoryFactory()
+        parent_commit = CommitFactory(repository=repo)
+        commit = CommitFactory(
             repository=repo,
-        )
-        commit = CommitFactory.create(
-            message='test_report_serializer',
             commitid='abf6d4df662c47e32460020ab14abf9303581429',
             parent_commit_id=parent_commit.commitid,
-            repository=repo,
         )
 
         response = CommitSerializer(instance=commit).data
@@ -40,12 +31,14 @@ class TestSerializers(object):
         expected_result = {
             'ci_passed': True,
             'author': {
-                'ownerid': commit.author.ownerid,
+                'service': commit.author.service,
+                'active_repos': commit.author.active_repos,
                 'username': commit.author.username,
                 'email': commit.author.email,
                 'name': commit.author.name,
+                'stats': {'members': 2, 'repos': 1},
             },
-            'message': 'test_report_serializer',
+            'message': commit.message,
             'commitid': 'abf6d4df662c47e32460020ab14abf9303581429',
             'repository': {
                 'repoid': commit.repository.repoid,
@@ -58,14 +51,14 @@ class TestSerializers(object):
             'state': Commit.CommitStates.COMPLETE
         }
 
-
         response = loads(dumps(response))
         expected_result = loads(dumps(expected_result))
         assert expected_result == response
 
-    @patch('torngit.github.Github.get_commit_diff', TestUtils.get_mock_coro(json.load(open(current_file.parent / f'samples/get_commit_diff-response.json'))))
-    def test_commit_serializer_with_src(self, mocker, db, codecov_vcr):
 
+class TestCommitWithSrcSerializers(object):
+    @patch('torngit.github.Github.get_commit_diff', TestUtils.get_mock_coro(json.load(open(current_file.parent / f'samples/get_commit_diff-response.json'))))
+    def test_serializer(self, mocker, db, codecov_vcr):
         mocked = mocker.patch.object(ArchiveService, 'read_chunks')
         f = open(
             current_file.parent.parent.parent / 'archive/tests/samples' / 'chunks.txt',
@@ -74,21 +67,12 @@ class TestSerializers(object):
         mocker.patch.object(ArchiveService, 'create_root_storage')
         mocked.return_value = f.read()
 
-        repo = RepositoryFactory.create(
-            author__unencrypted_oauth_token='testqmit3okrgutcoyzscveipor3toi3nsmb927v',
-            author__username='ThiagoCodecov',
-            author__service='github'
-        )
-        parent_commit = CommitFactory.create(
-            message='test_report_serializer',
-            commitid='c5b6730',
+        repo = RepositoryFactory()
+        parent_commit = CommitFactory(repository=repo)
+        commit = CommitFactory(
             repository=repo,
-        )
-        commit = CommitFactory.create(
-            message='test_report_serializer',
             commitid='abf6d4df662c47e32460020ab14abf9303581429',
             parent_commit_id=parent_commit.commitid,
-            repository=repo,
         )
 
         response = CommitWithSrcSerializer(instance=commit, context={'user': repo.author}).data
@@ -96,12 +80,14 @@ class TestSerializers(object):
         expected_result = {
             'ci_passed': True,
             'author': {
-                'ownerid': commit.author.ownerid,
+                'service': commit.author.service,
+                'active_repos': commit.author.active_repos,
                 'username': commit.author.username,
                 'email': commit.author.email,
                 'name': commit.author.name,
+                'stats': {'members': 2, 'repos': 1},
             },
-            'message': 'test_report_serializer',
+            'message': commit.message,
             'commitid': 'abf6d4df662c47e32460020ab14abf9303581429',
             'repository': {
                 'repoid': commit.repository.repoid,
@@ -291,3 +277,101 @@ class TestSerializers(object):
 
         assert expected_result == response
         mocked.assert_called_with('abf6d4df662c47e32460020ab14abf9303581429')
+
+
+class TestOwnerSerializers(object):
+    def test_serializer(self, mocker, db, codecov_vcr):
+        owner = OwnerFactory()
+        expected_result = {
+            "service": owner.service,
+            "username": owner.username,
+            "name": owner.name,
+            "email": owner.email,
+            "stats": {
+                "repos": 1,
+                "members": 2,
+            },
+            "active_repos": None
+        }
+
+        response = OwnerSerializer(instance=owner).data
+        assert expected_result == loads(dumps(response))
+
+    def test_serializer_with_repo(self, mocker, db, codecov_vcr):
+        owner = OwnerFactory()
+        repo = RepositoryFactory(author=owner, active=True)
+        expected_result = {
+            "service": owner.service,
+            "username": owner.username,
+            "name": owner.name,
+            "email": owner.email,
+            "stats": {
+                "repos": 1,
+                "members": 2,
+            },
+            "active_repos": [
+                {
+                    "repoid": repo.repoid,
+                    "name": repo.name
+                }
+            ]
+        }
+
+        response = OwnerSerializer(instance=owner).data
+        assert expected_result == loads(dumps(response))
+
+
+class TestOwnerDetailsSerializers(object):
+    def test_serializer_with_orgs(self, mocker, db, codecov_vcr):
+        org1 = OwnerFactory(username='org1', email='org1@codecov.io')
+        org2 = OwnerFactory(username='org2', email='org2@codecov.io')
+        owner = OwnerFactory(organizations=[org1.ownerid, org2.ownerid])
+        expected_result = {
+            "service": owner.service,
+            "username": owner.username,
+            "name": owner.name,
+            "email": owner.email,
+            "stats": {
+                "repos": 1,
+                "members": 2
+            },
+            "active_repos": None,
+            "orgs": [
+                {
+                    'active_repos': None,
+                    'email': org1.email,
+                    'name': org1.name,
+                    'service': org1.service,
+                    'stats': {'members': 2, 'repos': 1},
+                    'username': org1.username
+                },
+                {
+                    'active_repos': None,
+                    'email': org2.email,
+                    'name': org2.name,
+                    'service': org2.service,
+                    'stats': {'members': 2, 'repos': 1},
+                    'username': org2.username
+                }
+            ],
+            "avatar_url": "https://avatars0.githubusercontent.com/u/1234?v=3&s=50",
+        }
+
+        response = OwnerDetailsSerializer(instance=owner).data
+        assert expected_result == loads(dumps(response))
+
+    def test_serializer_without_orgs_and_stats(self, mocker, db, codecov_vcr):
+        owner = OwnerFactory(cache=None)
+        expected_result = {
+            "service": owner.service,
+            "username": owner.username,
+            "name": owner.name,
+            "email": owner.email,
+            "stats": None,
+            "active_repos": None,
+            "orgs": [],
+            "avatar_url": "https://avatars0.githubusercontent.com/u/1234?v=3&s=50",
+        }
+
+        response = OwnerDetailsSerializer(instance=owner).data
+        assert expected_result == loads(dumps(response))

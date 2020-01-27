@@ -3,19 +3,7 @@ from rest_framework.exceptions import NotFound
 
 from django.shortcuts import get_object_or_404
 
-from codecov_auth.models import Owner
 from core.models import Commit, Branch, Pull
-
-
-class AuthorSerializer(serializers.ModelSerializer):
-    ownerid = serializers.IntegerField()
-    username = serializers.CharField()
-    email = serializers.CharField()
-    name = serializers.CharField()
-
-    class Meta:
-        model = Owner
-        fields = ('ownerid', 'username', 'email', 'name')
 
 
 class CommitRefQueryParamSerializer(serializers.Serializer):

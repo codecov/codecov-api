@@ -1,10 +1,29 @@
+import os
 import uuid
 import logging
+from time import time
+from hashlib import md5
 
 from django.db import models
+from core.models import Repository
+from utils.config import get_config
 from django.contrib.postgres.fields import CITextField, JSONField, ArrayField
 
-from core.models import Repository
+from codecov_auth.constants import (
+    AVATAR_GITHUB_BASE_URL,
+    BITBUCKET_BASE_URL,
+    GRAVATAR_BASE_URL,
+    AVATARIO_BASE_URL,
+)
+
+from codecov_auth.helpers import get_gitlab_url
+
+SERVICE_GITHUB = 'github'
+SERVICE_GITHUB_ENTERPRISE = 'github_enterprise'
+SERVICE_BITBUCKET = 'bitbucket'
+SERVICE_BITBUCKET_SERVER = 'bitbucket_server'
+SERVICE_GITLAB = 'gitlab'
+SERVICE_CODECOV_ENTERPRISE = 'enterprise'
 
 log = logging.getLogger(__name__)
 
@@ -67,7 +86,9 @@ class Owner(models.Model):
 
     @property
     def orgs(self):
-        return Owner.objects.filter(ownerid__in=self.organizations)
+        if self.organizations:
+            return Owner.objects.filter(ownerid__in=self.organizations)
+        return Owner.objects.none()
 
     @property
     def is_active(self):
@@ -92,6 +113,44 @@ class Owner(models.Model):
     def has_perms(self, *args, **kwargs):
         # TODO : Implement real permissioning system
         return True
+
+    @property
+    def avatar_url(self, size=50):
+        if self.service == SERVICE_GITHUB and self.service_id:
+            return '{}/u/{}?v=3&s={}'.format(AVATAR_GITHUB_BASE_URL, self.service_id, size)
+
+        elif self.service == SERVICE_GITHUB_ENTERPRISE and self.service_id:
+            return '{}/avatars/u/{}?v=3&s={}'.format(get_config('github_enterprise', 'url'), self.service_id, size)
+
+        # Bitbucket
+        elif self.service == SERVICE_BITBUCKET and self.username:
+            return '{}/account/{}/avatar/{}'.format(BITBUCKET_BASE_URL, self.username, size)
+
+        elif self.service == SERVICE_BITBUCKET_SERVER and self.service_id and self.username:
+            if 'U' in self.service_id:
+                return '{}/users/{}/avatar.png?s={}'.format(get_config('bitbucket_server', 'url'), self.username, size)
+            else:
+                return '{}/projects/{}/avatar.png?s={}'.format(get_config('bitbucket_server', 'url'), self.username, size)
+
+        # Gitlab
+        elif self.service == SERVICE_GITLAB and self.email:
+            return get_gitlab_url(self.email, size)
+
+        # Codecov config
+        elif get_config('services', 'gravatar') and self.email:
+            return '{}/avatar/{}?s={}'.format(GRAVATAR_BASE_URL, md5(self.email.lower().encode()).hexdigest(), size)
+
+        elif get_config('services', 'avatars.io') and self.email:
+            return '{}/avatar/{}/{}'.format(AVATARIO_BASE_URL, md5(self.email.lower().encode()).hexdigest(), size)
+
+        elif self.ownerid:
+            return '{}/users/{}.png?size={}'.format(get_config('setup', 'codecov_url'), self.ownerid, size)
+
+        elif os.getenv('APP_ENV') == SERVICE_CODECOV_ENTERPRISE:
+            return '{}/media/images/gafsi/avatar.svg'.format(get_config('setup', 'codecov_url'))
+
+        else:
+            return '{}/media/images/gafsi/avatar.svg'.format(get_config('setup', 'media', 'assets'))
 
 
 class Session(models.Model):

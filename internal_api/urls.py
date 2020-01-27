@@ -1,6 +1,6 @@
 from django.urls import path, include
 
-from internal_api.org.views import OrgsView
+from internal_api.owner.views import OwnerView
 from internal_api.pull.views import RepoPullList, RepoPullFlagsList
 
 from internal_api.commit.views import RepoCommitList, RepoCommitFlags
@@ -53,7 +53,7 @@ compare_patterns = [
 
 
 urlpatterns = [
-    path('orgs', OrgsView.as_view()),
+    path('profile', OwnerView.as_view()),
 
     path('<str:orgName>/repos/', include(repos_router.urls)),
 

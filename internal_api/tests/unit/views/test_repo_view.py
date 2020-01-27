@@ -521,3 +521,79 @@ class TestRepositoryViewSet:
         content = json.loads(response.content.decode())
         assert content['latest_commit']
         assert content['latest_commit']['commitid'] == latest_commit_from_other_branch.commitid
+
+
+@patch("internal_api.repo.repository_accessors.RepoAccessors.get_repo_permissions")
+class RepositoryViewTest(InternalAPITest):
+
+    def test_simple_repo_name(self, mock_repo):
+        mock_repo.return_value = True, True
+        org = OwnerFactory.create(
+            username='codecov',
+            service='github',
+            unencrypted_oauth_token='testaaft3ituvli790m1yajovjv5eg0r4j0264iw',
+        )
+        repo = RepositoryFactory.create(
+            author=org,
+            name="codecovio",
+        )
+        self.client.force_login(user=repo.author)
+        url = f'/internal/{org.username}/repos/{repo.name}/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        content = json.loads(response.content.decode())
+        self.assertEqual(len(content), 18)
+
+    def test_repo_name_with_dot(self, mock_repo):
+        mock_repo.return_value = True, True
+        org = OwnerFactory.create(
+            username='codecov',
+            service='github',
+            unencrypted_oauth_token='testaaft3ituvli790m1yajovjv5eg0r4j0264iw',
+        )
+        repo = RepositoryFactory.create(
+            author=org,
+            name="codecov.io",
+        )
+        self.client.force_login(user=repo.author)
+        url = f'/internal/{org.username}/repos/{repo.name}/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        content = json.loads(response.content.decode())
+        self.assertEqual(len(content), 18)
+
+    # Note (Matt): the only special char that github isn't
+    # filtering is .
+    def test_repo_name_with_special_char(self, mock_repo):
+        mock_repo.return_value = True, True
+        org = OwnerFactory.create(
+            username='codecov',
+            service='github',
+            unencrypted_oauth_token='testaaft3ituvli790m1yajovjv5eg0r4j0264iw',
+        )
+        repo = RepositoryFactory.create(
+            author=org,
+            name="codec@v.i",
+        )
+        self.client.force_login(user=repo.author)
+        url = f'/internal/{org.username}/repos/{repo.name}/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        content = json.loads(response.content.decode())
+        self.assertEqual(len(content), 18)
+
+    def test_repo_name_with_special_char_not_found(self, mock_repo):
+        mock_repo.return_value = True, True
+        org = OwnerFactory.create(
+            username='codecov',
+            service='github',
+            unencrypted_oauth_token='testaaft3ituvli790m1yajovjv5eg0r4j0264iw',
+        )
+        repo = RepositoryFactory.create(
+            author=org,
+            name="codec@v.i&",
+        )
+        self.client.force_login(user=repo.author)
+        url = f'/internal/{org.username}/repos/{repo.name}/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)

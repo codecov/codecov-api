@@ -1,11 +1,11 @@
 from rest_framework import serializers
 
 from core.models import Branch, Commit
-from internal_api.serializers import AuthorSerializer
+from internal_api.owner.serializers import OwnerSerializer
 
 
 class BranchCommitSerializer(serializers.ModelSerializer):
-    author = AuthorSerializer()
+    author = OwnerSerializer()
     totals = serializers.JSONField()
     updatestamp = serializers.DateTimeField()
 

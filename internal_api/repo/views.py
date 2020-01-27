@@ -58,6 +58,7 @@ class RepositoryViewSet(
     filterset_class = RepositoryFilters
     search_fields = ('name',)
     ordering_fields = ('updatestamp', 'name', 'coverage',)
+    lookup_value_regex = '[\w\.@\:\-~]+'
     lookup_field = 'repoName'
     accessors = RepoAccessors()
 

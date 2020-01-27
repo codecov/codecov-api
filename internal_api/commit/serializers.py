@@ -6,7 +6,7 @@ from rest_framework import serializers
 from archive.services import ReportService
 from repo_providers.services import RepoProviderService
 from core.models import Repository, Commit
-from internal_api.serializers import AuthorSerializer
+from internal_api.owner.serializers import OwnerSerializer
 
 log = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ class CommitRepoSerializer(serializers.ModelSerializer):
 
 
 class CommitSerializer(serializers.ModelSerializer):
-    author = AuthorSerializer()
+    author = OwnerSerializer()
     repository = CommitRepoSerializer()
 
     class Meta:

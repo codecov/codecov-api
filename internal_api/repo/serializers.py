@@ -1,16 +1,15 @@
 from rest_framework import serializers
 
-from codecov_auth.models import Owner
 from core.models import Repository, Commit
-from internal_api.serializers import AuthorSerializer
+
+from internal_api.owner.serializers import OwnerSerializer
 from internal_api.commit.serializers import (
-    CommitWithReportSerializer,
     CommitWithFileLevelReportSerializer,
 )
 
 
 class RepoSerializer(serializers.ModelSerializer):
-    author = AuthorSerializer()
+    author = OwnerSerializer()
 
     class Meta:
         model = Repository
@@ -38,8 +37,7 @@ class RepoDetailsSerializer(RepoSerializer):
     can_view = serializers.SerializerMethodField()
     can_edit = serializers.SerializerMethodField()
 
-    class Meta:
-        model = Repository
+    class Meta(RepoSerializer.Meta):
         fields = (
             'fork',
             'upload_token',

@@ -106,7 +106,6 @@ class TestReport(object):
         commit = CommitFactory.create(message='aaaaa', commitid='abf6d4d')
         report = ReportService().build_report_from_commit(commit)
         res = report.flags['integrations'].report
-        print(res.totals)
         assert len(res._chunks) == 3
         assert len(res.files) == 3
         file_1, file_2, file_3 = sorted(res.file_reports(), key=lambda x: x.name)
