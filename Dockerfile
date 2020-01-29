@@ -32,7 +32,7 @@ RUN             apk add --no-cache postgresql-libs && \
 WORKDIR         /pip-packages/
 COPY            --from=build /pip-packages/ /pip-packages/
 RUN             rm -rf /pip-packages/src
-RUN             pip install --no-index --find-links=/pip-packages/ /pip-packages/*
+RUN             pip install --find-links=/pip-packages/ /pip-packages/*
 
 EXPOSE          8000
 
