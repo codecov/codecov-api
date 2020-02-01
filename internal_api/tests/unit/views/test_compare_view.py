@@ -1,5 +1,5 @@
 import json
-from pathlib import Path
+import pytest
 from unittest.mock import patch
 
 from django.test import override_settings
@@ -7,7 +7,9 @@ from django.test import override_settings
 from rest_framework import status
 from rest_framework.reverse import reverse
 
-
+from archive.services import SerializableReport
+from internal_api.commit.serializers import ReportSerializer
+from covreports.resources import ReportFile
 from archive.services import ArchiveService
 from codecov.tests.base_test import InternalAPITest
 from codecov_auth.tests.factories import OwnerFactory
@@ -18,432 +20,6 @@ from core.tests.factories import (
     BranchFactory,
     PullFactory,
 )
-
-current_file = Path(__file__)
-
-
-class TestCompareCommitsView(InternalAPITest):
-
-    def setUp(self):
-        org = OwnerFactory(username='Codecov')
-        self.user = OwnerFactory(username='codecov-user',
-                                 email='codecov-user@codecov.io',
-                                 organizations=[org.ownerid])
-        self.repo = RepositoryFactory(author=self.user)
-
-        self.client.force_login(user=self.user)
-
-    def _get_commits_comparison(self, kwargs, query_params):
-        return self.client.get(reverse('compare-commits', kwargs=kwargs), data=query_params)
-
-    def test_compare_commits_bad_commit(self):
-        parent_commit = CommitFactory.create(
-            message='test_compare_commits_parent',
-            commitid='c5b6730',
-            repository=self.repo,
-        )
-        commit_base = CommitFactory.create(
-            message='test_compare_commits_base',
-            commitid='9193232a8fe3429496956ba82b5fed2583d1b5eb',
-            parent_commit_id=parent_commit.commitid,
-            repository=self.repo,
-        )
-
-        bad_commitid = "9193232a8fe3429496123ba82b5fed2583d1b5eb"
-        response = self._get_commits_comparison(
-            kwargs={
-                "orgName": self.repo.author.username,
-                "repoName": self.repo.name
-            },
-            query_params={
-                "base": commit_base.commitid,
-                "head": bad_commitid
-            }
-        )
-        assert response.status_code == 404
-
-    def test_compare_commits_bad_branch(self):
-        parent_commit = CommitFactory.create(
-            message='test_compare_commits_parent',
-            commitid='c5b6730',
-            repository=self.repo,
-        )
-        commit_base = CommitFactory.create(
-            message='test_compare_commits_base',
-            commitid='9193232a8fe3429496956ba82b5fed2583d1b5eb',
-            parent_commit_id=parent_commit.commitid,
-            repository=self.repo,
-        )
-
-        bad_branch = "bad-branch"
-        branch_base = BranchFactory.create(
-            head=commit_base,
-            repository=self.repo
-        )
-        response = self._get_commits_comparison(
-            kwargs={
-                "orgName": self.repo.author.username,
-                "repoName": self.repo.name
-            },
-            query_params={
-                "base": branch_base.name,
-                "head": bad_branch
-            }
-        )
-        assert response.status_code == 404
-
-    @patch("compare.services.Comparison._calculate_git_comparison")
-    def test_compare_commits_view_with_branchname(self, mocked_comparison):
-        repo, commit_base, commit_head = build_commits(client=self.client)
-        git_commits, src_diff = build_mocked_compare_commits(mocked_comparison, self.user, commit_base, commit_head)
-        branch_base = BranchFactory.create(head=commit_base, repository=commit_base.repository)
-        branch_head = BranchFactory.create(head=commit_head, repository=commit_head.repository)
-
-        response = self._get_commits_comparison(
-            kwargs={
-                "orgName": repo.author.username,
-                "repoName": repo.name
-            },
-            query_params={
-                "base": branch_base.name,
-                "head": branch_head.name
-            }
-        )
-
-        assert response.status_code == 200
-        content = json.loads(response.content.decode())
-        assert content['git_commits'] == git_commits
-        assert content['commit_uploads'][0]['commitid'] == commit_head.commitid
-        assert content['commit_uploads'][0]['totals'] == commit_head.totals
-        assert content['commit_uploads'][1]['commitid'] == commit_base.commitid
-        assert content['commit_uploads'][1]['totals'] == commit_base.totals
-
-    @patch("compare.services.Comparison._calculate_git_comparison")
-    def test_compare_commits_view_with_commitid(self, mocked_comparison):
-        repo, commit_base, commit_head = build_commits(client=self.client)
-        git_commits, src_diff = build_mocked_compare_commits(mocked_comparison, self.user, commit_base, commit_head)
-
-        response = self._get_commits_comparison(
-            kwargs={
-                "orgName": repo.author.username,
-                "repoName": repo.name
-            },
-            query_params={
-                "base": commit_base.commitid,
-                "head": commit_head.commitid
-            }
-        )
-
-        assert response.status_code == 200
-        content = json.loads(response.content.decode())
-        assert content['git_commits'] == git_commits
-        assert content['commit_uploads'][0]['commitid'] == commit_head.commitid
-        assert content['commit_uploads'][0]['totals'] == commit_head.totals
-        assert content['commit_uploads'][1]['commitid'] == commit_base.commitid
-        assert content['commit_uploads'][1]['totals'] == commit_base.totals
-
-    @patch("compare.services.Comparison._calculate_git_comparison")
-    def test_compare_commits_view_with_pullid(self, mocked_comparison):
-        repo, base, head = build_commits(self.client)
-
-        pull = PullFactory(
-            pullid=2,
-            repository=repo,
-            author=repo.author,
-            base=base,
-            head=head
-        )
-
-        git_commits, _ = build_mocked_compare_commits(
-            mocked_comparison,
-            pull.repository.author,
-            pull.base,
-            pull.head
-        )
-
-        response = self._get_commits_comparison(
-            kwargs={
-                "orgName": repo.author.username,
-                "repoName": repo.name
-            },
-            query_params={
-                "pullid": pull.pullid
-            }
-        )
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        assert response.data['git_commits'] == git_commits
-        assert response.data['commit_uploads'][0]['commitid'] == head.commitid
-        assert response.data['commit_uploads'][0]['totals'] == head.totals
-        assert response.data['commit_uploads'][1]['commitid'] == base.commitid
-        assert response.data['commit_uploads'][1]['totals'] == base.totals
-
-
-class TestCompareDetailsView(object):
-
-    def _get_compare_details(self, client, kwargs, query_params):
-        return client.get(reverse('compare-details', kwargs=kwargs), data=query_params)
-
-    def verify_details_output(self, response, expected_report_result, git_commits):
-        assert response.status_code == 200
-        content = json.loads(response.content.decode())
-        assert content['head_report']['totals'] == expected_report_result['totals']
-        assert content['head_report']['files'][0]['name'] == expected_report_result['files'][0]['name']
-        assert 'lines' in content['head_report']['files'][0]
-        assert 'git_commits' in content
-        assert content['base_commit'] == git_commits[0]['commitid']
-        assert content['head_commit'] == git_commits[-1]['commitid']
-        assert content['git_commits'] == git_commits
-
-    @override_settings(DEBUG=True)
-    def test_compare_details_view(self, mocker, db, client, codecov_vcr):
-        repo, commit_base, commit_head = build_commits(client=client)
-        expected_report_result = build_mocked_report_archive(mocker)
-        mocked_comparison = mocker.patch.object(Comparison, '_calculate_git_comparison')
-        org = OwnerFactory(username='Codecov')
-        user = OwnerFactory(username='codecov-user',
-                            email='codecov-user@codecov.io',
-                            organizations=[org.ownerid])
-        git_commits, src_diff = build_mocked_compare_commits(mocked_comparison, user, commit_base, commit_head)
-
-        response = self._get_compare_details(
-            client,
-            kwargs={
-                "orgName": repo.author.username,
-                "repoName": repo.name
-            },
-            query_params={
-                "base": commit_base.commitid,
-                "head": commit_head.commitid
-            }
-        )
-
-        self.verify_details_output(response, expected_report_result, git_commits)
-
-    @override_settings(DEBUG=True)
-    def test_compare_details_accepts_pullid_query_param(self, mocker, db, client, codecov_vcr):
-        repo, commit_base, commit_head = build_commits(client=client)
-        expected_report_result = build_mocked_report_archive(mocker)
-        mocked_comparison = mocker.patch.object(Comparison, '_calculate_git_comparison')
-        git_commits, src_diff = build_mocked_compare_commits(mocked_comparison, repo.author, commit_base, commit_head)
-
-        response = self._get_compare_details(
-            client,
-            kwargs={
-                "orgName": repo.author.username,
-                "repoName": repo.name
-            },
-            query_params={
-                "pullid": PullFactory(
-                    base=commit_base,
-                    head=commit_head,
-                    pullid=2,
-                    author=commit_head.author,
-                    repository=repo
-                ).pullid
-            }
-        )
-
-        self.verify_details_output(response, expected_report_result, git_commits)
-
-
-class TestCompareSingleFileDiffView:
-    def _get_single_file_diff(self, client, kwargs, query_params):
-        return client.get(reverse('compare-diff-file', kwargs=kwargs), data=query_params)
-
-    @override_settings(DEBUG=True)
-    def test_compare_single_file_diff_view(self, mocker, db, client, codecov_vcr):
-        repo, commit_base, commit_head = build_commits(client=client)
-        build_mocked_report_archive(mocker)
-        mocked_comparison = mocker.patch.object(Comparison, '_calculate_git_comparison')
-        build_mocked_compare_commits(mocked_comparison, repo.author, commit_base, commit_head)
-
-        response = self._get_single_file_diff(
-            client,
-            kwargs={
-                "orgName": repo.author.username,
-                "repoName": repo.name,
-                "file_path": "src/adder/adder.py"
-            },
-            query_params={
-                "head": commit_head.commitid,
-                "base": commit_base.commitid
-            }
-        )
-
-        assert response.status_code == 200
-        content = json.loads(response.content.decode())
-        assert 'src_diff' in content
-        assert content['src_diff'] == {
-            "type": "modified",
-            "before": None,
-            "segments": [
-                {
-                    "header": [
-                        "9",
-                        "3",
-                        "9",
-                        "6"
-                    ],
-                    "lines": [
-                        "         ",
-                        "     def multiply(self, x, y):",
-                        "         return x * y",
-                        "+    ",
-                        "+    def double(self, x):",
-                        "+        return 2 * x"
-                    ]
-                }
-            ],
-            "stats": {
-                "added": 3,
-                "removed": 0
-            }
-        }
-        assert 'base_coverage' in content
-        assert 'head_coverage' in content
-
-
-class TestCompareFullSrcView:
-    def _get_compare_src(self, client, kwargs, query_params):
-        return client.get(reverse('compare-src-full', kwargs=kwargs), data=query_params)
-
-    def verify_src_output(self, response, expected_report_result):
-        assert response.status_code == 200
-        content = json.loads(response.content.decode())
-        assert 'src_diff' in content
-
-    @override_settings(DEBUG=True)
-    def test_basic_return_with_commit_refs(self, mocker, db, client, codecov_vcr):
-        repo, commit_base, commit_head = build_commits(client=client)
-        expected_report_result = build_mocked_report_archive(mocker)
-        mocked_comparison = mocker.patch.object(Comparison, '_calculate_git_comparison')
-        git_commits, src_diff = build_mocked_compare_commits(
-            mocked_comparison,
-            repo.author,
-            commit_base,
-            commit_head
-        )
-
-        response = self._get_compare_src(
-            client,
-            kwargs={
-                "orgName": repo.author.username,
-                "repoName": repo.name
-            },
-            query_params={
-                "base": commit_base.commitid,
-                "head": commit_head.commitid
-            }
-        )
-
-        self.verify_src_output(response, expected_report_result)
-
-    @override_settings(DEBUG=True)
-    def test_accepts_pullid_query_param(self, mocker, db, client, codecov_vcr):
-        repo, commit_base, commit_head = build_commits(client=client)
-        expected_report_result = build_mocked_report_archive(mocker)
-        mocked_comparison = mocker.patch.object(Comparison, '_calculate_git_comparison')
-        git_commits, src_diff = build_mocked_compare_commits(
-            mocked_comparison,
-            repo.author,
-            commit_base,
-            commit_head
-        )
-
-        response = self._get_compare_src(
-            client,
-            kwargs={
-                "orgName": repo.author.username,
-                "repoName": repo.name
-            },
-            query_params={
-                "pullid": PullFactory(
-                    base=commit_base,
-                    head=commit_head,
-                    pullid=2,
-                    author=commit_head.author,
-                    repository=commit_head.repository
-                ).pullid
-            }
-        )
-
-        self.verify_src_output(response, expected_report_result)
-
-    @override_settings(DEBUG=True)
-    def test_omits_line_data_after_first_five_files(self, mocker, db, client, codecov_vcr):
-        repo, commit_base, commit_head = build_commits(client=client)
-        expected_report_result = build_mocked_report_archive(mocker)
-        mocked_comparison = mocker.patch.object(Comparison, '_calculate_git_comparison')
-        git_commits, src_diff = build_mocked_compare_commits(
-            mocked_comparison,
-            repo.author,
-            commit_base,
-            commit_head
-        )
-
-        # Make src_diff long enough to trigger line data omission
-        # I'm just adding copies of 'main.py' with dummy names
-        src_diff["files"] = src_diff["files"]
-        for i in range(5):
-            # using json library to deep-copy the dict,
-            # but there might be a better way
-            src_diff["files"][f"main{i}.py"] = json.loads(
-                json.dumps(src_diff["files"]["src/main.py"])
-            )
-
-        assert len(mocked_comparison.return_value["diff"]["files"]) > 5
-
-        response = self._get_compare_src(
-            client,
-            kwargs={
-                "orgName": repo.author.username,
-                "repoName": repo.name
-            },
-            query_params={
-                "head": commit_head.commitid,
-                "base": commit_base.commitid
-            }
-        )
-
-        # there should be exactly five files with a non-empty list for "lines"
-        files_with_lines = 0
-        content = json.loads(response.content.decode())
-        for _, diff_data in content["src_diff"]["files"].items():
-            if diff_data["segments"]:
-                files_with_lines += 1
-
-        assert files_with_lines == 5
-
-    @override_settings(DEBUG=True)
-    def test_allows_diff_without_segments(self, mocker, db, client, codecov_vcr):
-        repo, commit_base, commit_head = build_commits(client=client)
-        expected_report_result = build_mocked_report_archive(mocker)
-        mocked_comparison = mocker.patch.object(Comparison, '_calculate_git_comparison')
-        git_commits, src_diff = build_mocked_compare_commits(
-            mocked_comparison,
-            repo.author,
-            commit_base,
-            commit_head
-        )
-
-        src_diff["files"] = src_diff["files"]
-        del src_diff["files"]["src/main.py"]["segments"]
-
-        response = self._get_compare_src(
-            client,
-            kwargs={
-                "orgName": repo.author.username,
-                "repoName": repo.name
-            },
-            query_params={
-                "head": commit_head.commitid,
-                "base": commit_base.commitid
-            }
-        )
-
-        self.verify_src_output(response, expected_report_result)
 
 
 def build_commits(client):
@@ -478,221 +54,515 @@ def build_commits(client):
     return repo, commit_base, commit_head
 
 
-def build_mocked_report_archive(mocker):
-    mocked = mocker.patch.object(ArchiveService, 'read_chunks')
-    f = open(
-        current_file.parent.parent.parent.parent.parent / 'archive/tests/samples' / 'chunks.txt',
-        'r'
-    )
-    mocker.patch.object(ArchiveService, 'create_root_storage')
-    mocked.return_value = f.read()
+class TestCompareCommitsView(InternalAPITest):
+    def setUp(self):
+        org = OwnerFactory(username='Codecov')
+        self.user = OwnerFactory(
+            username='codecov-user',
+            email='codecov-user@codecov.io',
+            organizations=[org.ownerid]
+        )
+        self.repo, self.commit_base, self.commit_head = build_commits(self.client)
 
-    expected_report_result = {
-        'files': [
-            ({
-                'name': 'tests/__init__.py',
-                'lines': [
-                    (1, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
-                    (4, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
-                    (5, 0, None, [[0, 0, None, None, None], [1, 0, None, None, None]], None, None)
-                ],
-                'totals': {
-                    'files': 0,
-                    'lines': 3,
-                    'hits': 2,
-                    'misses': 1,
-                    'partials': 0,
-                    'coverage': '66.66667',
-                    'branches': 0,
-                    'methods': 0,
-                    'messages': 0,
-                    'sessions': 0,
-                    'complexity': 0,
-                    'complexity_total': 0,
-                    'diff': 0
-                }
-            }),
-            ({
-                'name': 'awesome/__init__.py',
-                'lines': [
-                    (1, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
-                    (2, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
-                    (5, 1, None, [[0, 1, None, None, None], [1, 1, None, None, None]], None, None),
-                    (6, 1, None, [[0, 0, None, None, None], [1, 0, None, None, None]], None, None),
-                    (9, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
-                    (10, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
-                    (11, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
-                    (12, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
-                    (15, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
-                    (16, 0, None, [[0, 0, None, None, None], [1, 0, None, None, None]], None, None)
-                ],
-                'totals': {
-                    'files': 0,
-                    'lines': 10,
-                    'hits': 8,
-                    'misses': 2,
-                    'partials': 0,
-                    'coverage': '80.00000',
-                    'branches': 0,
-                    'methods': 0,
-                    'messages': 0,
-                    'sessions': 0,
-                    'complexity': 0,
-                    'complexity_total': 0,
-                    'diff': 0
-                }
-            }),
-            ({
-                'name': 'tests/test_sample.py',
-                'lines': [
-                    (1, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
-                    (4, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
-                    (5, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
-                    (8, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
-                    (9, 1, None, [[0, 1, None, None, None], [1, 0, None, None, None]], None, None),
-                    (12, 1, None, [[0, 1, None, None, None], [1, 1, None, None, None]], None, None),
-                    (13, 1, None, [[0, 1, None, None, None], [1, 1, None, None, None]], None, None)
-                ],
-                'totals': {
-                    'files': 0,
-                    'lines': 7,
-                    'hits': 7,
-                    'misses': 0,
-                    'partials': 0,
-                    'coverage': '100',
-                    'branches': 0,
-                    'methods': 0,
-                    'messages': 0,
-                    'sessions': 0,
-                    'complexity': 0,
-                    'complexity_total': 0,
-                    'diff': 0
-                }
-            })
-        ],
-        'totals': {
-            'files': 3,
-            'lines': 20,
-            'hits': 17,
-            'misses': 3,
-            'partials': 0,
-            'coverage': '85.00000',
-            'branches': 0,
-            'methods': 0,
-            'messages': 0,
-            'sessions': 1,
-            'complexity': 0,
-            'complexity_total': 0,
-            'diff': [1, 2, 1, 1, 0, '50.00000', 0, 0, 0, 0, 0, 0, 0]
-        }
-    }
-    return expected_report_result
+    def _get_commits_comparison(self, kwargs, query_params):
+        return self.client.get(reverse('compare-commits', kwargs=kwargs), data=query_params)
 
-
-def build_mocked_compare_commits(mocked_comparison, user, commit_base, commit_head):
-    """
-
-    :param mocked_comparison:
-    :param user:
-    :param client:
-    :return: repo, commit_base, commit_head, git_commits, src_diff
-    """
-    git_commits = [
-        {
-            'commitid': commit_base.commitid,
-            'message': commit_base.message,
-            'timestamp': '2019-03-31T02:28:02Z',
-            'author': {
-                'id': user.ownerid,
-                'username': user.username,
-                'name': user.name,
-                'email': user.email
-            }
-        },
-        {
-            'commitid': 'e8d9ce1a4c54a443607a2dd14cdeefc4dca4fde8',
-            'message': 'Some commit that doesnt have an upload',
-            'timestamp': '2019-03-31T04:28:02Z',
-            'author': {
-                'id': user.ownerid,
-                'username': user.username,
-                'name': user.name,
-                'email': user.email
-            }
-        },
-        {
-            'commitid': commit_head.commitid,
-            'message': commit_head.message,
-            'timestamp': '2019-03-31T07:23:19Z',
-            'author': {
-                'id': user.ownerid,
-                'username': user.username,
-                'name': user.name,
-                'email': user.email
-            }
-        },
-    ]
-    src_diff = {
-        "files": {
-            "src/adder/adder.py": {
-                "type": "modified",
-                "before": None,
-                "segments": [
-                    {
-                        "header": [
-                            "9",
-                            "3",
-                            "9",
-                            "6"
-                        ],
-                        "lines": [
-                            "         ",
-                            "     def multiply(self, x, y):",
-                            "         return x * y",
-                            "+    ",
-                            "+    def double(self, x):",
-                            "+        return 2 * x"
-                        ]
+    def _configure_mocked_comparison_with_commits(self, mock):
+         mock.return_value = {
+            "commits": [ 
+                {
+                    'commitid': self.commit_base.commitid,
+                    'message': self.commit_base.message,
+                    'timestamp': '2019-03-31T02:28:02Z',
+                    'author': {
+                        'id': self.repo.author.ownerid,
+                        'username': self.repo.author.username,
+                        'name': self.repo.author.name,
+                        'email': self.repo.author.email
                     }
-                ],
-                "stats": {
-                    "added": 3,
-                    "removed": 0
+                },
+                {
+                    'commitid': self.commit_head.commitid,
+                    'message': self.commit_head.message,
+                    'timestamp': '2019-03-31T07:23:19Z',
+                    'author': {
+                        'id': self.repo.author.ownerid,
+                        'username': self.repo.author.username,
+                        'name': self.repo.author.name,
+                        'email': self.repo.author.email
+                    }
                 }
+            ]
+        }
+
+    def test_compare_commits_bad_commit(self):
+        bad_commitid = "9193232a8fe3429496123ba82b5fed2583d1b5eb"
+        response = self._get_commits_comparison(
+            kwargs={
+                "orgName": self.repo.author.username,
+                "repoName": self.repo.name
             },
-            "src/main.py": {
-                "type": "modified",
-                "before": None,
-                "segments": [
-                    {
-                        "header": [
-                            "10",
-                            "7",
-                            "10",
-                            "8"
-                        ],
-                        "lines": [
-                            "     product = Adder().multiply(x,y)",
-                            "     quotient = Subtractor().divide(x,y)",
-                            "     fraction = Subtractor().fractionate(x)",
-                            "-    print(\"Given: {} and {}. The sum: {}. The difference: {}. The product: {}. The quotient: {}. The fraction: {}\").format(x, y, sum, diff, product, quotient, fraction)",
-                            "+    double = Adder().double(x)",
-                            "+    print(\"Given: {} and {}. The sum: {}. The difference: {}. The product: {}. The quotient: {}. The fraction: {}. The double of x: {}\").format(x, y, sum, diff, product, quotient, fraction, double)",
-                            " ",
-                            " ",
-                            " if __name__ == \"__main__\":"
-                        ]
-                    }
-                ],
-                "stats": {
-                    "added": 2,
-                    "removed": 1
-                }
+            query_params={
+                "base": self.commit_base.commitid,
+                "head": bad_commitid
             }
+        )
+        assert response.status_code == 404
+
+    def test_compare_commits_bad_branch(self):
+        bad_branch = "bad-branch"
+        branch_base = BranchFactory.create(
+            head=self.commit_base,
+            repository=self.repo
+        )
+        response = self._get_commits_comparison(
+            kwargs={
+                "orgName": self.repo.author.username,
+                "repoName": self.repo.name
+            },
+            query_params={
+                "base": branch_base.name,
+                "head": bad_branch
+            }
+        )
+        assert response.status_code == 404
+
+    @patch('compare.services.Comparison._calculate_git_comparison')
+    def test_compare_commits_view_with_branchname(self, mocked_comparison):
+        self._configure_mocked_comparison_with_commits(mocked_comparison)
+        branch_base = BranchFactory.create(head=self.commit_base, repository=self.commit_base.repository)
+        branch_head = BranchFactory.create(head=self.commit_head, repository=self.commit_head.repository)
+
+        response = self._get_commits_comparison(
+            kwargs={
+                "orgName": self.repo.author.username,
+                "repoName": self.repo.name
+            },
+            query_params={
+                "base": branch_base.name,
+                "head": branch_head.name
+            }
+        )
+
+        assert response.status_code == 200
+        content = json.loads(response.content.decode())
+        assert content['git_commits'] == mocked_comparison.return_value["commits"]
+        assert content['commit_uploads'][0]['commitid'] == self.commit_head.commitid
+        assert content['commit_uploads'][0]['totals'] == self.commit_head.totals
+        assert content['commit_uploads'][1]['commitid'] == self.commit_base.commitid
+        assert content['commit_uploads'][1]['totals'] == self.commit_base.totals
+
+    @patch('compare.services.Comparison._calculate_git_comparison')
+    def test_compare_commits_view_with_commitid(self, mocked_comparison):
+        self._configure_mocked_comparison_with_commits(mocked_comparison)
+        response = self._get_commits_comparison(
+            kwargs={
+                "orgName": self.repo.author.username,
+                "repoName": self.repo.name
+            },
+            query_params={
+                "base": self.commit_base.commitid,
+                "head": self.commit_head.commitid
+            }
+        )
+
+        assert response.status_code == 200
+        content = json.loads(response.content.decode())
+        assert content['git_commits'] == mocked_comparison.return_value["commits"]
+        assert content['commit_uploads'][0]['commitid'] == self.commit_head.commitid
+        assert content['commit_uploads'][0]['totals'] == self.commit_head.totals
+        assert content['commit_uploads'][1]['commitid'] == self.commit_base.commitid
+        assert content['commit_uploads'][1]['totals'] == self.commit_base.totals
+
+    @patch('compare.services.Comparison._calculate_git_comparison')
+    def test_compare_commits_view_with_pullid(self, mocked_comparison):
+        self._configure_mocked_comparison_with_commits(mocked_comparison)
+        pull = PullFactory(
+            pullid=2,
+            repository=self.repo,
+            author=self.repo.author,
+            base=self.commit_base,
+            head=self.commit_head
+        )
+
+        response = self._get_commits_comparison(
+            kwargs={
+                "orgName": self.repo.author.username,
+                "repoName": self.repo.name
+            },
+            query_params={
+                "pullid": pull.pullid
+            }
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        assert response.data['git_commits'] == mocked_comparison.return_value["commits"]
+        assert response.data['commit_uploads'][0]['commitid'] == self.commit_head.commitid
+        assert response.data['commit_uploads'][0]['totals'] == self.commit_head.totals
+        assert response.data['commit_uploads'][1]['commitid'] == self.commit_base.commitid
+        assert response.data['commit_uploads'][1]['totals'] == self.commit_base.totals
+
+
+@patch('archive.services.ArchiveService.create_root_storage')
+@patch('archive.services.ArchiveService.read_chunks')
+@patch('compare.services.Comparison._calculate_git_comparison')
+class TestCompareDetailsView(InternalAPITest):
+    def _get_compare_details(self, kwargs={}, query_params={}):
+        if not kwargs:
+            kwargs = {"orgName": self.repo.author.username, "repoName": self.repo.name}
+        if not query_params:
+            query_params = {"base": self.commit_base.commitid, "head": self.commit_head.commitid}
+        return self.client.get(reverse('compare-details', kwargs=kwargs), data=query_params)
+
+    def setUp(self):
+        self.repo, self.commit_base, self.commit_head = build_commits(client=self.client)
+
+    def test_details_returns_200_on_success(self, mocked_comparison, mocked_read_chunks, *_):
+        mocked_comparison.return_value = {"commits": []}
+        mocked_read_chunks.return_value = ''
+        response = self._get_compare_details()
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_details_returns_relevant_fields_on_success(self, mocked_comparison, mocked_read_chunks, *_):
+        mocked_comparison.return_value = {"commits": []}
+        mocked_read_chunks.return_value = ''
+        response = self._get_compare_details()
+        assert response.status_code == status.HTTP_200_OK
+        for field in ('head_commit', 'base_commit', 'head_report', 'base_report', 'git_commits'):
+            assert field in response.data
+
+    def test_details_accepts_pullid_query_param(self, mocked_comparison, mocked_read_chunks, *_):
+        mocked_comparison.return_value = {"commits": []}
+        mocked_read_chunks.return_value = ''
+        response = self._get_compare_details(
+            query_params={
+                "pullid": PullFactory(
+                    base=self.commit_base,
+                    head=self.commit_head,
+                    pullid=2,
+                    author=self.commit_head.author,
+                    repository=self.repo
+                ).pullid
+            }
+        )
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_details_return_with_mock_data(self, mocked_comparison, mocked_read_chunks, *args):
+        mocked_comparison.return_value = {
+            "commits": [
+                {
+                    'commitid': self.commit_base.commitid,
+                    'message': self.commit_base.message,
+                    'timestamp': '2019-03-31T02:28:02Z',
+                    'author': {
+                        'id': self.repo.author.ownerid,
+                        'username': self.repo.author.username,
+                        'name': self.repo.author.name,
+                        'email': self.repo.author.email
+                    }
+                },
+                {
+                    'commitid': 'e8d9ce1a4c54a443607a2dd14cdeefc4dca4fde8',
+                    'message': 'Some commit that doesnt have an upload',
+                    'timestamp': '2019-03-31T04:28:02Z',
+                    'author': {
+                        'id': self.repo.author.ownerid,
+                        'username': self.repo.author.username,
+                        'name': self.repo.author.name,
+                        'email': self.repo.author.email
+                    }
+                },
+                {
+                    'commitid': self.commit_head.commitid,
+                    'message': self.commit_head.message,
+                    'timestamp': '2019-03-31T07:23:19Z',
+                    'author': {
+                        'id': self.repo.author.ownerid,
+                        'username': self.repo.author.username,
+                        'name': self.repo.author.name,
+                        'email': self.repo.author.email
+                    }
+                }
+            ]
         }
-    }
-    mocked_comparison.return_value = {
-        'diff': src_diff,
-        'commits': git_commits
-    }
-    return git_commits, src_diff
+
+        mocked_read_chunks.return_value = """{}
+[1, null, [[0, 1], [1, 0]]]
+
+
+[1, null, [[0, 1], [1, 0]]]
+[0, null, [[0, 0], [1, 0]]]
+<<<<< end_of_chunk >>>>>
+{}
+[1, null, [[0, 1], [1, 0]]]
+
+
+[1, null, [[0, 1], [1, 0]]]
+[1, null, [[0, 1], [1, 0]]]
+
+
+[1, null, [[0, 1], [1, 0]]]
+[1, null, [[0, 1], [1, 0]]]
+
+
+[1, null, [[0, 1], [1, 1]]]
+[1, null, [[0, 1], [1, 1]]]
+<<<<< end_of_chunk >>>>>
+{}
+[1, null, [[0, 1], [1, 0]]]
+[1, null, [[0, 1], [1, 0]]]
+
+
+[1, null, [[0, 1], [1, 1]]]
+[1, null, [[0, 0], [1, 0]]]
+
+
+[1, null, [[0, 1], [1, 0]]]
+[1, null, [[0, 1], [1, 0]]]
+[1, null, [[0, 1], [1, 0]]]
+[1, null, [[0, 1], [1, 0]]]
+
+
+[1, null, [[0, 1], [1, 0]]]
+[0, null, [[0, 0], [1, 0]]]"""
+
+        ## dump to string, then read back as JSON to get rid of nested ordered dicts
+        expected_serialized_report = json.loads(json.dumps(ReportSerializer(
+            SerializableReport(
+                chunks=mocked_read_chunks.return_value,
+                files=CommitFactory.report["files"],
+                sessions=CommitFactory.report['sessions'],
+                totals=CommitFactory.totals
+            )
+        ).data))
+
+        response = self._get_compare_details()
+        content = json.loads(response.content.decode())
+        assert response.status_code == status.HTTP_200_OK
+        assert content["head_commit"] == self.commit_head.commitid
+        assert content["base_commit"] == self.commit_base.commitid
+        assert content["head_report"]["totals"] == expected_serialized_report["totals"]
+        assert content["base_report"]["totals"] == expected_serialized_report["totals"]
+
+        # loop through the files in the expected serialized report --
+        # can't do equality test because files appear in a list of nondeterministic order,
+        # because they are stored as a dict.
+        for file_data in expected_serialized_report["files"]:
+            # If an equivilant object exists in the head report (or base for second assert)
+            # this condition qill evaluate to True. If not, the list will be empty, which
+            # evaluates to False.
+            assert [f for f in content["head_report"]["files"] if f == file_data]
+            assert [f for f in content["base_report"]["files"] if f == file_data]
+
+        assert content["git_commits"] == mocked_comparison.return_value["commits"]
+
+
+@patch('archive.services.ArchiveService.create_root_storage')
+@patch('archive.services.ArchiveService.read_chunks', lambda obj, sha: '')
+@patch('compare.services.Comparison._calculate_git_comparison')
+class TestCompareSingleFileDiffView(InternalAPITest):
+    def _get_single_file_diff(self, kwargs, query_params):
+        return self.client.get(reverse('compare-diff-file', kwargs=kwargs), data=query_params)
+
+    def setUp(self):
+        self.repo = RepositoryFactory()
+        self.commit_base = CommitFactory(repository=self.repo)
+        self.commit_head = CommitFactory(repository=self.repo)
+
+        self.client.force_login(user=self.repo.author)
+
+    def test_returns_diff_for_file_name_on_success(self, mocked_comparison, *args):
+        tracked_file = "awesome/__init__.py"
+        mocked_comparison.return_value = {"diff": {"files": {tracked_file: tracked_file + "_data"}}}
+
+        response = self._get_single_file_diff(
+            kwargs={
+                "orgName": self.repo.author.username,
+                "repoName": self.repo.name,
+                "file_path": tracked_file
+            },
+            query_params={
+                "head": self.commit_head.commitid,
+                "base": self.commit_base.commitid
+            }
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['src_diff'] == mocked_comparison.return_value["diff"]["files"][tracked_file]
+        assert 'base_coverage' in response.data
+        assert 'head_coverage' in response.data
+
+    def test_returns_404_if_file_name_not_in_diff(self, mocked_comparison, *args):
+        file_not_in_diff = "not_found.py"
+        mocked_comparison.return_value = {"diff": {"files": {"hello.py": True}}}
+
+        response = self._get_single_file_diff(
+            kwargs={
+                "orgName": self.repo.author.username,
+                "repoName": self.repo.name,
+                "file_path": file_not_in_diff
+            },
+            query_params={
+                "head": self.commit_head.commitid,
+                "base": self.commit_base.commitid
+            }
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+@patch('archive.services.ArchiveService.create_root_storage')
+@patch('archive.services.ArchiveService.read_chunks', lambda obj, sha: '')
+@patch('compare.services.Comparison._calculate_git_comparison')
+class TestCompareFullSrcView(InternalAPITest):
+    def _get_compare_src(self, kwargs, query_params):
+        return self.client.get(reverse('compare-src-full', kwargs=kwargs), data=query_params)
+
+    def _configure_comparison_mock_with_commit_factory_report(self, mock):
+        mock.return_value = {
+            "diff": {"files": {
+                file_name: {"segments": True} for file_name, _ in CommitFactory.report["files"].items()
+            }},
+            "commits": []
+        }
+
+    def _configure_file_reports_with_commit_factory_report(self, mock):
+        mock.return_value = [
+            ReportFile(file_name) for file_name, _ in CommitFactory.report["files"].items()
+        ]
+
+    def setUp(self):
+        self.repo = RepositoryFactory()
+        self.commit_base = CommitFactory(repository=self.repo)
+        self.commit_head = CommitFactory(repository=self.repo)
+
+        self.client.force_login(user=self.repo.author)
+
+    def test_returns_calculated_diff_data_with_commit_refs(self, mocked_comparison, *_):
+        self._configure_comparison_mock_with_commit_factory_report(mocked_comparison)
+        response = self._get_compare_src(
+            kwargs={
+                "orgName": self.repo.author.username,
+                "repoName": self.repo.name
+            },
+            query_params={
+                "base": self.commit_base.commitid,
+                "head": self.commit_head.commitid
+            }
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["tracked_files"] == mocked_comparison.return_value["diff"]["files"]
+        assert response.data["untracked_files"] == []
+
+    def test_accepts_pullid_query_param(self, mocked_comparison, *_):
+        self._configure_comparison_mock_with_commit_factory_report(mocked_comparison)
+        response = self._get_compare_src(
+            kwargs={
+                "orgName": self.repo.author.username,
+                "repoName": self.repo.name
+            },
+            query_params={
+                "pullid": PullFactory(
+                    base=self.commit_base,
+                    head=self.commit_head,
+                    pullid=2,
+                    author=self.commit_head.author,
+                    repository=self.commit_head.repository
+                ).pullid
+            }
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["tracked_files"] == mocked_comparison.return_value["diff"]["files"]
+        assert response.data["untracked_files"] == []
+
+    @patch('archive.services.SerializableReport.file_reports')
+    def test_tracked_files_omits_line_data_after_first_five(self, mocked_head_file_reports, mocked_comparison, *args):
+        self._configure_comparison_mock_with_commit_factory_report(mocked_comparison)
+        self._configure_file_reports_with_commit_factory_report(mocked_head_file_reports)
+
+        # Add a 3 more tracked files to the report and diff (so total > 5)
+        for i in range(3):
+            new_file_name = f"newfile{i}.py"
+            mocked_head_file_reports.return_value.append(ReportFile(new_file_name))
+            mocked_comparison.return_value["diff"]["files"][new_file_name] = {"segments": True}
+
+        assert len(mocked_head_file_reports.return_value) > 5
+        assert len(mocked_comparison.return_value["diff"]["files"]) > 5
+
+        response = self._get_compare_src(
+            kwargs={
+                "orgName": self.repo.author.username,
+                "repoName": self.repo.name
+            },
+            query_params={
+                "head": self.commit_head.commitid,
+                "base": self.commit_base.commitid
+            }
+        )
+
+        # there should be exactly five files with a non-empty list for "lines"
+        files_with_lines = 0
+        for _, diff_data in response.data["tracked_files"].items():
+            if diff_data["segments"] is not None:
+                files_with_lines += 1
+
+        assert files_with_lines == 5
+
+    @patch('archive.services.SerializableReport.file_reports')
+    def test_diff_without_segments_doesnt_crash(self, mocked_head_file_reports, mocked_comparison, *args):
+        self._configure_comparison_mock_with_commit_factory_report(mocked_comparison)
+        self._configure_file_reports_with_commit_factory_report(mocked_head_file_reports)
+
+        # Some extra configuration for head file reports mock
+        mocked_head_file_reports.return_value = [
+            ReportFile(file_name) for file_name, _ in CommitFactory.report["files"].items()
+        ]
+
+        # Delete segments from this file's data -- case of no src data
+        del mocked_comparison.return_value["diff"]["files"]["awesome/__init__.py"]["segments"]
+
+        response = self._get_compare_src(
+            kwargs={
+                "orgName": self.repo.author.username,
+                "repoName": self.repo.name
+            },
+            query_params={
+                "head": self.commit_head.commitid,
+                "base": self.commit_base.commitid
+            }
+        )
+
+    @patch('archive.services.SerializableReport.file_reports')
+    def test_correctly_sorts_tracked_and_untracked_files(self, mocked_head_file_reports, mocked_comparison, *args):
+        self._configure_comparison_mock_with_commit_factory_report(mocked_comparison)
+        self._configure_file_reports_with_commit_factory_report(mocked_head_file_reports)
+
+        # Put in a file that is untracked -- not in report files
+        made_up_file = "madeup.py"
+        mocked_comparison.return_value["diff"]["files"].update({made_up_file: {'segments': None}})
+
+        response = self._get_compare_src(
+            kwargs={
+                "orgName": self.repo.author.username,
+                "repoName": self.repo.name
+            },
+            query_params={
+                "head": self.commit_head.commitid,
+                "base": self.commit_base.commitid
+            }
+        )
+
+        assert "tracked_files" in response.data
+        for file_name, _ in mocked_comparison.return_value["diff"]["files"].items():
+            if file_name == made_up_file:
+                continue
+            assert file_name in response.data["tracked_files"]
+
+        assert "untracked_files" in response.data
+        for file_name, _ in mocked_comparison.return_value["diff"]["files"].items():
+            if file_name != made_up_file:
+                continue
+            assert file_name in response.data["untracked_files"]

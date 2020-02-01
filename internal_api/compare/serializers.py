@@ -33,15 +33,38 @@ class ComparisonDetailsSerializer(serializers.Serializer):
 
 
 class ComparisonFullSrcSerializer(serializers.Serializer):
-    src_diff = serializers.SerializerMethodField()
+    tracked_files = serializers.SerializerMethodField()
+    untracked_files = serializers.SerializerMethodField()
 
-    def get_src_diff(self, obj):
-        git_diff = obj.git_comparison["diff"]
-        for i, file_diff in enumerate(git_diff["files"].items()):
-            _, diff_data = file_diff
-            if i >= 5:
+    def __init__(self, obj, *args, **kwargs):
+        self.tracked_file_names = set(
+            [f.name for f in obj.base_report.file_reports()] +
+            [f.name for f in obj.head_report.file_reports()]
+        )
+        super().__init__(obj, *args, **kwargs)
+
+    def get_tracked_files(self, obj):
+        """
+        Returns the diffs of changed files that are tracked by Codecov. What
+        is a tracked file? It's a file for which coverage data was generated during
+        the test run. An example of an untracked file would be codecov.yml.
+        """
+        tracked_files, files_with_source = {}, 0
+        for file_name, diff_data in obj.git_comparison["diff"]["files"].items():
+            if file_name not in self.tracked_file_names:
+                continue
+            if files_with_source >= 5:
                 diff_data["segments"] = None
-        return git_diff
+            else:
+                files_with_source += 1
+            tracked_files[file_name] = diff_data
+        return tracked_files
+
+    def get_untracked_files(self, obj):
+        return [
+            file_name for file_name, _ in obj.git_comparison["diff"]["files"].items()
+            if file_name not in self.tracked_file_names
+        ]
 
 
 class SingleFileSourceSerializer(serializers.Serializer):

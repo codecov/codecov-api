@@ -24,7 +24,19 @@ default_config = {
             'host': 'minio',
             'port': 9000
         },
-        'database_url': 'postgres://postgres:@postgres:5432/postgres'
+        'database_url': 'postgres://postgres:@postgres:5432/postgres',
+        "github": {
+            "client_id": "3d44be0e772666136a13",
+            "client_secret": "testrjumu7w1dfvxbr23q9sx3c7u3hgftcf1uho8"
+        },
+        "bitbucket": {
+            "client_id": "testqmo19ebdkseoby",
+            "client_secret": "testfi8hzehvz453qj8mhv21ca4rf83f"
+        },
+        "gitlab": {
+            "client_id": "testq117krewaffvh4y2ktl1cpof8ufldd397vygenzuy24wb220rqg83cdaps4w",
+            "client_secret": "testq19ki95gaa4faunz92a97otmekrwczg60s8wdy3vx1ddfch2rff2oagsozsr"
+        }
     },
     'setup': {
         'http': {

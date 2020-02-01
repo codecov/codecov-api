@@ -1,7 +1,7 @@
 import asyncio
 
 from rest_framework import generics
-from django.shortcuts import get_object_or_404
+from rest_framework.exceptions import NotFound
 
 from compare.services import Comparison
 from internal_api.compare.serializers import (
@@ -67,6 +67,8 @@ class CompareSingleFileDiff(CompareSlugMixin, generics.RetrieveAPIView):
         file_path = self.kwargs.get('file_path')
         report = Comparison(base_commit=base, head_commit=head, user=self.request.user)
         file_changes = report.file_diff(file_path=file_path)
+        if file_changes is None:
+            raise NotFound()
         return file_changes
 
 

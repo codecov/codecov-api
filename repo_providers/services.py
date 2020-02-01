@@ -3,6 +3,7 @@ from torngit import get
 from codecov_auth.models import Owner
 from core.models import Repository
 from utils.encryption import encryptor
+from utils.config import get_config
 
 
 class TorngitInitializationFailed(Exception):
@@ -26,10 +27,15 @@ class RepoProviderService(object):
             repo=dict(
                 name=repo.name,
                 using_integration=repo.using_integration or False,
-                service_id=repo.service_id
+                service_id=repo.service_id,
+                private=repo.private
             ),
             owner=dict(username=repo.author.username),
-            token=encryptor.decrypt_token(owner.oauth_token)
+            token=encryptor.decrypt_token(owner.oauth_token),
+            oauth_consumer_token=dict(
+                key=get_config(owner.service, 'client_id'),
+                secret=get_config(owner.service, 'client_secret')
+            )
         )
         return self._get_provider(owner.service, adapter_params)
 

@@ -9,7 +9,6 @@ from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory, CommitFactory, PullFactory, BranchFactory
 from core.models import Repository
 from internal_api.repo.repository_accessors import RepoAccessors
-from internal_api.tests.unit.views.test_compare_view import build_mocked_report_archive
 from torngit.exceptions import TorngitClientError
 
 
@@ -20,8 +19,8 @@ class RepositoryViewSetTestSuite(InternalAPITest):
             data=query_params
         )
 
-    def _retrieve(self, kwargs):
-        return self.client.get(reverse('repos-detail', kwargs=kwargs))
+    def _retrieve(self, kwargs, data={}):
+        return self.client.get(reverse('repos-detail', kwargs=kwargs), data=data)
 
     def _update(self, kwargs, data={}):
         return self.client.patch(
@@ -462,138 +461,77 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
 
         assert response.status_code == 401
 
+    @patch('archive.services.ArchiveService.create_root_storage', lambda _: None)
+    @patch('archive.services.ArchiveService.read_chunks', lambda obj, _: '' )
+    def test_retrieve_returns_latest_commit_data(self, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, True
+        commit = CommitFactory(repository=self.repo)
 
-class TestRepositoryViewSet:
+        from internal_api.commit.serializers import CommitWithReportSerializer
+        expected_commit_payload = CommitWithReportSerializer(commit).data
 
-    def test_retrieve_repo_with_latest_commit(self, mocker, db, client):
-        mock_repo_accessor = mocker.patch.object(RepoAccessors, 'get_repo_permissions')
-        mock_repo_accessor.return_value = True, True
-        user = OwnerFactory(username='codecov', service='github')
-        client.force_login(user=user)
-        repo = RepositoryFactory(author=user, active=True, private=True, name='repo1')
-        CommitFactory.create(
-            message='commit from default branch',
-            repository=repo,
-        )
-        latest_commit_from_default_branch = CommitFactory.create(
-            message='latest commit from default branch',
-            repository=repo,
-        )
-        CommitFactory.create(
-            message='commit not from default branch',
-            repository=repo,
-            branch="other-branch"
-        )
+        response = self._retrieve(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
+        assert response.status_code == 200
+        assert response.data["latest_commit"]["report"]["totals"] == expected_commit_payload["report"]["totals"]
 
-        build_mocked_report_archive(mocker)
+    @patch('archive.services.ArchiveService.create_root_storage', lambda _: None)
+    @patch('archive.services.ArchiveService.read_chunks', lambda obj, _: '' )
+    def test_retrieve_returns_latest_commit_of_default_branch_if_branch_not_specified(
+        self,
+        mocked_get_permissions
+    ):
+        mocked_get_permissions.return_value = True, True
 
-        response = client.get('/internal/codecov/repos/repo1/')
-        content = json.loads(response.content.decode())
-        assert content['latest_commit']
-        assert content['latest_commit']['commitid'] == latest_commit_from_default_branch.commitid
+        commit = CommitFactory(repository=self.repo)
+        more_recent_commit = CommitFactory(repository=self.repo, branch="other-branch")
 
-    def test_retrieve_repo_with_latest_commit_by_branch_param(self, mocker, db, client):
-        mock_repo_accessor = mocker.patch.object(RepoAccessors, 'get_repo_permissions')
-        mock_repo_accessor.return_value = True, True
-        user = OwnerFactory(username='codecov', service='github')
-        client.force_login(user=user)
-        repo = RepositoryFactory(author=user, active=True, private=True, name='repo1')
-        CommitFactory.create(
-            message='commit from default branch',
-            repository=repo,
-            branch="other-branch"
-        )
-        latest_commit_from_other_branch = CommitFactory.create(
-            message='commit not from default branch',
-            repository=repo,
-            branch="other-branch"
-        )
-        CommitFactory.create(
-            message='another commit from default branch',
-            repository=repo,
+        response = self._retrieve(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
+
+        assert response.data['latest_commit']['commitid'] == commit.commitid
+        assert response.data['latest_commit']['commitid'] != more_recent_commit.commitid
+
+    @patch('archive.services.ArchiveService.create_root_storage', lambda _: None)
+    @patch('archive.services.ArchiveService.read_chunks', lambda obj, _: '' )
+    def test_retrieve_accepts_branch_query_param_to_specify_latest_commit(self, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, True
+
+        commit = CommitFactory(repository=self.repo, branch="other-branch")
+        more_recent_commit = CommitFactory(repository=self.repo)
+
+        response = self._retrieve(
+            kwargs={"orgName": self.org.username, "repoName": self.repo.name},
+            data={"branch": "other-branch"}
         )
 
-        build_mocked_report_archive(mocker)
+        assert response.data['latest_commit']['commitid'] == commit.commitid
+        assert response.data['latest_commit']['commitid'] != more_recent_commit.commitid
 
-        response = client.get('/internal/codecov/repos/repo1/', data={
-            'branch': 'other-branch'
-        })
-        content = json.loads(response.content.decode())
-        assert content['latest_commit']
-        assert content['latest_commit']['commitid'] == latest_commit_from_other_branch.commitid
+    @patch('archive.services.ArchiveService.create_root_storage', lambda _: None)
+    @patch('archive.services.ArchiveService.read_chunks', lambda obj, _: '' )
+    def test_latest_commit_is_none_if_dne(self, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, True
 
-
-@patch("internal_api.repo.repository_accessors.RepoAccessors.get_repo_permissions")
-class RepositoryViewTest(InternalAPITest):
-
-    def test_simple_repo_name(self, mock_repo):
-        mock_repo.return_value = True, True
-        org = OwnerFactory.create(
-            username='codecov',
-            service='github',
-            unencrypted_oauth_token='testaaft3ituvli790m1yajovjv5eg0r4j0264iw',
+        response = self._retrieve(
+            kwargs={"orgName": self.org.username, "repoName": self.repo.name}
         )
-        repo = RepositoryFactory.create(
-            author=org,
-            name="codecovio",
-        )
-        self.client.force_login(user=repo.author)
-        url = f'/internal/{org.username}/repos/{repo.name}/'
-        response = self.client.get(url)
+
+        assert response.data['latest_commit'] == None
+
+    def test_can_retrieve_repo_name_containing_dot(self, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, True
+
+        self.repo.name = 'codecov.io'
+        self.repo.save()
+
+        response = self._retrieve(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
         self.assertEqual(response.status_code, 200)
-        content = json.loads(response.content.decode())
-        self.assertEqual(len(content), 18)
-
-    def test_repo_name_with_dot(self, mock_repo):
-        mock_repo.return_value = True, True
-        org = OwnerFactory.create(
-            username='codecov',
-            service='github',
-            unencrypted_oauth_token='testaaft3ituvli790m1yajovjv5eg0r4j0264iw',
-        )
-        repo = RepositoryFactory.create(
-            author=org,
-            name="codecov.io",
-        )
-        self.client.force_login(user=repo.author)
-        url = f'/internal/{org.username}/repos/{repo.name}/'
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        content = json.loads(response.content.decode())
-        self.assertEqual(len(content), 18)
 
     # Note (Matt): the only special char that github isn't
     # filtering is .
-    def test_repo_name_with_special_char(self, mock_repo):
-        mock_repo.return_value = True, True
-        org = OwnerFactory.create(
-            username='codecov',
-            service='github',
-            unencrypted_oauth_token='testaaft3ituvli790m1yajovjv5eg0r4j0264iw',
-        )
-        repo = RepositoryFactory.create(
-            author=org,
-            name="codec@v.i",
-        )
-        self.client.force_login(user=repo.author)
-        url = f'/internal/{org.username}/repos/{repo.name}/'
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        content = json.loads(response.content.decode())
-        self.assertEqual(len(content), 18)
+    def test_can_retrieve_repo_name_containing_special_char(self, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, True
+        self.repo.name = "codec@v.i"
+        self.repo.save()
 
-    def test_repo_name_with_special_char_not_found(self, mock_repo):
-        mock_repo.return_value = True, True
-        org = OwnerFactory.create(
-            username='codecov',
-            service='github',
-            unencrypted_oauth_token='testaaft3ituvli790m1yajovjv5eg0r4j0264iw',
-        )
-        repo = RepositoryFactory.create(
-            author=org,
-            name="codec@v.i&",
-        )
-        self.client.force_login(user=repo.author)
-        url = f'/internal/{org.username}/repos/{repo.name}/'
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
+        response = self._retrieve(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
+        self.assertEqual(response.status_code, 200)
