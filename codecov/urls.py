@@ -27,3 +27,4 @@ urlpatterns = [
 
 
 urlpatterns.append(path(INTERNAL_API_PREFIX, include('internal_api.urls')))
+urlpatterns.append(path('webhooks/', include('webhook_handlers.urls')))
