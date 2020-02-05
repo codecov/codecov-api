@@ -163,6 +163,11 @@ LOGGING = {
         }
     },
     'loggers': {
+        'webhook_handlers': {
+            'level': 'DEBUG',
+            'handlers': ['console'],
+            'propagate': True
+        },
         'django': {
             'level': 'INFO',
             'handlers': ['console'],
