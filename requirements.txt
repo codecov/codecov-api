@@ -8,6 +8,7 @@ psycopg2==2.7.6.1
 pytest==4.1.0
 pytest-django==3.4.5
 python-dateutil==2.7.5
+python-json-logger==0.1.11
 pytz==2018.7
 requests==2.21.0
 tlslite-ng==0.7.5

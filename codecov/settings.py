@@ -155,40 +155,31 @@ STATIC_URL = '/static/'
 
 LOGGING = {
     'version': 1,
-    'handlers': {
-        'console': {
-            'level': 'DEBUG',
-            'filters': [],
-            'class': 'logging.StreamHandler',
-        }
+    'disable_existing_loggers': False,
+    'formatters': {
+        'standard': {
+            'format': '%(message)s %(asctime)s %(name)s %(levelname)s %(lineno)s %(pathname)s %(funcName)s %(threadName)s',
+            'class': 'utils.logging.CustomLocalJsonFormatter'
+        },
+        'json': {
+            'format': '%(message)s %(asctime)s %(name)s %(levelname)s %(lineno)s %(pathname)s %(funcName)s %(threadName)s',
+            'class': 'utils.logging.CustomDatadogJsonFormatter'
+        },
     },
-    'loggers': {
-        'webhook_handlers': {
-            'level': 'DEBUG',
-            'handlers': ['console'],
-            'propagate': True
-        },
-        'django': {
+    'root': {
+        'handlers': ['default'],
+        'level': 'INFO',
+        'propagate': True
+    },
+    'handlers': {
+        'default': {
             'level': 'INFO',
-            'handlers': ['console'],
-            'propagate': True
+            'formatter': 'standard' if DEBUG else 'json',
+            'class': 'logging.StreamHandler',
+            'stream': 'ext://sys.stdout',  # Default is stderr
         },
-        'core': {
-            'level': 'DEBUG',
-            'handlers': ['console'],
-            'propagate': True
-        },
-        'internal_api': {
-            'level': 'DEBUG',
-            'handlers': ['console'],
-            'propagate': True
-        },
-        'archive': {
-            'level': 'DEBUG',
-            'handlers': ['console'],
-            'propagate': True
-        },
-    }
+    },
+    'loggers': {}
 }
 
 MINIO_ACCESS_KEY = get_config('services', 'minio', 'access_key_id')
