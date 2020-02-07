@@ -5,7 +5,7 @@ from rest_framework.test import APITestCase
 from rest_framework.reverse import reverse
 from rest_framework import status
 
-from core.tests.factories import RepositoryFactory
+from core.tests.factories import RepositoryFactory, BranchFactory
 from core.models import Repository
 from codecov_auth.tests.factories import OwnerFactory
 
@@ -26,7 +26,7 @@ class GithubWebhookHandlerTests(APITestCase):
         )
 
     def setUp(self):
-        self.repo = RepositoryFactory(author=OwnerFactory(service="github"))
+        self.repo = RepositoryFactory(author=OwnerFactory(service="github"), service_id=12345)
 
     def test_ping_returns_pong_and_200(self):
         response = self._post_event_data(event=GitHubWebhookEvents.PING)
@@ -106,4 +106,40 @@ class GithubWebhookHandlerTests(APITestCase):
             }
         )
 
+        assert response.status_code == status.HTTP_200_OK
         delete_files_mock.assert_called_once()
+
+    def test_delete_method_deletes_branch(self):
+        branch = BranchFactory(repository=self.repo)
+
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.DELETE,
+            data={
+                "ref": "refs/heads/" + branch.name,
+                "repository": {
+                    "id": self.repo.service_id
+                }
+            }
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert not self.repo.branches.filter(name=branch.name).exists()
+
+    def test_public_event_sets_repo_private_false_and_activated_false(self):
+        self.repo.private = True
+        self.repo.activated = True
+        self.repo.save()
+
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.PUBLIC,
+            data={
+                "repository": {
+                    "id": self.repo.service_id
+                }
+            }
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        self.repo.refresh_from_db()
+        assert not self.repo.private
+        assert not self.repo.activated

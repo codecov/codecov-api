@@ -5,7 +5,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 
-from core.models import Repository
+from core.models import Repository, Branch
 from archive.services import ArchiveService
 
 from .constants import GitHubHTTPHeaders, GitHubWebhookEvents
@@ -36,6 +36,13 @@ class GithubWebhookHandler(APIView):
         else:
             log.warn("Unknown 'repository' action: %s", action)
 
+    def _handle_delete(self, repo, branch_name):
+        Branch.objects.filter(repository=repo, name=branch_name).delete()
+
+    def _handle_public(self, repo):
+        repo.private, repo.activated = False, False
+        repo.save()
+
     def post(self, request, *args, **kwargs):
         self._validate_signature(request)
 
@@ -54,4 +61,8 @@ class GithubWebhookHandler(APIView):
 
         if event == GitHubWebhookEvents.REPOSITORY:
             self._handle_repository(action, repo)
+        elif event == GitHubWebhookEvents.DELETE:
+            self._handle_delete(repo, self.request.data.get('ref')[11:])
+        elif event == GitHubWebhookEvents.PUBLIC:
+            self._handle_public(repo)
         return Response(status=status.HTTP_200_OK)
