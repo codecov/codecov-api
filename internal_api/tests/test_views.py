@@ -4,6 +4,7 @@ from unittest.mock import patch
 from codecov.tests.base_test import InternalAPITest
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory, PullFactory, CommitFactory, BranchFactory
+from core.models import Pull
 
 get_permissions_method = "internal_api.repo.repository_accessors.RepoAccessors.get_repo_permissions"
 
@@ -143,6 +144,7 @@ class RepoBranchList(InternalAPITest):
         # Create different types of repos / branches
         repo = RepositoryFactory(
             author=org, name='testRepoName', active=True, private=True)
+        commit = CommitFactory(repository=repo)
         other_repo = RepositoryFactory(
             author=other_org, name='otherRepoName', active=True)
         repo_with_permission = [repo.repoid]
@@ -150,8 +152,8 @@ class RepoBranchList(InternalAPITest):
                                  service='github',
                                  organizations=[org.ownerid],
                                  permission=repo_with_permission)
-        BranchFactory(authors=[org.ownerid], repository=repo)
-        BranchFactory(authors=[org.ownerid], repository=repo)
+        BranchFactory(authors=[org.ownerid], repository=repo, head=commit)
+        BranchFactory(authors=[org.ownerid], repository=repo, head=commit)
         BranchFactory(authors=[other_org.ownerid], repository=other_repo)
 
     def test_get_branches(self, mock_provider):
