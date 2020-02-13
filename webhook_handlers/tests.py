@@ -5,7 +5,7 @@ from rest_framework.test import APITestCase
 from rest_framework.reverse import reverse
 from rest_framework import status
 
-from core.tests.factories import RepositoryFactory, BranchFactory
+from core.tests.factories import RepositoryFactory, BranchFactory, CommitFactory
 from core.models import Repository
 from codecov_auth.tests.factories import OwnerFactory
 
@@ -26,7 +26,11 @@ class GithubWebhookHandlerTests(APITestCase):
         )
 
     def setUp(self):
-        self.repo = RepositoryFactory(author=OwnerFactory(service="github"), service_id=12345)
+        self.repo = RepositoryFactory(
+            author=OwnerFactory(service="github"),
+            service_id=12345,
+            active=True
+        )
 
     def test_ping_returns_pong_and_200(self):
         response = self._post_event_data(event=GitHubWebhookEvents.PING)
@@ -109,13 +113,14 @@ class GithubWebhookHandlerTests(APITestCase):
         assert response.status_code == status.HTTP_200_OK
         delete_files_mock.assert_called_once()
 
-    def test_delete_method_deletes_branch(self):
+    def test_delete_event_deletes_branch(self):
         branch = BranchFactory(repository=self.repo)
 
         response = self._post_event_data(
             event=GitHubWebhookEvents.DELETE,
             data={
                 "ref": "refs/heads/" + branch.name,
+                "ref_type": "branch",
                 "repository": {
                     "id": self.repo.service_id
                 }
@@ -125,7 +130,7 @@ class GithubWebhookHandlerTests(APITestCase):
         assert response.status_code == status.HTTP_200_OK
         assert not self.repo.branches.filter(name=branch.name).exists()
 
-    def test_public_event_sets_repo_private_false_and_activated_false(self):
+    def test_public_sets_repo_private_false_and_activated_false(self):
         self.repo.private = True
         self.repo.activated = True
         self.repo.save()
@@ -143,3 +148,131 @@ class GithubWebhookHandlerTests(APITestCase):
         self.repo.refresh_from_db()
         assert not self.repo.private
         assert not self.repo.activated
+
+    def test_push_updates_only_unmerged_commits_with_branch_name(self):
+        commit1 = CommitFactory(merged=False, repository=self.repo)
+        commit2 = CommitFactory(merged=False, repository=self.repo)
+
+        merged_branch_name = "merged"
+        unmerged_branch_name = "unmerged"
+
+        merged_commit = CommitFactory(merged=True, repository=self.repo, branch=merged_branch_name)
+
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.PUSH,
+            data={
+                "ref": "refs/heads/" + unmerged_branch_name,
+                "repository": {
+                    "id": self.repo.service_id
+                },
+                "commits": [
+                    {"id": commit1.commitid, "message": commit1.message},
+                    {"id": commit2.commitid, "message": commit2.message},
+                    {"id": merged_commit.commitid, "message": merged_commit.message}
+                ]
+            }
+        )
+
+        commit1.refresh_from_db()
+        commit2.refresh_from_db()
+        merged_commit.refresh_from_db()
+
+        assert commit1.branch == unmerged_branch_name
+        assert commit2.branch == unmerged_branch_name
+
+        assert merged_commit.branch == merged_branch_name
+
+    def test_push_exits_early_with_200_if_repo_not_active(self):
+        self.repo.active = False
+        self.repo.save()
+        unmerged_commit = CommitFactory(repository=self.repo, merged=False)
+        branch_name = "new-branch-name"
+
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.PUSH,
+            data={
+                "ref": "refs/heads/" + branch_name,
+                "repository": {
+                    "id": self.repo.service_id
+                },
+                "commits": [
+                    {"id": unmerged_commit.commitid, "message": unmerged_commit.message}
+                ]
+            }
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+
+        unmerged_commit.refresh_from_db()
+        assert unmerged_commit.branch != branch_name
+
+    @patch('redis.Redis.sismember', lambda x, y, z: True)
+    @patch('services.task.TaskService.status_set_pending')
+    def test_push_triggers_set_pending_task_on_most_recent_commit(self, set_pending_mock):
+        commit1 = CommitFactory(merged=False, repository=self.repo)
+        commit2 = CommitFactory(merged=False, repository=self.repo)
+        unmerged_branch_name = "unmerged"
+
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.PUSH,
+            data={
+                "ref": "refs/heads/" + unmerged_branch_name,
+                "repository": {
+                    "id": self.repo.service_id
+                },
+                "commits": [
+                    {"id": commit1.commitid, "message": commit1.message},
+                    {"id": commit2.commitid, "message": commit2.message}
+                ]
+            }
+        )
+
+        set_pending_mock.assert_called_once_with(
+            repoid=self.repo.repoid,
+            commitid=commit2.commitid,
+            branch=unmerged_branch_name,
+            on_a_pull_request=False
+        )
+
+    @patch('redis.Redis.sismember', lambda x, y, z: False)
+    @patch('services.task.TaskService.status_set_pending')
+    def test_push_doesnt_trigger_task_if_repo_not_part_of_beta_set(self, set_pending_mock):
+        commit1 = CommitFactory(merged=False, repository=self.repo)
+        unmerged_branch_name = "unmerged"
+
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.PUSH,
+            data={
+                "ref": "refs/heads/" + "derp",
+                "repository": {
+                    "id": self.repo.service_id
+                },
+                "commits": [
+                    {"id": commit1.commitid, "message": commit1.message}
+                ]
+            }
+        )
+
+        set_pending_mock.assert_not_called()
+
+    @patch('redis.Redis.sismember', lambda x, y, z: True)
+    @patch('services.task.TaskService.status_set_pending')
+    def test_push_doesnt_trigger_task_if_ci_skipped(self, set_pending_mock):
+        commit1 = CommitFactory(merged=False, repository=self.repo, message="[ci skip]")
+        unmerged_branch_name = "unmerged"
+
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.PUSH,
+            data={
+                "ref": "refs/heads/" + "derp",
+                "repository": {
+                    "id": self.repo.service_id
+                },
+                "commits": [
+                    {"id": commit1.commitid, "message": commit1.message}
+                ]
+            }
+        )
+
+        assert response.data == "CI Skipped"
+        set_pending_mock.assert_not_called()

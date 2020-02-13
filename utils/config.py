@@ -36,7 +36,8 @@ default_config = {
         "gitlab": {
             "client_id": "testq117krewaffvh4y2ktl1cpof8ufldd397vygenzuy24wb220rqg83cdaps4w",
             "client_secret": "testq19ki95gaa4faunz92a97otmekrwczg60s8wdy3vx1ddfch2rff2oagsozsr"
-        }
+        },
+        "redis_url": 'redis://redis:6379/0'
     },
     'setup': {
         'http': {
