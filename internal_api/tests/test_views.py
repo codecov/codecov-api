@@ -6,6 +6,8 @@ from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory, PullFactory, CommitFactory, BranchFactory
 from core.models import Pull
 
+from rest_framework.reverse import reverse
+
 get_permissions_method = "internal_api.repo.repository_accessors.RepoAccessors.get_repo_permissions"
 
 
@@ -46,21 +48,28 @@ class RepoPullList(InternalAPITest):
         PullFactory(pullid=10, author=org, repository=repo, state='open')
         PullFactory(pullid=11, author=org, repository=repo, state='closed')
         PullFactory(pullid=12, author=other_org, repository=other_repo)
+        self.correct_kwargs={'orgName':'codecov', 'repoName':'testRepoName'}
+        self.incorrect_kwargs={'orgName':'codecov', 'repoName':'otherRepoName'}
 
     def test_get_pulls(self, mock_provider):
         mock_provider.return_value = True, True
         self.client.force_login(user=self.user)
-        response = self.client.get('/internal/codecov/testRepoName/pulls')
+        response = self.client.get(reverse('pulls-list', kwargs=self.correct_kwargs))
         self.assertEqual(response.status_code, 200)
         content = self.json_content(response)
         self.assertEqual(len(content['results']), 2, "got the wrong number of pulls: {}".format(
             content['results']))
 
+    def test_get_pulls_no_permissions(self, mock_provider):
+        mock_provider.return_value = False, False
+        self.client.force_login(user=self.user)
+        response = self.client.get(reverse('pulls-list', kwargs=self.correct_kwargs))
+        self.assertEqual(response.status_code, 403)
+
     def test_get_pulls_filter_state(self, mock_provider):
         mock_provider.return_value = True, True
         self.client.force_login(user=self.user)
-        response = self.client.get(
-            '/internal/codecov/testRepoName/pulls?state=open')
+        response = self.client.get(reverse('pulls-list', kwargs=self.correct_kwargs), data={'state': 'open'})
         self.assertEqual(response.status_code, 200)
         content = self.json_content(response)
         self.assertEqual(len(content['results']), 1, "got the wrong number of open pulls: {}".format(
@@ -69,11 +78,41 @@ class RepoPullList(InternalAPITest):
     def test_get_pull_wrong_org(self, mock_provider):
         mock_provider.return_value = True, True
         self.client.force_login(user=self.user)
-        response = self.client.get('/internal/codecov/otherRepoName/pulls')
+        response = self.client.get(reverse('pulls-list', kwargs=self.incorrect_kwargs))
         content = self.json_content(response)
         self.assertEqual(response.status_code, 404,
                          "got unexpected response: {}".format(content))
 
+@patch(get_permissions_method)
+class RepoPullDetail(InternalAPITest):
+    def setUp(self):
+        org = OwnerFactory(username='codecov', service='github')
+        other_org = OwnerFactory(username='other_org')
+        # Create different types of repos / pulls
+        repo = RepositoryFactory(author=org, name='testRepoName', active=True)
+        other_repo = RepositoryFactory(
+            author=other_org, name='otherRepoName', active=True)
+        repo_with_permission = [repo.repoid]
+        self.user = OwnerFactory(username='codecov-user',
+                                 service='github',
+                                 organizations=[org.ownerid],
+                                 permission=repo_with_permission)
+        PullFactory(pullid=10, author=org, repository=repo, state='open')
+        PullFactory(pullid=11, author=org, repository=repo, state='closed')
+
+    def test_get_pull(self, mock_provider):
+        mock_provider.return_value = True, True
+        self.client.force_login(user=self.user)
+        response = self.client.get('/internal/codecov/testRepoName/pulls/10/')
+        self.assertEqual(response.status_code, 200)
+        content = self.json_content(response)
+        self.assertEqual(content['pullid'], 10)
+
+    def test_get_pull_no_permissions(self, mock_provider):
+        mock_provider.return_value = False, False
+        self.client.force_login(user=self.user)
+        response = self.client.get('/internal/codecov/testRepoName/pulls/10/')
+        self.assertEqual(response.status_code, 403)
 
 @patch(get_permissions_method)
 class RepoCommitList(InternalAPITest):
@@ -152,8 +191,8 @@ class RepoBranchList(InternalAPITest):
                                  service='github',
                                  organizations=[org.ownerid],
                                  permission=repo_with_permission)
-        BranchFactory(authors=[org.ownerid], repository=repo, head=commit)
-        BranchFactory(authors=[org.ownerid], repository=repo, head=commit)
+        BranchFactory(authors=[org.ownerid], repository=repo, head=commit.commitid)
+        BranchFactory(authors=[org.ownerid], repository=repo, head=commit.commitid)
         BranchFactory(authors=[other_org.ownerid], repository=other_repo)
 
     def test_get_branches(self, mock_provider):

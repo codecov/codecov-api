@@ -139,9 +139,9 @@ class PullFactory(DjangoModelFactory):
         0
     ]
     title = factory.Faker('sentence', nb_words=7)
-    base = factory.SubFactory(CommitFactory)
-    head = factory.SubFactory(CommitFactory)
-    compared_to = factory.SubFactory(CommitFactory)
+    head = factory.LazyAttribute(lambda o: sha1(o.title.encode('utf-8')).hexdigest())
+    base = factory.LazyAttribute(lambda o: sha1(o.title.encode('utf-8')).hexdigest())
+    compared_to = factory.LazyAttribute(lambda o: sha1(o.title.encode('utf-8')).hexdigest())
 
 
 class BranchFactory(DjangoModelFactory):
@@ -149,7 +149,7 @@ class BranchFactory(DjangoModelFactory):
         model = models.Branch
 
     name = factory.Faker('sentence', nb_words=1)
-    head = factory.SubFactory(CommitFactory)
+    head = factory.LazyAttribute(lambda o: sha1(o.name.encode('utf-8')).hexdigest())
 
 
 class VersionFactory(DjangoModelFactory):

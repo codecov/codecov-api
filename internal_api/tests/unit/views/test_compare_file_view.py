@@ -148,8 +148,8 @@ class TestCompareSingleFileChangesView:
             },
             query_params={
                 "pullid": PullFactory(
-                    base=commit_base,
-                    head=change_commit,
+                    base=commit_base.commitid,
+                    head=change_commit.commitid,
                     pullid=1,
                     author=commit_head.author,
                     repository=commit_head.repository

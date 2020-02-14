@@ -27,8 +27,7 @@ YAML_SECRET_KEY = b']\xbb\x13\xf9}\xb3\xb7\x03)*0Kv\xb2\xcet'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-if DEBUG:
-    ALLOWED_HOSTS = ["api.localhost", "localhost"]
+ALLOWED_HOSTS = ["api.localhost", "localhost", "api.codecov.io"]
 
 AUTH_USER_MODEL = 'codecov_auth.Owner'
 
@@ -190,4 +189,7 @@ ARCHIVE_BUCKET_NAME = 'codecov'
 ENCRYPTION_SECRET = get_config('setup', 'encryption_secret')
 
 # cors
-CORS_ORIGIN_ALLOW_ALL = True
+CORS_ORIGIN_WHITELIST = [
+    'app.codecov.io',
+    'localhost:9000',
+]

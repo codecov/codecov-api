@@ -6,7 +6,11 @@ from repo_providers.services import RepoProviderService
 
 
 def get_comparison_from_pull_request(pull_request, user):
-    return Comparison(pull_request.base, pull_request.head, user)
+    return Comparison(
+        Commit.objects.get(commitid=pull_request.base, repository=pull_request.repository),
+        Commit.objects.get(commitid=pull_request.head, repository=pull_request.repository),
+        user
+    )
 
 
 class Comparison(object):

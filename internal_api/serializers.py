@@ -18,8 +18,10 @@ class CommitRefQueryParamSerializer(serializers.Serializer):
 
         branch = Branch.objects.filter(repository=repo, name=ref)
         if branch.exists():
-            return branch.get().head
-
+            head = Commit.objects.filter(repository=repo, commitid=branch.get().head)
+            if head.exists():
+                return head.get()
+            raise NotFound(f"Invalid branch head: {branch.get().head}")
         raise NotFound(f"Invalid commit or branch: {ref}")
 
     def validate_base(self, base):
@@ -35,5 +37,10 @@ class PullIDQueryParamSerializer(serializers.Serializer):
     def validate(self, obj):
         repo = self.context.get("repo")
         pull = get_object_or_404(Pull, pullid=obj.get("pullid"), repository=repo)
-
-        return {"base": pull.base, "head": pull.head}
+        try:
+            return {
+                "base": Commit.objects.get(commitid=pull.base, repository=repo),
+                "head": Commit.objects.get(commitid=pull.head, repository=repo)
+            }
+        except Commit.DoesNotExist:
+            raise serializers.ValidationError("Comparison requested for pull with nonexistant commit.")

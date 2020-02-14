@@ -203,8 +203,8 @@ class TestCompareFlagsView(InternalAPITest):
             },
             query_params={
                 "pullid": PullFactory(
-                    base=self.parent_commit,
-                    head=self.commit,
+                    base=self.parent_commit.commitid,
+                    head=self.commit.commitid,
                     pullid=2,
                     author=self.commit.author,
                     repository=self.repo
