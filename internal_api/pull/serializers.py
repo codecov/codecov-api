@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from core.models import Pull, Commit
 from codecov_auth.models import Owner
-from internal_api.owner.serializers import OwnerSerializer
+from internal_api.owner.serializers import OwnerSerializer, OwnerDetailsSerializer
 
 
 class PullCommitSerializer(serializers.ModelSerializer):
@@ -40,3 +40,6 @@ class PullSerializer(serializers.ModelSerializer):
         model = Pull
         fields = ('pullid', 'title', 'author', 'base', 'head',
                   'compared_to', 'updatestamp', 'state', 'diff', 'flare')
+
+class PullDetailSerializer(PullSerializer):
+    author = OwnerDetailsSerializer()
