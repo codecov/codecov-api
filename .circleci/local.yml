@@ -1,0 +1,98 @@
+version: 2
+
+gcloud_auth: &gcloud_auth
+  name: Copy gcloud auth for docker push
+  command: |-
+    echo "$GCLOUD_SERVICE_KEY" > service.json
+    gcloud auth activate-service-account --key-file=service.json
+    gcloud --quiet config set project ${GOOGLE_PROJECT_ID}
+    gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE}
+    gcloud auth configure-docker
+
+k8s_auth: &k8s_auth
+  name: Copy k8s auth for kubectl
+  command: |-
+    gcloud container clusters get-credentials --zone ${GOOGLE_COMPUTE_ZONE} ${GOOGLE_CLUSTER_NAME}
+
+jobs:
+  build:
+    docker:
+    - image: gcr.io/genuine-polymer-165712/codecov-deploy:latest
+      user: root
+      auth:
+        username: _json_key
+        password: $GCLOUD_SERVICE_KEY
+    working_directory: /work
+    steps:
+    - checkout
+    - setup_remote_docker
+    - run:
+        <<: *gcloud_auth
+    - run:
+        name: build container
+        command: |-
+          make -f Makefile.circle build-requirements GH_ACCESS_TOKEN=$GH_ACCESS_TOKEN
+          make -f Makefile.circle build VERSION=$CIRCLE_TAG
+          make -f Makefile.circle push
+  test:
+    docker:
+    - image: gcr.io/genuine-polymer-165712/codecov-api:latest
+      user: root
+      auth:
+        username: _json_key
+        password: $GCLOUD_SERVICE_KEY
+    - image: circleci/postgres:9.6.2
+    - image: redis:latest
+    working_directory: /app
+    steps:
+    - run:
+        name: run tests
+        command: |
+          make test
+    - run:
+        name: codecov
+        command: |
+          . venv/bin/activate
+          pip install codecov
+          codecov
+  deploy:
+    docker:
+    - image: gcr.io/genuine-polymer-165712/codecov-deploy:latest
+      user: root
+      auth:
+        username: _json_key
+        password: $GCLOUD_SERVICE_KEY
+    - image: circleci/postgres:9.6.2
+    working_directory: /work
+    steps:
+    - setup_remote_docker
+    - run:
+        <<: *gcloud_auth
+    - run:
+        name: deploy to k8s
+        command: |-
+          make -f Makefile.circle tag VERSION=$CIRCLE_TAG
+          make -f Makefile.circle deploy VERSION=$CIRCLE_TAG
+workflows:
+  version: 2
+  build-test-deploy:
+    jobs:
+    - build:
+        filters:
+          tags:
+            only: /.*/
+    - test:
+        filters:
+          tags:
+            only: /.*/
+        requires:
+        - build
+    - deploy:
+        filters:
+          tags:
+            only: /^production-.*/
+          branches:
+            ignore: /.*/
+        requires:
+        - build
+        - test

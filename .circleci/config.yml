@@ -1,52 +1,104 @@
-# Python CircleCI 2.0 configuration file
-#
-# Check https://circleci.com/docs/2.0/language-python/ for more details
-#
-version: 2
+version: 2.1
+executors:
+  codecov-deploy:
+    docker:
+    - image: gcr.io/genuine-polymer-165712/codecov-deploy:latest
+      user: root
+      auth:
+        username: _json_key
+        password: $GCLOUD_SERVICE_KEY
+    working_directory: /work
+  codecov-api:
+    docker:
+    - image: gcr.io/genuine-polymer-165712/codecov-api:latest
+      user: root
+      auth:
+        username: _json_key
+        password: $GCLOUD_SERVICE_KEY
+    - image: circleci/postgres:9.6.2
+      name: postgres
+    working_directory: /api
+
+gcloud_auth: &gcloud_auth
+  name: Copy gcloud auth for docker push
+  command: |-
+    echo "$GCLOUD_SERVICE_KEY" > service.json
+    gcloud auth activate-service-account --key-file=service.json
+    gcloud --quiet config set project ${GOOGLE_PROJECT_ID}
+    gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE}
+    gcloud auth configure-docker
+
+k8s_auth: &k8s_auth
+  name: Copy k8s auth for kubectl
+  command: |-
+    gcloud container clusters get-credentials --zone ${GOOGLE_COMPUTE_ZONE} ${GOOGLE_CLUSTER_NAME}
+
 jobs:
   build:
-    docker:
-      # specify the version you desire here
-      # use `-browsers` prefix for selenium tests, e.g. `3.6.1-browsers`
-      - image: circleci/python:3.7.1
-
-      # Specify service dependencies here if necessary
-      # CircleCI maintains a library of pre-built images
-      # documented at https://circleci.com/docs/2.0/circleci-images/
-      - image: circleci/postgres:9.6.2
-
-
-    working_directory: ~/repo
-
+    executor: codecov-deploy
     steps:
-      - checkout
+    - checkout
+    - setup_remote_docker
+    - run:
+        <<: *gcloud_auth
+    - run:
+        name: build container
+        command: |-
+          make -f Makefile.circle build-requirements GH_ACCESS_TOKEN=$GH_ACCESS_TOKEN
+          make -f Makefile.circle build VERSION=$CIRCLE_TAG
+          make -f Makefile.circle push
+  test:
+    executor: codecov-api
+    steps:
+    - run:
+        name: verify postgres is up
+        command: |
+          while ! nc -vz postgres 5432; do sleep 1; echo "waiting for postgres"; done
+    - run:
+        name: run tests
+        command: |
+          make test.unit
+          # make test.integration
 
-      # Download and cache dependencies
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "requirements.txt" }}
-            # fallback to using the latest cache if no exact match is found
-            - v1-dependencies-
+    - run:
+        name: codecov
+        command: |
+          pip install codecov
+          # codecov -F integration -f integration.coverage.xml  --required
+          codecov -F unit -f unit.coverage.xml  --required
+  deploy:
+    executor: codecov-deploy
+    steps:
+    - checkout
+    - setup_remote_docker
+    - run:
+        <<: *gcloud_auth
+    - run:
+        <<: *k8s_auth
+    - run:
+        name: deploy to k8s
+        command: |-
+          make -f Makefile.circle tag
+          make -f Makefile.circle deploy
 
-      - run:
-          name: install dependencies
-          command: |
-            python3 -m venv venv
-            . venv/bin/activate
-            pip install -r requirements.txt
-      - save_cache:
-          paths:
-            - ./venv
-          key: v1-dependencies-{{ checksum "requirements.txt" }}
-
-      - run:
-          name: run tests
-          command: |
-            . venv/bin/activate
-            python -m pytest --cov=./
-      - run:
-          name: codecov
-          command: |
-            . venv/bin/activate
-            bash <(curl -s https://codecov.io/bash)
-
+workflows:
+  version: 2
+  build-test-deploy:
+    jobs:
+      - build:
+          filters:
+            tags:
+              only: /.*/
+      - test:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /.*/
+      - deploy:
+          requires:
+            - build
+            - test
+          filters:
+            branches:
+              only: production

@@ -26,12 +26,12 @@ setup:
     uploads: 86400  # 1 day
 
 services:
-  database_url: postgres://root:@localhost:5432/circle_test
+  database_url: postgres://postgres:@postgres:5432/circle_test
   database:
-    username: root
+    username: postgres
     name: circle_test
     password: ""
-    host: localhost
+    host: postgres
   redis_url: redis://redis:@localhost:6379/
   minio:
     hash_key: testixik8qdauiab1yiffydimvi72ekq  # never change this
