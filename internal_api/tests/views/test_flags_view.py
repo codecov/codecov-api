@@ -213,8 +213,8 @@ class TestFlagsView(object):
             repository=repo,
         )
         pull = PullFactory.create(
-            base=parent_commit,
-            head=commit,
+            base=parent_commit.commitid,
+            head=commit.commitid,
             pullid=1010101,
             author=repo.author,
             repository=repo

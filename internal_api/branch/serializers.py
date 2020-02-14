@@ -20,7 +20,7 @@ class BranchSerializer(serializers.ModelSerializer):
     updatestamp = serializers.DateTimeField()
 
     def get_head(self, branch):
-        commit = Commit.objects.get(commitid=branch.head_id, repository=branch.repository)
+        commit = Commit.objects.get(commitid=branch.head, repository=branch.repository)
         return BranchCommitSerializer(commit).data
 
     class Meta:

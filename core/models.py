@@ -63,8 +63,7 @@ class Branch(models.Model):
         'core.Repository', db_column='repoid', on_delete=models.CASCADE, related_name='branches')
     authors = ArrayField(models.IntegerField(
         null=True, blank=True), null=True, blank=True, db_column='authors')
-    head = models.ForeignKey(
-        'core.Commit', db_column='head', related_name='branch_head', on_delete=models.CASCADE,)
+    head = models.TextField()
     updatestamp = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -112,12 +111,9 @@ class Pull(models.Model):
     issueid = models.IntegerField()
     state = models.CharField(max_length=100)
     title = models.CharField(max_length=100)
-    base = models.ForeignKey('core.Commit', db_column='base',
-                             related_name='pull_base', on_delete=models.CASCADE,)
-    head = models.ForeignKey('core.Commit', db_column='head',
-                             related_name='pull_head', on_delete=models.CASCADE,)
-    compared_to = models.ForeignKey(
-        'core.Commit', db_column='compared_to', related_name='compared_to', on_delete=models.CASCADE,)
+    base = models.TextField(null=True)
+    head = models.TextField(null=True)
+    compared_to = models.TextField(null=True)
     commentid = models.CharField(max_length=100)
     author = models.ForeignKey(
         'codecov_auth.Owner', db_column='author', on_delete=models.CASCADE,)

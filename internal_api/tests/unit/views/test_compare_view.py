@@ -130,8 +130,8 @@ class TestCompareCommitsView(InternalAPITest):
     @patch('compare.services.Comparison._calculate_git_comparison')
     def test_compare_commits_view_with_branchname(self, mocked_comparison):
         self._configure_mocked_comparison_with_commits(mocked_comparison)
-        branch_base = BranchFactory.create(head=self.commit_base, repository=self.commit_base.repository)
-        branch_head = BranchFactory.create(head=self.commit_head, repository=self.commit_head.repository)
+        branch_base = BranchFactory.create(head=self.commit_base.commitid, repository=self.commit_base.repository)
+        branch_head = BranchFactory.create(head=self.commit_head.commitid, repository=self.commit_head.repository)
 
         response = self._get_commits_comparison(
             kwargs={
@@ -181,8 +181,8 @@ class TestCompareCommitsView(InternalAPITest):
             pullid=2,
             repository=self.repo,
             author=self.repo.author,
-            base=self.commit_base,
-            head=self.commit_head
+            base=self.commit_base.commitid,
+            head=self.commit_head.commitid
         )
 
         response = self._get_commits_comparison(
@@ -238,8 +238,8 @@ class TestCompareDetailsView(InternalAPITest):
         response = self._get_compare_details(
             query_params={
                 "pullid": PullFactory(
-                    base=self.commit_base,
-                    head=self.commit_head,
+                    base=self.commit_base.commitid,
+                    head=self.commit_head.commitid,
                     pullid=2,
                     author=self.commit_head.author,
                     repository=self.repo
@@ -465,8 +465,8 @@ class TestCompareFullSrcView(InternalAPITest):
             },
             query_params={
                 "pullid": PullFactory(
-                    base=self.commit_base,
-                    head=self.commit_head,
+                    base=self.commit_base.commitid,
+                    head=self.commit_head.commitid,
                     pullid=2,
                     author=self.commit_head.author,
                     repository=self.commit_head.repository

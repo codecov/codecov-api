@@ -55,7 +55,11 @@ class RepoPullFlagsList(RepoSlugUrlMixin, generics.ListCreateAPIView):
             obj = pull_requests.get()
         except Pull.DoesNotExist:
             raise Http404('No pull matches the given query.')
-        return get_comparison_from_pull_request(obj, user)
+
+        try:
+            return get_comparison_from_pull_request(obj, user)
+        except Commit.DoesNotExist:
+            raise Http404("Pull base or head references nonexistant commit.")
 
     def get_queryset(self):
         comparison = self.get_comparison()

@@ -26,12 +26,12 @@ class PullSerializer(serializers.ModelSerializer):
     flare = serializers.JSONField()
 
     def get_base(self, pull):
-        commit = Commit.objects.filter(commitid=pull.base_id, repository=pull.repository)
+        commit = Commit.objects.filter(commitid=pull.base, repository=pull.repository)
         if commit.exists():
             return PullCommitSerializer(commit.get()).data
 
     def get_head(self, pull):
-        commit = Commit.objects.filter(commitid=pull.head_id, repository=pull.repository)
+        commit = Commit.objects.filter(commitid=pull.head, repository=pull.repository)
         if commit.exists():
             return PullCommitSerializer(commit.get()).data
 

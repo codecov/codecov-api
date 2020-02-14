@@ -191,8 +191,8 @@ class RepoBranchList(InternalAPITest):
                                  service='github',
                                  organizations=[org.ownerid],
                                  permission=repo_with_permission)
-        BranchFactory(authors=[org.ownerid], repository=repo, head=commit)
-        BranchFactory(authors=[org.ownerid], repository=repo, head=commit)
+        BranchFactory(authors=[org.ownerid], repository=repo, head=commit.commitid)
+        BranchFactory(authors=[org.ownerid], repository=repo, head=commit.commitid)
         BranchFactory(authors=[other_org.ownerid], repository=other_repo)
 
     def test_get_branches(self, mock_provider):
