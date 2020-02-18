@@ -69,6 +69,11 @@ class RepositoryViewSet(
             service=self.request.user.service
         )
 
+    def _assert_is_admin(self):
+        owner = self._get_owner()
+        if self.request.user.ownerid not in owner.admins:
+            raise PermissionDenied()
+
     def get_serializer_class(self):
         if self.action == 'list':
             return RepoSerializer
@@ -101,6 +106,8 @@ class RepositoryViewSet(
         self.can_view, self.can_edit = self.accessors.get_repo_permissions(self.request.user, repo)
         if self.request.method not in SAFE_METHODS and not self.can_edit:
             raise PermissionDenied()
+        if self.request.method == 'DELETE':
+            self._assert_is_admin()
         if not self.can_view:
             raise PermissionDenied()
 
@@ -127,6 +134,7 @@ class RepositoryViewSet(
 
     @action(detail=True, methods=['patch'])
     def erase(self, request, *args, **kwargs):
+        self._assert_is_admin()
         repo = self.get_object()
         repo.flush()
         return Response(self.get_serializer(repo).data)
