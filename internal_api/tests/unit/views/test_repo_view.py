@@ -194,14 +194,19 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         assert response.status_code == 200
         assert "upload_token" not in response.data
 
-    def test_destroy_repo_with_write_permissions_succeeds(self, mocked_get_permissions):
+    def test_destroy_repo_with_admin_rights_succeeds(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, True
+        self.org.admins = [self.user.ownerid]
+        self.org.save()
         response = self._destroy(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
         assert response.status_code == 204
         assert not Repository.objects.filter(name="repo1").exists()
 
-    def test_destroy_repo_without_write_permissions_returns_403(self, mocked_get_permissions):
-        mocked_get_permissions.return_value = True, False
+    def test_destroy_repo_without_admin_rights_returns_403(self, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, True
+
+        assert self.user.ownerid not in self.org.admins
+
         response = self._destroy(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
         assert response.status_code == 403
         assert Repository.objects.filter(name="repo1").exists()
@@ -248,6 +253,8 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
 
     def test_erase_deletes_related_content_and_clears_cache_and_yaml(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, True
+        self.org.admins = [self.user.ownerid]
+        self.org.save()
 
         CommitFactory(
             message='test_commits_base',
@@ -278,8 +285,11 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         assert self.repo.yaml == None
         assert self.repo.cache == None
 
-    def test_erase_without_write_permissions_returns_403(self, mocked_get_permissions):
-        mocked_get_permissions.return_value = True, False
+    def test_erase_without_admin_rights_returns_403(self, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, True
+
+        assert self.user.ownerid not in self.org.admins
+
         response = self._erase(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
         assert response.status_code == 403
 

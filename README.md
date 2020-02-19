@@ -7,13 +7,29 @@ A private Django REST Framework API intended to serve codecov's front end.
 
 ### Building
 
-This project contains a makefile. Run:
+This project contains a makefile. To build in standalone mode, run:
 
-    make build
+    make standalone
 
-To build the API.
+To build with codecovio (as a submodule) the `build` make target is included
 
-requirements.txt is used in the base image. If you make changes to requirements.txt you will need to run `make build` again.
+`requirements.txt` is used in the base image. If you make changes to `requirements.txt` you will need to rebuild.
+
+### Running Standalone
+
+This project contains a `docker-compose.yml` file that is intended to run the api standalone. In this configuration it **does not** share codecov.io's development database; so don't expect parity there. 
+
+To start the service, do
+
+`docker-compose up`
+
+Utilizing its own database provides a convenient way for the REST API to provide its own helpful seeds and migrations for active development without potentially destroying/modifying your development database for codecov.io.
+
+Once running, the api will be available at `http://localhost:8000`
+
+### Running with codecov.io
+
+This service will startup when you run codecov.io normally. It is under that `api` block of codecov.io's `docker-compose.yml` file. 
 
 ### Testing
 
@@ -23,18 +39,6 @@ The easiest way to run tests (that doesn't require installing postgres and other
     docker exec -it codecov-api_api_1 pytest
 
 If you want to run the test locally, you can also just run `pytest` locally, but you'll have to install the requirements.txt and change the DATABASE host to point to something local in the `codecov/settings.py`.
-
-### Running Standalone
-
-This project contains a docker-compose.yml file that is intended to run the api standalone. In this configuration it *does not* share codecov.io's development database; so don't expect parity there. 
-
-Utilizing its own database provides a convenient way for the REST API to provide its own helpful seeds and migrations for active development without potentially destroying/modifying your development database for codecov.io.
-
-Once running, the api will be available at `http://localhost:5100`
-
-### Running with codecov.io
-
-This service will startup when you run codecov.io normally. It is under that `api` block of codecov.io's `docker-compose.yml` file. 
 
 ### Secret and Credential Management
 
