@@ -1,3 +1,4 @@
+#TODO import new reports
 -e git+https://github.com/codecov/report.git@c81ef30bb025d456c3ea5e7af521f8772dd0484f#egg=covreports
 -e git+https://github.com/codecov/torngit.git@python-3-master#egg=torngit
 Django==2.1.3
