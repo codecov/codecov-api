@@ -4,7 +4,7 @@ import json
 from django.test import override_settings
 
 from core.tests.factories import CommitFactory, RepositoryFactory, PullFactory
-from archive.services import ArchiveService
+from services.archive import ArchiveService
 
 current_file = Path(__file__)
 
@@ -15,7 +15,7 @@ class TestFlagsView(object):
     def test_commit_flag_view(self, mocker, db, client, codecov_vcr):
         mocked = mocker.patch.object(ArchiveService, 'read_chunks')
         f = open(
-            current_file.parent.parent.parent.parent / 'archive/tests/samples' / 'chunks.txt',
+            current_file.parent.parent.parent.parent / 'services/tests/samples' / 'chunks.txt',
             'r'
         )
         mocker.patch.object(ArchiveService, 'create_root_storage')

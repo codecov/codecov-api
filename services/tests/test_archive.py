@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from archive.services import build_report, ArchiveService, MinioEndpoints, ReportService
+from services.archive import build_report, ArchiveService, MinioEndpoints, ReportService
 from core.tests.factories import CommitFactory
 
 

@@ -8,11 +8,11 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from core.models import Repository, Branch, Commit
-from archive.services import ArchiveService
+from services.archive import ArchiveService
 from services.task import TaskService
 from utils.config import get_config
 
-from .constants import GitHubHTTPHeaders, GitHubWebhookEvents
+from webhook_handlers.constants import GitHubHTTPHeaders, GitHubWebhookEvents, WebhookHandlerErrorMessages
 
 
 log = logging.getLogger(__name__)
@@ -33,6 +33,9 @@ class GithubWebhookHandler(APIView):
 
     def validate_signature(self, request):
         pass
+
+    def unhandled_webhook_event(self, request, *args, **kwargs):
+        return Response(data=WebhookHandlerErrorMessages.UNSUPPORTED_EVENT)
 
     def _get_repo(self, request):
         return Repository.objects.get(
@@ -80,7 +83,7 @@ class GithubWebhookHandler(APIView):
         repo = self._get_repo(request)
 
         if not repo.active:
-            return Response(data="Repository not active")
+            return Response(data=WebhookHandlerErrorMessages.SKIP_NOT_ACTIVE)
 
         branch_name = self.request.data.get('ref')[11:]
         commits = self.request.data.get('commits', [])
@@ -109,8 +112,25 @@ class GithubWebhookHandler(APIView):
 
         return Response()
 
-    def unhandled_webhook_event(self, request, *args, **kwargs):
-        pass
+    def status(self, request, *args, **kwargs):
+        repo = self._get_repo(request)
+
+        if not repo.active:
+            return Response(data=WebhookHandlerErrorMessages.SKIP_NOT_ACTIVE)
+        if request.data.get("context", "")[:8] == "codecov/":
+            return Response(data=WebhookHandlerErrorMessages.SKIP_CODECOV_STATUS)
+        if request.data.get("state") == "pending":
+            return Response(data=WebhookHandlerErrorMessages.SKIP_PENDING_STATUSES)
+
+        commitid = request.data.get("sha")
+        if not Commit.objects.filter(repository=repo, commitid=commitid, state="complete").exists():
+            return Response(data=WebhookHandlerErrorMessages.SKIP_PROCESSING)
+
+        log.info("Triggering notification from webhook for github: %s", commitid)
+
+        TaskService().notify(repoid=repo.repoid, commitid=commitid)
+
+        return Response()
 
     def post(self, request, *args, **kwargs):
         self.validate_signature(request)

@@ -9,16 +9,16 @@ from internal_api.tests.unit.views.test_compare_file_view import build_commits_w
 from core.tests.factories import PullFactory, RepositoryFactory, CommitFactory
 from covreports.utils.tuples import ReportTotals
 from codecov.tests.base_test import InternalAPITest
-from archive.services import ArchiveService
-from compare.services import FlagComparison
+from services.archive import ArchiveService
+from services.comparison import FlagComparison
 
 
 current_file = Path(__file__)
 
 
-@patch('archive.services.ArchiveService.read_chunks')
-@patch('archive.services.ArchiveService.create_root_storage')
-@patch('compare.services.FlagComparison.diff_totals', new_callable=PropertyMock)
+@patch('services.archive.ArchiveService.read_chunks')
+@patch('services.archive.ArchiveService.create_root_storage')
+@patch('services.comparison.FlagComparison.diff_totals', new_callable=PropertyMock)
 class TestCompareFlagsView(InternalAPITest):
     def _get_compare_flags(self, kwargs, query_params):
         return self.client.get(reverse('compare-flags', kwargs=kwargs), data=query_params)
@@ -214,7 +214,7 @@ class TestCompareFlagsView(InternalAPITest):
 
         assert response.status_code == 200
 
-    @patch('compare.services.FlagComparison.base_report', new_callable=PropertyMock)
+    @patch('services.comparison.FlagComparison.base_report', new_callable=PropertyMock)
     def test_compare_flags_doesnt_crash_if_base_doesnt_have_flags(
         self,
         base_flag_mock,

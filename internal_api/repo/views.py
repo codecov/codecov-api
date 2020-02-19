@@ -27,7 +27,7 @@ from .serializers import RepoSerializer, RepoDetailsSerializer, SecretStringPayl
 
 from .utils import encode_secret_string
 
-from repo_providers.services import RepoProviderService
+from services.repo_providers import RepoProviderService
 
 from .repository_actions import delete_webhook_on_provider, create_webhook_on_provider
 

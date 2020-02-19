@@ -1,5 +1,5 @@
 from django.urls import path, include
-from .views import GithubWebhookHandler
+from .views.github import GithubWebhookHandler
 
 
 urlpatterns = [

@@ -7,13 +7,13 @@ from django.test import override_settings
 from rest_framework import status
 from rest_framework.reverse import reverse
 
-from archive.services import SerializableReport
+from services.archive import SerializableReport
 from internal_api.commit.serializers import ReportSerializer
 from covreports.resources import ReportFile
-from archive.services import ArchiveService
+from services.archive import ArchiveService
 from codecov.tests.base_test import InternalAPITest
 from codecov_auth.tests.factories import OwnerFactory
-from compare.services import Comparison
+from services.comparison import Comparison
 from core.tests.factories import (
     RepositoryFactory,
     CommitFactory,
@@ -127,7 +127,7 @@ class TestCompareCommitsView(InternalAPITest):
         )
         assert response.status_code == 404
 
-    @patch('compare.services.Comparison._calculate_git_comparison')
+    @patch('services.comparison.Comparison._calculate_git_comparison')
     def test_compare_commits_view_with_branchname(self, mocked_comparison):
         self._configure_mocked_comparison_with_commits(mocked_comparison)
         branch_base = BranchFactory.create(head=self.commit_base.commitid, repository=self.commit_base.repository)
@@ -152,7 +152,7 @@ class TestCompareCommitsView(InternalAPITest):
         assert content['commit_uploads'][1]['commitid'] == self.commit_base.commitid
         assert content['commit_uploads'][1]['totals'] == self.commit_base.totals
 
-    @patch('compare.services.Comparison._calculate_git_comparison')
+    @patch('services.comparison.Comparison._calculate_git_comparison')
     def test_compare_commits_view_with_commitid(self, mocked_comparison):
         self._configure_mocked_comparison_with_commits(mocked_comparison)
         response = self._get_commits_comparison(
@@ -174,7 +174,7 @@ class TestCompareCommitsView(InternalAPITest):
         assert content['commit_uploads'][1]['commitid'] == self.commit_base.commitid
         assert content['commit_uploads'][1]['totals'] == self.commit_base.totals
 
-    @patch('compare.services.Comparison._calculate_git_comparison')
+    @patch('services.comparison.Comparison._calculate_git_comparison')
     def test_compare_commits_view_with_pullid(self, mocked_comparison):
         self._configure_mocked_comparison_with_commits(mocked_comparison)
         pull = PullFactory(
@@ -204,9 +204,9 @@ class TestCompareCommitsView(InternalAPITest):
         assert response.data['commit_uploads'][1]['totals'] == self.commit_base.totals
 
 
-@patch('archive.services.ArchiveService.create_root_storage')
-@patch('archive.services.ArchiveService.read_chunks')
-@patch('compare.services.Comparison._calculate_git_comparison')
+@patch('services.archive.ArchiveService.create_root_storage')
+@patch('services.archive.ArchiveService.read_chunks')
+@patch('services.comparison.Comparison._calculate_git_comparison')
 class TestCompareDetailsView(InternalAPITest):
     def _get_compare_details(self, kwargs={}, query_params={}):
         if not kwargs:
@@ -358,9 +358,9 @@ class TestCompareDetailsView(InternalAPITest):
         assert content["git_commits"] == mocked_comparison.return_value["commits"]
 
 
-@patch('archive.services.ArchiveService.create_root_storage')
-@patch('archive.services.ArchiveService.read_chunks', lambda obj, sha: '')
-@patch('compare.services.Comparison._calculate_git_comparison')
+@patch('services.archive.ArchiveService.create_root_storage')
+@patch('services.archive.ArchiveService.read_chunks', lambda obj, sha: '')
+@patch('services.comparison.Comparison._calculate_git_comparison')
 class TestCompareSingleFileDiffView(InternalAPITest):
     def _get_single_file_diff(self, kwargs, query_params):
         return self.client.get(reverse('compare-diff-file', kwargs=kwargs), data=query_params)
@@ -412,9 +412,9 @@ class TestCompareSingleFileDiffView(InternalAPITest):
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-@patch('archive.services.ArchiveService.create_root_storage')
-@patch('archive.services.ArchiveService.read_chunks', lambda obj, sha: '')
-@patch('compare.services.Comparison._calculate_git_comparison')
+@patch('services.archive.ArchiveService.create_root_storage')
+@patch('services.archive.ArchiveService.read_chunks', lambda obj, sha: '')
+@patch('services.comparison.Comparison._calculate_git_comparison')
 class TestCompareFullSrcView(InternalAPITest):
     def _get_compare_src(self, kwargs, query_params):
         return self.client.get(reverse('compare-src-full', kwargs=kwargs), data=query_params)
@@ -478,7 +478,7 @@ class TestCompareFullSrcView(InternalAPITest):
         assert response.data["tracked_files"] == mocked_comparison.return_value["diff"]["files"]
         assert response.data["untracked_files"] == []
 
-    @patch('archive.services.SerializableReport.file_reports')
+    @patch('services.archive.SerializableReport.file_reports')
     def test_tracked_files_omits_line_data_after_first_five(self, mocked_head_file_reports, mocked_comparison, *args):
         self._configure_comparison_mock_with_commit_factory_report(mocked_comparison)
         self._configure_file_reports_with_commit_factory_report(mocked_head_file_reports)
@@ -511,7 +511,7 @@ class TestCompareFullSrcView(InternalAPITest):
 
         assert files_with_lines == 5
 
-    @patch('archive.services.SerializableReport.file_reports')
+    @patch('services.archive.SerializableReport.file_reports')
     def test_diff_without_segments_doesnt_crash(self, mocked_head_file_reports, mocked_comparison, *args):
         self._configure_comparison_mock_with_commit_factory_report(mocked_comparison)
         self._configure_file_reports_with_commit_factory_report(mocked_head_file_reports)
@@ -535,7 +535,7 @@ class TestCompareFullSrcView(InternalAPITest):
             }
         )
 
-    @patch('archive.services.SerializableReport.file_reports')
+    @patch('services.archive.SerializableReport.file_reports')
     def test_correctly_sorts_tracked_and_untracked_files(self, mocked_head_file_reports, mocked_comparison, *args):
         self._configure_comparison_mock_with_commit_factory_report(mocked_comparison)
         self._configure_file_reports_with_commit_factory_report(mocked_head_file_reports)
