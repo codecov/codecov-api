@@ -6,7 +6,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 
-from core.models import Repository, Branch, Commit
+from core.models import Repository, Branch, Commit, Pull
 from services.archive import ArchiveService
 from services.redis import get_redis_connection
 from services.task import TaskService
@@ -128,6 +128,25 @@ class GithubWebhookHandler(APIView):
         log.info("Triggering notification from webhook for github: %s", commitid)
 
         TaskService().notify(repoid=repo.repoid, commitid=commitid)
+
+        return Response()
+
+    def pull_request(self, request, *args, **kwargs):
+        repo = self._get_repo(request)
+
+        if not repo.active:
+            return Response(data=WebhookHandlerErrorMessages.SKIP_NOT_ACTIVE)
+
+        action, pullid = request.data.get("action"), request.data.get("number")
+
+        if action in ["opened", "closed", "reopened", "synchronize"]:
+            pass # TODO: should trigger pulls.sync task
+        elif action == "edited":
+            Pull.objects.filter(
+                repository=repo, pullid=pullid
+            ).update(
+                title=request.data.get("pull_request", {}).get("title")
+            )
 
         return Response()
 

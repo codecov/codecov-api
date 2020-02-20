@@ -1,11 +1,13 @@
 import uuid
+import pytest
+
 from unittest.mock import patch
 
 from rest_framework.test import APITestCase
 from rest_framework.reverse import reverse
 from rest_framework import status
 
-from core.tests.factories import RepositoryFactory, BranchFactory, CommitFactory
+from core.tests.factories import RepositoryFactory, BranchFactory, CommitFactory, PullFactory
 from core.models import Repository
 from codecov_auth.tests.factories import OwnerFactory
 
@@ -351,3 +353,45 @@ class GithubWebhookHandlerTests(APITestCase):
 
         assert response.status_code == status.HTTP_200_OK
         notify_mock.assert_called_once_with(repoid=self.repo.repoid, commitid=commit.commitid)
+
+    def test_pull_request_exits_early_if_repo_not_active(self):
+        self.repo.active = False
+        self.repo.save()
+
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.PULL_REQUEST,
+            data={
+                "repository": {
+                    "id": self.repo.service_id
+                },
+            }
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == WebhookHandlerErrorMessages.SKIP_NOT_ACTIVE
+
+    @pytest.mark.xfail
+    def test_pull_request_triggers_pulls_sync_task_for_valid_actions(self):
+        assert False
+
+    def test_pull_request_updates_title_if_edited(self):
+        pull = PullFactory(repository=self.repo)
+        new_title = "brand new dang title"
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.PULL_REQUEST,
+            data={
+                "repository": {
+                    "id": self.repo.service_id
+                },
+                "action": "edited",
+                "number": pull.pullid,
+                "pull_request": {
+                    "title": new_title,
+                }
+            }
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+
+        pull.refresh_from_db()
+        assert pull.title == new_title
