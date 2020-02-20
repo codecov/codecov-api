@@ -1,8 +1,8 @@
 import asyncio
 
-from archive.services import ReportService
+from services.archive import ReportService
 from core.models import Commit
-from repo_providers.services import RepoProviderService
+from services.repo_providers import RepoProviderService
 
 
 def get_comparison_from_pull_request(pull_request, user):

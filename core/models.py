@@ -30,16 +30,17 @@ class Repository(models.Model):
     language = models.TextField(null=True, blank=True)
     fork = models.ForeignKey('core.Repository', db_column='forkid',
                              on_delete=models.DO_NOTHING, null=True, blank=True)
-    branch = models.TextField(null=True, blank=True)
+    branch = models.TextField(null=True, default='master')
     upload_token = models.UUIDField(default=uuid.uuid4)
     yaml = JSONField(null=True)
     cache = JSONField(null=True)
     image_token = models.CharField(max_length=10, default=_gen_image_token)
-    using_integration = models.BooleanField()
-    hookid = models.TextField()
+    using_integration = models.NullBooleanField()
+    hookid = models.TextField(null=True)
     bot = models.ForeignKey('codecov_auth.Owner', db_column="bot",
                             null=True, on_delete=models.SET_NULL, related_name="bot_repos")
-    activated = models.BooleanField(default=False)
+    activated = models.NullBooleanField(default=False)
+    deleted = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'repos'
@@ -64,6 +65,7 @@ class Branch(models.Model):
     authors = ArrayField(models.IntegerField(
         null=True, blank=True), null=True, blank=True, db_column='authors')
     head = models.TextField()
+    base = models.TextField(null=True)
     updatestamp = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -84,16 +86,16 @@ class Commit(models.Model):
         'codecov_auth.Owner', db_column='author', on_delete=models.CASCADE,)
     repository = models.ForeignKey(
         'core.Repository', db_column='repoid', on_delete=models.CASCADE, related_name='commits')
-    ci_passed = models.BooleanField()
-    totals = JSONField()
-    report = JSONField()
+    ci_passed = models.NullBooleanField()
+    totals = JSONField(null=True)
+    report = JSONField(null=True)
     merged = models.NullBooleanField()
     deleted = models.NullBooleanField()
     notified = models.NullBooleanField()
-    branch = models.TextField()
-    pullid = models.IntegerField()
-    message = models.TextField()
-    parent_commit_id = models.TextField(db_column='parent')
+    branch = models.TextField(null=True)
+    pullid = models.IntegerField(null=True)
+    message = models.TextField(null=True)
+    parent_commit_id = models.TextField(null=True, db_column='parent')
     state = models.CharField(max_length=256)
 
     @cached_property
@@ -108,18 +110,18 @@ class Pull(models.Model):
     repository = models.ForeignKey(
         'core.Repository', db_column='repoid', on_delete=models.CASCADE, related_name='pull_requests')
     pullid = models.IntegerField(primary_key=True)
-    issueid = models.IntegerField()
-    state = models.CharField(max_length=100)
-    title = models.CharField(max_length=100)
+    issueid = models.IntegerField(null=True)
+    state = models.CharField(max_length=100, default='open')
+    title = models.CharField(max_length=100, null=True)
     base = models.TextField(null=True)
     head = models.TextField(null=True)
     compared_to = models.TextField(null=True)
-    commentid = models.CharField(max_length=100)
+    commentid = models.CharField(max_length=100, null=True)
     author = models.ForeignKey(
-        'codecov_auth.Owner', db_column='author', on_delete=models.CASCADE,)
+        'codecov_auth.Owner', db_column='author', on_delete=models.SET_NULL, null=True)
     updatestamp = models.DateTimeField(auto_now=True)
-    diff = JSONField()
-    flare = JSONField()
+    diff = JSONField(null=True)
+    flare = JSONField(null=True)
 
     class Meta:
         db_table = 'pulls'
