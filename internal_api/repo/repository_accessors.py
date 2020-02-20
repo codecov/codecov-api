@@ -4,7 +4,7 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from codecov_auth.models import Owner
 from core.models import Repository
-from repo_providers.services import RepoProviderService
+from services.repo_providers import RepoProviderService
 
 
 class RepoAccessors:

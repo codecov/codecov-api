@@ -7,7 +7,7 @@ from rest_framework import viewsets, mixins
 
 from internal_api.mixins import FilterByRepoMixin, RepoSlugUrlMixin
 from internal_api.compare.serializers import FlagComparisonSerializer
-from compare.services import get_comparison_from_pull_request
+from services.comparison import get_comparison_from_pull_request
 from core.models import Pull
 from .serializers import PullSerializer, PullDetailSerializer
 

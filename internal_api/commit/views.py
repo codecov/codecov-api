@@ -2,7 +2,7 @@ import asyncio
 from rest_framework import generics
 from django.shortcuts import Http404
 
-from archive.services import ReportService
+from services.archive import ReportService
 from internal_api.mixins import FilterByRepoMixin, RepoSlugUrlMixin
 from core.models import Commit
 from .serializers import CommitWithParentSerializer, FlagSerializer, CommitSerializer

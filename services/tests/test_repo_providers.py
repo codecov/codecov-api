@@ -2,7 +2,7 @@ from torngit import Github
 
 from codecov.tests.base_test import InternalAPITest
 from core.tests.factories import RepositoryFactory
-from repo_providers.services import TorngitInitializationFailed, RepoProviderService
+from services.repo_providers import TorngitInitializationFailed, RepoProviderService
 
 
 class TestRepoProviderService(InternalAPITest):

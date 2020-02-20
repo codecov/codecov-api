@@ -3,7 +3,7 @@ import asyncio
 from rest_framework import generics
 from rest_framework.exceptions import NotFound
 
-from compare.services import Comparison
+from services.comparison import Comparison
 from internal_api.compare.serializers import (
     CommitsComparisonSerializer,
     ComparisonFullSrcSerializer,
