@@ -71,8 +71,9 @@ class RepositoryViewSet(
 
     def _assert_is_admin(self):
         owner = self._get_owner()
-        if self.request.user.ownerid not in owner.admins:
-            raise PermissionDenied()
+        if self.request.user.ownerid != owner.ownerid:
+            if owner.admins is None or self.request.user.ownerid not in owner.admins:
+                raise PermissionDenied()
 
     def get_serializer_class(self):
         if self.action == 'list':
