@@ -1,5 +1,4 @@
 import logging
-import redis
 import re
 
 from rest_framework.views import APIView
@@ -9,8 +8,8 @@ from rest_framework import status
 
 from core.models import Repository, Branch, Commit
 from services.archive import ArchiveService
+from services.redis import get_redis_connection
 from services.task import TaskService
-from utils.config import get_config
 
 from webhook_handlers.constants import GitHubHTTPHeaders, GitHubWebhookEvents, WebhookHandlerErrorMessages
 
@@ -29,7 +28,7 @@ class GithubWebhookHandler(APIView):
         webhook_handlers.constants.GitHubWebhookEvents
     """
     permission_classes = [AllowAny]
-    redis = redis.Redis.from_url(get_config('services', 'redis_url'))
+    redis = get_redis_connection()
 
     def validate_signature(self, request):
         pass
