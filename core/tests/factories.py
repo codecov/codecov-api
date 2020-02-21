@@ -108,6 +108,7 @@ class PullFactory(DjangoModelFactory):
     class Meta:
         model = models.Pull
 
+    pullid = random.randint(1, 10000)
     issueid = random.randint(1, 1000)
     commentid = factory.LazyAttribute(lambda o: sha1(o.title.encode('utf-8')).hexdigest())
     flare = {

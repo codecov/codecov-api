@@ -9,7 +9,7 @@ from internal_api.owner.serializers import OwnerSerializer, OwnerDetailsSerializ
 from core.tests.factories import RepositoryFactory, CommitFactory
 from codecov_auth.tests.factories import OwnerFactory
 from core.models import Commit
-from archive.services import ArchiveService
+from services.archive import ArchiveService
 
 from internal_api.tests.utils import TestUtils
 
@@ -61,7 +61,7 @@ class TestCommitWithSrcSerializers(object):
     def test_serializer(self, mocker, db, codecov_vcr):
         mocked = mocker.patch.object(ArchiveService, 'read_chunks')
         f = open(
-            current_file.parent.parent.parent / 'archive/tests/samples' / 'chunks.txt',
+            current_file.parent.parent.parent / 'services/tests/samples' / 'chunks.txt',
             'r'
         )
         mocker.patch.object(ArchiveService, 'create_root_storage')

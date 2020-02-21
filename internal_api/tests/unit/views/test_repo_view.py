@@ -101,8 +101,8 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         assert reverse_response.data["results"][0]["repoid"] == self.repo2.repoid
         assert reverse_response.data["results"][1]["repoid"] == self.repo1.repoid
 
-    @patch("archive.services.ArchiveService.create_root_storage")
-    @patch("archive.services.ArchiveService.read_chunks")
+    @patch("services.archive.ArchiveService.create_root_storage")
+    @patch("services.archive.ArchiveService.read_chunks")
     def test_order_by_coverage(self, read_chunks_mock, *args):
         read_chunks_mock.return_value = []
 
@@ -471,8 +471,8 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
 
         assert response.status_code == 401
 
-    @patch('archive.services.ArchiveService.create_root_storage', lambda _: None)
-    @patch('archive.services.ArchiveService.read_chunks', lambda obj, _: '' )
+    @patch('services.archive.ArchiveService.create_root_storage', lambda _: None)
+    @patch('services.archive.ArchiveService.read_chunks', lambda obj, _: '' )
     def test_retrieve_returns_latest_commit_data(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, True
         commit = CommitFactory(repository=self.repo)
@@ -484,8 +484,8 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         assert response.status_code == 200
         assert response.data["latest_commit"]["report"]["totals"] == expected_commit_payload["report"]["totals"]
 
-    @patch('archive.services.ArchiveService.create_root_storage', lambda _: None)
-    @patch('archive.services.ArchiveService.read_chunks', lambda obj, _: '' )
+    @patch('services.archive.ArchiveService.create_root_storage', lambda _: None)
+    @patch('services.archive.ArchiveService.read_chunks', lambda obj, _: '' )
     def test_retrieve_returns_latest_commit_of_default_branch_if_branch_not_specified(
         self,
         mocked_get_permissions
@@ -500,8 +500,8 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         assert response.data['latest_commit']['commitid'] == commit.commitid
         assert response.data['latest_commit']['commitid'] != more_recent_commit.commitid
 
-    @patch('archive.services.ArchiveService.create_root_storage', lambda _: None)
-    @patch('archive.services.ArchiveService.read_chunks', lambda obj, _: '' )
+    @patch('services.archive.ArchiveService.create_root_storage', lambda _: None)
+    @patch('services.archive.ArchiveService.read_chunks', lambda obj, _: '' )
     def test_retrieve_accepts_branch_query_param_to_specify_latest_commit(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, True
 
@@ -516,8 +516,8 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         assert response.data['latest_commit']['commitid'] == commit.commitid
         assert response.data['latest_commit']['commitid'] != more_recent_commit.commitid
 
-    @patch('archive.services.ArchiveService.create_root_storage', lambda _: None)
-    @patch('archive.services.ArchiveService.read_chunks', lambda obj, _: '' )
+    @patch('services.archive.ArchiveService.create_root_storage', lambda _: None)
+    @patch('services.archive.ArchiveService.read_chunks', lambda obj, _: '' )
     def test_latest_commit_is_none_if_dne(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, True
 

@@ -1,15 +1,17 @@
 import uuid
+import pytest
+
 from unittest.mock import patch
 
 from rest_framework.test import APITestCase
 from rest_framework.reverse import reverse
 from rest_framework import status
 
-from core.tests.factories import RepositoryFactory, BranchFactory, CommitFactory
+from core.tests.factories import RepositoryFactory, BranchFactory, CommitFactory, PullFactory
 from core.models import Repository
 from codecov_auth.tests.factories import OwnerFactory
 
-from .constants import GitHubHTTPHeaders, GitHubWebhookEvents
+from webhook_handlers.constants import GitHubHTTPHeaders, GitHubWebhookEvents, WebhookHandlerErrorMessages
 
 
 class GithubWebhookHandlerTests(APITestCase):
@@ -79,8 +81,8 @@ class GithubWebhookHandlerTests(APITestCase):
 
         assert self.repo.private == True
 
-    @patch('archive.services.ArchiveService.create_root_storage', lambda _: None)
-    @patch('archive.services.ArchiveService.delete_repo_files', lambda _: None)
+    @patch('services.archive.ArchiveService.create_root_storage', lambda _: None)
+    @patch('services.archive.ArchiveService.delete_repo_files', lambda _: None)
     def test_repository_deleted_deletes_repo(self):
         repository_id = self.repo.repoid
 
@@ -97,8 +99,8 @@ class GithubWebhookHandlerTests(APITestCase):
         assert response.status_code == status.HTTP_200_OK
         assert not Repository.objects.filter(repoid=repository_id).exists()
 
-    @patch('archive.services.ArchiveService.create_root_storage', lambda _: None)
-    @patch('archive.services.ArchiveService.delete_repo_files')
+    @patch('services.archive.ArchiveService.create_root_storage', lambda _: None)
+    @patch('services.archive.ArchiveService.delete_repo_files')
     def test_repository_delete_deletes_archive_data(self, delete_files_mock):
         response = self._post_event_data(
             event=GitHubWebhookEvents.REPOSITORY,
@@ -149,6 +151,7 @@ class GithubWebhookHandlerTests(APITestCase):
         assert not self.repo.private
         assert not self.repo.activated
 
+    @patch('redis.Redis.sismember', lambda x, y, z: False)
     def test_push_updates_only_unmerged_commits_with_branch_name(self):
         commit1 = CommitFactory(merged=False, repository=self.repo)
         commit2 = CommitFactory(merged=False, repository=self.repo)
@@ -276,3 +279,119 @@ class GithubWebhookHandlerTests(APITestCase):
 
         assert response.data == "CI Skipped"
         set_pending_mock.assert_not_called()
+
+    def test_status_exits_early_if_repo_not_active(self):
+        self.repo.active = False
+        self.repo.save()
+
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.STATUS,
+            data={
+                "repository": {
+                    "id": self.repo.service_id
+                },
+            }
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == WebhookHandlerErrorMessages.SKIP_NOT_ACTIVE
+
+    def test_status_exits_early_for_codecov_statuses(self):
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.STATUS,
+            data={
+                "context": "codecov/",
+                "repository": {
+                    "id": self.repo.service_id
+                },
+            }
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == WebhookHandlerErrorMessages.SKIP_CODECOV_STATUS
+
+    def test_status_exits_early_for_pending_statuses(self):
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.STATUS,
+            data={
+                "state": "pending",
+                "repository": {
+                    "id": self.repo.service_id
+                },
+            }
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == WebhookHandlerErrorMessages.SKIP_PENDING_STATUSES
+
+    def test_status_exits_early_if_commit_not_complete(self):
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.STATUS,
+            data={
+                "repository": {
+                    "id": self.repo.service_id
+                },
+                "sha": CommitFactory(repository=self.repo, state="pending").commitid
+            }
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == WebhookHandlerErrorMessages.SKIP_PROCESSING
+
+    @patch('services.task.TaskService.notify')
+    def test_status_triggers_notify_task(self, notify_mock):
+        commit = CommitFactory(repository=self.repo)
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.STATUS,
+            data={
+                "repository": {
+                    "id": self.repo.service_id
+                },
+                "sha": commit.commitid
+            }
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        notify_mock.assert_called_once_with(repoid=self.repo.repoid, commitid=commit.commitid)
+
+    def test_pull_request_exits_early_if_repo_not_active(self):
+        self.repo.active = False
+        self.repo.save()
+
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.PULL_REQUEST,
+            data={
+                "repository": {
+                    "id": self.repo.service_id
+                },
+            }
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == WebhookHandlerErrorMessages.SKIP_NOT_ACTIVE
+
+    @pytest.mark.xfail
+    def test_pull_request_triggers_pulls_sync_task_for_valid_actions(self):
+        assert False
+
+    def test_pull_request_updates_title_if_edited(self):
+        pull = PullFactory(repository=self.repo)
+        new_title = "brand new dang title"
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.PULL_REQUEST,
+            data={
+                "repository": {
+                    "id": self.repo.service_id
+                },
+                "action": "edited",
+                "number": pull.pullid,
+                "pull_request": {
+                    "title": new_title,
+                }
+            }
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+
+        pull.refresh_from_db()
+        assert pull.title == new_title

@@ -11,7 +11,7 @@ from hashlib import md5
 from base64 import b16encode
 
 from utils.config import get_config
-from archive.storage import StorageService
+from services.storage import StorageService
 
 log = logging.getLogger(__name__)
 

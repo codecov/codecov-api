@@ -28,3 +28,9 @@ class TaskService(object):
                 on_a_pull_request=on_a_pull_request
             )
         ).apply_async()
+
+    def notify(self, repoid, commitid):
+        self._create_signature(
+            'app.tasks.notify.Notify',
+            kwargs=dict(repoid=repoid, commitid=commitid)
+        ).apply_async()

@@ -3,8 +3,8 @@ import json
 
 from internal_api.compare.serializers import FlagComparisonSerializer
 from core.tests.factories import CommitFactory, RepositoryFactory
-from archive.services import ArchiveService
-from compare.services import Comparison
+from services.archive import ArchiveService
+from services.comparison import Comparison
 
 current_file = Path(__file__)
 

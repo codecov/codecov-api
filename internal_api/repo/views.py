@@ -27,7 +27,7 @@ from .serializers import RepoSerializer, RepoDetailsSerializer, SecretStringPayl
 
 from .utils import encode_secret_string
 
-from repo_providers.services import RepoProviderService
+from services.repo_providers import RepoProviderService
 
 from .repository_actions import delete_webhook_on_provider, create_webhook_on_provider
 
@@ -71,8 +71,9 @@ class RepositoryViewSet(
 
     def _assert_is_admin(self):
         owner = self._get_owner()
-        if self.request.user.ownerid not in owner.admins:
-            raise PermissionDenied()
+        if self.request.user.ownerid != owner.ownerid:
+            if owner.admins is None or self.request.user.ownerid not in owner.admins:
+                raise PermissionDenied()
 
     def get_serializer_class(self):
         if self.action == 'list':

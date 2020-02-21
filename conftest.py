@@ -16,3 +16,10 @@ def codecov_vcr(request):
             filter_headers=['authorization'],
             match_on=['method', 'scheme', 'host', 'port', 'path']) as cassete_maker:
         yield cassete_maker
+
+@pytest.fixture
+def mock_redis(mocker):
+    m = mocker.patch('services.redis._get_redis_instance_from_url')
+    redis_server = mocker.MagicMock()
+    m.return_value = redis_server
+    yield redis_server
