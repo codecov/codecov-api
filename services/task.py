@@ -34,3 +34,38 @@ class TaskService(object):
             'app.tasks.notify.Notify',
             kwargs=dict(repoid=repoid, commitid=commitid)
         ).apply_async()
+
+    def refresh(self, ownerid, username, sync_teams=True, sync_repos=True, using_integration=False):
+        """
+        !!!
+        Copied from https://github.com/codecov/codecov.io/blob/master/app/services/task.py
+        !!!
+
+        Send sync_teams and/or sync_repos task message
+
+        If running both tasks on new worker, we create a chain with sync_teams to run
+        first so that when sync_repos starts it has the most up to date teams/groups
+        data for the user. Otherwise, we may miss some repos.
+        """
+        chain_to_call = []
+        if sync_teams:
+            chain_to_call.append(self._create_signature(
+                'app.tasks.sync_teams.SyncTeams',
+                kwargs=dict(
+                    ownerid=ownerid,
+                    username=username,
+                    using_integration=using_integration
+                )
+            ))
+
+        if sync_repos:
+            chain_to_call.append(self._create_signature(
+                'app.tasks.sync_repos.SyncRepos',
+                kwargs=dict(
+                    ownerid=ownerid,
+                    username=username,
+                    using_integration=using_integration
+                )
+            ))
+
+        return chain(*chain_to_call).apply_async()

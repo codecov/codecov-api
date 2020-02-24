@@ -53,9 +53,9 @@ class Owner(models.Model):
     # plan_provider
     plan_user_count = models.SmallIntegerField(null=True)
     plan_auto_activate = models.BooleanField(null=True)
-    plan_activated_users = ArrayField(models.IntegerField(null=True))
+    plan_activated_users = ArrayField(models.IntegerField(null=True), null=True)
     did_trial = models.BooleanField(null=True)
-    free = models.SmallIntegerField()
+    free = models.SmallIntegerField(default=0)
     invoice_details = models.TextField(null=True)
     delinquent = models.BooleanField(null=True)
     yaml = JSONField(null=True)

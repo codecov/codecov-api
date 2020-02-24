@@ -12,6 +12,8 @@ class GitHubWebhookEvents:
     STATUS = "status"
     REPOSITORY = "repository"
     PING = "ping"
+    INSTALLATION = "installation"
+    INSTALLATION_REPOSITORIES = "installation_repositories"
 
     subscribed_members = [PULL_REQUEST, DELETE, PUSH, PUBLIC, STATUS, REPOSITORY]
 

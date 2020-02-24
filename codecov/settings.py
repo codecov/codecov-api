@@ -11,7 +11,10 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 """
 
 import os
+from environs import Env
 from utils.config import get_config
+
+env = Env()
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -25,9 +28,9 @@ SECRET_KEY = 'edj+31p-b0#5b4z163d4uyzf9*s7juwgy^lx^!-2=v+y_xadz5'
 YAML_SECRET_KEY = b']\xbb\x13\xf9}\xb3\xb7\x03)*0Kv\xb2\xcet'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', False) == 'True'
 
-ALLOWED_HOSTS = ["api.localhost", "localhost", "*"]
+ALLOWED_HOSTS = env.list('DJANGO_ALLOWED_HOSTS', default=['.codecov.io'], cast=str)
 
 AUTH_USER_MODEL = 'codecov_auth.Owner'
 
@@ -189,7 +192,7 @@ ARCHIVE_BUCKET_NAME = 'codecov'
 ENCRYPTION_SECRET = get_config('setup', 'encryption_secret')
 
 # cors
-CORS_ORIGIN_WHITELIST = [
-    'app.codecov.io',
-    'localhost:9000',
-]
+CORS_ORIGIN_WHITELIST = ['app.codecov.io']
+
+if DEBUG:
+    CORS_ORIGIN_WHITELIST = ['localhost:9000']
