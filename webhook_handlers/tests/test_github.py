@@ -1,7 +1,7 @@
 import uuid
 import pytest
 
-from unittest.mock import patch
+from unittest.mock import patch, call
 
 from rest_framework.test import APITestCase
 from rest_framework.reverse import reverse
@@ -9,6 +9,7 @@ from rest_framework import status
 
 from core.tests.factories import RepositoryFactory, BranchFactory, CommitFactory, PullFactory
 from core.models import Repository
+from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
 
 from webhook_handlers.constants import GitHubHTTPHeaders, GitHubWebhookEvents, WebhookHandlerErrorMessages
@@ -395,3 +396,136 @@ class GithubWebhookHandlerTests(APITestCase):
 
         pull.refresh_from_db()
         assert pull.title == new_title
+
+    @patch('services.task.TaskService.refresh', lambda self, ownerid, username, sync_teams, sync_repos, using_integration: None)
+    def test_installation_events_creates_new_owner_if_dne(self):
+        username, service_id = 'newuser', 123456
+
+        for event in [GitHubWebhookEvents.INSTALLATION, GitHubWebhookEvents.INSTALLATION_REPOSITORIES]:
+            response = self._post_event_data(
+                event=event,
+                data={
+                    "installation": {
+                        "id": 4,
+                        "account": {
+                            "id": service_id,
+                            "login": username
+                        }
+                    }
+                }
+            )
+
+            owner = Owner.objects.filter(
+                service="github",
+                service_id=service_id,
+                username=username
+            )
+
+            assert owner.exists()
+
+            # clear to check next event also creates
+            owner.delete()
+
+    def test_installation_events_with_deleted_action_nulls_values(self):
+        # Should set integration_id to null for owner,
+        # and set using_integration=False and bot=null for repos
+        owner = OwnerFactory()
+        repo1 = RepositoryFactory(author=owner)
+        repo2 = RepositoryFactory(author=owner)
+
+        for event in [GitHubWebhookEvents.INSTALLATION, GitHubWebhookEvents.INSTALLATION_REPOSITORIES]:
+            owner.integration_id = 12
+            owner.save()
+
+            repo1.using_integration, repo2.using_integration = True, True
+            repo1.bot, repo2.bot = owner, owner
+
+            repo1.save()
+            repo2.save()
+
+            response = self._post_event_data(
+                event=event,
+                data={
+                    "installation": {
+                        "account": {
+                            "id": owner.service_id,
+                            "login": owner.username
+                        }
+                    },
+                    "action": "deleted"
+                }
+            )
+
+            owner.refresh_from_db()
+            repo1.refresh_from_db()
+            repo2.refresh_from_db()
+
+            assert owner.integration_id == None
+            assert repo1.using_integration == False
+            assert repo2.using_integration == False
+
+            assert repo1.bot == None
+            assert repo2.bot == None
+
+    @patch('services.task.TaskService.refresh', lambda self, ownerid, username, sync_teams, sync_repos, using_integration: None)
+    def test_installation_events_with_other_actions_sets_owner_itegration_id_if_none(self):
+        integration_id = 44
+        owner = OwnerFactory()
+
+        for event in [GitHubWebhookEvents.INSTALLATION, GitHubWebhookEvents.INSTALLATION_REPOSITORIES]:
+            owner.integration_id = None
+            owner.save()
+
+            response = self._post_event_data(
+                event=event,
+                data={
+                    "installation": {
+                        "id": integration_id,
+                        "account": {
+                            "id": owner.service_id,
+                            "login": owner.username
+                        }
+                    },
+                    "action": "added"
+                }
+            )
+
+            owner.refresh_from_db()
+
+            assert owner.integration_id == integration_id
+
+    @patch('services.task.TaskService.refresh')
+    def test_installation_events_trigger_refresh_with_other_actions(self, refresh_mock):
+        owner = OwnerFactory(service="github")
+
+        for event in [GitHubWebhookEvents.INSTALLATION, GitHubWebhookEvents.INSTALLATION_REPOSITORIES]:
+            response = self._post_event_data(
+                event=event,
+                data={
+                    "installation": {
+                        "id": 11,
+                        "account": {
+                            "id": owner.service_id,
+                            "login": owner.username
+                        }
+                    },
+                    "action": "added"
+                }
+            )
+
+        refresh_mock.assert_has_calls([
+            call(
+                ownerid=owner.ownerid,
+                username=owner.username,
+                sync_teams=False,
+                sync_repos=True,
+                using_integration=True
+            ),
+            call(
+                ownerid=owner.ownerid,
+                username=owner.username,
+                sync_teams=False,
+                sync_repos=True,
+                using_integration=True
+            ),
+        ])
