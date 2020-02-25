@@ -187,6 +187,24 @@ class GithubWebhookHandler(APIView):
     def installation_repositories(self, request, *args, **kwargs):
         return self._handle_installation_events(request, *args, **kwargs)
 
+    def organization(self, request, *args, **kwargs):
+        action = request.data.get("action")
+        if action == "member_removed":
+            org = Owner.objects.get(
+                service="github",
+                service_id=request.data["organization"]["id"]
+            )
+
+            member = Owner.objects.get(
+                service="github",
+                service_id=request.data["membership"]["user"]["id"]
+            )
+
+            member.organizations = [ownerid for ownerid in member.organizations if ownerid != org.ownerid]
+            member.save(update_fields=['organizations'])
+
+        return Response()
+
     def post(self, request, *args, **kwargs):
         self.validate_signature(request)
 

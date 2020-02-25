@@ -529,3 +529,26 @@ class GithubWebhookHandlerTests(APITestCase):
                 using_integration=True
             ),
         ])
+
+    def test_membership_with_removed_action_removes_user_from_org(self):
+        org = OwnerFactory(service_id='4321')
+        user = OwnerFactory(organizations=[org.ownerid], service_id='12')
+
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.ORGANIZATION,
+            data={
+                "action": "member_removed",
+                "membership": {
+                    "user": {
+                        "id": user.service_id
+                    }
+                },
+                "organization": {
+                    "id": org.service_id
+                }
+            }
+        )
+
+        user.refresh_from_db()
+
+        assert org.ownerid not in user.organizations

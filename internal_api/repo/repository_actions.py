@@ -5,7 +5,7 @@ import asyncio
 
 
 WEBHOOK_EVENTS = {
-    "github": GitHubWebhookEvents.subscribed_members,
+    "github": GitHubWebhookEvents.repository_events,
     "github_enterprise": [
         "pull_request",
         "delete",
