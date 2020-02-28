@@ -6,6 +6,9 @@ RUN             apk update \
                 git \ 
                 openssh \ 
                 postgresql-dev \
+                libffi-dev \
+                gcc \
+                musl-dev \
                 && pip install --upgrade pip
 
 ARG             SSH_PRIVATE_KEY
@@ -27,6 +30,7 @@ RUN             apk add --no-cache postgresql-libs && \
                 musl-dev \ 
                 postgresql-dev \ 
                 python3-dev \
+                libffi-dev \
                 git
 
 WORKDIR         /pip-packages/

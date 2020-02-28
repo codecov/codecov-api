@@ -6,6 +6,8 @@ from django.db import models
 from django.contrib.postgres.fields import JSONField, CITextField, ArrayField
 from django.utils.functional import cached_property
 
+from utils.encoders import CustomJSONEncoder
+
 
 class Version(models.Model):
     version = models.TextField(primary_key=True)
@@ -88,7 +90,8 @@ class Commit(models.Model):
         'core.Repository', db_column='repoid', on_delete=models.CASCADE, related_name='commits')
     ci_passed = models.NullBooleanField()
     totals = JSONField(null=True)
-    report = JSONField(null=True)
+    # Use custom JSON to properly serialize custom data classes on reports
+    report = JSONField(null=True, encoder=CustomJSONEncoder)
     merged = models.NullBooleanField()
     deleted = models.NullBooleanField()
     notified = models.NullBooleanField()
