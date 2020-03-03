@@ -6,7 +6,7 @@ from django.db import models
 from django.contrib.postgres.fields import JSONField, CITextField, ArrayField
 from django.utils.functional import cached_property
 
-from utils.encoders import CustomJSONEncoder
+from core.encoders import ReportJSONEncoder
 
 
 class Version(models.Model):
@@ -91,7 +91,7 @@ class Commit(models.Model):
     ci_passed = models.NullBooleanField()
     totals = JSONField(null=True)
     # Use custom JSON to properly serialize custom data classes on reports
-    report = JSONField(null=True, encoder=CustomJSONEncoder)
+    report = JSONField(null=True, encoder=ReportJSONEncoder)
     merged = models.NullBooleanField()
     deleted = models.NullBooleanField()
     notified = models.NullBooleanField()

@@ -4,6 +4,7 @@ from rest_framework.reverse import reverse
 from rest_framework import status
 from unittest.mock import patch
 from json import dumps
+from yaml import YAMLError
 
 from utils.config import get_config
 from covreports.validation.exceptions import InvalidYamlException
@@ -34,6 +35,17 @@ class TestValidateYamlHandler(APITestCase):
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
         expected_result = "No content posted."
+        assert response.content.decode() == expected_result
+
+    @patch('validate.views.safe_load')
+    def test_post_malformed_yaml(self, mock_safe_load):
+        mock_safe_load.side_effect = YAMLError("Can't parse YAML")
+
+        response = self._post(data="malformed yaml")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+        expected_result = "Can't parse YAML\n"
         assert response.content.decode() == expected_result
 
     @patch('validate.views.validate_yaml')

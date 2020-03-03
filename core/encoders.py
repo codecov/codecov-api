@@ -2,7 +2,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 from dataclasses import is_dataclass, astuple
 
 
-class CustomJSONEncoder(DjangoJSONEncoder):
+class ReportJSONEncoder(DjangoJSONEncoder):
     def default(self, obj):
         if is_dataclass(obj):
             return astuple(obj)
