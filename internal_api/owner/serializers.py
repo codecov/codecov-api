@@ -12,21 +12,29 @@ class RepositorySerializer(serializers.ModelSerializer):
 
 
 class OwnerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Owner
+        fields = (
+            'service',
+            'username',
+            'avatar_url'
+        )
+
+
+class OwnerDetailsSerializer(OwnerSerializer):
     active_repos = RepositorySerializer(many=True)
+    orgs = OwnerSerializer(many=True)
     stats = serializers.SerializerMethodField()
 
     def get_stats(self, obj):
         if obj.cache and 'stats' in obj.cache:
             return obj.cache['stats']
 
-    class Meta:
-        model = Owner
-        fields = ('service', 'username', 'email',
-            'name', 'stats', 'active_repos')
-
-
-class OwnerDetailsSerializer(OwnerSerializer):
-    orgs = OwnerSerializer(many=True)
-
     class Meta(OwnerSerializer.Meta):
-        fields = OwnerSerializer.Meta.fields + ('avatar_url', 'orgs')
+        fields = OwnerSerializer.Meta.fields + (
+            'active_repos',
+            'orgs',
+            'email',
+            'name',
+            'stats',
+        )

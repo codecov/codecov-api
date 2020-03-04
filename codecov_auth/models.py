@@ -91,27 +91,30 @@ class Owner(models.Model):
         return Owner.objects.none()
 
     @property
+    def active_repos(self):
+        return Repository.objects.filter(
+            active=True,
+            author=self.ownerid
+        ).order_by('-updatestamp')
+
+    @property
     def is_active(self):
+        # Required to implement django's user-model interface
         return True
 
     @property
-    def active_repos(self):
-        active_repos = Repository.objects.filter(
-            active=True, author=self.ownerid).order_by('-updatestamp')
-
-        if len(active_repos):
-            return active_repos
-
-    @property
     def is_anonymous(self):
+        # Required to implement django's user-model interface
         return False
 
     @property
     def is_authenticated(self):
+        # Required to implement django's user-model interface
         return True
 
     def has_perms(self, *args, **kwargs):
         # TODO : Implement real permissioning system
+        # Required to implement django's user-model interface
         return True
 
     @property
