@@ -24,6 +24,7 @@ class RepoSerializer(serializers.ModelSerializer):
             'active',
             'language',
             "hookid",
+            "activated",
         )
 
 
