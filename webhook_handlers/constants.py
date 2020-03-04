@@ -12,8 +12,11 @@ class GitHubWebhookEvents:
     STATUS = "status"
     REPOSITORY = "repository"
     PING = "ping"
+    INSTALLATION = "installation"
+    INSTALLATION_REPOSITORIES = "installation_repositories"
+    ORGANIZATION = "organization"
 
-    subscribed_members = [PULL_REQUEST, DELETE, PUSH, PUBLIC, STATUS, REPOSITORY]
+    repository_events = [PULL_REQUEST, DELETE, PUSH, PUBLIC, STATUS, REPOSITORY]
 
 
 class WebhookHandlerErrorMessages:

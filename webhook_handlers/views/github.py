@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from core.models import Repository, Branch, Commit, Pull
+from codecov_auth.models import Owner
 from services.archive import ArchiveService
 from services.redis import get_redis_connection
 from services.task import TaskService
@@ -147,6 +148,60 @@ class GithubWebhookHandler(APIView):
             ).update(
                 title=request.data.get("pull_request", {}).get("title")
             )
+
+        return Response()
+
+    def _handle_installation_events(self, request, *args, **kwargs):
+        service_id = request.data["installation"]["account"]["id"]
+        username = request.data["installation"]["account"]["login"]
+        action = request.data.get("action")
+
+        owner, _ = Owner.objects.get_or_create(
+            service="github",
+            service_id=service_id,
+            username=username
+        )
+
+        if action == "deleted":
+            owner.integration_id = None
+            owner.save()
+            owner.repository_set.all().update(using_integration=False, bot=None)
+        else:
+            if owner.integration_id is None:
+                owner.integration_id = request.data["installation"]["id"]
+                owner.save()
+
+            TaskService().refresh(
+                ownerid=owner.ownerid,
+                username=username,
+                sync_teams=False,
+                sync_repos=True,
+                using_integration=True
+            )
+
+        return Response(data="Integration webhook received")
+
+    def installation(self, request, *args, **kwargs):
+        return self._handle_installation_events(request, *args, **kwargs)
+
+    def installation_repositories(self, request, *args, **kwargs):
+        return self._handle_installation_events(request, *args, **kwargs)
+
+    def organization(self, request, *args, **kwargs):
+        action = request.data.get("action")
+        if action == "member_removed":
+            org = Owner.objects.get(
+                service="github",
+                service_id=request.data["organization"]["id"]
+            )
+
+            member = Owner.objects.get(
+                service="github",
+                service_id=request.data["membership"]["user"]["id"]
+            )
+
+            member.organizations = [ownerid for ownerid in member.organizations if ownerid != org.ownerid]
+            member.save(update_fields=['organizations'])
 
         return Response()
 

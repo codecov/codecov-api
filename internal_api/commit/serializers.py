@@ -1,6 +1,7 @@
 import asyncio
 import logging
 
+from dataclasses import asdict, astuple
 from rest_framework import serializers
 
 from services.archive import ReportService
@@ -93,7 +94,10 @@ class CommitWithParentSerializer(CommitWithSrcSerializer):
 
 class ReportFileWithoutLinesSerializer(serializers.Serializer):
     name = serializers.CharField()
-    totals = serializers.JSONField(source='totals._asdict')
+    totals = serializers.SerializerMethodField()
+
+    def get_totals(self, obj):
+        return asdict(obj.totals)
 
 
 class ReportFileSerializer(ReportFileWithoutLinesSerializer):
@@ -104,19 +108,25 @@ class ReportFileSerializer(ReportFileWithoutLinesSerializer):
 
     def get_lines_iterator(self, obj):
         for line_number, line in obj.lines:
-            coverage, line_type, sessions, messages, complexity = line
+            coverage, line_type, sessions, messages, complexity = astuple(line)
             sessions = [list(s) for s in sessions]
             yield (line_number, coverage, line_type, sessions, messages, complexity)
 
 
 class ReportSerializer(serializers.Serializer):
-    totals = serializers.JSONField(source='totals._asdict')
+    totals = serializers.SerializerMethodField()
     files = ReportFileSerializer(source='file_reports', many=True)
+
+    def get_totals(self, obj):
+        return asdict(obj.totals)
 
 
 class ReportWithoutLinesSerializer(serializers.Serializer):
-    totals = serializers.JSONField(source='totals._asdict')
+    totals = serializers.SerializerMethodField()
     files = ReportFileWithoutLinesSerializer(source='file_reports', many=True)
+
+    def get_totals(self, obj):
+        return asdict(obj.totals)
 
 
 class FlagSerializer(serializers.Serializer):

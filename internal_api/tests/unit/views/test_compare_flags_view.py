@@ -7,7 +7,7 @@ from rest_framework.reverse import reverse
 
 from internal_api.tests.unit.views.test_compare_file_view import build_commits_with_changes
 from core.tests.factories import PullFactory, RepositoryFactory, CommitFactory
-from covreports.utils.tuples import ReportTotals
+from covreports.reports.types import ReportTotals
 from codecov.tests.base_test import InternalAPITest
 from services.archive import ArchiveService
 from services.comparison import FlagComparison
