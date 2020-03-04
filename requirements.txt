@@ -1,4 +1,4 @@
--e git+https://github.com/codecov/report.git@1b5b6703829de1f5554a42f1c2106c0463ea122c#egg=covreports
+-e git+https://github.com/codecov/report.git@v0.2.8#egg=covreports
 -e git+https://github.com/codecov/torngit.git@python-3-master#egg=torngit
 Django==2.1.3
 djangorestframework==3.9.0
