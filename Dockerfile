@@ -37,6 +37,6 @@ RUN             pip install --find-links=/pip-packages/ /pip-packages/*
 EXPOSE          8000
 
 COPY            . /app
-COPY --from=gcr.io/berglas/berglas:latest /bin/berglas /bin/berglas
+COPY --from=gcr.io/berglas/berglas@sha256:09276c9d38150ed3bafee4ae86f901ccabd17bfa30b9b4c9ea7382a029093aee /bin/berglas /bin/berglas
 
 WORKDIR         /app
