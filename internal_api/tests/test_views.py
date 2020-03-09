@@ -45,7 +45,20 @@ class RepoPullList(InternalAPITest):
                                  service='github',
                                  organizations=[org.ownerid],
                                  permission=repo_with_permission)
-        PullFactory(pullid=10, author=org, repository=repo, state='open')
+        PullFactory(
+            pullid=10,
+            author=org,
+            repository=repo,
+            state='open',
+            head=CommitFactory(
+                repository=repo,
+                author=self.user
+            ).commitid,
+            base=CommitFactory(
+                repository=repo,
+                author=self.user
+            ).commitid
+        )
         PullFactory(pullid=11, author=org, repository=repo, state='closed')
         PullFactory(pullid=12, author=other_org, repository=other_repo)
         self.correct_kwargs={'orgName':'codecov', 'repoName':'testRepoName'}
