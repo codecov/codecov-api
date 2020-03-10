@@ -7,6 +7,7 @@ from core.tests.factories import RepositoryFactory, PullFactory, CommitFactory, 
 from core.models import Pull
 
 from rest_framework.reverse import reverse
+from rest_framework import status
 
 get_permissions_method = "internal_api.repo.repository_accessors.RepoAccessors.get_repo_permissions"
 
@@ -34,32 +35,32 @@ class OrgsViewTest(InternalAPITest):
 @patch(get_permissions_method)
 class RepoPullList(InternalAPITest):
     def setUp(self):
-        org = OwnerFactory(username='codecov', service='github')
+        self.org = OwnerFactory(username='codecov', service='github')
         other_org = OwnerFactory(username='other_org')
         # Create different types of repos / pulls
-        repo = RepositoryFactory(author=org, name='testRepoName', active=True)
+        self.repo = RepositoryFactory(author=self.org, name='testRepoName', active=True)
         other_repo = RepositoryFactory(
             author=other_org, name='otherRepoName', active=True)
-        repo_with_permission = [repo.repoid]
+        repo_with_permission = [self.repo.repoid]
         self.user = OwnerFactory(username='codecov-user',
                                  service='github',
-                                 organizations=[org.ownerid],
+                                 organizations=[self.org.ownerid],
                                  permission=repo_with_permission)
         PullFactory(
             pullid=10,
-            author=org,
-            repository=repo,
+            author=self.org,
+            repository=self.repo,
             state='open',
             head=CommitFactory(
-                repository=repo,
+                repository=self.repo,
                 author=self.user
             ).commitid,
             base=CommitFactory(
-                repository=repo,
+                repository=self.repo,
                 author=self.user
             ).commitid
         )
-        PullFactory(pullid=11, author=org, repository=repo, state='closed')
+        PullFactory(pullid=11, author=self.org, repository=self.repo, state='closed')
         PullFactory(pullid=12, author=other_org, repository=other_repo)
         self.correct_kwargs={'orgName':'codecov', 'repoName':'testRepoName'}
         self.incorrect_kwargs={'orgName':'codecov', 'repoName':'otherRepoName'}
@@ -95,6 +96,32 @@ class RepoPullList(InternalAPITest):
         content = self.json_content(response)
         self.assertEqual(response.status_code, 404,
                          "got unexpected response: {}".format(content))
+
+    def test_get_pulls_null_head_author_doesnt_crash(self, mock_provider):
+        mock_provider.return_value = True, True
+        new_owner = OwnerFactory()
+
+        PullFactory(
+            pullid=13,
+            author=self.org,
+            repository=self.repo,
+            state='open',
+            head=CommitFactory(
+                repository=self.repo,
+                author=new_owner
+            ).commitid,
+            base=CommitFactory(
+                repository=self.repo,
+                author=new_owner
+            ).commitid
+        )
+
+        new_owner.delete()
+
+        self.client.force_login(user=self.user)
+        response = self.client.get(reverse('pulls-list', kwargs=self.correct_kwargs))
+        assert response.status_code == status.HTTP_200_OK
+
 
 @patch(get_permissions_method)
 class RepoPullDetail(InternalAPITest):

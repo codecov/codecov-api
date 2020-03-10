@@ -85,7 +85,7 @@ class Commit(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     updatestamp = models.DateTimeField(auto_now=True)
     author = models.ForeignKey(
-        'codecov_auth.Owner', db_column='author', on_delete=models.CASCADE)
+        'codecov_auth.Owner', db_column='author', on_delete=models.SET_NULL, null=True)
     repository = models.ForeignKey(
         'core.Repository', db_column='repoid', on_delete=models.CASCADE, related_name='commits')
     ci_passed = models.NullBooleanField()
