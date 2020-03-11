@@ -97,6 +97,13 @@ class RepoPullList(InternalAPITest):
         self.assertEqual(response.status_code, 404,
                          "got unexpected response: {}".format(content))
 
+    def test_pulls_list_returns_most_recent_commiter(self, mock_provider):
+        mock_provider.return_value = True, True
+        self.client.force_login(user=self.user)
+        response = self.client.get(reverse('pulls-list', kwargs=self.correct_kwargs))
+
+        assert response.data['results'][1]['most_recent_commiter'] == self.user.username
+
     def test_get_pulls_null_head_author_doesnt_crash(self, mock_provider):
         mock_provider.return_value = True, True
         new_owner = OwnerFactory()
@@ -223,7 +230,6 @@ class RepoBranchList(InternalAPITest):
         # Create different types of repos / branches
         repo = RepositoryFactory(
             author=org, name='testRepoName', active=True, private=True)
-        commit = CommitFactory(repository=repo)
         other_repo = RepositoryFactory(
             author=other_org, name='otherRepoName', active=True)
         repo_with_permission = [repo.repoid]
@@ -231,6 +237,7 @@ class RepoBranchList(InternalAPITest):
                                  service='github',
                                  organizations=[org.ownerid],
                                  permission=repo_with_permission)
+        commit = CommitFactory(repository=repo, author=self.user)
         BranchFactory(authors=[org.ownerid], repository=repo, head=commit.commitid)
         BranchFactory(authors=[org.ownerid], repository=repo, head=commit.commitid)
         BranchFactory(authors=[other_org.ownerid], repository=other_repo)
@@ -256,3 +263,10 @@ class RepoBranchList(InternalAPITest):
         content = self.json_content(response)
         self.assertEqual(response.status_code, 404,
                          "got unexpected response: {}".format(content))
+
+    def test_returns_username_of_most_recent_commiter(self, mock_provider):
+        mock_provider.return_value = True, True
+        self.client.force_login(user=self.user)
+        response = self.client.get('/internal/codecov/testRepoName/branches')
+
+        assert response.data['results'][0]['most_recent_commiter'] == self.user.username

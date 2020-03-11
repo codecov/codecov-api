@@ -4,25 +4,17 @@ from core.models import Branch, Commit
 from internal_api.owner.serializers import OwnerSerializer
 
 
-class BranchCommitSerializer(serializers.ModelSerializer):
-    author = OwnerSerializer()
-    totals = serializers.JSONField()
-    updatestamp = serializers.DateTimeField()
-
-    class Meta:
-        model = Commit
-        fields = ('author', 'totals', 'updatestamp')
-
-
 class BranchSerializer(serializers.ModelSerializer):
     name = serializers.CharField()
-    head = serializers.SerializerMethodField()
+    most_recent_commiter = serializers.SerializerMethodField()
     updatestamp = serializers.DateTimeField()
 
-    def get_head(self, branch):
-        commit = Commit.objects.get(commitid=branch.head, repository=branch.repository)
-        return BranchCommitSerializer(commit).data
+    def get_most_recent_commiter(self, branch):
+        return Commit.objects.filter(
+            commitid=branch.head,
+            repository=branch.repository
+        ).values_list('author__username', flat=True).get()
 
     class Meta:
         model = Branch
-        fields = ('name', 'head', 'updatestamp')
+        fields = ('name', 'most_recent_commiter', 'updatestamp')

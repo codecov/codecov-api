@@ -13,10 +13,15 @@ from utils.config import get_config
 log = logging.getLogger(__name__)
 
 
+MINIO_CLIENT = None
+
+
 # Service class for interfacing with codecov's underlying storage layer, minio
 class StorageService(object):
 
     def __init__(self, in_config=None):
+        global MINIO_CLIENT
+
         # init minio
         if in_config is None:
             self.minio_config = get_config('services', 'minio', default={})
@@ -28,17 +33,18 @@ class StorageService(object):
         if 'port' not in self.minio_config:
             self.minio_config['port'] = 9000
 
-        self.minio_client = self.init_minio_client(
-            self.minio_config['host'],
-            self.minio_config['port'],
-            self.minio_config['access_key_id'],
-            self.minio_config['secret_access_key'],
-            self.minio_config['verify_ssl']
-        )
-        log.info("----- created minio_client: ---- ")
+        if not MINIO_CLIENT:
+            MINIO_CLIENT = self.init_minio_client(
+                self.minio_config['host'],
+                self.minio_config['port'],
+                self.minio_config['access_key_id'],
+                self.minio_config['secret_access_key'],
+                self.minio_config['verify_ssl']
+            )
+            log.info("----- created minio_client: ---- ")
 
     def client(self):
-        return self.minio_client if self.minio_client else None
+        return MINIO_CLIENT if MINIO_CLIENT else None
 
     def init_minio_client(self, host, port, access_key, secret_key, verify_ssl):
         return minio.Minio(
@@ -51,8 +57,8 @@ class StorageService(object):
     # writes the initial storage bucket to storage via minio.
     def create_root_storage(self, bucket='archive', region='us-east-1'):
         try:
-            self.minio_client.make_bucket(bucket, location=region)
-            self.minio_client.set_bucket_policy(bucket, '*', "readonly")
+            MINIO_CLIENT.make_bucket(bucket, location=region)
+            MINIO_CLIENT.set_bucket_policy(bucket, '*', "readonly")
         # todo should only pass or raise
         except BucketAlreadyOwnedByYou:
             pass
@@ -81,7 +87,7 @@ class StorageService(object):
             headers = {'Content-Encoding': 'gzip'}
             if reduced_redundancy:
                 headers['x-amz-storage-class'] = 'REDUCED_REDUNDANCY'
-            self.minio_client.put_object(
+            MINIO_CLIENT.put_object(
                 bucket, path, out, out_size,
                 metadata=headers,
                 content_type='text/plain')
@@ -100,7 +106,7 @@ class StorageService(object):
 
     def read_file(self, bucket, url):
         try:
-            req = self.minio_client.get_object(bucket, url)
+            req = MINIO_CLIENT.get_object(bucket, url)
             data = BytesIO()
             for d in req.stream(32*1024):
                 data.write(d)
@@ -122,7 +128,7 @@ class StorageService(object):
     def delete_file(self, bucket, url):
         try:
             # delete a file given a bucket name and a url
-            self.minio_client.remove_object(bucket, url)
+            MINIO_CLIENT.remove_object(bucket, url)
 
             return True
         except ResponseError:
@@ -130,13 +136,13 @@ class StorageService(object):
 
     def delete_files(self, bucket, urls=[]):
         try:
-            for del_err in self.minio_client.remove_objects(bucket, urls):
+            for del_err in MINIO_CLIENT.remove_objects(bucket, urls):
                 print("Deletion error: {}".format(del_err))
         except ResponseError:
             raise
 
     def list_folder_contents(self, bucket, prefix=None, recursive=True):
-        return self.minio_client.list_objects_v2(bucket, prefix, recursive)
+        return MINIO_CLIENT.list_objects_v2(bucket, prefix, recursive)
 
     # TODO remove this function -- just using it for output during testing.
     def write(self, string, silence=False):
