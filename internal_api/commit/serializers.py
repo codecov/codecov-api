@@ -1,7 +1,8 @@
 import asyncio
 import logging
 
-from dataclasses import asdict, astuple
+from dataclasses import astuple, asdict
+
 from rest_framework import serializers
 
 from services.archive import ReportService
@@ -92,12 +93,25 @@ class CommitWithParentSerializer(CommitWithSrcSerializer):
                   'report', 'repository', 'parent', 'author')
 
 
+class ReportTotalsSerializer(serializers.Serializer):
+    files = serializers.IntegerField()
+    lines = serializers.IntegerField()
+    hits = serializers.IntegerField()
+    misses = serializers.IntegerField()
+    partials = serializers.IntegerField()
+    coverage = serializers.CharField()
+    branches = serializers.IntegerField()
+    methods = serializers.IntegerField()
+    messages = serializers.IntegerField()
+    sessions = serializers.IntegerField()
+    complexity = serializers.IntegerField()
+    complexity_total = serializers.IntegerField()
+    diff = serializers.JSONField()
+
+
 class ReportFileWithoutLinesSerializer(serializers.Serializer):
     name = serializers.CharField()
-    totals = serializers.SerializerMethodField()
-
-    def get_totals(self, obj):
-        return asdict(obj.totals)
+    totals = ReportTotalsSerializer()
 
 
 class ReportFileSerializer(ReportFileWithoutLinesSerializer):
@@ -108,25 +122,20 @@ class ReportFileSerializer(ReportFileWithoutLinesSerializer):
 
     def get_lines_iterator(self, obj):
         for line_number, line in obj.lines:
-            coverage, line_type, sessions, messages, complexity = astuple(line)
-            sessions = [list(s) for s in sessions]
-            yield (line_number, coverage, line_type, sessions, messages, complexity)
+            sessions = [[s.id, s.coverage, s.branches, s.partials, s.complexity] for s in line.sessions]
+            yield (line_number, line.coverage, line.type, sessions, line.messages, line.complexity)
 
 
 class ReportSerializer(serializers.Serializer):
     totals = serializers.SerializerMethodField()
     files = ReportFileSerializer(source='file_reports', many=True)
-
-    def get_totals(self, obj):
-        return asdict(obj.totals)
+    totals = ReportTotalsSerializer()
 
 
 class ReportWithoutLinesSerializer(serializers.Serializer):
     totals = serializers.SerializerMethodField()
     files = ReportFileWithoutLinesSerializer(source='file_reports', many=True)
-
-    def get_totals(self, obj):
-        return asdict(obj.totals)
+    totals = ReportTotalsSerializer()
 
 
 class FlagSerializer(serializers.Serializer):

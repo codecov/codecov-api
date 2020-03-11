@@ -1,28 +1,22 @@
 from rest_framework import serializers
-from dataclasses import asdict
 
 from internal_api.commit.serializers import (
     CommitSerializer,
     ReportSerializer,
     ReportFileSerializer,
+    ReportTotalsSerializer,
 )
 
 
 class FlagComparisonSerializer(serializers.Serializer):
     name = serializers.CharField(source='flag_name')
     base_report_totals = serializers.SerializerMethodField()
-    head_report_totals = serializers.SerializerMethodField()
-    diff_totals = serializers.SerializerMethodField()
+    head_report_totals = ReportTotalsSerializer(source="head_report.totals") 
+    diff_totals = ReportTotalsSerializer()
 
     def get_base_report_totals(self, obj):
         if obj.base_report:
-            return asdict(obj.base_report.totals)
-
-    def get_head_report_totals(self, obj):
-        return asdict(obj.head_report.totals)
-
-    def get_diff_totals(self, obj):
-        return asdict(obj.diff_totals)
+            return ReportTotalsSerializer(obj.base_report.totals).data
 
 
 class CommitsComparisonSerializer(serializers.Serializer):
