@@ -68,7 +68,7 @@ class Owner(models.Model):
 
     @property
     def has_legacy_plan(self):
-        return not self.plan.startswith('users')
+        return self.plan is None or not self.plan.startswith('users')
 
     @property
     def repo_credits(self):
@@ -78,7 +78,9 @@ class Owner(models.Model):
 
         if not self.has_legacy_plan:
             return float('inf')
-        if self.plan.startswith(V4_PLAN_PREFIX):
+        if self.plan is None:
+            repos = 1 + self.free or 0
+        elif self.plan.startswith(V4_PLAN_PREFIX):
             repos = self.plan[3:-1]
         else:
             repos = self.plan[:-1]

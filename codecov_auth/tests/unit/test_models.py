@@ -46,11 +46,16 @@ class TestOwnerModel(TestCase):
 
         assert self.owner.repo_credits == 4
 
+
     def test_repo_credits_returns_infinity_for_user_plans(self):
         users_plans = ('users', 'users-inappm', 'users-inappy', 'users-free')
         for plan in users_plans:
             self.owner.plan = plan
             assert self.owner.repo_credits == float('inf')
+
+    def test_repo_credits_treats_null_plan_as_free_plan(self):
+        assert self.owner.plan == None
+        assert self.owner.repo_credits == 1 + self.owner.free or 0
 
     @patch("codecov_auth.models.get_config")
     def test_main_avatar_url_services(self, mock_get_config):

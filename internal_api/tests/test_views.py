@@ -129,6 +129,46 @@ class RepoPullList(InternalAPITest):
         response = self.client.get(reverse('pulls-list', kwargs=self.correct_kwargs))
         assert response.status_code == status.HTTP_200_OK
 
+    def test_get_pulls_no_head_commit_returns_null_for_head_totals(self, mock_provider):
+        mock_provider.return_value = True, True
+
+        PullFactory(
+            pullid=13,
+            author=self.org,
+            repository=self.repo,
+            state='open',
+            head='',
+            base=CommitFactory(
+                repository=self.repo,
+                author=self.user
+            ).commitid
+        )
+
+        self.client.force_login(user=self.user)
+        response = self.client.get(reverse('pulls-list', kwargs=self.correct_kwargs))
+        assert response.status_code == status.HTTP_200_OK
+        assert [p for p in response.data['results'] if p["pullid"] == 13][0]["head_totals"] == None
+
+    def test_get_pulls_no_base_commit_returns_null_for_base_totals(self, mock_provider):
+        mock_provider.return_value = True, True
+
+        PullFactory(
+            pullid=13,
+            author=self.org,
+            repository=self.repo,
+            state='open',
+            base='',
+            head=CommitFactory(
+                repository=self.repo,
+                author=self.user
+            ).commitid
+        )
+
+        self.client.force_login(user=self.user)
+        response = self.client.get(reverse('pulls-list', kwargs=self.correct_kwargs))
+        assert response.status_code == status.HTTP_200_OK
+        assert [p for p in response.data['results'] if p["pullid"] == 13][0]["base_totals"] == None
+
 
 @patch(get_permissions_method)
 class RepoPullDetail(InternalAPITest):
