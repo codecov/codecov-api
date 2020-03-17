@@ -55,9 +55,9 @@ class TestOwnerModel(TestCase):
     @patch("codecov_auth.models.get_config")
     def test_main_avatar_url_services(self, mock_get_config):
         test_cases=[
-           {'service': SERVICE_GITHUB, 'get_config': None, 'expected': 'https://avatars0.githubusercontent.com/u/1234?v=3&s=50'},
-           {'service': SERVICE_GITHUB_ENTERPRISE, 'get_config': 'github_enterprise', 'expected': 'github_enterprise/avatars/u/1234?v=3&s=50'},
-           {'service': SERVICE_BITBUCKET, 'get_config': None, 'expected': 'https://bitbucket.org/account/codecov_name/avatar/50'},
+           {'service': SERVICE_GITHUB, 'get_config': None, 'expected': 'https://avatars0.githubusercontent.com/u/1234?v=3&s=55'},
+           {'service': SERVICE_GITHUB_ENTERPRISE, 'get_config': 'github_enterprise', 'expected': 'github_enterprise/avatars/u/1234?v=3&s=55'},
+           {'service': SERVICE_BITBUCKET, 'get_config': None, 'expected': 'https://bitbucket.org/account/codecov_name/avatar/55'},
         ]
         for i in range(0, len(test_cases)):
             with self.subTest(i=i):
@@ -74,7 +74,7 @@ class TestOwnerModel(TestCase):
 
         mock_get_config.side_effect = side_effect
         self.owner.service = SERVICE_BITBUCKET_SERVER
-        self.assertEqual(self.owner.avatar_url, 'bitbucket_server/projects/codecov_name/avatar.png?s=50')
+        self.assertEqual(self.owner.avatar_url, 'bitbucket_server/projects/codecov_name/avatar.png?s=55')
 
     @patch("codecov_auth.models.get_config")
     def test_bitbucket_with_u_url(self, mock_get_config):
@@ -86,7 +86,7 @@ class TestOwnerModel(TestCase):
         mock_get_config.side_effect = side_effect
         self.owner.service = SERVICE_BITBUCKET_SERVER
         self.owner.service_id = 'U1234'
-        self.assertEqual(self.owner.avatar_url, 'bitbucket_server/users/codecov_name/avatar.png?s=50')
+        self.assertEqual(self.owner.avatar_url, 'bitbucket_server/users/codecov_name/avatar.png?s=55')
 
     @patch("codecov_auth.models.get_gitlab_url")
     def test_gitlab_service(self, mock_gitlab_url):
@@ -104,7 +104,7 @@ class TestOwnerModel(TestCase):
 
         mock_get_config.side_effect = side_effect
         self.owner.service = None
-        self.assertEqual(self.owner.avatar_url, 'https://www.gravatar.com/avatar/9a74a018e6162103a2845e22ec5d88ef?s=50')
+        self.assertEqual(self.owner.avatar_url, 'https://www.gravatar.com/avatar/9a74a018e6162103a2845e22ec5d88ef?s=55')
 
     @patch("codecov_auth.models.get_config")
     def test_avatario_url(self, mock_get_config):
@@ -115,7 +115,7 @@ class TestOwnerModel(TestCase):
 
         mock_get_config.side_effect = side_effect
         self.owner.service = None
-        self.assertEqual(self.owner.avatar_url, 'https://avatars.io/avatar/9a74a018e6162103a2845e22ec5d88ef/50')
+        self.assertEqual(self.owner.avatar_url, 'https://avatars.io/avatar/9a74a018e6162103a2845e22ec5d88ef/55')
 
     @patch("codecov_auth.models.get_config")
     def test_ownerid_url(self, mock_get_config):
@@ -125,7 +125,7 @@ class TestOwnerModel(TestCase):
                 return 'codecov_url'
         mock_get_config.side_effect = side_effect
         self.owner.service = None
-        self.assertEqual(self.owner.avatar_url, 'codecov_url/users/4.png?size=50')
+        self.assertEqual(self.owner.avatar_url, 'codecov_url/users/4.png?size=55')
 
     @patch("codecov_auth.models.get_config")
     @patch("codecov_auth.models.os.getenv")

@@ -118,7 +118,7 @@ class Owner(models.Model):
         return True
 
     @property
-    def avatar_url(self, size=50):
+    def avatar_url(self, size=55):
         if self.service == SERVICE_GITHUB and self.service_id:
             return '{}/u/{}?v=3&s={}'.format(AVATAR_GITHUB_BASE_URL, self.service_id, size)
 
