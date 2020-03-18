@@ -10,7 +10,7 @@ from django.db.models import Subquery, OuterRef
 from django.shortcuts import get_object_or_404
 
 from rest_framework import generics, filters, mixins, viewsets
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, APIException
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import SAFE_METHODS # ['GET', 'HEAD', 'OPTIONS']
@@ -166,17 +166,18 @@ class RepositoryViewSet(
         repo = self.get_object()
         repository_service = RepoProviderService().get_adapter(self.request.user, repo)
 
-        if repo.hookid:
-            delete_webhook_on_provider(repository_service, repo)
-
         try:
+            if repo.hookid:
+                delete_webhook_on_provider(repository_service, repo)
+                repo.hookid = None
+                repo.save()
+
             repo.hookid = create_webhook_on_provider(repository_service, repo)
             repo.save()
-        except TorngitClientError:
-            return Response(
-                data={"message": f"Authorization declined by {repo.author.service} to create a webhook"},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
+        except TorngitClientError as e:
+           exception = APIException(detail=e.message)
+           exception.status_code = e.code
+           raise exception
 
         return Response(
             self.get_serializer(repo).data,

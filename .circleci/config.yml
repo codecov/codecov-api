@@ -63,9 +63,8 @@ jobs:
     - run:
         name: codecov
         command: |
-          pip install codecov
-          # codecov -F integration -f integration.coverage.xml  --required
-          codecov -F unit -f unit.coverage.xml  --required
+          apk add bash curl
+          bash -c "bash <(curl -s https://codecov.io/bash) -t a3f4746b-4e57-4fc6-90ee-b4007979c0d2 -F unit"
   deploy:
     executor: codecov-deploy
     steps:

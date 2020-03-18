@@ -11,6 +11,7 @@ RUN             apk update \
                 python-dev \
                 libffi-dev \
                 gcc \
+                bash \
                 && pip install --upgrade pip
 
 ARG             SSH_PRIVATE_KEY
