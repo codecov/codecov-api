@@ -1,15 +1,14 @@
 from django.test import TestCase
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from codecov_auth.models import (
-    Owner,
     SERVICE_GITHUB,
     SERVICE_GITHUB_ENTERPRISE,
     SERVICE_BITBUCKET,
     SERVICE_BITBUCKET_SERVER,
-    SERVICE_GITLAB,
     SERVICE_CODECOV_ENTERPRISE,
+    DEFAULT_AVATAR_SIZE
 )
 
 from codecov_auth.tests.factories import OwnerFactory
@@ -55,9 +54,9 @@ class TestOwnerModel(TestCase):
     @patch("codecov_auth.models.get_config")
     def test_main_avatar_url_services(self, mock_get_config):
         test_cases=[
-           {'service': SERVICE_GITHUB, 'get_config': None, 'expected': 'https://avatars0.githubusercontent.com/u/1234?v=3&s=55'},
-           {'service': SERVICE_GITHUB_ENTERPRISE, 'get_config': 'github_enterprise', 'expected': 'github_enterprise/avatars/u/1234?v=3&s=55'},
-           {'service': SERVICE_BITBUCKET, 'get_config': None, 'expected': 'https://bitbucket.org/account/codecov_name/avatar/55'},
+           {'service': SERVICE_GITHUB, 'get_config': None, 'expected': f'https://avatars0.githubusercontent.com/u/1234?v=3&s={DEFAULT_AVATAR_SIZE}'},
+           {'service': SERVICE_GITHUB_ENTERPRISE, 'get_config': 'github_enterprise', 'expected': f'github_enterprise/avatars/u/1234?v=3&s={DEFAULT_AVATAR_SIZE}'},
+           {'service': SERVICE_BITBUCKET, 'get_config': None, 'expected': f'https://bitbucket.org/account/codecov_name/avatar/{DEFAULT_AVATAR_SIZE}'},
         ]
         for i in range(0, len(test_cases)):
             with self.subTest(i=i):
@@ -74,7 +73,7 @@ class TestOwnerModel(TestCase):
 
         mock_get_config.side_effect = side_effect
         self.owner.service = SERVICE_BITBUCKET_SERVER
-        self.assertEqual(self.owner.avatar_url, 'bitbucket_server/projects/codecov_name/avatar.png?s=55')
+        self.assertEqual(self.owner.avatar_url, f'bitbucket_server/projects/codecov_name/avatar.png?s={DEFAULT_AVATAR_SIZE}')
 
     @patch("codecov_auth.models.get_config")
     def test_bitbucket_with_u_url(self, mock_get_config):
@@ -86,7 +85,7 @@ class TestOwnerModel(TestCase):
         mock_get_config.side_effect = side_effect
         self.owner.service = SERVICE_BITBUCKET_SERVER
         self.owner.service_id = 'U1234'
-        self.assertEqual(self.owner.avatar_url, 'bitbucket_server/users/codecov_name/avatar.png?s=55')
+        self.assertEqual(self.owner.avatar_url, f'bitbucket_server/users/codecov_name/avatar.png?s={DEFAULT_AVATAR_SIZE}')
 
     @patch("codecov_auth.models.get_gitlab_url")
     def test_gitlab_service(self, mock_gitlab_url):
@@ -104,7 +103,7 @@ class TestOwnerModel(TestCase):
 
         mock_get_config.side_effect = side_effect
         self.owner.service = None
-        self.assertEqual(self.owner.avatar_url, 'https://www.gravatar.com/avatar/9a74a018e6162103a2845e22ec5d88ef?s=55')
+        self.assertEqual(self.owner.avatar_url, f'https://www.gravatar.com/avatar/9a74a018e6162103a2845e22ec5d88ef?s={DEFAULT_AVATAR_SIZE}')
 
     @patch("codecov_auth.models.get_config")
     def test_avatario_url(self, mock_get_config):
@@ -115,7 +114,7 @@ class TestOwnerModel(TestCase):
 
         mock_get_config.side_effect = side_effect
         self.owner.service = None
-        self.assertEqual(self.owner.avatar_url, 'https://avatars.io/avatar/9a74a018e6162103a2845e22ec5d88ef/55')
+        self.assertEqual(self.owner.avatar_url, f'https://avatars.io/avatar/9a74a018e6162103a2845e22ec5d88ef/{DEFAULT_AVATAR_SIZE}')
 
     @patch("codecov_auth.models.get_config")
     def test_ownerid_url(self, mock_get_config):
@@ -125,7 +124,7 @@ class TestOwnerModel(TestCase):
                 return 'codecov_url'
         mock_get_config.side_effect = side_effect
         self.owner.service = None
-        self.assertEqual(self.owner.avatar_url, 'codecov_url/users/4.png?size=55')
+        self.assertEqual(self.owner.avatar_url, f'codecov_url/users/4.png?size={DEFAULT_AVATAR_SIZE}')
 
     @patch("codecov_auth.models.get_config")
     @patch("codecov_auth.models.os.getenv")
