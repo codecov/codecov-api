@@ -25,6 +25,8 @@ SERVICE_BITBUCKET_SERVER = 'bitbucket_server'
 SERVICE_GITLAB = 'gitlab'
 SERVICE_CODECOV_ENTERPRISE = 'enterprise'
 
+DEFAULT_AVATAR_SIZE = 55
+
 log = logging.getLogger(__name__)
 
 
@@ -120,7 +122,7 @@ class Owner(models.Model):
         return True
 
     @property
-    def avatar_url(self, size=50):
+    def avatar_url(self, size=DEFAULT_AVATAR_SIZE):
         if self.service == SERVICE_GITHUB and self.service_id:
             return '{}/u/{}?v=3&s={}'.format(AVATAR_GITHUB_BASE_URL, self.service_id, size)
 
