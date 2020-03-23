@@ -436,7 +436,7 @@ class TestCompareFullSrcView(InternalAPITest):
         self.repo = RepositoryFactory()
         self.commit_base = CommitFactory(repository=self.repo)
         self.commit_head = CommitFactory(repository=self.repo)
-
+        self.commit_base_no_report = CommitFactory(repository=self.repo, report=None)
         self.client.force_login(user=self.repo.author)
 
     def test_returns_calculated_diff_data_with_commit_refs(self, mocked_comparison, *_):
@@ -566,3 +566,31 @@ class TestCompareFullSrcView(InternalAPITest):
             if file_name != made_up_file:
                 continue
             assert file_name in response.data["untracked_files"]
+
+    def test_missing_base_report(self, mocked_comparison, *_):
+        self._configure_comparison_mock_with_commit_factory_report(mocked_comparison)
+        expected_data = {
+            'tracked_files': {
+                'awesome/__init__.py': {
+                    'segments': True},
+                    'tests/__init__.py': {
+                        'segments': True
+                    },
+                    'tests/test_sample.py': {
+                        'segments': True
+                    }
+                },
+            'untracked_files': []
+        }
+        response = self._get_compare_src(
+            kwargs={
+                "orgName": self.repo.author.username,
+                "repoName": self.repo.name
+            },
+            query_params={
+                "head": self.commit_head.commitid,
+                "base": self.commit_base_no_report.commitid
+            }
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == expected_data

@@ -37,10 +37,15 @@ class ComparisonFullSrcSerializer(serializers.Serializer):
     untracked_files = serializers.SerializerMethodField()
 
     def __init__(self, obj, *args, **kwargs):
-        self.tracked_file_names = set(
-            [f.name for f in obj.base_report.file_reports()] +
-            [f.name for f in obj.head_report.file_reports()]
-        )
+        if (obj.base_report):
+            self.tracked_file_names = set(
+                [f.name for f in obj.base_report.file_reports()] +
+                [f.name for f in obj.head_report.file_reports()]
+            )
+        else:
+            self.tracked_file_names = set(
+                [f.name for f in obj.head_report.file_reports()]
+            )
         super().__init__(obj, *args, **kwargs)
 
     def get_tracked_files(self, obj):

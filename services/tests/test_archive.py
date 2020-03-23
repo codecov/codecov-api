@@ -117,3 +117,8 @@ class TestReport(object):
         assert tuple(file_3.totals) == (0, 7, 2, 5, 0, '28.57143', 0, 0, 0, 0, 0, 0, 0)
         mocked.assert_called_with('abf6d4d')
         assert list(res.totals) == [3, 20, 3, 17, 0, '15.00000', 0, 0, 0, 2, 0, 0, 0]
+
+    def test_build_report_from_commit_no_report(self, db, mocker, codecov_vcr):
+        commit = CommitFactory(report=None)
+        report = ReportService().build_report_from_commit(commit)
+        assert report is None

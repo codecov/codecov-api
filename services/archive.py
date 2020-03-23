@@ -248,6 +248,8 @@ class ReportService(object):
         Returns:
             SerializableReport: A report with all information from such commit
         """
+        if not commit.report:
+            return None
         commitid = commit.commitid
         chunks = ArchiveService(commit.repository).read_chunks(commitid)
         files = commit.report['files']
