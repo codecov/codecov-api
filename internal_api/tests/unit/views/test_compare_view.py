@@ -65,26 +65,30 @@ class TestCompareCommitsView(InternalAPITest):
         self.commit_base_totals_serialized = {
             'files': self.commit_base.totals['f'],
             'lines': self.commit_base.totals['n'],
-            'hits': self.commit_base.totals["h"],
-            'misses': self.commit_base.totals["m"],
-            'partials': self.commit_base.totals["p"],
+            'hits': self.commit_base.totals['h'],
+            'misses': self.commit_base.totals['m'],
+            'partials': self.commit_base.totals['p'],
             'coverage': round(float(self.commit_base.totals['c']), 2),
-            'branches': self.commit_base.totals["b"],
-            'methods': self.commit_base.totals["d"],
+            'branches': self.commit_base.totals['b'],
+            'methods': self.commit_base.totals['d'],
             'sessions': self.commit_base.totals['s'],
-            'diffCoverage': round(float(self.commit_base.totals['diff'][5]), 2) 
+            'diffCoverage': round(float(self.commit_base.totals['diff'][5]), 2) ,
+            'complexity': self.commit_base.totals['C'],
+            'complexity_total': self.commit_base.totals['N'],
         }
         self.commit_head_totals_serialized = {
             'files': self.commit_head.totals['f'],
             'lines': self.commit_head.totals['n'],
-            'hits': self.commit_head.totals["h"],
-            'misses': self.commit_head.totals["m"],
-            'partials': self.commit_head.totals["p"],
+            'hits': self.commit_head.totals['h'],
+            'misses': self.commit_head.totals['m'],
+            'partials': self.commit_head.totals['p'],
             'coverage': round(float(self.commit_head.totals['c']), 2),
-            'branches': self.commit_head.totals["b"],
-            'methods': self.commit_head.totals["d"],
+            'branches': self.commit_head.totals['b'],
+            'methods': self.commit_head.totals['d'],
             'sessions': self.commit_head.totals['s'],
-            'diffCoverage': round(float(self.commit_head.totals['diff'][5]), 2)         
+            'diffCoverage': round(float(self.commit_head.totals['diff'][5]), 2),
+            'complexity': self.commit_head.totals['C'],
+            'complexity_total': self.commit_head.totals['N'],    
         }
 
     def _get_commits_comparison(self, kwargs, query_params):
