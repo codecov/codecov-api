@@ -57,6 +57,8 @@ class TotalsSerializer(serializers.Serializer):
     methods = serializers.IntegerField(source="d")
     sessions = serializers.IntegerField(source="s")
     diffCoverage = serializers.SerializerMethodField()
+    complexity = serializers.IntegerField(source="C")
+    complexity_total = serializers.IntegerField(source="N")
 
     def get_coverage(self, totals):
         return round(float(totals["c"]), 2)

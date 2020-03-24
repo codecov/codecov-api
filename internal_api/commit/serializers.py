@@ -9,6 +9,7 @@ from services.archive import ReportService
 from services.repo_providers import RepoProviderService
 from core.models import Repository, Commit
 from internal_api.owner.serializers import OwnerSerializer
+from internal_api.serializers import TotalsSerializer
 
 log = logging.getLogger(__name__)
 
@@ -26,6 +27,7 @@ class CommitRepoSerializer(serializers.ModelSerializer):
 class CommitSerializer(serializers.ModelSerializer):
     author = OwnerSerializer()
     repository = CommitRepoSerializer()
+    totals = TotalsSerializer()
 
     class Meta:
         model = Commit
@@ -70,6 +72,7 @@ class CommitWithFileLevelReportSerializer(CommitSerializer):
 
 class CommitWithSrcSerializer(CommitWithReportSerializer):
     src = serializers.SerializerMethodField()
+    totals = TotalsSerializer()
 
     def get_src(self, obj):
         loop = asyncio.get_event_loop()
@@ -86,11 +89,12 @@ class CommitWithSrcSerializer(CommitWithReportSerializer):
 
 class CommitWithParentSerializer(CommitWithSrcSerializer):
     parent = CommitWithSrcSerializer(source='parent_commit')
+    totals = TotalsSerializer()
 
     class Meta:
         model = Commit
         fields = ('src', 'commitid', 'timestamp', 'ci_passed',
-                  'report', 'repository', 'parent', 'author')
+                  'report', 'repository', 'parent', 'author', 'totals')
 
 
 class ReportTotalsSerializer(serializers.Serializer):
