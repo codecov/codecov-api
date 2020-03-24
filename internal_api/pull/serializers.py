@@ -1,15 +1,14 @@
 from rest_framework import serializers
 
-from core.models import Pull, Commit
-from codecov_auth.models import Owner
+from core.models import Pull
 from internal_api.owner.serializers import OwnerSerializer
-from internal_api.serializers import TotalsSerializer
+from internal_api.commit.serializers import CommitTotalsSerializer
 
 
 class PullSerializer(serializers.ModelSerializer):
     most_recent_commiter = serializers.CharField()
-    base_totals = TotalsSerializer()
-    head_totals = TotalsSerializer()
+    base_totals = CommitTotalsSerializer()
+    head_totals = CommitTotalsSerializer()
     ci_passed = serializers.BooleanField()
 
     class Meta:

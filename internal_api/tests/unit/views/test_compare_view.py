@@ -72,9 +72,9 @@ class TestCompareCommitsView(InternalAPITest):
             'branches': self.commit_base.totals['b'],
             'methods': self.commit_base.totals['d'],
             'sessions': self.commit_base.totals['s'],
-            'diffCoverage': round(float(self.commit_base.totals['diff'][5]), 2) ,
+            'diff': self.commit_base.totals['diff'],
             'complexity': self.commit_base.totals['C'],
-            'complexity_total': self.commit_base.totals['N'],
+            'complexity_total': self.commit_base.totals['N']
         }
         self.commit_head_totals_serialized = {
             'files': self.commit_head.totals['f'],
@@ -86,9 +86,9 @@ class TestCompareCommitsView(InternalAPITest):
             'branches': self.commit_head.totals['b'],
             'methods': self.commit_head.totals['d'],
             'sessions': self.commit_head.totals['s'],
-            'diffCoverage': round(float(self.commit_head.totals['diff'][5]), 2),
+            'diff': self.commit_head.totals['diff'],
             'complexity': self.commit_head.totals['C'],
-            'complexity_total': self.commit_head.totals['N'],    
+            'complexity_total': self.commit_head.totals['N']
         }
 
     def _get_commits_comparison(self, kwargs, query_params):

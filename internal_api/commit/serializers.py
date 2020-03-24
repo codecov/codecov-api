@@ -1,17 +1,51 @@
 import asyncio
 import logging
 
-from dataclasses import astuple, asdict
-
 from rest_framework import serializers
 
 from services.archive import ReportService
 from services.repo_providers import RepoProviderService
 from core.models import Repository, Commit
 from internal_api.owner.serializers import OwnerSerializer
-from internal_api.serializers import TotalsSerializer
 
 log = logging.getLogger(__name__)
+
+
+class CommitTotalsSerializer(serializers.Serializer):
+    files = serializers.IntegerField(source="f")
+    lines = serializers.IntegerField(source="n")
+    hits = serializers.IntegerField(source="h")
+    misses = serializers.IntegerField(source="m")
+    partials = serializers.IntegerField(source="p")
+    coverage = serializers.SerializerMethodField()
+    branches = serializers.IntegerField(source="b")
+    methods = serializers.IntegerField(source="d")
+    sessions = serializers.IntegerField(source="s")
+    complexity = serializers.IntegerField(source="C")
+    complexity_total = serializers.IntegerField(source="N")
+    diff = serializers.JSONField()
+
+    def get_coverage(self, totals):
+        return round(float(totals["c"]), 2)
+
+
+class ReportTotalsSerializer(serializers.Serializer):
+    files = serializers.IntegerField()
+    lines = serializers.IntegerField()
+    hits = serializers.IntegerField()
+    misses = serializers.IntegerField()
+    partials = serializers.IntegerField()
+    coverage = serializers.SerializerMethodField()
+    branches = serializers.IntegerField()
+    methods = serializers.IntegerField()
+    messages = serializers.IntegerField()
+    sessions = serializers.IntegerField()
+    complexity = serializers.IntegerField()
+    complexity_total = serializers.IntegerField()
+    diff = serializers.JSONField()
+
+    def get_coverage(self, totals):
+        return round(float(totals.coverage), 2)
 
 
 class CommitRepoSerializer(serializers.ModelSerializer):
@@ -27,7 +61,7 @@ class CommitRepoSerializer(serializers.ModelSerializer):
 class CommitSerializer(serializers.ModelSerializer):
     author = OwnerSerializer()
     repository = CommitRepoSerializer()
-    totals = TotalsSerializer()
+    totals = CommitTotalsSerializer()
 
     class Meta:
         model = Commit
@@ -72,7 +106,7 @@ class CommitWithFileLevelReportSerializer(CommitSerializer):
 
 class CommitWithSrcSerializer(CommitWithReportSerializer):
     src = serializers.SerializerMethodField()
-    totals = TotalsSerializer()
+    totals = CommitTotalsSerializer()
 
     def get_src(self, obj):
         loop = asyncio.get_event_loop()
@@ -89,28 +123,12 @@ class CommitWithSrcSerializer(CommitWithReportSerializer):
 
 class CommitWithParentSerializer(CommitWithSrcSerializer):
     parent = CommitWithSrcSerializer(source='parent_commit')
-    totals = TotalsSerializer()
+    totals = CommitTotalsSerializer()
 
     class Meta:
         model = Commit
         fields = ('src', 'commitid', 'timestamp', 'ci_passed',
                   'report', 'repository', 'parent', 'author', 'totals')
-
-
-class ReportTotalsSerializer(serializers.Serializer):
-    files = serializers.IntegerField()
-    lines = serializers.IntegerField()
-    hits = serializers.IntegerField()
-    misses = serializers.IntegerField()
-    partials = serializers.IntegerField()
-    coverage = serializers.CharField()
-    branches = serializers.IntegerField()
-    methods = serializers.IntegerField()
-    messages = serializers.IntegerField()
-    sessions = serializers.IntegerField()
-    complexity = serializers.IntegerField()
-    complexity_total = serializers.IntegerField()
-    diff = serializers.JSONField()
 
 
 class ReportFileWithoutLinesSerializer(serializers.Serializer):
