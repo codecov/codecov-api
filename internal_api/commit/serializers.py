@@ -106,7 +106,6 @@ class CommitWithFileLevelReportSerializer(CommitSerializer):
 
 class CommitWithSrcSerializer(CommitWithReportSerializer):
     src = serializers.SerializerMethodField()
-    totals = CommitTotalsSerializer()
 
     def get_src(self, obj):
         loop = asyncio.get_event_loop()
@@ -123,7 +122,6 @@ class CommitWithSrcSerializer(CommitWithReportSerializer):
 
 class CommitWithParentSerializer(CommitWithSrcSerializer):
     parent = CommitWithSrcSerializer(source='parent_commit')
-    totals = CommitTotalsSerializer()
 
     class Meta:
         model = Commit
