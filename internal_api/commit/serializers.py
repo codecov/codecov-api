@@ -21,8 +21,8 @@ class CommitTotalsSerializer(serializers.Serializer):
     branches = serializers.IntegerField(source="b")
     methods = serializers.IntegerField(source="d")
     sessions = serializers.IntegerField(source="s")
-    complexity = serializers.IntegerField(source="C")
-    complexity_total = serializers.IntegerField(source="N")
+    complexity = serializers.FloatField(source="C")
+    complexity_total = serializers.FloatField(source="N")
     diff = serializers.JSONField()
 
     def get_coverage(self, totals):
