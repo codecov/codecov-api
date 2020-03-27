@@ -35,6 +35,15 @@ class TaskService(object):
             kwargs=dict(repoid=repoid, commitid=commitid)
         ).apply_async()
 
+    def pulls_sync(self, repoid, pullid):
+        self._create_signature(
+            'app.tasks.pulls.Sync',
+            kwargs=dict(
+                repoid=repoid,
+                pullid=pullid,
+            )
+        ).apply_async()
+
     def refresh(self, ownerid, username, sync_teams=True, sync_repos=True, using_integration=False):
         """
         !!!
@@ -69,3 +78,13 @@ class TaskService(object):
             ))
 
         return chain(*chain_to_call).apply_async()
+
+    def sync_plans(self, sender=None, account=None, action=None):
+        self._create_signature(
+            'app.tasks.ghm_sync_plans.SyncPlans',
+            kwargs=dict(
+                sender=sender,
+                account=account,
+                action=action
+            )
+        )

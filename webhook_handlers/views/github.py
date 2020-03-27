@@ -1,16 +1,20 @@
 import logging
 import re
+import hmac
+from hashlib import sha1
 
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.exceptions import PermissionDenied
 
 from core.models import Repository, Branch, Commit, Pull
 from codecov_auth.models import Owner
 from services.archive import ArchiveService
 from services.redis import get_redis_connection
 from services.task import TaskService
+from utils.config import get_config
 
 from webhook_handlers.constants import GitHubHTTPHeaders, GitHubWebhookEvents, WebhookHandlerErrorMessages
 
@@ -32,7 +36,18 @@ class GithubWebhookHandler(APIView):
     redis = get_redis_connection()
 
     def validate_signature(self, request):
-        pass
+        sig = 'sha1='+hmac.new(
+            get_config(
+                "github",
+                'webhook_secret',
+                default=b'testixik8qdauiab1yiffydimvi72ekq'
+            ),
+            request.body,
+            digestmod=sha1
+        ).hexdigest()
+
+        if sig != request.META.get(GitHubHTTPHeaders.SIGNATURE):
+            raise PermissionDenied()
 
     def unhandled_webhook_event(self, request, *args, **kwargs):
         return Response(data=WebhookHandlerErrorMessages.UNSUPPORTED_EVENT)
@@ -141,7 +156,7 @@ class GithubWebhookHandler(APIView):
         action, pullid = request.data.get("action"), request.data.get("number")
 
         if action in ["opened", "closed", "reopened", "synchronize"]:
-            pass # TODO: should trigger pulls.sync task
+            TaskService().pulls_sync(repoid=repo.repoid, pullid=pullid)
         elif action == "edited":
             Pull.objects.filter(
                 repository=repo, pullid=pullid
@@ -205,11 +220,25 @@ class GithubWebhookHandler(APIView):
 
         return Response()
 
+    def _handle_marketplace_events(self, request, *args, **kwargs):
+        TaskService().sync_plans(
+            sender=request.data["sender"],
+            account=request.data["marketplace_purchase"]["account"],
+            action=request.data["action"]
+        )
+        return Response()
+
+    def marketplace_subscription(self, request, *args, **kwargs):
+        return self._handle_marketplace_events(request, *args, **kwargs)
+
+    def marketplace_purchase(self, request, *args, **kwargs):
+        return self._handle_marketplace_events(request, *args, **kwargs)
+
     def post(self, request, *args, **kwargs):
         self.validate_signature(request)
 
-        self.event = self.request.META.get(GitHubHTTPHeaders.EVENT)
-        log.info("GitHub Webhook Handler invoked with: %s", self.event.upper())
-        handler = getattr(self, self.event, self.unhandled_webhook_event)
+        event = self.request.META.get(GitHubHTTPHeaders.EVENT)
+        log.info("GitHub Webhook Handler invoked with: %s", event.upper())
+        handler = getattr(self, event, self.unhandled_webhook_event)
 
         return handler(request, *args, **kwargs)

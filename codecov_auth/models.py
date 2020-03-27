@@ -25,6 +25,8 @@ SERVICE_BITBUCKET_SERVER = 'bitbucket_server'
 SERVICE_GITLAB = 'gitlab'
 SERVICE_CODECOV_ENTERPRISE = 'enterprise'
 
+DEFAULT_AVATAR_SIZE = 55
+
 log = logging.getLogger(__name__)
 
 
@@ -68,7 +70,7 @@ class Owner(models.Model):
 
     @property
     def has_legacy_plan(self):
-        return not self.plan.startswith('users')
+        return self.plan is None or not self.plan.startswith('users')
 
     @property
     def repo_credits(self):
@@ -78,7 +80,9 @@ class Owner(models.Model):
 
         if not self.has_legacy_plan:
             return float('inf')
-        if self.plan.startswith(V4_PLAN_PREFIX):
+        if self.plan is None:
+            repos = 1 + self.free or 0
+        elif self.plan.startswith(V4_PLAN_PREFIX):
             repos = self.plan[3:-1]
         else:
             repos = self.plan[:-1]
@@ -118,7 +122,7 @@ class Owner(models.Model):
         return True
 
     @property
-    def avatar_url(self, size=50):
+    def avatar_url(self, size=DEFAULT_AVATAR_SIZE):
         if self.service == SERVICE_GITHUB and self.service_id:
             return '{}/u/{}?v=3&s={}'.format(AVATAR_GITHUB_BASE_URL, self.service_id, size)
 

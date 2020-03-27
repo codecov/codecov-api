@@ -21,7 +21,6 @@ from core.tests.factories import (
     PullFactory,
 )
 
-
 def build_commits(client):
     """
         build commits in mock_db that are based on a real git commit for using VCR
@@ -63,6 +62,34 @@ class TestCompareCommitsView(InternalAPITest):
             organizations=[org.ownerid]
         )
         self.repo, self.commit_base, self.commit_head = build_commits(self.client)
+        self.commit_base_totals_serialized = {
+            'files': self.commit_base.totals['f'],
+            'lines': self.commit_base.totals['n'],
+            'hits': self.commit_base.totals['h'],
+            'misses': self.commit_base.totals['m'],
+            'partials': self.commit_base.totals['p'],
+            'coverage': round(float(self.commit_base.totals['c']), 2),
+            'branches': self.commit_base.totals['b'],
+            'methods': self.commit_base.totals['d'],
+            'sessions': self.commit_base.totals['s'],
+            'diff': self.commit_base.totals['diff'],
+            'complexity': self.commit_base.totals['C'],
+            'complexity_total': self.commit_base.totals['N']
+        }
+        self.commit_head_totals_serialized = {
+            'files': self.commit_head.totals['f'],
+            'lines': self.commit_head.totals['n'],
+            'hits': self.commit_head.totals['h'],
+            'misses': self.commit_head.totals['m'],
+            'partials': self.commit_head.totals['p'],
+            'coverage': round(float(self.commit_head.totals['c']), 2),
+            'branches': self.commit_head.totals['b'],
+            'methods': self.commit_head.totals['d'],
+            'sessions': self.commit_head.totals['s'],
+            'diff': self.commit_head.totals['diff'],
+            'complexity': self.commit_head.totals['C'],
+            'complexity_total': self.commit_head.totals['N']
+        }
 
     def _get_commits_comparison(self, kwargs, query_params):
         return self.client.get(reverse('compare-commits', kwargs=kwargs), data=query_params)
@@ -148,9 +175,9 @@ class TestCompareCommitsView(InternalAPITest):
         content = json.loads(response.content.decode())
         assert content['git_commits'] == mocked_comparison.return_value["commits"]
         assert content['commit_uploads'][0]['commitid'] == self.commit_head.commitid
-        assert content['commit_uploads'][0]['totals'] == self.commit_head.totals
+        assert content['commit_uploads'][0]['totals'] == self.commit_head_totals_serialized
         assert content['commit_uploads'][1]['commitid'] == self.commit_base.commitid
-        assert content['commit_uploads'][1]['totals'] == self.commit_base.totals
+        assert content['commit_uploads'][1]['totals'] == self.commit_base_totals_serialized
 
     @patch('services.comparison.Comparison._calculate_git_comparison')
     def test_compare_commits_view_with_commitid(self, mocked_comparison):
@@ -170,9 +197,9 @@ class TestCompareCommitsView(InternalAPITest):
         content = json.loads(response.content.decode())
         assert content['git_commits'] == mocked_comparison.return_value["commits"]
         assert content['commit_uploads'][0]['commitid'] == self.commit_head.commitid
-        assert content['commit_uploads'][0]['totals'] == self.commit_head.totals
+        assert content['commit_uploads'][0]['totals'] == self.commit_head_totals_serialized
         assert content['commit_uploads'][1]['commitid'] == self.commit_base.commitid
-        assert content['commit_uploads'][1]['totals'] == self.commit_base.totals
+        assert content['commit_uploads'][1]['totals'] == self.commit_base_totals_serialized
 
     @patch('services.comparison.Comparison._calculate_git_comparison')
     def test_compare_commits_view_with_pullid(self, mocked_comparison):
@@ -199,9 +226,9 @@ class TestCompareCommitsView(InternalAPITest):
 
         assert response.data['git_commits'] == mocked_comparison.return_value["commits"]
         assert response.data['commit_uploads'][0]['commitid'] == self.commit_head.commitid
-        assert response.data['commit_uploads'][0]['totals'] == self.commit_head.totals
+        assert response.data['commit_uploads'][0]['totals'] == self.commit_head_totals_serialized
         assert response.data['commit_uploads'][1]['commitid'] == self.commit_base.commitid
-        assert response.data['commit_uploads'][1]['totals'] == self.commit_base.totals
+        assert response.data['commit_uploads'][1]['totals'] == self.commit_base_totals_serialized
 
 
 @patch('services.archive.ArchiveService.create_root_storage')
@@ -436,7 +463,7 @@ class TestCompareFullSrcView(InternalAPITest):
         self.repo = RepositoryFactory()
         self.commit_base = CommitFactory(repository=self.repo)
         self.commit_head = CommitFactory(repository=self.repo)
-
+        self.commit_base_no_report = CommitFactory(repository=self.repo, report=None)
         self.client.force_login(user=self.repo.author)
 
     def test_returns_calculated_diff_data_with_commit_refs(self, mocked_comparison, *_):
@@ -566,3 +593,31 @@ class TestCompareFullSrcView(InternalAPITest):
             if file_name != made_up_file:
                 continue
             assert file_name in response.data["untracked_files"]
+
+    def test_missing_base_report(self, mocked_comparison, *_):
+        self._configure_comparison_mock_with_commit_factory_report(mocked_comparison)
+        expected_data = {
+            'tracked_files': {
+                'awesome/__init__.py': {
+                    'segments': True},
+                    'tests/__init__.py': {
+                        'segments': True
+                    },
+                    'tests/test_sample.py': {
+                        'segments': True
+                    }
+                },
+            'untracked_files': []
+        }
+        response = self._get_compare_src(
+            kwargs={
+                "orgName": self.repo.author.username,
+                "repoName": self.repo.name
+            },
+            query_params={
+                "head": self.commit_head.commitid,
+                "base": self.commit_base_no_report.commitid
+            }
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == expected_data

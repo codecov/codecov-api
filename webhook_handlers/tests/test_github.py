@@ -1,5 +1,8 @@
 import uuid
 import pytest
+import hmac
+from hashlib import sha1
+import json
 
 from unittest.mock import patch, call
 
@@ -11,6 +14,7 @@ from core.tests.factories import RepositoryFactory, BranchFactory, CommitFactory
 from core.models import Repository
 from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
+from utils.config import get_config
 
 from webhook_handlers.constants import GitHubHTTPHeaders, GitHubWebhookEvents, WebhookHandlerErrorMessages
 
@@ -22,7 +26,15 @@ class GithubWebhookHandlerTests(APITestCase):
             **{
                 GitHubHTTPHeaders.EVENT: event,
                 GitHubHTTPHeaders.DELIVERY_TOKEN: uuid.UUID(int=5),
-                GitHubHTTPHeaders.SIGNATURE: 0
+                GitHubHTTPHeaders.SIGNATURE: 'sha1='+hmac.new(
+                    get_config(
+                        "github",
+                        'webhook_secret',
+                        default=b'testixik8qdauiab1yiffydimvi72ekq'
+                    ),
+                    json.dumps(data, separators=(',', ':')).encode('utf-8'),
+                    digestmod=sha1
+                ).hexdigest(),
             },
             data=data,
             format="json"
@@ -371,9 +383,26 @@ class GithubWebhookHandlerTests(APITestCase):
         assert response.status_code == status.HTTP_200_OK
         assert response.data == WebhookHandlerErrorMessages.SKIP_NOT_ACTIVE
 
-    @pytest.mark.xfail
-    def test_pull_request_triggers_pulls_sync_task_for_valid_actions(self):
-        assert False
+    @patch('services.task.TaskService.pulls_sync')
+    def test_pull_request_triggers_pulls_sync_task_for_valid_actions(self, pulls_sync_mock):
+        pull = PullFactory(repository=self.repo)
+
+        valid_actions = ["opened", "closed", "reopened", "synchronize"]
+
+        for action in valid_actions:
+            response = self._post_event_data(
+                event=GitHubWebhookEvents.PULL_REQUEST,
+                data={
+                    "repository": {
+                        "id": self.repo.service_id
+                    },
+                    "action": action,
+                    "number": pull.pullid
+                }
+            )
+
+        pulls_sync_mock.assert_has_calls([call(repoid=self.repo.repoid, pullid=pull.pullid)] * len(valid_actions))
+
 
     def test_pull_request_updates_title_if_edited(self):
         pull = PullFactory(repository=self.repo)
@@ -552,3 +581,42 @@ class GithubWebhookHandlerTests(APITestCase):
         user.refresh_from_db()
 
         assert org.ownerid not in user.organizations
+
+    @patch('services.task.TaskService.sync_plans')
+    def test_marketplace_subscription_triggers_sync_plans_task(self, sync_plans_mock):
+        sender = {
+            "id": 545,
+            "login": "buddy@guy.com"
+        }
+        action = "purchased"
+        account = {
+            "type": "Organization",
+            "id": 54678,
+            "login": "username"
+        }
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.MARKETPLACE_PURCHASE,
+            data={
+                "action": action,
+                "sender": sender,
+                "marketplace_purchase": {
+                    "account": account
+                }
+            }
+        )
+
+        sync_plans_mock.assert_called_once_with(sender=sender, account=account, action=action)
+
+    def test_signature_validation(self):
+        response = self.client.post(
+            reverse("github-webhook"),
+            **{
+                GitHubHTTPHeaders.EVENT: '',
+                GitHubHTTPHeaders.DELIVERY_TOKEN: uuid.UUID(int=5),
+                GitHubHTTPHeaders.SIGNATURE: 0
+            },
+            data={},
+            format="json"
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN

@@ -7,11 +7,9 @@ A private Django REST Framework API intended to serve codecov's front end.
 
 ### Building
 
-This project contains a makefile. To build in standalone mode, run:
+This project contains a makefile. To build the docker image:
 
-    make standalone
-
-To build with codecovio (as a submodule) the `build` make target is included
+    make build
 
 `requirements.txt` is used in the base image. If you make changes to `requirements.txt` you will need to rebuild.
 
@@ -25,7 +23,7 @@ To start the service, do
 
 Utilizing its own database provides a convenient way for the REST API to provide its own helpful seeds and migrations for active development without potentially destroying/modifying your development database for codecov.io.
 
-Once running, the api will be available at `http://localhost:8000`
+Once running, the api will be available at `http://localhost:5100`
 
 ### Running with codecov.io
 

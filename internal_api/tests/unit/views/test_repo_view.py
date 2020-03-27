@@ -456,20 +456,23 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
 
     @patch('internal_api.repo.views.delete_webhook_on_provider')
     @patch('internal_api.repo.views.create_webhook_on_provider')
-    def test_reset_webhook_returns_401_if_TorgitClientError_raised_on_create(
+    def test_reset_webhook_returns_correct_code_and_response_if_TorgitClientError_raised(
         self,
         create_webhook_mock,
         delete_webhook_mock,
         mocked_get_permissions
     ):
+        code = 403
+        message = "No can do, buddy"
         mocked_get_permissions.return_value = True, True
-        create_webhook_mock.side_effect = TorngitClientError(code=2000, response=None, message=None)
+        create_webhook_mock.side_effect = TorngitClientError(code=code, response=None, message=message)
 
         response = self._reset_webhook(
             kwargs={"orgName": self.org.username, "repoName": self.repo.name},
         )
 
-        assert response.status_code == 401
+        assert response.status_code == code
+        assert response.data == {"detail": message}
 
     @patch('services.archive.ArchiveService.create_root_storage', lambda _: None)
     @patch('services.archive.ArchiveService.read_chunks', lambda obj, _: '' )

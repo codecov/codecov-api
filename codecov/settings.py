@@ -32,6 +32,11 @@ DEBUG = os.environ.get('DEBUG', False) == 'True'
 
 ALLOWED_HOSTS = env.list('DJANGO_ALLOWED_HOSTS', default=['.codecov.io'], cast=str)
 
+if not DEBUG:
+    WEBHOOK_URL = 'https://codecov.io'
+else:
+    WEBHOOK_URL = '' # if developing, put ngrok url here instead, and don't forget to add to ALLOWED_HOSTS
+
 AUTH_USER_MODEL = 'codecov_auth.Owner'
 
 

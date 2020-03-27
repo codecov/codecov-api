@@ -1,3 +1,5 @@
+from django.conf import settings
+
 from utils.config import get_config
 from webhook_handlers.constants import GitHubWebhookEvents
 
@@ -58,9 +60,7 @@ def create_webhook_on_provider(repository_service, repo):
         Creates webhook on provider
     """
 
-    webhook_url = (
-        get_config('setup', 'webhook_url') or get_config('setup', 'codecov_url')
-    )
+    webhook_url = settings.WEBHOOK_URL
 
     return asyncio.run(
         repository_service.post_webhook(
