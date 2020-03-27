@@ -58,7 +58,7 @@ class TestFlagsView(object):
                                 'name': 'tests/__init__.py',
                                 'totals': {
                                     'branches': 0, 'complexity': 0, 'complexity_total': 0,
-                                    'coverage': '66.66667', 'diff': 0, 'files': 0, 'hits': 2,
+                                    'coverage': 66.67, 'diff': 0, 'files': 0, 'hits': 2,
                                     'lines': 3, 'messages': 0, 'methods': 0, 'misses': 1,
                                     'partials': 0, 'sessions': 0
                                 }
@@ -77,7 +77,7 @@ class TestFlagsView(object):
                                     [16, 0, None, [[0, 0, None, None, None]], None, None]
                                 ],
                                 'name': 'awesome/__init__.py',
-                                'totals': {'branches': 0, 'complexity': 0, 'complexity_total': 0, 'coverage': '80.00000', 'diff': 0, 'files': 0, 'hits': 8, 'lines': 10, 'messages': 0, 'methods': 0, 'misses': 2, 'partials': 0, 'sessions': 0
+                                'totals': {'branches': 0, 'complexity': 0, 'complexity_total': 0, 'coverage': 80, 'diff': 0, 'files': 0, 'hits': 8, 'lines': 10, 'messages': 0, 'methods': 0, 'misses': 2, 'partials': 0, 'sessions': 0
                                 }
                             },
                             {
@@ -90,7 +90,7 @@ class TestFlagsView(object):
                                     [12, 1, None, [[0, 1, None, None, None]], None, None],
                                     [13, 1, None, [[0, 1, None, None, None]], None, None]],
                                 'name': 'tests/test_sample.py',
-                                'totals': {'branches': 0, 'complexity': 0, 'complexity_total': 0, 'coverage': '100', 'diff': 0, 'files': 0, 'hits': 7, 'lines': 7, 'messages': 0, 'methods': 0, 'misses': 0, 'partials': 0, 'sessions': 0
+                                'totals': {'branches': 0, 'complexity': 0, 'complexity_total': 0, 'coverage': 100, 'diff': 0, 'files': 0, 'hits': 7, 'lines': 7, 'messages': 0, 'methods': 0, 'misses': 0, 'partials': 0, 'sessions': 0
                                 }
                             }
                         ],
@@ -98,7 +98,7 @@ class TestFlagsView(object):
                             'branches': 0,
                             'complexity': 0,
                             'complexity_total': 0,
-                            'coverage': '85.00000',
+                            'coverage': 85.00,
                             'diff': 0,
                             'files': 3,
                             'hits': 17,
@@ -123,7 +123,7 @@ class TestFlagsView(object):
                                 ],
                                 'name': 'tests/__init__.py',
                                 'totals': {
-                                    'branches': 0, 'complexity': 0, 'complexity_total': 0, 'coverage': '0', 'diff': 0, 'files': 0, 'hits': 0, 'lines': 3, 'messages': 0, 'methods': 0, 'misses': 3, 'partials': 0, 'sessions': 0
+                                    'branches': 0, 'complexity': 0, 'complexity_total': 0, 'coverage': 0, 'diff': 0, 'files': 0, 'hits': 0, 'lines': 3, 'messages': 0, 'methods': 0, 'misses': 3, 'partials': 0, 'sessions': 0
                                 }
                             },
                             {
@@ -140,7 +140,7 @@ class TestFlagsView(object):
                                     [16, 0, None, [[1, 0, None, None, None]], None, None]
                                 ],
                                 'name': 'awesome/__init__.py',
-                                'totals': {'branches': 0, 'complexity': 0, 'complexity_total': 0, 'coverage': '10.00000', 'diff': 0, 'files': 0, 'hits': 1, 'lines': 10, 'messages': 0, 'methods': 0, 'misses': 9, 'partials': 0, 'sessions': 0}},
+                                'totals': {'branches': 0, 'complexity': 0, 'complexity_total': 0, 'coverage': 10, 'diff': 0, 'files': 0, 'hits': 1, 'lines': 10, 'messages': 0, 'methods': 0, 'misses': 9, 'partials': 0, 'sessions': 0}},
                             {
                                 'lines': [
                                     [1, 0, None, [[1, 0, None, None, None]], None, None],
@@ -153,7 +153,7 @@ class TestFlagsView(object):
                                 ],
                                 'name': 'tests/test_sample.py',
                                 'totals': {
-                                    'branches': 0, 'complexity': 0, 'complexity_total': 0, 'coverage': '28.57143', 'diff': 0, 'files': 0, 'hits': 2, 'lines': 7, 'messages': 0, 'methods': 0, 'misses': 5, 'partials': 0, 'sessions': 0
+                                    'branches': 0, 'complexity': 0, 'complexity_total': 0, 'coverage': 28.57, 'diff': 0, 'files': 0, 'hits': 2, 'lines': 7, 'messages': 0, 'methods': 0, 'misses': 5, 'partials': 0, 'sessions': 0
                                 }
                             }
                         ],
@@ -161,7 +161,7 @@ class TestFlagsView(object):
                             'branches': 0,
                             'complexity': 0,
                             'complexity_total': 0,
-                            'coverage': '15.00000',
+                            'coverage': 15,
                             'diff': 0,
                             'files': 3,
                             'hits': 3,
@@ -236,7 +236,7 @@ class TestFlagsView(object):
                         'branches': 0,
                         'complexity': 0,
                         'complexity_total': 0,
-                        'coverage': '79.16667',
+                        'coverage': 79.17,
                         'diff': 0,
                         'files': 3,
                         'hits': 19,
@@ -251,7 +251,7 @@ class TestFlagsView(object):
                         'branches': 0,
                         'complexity': 0,
                         'complexity_total': 0,
-                        'coverage': '100',
+                        'coverage': 100,
                         'diff': 0,
                         'files': 1,
                         'hits': 1,
@@ -266,7 +266,7 @@ class TestFlagsView(object):
                         'branches': 0,
                         'complexity': 0,
                         'complexity_total': 0,
-                        'coverage': '80.00000',
+                        'coverage': 80,
                         'diff': 0,
                         'files': 3,
                         'hits': 20,
@@ -284,7 +284,7 @@ class TestFlagsView(object):
                         'branches': 0,
                         'complexity': 0,
                         'complexity_total': 0,
-                        'coverage': '79.16667',
+                        'coverage': 79.17,
                         'diff': 0,
                         'files': 3,
                         'hits': 19,
@@ -299,7 +299,7 @@ class TestFlagsView(object):
                         'branches': 0,
                         'complexity': 0,
                         'complexity_total': 0,
-                        'coverage': '0',
+                        'coverage': 0,
                         'diff': 0,
                         'files': 1,
                         'hits': 0,
@@ -314,7 +314,7 @@ class TestFlagsView(object):
                         'branches': 0,
                         'complexity': 0,
                         'complexity_total': 0,
-                        'coverage': '56.00000',
+                        'coverage': 56,
                         'diff': 0,
                         'files': 3,
                         'hits': 14,

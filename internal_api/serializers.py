@@ -44,24 +44,3 @@ class PullIDQueryParamSerializer(serializers.Serializer):
             }
         except Commit.DoesNotExist:
             raise serializers.ValidationError("Comparison requested for pull with nonexistant commit.")
-
-
-class TotalsSerializer(serializers.Serializer):
-    files = serializers.IntegerField(source="f")
-    lines = serializers.IntegerField(source="n")
-    hits = serializers.IntegerField(source="h")
-    misses = serializers.IntegerField(source="m")
-    partials = serializers.IntegerField(source="p")
-    coverage = serializers.SerializerMethodField()
-    branches = serializers.IntegerField(source="b")
-    methods = serializers.IntegerField(source="d")
-    sessions = serializers.IntegerField(source="s")
-    diffCoverage = serializers.SerializerMethodField()
-
-    def get_coverage(self, totals):
-        return round(float(totals["c"]), 2)
-
-    def get_diffCoverage(self, totals):
-        if totals["diff"]:
-            return round(float(totals["diff"][5]), 2)
-        return 0
