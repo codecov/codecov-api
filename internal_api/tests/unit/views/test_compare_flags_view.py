@@ -5,7 +5,7 @@ from unittest.mock import patch, PropertyMock
 from django.test import override_settings
 from rest_framework.reverse import reverse
 
-from internal_api.tests.unit.views.test_compare_file_view import build_commits_with_changes
+from internal_api.tests.views.test_compare_src_file_view import build_commits_with_changes
 from core.tests.factories import PullFactory, RepositoryFactory, CommitFactory
 from covreports.reports.types import ReportTotals
 from codecov.tests.base_test import InternalAPITest
@@ -81,109 +81,104 @@ class TestCompareFlagsView(InternalAPITest):
 
         assert response.status_code == 200
 
-        expected_result = {
-            'count': 2,
-            'next': None,
-            'previous': None,
-            'results': [
-                {
-                    'base_report_totals': {
-                        'branches': 0,
-                        'complexity': 0,
-                        'complexity_total': 0,
-                        'coverage': 79.17,
-                        'diff': 0,
-                        'files': 3,
-                        'hits': 19,
-                        'lines': 24,
-                        'messages': 0,
-                        'methods': 0,
-                        'misses': 5,
-                        'partials': 0,
-                        'sessions': 2
-                    },
-                    'diff_totals': {
-                        'branches': 0,
-                        'complexity': 0,
-                        'complexity_total': 0,
-                        'coverage': 0,
-                        'diff': 0,
-                        'files': 0,
-                        'hits': 0,
-                        'lines': 0,
-                        'messages': 0,
-                        'methods': 0,
-                        'misses': 0,
-                        'partials': 0,
-                        'sessions': 0
-                    },
-                    'head_report_totals': {
-                        'branches': 0,
-                        'complexity': 0,
-                        'complexity_total': 0,
-                        'coverage': 80,
-                        'diff': 0,
-                        'files': 3,
-                        'hits': 20,
-                        'lines': 25,
-                        'messages': 0,
-                        'methods': 0,
-                        'misses': 5,
-                        'partials': 0,
-                        'sessions': 2
-                    },
-                    'name': 'unittests'
+        expected_result = [
+            {
+                'name': 'unittests',
+                'base_report_totals': {
+                    'branches': 0,
+                    'complexity': 0,
+                    'complexity_total': 0,
+                    'coverage': 79.17,
+                    'diff': 0,
+                    'files': 3,
+                    'hits': 19,
+                    'lines': 24,
+                    'messages': 0,
+                    'methods': 0,
+                    'misses': 5,
+                    'partials': 0,
+                    'sessions': 2
                 },
-                {
-                    'base_report_totals': {
-                        'branches': 0,
-                        'complexity': 0,
-                        'complexity_total': 0,
-                        'coverage': 79.17,
-                        'diff': 0,
-                        'files': 3,
-                        'hits': 19,
-                        'lines': 24,
-                        'messages': 0,
-                        'methods': 0,
-                        'misses': 5,
-                        'partials': 0,
-                        'sessions': 2
-                    },
-                    'diff_totals': {
-                        'branches': 0,
-                        'complexity': 0,
-                        'complexity_total': 0,
-                        'coverage': 0,
-                        'diff': 0,
-                        'files': 0,
-                        'hits': 0,
-                        'lines': 0,
-                        'messages': 0,
-                        'methods': 0,
-                        'misses': 0,
-                        'partials': 0,
-                        'sessions': 0
-                    },
-                    'head_report_totals': {
-                        'branches': 0,
-                        'complexity': 0,
-                        'complexity_total': 0,
-                        'coverage': 56,
-                        'diff': 0,
-                        'files': 3,
-                        'hits': 14,
-                        'lines': 25,
-                        'messages': 0,
-                        'methods': 0,
-                        'misses': 11,
-                        'partials': 0,
-                        'sessions': 2
-                    },
-                    'name': 'integrations'
+                'diff_totals': {
+                    'branches': 0,
+                    'complexity': 0,
+                    'complexity_total': 0,
+                    'coverage': 0,
+                    'diff': 0,
+                    'files': 0,
+                    'hits': 0,
+                    'lines': 0,
+                    'messages': 0,
+                    'methods': 0,
+                    'misses': 0,
+                    'partials': 0,
+                    'sessions': 0
+                },
+                'head_report_totals': {
+                    'branches': 0,
+                    'complexity': 0,
+                    'complexity_total': 0,
+                    'coverage': 80.00,
+                    'diff': 0,
+                    'files': 3,
+                    'hits': 20,
+                    'lines': 25,
+                    'messages': 0,
+                    'methods': 0,
+                    'misses': 5,
+                    'partials': 0,
+                    'sessions': 2
                 }
-            ]
-        }
+            },
+            {
+                'name': 'integrations',
+                'base_report_totals': {
+                    'branches': 0,
+                    'complexity': 0,
+                    'complexity_total': 0,
+                    'coverage': 79.17,
+                    'diff': 0,
+                    'files': 3,
+                    'hits': 19,
+                    'lines': 24,
+                    'messages': 0,
+                    'methods': 0,
+                    'misses': 5,
+                    'partials': 0,
+                    'sessions': 2
+                },
+                'diff_totals': {
+                    'branches': 0,
+                    'complexity': 0,
+                    'complexity_total': 0,
+                    'coverage': 0,
+                    'diff': 0,
+                    'files': 0,
+                    'hits': 0,
+                    'lines': 0,
+                    'messages': 0,
+                    'methods': 0,
+                    'misses': 0,
+                    'partials': 0,
+                    'sessions': 0
+                },
+                'head_report_totals': {
+                    'branches': 0,
+                    'complexity': 0,
+                    'complexity_total': 0,
+                    'coverage': 56.00,
+                    'diff': 0,
+                    'files': 3,
+                    'hits': 14,
+                    'lines': 25,
+                    'messages': 0,
+                    'methods': 0,
+                    'misses': 11,
+                    'partials': 0,
+                    'sessions': 2
+                }
+            }
+        ]
 
         assert response.data == expected_result
 
