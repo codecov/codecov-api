@@ -15,6 +15,8 @@ class GitHubWebhookEvents:
     INSTALLATION = "installation"
     INSTALLATION_REPOSITORIES = "installation_repositories"
     ORGANIZATION = "organization"
+    MARKETPLACE_PURCHASE = "marketplace_purchase"
+    MARKETPLACE_SUBSCRIPTION = "marketplace_subscription"
 
     repository_events = [PULL_REQUEST, DELETE, PUSH, PUBLIC, STATUS, REPOSITORY]
 
