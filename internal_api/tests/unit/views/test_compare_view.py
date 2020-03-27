@@ -21,6 +21,8 @@ from core.tests.factories import (
     PullFactory,
 )
 
+from internal_api.commit.serializers import CommitTotalsSerializer
+
 def build_commits(client):
     """
         build commits in mock_db that are based on a real git commit for using VCR
@@ -53,6 +55,8 @@ def build_commits(client):
     return repo, commit_base, commit_head
 
 
+@patch('services.archive.ArchiveService.create_root_storage', lambda obj: None)
+@patch('services.archive.ArchiveService.read_chunks', lambda obj, sha: '')
 class TestCompareCommitsView(InternalAPITest):
     def setUp(self):
         org = OwnerFactory(username='Codecov')
@@ -92,10 +96,11 @@ class TestCompareCommitsView(InternalAPITest):
         }
 
     def _get_commits_comparison(self, kwargs, query_params):
-        return self.client.get(reverse('compare-commits', kwargs=kwargs), data=query_params)
+        return self.client.get(reverse('compare-retrieve', kwargs=kwargs), data=query_params)
 
     def _configure_mocked_comparison_with_commits(self, mock):
-         mock.return_value = {
+        mock.return_value = {
+            "diff": {"files": {}},
             "commits": [ 
                 {
                     'commitid': self.commit_base.commitid,
@@ -173,11 +178,11 @@ class TestCompareCommitsView(InternalAPITest):
 
         assert response.status_code == 200
         content = json.loads(response.content.decode())
-        assert content['git_commits'] == mocked_comparison.return_value["commits"]
-        assert content['commit_uploads'][0]['commitid'] == self.commit_head.commitid
-        assert content['commit_uploads'][0]['totals'] == self.commit_head_totals_serialized
-        assert content['commit_uploads'][1]['commitid'] == self.commit_base.commitid
-        assert content['commit_uploads'][1]['totals'] == self.commit_base_totals_serialized
+        assert content['diff']["git_commits"] == mocked_comparison.return_value["commits"]
+        assert content["commit_uploads"][0]['commitid'] == self.commit_head.commitid
+        assert content["commit_uploads"][0]['totals'] == CommitTotalsSerializer(self.commit_head.totals).data
+        assert content["commit_uploads"][1]['commitid'] == self.commit_base.commitid
+        assert content["commit_uploads"][1]['totals'] == CommitTotalsSerializer(self.commit_base.totals).data
 
     @patch('services.comparison.Comparison._calculate_git_comparison')
     def test_compare_commits_view_with_commitid(self, mocked_comparison):
@@ -195,11 +200,11 @@ class TestCompareCommitsView(InternalAPITest):
 
         assert response.status_code == 200
         content = json.loads(response.content.decode())
-        assert content['git_commits'] == mocked_comparison.return_value["commits"]
-        assert content['commit_uploads'][0]['commitid'] == self.commit_head.commitid
-        assert content['commit_uploads'][0]['totals'] == self.commit_head_totals_serialized
-        assert content['commit_uploads'][1]['commitid'] == self.commit_base.commitid
-        assert content['commit_uploads'][1]['totals'] == self.commit_base_totals_serialized
+        assert content['diff']["git_commits"] == mocked_comparison.return_value["commits"]
+        assert content["commit_uploads"][0]['commitid'] == self.commit_head.commitid
+        assert content["commit_uploads"][0]['totals'] == CommitTotalsSerializer(self.commit_head.totals).data
+        assert content["commit_uploads"][1]['commitid'] == self.commit_base.commitid
+        assert content["commit_uploads"][1]['totals'] == CommitTotalsSerializer(self.commit_base.totals).data
 
     @patch('services.comparison.Comparison._calculate_git_comparison')
     def test_compare_commits_view_with_pullid(self, mocked_comparison):
@@ -224,11 +229,11 @@ class TestCompareCommitsView(InternalAPITest):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        assert response.data['git_commits'] == mocked_comparison.return_value["commits"]
-        assert response.data['commit_uploads'][0]['commitid'] == self.commit_head.commitid
-        assert response.data['commit_uploads'][0]['totals'] == self.commit_head_totals_serialized
-        assert response.data['commit_uploads'][1]['commitid'] == self.commit_base.commitid
-        assert response.data['commit_uploads'][1]['totals'] == self.commit_base_totals_serialized
+        assert response.data["diff"]['git_commits'] == mocked_comparison.return_value["commits"]
+        assert response.data["commit_uploads"][0]['commitid'] == self.commit_head.commitid
+        assert response.data["commit_uploads"][0]['totals'] == CommitTotalsSerializer(self.commit_head.totals).data
+        assert response.data["commit_uploads"][1]['commitid'] == self.commit_base.commitid
+        assert response.data["commit_uploads"][1]['totals'] == CommitTotalsSerializer(self.commit_base.totals).data
 
 
 @patch('services.archive.ArchiveService.create_root_storage')
@@ -240,27 +245,27 @@ class TestCompareDetailsView(InternalAPITest):
             kwargs = {"orgName": self.repo.author.username, "repoName": self.repo.name}
         if not query_params:
             query_params = {"base": self.commit_base.commitid, "head": self.commit_head.commitid}
-        return self.client.get(reverse('compare-details', kwargs=kwargs), data=query_params)
+        return self.client.get(reverse('compare-retrieve', kwargs=kwargs), data=query_params)
 
     def setUp(self):
         self.repo, self.commit_base, self.commit_head = build_commits(client=self.client)
 
     def test_details_returns_200_on_success(self, mocked_comparison, mocked_read_chunks, *_):
-        mocked_comparison.return_value = {"commits": []}
+        mocked_comparison.return_value = {"diff": {"files": {}}, "commits": []}
         mocked_read_chunks.return_value = ''
         response = self._get_compare_details()
         assert response.status_code == status.HTTP_200_OK
 
     def test_details_returns_relevant_fields_on_success(self, mocked_comparison, mocked_read_chunks, *_):
-        mocked_comparison.return_value = {"commits": []}
+        mocked_comparison.return_value = {"diff": {"files": {}}, "commits": []}
         mocked_read_chunks.return_value = ''
         response = self._get_compare_details()
         assert response.status_code == status.HTTP_200_OK
-        for field in ('head_commit', 'base_commit', 'head_report', 'base_report', 'git_commits'):
+        for field in ('head_commit', 'base_commit', 'head_report', 'base_report', "commit_uploads", 'diff'):
             assert field in response.data
 
     def test_details_accepts_pullid_query_param(self, mocked_comparison, mocked_read_chunks, *_):
-        mocked_comparison.return_value = {"commits": []}
+        mocked_comparison.return_value = {"diff": {"files": {}}, "commits": []}
         mocked_read_chunks.return_value = ''
         response = self._get_compare_details(
             query_params={
@@ -277,6 +282,7 @@ class TestCompareDetailsView(InternalAPITest):
 
     def test_details_return_with_mock_data(self, mocked_comparison, mocked_read_chunks, *args):
         mocked_comparison.return_value = {
+            "diff": {"files": {}},
             "commits": [
                 {
                     'commitid': self.commit_base.commitid,
@@ -382,7 +388,7 @@ class TestCompareDetailsView(InternalAPITest):
             assert [f for f in content["head_report"]["files"] if f == file_data]
             assert [f for f in content["base_report"]["files"] if f == file_data]
 
-        assert content["git_commits"] == mocked_comparison.return_value["commits"]
+        assert content["diff"]["git_commits"] == mocked_comparison.return_value["commits"]
 
 
 @patch('services.archive.ArchiveService.create_root_storage')
@@ -444,7 +450,7 @@ class TestCompareSingleFileDiffView(InternalAPITest):
 @patch('services.comparison.Comparison._calculate_git_comparison')
 class TestCompareFullSrcView(InternalAPITest):
     def _get_compare_src(self, kwargs, query_params):
-        return self.client.get(reverse('compare-src-full', kwargs=kwargs), data=query_params)
+        return self.client.get(reverse('compare-retrieve', kwargs=kwargs), data=query_params)
 
     def _configure_comparison_mock_with_commit_factory_report(self, mock):
         mock.return_value = {
@@ -480,8 +486,8 @@ class TestCompareFullSrcView(InternalAPITest):
         )
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["tracked_files"] == mocked_comparison.return_value["diff"]["files"]
-        assert response.data["untracked_files"] == []
+        assert response.data["diff"]["tracked_files"] == mocked_comparison.return_value["diff"]["files"]
+        assert response.data["diff"]["untracked_files"] == []
 
     def test_accepts_pullid_query_param(self, mocked_comparison, *_):
         self._configure_comparison_mock_with_commit_factory_report(mocked_comparison)
@@ -502,8 +508,8 @@ class TestCompareFullSrcView(InternalAPITest):
         )
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["tracked_files"] == mocked_comparison.return_value["diff"]["files"]
-        assert response.data["untracked_files"] == []
+        assert response.data["diff"]["tracked_files"] == mocked_comparison.return_value["diff"]["files"]
+        assert response.data["diff"]["untracked_files"] == []
 
     @patch('services.archive.SerializableReport.file_reports')
     def test_tracked_files_omits_line_data_after_first_five(self, mocked_head_file_reports, mocked_comparison, *args):
@@ -532,7 +538,7 @@ class TestCompareFullSrcView(InternalAPITest):
 
         # there should be exactly five files with a non-empty list for "lines"
         files_with_lines = 0
-        for _, diff_data in response.data["tracked_files"].items():
+        for _, diff_data in response.data["diff"]["tracked_files"].items():
             if diff_data["segments"] is not None:
                 files_with_lines += 1
 
@@ -582,17 +588,17 @@ class TestCompareFullSrcView(InternalAPITest):
             }
         )
 
-        assert "tracked_files" in response.data
+        assert "tracked_files" in response.data["diff"]
         for file_name, _ in mocked_comparison.return_value["diff"]["files"].items():
             if file_name == made_up_file:
                 continue
-            assert file_name in response.data["tracked_files"]
+            assert file_name in response.data["diff"]["tracked_files"]
 
-        assert "untracked_files" in response.data
+        assert "untracked_files" in response.data["diff"]
         for file_name, _ in mocked_comparison.return_value["diff"]["files"].items():
             if file_name != made_up_file:
                 continue
-            assert file_name in response.data["untracked_files"]
+            assert file_name in response.data["diff"]["untracked_files"]
 
     def test_missing_base_report(self, mocked_comparison, *_):
         self._configure_comparison_mock_with_commit_factory_report(mocked_comparison)
@@ -607,7 +613,8 @@ class TestCompareFullSrcView(InternalAPITest):
                         'segments': True
                     }
                 },
-            'untracked_files': []
+            'untracked_files': [],
+            "git_commits": []
         }
         response = self._get_compare_src(
             kwargs={
@@ -620,4 +627,4 @@ class TestCompareFullSrcView(InternalAPITest):
             }
         )
         assert response.status_code == status.HTTP_200_OK
-        assert response.data == expected_data
+        assert response.data["diff"] == expected_data

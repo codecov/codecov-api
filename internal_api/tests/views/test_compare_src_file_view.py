@@ -1,182 +1,83 @@
 import json
-
-from django.test import override_settings
+import asyncio
+from unittest.mock import patch
 
 from core.tests.factories import RepositoryFactory, CommitFactory, PullFactory
 
 from rest_framework.reverse import reverse
+from rest_framework.test import APITestCase
+from rest_framework import status
 
 
-class TestCompareSingleFileChangesView:
-    def _get_single_file_changes(self, client, kwargs, query_params):
-        return client.get(reverse('compare-src-file', kwargs=kwargs), data=query_params)
+test_file_name = "test.py"
+test_line = "split\nthis\nline"
 
-    @override_settings(DEBUG=True)
-    def test_fetch_file_cov_decrease___success(self, mocker, db, client, codecov_vcr):
-        repo, commit_base, commit_head, change_commit = build_commits_with_changes(client=client)
-        response = self._get_single_file_changes(
-            client,
-            kwargs={
-                "orgName": repo.author.username,
-                "repoName": repo.name,
-                "file_path": "src/subtractor/subtractor.py"
-            },
-            query_params={
-                "base": commit_base.commitid,
-                "head": commit_head.commitid
+
+class MockedGetSourceAdapter:
+    async def get_source(self, file_path, commitid):
+        return {"content": test_line}
+
+
+@patch('services.repo_providers.RepoProviderService.get_adapter', lambda self, owner, repo: MockedGetSourceAdapter())
+class TestCompareSrcFileView(APITestCase):
+
+    def _get_src_file(self, kwargs={}, query_params={}):
+        if not kwargs:
+            kwargs = {
+                "orgName": self.repo.author.username,
+                "repoName": self.repo.name,
+                "file_path": self.file_name
             }
-        )
-        assert response.status_code == 200
-        content = json.loads(response.content.decode())
-        assert content['src'] == {
-            "base": None,
-            "head": [
-                "import math",
-                "",
-                "class Subtractor(object):",
-                "    def subtract(self, x, y):",
-                "        return x - y",
-                "    ",
-                "    def divide(self, x, y):",
-                "        return float(x) / float(y)",
-                "    ",
-                "    def fractionate(self, x):",
-                "        return 1 / float(x)",
-                "    ",
-                "    def half(self, x):",
-                "        return float(x) / 2"
-            ]
-        }
+        if not query_params:
+            query_params = {
+                "base": self.base.commitid,
+                "head": self.head.commitid
+            }
+        return self.client.get(reverse('compare-src-file', kwargs=kwargs), data=query_params)
 
-    @override_settings(DEBUG=True)
-    def test_fetch_file_with_filename_change(self, mocker, db, client, codecov_vcr):
-        repo, commit_base, commit_head, change_commit = build_commits_with_changes(client=client)
-        response = self._get_single_file_changes(
-            client,
-            kwargs={
-                "orgName": repo.author.username,
-                "repoName": repo.name,
-                "file_path": "src/adder/adders.py"
-            },
-            query_params={
-                "base": commit_base.commitid,
-                "head": commit_head.commitid,
-                "before": "src/adder/adder.py"
-            }
-        )
-        assert response.status_code == 200
-        content = json.loads(response.content.decode())
-        assert content == {
-            "src": {
-                "base": [
-                    "import math",
-                    "",
-                    "class Adder(object):",
-                    "    def add(self, x, y):",
-                    "        # a line --",
-                    "        # another line",
-                    "        # a third line",
-                    "        return x + y",
-                    "        ",
-                    "    def multiply(self, x, y):",
-                    "        return x * y"
-                ],
-                "head": [
-                    "import math",
-                    "",
-                    "class Adder(object):",
-                    "    def add(self, x, y):",
-                    "        # a line --",
-                    "        # another line",
-                    "        # a third line",
-                    "        return x + y",
-                    "        ",
-                    "    def multiply(self, x, y):",
-                    "        return x * y",
-                    "    ",
-                    "    def add2(self, x):",
-                    "        return x + 2"
-                ]
-            }
-        }
+    def setUp(self):
+        self.repo = RepositoryFactory()
+        self.base = CommitFactory(repository=self.repo)
+        self.head = CommitFactory(repository=self.repo)
+        self.file_name = test_file_name
 
-    @override_settings(DEBUG=True)
-    def test_fetch_file_with_diff_change(self, mocker, db, client, codecov_vcr):
-        repo, commit_base, commit_head, change_commit = build_commits_with_changes(client=client)
-        response = self._get_single_file_changes(
-            client,
-            kwargs={
-                "orgName": repo.author.username,
-                "repoName": repo.name,
-                "file_path": "tests/unit/adder/test_adder.py"
-            },
-            query_params={
-                "base": commit_base.commitid,
-                "head": change_commit.commitid
-            }
-        )
-        assert response.status_code == 200
-        content = json.loads(response.content.decode())
-        assert content == {
-            "src": {
-                "base": None,
-                "head": [
-                    "import pytest",
-                    "from src.adder.adders import Adder",
-                    "",
-                    "def test_sum_two_plus_two_is_four():",
-                    "    assert Adder().add(3,3) == 6",
-                    "",
-                    "def test_sum_two_plus_two_is_not_five():",
-                    "    assert Adder().add(3,4) != 6",
-                    "",
-                    "def test_add2_with_four():",
-                    "\tassert Adder().add2(4) == 6"
-                ]
-            }
-        }
+        self.client.force_login(user=self.repo.author)
 
-    @override_settings(DEBUG=True)
-    def test_compare_file_src_accepts_pullid_query_parameter(self, mocker, db, client, codecov_vcr):
-        repo, commit_base, commit_head, change_commit = build_commits_with_changes(client=client)
-        response = self._get_single_file_changes(
-            client,
-            kwargs={
-                "orgName": repo.author.username,
-                "repoName": repo.name,
-                "file_path": "tests/unit/adder/test_adder.py"
-            },
+    @patch('services.comparison.Comparison._calculate_base_report', lambda commit: {test_file_name: None})
+    @patch('services.comparison.Comparison._calculate_head_report', lambda commit: {test_file_name: True})
+    def test_no_base_file_returns_404(self):
+        response = self._get_src_file()
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    @patch('services.comparison.Comparison._calculate_head_report', lambda commit: {test_file_name: None})
+    @patch('services.comparison.Comparison._calculate_base_report', lambda commit: {test_file_name: True})
+    def test_no_head_file_returns_404(self):
+        response = self._get_src_file()
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    @patch('services.comparison.Comparison._calculate_base_report', lambda commit: {test_file_name: True})
+    @patch('services.comparison.Comparison._calculate_head_report', lambda commit: {test_file_name: True})
+    def test_returns_list_of_lines_on_success(self):
+        response = self._get_src_file()
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["src"] == test_line.splitlines()
+
+    @patch('services.comparison.Comparison._calculate_base_report', lambda commit: {test_file_name: True})
+    @patch('services.comparison.Comparison._calculate_head_report', lambda commit: {test_file_name: True})
+    def test_accepts_pullid_query_param(self):
+        response = self._get_src_file(
             query_params={
                 "pullid": PullFactory(
-                    base=commit_base.commitid,
-                    head=change_commit.commitid,
+                    base=self.base.commitid,
+                    head=self.head.commitid,
+                    repository=self.repo,
                     pullid=1,
-                    author=commit_head.author,
-                    repository=commit_head.repository
                 ).pullid
             }
         )
 
-        assert response.status_code == 200
-        content = json.loads(response.content.decode())
-        assert content == {
-            "src": {
-                "base": None,
-                "head": [
-                    "import pytest",
-                    "from src.adder.adders import Adder",
-                    "",
-                    "def test_sum_two_plus_two_is_four():",
-                    "    assert Adder().add(3,3) == 6",
-                    "",
-                    "def test_sum_two_plus_two_is_not_five():",
-                    "    assert Adder().add(3,4) != 6",
-                    "",
-                    "def test_add2_with_four():",
-                    "\tassert Adder().add2(4) == 6"
-                ]
-            }
-        }
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["src"] == test_line.splitlines()
 
 
 def build_commits_with_changes(client):
