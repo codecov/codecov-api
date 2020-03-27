@@ -14,8 +14,8 @@ class RepoBranchList(FilterByRepoMixin, generics.ListAPIView):
 
     def filter_queryset(self, queryset):
         queryset = super(RepoBranchList, self).filter_queryset(queryset)
-        author = self.request.GET.get('author')
 
+        author = self.request.GET.get('author')
         if author:
             return queryset.filter(authors__contains=[author])
 
