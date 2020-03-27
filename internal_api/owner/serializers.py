@@ -37,4 +37,5 @@ class OwnerDetailsSerializer(OwnerSerializer):
             'email',
             'name',
             'stats',
+            'ownerid'
         )

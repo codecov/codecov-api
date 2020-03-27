@@ -26,8 +26,8 @@ class RepoPullViewset(
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin
 ):
-    filter_backends = (DjangoFilterBackend, filters.OrderingFilter)
-    filter_fields = ('state',)
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['state']
     ordering_fields = ('updatestamp', 'head__timestamp')
 
     def get_serializer_class(self):
@@ -79,6 +79,7 @@ class RepoPullViewset(
                 ).values('author__username')[:1]
             )
         )
+
 
 class RepoPullFlagsList(RepoSlugUrlMixin, generics.ListCreateAPIView):
     serializer_class = FlagComparisonSerializer
