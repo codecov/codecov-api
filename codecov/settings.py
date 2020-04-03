@@ -198,6 +198,10 @@ ENCRYPTION_SECRET = get_config('setup', 'encryption_secret')
 
 # cors
 CORS_ORIGIN_WHITELIST = ['app.codecov.io']
+CODECOV_API_URL = 'https://api.codecov.io'
+CODECOV_URL = 'https://codecov.io'
 
 if DEBUG:
     CORS_ORIGIN_WHITELIST = ['localhost:9000']
+    CODECOV_API_URL = 'localhost:5100'
+    CODECOV_URL = 'localhost'
