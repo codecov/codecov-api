@@ -14,7 +14,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from internal_api.constants import INTERNAL_API_PREFIX
 import codecov.views as views
 from django.conf import settings
@@ -28,4 +28,5 @@ urlpatterns = [
 
 urlpatterns.append(path(INTERNAL_API_PREFIX, include('internal_api.urls')))
 urlpatterns.append(path('webhooks/', include('webhook_handlers.urls')))
-urlpatterns.append(path('validate/', include('validate.urls')))
+# Use regex to make the trailing slash optional
+urlpatterns.append(re_path('^validate/?', include('validate.urls')))

@@ -117,3 +117,4 @@ dmypy.json
 # vim temp files
 *.swp
 *.swo
+.vscode/
