@@ -21,6 +21,24 @@ class GitHubWebhookEvents:
     repository_events = [PULL_REQUEST, DELETE, PUSH, PUBLIC, STATUS, REPOSITORY]
 
 
+class BitbucketHTTPHeaders:
+    EVENT = 'HTTP_X_EVENT_KEY'
+    UUID = 'HTTP_X_HOOK_UUID'
+
+
+class BitbucketWebhookEvents:
+    PULL_REQUEST_CREATED = "pullrequest:created"
+    PULL_REQUEST_UPDATED = "pullrequest:updated"
+    PULL_REQUEST_REJECTED = "pullrequest:rejected"
+    PULL_REQUEST_FULFILLED = "pullrequest:fulfilled"
+    REPO_PUSH = "repo:push"
+    REPO_COMMIT_STATUS_CREATED = "repo:commit_status_created"
+    REPO_COMMIT_STATUS_UPDATED = "repo:commit_status_updated"
+
+    subscribed_events = [PULL_REQUEST_CREATED, PULL_REQUEST_UPDATED, PULL_REQUEST_FULFILLED,
+                          REPO_PUSH, REPO_COMMIT_STATUS_CREATED, REPO_COMMIT_STATUS_UPDATED]
+
+
 class GitLabHTTPHeaders:
     EVENT = "HTTP_X_GITLAB_EVENT"
 
