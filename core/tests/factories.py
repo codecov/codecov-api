@@ -149,6 +149,7 @@ class BranchFactory(DjangoModelFactory):
     class Meta:
         model = models.Branch
 
+    repository = factory.SubFactory(RepositoryFactory)
     name = factory.Faker('sentence', nb_words=1)
     head = factory.LazyAttribute(lambda o: sha1(o.name.encode('utf-8')).hexdigest())
 
