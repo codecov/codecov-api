@@ -8,6 +8,30 @@ from internal_api.commit.serializers import (
 )
 
 
+class TotalsComparisonSerializer(serializers.Serializer):
+    base = ReportTotalsSerializer()
+    head = ReportTotalsSerializer()
+
+
+class LineComparisonSerializer(serializers.Serializer):
+    value = serializers.CharField()
+    number = serializers.JSONField()
+    coverage = serializers.JSONField()
+    is_diff = serializers.BooleanField()
+    added = serializers.BooleanField()
+    removed = serializers.BooleanField()
+    sessions = serializers.IntegerField()
+
+
+class FileComparisonSerializer(serializers.Serializer):
+    name = serializers.JSONField()
+    totals = TotalsComparisonSerializer()
+    has_diff = serializers.BooleanField()
+    stats = serializers.JSONField()
+    change_summary = serializers.JSONField()
+    lines = LineComparisonSerializer(many=True)
+
+
 class ComparisonSerializer(serializers.Serializer):
     base_commit = serializers.CharField(source='base_commit.commitid')
     head_commit = serializers.CharField(source='head_commit.commitid')
@@ -15,6 +39,8 @@ class ComparisonSerializer(serializers.Serializer):
     head_report = ReportSerializer()
     commit_uploads = CommitSerializer(many=True, source='upload_commits')
     diff = serializers.SerializerMethodField()
+#    files = FileComparisonSerializer(many=True)
+
 
     def _get_tracked_files(self, comparison, tracked_file_names):
         """
