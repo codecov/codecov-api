@@ -10,7 +10,7 @@ from rest_framework.exceptions import PermissionDenied
 from internal_api.mixins import RepoSlugUrlMixin
 from internal_api.repo.repository_accessors import RepoAccessors
 from internal_api.compare.serializers import FlagComparisonSerializer
-from services.comparison import get_comparison_from_pull_request
+from services.comparison import Comparison
 from core.models import Pull, Commit
 from .serializers import PullSerializer, PullDetailSerializer
 
@@ -99,7 +99,11 @@ class RepoPullFlagsList(RepoSlugUrlMixin, generics.ListCreateAPIView):
             raise Http404('No pull matches the given query.')
 
         try:
-            return get_comparison_from_pull_request(obj, user)
+            return Comparison(
+                Commit.objects.get(commitid=obj.base, repository=obj.repository),
+                Commit.objects.get(commitid=obj.head, repository=obj.repository),
+                user
+            )
         except Commit.DoesNotExist:
             raise Http404("Pull base or head references nonexistant commit.")
 
