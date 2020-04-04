@@ -110,6 +110,11 @@ class Commit(models.Model):
 
 
 class Pull(models.Model):
+    class PullStates:
+        OPEN = 'open'
+        MERGED = 'merged'
+        CLOSED = 'closed'
+
     repository = models.ForeignKey(
         'core.Repository', db_column='repoid', on_delete=models.CASCADE, related_name='pull_requests')
     pullid = models.IntegerField(primary_key=True)

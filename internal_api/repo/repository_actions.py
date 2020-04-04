@@ -1,7 +1,7 @@
 from django.conf import settings
 
 from utils.config import get_config
-from webhook_handlers.constants import GitHubWebhookEvents
+from webhook_handlers.constants import GitHubWebhookEvents, GitLabWebhookEvents
 
 import asyncio
 
@@ -23,28 +23,8 @@ WEBHOOK_EVENTS = {
     ],
     # https://confluence.atlassian.com/bitbucketserver/post-service-webhook-for-bitbucket-server-776640367.html
     "bitbucket_server": [],
-    "gitlab": {
-        "push_events": True,
-        "issues_events": False,
-        "merge_requests_events": True,
-        "tag_push_events": False,
-        "note_events": False,
-        "job_events": False,
-        "build_events": True,
-        "pipeline_events": True,
-        "wiki_events": False
-    },
-    "gitlab_enterprise": {
-        "push_events": True,
-        "issues_events": False,
-        "merge_requests_events": True,
-        "tag_push_events": False,
-        "note_events": False,
-        "job_events": False,
-        "build_events": True,
-        "pipeline_events": True,
-        "wiki_events": False
-    }
+    "gitlab": GitLabWebhookEvents.subscribed_events,
+    "gitlab_enterprise": GitLabWebhookEvents.subscribed_events,
 }
 
 

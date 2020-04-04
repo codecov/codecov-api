@@ -21,6 +21,29 @@ class GitHubWebhookEvents:
     repository_events = [PULL_REQUEST, DELETE, PUSH, PUBLIC, STATUS, REPOSITORY]
 
 
+class GitLabHTTPHeaders:
+    EVENT = "HTTP_X_GITLAB_EVENT"
+
+
+class GitLabWebhookEvents:
+    MERGE_REQUEST = "Merge Request Hook"
+    SYSTEM = "System Hook"
+    PUSH = "Push Hook"
+    JOB = "Job Hook"
+
+    subscribed_events = {
+        "push_events": True,
+        "issues_events": False,
+        "merge_requests_events": True,
+        "tag_push_events": False,
+        "note_events": False,
+        "job_events": False,
+        "build_events": True,
+        "pipeline_events": True,
+        "wiki_events": False
+    }
+
+
 class WebhookHandlerErrorMessages:
     LICENSE_EXPIRED =  "License expired/invalid. Webhook rejected.",
     INVALID_SIGNATURE = "Invalid signature",
