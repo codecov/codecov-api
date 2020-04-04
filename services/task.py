@@ -29,10 +29,14 @@ class TaskService(object):
             )
         ).apply_async()
 
-    def notify(self, repoid, commitid):
+    def notify(self, repoid, commitid, current_yaml=None):
         self._create_signature(
             'app.tasks.notify.Notify',
-            kwargs=dict(repoid=repoid, commitid=commitid)
+            kwargs=dict(
+                repoid=repoid,
+                commitid=commitid,
+                current_yaml=current_yaml,
+            )
         ).apply_async()
 
     def pulls_sync(self, repoid, pullid):
