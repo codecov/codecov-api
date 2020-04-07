@@ -71,10 +71,8 @@ class TestValidateYamlHandler(APITestCase):
         response = self._post(data="valid yaml")
 
         assert response.status_code == status.HTTP_200_OK
-
-        # TODO: re-enable after addressing CE-1484
-        # expected_result = f"Valid!\n\n{dumps(validated_yaml, indent=2)}\n"
-        # assert response.content.decode() == expected_result
+        expected_result = f"Valid!\n\n{dumps(validated_yaml, indent=2)}\n"
+        assert response.content.decode() == expected_result
 
     @patch('validate.views.validate_yaml')
     def test_post_invalid_yaml(self, mock_validate_yaml):

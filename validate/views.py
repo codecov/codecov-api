@@ -26,9 +26,6 @@ class ValidateYamlHandler(APIView):
             return HttpResponse(f"{str(e)}\n", status=status.HTTP_400_BAD_REQUEST, content_type="text/plain")
         try:
             validated_yaml = validate_yaml(yaml_dict)
-            return HttpResponse(f"Valid!", status=status.HTTP_200_OK, content_type="text/plain")
-            # TODO: return validated yaml as done below after addressing
-            # https://codecovio.atlassian.net/browse/CE-1484
-            # return HttpResponse(f"Valid!\n\n{dumps(validated_yaml, indent=2)}\n", status=status.HTTP_200_OK, content_type="text/plain")
+            return HttpResponse(f"Valid!\n\n{dumps(validated_yaml, indent=2)}\n", status=status.HTTP_200_OK, content_type="text/plain")
         except InvalidYamlException as e:
             return HttpResponse(f"{str(e)}\n", status=status.HTTP_400_BAD_REQUEST, content_type="text/plain")
