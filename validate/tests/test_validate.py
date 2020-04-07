@@ -48,9 +48,11 @@ class TestValidateYamlHandler(APITestCase):
         expected_result = "Can't parse YAML\n"
         assert response.content.decode() == expected_result
 
-    @patch('validate.views.validate_yaml')
-    def test_post_valid_yaml(self, mock_validate_yaml):
-        validated_yaml = {
+    def test_post_valid_yaml(self):
+        yaml = {
+            "ignore": [
+                "Pods/.*",
+            ],
             "coverage": {
                 "round": "down",
                 "precision": 2,
@@ -61,17 +63,20 @@ class TestValidateYamlHandler(APITestCase):
                             "base": "auto",
                         }
                     }
+                },
+                "notify": {
+                    "slack": {
+                        "default": {
+                            "url": "secret:c/nCgqn5v1HY5VFIs9i4W3UY6eleB2rTBdBKK/ilhPR7Ch4N0FE1aO6SRfAxp3Zlm4tLNusaPY7ettH6dTYj/YhiRohxiNqJMJ4L9YQmESo="
+                        }
+                    }
                 }
-            },
-            "ignore": [
-                "Pods/.*",
-            ]
+            }
         }
-        mock_validate_yaml.return_value = validated_yaml
-        response = self._post(data="valid yaml")
+        response = self._post(data=yaml)
 
         assert response.status_code == status.HTTP_200_OK
-        expected_result = f"Valid!\n\n{dumps(validated_yaml, indent=2)}\n"
+        expected_result = f"Valid!\n\n{dumps(yaml, indent=2)}\n"
         assert response.content.decode() == expected_result
 
     @patch('validate.views.validate_yaml')
