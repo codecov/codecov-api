@@ -16,6 +16,9 @@ from services.repo_providers import RepoProviderService
 log = logging.getLogger(__name__)
 
 
+MAX_DIFF_SIZE = 170
+
+
 def _is_added(line_value):
     return line_value and line_value[0] == "+"
 
@@ -75,7 +78,7 @@ class FileComparisonTraverseManager:
             the line value passed to the visitors will be the line at src[self.head_ln - 1].
         """
         if src:
-            assert head_file_eof - 1 == len(src), "If source provided, it must be full source"
+            assert head_file_eof - 1 <= len(src), "If source provided, it must be full source"
 
         self.head_file_eof = head_file_eof
         self.base_file_eof = base_file_eof
@@ -263,19 +266,56 @@ class LineComparison:
 
     @property
     def sessions(self):
-        if self.head_line is not None:
-            return functools.reduce(
-                lambda a, b: a + b,
-                [session.coverage for session in self.head_line.sessions if session.coverage == 1]
-            )
+        """
+        Returns the number of LineSessions in the head ReportLine such that
+        LineSession.coverage == 1 (indicating a hit).
+        """
+        if self.head_line is None:
+            return None
+
+        # an array of 1's (like [1, 1, ...]) of length equal to the number of sessions
+        # where each session's coverage == 1 (hit)
+        session_coverage = [session.coverage for session in self.head_line.sessions if session.coverage == 1]
+        if session_coverage:
+            return functools.reduce(lambda a, b: a + b, session_coverage)
 
 
 class FileComparison:
-    def __init__(self, base_file, head_file, diff_data=None, src=[]):
+    def __init__(self, base_file, head_file, diff_data=None, src=[], bypass_max_diff=False):
+        """
+        base_file -- the ReportFile for this file from the base report
+
+        head_file -- the ReportFile for this file from the head report
+
+        diff_data -- the git-comparison between the base and head references in the instantiation
+            Comparison object. fields include:
+
+            stats: -- {"added": number of added lines, "removed": number of removed lines}
+            segments: (described in detail in the FileComparisonTraverseManager docstring)
+            before: the name of this file in the base reference, if different from name in head ref
+
+            If this file is unchanged in the comparison between base and head, the default will be used.
+
+        src -- The full source of the file in the head reference. Used in FileComparisonTraverseManager
+            to join src-code with coverage data. Default is used when retrieving full comparison,
+            whereas full-src is serialized when retrieving individual file comparison.
+
+        bypass_max_diff -- configuration paramater that tells this class to ignore max-diff truncating.
+            default is used when retrieving full comparison; True is passed when fetching individual
+            file comparison.
+        """
         self.base_file = base_file
         self.head_file = head_file
         self.diff_data = diff_data
         self.src = src
+
+        # Some extra fields for truncating large diffs in the initial response
+        self.total_diff_length = functools.reduce(
+            lambda a, b: a + b,
+            [len(segment["lines"]) for segment in self.diff_data["segments"]]
+        ) if self.diff_data is not None and self.diff_data["segments"] else 0
+
+        self.bypass_max_diff = bypass_max_diff
 
     @property
     def name(self):
@@ -319,6 +359,9 @@ class FileComparison:
 
     @cached_property
     def lines(self):
+        if self.total_diff_length > MAX_DIFF_SIZE and not self.bypass_max_diff:
+            return None
+
         return self._calculated_changes_and_lines[1]
 
 
@@ -337,16 +380,38 @@ class Comparison(object):
 
     @cached_property
     def files(self):
-        files = []
-        for f in self.head_report.file_reports():
-            diff_data = self.git_comparison["diff"]["files"].get(f.name)
-            base_file = self.base_report.get(f.name)
-            if diff_data and not base_file:
-                base_file = self.base_report.get(diff_data.get("before"))
-            files.append(
-                FileComparison(head_file=f, base_file=base_file, diff_data=diff_data)
-            )
-        return files
+        return [self.get_file_comparison(file_name) for file_name in self.head_report.files]
+
+    def get_file_comparison(self, file_name, with_src=False, bypass_max_diff=False):
+        diff_data = self.git_comparison["diff"]["files"].get(file_name)
+        base_file = self.base_report.get(file_name)
+        if diff_data and base_file is None:
+            base_file = self.base_report.get(diff_data.get("before"))
+        head_file = self.head_report.get(file_name)
+
+        if with_src:
+            src = str(
+                asyncio.run(
+                    RepoProviderService().get_adapter(
+                        owner=self.user,
+                        repo=self.head_commit.repository
+                    ).get_source(
+                        file_name,
+                        self.head_commit.commitid
+                    )
+                )["content"],
+                'utf-8'
+            ).splitlines()
+        else:
+            src = []
+
+        return FileComparison(
+            base_file=base_file,
+            head_file=head_file,
+            diff_data=diff_data,
+            src=src,
+            bypass_max_diff=bypass_max_diff
+        )
 
     @property
     def git_comparison(self):
@@ -365,6 +430,13 @@ class Comparison(object):
         if self._head_report is None:
             self._head_report = self._calculate_head_report()
         return self._head_report
+
+    @property
+    def totals(self):
+        return {
+            "base": self.base_report.totals if self.base_report is not None else None,
+            "head": self.head_report.totals if self.head_report is not None else None,
+        }
 
     @property
     def git_commits(self):
@@ -387,13 +459,6 @@ class Comparison(object):
                                                  repository=self.base_commit.repository)
         commits_queryset.exclude(deleted=True)
         return commits_queryset
-
-    def file_diff(self, file_path):
-        diff = self.git_comparison['diff']['files']
-        if file_path in diff:
-            return dict(src_diff=diff[file_path],
-                        base_coverage=self.base_report.get(filename=file_path, _else=None),
-                        head_coverage=self.head_report.get(filename=file_path, _else=None))
 
     def _calculate_git_commits(self):
         commits = self.git_comparison['commits']

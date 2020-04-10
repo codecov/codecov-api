@@ -5,7 +5,6 @@ from unittest.mock import patch, PropertyMock
 from django.test import override_settings
 from rest_framework.reverse import reverse
 
-from internal_api.tests.views.test_compare_src_file_view import build_commits_with_changes
 from core.tests.factories import PullFactory, RepositoryFactory, CommitFactory
 from covreports.reports.types import ReportTotals
 from codecov.tests.base_test import InternalAPITest
@@ -19,6 +18,7 @@ current_file = Path(__file__)
 @patch('services.archive.ArchiveService.read_chunks')
 @patch('services.archive.ArchiveService.create_root_storage')
 @patch('services.comparison.FlagComparison.diff_totals', new_callable=PropertyMock)
+@patch("internal_api.repo.repository_accessors.RepoAccessors.get_repo_permissions", lambda self, repo, user: (True, True))
 class TestCompareFlagsView(InternalAPITest):
     def _get_compare_flags(self, kwargs, query_params):
         return self.client.get(reverse('compare-flags', kwargs=kwargs), data=query_params)
