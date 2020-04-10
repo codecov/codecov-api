@@ -15,7 +15,7 @@ from torngit.exceptions import TorngitClientError
 class RepositoryViewSetTestSuite(InternalAPITest):
     def _list(self, kwargs, query_params={}):
         return self.client.get(
-            reverse('repos-list', kwargs={"orgName": self.org.username}),
+            reverse('repos-list', kwargs=kwargs),
             data=query_params
         )
 
@@ -45,7 +45,6 @@ class RepositoryViewSetTestSuite(InternalAPITest):
         return self.client.put(reverse('repos-reset-webhook', kwargs=kwargs))
 
 
-@patch("internal_api.repo.repository_accessors.RepoAccessors.get_repo_permissions")
 class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
     def setUp(self):
         self.org = OwnerFactory(username='codecov', service='github')
@@ -67,7 +66,7 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
 
         self.client.force_login(user=self.user)
 
-    def test_order_by_updatestamp(self, _):
+    def test_order_by_updatestamp(self):
         response = self._list(
             kwargs={"orgName": self.org.username},
             query_params={'ordering': 'updatestamp'}
@@ -84,7 +83,7 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         assert reverse_response.data["results"][0]["repoid"] == self.repo2.repoid
         assert reverse_response.data["results"][1]["repoid"] == self.repo1.repoid
 
-    def test_order_by_name(self, _):
+    def test_order_by_name(self):
         response = self._list(
             kwargs={"orgName": self.org.username},
             query_params={'ordering': 'name'}
@@ -101,11 +100,7 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         assert reverse_response.data["results"][0]["repoid"] == self.repo2.repoid
         assert reverse_response.data["results"][1]["repoid"] == self.repo1.repoid
 
-    @patch("services.archive.ArchiveService.create_root_storage")
-    @patch("services.archive.ArchiveService.read_chunks")
-    def test_order_by_coverage(self, read_chunks_mock, *args):
-        read_chunks_mock.return_value = []
-
+    def test_order_by_coverage(self):
         CommitFactory(repository=self.repo1, totals={"c": 25})
         CommitFactory(repository=self.repo1, totals={"c": 41})
         CommitFactory(repository=self.repo2, totals={"c": 32})
@@ -126,7 +121,7 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         assert reverse_response.data["results"][0]["repoid"] == self.repo1.repoid
         assert reverse_response.data["results"][1]["repoid"] == self.repo2.repoid
 
-    def test_get_active_repos(self, _):
+    def test_get_active_repos(self):
         RepositoryFactory(author=self.org, name='C')
         response = self._list(
             kwargs={"orgName": self.org.username},
@@ -139,8 +134,9 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
             "got the wrong number of repos: {}".format(len(response.data['results']))
         )
 
-    def test_get_inactive_repos(self, _):
-        RepositoryFactory(author=self.org, name='C')
+    def test_get_inactive_repos(self):
+        new_repo = RepositoryFactory(author=self.org, name='C', private=False)
+
         response = self._list(
             kwargs={"orgName": self.org.username},
             query_params={'active': False}
@@ -152,8 +148,9 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
             "got the wrong number of repos: {}".format(len(response.data['results']))
         )
 
-    def test_get_all_repos(self, mock_provider):
-        RepositoryFactory(author=self.org, name='C')
+    def test_get_all_repos(self):
+        new_repo = RepositoryFactory(author=self.org, name='C', private=False)
+
         response = self._list(kwargs={"orgName": self.org.username})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
@@ -161,6 +158,41 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
             3,
             "got the wrong number of repos: {}".format(len(response.data['results']))
         )
+
+    def test_returns_private_repos_if_user_has_permission(self):
+        new_repo = RepositoryFactory(author=self.org, name='C')
+        self.user.permission.append(new_repo.repoid)
+        self.user.save()
+
+        response = self._list(kwargs={"orgName": self.org.username})
+
+        assert response.status_code == 200
+        assert len(response.data['results']) == 3
+
+    def test_returns_private_repos_if_user_owns_repo(self):
+        new_repo = RepositoryFactory(author=self.user, name='C')
+
+        response = self._list(kwargs={"orgName": self.user.username})
+
+        assert response.status_code == 200
+        assert new_repo.name in [repo["name"] for repo in response.data['results']]
+
+    def test_returns_public_repos_if_not_owned_by_user_and_not_in_permissions_array(self):
+        new_repo = RepositoryFactory(author=self.org, name='C', private=False)
+
+        response = self._list(kwargs={"orgName": self.org.username})
+
+        assert response.status_code == 200
+        assert new_repo.name in [repo["name"] for repo in response.data['results']]
+
+    def test_doesnt_return_private_repos_if_above_conditions_not_met(self):
+        # Private repo, not owned by user, not in users permissions array
+        private_repo = RepositoryFactory(author=self.org, name='C', private=True)
+
+        response = self._list(kwargs={"orgName": self.org.username})
+
+        assert response.status_code == 200
+        assert private_repo.name not in [repo["name"] for repo in response.data['results']]
 
 
 @patch("internal_api.repo.repository_accessors.RepoAccessors.get_repo_permissions")

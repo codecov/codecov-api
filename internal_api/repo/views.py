@@ -4,7 +4,7 @@ import logging
 
 from torngit.exceptions import TorngitClientError
 
-from django.db.models import Subquery, OuterRef
+from django.db.models import Subquery, OuterRef, Q
 
 from django.db.models import Subquery, OuterRef
 from django.shortcuts import get_object_or_404
@@ -88,7 +88,11 @@ class RepositoryViewSet(
 
     def get_queryset(self):
         owner = self._get_owner()
-        queryset = owner.repository_set.all()
+        queryset = owner.repository_set.filter(
+            Q(private=False)
+            | Q(author__ownerid=self.request.user.ownerid)
+            | Q(repoid__in=self.request.user.permission)
+        )
 
         if self.action == 'list':
             # Hiding this annotation will avoid expensive subqueries
