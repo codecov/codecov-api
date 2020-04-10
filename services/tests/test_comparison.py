@@ -304,6 +304,18 @@ class LineComparisonTests(TestCase):
 
         assert lc.sessions == 2
 
+    def test_sessions_returns_none_if_no_coverage(self):
+        lc = LineComparison(
+            None,
+            ReportLine(
+                sessions=[
+                    LineSession(id=0, coverage=0),
+                ]
+            ),
+            0, 0, "", False
+        )
+        assert lc.sessions is None
+
 
 class FileComparisonTests(TestCase):
     def setUp(self):
@@ -432,44 +444,40 @@ class ComparisonTests(TestCase):
         base, head = CommitFactory(author=owner), CommitFactory(author=owner)
         self.comparison = Comparison(base, head, owner)
 
-    def test_files_returns_files_in_head_report(
+    def test_files_gets_file_comparison_for_each_file_in_head_report(
         self,
         base_report_mock,
         head_report_mock,
         git_comparison_mock
     ):
-        file_name = "myfile.py"
-
-        base_report_files = {}
-        base_report_mock.return_value = SerializableReport(files=base_report_files)
-
-        head_report_files = {file_name : file_data}
+        head_report_files = {"file1": file_data, "file2": file_data}
         head_report_mock.return_value = SerializableReport(files=head_report_files)
+        base_report_mock.return_value = SerializableReport(files={})
+        git_comparison_mock.return_value = {"diff": {"files": {}}}
 
-        assert self.comparison.files[0].head_file.name == file_name
+        assert len(self.comparison.files) == 2
+        for fc in self.comparison.files:
+            assert isinstance(fc, FileComparison)
+            assert fc.head_file.name in head_report_files
+            assert fc.base_file is None
 
-    def test_files_adds_in_files_from_base_report_if_exists(
+    def test_get_file_comparison_adds_in_file_from_base_report_if_exists(
         self,
         base_report_mock,
         head_report_mock,
         git_comparison_mock
     ):
-        file_in_base_and_head = "both.py"
-        file_only_in_head = "headonly.py"
+        git_comparison_mock.return_value = {"diff": {"files": {}}}
 
-        base_report_files = {file_in_base_and_head: file_data}
-        base_report_mock.return_value = SerializableReport(files=base_report_files)
+        files = {"both.py": file_data}
+        base_report_mock.return_value = SerializableReport(files=files)
+        head_report_mock.return_value = SerializableReport(files=files)
 
-        head_report_files = {
-            file_in_base_and_head: file_data,
-            file_only_in_head: file_data
-        }
-        head_report_mock.return_value = SerializableReport(files=head_report_files)
+        fc = self.comparison.get_file_comparison("both.py")
+        assert fc.head_file.name == "both.py"
+        assert fc.base_file.name == "both.py"
 
-        assert self.comparison.files[1].base_file is None
-        assert self.comparison.files[0].base_file.name == file_in_base_and_head
-
-    def test_files_adds_in_diff_data_if_exists(
+    def test_get_file_comparison_accounts_for_renamed_files(
         self,
         base_report_mock,
         head_report_mock,
@@ -477,7 +485,8 @@ class ComparisonTests(TestCase):
     ):
         file_name = "myfile.py"
         previous_name = "previous.py"
-        base_report_files = {}
+
+        base_report_files = {previous_name: file_data}
         base_report_mock.return_value = SerializableReport(files=base_report_files)
 
         head_report_files = {file_name : file_data}
@@ -486,13 +495,73 @@ class ComparisonTests(TestCase):
         git_comparison_mock.return_value = {
             "diff": {
                 "files": {
-                    file_name: {"before": previous_name}
+                    file_name: {
+                        "before": previous_name,
+                        "segments": []
+                    }
                 }
             },
             "commits": []
         }
 
-        assert self.comparison.files[0].diff_data["before"] == previous_name
+        fc = self.comparison.get_file_comparison(file_name)
+        assert fc.head_file.name == file_name
+        assert fc.base_file.name == previous_name
+
+    def test_get_file_comparison_includes_diff_data_if_exists(
+        self,
+        base_report_mock,
+        head_report_mock,
+        git_comparison_mock
+    ):
+        file_name = "f"
+        diff_data = {
+            "segments": [{
+                "header": ["4", "6", "7", "3"],
+                "lines": []
+            }],
+            "stats": {"added": 3, "removed": 2}
+        }
+
+        base_report_mock.return_value = SerializableReport(files={})
+
+        head_report_files = {file_name : file_data}
+        head_report_mock.return_value = SerializableReport(files=head_report_files)
+
+        git_comparison_mock.return_value = {
+            "diff": {
+                "files": {file_name: diff_data}
+            }
+        }
+
+        fc = self.comparison.get_file_comparison(file_name)
+        assert fc.diff_data == diff_data
+
+    @patch('services.repo_providers.RepoProviderService.get_adapter')
+    def test_get_file_comparison_includes_src_if_with_src_is_true(
+        self,
+        mocked_comparison_adapter,
+        base_report_mock,
+        head_report_mock,
+        git_comparison_mock
+    ):
+        from internal_api.tests.views.test_compare_viewset import MockedComparisonAdapter
+        src = b"two\nlines"
+        git_comparison_mock.return_value = {"diff": {"files": {}}}
+        mocked_comparison_adapter.return_value = MockedComparisonAdapter(
+            {"diff": {"files": {}}},
+            test_lines=src
+        )
+
+        file_name = "f"
+
+        base_report_mock.return_value = SerializableReport(files={})
+        head_report_files = {file_name : file_data}
+        head_report_mock.return_value = SerializableReport(files=head_report_files)
+
+        fc = self.comparison.get_file_comparison(file_name, with_src=True)
+        assert fc.src == ["two", "lines"]
+
 
     @pytest.mark.xfail #TODO(pierce): investigate this feature
     def test_files_adds_deleted_files_that_were_tracked_in_base_report(
@@ -520,3 +589,27 @@ class ComparisonTests(TestCase):
         assert self.comparison.files[0].base_file.name == deleted_file_name
         assert self.comparison.files[0].head_file is None
         assert self.comparison.files[0].diff_data == {"type": "deleted"}
+
+    def test_totals_returns_head_totals_if_exists(
+        self,
+        base_report_mock,
+        head_report_mock,
+        git_comparison_mock
+    ):
+        base_report_mock.return_value = None
+        head_report_mock.return_value = SerializableReport()
+
+        assert self.comparison.totals["head"] == head_report_mock.return_value.totals
+        assert self.comparison.totals["base"] is None
+
+    def test_totals_returns_head_totals_if_exists(
+        self,
+        base_report_mock,
+        head_report_mock,
+        git_comparison_mock
+    ):
+        head_report_mock.return_value = None
+        base_report_mock.return_value = SerializableReport()
+
+        assert self.comparison.totals["base"] == base_report_mock.return_value.totals
+        assert self.comparison.totals["head"] is None
