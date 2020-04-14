@@ -345,3 +345,20 @@ class TestCompareViewSetRetrieve(APITestCase):
 
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data["lines"]) == 46
+
+    def test_missing_base_report_returns_none_base_totals(
+        self,
+        repo_permissions_mock,
+        adapter_mock,
+        base_report_mock,
+        head_report_mock
+    ):
+        repo_permissions_mock.return_value = True, True
+        base_report_mock.return_value = None
+        head_report_mock.return_value = self.head_report
+        adapter_mock.return_value = self.mocked_compare_adapter
+
+        response = self._get_comparison()
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["totals"]["base"] == None

@@ -383,11 +383,15 @@ class Comparison(object):
         return [self.get_file_comparison(file_name) for file_name in self.head_report.files]
 
     def get_file_comparison(self, file_name, with_src=False, bypass_max_diff=False):
-        diff_data = self.git_comparison["diff"]["files"].get(file_name)
-        base_file = self.base_report.get(file_name)
-        if diff_data and base_file is None:
-            base_file = self.base_report.get(diff_data.get("before"))
         head_file = self.head_report.get(file_name)
+        diff_data = self.git_comparison["diff"]["files"].get(file_name)
+
+        if self.base_report is not None:
+            base_file = self.base_report.get(file_name)
+            if base_file is None and diff_data:
+                base_file = self.base_report.get(diff_data.get("before"))
+        else:
+            base_file = None
 
         if with_src:
             src = str(

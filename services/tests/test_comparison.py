@@ -562,6 +562,21 @@ class ComparisonTests(TestCase):
         fc = self.comparison.get_file_comparison(file_name, with_src=True)
         assert fc.src == ["two", "lines"]
 
+    def test_get_file_comparison_with_no_base_report_doesnt_crash(
+        self,
+        base_report_mock,
+        head_report_mock,
+        git_comparison_mock
+    ):
+        git_comparison_mock.return_value = {"diff": {"files": {}}}
+
+        files = {"both.py": file_data}
+        base_report_mock.return_value = None
+        head_report_mock.return_value = SerializableReport(files=files)
+
+        fc = self.comparison.get_file_comparison("both.py")
+        assert fc.head_file.name == "both.py"
+
 
     @pytest.mark.xfail #TODO(pierce): investigate this feature
     def test_files_adds_deleted_files_that_were_tracked_in_base_report(
