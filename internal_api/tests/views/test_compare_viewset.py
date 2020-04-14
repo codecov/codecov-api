@@ -66,6 +66,7 @@ class TestCompareViewSetRetrieve(APITestCase):
             "diff": {
                 "files": {
                     self.file_name: {
+                        "type": "modified",
                         "segments": [{
                               "header": ["4", "43", "4", "3"],
                               "lines": ["", "", ""] + ["-this line is removed"]*40

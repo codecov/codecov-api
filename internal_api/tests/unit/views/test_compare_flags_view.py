@@ -15,6 +15,7 @@ from services.comparison import FlagComparison
 current_file = Path(__file__)
 
 
+@patch('services.comparison.Comparison.git_comparison', new_callable=PropertyMock)
 @patch('services.archive.ArchiveService.read_chunks')
 @patch('services.archive.ArchiveService.create_root_storage')
 @patch('services.comparison.FlagComparison.diff_totals', new_callable=PropertyMock)
@@ -42,7 +43,8 @@ class TestCompareFlagsView(InternalAPITest):
         self,
         diff_totals_mock, 
         create_root_storage_mock,
-        read_chunks_mock
+        read_chunks_mock,
+        git_comparison_mock
     ):
         head_chunks = open(
             current_file.parent.parent.parent / f'samples/{self.commit.commitid}_chunks.txt',
@@ -68,6 +70,7 @@ class TestCompareFlagsView(InternalAPITest):
             complexity_total=0,
             diff=0
         )
+        git_comparison_mock.return_value = {"diff": {"files": {}}}
         response = self._get_compare_flags(
             kwargs={
                 "orgName": self.repo.author.username,
@@ -186,8 +189,10 @@ class TestCompareFlagsView(InternalAPITest):
         self,
         diff_totals_mock,
         root_storage_mock,
-        read_chunks_mock
+        read_chunks_mock,
+        git_comparison_mock
     ):
+        git_comparison_mock.return_value = {"diff": {"files": {}}}
         read_chunks_mock.return_value = ""
         diff_totals_mock.return_value = ReportTotals()
 
@@ -215,8 +220,10 @@ class TestCompareFlagsView(InternalAPITest):
         base_flag_mock,
         diff_totals_mock,
         root_storage_mock,
-        read_chunks_mock
+        read_chunks_mock,
+        git_comparison_mock
     ):
+        git_comparison_mock.return_value = {"diff": {"files": {}}}
         read_chunks_mock.return_value = ""
         base_flag_mock.return_value = None
         diff_totals_mock.return_value = ReportTotals()

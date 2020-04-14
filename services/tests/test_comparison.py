@@ -363,6 +363,13 @@ class FileComparisonTests(TestCase):
             "head": None
         }
 
+    def test_totals_includes_diff_totals_if_diff(self):
+        totals = "these are the totals"
+        self.file_comparison.diff_data = {
+          "totals": totals
+        }
+        assert self.file_comparison.totals["head"].diff == totals
+
     def test_has_diff_returns_true_iff_diff_data_not_none(self):
         assert self.file_comparison.has_diff is False
 
@@ -628,3 +635,27 @@ class ComparisonTests(TestCase):
 
         assert self.comparison.totals["base"] == base_report_mock.return_value.totals
         assert self.comparison.totals["head"] is None
+
+
+@patch('services.comparison.Comparison.git_comparison', new_callable=PropertyMock)
+@patch('services.archive.ReportService.build_report_from_commit')
+class ComparisonHeadReportTests(TestCase):
+    def setUp(self):
+        owner = OwnerFactory()
+        base, head = CommitFactory(author=owner), CommitFactory(author=owner)
+        self.comparison = Comparison(base, head, owner)
+
+    @patch('services.archive.SerializableReport.apply_diff')
+    def test_head_report_calls_apply_diff(
+        self,
+        apply_diff_mock,
+        build_report_from_commit_mock,
+        git_comparison_mock
+    ):
+        build_report_from_commit_mock.return_value = SerializableReport(files={"f": file_data})
+        git_comparison_mock.return_value = {"diff": {"files": {}}}
+
+        # should be called when invoking this property
+        self.comparison.head_report
+
+        apply_diff_mock.assert_called_once_with(git_comparison_mock.return_value["diff"])

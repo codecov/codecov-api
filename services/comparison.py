@@ -7,6 +7,7 @@ from collections import Counter
 from django.utils.functional import cached_property
 
 from covreports.reports.resources import ReportFile
+from covreports.reports.types import ReportTotals
 
 from services.archive import ReportService
 from core.models import Commit
@@ -326,9 +327,18 @@ class FileComparison:
 
     @property
     def totals(self):
+        head_totals = self.head_file.totals if self.head_file is not None else None
+
+        # The call to '.apply_diff()' in 'Comparison.head_report' stores diff totals
+        # for each file in the diff_data for that file (in a field called 'totals').
+        # Here we pass this along to the frontend by assigning the diff totals
+        # to the head_totals' 'diff' attribute. It is absolutely worth considering
+        # modifying the behavior of covreports to implement something similar.
+        if head_totals and self.diff_data:
+            head_totals.diff = self.diff_data.get('totals', 0)
         return {
             "base": self.base_file.totals if self.base_file is not None else None,
-            "head": self.head_file.totals if self.head_file is not None else None
+            "head": head_totals
         }
 
     @property
@@ -374,7 +384,6 @@ class Comparison(object):
         self.report_service = ReportService()
         self._base_report = None
         self._git_comparison = None
-        self._head_report = None
         self._git_commits = None
         self._upload_commits = None
 
@@ -429,11 +438,11 @@ class Comparison(object):
             self._base_report = self._calculate_base_report()
         return self._base_report
 
-    @property
+    @cached_property
     def head_report(self):
-        if self._head_report is None:
-            self._head_report = self._calculate_head_report()
-        return self._head_report
+        report = self.report_service.build_report_from_commit(self.head_commit)
+        report.apply_diff(self.git_comparison["diff"])
+        return report
 
     @property
     def totals(self):
@@ -479,9 +488,6 @@ class Comparison(object):
 
     def _calculate_base_report(self):
         return self.report_service.build_report_from_commit(self.base_commit)
-
-    def _calculate_head_report(self):
-        return self.report_service.build_report_from_commit(self.head_commit)
 
     def flag_comparison(self, flag_name):
         return FlagComparison(self, flag_name)
