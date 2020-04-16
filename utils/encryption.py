@@ -1,6 +1,6 @@
 import os
 
-from covreports.encryption import StandardEncryptor
+from shared.encryption import StandardEncryptor
 
 from django.conf import settings
 

@@ -6,8 +6,8 @@ from django.http import HttpResponse
 from json import dumps
 from django.conf import settings
 
-from covreports.validation.yaml import validate_yaml
-from covreports.validation.exceptions import InvalidYamlException
+from shared.validation.yaml import validate_yaml
+from shared.validation.exceptions import InvalidYamlException
 
 
 class ValidateYamlHandler(APIView):

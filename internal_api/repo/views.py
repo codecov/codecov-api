@@ -2,7 +2,7 @@ import uuid
 import asyncio
 import logging
 
-from torngit.exceptions import TorngitClientError
+from shared.torngit.exceptions import TorngitClientError
 
 from django.db.models import Subquery, OuterRef, Q
 
