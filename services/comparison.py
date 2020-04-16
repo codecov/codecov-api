@@ -333,7 +333,7 @@ class FileComparison:
         # for each file in the diff_data for that file (in a field called 'totals').
         # Here we pass this along to the frontend by assigning the diff totals
         # to the head_totals' 'diff' attribute. It is absolutely worth considering
-        # modifying the behavior of shared to implement something similar.
+        # modifying the behavior of shared.reports to implement something similar.
         if head_totals and self.diff_data:
             head_totals.diff = self.diff_data.get('totals', 0)
         return {
