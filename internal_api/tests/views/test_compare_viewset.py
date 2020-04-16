@@ -4,8 +4,8 @@ from rest_framework import status
 
 from unittest.mock import patch, PropertyMock
 
-from covreports.reports.resources import ReportFile
-from covreports.reports.types import ReportLine, ReportTotals, LineSession
+from shared.reports.resources import ReportFile
+from shared.reports.types import ReportLine, ReportTotals, LineSession
 from services.archive import SerializableReport
 
 from codecov_auth.tests.factories import OwnerFactory

@@ -9,7 +9,7 @@ from rest_framework.reverse import reverse
 
 from services.archive import SerializableReport
 from internal_api.commit.serializers import ReportSerializer
-from covreports.reports.resources import ReportFile
+from shared.reports.resources import ReportFile
 from services.archive import ArchiveService
 from codecov.tests.base_test import InternalAPITest
 from codecov_auth.tests.factories import OwnerFactory

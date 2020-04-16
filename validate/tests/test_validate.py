@@ -7,7 +7,7 @@ from json import dumps
 from yaml import YAMLError
 
 from django.conf import settings
-from covreports.validation.exceptions import InvalidYamlException
+from shared.validation.exceptions import InvalidYamlException
 
 
 class TestValidateYamlHandler(APITestCase):

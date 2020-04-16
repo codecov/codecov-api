@@ -6,7 +6,7 @@ from django.test import override_settings
 from rest_framework.reverse import reverse
 
 from core.tests.factories import PullFactory, RepositoryFactory, CommitFactory
-from covreports.reports.types import ReportTotals
+from shared.reports.types import ReportTotals
 from codecov.tests.base_test import InternalAPITest
 from services.archive import ArchiveService
 from services.comparison import FlagComparison

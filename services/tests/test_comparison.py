@@ -3,8 +3,8 @@ from django.test import TestCase
 from unittest.mock import patch, PropertyMock
 import pytest
 
-from covreports.reports.resources import ReportFile
-from covreports.reports.types import ReportLine, LineSession
+from shared.reports.resources import ReportFile
+from shared.reports.types import ReportLine, LineSession
 
 from core.tests.factories import CommitFactory
 from codecov_auth.tests.factories import OwnerFactory

@@ -6,8 +6,8 @@ from collections import Counter
 
 from django.utils.functional import cached_property
 
-from covreports.reports.resources import ReportFile
-from covreports.reports.types import ReportTotals
+from shared.reports.resources import ReportFile
+from shared.reports.types import ReportTotals
 
 from services.archive import ReportService
 from core.models import Commit
@@ -333,7 +333,7 @@ class FileComparison:
         # for each file in the diff_data for that file (in a field called 'totals').
         # Here we pass this along to the frontend by assigning the diff totals
         # to the head_totals' 'diff' attribute. It is absolutely worth considering
-        # modifying the behavior of covreports to implement something similar.
+        # modifying the behavior of shared to implement something similar.
         if head_totals and self.diff_data:
             head_totals.diff = self.diff_data.get('totals', 0)
         return {

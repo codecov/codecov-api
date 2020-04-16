@@ -6,7 +6,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 
-from covreports.helpers.yaml import walk
+from shared.helpers.yaml import walk
 from codecov_auth.models import Owner
 from core.models import Repository, Branch, Commit, Pull
 from services.task import TaskService
