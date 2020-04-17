@@ -79,6 +79,9 @@ jobs:
         command: |-
           make -f Makefile.circle tag
           make -f Makefile.circle deploy
+    - run:
+        command: |-
+          if [ $CIRCLE_BRANCH = 'staging' ]; then make -f Makefile.circle staging; done
 
 workflows:
   version: 2
