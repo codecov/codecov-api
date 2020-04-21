@@ -76,6 +76,8 @@ class RepoPullList(InternalAPITest):
 
     def test_get_pulls_no_permissions(self, mock_provider):
         mock_provider.return_value = False, False
+        self.user.permission = []
+        self.user.save()
         self.client.force_login(user=self.user)
         response = self.client.get(reverse('pulls-list', kwargs=self.correct_kwargs))
         self.assertEqual(response.status_code, 403)
@@ -196,10 +198,13 @@ class RepoPullDetail(InternalAPITest):
         self.assertEqual(content['pullid'], 10)
 
     def test_get_pull_no_permissions(self, mock_provider):
+        self.user.permission = []
+        self.user.save()
         mock_provider.return_value = False, False
         self.client.force_login(user=self.user)
         response = self.client.get('/internal/codecov/testRepoName/pulls/10/')
         self.assertEqual(response.status_code, 403)
+
 
 @patch(get_permissions_method)
 class RepoCommitList(InternalAPITest):
@@ -261,6 +266,16 @@ class RepoCommitList(InternalAPITest):
         assert len(content['results']) == 1
         assert content['results'][0]['commitid'] == commit_non_master.commitid
 
+    def test_fetch_commits_no_permissions(self, mock_provider):
+        mock_provider.return_value = False, False
+        self.user.permission = []
+        self.user.save()
+        self.client.force_login(user=self.user)
+
+        response = self.client.get('/internal/codecov/testRepoName/commits')
+
+        assert response.status_code == 403
+
 
 @patch(get_permissions_method)
 class RepoBranchList(InternalAPITest):
@@ -293,6 +308,8 @@ class RepoBranchList(InternalAPITest):
 
     def test_get_branches_without_permission(self, mock_provider):
         mock_provider.return_value = False, False
+        self.user.permission = []
+        self.user.save()
         self.client.force_login(user=self.user)
         response = self.client.get('/internal/codecov/testRepoName/branches')
         self.assertEqual(response.status_code, 403)

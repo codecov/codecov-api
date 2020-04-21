@@ -1,9 +1,9 @@
 from django.urls import path, include
 
 from internal_api.owner.views import OwnerView
-from internal_api.pull.views import RepoPullFlagsList, RepoPullViewset
+from internal_api.pull.views import RepoPullViewset
 
-from internal_api.commit.views import RepoCommitList, RepoCommitFlags
+from internal_api.commit.views import RepoCommitList
 from internal_api.branch.views import RepoBranchList
 
 from internal_api.repo.views import RepositoryViewSet
@@ -21,8 +21,8 @@ repos_router.register(r'', RepositoryViewSet, base_name='repos')
 
 # Pull
 
-pull_router = DefaultRouter()
-pull_router.register(r'', RepoPullViewset, base_name='pulls')
+pulls_router = DefaultRouter()
+pulls_router.register(r'pulls', RepoPullViewset, base_name='pulls')
 
 # Account
 
@@ -34,12 +34,6 @@ compare_router.register(r'compare', CompareViewSet, base_name='compare')
 
 commits_patterns = [
     path('', RepoCommitList.as_view(), name='commits-list'),
-    path('/<str:commitid>/flags', RepoCommitFlags.as_view(), name='commits-flags-list'),
-]
-
-pulls_patterns = [
-    path('/', include(pull_router.urls)),
-    path('/<str:pullid>/flags', RepoPullFlagsList.as_view(), name='pulls-flags-list'),
 ]
 
 urlpatterns = [
@@ -47,7 +41,7 @@ urlpatterns = [
     path('<str:orgName>/repos/', include(repos_router.urls)),
     path('', include(accounts_router.urls)),
     path('<str:orgName>/<str:repoName>/branches', RepoBranchList.as_view(), name="branches"),
-    path('<str:orgName>/<str:repoName>/pulls', include(pulls_patterns)),
+    path('<str:orgName>/<str:repoName>/', include(pulls_router.urls)),
     path('<str:orgName>/<str:repoName>/commits', include(commits_patterns)),
     path('<str:orgName>/<str:repoName>/', include(compare_router.urls))
 ]

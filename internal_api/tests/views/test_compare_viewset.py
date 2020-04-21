@@ -46,11 +46,13 @@ class MockedComparisonAdapter:
     async def get_compare(self, base, head):
         return self.test_diff
 
+    async def get_authenticated(self):
+        return False, False
+
 
 @patch('services.comparison.Comparison.head_report', new_callable=PropertyMock)
 @patch('services.comparison.Comparison.base_report', new_callable=PropertyMock)
 @patch('services.repo_providers.RepoProviderService.get_adapter')
-@patch("internal_api.repo.repository_accessors.RepoAccessors.get_repo_permissions")
 class TestCompareViewSetRetrieve(APITestCase):
     """
     Tests for retrieving a comparison. Does not test data that will be depracated,
@@ -189,12 +191,10 @@ class TestCompareViewSetRetrieve(APITestCase):
 
     def test_returns_200_and_expected_files_on_success(
         self,
-        repo_permissions_mock,
         adapter_mock,
         base_report_mock,
         head_report_mock
     ):
-        repo_permissions_mock.return_value = True, True
         adapter_mock.return_value = self.mocked_compare_adapter
         base_report_mock.return_value = self.base_report
         head_report_mock.return_value = self.head_report
@@ -206,13 +206,10 @@ class TestCompareViewSetRetrieve(APITestCase):
 
     def test_returns_404_if_base_or_head_references_not_found(
         self,
-        repo_permissions_mock,
         adapter_mock,
         base_report_mock,
         head_report_mock
     ):
-        repo_permissions_mock.return_value = True, True
-
         response = self._get_comparison(
             query_params={"base": 12345, "head": 678}
         )
@@ -221,14 +218,14 @@ class TestCompareViewSetRetrieve(APITestCase):
 
     def test_returns_403_if_user_doesnt_have_permissions(
         self,
-        repo_permissions_mock,
         adapter_mock,
         base_report_mock,
         head_report_mock
     ):
-        repo_permissions_mock.return_value = False, False
         other_user = OwnerFactory()
         self.client.force_login(user=other_user)
+
+        adapter_mock.return_value = self.mocked_compare_adapter
 
         response = self._get_comparison()
 
@@ -236,12 +233,10 @@ class TestCompareViewSetRetrieve(APITestCase):
 
     def test_accepts_pullid_query_param(
         self,
-        repo_permissions_mock,
         adapter_mock,
         base_report_mock,
         head_report_mock
     ):
-        repo_permissions_mock.return_value = True, True
         adapter_mock.return_value = self.mocked_compare_adapter
         base_report_mock.return_value = self.base_report
         head_report_mock.return_value = self.head_report
@@ -262,12 +257,10 @@ class TestCompareViewSetRetrieve(APITestCase):
 
     def test_diffs_larger_than_MAX_DIFF_SIZE_doesnt_include_lines(
         self,
-        repo_permissions_mock,
         adapter_mock,
         base_report_mock,
         head_report_mock
     ):
-        repo_permissions_mock.return_value = True, True
         adapter_mock.return_value = self.mocked_compare_adapter
         base_report_mock.return_value = self.base_report
         head_report_mock.return_value = self.head_report
@@ -286,12 +279,10 @@ class TestCompareViewSetRetrieve(APITestCase):
 
     def test_file_returns_comparefile_with_diff_and_src_data(
         self,
-        repo_permissions_mock,
         adapter_mock,
         base_report_mock,
         head_report_mock
     ):
-        repo_permissions_mock.return_value = True, True
         base_report_mock.return_value = self.base_report
         head_report_mock.return_value = self.head_report
 
@@ -325,12 +316,10 @@ class TestCompareViewSetRetrieve(APITestCase):
 
     def test_file_ignores_MAX_DIFF_SIZE(
         self,
-        repo_permissions_mock,
         adapter_mock,
         base_report_mock,
         head_report_mock
     ):
-        repo_permissions_mock.return_value = True, True
         base_report_mock.return_value = self.base_report
         head_report_mock.return_value = self.head_report
 
@@ -349,12 +338,10 @@ class TestCompareViewSetRetrieve(APITestCase):
 
     def test_missing_base_report_returns_none_base_totals(
         self,
-        repo_permissions_mock,
         adapter_mock,
         base_report_mock,
         head_report_mock
     ):
-        repo_permissions_mock.return_value = True, True
         base_report_mock.return_value = None
         head_report_mock.return_value = self.head_report
         adapter_mock.return_value = self.mocked_compare_adapter

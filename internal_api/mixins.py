@@ -47,13 +47,4 @@ class FilterByRepoMixin(RepoSlugUrlMixin):
     def filter_queryset(self, queryset, lookup_field = 'repository'):
         queryset = super().filter_queryset(queryset)
         repo = self.get_repo()
-
-        if repo.private:
-            can_view, can_edit = RepoAccessors().get_repo_permissions(self.request.user, repo)
-            if not can_view:
-                raise PermissionDenied(detail="You do not have permissions to view this repo")
-        # TODO:
-        # 1. handle if it's delayed auth
-        # 2. check logic on handling activated repos or if enterprise
-        # https://github.com/codecov/codecov.io/blob/master/app/handlers/base.py#L648-L753
         return queryset.filter(**{ lookup_field: repo })
