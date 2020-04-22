@@ -34,7 +34,7 @@ This service will startup when you run codecov.io normally. It is under that `ap
 The easiest way to run tests (that doesn't require installing postgres and other dependencies) is to run inside of docker:
 
     docker-compose up
-    docker exec -it codecov-api_api_1 pytest
+    docker exec -it codecov-api_api_1 pytest -rf
 
 If you want to run the test locally, you can also just run `pytest` locally, but you'll have to install the requirements.txt and change the DATABASE host to point to something local in the `codecov/settings.py`.
 
