@@ -29,13 +29,13 @@ class RepositoryPermissionsService:
 class RepositoryArtifactPermissions(BasePermission):
     """
     Permissions class for artifacts of a repository, eg commits, branches,
-    pulls, comparisons, etc. Requires that the view has a `'get_repo()'
-    method that returns the repo being worked on.
+    pulls, comparisons, etc. Requires that the view has a `'.repo'
+    property that returns the repo being worked on.
     """
     permissions_service = RepositoryPermissionsService()
 
     def has_permission(self, request, view):
         return (
             request.method in SAFE_METHODS
-            and self.permissions_service.has_read_permissions(request.user, view.get_repo())
+            and self.permissions_service.has_read_permissions(request.user, view.repo)
         )

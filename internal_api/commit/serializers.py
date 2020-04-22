@@ -64,33 +64,21 @@ class ReportTotalsSerializer(serializers.Serializer):
         )
 
 
-class CommitRepoSerializer(serializers.ModelSerializer):
-    repoid = serializers.IntegerField()
-    name = serializers.CharField()
-    updatestamp = serializers.DateTimeField()
-
-    class Meta:
-        model = Repository
-        fields = ("repoid", "name", "updatestamp")
-
-
 class CommitSerializer(serializers.ModelSerializer):
     author = OwnerSerializer()
-    repository = CommitRepoSerializer()
     totals = CommitTotalsSerializer()
 
     class Meta:
         model = Commit
         fields = (
-            "commitid",
-            "message",
-            "timestamp",
-            "ci_passed",
-            "author",
-            "repository",
-            "branch",
-            "totals",
-            "state",
+            'commitid',
+            'message',
+            'timestamp',
+            'ci_passed',
+            'author',
+            'branch',
+            'totals',
+            'state',
         )
 
 

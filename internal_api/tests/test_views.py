@@ -289,7 +289,7 @@ class RepoCommitList(InternalAPITest):
     def test_get_commits(self, mock_provider):
         mock_provider.return_value = True, True
         self.client.force_login(user=self.user)
-        response = self.client.get("/internal/codecov/testRepoName/commits")
+        response = self.client.get("/internal/codecov/testRepoName/commits/")
         self.assertEqual(response.status_code, 200)
         content = self.json_content(response)
         self.assertEqual(
@@ -311,11 +311,6 @@ class RepoCommitList(InternalAPITest):
                         "service": self.org.service,
                         "username": self.org.username,
                         "avatar_url": self.org.avatar_url,
-                    },
-                    "repository": {
-                        "repoid": self.repo.repoid,
-                        "name": self.repo.name,
-                        "updatestamp": self.repo.updatestamp.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
                     },
                     "branch": self.second_test_commit.branch,
                     "totals": {
@@ -345,11 +340,6 @@ class RepoCommitList(InternalAPITest):
                         "username": self.org.username,
                         "avatar_url": self.org.avatar_url,
                     },
-                    "repository": {
-                        "repoid": self.repo.repoid,
-                        "name": self.repo.name,
-                        "updatestamp": self.repo.updatestamp.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
-                    },
                     "branch": self.first_test_commit.branch,
                     "totals": {
                         "branches": 0,
@@ -374,7 +364,7 @@ class RepoCommitList(InternalAPITest):
 
     def test_get_commits_wrong_org(self, mock_provider):
         self.client.force_login(user=self.user)
-        response = self.client.get("/internal/codecov/otherRepoName/commits")
+        response = self.client.get("/internal/codecov/otherRepoName/commits/")
         content = self.json_content(response)
         self.assertEqual(
             response.status_code, 404, "got unexpected response: {}".format(content)
@@ -398,13 +388,13 @@ class RepoCommitList(InternalAPITest):
             branch="other-branch",
         )
 
-        response = self.client.get("/internal/codecov-user/banana/commits")
+        response = self.client.get("/internal/codecov-user/banana/commits/")
         content = json.loads(response.content.decode())
         assert len(content["results"]) == 2
         assert content["results"][0]["commitid"] == commit_non_master.commitid
 
         response = self.client.get(
-            "/internal/codecov-user/banana/commits?branch=other-branch"
+            "/internal/codecov-user/banana/commits/?branch=other-branch"
         )
         content = json.loads(response.content.decode())
         assert len(content["results"]) == 1
@@ -416,7 +406,7 @@ class RepoCommitList(InternalAPITest):
         self.user.save()
         self.client.force_login(user=self.user)
 
-        response = self.client.get('/internal/codecov/testRepoName/commits')
+        response = self.client.get('/internal/codecov/testRepoName/commits/')
 
         assert response.status_code == 403
 
@@ -448,7 +438,7 @@ class RepoBranchList(InternalAPITest):
     def test_get_branches(self, mock_provider):
         mock_provider.return_value = True, True
         self.client.force_login(user=self.user)
-        response = self.client.get("/internal/codecov/testRepoName/branches")
+        response = self.client.get("/internal/codecov/testRepoName/branches/")
         self.assertEqual(response.status_code, 200)
         content = self.json_content(response)
         self.assertEqual(
@@ -462,12 +452,12 @@ class RepoBranchList(InternalAPITest):
         self.user.permission = []
         self.user.save()
         self.client.force_login(user=self.user)
-        response = self.client.get("/internal/codecov/testRepoName/branches")
+        response = self.client.get("/internal/codecov/testRepoName/branches/")
         self.assertEqual(response.status_code, 403)
 
     def test_get_branches_wrong_org(self, mock_provider):
         self.client.force_login(user=self.user)
-        response = self.client.get("/internal/codecov/otherRepoName/branches")
+        response = self.client.get("/internal/codecov/otherRepoName/branches/")
         content = self.json_content(response)
         self.assertEqual(
             response.status_code, 404, "got unexpected response: {}".format(content)
@@ -476,6 +466,6 @@ class RepoBranchList(InternalAPITest):
     def test_returns_username_of_most_recent_commiter(self, mock_provider):
         mock_provider.return_value = True, True
         self.client.force_login(user=self.user)
-        response = self.client.get("/internal/codecov/testRepoName/branches")
+        response = self.client.get("/internal/codecov/testRepoName/branches/")
 
         assert response.data["results"][0]["most_recent_commiter"] == self.user.username

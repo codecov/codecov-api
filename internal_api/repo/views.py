@@ -18,7 +18,6 @@ from rest_framework import status
 
 from django_filters import rest_framework as django_filters, BooleanFilter
 
-from internal_api.mixins import FilterByRepoMixin, RepoSlugUrlMixin
 from codecov_auth.models import Owner
 from core.models import Repository, Commit
 

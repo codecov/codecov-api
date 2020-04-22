@@ -8,7 +8,7 @@ from rest_framework import generics, filters
 from rest_framework import viewsets, mixins
 from rest_framework.exceptions import PermissionDenied
 
-from internal_api.mixins import RepoSlugUrlMixin
+from internal_api.mixins import RepoPropertyMixin
 from internal_api.repo.repository_accessors import RepoAccessors
 from internal_api.compare.serializers import FlagComparisonSerializer
 from services.comparison import Comparison
@@ -20,8 +20,8 @@ from internal_api.permissions import RepositoryArtifactPermissions
 log = logging.getLogger(__name__)
 
 
-class RepoPullViewset(
-    RepoSlugUrlMixin,
+class PullViewSet(
+    RepoPropertyMixin,
     viewsets.GenericViewSet,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin
@@ -39,15 +39,10 @@ class RepoPullViewset(
 
     def get_object(self):
         pullid = self.kwargs.get("pk")
-        obj = get_object_or_404(self.get_queryset(), pullid=pullid)
-        return obj
+        return get_object_or_404(self.get_queryset(), pullid=pullid)
 
     def get_queryset(self):
-        repo = self.get_repo()
-
-        return Pull.objects.filter(
-            repository=repo
-        ).annotate(
+        return self.repo.pull_requests.annotate(
             base_totals=Subquery(
                 Commit.objects.filter(
                     commitid=OuterRef("base"),
