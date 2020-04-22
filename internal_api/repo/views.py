@@ -2,7 +2,7 @@ import uuid
 import asyncio
 import logging
 
-from torngit.exceptions import TorngitClientError
+from shared.torngit.exceptions import TorngitClientError
 
 from django.db.models import Subquery, OuterRef, Q
 
@@ -18,7 +18,6 @@ from rest_framework import status
 
 from django_filters import rest_framework as django_filters, BooleanFilter
 
-from internal_api.mixins import FilterByRepoMixin, RepoSlugUrlMixin
 from codecov_auth.models import Owner
 from core.models import Repository, Commit
 

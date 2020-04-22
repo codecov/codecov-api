@@ -1,22 +1,31 @@
-from rest_framework import generics, filters
+from django.db.models import Subquery, OuterRef
+
+from rest_framework import viewsets, mixins, filters
+
 from django_filters.rest_framework import DjangoFilterBackend
 
-from internal_api.mixins import FilterByRepoMixin
-from core.models import Branch
+from core.models import Branch, Commit
+
+from internal_api.mixins import RepoPropertyMixin
+from internal_api.permissions import RepositoryArtifactPermissions
+
 from .serializers import BranchSerializer
+from .filters import BranchFilters
 
 
-class RepoBranchList(FilterByRepoMixin, generics.ListAPIView):
-    queryset = Branch.objects.all()
+class BranchViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, RepoPropertyMixin):
     serializer_class = BranchSerializer
     filter_backends = (DjangoFilterBackend, filters.OrderingFilter)
+    filterset_class = BranchFilters
     ordering_fields = ('updatestamp', 'name')
+    ordering = ['-updatestamp']
+    permission_classes = [RepositoryArtifactPermissions]
 
-    def filter_queryset(self, queryset):
-        queryset = super(RepoBranchList, self).filter_queryset(queryset)
-
-        author = self.request.GET.get('author')
-        if author:
-            return queryset.filter(authors__contains=[author])
-
-        return queryset
+    def get_queryset(self):
+        return self.repo.branches.annotate(
+            most_recent_commiter=Subquery(
+                Commit.objects.filter(
+                    repository_id=OuterRef('repository__repoid')
+                ).order_by('-timestamp').values('author__username')[:1]
+            )
+        )

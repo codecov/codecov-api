@@ -16,21 +16,16 @@ from internal_api.compare.serializers import (
 
 from internal_api.mixins import CompareSlugMixin
 from internal_api.repo.repository_accessors import RepoAccessors
+from internal_api.permissions import RepositoryArtifactPermissions
 
 
 class CompareViewSet(CompareSlugMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     serializer_class = ComparisonSerializer
-
-    def check_object_permissions(self, _):
-        repo = self.get_repo()
-        can_view, _ = RepoAccessors().get_repo_permissions(self.request.user, repo)
-        if not can_view:
-            raise PermissionDenied()
+    permission_classes = [RepositoryArtifactPermissions]
 
     def get_object(self):
         base, head = self.get_commits()
         comparison = Comparison(base_commit=base, head_commit=head, user=self.request.user)
-        self.check_object_permissions(comparison)
         asyncio.set_event_loop(asyncio.new_event_loop())
         return comparison
 

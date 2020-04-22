@@ -6,7 +6,8 @@ from collections import Counter
 
 from django.utils.functional import cached_property
 
-from covreports.reports.resources import ReportFile
+from shared.reports.resources import ReportFile
+from shared.reports.types import ReportTotals
 
 from services.archive import ReportService
 from core.models import Commit
@@ -326,9 +327,18 @@ class FileComparison:
 
     @property
     def totals(self):
+        head_totals = self.head_file.totals if self.head_file is not None else None
+
+        # The call to '.apply_diff()' in 'Comparison.head_report' stores diff totals
+        # for each file in the diff_data for that file (in a field called 'totals').
+        # Here we pass this along to the frontend by assigning the diff totals
+        # to the head_totals' 'diff' attribute. It is absolutely worth considering
+        # modifying the behavior of shared.reports to implement something similar.
+        if head_totals and self.diff_data:
+            head_totals.diff = self.diff_data.get('totals', 0)
         return {
             "base": self.base_file.totals if self.base_file is not None else None,
-            "head": self.head_file.totals if self.head_file is not None else None
+            "head": head_totals
         }
 
     @property
@@ -374,7 +384,6 @@ class Comparison(object):
         self.report_service = ReportService()
         self._base_report = None
         self._git_comparison = None
-        self._head_report = None
         self._git_commits = None
         self._upload_commits = None
 
@@ -383,11 +392,15 @@ class Comparison(object):
         return [self.get_file_comparison(file_name) for file_name in self.head_report.files]
 
     def get_file_comparison(self, file_name, with_src=False, bypass_max_diff=False):
-        diff_data = self.git_comparison["diff"]["files"].get(file_name)
-        base_file = self.base_report.get(file_name)
-        if diff_data and base_file is None:
-            base_file = self.base_report.get(diff_data.get("before"))
         head_file = self.head_report.get(file_name)
+        diff_data = self.git_comparison["diff"]["files"].get(file_name)
+
+        if self.base_report is not None:
+            base_file = self.base_report.get(file_name)
+            if base_file is None and diff_data:
+                base_file = self.base_report.get(diff_data.get("before"))
+        else:
+            base_file = None
 
         if with_src:
             src = str(
@@ -425,11 +438,18 @@ class Comparison(object):
             self._base_report = self._calculate_base_report()
         return self._base_report
 
-    @property
+    @cached_property
     def head_report(self):
-        if self._head_report is None:
-            self._head_report = self._calculate_head_report()
-        return self._head_report
+        report = self.report_service.build_report_from_commit(self.head_commit)
+        report.apply_diff(self.git_comparison["diff"])
+        return report
+
+    @property
+    def totals(self):
+        return {
+            "base": self.base_report.totals if self.base_report is not None else None,
+            "head": self.head_report.totals if self.head_report is not None else None,
+        }
 
     @property
     def totals(self):
@@ -475,9 +495,6 @@ class Comparison(object):
 
     def _calculate_base_report(self):
         return self.report_service.build_report_from_commit(self.base_commit)
-
-    def _calculate_head_report(self):
-        return self.report_service.build_report_from_commit(self.head_commit)
 
     def flag_comparison(self, flag_name):
         return FlagComparison(self, flag_name)

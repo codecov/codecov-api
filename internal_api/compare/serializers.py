@@ -35,8 +35,6 @@ class FileComparisonSerializer(serializers.Serializer):
 class ComparisonSerializer(serializers.Serializer):
     base_commit = serializers.CharField(source='base_commit.commitid')
     head_commit = serializers.CharField(source='head_commit.commitid')
-    base_report = ReportSerializer()
-    head_report = ReportSerializer()
     totals = TotalsComparisonSerializer()
     commit_uploads = CommitSerializer(many=True, source='upload_commits')
     diff = serializers.SerializerMethodField()
@@ -46,7 +44,7 @@ class ComparisonSerializer(serializers.Serializer):
     def get_untracked(self, comparison):
         return [
             f for f, _ in comparison.git_comparison["diff"]["files"].items()
-            if f not in comparison.base_report and f not in comparison.head_report
+            if f not in (comparison.base_report or []) and f not in comparison.head_report
         ]
 
     def get_diff(self, comparison):

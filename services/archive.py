@@ -3,8 +3,8 @@ import logging
 from django.conf import settings
 from enum import Enum
 from minio import Minio
-from covreports.reports.resources import Report
-from covreports.helpers.flag import Flag
+from shared.reports.resources import Report
+from shared.helpers.flag import Flag
 
 from datetime import datetime
 from hashlib import md5
@@ -240,7 +240,7 @@ class ReportService(object):
     """
 
     def build_report_from_commit(self, commit):
-        """Builds a `covreports.reports.resources.Report` from a given commit
+        """Builds a `shared.reports.resources.Report` from a given commit
 
         Args:
             commit (core.models.Commit): The commit we want to see the report about
