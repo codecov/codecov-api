@@ -1,4 +1,4 @@
-from torngit import Github
+from shared.torngit import Github
 
 from codecov.tests.base_test import InternalAPITest
 from core.tests.factories import RepositoryFactory

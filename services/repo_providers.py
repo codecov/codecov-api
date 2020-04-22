@@ -1,4 +1,4 @@
-from torngit import get
+from shared.torngit import get
 
 from codecov_auth.models import Owner
 from core.models import Repository

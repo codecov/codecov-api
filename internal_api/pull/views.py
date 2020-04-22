@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import Http404, get_object_or_404
@@ -7,21 +8,20 @@ from rest_framework import generics, filters
 from rest_framework import viewsets, mixins
 from rest_framework.exceptions import PermissionDenied
 
-from internal_api.mixins import RepoSlugUrlMixin
+from internal_api.mixins import RepoPropertyMixin
 from internal_api.repo.repository_accessors import RepoAccessors
 from internal_api.compare.serializers import FlagComparisonSerializer
 from services.comparison import Comparison
 from core.models import Pull, Commit
 from .serializers import PullSerializer, PullDetailSerializer
-
-import logging
+from internal_api.permissions import RepositoryArtifactPermissions
 
 
 log = logging.getLogger(__name__)
 
 
-class RepoPullViewset(
-    RepoSlugUrlMixin,
+class PullViewSet(
+    RepoPropertyMixin,
     viewsets.GenericViewSet,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin
@@ -29,6 +29,7 @@ class RepoPullViewset(
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ['state']
     ordering_fields = ('updatestamp', 'head__timestamp')
+    permission_classes = [RepositoryArtifactPermissions]
 
     def get_serializer_class(self):
         if self.action == 'retrieve':
@@ -38,22 +39,10 @@ class RepoPullViewset(
 
     def get_object(self):
         pullid = self.kwargs.get("pk")
-        obj = get_object_or_404(self.get_queryset(), pullid=pullid)
-        return obj
-
-    def _check_permissions(self, repo):
-        # TODO: roll this into shared permssions class, use DRF permissions engine
-        can_view, _ = RepoAccessors().get_repo_permissions(self.request.user, repo)
-        if not can_view:
-            raise PermissionDenied(detail="You do not have permissions to view this repo")
+        return get_object_or_404(self.get_queryset(), pullid=pullid)
 
     def get_queryset(self):
-        repo = self.get_repo()
-        self._check_permissions(repo)
-
-        return Pull.objects.filter(
-            repository=repo
-        ).annotate(
+        return self.repo.pull_requests.annotate(
             base_totals=Subquery(
                 Commit.objects.filter(
                     commitid=OuterRef("base"),
@@ -78,37 +67,4 @@ class RepoPullViewset(
                     repository=OuterRef('repository')
                 ).values('author__username')[:1]
             )
-        )
-
-
-class RepoPullFlagsList(RepoSlugUrlMixin, generics.ListCreateAPIView):
-    serializer_class = FlagComparisonSerializer
-
-    def get_comparison(self):
-        asyncio.set_event_loop(asyncio.new_event_loop())
-        user = self.request.user
-        repo = self.get_repo()
-        pullid = self.kwargs['pullid']
-        pull_requests = Pull.objects.filter(
-            repository=repo,
-            pullid=pullid
-        )
-        try:
-            obj = pull_requests.get()
-        except Pull.DoesNotExist:
-            raise Http404('No pull matches the given query.')
-
-        try:
-            return Comparison(
-                Commit.objects.get(commitid=obj.base, repository=obj.repository),
-                Commit.objects.get(commitid=obj.head, repository=obj.repository),
-                user
-            )
-        except Commit.DoesNotExist:
-            raise Http404("Pull base or head references nonexistant commit.")
-
-    def get_queryset(self):
-        comparison = self.get_comparison()
-        return list(
-            comparison.flag_comparison(flag_name) for flag_name in comparison.available_flags
         )

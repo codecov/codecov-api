@@ -23,10 +23,18 @@ class CommitTotalsSerializer(serializers.Serializer):
     sessions = serializers.IntegerField(source="s")
     complexity = serializers.FloatField(source="C")
     complexity_total = serializers.FloatField(source="N")
+    complexity_ratio = serializers.SerializerMethodField()
     diff = serializers.JSONField()
 
     def get_coverage(self, totals):
         return round(float(totals["c"]), 2)
+
+    def get_complexity_ratio(self, totals):
+        return (
+            round((totals["C"] / totals["N"]) * 100, 2)
+            if totals["C"] and totals["N"]
+            else 0
+        )
 
 
 class ReportTotalsSerializer(serializers.Serializer):
@@ -40,27 +48,24 @@ class ReportTotalsSerializer(serializers.Serializer):
     methods = serializers.IntegerField()
     messages = serializers.IntegerField()
     sessions = serializers.IntegerField()
-    complexity = serializers.IntegerField()
-    complexity_total = serializers.IntegerField()
+    complexity = serializers.FloatField()
+    complexity_total = serializers.FloatField()
+    complexity_ratio = serializers.SerializerMethodField()
     diff = serializers.JSONField()
 
     def get_coverage(self, totals):
         return round(float(totals.coverage), 2)
 
-
-class CommitRepoSerializer(serializers.ModelSerializer):
-    repoid = serializers.IntegerField()
-    name = serializers.CharField()
-    updatestamp = serializers.DateTimeField()
-
-    class Meta:
-        model = Repository
-        fields = ('repoid', 'name', 'updatestamp')
+    def get_complexity_ratio(self, totals):
+        return (
+            round((totals.complexity / totals.complexity_total) * 100, 2)
+            if totals.complexity and totals.complexity_total
+            else 0
+        )
 
 
 class CommitSerializer(serializers.ModelSerializer):
     author = OwnerSerializer()
-    repository = CommitRepoSerializer()
     totals = CommitTotalsSerializer()
 
     class Meta:
@@ -71,7 +76,6 @@ class CommitSerializer(serializers.ModelSerializer):
             'timestamp',
             'ci_passed',
             'author',
-            'repository',
             'branch',
             'totals',
             'state',
@@ -87,8 +91,15 @@ class CommitWithReportSerializer(CommitSerializer):
 
     class Meta:
         model = Commit
-        fields = ('report', 'commitid', 'timestamp',
-                  'ci_passed', 'repository', 'author', 'message')
+        fields = (
+            "report",
+            "commitid",
+            "timestamp",
+            "ci_passed",
+            "repository",
+            "author",
+            "message",
+        )
 
 
 class CommitWithFileLevelReportSerializer(CommitSerializer):
@@ -100,8 +111,15 @@ class CommitWithFileLevelReportSerializer(CommitSerializer):
 
     class Meta:
         model = Commit
-        fields = ('report', 'commitid', 'timestamp',
-                  'ci_passed', 'repository', 'author', 'message')
+        fields = (
+            "report",
+            "commitid",
+            "timestamp",
+            "ci_passed",
+            "repository",
+            "author",
+            "message",
+        )
 
 
 class CommitWithSrcSerializer(CommitWithReportSerializer):
@@ -110,23 +128,45 @@ class CommitWithSrcSerializer(CommitWithReportSerializer):
     def get_src(self, obj):
         loop = asyncio.get_event_loop()
         user = self.context.get("user")
-        task = RepoProviderService().get_adapter(
-            user, obj.repository).get_commit_diff(obj.commitid)
+        task = (
+            RepoProviderService()
+            .get_adapter(user, obj.repository)
+            .get_commit_diff(obj.commitid)
+        )
         return loop.run_until_complete(task)
 
     class Meta:
         model = Commit
-        fields = ('src', 'report', 'commitid', 'timestamp', 'ci_passed',
-                  'repository', 'branch', 'author', 'totals', 'message')
+        fields = (
+            "src",
+            "report",
+            "commitid",
+            "timestamp",
+            "ci_passed",
+            "repository",
+            "branch",
+            "author",
+            "totals",
+            "message",
+        )
 
 
 class CommitWithParentSerializer(CommitWithSrcSerializer):
-    parent = CommitWithSrcSerializer(source='parent_commit')
+    parent = CommitWithSrcSerializer(source="parent_commit")
 
     class Meta:
         model = Commit
-        fields = ('src', 'commitid', 'timestamp', 'ci_passed',
-                  'report', 'repository', 'parent', 'author', 'totals')
+        fields = (
+            "src",
+            "commitid",
+            "timestamp",
+            "ci_passed",
+            "report",
+            "repository",
+            "parent",
+            "author",
+            "totals",
+        )
 
 
 class ReportFileWithoutLinesSerializer(serializers.Serializer):
@@ -142,19 +182,29 @@ class ReportFileSerializer(ReportFileWithoutLinesSerializer):
 
     def get_lines_iterator(self, obj):
         for line_number, line in obj.lines:
-            sessions = [[s.id, s.coverage, s.branches, s.partials, s.complexity] for s in line.sessions]
-            yield (line_number, line.coverage, line.type, sessions, line.messages, line.complexity)
+            sessions = [
+                [s.id, s.coverage, s.branches, s.partials, s.complexity]
+                for s in line.sessions
+            ]
+            yield (
+                line_number,
+                line.coverage,
+                line.type,
+                sessions,
+                line.messages,
+                line.complexity,
+            )
 
 
 class ReportSerializer(serializers.Serializer):
     totals = serializers.SerializerMethodField()
-    files = ReportFileSerializer(source='file_reports', many=True)
+    files = ReportFileSerializer(source="file_reports", many=True)
     totals = ReportTotalsSerializer()
 
 
 class ReportWithoutLinesSerializer(serializers.Serializer):
     totals = serializers.SerializerMethodField()
-    files = ReportFileWithoutLinesSerializer(source='file_reports', many=True)
+    files = ReportFileWithoutLinesSerializer(source="file_reports", many=True)
     totals = ReportTotalsSerializer()
 
 

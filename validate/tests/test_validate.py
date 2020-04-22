@@ -7,7 +7,7 @@ from json import dumps
 from yaml import YAMLError
 
 from django.conf import settings
-from covreports.validation.exceptions import InvalidYamlException
+from shared.validation.exceptions import InvalidYamlException
 
 
 class TestValidateYamlHandler(APITestCase):
@@ -88,4 +88,3 @@ class TestValidateYamlHandler(APITestCase):
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         expected_result = "Invalid yaml!\n"
         assert response.content.decode() == expected_result
-        

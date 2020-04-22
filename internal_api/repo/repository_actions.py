@@ -5,6 +5,10 @@ from webhook_handlers.constants import GitHubWebhookEvents, GitLabWebhookEvents,
 
 import asyncio
 
+import logging
+
+log = logging.getLogger(__name__)
+
 
 WEBHOOK_EVENTS = {
     "github": GitHubWebhookEvents.repository_events,
@@ -37,6 +41,8 @@ def create_webhook_on_provider(repository_service, repo):
     """
 
     webhook_url = settings.WEBHOOK_URL
+
+    log.info("Resetting webhook with webhook url: %s" % f'{webhook_url}/webhooks/{repository_service.service}')
 
     return asyncio.run(
         repository_service.post_webhook(

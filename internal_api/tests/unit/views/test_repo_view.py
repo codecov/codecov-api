@@ -9,7 +9,7 @@ from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory, CommitFactory, PullFactory, BranchFactory
 from core.models import Repository
 from internal_api.repo.repository_accessors import RepoAccessors
-from torngit.exceptions import TorngitClientError
+from shared.torngit.exceptions import TorngitClientError
 
 
 class RepositoryViewSetTestSuite(InternalAPITest):
@@ -392,7 +392,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
             string_arg
         ))
 
-        from covreports.encryption import StandardEncryptor
+        from shared.encryption import StandardEncryptor
         check_encryptor = StandardEncryptor()
         check_encryptor.key = b']\xbb\x13\xf9}\xb3\xb7\x03)*0Kv\xb2\xcet'
 
