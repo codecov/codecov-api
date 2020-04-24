@@ -7,7 +7,6 @@ from json import dumps
 from yaml import YAMLError
 
 from django.conf import settings
-from shared.validation.exceptions import InvalidYamlException
 
 
 class TestValidateYamlHandler(APITestCase):
@@ -79,12 +78,27 @@ class TestValidateYamlHandler(APITestCase):
         expected_result = f"Valid!\n\n{dumps(yaml, indent=2)}\n"
         assert response.content.decode() == expected_result
 
-    @patch('validate.views.validate_yaml')
-    def test_post_invalid_yaml(self, mock_validate_yaml):
-        mock_validate_yaml.side_effect = InvalidYamlException("Invalid yaml!")
+    def test_post_invalid_yaml(self):
+        yaml = {
+            "ignore": [
+                "Pods/.*",
+            ],
+            "coverage": {
+                "round": "down",
+                "precision": 2,
+                "range": [70.0, 100.0],
+                "status": {
+                    "project": {
+                        "default": {
+                            "base": "auto",
+                        }
+                    },
+                    "patch": "nope"
+                },
+            }
+        }
 
-        response = self._post(data="invalid yaml")
-
+        response = self._post(data=yaml)
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        expected_result = "Invalid yaml!\n"
+        expected_result = "Path: coverage->status->patch\n'nope' should be instance of 'dict'\n"
         assert response.content.decode() == expected_result
