@@ -25,6 +25,7 @@ class BranchViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, RepoProperty
         return self.repo.branches.annotate(
             most_recent_commiter=Subquery(
                 Commit.objects.filter(
+                    branch=OuterRef('name'),
                     repository_id=OuterRef('repository__repoid')
                 ).order_by('-timestamp').values('author__username')[:1]
             )
