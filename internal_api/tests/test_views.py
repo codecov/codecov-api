@@ -412,60 +412,47 @@ class RepoCommitList(InternalAPITest):
 
 
 @patch(get_permissions_method)
-class RepoBranchList(InternalAPITest):
+class BranchViewSetTests(InternalAPITest):
     def setUp(self):
-        org = OwnerFactory(username="codecov", service="github")
-        other_org = OwnerFactory(username="other_org")
-        # Create different types of repos / branches
-        repo = RepositoryFactory(
-            author=org, name="testRepoName", active=True, private=True
-        )
-        other_repo = RepositoryFactory(
-            author=other_org, name="otherRepoName", active=True
-        )
-        repo_with_permission = [repo.repoid]
-        self.user = OwnerFactory(
-            username="codecov-user",
-            service="github",
-            organizations=[org.ownerid],
-            permission=repo_with_permission,
-        )
-        commit = CommitFactory(repository=repo, author=self.user)
-        BranchFactory(authors=[org.ownerid], repository=repo, head=commit.commitid)
-        BranchFactory(authors=[org.ownerid], repository=repo, head=commit.commitid)
-        BranchFactory(authors=[other_org.ownerid], repository=other_repo)
+        self.org = OwnerFactory()
+        self.repo = RepositoryFactory(author=self.org)
+        self.user = OwnerFactory(permission=[self.repo.repoid])
+        self.other_user = OwnerFactory(permission=[self.repo.repoid])
 
-    def test_get_branches(self, mock_provider):
-        mock_provider.return_value = True, True
+        self.branches = [
+            BranchFactory(repository=self.repo),
+            BranchFactory(repository=self.repo)
+        ]
+
         self.client.force_login(user=self.user)
-        response = self.client.get("/internal/codecov/testRepoName/branches/")
-        self.assertEqual(response.status_code, 200)
-        content = self.json_content(response)
-        self.assertEqual(
-            len(content["results"]),
-            2,
-            "got the wrong number of pulls: {}".format(content["results"]),
-        )
 
-    def test_get_branches_without_permission(self, mock_provider):
+    def _get_branches(self, kwargs={}, query={}):
+        if not kwargs:
+            kwargs = {"orgName": self.org.username, "repoName": self.repo.name}
+        return self.client.get(reverse('branches-list', kwargs=kwargs), data=query)
+
+    def test_list_returns_200_and_expected_branches(self, mock_provider):
+        response = self._get_branches()
+        assert response.status_code == 200
+        assert response.data['results'][0]['name'] == self.branches[1].name
+        assert response.data['results'][1]['name'] == self.branches[0].name
+
+    def test_list_without_permission_returns_403(self, mock_provider):
         mock_provider.return_value = False, False
-        self.user.permission = []
-        self.user.save()
-        self.client.force_login(user=self.user)
-        response = self.client.get("/internal/codecov/testRepoName/branches/")
-        self.assertEqual(response.status_code, 403)
+        repo_no_permissions = RepositoryFactory(author=self.org)
+        response = self._get_branches(kwargs={"orgName": self.org.username, "repoName": repo_no_permissions.name})
+        assert response.status_code == 403
 
-    def test_get_branches_wrong_org(self, mock_provider):
-        self.client.force_login(user=self.user)
-        response = self.client.get("/internal/codecov/otherRepoName/branches/")
-        content = self.json_content(response)
-        self.assertEqual(
-            response.status_code, 404, "got unexpected response: {}".format(content)
-        )
+    def test_list_with_nonexistent_repo_returns_404(self, mock_provider):
+        nonexistent_repo_name = 'existant'
+        response = self._get_branches(kwargs={"orgName": self.org.username, "repoName": nonexistent_repo_name})
+        assert response.status_code == 404
 
-    def test_returns_username_of_most_recent_commiter(self, mock_provider):
-        mock_provider.return_value = True, True
-        self.client.force_login(user=self.user)
-        response = self.client.get("/internal/codecov/testRepoName/branches/")
+    def test_branch_data_includes_most_recent_commiter_of_each_branch(self, mock_provider):
+        CommitFactory(repository=self.repo, author=self.user, branch=self.branches[0].name)
+        CommitFactory(repository=self.repo, author=self.other_user, branch=self.branches[1].name)
 
-        assert response.data["results"][0]["most_recent_commiter"] == self.user.username
+        response = self._get_branches()
+
+        assert response.data['results'][0]['most_recent_commiter'] == self.other_user.username
+        assert response.data['results'][1]['most_recent_commiter'] == self.user.username

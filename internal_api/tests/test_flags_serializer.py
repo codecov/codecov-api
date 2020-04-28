@@ -28,6 +28,7 @@ class TestFlagSerializers(object):
             author__unencrypted_oauth_token="testaaft3ituvli790m1yajovjv5eg0r4j0264iw",
             author__username="ThiagoCodecov",
             author__service="github",
+            name='example-python'
         )
         base_commit = CommitFactory.create(
             message="test_report_serializer",

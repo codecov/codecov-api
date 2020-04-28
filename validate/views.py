@@ -28,4 +28,4 @@ class ValidateYamlHandler(APIView):
             validated_yaml = validate_yaml(yaml_dict)
             return HttpResponse(f"Valid!\n\n{dumps(validated_yaml, indent=2)}\n", status=status.HTTP_200_OK, content_type="text/plain")
         except InvalidYamlException as e:
-            return HttpResponse(f"{str(e)}\n", status=status.HTTP_400_BAD_REQUEST, content_type="text/plain")
+            return HttpResponse(f"{str(e.error_location)}\n{e.original_exc.autos[-1]}\n", status=status.HTTP_400_BAD_REQUEST, content_type="text/plain")
