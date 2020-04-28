@@ -14,6 +14,15 @@ import os
 from environs import Env
 from utils.config import get_config
 
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+
+sentry_sdk.init(
+    dsn="https://570709366d674aeca773669feb989415@o26192.ingest.sentry.io/5215654",
+    integrations=[DjangoIntegration()]
+)
+
+
 env = Env()
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
