@@ -234,3 +234,40 @@ class TestCompareFlagsView(InternalAPITest):
                 "head": self.commit.commitid,
             },
         )
+
+    @patch("shared.reports.resources.Report.totals", new_callable=PropertyMock)
+    def test_compare_flags_view_doesnt_crash_if_coverage_is_none(
+        self,
+        report_totals_mock,
+        diff_totals_mock,
+        root_storage_mock,
+        read_chunks_mock,
+        git_comparison_mock,
+    ):
+        diff_totals_mock.return_value = ReportTotals()
+        read_chunks_mock.return_value = ""
+        git_comparison_mock.return_value = {"diff": {"files": {}}}
+        report_totals_mock.return_value = ReportTotals(
+            branches=0,
+            complexity=0,
+            complexity_total=0,
+            coverage=None,
+            diff=0,
+            files=3,
+            hits=19,
+            lines=24,
+            messages=0,
+            methods=0,
+            misses=5,
+            partials=0,
+            sessions=2
+        )
+
+        # should not crash
+        self._get_compare_flags(
+            kwargs={"orgName": self.repo.author.username, "repoName": self.repo.name},
+            query_params={
+                "base": self.parent_commit.commitid,
+                "head": self.commit.commitid,
+            },
+        )
