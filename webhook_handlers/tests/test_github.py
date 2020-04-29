@@ -94,9 +94,7 @@ class GithubWebhookHandlerTests(APITestCase):
 
         assert self.repo.private == True
 
-    @patch('services.archive.ArchiveService.create_root_storage', lambda _: None)
-    @patch('services.archive.ArchiveService.delete_repo_files', lambda _: None)
-    def test_repository_deleted_deletes_repo(self):
+    def test_repository_deleted_sets_deleted_activated_and_active(self):
         repository_id = self.repo.repoid
 
         response = self._post_event_data(
@@ -110,23 +108,10 @@ class GithubWebhookHandlerTests(APITestCase):
         )
 
         assert response.status_code == status.HTTP_200_OK
-        assert not Repository.objects.filter(repoid=repository_id).exists()
-
-    @patch('services.archive.ArchiveService.create_root_storage', lambda _: None)
-    @patch('services.archive.ArchiveService.delete_repo_files')
-    def test_repository_delete_deletes_archive_data(self, delete_files_mock):
-        response = self._post_event_data(
-            event=GitHubWebhookEvents.REPOSITORY,
-            data={
-                "action": "deleted",
-                "repository": {
-                    "id": self.repo.service_id
-                }
-            }
-        )
-
-        assert response.status_code == status.HTTP_200_OK
-        delete_files_mock.assert_called_once()
+        self.repo.refresh_from_db()
+        assert self.repo.deleted is True
+        assert self.repo.active is False
+        assert self.repo.activated is False
 
     def test_delete_event_deletes_branch(self):
         branch = BranchFactory(repository=self.repo)
@@ -620,3 +605,37 @@ class GithubWebhookHandlerTests(APITestCase):
         )
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_member_removes_repo_permissions_if_member_removed(self):
+        member = OwnerFactory(permission=[self.repo.repoid], service_id=6098)
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.MEMBER,
+            data={
+                "action": "removed",
+                "member": {
+                    "id": member.service_id
+                },
+                "repository": {
+                    "id": self.repo.service_id
+                }
+            }
+        )
+
+        member.refresh_from_db()
+        assert self.repo.repoid not in member.permission
+
+    def test_member_doesnt_crash_if_member_dne(self):
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.MEMBER,
+            data={
+                "action": "removed",
+                "member": {
+                    "id": 604945829 # some random number
+                },
+                "repository": {
+                    "id": self.repo.service_id
+                }
+            }
+        )
+
+        assert response.status_code == 404

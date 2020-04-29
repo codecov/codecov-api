@@ -17,12 +17,6 @@ from utils.config import get_config
 import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
 
-sentry_sdk.init(
-    dsn="https://570709366d674aeca773669feb989415@o26192.ingest.sentry.io/5215654",
-    integrations=[DjangoIntegration()]
-)
-
-
 env = Env()
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -45,6 +39,17 @@ if not DEBUG:
     WEBHOOK_URL = 'https://codecov.io'
 else:
     WEBHOOK_URL = '' # if developing, put ngrok url here instead, and don't forget to add to ALLOWED_HOSTS
+
+
+# TODO(pierce): store environment name in variable and condition on that.
+# That way we can eventually see sentry errors in staging or potentially even canary stage.
+# Right now we just block sentry traffic during local development.
+if not DEBUG:
+    sentry_sdk.init(
+        dsn="https://570709366d674aeca773669feb989415@o26192.ingest.sentry.io/5215654",
+        integrations=[DjangoIntegration()]
+    )
+
 
 AUTH_USER_MODEL = 'codecov_auth.Owner'
 
