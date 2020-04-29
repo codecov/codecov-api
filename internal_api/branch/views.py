@@ -1,4 +1,4 @@
-from django.db.models import Subquery, OuterRef
+from django.db.models import Subquery, OuterRef, F
 
 from rest_framework import viewsets, mixins, filters
 
@@ -18,15 +18,14 @@ class BranchViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, RepoProperty
     filter_backends = (DjangoFilterBackend, filters.OrderingFilter)
     filterset_class = BranchFilters
     ordering_fields = ('updatestamp', 'name')
-    ordering = ['-updatestamp']
     permission_classes = [RepositoryArtifactPermissions]
 
     def get_queryset(self):
         return self.repo.branches.annotate(
             most_recent_commiter=Subquery(
                 Commit.objects.filter(
-                    branch=OuterRef('name'),
+                    commitid=OuterRef('head'),
                     repository_id=OuterRef('repository__repoid')
-                ).order_by('-timestamp').values('author__username')[:1]
+                ).values('author__username')[:1]
             )
-        )
+        ).order_by(F('updatestamp').desc(nulls_last=True))

@@ -449,8 +449,10 @@ class BranchViewSetTests(InternalAPITest):
         assert response.status_code == 404
 
     def test_branch_data_includes_most_recent_commiter_of_each_branch(self, mock_provider):
-        CommitFactory(repository=self.repo, author=self.user, branch=self.branches[0].name)
-        CommitFactory(repository=self.repo, author=self.other_user, branch=self.branches[1].name)
+        self.branches[0].head = CommitFactory(repository=self.repo, author=self.user, branch=self.branches[0].name).commitid
+        self.branches[0].save()
+        self.branches[1].head = CommitFactory(repository=self.repo, author=self.other_user, branch=self.branches[1].name).commitid
+        self.branches[1].save()
 
         response = self._get_branches()
 
