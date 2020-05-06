@@ -406,7 +406,7 @@ class Comparison(object):
             src = str(
                 asyncio.run(
                     RepoProviderService().get_adapter(
-                        owner=self.user,
+                        user=self.user,
                         repo=self.head_commit.repository
                     ).get_source(
                         file_name,

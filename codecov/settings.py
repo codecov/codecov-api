@@ -212,6 +212,7 @@ ENCRYPTION_SECRET = get_config('setup', 'encryption_secret')
 
 # cors
 CORS_ORIGIN_WHITELIST = ['app.codecov.io']
+CORS_ALLOW_CREDENTIALS = True
 CODECOV_API_URL = 'https://api.codecov.io'
 CODECOV_URL = 'https://codecov.io'
 

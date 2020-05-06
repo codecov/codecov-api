@@ -24,11 +24,11 @@ class RepositoryAccessorsTestCase(TestCase):
         self.client.force_login(user=self.user)
 
     def test_get_repo_details_if_exists(self):
-        repo = RepoAccessors.get_repo_details(self, self.user, self.repo1.name, self.org.username)
+        repo = RepoAccessors.get_repo_details(self, self.user, self.repo1.name, self.org.username, self.org.service)
         self.assertEqual(repo, self.repo1)
 
     def test_get_repo_details_if_not_exists(self):
-        repo = RepoAccessors.get_repo_details(self, self.user, 'repo-not-in-db', self.org.username)
+        repo = RepoAccessors.get_repo_details(self, self.user, 'repo-not-in-db', self.org.username, self.org.service)
         self.assertEqual(repo, None)
 
     @patch("services.repo_providers.RepoProviderService.get_by_name")
@@ -63,7 +63,7 @@ class RepositoryAccessorsTestCase(TestCase):
                 return git_repo_response
         mocked_repo_provider_service.return_value = MockedRepoService()
 
-        repo = RepoAccessors.fetch_from_git_and_create_repo(self, self.user, 'new-repo', 'new-org')
+        repo = RepoAccessors.fetch_from_git_and_create_repo(self, self.user, 'new-repo', 'new-org', 'github')
         assert repo.name == git_repo_response['repo']['name']
         assert repo.fork is not None
 
@@ -75,4 +75,4 @@ class RepositoryAccessorsTestCase(TestCase):
         mocked_repo_provider_service.return_value = MockedRepoService()
 
         with self.assertRaises(TorngitClientError):
-            RepoAccessors.fetch_from_git_and_create_repo(self, self.user, 'repo-not-in-db', self.org.username)
+            RepoAccessors.fetch_from_git_and_create_repo(self, self.user, 'repo-not-in-db', self.org.username, self.org.service)

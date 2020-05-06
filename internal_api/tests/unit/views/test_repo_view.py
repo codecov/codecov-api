@@ -10,35 +10,50 @@ from core.models import Repository
 
 
 class RepositoryViewSetTestSuite(InternalAPITest):
-    def _list(self, kwargs, query_params={}):
+    def _list(self, kwargs={}, query_params={}):
+        if kwargs == {}:
+            kwargs={"service": self.org.service, "orgName": self.org.username}
+
         return self.client.get(
             reverse('repos-list', kwargs=kwargs),
             data=query_params
         )
 
-    def _retrieve(self, kwargs, data={}):
+    def _retrieve(self, kwargs={}, data={}):
+        if kwargs == {}:
+            kwargs={"service": self.org.service, "orgName": self.org.username, "repoName": self.repo.name}
         return self.client.get(reverse('repos-detail', kwargs=kwargs), data=data)
 
-    def _update(self, kwargs, data={}):
+    def _update(self, kwargs={}, data={}):
+        if kwargs == {}:
+            kwargs={"service": self.org.service, "orgName": self.org.username, "repoName": self.repo.name}
         return self.client.patch(
             reverse('repos-detail', kwargs=kwargs),
             data=data,
             content_type="application/json"
         )
 
-    def _destroy(self, kwargs):
+    def _destroy(self, kwargs={}):
+        if kwargs == {}:
+            kwargs={"service": self.org.service, "orgName": self.org.username, "repoName": self.repo.name}
         return self.client.delete(reverse('repos-detail', kwargs=kwargs))
 
-    def _regenerate_upload_token(self, kwargs):
+    def _regenerate_upload_token(self, kwargs={}):
+        if kwargs == {}:
+            kwargs={"service": self.org.service, "orgName": self.org.username, "repoName": self.repo.name}
         return self.client.patch(reverse('repos-regenerate-upload-token', kwargs=kwargs))
 
-    def _erase(self, kwargs):
+    def _erase(self, kwargs={}):
+        if kwargs == {}:
+            kwargs={"service": self.org.service, "orgName": self.org.username, "repoName": self.repo.name}
         return self.client.patch(reverse('repos-erase', kwargs=kwargs))
 
     def _encode(self, kwargs, data):
         return self.client.post(reverse('repos-encode', kwargs=kwargs), data=data)
 
-    def _reset_webhook(self, kwargs):
+    def _reset_webhook(self, kwargs={}):
+        if kwargs == {}:
+            kwargs={"service": self.org.service, "orgName": self.org.username, "repoName": self.repo.name}
         return self.client.put(reverse('repos-reset-webhook', kwargs=kwargs))
 
 
@@ -65,7 +80,6 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
 
     def test_order_by_updatestamp(self):
         response = self._list(
-            kwargs={"orgName": self.org.username},
             query_params={'ordering': 'updatestamp'}
         )
 
@@ -73,7 +87,6 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         assert response.data["results"][1]["repoid"] == self.repo2.repoid
 
         reverse_response = self._list(
-            kwargs={"orgName": self.org.username},
             query_params={'ordering': '-updatestamp'}
         )
 
@@ -82,7 +95,6 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
 
     def test_order_by_name(self):
         response = self._list(
-            kwargs={"orgName": self.org.username},
             query_params={'ordering': 'name'}
         )
 
@@ -90,7 +102,6 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         assert response.data["results"][1]["repoid"] == self.repo2.repoid
 
         reverse_response = self._list(
-            kwargs={"orgName": self.org.username},
             query_params={'ordering': '-name'}
         )
 
@@ -103,7 +114,6 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         CommitFactory(repository=self.repo2, totals={"c": 32})
 
         response = self._list(
-            kwargs={"orgName": self.org.username},
             query_params={'ordering': 'coverage'}
         )
 
@@ -111,7 +121,6 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         assert response.data["results"][1]["repoid"] == self.repo1.repoid
 
         reverse_response = self._list(
-            kwargs={"orgName": self.org.username},
             query_params={'ordering': '-coverage'}
         )
 
@@ -121,7 +130,6 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
     def test_get_active_repos(self):
         RepositoryFactory(author=self.org, name='C')
         response = self._list(
-            kwargs={"orgName": self.org.username},
             query_params={'active': True}
         )
         self.assertEqual(response.status_code, 200)
@@ -135,7 +143,6 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         new_repo = RepositoryFactory(author=self.org, name='C', private=False)
 
         response = self._list(
-            kwargs={"orgName": self.org.username},
             query_params={'active': False}
         )
         self.assertEqual(response.status_code, 200)
@@ -148,7 +155,7 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
     def test_get_all_repos(self):
         new_repo = RepositoryFactory(author=self.org, name='C', private=False)
 
-        response = self._list(kwargs={"orgName": self.org.username})
+        response = self._list()
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             len(response.data['results']),
@@ -161,7 +168,7 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         self.user.permission.append(new_repo.repoid)
         self.user.save()
 
-        response = self._list(kwargs={"orgName": self.org.username})
+        response = self._list()
 
         assert response.status_code == 200
         assert len(response.data['results']) == 3
@@ -169,7 +176,7 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
     def test_returns_private_repos_if_user_owns_repo(self):
         new_repo = RepositoryFactory(author=self.user, name='C')
 
-        response = self._list(kwargs={"orgName": self.user.username})
+        response = self._list({"service": self.user.service, "orgName": self.user.username})
 
         assert response.status_code == 200
         assert new_repo.name in [repo["name"] for repo in response.data['results']]
@@ -177,7 +184,7 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
     def test_returns_public_repos_if_not_owned_by_user_and_not_in_permissions_array(self):
         new_repo = RepositoryFactory(author=self.org, name='C', private=False)
 
-        response = self._list(kwargs={"orgName": self.org.username})
+        response = self._list()
 
         assert response.status_code == 200
         assert new_repo.name in [repo["name"] for repo in response.data['results']]
@@ -186,7 +193,7 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         # Private repo, not owned by user, not in users permissions array
         private_repo = RepositoryFactory(author=self.org, name='C', private=True)
 
-        response = self._list(kwargs={"orgName": self.org.username})
+        response = self._list()
 
         assert response.status_code == 200
         assert private_repo.name not in [repo["name"] for repo in response.data['results']]
@@ -208,18 +215,18 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
 
     def test_retrieve_with_view_and_edit_permissions_succeeds(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, True
-        response = self._retrieve(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
+        response = self._retrieve()
         self.assertEqual(response.status_code, 200)
         assert 'upload_token' in response.data
 
     def test_retrieve_without_read_permissions_returns_403(self, mocked_get_permissions):
         mocked_get_permissions.return_value = False, False
-        response = self._retrieve(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
+        response = self._retrieve()
         assert response.status_code == 403
 
     def test_retrieve_without_edit_permissions_returns_detail_view_without_upload_token(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, False
-        response = self._retrieve(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
+        response = self._retrieve()
         assert response.status_code == 200
         assert "upload_token" not in response.data
 
@@ -227,7 +234,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         mocked_get_permissions.return_value = True, True
         self.org.admins = [self.user.ownerid]
         self.org.save()
-        response = self._destroy(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
+        response = self._destroy()
         assert response.status_code == 204
         assert not Repository.objects.filter(name="repo1").exists()
 
@@ -236,7 +243,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
 
         assert self.user.ownerid not in self.org.admins
 
-        response = self._destroy(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
+        response = self._destroy()
         assert response.status_code == 403
         assert Repository.objects.filter(name="repo1").exists()
 
@@ -244,7 +251,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         mocked_get_permissions.return_value = True, True
         old_upload_token = self.repo.upload_token
 
-        response = self._regenerate_upload_token(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
+        response = self._regenerate_upload_token()
 
         assert response.status_code == 200
         self.repo.refresh_from_db()
@@ -253,7 +260,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
 
     def test_regenerate_upload_token_without_permissions_returns_403(self, mocked_get_permissions):
         mocked_get_permissions.return_value = False, False
-        response = self._regenerate_upload_token(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
+        response = self._regenerate_upload_token()
         self.assertEqual(response.status_code, 403)
 
     def test_update_default_branch_with_permissions_succeeds(self, mocked_get_permissions):
@@ -261,7 +268,6 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         new_default_branch = "dev"
 
         response = self._update(
-            kwargs={"orgName": self.org.username, "repoName": self.repo.name},
             data={'branch': new_default_branch}
         )
 
@@ -275,7 +281,6 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         new_default_branch = "no_write_permissions"
 
         response = self._update(
-            kwargs={"orgName": self.org.username, "repoName": self.repo.name},
             data={'branch': 'dev'}
         )
         self.assertEqual(response.status_code, 403)
@@ -303,7 +308,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         self.repo.yaml = {"yaml": "val"}
         self.repo.save()
 
-        response = self._erase(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
+        response = self._erase()
         assert response.status_code == 200
 
         assert not self.repo.commits.exists()
@@ -319,7 +324,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
 
         assert self.user.ownerid not in self.org.admins
 
-        response = self._erase(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
+        response = self._erase()
         assert response.status_code == 403
 
     def test_retrieve_returns_yaml(self, mocked_get_permissions):
@@ -329,7 +334,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         self.repo.yaml = yaml
         self.repo.save()
 
-        response = self._retrieve(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
+        response = self._retrieve()
         assert response.status_code == 200
         assert response.data["yaml"] == yaml
 
@@ -346,7 +351,6 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
 
         activation_data = {'active': True}
         response = self._update(
-            kwargs={"orgName": self.org.username, "repoName": inactive_repo.name},
             data=activation_data
         )
 
@@ -357,7 +361,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
 
         to_encode = {'value': "hjrok"}
         response = self._encode(
-            kwargs={'orgName': self.org.username, 'repoName': self.repo.name},
+            kwargs={"service": self.org.service, "orgName": self.org.username, "repoName": self.repo.name},
             data=to_encode
         )
 
@@ -371,7 +375,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
 
         to_encode = {'value': "hjrok"}
         response = self._encode(
-            kwargs={'orgName': self.org.username, 'repoName': self.repo.name},
+            kwargs={"service": self.org.service, 'orgName': self.org.username, 'repoName': self.repo.name},
             data=to_encode
         )
 
@@ -404,9 +408,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         self.repo.bot = OwnerFactory(username=username)
         self.repo.save()
 
-        response = self._retrieve(
-            kwargs={'orgName': self.org.username, 'repoName': self.repo.name}
-        )
+        response = self._retrieve()
 
         assert "bot" in response.data
         assert response.data["bot"] == username
@@ -416,7 +418,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
 
         self.repo.commits.all().delete()
 
-        response = self._retrieve(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
+        response = self._retrieve()
         assert response.status_code == 200
 
     @patch('internal_api.repo.views.delete_webhook_on_provider')
@@ -436,9 +438,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
 
         create_webhook_mock.return_value = new_webhook_id
 
-        response = self._reset_webhook(
-            kwargs={"orgName": self.org.username, "repoName": self.repo.name},
-        )
+        response = self._reset_webhook()
 
         assert response.status_code == 200
 
@@ -460,9 +460,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         # Make delete function throw exception, so if it's called this test fails
         delete_webhook_mock.side_effect = Exception("Attempted to delete nonexistent webhook")
 
-        response = self._reset_webhook(
-            kwargs={"orgName": self.org.username, "repoName": self.repo.name},
-        )
+        response = self._reset_webhook()
 
     @patch('internal_api.repo.views.delete_webhook_on_provider')
     @patch('internal_api.repo.views.create_webhook_on_provider')
@@ -476,9 +474,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         new_webhook_id = "123"
         create_webhook_mock.return_value = new_webhook_id
 
-        response = self._reset_webhook(
-            kwargs={"orgName": self.org.username, "repoName": self.repo.name},
-        )
+        response = self._reset_webhook()
 
         self.repo.refresh_from_db()
         assert self.repo.hookid == new_webhook_id
@@ -496,9 +492,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         mocked_get_permissions.return_value = True, True
         create_webhook_mock.side_effect = TorngitClientError(code=code, response=None, message=message)
 
-        response = self._reset_webhook(
-            kwargs={"orgName": self.org.username, "repoName": self.repo.name},
-        )
+        response = self._reset_webhook()
 
         assert response.status_code == code
         assert response.data == {"detail": message}
@@ -512,7 +506,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         from internal_api.commit.serializers import CommitWithReportSerializer
         expected_commit_payload = CommitWithReportSerializer(commit).data
 
-        response = self._retrieve(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
+        response = self._retrieve()
         assert response.status_code == 200
         assert response.data["latest_commit"]["report"]["totals"] == expected_commit_payload["report"]["totals"]
 
@@ -527,7 +521,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         commit = CommitFactory(repository=self.repo)
         more_recent_commit = CommitFactory(repository=self.repo, branch="other-branch")
 
-        response = self._retrieve(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
+        response = self._retrieve()
 
         assert response.data['latest_commit']['commitid'] == commit.commitid
         assert response.data['latest_commit']['commitid'] != more_recent_commit.commitid
@@ -541,7 +535,6 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         more_recent_commit = CommitFactory(repository=self.repo)
 
         response = self._retrieve(
-            kwargs={"orgName": self.org.username, "repoName": self.repo.name},
             data={"branch": "other-branch"}
         )
 
@@ -553,9 +546,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
     def test_latest_commit_is_none_if_dne(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, True
 
-        response = self._retrieve(
-            kwargs={"orgName": self.org.username, "repoName": self.repo.name}
-        )
+        response = self._retrieve()
 
         assert response.data['latest_commit'] == None
 
@@ -565,7 +556,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         self.repo.name = 'codecov.io'
         self.repo.save()
 
-        response = self._retrieve(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
+        response = self._retrieve()
         self.assertEqual(response.status_code, 200)
 
     # Note (Matt): the only special char that github isn't
@@ -575,8 +566,32 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         self.repo.name = "codec@v.i"
         self.repo.save()
 
-        response = self._retrieve(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
+        response = self._retrieve()
         self.assertEqual(response.status_code, 200)
+
+    def test_permissions_check_handles_torngit_error(self, mocked_get_permissions):
+        err_code, err_message = 403, "yo, no."
+        mocked_get_permissions.side_effect = TorngitClientError(
+            code=err_code,
+            message=err_message,
+            response=None
+        )
+        response = self._retrieve()
+        assert response.status_code == err_code
+        assert response.data == {"detail": err_message}
+
+    @patch('internal_api.repo.repository_accessors.RepoAccessors.get_repo_details')
+    def test_get_object_handles_torngit_error(self, mocked_get_details, mocked_get_perms):
+        mocked_get_perms.return_value = True, True
+        err_code, err_message = 403, "yo, no."
+        mocked_get_details.side_effect = TorngitClientError(
+            code=err_code,
+            message=err_message,
+            response=None
+        )
+        response = self._retrieve()
+        assert response.status_code == err_code
+        assert response.data == {"detail": err_message}
 
     @patch("internal_api.repo.repository_accessors.RepoAccessors.get_repo_details")
     @patch("internal_api.repo.repository_accessors.RepoAccessors.fetch_from_git_and_create_repo")
@@ -585,7 +600,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         mocked_get_repo_details.return_value = None
         mocked_fetch_and_create.return_value = self.repo
 
-        response = self._retrieve(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
+        response = self._retrieve(kwargs={"service": self.org.service, "orgName": self.org.username, "repoName": self.repo.name})
         mocked_fetch_and_create.assert_called()
         mocked_fetch_and_create.assert_called()
         self.assertEqual(response.status_code, 200)
@@ -597,7 +612,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         mocked_get_repo_details.return_value = None
         mocked_fetch_and_create.side_effect = TorngitClientError(code=403, response=None, message="Forbidden")
 
-        response = self._retrieve(kwargs={"orgName": self.org.username, "repoName": "new-repo"})
+        response = self._retrieve(kwargs={"service": self.org.service, "orgName": self.org.username, "repoName": "new-repo"})
         mocked_fetch_and_create.assert_called()
         mocked_fetch_and_create.assert_called()
         self.assertEqual(response.status_code, 403)

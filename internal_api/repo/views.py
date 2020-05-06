@@ -5,9 +5,8 @@ import logging
 from shared.torngit.exceptions import TorngitClientError
 
 from django.db.models import Subquery, OuterRef, Q
-
-from django.db.models import Subquery, OuterRef
 from django.shortcuts import get_object_or_404
+from django.utils.functional import cached_property
 
 from rest_framework import generics, filters, mixins, viewsets
 from rest_framework.exceptions import PermissionDenied, APIException, NotFound
@@ -20,15 +19,18 @@ from django_filters import rest_framework as django_filters, BooleanFilter
 
 from codecov_auth.models import Owner
 from core.models import Repository, Commit
+from services.repo_providers import RepoProviderService
+from services.decorators import torngit_safe
 
 from .repository_accessors import RepoAccessors
 from .serializers import RepoSerializer, RepoDetailsSerializer, SecretStringPayloadSerializer
 
 from .utils import encode_secret_string
 
-from services.repo_providers import RepoProviderService
-
 from .repository_actions import delete_webhook_on_provider, create_webhook_on_provider
+
+
+log = logging.getLogger(__name__)
 
 
 class RepositoryFilters(django_filters.FilterSet):
@@ -61,15 +63,18 @@ class RepositoryViewSet(
     lookup_field = 'repoName'
     accessors = RepoAccessors()
 
-    def _get_owner(self):
+    @cached_property
+    def owner(self):
+        # Usable everywhere except for in .get_object(), becauses the owner
+        # may not exist yet.
         return get_object_or_404(
             Owner,
             username=self.kwargs.get("orgName"),
-            service=self.request.user.service
+            service=self.kwargs.get("service")
         )
 
     def _assert_is_admin(self):
-        owner = self._get_owner()
+        owner = self.owner
         if self.request.user.ownerid != owner.ownerid:
             if owner.admins is None or self.request.user.ownerid not in owner.admins:
                 raise PermissionDenied()
@@ -86,8 +91,7 @@ class RepositoryViewSet(
         return context
 
     def get_queryset(self):
-        owner = self._get_owner()
-        queryset = owner.repository_set.filter(
+        queryset = self.owner.repository_set.filter(
             Q(private=False)
             | Q(author__ownerid=self.request.user.ownerid)
             | Q(repoid__in=self.request.user.permission)
@@ -106,6 +110,7 @@ class RepositoryViewSet(
 
         return queryset
 
+    @torngit_safe
     def check_object_permissions(self, request, repo):
         self.can_view, self.can_edit = self.accessors.get_repo_permissions(self.request.user, repo)
         if self.request.method not in SAFE_METHODS and not self.can_edit:
@@ -115,26 +120,34 @@ class RepositoryViewSet(
         if not self.can_view:
             raise PermissionDenied()
 
+    @torngit_safe
     def get_object(self):
         # Get request args and try to find the repo in the DB
-        repo_name, org_name = self.kwargs.get('repoName'), self.kwargs.get('orgName')
-        repo = self.accessors.get_repo_details(self.request.user, repo_name, org_name)
+        repo_name = self.kwargs.get('repoName')
+        org_name = self.kwargs.get('orgName')
+        service = self.kwargs.get('service')
 
-        # If we couldn't find the repo, try to fetch the repo from the git provider and save it
-        if not repo:
-            try:
-                repo = self.accessors.fetch_from_git_and_create_repo(self.request.user, repo_name, org_name)
-            except TorngitClientError as e:
-                exception = APIException(detail=e.message)
-                exception.status_code = e.code
-                raise exception
+        repo = self.accessors.get_repo_details(
+            user=self.request.user,
+            repo_name=repo_name,
+            repo_owner_username=org_name,
+            repo_owner_service=service
+        )
+
+        if repo is None:
+            repo = self.accessors.fetch_from_git_and_create_repo(
+                user=self.request.user,
+                repo_name=repo_name,
+                repo_owner_username=org_name,
+                repo_owner_service=service
+            )
 
         self.check_object_permissions(self.request, repo)
         return repo
 
     def perform_update(self, serializer):
         # Check repo limits for users with legacy plans
-        owner = self._get_owner()
+        owner = self.owner
         if serializer.validated_data.get('active'):
             if owner.has_legacy_plan and owner.repo_credits <= 0:
                 raise PermissionDenied("Private repository limit reached.")
@@ -159,7 +172,7 @@ class RepositoryViewSet(
         serializer = SecretStringPayloadSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        owner, repo = self._get_owner(), self.get_object()
+        owner, repo = self.owner, self.get_object()
 
         to_encode = '/'.join((
             owner.service,
@@ -176,22 +189,18 @@ class RepositoryViewSet(
         )
 
     @action(detail=True, methods=['put'], url_path='reset-webhook')
+    @torngit_safe
     def reset_webhook(self, request, *args, **kwargs):
         repo = self.get_object()
         repository_service = RepoProviderService().get_adapter(self.request.user, repo)
 
-        try:
-            if repo.hookid:
-                delete_webhook_on_provider(repository_service, repo)
-                repo.hookid = None
-                repo.save()
-
-            repo.hookid = create_webhook_on_provider(repository_service, repo)
+        if repo.hookid:
+            delete_webhook_on_provider(repository_service, repo)
+            repo.hookid = None
             repo.save()
-        except TorngitClientError as e:
-           exception = APIException(detail=e.message)
-           exception.status_code = e.code
-           raise exception
+
+        repo.hookid = create_webhook_on_provider(repository_service, repo)
+        repo.save()
 
         return Response(
             self.get_serializer(repo).data,

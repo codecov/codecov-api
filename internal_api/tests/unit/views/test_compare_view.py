@@ -132,6 +132,7 @@ class TestCompareCommitsView(InternalAPITest):
         bad_commitid = "9193232a8fe3429496123ba82b5fed2583d1b5eb"
         response = self._get_commits_comparison(
             kwargs={
+                "service": self.repo.author.service,
                 "orgName": self.repo.author.username,
                 "repoName": self.repo.name
             },
@@ -150,6 +151,7 @@ class TestCompareCommitsView(InternalAPITest):
         )
         response = self._get_commits_comparison(
             kwargs={
+                "service": self.repo.author.service,
                 "orgName": self.repo.author.username,
                 "repoName": self.repo.name
             },
@@ -168,6 +170,7 @@ class TestCompareCommitsView(InternalAPITest):
 
         response = self._get_commits_comparison(
             kwargs={
+                "service": self.repo.author.service,
                 "orgName": self.repo.author.username,
                 "repoName": self.repo.name
             },
@@ -190,6 +193,7 @@ class TestCompareCommitsView(InternalAPITest):
         self._configure_mocked_comparison_with_commits(mocked_comparison)
         response = self._get_commits_comparison(
             kwargs={
+                "service": self.repo.author.service,
                 "orgName": self.repo.author.username,
                 "repoName": self.repo.name
             },
@@ -220,6 +224,7 @@ class TestCompareCommitsView(InternalAPITest):
 
         response = self._get_commits_comparison(
             kwargs={
+                "service": self.repo.author.service,
                 "orgName": self.repo.author.username,
                 "repoName": self.repo.name
             },
