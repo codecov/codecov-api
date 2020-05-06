@@ -1,15 +1,12 @@
 from unittest.mock import patch
-import json
 
 from rest_framework.reverse import reverse
+from shared.torngit.exceptions import TorngitClientError
 
 from codecov.tests.base_test import InternalAPITest
-from django.test import TestCase
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory, CommitFactory, PullFactory, BranchFactory
 from core.models import Repository
-from internal_api.repo.repository_accessors import RepoAccessors
-from shared.torngit.exceptions import TorngitClientError
 
 
 class RepositoryViewSetTestSuite(InternalAPITest):
@@ -580,3 +577,27 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
 
         response = self._retrieve(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
         self.assertEqual(response.status_code, 200)
+
+    @patch("internal_api.repo.repository_accessors.RepoAccessors.get_repo_details")
+    @patch("internal_api.repo.repository_accessors.RepoAccessors.fetch_from_git_and_create_repo")
+    def test_create_repo_on_fetch_if_dne(self, mocked_fetch_and_create, mocked_get_repo_details, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, True
+        mocked_get_repo_details.return_value = None
+        mocked_fetch_and_create.return_value = self.repo
+
+        response = self._retrieve(kwargs={"orgName": self.org.username, "repoName": self.repo.name})
+        mocked_fetch_and_create.assert_called()
+        mocked_fetch_and_create.assert_called()
+        self.assertEqual(response.status_code, 200)
+
+    @patch("internal_api.repo.repository_accessors.RepoAccessors.get_repo_details")
+    @patch("internal_api.repo.repository_accessors.RepoAccessors.fetch_from_git_and_create_repo")
+    def test_unable_to_fetch_git_repo(self, mocked_fetch_and_create, mocked_get_repo_details, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, True
+        mocked_get_repo_details.return_value = None
+        mocked_fetch_and_create.side_effect = TorngitClientError(code=403, response=None, message="Forbidden")
+
+        response = self._retrieve(kwargs={"orgName": self.org.username, "repoName": "new-repo"})
+        mocked_fetch_and_create.assert_called()
+        mocked_fetch_and_create.assert_called()
+        self.assertEqual(response.status_code, 403)

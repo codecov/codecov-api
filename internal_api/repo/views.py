@@ -10,7 +10,7 @@ from django.db.models import Subquery, OuterRef
 from django.shortcuts import get_object_or_404
 
 from rest_framework import generics, filters, mixins, viewsets
-from rest_framework.exceptions import PermissionDenied, APIException
+from rest_framework.exceptions import PermissionDenied, APIException, NotFound
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import SAFE_METHODS # ['GET', 'HEAD', 'OPTIONS']
@@ -116,8 +116,19 @@ class RepositoryViewSet(
             raise PermissionDenied()
 
     def get_object(self):
+        # Get request args and try to find the repo in the DB
         repo_name, org_name = self.kwargs.get('repoName'), self.kwargs.get('orgName')
         repo = self.accessors.get_repo_details(self.request.user, repo_name, org_name)
+
+        # If we couldn't find the repo, try to fetch the repo from the git provider and save it
+        if not repo:
+            try:
+                repo = self.accessors.fetch_from_git_and_create_repo(self.request.user, repo_name, org_name)
+            except TorngitClientError as e:
+                exception = APIException(detail=e.message)
+                exception.status_code = e.code
+                raise exception
+
         self.check_object_permissions(self.request, repo)
         return repo
 
