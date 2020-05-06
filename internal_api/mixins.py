@@ -22,7 +22,7 @@ class RepoPropertyMixin:
             Repository,
             name=self.kwargs.get("repoName"),
             author__username=self.kwargs.get("orgName"),
-            author__service=self.request.user.service
+            author__service=self.kwargs.get("service")
         )
 
 

@@ -4,10 +4,12 @@ from rest_framework.permissions import BasePermission
 from rest_framework.permissions import SAFE_METHODS # ['GET', 'HEAD', 'OPTIONS']
 
 from services.repo_providers import RepoProviderService
+from services.decorators import torngit_safe
 from internal_api.repo.repository_accessors import RepoAccessors
 
 
 class RepositoryPermissionsService:
+    @torngit_safe
     def _fetch_provider_permissions(self, user, repo):
         can_view, can_edit = RepoAccessors().get_repo_permissions(user, repo)
 

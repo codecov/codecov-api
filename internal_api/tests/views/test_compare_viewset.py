@@ -155,6 +155,7 @@ class TestCompareViewSetRetrieve(APITestCase):
     def _get_comparison(self, kwargs={}, query_params={}):
         if kwargs == {}:
             kwargs = {
+                "service": self.org.service,
                 "orgName": self.org.username,
                 "repoName": self.repo.name
             }
@@ -173,6 +174,7 @@ class TestCompareViewSetRetrieve(APITestCase):
     def _get_file_comparison(self, file_name='', kwargs={}, query_params={}):
         if kwargs == {}:
             kwargs = {
+                "service": self.org.service,
                 "orgName": self.org.username,
                 "repoName": self.repo.name,
                 "file_path": file_name or self.file_name

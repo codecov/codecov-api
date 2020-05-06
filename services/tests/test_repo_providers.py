@@ -1,7 +1,8 @@
-from shared.torngit import Github
+from shared.torngit import Github, Bitbucket, Gitlab
 
 from codecov.tests.base_test import InternalAPITest
 from core.tests.factories import RepositoryFactory
+from codecov_auth.tests.factories import OwnerFactory
 from services.repo_providers import TorngitInitializationFailed, RepoProviderService
 
 
@@ -22,5 +23,30 @@ class TestRepoProviderService(InternalAPITest):
             author__username='ThiagoCodecov',
             author__service='github'
         )
-        provider = RepoProviderService().get_by_name(repo.author, repo.name, repo.author.username)
+        provider = RepoProviderService().get_by_name(repo.author, repo.name, repo.author, repo.author.service)
         assert isinstance(Github(), type(provider))
+
+    def test_get_adapter_returns_adapter_for_repo_authors_service(self):
+        some_other_user = OwnerFactory(service='github')
+        repo = RepositoryFactory.create(
+            author__username='ThiagoCodecov',
+            author__service='bitbucket'
+        )
+        provider = RepoProviderService().get_adapter(some_other_user, repo)
+        assert isinstance(Bitbucket(), type(provider))
+
+    def test_get_by_name_returns_adapter_for_repo_owner_service(self):
+        some_other_user = OwnerFactory(service='bitbucket')
+        repo_name = 'gl-repo'
+        repo_owner_username = 'me'
+        repo_owner_service = 'gitlab'
+
+        provider = RepoProviderService().get_by_name(
+            user=some_other_user,
+            repo_name=repo_name,
+            repo_owner_username=repo_owner_username,
+            repo_owner_service=repo_owner_service
+        )
+
+        assert isinstance(Gitlab(), type(provider))
+

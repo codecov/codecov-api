@@ -7,6 +7,7 @@ from rest_framework.exceptions import NotFound, PermissionDenied
 
 from services.comparison import Comparison
 from services.repo_providers import RepoProviderService
+from services.decorators import torngit_safe
 
 from internal_api.compare.serializers import (
     FileComparisonSerializer,
@@ -29,7 +30,12 @@ class CompareViewSet(CompareSlugMixin, mixins.RetrieveModelMixin, viewsets.Gener
         asyncio.set_event_loop(asyncio.new_event_loop())
         return comparison
 
-    @action(detail=False, methods=['get'], url_path='file/(?P<file_path>.+)')
+    @torngit_safe
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
+
+    @action(detail=False, methods=['get'], url_path='file/(?P<file_path>.+)', url_name="file")
+    @torngit_safe
     def file(self, request, *args, **kwargs):
         comparison = self.get_object()
         file_path = file_path=kwargs.get('file_path')

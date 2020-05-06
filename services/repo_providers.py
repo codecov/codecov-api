@@ -14,11 +14,11 @@ class TorngitInitializationFailed(Exception):
 
 
 class RepoProviderService(object):
-    def get_adapter(self, owner: Owner, repo: Repository):
+    def get_adapter(self, user: Owner, repo: Repository):
         """
         Return the corresponding implementation for calling the repository provider
 
-        :param owner: :class:`codecov_auth.models.Owner`
+        :param user: :class:`codecov_auth.models.Owner`
         :param repo: :class:`core.models.Repository`
         :return:
         :raises: TorngitInitializationFailed
@@ -31,32 +31,33 @@ class RepoProviderService(object):
                 private=repo.private
             ),
             owner=dict(username=repo.author.username),
-            token=encryptor.decrypt_token(owner.oauth_token),
+            token=encryptor.decrypt_token(user.oauth_token) if user.oauth_token else None,
             oauth_consumer_token=dict(
-                key=get_config(owner.service, 'client_id'),
-                secret=get_config(owner.service, 'client_secret')
+                key=get_config(repo.author.service, 'client_id'),
+                secret=get_config(repo.author.service, 'client_secret')
             )
         )
-        return self._get_provider(owner.service, adapter_params)
+        return self._get_provider(repo.author.service, adapter_params)
 
-    def get_by_name(self, owner, repo_name, repo_owner):
+    def get_by_name(self, user, repo_name, repo_owner_username, repo_owner_service):
         """
         Return the corresponding implementation for calling the repository provider
 
-        :param owner:
-        :param repo_name:
-        :param repo_owner:
+        :param user: Owner object of the user
+        :param repo_name: string, name of the repo
+        :param owner: Owner, owner of the repo in question
+        :repo_owner_service: 'github', 'gitlab' etc
         :return:
         :raises: TorngitInitializationFailed
         """
         adapter_params = dict(
             repo=dict(name=repo_name),
-            owner=dict(username=repo_owner),
-            token=encryptor.decrypt_token(owner.oauth_token)
+            owner=dict(username=repo_owner_username),
+            token=encryptor.decrypt_token(user.oauth_token)
         )
         return self._get_provider(
-            owner.service,
-            adapter_params
+            service=repo_owner_service,
+            adapter_params=adapter_params
         )
 
     @classmethod
@@ -69,4 +70,3 @@ class RepoProviderService(object):
             return provider
         else:
             raise TorngitInitializationFailed()
-

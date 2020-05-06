@@ -70,8 +70,12 @@ class GithubWebhookHandler(APIView):
             repo.private = True
             repo.save()
         elif action == "deleted":
-            ArchiveService(repo).delete_repo_files()
-            repo.delete()
+            log.info(f"Request to delete repository: {repo.repoid}")
+            repo.deleted = True
+            repo.activated = False
+            repo.active = False
+            repo.save(update_fields=["deleted", "activated", "active"])
+            log.info(f"Repository {repo.repoid} soft-deleted")
         else:
             log.warn("Unknown 'repository' action: %s", action)
         return Response()
@@ -233,6 +237,24 @@ class GithubWebhookHandler(APIView):
 
     def marketplace_purchase(self, request, *args, **kwargs):
         return self._handle_marketplace_events(request, *args, **kwargs)
+
+    def member(self, request, *args, **kwargs):
+        action = request.data["action"]
+        if action == "removed":
+            repo = self._get_repo(request)   
+            log.info(f"Request to remove read permissions for user, repo: {repo.repoid}")
+            try:
+                member = Owner.objects.get(
+                    service="github",
+                    service_id=request.data["member"]["id"]
+                )
+            except Owner.DoesNotExist:
+                log.info(f"Repo permissions unchanged -- owner doesn't exist")
+                return Response(status=status.HTTP_404_NOT_FOUND)
+            member.permission.remove(repo.repoid)
+            member.save(update_fields=['permission'])
+            log.info(f"Successfully updated read permissions for repo: {repo.repoid}, owner {member.ownerid}")
+        return Response()
 
     def post(self, request, *args, **kwargs):
         self.validate_signature(request)
