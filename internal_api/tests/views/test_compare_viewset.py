@@ -1,6 +1,7 @@
 from rest_framework.test import APITestCase
 from rest_framework.reverse import reverse
 from rest_framework import status
+import minio
 
 from unittest.mock import patch, PropertyMock
 
@@ -352,3 +353,17 @@ class TestCompareViewSetRetrieve(APITestCase):
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data["totals"]["base"] == None
+
+    def test_no_raw_reports_returns_404(
+        self,
+        adapter_mock,
+        base_report_mock,
+        head_report_mock
+    ):
+        base_report_mock.return_value = None
+        head_report_mock.side_effect = minio.error.NoSuchKey(response_error=None)
+        adapter_mock.return_value = self.mocked_compare_adapter
+
+        response = self._get_comparison()
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
