@@ -28,7 +28,8 @@ compare_router.register(r'compare', CompareViewSet, base_name='compare')
 
 urlpatterns = [
     path('profile', OwnerView.as_view()),
-    path('<str:orgName>/repos/', include(repos_router.urls)),
-    path('<str:orgName>/<str:repoName>/', include(repository_artifacts_router.urls)),
-    path('<str:orgName>/<str:repoName>/', include(compare_router.urls))
+    path('<str:service>/<str:orgName>/repos/', include(repos_router.urls)),
+    path('', include(accounts_router.urls)),
+    path('<str:service>/<str:orgName>/<str:repoName>/', include(repository_artifacts_router.urls)),
+    path('<str:service>/<str:orgName>/<str:repoName>/', include(compare_router.urls))
 ]

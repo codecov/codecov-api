@@ -2,9 +2,18 @@ import asyncio
 
 from django.core.exceptions import ObjectDoesNotExist
 
-from codecov_auth.models import Owner
+from rest_framework.exceptions import PermissionDenied, APIException
+
+from shared.torngit.exceptions import TorngitClientError
 from core.models import Repository
+from codecov_auth.models import Owner
 from services.repo_providers import RepoProviderService
+from services.decorators import torngit_safe
+
+import logging
+
+
+log = logging.getLogger(__name__)
 
 
 class RepoAccessors:
@@ -19,38 +28,75 @@ class RepoAccessors:
         :param org_name:
         :return:
         """
-        return asyncio.run(RepoProviderService().get_adapter(
-            owner=user,
-            repo=repo
-        ).get_authenticated())
+        return asyncio.run(
+            RepoProviderService().get_adapter(
+                user=user,
+                repo=repo
+            ).get_authenticated()
+        )
 
-    def get_repo_details(self, user, repo_name, org_name):
+    def get_repo_details(self, user, repo_name, repo_owner_username, repo_owner_service):
         """
-        Checks if repo exists in DB, and if it doesn't, tries to fetch it from provider.
+        Returns repo from DB, if it exists.
         """
         try:
-            owner = Owner.objects.get(service=user.service, username=org_name)
-            repo = Repository.objects.get(name=repo_name, author=owner)
+            return Repository.objects.get(
+                name=repo_name,
+                author__username=repo_owner_username,
+                author__service=repo_owner_service
+            )
         except ObjectDoesNotExist:
-            repo = self.fetch_repo(user, repo_name, org_name)
-            # raise NotFound(detail="Repository {} for org {} not found ".format(repo_name, org_name))
+            repo = None
         return repo
 
-    def fetch_repo(self, user, repo_name, org_name):
+    def fetch_from_git_and_create_repo(self, user, repo_name, repo_owner_username, repo_owner_service):
         """
             Fetch repository details for the provider and update the DB with new information.
         """
-        result = asyncio.run(RepoProviderService().get_by_name(user, repo_name=repo_name,
-                                                               repo_owner=org_name).get_repository())
-        fork = result['repo'].pop('fork', None)
-        repo = Repository(**result['repo'])
-        owner = Owner(**result['owner'])
-        repo.author = owner
-        if fork:
-            fork_repo = Repository(**fork['repo'])
-            fork_owner = Owner(**fork['owner'])
-            fork_repo.author = fork_owner
-            repo.fork = fork_repo
-        # TODO: save this repo to the DB, and generate a upload token for it if doesn't exist
-        # https://github.com/codecov/codecov.io/blob/master/src/sql/main/functions/refresh_repos.sql#L53-L149
-        return repo
+        # Try to fetch the repo from the git provider using shared.torngit
+        result = asyncio.run(
+            RepoProviderService().get_by_name(
+                user=user,
+                repo_name=repo_name,
+                repo_owner_username=repo_owner_username,
+                repo_owner_service=repo_owner_service
+            ).get_repository()
+        )
+
+        git_repo = result['repo']
+        git_repo_owner = result['owner']
+
+        owner, _ = Owner.objects.get_or_create(
+            service=repo_owner_service,
+            username=git_repo_owner['username'],
+            service_id=git_repo_owner['service_id']
+        )
+        created_repo, _ = Repository.objects.get_or_create(
+            author=owner,
+            service_id=git_repo['service_id'],
+            private=git_repo['private'],
+            branch=git_repo['branch'],
+            name=git_repo['name']
+        )
+
+        # If this is a fork, create the forked repo and save it to the new repo
+        if git_repo.get('fork'):
+            git_repo_fork = git_repo['fork']['repo']
+            git_repo_fork_owner = git_repo['fork']['owner']
+
+            fork_owner, _ = Owner.objects.get_or_create(
+                service=repo_owner_service,
+                username=git_repo_fork_owner['username'],
+                service_id=git_repo_fork_owner['service_id']
+            )
+            fork, _ = Repository.objects.get_or_create(
+                author=fork_owner,
+                service_id=git_repo_fork['service_id'],
+                private=git_repo_fork['private'],
+                branch=git_repo_fork['branch'],
+                name=git_repo_fork['name']
+            )
+            created_repo.fork = fork
+            created_repo.save()
+
+        return created_repo

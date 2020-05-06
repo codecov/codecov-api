@@ -406,7 +406,7 @@ class Comparison(object):
             src = str(
                 asyncio.run(
                     RepoProviderService().get_adapter(
-                        owner=self.user,
+                        user=self.user,
                         repo=self.head_commit.repository
                     ).get_source(
                         file_name,
@@ -443,13 +443,6 @@ class Comparison(object):
         report = self.report_service.build_report_from_commit(self.head_commit)
         report.apply_diff(self.git_comparison["diff"])
         return report
-
-    @property
-    def totals(self):
-        return {
-            "base": self.base_report.totals if self.base_report is not None else None,
-            "head": self.head_report.totals if self.head_report is not None else None,
-        }
 
     @property
     def totals(self):

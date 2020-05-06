@@ -17,8 +17,9 @@ class GitHubWebhookEvents:
     ORGANIZATION = "organization"
     MARKETPLACE_PURCHASE = "marketplace_purchase"
     MARKETPLACE_SUBSCRIPTION = "marketplace_subscription"
+    MEMBER = 'member'
 
-    repository_events = [PULL_REQUEST, DELETE, PUSH, PUBLIC, STATUS, REPOSITORY]
+    repository_events = [PULL_REQUEST, DELETE, PUSH, PUBLIC, STATUS, REPOSITORY, MEMBER]
 
 
 class BitbucketHTTPHeaders:

@@ -54,7 +54,9 @@ class ReportTotalsSerializer(serializers.Serializer):
     diff = serializers.JSONField()
 
     def get_coverage(self, totals):
-        return round(float(totals.coverage), 2)
+        if totals.coverage is not None:
+            return round(float(totals.coverage), 2)
+        return 0
 
     def get_complexity_ratio(self, totals):
         return (
