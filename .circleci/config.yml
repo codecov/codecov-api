@@ -66,7 +66,7 @@ jobs:
           apk add wget
           wget https://github.com/codecov/uploader/releases/download/v0.1.0_758/codecov-linux
           chmod +x codecov-linux 
-          ./codecov-linux -t -t a3f4746b-4e57-4fc6-90ee-b4007979c0d2 -F unit
+          bash - c "./codecov-linux -t -t a3f4746b-4e57-4fc6-90ee-b4007979c0d2 -F unit"
           
   deploy:
     executor: codecov-deploy
