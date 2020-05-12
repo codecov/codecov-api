@@ -28,7 +28,7 @@ class PullViewSet(
 ):
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ['state']
-    ordering_fields = ('updatestamp', 'head__timestamp')
+    ordering_fields = ('pullid',)
     permission_classes = [RepositoryArtifactPermissions]
 
     def get_serializer_class(self):
