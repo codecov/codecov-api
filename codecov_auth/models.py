@@ -3,6 +3,7 @@ import uuid
 import logging
 from time import time
 from hashlib import md5
+from enum import Enum
 
 from django.db import models
 from core.models import Repository
@@ -30,6 +31,16 @@ DEFAULT_AVATAR_SIZE = 55
 log = logging.getLogger(__name__)
 
 
+# TODO use this to refactor avatar_url
+class Service(Enum):
+    GITHUB = "github"
+    GITLAB = "gitlab"
+    BITBUCKET = "bitbucket"
+    GITHUB_ENTERPRISE = "github_enterprise"
+    GITLAB_ENTERPRISE = "gitlab_enterprise"
+    BITBUCKET_SERVER = "bitbucket_server"
+
+
 class Owner(models.Model):
 
     class Meta:
@@ -51,7 +62,7 @@ class Owner(models.Model):
     private_access = models.BooleanField(null=True)
     staff = models.BooleanField(null=True, default=False)
     cache = JSONField(null=True)
-    plan = models.CharField(max_length=10, null=True)
+    plan = models.TextField(null=True)
     # plan_provider
     plan_user_count = models.SmallIntegerField(null=True)
     plan_auto_activate = models.BooleanField(null=True)
@@ -100,6 +111,19 @@ class Owner(models.Model):
             active=True,
             author=self.ownerid
         ).order_by('-updatestamp')
+
+    @property
+    def activated_user_count(self):
+        return len(self.plan_activated_users) if self.plan_activated_users else 0
+
+    @property
+    def inactive_user_count(self):
+        return Owner.objects.filter(
+            organizations__contains=[self.ownerid]
+        ).count() - self.activated_user_count
+
+    def is_admin(self, owner):
+        return self.ownerid == owner.ownerid or (bool(self.admins) and owner.ownerid in self.admins)
 
     @property
     def is_active(self):

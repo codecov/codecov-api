@@ -341,6 +341,10 @@ class RepoCommitList(InternalAPITest):
                         "service": self.org.service,
                         "username": self.org.username,
                         "avatar_url": self.org.avatar_url,
+                        "stats": self.org.cache['stats'] if self.org.cache and 'stats' in self.org.cache else None,
+                        "email": self.org.email,
+                        "ownerid": self.org.ownerid,
+                        "integration_id": self.org.integration_id
                     },
                     "branch": self.second_test_commit.branch,
                     "totals": {
@@ -369,6 +373,10 @@ class RepoCommitList(InternalAPITest):
                         "service": self.org.service,
                         "username": self.org.username,
                         "avatar_url": self.org.avatar_url,
+                        "stats": self.org.cache['stats'] if self.org.cache and 'stats' in self.org.cache else None,
+                        "email": self.org.email,
+                        "ownerid": self.org.ownerid,
+                        "integration_id": self.org.integration_id
                     },
                     "branch": self.first_test_commit.branch,
                     "totals": {

@@ -11,8 +11,10 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 """
 
 import os
-from environs import Env
 from utils.config import get_config
+from environs import Env
+
+import stripe
 
 import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
@@ -39,6 +41,14 @@ if not DEBUG:
     WEBHOOK_URL = 'https://codecov.io'
 else:
     WEBHOOK_URL = '' # if developing, put ngrok url here instead, and don't forget to add to ALLOWED_HOSTS
+
+
+# STRIPE
+if DEBUG:
+    # Test key
+    STRIPE_API_KEY = 'sk_test_testsn3sc2tirvdea6mqp31t'
+else:
+    STRIPE_API_KEY = os.environ.get('SERVICES__STRIPE__API_KEY', None)
 
 
 # TODO(pierce): store environment name in variable and condition on that.
