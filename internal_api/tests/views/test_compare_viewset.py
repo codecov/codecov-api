@@ -6,7 +6,7 @@ import minio
 from unittest.mock import patch, PropertyMock
 
 from shared.reports.resources import ReportFile
-from shared.reports.types import ReportLine, ReportTotals, LineSession
+from shared.reports.types import ReportTotals
 from services.archive import SerializableReport
 
 from codecov_auth.tests.factories import OwnerFactory
@@ -85,13 +85,45 @@ class TestCompareViewSetRetrieve(APITestCase):
 
         self.mocked_compare_adapter = MockedComparisonAdapter(self.mock_git_compare_data)
 
-        self.base_file = ReportFile(name=self.file_name)
-        self.base_file._lines = [ReportLine(coverage=1, sessions=[LineSession(id=1, coverage=1)])] * 46
+        self.base_file = ReportFile(
+            name=self.file_name,
+            totals=[
+                46,
+                46,
+                0,
+                0,
+                100,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0
+            ]
+        )
+        self.base_file._lines = [[1, '', [[1, 1, 0, 0, 0]], 0, 0]] * 46
         self.base_report = MockSerializableReport()
         self.base_report.mocked_files = {self.file_name: self.base_file}
 
-        self.head_file = ReportFile(name=self.file_name)
-        self.head_file._lines = [ReportLine(coverage=1, sessions=[LineSession(id=1, coverage=1)])] * 6
+        self.head_file = ReportFile(
+            name=self.file_name,
+            totals=[
+                6,
+                6,
+                0,
+                0,
+                100,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0
+            ]
+        )
+        self.head_file._lines = [[1, '', [[1, 1, 0, 0, 0]], 0, 0]] * 6
         self.head_report = MockSerializableReport()
         self.head_report.mocked_files = {self.file_name: self.head_file}
 
@@ -201,6 +233,7 @@ class TestCompareViewSetRetrieve(APITestCase):
         adapter_mock.return_value = self.mocked_compare_adapter
         base_report_mock.return_value = self.base_report
         head_report_mock.return_value = self.head_report
+
 
         response = self._get_comparison()
 
