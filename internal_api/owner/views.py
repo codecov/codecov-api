@@ -10,10 +10,12 @@ from rest_framework.response import Response
 
 from codecov_auth.models import Owner, Service
 from services.decorators import billing_safe
+from services.billing import BillingService
 
 from .serializers import (
     OwnerSerializer,
-    AccountDetailsSerializer
+    AccountDetailsSerializer,
+    StripeInvoiceSerializer
 )
 
 
@@ -57,3 +59,16 @@ class OwnerViewSet(
         if not owner.is_admin(self.request.user):
             raise PermissionDenied()
         return Response(AccountDetailsSerializer(owner).data)
+
+    @action(detail=True, methods=['get'])
+    @billing_safe
+    def invoices(self, request, *args, **kwargs):
+        owner = self.get_object()
+        if not owner.is_admin(self.request.user):
+            raise PermissionDenied()
+        return Response(
+            StripeInvoiceSerializer(
+                BillingService().list_invoices(owner, 100),
+                many=True
+            ).data
+        )
