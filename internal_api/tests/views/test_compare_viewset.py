@@ -1,11 +1,12 @@
 from rest_framework.test import APITestCase
 from rest_framework.reverse import reverse
 from rest_framework import status
+import minio
 
 from unittest.mock import patch, PropertyMock
 
 from shared.reports.resources import ReportFile
-from shared.reports.types import ReportLine, ReportTotals, LineSession
+from shared.reports.types import ReportTotals
 from services.archive import SerializableReport
 
 from codecov_auth.tests.factories import OwnerFactory
@@ -84,13 +85,45 @@ class TestCompareViewSetRetrieve(APITestCase):
 
         self.mocked_compare_adapter = MockedComparisonAdapter(self.mock_git_compare_data)
 
-        self.base_file = ReportFile(name=self.file_name)
-        self.base_file._lines = [ReportLine(coverage=1, sessions=[LineSession(id=1, coverage=1)])] * 46
+        self.base_file = ReportFile(
+            name=self.file_name,
+            totals=[
+                46,
+                46,
+                0,
+                0,
+                100,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0
+            ]
+        )
+        self.base_file._lines = [[1, '', [[1, 1, 0, 0, 0]], 0, 0]] * 46
         self.base_report = MockSerializableReport()
         self.base_report.mocked_files = {self.file_name: self.base_file}
 
-        self.head_file = ReportFile(name=self.file_name)
-        self.head_file._lines = [ReportLine(coverage=1, sessions=[LineSession(id=1, coverage=1)])] * 6
+        self.head_file = ReportFile(
+            name=self.file_name,
+            totals=[
+                6,
+                6,
+                0,
+                0,
+                100,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0
+            ]
+        )
+        self.head_file._lines = [[1, '', [[1, 1, 0, 0, 0]], 0, 0]] * 6
         self.head_report = MockSerializableReport()
         self.head_report.mocked_files = {self.file_name: self.head_file}
 
@@ -200,6 +233,7 @@ class TestCompareViewSetRetrieve(APITestCase):
         adapter_mock.return_value = self.mocked_compare_adapter
         base_report_mock.return_value = self.base_report
         head_report_mock.return_value = self.head_report
+
 
         response = self._get_comparison()
 
@@ -352,3 +386,17 @@ class TestCompareViewSetRetrieve(APITestCase):
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data["totals"]["base"] == None
+
+    def test_no_raw_reports_returns_404(
+        self,
+        adapter_mock,
+        base_report_mock,
+        head_report_mock
+    ):
+        base_report_mock.return_value = None
+        head_report_mock.side_effect = minio.error.NoSuchKey(response_error=None)
+        adapter_mock.return_value = self.mocked_compare_adapter
+
+        response = self._get_comparison()
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND

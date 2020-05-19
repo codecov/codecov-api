@@ -1,4 +1,5 @@
 import asyncio
+import minio
 
 from rest_framework import mixins, viewsets
 from rest_framework.response import Response
@@ -32,7 +33,13 @@ class CompareViewSet(CompareSlugMixin, mixins.RetrieveModelMixin, viewsets.Gener
 
     @torngit_safe
     def retrieve(self, request, *args, **kwargs):
-        return super().retrieve(request, *args, **kwargs)
+        # Fetching the head report in the comparison can throw a minio error
+        # if the report has been evicted from storage, so we translaate that
+        # error into an API exception here
+        try:
+            return super().retrieve(request, *args, **kwargs)
+        except minio.error.NoSuchKey:
+            raise NotFound("Raw report not found for base or head reference.")
 
     @action(detail=False, methods=['get'], url_path='file/(?P<file_path>.+)', url_name="file")
     @torngit_safe

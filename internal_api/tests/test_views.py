@@ -101,6 +101,35 @@ class RepoPullList(InternalAPITest):
             "got the wrong number of open pulls: {}".format(content["results"]),
         )
 
+    def test_get_pulls_ordered_by_pullid(self, mock_provider):
+        mock_provider.return_value = True, True
+        self.client.force_login(user=self.user)
+        # Test increasing ordering
+        response = self.client.get(
+            reverse("pulls-list", kwargs=self.correct_kwargs), data={"ordering": "pullid"}
+        )
+        content = self.json_content(response)
+        pullids = [r['pullid'] for r in content['results']]
+        self.assertEqual(pullids, [10,11])
+        # Test decreasing ordering
+        response = self.client.get(
+            reverse("pulls-list", kwargs=self.correct_kwargs), data={"ordering": "-pullid"}
+        )
+        content = self.json_content(response)
+        pullids = [r['pullid'] for r in content['results']]
+        self.assertEqual(pullids, [11,10])
+
+    def test_get_pulls_default_ordering(self, mock_provider):
+        mock_provider.return_value = True, True
+        self.client.force_login(user=self.user)
+        # Test default ordering
+        response = self.client.get(
+            reverse("pulls-list", kwargs=self.correct_kwargs)
+        )
+        content = self.json_content(response)
+        pullids = [r['pullid'] for r in content['results']]
+        self.assertEqual(pullids, [11,10])
+
     def test_get_pull_wrong_org(self, mock_provider):
         mock_provider.return_value = True, True
         self.client.force_login(user=self.user)
@@ -312,6 +341,10 @@ class RepoCommitList(InternalAPITest):
                         "service": self.org.service,
                         "username": self.org.username,
                         "avatar_url": self.org.avatar_url,
+                        "stats": self.org.cache['stats'] if self.org.cache and 'stats' in self.org.cache else None,
+                        "email": self.org.email,
+                        "ownerid": self.org.ownerid,
+                        "integration_id": self.org.integration_id
                     },
                     "branch": self.second_test_commit.branch,
                     "totals": {
@@ -340,6 +373,10 @@ class RepoCommitList(InternalAPITest):
                         "service": self.org.service,
                         "username": self.org.username,
                         "avatar_url": self.org.avatar_url,
+                        "stats": self.org.cache['stats'] if self.org.cache and 'stats' in self.org.cache else None,
+                        "email": self.org.email,
+                        "ownerid": self.org.ownerid,
+                        "integration_id": self.org.integration_id
                     },
                     "branch": self.first_test_commit.branch,
                     "totals": {

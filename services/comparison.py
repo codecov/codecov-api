@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import functools
+import json
 
 from collections import Counter
 
@@ -160,17 +161,41 @@ class FileComparisonVisitor:
     all the edge cases.
     """
 
+    def _get_line(self, report_file, ln):
+        """
+        Kindof a hacky way to bypass the dataclasses used in `reports`
+        library, because they are extremely slow. This basically copies
+        some logic from ReportFile.get and ReportFile._line, which work
+        together to take an index and turn it into a ReportLine. Here
+        we do something similar, but just return the underlying array instead.
+        Not sure if this will be the final solution.
+
+        Note: the underlying array representation cn be seen here:
+        https://github.com/codecov/shared/blob/master/shared/reports/types.py#L75
+        The index in the array representation is 1-1 with the index of the
+        dataclass attribute for ReportLine.
+        """
+        if report_file is None or ln is None:
+            return None
+
+        # copied from ReportFile.get
+        try:
+            line = report_file._lines[ln - 1]
+        except IndexError:
+            return None 
+
+        # copied from ReportFile._line, minus dataclass instantiation
+        if line:
+            if type(line) is list:
+                return line
+            else:
+                # these are old versions
+                # note:(pierce) ^^ this comment is copied, not sure what it means
+                return json.loads(line)
+
     def _get_lines(self, base_ln, head_ln):
-        base_line, head_line = None, None
-
-        if base_ln and isinstance(self.base_file, ReportFile):
-            if base_ln in self.base_file:
-                base_line = self.base_file[base_ln]
-
-        if head_ln and isinstance(self.head_file, ReportFile):
-            if head_ln in self.head_file:
-                head_line = self.head_file[head_ln]
-
+        base_line = self._get_line(self.base_file, base_ln)
+        head_line = self._get_line(self.head_file, head_ln)
         return base_line, head_line
 
     def __call__(self, base_ln, head_ln, value, is_diff):
@@ -215,14 +240,27 @@ class CreateChangeSummaryVisitor(FileComparisonVisitor):
     def __init__(self, base_file, head_file):
         self.base_file, self.head_file = base_file, head_file
         self.summary = Counter()
+        self.coverage_type_map = {
+          0: "misses",
+          1: "hits",
+          2: "partials"
+        }
 
-    def _get_coverage_type(self, integer_representation):
-        if integer_representation == 0:
-            return "misses"
-        if integer_representation == 1:
-            return "hits"
-        if integer_representation == 2:
-            return "partials"
+    def _update_summary(self, base_line, head_line):
+        """
+        Updates the change summary based on the coverage type (0
+        for miss, 1 for hit, 2 for partial) found at index 0 of the
+        line-array.
+        """
+        try:
+            self.summary[self.coverage_type_map[base_line[0]]] -= 1
+        except KeyError:
+            pass
+
+        try:
+            self.summary[self.coverage_type_map[head_line[0]]] += 1
+        except KeyError:
+            pass
 
     def __call__(self, base_ln, head_ln, value, is_diff):
         if value and value[0] in ["+", "-"]:
@@ -232,11 +270,10 @@ class CreateChangeSummaryVisitor(FileComparisonVisitor):
         if base_line is None or head_line is None:
             return
 
-        if base_line.coverage == head_line.coverage:
+        if base_line[0] == head_line[0]:
             return
 
-        self.summary[self._get_coverage_type(base_line.coverage)] -= 1
-        self.summary[self._get_coverage_type(head_line.coverage)] += 1
+        self._update_summary(base_line, head_line)
 
 
 class LineComparison:
@@ -261,8 +298,8 @@ class LineComparison:
     @property
     def coverage(self):
         return {
-            "base": None if self.added or not self.base_line else self.base_line.coverage,
-            "head": None if self.removed or not self.head_line else self.head_line.coverage
+            "base": None if self.added or not self.base_line else self.base_line[0],
+            "head": None if self.removed or not self.head_line else self.head_line[0]
         }
 
     @property
@@ -276,7 +313,7 @@ class LineComparison:
 
         # an array of 1's (like [1, 1, ...]) of length equal to the number of sessions
         # where each session's coverage == 1 (hit)
-        session_coverage = [session.coverage for session in self.head_line.sessions if session.coverage == 1]
+        session_coverage = [session[1] for session in self.head_line[2] if session[1] == 1]
         if session_coverage:
             return functools.reduce(lambda a, b: a + b, session_coverage)
 

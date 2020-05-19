@@ -20,8 +20,7 @@ class TestOwnerModel(TestCase):
         self.owner = OwnerFactory(
             username="codecov_name",
             service_id="1234",
-            email="name@codecov.io",
-            ownerid="4",
+            email="name@codecov.io"
         )
 
     def test_repo_credits_returns_correct_repos_for_legacy_plan(self):
@@ -129,7 +128,7 @@ class TestOwnerModel(TestCase):
                 return 'codecov_url'
         mock_get_config.side_effect = side_effect
         self.owner.service = None
-        self.assertEqual(self.owner.avatar_url, f'codecov_url/users/4.png?size={DEFAULT_AVATAR_SIZE}')
+        self.assertEqual(self.owner.avatar_url, f'codecov_url/users/{self.owner.ownerid}.png?size={DEFAULT_AVATAR_SIZE}')
 
     @patch("codecov_auth.models.get_config")
     @patch("codecov_auth.models.os.getenv")
@@ -154,3 +153,28 @@ class TestOwnerModel(TestCase):
         self.owner.service = None
         self.owner.ownerid = None
         self.assertEqual(self.owner.avatar_url, 'codecov_url_media/media/images/gafsi/avatar.svg')
+
+    def test_is_admin_returns_false_if_admin_array_is_null(self):
+        assert self.owner.is_admin(OwnerFactory()) is False
+
+    def test_is_admin_returns_true_when_comparing_with_self(self):
+        assert self.owner.is_admin(self.owner) is True
+
+    def test_is_admin_returns_true_if_ownerid_in_admin_array(self):
+        owner = OwnerFactory()
+        self.owner.admins = [owner.ownerid]
+        assert self.owner.is_admin(owner) is True
+
+    def test_is_admin_returns_false_if_ownerid_not_in_admin_array(self):
+        owner = OwnerFactory()
+        self.owner.admins = []
+        assert self.owner.is_admin(owner) is False
+
+    def test_activated_user_count_returns_num_activated_users(self):
+        owner = OwnerFactory(plan_activated_users=[OwnerFactory().ownerid, OwnerFactory().ownerid])
+        assert owner.activated_user_count == 2
+
+    def test_activated_user_count_returns_0_if_plan_activated_users_is_null(self):
+        owner = OwnerFactory(plan_activated_users=None)
+        assert owner.plan_activated_users == None
+        assert owner.activated_user_count == 0
