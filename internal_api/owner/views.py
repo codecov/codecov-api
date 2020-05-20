@@ -1,12 +1,18 @@
 import logging
 
+from django.utils.functional import cached_property
 from django.shortcuts import get_object_or_404
-from django.db.models import Subquery, OuterRef, Q
 
-from rest_framework import generics, viewsets, mixins
+from django.db.models import OuterRef, Exists, Func
+
+from django.contrib.postgres.fields import ArrayField
+
+from rest_framework import generics, viewsets, mixins, filters
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, NotFound
 from rest_framework.response import Response
+
+from django_filters import rest_framework as django_filters
 
 from codecov_auth.models import Owner, Service
 from services.decorators import billing_safe
@@ -15,8 +21,11 @@ from services.billing import BillingService
 from .serializers import (
     OwnerSerializer,
     AccountDetailsSerializer,
-    StripeInvoiceSerializer
+    UserSerializer,
+    StripeInvoiceSerializer,
 )
+
+from .filters import UserFilters
 
 
 log = logging.getLogger(__name__)
@@ -71,4 +80,41 @@ class OwnerViewSet(
                 BillingService().list_invoices(owner, 100),
                 many=True
             ).data
+        )
+
+
+class UserViewSet(
+    viewsets.GenericViewSet,
+    mixins.ListModelMixin
+):
+    serializer_class = UserSerializer
+    filter_backends = (django_filters.DjangoFilterBackend, filters.OrderingFilter,)
+    filterset_class = UserFilters
+    ordering_fields = ('name',)
+
+    @cached_property
+    def owner(self):
+        return get_object_or_404(
+            Owner,
+            username=self.kwargs.get("username"),
+            service=self.kwargs.get("service")
+        )
+
+    def get_queryset(self):
+        owner = self.owner
+        if not owner.is_admin(self.request.user):
+            raise PermissionDenied()
+        return Owner.objects.filter(
+            organizations__contains=[owner.ownerid]
+        ).annotate(
+            activated=Exists(
+                Owner.objects.filter(
+                    ownerid=owner.ownerid,
+                    plan_activated_users__contains=Func(
+                        OuterRef('ownerid'),
+                        function='ARRAY',
+                        template="%(function)s[%(expressions)s]"
+                    )
+                )
+            )
         )
