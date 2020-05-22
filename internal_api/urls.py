@@ -1,4 +1,5 @@
 from django.urls import path, include
+from django.conf import urls
 
 from internal_api.owner.views import ProfileView, OwnerViewSet, UserViewSet
 from internal_api.pull.views import PullViewSet
@@ -8,7 +9,14 @@ from internal_api.repo.views import RepositoryViewSet
 from internal_api.compare.views import CompareViewSet
 
 from rest_framework.routers import DefaultRouter
-from internal_api.compare.router import ComparisonRouter
+from rest_framework.exceptions import server_error
+
+from .compare.router import ComparisonRouter
+from .error_views import not_found
+
+
+urls.handler404 = not_found
+urls.handler500 = server_error
 
 owners_router = DefaultRouter()
 owners_router.register(r'owners', OwnerViewSet, base_name='owners')
