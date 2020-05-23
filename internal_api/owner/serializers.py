@@ -111,3 +111,18 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
             BillingService().list_invoices(owner, limit=4),
             many=True
         ).data
+
+
+class UserSerializer(serializers.ModelSerializer):
+    activated = serializers.BooleanField()
+
+    class Meta:
+        model = Owner
+        fields = (
+            'activated',
+            'username',
+            'email',
+            'ownerid',
+            'student',
+            'name'
+        )

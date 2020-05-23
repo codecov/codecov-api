@@ -78,6 +78,7 @@ class Owner(models.Model):
     integration_id = models.IntegerField(null=True)
     permission = ArrayField(models.IntegerField(null=True), null=True)
     bot = models.IntegerField(null=True)
+    student = models.BooleanField(default=False)
 
     @property
     def has_legacy_plan(self):
