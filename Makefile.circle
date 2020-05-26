@@ -42,6 +42,17 @@ tag:
 	docker tag ${GCR_REPO}:latest ${GCR_REPO}:${VERSION}
 	docker push ${GCR_REPO}:${VERSION}
 
+# build and tag with staging tag
+# - when the docker image is uploaded to GCR with the "staging" tag, spinnaker will automatically detect the new image and deploy to the staging k8s cluster
+# - spinnaker pipeline: https://spinnaker.codecov.dev/?to=https%3A%2F%2Fspinnaker.codecov.dev%2F%23%2Fsearch#/applications/codecov-staging/executions?pipeline=api
+# - staging url: https://stage-api.codecov.dev
+staging:
+	docker build \
+		-f  Dockerfile.circle . \
+		-t ${GCR_REPO}:staging \
+		--build-arg REQUIREMENTS_IMAGE=${GCR_REPO}:${REQUIREMENTS_TAG} && \
+	docker push ${GCR_REPO}:staging
+
 # CIRCLECI
 # job: deploy
 # deploys tagged version to production k8s
