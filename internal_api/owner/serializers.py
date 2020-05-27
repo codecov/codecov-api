@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.exceptions import PermissionDenied
 
 from codecov_auth.models import Owner
 from codecov_auth.constants import USER_PLANS
@@ -126,3 +127,17 @@ class UserSerializer(serializers.ModelSerializer):
             'student',
             'name'
         )
+
+    def update(self, instance, validated_data):
+        owner = self.context["view"].owner
+
+        if "activated" in validated_data:
+            if validated_data["activated"] is True and owner.can_activate_user(instance):
+                owner.activate_user(instance)
+            elif validated_data["activated"] is False:
+                owner.deactivate_user(instance)
+            else:
+                raise PermissionDenied(f"Cannot activate user {instance.username} -- not enough seats left.")
+
+        # Re-fetch from DB to set activated and admin fields
+        return self.context["view"].get_object()

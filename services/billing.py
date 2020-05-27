@@ -24,6 +24,9 @@ class BillingException(Exception):
 class StripeService:
     def list_invoices(self, owner, limit=10):
         log.info(f"Fetching invoices from stripe for ownerid {owner.ownerid}")
+        if owner.stripe_customer_id is None:
+            log.info("stripe_customer_id is None, not fetching invoices")
+            return []
         try:
             return stripe.Invoice.list(customer=owner.stripe_customer_id, limit=limit)["data"]
         except stripe.error.StripeError as e:

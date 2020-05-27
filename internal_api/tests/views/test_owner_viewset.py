@@ -31,7 +31,7 @@ class OwnerViewSetTests(APITestCase):
 
     def setUp(self):
         self.service = "bitbucket"
-        self.user = OwnerFactory()
+        self.user = OwnerFactory(stripe_customer_id=1000)
         self.expected_invoice = {
             "number": "EF0A41E-0001",
             "status": "paid",

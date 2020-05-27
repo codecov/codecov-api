@@ -115,7 +115,9 @@ class Owner(models.Model):
 
     @property
     def activated_user_count(self):
-        return len(self.plan_activated_users) if self.plan_activated_users else 0
+        if not self.plan_activated_users:
+            return 0
+        return Owner.objects.filter(ownerid__in=self.plan_activated_users, student=False).count()
 
     @property
     def inactive_user_count(self):
@@ -183,6 +185,25 @@ class Owner(models.Model):
 
         else:
             return '{}/media/images/gafsi/avatar.svg'.format(get_config('setup', 'media', 'assets'))
+
+    def can_activate_user(self, user):
+        return user.student or self.activated_user_count < self.plan_user_count + self.free
+
+    def activate_user(self, user):
+        if isinstance(self.plan_activated_users, list):
+            if user.ownerid not in self.plan_activated_users:
+                self.plan_activated_users.append(user.ownerid)
+        else:
+            self.plan_activated_users = [user.ownerid]
+        self.save()
+
+    def deactivate_user(self, user):
+        if isinstance(self.plan_activated_users, list):
+            try:
+                self.plan_activated_users.remove(user.ownerid)
+            except ValueError:
+                pass
+        self.save()
 
 
 class Session(models.Model):

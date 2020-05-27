@@ -9,7 +9,7 @@ from codecov_auth.tests.factories import OwnerFactory
 
 class UserViewSetTests(APITestCase):
     def setUp(self):
-        self.owner = OwnerFactory()
+        self.owner = OwnerFactory(plan='users-free', plan_user_count=5)
         self.users = [
             OwnerFactory(organizations=[self.owner.ownerid]),
             OwnerFactory(organizations=[self.owner.ownerid]),
@@ -20,8 +20,11 @@ class UserViewSetTests(APITestCase):
 
     def _list(self, kwargs={}, query_params={}):
         if not kwargs:
-            kwargs = {"service": self.owner.service, "username": self.owner.username}
+            kwargs = {"service": self.owner.service, "owner_username": self.owner.username}
         return self.client.get(reverse('users-list', kwargs=kwargs), data=query_params)
+
+    def _patch(self, kwargs, data):
+        return self.client.patch(reverse('users-detail', kwargs=kwargs), data=data)
 
     def test_list_returns_200_and_user_list_on_success(self):
         response = self._list()
@@ -122,3 +125,72 @@ class UserViewSetTests(APITestCase):
         response = self._list(query_params={"ordering": "-name"})
 
         assert [r['name'] for r in response.data['results']] == ['c', 'b', 'a']
+
+    def test_patch_can_set_activated_to_true(self):
+        response = self._patch(
+            kwargs={
+                "service": self.owner.service,
+                "owner_username": self.owner.username,
+                "user_username": self.users[0].username
+            },
+            data={
+                'activated': True
+            }
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            'name': self.users[0].name,
+            'activated': True,
+            'username': self.users[0].username,
+            'email': self.users[0].email,
+            'ownerid': self.users[0].ownerid,
+            'student': self.users[0].student
+        }
+
+        self.owner.refresh_from_db()
+        assert self.users[0].ownerid in self.owner.plan_activated_users
+
+    def test_patch_can_set_activated_to_false(self):
+        # setup activated user
+        self.owner.plan_activated_users = [self.users[0].ownerid]
+        self.owner.save()
+
+        response = self._patch(
+            kwargs={
+                "service": self.owner.service,
+                "owner_username": self.owner.username,
+                "user_username": self.users[0].username
+            },
+            data={
+                'activated': False
+            }
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            'name': self.users[0].name,
+            'activated': False,
+            'username': self.users[0].username,
+            'email': self.users[0].email,
+            'ownerid': self.users[0].ownerid,
+            'student': self.users[0].student
+        }
+
+        self.owner.refresh_from_db()
+        assert self.users[0].ownerid not in self.owner.plan_activated_users
+
+    @patch('codecov_auth.models.Owner.can_activate_user', lambda self, user: False)
+    def test_patch_returns_403_if_cannot_activate_user(self):
+        response = self._patch(
+            kwargs={
+                "service": self.owner.service,
+                "owner_username": self.owner.username,
+                "user_username": self.users[0].username
+            },
+            data={
+                'activated': True
+            }
+        )
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN

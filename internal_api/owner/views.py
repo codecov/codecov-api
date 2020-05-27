@@ -9,7 +9,7 @@ from django.contrib.postgres.fields import ArrayField
 
 from rest_framework import generics, viewsets, mixins, filters
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied, NotFound
+from rest_framework.exceptions import PermissionDenied, NotFound, ValidationError
 from rest_framework.response import Response
 
 from django_filters import rest_framework as django_filters
@@ -85,25 +85,35 @@ class OwnerViewSet(
 
 class UserViewSet(
     viewsets.GenericViewSet,
-    mixins.ListModelMixin
+    mixins.ListModelMixin,
+    mixins.UpdateModelMixin
 ):
     serializer_class = UserSerializer
     filter_backends = (django_filters.DjangoFilterBackend, filters.OrderingFilter,)
     filterset_class = UserFilters
     ordering_fields = ('name',)
+    lookup_field = "user_username"
 
     @cached_property
     def owner(self):
         return get_object_or_404(
             Owner,
-            username=self.kwargs.get("username"),
+            username=self.kwargs.get("owner_username"),
             service=self.kwargs.get("service")
+        )
+
+    def get_object(self):
+        return get_object_or_404(
+            self.get_queryset(),
+            username=self.kwargs.get("user_username")
         )
 
     def get_queryset(self):
         owner = self.owner
         if not owner.is_admin(self.request.user):
             raise PermissionDenied()
+        if owner.has_legacy_plan:
+            raise ValidationError(detail="Users API not accessible for legacy plans")
         return Owner.objects.filter(
             organizations__contains=[owner.ownerid]
         ).annotate(

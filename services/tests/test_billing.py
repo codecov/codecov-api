@@ -19,7 +19,7 @@ class StripeServiceTests(TestCase):
 
     @patch('stripe.Invoice.list')
     def test_list_invoices_raises_billing_exception_if_stripe_exception(self, invoice_list_mock):
-        owner = OwnerFactory()
+        owner = OwnerFactory(stripe_customer_id=100)
         err_code, err_msg = 404, "Not Found"
         invoice_list_mock.side_effect = StripeError(message=err_msg, http_status=err_code)
 
@@ -27,6 +27,14 @@ class StripeServiceTests(TestCase):
             self.stripe.list_invoices(owner)
             assert e.http_status == err_code
             assert e.message == err_msg
+
+    @patch('stripe.Invoice.list')
+    def test_list_invoices_returns_emptylist_if_stripe_customer_id_is_None(self, invoice_list_mock):
+        owner = OwnerFactory()
+        invoices = self.stripe.list_invoices(owner)
+
+        invoice_list_mock.assert_not_called()
+        assert invoices == []
 
 
 class MockPaymentService:
