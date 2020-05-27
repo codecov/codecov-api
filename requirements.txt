@@ -22,3 +22,4 @@ redis==3.2.0
 environs==7.2.0
 sentry-sdk==0.14.3
 stripe==2.47.0
+setproctitle==1.1.10
