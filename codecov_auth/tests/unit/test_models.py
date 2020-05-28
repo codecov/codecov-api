@@ -178,3 +178,56 @@ class TestOwnerModel(TestCase):
         owner = OwnerFactory(plan_activated_users=None)
         assert owner.plan_activated_users == None
         assert owner.activated_user_count == 0
+
+    def test_activated_user_count_ignores_students(self):
+        student = OwnerFactory(student=True)
+        self.owner.plan_activated_users = [student.ownerid]
+        self.owner.save()
+        assert self.owner.activated_user_count == 0
+
+    def test_activate_user_adds_ownerid_to_plan_activated_users(self):
+        to_activate = OwnerFactory()
+        self.owner.activate_user(to_activate)
+        self.owner.refresh_from_db()
+        assert to_activate.ownerid in self.owner.plan_activated_users
+
+    def test_activate_user_does_nothing_if_user_is_activated(self):
+        to_activate = OwnerFactory()
+        self.owner.plan_activated_users = [to_activate.ownerid]
+        self.owner.save()
+        self.owner.activate_user(to_activate)
+        self.owner.refresh_from_db()
+        assert self.owner.plan_activated_users == [to_activate.ownerid]
+
+    def test_deactivate_removes_ownerid_from_plan_activated_users(self):
+        to_deactivate = OwnerFactory()
+        self.owner.plan_activated_users = [3, 4, to_deactivate.ownerid]
+        self.owner.save()
+        self.owner.deactivate_user(to_deactivate)
+        self.owner.refresh_from_db()
+        assert to_deactivate.ownerid not in self.owner.plan_activated_users
+
+    def test_deactivate_non_activated_user_doesnt_crash(self):
+        to_deactivate = OwnerFactory()
+        self.owner.plan_activated_users = []
+        self.owner.save()
+        self.owner.deactivate_user(to_deactivate)
+
+    def test_can_activate_user_returns_true_if_user_is_student(self):
+        student = OwnerFactory(student=True)
+        assert self.owner.can_activate_user(student) is True
+
+    def test_can_activate_user_returns_true_if_activated_user_count_not_maxed(self):
+        to_activate = OwnerFactory()
+        existing_user = OwnerFactory(ownerid=1000, student=False)
+        self.owner.plan_activated_users = [existing_user.ownerid]
+        self.owner.plan_user_count = 2
+        self.owner.save()
+        assert self.owner.can_activate_user(to_activate) is True
+
+    def test_can_activate_user_factors_free_seats_into_total_allowed(self):
+        to_activate = OwnerFactory()
+        self.owner.free = 1
+        self.owner.plan_user_count = 0
+        self.owner.save()
+        assert self.owner.can_activate_user(to_activate) is True
