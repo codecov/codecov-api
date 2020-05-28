@@ -72,6 +72,8 @@ jobs:
     - checkout
     - setup_remote_docker
     - run:
+        <<: *gcloud_auth
+    - run:
         name: docker build, tag, and upload to staging
         command: |
           make -f Makefile.circle staging
