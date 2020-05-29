@@ -97,7 +97,7 @@ class TestCompareCommitsView(InternalAPITest):
         }
 
     def _get_commits_comparison(self, kwargs, query_params):
-        return self.client.get(reverse('compare-retrieve', kwargs=kwargs), data=query_params)
+        return self.client.get(reverse('compare-detail', kwargs=kwargs), data=query_params)
 
     def _configure_mocked_comparison_with_commits(self, mock):
         mock.return_value = {

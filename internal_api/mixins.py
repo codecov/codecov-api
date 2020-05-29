@@ -26,6 +26,17 @@ class RepoPropertyMixin:
         )
 
 
+class OwnerPropertyMixin:
+
+    @cached_property
+    def owner(self):
+        return get_object_or_404(
+            Owner,
+            username=self.kwargs.get("owner_username"),
+            service=self.kwargs.get("service")
+        )
+
+
 class CompareSlugMixin(RepoPropertyMixin):
     def _get_query_param_serializer_class(self):
         if "pullid" in self.request.query_params:

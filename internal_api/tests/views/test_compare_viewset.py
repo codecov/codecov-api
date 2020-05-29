@@ -199,7 +199,7 @@ class TestCompareViewSetRetrieve(APITestCase):
             }
 
         return self.client.get(
-            reverse('compare-retrieve', kwargs=kwargs),
+            reverse('compare-detail', kwargs=kwargs),
             data=query_params,
             content_type="application/json"
         )

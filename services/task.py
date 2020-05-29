@@ -1,3 +1,4 @@
+import logging
 import celery_config
 from celery import Celery
 
@@ -6,6 +7,9 @@ from celery import signature, chain
 
 celery_app = Celery("tasks")
 celery_app.config_from_object(celery_config)
+
+
+log = logging.getLogger(__name__)
 
 
 class TaskService(object):
@@ -91,4 +95,11 @@ class TaskService(object):
                 account=account,
                 action=action
             )
+        )
+
+    def delete_owner(self, ownerid):
+        log.info(f"Triggering delete_owner task for owner: {ownerid}")
+        self._create_signature(
+            'app.tasks.delete_owner.DeleteOwner',
+            kwargs=dict(ownerid=ownerid)
         )
