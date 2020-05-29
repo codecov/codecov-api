@@ -49,9 +49,9 @@ tag:
 staging:
 	docker build \
 		-f  Dockerfile.circle . \
-		-t ${GCR_REPO}:staging \
+		-t ${GCR_REPO}:staging-${VERSION} \
 		--build-arg REQUIREMENTS_IMAGE=${GCR_REPO}:${REQUIREMENTS_TAG} && \
-	docker push ${GCR_REPO}:staging
+	docker push ${GCR_REPO}:staging-${VERSION}
 
 # CIRCLECI
 # job: deploy
