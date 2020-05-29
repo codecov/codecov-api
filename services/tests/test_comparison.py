@@ -592,7 +592,6 @@ class ComparisonTests(TestCase):
         fc = self.comparison.get_file_comparison("both.py")
         assert fc.head_file.name == "both.py"
 
-
     @pytest.mark.xfail #TODO(pierce): investigate this feature
     def test_files_adds_deleted_files_that_were_tracked_in_base_report(
         self,
