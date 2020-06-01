@@ -205,6 +205,22 @@ class Owner(models.Model):
                 pass
         self.save()
 
+    def add_admin(self, user):
+        if isinstance(self.admins, list):
+            if user.ownerid not in self.admins:
+                self.admins.append(user.ownerid)
+        else:
+            self.admins = [user.ownerid]
+        self.save()
+
+    def remove_admin(self, user):
+        if isinstance(self.admins, list):
+            try:
+                self.admins.remove(user.ownerid)
+            except ValueError:
+                pass
+        self.save()
+
 
 class Session(models.Model):
 

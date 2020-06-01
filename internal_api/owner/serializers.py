@@ -116,11 +116,13 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     activated = serializers.BooleanField()
+    is_admin = serializers.BooleanField()
 
     class Meta:
         model = Owner
         fields = (
             'activated',
+            'is_admin',
             'username',
             'email',
             'ownerid',
@@ -138,6 +140,12 @@ class UserSerializer(serializers.ModelSerializer):
                 owner.deactivate_user(instance)
             else:
                 raise PermissionDenied(f"Cannot activate user {instance.username} -- not enough seats left.")
+
+        if "is_admin" in validated_data:
+            if validated_data["is_admin"]:
+                owner.add_admin(instance)
+            else:
+                owner.remove_admin(instance)
 
         # Re-fetch from DB to set activated and admin fields
         return self.context["view"].get_object()

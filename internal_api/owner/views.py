@@ -140,5 +140,15 @@ class UserViewSet(
                         template="%(function)s[%(expressions)s]"
                     )
                 )
+            ),
+            is_admin=Exists(
+                Owner.objects.filter(
+                    ownerid=owner.ownerid,
+                    admins__contains=Func(
+                        OuterRef('ownerid'),
+                        function='ARRAY',
+                        template="%(function)s[%(expressions)s]"
+                    )
+                )
             )
         )
