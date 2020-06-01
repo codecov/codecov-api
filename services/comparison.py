@@ -9,6 +9,7 @@ from django.utils.functional import cached_property
 
 from shared.reports.resources import ReportFile
 from shared.reports.types import ReportTotals
+from shared.utils.merge import line_type, LineType
 
 from services.archive import ReportService
 from core.models import Commit
@@ -241,9 +242,9 @@ class CreateChangeSummaryVisitor(FileComparisonVisitor):
         self.base_file, self.head_file = base_file, head_file
         self.summary = Counter()
         self.coverage_type_map = {
-          0: "misses",
-          1: "hits",
-          2: "partials"
+          LineType.hit: "hits",
+          LineType.miss: "misses",
+          LineType.partial: "partials"
         }
 
     def _update_summary(self, base_line, head_line):
@@ -252,15 +253,8 @@ class CreateChangeSummaryVisitor(FileComparisonVisitor):
         for miss, 1 for hit, 2 for partial) found at index 0 of the
         line-array.
         """
-        try:
-            self.summary[self.coverage_type_map[base_line[0]]] -= 1
-        except KeyError:
-            pass
-
-        try:
-            self.summary[self.coverage_type_map[head_line[0]]] += 1
-        except KeyError:
-            pass
+        self.summary[self.coverage_type_map[line_type(base_line[0])]] -= 1
+        self.summary[self.coverage_type_map[line_type(head_line[0])]] += 1
 
     def __call__(self, base_ln, head_ln, value, is_diff):
         if value and value[0] in ["+", "-"]:
@@ -270,7 +264,7 @@ class CreateChangeSummaryVisitor(FileComparisonVisitor):
         if base_line is None or head_line is None:
             return
 
-        if base_line[0] == head_line[0]:
+        if line_type(base_line[0]) == line_type(head_line[0]):
             return
 
         self._update_summary(base_line, head_line)
@@ -298,8 +292,8 @@ class LineComparison:
     @property
     def coverage(self):
         return {
-            "base": None if self.added or not self.base_line else self.base_line[0],
-            "head": None if self.removed or not self.head_line else self.head_line[0]
+            "base": None if self.added or not self.base_line else line_type(self.base_line[0]),
+            "head": None if self.removed or not self.head_line else line_type(self.head_line[0])
         }
 
     @property

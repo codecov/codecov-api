@@ -5,6 +5,7 @@ import pytest
 
 from shared.reports.resources import ReportFile
 from shared.reports.types import ReportLine, LineSession
+from shared.utils.merge import LineType
 
 from core.tests.factories import CommitFactory
 from codecov_auth.tests.factories import OwnerFactory
@@ -250,7 +251,7 @@ class CreateChangeSummaryVisitorTests(TestCase):
 
     def test_summary_with_one_less_hit_and_one_more_partial(self):
         self.base_file._lines[0][0] = 1
-        self.head_file._lines[0][0] = 2
+        self.head_file._lines[0][0] = "1/2"
         visitor = CreateChangeSummaryVisitor(self.base_file, self.head_file)
         visitor(1, 1, "", True)
         assert visitor.summary == {"hits": -1, "partials": 1}
@@ -277,17 +278,17 @@ class LineComparisonTests(TestCase):
     def test_coverage_shows_coverage_for_base_and_head(self):
         base_cov, head_cov = 0, 1
         lc = LineComparison([base_cov, '', [], 0, 0], [head_cov, '', [], 0, 0], 0, 0, "", False)
-        assert lc.coverage == {"base": base_cov, "head": head_cov}
+        assert lc.coverage == {"base": LineType.miss, "head": LineType.hit}
 
     def test_coverage_shows_none_for_base_if_added(self):
         head_cov = 1
         lc = LineComparison(None, [head_cov, '', [], 0, 0], 0, 0, "+", False)
-        assert lc.coverage == {"base": None, "head": head_cov}
+        assert lc.coverage == {"base": None, "head": LineType.hit}
 
     def test_coverage_shows_none_for_head_if_removed(self):
         base_cov = 0
         lc = LineComparison([base_cov, '', [], 0, 0], None, 0, 0, "-", False)
-        assert lc.coverage == {"base": base_cov, "head": None}
+        assert lc.coverage == {"base": LineType.miss, "head": None}
 
     def test_sessions_returns_sessions_hit_in_head(self):
         lc = LineComparison(
@@ -398,7 +399,7 @@ class FileComparisonTests(TestCase):
 
     # essentially a smoke/integration test
     def test_lines(self):
-        head_lines = [[1, '', [], 0, None], [2, '', [], 0, None], [1, '', [], 0, None]]
+        head_lines = [[1, '', [], 0, None], ["1/2", '', [], 0, None], [1, '', [], 0, None]]
         base_lines = [[0, '', [], 0, None], [1, '', [], 0, None], [0, '', [], 0, None]]
 
         first_line_val = "unchanged line from src"
@@ -416,22 +417,22 @@ class FileComparisonTests(TestCase):
 
         assert self.file_comparison.lines[0].value == first_line_val
         assert self.file_comparison.lines[0].number == {"base": 1, "head": 1}
-        assert self.file_comparison.lines[0].coverage == {"base": 0, "head": 1}
+        assert self.file_comparison.lines[0].coverage == {"base": LineType.miss, "head": LineType.hit}
 
         assert self.file_comparison.lines[1].value == second_line_val
         assert self.file_comparison.lines[1].number == {"base": None, "head": 2}
-        assert self.file_comparison.lines[1].coverage == {"base": None, "head": 2}
+        assert self.file_comparison.lines[1].coverage == {"base": None, "head": LineType.partial}
 
         assert self.file_comparison.lines[2].value == third_line_val
         assert self.file_comparison.lines[2].number == {"base": 2, "head": None}
-        assert self.file_comparison.lines[2].coverage == {"base": 1, "head": None}
+        assert self.file_comparison.lines[2].coverage == {"base": LineType.hit, "head": None}
 
         assert self.file_comparison.lines[3].value == last_line_val
         assert self.file_comparison.lines[3].number == {"base": 3, "head": 3}
-        assert self.file_comparison.lines[3].coverage == {"base": 0, "head": 1}
+        assert self.file_comparison.lines[3].coverage == {"base": LineType.miss, "head": LineType.hit}
 
     def test_change_summary(self):
-        head_lines = [[1, '', [], 0, None], [2, '', [], 0, None], [1, '', [], 0, None]]
+        head_lines = [[1, '', [], 0, None], ["3/4", '', [], 0, None], [1, '', [], 0, None]]
         base_lines = [[0, '', [], 0, None], [1, '', [], 0, None], [0, '', [], 0, None]]
 
         first_line_val = "unchanged line from src"

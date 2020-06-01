@@ -7,6 +7,7 @@ from unittest.mock import patch, PropertyMock
 
 from shared.reports.resources import ReportFile
 from shared.reports.types import ReportTotals
+from shared.utils.merge import LineType
 from services.archive import SerializableReport
 
 from codecov_auth.tests.factories import OwnerFactory
@@ -157,8 +158,8 @@ class TestCompareViewSetRetrieve(APITestCase):
                             "head": idx
                         },
                         "coverage": {
-                            "base": 1,
-                            "head": 1
+                            "base": LineType.hit,
+                            "head": LineType.hit
                         },
                         "added": False,
                         "removed": False,
@@ -173,7 +174,7 @@ class TestCompareViewSetRetrieve(APITestCase):
                             "head": None
                         },
                         "coverage": {
-                            "base": 1,
+                            "base": LineType.hit,
                             "head": None
                         },
                         "added": False,
@@ -338,8 +339,8 @@ class TestCompareViewSetRetrieve(APITestCase):
                     "head": idx
                 },
                 "coverage": {
-                    "base": 1,
-                    "head": 1
+                    "base": LineType.hit,
+                    "head": LineType.hit
                 },
                 "added": False,
                 "removed": False,
