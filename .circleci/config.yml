@@ -72,7 +72,7 @@ jobs:
       - checkout
       - setup_remote_docker
       - run: echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKER_USERNAME" --password-stdin
-      - run: make docker-deploy
+      - run: make -f Makefile.circle docker-deploy
 
   staging:
     executor: codecov-deploy
