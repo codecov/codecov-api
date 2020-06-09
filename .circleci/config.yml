@@ -66,6 +66,14 @@ jobs:
           apk add bash curl
           bash -c "bash <(curl -s https://codecov.io/bash) -t a3f4746b-4e57-4fc6-90ee-b4007979c0d2 -F unit"
 
+  portable:
+    executor: codecov-deploy
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run: echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKER_USERNAME" --password-stdin
+      - run: make docker-deploy
+
   staging:
     executor: codecov-deploy
     steps:
@@ -107,6 +115,11 @@ workflows:
           filters:
             tags:
               only: /.*/
+      - portable:
+          context: "DockerHub Push Context"
+          requires:
+            - build
+            - test
       - staging:
           requires:
             - build
