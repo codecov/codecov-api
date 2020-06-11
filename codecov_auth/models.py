@@ -15,9 +15,11 @@ from codecov_auth.constants import (
     BITBUCKET_BASE_URL,
     GRAVATAR_BASE_URL,
     AVATARIO_BASE_URL,
+    USER_PLAN_REPRESENTATIONS,
 )
 
 from codecov_auth.helpers import get_gitlab_url
+
 
 SERVICE_GITHUB = 'github'
 SERVICE_GITHUB_ENTERPRISE = 'github_enterprise'
@@ -26,7 +28,9 @@ SERVICE_BITBUCKET_SERVER = 'bitbucket_server'
 SERVICE_GITLAB = 'gitlab'
 SERVICE_CODECOV_ENTERPRISE = 'enterprise'
 
+
 DEFAULT_AVATAR_SIZE = 55
+
 
 log = logging.getLogger(__name__)
 
@@ -186,10 +190,16 @@ class Owner(models.Model):
         else:
             return '{}/media/images/gafsi/avatar.svg'.format(get_config('setup', 'media', 'assets'))
 
+    @property
+    def pretty_plan(self):
+        if self.plan in USER_PLAN_REPRESENTATIONS:
+            return USER_PLAN_REPRESENTATIONS[self.plan]
+
     def can_activate_user(self, user):
         return user.student or self.activated_user_count < self.plan_user_count + self.free
 
     def activate_user(self, user):
+        log.info(f"Activating user {user.ownerid} in ownerid {self.ownerid}")
         if isinstance(self.plan_activated_users, list):
             if user.ownerid not in self.plan_activated_users:
                 self.plan_activated_users.append(user.ownerid)
@@ -198,6 +208,7 @@ class Owner(models.Model):
         self.save()
 
     def deactivate_user(self, user):
+        log.info(f"Deactivating user {user.ownerid} in ownerid {self.ownerid}")
         if isinstance(self.plan_activated_users, list):
             try:
                 self.plan_activated_users.remove(user.ownerid)
@@ -206,6 +217,7 @@ class Owner(models.Model):
         self.save()
 
     def add_admin(self, user):
+        log.info(f"Granting admin permissions to user {user.ownerid} within owner {self.ownerid}")
         if isinstance(self.admins, list):
             if user.ownerid not in self.admins:
                 self.admins.append(user.ownerid)
@@ -214,11 +226,20 @@ class Owner(models.Model):
         self.save()
 
     def remove_admin(self, user):
+        log.info(f"Revoking admin permissions for user {user.ownerid} within owner {self.ownerid}")
         if isinstance(self.admins, list):
             try:
                 self.admins.remove(user.ownerid)
             except ValueError:
                 pass
+        self.save()
+
+    def set_free_plan(self):
+        log.info(f"Setting plan to users-free for owner {self.ownerid}")
+        self.plan="users-free"
+        self.plan_auto_activate=True
+        self.plan_activated_users=None
+        self.plan_user_count=5
         self.save()
 
 

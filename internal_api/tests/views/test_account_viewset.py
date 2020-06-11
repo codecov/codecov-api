@@ -10,6 +10,7 @@ from rest_framework import status
 
 from codecov_auth.tests.factories import OwnerFactory
 from codecov_auth.models import Owner
+from codecov_auth.constants import USER_PLAN_REPRESENTATIONS
 
 
 curr_path = os.path.dirname(__file__)
@@ -22,7 +23,7 @@ class AccountViewSetTests(APITestCase):
         return self.client.get(reverse("account_details-detail", kwargs=kwargs))
 
     def _update(self, kwargs, data):
-        return self.client.patch(reverse("account_details-detail", kwargs=kwargs), data=data)
+        return self.client.patch(reverse("account_details-detail", kwargs=kwargs), data=data, format='json')
 
     def _destroy(self, kwargs):
         return self.client.delete(reverse("account_details-detail", kwargs=kwargs))
@@ -93,9 +94,15 @@ class AccountViewSetTests(APITestCase):
         response = self._retrieve()
         assert response.status_code == status.HTTP_200_OK
         assert response.data['plan'] == {
-            "name": "Basic",
+            "marketing_name": "Basic",
+            "value": "users-free",
             "billing_rate": None,
-            "base_unit_price": 0
+            "base_unit_price": 0,
+            "benefits": [
+                "Up to 5 users",
+                "Unlimited public repositories",
+                "Unlimited private repositories"
+            ]
         }
 
     @patch('internal_api.owner.serializers.BillingService.list_invoices')
@@ -105,33 +112,35 @@ class AccountViewSetTests(APITestCase):
         response = self._retrieve()
         assert response.status_code == status.HTTP_200_OK
         assert response.data['plan'] == {
-            "name": "Pro Team",
+            "marketing_name": "Pro Team (billed monthly)",
+            "value": "users-inappm",
             "billing_rate": "monthly",
-            "base_unit_price": 12
+            "base_unit_price": 12,
+            "benefits": [
+                "Configureable # of users",
+                "Unlimited public repositories",
+                "Unlimited private repositories",
+                "Priorty Support"
+            ]
         }
 
     @patch('internal_api.owner.serializers.BillingService.list_invoices')
-    def test_account_with_paid_user_plan_billed_anually(self, _):
+    def test_account_with_paid_user_plan_billed_annually(self, _):
         self.user.plan = 'users-inappy'
         self.user.save()
         response = self._retrieve()
         assert response.status_code == status.HTTP_200_OK
         assert response.data['plan'] == {
-            "name": "Pro Team",
+            "marketing_name": "Pro Team (billed annually)",
+            "value": "users-inappy",
             "billing_rate": "annually",
-            "base_unit_price": 10
-        }
-
-    @patch('internal_api.owner.serializers.BillingService.list_invoices')
-    def test_account_with_paid_user_github_marketplace_plan(self, _):
-        self.user.plan = 'users'
-        self.user.save()
-        response = self._retrieve()
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data['plan'] == {
-            "name": "Pro Team",
-            "billing_rate": "monthly",
-            "base_unit_price": 12
+            "base_unit_price": 10,
+            "benefits": [
+                "Configureable # of users",
+                "Unlimited public repositories",
+                "Unlimited private repositories",
+                "Priorty Support"
+            ]
         }
 
     def test_retrieve_account_returns_403_if_user_not_admin(self):
@@ -192,6 +201,27 @@ class AccountViewSetTests(APITestCase):
 
         assert self.user.plan_auto_activate is False
         assert response.data['plan_auto_activate'] is False
+
+    @patch('services.billing.stripe.Invoice.list')
+    @patch('services.billing.stripe.Subscription.delete')
+    def test_update_can_set_plan_to_users_free(self, delete_sub_mock, list_inv_mock):
+        self.user.plan = "users-inappy"
+        self.user.save()
+
+        response = self._update(
+            kwargs={"service": self.user.service, "owner_username": self.user.username},
+            data={"plan": {"value": "users-free"}}
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+
+        self.user.refresh_from_db()
+
+        assert self.user.plan == "users-free"
+        assert self.user.plan_activated_users is None
+        assert self.user.plan_user_count == 5
+        assert response.data["plan_auto_activate"] is True
+        assert response.data["plan"] == USER_PLAN_REPRESENTATIONS["users-free"]
 
     def test_update_without_admin_permissions_returns_403(self):
         owner = OwnerFactory()
