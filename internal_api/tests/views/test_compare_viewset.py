@@ -52,6 +52,7 @@ class MockedComparisonAdapter:
         return False, False
 
 
+@patch('services.comparison.Comparison.has_unmerged_base_commits', lambda self: True)
 @patch('services.comparison.Comparison.head_report', new_callable=PropertyMock)
 @patch('services.comparison.Comparison.base_report', new_callable=PropertyMock)
 @patch('services.repo_providers.RepoProviderService.get_adapter')
@@ -235,11 +236,11 @@ class TestCompareViewSetRetrieve(APITestCase):
         base_report_mock.return_value = self.base_report
         head_report_mock.return_value = self.head_report
 
-
         response = self._get_comparison()
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data["files"] == self.expected_files
+        assert response.data["has_unmerged_base_commits"] is True
 
     def test_returns_404_if_base_or_head_references_not_found(
         self,
@@ -291,6 +292,29 @@ class TestCompareViewSetRetrieve(APITestCase):
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data["files"] == self.expected_files
+
+    def test_pullid_with_nonexistent_commit_returns_404(
+        self,
+        adapter_mock,
+        base_report_mock,
+        head_report_mock
+    ):
+        adapter_mock.return_value = self.mocked_compare_adapter
+        base_report_mock.return_value = self.base_report
+        head_report_mock.return_value = self.head_report
+
+        response = self._get_comparison(
+            query_params={
+                "pullid": PullFactory(
+                    base="123456",
+                    head=self.head.commitid,
+                    pullid=2,
+                    repository=self.repo
+                ).pullid
+            }
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_diffs_larger_than_MAX_DIFF_SIZE_doesnt_include_lines(
         self,
