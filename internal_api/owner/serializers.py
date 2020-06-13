@@ -1,10 +1,14 @@
+import logging
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 
 from codecov_auth.models import Owner
-from codecov_auth.constants import USER_PLANS
+from codecov_auth.constants import USER_PLAN_REPRESENTATIONS
 
 from services.billing import BillingService
+
+
+log = logging.getLogger(__name__)
 
 
 class OwnerSerializer(serializers.ModelSerializer):
@@ -25,32 +29,6 @@ class OwnerSerializer(serializers.ModelSerializer):
     def get_stats(self, obj):
         if obj.cache and 'stats' in obj.cache:
             return obj.cache['stats']
-
-
-# TODO: needs to account for enterprise/legacy plans
-class PlanSerializer(serializers.Serializer):
-    name = serializers.SerializerMethodField()
-    base_unit_price = serializers.SerializerMethodField()
-    billing_rate = serializers.SerializerMethodField()
-
-    def get_name(self, plan):
-        if 'free' in plan:
-            return "Basic"
-        return "Pro Team"
-
-    def get_base_unit_price(self, plan):
-        if 'free' in plan:
-            return 0
-        if 'y' in plan:
-            return 10
-        return 12
-
-    def get_billing_rate(self, plan):
-        if 'free' in plan:
-            return None
-        if "y" in plan:
-            return "annually"
-        return "monthly"
 
 
 class StripeLineItemSerializer(serializers.Serializer):
@@ -80,7 +58,7 @@ class StripeInvoiceSerializer(serializers.Serializer):
 
 
 class AccountDetailsSerializer(serializers.ModelSerializer):
-    plan = serializers.SerializerMethodField()
+    plan = serializers.JSONField(source="pretty_plan")
     admins = serializers.SerializerMethodField()
     recent_invoices = serializers.SerializerMethodField()
 
@@ -96,11 +74,6 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
             'recent_invoices'
         )
 
-    def get_plan(self, owner):
-        if owner.plan in USER_PLANS:
-            return PlanSerializer(owner.plan).data
-        # TODO: legacy plans
-
     def get_admins(self, owner):
         return OwnerSerializer(
             Owner.objects.filter(ownerid__in=owner.admins),
@@ -113,14 +86,23 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
             many=True
         ).data
 
+    def update(self, instance, validated_data):
+        if "pretty_plan" in validated_data:
+            plan = validated_data.pop("pretty_plan")
+            BillingService().update_plan(instance, plan)
+        super().update(instance, validated_data)
+        return self.context["view"].get_object()
+
 
 class UserSerializer(serializers.ModelSerializer):
     activated = serializers.BooleanField()
+    is_admin = serializers.BooleanField()
 
     class Meta:
         model = Owner
         fields = (
             'activated',
+            'is_admin',
             'username',
             'email',
             'ownerid',
@@ -138,6 +120,12 @@ class UserSerializer(serializers.ModelSerializer):
                 owner.deactivate_user(instance)
             else:
                 raise PermissionDenied(f"Cannot activate user {instance.username} -- not enough seats left.")
+
+        if "is_admin" in validated_data:
+            if validated_data["is_admin"]:
+                owner.add_admin(instance)
+            else:
+                owner.remove_admin(instance)
 
         # Re-fetch from DB to set activated and admin fields
         return self.context["view"].get_object()

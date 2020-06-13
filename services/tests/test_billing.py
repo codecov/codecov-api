@@ -36,10 +36,42 @@ class StripeServiceTests(TestCase):
         invoice_list_mock.assert_not_called()
         assert invoices == []
 
+    @patch('codecov_auth.models.Owner.set_free_plan')
+    @patch('stripe.Subscription.delete')
+    @patch('stripe.Subscription.modify')
+    def test_delete_subscription_deletes_and_prorates_if_owner_not_on_user_plan(
+        self,
+        modify_mock,
+        delete_mock,
+        set_free_plan_mock
+    ):
+        owner = OwnerFactory(stripe_subscription_id="fowdldjfjwe", plan="v4-50m")
+        self.stripe.delete_subscription(owner)
+        delete_mock.assert_called_once_with(owner.stripe_subscription_id, prorate=True)
+        set_free_plan_mock.assert_called_once()
+
+    @patch('codecov_auth.models.Owner.set_free_plan')
+    @patch('stripe.Subscription.delete')
+    @patch('stripe.Subscription.modify')
+    def test_delete_subscription_modifies_subscription_to_delete_at_end_of_billing_cycle_if_user_plan(
+        self,
+        modify_mock,
+        delete_mock,
+        set_free_plan_mock
+    ):
+        owner = OwnerFactory(stripe_subscription_id="fowdldjfjwe", plan="users-inappy")
+        self.stripe.delete_subscription(owner)
+        delete_mock.assert_not_called()
+        set_free_plan_mock.assert_not_called()
+        modify_mock.assert_called_once_with(owner.stripe_subscription_id, cancel_at_period_end=True)
+
 
 class MockPaymentService:
     def list_invoices(self, owner, limit=10):
         return f"{owner.ownerid} {limit}"
+
+    def delete_subscription(self, owner):
+        pass
 
 
 class BillingServiceTests(TestCase):
@@ -53,3 +85,24 @@ class BillingServiceTests(TestCase):
     def test_list_invoices_calls_payment_service_list_invoices_with_limit(self):
         owner = OwnerFactory()
         assert self.billing_service.list_invoices(owner) == self.mock_payment_service.list_invoices(owner)
+
+    @patch('services.tests.test_billing.MockPaymentService.delete_subscription')
+    def test_update_plan_to_users_free_deletes_subscription_if_user_has_stripe_subscription(
+        self,
+        delete_subscription_mock
+    ):
+        owner = OwnerFactory(stripe_subscription_id="tor_dsoe")
+        self.billing_service.update_plan(owner, {"value": "users-free"})
+        delete_subscription_mock.assert_called_once_with(owner)
+
+    @patch('codecov_auth.models.Owner.set_free_plan')
+    @patch('services.tests.test_billing.MockPaymentService.delete_subscription')
+    def test_update_plan_to_users_free_sets_plan_if_no_subscription_id(
+        self,
+        delete_subscription_mock,
+        set_free_plan_mock
+    ):
+        owner = OwnerFactory()
+        self.billing_service.update_plan(owner, {"value": "users-free"})
+        delete_subscription_mock.assert_not_called()
+        set_free_plan_mock.assert_called_once()

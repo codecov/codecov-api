@@ -1,6 +1,6 @@
 import json
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, PropertyMock
 
 from django.test import override_settings
 
@@ -55,6 +55,7 @@ def build_commits(client):
     return repo, commit_base, commit_head
 
 
+@patch('services.comparison.Comparison.has_unmerged_base_commits', lambda self: False)
 @patch('services.archive.ArchiveService.create_root_storage', lambda obj: None)
 @patch('services.archive.ArchiveService.read_chunks', lambda obj, sha: '')
 @patch("internal_api.repo.repository_accessors.RepoAccessors.get_repo_permissions", lambda self, repo, user: (True, True))
@@ -97,7 +98,7 @@ class TestCompareCommitsView(InternalAPITest):
         }
 
     def _get_commits_comparison(self, kwargs, query_params):
-        return self.client.get(reverse('compare-retrieve', kwargs=kwargs), data=query_params)
+        return self.client.get(reverse('compare-detail', kwargs=kwargs), data=query_params)
 
     def _configure_mocked_comparison_with_commits(self, mock):
         mock.return_value = {
@@ -162,7 +163,7 @@ class TestCompareCommitsView(InternalAPITest):
         )
         assert response.status_code == 404
 
-    @patch('services.comparison.Comparison._calculate_git_comparison')
+    @patch('services.comparison.Comparison.git_comparison', new_callable=PropertyMock)
     def test_compare_commits_view_with_branchname(self, mocked_comparison):
         self._configure_mocked_comparison_with_commits(mocked_comparison)
         branch_base = BranchFactory.create(head=self.commit_base.commitid, repository=self.commit_base.repository)
@@ -188,7 +189,7 @@ class TestCompareCommitsView(InternalAPITest):
         assert content["commit_uploads"][1]['commitid'] == self.commit_base.commitid
         assert content["commit_uploads"][1]['totals'] == CommitTotalsSerializer(self.commit_base.totals).data
 
-    @patch('services.comparison.Comparison._calculate_git_comparison')
+    @patch('services.comparison.Comparison.git_comparison', new_callable=PropertyMock)
     def test_compare_commits_view_with_commitid(self, mocked_comparison):
         self._configure_mocked_comparison_with_commits(mocked_comparison)
         response = self._get_commits_comparison(
@@ -211,7 +212,7 @@ class TestCompareCommitsView(InternalAPITest):
         assert content["commit_uploads"][1]['commitid'] == self.commit_base.commitid
         assert content["commit_uploads"][1]['totals'] == CommitTotalsSerializer(self.commit_base.totals).data
 
-    @patch('services.comparison.Comparison._calculate_git_comparison')
+    @patch('services.comparison.Comparison.git_comparison', new_callable=PropertyMock)
     def test_compare_commits_view_with_pullid(self, mocked_comparison):
         self._configure_mocked_comparison_with_commits(mocked_comparison)
         pull = PullFactory(

@@ -1,10 +1,12 @@
 from django.test import TestCase
+import asyncio
 
 from unittest.mock import patch, PropertyMock
 import pytest
 
 from shared.reports.resources import ReportFile
 from shared.reports.types import ReportLine, LineSession
+from shared.utils.merge import LineType
 
 from core.tests.factories import CommitFactory
 from codecov_auth.tests.factories import OwnerFactory
@@ -181,6 +183,16 @@ class FileComparisonTraverseManagerTests(TestCase):
 
         assert manager.traverse_finished() is False
 
+    def test_no_indexerror_if_basefile_longer_than_headfile_and_src_provided(self):
+        manager = FileComparisonTraverseManager(
+            head_file_eof=3,
+            base_file_eof=4,
+            src=["hey"] * 2 # head file eof minus 1, which is the typical case
+        )
+
+        # No indexerror should occur
+        manager.apply([lambda a, b, c, d: None])
+
 
 class CreateLineComparisonVisitorTests(TestCase):
     def setUp(self):
@@ -250,7 +262,7 @@ class CreateChangeSummaryVisitorTests(TestCase):
 
     def test_summary_with_one_less_hit_and_one_more_partial(self):
         self.base_file._lines[0][0] = 1
-        self.head_file._lines[0][0] = 2
+        self.head_file._lines[0][0] = "1/2"
         visitor = CreateChangeSummaryVisitor(self.base_file, self.head_file)
         visitor(1, 1, "", True)
         assert visitor.summary == {"hits": -1, "partials": 1}
@@ -277,17 +289,17 @@ class LineComparisonTests(TestCase):
     def test_coverage_shows_coverage_for_base_and_head(self):
         base_cov, head_cov = 0, 1
         lc = LineComparison([base_cov, '', [], 0, 0], [head_cov, '', [], 0, 0], 0, 0, "", False)
-        assert lc.coverage == {"base": base_cov, "head": head_cov}
+        assert lc.coverage == {"base": LineType.miss, "head": LineType.hit}
 
     def test_coverage_shows_none_for_base_if_added(self):
         head_cov = 1
         lc = LineComparison(None, [head_cov, '', [], 0, 0], 0, 0, "+", False)
-        assert lc.coverage == {"base": None, "head": head_cov}
+        assert lc.coverage == {"base": None, "head": LineType.hit}
 
     def test_coverage_shows_none_for_head_if_removed(self):
         base_cov = 0
         lc = LineComparison([base_cov, '', [], 0, 0], None, 0, 0, "-", False)
-        assert lc.coverage == {"base": base_cov, "head": None}
+        assert lc.coverage == {"base": LineType.miss, "head": None}
 
     def test_sessions_returns_sessions_hit_in_head(self):
         lc = LineComparison(
@@ -398,7 +410,7 @@ class FileComparisonTests(TestCase):
 
     # essentially a smoke/integration test
     def test_lines(self):
-        head_lines = [[1, '', [], 0, None], [2, '', [], 0, None], [1, '', [], 0, None]]
+        head_lines = [[1, '', [], 0, None], ["1/2", '', [], 0, None], [1, '', [], 0, None]]
         base_lines = [[0, '', [], 0, None], [1, '', [], 0, None], [0, '', [], 0, None]]
 
         first_line_val = "unchanged line from src"
@@ -416,22 +428,22 @@ class FileComparisonTests(TestCase):
 
         assert self.file_comparison.lines[0].value == first_line_val
         assert self.file_comparison.lines[0].number == {"base": 1, "head": 1}
-        assert self.file_comparison.lines[0].coverage == {"base": 0, "head": 1}
+        assert self.file_comparison.lines[0].coverage == {"base": LineType.miss, "head": LineType.hit}
 
         assert self.file_comparison.lines[1].value == second_line_val
         assert self.file_comparison.lines[1].number == {"base": None, "head": 2}
-        assert self.file_comparison.lines[1].coverage == {"base": None, "head": 2}
+        assert self.file_comparison.lines[1].coverage == {"base": None, "head": LineType.partial}
 
         assert self.file_comparison.lines[2].value == third_line_val
         assert self.file_comparison.lines[2].number == {"base": 2, "head": None}
-        assert self.file_comparison.lines[2].coverage == {"base": 1, "head": None}
+        assert self.file_comparison.lines[2].coverage == {"base": LineType.hit, "head": None}
 
         assert self.file_comparison.lines[3].value == last_line_val
         assert self.file_comparison.lines[3].number == {"base": 3, "head": 3}
-        assert self.file_comparison.lines[3].coverage == {"base": 0, "head": 1}
+        assert self.file_comparison.lines[3].coverage == {"base": LineType.miss, "head": LineType.hit}
 
     def test_change_summary(self):
-        head_lines = [[1, '', [], 0, None], [2, '', [], 0, None], [1, '', [], 0, None]]
+        head_lines = [[1, '', [], 0, None], ["3/4", '', [], 0, None], [1, '', [], 0, None]]
         base_lines = [[0, '', [], 0, None], [1, '', [], 0, None], [0, '', [], 0, None]]
 
         first_line_val = "unchanged line from src"
@@ -666,3 +678,29 @@ class ComparisonHeadReportTests(TestCase):
         self.comparison.head_report
 
         apply_diff_mock.assert_called_once_with(git_comparison_mock.return_value["diff"])
+
+
+@patch("services.repo_providers.RepoProviderService.get_adapter")
+class ComparisonHasUnmergedBaseCommitsTests(TestCase):
+    class MockFetchDiffCoro:
+        def __init__(self, commits):
+            self.commits = commits
+
+        async def get_compare(self, base, head):
+            return {"commits": self.commits}
+
+    def setUp(self):
+        owner = OwnerFactory()
+        base, head = CommitFactory(author=owner), CommitFactory(author=owner)
+        self.comparison = Comparison(base, head, owner)
+        asyncio.set_event_loop(asyncio.new_event_loop())
+
+    def test_returns_true_if_reverse_comparison_has_commits(self, get_adapter_mock):
+        commits = ["a", "b"]
+        get_adapter_mock.return_value = ComparisonHasUnmergedBaseCommitsTests.MockFetchDiffCoro(commits)
+        assert self.comparison.has_unmerged_base_commits is True
+
+    def test_returns_false_if_reverse_comparison_has_one_commit_or_less(self, get_adapter_mock):
+        commits = ["a"]
+        get_adapter_mock.return_value = ComparisonHasUnmergedBaseCommitsTests.MockFetchDiffCoro(commits)
+        assert self.comparison.has_unmerged_base_commits is False

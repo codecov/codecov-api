@@ -231,3 +231,68 @@ class TestOwnerModel(TestCase):
         self.owner.plan_user_count = 0
         self.owner.save()
         assert self.owner.can_activate_user(to_activate) is True
+
+    def test_add_admin_adds_ownerid_to_admin_array(self):
+        self.owner.admins = []
+        self.owner.save()
+        admin = OwnerFactory()
+        self.owner.add_admin(admin)
+
+        self.owner.refresh_from_db()
+        assert admin.ownerid in self.owner.admins
+
+    def test_add_admin_creates_array_if_null(self):
+        self.owner.admins = None
+        self.owner.save()
+        admin = OwnerFactory()
+        self.owner.add_admin(admin)
+
+        self.owner.refresh_from_db()
+        assert self.owner.admins == [admin.ownerid]
+
+    def test_add_admin_doesnt_add_if_ownerid_already_in_admins(self):
+        admin = OwnerFactory()
+        self.owner.admins = [admin.ownerid]
+        self.owner.save()
+
+        self.owner.add_admin(admin)
+
+        self.owner.refresh_from_db()
+        assert self.owner.admins == [admin.ownerid]
+
+    def test_remove_admin_removes_ownerid_from_admins(self):
+        admin1 = OwnerFactory()
+        admin2 = OwnerFactory()
+        self.owner.admins = [admin1.ownerid, admin2.ownerid]
+        self.owner.save()
+
+        self.owner.remove_admin(admin1)
+
+        self.owner.refresh_from_db()
+        assert self.owner.admins == [admin2.ownerid]
+
+    def test_remove_admin_does_nothing_if_user_not_admin(self):
+        admin1 = OwnerFactory()
+        admin2 = OwnerFactory()
+        self.owner.admins = [admin1.ownerid]
+        self.owner.save()
+
+        self.owner.remove_admin(admin2)
+
+        self.owner.refresh_from_db()
+        assert self.owner.admins == [admin1.ownerid]
+
+    def test_set_free_plan_sets_correct_values(self):
+        self.owner.plan = "users-inappy"
+        self.owner.plan_user_count = 20
+        self.owner.plan_activated_users = [44]
+        self.owner.plan_auto_activate = False
+        self.owner.save()
+
+        self.owner.set_free_plan()
+        self.owner.refresh_from_db()
+
+        assert self.owner.plan == "users-free"
+        assert self.owner.plan_user_count == 5
+        assert self.owner.plan_activated_users == None
+        assert self.owner.plan_auto_activate == True

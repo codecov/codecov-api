@@ -13,7 +13,7 @@ current_file = Path(__file__)
 @patch("services.comparison.Comparison.git_comparison", new_callable=PropertyMock)
 @patch("services.archive.ArchiveService.read_chunks")
 @patch("services.archive.ArchiveService.create_root_storage")
-@patch("services.comparison.FlagComparison.diff_totals", new_callable=PropertyMock)
+@patch("services.archive.SerializableReport.apply_diff")
 @patch(
     "internal_api.repo.repository_accessors.RepoAccessors.get_repo_permissions",
     lambda self, repo, user: (True, True),

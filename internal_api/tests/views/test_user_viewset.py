@@ -32,6 +32,7 @@ class UserViewSetTests(APITestCase):
         assert response.data['results'] == [
             {
                 'name': user.name,
+                'is_admin': False,
                 'activated': False,
                 'username': user.username,
                 'email': user.email,
@@ -56,10 +57,28 @@ class UserViewSetTests(APITestCase):
         assert response.data['results'][0] == {
             'name': self.users[0].name,
             'activated': True,
+            'is_admin': False,
             'username': self.users[0].username,
             'email': self.users[0].email,
             'ownerid': self.users[0].ownerid,
             'student': self.users[0].student
+        }
+
+    def test_list_sets_is_admin(self):
+        self.owner.admins = [self.users[1].ownerid]
+        self.owner.save()
+
+        response = self._list()
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['results'][1] == {
+            'name': self.users[1].name,
+            'activated': False,
+            'is_admin': True,
+            'username': self.users[1].username,
+            'email': self.users[1].email,
+            'ownerid': self.users[1].ownerid,
+            'student': self.users[1].student
         }
 
     def test_list_can_filter_by_activated(self):
@@ -73,12 +92,30 @@ class UserViewSetTests(APITestCase):
             {
                 'name': self.users[0].name,
                 'activated': True,
+                'is_admin': False,
                 'username': self.users[0].username,
                 'email': self.users[0].email,
                 'ownerid': self.users[0].ownerid,
                 'student': self.users[0].student
             }
         ]
+
+    def test_list_can_filter_by_is_admin(self):
+        self.owner.admins = [self.users[1].ownerid]
+        self.owner.save()
+
+        response = self._list(query_params={"is_admin": True})
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['results'] == [{
+            'name': self.users[1].name,
+            'activated': False,
+            'is_admin': True,
+            'username': self.users[1].username,
+            'email': self.users[1].email,
+            'ownerid': self.users[1].ownerid,
+            'student': self.users[1].student
+        }]
 
     def test_list_can_filter_by_name_prefix(self):
         # set up some names
@@ -95,6 +132,7 @@ class UserViewSetTests(APITestCase):
             {
                 'name': 'fer',
                 'activated': False,
+                'is_admin': False,
                 'username': self.users[1].username,
                 'email': self.users[1].email,
                 'ownerid': self.users[1].ownerid,
@@ -103,6 +141,7 @@ class UserViewSetTests(APITestCase):
             {
                 'name': 'fero',
                 'activated': False,
+                'is_admin': False,
                 'username': self.users[2].username,
                 'email': self.users[2].email,
                 'ownerid': self.users[2].ownerid,
@@ -142,6 +181,7 @@ class UserViewSetTests(APITestCase):
         assert response.data == {
             'name': self.users[0].name,
             'activated': True,
+            'is_admin': False,
             'username': self.users[0].username,
             'email': self.users[0].email,
             'ownerid': self.users[0].ownerid,
@@ -171,6 +211,7 @@ class UserViewSetTests(APITestCase):
         assert response.data == {
             'name': self.users[0].name,
             'activated': False,
+            'is_admin': False,
             'username': self.users[0].username,
             'email': self.users[0].email,
             'ownerid': self.users[0].ownerid,
@@ -194,3 +235,58 @@ class UserViewSetTests(APITestCase):
         )
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_patch_can_set_is_admin_to_true(self):
+        response = self._patch(
+            kwargs={
+                "service": self.owner.service,
+                "owner_username": self.owner.username,
+                "user_username": self.users[2].username
+            },
+            data={
+                'is_admin': True
+            }
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            'name': self.users[2].name,
+            'activated': False,
+            'is_admin': True,
+            'username': self.users[2].username,
+            'email': self.users[2].email,
+            'ownerid': self.users[2].ownerid,
+            'student': self.users[2].student
+        }
+
+        self.owner.refresh_from_db()
+        assert self.users[2].ownerid in self.owner.admins
+
+    def test_patch_can_set_is_admin_to_false(self):
+        self.owner.admins = [self.users[2].ownerid]
+        self.owner.save()
+
+        response = self._patch(
+            kwargs={
+                "service": self.owner.service,
+                "owner_username": self.owner.username,
+                "user_username": self.users[2].username
+            },
+            data={
+                'is_admin': False
+            }
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            'name': self.users[2].name,
+            'activated': False,
+            'is_admin': False,
+            'username': self.users[2].username,
+            'email': self.users[2].email,
+            'ownerid': self.users[2].ownerid,
+            'student': self.users[2].student
+        }
+
+        self.owner.refresh_from_db()
+        assert self.users[2].ownerid not in self.owner.admins

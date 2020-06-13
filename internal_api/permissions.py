@@ -31,7 +31,7 @@ class RepositoryPermissionsService:
 class RepositoryArtifactPermissions(BasePermission):
     """
     Permissions class for artifacts of a repository, eg commits, branches,
-    pulls, comparisons, etc. Requires that the view has a `'.repo'
+    pulls, comparisons, etc. Requires that the view has a '.repo'
     property that returns the repo being worked on.
     """
     permissions_service = RepositoryPermissionsService()
@@ -41,3 +41,13 @@ class RepositoryArtifactPermissions(BasePermission):
             request.method in SAFE_METHODS
             and self.permissions_service.has_read_permissions(request.user, view.repo)
         )
+
+
+class UserIsAdminPermissions(BasePermission):
+    """
+    Permissions class for asserting the user is an admin of the 'owner'
+    being queried. Requires that the view has a '.owner' property that
+    returns this owner.
+    """
+    def has_permission(self, request, view):
+        return view.owner.is_admin(request.user)
