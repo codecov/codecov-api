@@ -15,6 +15,7 @@ from rest_framework.response import Response
 from django_filters import rest_framework as django_filters
 
 from codecov_auth.models import Owner, Service
+from codecov_auth.constants import USER_PLAN_REPRESENTATIONS
 from services.decorators import billing_safe
 from services.billing import BillingService
 from services.task import TaskService
@@ -152,3 +153,8 @@ class UserViewSet(
                 )
             )
         )
+
+
+class PlanViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
+    def list(self, request, *args, **kwargs):
+        return Response([val for key, val in USER_PLAN_REPRESENTATIONS.items()])
