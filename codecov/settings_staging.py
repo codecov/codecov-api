@@ -1,10 +1,12 @@
 from .settings_base import *
 import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
+import os
 
 
 DEBUG = False
-ALLOWED_HOSTS = ['stage-api.codecov.dev']
+THIS_POD_IP = os.environ.get("THIS_POD_IP")
+ALLOWED_HOSTS = ['stage-api.codecov.dev', THIS_POD_IP] if THIS_POD_IP else ['stage-api.codecov.dev']
 WEBHOOK_URL = 'https://stage-api.codecov.dev'
 STRIPE_API_KEY = 'sk_test_testsn3sc2tirvdea6mqp31t'
 sentry_sdk.init(
