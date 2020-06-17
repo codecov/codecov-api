@@ -11,8 +11,6 @@ from internal_api.commit.serializers import (
 
 class RepoSerializer(serializers.ModelSerializer):
     author = OwnerSerializer()
-    coverage = serializers.SerializerMethodField(
-        source="get_coverage")
 
     class Meta:
         model = Repository
@@ -29,16 +27,16 @@ class RepoSerializer(serializers.ModelSerializer):
             "hookid",
             "activated",
             "using_integration",
-            'coverage'
         )
 
-    def get_coverage(self, repo):
-        commit = repo.commits.filter(
-            state=Commit.CommitStates.COMPLETE,
-        ).order_by('-timestamp').first()
 
-        if commit:
-            return CommitTotalsSerializer(commit.totals).data
+class RepoWithTotalSerializer(RepoSerializer):
+    totals = CommitTotalsSerializer()
+
+    class Meta(RepoSerializer.Meta):
+        fields = (
+            'totals',
+        ) + RepoSerializer.Meta.fields
 
 
 class RepoDetailsSerializer(RepoSerializer):

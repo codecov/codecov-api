@@ -23,7 +23,7 @@ from services.repo_providers import RepoProviderService
 from services.decorators import torngit_safe
 
 from .repository_accessors import RepoAccessors
-from .serializers import RepoSerializer, RepoDetailsSerializer, SecretStringPayloadSerializer
+from .serializers import RepoWithTotalSerializer, RepoDetailsSerializer, SecretStringPayloadSerializer
 
 from .utils import encode_secret_string
 
@@ -84,7 +84,7 @@ class RepositoryViewSet(
 
     def get_serializer_class(self):
         if self.action == 'list':
-            return RepoSerializer
+            return RepoWithTotalSerializer
         return RepoDetailsSerializer
 
     def get_serializer_context(self, *args, **kwargs):
@@ -108,6 +108,11 @@ class RepositoryViewSet(
                     Commit.objects.filter(
                         repository_id=OuterRef('repoid')
                     ).order_by('-timestamp').values('totals__c')[:1]
+                ),
+                totals = Subquery(
+                    Commit.objects.filter(
+                        repository_id=OuterRef('repoid')
+                    ).order_by('-timestamp').values('totals')[:1]
                 )
             )
 
