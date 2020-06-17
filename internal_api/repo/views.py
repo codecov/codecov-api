@@ -15,7 +15,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import SAFE_METHODS # ['GET', 'HEAD', 'OPTIONS']
 from rest_framework import status
 
-from django_filters import rest_framework as django_filters, BooleanFilter
+from django_filters import rest_framework as django_filters, BooleanFilter, BaseInFilter
 
 from codecov_auth.models import Owner
 from core.models import Repository, Commit
@@ -37,6 +37,9 @@ class RepositoryFilters(django_filters.FilterSet):
     """Filter for active repositories"""
     active = BooleanFilter(field_name='active', method='filter_active')
 
+    """Filter for getting multiple repositories by name"""
+    names = BaseInFilter(field_name='name', lookup_expr='in')
+
     def filter_active(self, queryset, name, value):
         # The database currently stores 't' instead of 'true' for active repos, and nothing for inactive
         # so if the query param active is set, we return repos with non-null value in active column
@@ -44,7 +47,7 @@ class RepositoryFilters(django_filters.FilterSet):
 
     class Meta:
         model = Repository
-        fields = ['active']
+        fields = ['active', 'names']
 
 
 class RepositoryViewSet(

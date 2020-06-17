@@ -109,9 +109,24 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         assert reverse_response.data["results"][1]["repoid"] == self.repo1.repoid
 
     def test_order_by_coverage(self):
-        CommitFactory(repository=self.repo1, totals={"c": 25})
-        CommitFactory(repository=self.repo1, totals={"c": 41})
-        CommitFactory(repository=self.repo2, totals={"c": 32})
+        default_totals = {
+            "f": 1,
+            "n": 4,
+            "h": 4,
+            "m": 0,
+            "p": 0,
+            "c": 100.0,
+            "b": 0,
+            "d": 0,
+            "s": 1,
+            "C": 0.0,
+            "N": 0.0,
+            "diff": ""
+        }
+
+        CommitFactory(repository=self.repo1, totals={**default_totals, "c": 25})
+        CommitFactory(repository=self.repo1, totals={**default_totals, "c": 41})
+        CommitFactory(repository=self.repo2, totals={**default_totals, "c": 32})
 
         response = self._list(
             query_params={'ordering': 'coverage'}
@@ -160,6 +175,19 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         self.assertEqual(
             len(response.data['results']),
             3,
+            "got the wrong number of repos: {}".format(len(response.data['results']))
+        )
+
+    def test_get_all_repos_by_name(self):
+        new_repo = RepositoryFactory(author=self.org, name='C', private=False)
+
+        response = self._list(
+            query_params={'names': 'A,B'}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            len(response.data['results']),
+            2,
             "got the wrong number of repos: {}".format(len(response.data['results']))
         )
 
