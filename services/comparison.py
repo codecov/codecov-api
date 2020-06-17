@@ -90,12 +90,13 @@ class FileComparisonTraverseManager:
 
         if self.segments:
             # Base offsets can be 0 if files are added or removed
-            self.base_ln, self.head_ln = min(1, int(self.segments[0]["header"][0])), min(1, int(self.segments[0]["header"][2]))
+            self.base_ln = min(1, int(self.segments[0]["header"][0]))
+            self.head_ln = min(1, int(self.segments[0]["header"][2]))
         else:
             self.base_ln, self.head_ln = 1, 1
 
     def traverse_finished(self):
-        return self.base_ln >= self.base_file_eof and self.head_ln >= self.head_file_eof and not self.traversing_diff()
+        return self.head_ln >= self.head_file_eof and not self.traversing_diff()
 
     def traversing_diff(self):
         if self.segments == []:
@@ -414,7 +415,6 @@ class Comparison(object):
         self.head_commit = head_commit
         self.report_service = ReportService()
         self._base_report = None
-        self._git_comparison = None
         self._git_commits = None
         self._upload_commits = None
 
@@ -459,9 +459,7 @@ class Comparison(object):
 
     @property
     def git_comparison(self):
-        if self._git_comparison is None:
-            self._git_comparison = self._calculate_git_comparison()
-        return self._git_comparison
+        return self._fetch_comparison_and_reverse_comparison[0]
 
     @property
     def base_report(self):
@@ -484,13 +482,7 @@ class Comparison(object):
 
     @property
     def git_commits(self):
-        """
-            Returns the complete git commits between base and head.
-            :return: list of commit info with objects
-        """
-        if self._git_commits is None:
-            self._calculate_git_commits()
-        return self._git_commits
+        return self.git_comparison["commits"]
 
     @property
     def upload_commits(self):
@@ -504,18 +496,37 @@ class Comparison(object):
         commits_queryset.exclude(deleted=True)
         return commits_queryset
 
-    def _calculate_git_commits(self):
-        commits = self.git_comparison['commits']
-        self._git_commits = commits
-        return self._git_commits
-
-    def _calculate_git_comparison(self):
+    @cached_property
+    def _fetch_comparison_and_reverse_comparison(self):
+        """
+        Fetches comparison and reverse comparison concurrently, then
+        caches the result. Returns (comparison, reverse_comparison).
+        """
         loop = asyncio.get_event_loop()
-        base_commit_sha = self.base_commit.commitid
-        head_commit_sha = self.head_commit.commitid
-        task = RepoProviderService().get_adapter(
-            self.user, self.base_commit.repository).get_compare(base_commit_sha, head_commit_sha)
-        return loop.run_until_complete(task)
+
+        comparison_coro = RepoProviderService().get_adapter(
+            self.user,
+            self.base_commit.repository
+        ).get_compare(
+            self.base_commit.commitid,
+            self.head_commit.commitid
+        )
+
+        reverse_comparison_coro = RepoProviderService().get_adapter(
+            self.user,
+            self.base_commit.repository
+        ).get_compare(
+            self.head_commit.commitid,
+            self.base_commit.commitid
+        )
+
+        async def runnable():
+            return await asyncio.gather(
+                loop.create_task(comparison_coro),
+                loop.create_task(reverse_comparison_coro)
+            )
+
+        return loop.run_until_complete(runnable())
 
     def _calculate_base_report(self):
         return self.report_service.build_report_from_commit(self.base_commit)
@@ -526,6 +537,18 @@ class Comparison(object):
     @property
     def available_flags(self):
         return self.head_report.flags.keys()
+
+    @cached_property
+    def has_unmerged_base_commits(self):
+        """
+        We use reverse comparison to detect if any commits exist in the
+        base reference but not in the head reference. We use this information
+        to show a message in the UI urging the user to integrate the changes
+        in the base reference in order to see accurate coverage information.
+        We compare with 1 because torngit injects the base commit into the commits
+        array because reasons.
+        """
+        return len(self._fetch_comparison_and_reverse_comparison[1]["commits"]) > 1
 
 
 class FlagComparison(object):

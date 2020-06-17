@@ -1,4 +1,5 @@
 from django.test import TestCase
+import asyncio
 
 from unittest.mock import patch, PropertyMock
 import pytest
@@ -181,6 +182,16 @@ class FileComparisonTraverseManagerTests(TestCase):
         manager.head_ln = 7  # highest it can go in this segment
 
         assert manager.traverse_finished() is False
+
+    def test_no_indexerror_if_basefile_longer_than_headfile_and_src_provided(self):
+        manager = FileComparisonTraverseManager(
+            head_file_eof=3,
+            base_file_eof=4,
+            src=["hey"] * 2 # head file eof minus 1, which is the typical case
+        )
+
+        # No indexerror should occur
+        manager.apply([lambda a, b, c, d: None])
 
 
 class CreateLineComparisonVisitorTests(TestCase):
@@ -667,3 +678,29 @@ class ComparisonHeadReportTests(TestCase):
         self.comparison.head_report
 
         apply_diff_mock.assert_called_once_with(git_comparison_mock.return_value["diff"])
+
+
+@patch("services.repo_providers.RepoProviderService.get_adapter")
+class ComparisonHasUnmergedBaseCommitsTests(TestCase):
+    class MockFetchDiffCoro:
+        def __init__(self, commits):
+            self.commits = commits
+
+        async def get_compare(self, base, head):
+            return {"commits": self.commits}
+
+    def setUp(self):
+        owner = OwnerFactory()
+        base, head = CommitFactory(author=owner), CommitFactory(author=owner)
+        self.comparison = Comparison(base, head, owner)
+        asyncio.set_event_loop(asyncio.new_event_loop())
+
+    def test_returns_true_if_reverse_comparison_has_commits(self, get_adapter_mock):
+        commits = ["a", "b"]
+        get_adapter_mock.return_value = ComparisonHasUnmergedBaseCommitsTests.MockFetchDiffCoro(commits)
+        assert self.comparison.has_unmerged_base_commits is True
+
+    def test_returns_false_if_reverse_comparison_has_one_commit_or_less(self, get_adapter_mock):
+        commits = ["a"]
+        get_adapter_mock.return_value = ComparisonHasUnmergedBaseCommitsTests.MockFetchDiffCoro(commits)
+        assert self.comparison.has_unmerged_base_commits is False

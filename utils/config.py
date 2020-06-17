@@ -6,6 +6,20 @@ from yaml import load as yaml_load
 import collections
 
 
+RUN_ENV = os.environ.get("RUN_ENV", "PRODUCTION")
+
+if RUN_ENV == "DEV":
+    settings_module = "codecov.settings_dev"
+elif RUN_ENV == "STAGING":
+    settings_module = "codecov.settings_staging"
+else:
+    settings_module = "codecov.settings_prod"
+
+
+def get_settings_module():
+    return settings_module
+
+
 class MissingConfigException(Exception):
     pass
 
@@ -118,4 +132,3 @@ def get_config(*path, default=None):
         return config.get(*path)
     except MissingConfigException:
         return default
-
