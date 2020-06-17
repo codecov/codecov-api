@@ -71,8 +71,14 @@ jobs:
     steps:
       - checkout
       - setup_remote_docker
+      - run:
+          <<: *gcloud_auth
       - run: echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKER_USERNAME" --password-stdin
-      - run: make -f Makefile.circle docker-deploy
+      - run:
+          name: build container
+          command: |-
+            make -f Makefile.circle build-requirements GH_ACCESS_TOKEN=$GH_ACCESS_TOKEN
+            make -f Makefile.circle docker-deploy
 
   staging:
     executor: codecov-deploy

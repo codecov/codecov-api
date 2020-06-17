@@ -1,4 +1,6 @@
-FROM            codecov/api
+ARG REQUIREMENTS_IMAGE
+
+FROM $REQUIREMENTS_IMAGE
 
 WORKDIR         /app
 COPY            config/development.yml /config/codecov.yml

@@ -53,6 +53,7 @@ build-portable:
 		--label "org.label-schema.vendor"="Codecov" \
 		--label "org.label-schema.version"="$(tag)" \
 		--label "org.vcs-branch"="$(branch)" \
+		--build-arg REQUIREMENTS_IMAGE=${GCR_REPO}:${REQUIREMENTS_TAG}
 
 
 # CIRCLECI
