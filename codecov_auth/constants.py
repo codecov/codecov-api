@@ -18,7 +18,7 @@ USER_PLAN_REPRESENTATIONS = {
         ]
     },
     "users-inappm": {
-        "marketing_name": "Pro Team (billed monthly)",
+        "marketing_name": "Pro Team",
         "value": "users-inappm",
         "billing_rate": "monthly",
         "base_unit_price": 12,
@@ -30,7 +30,7 @@ USER_PLAN_REPRESENTATIONS = {
         ]
     },
     "users-inappy": {
-        "marketing_name": "Pro Team (billed annually)",
+        "marketing_name": "Pro Team",
         "value": "users-inappy",
         "billing_rate": "annually",
         "base_unit_price": 10,

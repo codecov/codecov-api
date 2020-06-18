@@ -193,7 +193,15 @@ class Owner(models.Model):
     @property
     def pretty_plan(self):
         if self.plan in USER_PLAN_REPRESENTATIONS:
-            return USER_PLAN_REPRESENTATIONS[self.plan]
+            plan_details = USER_PLAN_REPRESENTATIONS[self.plan].copy()
+
+            # update with quantity they've purchased
+            # allows api users to update the quantity
+            # by modifying the "plan", sidestepping
+            # some iffy data modeling
+
+            plan_details.update({"quantity": self.plan_user_count })
+            return plan_details
 
     def can_activate_user(self, user):
         return user.student or self.activated_user_count < self.plan_user_count + self.free

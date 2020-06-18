@@ -16,7 +16,6 @@ from django_filters import rest_framework as django_filters
 
 from codecov_auth.models import Owner, Service
 from codecov_auth.constants import USER_PLAN_REPRESENTATIONS
-from services.decorators import billing_safe
 from services.billing import BillingService
 from services.task import TaskService
 
@@ -66,18 +65,19 @@ class OwnerViewSet(
             service=self.kwargs.get("service")
         )
 
-    @action(detail=True, methods=['get'])
-    @billing_safe
-    def invoices(self, request, *args, **kwargs):
-        owner = self.get_object()
-        if not owner.is_admin(self.request.user):
-            raise PermissionDenied()
-        return Response(
-            StripeInvoiceSerializer(
-                BillingService().list_invoices(owner, 100),
-                many=True
-            ).data
-        )
+class InvoiceViewSet(
+    viewsets.GenericViewSet,
+    mixins.ListModelMixin,
+    OwnerPropertyMixin
+):
+    serializer_class = StripeInvoiceSerializer
+    permission_classes = [UserIsAdminPermissions]
+    pagination_class = None
+
+    def get_queryset(self):
+        return BillingService(
+            requesting_user=self.request.user
+        ).list_invoices(self.owner, 100)
 
 
 class AccountDetailsViewSet(
@@ -89,14 +89,6 @@ class AccountDetailsViewSet(
 ):
     serializer_class = AccountDetailsSerializer
     permission_classes = [UserIsAdminPermissions]
-
-    @billing_safe
-    def retrieve(self, request, *args, **kwargs):
-        return super().retrieve(request, *args, **kwargs)
-
-    @billing_safe
-    def update(self, request, *args, **kwargs):
-        return super().update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
         TaskService().delete_owner(self.owner.ownerid)

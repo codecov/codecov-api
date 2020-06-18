@@ -1,21 +1,18 @@
 import uuid
-import asyncio
 import logging
-
-from shared.torngit.exceptions import TorngitClientError
 
 from django.db.models import Subquery, OuterRef, Q
 from django.shortcuts import get_object_or_404
 from django.utils.functional import cached_property
 
-from rest_framework import generics, filters, mixins, viewsets
-from rest_framework.exceptions import PermissionDenied, APIException, NotFound
+from rest_framework import filters, mixins, viewsets
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import SAFE_METHODS # ['GET', 'HEAD', 'OPTIONS']
 from rest_framework import status
 
-from django_filters import rest_framework as django_filters, BooleanFilter
+from django_filters import rest_framework as django_filters, BooleanFilter, BaseInFilter
 
 from codecov_auth.models import Owner
 from core.models import Repository, Commit
@@ -23,7 +20,7 @@ from services.repo_providers import RepoProviderService
 from services.decorators import torngit_safe
 
 from .repository_accessors import RepoAccessors
-from .serializers import RepoSerializer, RepoDetailsSerializer, SecretStringPayloadSerializer
+from .serializers import RepoWithTotalSerializer, RepoDetailsSerializer, SecretStringPayloadSerializer
 
 from .utils import encode_secret_string
 
@@ -37,6 +34,9 @@ class RepositoryFilters(django_filters.FilterSet):
     """Filter for active repositories"""
     active = BooleanFilter(field_name='active', method='filter_active')
 
+    """Filter for getting multiple repositories by name"""
+    names = BaseInFilter(field_name='name', lookup_expr='in')
+
     def filter_active(self, queryset, name, value):
         # The database currently stores 't' instead of 'true' for active repos, and nothing for inactive
         # so if the query param active is set, we return repos with non-null value in active column
@@ -44,7 +44,7 @@ class RepositoryFilters(django_filters.FilterSet):
 
     class Meta:
         model = Repository
-        fields = ['active']
+        fields = ['active', 'names']
 
 
 class RepositoryViewSet(
@@ -81,7 +81,7 @@ class RepositoryViewSet(
 
     def get_serializer_class(self):
         if self.action == 'list':
-            return RepoSerializer
+            return RepoWithTotalSerializer
         return RepoDetailsSerializer
 
     def get_serializer_context(self, *args, **kwargs):
@@ -98,6 +98,8 @@ class RepositoryViewSet(
         )
 
         if self.action == 'list':
+            timestamp = self.request.query_params.get("timestamp", None)
+
             # Hiding this annotation will avoid expensive subqueries
             # used only for filtering list action on coverage metrics
             queryset = queryset.annotate(
@@ -107,6 +109,25 @@ class RepositoryViewSet(
                     ).order_by('-timestamp').values('totals__c')[:1]
                 )
             )
+
+            # Get the commit at a specific timestamp based on the query params
+            if timestamp:
+                queryset = queryset.annotate(
+                    totals=Subquery(
+                        Commit.objects.filter(
+                            repository_id=OuterRef('repoid'),
+                            timestamp__lte=timestamp
+                        ).order_by('-timestamp').values('totals')[:1]
+                    )
+                )
+            else:
+                queryset = queryset.annotate(
+                    totals=Subquery(
+                        Commit.objects.filter(
+                            repository_id=OuterRef('repoid')
+                        ).order_by('-timestamp').values('totals')[:1]
+                    )
+                )
 
         return queryset
 
