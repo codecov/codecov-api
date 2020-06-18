@@ -1,3 +1,6 @@
+from datetime import datetime
+import time
+
 from unittest.mock import patch
 
 from rest_framework.reverse import reverse
@@ -176,6 +179,36 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         assert response.data["results"][0]["totals"]["complexity"] == 0.0
         assert response.data["results"][0]["totals"]["complexity_total"] == 0.0
         assert response.data["results"][0]["totals"]["complexity_ratio"] == 0
+
+    def test_get_totals_with_timestamp(self):
+        default_totals = {
+            "f": 1,
+            "n": 4,
+            "h": 4,
+            "m": 0,
+            "p": 0,
+            "c": 100.0,
+            "b": 0,
+            "d": 0,
+            "s": 1,
+            "C": 0.0,
+            "N": 0.0,
+            "diff": ""
+        }
+        older_coverage = 90.0
+
+        CommitFactory(repository=self.repo1, totals={**default_totals, "c": older_coverage})
+        # We're testing that the lte works as expected, so we're not sending the exact same timestamp
+        fetching_time = datetime.now().isoformat()
+
+        time.sleep(1)
+        CommitFactory(repository=self.repo1, totals=default_totals)
+
+        response = self._list(
+            query_params={'names': 'A', 'timestamp': fetching_time}
+        )
+
+        assert response.data["results"][0]["totals"]["coverage"] == older_coverage
 
     def test_get_active_repos(self):
         RepositoryFactory(author=self.org, name='C')

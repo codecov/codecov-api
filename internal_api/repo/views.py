@@ -1,15 +1,12 @@
 import uuid
-import asyncio
 import logging
-
-from shared.torngit.exceptions import TorngitClientError
 
 from django.db.models import Subquery, OuterRef, Q
 from django.shortcuts import get_object_or_404
 from django.utils.functional import cached_property
 
-from rest_framework import generics, filters, mixins, viewsets
-from rest_framework.exceptions import PermissionDenied, APIException, NotFound
+from rest_framework import filters, mixins, viewsets
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import SAFE_METHODS # ['GET', 'HEAD', 'OPTIONS']
@@ -101,6 +98,8 @@ class RepositoryViewSet(
         )
 
         if self.action == 'list':
+            timestamp = self.request.query_params.get("timestamp", None)
+
             # Hiding this annotation will avoid expensive subqueries
             # used only for filtering list action on coverage metrics
             queryset = queryset.annotate(
@@ -108,13 +107,27 @@ class RepositoryViewSet(
                     Commit.objects.filter(
                         repository_id=OuterRef('repoid')
                     ).order_by('-timestamp').values('totals__c')[:1]
-                ),
-                totals = Subquery(
-                    Commit.objects.filter(
-                        repository_id=OuterRef('repoid')
-                    ).order_by('-timestamp').values('totals')[:1]
                 )
             )
+
+            # Get the commit at a specific timestamp based on the query params
+            if timestamp:
+                queryset = queryset.annotate(
+                    totals=Subquery(
+                        Commit.objects.filter(
+                            repository_id=OuterRef('repoid'),
+                            timestamp__lte=timestamp
+                        ).order_by('-timestamp').values('totals')[:1]
+                    )
+                )
+            else:
+                queryset = queryset.annotate(
+                    totals=Subquery(
+                        Commit.objects.filter(
+                            repository_id=OuterRef('repoid')
+                        ).order_by('-timestamp').values('totals')[:1]
+                    )
+                )
 
         return queryset
 
