@@ -12,6 +12,8 @@ if RUN_ENV == "DEV":
     settings_module = "codecov.settings_dev"
 elif RUN_ENV == "STAGING":
     settings_module = "codecov.settings_staging"
+elif RUN_ENV == "TESTING":
+    settings_module = "codecov.settings_test"
 else:
     settings_module = "codecov.settings_prod"
 
