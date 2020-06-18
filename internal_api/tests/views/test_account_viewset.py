@@ -62,32 +62,22 @@ class AccountViewSetTests(APITestCase):
 
         self.client.force_login(user=self.user)
 
-    @patch('internal_api.owner.serializers.BillingService.list_invoices')
+    @patch('services.billing.stripe.Invoice.list')
     def test_retrieve_account_gets_account_fields(self, _):
         owner = OwnerFactory(admins=[self.user.ownerid])
         response = self._retrieve(kwargs={"service": owner.service, "owner_username": owner.username})
         assert response.status_code == status.HTTP_200_OK
         assert response.data == {
-            "admins": [
-                {
-                    "service": self.user.service,
-                    "username": self.user.username,
-                    "email": self.user.email,
-                    "stats": self.user.cache["stats"],
-                    "avatar_url": self.user.avatar_url,
-                    "ownerid": self.user.ownerid,
-                    "integration_id": self.user.integration_id
-                }
-            ],
             "activated_user_count": 0,
             "integration_id": owner.integration_id,
             "plan_auto_activate": owner.plan_auto_activate,
             "inactive_user_count": 0,
             "plan": None, # TODO -- legacy plan
-            "recent_invoices": []
+            "recent_invoices": [],
+            "checkout_session_id": None
         }
 
-    @patch('internal_api.owner.serializers.BillingService.list_invoices')
+    @patch('services.billing.stripe.Invoice.list')
     def test_account_with_free_user_plan(self, _):
         self.user.plan = 'users-free'
         self.user.save()
@@ -102,17 +92,18 @@ class AccountViewSetTests(APITestCase):
                 "Up to 5 users",
                 "Unlimited public repositories",
                 "Unlimited private repositories"
-            ]
+            ],
+            "quantity": self.user.plan_user_count
         }
 
-    @patch('internal_api.owner.serializers.BillingService.list_invoices')
+    @patch('services.billing.stripe.Invoice.list')
     def test_account_with_paid_user_plan_billed_monthly(self, _):
         self.user.plan = 'users-inappm'
         self.user.save()
         response = self._retrieve()
         assert response.status_code == status.HTTP_200_OK
         assert response.data['plan'] == {
-            "marketing_name": "Pro Team (billed monthly)",
+            "marketing_name": "Pro Team",
             "value": "users-inappm",
             "billing_rate": "monthly",
             "base_unit_price": 12,
@@ -121,17 +112,18 @@ class AccountViewSetTests(APITestCase):
                 "Unlimited public repositories",
                 "Unlimited private repositories",
                 "Priorty Support"
-            ]
+            ],
+            "quantity": self.user.plan_user_count
         }
 
-    @patch('internal_api.owner.serializers.BillingService.list_invoices')
+    @patch('services.billing.stripe.Invoice.list')
     def test_account_with_paid_user_plan_billed_annually(self, _):
         self.user.plan = 'users-inappy'
         self.user.save()
         response = self._retrieve()
         assert response.status_code == status.HTTP_200_OK
         assert response.data['plan'] == {
-            "marketing_name": "Pro Team (billed annually)",
+            "marketing_name": "Pro Team",
             "value": "users-inappy",
             "billing_rate": "annually",
             "base_unit_price": 10,
@@ -140,7 +132,8 @@ class AccountViewSetTests(APITestCase):
                 "Unlimited public repositories",
                 "Unlimited private repositories",
                 "Priorty Support"
-            ]
+            ],
+            "quantity": self.user.plan_user_count
         }
 
     def test_retrieve_account_returns_403_if_user_not_admin(self):
@@ -158,15 +151,6 @@ class AccountViewSetTests(APITestCase):
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data['recent_invoices'] == expected_invoices
-
-    @patch('services.billing.stripe.Invoice.list')
-    def test_account_raises_api_exception_if_billing_exception(self, mock_list_invoices):
-        err_code, err_msg = 404, "Not Found"
-        mock_list_invoices.side_effect = StripeError(message=err_msg, http_status=err_code)
-
-        response = self._retrieve()
-        assert response.status_code == err_code
-        assert response.data['detail'] == err_msg
 
     @patch('services.billing.stripe.Invoice.list')
     def test_update_can_set_plan_auto_activate_to_true(self, _):
@@ -221,7 +205,94 @@ class AccountViewSetTests(APITestCase):
         assert self.user.plan_activated_users is None
         assert self.user.plan_user_count == 5
         assert response.data["plan_auto_activate"] is True
-        assert response.data["plan"] == USER_PLAN_REPRESENTATIONS["users-free"]
+
+    @patch('services.billing.stripe.Invoice.list')
+    @patch('services.billing.stripe.checkout.Session.create')
+    def test_update_can_upgrade_to_paid_plan_for_new_customer_and_return_checkout_session_id(
+        self,
+        create_checkout_session_mock,
+        list_inv_mock
+    ):
+        expected_id = "this is the id"
+        create_checkout_session_mock.return_value = {"id": expected_id}
+        self.user.stripe_subscription_id = None
+        self.user.save()
+
+        response = self._update(
+            kwargs={"service": self.user.service, "owner_username": self.user.username},
+            data={
+                "plan": {
+                    "quantity": 25,
+                    "value": "users-inappy"
+                }
+            }
+        )
+
+        create_checkout_session_mock.assert_called_once()
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["checkout_session_id"] == expected_id
+
+    @patch('services.billing.stripe.Invoice.list')
+    @patch('services.billing.stripe.Subscription.retrieve')
+    @patch('services.billing.stripe.Subscription.modify')
+    def test_update_can_upgrade_to_paid_plan_for_existing_customer_and_set_plan_info(
+        self,
+        modify_subscription_mock,
+        retrieve_subscription_mock,
+        list_inv_mock
+    ):
+        desired_plan = {
+            "value": "users-inappm",
+            "quantity": 12
+        }
+        self.user.stripe_customer_id = "flsoe"
+        self.user.stripe_subscription_id = "djfos"
+        self.user.save()
+
+        response = self._update(
+            kwargs={"service": self.user.service, "owner_username": self.user.username},
+            data={"plan": desired_plan}
+        )
+
+        modify_subscription_mock.assert_called_once()
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["plan"]["value"] == desired_plan["value"]
+        assert response.data["plan"]["quantity"] == desired_plan["quantity"]
+
+        self.user.refresh_from_db()
+        assert self.user.plan == desired_plan["value"]
+        assert self.user.plan_user_count == desired_plan["quantity"]
+
+    def test_update_requires_quantity_if_updating_to_paid_plan(self):
+        desired_plan = {"value": "users-inappy"}
+        response = self._update(
+            kwargs={"service": self.user.service, "owner_username": self.user.username},
+            data={"plan": desired_plan}
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_update_quantity_must_be_greater_or_equal_to_current_activated_users_if_paid_plan(self):
+        self.user.plan_activated_users = [1] * 15
+        self.user.save()
+        desired_plan = {"value": "users-inappy", "quantity": 14}
+
+        response = self._update(
+            kwargs={"service": self.user.service, "owner_username": self.user.username},
+            data={"plan": desired_plan}
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_update_quantity_must_be_at_least_5_if_paid_plan(self):
+        desired_plan = {"value": "users-inappy", "quantity": 4}
+        response = self._update(
+            kwargs={"service": self.user.service, "owner_username": self.user.username},
+            data={"plan": desired_plan}
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_update_without_admin_permissions_returns_403(self):
         owner = OwnerFactory()
