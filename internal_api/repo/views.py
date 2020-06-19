@@ -116,6 +116,7 @@ class RepositoryViewSet(
                     totals=Subquery(
                         Commit.objects.filter(
                             repository_id=OuterRef('repoid'),
+                            branch=OuterRef('branch'),
                             timestamp__lte=timestamp
                         ).order_by('-timestamp').values('totals')[:1]
                     )
@@ -124,7 +125,8 @@ class RepositoryViewSet(
                 queryset = queryset.annotate(
                     totals=Subquery(
                         Commit.objects.filter(
-                            repository_id=OuterRef('repoid')
+                            repository_id=OuterRef('repoid'),
+                            branch=OuterRef('branch')
                         ).order_by('-timestamp').values('totals')[:1]
                     )
                 )
