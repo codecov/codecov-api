@@ -162,22 +162,24 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         }
 
         CommitFactory(repository=self.repo1, totals=default_totals)
+        # Make sure we only get the commit from the default branch
+        CommitFactory(repository=self.repo1, totals={**default_totals, 'c': 90.0}, branch='other')
 
         response = self._list(
             query_params={'names': 'A'}
         )
 
-        assert response.data["results"][0]["totals"]["files"] == 1
-        assert response.data["results"][0]["totals"]["lines"] == 4
-        assert response.data["results"][0]["totals"]["hits"] == 4
-        assert response.data["results"][0]["totals"]["misses"] == 0
-        assert response.data["results"][0]["totals"]["partials"] == 0
-        assert response.data["results"][0]["totals"]["coverage"] == 100.0
-        assert response.data["results"][0]["totals"]["branches"] == 0
-        assert response.data["results"][0]["totals"]["methods"] == 0
-        assert response.data["results"][0]["totals"]["sessions"] == 1
-        assert response.data["results"][0]["totals"]["complexity"] == 0.0
-        assert response.data["results"][0]["totals"]["complexity_total"] == 0.0
+        assert response.data["results"][0]["totals"]["files"] == default_totals['f']
+        assert response.data["results"][0]["totals"]["lines"] == default_totals['n']
+        assert response.data["results"][0]["totals"]["hits"] == default_totals['h']
+        assert response.data["results"][0]["totals"]["misses"] == default_totals['m']
+        assert response.data["results"][0]["totals"]["partials"] == default_totals['p']
+        assert response.data["results"][0]["totals"]["coverage"] == default_totals['c']
+        assert response.data["results"][0]["totals"]["branches"] == default_totals['b']
+        assert response.data["results"][0]["totals"]["methods"] == default_totals['d']
+        assert response.data["results"][0]["totals"]["sessions"] == default_totals['s']
+        assert response.data["results"][0]["totals"]["complexity"] == default_totals['C']
+        assert response.data["results"][0]["totals"]["complexity_total"] == default_totals['N']
         assert response.data["results"][0]["totals"]["complexity_ratio"] == 0
 
     def test_get_totals_with_timestamp(self):
