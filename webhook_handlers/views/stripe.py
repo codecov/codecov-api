@@ -43,11 +43,11 @@ class StripeWebhookHandler(APIView):
             log.warn(f"Stripe webhook event received with invalid signature -- {e}")
             return Response("Invalid signature", status=status.HTTP_400_BAD_REQUEST)
 
-        log.info(f"Stripe webhook event received -- {event.type}")
         if event.type not in StripeWebhookEvents.subscribed_events:
             log.warning(f"Unsupported Stripe webhook event received -- {event.type}")
             return Response("Unsupported event type", status=204)
 
+        log.info(f"Stripe webhook event received -- {event.type}, customer {event.data.object.customer")
 
         getattr(self, event.type.replace(".", "_"))(event.data.object)
 
