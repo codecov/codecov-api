@@ -68,8 +68,7 @@ class StripeWebhookHandler(APIView):
         if subscription.plan.name not in PAID_USER_PLAN_REPRESENTATIONS:
             log.warning(
                 f"Subscription creation requested for invalid plan "
-                f" '{subscription.plan.name}' "
-                f"doing nothing"
+                f"'{subscription.plan.name}' -- doing nothing"
             )
             return
 
@@ -81,6 +80,39 @@ class StripeWebhookHandler(APIView):
             plan_auto_activate=True,
             stripe_subscription_id=subscription.id,
             stripe_customer_id=subscription.customer
+        )
+
+    def customer_subscription_updated(self, subscription):
+        if subscription.plan.name not in PAID_USER_PLAN_REPRESENTATIONS:
+            log.warning(
+                f"Subscription update requested with invalid plan "
+                f"{subscription.plan.name} -- doing nothing "
+            )
+            return
+        if subscription.status == "incomplete_expired":
+            log.info(
+                f"Subscription {subscription.id} updated with status change "
+                f"to 'incomplete_expired' -- cancelling to free"
+            )
+            owner = Owner.objects.get(
+                stripe_subscription_id=subscription.id,
+                stripe_customer_id=subscription.customer
+            )
+            owner.set_free_plan()
+            owner.repository_set.all().update(active=False, activated=False)
+            return
+
+        log.info(
+            f"Subscription {subscription.id} updated with -- "
+            f"plan: {subscription.plan.name}, quantity: {subscription.quantity}"
+        )
+        Owner.objects.filter(
+            stripe_subscription_id=subscription.id,
+            stripe_customer_id=subscription.customer
+        ).update(
+            plan=subscription.plan.name,
+            plan_user_count=quantity,
+            plan_auto_activate=True
         )
 
     def post(self, request, *args, **kwargs):
