@@ -3,7 +3,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 
 from codecov_auth.models import Owner
-from codecov_auth.constants import USER_PLAN_REPRESENTATIONS
+from codecov_auth.constants import PAID_USER_PLAN_REPRESENTATIONS, USER_PLAN_REPRESENTATIONS
 
 from services.billing import BillingService
 
@@ -77,7 +77,7 @@ class PlanSerializer(serializers.Serializer):
         owner = self.context["view"].owner
 
         # Validate quantity here because we need access to whole plan object
-        if plan["value"] in ["users-inappy", "users-inappm"]:
+        if plan["value"] in PAID_USER_PLAN_REPRESENTATIONS:
             if "quantity" not in plan:
                 raise serializers.ValidationError(f"Field 'quantity' required for updating to paid plans")
             if plan["quantity"] < 5:

@@ -5,18 +5,7 @@ GRAVATAR_BASE_URL = 'https://www.gravatar.com'
 AVATARIO_BASE_URL = 'https://avatars.io'
 
 
-USER_PLAN_REPRESENTATIONS = {
-    "users-free": {
-        "marketing_name": "Basic",
-        "value": "users-free",
-        "billing_rate": None,
-        "base_unit_price": 0,
-        "benefits": [
-            "Up to 5 users",
-            "Unlimited public repositories",
-            "Unlimited private repositories"
-        ]
-    },
+PAID_USER_PLAN_REPRESENTATIONS = {
     "users-inappm": {
         "marketing_name": "Pro Team",
         "value": "users-inappm",
@@ -41,4 +30,20 @@ USER_PLAN_REPRESENTATIONS = {
             "Priorty Support"
         ]
     },
+}
+
+
+USER_PLAN_REPRESENTATIONS = {
+    "users-free": {
+        "marketing_name": "Basic",
+        "value": "users-free",
+        "billing_rate": None,
+        "base_unit_price": 0,
+        "benefits": [
+            "Up to 5 users",
+            "Unlimited public repositories",
+            "Unlimited private repositories"
+        ]
+    },
+    **PAID_USER_PLAN_REPRESENTATIONS
 }
