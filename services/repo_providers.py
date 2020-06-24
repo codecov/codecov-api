@@ -55,7 +55,11 @@ class RepoProviderService(object):
         adapter_params = dict(
             repo=dict(name=repo_name),
             owner=dict(username=repo_owner_username),
-            token=encryptor.decrypt_token(user.oauth_token)
+            token=encryptor.decrypt_token(user.oauth_token),
+            oauth_consumer_token=dict(
+                key=getattr(settings, f"{repo_owner_service.upper()}_CLIENT_ID", "unknown"),
+                secret=getattr(settings, f"{repo_owner_service.upper()}_CLIENT_SECRET", "unknown")
+            )
         )
         return self._get_provider(
             service=repo_owner_service,
