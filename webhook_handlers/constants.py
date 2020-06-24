@@ -84,4 +84,5 @@ class StripeHTTPHeaders:
 class StripeWebhookEvents:
     subscribed_events = (
         "invoice.payment_succeeded",
+        "invoice.payment_failed",
     )

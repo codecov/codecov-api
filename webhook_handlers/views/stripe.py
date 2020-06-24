@@ -22,11 +22,19 @@ class StripeWebhookHandler(APIView):
     permission_classes = [AllowAny]
 
     def invoice_payment_succeeded(self, invoice):
-        owner = Owner.objects.filter(
+        Owner.objects.filter(
             stripe_customer_id=invoice.customer,
             stripe_subscription_id=invoice.subscription.id
         ).update(
             delinquent=False
+        )
+
+    def invoice_payment_failed(self, invoice):
+        Owner.objects.filter(
+            stripe_customer_id=invoice.customer,
+            stripe_subscription_id=invoice.subscription.id
+        ).update(
+            delinquent=True
         )
 
     def post(self, request, *args, **kwargs):

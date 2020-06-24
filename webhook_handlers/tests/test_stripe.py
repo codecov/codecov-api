@@ -56,3 +56,25 @@ class StripeWebhookHandlerTests(APITestCase):
         self.owner.refresh_from_db()
         assert response.status_code == status.HTTP_204_NO_CONTENT
         assert self.owner.delinquent is False
+
+    def test_invoice_payment_failed_sets_owner_delinquent_true(self):
+        self.owner.delinquent = False
+        self.owner.save()
+
+        response = self._send_event(
+            payload={
+                "type": "invoice.payment_failed",
+                "data": {
+                    "object": {
+                        "customer": self.owner.stripe_customer_id,
+                        "subscription": {
+                            "id": self.owner.stripe_subscription_id
+                        }
+                    }
+                }
+            }
+        )
+
+        self.owner.refresh_from_db()
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert self.owner.delinquent is True
