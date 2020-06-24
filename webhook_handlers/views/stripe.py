@@ -22,6 +22,7 @@ class StripeWebhookHandler(APIView):
     permission_classes = [AllowAny]
 
     def invoice_payment_succeeded(self, invoice):
+        log.info(f"Setting delinquency status False for stripe customer {invoice.customer}")
         Owner.objects.filter(
             stripe_customer_id=invoice.customer,
             stripe_subscription_id=invoice.subscription.id
@@ -30,11 +31,25 @@ class StripeWebhookHandler(APIView):
         )
 
     def invoice_payment_failed(self, invoice):
+        log.info(f"Setting delinquency status True for stripe customer {invoice.customer}")
         Owner.objects.filter(
             stripe_customer_id=invoice.customer,
             stripe_subscription_id=invoice.subscription.id
         ).update(
             delinquent=True
+        )
+
+    def customer_subscription_deleted(self, subscription):
+        log.info(f"Setting free plan and deactivating repos for stripe customer {subscription.customer}")
+        owner = Owner.objects.get(
+            stripe_customer_id=subscription.customer,
+            stripe_subscription_id=subscription.id
+        )
+
+        owner.set_free_plan()
+        owner.repository_set.update(
+            active=False,
+            activated=False
         )
 
     def post(self, request, *args, **kwargs):
@@ -55,7 +70,7 @@ class StripeWebhookHandler(APIView):
             log.warning(f"Unsupported Stripe webhook event received -- {event.type}")
             return Response("Unsupported event type", status=204)
 
-        log.info(f"Stripe webhook event received -- {event.type}, customer {event.data.object.customer}")
+        log.info(f"Stripe webhook event received -- {event.type}")
 
         getattr(self, event.type.replace(".", "_"))(event.data.object)
 
