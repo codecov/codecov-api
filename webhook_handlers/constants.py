@@ -71,3 +71,17 @@ class WebhookHandlerErrorMessages:
     SKIP_NOT_ACTIVE = "OK. Skip because repo is not active.",
     SKIP_PROCESSING = "OK. Skip because commit not found or is processing.",
     SKIP_PENDING_STATUSES = "Ok. Skip because status is pending."
+
+
+class StripeHTTPHeaders:
+    """
+    Header-strings associated with Stripe webhook events.
+    """
+    # https://stripe.com/docs/webhooks/signatures#verify-official-libraries
+    SIGNATURE = 'Stripe-Signature'
+
+
+class StripeWebhookEvents:
+    subscribed_events = (
+        "invoice.payment_succeeded",
+    )

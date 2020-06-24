@@ -13,6 +13,7 @@ WEBHOOK_URL = 'https://codecov.io'
 
 
 STRIPE_API_KEY = os.environ.get('SERVICES__STRIPE__API_KEY', None)
+STRIPE_ENDPOINT_SECRET = os.environ.get("SERVICES__STRIPE__ENDPOINT_SECRET", None)
 STRIPE_PLAN_IDS = {
     "users-inappm": "plan_FZfyGRXwm8is1L",
     "users-inappy": "plan_FZfwfpAYWDks0V"

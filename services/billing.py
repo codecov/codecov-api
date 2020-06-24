@@ -13,8 +13,6 @@ log = logging.getLogger(__name__)
 
 if settings.STRIPE_API_KEY:
     stripe.api_key = settings.STRIPE_API_KEY
-else:
-    log.warn("Missing stripe API key configuration -- communication with stripe won't be possible.")
 
 
 def _log_stripe_error(method):
@@ -48,6 +46,8 @@ class AbstractPaymentService(ABC):
 class StripeService(AbstractPaymentService):
 
     def __init__(self, requesting_user):
+        if settings.STRIPE_API_KEY is None:
+            log.critical("Missing stripe API key configuration -- communication with stripe won't be possible.")
         if not isinstance(requesting_user, Owner):
             raise Exception("StripeService requires requesting_user to be Owner instance")
 
