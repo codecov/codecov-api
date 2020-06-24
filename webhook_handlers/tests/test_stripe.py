@@ -122,3 +122,16 @@ class StripeWebhookHandlerTests(APITestCase):
         )
 
         assert self.owner.repository_set.filter(activated=True, active=True).count() == 0
+
+    def test_customer_created_logs_and_doesnt_crash(self):
+        response = self._send_event(
+            payload={
+                "type": "customer.created",
+                "data": {
+                    "object": {
+                        "id": "FOEKDCDEQ",
+                        "email": "test@email.com"
+                    }
+                }
+            }
+        )

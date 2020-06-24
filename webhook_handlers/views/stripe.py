@@ -52,6 +52,13 @@ class StripeWebhookHandler(APIView):
             activated=False
         )
 
+    def customer_created(self, customer):
+        # Based on what stripe doesn't gives us (an ownerid!)
+        # in this event we cannot reliably create a customer,
+        # so we're just logging that we created the event and
+        # relying on customer.subscription.created to handle sub creation
+        log.info(f"Customer created with stripe_customer_id: {customer.id} & email: {customer.email}")
+
     def post(self, request, *args, **kwargs):
         if settings.STRIPE_ENDPOINT_SECRET is None:
             log.critical("Stripe endpoint secret improperly configured -- webhooks will not be processed.")
