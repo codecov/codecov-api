@@ -30,7 +30,6 @@ class StripeWebhookHandler(APIView):
         )
 
     def invoice_payment_failed(self, invoice):
-        breakpoint()
         Owner.objects.filter(
             stripe_customer_id=invoice.customer,
             stripe_subscription_id=invoice.subscription.id
