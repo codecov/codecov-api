@@ -73,6 +73,10 @@ class StripeWebhookHandler(APIView):
             )
             return
 
+        log.info(
+            f"Subscription created for customer {subscription.customer} "
+            f"with -- plan: {subscription.plan.name}, quantity {subscription.quantity}"
+        )
         Owner.objects.filter(
             ownerid=subscription.metadata.obo_organization
         ).update(
