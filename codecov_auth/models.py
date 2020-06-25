@@ -248,6 +248,7 @@ class Owner(models.Model):
         self.plan_auto_activate = True
         self.plan_activated_users = None
         self.plan_user_count = 5
+        self.stripe_subscription_id = None
         self.save()
 
 

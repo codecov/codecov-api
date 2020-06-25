@@ -72,6 +72,10 @@ class StripeWebhookHandler(APIView):
             )
             return
 
+        log.info(
+            f"Subscription created for customer {subscription.customer} "
+            f"with -- plan: {subscription.plan.name}, quantity {subscription.quantity}"
+        )
         Owner.objects.filter(
             ownerid=subscription.metadata.obo_organization
         ).update(
@@ -135,6 +139,8 @@ class StripeWebhookHandler(APIView):
 
         log.info(f"Stripe webhook event received -- {event.type}")
 
+        # Converts event names of the format X.Y.Z into X_Y_Z, and calls
+        # the relevant method in this class
         getattr(self, event.type.replace(".", "_"))(event.data.object)
 
         return Response(status=status.HTTP_204_NO_CONTENT)
