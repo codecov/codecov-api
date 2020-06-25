@@ -70,7 +70,7 @@ class StripeWebhookHandler(APIView):
             log.warning(f"Unsupported Stripe webhook event received -- {event.type}")
             return Response("Unsupported event type", status=204)
 
-        log.info(f"Stripe webhook event received -- {event.type}")
+        log.info(f"Stripe webhook event received -- {event.type}, customer {event.data.object.customer}")
 
         # Converts event names of the format X.Y.Z into X_Y_Z, and calls
         # the relevant method in this class
