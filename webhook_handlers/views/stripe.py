@@ -99,7 +99,7 @@ class StripeWebhookHandler(APIView):
                 stripe_customer_id=subscription.customer
             )
             owner.set_free_plan()
-            owner.repository_set.all().update(active=False, activated=False)
+            owner.repository_set.update(active=False, activated=False)
             return
 
         log.info(
@@ -111,7 +111,7 @@ class StripeWebhookHandler(APIView):
             stripe_customer_id=subscription.customer
         ).update(
             plan=subscription.plan.name,
-            plan_user_count=quantity,
+            plan_user_count=subscription.quantity,
             plan_auto_activate=True
         )
 

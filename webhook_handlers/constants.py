@@ -84,4 +84,5 @@ class StripeWebhookEvents:
         "customer.subscription.deleted",
         "customer.created",
         "customer.subscription.created",
+        "customer.subscription.updated",
     )
