@@ -284,6 +284,7 @@ class TestOwnerModel(TestCase):
 
     def test_set_free_plan_sets_correct_values(self):
         self.owner.plan = "users-inappy"
+        self.owner.stripe_subscription_id = "4kw23l4k"
         self.owner.plan_user_count = 20
         self.owner.plan_activated_users = [44]
         self.owner.plan_auto_activate = False
@@ -296,3 +297,4 @@ class TestOwnerModel(TestCase):
         assert self.owner.plan_user_count == 5
         assert self.owner.plan_activated_users == None
         assert self.owner.plan_auto_activate == True
+        assert self.owner.stripe_subscription_id == None
