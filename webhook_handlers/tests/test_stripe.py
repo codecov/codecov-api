@@ -122,3 +122,111 @@ class StripeWebhookHandlerTests(APITestCase):
         )
 
         assert self.owner.repository_set.filter(activated=True, active=True).count() == 0
+
+    def test_customer_created_logs_and_doesnt_crash(self):
+        response = self._send_event(
+            payload={
+                "type": "customer.created",
+                "data": {
+                    "object": {
+                        "id": "FOEKDCDEQ",
+                        "email": "test@email.com"
+                    }
+                }
+            }
+        )
+
+    def test_customer_subscription_created_does_nothing_if_no_plan_id(self):
+        self.owner.stripe_subscription_id = None
+        self.owner.stripe_customer_id = None
+        self.owner.save()
+
+        response = self._send_event(
+            payload={
+                "type": "customer.subscription.created",
+                "data": {
+                    "object": {
+                        "id": "FOEKDCDEQ",
+                        "customer": "sdo050493",
+                        "plan": {
+                            "id": None,
+                            "name": "users-inappy"
+                        },
+                        "metadata": {
+                            "obo_organization": self.owner.ownerid
+                        },
+                        "quantity": 20
+                    }
+                }
+            }
+        )
+
+        self.owner.refresh_from_db()
+        assert self.owner.stripe_subscription_id == None
+        assert self.owner.stripe_customer_id == None
+
+    def test_customer_subscription_created_does_nothing_if_plan_not_paid_user_plan(self):
+        self.owner.stripe_subscription_id = None
+        self.owner.stripe_customer_id = None
+        self.owner.save()
+
+        response = self._send_event(
+            payload={
+                "type": "customer.subscription.created",
+                "data": {
+                    "object": {
+                        "id": "FOEKDCDEQ",
+                        "customer": "sdo050493",
+                        "plan": {
+                            "id": "fieown4",
+                            "name": "users-free"
+                        },
+                        "metadata": {
+                            "obo_organization": self.owner.ownerid
+                        },
+                        "quantity": 20
+                    }
+                }
+            }
+        )
+
+        self.owner.refresh_from_db()
+        assert self.owner.stripe_subscription_id == None
+        assert self.owner.stripe_customer_id == None
+
+    def test_customer_subscription_created_sets_plan_info(self):
+        self.owner.stripe_subscription_id = None
+        self.owner.stripe_customer_id = None
+        self.owner.save()
+
+        stripe_subscription_id = "FOEKDCDEQ"
+        stripe_customer_id = "sdo050493"
+        plan_name = "users-inappy"
+        quantity = 20
+
+        response = self._send_event(
+            payload={
+                "type": "customer.subscription.created",
+                "data": {
+                    "object": {
+                        "id": stripe_subscription_id,
+                        "customer": stripe_customer_id,
+                        "plan": {
+                            "id": "fieown4",
+                            "name": plan_name
+                        },
+                        "metadata": {
+                            "obo_organization": self.owner.ownerid
+                        },
+                        "quantity": quantity
+                    }
+                }
+            }
+        )
+
+        self.owner.refresh_from_db()
+        assert self.owner.stripe_subscription_id == stripe_subscription_id
+        assert self.owner.stripe_customer_id == stripe_customer_id
+        assert self.owner.plan_user_count == quantity
+        assert self.owner.plan_auto_activate is True
+        assert self.owner.plan == plan_name

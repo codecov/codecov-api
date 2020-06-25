@@ -86,4 +86,6 @@ class StripeWebhookEvents:
         "invoice.payment_succeeded",
         "invoice.payment_failed",
         "customer.subscription.deleted",
+        "customer.created",
+        "customer.subscription.created",
     )
