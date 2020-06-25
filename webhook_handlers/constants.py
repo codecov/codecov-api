@@ -85,4 +85,5 @@ class StripeWebhookEvents:
     subscribed_events = (
         "invoice.payment_succeeded",
         "invoice.payment_failed",
+        "customer.subscription.deleted",
     )
