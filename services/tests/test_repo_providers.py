@@ -50,3 +50,17 @@ class TestRepoProviderService(InternalAPITest):
 
         assert isinstance(Gitlab(), type(provider))
 
+    def test_get_by_name_submits_consumer_oauth_token(self):
+        user = OwnerFactory(service='bitbucket')
+        repo_name = 'bb-repo'
+        repo_owner_username = 'me'
+        repo_owner_service = 'bitbucket'
+
+        provider = RepoProviderService().get_by_name(
+            user=user,
+            repo_name=repo_name,
+            repo_owner_username=repo_owner_username,
+            repo_owner_service=repo_owner_service
+        )
+
+        assert provider._oauth_consumer_token() is not None
