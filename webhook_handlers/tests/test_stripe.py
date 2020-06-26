@@ -230,3 +230,109 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.owner.plan_user_count == quantity
         assert self.owner.plan_auto_activate is True
         assert self.owner.plan == plan_name
+
+    def test_customer_subscription_updated_does_nothing_if_not_paid_user_plan(self):
+        self.owner.plan = None
+        self.owner.plan_user_count = 0
+        self.owner.plan_auto_activate = False
+        self.owner.save()
+
+        response = self._send_event(
+            payload={
+                "type": "customer.subscription.updated",
+                "data": {
+                    "object": {
+                        "id": self.owner.stripe_subscription_id,
+                        "customer": self.owner.stripe_customer_id,
+                        "plan": {
+                            "id": "fieown4",
+                            "name": "users-free"
+                        },
+                        "metadata": {
+                            "obo_organization": self.owner.ownerid
+                        },
+                        "quantity": 20,
+                        "status": "active"
+                    }
+                }
+            }
+        )
+
+        self.owner.refresh_from_db()
+        assert self.owner.plan == None
+        assert self.owner.plan_user_count == 0
+        assert self.owner.plan_auto_activate == False
+
+    @patch('codecov_auth.models.Owner.set_free_plan')
+    def test_customer_subscription_updated_sets_free_and_deactivates_all_repos_if_incomplete_expired(
+        self,
+        set_free_plan_mock
+    ):
+        self.owner.plan = "users-inappy"
+        self.owner.plan_user_count = 10
+        self.owner.plan_auto_activate = False
+        self.owner.save()
+
+        RepositoryFactory(author=self.owner, activated=True, active=True)
+        RepositoryFactory(author=self.owner, activated=True, active=True)
+        RepositoryFactory(author=self.owner, activated=True, active=True)
+        assert self.owner.repository_set.count() == 3
+
+        response = self._send_event(
+            payload={
+                "type": "customer.subscription.updated",
+                "data": {
+                    "object": {
+                        "id": self.owner.stripe_subscription_id,
+                        "customer": self.owner.stripe_customer_id, 
+                        "plan": {
+                            "id": "fieown4",
+                            "name": "users-inappy"
+                        },
+                        "metadata": {
+                            "obo_organization": self.owner.ownerid
+                        },
+                        "quantity": 20,
+                        "status": "incomplete_expired"
+                    }
+                }
+            }
+        )
+
+        set_free_plan_mock.assert_called_once()
+
+        assert self.owner.repository_set.filter(active=True, activated=True).count() == 0
+
+    def test_customer_subscription_updated_sets_fields_on_success(self):
+        self.owner.plan = "users-free"
+        self.owner.plan_user_count = 5
+        self.owner.plan_auto_activate = False
+
+        plan_name = "users-inappy"
+        quantity = 20
+
+        response = self._send_event(
+            payload={
+                "type": "customer.subscription.updated",
+                "data": {
+                    "object": {
+                        "id": self.owner.stripe_subscription_id,
+                        "customer": self.owner.stripe_customer_id, 
+                        "plan": {
+                            "id": "fieown4",
+                            "name": plan_name
+                        },
+                        "metadata": {
+                            "obo_organization": self.owner.ownerid
+                        },
+                        "quantity": quantity,
+                        "status": "active"
+                    }
+                }
+            }
+        )
+
+        self.owner.refresh_from_db()
+        assert self.owner.plan == plan_name
+        assert self.owner.plan_user_count == quantity
+        assert self.owner.plan_auto_activate == True
