@@ -5,6 +5,7 @@ from core.models import Repository, Commit
 from internal_api.owner.serializers import OwnerSerializer
 from internal_api.commit.serializers import (
     CommitWithFileLevelReportSerializer,
+    CommitTotalsSerializer,
 )
 
 
@@ -25,8 +26,17 @@ class RepoSerializer(serializers.ModelSerializer):
             'language',
             "hookid",
             "activated",
-            "using_integration"
+            "using_integration",
         )
+
+
+class RepoWithTotalSerializer(RepoSerializer):
+    totals = CommitTotalsSerializer()
+
+    class Meta(RepoSerializer.Meta):
+        fields = (
+            'totals',
+        ) + RepoSerializer.Meta.fields
 
 
 class RepoDetailsSerializer(RepoSerializer):

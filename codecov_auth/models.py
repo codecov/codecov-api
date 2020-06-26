@@ -193,7 +193,15 @@ class Owner(models.Model):
     @property
     def pretty_plan(self):
         if self.plan in USER_PLAN_REPRESENTATIONS:
-            return USER_PLAN_REPRESENTATIONS[self.plan]
+            plan_details = USER_PLAN_REPRESENTATIONS[self.plan].copy()
+
+            # update with quantity they've purchased
+            # allows api users to update the quantity
+            # by modifying the "plan", sidestepping
+            # some iffy data modeling
+
+            plan_details.update({"quantity": self.plan_user_count })
+            return plan_details
 
     def can_activate_user(self, user):
         return user.student or self.activated_user_count < self.plan_user_count + self.free
@@ -236,10 +244,11 @@ class Owner(models.Model):
 
     def set_free_plan(self):
         log.info(f"Setting plan to users-free for owner {self.ownerid}")
-        self.plan="users-free"
-        self.plan_auto_activate=True
-        self.plan_activated_users=None
-        self.plan_user_count=5
+        self.plan = "users-free"
+        self.plan_auto_activate = True
+        self.plan_activated_users = None
+        self.plan_user_count = 5
+        self.stripe_subscription_id = None
         self.save()
 
 

@@ -5,6 +5,8 @@ from core.models import Repository
 from utils.encryption import encryptor
 from utils.config import get_config
 
+from django.conf import settings
+
 
 class TorngitInitializationFailed(Exception):
     """
@@ -33,8 +35,8 @@ class RepoProviderService(object):
             owner=dict(username=repo.author.username),
             token=encryptor.decrypt_token(user.oauth_token) if user.oauth_token else None,
             oauth_consumer_token=dict(
-                key=get_config(repo.author.service, 'client_id'),
-                secret=get_config(repo.author.service, 'client_secret')
+                key=getattr(settings, f"{repo.author.service.upper()}_CLIENT_ID", "unknown"),
+                secret=getattr(settings, f"{repo.author.service.upper()}_CLIENT_SECRET", "unknown")
             )
         )
         return self._get_provider(repo.author.service, adapter_params)
@@ -53,7 +55,11 @@ class RepoProviderService(object):
         adapter_params = dict(
             repo=dict(name=repo_name),
             owner=dict(username=repo_owner_username),
-            token=encryptor.decrypt_token(user.oauth_token)
+            token=encryptor.decrypt_token(user.oauth_token),
+            oauth_consumer_token=dict(
+                key=getattr(settings, f"{repo_owner_service.upper()}_CLIENT_ID", "unknown"),
+                secret=getattr(settings, f"{repo_owner_service.upper()}_CLIENT_SECRET", "unknown")
+            )
         )
         return self._get_provider(
             service=repo_owner_service,

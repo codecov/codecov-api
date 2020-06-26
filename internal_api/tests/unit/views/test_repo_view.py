@@ -1,3 +1,6 @@
+from datetime import datetime
+import time
+
 from unittest.mock import patch
 
 from rest_framework.reverse import reverse
@@ -109,9 +112,24 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         assert reverse_response.data["results"][1]["repoid"] == self.repo1.repoid
 
     def test_order_by_coverage(self):
-        CommitFactory(repository=self.repo1, totals={"c": 25})
-        CommitFactory(repository=self.repo1, totals={"c": 41})
-        CommitFactory(repository=self.repo2, totals={"c": 32})
+        default_totals = {
+            "f": 1,
+            "n": 4,
+            "h": 4,
+            "m": 0,
+            "p": 0,
+            "c": 100.0,
+            "b": 0,
+            "d": 0,
+            "s": 1,
+            "C": 0.0,
+            "N": 0.0,
+            "diff": ""
+        }
+
+        CommitFactory(repository=self.repo1, totals={**default_totals, "c": 25})
+        CommitFactory(repository=self.repo1, totals={**default_totals, "c": 41})
+        CommitFactory(repository=self.repo2, totals={**default_totals, "c": 32})
 
         response = self._list(
             query_params={'ordering': 'coverage'}
@@ -126,6 +144,73 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
 
         assert reverse_response.data["results"][0]["repoid"] == self.repo1.repoid
         assert reverse_response.data["results"][1]["repoid"] == self.repo2.repoid
+
+    def test_totals_serializer(self):
+        default_totals = {
+            "f": 1,
+            "n": 4,
+            "h": 4,
+            "m": 0,
+            "p": 0,
+            "c": 100.0,
+            "b": 0,
+            "d": 0,
+            "s": 1,
+            "C": 0.0,
+            "N": 0.0,
+            "diff": ""
+        }
+
+        CommitFactory(repository=self.repo1, totals=default_totals)
+        # Make sure we only get the commit from the default branch
+        CommitFactory(repository=self.repo1, totals={**default_totals, 'c': 90.0}, branch='other')
+
+        response = self._list(
+            query_params={'names': 'A'}
+        )
+
+        assert response.data["results"][0]["totals"]["files"] == default_totals['f']
+        assert response.data["results"][0]["totals"]["lines"] == default_totals['n']
+        assert response.data["results"][0]["totals"]["hits"] == default_totals['h']
+        assert response.data["results"][0]["totals"]["misses"] == default_totals['m']
+        assert response.data["results"][0]["totals"]["partials"] == default_totals['p']
+        assert response.data["results"][0]["totals"]["coverage"] == default_totals['c']
+        assert response.data["results"][0]["totals"]["branches"] == default_totals['b']
+        assert response.data["results"][0]["totals"]["methods"] == default_totals['d']
+        assert response.data["results"][0]["totals"]["sessions"] == default_totals['s']
+        assert response.data["results"][0]["totals"]["complexity"] == default_totals['C']
+        assert response.data["results"][0]["totals"]["complexity_total"] == default_totals['N']
+        assert response.data["results"][0]["totals"]["complexity_ratio"] == 0
+
+    def test_get_totals_with_timestamp(self):
+        default_totals = {
+            "f": 1,
+            "n": 4,
+            "h": 4,
+            "m": 0,
+            "p": 0,
+            "c": 100.0,
+            "b": 0,
+            "d": 0,
+            "s": 1,
+            "C": 0.0,
+            "N": 0.0,
+            "diff": ""
+        }
+        older_coverage = 90.0
+
+        CommitFactory(repository=self.repo1, totals={**default_totals, "c": older_coverage})
+        # We're testing that the lte works as expected, so we're not sending the exact same timestamp
+        fetching_time = datetime.now().isoformat()
+
+        time.sleep(1)
+        CommitFactory(repository=self.repo1, totals=default_totals)
+
+        response = self._list(
+            query_params={'names': 'A', 'timestamp': fetching_time}
+        )
+
+        assert response.data["results"][0]["totals"]["coverage"] == older_coverage
 
     def test_get_active_repos(self):
         RepositoryFactory(author=self.org, name='C')
@@ -160,6 +245,19 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         self.assertEqual(
             len(response.data['results']),
             3,
+            "got the wrong number of repos: {}".format(len(response.data['results']))
+        )
+
+    def test_get_all_repos_by_name(self):
+        new_repo = RepositoryFactory(author=self.org, name='C', private=False)
+
+        response = self._list(
+            query_params={'names': 'A,B'}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            len(response.data['results']),
+            2,
             "got the wrong number of repos: {}".format(len(response.data['results']))
         )
 

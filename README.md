@@ -36,7 +36,13 @@ The easiest way to run tests (that doesn't require installing postgres and other
     docker-compose up
     docker exec -it codecov-api_api_1 pytest -rf
 
-If you want to run the test locally, you can also just run `pytest` locally, but you'll have to install the requirements.txt and change the DATABASE host to point to something local in the `codecov/settings.py`.
+### Testing standalone
+
+If you would like to use pytest directly (Either through an IDE like PyCharm or with the CLI), you will need to change the settings file used by pytest. Run this command to have the tests executed (You will need an instance of postgres running locally):
+
+    RUN_ENV=TESTING DJANGO_SETTINGS_MODULE=codecov.settings_test pytest
+
+Make sure to have all the requirements from `requirements.txt` installed.
 
 ### Secret and Credential Management
 

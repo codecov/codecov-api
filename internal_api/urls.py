@@ -1,7 +1,14 @@
 from django.urls import path, include
 from django.conf import urls
 
-from internal_api.owner.views import ProfileView, OwnerViewSet, UserViewSet, AccountDetailsViewSet, PlanViewSet
+from internal_api.owner.views import (
+    ProfileView,
+    OwnerViewSet,
+    UserViewSet,
+    InvoiceViewSet,
+    AccountDetailsViewSet,
+    PlanViewSet
+)
 from internal_api.pull.views import PullViewSet
 from internal_api.commit.views import CommitsViewSet
 from internal_api.branch.views import BranchViewSet
@@ -26,6 +33,7 @@ owners_router.register(r'owners', OwnerViewSet, base_name='owners')
 
 owner_artifacts_router = DefaultRouter()
 owner_artifacts_router.register(r'users', UserViewSet, base_name='users')
+owner_artifacts_router.register(r'invoices', InvoiceViewSet, base_name='invoices')
 
 account_details_router = RetrieveUpdateDestroyRouter()
 account_details_router.register(r'account-details', AccountDetailsViewSet, base_name='account_details')

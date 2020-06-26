@@ -5,6 +5,34 @@ GRAVATAR_BASE_URL = 'https://www.gravatar.com'
 AVATARIO_BASE_URL = 'https://avatars.io'
 
 
+PAID_USER_PLAN_REPRESENTATIONS = {
+    "users-inappm": {
+        "marketing_name": "Pro Team",
+        "value": "users-inappm",
+        "billing_rate": "monthly",
+        "base_unit_price": 12,
+        "benefits": [
+            "Configureable # of users",
+            "Unlimited public repositories",
+            "Unlimited private repositories",
+            "Priorty Support"
+        ]
+    },
+    "users-inappy": {
+        "marketing_name": "Pro Team",
+        "value": "users-inappy",
+        "billing_rate": "annually",
+        "base_unit_price": 10,
+        "benefits": [
+            "Configureable # of users",
+            "Unlimited public repositories",
+            "Unlimited private repositories",
+            "Priorty Support"
+        ]
+    },
+}
+
+
 USER_PLAN_REPRESENTATIONS = {
     "users-free": {
         "marketing_name": "Basic",
@@ -17,28 +45,5 @@ USER_PLAN_REPRESENTATIONS = {
             "Unlimited private repositories"
         ]
     },
-    "users-inappm": {
-        "marketing_name": "Pro Team (billed monthly)",
-        "value": "users-inappm",
-        "billing_rate": "monthly",
-        "base_unit_price": 12,
-        "benefits": [
-            "Configureable # of users",
-            "Unlimited public repositories",
-            "Unlimited private repositories",
-            "Priorty Support"
-        ]
-    },
-    "users-inappy": {
-        "marketing_name": "Pro Team (billed annually)",
-        "value": "users-inappy",
-        "billing_rate": "annually",
-        "base_unit_price": 10,
-        "benefits": [
-            "Configureable # of users",
-            "Unlimited public repositories",
-            "Unlimited private repositories",
-            "Priorty Support"
-        ]
-    },
+    **PAID_USER_PLAN_REPRESENTATIONS
 }
