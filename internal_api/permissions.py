@@ -1,9 +1,6 @@
-import asyncio
-
 from rest_framework.permissions import BasePermission
-from rest_framework.permissions import SAFE_METHODS # ['GET', 'HEAD', 'OPTIONS']
+from rest_framework.permissions import SAFE_METHODS  # ['GET', 'HEAD', 'OPTIONS']
 
-from services.repo_providers import RepoProviderService
 from services.decorators import torngit_safe
 from internal_api.repo.repository_accessors import RepoAccessors
 
@@ -15,7 +12,7 @@ class RepositoryPermissionsService:
 
         if can_view:
             user.permission.append(repo.repoid)
-            user.save(update_fields=['permission'])
+            user.save(update_fields=["permission"])
 
         return can_view, can_edit
 
@@ -34,6 +31,7 @@ class RepositoryArtifactPermissions(BasePermission):
     pulls, comparisons, etc. Requires that the view has a '.repo'
     property that returns the repo being worked on.
     """
+
     permissions_service = RepositoryPermissionsService()
 
     def has_permission(self, request, view):
@@ -43,11 +41,22 @@ class RepositoryArtifactPermissions(BasePermission):
         )
 
 
+class ChartPermissions(BasePermission):
+    permissions_service = RepositoryPermissionsService()
+
+    def has_permission(self, request, view):
+        for repo in view.repositories:
+            if not self.permissions_service.has_read_permissions(request.user, repo):
+                return False
+        return True
+
+
 class UserIsAdminPermissions(BasePermission):
     """
     Permissions class for asserting the user is an admin of the 'owner'
     being queried. Requires that the view has a '.owner' property that
     returns this owner.
     """
+
     def has_permission(self, request, view):
         return view.owner.is_admin(request.user)

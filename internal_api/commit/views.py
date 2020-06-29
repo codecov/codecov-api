@@ -6,7 +6,6 @@ from core.models import Commit
 
 from .serializers import CommitSerializer
 from .filters import CommitFilters
-from internal_api.permissions import RepositoryArtifactPermissions
 
 
 class CommitsViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, RepoPropertyMixin):
@@ -15,4 +14,4 @@ class CommitsViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, RepoPropert
     permission_classes = [RepositoryArtifactPermissions]
 
     def get_queryset(self):
-        return self.repo.commits.select_related('author').order_by('-timestamp')
+        return self.repo.commits.select_related("author").order_by("-timestamp")
