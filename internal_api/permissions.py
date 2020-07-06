@@ -1,8 +1,13 @@
+import logging
+
 from rest_framework.permissions import BasePermission
 from rest_framework.permissions import SAFE_METHODS  # ['GET', 'HEAD', 'OPTIONS']
 
 from services.decorators import torngit_safe
 from internal_api.repo.repository_accessors import RepoAccessors
+
+
+log = logging.getLogger(__name__)
 
 
 class RepositoryPermissionsService:
@@ -24,6 +29,25 @@ class RepositoryPermissionsService:
             or self._fetch_provider_permissions(user, repo)[0]
         )
 
+    def user_is_activated(self, user, owner):
+        if user.ownerid == owner.ownerid:
+            return True
+        if owner.has_legacy_plan:
+            return True
+        if user.organizations is None or owner.ownerid not in user.organizations:
+            return False
+        if owner.plan_activated_users and user.ownerid in owner.plan_activated_users:
+            return True
+        if owner.plan_auto_activate:
+            log.info(f"Attemping to auto-activate user {user.ownerid} in {owner.ownerid}")
+            if owner.can_activate_user(user):
+                owner.activate_user(user)
+                return True
+            else:
+                log.info("Auto-activation failed -- not enough seats remaining")
+
+        return False
+
 
 class RepositoryArtifactPermissions(BasePermission):
     """
@@ -33,11 +57,22 @@ class RepositoryArtifactPermissions(BasePermission):
     """
 
     permissions_service = RepositoryPermissionsService()
+    message = (
+        f"Permission denied: some possbile reasons for this are (1) the "
+        f"user doesn't have permission to view the specific resource; "
+        f"or (2) the organization has a per-user plan, and the user is "
+        f"trying to view a private repo but is not activated."
+    )
 
     def has_permission(self, request, view):
+        if view.repo.private:
+            user_activated_permissions = self.permissions_service.user_is_activated(request.user, view.owner)
+        else:
+            user_activated_permissions = True
         return (
             request.method in SAFE_METHODS
             and self.permissions_service.has_read_permissions(request.user, view.repo)
+            and user_activated_permissions
         )
 
 

@@ -77,8 +77,8 @@ class TestCompareFlagsView(InternalAPITest):
         response = self._get_compare_flags(
             kwargs={
                 "service": self.repo.author.service,
-                "orgName": self.repo.author.username,
-                "repoName": self.repo.name,
+                "owner_username": self.repo.author.username,
+                "repo_name": self.repo.name,
             },
             query_params={
                 "base": self.parent_commit.commitid,
@@ -205,8 +205,8 @@ class TestCompareFlagsView(InternalAPITest):
         response = self._get_compare_flags(
             kwargs={
                 "service": self.repo.author.service,
-                "orgName": self.repo.author.username,
-                "repoName": self.repo.name
+                "owner_username": self.repo.author.username,
+                "repo_name": self.repo.name
             },
             query_params={
                 "pullid": PullFactory(
@@ -239,8 +239,8 @@ class TestCompareFlagsView(InternalAPITest):
         response = self._get_compare_flags(
             kwargs={
                 "service": self.repo.author.service,
-                "orgName": self.repo.author.username,
-                "repoName": self.repo.name
+                "owner_username": self.repo.author.username,
+                "repo_name": self.repo.name
             },
             query_params={
                 "base": self.parent_commit.commitid,
@@ -280,8 +280,8 @@ class TestCompareFlagsView(InternalAPITest):
         self._get_compare_flags(
             kwargs={
                 "service": self.repo.author.service,
-                "orgName": self.repo.author.username,
-                "repoName": self.repo.name
+                "owner_username": self.repo.author.username,
+                "repo_name": self.repo.name
             },
             query_params={
                 "base": self.parent_commit.commitid,

@@ -18,6 +18,8 @@ from codecov_auth.models import Owner
 from core.models import Repository, Commit
 from services.repo_providers import RepoProviderService
 from services.decorators import torngit_safe
+from internal_api.permissions import RepositoryPermissionsService
+from internal_api.mixins import OwnerPropertyMixin
 
 from .repository_accessors import RepoAccessors
 from .serializers import RepoWithTotalSerializer, RepoDetailsSerializer, SecretStringPayloadSerializer
@@ -52,7 +54,8 @@ class RepositoryViewSet(
         mixins.RetrieveModelMixin,
         mixins.UpdateModelMixin,
         mixins.DestroyModelMixin,
-        viewsets.GenericViewSet
+        viewsets.GenericViewSet,
+        OwnerPropertyMixin
     ):
 
     filter_backends = (django_filters.DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
@@ -60,18 +63,8 @@ class RepositoryViewSet(
     search_fields = ('name',)
     ordering_fields = ('updatestamp', 'name', 'coverage',)
     lookup_value_regex = '[\w\.@\:\-~]+'
-    lookup_field = 'repoName'
+    lookup_field = 'repo_name'
     accessors = RepoAccessors()
-
-    @cached_property
-    def owner(self):
-        # Usable everywhere except for in .get_object(), becauses the owner
-        # may not exist yet.
-        return get_object_or_404(
-            Owner,
-            username=self.kwargs.get("orgName"),
-            service=self.kwargs.get("service")
-        )
 
     def _assert_is_admin(self):
         owner = self.owner
@@ -136,6 +129,9 @@ class RepositoryViewSet(
     @torngit_safe
     def check_object_permissions(self, request, repo):
         self.can_view, self.can_edit = self.accessors.get_repo_permissions(self.request.user, repo)
+
+        if repo.private and not RepositoryPermissionsService().user_is_activated(self.request.user, self.owner):
+            raise PermissionDenied("User not activated")
         if self.request.method not in SAFE_METHODS and not self.can_edit:
             raise PermissionDenied()
         if self.request.method == 'DELETE':
@@ -146,8 +142,8 @@ class RepositoryViewSet(
     @torngit_safe
     def get_object(self):
         # Get request args and try to find the repo in the DB
-        repo_name = self.kwargs.get('repoName')
-        org_name = self.kwargs.get('orgName')
+        repo_name = self.kwargs.get('repo_name')
+        org_name = self.kwargs.get('owner_username')
         service = self.kwargs.get('service')
 
         repo = self.accessors.get_repo_details(

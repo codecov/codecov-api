@@ -33,17 +33,14 @@ owners_router = DefaultRouter()
 owners_router.register(r"owners", OwnerViewSet, basename="owners")
 
 owner_artifacts_router = DefaultRouter()
-owner_artifacts_router.register(r"users", UserViewSet, basename="users")
-owner_artifacts_router.register(r"invoices", InvoiceViewSet, basename="invoices")
+owner_artifacts_router.register(r'users', UserViewSet, base_name='users')
+owner_artifacts_router.register(r'invoices', InvoiceViewSet, base_name='invoices')
+owner_artifacts_router.register(r'repos', RepositoryViewSet, base_name='repos')
 
 account_details_router = RetrieveUpdateDestroyRouter()
 account_details_router.register(
     r"account-details", AccountDetailsViewSet, basename="account_details"
 )
-
-# TODO(pierce): roll this into owner_artifacts_router
-repository_router = DefaultRouter()
-repository_router.register(r"repos", RepositoryViewSet, basename="repos")
 
 repository_artifacts_router = DefaultRouter()
 repository_artifacts_router.register(r"pulls", PullViewSet, basename="pulls")
@@ -54,17 +51,13 @@ compare_router = RetrieveUpdateDestroyRouter()
 compare_router.register(r"compare", CompareViewSet, basename="compare")
 
 urlpatterns = [
-    path("profile", ProfileView.as_view()),
-    path("", include(plans_router.urls)),
-    path("<str:service>/", include(owners_router.urls)),
-    path("<str:service>/<str:owner_username>/", include(owner_artifacts_router.urls)),
-    path("<str:service>/<str:owner_username>/", include(account_details_router.urls)),
-    path("<str:service>/<str:orgName>/", include(repository_router.urls)),
-    path(
-        "<str:service>/<str:orgName>/<str:repoName>/",
-        include(repository_artifacts_router.urls),
-    ),
-    path("<str:service>/<str:orgName>/<str:repoName>/", include(compare_router.urls)),
+    path('profile', ProfileView.as_view()),
+    path('', include(plans_router.urls)),
+    path('<str:service>/', include(owners_router.urls)),
+    path('<str:service>/<str:owner_username>/', include(owner_artifacts_router.urls)),
+    path('<str:service>/<str:owner_username>/', include(account_details_router.urls)),
+    path('<str:service>/<str:owner_username>/<str:repo_name>/', include(repository_artifacts_router.urls)),
+    path('<str:service>/<str:owner_username>/<str:repo_name>/', include(compare_router.urls))
 ]
 
 urlpatterns.append(path("charts/", include("internal_api.chart.urls")))

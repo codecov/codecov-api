@@ -15,7 +15,7 @@ from core.models import Repository
 class RepositoryViewSetTestSuite(InternalAPITest):
     def _list(self, kwargs={}, query_params={}):
         if kwargs == {}:
-            kwargs={"service": self.org.service, "orgName": self.org.username}
+            kwargs={"service": self.org.service, "owner_username": self.org.username}
 
         return self.client.get(
             reverse('repos-list', kwargs=kwargs),
@@ -24,12 +24,12 @@ class RepositoryViewSetTestSuite(InternalAPITest):
 
     def _retrieve(self, kwargs={}, data={}):
         if kwargs == {}:
-            kwargs={"service": self.org.service, "orgName": self.org.username, "repoName": self.repo.name}
+            kwargs={"service": self.org.service, "owner_username": self.org.username, "repo_name": self.repo.name}
         return self.client.get(reverse('repos-detail', kwargs=kwargs), data=data)
 
     def _update(self, kwargs={}, data={}):
         if kwargs == {}:
-            kwargs={"service": self.org.service, "orgName": self.org.username, "repoName": self.repo.name}
+            kwargs={"service": self.org.service, "owner_username": self.org.username, "repo_name": self.repo.name}
         return self.client.patch(
             reverse('repos-detail', kwargs=kwargs),
             data=data,
@@ -38,17 +38,17 @@ class RepositoryViewSetTestSuite(InternalAPITest):
 
     def _destroy(self, kwargs={}):
         if kwargs == {}:
-            kwargs={"service": self.org.service, "orgName": self.org.username, "repoName": self.repo.name}
+            kwargs={"service": self.org.service, "owner_username": self.org.username, "repo_name": self.repo.name}
         return self.client.delete(reverse('repos-detail', kwargs=kwargs))
 
     def _regenerate_upload_token(self, kwargs={}):
         if kwargs == {}:
-            kwargs={"service": self.org.service, "orgName": self.org.username, "repoName": self.repo.name}
+            kwargs={"service": self.org.service, "owner_username": self.org.username, "repo_name": self.repo.name}
         return self.client.patch(reverse('repos-regenerate-upload-token', kwargs=kwargs))
 
     def _erase(self, kwargs={}):
         if kwargs == {}:
-            kwargs={"service": self.org.service, "orgName": self.org.username, "repoName": self.repo.name}
+            kwargs={"service": self.org.service, "owner_username": self.org.username, "repo_name": self.repo.name}
         return self.client.patch(reverse('repos-erase', kwargs=kwargs))
 
     def _encode(self, kwargs, data):
@@ -56,7 +56,7 @@ class RepositoryViewSetTestSuite(InternalAPITest):
 
     def _reset_webhook(self, kwargs={}):
         if kwargs == {}:
-            kwargs={"service": self.org.service, "orgName": self.org.username, "repoName": self.repo.name}
+            kwargs={"service": self.org.service, "owner_username": self.org.username, "repo_name": self.repo.name}
         return self.client.put(reverse('repos-reset-webhook', kwargs=kwargs))
 
 
@@ -274,7 +274,7 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
     def test_returns_private_repos_if_user_owns_repo(self):
         new_repo = RepositoryFactory(author=self.user, name='C')
 
-        response = self._list({"service": self.user.service, "orgName": self.user.username})
+        response = self._list({"service": self.user.service, "owner_username": self.user.username})
 
         assert response.status_code == 200
         assert new_repo.name in [repo["name"] for repo in response.data['results']]
@@ -322,6 +322,15 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         response = self._retrieve()
         assert response.status_code == 403
 
+    def test_retrieve_for_inactive_user_returns_403(self, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, True
+        self.org.plan = "users-inappy"
+        self.org.save()
+
+        response = self._retrieve()
+        assert response.status_code == 403
+        assert response.data["detail"] == "User not activated"
+
     def test_retrieve_without_edit_permissions_returns_detail_view_without_upload_token(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, False
         response = self._retrieve()
@@ -345,6 +354,17 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         assert response.status_code == 403
         assert Repository.objects.filter(name="repo1").exists()
 
+    def test_destroy_repo_as_inactive_user_returns_403(self, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, True
+        self.org.admins = [self.user.ownerid]
+        self.org.plan = "users-inappy"
+        self.org.save()
+
+        response = self._destroy()
+        assert response.status_code == 403
+        assert response.data["detail"] == "User not activated"
+        assert Repository.objects.filter(name="repo1").exists()
+
     def test_regenerate_upload_token_with_permissions_succeeds(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, True
         old_upload_token = self.repo.upload_token
@@ -360,6 +380,16 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         mocked_get_permissions.return_value = False, False
         response = self._regenerate_upload_token()
         self.assertEqual(response.status_code, 403)
+
+    def test_regenerate_upload_token_as_inactive_user_returns_403(self, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, True
+        self.org.plan = "users-inappy"
+        self.org.save()
+
+        response = self._regenerate_upload_token()
+
+        assert response.status_code == 403
+        assert response.data["detail"] == "User not activated"
 
     def test_update_default_branch_with_permissions_succeeds(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, True
@@ -425,6 +455,17 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         response = self._erase()
         assert response.status_code == 403
 
+    def test_erase_as_inactive_user_returns_403(self, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, True
+        self.org.plan = "users-inappy"
+        self.org.admins = [self.user.ownerid]
+        self.org.save()
+
+        response = self._erase()
+
+        assert response.status_code == 403
+        assert response.data["detail"] == "User not activated"
+
     def test_retrieve_returns_yaml(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, False
 
@@ -459,7 +500,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
 
         to_encode = {'value': "hjrok"}
         response = self._encode(
-            kwargs={"service": self.org.service, "orgName": self.org.username, "repoName": self.repo.name},
+            kwargs={"service": self.org.service, "owner_username": self.org.username, "repo_name": self.repo.name},
             data=to_encode
         )
 
@@ -473,7 +514,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
 
         to_encode = {'value': "hjrok"}
         response = self._encode(
-            kwargs={"service": self.org.service, 'orgName': self.org.username, 'repoName': self.repo.name},
+            kwargs={"service": self.org.service, 'owner_username': self.org.username, 'repo_name': self.repo.name},
             data=to_encode
         )
 
@@ -698,7 +739,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         mocked_get_repo_details.return_value = None
         mocked_fetch_and_create.return_value = self.repo
 
-        response = self._retrieve(kwargs={"service": self.org.service, "orgName": self.org.username, "repoName": self.repo.name})
+        response = self._retrieve(kwargs={"service": self.org.service, "owner_username": self.org.username, "repo_name": self.repo.name})
         mocked_fetch_and_create.assert_called()
         mocked_fetch_and_create.assert_called()
         self.assertEqual(response.status_code, 200)
@@ -710,7 +751,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         mocked_get_repo_details.return_value = None
         mocked_fetch_and_create.side_effect = TorngitClientError(code=403, response=None, message="Forbidden")
 
-        response = self._retrieve(kwargs={"service": self.org.service, "orgName": self.org.username, "repoName": "new-repo"})
+        response = self._retrieve(kwargs={"service": self.org.service, "owner_username": self.org.username, "repo_name": "new-repo"})
         mocked_fetch_and_create.assert_called()
         mocked_fetch_and_create.assert_called()
         self.assertEqual(response.status_code, 403)
