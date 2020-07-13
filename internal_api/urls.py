@@ -7,13 +7,14 @@ from internal_api.owner.views import (
     UserViewSet,
     InvoiceViewSet,
     AccountDetailsViewSet,
-    PlanViewSet
+    PlanViewSet,
 )
 from internal_api.pull.views import PullViewSet
 from internal_api.commit.views import CommitsViewSet
 from internal_api.branch.views import BranchViewSet
 from internal_api.repo.views import RepositoryViewSet
 from internal_api.compare.views import CompareViewSet
+
 
 from rest_framework.routers import DefaultRouter
 from rest_framework.exceptions import server_error
@@ -26,29 +27,28 @@ urls.handler404 = not_found
 urls.handler500 = server_error
 
 plans_router = DefaultRouter()
-plans_router.register(r'plans', PlanViewSet, base_name='plans')
+plans_router.register(r"plans", PlanViewSet, basename="plans")
 
 owners_router = DefaultRouter()
-owners_router.register(r'owners', OwnerViewSet, base_name='owners')
+owners_router.register(r"owners", OwnerViewSet, basename="owners")
 
 owner_artifacts_router = DefaultRouter()
 owner_artifacts_router.register(r'users', UserViewSet, base_name='users')
 owner_artifacts_router.register(r'invoices', InvoiceViewSet, base_name='invoices')
+owner_artifacts_router.register(r'repos', RepositoryViewSet, base_name='repos')
 
 account_details_router = RetrieveUpdateDestroyRouter()
-account_details_router.register(r'account-details', AccountDetailsViewSet, base_name='account_details')
-
-# TODO(pierce): roll this into owner_artifacts_router
-repository_router = DefaultRouter()
-repository_router.register(r'repos', RepositoryViewSet, base_name='repos')
+account_details_router.register(
+    r"account-details", AccountDetailsViewSet, basename="account_details"
+)
 
 repository_artifacts_router = DefaultRouter()
-repository_artifacts_router.register(r'pulls', PullViewSet, base_name='pulls')
-repository_artifacts_router.register(r'commits', CommitsViewSet, base_name='commits')
-repository_artifacts_router.register(r'branches', BranchViewSet, base_name='branches')
+repository_artifacts_router.register(r"pulls", PullViewSet, basename="pulls")
+repository_artifacts_router.register(r"commits", CommitsViewSet, basename="commits")
+repository_artifacts_router.register(r"branches", BranchViewSet, basename="branches")
 
 compare_router = RetrieveUpdateDestroyRouter()
-compare_router.register(r'compare', CompareViewSet, base_name='compare')
+compare_router.register(r"compare", CompareViewSet, basename="compare")
 
 urlpatterns = [
     path('profile', ProfileView.as_view()),
@@ -56,7 +56,8 @@ urlpatterns = [
     path('<str:service>/', include(owners_router.urls)),
     path('<str:service>/<str:owner_username>/', include(owner_artifacts_router.urls)),
     path('<str:service>/<str:owner_username>/', include(account_details_router.urls)),
-    path('<str:service>/<str:orgName>/', include(repository_router.urls)),
-    path('<str:service>/<str:orgName>/<str:repoName>/', include(repository_artifacts_router.urls)),
-    path('<str:service>/<str:orgName>/<str:repoName>/', include(compare_router.urls))
+    path('<str:service>/<str:owner_username>/<str:repo_name>/', include(repository_artifacts_router.urls)),
+    path('<str:service>/<str:owner_username>/<str:repo_name>/', include(compare_router.urls))
 ]
+
+urlpatterns.append(path("charts/", include("internal_api.chart.urls")))

@@ -134,8 +134,8 @@ class TestCompareCommitsView(InternalAPITest):
         response = self._get_commits_comparison(
             kwargs={
                 "service": self.repo.author.service,
-                "orgName": self.repo.author.username,
-                "repoName": self.repo.name
+                "owner_username": self.repo.author.username,
+                "repo_name": self.repo.name
             },
             query_params={
                 "base": self.commit_base.commitid,
@@ -153,8 +153,8 @@ class TestCompareCommitsView(InternalAPITest):
         response = self._get_commits_comparison(
             kwargs={
                 "service": self.repo.author.service,
-                "orgName": self.repo.author.username,
-                "repoName": self.repo.name
+                "owner_username": self.repo.author.username,
+                "repo_name": self.repo.name
             },
             query_params={
                 "base": branch_base.name,
@@ -172,8 +172,8 @@ class TestCompareCommitsView(InternalAPITest):
         response = self._get_commits_comparison(
             kwargs={
                 "service": self.repo.author.service,
-                "orgName": self.repo.author.username,
-                "repoName": self.repo.name
+                "owner_username": self.repo.author.username,
+                "repo_name": self.repo.name
             },
             query_params={
                 "base": branch_base.name,
@@ -195,8 +195,8 @@ class TestCompareCommitsView(InternalAPITest):
         response = self._get_commits_comparison(
             kwargs={
                 "service": self.repo.author.service,
-                "orgName": self.repo.author.username,
-                "repoName": self.repo.name
+                "owner_username": self.repo.author.username,
+                "repo_name": self.repo.name
             },
             query_params={
                 "base": self.commit_base.commitid,
@@ -226,8 +226,8 @@ class TestCompareCommitsView(InternalAPITest):
         response = self._get_commits_comparison(
             kwargs={
                 "service": self.repo.author.service,
-                "orgName": self.repo.author.username,
-                "repoName": self.repo.name
+                "owner_username": self.repo.author.username,
+                "repo_name": self.repo.name
             },
             query_params={
                 "pullid": pull.pullid

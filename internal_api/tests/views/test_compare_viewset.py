@@ -132,7 +132,7 @@ class TestCompareViewSetRetrieve(APITestCase):
         self.org = OwnerFactory()
         self.repo = RepositoryFactory(author=self.org)
         self.base, self.head = CommitFactory(repository=self.repo), CommitFactory(repository=self.repo)
-        self.user = OwnerFactory(service=self.org.service, permission=[self.repo.repoid])
+        self.user = OwnerFactory(service=self.org.service, permission=[self.repo.repoid], organizations=[self.org.ownerid])
         self.client.force_login(user=self.user)
 
         self.expected_files = [
@@ -191,8 +191,8 @@ class TestCompareViewSetRetrieve(APITestCase):
         if kwargs == {}:
             kwargs = {
                 "service": self.org.service,
-                "orgName": self.org.username,
-                "repoName": self.repo.name
+                "owner_username": self.org.username,
+                "repo_name": self.repo.name
             }
         if query_params == {}:
             query_params = {
@@ -210,8 +210,8 @@ class TestCompareViewSetRetrieve(APITestCase):
         if kwargs == {}:
             kwargs = {
                 "service": self.org.service,
-                "orgName": self.org.username,
-                "repoName": self.repo.name,
+                "owner_username": self.org.username,
+                "repo_name": self.repo.name,
                 "file_path": file_name or self.file_name
             }
         if query_params == {}:
@@ -425,3 +425,15 @@ class TestCompareViewSetRetrieve(APITestCase):
         response = self._get_comparison()
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_returns_403_if_user_inactive(
+        self,
+        adapter_mock,
+        base_report_mock,
+        head_report_mock
+    ):
+        self.org.plan = "users-inappy"
+        self.org.save()
+
+        response = self._get_comparison()
+        assert response.status_code == 403

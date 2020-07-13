@@ -23,3 +23,5 @@ environs==7.2.0
 sentry-sdk==0.14.3
 stripe==2.47.0
 setproctitle==1.1.10
+django-dynamic-fixture==3.1.0
+cerberus==1.3.2
