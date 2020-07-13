@@ -25,7 +25,7 @@ def validate_params(data):
 
     params_schema = {
         "organization": {"type": "string", "required": True},
-        "repositories": {"type": "list", "required": True},
+        "repositories": {"type": "list"},
         "branch": {"type": "string"},
         "start_date": {"type": "string"},
         "end_date": {"type": "string"},
@@ -90,14 +90,14 @@ def apply_grouping(queryset, data):
     """
     grouping_unit = data.get("grouping_unit")
     agg_function = data.get("agg_function")
-    agg_value = data.get("agg_value")
+    agg_value = data.get("agg_value", "coverage")
 
     # Truncate the commit's timestamp so we can group it in the appropriate time unit.
     # For example, if we're grouping by quarter, commits in Jan/Feb/March 2020 will all share the same truncated_date
     queryset = queryset.annotate(truncated_date=Trunc("timestamp", grouping_unit))
     ordering = "" if agg_function == "min" else "-"
     return queryset.order_by(
-        "truncated_date", "repository__name", f"{ordering}{agg_value}"
+        "-truncated_date", "repository__name", f"{ordering}{agg_value}"
     ).distinct(
         "truncated_date", "repository__name"
     )  # this will select the first row for a given date/repo combo, which since we've just ordered the commits
@@ -126,7 +126,7 @@ def aggregate_across_repositories(grouped_queryset):
         total_partials = sum([commit.partials for commit in commits])
         total_misses = sum([commit.misses for commit in commits])
 
-        weighted_coverage = (total_hits + total_partials) / total_lines
+        weighted_coverage = (total_hits + total_partials) / total_lines * 100
 
         result.append(
             {
