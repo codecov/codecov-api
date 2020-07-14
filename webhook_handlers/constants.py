@@ -89,4 +89,5 @@ class StripeWebhookEvents:
         "customer.created",
         "customer.subscription.created",
         "customer.subscription.updated",
+        "checkout.session.completed",
     )
