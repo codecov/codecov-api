@@ -96,7 +96,11 @@ class FileComparisonTraverseManager:
             self.base_ln, self.head_ln = 1, 1
 
     def traverse_finished(self):
-        return self.head_ln >= self.head_file_eof and not self.traversing_diff()
+        if self.segments:
+            return False
+        if self.src:
+            return self.head_ln > len(self.src)
+        return self.head_ln >= self.head_file_eof and self.base_ln >= self.base_file_eof
 
     def traversing_diff(self):
         if self.segments == []:

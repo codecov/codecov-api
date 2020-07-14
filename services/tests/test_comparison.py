@@ -193,6 +193,25 @@ class FileComparisonTraverseManagerTests(TestCase):
         # No indexerror should occur
         manager.apply([lambda a, b, c, d: None])
 
+    def test_can_traverse_diff_with_line_numbers_greater_than_file_eof(self):
+        # This can happen when we have a file ending in a large multi-line
+        # expression, and a diff is made somewhere within that expression,
+        # but the start of the diff occurs after the start of the expression.
+        # The previous implementation of "traverse_finished" would end the traverse
+        # on account of not "traversing_diff", and having the line indices be
+        # greater than the respective files' EOF. The fix for this bug is stronger
+        # than that of the above comment and should handle both cases.
+        segments = [{"header": ["3", "4", "3", "4"], "lines": ["-Pro Team (billed monthly)", "+Pro Team"]}]
+        manager = FileComparisonTraverseManager(
+            head_file_eof=2,
+            base_file_eof=2,
+            segments=segments
+        )
+
+        visitor = LineNumberCollector()
+        manager.apply([visitor])
+        assert visitor.line_numbers == [(1, 1), (2, 2), (3, None), (None, 3)]
+
 
 class CreateLineComparisonVisitorTests(TestCase):
     def setUp(self):
