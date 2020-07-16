@@ -24,10 +24,15 @@ def validate_params(data):
     - end_date: indicates only commits before this date should be included
     - grouping_unit: indicates how to group the commits. if this is 'commit' we'll just return ungrouped commits, if this is a unit of time
     (day, month, year) we'll group the commits by that time unit when applying aggregation.
-    - agg_function: indicates how to aggregate the commits. example: if this is 'max', we'll retrieve the commit within a time window with the
-    highest value of whatever 'agg_value' is.
+    - agg_function: indicates how to aggregate the commits over . example: if this is 'max', we'll retrieve the commit within a time window with the
+    highest value of whatever 'agg_value' is. *(See below for more explanation on this field)
     - agg_value: indicates which value we should perform aggregation/grouping on. example: if this is 'coverage', the aggregation function
-    (min, max, etc.) will be applied to commit coverage.
+    (min, max, etc.) will be applied to commit coverage. *(See below for more explanation on this field.)
+
+    Aggregation fields - when grouping by a unit of time, we need to know which commit to retrieve over that unit of time - e.g. the latest commit
+    in a given month, or the commit with the highest coverage, etc. The `agg_function` and `agg_value` parameters are used to determine this.
+    Examples: { "grouping_unit": "month", "agg_function": "min", "agg_value": "coverage" } --> get the commit with the highest coverage in a given month
+    Examples: { "grouping_unit": "week", "agg_function": "max", "agg_value": "timestmap" } --> get the most recent commit in a given week
     """
 
     params_schema = {
