@@ -4,6 +4,13 @@ from django.db.models import FloatField, Case, When, Value
 from rest_framework.exceptions import ValidationError
 from cerberus import Validator
 
+class ChartParamValidator(Validator):
+    # Custom validation rule to require "agg_value" and "agg_function" fields only when not grouping by commit.
+    # When grouping by commit, we return commits directly without applying any aggregation, so those fields aren't needed.
+    def _validate_check_aggregation_fields(self, check_aggregation_fields, field, value):
+        agg_fields_present = self.document.get("agg_value") and self.document.get("agg_function")
+        if check_aggregation_fields and value != "commit" and not agg_fields_present:
+                self._error(field, "Must provide a value for agg_value and agg_function fields if not grouping by commit")
 
 def validate_params(data):
     """
@@ -24,7 +31,8 @@ def validate_params(data):
     """
 
     params_schema = {
-        "organization": {"type": "string", "required": True},
+        "owner_username": {"type": "string", "required": True},
+        "service": {"type": "string", "required": False},
         "repositories": {"type": "list"},
         "branch": {"type": "string"},
         "start_date": {"type": "string"},
@@ -32,6 +40,7 @@ def validate_params(data):
         "grouping_unit": {
             "type": "string",
             "required": True,
+            "check_aggregation_fields": True,
             "allowed": [
                 "commit",
                 "hour",
@@ -42,10 +51,10 @@ def validate_params(data):
                 "year",
             ],  # must be one of the values accepted by Django's Trunc function; for more info see https://docs.djangoproject.com/en/3.0/ref/models/database-functions/#trunc
         },
-        "agg_function": {"type": "string", "allowed": ["min", "max"]},
+        "agg_function": {"type": "string", "allowed": ["min", "max"],},
         "agg_value": {"type": "string", "allowed": ["timestamp", "coverage"]},
     }
-    v = Validator(params_schema)
+    v = ChartParamValidator(params_schema)
     if not v.validate(data):
         raise ValidationError(v.errors)
 

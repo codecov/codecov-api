@@ -6,6 +6,7 @@ from random import randint
 from math import isclose
 from factory.faker import faker
 from unittest.mock import patch
+from rest_framework.reverse import reverse
 
 from core.tests.factories import RepositoryFactory, OwnerFactory
 from codecov.tests.base_test import InternalAPITest
@@ -154,18 +155,68 @@ class CoverageChartHelpersTest(TestCase):
         self.repo1_org2 = RepositoryFactory(author=self.org2, name="repo1")
         setup_commits(self.repo1_org2, 10)
 
-    def test_validate_params(self):
+        self.user = OwnerFactory(
+            username="codecov-user", service="github", organizations=[self.org1.ownerid], permission=[self.repo1_org1.repoid, self.repo2_org1.repoid, self.repo1_org2.repoid]
+        )
+
+    def test_validate_params_invalid(self):
         data = {
-            "organization": self.org1.username,
             "agg_function": "potato",
-            "agg_value": "potato",
             "grouping_unit": "potato",
             "repositories": [],
+            "field_not_in_schema": True
         }
 
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValidationError) as err:
             validate_params(data)
+        
+        # Check that only the expected validation errors occurred
+        validation_errors = err.exception.detail
+        assert len(validation_errors) == 4
+        assert "owner_username" in validation_errors # required field missing
+        assert "grouping_unit" in validation_errors # value not allowed
+        assert "agg_function" in validation_errors # value not allowed
+        assert "field_not_in_schema" in validation_errors # only fields in the schema are allowed in params
 
+    def test_validate_params_valid(self):
+        data = {
+            "owner_username": self.org1.username,
+            "agg_function": "max",
+            "agg_value": "coverage",
+            "grouping_unit": "month",
+        }
+
+        validate_params(data)
+
+    def test_validate_params_agg_fields(self):
+        data_aggregated = {
+            "owner_username": self.org1.username,
+            "grouping_unit": "day",          
+            "agg_function": "min",
+            "agg_value": "timestamp",
+        }
+        validate_params(data_aggregated)
+
+        # Check that aggregation parameters are not required when grouping by commit
+        data_grouped_by_commit = {
+            "owner_username": self.org1.username,
+            "grouping_unit": "commit",          
+        }
+        validate_params(data_grouped_by_commit)
+
+        # Check that aggregation parameters are required when grouping by commit
+        data_aggregated_missing_agg_fields = {
+            "owner_username": self.org1.username,
+            "grouping_unit": "month",     
+        }
+        with self.assertRaises(ValidationError) as err:
+            validate_params(data_aggregated_missing_agg_fields)
+        
+        validation_errors = err.exception.detail
+        assert len(validation_errors) == 1
+        assert "grouping_unit" in validation_errors
+
+    
     def test_apply_default_filters(self):
         setup_commits(self.repo1_org1, 10, meets_default_filters=False)
 
@@ -183,21 +234,38 @@ class CoverageChartHelpersTest(TestCase):
         setup_commits(self.repo1_org1, 2, branch="production", start_date="-7d")
 
         data = {
-            "organization": self.org1.username,
+            "owner_username": self.org1.username,
             "branch": "master",
             "start_date": datetime.now(tz=UTC) - relativedelta(days=7),
             "end_date": datetime.now(tz=UTC),
             "repositories": [self.repo1_org1.name, self.repo2_org1.name],
         }
-        queryset = apply_simple_filters(Commit.objects.all(), data)
+        queryset = apply_simple_filters(Commit.objects.all(), data, self.user)
 
         assert queryset.count() > 0
         for commit in queryset:
             assert commit.repository.name in data.get("repositories")
-            assert commit.repository.author.username == data["organization"]
+            assert commit.repository.author.username == data["owner_username"]
             assert commit.branch == data["branch"]
             assert commit.timestamp >= data["start_date"]
             assert commit.timestamp <= data["end_date"]
+
+    def test_apply_simple_filters_repo_filtering(self):
+        """
+            This test verifies that when no "repository" parameters are returned, we only return all repositories
+            in the organization that the logged-in user has permissions to view.
+        """
+        no_permissions_repo = RepositoryFactory(author=self.org1, name="no_permissions_to_this_repo", private=True)
+        setup_commits(no_permissions_repo, 10)
+
+        data = {
+            "owner_username": self.org1.username,
+        }
+
+        queryset = apply_simple_filters(Commit.objects.all(), data, self.user)
+        assert queryset.count() > 0
+        for commit in queryset:
+            assert commit.repository.name != no_permissions_repo
 
     def test_annotate_commits_with_totals(self):
         G(Commit, totals={"n": 0, "h": 0, "p": 0, "m": 0, "c": 0, "C": 0, "N": 0})
@@ -222,7 +290,7 @@ class CoverageChartHelpersTest(TestCase):
             setup_commits(self.repo1_org1, 20, start_date="-7d")
 
             data = {
-                "organization": self.org1.username,
+                "owner_username": self.org1.username,
                 "grouping_unit": "day",
                 "agg_function": "min",
                 "agg_value": "coverage",
@@ -232,7 +300,7 @@ class CoverageChartHelpersTest(TestCase):
             }
 
             initial_queryset = annotate_commits_with_totals(
-                apply_simple_filters(apply_default_filters(Commit.objects.all()), data)
+                apply_simple_filters(apply_default_filters(Commit.objects.all()), data, self.user)
             )
             grouped_queryset = apply_grouping(initial_queryset, data)
             check_grouping_correctness(grouped_queryset, initial_queryset, data)
@@ -241,7 +309,7 @@ class CoverageChartHelpersTest(TestCase):
             setup_commits(self.repo1_org1, 20, start_date="-180d")
 
             data = {
-                "organization": self.org1.username,
+                "owner_username": self.org1.username,
                 "grouping_unit": "month",
                 "agg_function": "max",
                 "agg_value": "coverage",
@@ -251,7 +319,7 @@ class CoverageChartHelpersTest(TestCase):
             }
 
             initial_queryset = annotate_commits_with_totals(
-                apply_simple_filters(apply_default_filters(Commit.objects.all()), data)
+                apply_simple_filters(apply_default_filters(Commit.objects.all()), data, self.user)
             )
             grouped_queryset = apply_grouping(initial_queryset, data)
             check_grouping_correctness(grouped_queryset, initial_queryset, data)
@@ -260,7 +328,7 @@ class CoverageChartHelpersTest(TestCase):
             setup_commits(self.repo1_org1, 20, start_date="-7d")
 
             data = {
-                "organization": self.org1.username,
+                "owner_username": self.org1.username,
                 "grouping_unit": "day",
                 "agg_function": "max",
                 "agg_value": "complexity",
@@ -270,7 +338,7 @@ class CoverageChartHelpersTest(TestCase):
             }
 
             initial_queryset = annotate_commits_with_totals(
-                apply_simple_filters(apply_default_filters(Commit.objects.all()), data)
+                apply_simple_filters(apply_default_filters(Commit.objects.all()), data, self.user)
             )
             grouped_queryset = apply_grouping(initial_queryset, data)
             check_grouping_correctness(grouped_queryset, initial_queryset, data)
@@ -279,7 +347,7 @@ class CoverageChartHelpersTest(TestCase):
             setup_commits(self.repo1_org1, 20, start_date="-7d")
 
             data = {
-                "organization": self.org1.username,
+                "owner_username": self.org1.username,
                 "grouping_unit": "day",
                 "agg_function": "max",
                 "agg_value": "complexity",
@@ -289,7 +357,7 @@ class CoverageChartHelpersTest(TestCase):
             }
 
             initial_queryset = annotate_commits_with_totals(
-                apply_simple_filters(apply_default_filters(Commit.objects.all()), data)
+                apply_simple_filters(apply_default_filters(Commit.objects.all()), data, self.user)
             )
             grouped_queryset = apply_grouping(initial_queryset, data)
             check_grouping_correctness(grouped_queryset, initial_queryset, data)
@@ -299,7 +367,7 @@ class CoverageChartHelpersTest(TestCase):
             setup_commits(self.repo2_org1, 20, start_date="-365d")
 
             data = {
-                "organization": self.org1.username,
+                "owner_username": self.org1.username,
                 "grouping_unit": "quarter",
                 "agg_function": "max",
                 "agg_value": "timestamp",
@@ -309,7 +377,7 @@ class CoverageChartHelpersTest(TestCase):
             }
 
             initial_queryset = annotate_commits_with_totals(
-                apply_simple_filters(apply_default_filters(Commit.objects.all()), data)
+                apply_simple_filters(apply_default_filters(Commit.objects.all()), data, self.user)
             )
             grouped_queryset = apply_grouping(initial_queryset, data)
             check_grouping_correctness(grouped_queryset, initial_queryset, data)
@@ -320,6 +388,9 @@ class CoverageChartHelpersTest(TestCase):
         repo2_org2 = RepositoryFactory(author=self.org2)
         repo3_org2 = RepositoryFactory(author=self.org2)
         repo4_org2 = RepositoryFactory(author=self.org2)
+        user2 = OwnerFactory(
+            username="another-codecov-user", service="github", organizations=[self.org2.ownerid], permission=[repo2_org2.repoid, repo3_org2.repoid, repo4_org2.repoid]
+        )
 
         setup_commits(
             repo2_org2,
@@ -337,7 +408,7 @@ class CoverageChartHelpersTest(TestCase):
         )
 
         data = {
-            "organization": self.org2.username,
+            "owner_username": self.org2.username,
             "grouping_unit": "day",
             "agg_function": "max",
             "agg_value": "timestamp",
@@ -347,7 +418,7 @@ class CoverageChartHelpersTest(TestCase):
 
         grouped_queryset = apply_grouping(
             annotate_commits_with_totals(
-                apply_simple_filters(apply_default_filters(Commit.objects.all()), data)
+                apply_simple_filters(apply_default_filters(Commit.objects.all()), data, user2)
             ),
             data,
         )
@@ -360,11 +431,11 @@ class CoverageChartHelpersTest(TestCase):
         assert result[0]["date"].date() == date.today()
 
 
-@patch("internal_api.repo.repository_accessors.RepoAccessors.get_repo_permissions")
+@patch("internal_api.permissions.RepositoryPermissionsService.has_read_permissions")
 class RepositoryCoverageChartTest(InternalAPITest):
-    def _retrieve(self, data={}):
+    def _retrieve(self, kwargs={}, data={}):
         return self.client.post(
-            "/internal/charts/coverage/repository",
+            reverse("chart-coverage-repository", kwargs=kwargs),
             data=data,
             content_type="application/json",
         )
@@ -375,13 +446,12 @@ class RepositoryCoverageChartTest(InternalAPITest):
         setup_commits(self.repo1_org1, 10, start_date="-4d")
 
         self.user = OwnerFactory(
-            username="codecov-user", service="github", organizations=[self.org1.ownerid]
+            username="codecov-user", service="github", organizations=[self.org1.ownerid], permission=[self.repo1_org1.repoid]
         )
         self.client.force_login(user=self.user)
 
     def test_no_permissions(self, mocked_get_permissions):
         data = {
-            "organization": self.org1.username,
             "branch": "master",
             "start_date": datetime.now(tz=UTC) - timedelta(7),
             "end_date": datetime.now(tz=UTC),
@@ -389,15 +459,19 @@ class RepositoryCoverageChartTest(InternalAPITest):
             "repositories": [self.repo1_org1.name],
         }
 
-        mocked_get_permissions.return_value = False, False
-        response = self._retrieve(data=data)
+        kwargs = {
+            "owner_username": self.org1.username,
+            "service": "gh"
+        }
+
+        mocked_get_permissions.return_value = False
+        response = self._retrieve(kwargs=kwargs, data=data)
 
         assert response.status_code == 403
 
     # when "grouping_unit" is commit we just return all the commits with no grouping/aggregation
     def test_get_commits_no_time_grouping(self, mocked_get_permissions):
         data = {
-            "organization": self.org1.username,
             "branch": "master",
             "start_date": datetime.now(tz=UTC) - timedelta(7),
             "end_date": datetime.now(tz=UTC),
@@ -405,17 +479,20 @@ class RepositoryCoverageChartTest(InternalAPITest):
             "repositories": [self.repo1_org1.name],
         }
 
-        mocked_get_permissions.return_value = True, True
-        response = self._retrieve(data=data)
+        kwargs = {
+            "owner_username": self.org1.username,
+            "service": "gh"
+        }
 
-        print("!!!Response: " + str(response.data))
+        mocked_get_permissions.return_value = True
+        response = self._retrieve(kwargs=kwargs, data=data)
+
         assert response.status_code == 200
         assert len(response.data["coverage"]) == 10
         assert len(response.data["complexity"]) == 10
 
     def test_get_commits_with_time_grouping(self, mocked_get_permissions):
         data = {
-            "organization": self.org1.username,
             "branch": "master",
             "start_date": datetime.now(tz=UTC) - timedelta(7),
             "end_date": datetime.now(tz=UTC),
@@ -425,19 +502,24 @@ class RepositoryCoverageChartTest(InternalAPITest):
             "repositories": [self.repo1_org1.name],
         }
 
-        mocked_get_permissions.return_value = True, True
-        response = self._retrieve(data=data)
+        kwargs = {
+            "owner_username": self.org1.username,
+            "service": "gh"
+        }
+
+        mocked_get_permissions.return_value = True
+        response = self._retrieve(kwargs=kwargs, data=data)
 
         assert response.status_code == 200
         assert len(response.data["coverage"]) > 0
         assert len(response.data["complexity"]) > 0
 
 
-@patch("internal_api.repo.repository_accessors.RepoAccessors.get_repo_permissions")
+@patch("internal_api.permissions.RepositoryPermissionsService.has_read_permissions")
 class OrganizationCoverageChartTest(InternalAPITest):
-    def _retrieve(self, data={}):
+    def _retrieve(self, kwargs={}, data={}):
         return self.client.post(
-            "/internal/charts/coverage/organization",
+            reverse("chart-coverage-organization", kwargs=kwargs),
             data=data,
             content_type="application/json",
         )
@@ -451,13 +533,12 @@ class OrganizationCoverageChartTest(InternalAPITest):
         setup_commits(self.repo2_org1, 10, start_date="-4d")
 
         self.user = OwnerFactory(
-            username="codecov-user", service="github", organizations=[self.org1.ownerid]
+            username="codecov-user", service="github", organizations=[self.org1.ownerid], permission=[self.repo1_org1.repoid, self.repo2_org1.repoid]
         )
         self.client.force_login(user=self.user)
 
     def test_no_permissions(self, mocked_get_permissions):
         data = {
-            "organization": self.org1.username,
             "branch": "master",
             "start_date": datetime.now(tz=UTC) - timedelta(7),
             "end_date": datetime.now(tz=UTC),
@@ -467,14 +548,18 @@ class OrganizationCoverageChartTest(InternalAPITest):
             "repositories": [self.repo1_org1.name, self.repo2_org1.name],
         }
 
-        mocked_get_permissions.return_value = False, False
-        response = self._retrieve(data=data)
+        kwargs = {
+            "owner_username": self.org1.username,
+            "service": "gh"
+        }
+
+        mocked_get_permissions.return_value = False
+        response = self._retrieve(kwargs=kwargs, data=data)
 
         assert response.status_code == 403
 
     def test_get_chart(self, mocked_get_permissions):
         data = {
-            "organization": self.org1.username,
             "branch": "master",
             "start_date": datetime.now(tz=UTC) - timedelta(7),
             "end_date": datetime.now(tz=UTC),
@@ -484,8 +569,13 @@ class OrganizationCoverageChartTest(InternalAPITest):
             "repositories": [self.repo1_org1.name, self.repo2_org1.name],
         }
 
-        mocked_get_permissions.return_value = True, True
-        response = self._retrieve(data=data)
+        kwargs = {
+            "owner_username": self.org1.username,
+            "service": "gh"
+        }
+
+        mocked_get_permissions.return_value = True
+        response = self._retrieve(kwargs=kwargs, data=data)
 
         assert response.status_code == 200
         assert len(response.data["coverage"]) > 0
@@ -498,12 +588,18 @@ class OrganizationCoverageChartTest(InternalAPITest):
 
     def test_get_chart_default_params(self, mocked_get_permissions):
         data = {
-            "organization": self.org1.username,
             "grouping_unit": "day",
+            "agg_function": "min",
+            "agg_value": "timestamp",
         }
 
-        mocked_get_permissions.return_value = True, True
-        response = self._retrieve(data=data)
+        kwargs = {
+            "owner_username": self.org1.username,
+            "service": "gh"
+        }        
+
+        mocked_get_permissions.return_value = True
+        response = self._retrieve(kwargs=kwargs, data=data)
 
         assert response.status_code == 200
         assert len(response.data["coverage"]) > 0

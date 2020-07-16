@@ -33,9 +33,9 @@ owners_router = DefaultRouter()
 owners_router.register(r"owners", OwnerViewSet, basename="owners")
 
 owner_artifacts_router = DefaultRouter()
-owner_artifacts_router.register(r'users', UserViewSet, base_name='users')
-owner_artifacts_router.register(r'invoices', InvoiceViewSet, base_name='invoices')
-owner_artifacts_router.register(r'repos', RepositoryViewSet, base_name='repos')
+owner_artifacts_router.register(r'users', UserViewSet, basename='users')
+owner_artifacts_router.register(r'invoices', InvoiceViewSet, basename='invoices')
+owner_artifacts_router.register(r'repos', RepositoryViewSet, basename='repos')
 
 account_details_router = RetrieveUpdateDestroyRouter()
 account_details_router.register(

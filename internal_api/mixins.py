@@ -35,7 +35,7 @@ class RepositoriesMixin:
         """
         return Repository.objects.filter(
             name__in=self.request.data.get("repositories", []),
-            author__username=self.request.data.get("organization"),
+            author__username=self.kwargs.get("owner_username"),
         )
 
 

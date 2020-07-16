@@ -62,9 +62,10 @@ class RepositoryChartHandler(APIView, RepositoriesMixin):
     parser_classes = [JSONParser]
 
     def post(self, request, *args, **kwargs):
-        validate_params(self.request.data)
+        request_params = {**self.request.data, **self.kwargs}
+        validate_params(request_params)
         queryset = apply_simple_filters(
-            apply_default_filters(Commit.objects.all()), self.request.data
+            apply_default_filters(Commit.objects.all()), request_params, self.request.user
         )
 
         annotated_queryset = annotate_commits_with_totals(queryset)
@@ -151,10 +152,10 @@ class OrganizationChartHandler(APIView, RepositoriesMixin):
     parser_classes = [JSONParser]
 
     def post(self, request, *args, **kwargs):
-        validate_params(self.request.data)
-
+        request_params = {**self.request.data, **self.kwargs}
+        validate_params(request_params)
         queryset = apply_simple_filters(
-            apply_default_filters(Commit.objects.all()), self.request.data
+            apply_default_filters(Commit.objects.all()), request_params, self.request.user
         )
 
         annotated_commits = annotate_commits_with_totals(queryset)
