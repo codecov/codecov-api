@@ -124,6 +124,11 @@ class RepositoryViewSet(
                     )
                 )
 
+            # We have to manage this parameter dynamically as the totals are added after the filters run
+            covered = self.request.query_params.get("covered", None)
+            if covered:
+                queryset = queryset.exclude(totals__isnull=True)
+
         return queryset
 
     @torngit_safe
