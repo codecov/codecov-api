@@ -231,7 +231,7 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         CommitFactory(repository=self.repo1, totals=default_totals)
 
         response = self._list(
-            query_params={'covered': True}
+            query_params={'exclude_uncovered': True}
         )
 
         assert response.data["count"] == 1
