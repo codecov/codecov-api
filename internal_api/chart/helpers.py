@@ -4,6 +4,13 @@ from django.db.models import FloatField, Case, When, Value
 from rest_framework.exceptions import ValidationError
 from cerberus import Validator
 
+class ChartParamValidator(Validator):
+    # Custom validation rule to require "agg_value" and "agg_function" fields only when not grouping by commit.
+    # When grouping by commit, we return commits directly without applying any aggregation, so those fields aren't needed.
+    def _validate_check_aggregation_fields(self, check_aggregation_fields, field, value):
+        agg_fields_present = self.document.get("agg_value") and self.document.get("agg_function")
+        if check_aggregation_fields and value != "commit" and not agg_fields_present:
+                self._error(field, "Must provide a value for agg_value and agg_function fields if not grouping by commit")
 
 def validate_params(data):
     """
@@ -17,14 +24,20 @@ def validate_params(data):
     - end_date: indicates only commits before this date should be included
     - grouping_unit: indicates how to group the commits. if this is 'commit' we'll just return ungrouped commits, if this is a unit of time
     (day, month, year) we'll group the commits by that time unit when applying aggregation.
-    - agg_function: indicates how to aggregate the commits. example: if this is 'max', we'll retrieve the commit within a time window with the
-    highest value of whatever 'agg_value' is.
+    - agg_function: indicates how to aggregate the commits over . example: if this is 'max', we'll retrieve the commit within a time window with the
+    highest value of whatever 'agg_value' is. *(See below for more explanation on this field)
     - agg_value: indicates which value we should perform aggregation/grouping on. example: if this is 'coverage', the aggregation function
-    (min, max, etc.) will be applied to commit coverage.
+    (min, max, etc.) will be applied to commit coverage. *(See below for more explanation on this field.)
+
+    Aggregation fields - when grouping by a unit of time, we need to know which commit to retrieve over that unit of time - e.g. the latest commit
+    in a given month, or the commit with the highest coverage, etc. The `agg_function` and `agg_value` parameters are used to determine this.
+    Examples: { "grouping_unit": "month", "agg_function": "min", "agg_value": "coverage" } --> get the commit with the highest coverage in a given month
+    Examples: { "grouping_unit": "week", "agg_function": "max", "agg_value": "timestmap" } --> get the most recent commit in a given week
     """
 
     params_schema = {
-        "organization": {"type": "string", "required": True},
+        "owner_username": {"type": "string", "required": True},
+        "service": {"type": "string", "required": False},
         "repositories": {"type": "list"},
         "branch": {"type": "string"},
         "start_date": {"type": "string"},
@@ -32,6 +45,7 @@ def validate_params(data):
         "grouping_unit": {
             "type": "string",
             "required": True,
+            "check_aggregation_fields": True,
             "allowed": [
                 "commit",
                 "hour",
@@ -42,10 +56,10 @@ def validate_params(data):
                 "year",
             ],  # must be one of the values accepted by Django's Trunc function; for more info see https://docs.djangoproject.com/en/3.0/ref/models/database-functions/#trunc
         },
-        "agg_function": {"type": "string", "allowed": ["min", "max"]},
+        "agg_function": {"type": "string", "allowed": ["min", "max"],},
         "agg_value": {"type": "string", "allowed": ["timestamp", "coverage"]},
     }
-    v = Validator(params_schema)
+    v = ChartParamValidator(params_schema)
     if not v.validate(data):
         raise ValidationError(v.errors)
 
