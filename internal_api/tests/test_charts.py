@@ -338,7 +338,7 @@ class CoverageChartHelpersTest(TestCase):
             for i in range(len(results)):
                 if i < len(results) - 1:
                     assert results[i]["timestamp"] < results[i + 1]["timestamp"]
-        
+
         with self.subTest("order by decreasing dates"):
             setup_commits(self.repo1_org1, 20, start_date="-7d")
 
