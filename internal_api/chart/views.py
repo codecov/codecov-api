@@ -64,6 +64,8 @@ class RepositoryChartHandler(APIView, RepositoriesMixin):
     def post(self, request, *args, **kwargs):
         request_params = {**self.request.data, **self.kwargs}
         validate_params(request_params)
+        coverage_ordering = "" if request_params.get("coverage_timestamp_order", "increasing") == "increasing" else "-"
+
         queryset = apply_simple_filters(
             apply_default_filters(Commit.objects.all()), request_params, self.request.user
         )
@@ -79,7 +81,7 @@ class RepositoryChartHandler(APIView, RepositoriesMixin):
                     "coverage": commit.coverage,
                     "commitid": commit.commitid,
                 }
-                for commit in annotated_queryset.order_by("timestamp")[:max_num_commits]
+                for commit in annotated_queryset.order_by(f"{coverage_ordering}timestamp")[:max_num_commits]
             ]
 
             complexity = [
@@ -88,7 +90,7 @@ class RepositoryChartHandler(APIView, RepositoriesMixin):
                     "complexity_ratio": commit.complexity_ratio,
                     "commitid": commit.commitid,
                 }
-                for commit in annotated_queryset.order_by("timestamp")[:max_num_commits]
+                for commit in annotated_queryset.order_by(f"{coverage_ordering}timestamp")[:max_num_commits]
             ]
 
         else:

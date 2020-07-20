@@ -28,7 +28,7 @@ def validate_params(data):
     highest value of whatever 'agg_value' is. *(See below for more explanation on this field)
     - agg_value: indicates which value we should perform aggregation/grouping on. example: if this is 'coverage', the aggregation function
     (min, max, etc.) will be applied to commit coverage. *(See below for more explanation on this field.)
-    - coverage_timestamp_order: indicates in which order the coverage entries should be ordered by. Increasing will return the latest coverage
+    - coverage_timestamp_ordering: indicates in which order the coverage entries should be ordered by. Increasing will return the latest coverage
     at the end of the coverage array while decreasing will return the latest coverage at the beginning of the array.
 
     Aggregation fields - when grouping by a unit of time, we need to know which commit to retrieve over that unit of time - e.g. the latest commit
@@ -60,7 +60,7 @@ def validate_params(data):
         },
         "agg_function": {"type": "string", "allowed": ["min", "max"],},
         "agg_value": {"type": "string", "allowed": ["timestamp", "coverage"]},
-        "coverage_timestamp_order": {"type": "string", "allowed": ["increasing", "decreasing"]},
+        "coverage_timestamp_ordering": {"type": "string", "allowed": ["increasing", "decreasing"]},
     }
     v = ChartParamValidator(params_schema)
     if not v.validate(data):

@@ -163,6 +163,7 @@ class CoverageChartHelpersTest(TestCase):
         data = {
             "agg_function": "potato",
             "grouping_unit": "potato",
+            "coverage_timestamp_ordering": "potato",
             "repositories": [],
             "field_not_in_schema": True
         }
@@ -177,6 +178,7 @@ class CoverageChartHelpersTest(TestCase):
         assert "grouping_unit" in validation_errors # value not allowed
         assert "agg_function" in validation_errors # value not allowed
         assert "field_not_in_schema" in validation_errors # only fields in the schema are allowed in params
+        assert "coverage_timestamp_ordering" in validation_errors # value not allowed
 
     def test_validate_params_valid(self):
         data = {
@@ -184,6 +186,7 @@ class CoverageChartHelpersTest(TestCase):
             "agg_function": "max",
             "agg_value": "coverage",
             "grouping_unit": "month",
+            "coverage_timestamp_ordering": "increasing",
         }
 
         validate_params(data)
@@ -392,20 +395,20 @@ class CoverageChartHelpersTest(TestCase):
                 "organization": self.org1.username,
                 "grouping_unit": "day",
                 "agg_function": "min",
-                "coverage_timestamp_order": "increasing",
+                "coverage_timestamp_ordering": "increasing",
                 "agg_value": "coverage",
                 "repositories": [self.repo1_org1.name],
             }
 
             queryset = annotate_commits_with_totals(
-                apply_simple_filters(apply_default_filters(Commit.objects.all()), data)
+                apply_simple_filters(apply_default_filters(Commit.objects.all()), data, self.user)
             )
             queryset = apply_grouping(queryset, data)
 
             results = queryset.values()
-            for i in range(len(results)):
-                if i < len(results) - 1:
-                    assert results[i]["timestamp"] < results[i + 1]["timestamp"]
+            # -1 because the last result doesn't need to be tested against
+            for i in range(len(results) - 1):
+                assert results[i]["timestamp"] < results[i + 1]["timestamp"]
 
         with self.subTest("order by decreasing dates"):
             setup_commits(self.repo1_org1, 20, start_date="-7d")
@@ -414,20 +417,20 @@ class CoverageChartHelpersTest(TestCase):
                 "organization": self.org1.username,
                 "grouping_unit": "day",
                 "agg_function": "min",
-                "coverage_timestamp_order": "decreasing",
+                "coverage_timestamp_ordering": "decreasing",
                 "agg_value": "coverage",
                 "repositories": [self.repo1_org1.name],
             }
 
             queryset = annotate_commits_with_totals(
-                apply_simple_filters(apply_default_filters(Commit.objects.all()), data)
+                apply_simple_filters(apply_default_filters(Commit.objects.all()), data, self.user)
             )
             queryset = apply_grouping(queryset, data)
 
             results = queryset.values()
-            for i in range(len(results)):
-                if i < len(results) - 1:
-                    assert results[i]["timestamp"] > results[i + 1]["timestamp"]
+            # -1 because the last result doesn't need to be tested against
+            for i in range(len(results) - 1):
+                assert results[i]["timestamp"] > results[i + 1]["timestamp"]
 
     def test_aggregate_across_repositories(self):
         repo2_org2 = RepositoryFactory(author=self.org2)
