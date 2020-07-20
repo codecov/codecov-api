@@ -53,7 +53,7 @@ def setup_commits(
         branch="master",
         start_date=None,
         meets_default_filters=True,
-        **kwargs,
+        **kwargs
 ):
     """
     Generate random commits with different configurations, to accommodate different testing scenarios.
@@ -315,6 +315,51 @@ class CoverageChartHelpersTest(TestCase):
             check_grouping_correctness(grouped_queryset, initial_queryset, data)
 
             aggregate_across_repositories(grouped_queryset)
+
+    def test_ordering(self):
+        with self.subTest("order by increasing dates"):
+            setup_commits(self.repo1_org1, 20, start_date="-7d")
+
+            data = {
+                "organization": self.org1.username,
+                "grouping_unit": "day",
+                "agg_function": "min",
+                "coverage_timestamp_order": "increasing",
+                "agg_value": "coverage",
+                "repositories": [self.repo1_org1.name],
+            }
+
+            queryset = annotate_commits_with_totals(
+                apply_simple_filters(apply_default_filters(Commit.objects.all()), data)
+            )
+            queryset = apply_grouping(queryset, data)
+
+            results = queryset.values()
+            for i in range(len(results)):
+                if i < len(results) - 1:
+                    assert results[i]["timestamp"] < results[i + 1]["timestamp"]
+        
+        with self.subTest("order by decreasing dates"):
+            setup_commits(self.repo1_org1, 20, start_date="-7d")
+
+            data = {
+                "organization": self.org1.username,
+                "grouping_unit": "day",
+                "agg_function": "min",
+                "coverage_timestamp_order": "decreasing",
+                "agg_value": "coverage",
+                "repositories": [self.repo1_org1.name],
+            }
+
+            queryset = annotate_commits_with_totals(
+                apply_simple_filters(apply_default_filters(Commit.objects.all()), data)
+            )
+            queryset = apply_grouping(queryset, data)
+
+            results = queryset.values()
+            for i in range(len(results)):
+                if i < len(results) - 1:
+                    assert results[i]["timestamp"] > results[i + 1]["timestamp"]
 
     def test_aggregate_across_repositories(self):
         repo2_org2 = RepositoryFactory(author=self.org2)
