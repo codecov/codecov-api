@@ -212,6 +212,30 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
 
         assert response.data["results"][0]["totals"]["coverage"] == older_coverage
 
+    def test_get_repos_with_totals(self):
+        default_totals = {
+            "f": 1,
+            "n": 4,
+            "h": 4,
+            "m": 0,
+            "p": 0,
+            "c": 100.0,
+            "b": 0,
+            "d": 0,
+            "s": 1,
+            "C": 0.0,
+            "N": 0.0,
+            "diff": ""
+        }
+
+        CommitFactory(repository=self.repo1, totals=default_totals)
+
+        response = self._list(
+            query_params={'exclude_uncovered': True}
+        )
+
+        assert response.data["count"] == 1
+
     def test_get_active_repos(self):
         RepositoryFactory(author=self.org, name='C')
         response = self._list(
