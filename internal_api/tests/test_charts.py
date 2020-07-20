@@ -173,7 +173,7 @@ class CoverageChartHelpersTest(TestCase):
         
         # Check that only the expected validation errors occurred
         validation_errors = err.exception.detail
-        assert len(validation_errors) == 4
+        assert len(validation_errors) == 5
         assert "owner_username" in validation_errors # required field missing
         assert "grouping_unit" in validation_errors # value not allowed
         assert "agg_function" in validation_errors # value not allowed
