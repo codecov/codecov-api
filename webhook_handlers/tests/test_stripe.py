@@ -336,3 +336,24 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.owner.plan == plan_name
         assert self.owner.plan_user_count == quantity
         assert self.owner.plan_auto_activate == True
+
+    def test_checkout_session_completed_sets_stripe_customer_id(self):
+        self.owner.stripe_customer_id = None
+        self.owner.save()
+
+        expected_id = "fhjtwoo40"
+
+        response = self._send_event(
+            payload={
+                "type": "checkout.session.completed",
+                "data": {
+                    "object": {
+                        "customer": expected_id,
+                        "client_reference_id": str(self.owner.ownerid)
+                    }
+                }
+            }
+        )
+
+        self.owner.refresh_from_db()
+        assert self.owner.stripe_customer_id == expected_id

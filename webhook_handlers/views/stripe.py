@@ -22,23 +22,32 @@ log = logging.getLogger(__name__)
 class StripeWebhookHandler(APIView):
     permission_classes = [AllowAny]
 
+
+    def _log_updated(self, updated):
+        if updated >= 1:
+            log.warn(f"Could not find customer")
+        else:
+            log.info(f"Successfully updated customer info")
+
     def invoice_payment_succeeded(self, invoice):
         log.info(f"Setting delinquency status False for stripe customer {invoice.customer}")
-        Owner.objects.filter(
+        updated = Owner.objects.filter(
             stripe_customer_id=invoice.customer,
             stripe_subscription_id=invoice.subscription.id
         ).update(
             delinquent=False
         )
+        self._log_updated(updated)
 
     def invoice_payment_failed(self, invoice):
         log.info(f"Setting delinquency status True for stripe customer {invoice.customer}")
-        Owner.objects.filter(
+        updated = Owner.objects.filter(
             stripe_customer_id=invoice.customer,
             stripe_subscription_id=invoice.subscription.id
         ).update(
             delinquent=True
         )
+        self._log_updated(updated)
 
     def customer_subscription_deleted(self, subscription):
         log.info(f"Setting free plan and deactivating repos for stripe customer {subscription.customer}")
@@ -52,6 +61,7 @@ class StripeWebhookHandler(APIView):
             active=False,
             activated=False
         )
+        self._log_updated(1)
 
     def customer_created(self, customer):
         # Based on what stripe doesn't gives us (an ownerid!)
@@ -76,7 +86,7 @@ class StripeWebhookHandler(APIView):
             f"Subscription created for customer {subscription.customer} "
             f"with -- plan: {subscription.plan.name}, quantity {subscription.quantity}"
         )
-        Owner.objects.filter(
+        updated = Owner.objects.filter(
             ownerid=subscription.metadata.obo_organization
         ).update(
             plan=subscription.plan.name,
@@ -85,6 +95,7 @@ class StripeWebhookHandler(APIView):
             stripe_subscription_id=subscription.id,
             stripe_customer_id=subscription.customer
         )
+        self._log_updated(updated)
 
     def customer_subscription_updated(self, subscription):
         if subscription.plan.name not in PAID_USER_PLAN_REPRESENTATIONS:
@@ -110,7 +121,7 @@ class StripeWebhookHandler(APIView):
             f"Subscription {subscription.id} updated with -- "
             f"plan: {subscription.plan.name}, quantity: {subscription.quantity}"
         )
-        Owner.objects.filter(
+        updated = Owner.objects.filter(
             stripe_subscription_id=subscription.id,
             stripe_customer_id=subscription.customer
         ).update(
@@ -118,6 +129,19 @@ class StripeWebhookHandler(APIView):
             plan_user_count=subscription.quantity,
             plan_auto_activate=True
         )
+        self._log_updated(updated)
+
+    def checkout_session_completed(self, checkout_session):
+        log.info(
+            f"Checkout session completed for customer -- ownerid: "
+            f"{checkout_session.client_reference_id}"
+        )
+        updated = Owner.objects.filter(
+            ownerid=checkout_session.client_reference_id
+        ).update(
+            stripe_customer_id=checkout_session.customer
+        )
+        self._log_updated(updated)
 
     def post(self, request, *args, **kwargs):
         if settings.STRIPE_ENDPOINT_SECRET is None:

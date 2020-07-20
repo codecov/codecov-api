@@ -20,12 +20,11 @@ from internal_api.chart.helpers import (
 from dateutil.relativedelta import relativedelta
 from rest_framework.exceptions import ValidationError
 
-
 fake = faker.Faker()
 
 
 def generate_random_totals(
-    include_complexity=True, lines=None, hits=None, partials=None
+        include_complexity=True, lines=None, hits=None, partials=None
 ):
     lines = lines or randint(5, 5000)
     hits = hits or randint(0, lines)
@@ -49,12 +48,12 @@ def generate_random_totals(
 
 
 def setup_commits(
-    repo,
-    num_commits,
-    branch="master",
-    start_date=None,
-    meets_default_filters=True,
-    **kwargs,
+        repo,
+        num_commits,
+        branch="master",
+        start_date=None,
+        meets_default_filters=True,
+        **kwargs,
 ):
     """
     Generate random commits with different configurations, to accommodate different testing scenarios.
@@ -131,14 +130,14 @@ def check_grouping_correctness(grouped_queryset, initial_queryset, data):
             not initial_queryset.filter(
                 timestamp__gt=commit.truncated_date,
                 timestamp__lt=commit.truncated_date
-                + relativedelta(**relative_delta_args),
+                              + relativedelta(**relative_delta_args),
                 repository__name=commit.repository.name,
             )
-            .filter(
+                .filter(
                 **filtering_value_args
             )  # make two filter calls to avoid potentially filtering by timestamp multiple time in the same call which makes django unhappy
-            .exclude(commitid=commit.commitid)
-            .exists()
+                .exclude(commitid=commit.commitid)
+                .exists()
         )
 
 
@@ -483,6 +482,24 @@ class OrganizationCoverageChartTest(InternalAPITest):
             "agg_function": "max",
             "agg_value": "coverage",
             "repositories": [self.repo1_org1.name, self.repo2_org1.name],
+        }
+
+        mocked_get_permissions.return_value = True, True
+        response = self._retrieve(data=data)
+
+        assert response.status_code == 200
+        assert len(response.data["coverage"]) > 0
+        for item in response.data["coverage"]:
+            assert "weighted_coverage" in item
+            assert "total_lines" in item
+            assert "total_hits" in item
+            assert "total_partials" in item
+            assert "total_misses" in item
+
+    def test_get_chart_default_params(self, mocked_get_permissions):
+        data = {
+            "organization": self.org1.username,
+            "grouping_unit": "day",
         }
 
         mocked_get_permissions.return_value = True, True
