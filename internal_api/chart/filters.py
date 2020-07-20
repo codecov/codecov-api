@@ -11,12 +11,19 @@ def apply_default_filters(queryset):
     ).filter(Q(deleted__isnull=True) | Q(deleted=False))
 
 
-def apply_simple_filters(queryset, data):
+def apply_simple_filters(queryset, data, user):
     """
     Apply any coverage chart filtering parameters that can be construed as a simple queryset.filter call.
     """
+
     queryset = queryset.filter(
-        repository__author__username=data.get("organization"),
+        repository__author__username=data.get("owner_username") # filter by the organization in the request route
+    ).filter(
+        # make sure we only return repositories that are either public or that the logged-in user has permission to view.
+        # this is important because if no "repository" param was provided then the permissions check will succeed, but we still
+        # want to make sure we return only all repositories the logged-in user has permissions to view.
+        Q(repository__private=False)
+        | Q(repository__repoid__in=user.permission) 
     )
 
     # Optional filters
