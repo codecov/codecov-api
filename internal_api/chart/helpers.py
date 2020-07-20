@@ -28,6 +28,8 @@ def validate_params(data):
     highest value of whatever 'agg_value' is. *(See below for more explanation on this field)
     - agg_value: indicates which value we should perform aggregation/grouping on. example: if this is 'coverage', the aggregation function
     (min, max, etc.) will be applied to commit coverage. *(See below for more explanation on this field.)
+    - coverage_timestamp_ordering: indicates in which order the coverage entries should be ordered by. Increasing will return the latest coverage
+    at the end of the coverage array while decreasing will return the latest coverage at the beginning of the array.
 
     Aggregation fields - when grouping by a unit of time, we need to know which commit to retrieve over that unit of time - e.g. the latest commit
     in a given month, or the commit with the highest coverage, etc. The `agg_function` and `agg_value` parameters are used to determine this.
@@ -58,6 +60,7 @@ def validate_params(data):
         },
         "agg_function": {"type": "string", "allowed": ["min", "max"],},
         "agg_value": {"type": "string", "allowed": ["timestamp", "coverage"]},
+        "coverage_timestamp_ordering": {"type": "string", "allowed": ["increasing", "decreasing"]},
     }
     v = ChartParamValidator(params_schema)
     if not v.validate(data):
@@ -105,13 +108,15 @@ def apply_grouping(queryset, data):
     grouping_unit = data.get("grouping_unit")
     agg_function = data.get("agg_function")
     agg_value = data.get("agg_value", "coverage")
+    commit_order = data.get("coverage_timestamp_order", "increasing")
 
     # Truncate the commit's timestamp so we can group it in the appropriate time unit.
     # For example, if we're grouping by quarter, commits in Jan/Feb/March 2020 will all share the same truncated_date
     queryset = queryset.annotate(truncated_date=Trunc("timestamp", grouping_unit))
+    date_ordering = "" if commit_order == "increasing" else "-"
     ordering = "" if agg_function == "min" else "-"
     return queryset.order_by(
-        "-truncated_date", "repository__name", f"{ordering}{agg_value}"
+        f"{date_ordering}truncated_date", "repository__name", f"{ordering}{agg_value}"
     ).distinct(
         "truncated_date", "repository__name"
     )  # this will select the first row for a given date/repo combo, which since we've just ordered the commits
