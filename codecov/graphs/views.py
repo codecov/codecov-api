@@ -41,7 +41,10 @@ class BadgeHandler(APIView, RepoPropertyMixin):
             return HttpResponse(coverage)
 
         badge = get_badge(coverage, [70, 100], precision)
-        return HttpResponse(badge)
+        response = HttpResponse(badge)
+        response['Content-Disposition'] =' inline; filename="badge.svg"'
+        response['Content-Type'] = 'image/svg+xml'
+        return response
     
     def get_coverage(self):
         """
