@@ -22,45 +22,43 @@ log = logging.getLogger(__name__)
 class StripeWebhookHandler(APIView):
     permission_classes = [AllowAny]
 
-
     def _log_updated(self, updated):
         if updated >= 1:
-            log.warn(f"Could not find customer")
+            log.warning(f"Could not find customer")
         else:
             log.info(f"Successfully updated customer info")
 
     def invoice_payment_succeeded(self, invoice):
-        log.info(f"Setting delinquency status False for stripe customer {invoice.customer}")
+        log.info(
+            f"Setting delinquency status False for stripe customer {invoice.customer}"
+        )
         updated = Owner.objects.filter(
             stripe_customer_id=invoice.customer,
-            stripe_subscription_id=invoice.subscription.id
-        ).update(
-            delinquent=False
-        )
+            stripe_subscription_id=invoice.subscription.id,
+        ).update(delinquent=False)
         self._log_updated(updated)
 
     def invoice_payment_failed(self, invoice):
-        log.info(f"Setting delinquency status True for stripe customer {invoice.customer}")
+        log.info(
+            f"Setting delinquency status True for stripe customer {invoice.customer}"
+        )
         updated = Owner.objects.filter(
             stripe_customer_id=invoice.customer,
-            stripe_subscription_id=invoice.subscription.id
-        ).update(
-            delinquent=True
-        )
+            stripe_subscription_id=invoice.subscription.id,
+        ).update(delinquent=True)
         self._log_updated(updated)
 
     def customer_subscription_deleted(self, subscription):
-        log.info(f"Setting free plan and deactivating repos for stripe customer {subscription.customer}")
+        log.info(
+            f"Setting free plan and deactivating repos for stripe customer {subscription.customer}"
+        )
         owner = Owner.objects.get(
             stripe_customer_id=subscription.customer,
-            stripe_subscription_id=subscription.id
+            stripe_subscription_id=subscription.id,
         )
 
         owner.set_free_plan()
-        owner.repository_set.update(
-            active=False,
-            activated=False
-        )
+        owner.repository_set.update(active=False, activated=False)
         self._log_updated(1)
 
     def customer_created(self, customer):
@@ -68,7 +66,9 @@ class StripeWebhookHandler(APIView):
         # in this event we cannot reliably create a customer,
         # so we're just logging that we created the event and
         # relying on customer.subscription.created to handle sub creation
-        log.info(f"Customer created with stripe_customer_id: {customer.id} & email: {customer.email}")
+        log.info(
+            f"Customer created with stripe_customer_id: {customer.id} & email: {customer.email}"
+        )
 
     def customer_subscription_created(self, subscription):
         if not subscription.plan.id:
@@ -93,7 +93,7 @@ class StripeWebhookHandler(APIView):
             plan_user_count=subscription.quantity,
             plan_auto_activate=True,
             stripe_subscription_id=subscription.id,
-            stripe_customer_id=subscription.customer
+            stripe_customer_id=subscription.customer,
         )
         self._log_updated(updated)
 
@@ -111,7 +111,7 @@ class StripeWebhookHandler(APIView):
             )
             owner = Owner.objects.get(
                 stripe_subscription_id=subscription.id,
-                stripe_customer_id=subscription.customer
+                stripe_customer_id=subscription.customer,
             )
             owner.set_free_plan()
             owner.repository_set.update(active=False, activated=False)
@@ -123,11 +123,11 @@ class StripeWebhookHandler(APIView):
         )
         updated = Owner.objects.filter(
             stripe_subscription_id=subscription.id,
-            stripe_customer_id=subscription.customer
+            stripe_customer_id=subscription.customer,
         ).update(
             plan=subscription.plan.name,
             plan_user_count=subscription.quantity,
-            plan_auto_activate=True
+            plan_auto_activate=True,
         )
         self._log_updated(updated)
 
@@ -138,23 +138,23 @@ class StripeWebhookHandler(APIView):
         )
         updated = Owner.objects.filter(
             ownerid=checkout_session.client_reference_id
-        ).update(
-            stripe_customer_id=checkout_session.customer
-        )
+        ).update(stripe_customer_id=checkout_session.customer)
         self._log_updated(updated)
 
     def post(self, request, *args, **kwargs):
         if settings.STRIPE_ENDPOINT_SECRET is None:
-            log.critical("Stripe endpoint secret improperly configured -- webhooks will not be processed.")
+            log.critical(
+                "Stripe endpoint secret improperly configured -- webhooks will not be processed."
+            )
 
         try:
             event = stripe.Webhook.construct_event(
                 json.dumps(self.request.data),
                 self.request.META.get(StripeHTTPHeaders.SIGNATURE),
-                settings.STRIPE_ENDPOINT_SECRET
+                settings.STRIPE_ENDPOINT_SECRET,
             )
         except stripe.error.SignatureVerificationError as e:
-            log.warn(f"Stripe webhook event received with invalid signature -- {e}")
+            log.warning(f"Stripe webhook event received with invalid signature -- {e}")
             return Response("Invalid signature", status=status.HTTP_400_BAD_REQUEST)
 
         if event.type not in StripeWebhookEvents.subscribed_events:

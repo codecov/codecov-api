@@ -4,13 +4,22 @@ from django.db.models import FloatField, Case, When, Value
 from rest_framework.exceptions import ValidationError
 from cerberus import Validator
 
+
 class ChartParamValidator(Validator):
     # Custom validation rule to require "agg_value" and "agg_function" fields only when not grouping by commit.
     # When grouping by commit, we return commits directly without applying any aggregation, so those fields aren't needed.
-    def _validate_check_aggregation_fields(self, check_aggregation_fields, field, value):
-        agg_fields_present = self.document.get("agg_value") and self.document.get("agg_function")
+    def _validate_check_aggregation_fields(
+        self, check_aggregation_fields, field, value
+    ):
+        agg_fields_present = self.document.get("agg_value") and self.document.get(
+            "agg_function"
+        )
         if check_aggregation_fields and value != "commit" and not agg_fields_present:
-                self._error(field, "Must provide a value for agg_value and agg_function fields if not grouping by commit")
+            self._error(
+                field,
+                "Must provide a value for agg_value and agg_function fields if not grouping by commit",
+            )
+
 
 def validate_params(data):
     """
@@ -60,7 +69,10 @@ def validate_params(data):
         },
         "agg_function": {"type": "string", "allowed": ["min", "max"],},
         "agg_value": {"type": "string", "allowed": ["timestamp", "coverage"]},
-        "coverage_timestamp_ordering": {"type": "string", "allowed": ["increasing", "decreasing"]},
+        "coverage_timestamp_ordering": {
+            "type": "string",
+            "allowed": ["increasing", "decreasing"],
+        },
     }
     v = ChartParamValidator(params_schema)
     if not v.validate(data):
@@ -107,7 +119,7 @@ def apply_grouping(queryset, data):
     """
     grouping_unit = data.get("grouping_unit")
     agg_function = data.get("agg_function")
-    agg_value = data.get("agg_value", "coverage")
+    agg_value = data.get("agg_value")
     commit_order = data.get("coverage_timestamp_order", "increasing")
 
     # Truncate the commit's timestamp so we can group it in the appropriate time unit.

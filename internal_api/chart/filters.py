@@ -1,4 +1,4 @@
-from django.db.models import Q
+from django.db.models import Q, F
 
 
 def apply_default_filters(queryset):
@@ -26,11 +26,16 @@ def apply_simple_filters(queryset, data, user):
         | Q(repository__repoid__in=user.permission) 
     )
 
+    # Handle branch filtering
+    if data.get("branch"):
+        queryset = queryset.filter(branch=data.get("branch"))
+    else:
+        # if no branch param was provided, default to filtering commits based on the repository's default branch
+        queryset = queryset.filter(branch=F("repository__branch"))
+
     # Optional filters
     if data.get("repositories"):
         queryset = queryset.filter(repository__name__in=data.get("repositories", []))
-    if data.get("branch"):
-        queryset = queryset.filter(branch=data.get("branch"))
     if data.get("start_date"):
         queryset = queryset.filter(timestamp__gte=data.get("start_date"))
     if data.get("end_date"):
