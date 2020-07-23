@@ -284,11 +284,11 @@ class CoverageChartHelpersTest(TestCase):
         branch_test = RepositoryFactory(
             author=self.org1, name="branch_test", private=False, branch="main"
         )  # "main" is the default branch
-        setup_commits(branch_test, 5, branch="main")
-        setup_commits(branch_test, 5, branch="not_default")
+        setup_commits(branch_test, 10, branch="main")
+        setup_commits(branch_test, 10, branch="not_default")
 
         # we shouldn't get commits on "main" branch for a repo that has a different default branch
-        setup_commits(self.repo1_org1, 5, branch="main")
+        setup_commits(self.repo1_org1, 10, branch="main")
 
         data = {
             "owner_username": self.org1.username,
