@@ -102,6 +102,8 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
             'plan',
             'recent_invoices',
             'checkout_session_id',
+            'name',
+            'email',
         )
 
     def get_recent_invoices(self, owner):
