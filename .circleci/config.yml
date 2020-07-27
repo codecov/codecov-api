@@ -140,6 +140,11 @@ workflows:
           requires:
             - build
             - test
+          filters:
+            branches:
+              only:
+                - master
+                - /portable-.*/
       - staging:
           requires:
             - build
