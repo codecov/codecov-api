@@ -74,7 +74,9 @@ class AccountViewSetTests(APITestCase):
             "inactive_user_count": 0,
             "plan": None, # TODO -- legacy plan
             "recent_invoices": [],
-            "checkout_session_id": None
+            "checkout_session_id": None,
+            "name": owner.name,
+            "email": owner.email
         }
 
     @patch('services.billing.stripe.Invoice.list')
@@ -302,6 +304,20 @@ class AccountViewSetTests(APITestCase):
         )
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    @patch('services.billing.stripe.Invoice.list')
+    def test_update_can_change_name_and_email(self, _):
+        expected_name, expected_email = "Scooby Doo", "scoob@snack.com"
+        response = self._update(
+            kwargs={"service": self.user.service, "owner_username": self.user.username},
+            data={"name": expected_name, "email": expected_email}
+        )
+
+        assert response.data["name"] == expected_name
+        assert response.data["email"] == expected_email
+        self.user.refresh_from_db()
+        assert self.user.name == expected_name
+        assert self.user.email == expected_email
 
     @patch('services.task.TaskService.delete_owner')
     def test_destroy_triggers_delete_owner_task(self, delete_owner_mock):

@@ -4,12 +4,12 @@ from .views import RepositoryChartHandler, OrganizationChartHandler
 
 urlpatterns = [
     path(
-        "coverage/repository",
+        "<str:service>/<str:owner_username>/coverage/repository",
         RepositoryChartHandler.as_view(),
         name="chart-coverage-repository",
     ),
     path(
-        "coverage/organization",
+        "<str:service>/<str:owner_username>/coverage/organization",
         OrganizationChartHandler.as_view(),
         name="chart-coverage-organization",
     ),

@@ -20,8 +20,6 @@ services:
       - ./:/app
     environment:
       - RUN_ENV=DEV
-      - STATSD_HOST=statsd
-      - STATSD_PORT=8125
   postgres:
     image: postgres:9.6-alpine
     volumes:
