@@ -23,6 +23,7 @@ from internal_api.mixins import OwnerPropertyMixin
 from internal_api.permissions import UserIsAdminPermissions
 
 from .serializers import (
+    ProfileSerializer,
     OwnerSerializer,
     AccountDetailsSerializer,
     UserSerializer,
@@ -35,8 +36,12 @@ from .filters import UserFilters
 log = logging.getLogger(__name__)
 
 
-class ProfileView(generics.RetrieveAPIView):
-    serializer_class = OwnerSerializer
+class ProfileViewSet(
+    viewsets.GenericViewSet,
+    mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin
+):
+    serializer_class = ProfileSerializer
 
     def get_object(self):
         return self.request.user
