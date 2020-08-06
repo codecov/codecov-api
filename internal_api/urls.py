@@ -2,7 +2,7 @@ from django.urls import path, include
 from django.conf import urls
 
 from internal_api.owner.views import (
-    ProfileView,
+    ProfileViewSet,
     OwnerViewSet,
     UserViewSet,
     InvoiceViewSet,
@@ -29,6 +29,9 @@ urls.handler500 = server_error
 plans_router = DefaultRouter()
 plans_router.register(r"plans", PlanViewSet, basename="plans")
 
+profile_router = RetrieveUpdateDestroyRouter()
+profile_router.register(r"profile", ProfileViewSet, basename="profile")
+
 owners_router = DefaultRouter()
 owners_router.register(r"owners", OwnerViewSet, basename="owners")
 
@@ -51,8 +54,8 @@ compare_router = RetrieveUpdateDestroyRouter()
 compare_router.register(r"compare", CompareViewSet, basename="compare")
 
 urlpatterns = [
-    path('profile', ProfileView.as_view()),
     path('', include(plans_router.urls)),
+    path('', include(profile_router.urls)),
     path('<str:service>/', include(owners_router.urls)),
     path('<str:service>/<str:owner_username>/', include(owner_artifacts_router.urls)),
     path('<str:service>/<str:owner_username>/', include(account_details_router.urls)),
