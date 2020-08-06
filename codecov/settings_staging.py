@@ -34,3 +34,4 @@ CLIENT_PLAN_CHANGE_CANCEL_URL = ''
 CORS_ORIGIN_REGEX_WHITELIST = [r"^https:\/\/deploy-preview-[0-9]+--zen-dubinsky-9aced3\.netlify\.app$", "https://stage-web.codecov.dev/"]
 CORS_ALLOW_CREDENTIALS = True
 CODECOV_URL = 'https://stage-web.codecov.dev'
+CODECOV_DASHBOARD_URL = 'https://stage-app.codecov.dev'

@@ -22,6 +22,7 @@ from django.conf import settings
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('health/', views.health),
+    re_path(r'^redirect_app', views.redirect_app),
     path('', views.health),
     path('<str:service>/<str:owner_username>/<str:repo_name>/', include("graphs.urls")),
 ]
