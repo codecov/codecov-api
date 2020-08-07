@@ -29,12 +29,20 @@ class ProfileTest(InternalAPITest):
 
     def test_get_profile_valid_user(self):
         self.client.force_login(user=self.user)
-        response = self.client.get("/internal/profile")
+        response = self.client.get("/internal/profile/")
         self.assertEqual(response.status_code, 200)
 
     def test_get_profile_unauthed_user(self):
-        response = self.client.get("/internal/profile")
+        response = self.client.get("/internal/profile/")
         self.assertEqual(response.status_code, 403)
+
+    def test_update_profile_private_access(self):
+        self.client.force_login(user=self.user)
+        response = self.client.patch("/internal/profile/", data={"private_access": True}, content_type="application/json")
+
+        self.user.refresh_from_db()
+        assert self.user.private_access is True
+        assert response.data["private_access"] is True
 
 
 @patch(get_permissions_method)

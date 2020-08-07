@@ -23,12 +23,18 @@ class OwnerSerializer(serializers.ModelSerializer):
             'email',
             'stats',
             'ownerid',
-            'integration_id'
+            'integration_id',
         )
 
     def get_stats(self, obj):
         if obj.cache and 'stats' in obj.cache:
             return obj.cache['stats']
+
+
+class ProfileSerializer(OwnerSerializer):
+    class Meta:
+        model = Owner
+        fields = OwnerSerializer.Meta.fields + ('private_access',)
 
 
 class StripeLineItemSerializer(serializers.Serializer):
