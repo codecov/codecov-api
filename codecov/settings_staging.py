@@ -30,6 +30,9 @@ sentry_sdk.init(
 CLIENT_PLAN_CHANGE_SUCCESS_URL = ''
 CLIENT_PLAN_CHANGE_CANCEL_URL = ''
 
+#temporarily allow all origins to bypass CORS error.
+CORS_ORIGIN_ALLOW_ALL = True
+
 CORS_ORIGIN_WHITELIST = ["https://stage-web.codecov.dev"]
 CORS_ORIGIN_REGEX_WHITELIST = [r"^https:\/\/deploy-preview-[0-9]+--zen-dubinsky-9aced3\.netlify\.app$"]
 CORS_ALLOW_CREDENTIALS = True
