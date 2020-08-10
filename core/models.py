@@ -6,7 +6,8 @@ from django.db import models
 from django.contrib.postgres.fields import JSONField, CITextField, ArrayField
 from django.utils.functional import cached_property
 
-from core.encoders import ReportJSONEncoder
+from .encoders import ReportJSONEncoder
+from .managers import RepositoryQuerySet
 
 
 class Version(models.Model):
@@ -46,6 +47,8 @@ class Repository(models.Model):
 
     class Meta:
         db_table = 'repos'
+
+    objects = RepositoryQuerySet.as_manager()
 
     @property
     def service(self):
