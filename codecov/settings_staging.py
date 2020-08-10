@@ -30,7 +30,7 @@ sentry_sdk.init(
 CLIENT_PLAN_CHANGE_SUCCESS_URL = ''
 CLIENT_PLAN_CHANGE_CANCEL_URL = ''
 
-
-CORS_ORIGIN_REGEX_WHITELIST = [r"^https:\/\/deploy-preview-[0-9]+--zen-dubinsky-9aced3\.netlify\.app$", "https://stage-web.codecov.dev"]
+CORS_ORIGIN_WHITELIST = ["https://stage-web.codecov.dev"]
+CORS_ORIGIN_REGEX_WHITELIST = [r"^https:\/\/deploy-preview-[0-9]+--zen-dubinsky-9aced3\.netlify\.app$"]
 CORS_ALLOW_CREDENTIALS = True
 CODECOV_URL = 'https://stage-web.codecov.dev'
