@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from rest_framework import serializers
 
 from core.models import Repository, Commit
@@ -5,12 +7,13 @@ from core.models import Repository, Commit
 from internal_api.owner.serializers import OwnerSerializer
 from internal_api.commit.serializers import (
     CommitWithFileLevelReportSerializer,
-    CommitTotalsSerializer,
+    CommitSerializer,
 )
 
 
 class RepoSerializer(serializers.ModelSerializer):
     author = OwnerSerializer()
+    latest_commit = serializers.SerializerMethodField()
 
     class Meta:
         model = Repository
@@ -27,15 +30,26 @@ class RepoSerializer(serializers.ModelSerializer):
             "hookid",
             "activated",
             "using_integration",
+            "latest_commit",
         )
 
+    def get_latest_commit(self, repo):
+        latest_commit = repo.commits.filter(
+            state=Commit.CommitStates.COMPLETE,
+            branch=self.context["request"].query_params.get("branch", None) or repo.branch,
+            timestamp__lte=self.context["request"].query_params.get("timestamp", None) or datetime.now()
+        ).select_related('author').order_by('-timestamp').first()
+        return CommitSerializer(latest_commit).data
 
-class RepoWithTotalSerializer(RepoSerializer):
-    totals = CommitTotalsSerializer()
+
+class RepoWithMetricsSerializer(RepoSerializer):
+    total_commit_count = serializers.IntegerField()
+    latest_coverage_change = serializers.FloatField()
 
     class Meta(RepoSerializer.Meta):
         fields = (
-            'totals',
+            'total_commit_count',
+            'latest_coverage_change',
         ) + RepoSerializer.Meta.fields
 
 

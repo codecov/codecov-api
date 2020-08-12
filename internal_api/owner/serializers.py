@@ -95,7 +95,7 @@ class PlanSerializer(serializers.Serializer):
 
 class AccountDetailsSerializer(serializers.ModelSerializer):
     plan = PlanSerializer(source="pretty_plan")
-    recent_invoices = serializers.SerializerMethodField()
+    latest_invoice = serializers.SerializerMethodField()
     checkout_session_id = serializers.SerializerMethodField()
 
     class Meta:
@@ -106,22 +106,22 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
             'plan_auto_activate',
             'integration_id',
             'plan',
-            'recent_invoices',
+            'latest_invoice',
             'checkout_session_id',
             'name',
             'email',
         )
 
-    def get_recent_invoices(self, owner):
-        return StripeInvoiceSerializer(
-            BillingService(
-                requesting_user=self.context["request"].user
-            ).list_invoices(
-                owner,
-                limit=4
-            ),
-            many=True
-        ).data
+    def get_latest_invoice(self, owner):
+        invoices = BillingService(
+            requesting_user=self.context["request"].user
+        ).list_invoices(
+            owner,
+            limit=1
+        )
+
+        if invoices:
+            return StripeInvoiceSerializer(invoices[0]).data
 
     def get_checkout_session_id(self, _):
         return self.context.get("checkout_session_id")
@@ -145,6 +145,8 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     activated = serializers.BooleanField()
     is_admin = serializers.BooleanField()
+    latest_private_pr_date = serializers.DateTimeField()
+    lastseen = serializers.DateTimeField()
 
     class Meta:
         model = Owner
@@ -155,7 +157,9 @@ class UserSerializer(serializers.ModelSerializer):
             'email',
             'ownerid',
             'student',
-            'name'
+            'name',
+            'latest_private_pr_date',
+            'lastseen',
         )
 
     def update(self, instance, validated_data):

@@ -1,10 +1,14 @@
 from unittest.mock import patch
+from ddf import G
+import dateutil
+from datetime import datetime
 
 from rest_framework.test import APITestCase
 from rest_framework.reverse import reverse
 from rest_framework import status
 
-from codecov_auth.tests.factories import OwnerFactory
+from codecov_auth.tests.factories import OwnerFactory, SessionFactory
+from core.models import Pull, Repository
 
 
 class UserViewSetTests(APITestCase):
@@ -37,7 +41,9 @@ class UserViewSetTests(APITestCase):
                 'username': user.username,
                 'email': user.email,
                 'ownerid': user.ownerid,
-                'student': user.student
+                'student': user.student,
+                'latest_private_pr_date': None,
+                'lastseen': None
             }
             for user in self.users
         ]
@@ -61,7 +67,9 @@ class UserViewSetTests(APITestCase):
             'username': self.users[0].username,
             'email': self.users[0].email,
             'ownerid': self.users[0].ownerid,
-            'student': self.users[0].student
+            'student': self.users[0].student,
+            'latest_private_pr_date': None,
+            'lastseen': None
         }
 
     def test_list_sets_is_admin(self):
@@ -78,8 +86,25 @@ class UserViewSetTests(APITestCase):
             'username': self.users[1].username,
             'email': self.users[1].email,
             'ownerid': self.users[1].ownerid,
-            'student': self.users[1].student
+            'student': self.users[1].student,
+            'latest_private_pr_date': None,
+            'lastseen': None
         }
+
+    def test_list_sets_latest_private_pr_date_in(self):
+        pull = G(
+            Pull,
+            repository=G(Repository, author=self.owner, private=True),
+            author=self.users[0]
+        )
+
+        response = self._list()
+        assert dateutil.parser.parse(response.data["results"][0]["latest_private_pr_date"]) == pull.updatestamp
+
+    def test_list_sets_lastseen(self):
+        session = SessionFactory(owner=self.users[0])
+        response = self._list()
+        assert dateutil.parser.parse(response.data["results"][0]["lastseen"]) == session.lastseen
 
     def test_list_can_filter_by_activated(self):
         self.owner.plan_activated_users = [self.users[0].ownerid]
@@ -96,7 +121,9 @@ class UserViewSetTests(APITestCase):
                 'username': self.users[0].username,
                 'email': self.users[0].email,
                 'ownerid': self.users[0].ownerid,
-                'student': self.users[0].student
+                'student': self.users[0].student,
+                'latest_private_pr_date': None,
+                'lastseen': None
             }
         ]
 
@@ -114,7 +141,9 @@ class UserViewSetTests(APITestCase):
             'username': self.users[1].username,
             'email': self.users[1].email,
             'ownerid': self.users[1].ownerid,
-            'student': self.users[1].student
+            'student': self.users[1].student,
+            'latest_private_pr_date': None,
+            'lastseen': None
         }]
 
     def test_list_can_filter_by_name_prefix(self):
@@ -136,7 +165,9 @@ class UserViewSetTests(APITestCase):
                 'username': self.users[1].username,
                 'email': self.users[1].email,
                 'ownerid': self.users[1].ownerid,
-                'student': self.users[1].student
+                'student': self.users[1].student,
+                'latest_private_pr_date': None,
+                'lastseen': None
             },
             {
                 'name': 'fero',
@@ -145,7 +176,9 @@ class UserViewSetTests(APITestCase):
                 'username': self.users[2].username,
                 'email': self.users[2].email,
                 'ownerid': self.users[2].ownerid,
-                'student': self.users[2].student
+                'student': self.users[2].student,
+                'latest_private_pr_date': None,
+                'lastseen': None
             },
         ]
 
@@ -185,7 +218,9 @@ class UserViewSetTests(APITestCase):
             'username': self.users[0].username,
             'email': self.users[0].email,
             'ownerid': self.users[0].ownerid,
-            'student': self.users[0].student
+            'student': self.users[0].student,
+            'latest_private_pr_date': None,
+            'lastseen': None
         }
 
         self.owner.refresh_from_db()
@@ -215,7 +250,9 @@ class UserViewSetTests(APITestCase):
             'username': self.users[0].username,
             'email': self.users[0].email,
             'ownerid': self.users[0].ownerid,
-            'student': self.users[0].student
+            'student': self.users[0].student,
+            'latest_private_pr_date': None,
+            'lastseen': None
         }
 
         self.owner.refresh_from_db()
@@ -256,7 +293,9 @@ class UserViewSetTests(APITestCase):
             'username': self.users[2].username,
             'email': self.users[2].email,
             'ownerid': self.users[2].ownerid,
-            'student': self.users[2].student
+            'student': self.users[2].student,
+            'latest_private_pr_date': None,
+            'lastseen': None
         }
 
         self.owner.refresh_from_db()
@@ -285,7 +324,9 @@ class UserViewSetTests(APITestCase):
             'username': self.users[2].username,
             'email': self.users[2].email,
             'ownerid': self.users[2].ownerid,
-            'student': self.users[2].student
+            'student': self.users[2].student,
+            'latest_private_pr_date': None,
+            'lastseen': None
         }
 
         self.owner.refresh_from_db()

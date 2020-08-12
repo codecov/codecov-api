@@ -10,6 +10,8 @@ from core.models import Repository
 from utils.config import get_config
 from django.contrib.postgres.fields import CITextField, JSONField, ArrayField
 
+from .managers import OwnerQuerySet
+
 from codecov_auth.constants import (
     AVATAR_GITHUB_BASE_URL,
     BITBUCKET_BASE_URL,
@@ -83,6 +85,8 @@ class Owner(models.Model):
     permission = ArrayField(models.IntegerField(null=True), null=True)
     bot = models.IntegerField(null=True)
     student = models.BooleanField(default=False)
+
+    objects = OwnerQuerySet.as_manager()
 
     @property
     def has_legacy_plan(self):
@@ -259,10 +263,10 @@ class Session(models.Model):
 
     sessionid = models.AutoField(primary_key=True)
     token = models.UUIDField(default=uuid.uuid4, editable=False)
-    name = models.TextField()
-    useragent = models.TextField()
-    ip = models.TextField()
+    name = models.TextField(null=True)
+    useragent = models.TextField(null=True)
+    ip = models.TextField(null=True)
     owner = models.ForeignKey(
         Owner, db_column='ownerid', on_delete=models.CASCADE)
-    lastseen = models.DateTimeField()
+    lastseen = models.DateTimeField(null=True)
     # type

@@ -10,6 +10,7 @@ from codecov.tests.base_test import InternalAPITest
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory, CommitFactory, PullFactory, BranchFactory
 from core.models import Repository
+from internal_api.commit.serializers import CommitSerializer
 
 
 class RepositoryViewSetTestSuite(InternalAPITest):
@@ -169,18 +170,18 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
             query_params={'names': 'A'}
         )
 
-        assert response.data["results"][0]["totals"]["files"] == default_totals['f']
-        assert response.data["results"][0]["totals"]["lines"] == default_totals['n']
-        assert response.data["results"][0]["totals"]["hits"] == default_totals['h']
-        assert response.data["results"][0]["totals"]["misses"] == default_totals['m']
-        assert response.data["results"][0]["totals"]["partials"] == default_totals['p']
-        assert response.data["results"][0]["totals"]["coverage"] == default_totals['c']
-        assert response.data["results"][0]["totals"]["branches"] == default_totals['b']
-        assert response.data["results"][0]["totals"]["methods"] == default_totals['d']
-        assert response.data["results"][0]["totals"]["sessions"] == default_totals['s']
-        assert response.data["results"][0]["totals"]["complexity"] == default_totals['C']
-        assert response.data["results"][0]["totals"]["complexity_total"] == default_totals['N']
-        assert response.data["results"][0]["totals"]["complexity_ratio"] == 0
+        assert response.data["results"][0]["latest_commit"]["totals"]["files"] == default_totals['f']
+        assert response.data["results"][0]["latest_commit"]["totals"]["lines"] == default_totals['n']
+        assert response.data["results"][0]["latest_commit"]["totals"]["hits"] == default_totals['h']
+        assert response.data["results"][0]["latest_commit"]["totals"]["misses"] == default_totals['m']
+        assert response.data["results"][0]["latest_commit"]["totals"]["partials"] == default_totals['p']
+        assert response.data["results"][0]["latest_commit"]["totals"]["coverage"] == default_totals['c']
+        assert response.data["results"][0]["latest_commit"]["totals"]["branches"] == default_totals['b']
+        assert response.data["results"][0]["latest_commit"]["totals"]["methods"] == default_totals['d']
+        assert response.data["results"][0]["latest_commit"]["totals"]["sessions"] == default_totals['s']
+        assert response.data["results"][0]["latest_commit"]["totals"]["complexity"] == default_totals['C']
+        assert response.data["results"][0]["latest_commit"]["totals"]["complexity_total"] == default_totals['N']
+        assert response.data["results"][0]["latest_commit"]["totals"]["complexity_ratio"] == 0
 
     def test_get_totals_with_timestamp(self):
         default_totals = {
@@ -210,7 +211,7 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
             query_params={'names': 'A', 'timestamp': fetching_time}
         )
 
-        assert response.data["results"][0]["totals"]["coverage"] == older_coverage
+        assert response.data["results"][0]["latest_commit"]["totals"]["coverage"] == older_coverage
 
     def test_get_repos_with_totals(self):
         default_totals = {
@@ -319,6 +320,54 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
 
         assert response.status_code == 200
         assert private_repo.name not in [repo["name"] for repo in response.data['results']]
+
+    def test_returns_total_commit_count_and_latest_coverage_change(self):
+        CommitFactory(
+            totals={
+            "f": 1,
+            "n": 4,
+            "h": 4,
+            "m": 0,
+            "p": 0,
+            "c": 100.0,
+            "b": 0,
+            "d": 0,
+            "s": 1,
+            "C": 0.0,
+            "N": 0.0,
+            "diff": ""
+            },
+            repository=self.repo1
+        )
+        CommitFactory(
+            totals={
+            "f": 1,
+            "n": 4,
+            "h": 4,
+            "m": 0,
+            "p": 0,
+            "c": 70.0,
+            "b": 0,
+            "d": 0,
+            "s": 1,
+            "C": 0.0,
+            "N": 0.0,
+            "diff": ""
+            },
+            repository=self.repo1
+        )
+
+        response = self._list()
+        repo1 = [repo for repo in response.data["results"] if repo["name"] == "A"][0]
+        assert repo1["total_commit_count"] == 2
+        assert repo1["latest_coverage_change"] == -30
+
+    def test_returns_latest_commit(self):
+        commit = CommitFactory(repository=self.repo1)
+        response = self._list()
+        repo1 = [repo for repo in response.data["results"] if repo["name"] == "A"][0]
+
+        assert repo1["latest_commit"] == CommitSerializer(commit).data
 
 
 @patch("internal_api.repo.repository_accessors.RepoAccessors.get_repo_permissions")
