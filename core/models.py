@@ -130,7 +130,7 @@ class Pull(models.Model):
     commentid = models.CharField(max_length=100, null=True)
     author = models.ForeignKey(
         'codecov_auth.Owner', db_column='author', on_delete=models.SET_NULL, null=True)
-    updatestamp = models.DateTimeField(auto_now=True)
+    updatestamp = models.DateTimeField(auto_now_add=True)
     diff = JSONField(null=True)
     flare = JSONField(null=True)
 

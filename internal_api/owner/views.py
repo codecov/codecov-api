@@ -123,33 +123,17 @@ class UserViewSet(
         )
 
     def get_queryset(self):
-        owner = self.owner
-        if owner.has_legacy_plan:
+        if self.owner.has_legacy_plan:
             raise ValidationError(detail="Users API not accessible for legacy plans")
-        return Owner.objects.filter(
-            organizations__contains=[owner.ownerid]
-        ).annotate(
-            activated=Exists(
-                Owner.objects.filter(
-                    ownerid=owner.ownerid,
-                    plan_activated_users__contains=Func(
-                        OuterRef('ownerid'),
-                        function='ARRAY',
-                        template="%(function)s[%(expressions)s]"
-                    )
-                )
-            ),
-            is_admin=Exists(
-                Owner.objects.filter(
-                    ownerid=owner.ownerid,
-                    admins__contains=Func(
-                        OuterRef('ownerid'),
-                        function='ARRAY',
-                        template="%(function)s[%(expressions)s]"
-                    )
-                )
-            )
-        )
+        return Owner.objects.users_of(
+            owner=self.owner
+        ).annotate_activated_in(
+            owner=self.owner
+        ).annotate_is_admin_in(
+            owner=self.owner
+        ).annotate_with_latest_private_pr_date_in(
+            owner=self.owner
+        ).annotate_with_lastseen()
 
 
 class PlanViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):

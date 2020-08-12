@@ -2,6 +2,7 @@ import logging
 from base64 import b64decode
 import hmac
 import hashlib
+from datetime import datetime
 
 from rest_framework import authentication
 from rest_framework import exceptions
@@ -66,6 +67,8 @@ class CodecovSessionAuthentication(authentication.BaseAuthentication):
                 username_to_impersonate=request.COOKIES["staff_user"],
                 service=request.parser_context['kwargs']['service']
             )
+        else:
+            self.update_session(request, session)
 
         return (session.owner, session)
 
@@ -117,3 +120,13 @@ class CodecovSessionAuthentication(authentication.BaseAuthentication):
         hash = hmac.new(secret.encode(), digestmod=hashlib.sha256)
         hash.update(s.encode())
         return hash.hexdigest()
+
+    def update_session(self, request, session):
+        session.lastseen = datetime.now()
+        session.useragent = request.META.get("User-Agent")
+        http_x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+        if http_x_forwarded_for:
+            session.ip = http_x_forwarded_for.split(",")[0]
+        else:
+            session.ip = request.META.get("REMOTE_ADDR")
+        session.save(update_fields=["lastseen", "useragent", "ip"])
