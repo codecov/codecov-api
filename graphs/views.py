@@ -1,3 +1,4 @@
+from json import dumps, loads
 from rest_framework.views import APIView
 from django.http import HttpResponse
 from rest_framework.permissions import AllowAny
@@ -8,6 +9,9 @@ from codecov_auth.models import Owner
 from core.models import Repository, Branch
 from internal_api.mixins import RepoPropertyMixin
 from django.shortcuts import Http404
+from services.redis import get_redis_connection
+
+redis = get_redis_connection()
 
 class BadgeHandler(APIView, RepoPropertyMixin):
     permission_classes = [AllowAny]
@@ -32,6 +36,8 @@ class BadgeHandler(APIView, RepoPropertyMixin):
         if not precision in self.precisions:
             return Response({"detail": "Coverage precision should be one of [ 0 || 1 || 2 ]"}, status=status.HTTP_404_NOT_FOUND)
 
+        self.kwargs["service"] = self.short_services[self.kwargs.get("service")] if self.kwargs.get("service") in self.short_services else self.kwargs.get("service")
+
         coverage = self.get_coverage()
 
         # Format coverage according to precision      
@@ -41,7 +47,10 @@ class BadgeHandler(APIView, RepoPropertyMixin):
             return HttpResponse(coverage)
 
         badge = get_badge(coverage, [70, 100], precision)
-        return HttpResponse(badge)
+        response = HttpResponse(badge)
+        response['Content-Disposition'] =' inline; filename="badge.svg"'
+        response['Content-Type'] = 'image/svg+xml'
+        return response
     
     def get_coverage(self):
         """
@@ -50,12 +59,14 @@ class BadgeHandler(APIView, RepoPropertyMixin):
 
                   We also need to support service abbreviations for users already using them
         """
-        self.kwargs["service"] = self.short_services[self.kwargs.get("service")] if self.kwargs.get("service") in self.short_services else self.kwargs.get("service")
+        coverage = self.get_cached_coverage()
+        if coverage is not None:
+            return coverage
         try:
             repo = self.repo
         except Http404:
             return None
-        
+
         if repo.private and repo.image_token != self.request.query_params.get('token'):
             return None
        
@@ -70,7 +81,12 @@ class BadgeHandler(APIView, RepoPropertyMixin):
         if flag:
             return self.flag_coverage(flag, commit)
 
-        return commit.totals.get('c') if commit is not None and commit.totals is not None else None
+        coverage = commit.totals.get('c') if commit is not None and commit.totals is not None else None
+
+        if coverage is not None and flag is None:
+            coverage_key = ':'.join((self.kwargs["service"], self.kwargs.get("owner_username"), self.kwargs.get("repo_name"), self.kwargs.get('branch') or '')).lower()
+            redis.hset('badge', coverage_key, dumps({'r': None, 'c': coverage, 't': repo.image_token if repo.private else None }))
+        return coverage
 
     def flag_coverage(self, flag, commit):
         """
@@ -86,3 +102,15 @@ class BadgeHandler(APIView, RepoPropertyMixin):
                 totals = data.get('t', [])
                 return totals[5] if len(totals) > 5 else None
         return None
+
+    def get_cached_coverage(self):
+        coverage_key = ':'.join((self.kwargs["service"], self.kwargs.get("owner_username"), self.kwargs.get("repo_name"), self.kwargs.get('branch') or '')).lower()
+        coverage = redis.hget('badge', coverage_key)
+        if coverage:
+            coverage = loads(coverage)
+            token = coverage.get('t')
+            if token and token != self.request.query_params.get('token'):
+                return None
+            return coverage['c']
+        else:
+            return None

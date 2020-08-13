@@ -53,6 +53,65 @@ class TestAuthentication(BaseTestCase):
         with pytest.raises(rest_framework.exceptions.AuthenticationFailed):
             authenticator.authenticate(request)
 
+    def test_verify_session_updates_session(self, db):
+        session = SessionFactory.create()
+        new_ip, new_user_agent = "0.0.5.6", "Chrome3.99"
+        headers = {
+            "HTTP_X_FORWARDED_FOR": new_ip,
+            "User-Agent": new_user_agent
+        }
+        request = APIRequestFactory().get(
+            '',
+            **headers
+        )
+        authenticator = CodecovSessionAuthentication()
+        authenticator.update_session(
+            request,
+            session
+        )
+
+        session.refresh_from_db()
+        assert session.ip == new_ip
+        assert session.useragent == new_user_agent
+
+    def test_verify_session_updates_session_with_remote_addr(self, db):
+        """
+        This happens when HTTP_X_FORWARDED_FOR header is not present.
+        """
+        session = SessionFactory.create()
+        new_ip, new_user_agent = "0.0.5.6", "Chrome3.99"
+        headers = {
+            "REMOTE_ADDR": new_ip,
+            "User-Agent": new_user_agent
+        }
+        request = APIRequestFactory().get(
+            '',
+            **headers
+        )
+        authenticator = CodecovSessionAuthentication()
+        authenticator.update_session(
+            request,
+            session
+        )
+
+        session.refresh_from_db()
+        assert session.ip == new_ip
+        assert session.useragent == new_user_agent
+
+    def test_authenticate_updates_session(self, db, mocker):
+        a = "2|1:0|10:1557329312|15:bitbucket-token|48:OGY5YmM2Y2ItZmQxNC00M2JjLWJiYjUtYmUxZTdjOTQ4ZjM0|459669157b19d2e220f461e02c07c377a455bc532ad0c2b8b69b2648cfbe3914"
+        session = SessionFactory.create(token="8f9bc6cb-fd14-43bc-bbb5-be1e7c948f34")
+        request_factory = APIRequestFactory()
+        request = request_factory.post('/notes/', {'title': 'new idea'}, HTTP_AUTHORIZATION=f'frontend {a}')
+        mocked_verify_session = mocker.patch(
+            'codecov_auth.authentication.CodecovSessionAuthentication.update_session'
+        )
+        authenticator = CodecovSessionAuthentication()
+        authenticator.authenticate(request)
+
+        mocked_verify_session.assert_called_once_with(request, session)
+
+
 class CodecovSessionAuthenticationImpersonationTests(TestCase):
     def setUp(self):
         token = "2|1:0|10:1557329312|15:bitbucket-token|48:OGY5YmM2Y2ItZmQxNC00M2JjLWJiYjUtYmUxZTdjOTQ4ZjM0|459669157b19d2e220f461e02c07c377a455bc532ad0c2b8b69b2648cfbe3914"

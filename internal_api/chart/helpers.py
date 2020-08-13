@@ -120,7 +120,7 @@ def apply_grouping(queryset, data):
     grouping_unit = data.get("grouping_unit")
     agg_function = data.get("agg_function")
     agg_value = data.get("agg_value")
-    commit_order = data.get("coverage_timestamp_order", "increasing")
+    commit_order = data.get("coverage_timestamp_ordering", "increasing")
 
     # Truncate the commit's timestamp so we can group it in the appropriate time unit.
     # For example, if we're grouping by quarter, commits in Jan/Feb/March 2020 will all share the same truncated_date

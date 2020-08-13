@@ -23,10 +23,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("health/", views.health),
     path("", views.health),
-    path(
-        "<str:service>/<str:owner_username>/<str:repo_name>/",
-        include("codecov.graphs.urls"),
-    ),
+    path("<str:service>/<str:owner_username>/<str:repo_name>/", include("graphs.urls")),
 ]
 
 urlpatterns.append(path(INTERNAL_API_PREFIX, include("internal_api.urls")))
