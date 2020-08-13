@@ -9,6 +9,7 @@ from rest_framework.permissions import SAFE_METHODS # ['GET', 'HEAD', 'OPTIONS']
 from rest_framework import status
 
 from django_filters import rest_framework as django_filters, BooleanFilter
+from internal_api.repo.filter import StringListFilter
 
 from core.models import Repository
 from services.repo_providers import RepoProviderService
@@ -29,23 +30,6 @@ from .repository_actions import delete_webhook_on_provider, create_webhook_on_pr
 
 
 log = logging.getLogger(__name__)
-
-class StringListFilter(django_filters.Filter):
-    def __init__(self, query_param, *args, **kwargs):
-        super(StringListFilter, self).__init__(*args, **kwargs)
-        self.query_param = query_param
-
-    def filter(self, qs, value):
-        try:
-            request = self.parent.request
-        except AttributeError:
-            return None
-
-        values = request.GET.getlist(self.query_param)
-        if len(values) > 0:
-            return qs.filter(**{'%s__%s'%(self.field_name, self.lookup_expr):values})
-
-        return qs
 
 
 class RepositoryFilters(django_filters.FilterSet):
