@@ -39,7 +39,7 @@ class StringListFilter(django_filters.Filter):
         try:
             request = self.parent.request
         except AttributeError:
-            return qs
+            return None
 
         values = request.GET.getlist(self.query_param)
         if len(values) > 0:
