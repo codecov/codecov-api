@@ -20,8 +20,9 @@ def _log_stripe_error(method):
         try:
             return method(*args, **kwargs)
         except stripe.error.StripeError as e:
-            log.warn(e.user_message)
+            log.warning(e.user_message)
             raise
+
     return catch_and_raise
 
 
@@ -44,12 +45,15 @@ class AbstractPaymentService(ABC):
 
 
 class StripeService(AbstractPaymentService):
-
     def __init__(self, requesting_user):
         if settings.STRIPE_API_KEY is None:
-            log.critical("Missing stripe API key configuration -- communication with stripe won't be possible.")
+            log.critical(
+                "Missing stripe API key configuration -- communication with stripe won't be possible."
+            )
         if not isinstance(requesting_user, Owner):
-            raise Exception("StripeService requires requesting_user to be Owner instance")
+            raise Exception(
+                "StripeService requires requesting_user to be Owner instance"
+            )
 
         self.requesting_user = requesting_user
 
@@ -60,7 +64,7 @@ class StripeService(AbstractPaymentService):
             "username": owner.username,
             "obo_name": self.requesting_user.name,
             "obo_email": self.requesting_user.email,
-            "obo": self.requesting_user.ownerid
+            "obo": self.requesting_user.ownerid,
         }
 
     @_log_stripe_error
@@ -69,21 +73,29 @@ class StripeService(AbstractPaymentService):
         if owner.stripe_customer_id is None:
             log.info("stripe_customer_id is None, not fetching invoices")
             return []
-        return stripe.Invoice.list(customer=owner.stripe_customer_id, limit=limit)["data"]
+        return stripe.Invoice.list(customer=owner.stripe_customer_id, limit=limit)[
+            "data"
+        ]
 
     @_log_stripe_error
     def delete_subscription(self, owner):
         if owner.plan not in USER_PLAN_REPRESENTATIONS:
-            log.info(f"Downgrade to free plan from legacy plan for owner {owner.ownerid}")
+            log.info(
+                f"Downgrade to free plan from legacy plan for owner {owner.ownerid}"
+            )
             stripe.Subscription.delete(owner.stripe_subscription_id, prorate=True)
             owner.set_free_plan()
         else:
             log.info(f"Downgrade to free plan from user plan for owner {owner.ownerid}")
-            stripe.Subscription.modify(owner.stripe_subscription_id, cancel_at_period_end=True)
+            stripe.Subscription.modify(
+                owner.stripe_subscription_id, cancel_at_period_end=True
+            )
 
     @_log_stripe_error
     def modify_subscription(self, owner, desired_plan):
-        log.info(f"Updating Stripe subscription for owner {owner.ownerid} to {desired_plan['value']}")
+        log.info(
+            f"Updating Stripe subscription for owner {owner.ownerid} to {desired_plan['value']}"
+        )
         subscription = stripe.Subscription.retrieve(owner.stripe_subscription_id)
         stripe.Subscription.modify(
             owner.stripe_subscription_id,
@@ -92,10 +104,10 @@ class StripeService(AbstractPaymentService):
                 {
                     "id": subscription["items"]["data"][0]["id"],
                     "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                    "quantity": desired_plan["quantity"]
+                    "quantity": desired_plan["quantity"],
                 }
             ],
-            metadata=self._get_checkout_session_and_subscription_metadata(owner)
+            metadata=self._get_checkout_session_and_subscription_metadata(owner),
         )
 
         owner.plan = desired_plan["value"]
@@ -116,15 +128,19 @@ class StripeService(AbstractPaymentService):
             success_url=settings.CLIENT_PLAN_CHANGE_SUCCESS_URL,
             cancel_url=settings.CLIENT_PLAN_CHANGE_CANCEL_URL,
             subscription_data={
-                "items": [{
-                    "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                    "quantity": desired_plan["quantity"]
-                }],
+                "items": [
+                    {
+                        "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                        "quantity": desired_plan["quantity"],
+                    }
+                ],
                 "payment_behavior": "allow_incomplete",
-                "metadata": self._get_checkout_session_and_subscription_metadata(owner)
-            }
+                "metadata": self._get_checkout_session_and_subscription_metadata(owner),
+            },
         )
-        log.info(f"Stripe Checkout Session created successfully for owner {owner.ownerid}")
+        log.info(
+            f"Stripe Checkout Session created successfully for owner {owner.ownerid}"
+        )
         return session["id"]
 
 
@@ -138,7 +154,9 @@ class BillingService:
             self.payment_service = payment_service
 
         if not issubclass(type(self.payment_service), AbstractPaymentService):
-            raise Exception("self.payment_service must subclass AbstractPaymentService!")
+            raise Exception(
+                "self.payment_service must subclass AbstractPaymentService!"
+            )
 
     def list_invoices(self, owner, limit=10):
         return self.payment_service.list_invoices(owner, limit)
@@ -160,7 +178,7 @@ class BillingService:
             else:
                 return self.payment_service.create_checkout_session(owner, desired_plan)
         else:
-            log.warn(
+            log.warning(
                 f"Attempted to transition to non-existent or legacy plan: "
                 f"owner {owner.ownerid}, plan: {desired_plan}"
             )

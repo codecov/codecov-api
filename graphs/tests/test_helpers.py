@@ -1,4 +1,4 @@
-from codecov.graphs.helpers.badge import format_coverage_precision, get_badge
+from graphs.helpers.badge import format_coverage_precision, get_badge
 
 
 class TestGraphsHelpers(object):

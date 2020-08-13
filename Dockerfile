@@ -12,6 +12,8 @@ RUN             apk update \
                 libffi-dev \
                 gcc \
                 bash \
+                curl-dev \
+                libcurl \
                 && pip install --upgrade pip
 
 ARG             SSH_PRIVATE_KEY
@@ -41,8 +43,9 @@ RUN             apk add --no-cache postgresql-libs && \
                 libffi-dev \
                 openssl-dev \
                 make \
-                python3-dev
-
+                python3-dev \
+                curl-dev \
+                libcurl
 RUN             wget -q -O /usr/local/bin/berglas https://storage.googleapis.com/berglas/0.5.0/linux_amd64/berglas && \
                 chmod +x /usr/local/bin/berglas
 
