@@ -10,7 +10,7 @@ branch = $(shell git branch | grep \* | cut -f2 -d' ')
 docker_version = $(shell git describe --always --tags --dirty | sed 's/^v//')
 release_env = master
 
-ifneq ($(branch), "master")
+ifneq ($(branch), master)
 release_env = pr
 endif
 
