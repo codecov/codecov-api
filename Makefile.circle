@@ -30,7 +30,7 @@ build-requirements:
 		-f Dockerfile.requirements . \
 		-t ${GCR_REPO}:${REQUIREMENTS_TAG} \
 		--build-arg GH_ACCESS_TOKEN=${GH_ACCESS_TOKEN} \
-	&& docker push ${GCR_REPO}:${REQUIREMENTS_TAG}
+	&& docker push ${GCR_REPO}:${REQUIREMENTS_TAG}; true
 
 # CIRCLECI
 # job: build
@@ -45,15 +45,15 @@ build:
 # CIRCLECI
 # job: portable
 # builds an image for deploying a portable version of the containers
-build-portable:
-	docker build -f Dockerfile.portable . -t codecov/$(name) \
+build-portable: build-requirements
+	docker build -f Dockerfile.circle . -t codecov/$(name) \
 		--label "org.label-schema.build-date"="$(build_date)" \
 		--label "org.label-schema.name"="$(name)" \
 		--label "org.label-schema.vcs-ref"="$(sha)" \
 		--label "org.label-schema.vendor"="Codecov" \
 		--label "org.label-schema.version"="$(tag)" \
 		--label "org.vcs-branch"="$(branch)" \
-		--build-arg GH_ACCESS_TOKEN=${GH_ACCESS_TOKEN}
+		--build-arg REQUIREMENTS_IMAGE=${GCR_REPO}:${REQUIREMENTS_TAG}
 
 
 # CIRCLECI

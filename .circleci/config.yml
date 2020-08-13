@@ -80,7 +80,7 @@ jobs:
       - run:
           <<: *gcloud_auth
       - run: echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKER_USERNAME" --password-stdin
-      - run: make -f Makefile.circle docker-deploy GH_ACCESS_TOKEN=$GH_ACCESS_TOKEN
+      - run: make -f Makefile.circle docker-deploy
 
   staging:
     executor: codecov-deploy
