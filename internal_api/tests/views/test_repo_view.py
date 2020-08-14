@@ -277,7 +277,7 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         new_repo = RepositoryFactory(author=self.org, name='C', private=False)
 
         response = self._list(
-            query_params={'names': 'A,B'}
+            query_params={'names': ['A', 'B']}
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
