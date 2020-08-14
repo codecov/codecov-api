@@ -1,10 +1,6 @@
 import uuid
 import logging
 
-from django.db.models import Subquery, OuterRef, Q
-from django.shortcuts import get_object_or_404
-from django.utils.functional import cached_property
-
 from rest_framework import filters, mixins, viewsets
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
@@ -12,10 +8,10 @@ from rest_framework.decorators import action
 from rest_framework.permissions import SAFE_METHODS # ['GET', 'HEAD', 'OPTIONS']
 from rest_framework import status
 
-from django_filters import rest_framework as django_filters, BooleanFilter, BaseInFilter
+from django_filters import rest_framework as django_filters, BooleanFilter
+from internal_api.repo.filter import StringListFilter
 
-from codecov_auth.models import Owner
-from core.models import Repository, Commit
+from core.models import Repository
 from services.repo_providers import RepoProviderService
 from services.decorators import torngit_safe
 from internal_api.permissions import RepositoryPermissionsService
@@ -41,7 +37,7 @@ class RepositoryFilters(django_filters.FilterSet):
     active = BooleanFilter(field_name='active', method='filter_active')
 
     """Filter for getting multiple repositories by name"""
-    names = BaseInFilter(field_name='name', lookup_expr='in')
+    names = StringListFilter(query_param='names', field_name='name', lookup_expr='in')
 
     def filter_active(self, queryset, name, value):
         # The database currently stores 't' instead of 'true' for active repos, and nothing for inactive
