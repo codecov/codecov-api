@@ -206,7 +206,7 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         CommitFactory(repository=self.repo1, totals=default_totals)
 
         response = self._list(
-            query_params={'names': 'A', 'timestamp': fetching_time}
+            query_params={'names': 'A', 'before_date': fetching_time}
         )
 
         # The fetching truncates the time, so it will not take into account the time part of the date time

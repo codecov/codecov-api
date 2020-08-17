@@ -40,7 +40,7 @@ class RepoSerializer(serializers.ModelSerializer):
         ).filter(
             state=Commit.CommitStates.COMPLETE,
             branch=self.context["request"].query_params.get("branch", None) or repo.branch,
-            truncated_date__lte=self.context["request"].query_params.get("timestamp", None) or datetime.now()
+            truncated_date__lte=self.context["request"].query_params.get("before_date", None) or datetime.now()
         ).select_related('author').order_by('-timestamp').first()
         return CommitSerializer(latest_commit).data
 
