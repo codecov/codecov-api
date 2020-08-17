@@ -42,9 +42,7 @@ class RepoSerializer(serializers.ModelSerializer):
             branch=self.context["request"].query_params.get("branch", None) or repo.branch,
             truncated_date__lte=self.context["request"].query_params.get("timestamp", None) or datetime.now()
         ).select_related('author').order_by('-timestamp').first()
-        test = CommitSerializer(latest_commit).data
-        print("repo list", test)
-        return test
+        return CommitSerializer(latest_commit).data
 
 
 class RepoWithMetricsSerializer(RepoSerializer):
