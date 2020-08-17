@@ -40,7 +40,12 @@ def apply_simple_filters(queryset, data, user):
     if data.get("repositories"):
         queryset = queryset.filter(repository__name__in=data.get("repositories", []))
     if data.get("start_date"):
+        # The __date cast function will case the datetime based timestamp on the commit to a date object that only
+        # contains the year, month and day. This allows us to filter through a daily granularity rather than
+        # a second granularity since this is the level of granularity we get from other parts of the API.
+        # We also have to convert the parameter to a datetime object for this to work, rather than pass a string.
         queryset = queryset.filter(timestamp__date__gte=parser.parse(data.get("start_date")))
     if data.get("end_date"):
+        # Same as above.
         queryset = queryset.filter(timestamp__date__lte=parser.parse(data.get("end_date")))
     return queryset
