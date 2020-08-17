@@ -1,4 +1,5 @@
 from django.db.models import Q, F
+from django.db.models.functions import Trunc
 
 
 def apply_default_filters(queryset):
@@ -16,7 +17,9 @@ def apply_simple_filters(queryset, data, user):
     Apply any coverage chart filtering parameters that can be construed as a simple queryset.filter call.
     """
 
-    queryset = queryset.filter(
+    queryset = queryset.annotate(
+        trunc_timestamp=Trunc("timestamp", "day")
+    ).filter(
         repository__author__username=data.get("owner_username") # filter by the organization in the request route
     ).filter(
         # make sure we only return repositories that are either public or that the logged-in user has permission to view.
@@ -37,7 +40,7 @@ def apply_simple_filters(queryset, data, user):
     if data.get("repositories"):
         queryset = queryset.filter(repository__name__in=data.get("repositories", []))
     if data.get("start_date"):
-        queryset = queryset.filter(timestamp__gte=data.get("start_date"))
+        queryset = queryset.filter(trunc_timestamp__gte=data.get("start_date"))
     if data.get("end_date"):
-        queryset = queryset.filter(timestamp__lte=data.get("end_date"))
+        queryset = queryset.filter(trunc_timestamp__lte=data.get("end_date"))
     return queryset
