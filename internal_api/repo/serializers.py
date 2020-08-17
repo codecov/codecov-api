@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from django.db.models.functions import Trunc
+from dateutil import parser
 from rest_framework import serializers
 
 from core.models import Repository, Commit
@@ -35,12 +35,12 @@ class RepoSerializer(serializers.ModelSerializer):
         )
 
     def get_latest_commit(self, repo):
-        latest_commit = repo.commits.annotate(
-            truncated_date=Trunc("timestamp", "day")
-        ).filter(
+        timestamp = parser.parse(self.context["request"].query_params.get("before_date", datetime.now().isoformat()))
+
+        latest_commit = repo.commits.filter(
             state=Commit.CommitStates.COMPLETE,
             branch=self.context["request"].query_params.get("branch", None) or repo.branch,
-            truncated_date__lte=self.context["request"].query_params.get("before_date", None) or datetime.now()
+            timestamp__date__lte=timestamp
         ).select_related('author').order_by('-timestamp').first()
         return CommitSerializer(latest_commit).data
 
