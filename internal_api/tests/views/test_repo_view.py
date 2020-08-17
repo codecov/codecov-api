@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
 
 from unittest.mock import patch
@@ -204,14 +204,14 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         # We're testing that the lte works as expected, so we're not sending the exact same timestamp
         fetching_time = datetime.now().isoformat()
 
-        time.sleep(1)
         CommitFactory(repository=self.repo1, totals=default_totals)
 
         response = self._list(
             query_params={'names': 'A', 'timestamp': fetching_time}
         )
 
-        assert response.data["results"][0]["latest_commit"]["totals"]["coverage"] == older_coverage
+        # The fetching truncates the time, so it will not take into account the time part of the date time
+        assert response.data["results"][0]["latest_commit"]["totals"]["coverage"] == 100.0
 
     def test_get_repos_with_totals(self):
         default_totals = {
