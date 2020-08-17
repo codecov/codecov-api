@@ -2,15 +2,43 @@ from json import dumps, loads
 from rest_framework.views import APIView
 from django.http import HttpResponse
 from rest_framework.permissions import AllowAny
-from rest_framework import status
+from rest_framework import status, exceptions
 from rest_framework.response import Response
 from .helpers.badge import get_badge, format_coverage_precision
 from codecov_auth.models import Owner
 from core.models import Repository, Branch
 from internal_api.mixins import RepoPropertyMixin
 from django.shortcuts import Http404
+from rest_framework.negotiation import DefaultContentNegotiation
+
+import logging
+
+log = logging.getLogger(__name__)
+
+
+class IgnoreClientContentNegotiation(DefaultContentNegotiation):
+    def select_parser(self, request, parsers):
+        """
+        Select the first parser in the `.parser_classes` list.
+        """
+        return parsers[0]
+
+    def select_renderer(self, request, renderers, format_suffix):
+        """
+        Select the first renderer in the `.renderer_classes` list.
+        """
+        try:
+            return super().select_renderer(request, renderers, format_suffix)
+        except exceptions.NotAcceptable:
+            log.info(
+                f"Recieved unsupported HTTP_ACCEPT header: {request.META.get('HTTP_ACCEPT')}"
+            )
+            return (renderers[0], renderers[0].media_type)
 
 class BadgeHandler(APIView, RepoPropertyMixin):
+
+    content_negotiation_class = IgnoreClientContentNegotiation
+
     permission_classes = [AllowAny]
 
     extensions = ['svg', 'txt']
@@ -22,7 +50,6 @@ class BadgeHandler(APIView, RepoPropertyMixin):
     }
 
     def get(self, request, *args, **kwargs):
-        
         # Validate file extensions
         ext = self.kwargs.get('ext')
         if not ext in self.extensions:
