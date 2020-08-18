@@ -645,6 +645,13 @@ class GithubWebhookHandlerTests(APITestCase):
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
+    @patch('webhook_handlers.views.github.get_config')
+    def test_signature_validation_with_string_key(self, get_config_mock):
+        # make get_config return string
+        get_config_mock.return_value = 'testixik8qdauiab1yiffydimvi72ekq'
+        response = self._post_event_data(event='', data={})
+        assert response.status_code == status.HTTP_200_OK
+
     def test_member_removes_repo_permissions_if_member_removed(self):
         member = OwnerFactory(permission=[self.repo.repoid], service_id=6098)
         response = self._post_event_data(

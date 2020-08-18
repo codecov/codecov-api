@@ -36,12 +36,18 @@ class GithubWebhookHandler(APIView):
     redis = get_redis_connection()
 
     def validate_signature(self, request):
+        key = get_config(
+            "github",
+            'webhook_secret',
+            default=b'testixik8qdauiab1yiffydimvi72ekq'
+        )
+        if type(key) is str:
+            # If "key" comes from k8s secret, it is of type str, so
+            # must convert to bytearray for use with hmac
+            key = bytes(key, 'utf-8')
+
         sig = 'sha1='+hmac.new(
-            get_config(
-                "github",
-                'webhook_secret',
-                default=b'testixik8qdauiab1yiffydimvi72ekq'
-            ),
+            key,
             request.body,
             digestmod=sha1
         ).hexdigest()
