@@ -544,7 +544,7 @@ class GithubWebhookHandlerTests(APITestCase):
             ),
         ])
 
-    def test_membership_with_removed_action_removes_user_from_org(self):
+    def test_organization_with_removed_action_removes_user_from_org(self):
         org = OwnerFactory(service_id='4321')
         user = OwnerFactory(organizations=[org.ownerid], service_id='12')
 
@@ -566,6 +566,45 @@ class GithubWebhookHandlerTests(APITestCase):
         user.refresh_from_db()
 
         assert org.ownerid not in user.organizations
+
+    def test_organization_member_removed_with_nonexistent_org_doesnt_crash(self):
+        user = OwnerFactory(service_id='12')
+
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.ORGANIZATION,
+            data={
+                "action": "member_removed",
+                "membership": {
+                    "user": {
+                        "id": user.service_id
+                    }
+                },
+                "organization": {
+                    "id": 65000
+                }
+            }
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+    def test_organization_member_removed_with_nonexistent_member_doesnt_crash(self):
+        org = OwnerFactory(service_id='4321')
+
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.ORGANIZATION,
+            data={
+                "action": "member_removed",
+                "membership": {
+                    "user": {
+                        "id": 101010
+                    }
+                },
+                "organization": {
+                    "id": org.service_id
+                }
+            }
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     @patch('services.task.TaskService.sync_plans')
     def test_marketplace_subscription_triggers_sync_plans_task(self, sync_plans_mock):

@@ -209,18 +209,42 @@ class GithubWebhookHandler(APIView):
     def organization(self, request, *args, **kwargs):
         action = request.data.get("action")
         if action == "member_removed":
-            org = Owner.objects.get(
-                service="github",
-                service_id=request.data["organization"]["id"]
+            log.info(
+                f"Removing user with service-id {request.data['membership']['user']['id']} "
+                f"from organization with service-id {request.data['organization']['id']}"
             )
 
-            member = Owner.objects.get(
-                service="github",
-                service_id=request.data["membership"]["user"]["id"]
-            )
+            try:
+                org = Owner.objects.get(
+                    service="github",
+                    service_id=request.data["organization"]["id"]
+                )
+            except Owner.DoesNotExist:
+                log.info("Organization does not exist, exiting")
+                return Response(
+                    status=status.HTTP_400_BAD_REQUEST,
+                    data="Attempted to remove member from non-Codecov org failed"
+                )
+
+            try:
+                member = Owner.objects.get(
+                    service="github",
+                    service_id=request.data["membership"]["user"]["id"]
+                )
+            except Owner.DoesNotExist:
+                log.info(
+                    f"Member with service-id {request.data['membership']['user']['id']} "
+                    f"does not exist, exiting"
+                )
+                return Response(
+                    status=status.HTTP_400_BAD_REQUEST,
+                    data="Attempted to remove non Codecov user from Codecov org failed"
+                )
 
             member.organizations = [ownerid for ownerid in member.organizations if ownerid != org.ownerid]
             member.save(update_fields=['organizations'])
+
+            log.info(f"User removal -- success")
 
         return Response()
 
