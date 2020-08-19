@@ -6,9 +6,10 @@ from rest_framework import status, exceptions
 from rest_framework.response import Response
 from .helpers.badge import get_badge, format_coverage_precision
 from codecov_auth.models import Owner
-from core.models import Repository, Branch
+from core.models import Repository, Branch, Commit
 from internal_api.mixins import RepoPropertyMixin
 from django.shortcuts import Http404
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.negotiation import DefaultContentNegotiation
 from services.redis import get_redis_connection
 
@@ -102,7 +103,12 @@ class BadgeHandler(APIView, RepoPropertyMixin):
        
         if branch is None:
             return None
-        commit = repo.commits.get(commitid=branch.head)
+        try:
+            commit = repo.commits.get(commitid=branch.head)
+        except ObjectDoesNotExist:
+            # if commit does not exist return None coverage
+            return None
+            
 
         flag = self.request.query_params.get('flag')
         if flag:
