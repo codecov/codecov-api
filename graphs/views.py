@@ -108,7 +108,6 @@ class BadgeHandler(APIView, RepoPropertyMixin):
         except ObjectDoesNotExist:
             # if commit does not exist return None coverage
             return None
-            
 
         flag = self.request.query_params.get('flag')
         if flag:
