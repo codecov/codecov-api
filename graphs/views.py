@@ -6,7 +6,7 @@ from rest_framework import status, exceptions
 from rest_framework.response import Response
 from .helpers.badge import get_badge, format_coverage_precision
 from codecov_auth.models import Owner
-from core.models import Repository, Branch, Commit
+from core.models import Repository, Branch
 from internal_api.mixins import RepoPropertyMixin
 from django.shortcuts import Http404
 from django.core.exceptions import ObjectDoesNotExist
