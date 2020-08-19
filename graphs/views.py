@@ -98,7 +98,7 @@ class BadgeHandler(APIView, RepoPropertyMixin):
             return None
        
         branch_name = self.kwargs.get('branch') or repo.branch
-        branch = Branch.objects.get(name=branch_name, repository_id=repo.repoid)
+        Branch.objects.filter(name=branch_name, repository_id=repo.repoid).first()
        
         if branch is None:
             return None
