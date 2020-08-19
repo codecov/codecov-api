@@ -1,4 +1,4 @@
-from json import dumps, loads
+import json
 from rest_framework.views import APIView
 from django.http import HttpResponse
 from rest_framework.permissions import AllowAny
@@ -112,7 +112,7 @@ class BadgeHandler(APIView, RepoPropertyMixin):
 
         if coverage is not None and flag is None:
             coverage_key = ':'.join((self.kwargs["service"], self.kwargs.get("owner_username"), self.kwargs.get("repo_name"), self.kwargs.get('branch') or '')).lower()
-            redis.hset('badge', coverage_key, dumps({'r': None, 'c': coverage, 't': repo.image_token if repo.private else None }))
+            redis.hset('badge', coverage_key, json.dumps({'r': None, 'c': coverage, 't': repo.image_token if repo.private else None }))
 
         return coverage
 
@@ -136,7 +136,9 @@ class BadgeHandler(APIView, RepoPropertyMixin):
         coverage_key = ':'.join((self.kwargs["service"], self.kwargs.get("owner_username"), self.kwargs.get("repo_name"), self.kwargs.get('branch') or '')).lower()
         coverage = redis.hget('badge', coverage_key)
         if coverage:
-            coverage = loads(coverage)
+            coverage = json.loads(coverage)
+            if coverage is None:
+                return None
             token = coverage.get('t')
             if token and token != self.request.query_params.get('token'):
                 return None
