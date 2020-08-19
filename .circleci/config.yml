@@ -72,6 +72,16 @@ jobs:
           bash -c "bash <(curl -s https://stage-web.codecov.dev/bash) -t dfdd2ba4-4dbc-40a6-8a96-534c0a39c3a5 -F unit"
 
 
+  portable:
+    executor: codecov-deploy
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          <<: *gcloud_auth
+      - run: echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKER_USERNAME" --password-stdin
+      - run: make -f Makefile.circle docker-deploy
+
   staging:
     executor: codecov-deploy
     steps:
@@ -125,6 +135,16 @@ workflows:
           filters:
             tags:
               only: /.*/
+      - portable:
+          context: "DockerHub Push Context"
+          requires:
+            - build
+            - test
+          filters:
+            branches:
+              only:
+                - master
+                - /portable-.*/
       - staging:
           requires:
             - build
