@@ -98,11 +98,11 @@ class BadgeHandler(APIView, RepoPropertyMixin):
             return None
        
         branch_name = self.kwargs.get('branch') or repo.branch
-        branch = Branch.objects.filter(name=branch_name, repository_id=repo.repoid).get()
+        branch = Branch.objects.get(name=branch_name, repository_id=repo.repoid).
        
         if branch is None:
             return None
-        commit = repo.commits.filter(commitid=branch.head).get()
+        commit = repo.commits.get(commitid=branch.head)
 
         flag = self.request.query_params.get('flag')
         if flag:
