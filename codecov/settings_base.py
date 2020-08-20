@@ -169,6 +169,8 @@ MINIO_HASH_KEY = get_config('services', 'minio', 'hash_key')
 ARCHIVE_BUCKET_NAME = 'codecov'
 ENCRYPTION_SECRET = get_config('setup', 'encryption_secret')
 
+COOKIE_SECRET = get_config("setup", "http", "cookie_secret")
+
 
 GITHUB_CLIENT_ID = os.environ.get("GITHUB__CLIENT_ID")
 GITHUB_CLIENT_SECRET = os.environ.get("GITHUB__CLIENT_SECRET")
