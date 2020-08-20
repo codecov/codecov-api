@@ -44,6 +44,10 @@ If you would like to use pytest directly (Either through an IDE like PyCharm or 
 
 Make sure to have all the requirements from `requirements.txt` installed.
 
+### Deploying
+
+All work merged into the `master` branch is immediately deployed to the production environment.
+
 ### Secret and Credential Management
 
 This project should store no secrets or credentials in its source. If you need to add to / modify / setup secrets for this project, contact Eli and he'll get you started. 
