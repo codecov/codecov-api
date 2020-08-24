@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, NotFound
 
 from core.models import Repository, Branch, Commit, Pull
 from codecov_auth.models import Owner
@@ -59,10 +59,13 @@ class GithubWebhookHandler(APIView):
         return Response(data=WebhookHandlerErrorMessages.UNSUPPORTED_EVENT)
 
     def _get_repo(self, request):
-        return Repository.objects.get(
-            author__service="github",
-            service_id=self.request.data.get("repository", {}).get("id")
-        )
+        try:
+            return Repository.objects.get(
+                author__service="github",
+                service_id=self.request.data.get("repository", {}).get("id")
+            )
+        except Repository.DoesNotExist:
+            raise NotFound("Repo does not exist")
 
     def ping(self, request, *args, **kwargs):
         return Response(data="pong")
