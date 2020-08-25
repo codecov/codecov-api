@@ -24,6 +24,7 @@ urlpatterns = [
     path("health/", views.health),
     path("", views.health),
     path("<str:service>/<str:owner_username>/<str:repo_name>/", include("graphs.urls")),
+    re_path(r'^redirect_app', views.redirect_app),
 ]
 
 urlpatterns.append(path(INTERNAL_API_PREFIX, include("internal_api.urls")))

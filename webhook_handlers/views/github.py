@@ -132,11 +132,23 @@ class GithubWebhookHandler(APIView):
         most_recent_commit = commits[-1]
 
         if regexp_ci_skip(most_recent_commit.get('message')):
-            log.info("CI skip tag on head commit, not setting status", extra=dict(repoid=repo.repoid))
+            log.info(
+                "CI skip tag on head commit, not setting status",
+                extra=dict(
+                    repoid=repo.repoid,
+                    commitid=most_recent_commit.get("id")
+                )
+            )
             return Response(data="CI Skipped")
 
         if self.redis.sismember('beta.pending', repo.repoid):
-            log.info("Triggering status set pending task", extra=dict(repoid=repo.repoid))
+            log.info(
+                "Triggering status set pending task",
+                extra=dict(
+                    repoid=repo.repoid,
+                    commitid=most_recent_commit.get("id")
+                )
+            )
             TaskService().status_set_pending(
                 repoid=repo.repoid,
                 commitid=most_recent_commit.get('id'),
@@ -282,18 +294,27 @@ class GithubWebhookHandler(APIView):
         action = request.data["action"]
         if action == "removed":
             repo = self._get_repo(request)   
-            log.info(f"Request to remove read permissions for user, repo: {repo.repoid}")
+            log.info(
+                f"Request to remove read permissions for user",
+                extra=dict(repoid=repo.repoid)
+            )
             try:
                 member = Owner.objects.get(
                     service="github",
                     service_id=request.data["member"]["id"]
                 )
             except Owner.DoesNotExist:
-                log.info(f"Repo permissions unchanged -- owner doesn't exist")
+                log.info(
+                    f"Repo permissions unchanged -- owner doesn't exist",
+                    extra=dict(repoid=repo.repoid)
+                )
                 return Response(status=status.HTTP_404_NOT_FOUND)
             member.permission.remove(repo.repoid)
             member.save(update_fields=['permission'])
-            log.info(f"Successfully updated read permissions for repo: {repo.repoid}, owner {member.ownerid}")
+            log.info(
+                f"Successfully updated read permissions for repo",
+                extra=dict(repoid=repo.repoid, ownerid=member.ownerid)
+            )
         return Response()
 
     def post(self, request, *args, **kwargs):

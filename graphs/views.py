@@ -78,6 +78,11 @@ class BadgeHandler(APIView, RepoPropertyMixin):
         response = HttpResponse(badge)
         response['Content-Disposition'] =' inline; filename="badge.svg"'
         response['Content-Type'] = 'image/svg+xml'
+        response['Pragma'] = 'no-cache'
+        response['Expires'] = '0'
+        response['Access-Control-Expose-Headers'] = 'Content-Type, Cache-Control, Expires, Etag, Last-Modified'
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+
         return response
     
     def get_coverage(self):
@@ -133,7 +138,7 @@ class BadgeHandler(APIView, RepoPropertyMixin):
         for key, data in sessions.items():
             if flag in data.get('f', []):
                 totals = data.get('t', [])
-                return totals[5] if len(totals) > 5 else None
+                return totals[5] if totals is not None and len(totals) > 5 else None
         return None
 
 
