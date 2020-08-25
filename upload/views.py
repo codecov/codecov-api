@@ -56,7 +56,7 @@ class UploadHandler(APIView):
         try:
             upload_params = parse_params(request_params)
         except ValidationError as e:
-            log.debug(
+            log.error(
                 "Failed to parse upload request params",
                 extra=dict(request_params=request_params, errors=str(e)),
             )

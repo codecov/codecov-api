@@ -10,7 +10,7 @@ def parse_params(data):
     """
 
     # filter out empty values from the data; this makes parsing and setting defaults a bit easier
-    filtered_data = {
+    non_empty_data = {
         key: value for key, value in data.items() if value not in [None, ""]
     }
 
@@ -122,7 +122,7 @@ def parse_params(data):
     }
 
     v = Validator(params_schema, allow_unknown=True)
-    if not v.validate(filtered_data):
+    if not v.validate(non_empty_data):
         raise ValidationError(v.errors)
 
     # return validated data, including coerced values
