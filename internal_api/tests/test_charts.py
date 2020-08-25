@@ -242,11 +242,13 @@ class CoverageChartHelpersTest(TestCase):
         setup_commits(self.repo1_org1, 10, start_date="-7d")
         setup_commits(self.repo1_org1, 2, branch="production", start_date="-7d")
 
+        start_date = datetime.now(tz=UTC) - relativedelta(days=7)
+        end_date = datetime.now(tz=UTC)
         data = {
             "owner_username": self.org1.username,
             "branch": "master",
-            "start_date": datetime.now(tz=UTC) - relativedelta(days=7),
-            "end_date": datetime.now(tz=UTC),
+            "start_date": start_date.isoformat(),
+            "end_date": end_date.isoformat(),
             "repositories": [self.repo1_org1.name, self.repo2_org1.name],
         }
         queryset = apply_simple_filters(Commit.objects.all(), data, self.user)
@@ -256,8 +258,8 @@ class CoverageChartHelpersTest(TestCase):
             assert commit.repository.name in data.get("repositories")
             assert commit.repository.author.username == data["owner_username"]
             assert commit.branch == data["branch"]
-            assert commit.timestamp >= data["start_date"]
-            assert commit.timestamp <= data["end_date"]
+            assert commit.timestamp >= start_date
+            assert commit.timestamp <= end_date
 
     def test_apply_simple_filters_repo_filtering(self):
         """
@@ -345,8 +347,8 @@ class CoverageChartHelpersTest(TestCase):
                 "grouping_unit": "day",
                 "agg_function": "min",
                 "agg_value": "coverage",
-                "start_date": datetime.now(tz=UTC) - relativedelta(days=7),
-                "end_date": datetime.now(tz=UTC),
+                "start_date": (datetime.now(tz=UTC) - relativedelta(days=7)).isoformat(),
+                "end_date": datetime.now(tz=UTC).isoformat(),
                 "repositories": [self.repo1_org1.name],
             }
 
@@ -366,8 +368,8 @@ class CoverageChartHelpersTest(TestCase):
                 "grouping_unit": "month",
                 "agg_function": "max",
                 "agg_value": "coverage",
-                "start_date": datetime.now(tz=UTC) - relativedelta(months=6),
-                "end_date": datetime.now(tz=UTC),
+                "start_date": (datetime.now(tz=UTC) - relativedelta(months=6)).isoformat(),
+                "end_date": datetime.now(tz=UTC).isoformat(),
                 "repositories": [self.repo1_org1.name],
             }
 
@@ -387,8 +389,8 @@ class CoverageChartHelpersTest(TestCase):
                 "grouping_unit": "day",
                 "agg_function": "max",
                 "agg_value": "complexity",
-                "start_date": datetime.now(tz=UTC) - relativedelta(days=7),
-                "end_date": datetime.now(tz=UTC),
+                "start_date": (datetime.now(tz=UTC) - relativedelta(days=7)).isoformat(),
+                "end_date": datetime.now(tz=UTC).isoformat(),
                 "repositories": [self.repo1_org1.name],
             }
 
@@ -408,8 +410,8 @@ class CoverageChartHelpersTest(TestCase):
                 "grouping_unit": "day",
                 "agg_function": "max",
                 "agg_value": "complexity",
-                "start_date": datetime.now(tz=UTC) - relativedelta(days=7),
-                "end_date": datetime.now(tz=UTC),
+                "start_date": (datetime.now(tz=UTC) - relativedelta(days=7)).isoformat(),
+                "end_date": datetime.now(tz=UTC).isoformat(),
                 "repositories": [self.repo1_org1.name],
             }
 
@@ -430,8 +432,8 @@ class CoverageChartHelpersTest(TestCase):
                 "grouping_unit": "quarter",
                 "agg_function": "max",
                 "agg_value": "timestamp",
-                "start_date": datetime.now(tz=UTC) - relativedelta(months=12),
-                "end_date": datetime.now(tz=UTC),
+                "start_date": (datetime.now(tz=UTC) - relativedelta(months=12)).isoformat(),
+                "end_date": datetime.now(tz=UTC).isoformat(),
                 "repositories": [self.repo1_org1.name, self.repo2_org1.name],
             }
 
@@ -520,7 +522,7 @@ class CoverageChartHelpersTest(TestCase):
             "grouping_unit": "day",
             "agg_function": "max",
             "agg_value": "timestamp",
-            "start_date": datetime.combine(date.today(), time(0, tzinfo=UTC)),
+            "start_date": datetime.combine(date.today(), time(0, tzinfo=UTC)).isoformat(),
             "repositories": [repo2_org2.name, repo3_org2.name, repo4_org2.name],
         }
 

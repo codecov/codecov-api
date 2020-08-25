@@ -1,9 +1,6 @@
 import uuid
 import logging
-
-from django.db.models import Subquery, OuterRef, Q
-from django.shortcuts import get_object_or_404
-from django.utils.functional import cached_property
+from datetime import datetime
 
 from rest_framework import filters, mixins, viewsets
 from rest_framework.exceptions import PermissionDenied
@@ -12,17 +9,21 @@ from rest_framework.decorators import action
 from rest_framework.permissions import SAFE_METHODS # ['GET', 'HEAD', 'OPTIONS']
 from rest_framework import status
 
-from django_filters import rest_framework as django_filters, BooleanFilter, BaseInFilter
+from django_filters import rest_framework as django_filters, BooleanFilter
+from internal_api.repo.filter import StringListFilter
 
-from codecov_auth.models import Owner
-from core.models import Repository, Commit
+from core.models import Repository
 from services.repo_providers import RepoProviderService
 from services.decorators import torngit_safe
 from internal_api.permissions import RepositoryPermissionsService
 from internal_api.mixins import OwnerPropertyMixin
 
 from .repository_accessors import RepoAccessors
-from .serializers import RepoWithTotalSerializer, RepoDetailsSerializer, SecretStringPayloadSerializer
+from .serializers import (
+    RepoWithMetricsSerializer,
+    RepoDetailsSerializer,
+    SecretStringPayloadSerializer,
+)
 
 from .utils import encode_secret_string
 
@@ -37,7 +38,7 @@ class RepositoryFilters(django_filters.FilterSet):
     active = BooleanFilter(field_name='active', method='filter_active')
 
     """Filter for getting multiple repositories by name"""
-    names = BaseInFilter(field_name='name', lookup_expr='in')
+    names = StringListFilter(query_param='names', field_name='name', lookup_expr='in')
 
     def filter_active(self, queryset, name, value):
         # The database currently stores 't' instead of 'true' for active repos, and nothing for inactive
@@ -61,20 +62,28 @@ class RepositoryViewSet(
     filter_backends = (django_filters.DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
     filterset_class = RepositoryFilters
     search_fields = ('name',)
-    ordering_fields = ('updatestamp', 'name', 'coverage',)
+    ordering_fields = (
+        'updatestamp',
+        'name',
+        'latest_coverage_change',
+        'coverage',
+        'lines',
+        'hits',
+        'partials',
+        'misses',
+        'complexity',
+    )
     lookup_value_regex = '[\w\.@\:\-~]+'
     lookup_field = 'repo_name'
     accessors = RepoAccessors()
 
     def _assert_is_admin(self):
-        owner = self.owner
-        if self.request.user.ownerid != owner.ownerid:
-            if owner.admins is None or self.request.user.ownerid not in owner.admins:
-                raise PermissionDenied()
+        if not self.owner.is_admin(self.request.user):
+            raise PermissionDenied()
 
     def get_serializer_class(self):
         if self.action == 'list':
-            return RepoWithTotalSerializer
+            return RepoWithMetricsSerializer
         return RepoDetailsSerializer
 
     def get_serializer_context(self, *args, **kwargs):
@@ -84,50 +93,21 @@ class RepositoryViewSet(
         return context
 
     def get_queryset(self):
-        queryset = self.owner.repository_set.filter(
-            Q(private=False)
-            | Q(author__ownerid=self.request.user.ownerid)
-            | Q(repoid__in=self.request.user.permission)
+        queryset = self.owner.repository_set.viewable_repos(
+            self.request.user
+        ).select_related(
+            "author"
         )
 
         if self.action == 'list':
-            timestamp = self.request.query_params.get("timestamp", None)
+            if self.request.query_params.get("exclude_uncovered", False):
+                queryset = queryset.exclude_uncovered()
 
-            # Hiding this annotation will avoid expensive subqueries
-            # used only for filtering list action on coverage metrics
-            queryset = queryset.annotate(
-                coverage=Subquery(
-                    Commit.objects.filter(
-                        repository_id=OuterRef('repoid')
-                    ).order_by('-timestamp').values('totals__c')[:1]
-                )
-            )
-
-            # Get the commit at a specific timestamp based on the query params
-            if timestamp:
-                queryset = queryset.annotate(
-                    totals=Subquery(
-                        Commit.objects.filter(
-                            repository_id=OuterRef('repoid'),
-                            branch=OuterRef('branch'),
-                            timestamp__lte=timestamp
-                        ).order_by('-timestamp').values('totals')[:1]
-                    )
-                )
-            else:
-                queryset = queryset.annotate(
-                    totals=Subquery(
-                        Commit.objects.filter(
-                            repository_id=OuterRef('repoid'),
-                            branch=OuterRef('branch')
-                        ).order_by('-timestamp').values('totals')[:1]
-                    )
-                )
-
-            # We have to manage this parameter dynamically as the totals are added after the filters run
-            exclude_uncovered = self.request.query_params.get("exclude_uncovered", None)
-            if exclude_uncovered:
-                queryset = queryset.exclude(totals__isnull=True)
+            queryset = queryset.with_latest_commit_before(
+                self.request.query_params.get("before_date", datetime.now().isoformat()),
+                self.request.query_params.get("branch", None)
+            ).with_latest_coverage_change(
+            ).with_total_commit_count()
 
         return queryset
 

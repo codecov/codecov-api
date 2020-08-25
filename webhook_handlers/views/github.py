@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, NotFound
 
 from core.models import Repository, Branch, Commit, Pull
 from codecov_auth.models import Owner
@@ -36,12 +36,18 @@ class GithubWebhookHandler(APIView):
     redis = get_redis_connection()
 
     def validate_signature(self, request):
+        key = get_config(
+            "github",
+            'webhook_secret',
+            default=b'testixik8qdauiab1yiffydimvi72ekq'
+        )
+        if type(key) is str:
+            # If "key" comes from k8s secret, it is of type str, so
+            # must convert to bytearray for use with hmac
+            key = bytes(key, 'utf-8')
+
         sig = 'sha1='+hmac.new(
-            get_config(
-                "github",
-                'webhook_secret',
-                default=b'testixik8qdauiab1yiffydimvi72ekq'
-            ),
+            key,
             request.body,
             digestmod=sha1
         ).hexdigest()
@@ -53,10 +59,13 @@ class GithubWebhookHandler(APIView):
         return Response(data=WebhookHandlerErrorMessages.UNSUPPORTED_EVENT)
 
     def _get_repo(self, request):
-        return Repository.objects.get(
-            author__service="github",
-            service_id=self.request.data.get("repository", {}).get("id")
-        )
+        try:
+            return Repository.objects.get(
+                author__service="github",
+                service_id=self.request.data.get("repository", {}).get("id")
+            )
+        except Repository.DoesNotExist:
+            raise NotFound("Repo does not exist")
 
     def ping(self, request, *args, **kwargs):
         return Response(data="pong")
@@ -96,18 +105,20 @@ class GithubWebhookHandler(APIView):
 
     def push(self, request, *args, **kwargs):
         ref_type = "branch" if request.data.get("ref")[5:10] == "heads" else "tag"
+        repo = self._get_repo(request)
         if ref_type != "branch":
+            log.info("Ref is tag, not branch, ignoring push event", extra=dict(repoid=repo.repoid))
             return Response(f"Unsupported ref type: {ref_type}")
 
-        repo = self._get_repo(request)
-
         if not repo.active:
+            log.info("Repo is not active, ignoring push event", extra=dict(repoid=repo.repoid))
             return Response(data=WebhookHandlerErrorMessages.SKIP_NOT_ACTIVE)
 
         branch_name = self.request.data.get('ref')[11:]
         commits = self.request.data.get('commits', [])
 
         if not commits:
+            log.info(f"No commits in webhook payload for branch {branch_name}", extra=dict(repoid=repo.repoid))
             return Response()
 
         Commit.objects.filter(
@@ -116,12 +127,16 @@ class GithubWebhookHandler(APIView):
             merged=False
         ).update(branch=branch_name)
 
+        log.info(f"Branch name updated for commits to {branch_name}", extra=dict(repoid=repo.repoid))
+
         most_recent_commit = commits[-1]
 
         if regexp_ci_skip(most_recent_commit.get('message')):
+            log.info("CI skip tag on head commit, not setting status", extra=dict(repoid=repo.repoid))
             return Response(data="CI Skipped")
 
         if self.redis.sismember('beta.pending', repo.repoid):
+            log.info("Triggering status set pending task", extra=dict(repoid=repo.repoid))
             TaskService().status_set_pending(
                 repoid=repo.repoid,
                 commitid=most_recent_commit.get('id'),
@@ -209,18 +224,43 @@ class GithubWebhookHandler(APIView):
     def organization(self, request, *args, **kwargs):
         action = request.data.get("action")
         if action == "member_removed":
-            org = Owner.objects.get(
-                service="github",
-                service_id=request.data["organization"]["id"]
+            log.info(
+                f"Removing user with service-id {request.data['membership']['user']['id']} "
+                f"from organization with service-id {request.data['organization']['id']}"
             )
 
-            member = Owner.objects.get(
-                service="github",
-                service_id=request.data["membership"]["user"]["id"]
-            )
+            try:
+                org = Owner.objects.get(
+                    service="github",
+                    service_id=request.data["organization"]["id"]
+                )
+            except Owner.DoesNotExist:
+                log.info("Organization does not exist, exiting")
+                return Response(
+                    status=status.HTTP_400_BAD_REQUEST,
+                    data="Attempted to remove member from non-Codecov org failed"
+                )
+
+            try:
+                member = Owner.objects.get(
+                    service="github",
+                    service_id=request.data["membership"]["user"]["id"]
+                )
+            except Owner.DoesNotExist:
+                log.info(
+                    f"Member with service-id {request.data['membership']['user']['id']} "
+                    f"does not exist, exiting",
+                    extra=dict(ownerid=org.ownerid)
+                )
+                return Response(
+                    status=status.HTTP_400_BAD_REQUEST,
+                    data="Attempted to remove non Codecov user from Codecov org failed"
+                )
 
             member.organizations = [ownerid for ownerid in member.organizations if ownerid != org.ownerid]
             member.save(update_fields=['organizations'])
+
+            log.info(f"User removal of {member.ownerid}, success", extra=dict(ownerid=org.ownerid))
 
         return Response()
 

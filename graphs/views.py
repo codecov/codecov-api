@@ -1,19 +1,48 @@
-from json import dumps, loads
+import json
 from rest_framework.views import APIView
 from django.http import HttpResponse
 from rest_framework.permissions import AllowAny
-from rest_framework import status
+from rest_framework import status, exceptions
 from rest_framework.response import Response
 from .helpers.badge import get_badge, format_coverage_precision
 from codecov_auth.models import Owner
 from core.models import Repository, Branch
 from internal_api.mixins import RepoPropertyMixin
 from django.shortcuts import Http404
+from django.core.exceptions import ObjectDoesNotExist
+from rest_framework.negotiation import DefaultContentNegotiation
 from services.redis import get_redis_connection
 
 redis = get_redis_connection()
 
+import logging
+
+log = logging.getLogger(__name__)
+
+
+class IgnoreClientContentNegotiation(DefaultContentNegotiation):
+    def select_parser(self, request, parsers):
+        """
+        Select the first parser in the `.parser_classes` list.
+        """
+        return parsers[0]
+
+    def select_renderer(self, request, renderers, format_suffix):
+        """
+        Select the first renderer in the `.renderer_classes` list.
+        """
+        try:
+            return super().select_renderer(request, renderers, format_suffix)
+        except exceptions.NotAcceptable:
+            log.info(
+                f"Recieved unsupported HTTP_ACCEPT header: {request.META.get('HTTP_ACCEPT')}"
+            )
+            return (renderers[0], renderers[0].media_type)
+
 class BadgeHandler(APIView, RepoPropertyMixin):
+
+    content_negotiation_class = IgnoreClientContentNegotiation
+
     permission_classes = [AllowAny]
 
     extensions = ['svg', 'txt']
@@ -25,7 +54,6 @@ class BadgeHandler(APIView, RepoPropertyMixin):
     }
 
     def get(self, request, *args, **kwargs):
-        
         # Validate file extensions
         ext = self.kwargs.get('ext')
         if not ext in self.extensions:
@@ -50,6 +78,11 @@ class BadgeHandler(APIView, RepoPropertyMixin):
         response = HttpResponse(badge)
         response['Content-Disposition'] =' inline; filename="badge.svg"'
         response['Content-Type'] = 'image/svg+xml'
+        response['Pragma'] = 'no-cache'
+        response['Expires'] = '0'
+        response['Access-Control-Expose-Headers'] = 'Content-Type, Cache-Control, Expires, Etag, Last-Modified'
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+
         return response
     
     def get_coverage(self):
@@ -75,7 +108,11 @@ class BadgeHandler(APIView, RepoPropertyMixin):
        
         if branch is None:
             return None
-        commit = repo.commits.filter(commitid=branch.head).first()
+        try:
+            commit = repo.commits.get(commitid=branch.head)
+        except ObjectDoesNotExist:
+            # if commit does not exist return None coverage
+            return None
 
         flag = self.request.query_params.get('flag')
         if flag:
@@ -85,7 +122,8 @@ class BadgeHandler(APIView, RepoPropertyMixin):
 
         if coverage is not None and flag is None:
             coverage_key = ':'.join((self.kwargs["service"], self.kwargs.get("owner_username"), self.kwargs.get("repo_name"), self.kwargs.get('branch') or '')).lower()
-            redis.hset('badge', coverage_key, dumps({'r': None, 'c': coverage, 't': repo.image_token if repo.private else None }))
+            redis.hset('badge', coverage_key, json.dumps({'r': None, 'c': coverage, 't': repo.image_token if repo.private else None }))
+
         return coverage
 
     def flag_coverage(self, flag, commit):
@@ -100,14 +138,17 @@ class BadgeHandler(APIView, RepoPropertyMixin):
         for key, data in sessions.items():
             if flag in data.get('f', []):
                 totals = data.get('t', [])
-                return totals[5] if len(totals) > 5 else None
+                return totals[5] if totals is not None and len(totals) > 5 else None
         return None
+
 
     def get_cached_coverage(self):
         coverage_key = ':'.join((self.kwargs["service"], self.kwargs.get("owner_username"), self.kwargs.get("repo_name"), self.kwargs.get('branch') or '')).lower()
         coverage = redis.hget('badge', coverage_key)
         if coverage:
-            coverage = loads(coverage)
+            coverage = json.loads(coverage)
+            if coverage is None:
+                return None
             token = coverage.get('t')
             if token and token != self.request.query_params.get('token'):
                 return None
