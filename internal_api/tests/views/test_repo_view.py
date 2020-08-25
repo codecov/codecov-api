@@ -1,3 +1,4 @@
+import pytest
 from datetime import datetime
 
 from unittest.mock import patch
@@ -144,6 +145,39 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
 
         assert reverse_response.data["results"][0]["repoid"] == self.repo1.repoid
         assert reverse_response.data["results"][1]["repoid"] == self.repo2.repoid
+
+    def test_order_by_lines(self):
+        default_totals = {
+            "f": 1,
+            "n": 4,
+            "h": 4,
+            "m": 0,
+            "p": 0,
+            "c": 100.0,
+            "b": 0,
+            "d": 0,
+            "s": 1,
+            "C": 0.0,
+            "N": 0.0,
+            "diff": ""
+        }
+
+        CommitFactory(repository=self.repo1, totals={**default_totals, "n": 25})
+        CommitFactory(repository=self.repo2, totals={**default_totals, "n": 32})
+
+        response = self._list(
+            query_params={'ordering': 'lines'}
+        )
+
+        assert response.data["results"][0]["repoid"] == self.repo1.repoid
+        assert response.data["results"][1]["repoid"] == self.repo2.repoid
+
+        reverse_response = self._list(
+            query_params={'ordering': '-lines'}
+        )
+
+        assert reverse_response.data["results"][0]["repoid"] == self.repo2.repoid
+        assert reverse_response.data["results"][1]["repoid"] == self.repo1.repoid
 
     def test_totals_serializer(self):
         default_totals = {
@@ -360,6 +394,13 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         repo1 = [repo for repo in response.data["results"] if repo["name"] == "A"][0]
         assert repo1["total_commit_count"] == 2
         assert repo1["latest_coverage_change"] == -30
+
+    def test_latest_commit_null(self):
+        response = self._list()
+        repo1 = [repo for repo in response.data["results"] if repo["name"] == "A"][0]
+
+        # When the commit is missing, everything is set to None or empty string. Test with lines.
+        assert repo1["latest_commit"]["totals"]["lines"] is None
 
     def test_returns_latest_commit(self):
         commit = CommitFactory(repository=self.repo1)
