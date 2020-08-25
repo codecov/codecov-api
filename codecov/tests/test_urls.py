@@ -10,5 +10,5 @@ class ViewTest(TestCase):
     def test_redirect_app(self, env_setting, expected_url):
         client = Client()
         response = client.get('/redirect_app/gh/codecov/codecov.io/settings', follow=False)
-        self.assertRedirects(response,expected_url, 302, fetch_redirect_response=False)
+        self.assertRedirects(response,"http://localhost:9000/gh/codecov/codecov.io/settings", 302, fetch_redirect_response=False)
 
