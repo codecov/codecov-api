@@ -685,3 +685,16 @@ class GithubWebhookHandlerTests(APITestCase):
         )
 
         assert response.status_code == 404
+
+    def test_returns_404_if_repo_not_found(self):
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.REPOSITORY,
+            data={
+                "action": "publicized",
+                "repository": {
+                    "id": -29384
+                }
+            }
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
