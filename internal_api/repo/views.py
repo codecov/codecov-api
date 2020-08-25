@@ -1,5 +1,6 @@
 import uuid
 import logging
+from datetime import datetime
 
 from rest_framework import filters, mixins, viewsets
 from rest_framework.exceptions import PermissionDenied
@@ -61,7 +62,17 @@ class RepositoryViewSet(
     filter_backends = (django_filters.DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
     filterset_class = RepositoryFilters
     search_fields = ('name',)
-    ordering_fields = ('updatestamp', 'name', 'coverage',)
+    ordering_fields = (
+        'updatestamp',
+        'name',
+        'latest_coverage_change',
+        'coverage',
+        'lines',
+        'hits',
+        'partials',
+        'misses',
+        'complexity',
+    )
     lookup_value_regex = '[\w\.@\:\-~]+'
     lookup_field = 'repo_name'
     accessors = RepoAccessors()
@@ -92,7 +103,9 @@ class RepositoryViewSet(
             if self.request.query_params.get("exclude_uncovered", False):
                 queryset = queryset.exclude_uncovered()
 
-            queryset = queryset.with_current_coverage(
+            queryset = queryset.with_latest_commit_before(
+                self.request.query_params.get("before_date", datetime.now().isoformat()),
+                self.request.query_params.get("branch", None)
             ).with_latest_coverage_change(
             ).with_total_commit_count()
 
