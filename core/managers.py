@@ -1,6 +1,6 @@
 from dateutil import parser
 
-from django.db.models import QuerySet, Subquery, OuterRef, Q, Count, F, FloatField, Max
+from django.db.models import QuerySet, Subquery, OuterRef, Q, Count, F, FloatField
 from django.db.models.functions import Cast
 from django.contrib.postgres.fields.jsonb import KeyTextTransform
 
@@ -18,7 +18,15 @@ class RepositoryQuerySet(QuerySet):
         )
 
     def exclude_uncovered(self):
-        return self.exclude(latest_commit__totals__isnull=True)
+        from core.models import Commit
+        return self.annotate(
+            totals=Subquery(
+                Commit.objects.filter(
+                    repository_id=OuterRef('repoid'),
+                    branch=OuterRef('branch')
+                ).order_by('-timestamp').values('totals')[:1]
+            )
+        ).exclude(totals__isnull=True)
 
     def with_latest_commit_before(self, before_date, branch_param):
         """
