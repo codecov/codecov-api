@@ -1,6 +1,6 @@
 from dateutil import parser
 
-from django.db.models import QuerySet, Subquery, OuterRef, Q, Count, F, FloatField
+from django.db.models import QuerySet, Subquery, OuterRef, Q, Count, F, FloatField, Avg, Sum
 from django.db.models.functions import Cast
 from django.contrib.postgres.fields.jsonb import KeyTextTransform
 
@@ -127,4 +127,23 @@ class RepositoryQuerySet(QuerySet):
             )
         ).annotate(
             latest_coverage_change=F("latest_coverage") - F("second_latest_coverage")
+        )
+
+    def get_aggregated_coverage(self):
+        """
+        Adds group_bys in the queryset to aggregate the repository coverage totals together to access
+        statistics on an organization repositories. Requires `with_latest_coverage_change` and
+        `with_latest_commit_before` to have been executed beforehand.
+
+        Does not return a queryset and instead returns the aggregated values, fetched from the database.
+        """
+        return self.aggregate(
+            repo_count=Count("repoid"),
+            sum_lines=Sum("lines"),
+            sum_hits=Sum("hits"),
+            sum_partials=Sum("partials"),
+            sum_misses=Sum("misses"),
+            average_coverage=Avg("coverage"),
+            average_complexity=Avg("complexity"),
+            average_change=Avg("latest_coverage_change"),
         )

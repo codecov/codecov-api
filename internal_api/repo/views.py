@@ -157,6 +157,38 @@ class RepositoryViewSet(
                 raise PermissionDenied("Private repository limit reached.")
         return super().perform_update(serializer)
 
+    @action(detail=False, url_path='statistics')
+    def statistics(self, request, *args, **kwargs):
+        request_params = {**self.request.query_params, **self.kwargs}
+
+        # Only get viewable repositories
+        queryset = self.owner.repository_set.viewable_repos(
+            self.request.user
+        )
+
+        # Filter the repositories by the list of repositories if it is set
+        if request_params.get("names"):
+            queryset = queryset.filter(name__in=request_params.get("names", []))
+
+        # Then only get the repositories with totals and then annotate the latest commit
+        results = queryset.exclude_uncovered(
+        ).with_latest_commit_before(
+            request_params.get("before_date", datetime.now().isoformat()),
+            request_params.get("branch", None)
+        ).with_latest_coverage_change(
+        ).get_aggregated_coverage()
+
+        return Response(data={
+            "repos_count": results["repo_count"],
+            "sum_lines": results["sum_lines"],
+            "sum_hits": results["sum_hits"],
+            "sum_partials": results["sum_partials"],
+            "sum_misses": results["sum_misses"],
+            "average_coverage": results["average_coverage"],
+            "average_complexity": results["average_complexity"],
+            "average_change": results["average_change"],
+        })
+
     @action(detail=True, methods=['patch'], url_path='regenerate-upload-token')
     def regenerate_upload_token(self, request, *args, **kwargs):
         repo = self.get_object()

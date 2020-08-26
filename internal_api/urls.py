@@ -60,7 +60,6 @@ urlpatterns = [
     path('<str:service>/<str:owner_username>/', include(owner_artifacts_router.urls)),
     path('<str:service>/<str:owner_username>/', include(account_details_router.urls)),
     path('<str:service>/<str:owner_username>/<str:repo_name>/', include(repository_artifacts_router.urls)),
-    path('<str:service>/<str:owner_username>/<str:repo_name>/', include(compare_router.urls))
+    path('<str:service>/<str:owner_username>/<str:repo_name>/', include(compare_router.urls)),
+    path("charts/", include("internal_api.chart.urls"))
 ]
-
-urlpatterns.append(path("charts/", include("internal_api.chart.urls")))
