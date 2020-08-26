@@ -197,3 +197,13 @@ ci = {
         "build_url": None,  # provided in upload,
     },
 }
+
+global_upload_token_providers = [
+    "github",
+    "github_enterprise",
+    "gitlab",
+    "gitlab_enterprise",
+    "bitbucket",
+    "bitbucket_server",
+]
+

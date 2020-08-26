@@ -1,7 +1,10 @@
 from cerberus import Validator
 from rest_framework.exceptions import ValidationError
 
-from .constants import ci
+from core.models import Repository
+from codecov_auth.models import Owner
+from utils.config import get_config
+from .constants import ci, global_upload_token_providers
 
 
 def parse_params(data):
@@ -13,6 +16,8 @@ def parse_params(data):
     filtered_data = {
         key: value for key, value in data.items() if value not in [None, ""]
     }
+
+    global_tokens = get_global_tokens()
 
     params_schema = {
         "version": {"type": "string", "required": True, "allowed": ["v2", "v4"]},
@@ -49,15 +54,32 @@ def parse_params(data):
         # repository upload token
         "token": {
             "type": "string",
-            "regex": r"^[0-9a-f]{8}(-?[0-9a-f]{4}){3}-?[0-9a-f]{12}$",
+            "anyof": [
+                {"regex": r"^[0-9a-f]{8}(-?[0-9a-f]{4}){3}-?[0-9a-f]{12}$"},
+                {"allowed": list(global_tokens.keys())},
+            ],
+        },
+        "using_global_token": {
+            "type": "boolean",
+            "default_setter": (
+                lambda document: True
+                if document.get("token") and document.get("token") in global_tokens
+                else False
+            ),
         },
         # name of the CI service used, must be a name in the list of CI services we support
         "service": {
             "type": "string",
-            "allowed": list(ci.keys()),
+            "nullable": True,
+            "allowed": list(ci.keys()) + list(global_tokens.values()),
             "coerce": (
                 lambda value: "travis" if value == "travis-org" else value,
             ),  # if "travis-org" was passed as the service rename it to "travis" before validating
+            "default_setter": (
+                lambda document: global_tokens[document.get("token")]
+                if document.get("using_global_token")
+                else None
+            ),
         },
         # pull request number
         # if a value is passed to the "pull_request" field and not to "pr", we'll use that to set the value of this field
@@ -127,3 +149,42 @@ def parse_params(data):
 
     # return validated data, including coerced values
     return v.document
+
+
+def determine_repo_and_owner_for_upload(upload_params):
+    token = upload_params.get("token")
+    using_global_token = upload_params.get("using_global_token")
+    service = upload_params.get("service")
+
+    if token and not using_global_token:
+        try:
+            repository = Repository.objects.get(upload_token=token)
+            owner = Owner.objects.get(id=repository.owner)
+        except Owner.DoesNotExist:
+            raise ValidationError(
+                f"Could not find a repository associated with upload token {token}"
+            )
+    else:
+        raise ValidationError(
+            "Need either a token or service to determine target repository"
+        )
+
+    """
+    TODO: add CI verification and repo retrieval from CI
+    elif service:
+        if not using_global_token:
+            # verify CI TODO
+        
+        # Get repo info from CI TODO
+    """
+
+
+def get_global_tokens():
+    print("Result of calling get config: " + str(get_config()))
+    # Returns dict with structure {<upload token>: <service name>}
+    tokens = {
+        get_config(service, "global_upload_token"): service
+        for service in global_upload_token_providers
+        if get_config(service, "global_upload_token")
+    }
+    return tokens

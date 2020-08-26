@@ -10,7 +10,16 @@ from django.conf import settings
 from django.test import RequestFactory
 from urllib.parse import urlencode
 
-from upload.helpers import parse_params
+from upload.helpers import parse_params, get_global_tokens
+
+
+def mock_get_config_side_effect(*args):
+    if args == ("github", "global_upload_token"):
+        return "githubuploadtoken"
+    if args == ("gitlab", "global_upload_token"):
+        return "gitlabuploadtoken"
+    if args == ("bitbucket_server", "global_upload_token"):
+        return "bitbucketserveruploadtoken"
 
 
 class UploadHandlerHelpersTest(TestCase):
@@ -45,6 +54,7 @@ class UploadHandlerHelpersTest(TestCase):
             "s3": 123,
             "build_url": "https://thisisabuildurl.com",
             "job": None,
+            "using_global_token": False,
         }
 
         parsed_params = parse_params(request_params)
@@ -93,6 +103,7 @@ class UploadHandlerHelpersTest(TestCase):
             "job": "travis-jobID",  # populated from "travis_job_id" since none was provided
             "travis_job_id": "travis-jobID",
             "build": None,  # "nil" coerced to None
+            "using_global_token": False,
         }
 
         parsed_params = parse_params(request_params)
@@ -118,6 +129,8 @@ class UploadHandlerHelpersTest(TestCase):
             "branch": "another-test-branch",  # "refs/heads" removed
             "job": "jobID",  # not populated from "travis_job_id"
             "travis_job_id": "travis-jobID",
+            "using_global_token": False,
+            "service": None,  # defaulted to None if not provided and not using global upload token
         }
 
         parsed_params = parse_params(request_params)
@@ -142,10 +155,50 @@ class UploadHandlerHelpersTest(TestCase):
             "pull_request": "156",
             "job": "travis-jobID",  # populated from "travis_job_id"
             "travis_job_id": "travis-jobID",
+            "service": None,  # defaulted to None if not provided and not using global upload token
+            "using_global_token": False,
         }
 
         parsed_params = parse_params(request_params)
         assert expected_result == parsed_params
+
+    @patch("upload.helpers.get_config")
+    def test_parse_params_recognizes_global_token(self, mock_get_config):
+        mock_get_config.side_effect = mock_get_config_side_effect
+
+        request_params = {
+            "version": "v4",
+            "commit": "3be5c52bd748c508a7e96993c02cf3518c816e84",
+            "token": "bitbucketserveruploadtoken",
+        }
+
+        expected_result = {
+            "version": "v4",
+            "commit": "3be5c52bd748c508a7e96993c02cf3518c816e84",
+            "token": "bitbucketserveruploadtoken",
+            "using_global_token": True,
+            "service": "bitbucket_server",
+            "job": None,
+            "owner": None,
+            "pr": None,
+            "repo": None,
+        }
+
+        parsed_params = parse_params(request_params)
+        assert expected_result == parsed_params
+
+    @patch("upload.helpers.get_config")
+    def test_get_global_tokens(self, mock_get_config):
+        mock_get_config.side_effect = mock_get_config_side_effect
+
+        expected_result = {
+            "githubuploadtoken": "github",
+            "gitlabuploadtoken": "gitlab",
+            "bitbucketserveruploadtoken": "bitbucket_server",
+        }
+
+        global_tokens = get_global_tokens()
+        assert expected_result == global_tokens
 
 
 class UploadHandlerRouteTest(APITestCase):
