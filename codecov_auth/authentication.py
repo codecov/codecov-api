@@ -8,7 +8,7 @@ from rest_framework import authentication
 from rest_framework import exceptions
 
 from codecov_auth.models import Session, Owner
-from codecov_auth.helpers import decode_token_from_cookie, create_signature_v2
+from codecov_auth.helpers import decode_token_from_cookie
 from utils.config import get_config
 
 
