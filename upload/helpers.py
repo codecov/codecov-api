@@ -146,7 +146,6 @@ def parse_params(data):
 
     v = Validator(params_schema, allow_unknown=True)
     if not v.validate(filtered_data):
-        print("Errors: " + str(v.errors))
         raise ValidationError(v.errors)
 
     # return validated data, including coerced values
