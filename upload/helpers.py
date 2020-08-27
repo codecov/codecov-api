@@ -23,13 +23,17 @@ def parse_params(data):
             "regex": r"^\d+:\w{12}|\w{40}$",
             "coerce": lambda value: value.lower(),
         },
-        "slug": {"type": "string", "regex": r"^[\w\-\.]{1,255}\/[\w\-\.]{1,255}$"},
-        # owner username, we set this by parsing the value of "slug" if provided
+        "slug": {"type": "string", "regex": r"^[\w\-\.\~\/]+\/[\w\-\.]{1,255}$"},
+        # owner username, we set this by splitting the value of "slug" on "/" if provided
         "owner": {
             "type": "string",
             "nullable": True,
             "default_setter": (
-                lambda document: document.get("slug").rsplit("/", 1)[0]
+                lambda document: document.get("slug")
+                .rsplit("/", 1)[0]
+                .replace(
+                    "/", ":"
+                )  # we use ':' as separator for gitlab subgroups internally
                 if document.get("slug")
                 and len(document.get("slug").rsplit("/", 1)) == 2
                 else None
