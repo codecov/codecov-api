@@ -18,6 +18,9 @@ from upload.helpers import (
     parse_params,
     get_global_tokens,
     determine_repo_and_owner_for_upload,
+    determine_upload_branch_to_use,
+    determine_upload_pr_to_use,
+    determine_upload_commitid_to_use,
 )
 
 
@@ -41,10 +44,12 @@ class UploadHandlerHelpersTest(TestCase):
             "pull_request": "undefined",
             "flags": "this-is-a-flag,this-is-another-flag",
             "name": "",
-            "branch": "",
+            "branch": "HEAD",
             "param_doesn't_exist_but_still_should_not_error": True,
             "s3": 123,
             "build_url": "https://thisisabuildurl.com",
+            "_did_change_merge_commit": False,
+            "parent": "123abc",
         }
 
         expected_result = {
@@ -63,6 +68,9 @@ class UploadHandlerHelpersTest(TestCase):
             "build_url": "https://thisisabuildurl.com",
             "job": None,
             "using_global_token": False,
+            "branch": None,
+            "_did_change_merge_commit": False,
+            "parent": "123abc",
         }
 
         parsed_params = parse_params(request_params)
@@ -78,12 +86,14 @@ class UploadHandlerHelpersTest(TestCase):
             "flags": "not_a_valid_flag!!?!",
             "s3": "this should be an integer",
             "build_url": "not a valid url!",
+            "_did_change_merge_commit": "yup",
+            "parent": 123,
         }
 
         with self.assertRaises(ValidationError) as err:
             parse_params(request_params)
 
-        assert len(err.exception.detail) == 7
+        assert len(err.exception.detail) == 9
 
     def test_parse_params_transforms_input(self):
         request_params = {
@@ -242,6 +252,73 @@ class UploadHandlerHelpersTest(TestCase):
 
         with self.assertRaises(ValidationError):
             determine_repo_and_owner_for_upload(params)
+
+    def test_determine_upload_branch_to_use(self):
+        with self.subTest("no branch and no pr provided"):
+            upload_params = {"branch": None, "pr": None}
+            repo_default_branch = "defaultbranch"
+
+            expected_value = "defaultbranch"
+            assert expected_value == determine_upload_branch_to_use(
+                upload_params, repo_default_branch
+            )
+
+        with self.subTest("pullid in branch name"):
+            upload_params = {"branch": "pr/123", "pr": None}
+            repo_default_branch = "defaultbranch"
+
+            expected_value = None
+            assert expected_value == determine_upload_branch_to_use(
+                upload_params, repo_default_branch
+            )
+
+        with self.subTest("branch and no pr provided"):
+            upload_params = {"branch": "uploadbranch", "pr": None}
+            repo_default_branch = "defaultbranch"
+
+            expected_value = "uploadbranch"
+            assert expected_value == determine_upload_branch_to_use(
+                upload_params, repo_default_branch
+            )
+
+        with self.subTest("branch and pr provided"):
+            upload_params = {"branch": "uploadbranch", "pr": "123"}
+            repo_default_branch = "defaultbranch"
+
+            expected_value = "uploadbranch"
+            assert expected_value == determine_upload_branch_to_use(
+                upload_params, repo_default_branch
+            )
+
+    def test_determine_upload_pr_to_use(self):
+        with self.subTest("pullid in branch"):
+            upload_params = {"branch": "pr/123", "pr": "456"}
+
+            expected_value = "123"
+            assert expected_value == determine_upload_pr_to_use(upload_params)
+
+        with self.subTest("pullid in arguments, no pullid in branch"):
+            upload_params = {"branch": "uploadbranch", "pr": "456"}
+
+            expected_value = "456"
+            assert expected_value == determine_upload_pr_to_use(upload_params)
+
+        with self.subTest("pullid not provided"):
+            upload_params = {"branch": "uploadbranch", "pr": None}
+
+            expected_value = None
+            assert expected_value == determine_upload_pr_to_use(upload_params)
+
+    def test_determine_upload_commitid_to_use(self):
+        with self.subTest("not a github commit"):
+            upload_params = {
+                "service": "bitbucket",
+                "commit": "3be5c52bd748c508a7e96993c02cf3518c816e84",
+            }
+
+            expected_value = "3be5c52bd748c508a7e96993c02cf3518c816e84"
+
+            assert expected_value == determine_upload_commitid_to_use(upload_params)
 
 
 class UploadHandlerRouteTest(APITestCase):

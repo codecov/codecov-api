@@ -10,6 +10,10 @@ from .helpers import (
     parse_params,
     get_global_tokens,
     determine_repo_and_owner_for_upload,
+    determine_upload_branch_to_use,
+    determine_upload_pr_to_use,
+    determine_upload_commitid_to_use,
+    insert_commit,
 )
 
 log = logging.getLogger(__name__)
@@ -75,5 +79,22 @@ class UploadHandler(APIView):
             response.status_code = status.HTTP_400_BAD_REQUEST
             response.content = "Could not determine repo and owner"
             return response
+
+        # TODO other stuff
+
+        # Save commit
+        branch = determine_upload_branch_to_use(upload_params, repository.branch)
+        pr = determine_upload_pr_to_use(upload_params)
+        commitid = determine_upload_commitid_to_use(upload_params)
+
+        insert_commit(
+            commitid, branch, pr, repository, owner, upload_params.get("parent")
+        )
+
+        # Update repo and set it to active if it's not already
+        if repository.active == False or repository.deleted == True:
+            repository.active = True
+            repository.deleted = False
+            repository.save()
 
         return response
