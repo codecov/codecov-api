@@ -36,3 +36,4 @@ CORS_ORIGIN_ALLOW_ALL = True
 CORS_ORIGIN_WHITELIST = ["https://stage-web.codecov.dev"]
 CORS_ORIGIN_REGEX_WHITELIST = [r"^https:\/\/deploy-preview-[0-9]+--zen-dubinsky-9aced3\.netlify\.app$"]
 CODECOV_URL = 'https://stage-web.codecov.dev'
+CODECOV_DASHBOARD_URL = 'https://stage-app.codecov.dev'

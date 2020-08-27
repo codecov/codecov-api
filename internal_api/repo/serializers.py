@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from rest_framework import serializers
 
 from core.models import Repository, Commit
@@ -30,15 +28,14 @@ class RepoSerializer(serializers.ModelSerializer):
             "hookid",
             "activated",
             "using_integration",
-            "latest_commit",
+            "latest_commit"
         )
 
     def get_latest_commit(self, repo):
-        latest_commit = repo.commits.filter(
-            state=Commit.CommitStates.COMPLETE,
-            branch=self.context["request"].query_params.get("branch", None) or repo.branch,
-            timestamp__lte=self.context["request"].query_params.get("timestamp", None) or datetime.now()
-        ).select_related('author').order_by('-timestamp').first()
+        if repo.latest_commitid is None:
+            return CommitSerializer(None).data
+
+        latest_commit = repo.commits.get(commitid=repo.latest_commitid)
         return CommitSerializer(latest_commit).data
 
 

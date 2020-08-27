@@ -247,6 +247,9 @@ class UploadHandlerHelpersTest(TestCase):
 class UploadHandlerRouteTest(APITestCase):
 
     # Wrap client calls
+    def _get(self, kwargs=None):
+        return self.client.get(reverse("upload-handler", kwargs=kwargs))
+
     def _options(self, kwargs=None, data=None):
         return self.client.options(reverse("upload-handler", kwargs=kwargs))
 
@@ -258,6 +261,11 @@ class UploadHandlerRouteTest(APITestCase):
     def setUp(self):
         self.org = G(Owner)
         self.repo = G(Repository, author=self.org)
+
+    def test_get_request_returns_405(self):
+        response = self._get(kwargs={"version": "v4"})
+
+        assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
 
     # Test headers
     def test_options_headers(self):

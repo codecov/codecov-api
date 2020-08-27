@@ -1,5 +1,5 @@
+import pytest
 from datetime import datetime
-import time
 
 from unittest.mock import patch
 
@@ -146,6 +146,39 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         assert reverse_response.data["results"][0]["repoid"] == self.repo1.repoid
         assert reverse_response.data["results"][1]["repoid"] == self.repo2.repoid
 
+    def test_order_by_lines(self):
+        default_totals = {
+            "f": 1,
+            "n": 4,
+            "h": 4,
+            "m": 0,
+            "p": 0,
+            "c": 100.0,
+            "b": 0,
+            "d": 0,
+            "s": 1,
+            "C": 0.0,
+            "N": 0.0,
+            "diff": ""
+        }
+
+        CommitFactory(repository=self.repo1, totals={**default_totals, "n": 25})
+        CommitFactory(repository=self.repo2, totals={**default_totals, "n": 32})
+
+        response = self._list(
+            query_params={'ordering': 'lines'}
+        )
+
+        assert response.data["results"][0]["repoid"] == self.repo1.repoid
+        assert response.data["results"][1]["repoid"] == self.repo2.repoid
+
+        reverse_response = self._list(
+            query_params={'ordering': '-lines'}
+        )
+
+        assert reverse_response.data["results"][0]["repoid"] == self.repo2.repoid
+        assert reverse_response.data["results"][1]["repoid"] == self.repo1.repoid
+
     def test_totals_serializer(self):
         default_totals = {
             "f": 1,
@@ -204,14 +237,14 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         # We're testing that the lte works as expected, so we're not sending the exact same timestamp
         fetching_time = datetime.now().isoformat()
 
-        time.sleep(1)
         CommitFactory(repository=self.repo1, totals=default_totals)
 
         response = self._list(
-            query_params={'names': 'A', 'timestamp': fetching_time}
+            query_params={'names': 'A', 'before_date': fetching_time}
         )
 
-        assert response.data["results"][0]["latest_commit"]["totals"]["coverage"] == older_coverage
+        # The fetching truncates the time, so it will not take into account the time part of the date time
+        assert response.data["results"][0]["latest_commit"]["totals"]["coverage"] == 100.0
 
     def test_get_repos_with_totals(self):
         default_totals = {
@@ -277,7 +310,7 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         new_repo = RepositoryFactory(author=self.org, name='C', private=False)
 
         response = self._list(
-            query_params={'names': 'A,B'}
+            query_params={'names': ['A', 'B']}
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
@@ -361,6 +394,13 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         repo1 = [repo for repo in response.data["results"] if repo["name"] == "A"][0]
         assert repo1["total_commit_count"] == 2
         assert repo1["latest_coverage_change"] == -30
+
+    def test_latest_commit_null(self):
+        response = self._list()
+        repo1 = [repo for repo in response.data["results"] if repo["name"] == "A"][0]
+
+        # When the commit is missing, everything is set to None or empty string. Test with lines.
+        assert repo1["latest_commit"]["totals"]["lines"] is None
 
     def test_returns_latest_commit(self):
         commit = CommitFactory(repository=self.repo1)

@@ -23,6 +23,7 @@ class MockSerializableReport(SerializableReport):
     report files on the fly from information not provided by these test, like the chunks
     for example.
     """
+
     def file_reports(self):
         return [report_file for name, report_file in self.mocked_files.items()]
 
@@ -52,10 +53,10 @@ class MockedComparisonAdapter:
         return False, False
 
 
-@patch('services.comparison.Comparison.has_unmerged_base_commits', lambda self: True)
-@patch('services.comparison.Comparison.head_report', new_callable=PropertyMock)
-@patch('services.comparison.Comparison.base_report', new_callable=PropertyMock)
-@patch('services.repo_providers.RepoProviderService.get_adapter')
+@patch("services.comparison.Comparison.has_unmerged_base_commits", lambda self: True)
+@patch("services.comparison.Comparison.head_report", new_callable=PropertyMock)
+@patch("services.comparison.Comparison.base_report", new_callable=PropertyMock)
+@patch("services.repo_providers.RepoProviderService.get_adapter")
 class TestCompareViewSetRetrieve(APITestCase):
     """
     Tests for retrieving a comparison. Does not test data that will be depracated,
@@ -72,118 +73,83 @@ class TestCompareViewSetRetrieve(APITestCase):
                 "files": {
                     self.file_name: {
                         "type": "modified",
-                        "segments": [{
-                              "header": ["4", "43", "4", "3"],
-                              "lines": ["", "", ""] + ["-this line is removed"]*40
-                        }],
-                        "stats": {
-                            "removed": 40,
-                            "added": 0
-                        }
+                        "segments": [
+                            {
+                                "header": ["4", "43", "4", "3"],
+                                "lines": ["", "", ""] + ["-this line is removed"] * 40,
+                            }
+                        ],
+                        "stats": {"removed": 40, "added": 0},
                     }
                 }
-            }
+            },
         }
 
-        self.mocked_compare_adapter = MockedComparisonAdapter(self.mock_git_compare_data)
+        self.mocked_compare_adapter = MockedComparisonAdapter(
+            self.mock_git_compare_data
+        )
 
         self.base_file = ReportFile(
-            name=self.file_name,
-            totals=[
-                46,
-                46,
-                0,
-                0,
-                100,
-                0,
-                0,
-                0,
-                1,
-                0,
-                0,
-                0
-            ]
+            name=self.file_name, totals=[46, 46, 0, 0, 100, 0, 0, 0, 1, 0, 0, 0]
         )
-        self.base_file._lines = [[1, '', [[1, 1, 0, 0, 0]], 0, 0]] * 46
+        self.base_file._lines = [[1, "", [[1, 1, 0, 0, 0]], 0, 0]] * 46
         self.base_report = MockSerializableReport()
         self.base_report.mocked_files = {self.file_name: self.base_file}
 
         self.head_file = ReportFile(
-            name=self.file_name,
-            totals=[
-                6,
-                6,
-                0,
-                0,
-                100,
-                0,
-                0,
-                0,
-                1,
-                0,
-                0,
-                0
-            ]
+            name=self.file_name, totals=[6, 6, 0, 0, 100, 0, 0, 0, 1, 0, 0, 0]
         )
-        self.head_file._lines = [[1, '', [[1, 1, 0, 0, 0]], 0, 0]] * 6
+        self.head_file._lines = [[1, "", [[1, 1, 0, 0, 0]], 0, 0]] * 6
         self.head_report = MockSerializableReport()
         self.head_report.mocked_files = {self.file_name: self.head_file}
 
         self.org = OwnerFactory()
         self.repo = RepositoryFactory(author=self.org)
-        self.base, self.head = CommitFactory(repository=self.repo), CommitFactory(repository=self.repo)
-        self.user = OwnerFactory(service=self.org.service, permission=[self.repo.repoid], organizations=[self.org.ownerid])
+        self.base, self.head = (
+            CommitFactory(repository=self.repo),
+            CommitFactory(repository=self.repo),
+        )
+        self.user = OwnerFactory(
+            service=self.org.service,
+            permission=[self.repo.repoid],
+            organizations=[self.org.ownerid],
+        )
         self.client.force_login(user=self.user)
 
         self.expected_files = [
             {
-                "name": {
-                    "base": self.file_name,
-                    "head": self.file_name
-                },
+                "name": {"base": self.file_name, "head": self.file_name},
                 "totals": {
                     "base": ReportTotalsSerializer(self.base_file.totals).data,
-                    "head": ReportTotalsSerializer(self.head_file.totals).data
+                    "head": ReportTotalsSerializer(self.head_file.totals).data,
                 },
                 "has_diff": True,
-                "stats": {
-                    "added": 0,
-                    "removed": 40
-                },
+                "stats": {"added": 0, "removed": 40},
                 "change_summary": {},
                 "lines": [
                     {
                         "value": "",
-                        "number": {
-                            "base": idx,
-                            "head": idx
-                        },
-                        "coverage": {
-                            "base": LineType.hit,
-                            "head": LineType.hit
-                        },
+                        "number": {"base": idx, "head": idx},
+                        "coverage": {"base": LineType.hit, "head": LineType.hit},
                         "added": False,
                         "removed": False,
                         "is_diff": True,
-                        "sessions": 1
-                    } for idx in range(4, 7)
-                ] + [
+                        "sessions": 1,
+                    }
+                    for idx in range(4, 7)
+                ]
+                + [
                     {
                         "value": "-this line is removed",
-                        "number": {
-                            "base": idx,
-                            "head": None
-                        },
-                        "coverage": {
-                            "base": LineType.hit,
-                            "head": None
-                        },
+                        "number": {"base": idx, "head": None},
+                        "coverage": {"base": LineType.hit, "head": None},
                         "added": False,
                         "removed": True,
                         "is_diff": True,
-                        "sessions": None
-                    } for idx in range(7, 47)
-                ]
+                        "sessions": None,
+                    }
+                    for idx in range(7, 47)
+                ],
             }
         ]
 
@@ -192,45 +158,36 @@ class TestCompareViewSetRetrieve(APITestCase):
             kwargs = {
                 "service": self.org.service,
                 "owner_username": self.org.username,
-                "repo_name": self.repo.name
+                "repo_name": self.repo.name,
             }
         if query_params == {}:
-            query_params = {
-                "base": self.base.commitid,
-                "head": self.head.commitid
-            }
+            query_params = {"base": self.base.commitid, "head": self.head.commitid}
 
         return self.client.get(
-            reverse('compare-detail', kwargs=kwargs),
+            reverse("compare-detail", kwargs=kwargs),
             data=query_params,
-            content_type="application/json"
+            content_type="application/json",
         )
 
-    def _get_file_comparison(self, file_name='', kwargs={}, query_params={}):
+    def _get_file_comparison(self, file_name="", kwargs={}, query_params={}):
         if kwargs == {}:
             kwargs = {
                 "service": self.org.service,
                 "owner_username": self.org.username,
                 "repo_name": self.repo.name,
-                "file_path": file_name or self.file_name
+                "file_path": file_name or self.file_name,
             }
         if query_params == {}:
-            query_params = {
-                "base": self.base.commitid,
-                "head": self.head.commitid
-            }
+            query_params = {"base": self.base.commitid, "head": self.head.commitid}
 
         return self.client.get(
-            reverse('compare-file', kwargs=kwargs),
+            reverse("compare-file", kwargs=kwargs),
             data=query_params,
-            content_type="application/json"
+            content_type="application/json",
         )
 
     def test_returns_200_and_expected_files_on_success(
-        self,
-        adapter_mock,
-        base_report_mock,
-        head_report_mock
+        self, adapter_mock, base_report_mock, head_report_mock
     ):
         adapter_mock.return_value = self.mocked_compare_adapter
         base_report_mock.return_value = self.base_report
@@ -243,22 +200,14 @@ class TestCompareViewSetRetrieve(APITestCase):
         assert response.data["has_unmerged_base_commits"] is True
 
     def test_returns_404_if_base_or_head_references_not_found(
-        self,
-        adapter_mock,
-        base_report_mock,
-        head_report_mock
+        self, adapter_mock, base_report_mock, head_report_mock
     ):
-        response = self._get_comparison(
-            query_params={"base": 12345, "head": 678}
-        )
+        response = self._get_comparison(query_params={"base": 12345, "head": 678})
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_returns_403_if_user_doesnt_have_permissions(
-        self,
-        adapter_mock,
-        base_report_mock,
-        head_report_mock
+        self, adapter_mock, base_report_mock, head_report_mock
     ):
         other_user = OwnerFactory()
         self.client.force_login(user=other_user)
@@ -270,10 +219,7 @@ class TestCompareViewSetRetrieve(APITestCase):
         assert response.status_code == 403
 
     def test_accepts_pullid_query_param(
-        self,
-        adapter_mock,
-        base_report_mock,
-        head_report_mock
+        self, adapter_mock, base_report_mock, head_report_mock
     ):
         adapter_mock.return_value = self.mocked_compare_adapter
         base_report_mock.return_value = self.base_report
@@ -285,7 +231,7 @@ class TestCompareViewSetRetrieve(APITestCase):
                     base=self.base.commitid,
                     head=self.head.commitid,
                     pullid=2,
-                    repository=self.repo
+                    repository=self.repo,
                 ).pullid
             }
         )
@@ -294,10 +240,7 @@ class TestCompareViewSetRetrieve(APITestCase):
         assert response.data["files"] == self.expected_files
 
     def test_pullid_with_nonexistent_commit_returns_404(
-        self,
-        adapter_mock,
-        base_report_mock,
-        head_report_mock
+        self, adapter_mock, base_report_mock, head_report_mock
     ):
         adapter_mock.return_value = self.mocked_compare_adapter
         base_report_mock.return_value = self.base_report
@@ -309,7 +252,7 @@ class TestCompareViewSetRetrieve(APITestCase):
                     base="123456",
                     head=self.head.commitid,
                     pullid=2,
-                    repository=self.repo
+                    repository=self.repo,
                 ).pullid
             }
         )
@@ -317,39 +260,42 @@ class TestCompareViewSetRetrieve(APITestCase):
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_diffs_larger_than_MAX_DIFF_SIZE_doesnt_include_lines(
-        self,
-        adapter_mock,
-        base_report_mock,
-        head_report_mock
+        self, adapter_mock, base_report_mock, head_report_mock
     ):
         adapter_mock.return_value = self.mocked_compare_adapter
         base_report_mock.return_value = self.base_report
         head_report_mock.return_value = self.head_report
 
         previous_max = comparison.MAX_DIFF_SIZE
-        comparison.MAX_DIFF_SIZE = len(
-            self.mock_git_compare_data["diff"]["files"][self.file_name]["segments"][0]["lines"]
-        ) - 1
+        comparison.MAX_DIFF_SIZE = (
+            len(
+                self.mock_git_compare_data["diff"]["files"][self.file_name]["segments"][
+                    0
+                ]["lines"]
+            )
+            - 1
+        )
 
         response = self._get_comparison()
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["files"][0]["lines"] == None # None means diff was truncated
+        assert (
+            response.data["files"][0]["lines"] == None
+        )  # None means diff was truncated
 
         comparison.MAX_DIFF_SIZE = previous_max
 
     def test_file_returns_comparefile_with_diff_and_src_data(
-        self,
-        adapter_mock,
-        base_report_mock,
-        head_report_mock
+        self, adapter_mock, base_report_mock, head_report_mock
     ):
         base_report_mock.return_value = self.base_report
         head_report_mock.return_value = self.head_report
 
         src = b"first\nfirst\nfirst\nfirst\nfirst\nfirst"
 
-        adapter_mock.return_value = MockedComparisonAdapter(test_diff=self.mock_git_compare_data, test_lines=src)
+        adapter_mock.return_value = MockedComparisonAdapter(
+            test_diff=self.mock_git_compare_data, test_lines=src
+        )
 
         response = self._get_file_comparison()
 
@@ -358,28 +304,20 @@ class TestCompareViewSetRetrieve(APITestCase):
         expected_lines = [
             {
                 "value": "first",
-                "number": {
-                    "base": idx,
-                    "head": idx
-                },
-                "coverage": {
-                    "base": LineType.hit,
-                    "head": LineType.hit
-                },
+                "number": {"base": idx, "head": idx},
+                "coverage": {"base": LineType.hit, "head": LineType.hit},
                 "added": False,
                 "removed": False,
                 "is_diff": False,
-                "sessions": 1
-            } for idx in range(1, 4)
+                "sessions": 1,
+            }
+            for idx in range(1, 4)
         ] + self.expected_files[0]["lines"]
 
         assert response.data["lines"] == expected_lines
 
     def test_file_ignores_MAX_DIFF_SIZE(
-        self,
-        adapter_mock,
-        base_report_mock,
-        head_report_mock
+        self, adapter_mock, base_report_mock, head_report_mock
     ):
         base_report_mock.return_value = self.base_report
         head_report_mock.return_value = self.head_report
@@ -388,7 +326,9 @@ class TestCompareViewSetRetrieve(APITestCase):
         comparison.MAX_DIFF_SIZE = -1
 
         src = b"first\nfirst\nfirst\nfirst\nfirst\nfirst"
-        adapter_mock.return_value = MockedComparisonAdapter(test_diff=self.mock_git_compare_data, test_lines=src)
+        adapter_mock.return_value = MockedComparisonAdapter(
+            test_diff=self.mock_git_compare_data, test_lines=src
+        )
 
         response = self._get_file_comparison()
 
@@ -398,10 +338,7 @@ class TestCompareViewSetRetrieve(APITestCase):
         assert len(response.data["lines"]) == 46
 
     def test_missing_base_report_returns_none_base_totals(
-        self,
-        adapter_mock,
-        base_report_mock,
-        head_report_mock
+        self, adapter_mock, base_report_mock, head_report_mock
     ):
         base_report_mock.return_value = None
         head_report_mock.return_value = self.head_report
@@ -413,13 +350,10 @@ class TestCompareViewSetRetrieve(APITestCase):
         assert response.data["totals"]["base"] == None
 
     def test_no_raw_reports_returns_404(
-        self,
-        adapter_mock,
-        base_report_mock,
-        head_report_mock
+        self, adapter_mock, base_report_mock, head_report_mock
     ):
         base_report_mock.return_value = None
-        head_report_mock.side_effect = minio.error.NoSuchKey(response_error=None)
+        head_report_mock.side_effect = minio.error.NoSuchKey()
         adapter_mock.return_value = self.mocked_compare_adapter
 
         response = self._get_comparison()
@@ -427,10 +361,7 @@ class TestCompareViewSetRetrieve(APITestCase):
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_returns_403_if_user_inactive(
-        self,
-        adapter_mock,
-        base_report_mock,
-        head_report_mock
+        self, adapter_mock, base_report_mock, head_report_mock
     ):
         self.org.plan = "users-inappy"
         self.org.save()

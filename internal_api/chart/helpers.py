@@ -157,7 +157,7 @@ def aggregate_across_repositories(grouped_queryset):
         total_partials = sum([commit.partials for commit in commits])
         total_misses = sum([commit.misses for commit in commits])
 
-        weighted_coverage = (total_hits + total_partials) / total_lines * 100
+        weighted_coverage = (total_hits / total_lines) * 100
 
         result.append(
             {
