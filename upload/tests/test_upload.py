@@ -1,7 +1,7 @@
 from rest_framework.test import APITestCase
 from rest_framework.reverse import reverse
 from rest_framework import status
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, NotFound
 from unittest.mock import patch
 from json import dumps
 from yaml import YAMLError
@@ -9,8 +9,16 @@ from django.test import TestCase
 from django.conf import settings
 from django.test import RequestFactory
 from urllib.parse import urlencode
+from ddf import G
 
-from upload.helpers import parse_params, get_global_tokens
+from core.models import Repository
+from codecov_auth.models import Owner
+
+from upload.helpers import (
+    parse_params,
+    get_global_tokens,
+    determine_repo_and_owner_for_upload,
+)
 
 
 def mock_get_config_side_effect(*args):
@@ -200,6 +208,41 @@ class UploadHandlerHelpersTest(TestCase):
         global_tokens = get_global_tokens()
         assert expected_result == global_tokens
 
+    def test_determine_repo_upload_token_found(self):
+        org = G(Owner)
+        repo = G(Repository, author=org)
+
+        params = {
+            "version": "v4",
+            "using_global_token": False,
+            "token": repo.upload_token,
+        }
+
+        assert (repo, org) == determine_repo_and_owner_for_upload(params)
+
+    def test_determine_repo_upload_token_not_found(self):
+        org = G(Owner)
+        repo = G(Repository, author=org)
+
+        params = {
+            "version": "v4",
+            "using_global_token": False,
+            "token": "testbtznwf3ooi3xlrsnetkddj5od731pap9",
+        }
+
+        with self.assertRaises(NotFound):
+            determine_repo_and_owner_for_upload(params)
+
+    def test_determine_repo_no_token_or_service(self):
+        params = {
+            "version": "v4",
+            "using_global_token": False,
+            "service": None,
+        }
+
+        with self.assertRaises(ValidationError):
+            determine_repo_and_owner_for_upload(params)
+
 
 class UploadHandlerRouteTest(APITestCase):
 
@@ -211,6 +254,10 @@ class UploadHandlerRouteTest(APITestCase):
         query_string = f"?{urlencode(query)}" if query else ""
         url = reverse("upload-handler", kwargs=kwargs) + query_string
         return self.client.post(url, data=data)
+
+    def setUp(self):
+        self.org = G(Owner)
+        self.repo = G(Repository, author=self.org)
 
     # Test headers
     def test_options_headers(self):
@@ -267,6 +314,7 @@ class UploadHandlerRouteTest(APITestCase):
         with self.subTest("valid"):
             query_params = {
                 "commit": "3be5c52bd748c508a7e96993c02cf3518c816e84",
+                "token": self.repo.upload_token,
                 "pr": "",
                 "pull_request": "9838",
                 "branch": "",

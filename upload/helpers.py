@@ -1,5 +1,6 @@
 from cerberus import Validator
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, NotFound
+from django.core.exceptions import ObjectDoesNotExist
 
 from core.models import Repository
 from codecov_auth.models import Owner
@@ -145,6 +146,7 @@ def parse_params(data):
 
     v = Validator(params_schema, allow_unknown=True)
     if not v.validate(filtered_data):
+        print("Errors: " + str(v.errors))
         raise ValidationError(v.errors)
 
     # return validated data, including coerced values
@@ -159,15 +161,17 @@ def determine_repo_and_owner_for_upload(upload_params):
     if token and not using_global_token:
         try:
             repository = Repository.objects.get(upload_token=token)
-            owner = Owner.objects.get(id=repository.owner)
-        except Owner.DoesNotExist:
-            raise ValidationError(
+            owner = Owner.objects.get(ownerid=repository.author.ownerid)
+        except ObjectDoesNotExist:
+            raise NotFound(
                 f"Could not find a repository associated with upload token {token}"
             )
     else:
         raise ValidationError(
             "Need either a token or service to determine target repository"
         )
+
+    return repository, owner
 
     """
     TODO: add CI verification and repo retrieval from CI
@@ -180,7 +184,6 @@ def determine_repo_and_owner_for_upload(upload_params):
 
 
 def get_global_tokens():
-    print("Result of calling get config: " + str(get_config()))
     # Returns dict with structure {<upload token>: <service name>}
     tokens = {
         get_config(service, "global_upload_token"): service
