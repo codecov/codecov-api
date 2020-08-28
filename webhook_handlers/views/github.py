@@ -176,7 +176,7 @@ class GithubWebhookHandler(APIView):
                 "CI skip tag on head commit, not setting status",
                 extra=dict(
                     repoid=repo.repoid,
-                    commitid=most_recent_commit.get("id"),
+                    commit=most_recent_commit.get("id"),
                     github_webhook_event=self.event
                 )
             )
@@ -187,7 +187,7 @@ class GithubWebhookHandler(APIView):
                 "Triggering status set pending task",
                 extra=dict(
                     repoid=repo.repoid,
-                    commitid=most_recent_commit.get("id"),
+                    commit=most_recent_commit.get("id"),
                     github_webhook_event=self.event
                 )
             )
@@ -209,7 +209,7 @@ class GithubWebhookHandler(APIView):
                 "Repository is not active, ignoring status event",
                 extra=dict(
                     repoid=repo.repoid,
-                    commitid=commitid,
+                    commit=commitid,
                     github_webhook_event=self.event
                 )
             )
@@ -219,7 +219,7 @@ class GithubWebhookHandler(APIView):
                 "Status is Codecov status, exiting",
                 extra=dict(
                     repoid=repo.repoid,
-                    commitid=commitid,
+                    commit=commitid,
                     github_webhook_event=self.event
                 )
             )
@@ -229,7 +229,7 @@ class GithubWebhookHandler(APIView):
                 "Commit in pending state, exiting",
                 extra=dict(
                     repoid=repo.repoid,
-                    commitid=commitid,
+                    commit=commitid,
                     github_webhook_event=self.event
                 )
             )
@@ -242,7 +242,7 @@ class GithubWebhookHandler(APIView):
             "Triggering notify task",
             extra=dict(
                 repoid=repo.repoid,
-                commitid=commitid,
+                commit=commitid,
                 github_webhook_event=self.event
             )
         )
