@@ -143,7 +143,7 @@ class RepositoryQuerySet(QuerySet):
             sum_hits=Sum("hits"),
             sum_partials=Sum("partials"),
             sum_misses=Sum("misses"),
-            average_coverage=Avg("coverage"),
+            weighted_coverage=(F("sum_hits") / F("sum_lines")) * 100,
             average_complexity=Avg("complexity"),
             average_change=Avg("latest_coverage_change"),
         )
