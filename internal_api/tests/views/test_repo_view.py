@@ -442,9 +442,9 @@ class TestRepositoryViewSetExtraActions(RepositoryViewSetTestSuite):
             totals={
             "f": 1,
             "n": 4,
-            "h": 4,
+            "h": 0,
             "m": 0,
-            "p": 0,
+            "p": 4,
             "c": 70.0,
             "b": 0,
             "d": 0,
@@ -476,8 +476,8 @@ class TestRepositoryViewSetExtraActions(RepositoryViewSetTestSuite):
             totals={
                 "f": 1,
                 "n": 8,
-                "h": 4,
-                "m": 4,
+                "h": 3,
+                "m": 5,
                 "p": 0,
                 "c": 60.0,
                 "b": 0,
@@ -512,9 +512,9 @@ class TestRepositoryViewSetExtraActions(RepositoryViewSetTestSuite):
             "sum_hits": self.repo1Commit2.totals["h"] + self.repo2Commit2.totals["h"],
             "sum_partials": self.repo1Commit2.totals["p"] + self.repo2Commit2.totals["p"],
             "sum_misses": self.repo1Commit2.totals["m"] + self.repo2Commit2.totals["m"],
-            "average_coverage": (self.repo1Commit2.totals["c"] + self.repo2Commit2.totals["c"]) / 2,
+            "weighted_coverage": 25.0,
             "average_complexity": 0,
-            "average_change": -35.0,
+            "weighted_coverage_change": -41.6666666666667,
         }
 
         assert response.data == stats
@@ -529,9 +529,9 @@ class TestRepositoryViewSetExtraActions(RepositoryViewSetTestSuite):
             "sum_hits": self.repo1Commit2.totals["h"],
             "sum_partials": self.repo1Commit2.totals["p"],
             "sum_misses": self.repo1Commit2.totals["m"],
-            "average_coverage": self.repo1Commit2.totals["c"],
+            "weighted_coverage": 0.0,
             "average_complexity": 0,
-            "average_change": -30.0,
+            "weighted_coverage_change": -100.0,
         }
 
         assert response.data == stats

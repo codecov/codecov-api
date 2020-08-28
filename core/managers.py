@@ -73,10 +73,20 @@ class RepositoryQuerySet(QuerySet):
             ),
             lines=Subquery(
                 commit_query_set.values("lines")[:1],
+                output_field=FloatField() # These have to be float fields so we don't introduce integer math
+            ),
+            # Useful for calculating weighted coverage change
+            prev_lines=Subquery(
+                commit_query_set.values("lines")[1:2],
                 output_field=FloatField()
             ),
             hits=Subquery(
                 commit_query_set.values("hits")[:1],
+                output_field=FloatField()
+            ),
+            # Useful for calculating weighted coverage change
+            prev_hits=Subquery(
+                commit_query_set.values("hits")[1:2],
                 output_field=FloatField()
             ),
             partials=Subquery(
@@ -143,7 +153,9 @@ class RepositoryQuerySet(QuerySet):
             sum_hits=Sum("hits"),
             sum_partials=Sum("partials"),
             sum_misses=Sum("misses"),
-            weighted_coverage=(F("sum_hits") / F("sum_lines")) * 100,
+            weighted_coverage=(Sum("hits") / Sum("lines")) * 100,
             average_complexity=Avg("complexity"),
-            average_change=Avg("latest_coverage_change"),
+            # Function to get the weighted coverage change is to calculate the weighted coverage for the previous commit
+            # minus the weighted coverage from the current commit
+            weighted_coverage_change=(Sum("hits") / Sum("lines")) * 100 - (Sum("prev_hits") / Sum("prev_lines")) * 100,
         )

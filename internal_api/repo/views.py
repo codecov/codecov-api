@@ -184,9 +184,9 @@ class RepositoryViewSet(
             "sum_hits": results["sum_hits"],
             "sum_partials": results["sum_partials"],
             "sum_misses": results["sum_misses"],
-            "average_coverage": results["average_coverage"],
+            "weighted_coverage": results["weighted_coverage"],
+            "weighted_coverage_change": results["weighted_coverage_change"],
             "average_complexity": results["average_complexity"],
-            "average_change": results["average_change"],
         })
 
     @action(detail=True, methods=['patch'], url_path='regenerate-upload-token')
