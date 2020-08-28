@@ -1,6 +1,6 @@
 from django.db.models.functions import Trunc, Cast
 from django.contrib.postgres.fields.jsonb import KeyTextTransform
-from django.db.models import FloatField, Case, When, Value
+from django.db.models import FloatField, Case, When, Value, Subquery, OuterRef
 from rest_framework.exceptions import ValidationError
 from cerberus import Validator
 
@@ -85,7 +85,7 @@ def annotate_commits_with_totals(queryset):
     This is necessary when using Django aggregation functions, and otherwise is generally more convenient than wrangling with the totals JSON field.
     See "CommitTotalsSerializer" for reference on what the values ("c", "N", etc) represent
     """
-    coverage = Cast(KeyTextTransform("c", "totals"), output_field=FloatField(),)
+    coverage = Cast(KeyTextTransform("c", "totals"), output_field=FloatField())
     lines = Cast(KeyTextTransform("n", "totals"), output_field=FloatField())
     hits = Cast(KeyTextTransform("h", "totals"), output_field=FloatField())
     misses = Cast(KeyTextTransform("m", "totals"), output_field=FloatField())
