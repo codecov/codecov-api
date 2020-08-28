@@ -1,6 +1,6 @@
 from django.db.models.functions import Trunc, Cast
 from django.contrib.postgres.fields.jsonb import KeyTextTransform
-from django.db.models import FloatField, Case, When, Value, Subquery, OuterRef
+from django.db.models import FloatField, Case, When, Value
 from rest_framework.exceptions import ValidationError
 from cerberus import Validator
 
