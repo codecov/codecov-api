@@ -49,7 +49,7 @@ class RepositoryQuerySetTests(TestCase):
                 "h": 5,
                 "m": 5,
                 "p": 0,
-                "c": 80.0,
+                "c": 50.0,
                 "C": 0.0,
             },
             repository=self.repo1
@@ -95,7 +95,6 @@ class RepositoryQuerySetTests(TestCase):
         ).with_latest_coverage_change(
         ).get_aggregated_coverage()
 
-        print(stats)
         assert stats["repo_count"] == 2
         assert stats["sum_lines"] == 110
         assert stats["sum_partials"] == 0
