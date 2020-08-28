@@ -261,6 +261,15 @@ class Session(models.Model):
     class Meta:
         db_table = 'sessions'
 
+    class SessionType:
+        API = "api"
+        LOGIN = "login"
+
+    SESSION_TYPE_CHOICES = (
+        (SessionType.API, SessionType.API),
+        (SessionType.LOGIN, SessionType.LOGIN),
+    )
+
     sessionid = models.AutoField(primary_key=True)
     token = models.UUIDField(default=uuid.uuid4, editable=False)
     name = models.TextField(null=True)
@@ -269,4 +278,4 @@ class Session(models.Model):
     owner = models.ForeignKey(
         Owner, db_column='ownerid', on_delete=models.CASCADE)
     lastseen = models.DateTimeField(null=True)
-    # type
+    type = models.CharField(max_length=10, choices=SESSION_TYPE_CHOICES, null=True)
