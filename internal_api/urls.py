@@ -14,6 +14,7 @@ from internal_api.commit.views import CommitsViewSet
 from internal_api.branch.views import BranchViewSet
 from internal_api.repo.views import RepositoryViewSet
 from internal_api.compare.views import CompareViewSet
+from internal_api.sessions.views import SessionViewSet
 
 
 from rest_framework.routers import DefaultRouter
@@ -39,6 +40,7 @@ owner_artifacts_router = DefaultRouter()
 owner_artifacts_router.register(r'users', UserViewSet, basename='users')
 owner_artifacts_router.register(r'invoices', InvoiceViewSet, basename='invoices')
 owner_artifacts_router.register(r'repos', RepositoryViewSet, basename='repos')
+owner_artifacts_router.register(r'sessions', SessionViewSet, basename='sessions')
 
 account_details_router = RetrieveUpdateDestroyRouter()
 account_details_router.register(
@@ -60,7 +62,6 @@ urlpatterns = [
     path('<str:service>/<str:owner_username>/', include(owner_artifacts_router.urls)),
     path('<str:service>/<str:owner_username>/', include(account_details_router.urls)),
     path('<str:service>/<str:owner_username>/<str:repo_name>/', include(repository_artifacts_router.urls)),
-    path('<str:service>/<str:owner_username>/<str:repo_name>/', include(compare_router.urls))
+    path('<str:service>/<str:owner_username>/<str:repo_name>/', include(compare_router.urls)),
+    path("charts/", include("internal_api.chart.urls"))
 ]
-
-urlpatterns.append(path("charts/", include("internal_api.chart.urls")))

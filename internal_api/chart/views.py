@@ -75,13 +75,16 @@ class RepositoryChartHandler(APIView, RepositoriesMixin):
         # if grouping_unit doesn't specify time, return all values
         if self.request.data.get("grouping_unit") == "commit":
             max_num_commits = 1000
+            commits = annotated_queryset.order_by(f"{coverage_ordering}timestamp")[:max_num_commits]
             coverage = [
                 {
-                    "date": commit.timestamp,
-                    "coverage": commit.coverage,
-                    "commitid": commit.commitid,
+                    "date": commits[index].timestamp,
+                    "coverage": commits[index].coverage,
+                    "coverage_change": commits[index].coverage -
+                                       commits[max(index - 1, 0)].coverage,
+                    "commitid": commits[index].commitid,
                 }
-                for commit in annotated_queryset.order_by(f"{coverage_ordering}timestamp")[:max_num_commits]
+                for index in range(len(commits))
             ]
 
             complexity = [
@@ -98,13 +101,17 @@ class RepositoryChartHandler(APIView, RepositoriesMixin):
             coverage_grouped_queryset = apply_grouping(
                 annotated_queryset, self.request.data
             )
+
+            commits = coverage_grouped_queryset
             coverage = [
                 {
-                    "date": commit.truncated_date,
-                    "coverage": commit.coverage,
-                    "commitid": commit.commitid,
+                    "date": commits[index].truncated_date,
+                    "coverage": commits[index].coverage,
+                    "coverage_change": commits[index].coverage -
+                                       commits[max(index - 1, 0)].coverage,
+                    "commitid": commits[index].commitid,
                 }
-                for commit in coverage_grouped_queryset
+                for index in range(len(commits))
             ]
 
             # Complexity
