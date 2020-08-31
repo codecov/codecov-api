@@ -637,6 +637,7 @@ class RepositoryCoverageChartTest(InternalAPITest):
 
         assert response.status_code == 200
 
+        assert len(response.data["coverage"]) > 1
         # Verify that the coverage change was properly computed
         for index in range(len(response.data["coverage"])):
             commit = response.data["coverage"][index]
