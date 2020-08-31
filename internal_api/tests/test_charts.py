@@ -619,6 +619,34 @@ class RepositoryCoverageChartTest(InternalAPITest):
         assert len(response.data["coverage"]) > 0
         assert len(response.data["complexity"]) > 0
 
+    def test_get_commits_with_coverage_change(self, mocked_get_permissions):
+        data = {
+            "branch": "master",
+            "start_date": datetime.now(tz=UTC) - timedelta(7),
+            "end_date": datetime.now(tz=UTC),
+            "grouping_unit": "day",
+            "agg_function": "max",
+            "agg_value": "coverage",
+            "repositories": [self.repo1_org1.name],
+        }
+
+        kwargs = {"owner_username": self.org1.username, "service": "gh"}
+
+        mocked_get_permissions.return_value = True
+        response = self._retrieve(kwargs=kwargs, data=data)
+
+        assert response.status_code == 200
+
+        # Verify that the coverage change was properly computed
+        for index in range(len(response.data["coverage"])):
+            commit = response.data["coverage"][index]
+
+            # First commit should always have change = 0 since it changed nothing
+            if index == 0:
+                assert commit["coverage_change"] == 0
+            else:
+                assert commit["coverage_change"] == commit["coverage"] - response.data["coverage"][index - 1]["coverage"]
+
 
 @patch("internal_api.permissions.RepositoryPermissionsService.has_read_permissions")
 class OrganizationCoverageChartTest(InternalAPITest):
