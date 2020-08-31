@@ -2,9 +2,11 @@ import logging
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
+from rest_framework.exceptions import ValidationError
 from django.http import HttpResponse
+from urllib.parse import parse_qs
 
-from .helpers import validate_params
+from .helpers import parse_params
 
 log = logging.getLogger(__name__)
 
@@ -15,16 +17,25 @@ class UploadHandler(APIView):
     def get(self, request, *args, **kwargs):
         return HttpResponse(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
+    def options(self, request, *args, **kwargs):
+        response = HttpResponse()
+        response["Accept"] = "text/*"
+        response["Access-Control-Allow-Origin"] = "*"
+        response["Access-Control-Allow-Method"] = "POST"
+        response[
+            "Access-Control-Allow-Headers"
+        ] = "Origin, Content-Type, Accept, X-User-Agent"
+
+        return response
+
     def post(self, request, *args, **kwargs):
+        # Extract the version
+        version = self.kwargs["version"]
+
         log.info(
             "Received upload request",
-            extra=dict(
-                version=self.kwargs["version"], arguments=self.request.query_params
-            ),
+            extra=dict(version=version, query_params=self.request.query_params),
         )
-
-        request_params = {**self.request.query_params, **self.kwargs}  # TODO validate
-        version = request_params["version"]
 
         # Set response headers
         response = HttpResponse()
@@ -37,15 +48,20 @@ class UploadHandler(APIView):
             response["Content-Type"] = "text/plain"
             request.META["HTTP_ACCEPT"] = "text/plain"
 
-        return response
-
-    def options(self, request, *args, **kwargs):
-        response = HttpResponse()
-        response["Accept"] = "text/*"
-        response["Access-Control-Allow-Origin"] = "*"
-        response["Access-Control-Allow-Method"] = "POST"
-        response[
-            "Access-Control-Allow-Headers"
-        ] = "Origin, Content-Type, Accept, X-User-Agent"
+        # Parse request parameters
+        request_params = {
+            **self.request.query_params.dict(),  # query_params is a QueryDict, need to convert to dict to process it properly
+            **self.kwargs,
+        }
+        try:
+            upload_params = parse_params(request_params)
+        except ValidationError as e:
+            log.error(
+                "Failed to parse upload request params",
+                extra=dict(request_params=request_params, errors=str(e)),
+            )
+            response.status_code = status.HTTP_400_BAD_REQUEST
+            response.content = "Invalid request parameters"
+            return response
 
         return response
