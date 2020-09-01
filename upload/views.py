@@ -65,7 +65,7 @@ class UploadHandler(APIView):
             upload_params = parse_params(request_params)
         except ValidationError as e:
             log.error(
-                "Invalid upload request parameters",
+                "Failed to parse upload request params",
                 extra=dict(request_params=request_params, errors=str(e)),
             )
             response.status_code = status.HTTP_400_BAD_REQUEST

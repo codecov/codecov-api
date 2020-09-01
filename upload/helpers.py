@@ -17,7 +17,7 @@ def parse_params(data):
     """
 
     # filter out empty values from the data; this makes parsing and setting defaults a bit easier
-    filtered_data = {
+    non_empty_data = {
         key: value for key, value in data.items() if value not in [None, ""]
     }
 
@@ -33,13 +33,17 @@ def parse_params(data):
             "coerce": lambda value: value.lower(),
         },
         "_did_change_merge_commit": {"type": "boolean"},
-        "slug": {"type": "string", "regex": r"^[\w\-\.]{1,255}\/[\w\-\.]{1,255}$"},
-        # owner username, we set this by parsing the value of "slug" if provided
+        "slug": {"type": "string", "regex": r"^[\w\-\.\~\/]+\/[\w\-\.]{1,255}$"},
+        # owner username, we set this by splitting the value of "slug" on "/" if provided
         "owner": {
             "type": "string",
             "nullable": True,
             "default_setter": (
-                lambda document: document.get("slug").rsplit("/", 1)[0]
+                lambda document: document.get("slug")
+                .rsplit("/", 1)[0]
+                .replace(
+                    "/", ":"
+                )  # we use ':' as separator for gitlab subgroups internally
                 if document.get("slug")
                 and len(document.get("slug").rsplit("/", 1)) == 2
                 else None
@@ -153,7 +157,7 @@ def parse_params(data):
     }
 
     v = Validator(params_schema, allow_unknown=True)
-    if not v.validate(filtered_data):
+    if not v.validate(non_empty_data):
         raise ValidationError(v.errors)
 
     # return validated data, including coerced values

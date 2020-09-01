@@ -99,7 +99,7 @@ class UploadHandlerHelpersTest(TestCase):
         request_params = {
             "version": "v4",
             "commit": "3BE5C52BD748C508a7e96993c02cf3518c816e84",
-            "slug": "codecov/codecov-api",
+            "slug": "codecov/subgroup/codecov-api",
             "service": "travis-org",
             "pull_request": "439",
             "pr": "",
@@ -111,8 +111,8 @@ class UploadHandlerHelpersTest(TestCase):
         expected_result = {
             "version": "v4",
             "commit": "3be5c52bd748c508a7e96993c02cf3518c816e84",  # converted to lower case
-            "slug": "codecov/codecov-api",
-            "owner": "codecov",  # extracted from slug
+            "slug": "codecov/subgroup/codecov-api",
+            "owner": "codecov:subgroup",  # extracted from slug
             "repo": "codecov-api",  # extracted from slug
             "service": "travis",  # "travis-org" converted to "travis"
             "pr": "439",  # populated from "pull_request" field since none was provided
