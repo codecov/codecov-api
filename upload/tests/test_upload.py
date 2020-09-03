@@ -17,7 +17,7 @@ from codecov_auth.models import Owner
 from upload.helpers import (
     parse_params,
     get_global_tokens,
-    determine_repo_and_owner_for_upload,
+    determine_repo_for_upload,
 )
 
 
@@ -219,7 +219,7 @@ class UploadHandlerHelpersTest(TestCase):
                 "token": repo.upload_token,
             }
 
-            assert (repo, org) == determine_repo_and_owner_for_upload(params)
+            assert repo == determine_repo_for_upload(params)
 
         with self.subTest("token not found"):
             org = G(Owner)
@@ -232,7 +232,7 @@ class UploadHandlerHelpersTest(TestCase):
             }
 
             with self.assertRaises(NotFound):
-                determine_repo_and_owner_for_upload(params)
+                determine_repo_for_upload(params)
 
         with self.subTest("missing token or service"):
             params = {
@@ -242,7 +242,7 @@ class UploadHandlerHelpersTest(TestCase):
             }
 
             with self.assertRaises(ValidationError):
-                determine_repo_and_owner_for_upload(params)
+                determine_repo_for_upload(params)
 
 
 class UploadHandlerRouteTest(APITestCase):

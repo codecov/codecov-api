@@ -9,7 +9,7 @@ from urllib.parse import parse_qs
 from .helpers import (
     parse_params,
     get_global_tokens,
-    determine_repo_and_owner_for_upload,
+    determine_repo_for_upload,
 )
 
 log = logging.getLogger(__name__)
@@ -70,7 +70,8 @@ class UploadHandler(APIView):
 
         # Try to determine the repository associated with the upload based on the params provided
         try:
-            repository, owner = determine_repo_and_owner_for_upload(upload_params)
+            repository = determine_repo_for_upload(upload_params)
+            owner = repository.author
         except ValidationError as e:
             response.status_code = status.HTTP_400_BAD_REQUEST
             response.content = "Could not determine repo and owner"

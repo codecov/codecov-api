@@ -156,7 +156,7 @@ def parse_params(data):
     return v.document
 
 
-def determine_repo_and_owner_for_upload(upload_params):
+def determine_repo_for_upload(upload_params):
     token = upload_params.get("token")
     using_global_token = upload_params.get("using_global_token")
     service = upload_params.get("service")
@@ -164,7 +164,6 @@ def determine_repo_and_owner_for_upload(upload_params):
     if token and not using_global_token:
         try:
             repository = Repository.objects.get(upload_token=token)
-            owner = Owner.objects.get(ownerid=repository.author.ownerid)
         except ObjectDoesNotExist:
             raise NotFound(
                 f"Could not find a repository associated with upload token {token}"
@@ -174,7 +173,7 @@ def determine_repo_and_owner_for_upload(upload_params):
             "Need either a token or service to determine target repository"
         )
 
-    return repository, owner
+    return repository
 
     """
     TODO: add CI verification and repo retrieval from CI
