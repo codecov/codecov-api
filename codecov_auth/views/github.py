@@ -9,6 +9,8 @@ from codecov_auth.views.base import LoginMixin
 
 
 class GithubLoginView(View, LoginMixin):
+    cookie_prefix = "github"
+
     def get_is_enterprise(self):
         return False
 
