@@ -536,6 +536,12 @@ class TestRepositoryViewSetExtraActions(RepositoryViewSetTestSuite):
 
         assert response.data == stats
 
+    def test_stats_with_datetime_crashes(self):
+        with pytest.raises(ValueError):
+            self._get_stats(
+                data={'before_date': 'A'}
+            )
+
 
 @patch("internal_api.repo.repository_accessors.RepoAccessors.get_repo_permissions")
 class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
