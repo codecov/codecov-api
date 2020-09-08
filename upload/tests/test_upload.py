@@ -17,7 +17,7 @@ from codecov_auth.models import Owner
 from upload.helpers import (
     parse_params,
     get_global_tokens,
-    determine_repo_and_owner_for_upload,
+    determine_repo_for_upload,
     determine_upload_branch_to_use,
     determine_upload_pr_to_use,
     determine_upload_commitid_to_use,
@@ -218,40 +218,41 @@ class UploadHandlerHelpersTest(TestCase):
         global_tokens = get_global_tokens()
         assert expected_result == global_tokens
 
-    def test_determine_repo_upload_token_found(self):
-        org = G(Owner)
-        repo = G(Repository, author=org)
+    def test_determine_repo_upload(self):
+        with self.subTest("token found"):
+            org = G(Owner)
+            repo = G(Repository, author=org)
 
-        params = {
-            "version": "v4",
-            "using_global_token": False,
-            "token": repo.upload_token,
-        }
+            params = {
+                "version": "v4",
+                "using_global_token": False,
+                "token": repo.upload_token,
+            }
 
-        assert (repo, org) == determine_repo_and_owner_for_upload(params)
+            assert repo == determine_repo_for_upload(params)
 
-    def test_determine_repo_upload_token_not_found(self):
-        org = G(Owner)
-        repo = G(Repository, author=org)
+        with self.subTest("token not found"):
+            org = G(Owner)
+            repo = G(Repository, author=org)
 
-        params = {
-            "version": "v4",
-            "using_global_token": False,
-            "token": "testbtznwf3ooi3xlrsnetkddj5od731pap9",
-        }
+            params = {
+                "version": "v4",
+                "using_global_token": False,
+                "token": "testbtznwf3ooi3xlrsnetkddj5od731pap9",
+            }
 
-        with self.assertRaises(NotFound):
-            determine_repo_and_owner_for_upload(params)
+            with self.assertRaises(NotFound):
+                determine_repo_for_upload(params)
 
-    def test_determine_repo_no_token_or_service(self):
-        params = {
-            "version": "v4",
-            "using_global_token": False,
-            "service": None,
-        }
+        with self.subTest("missing token or service"):
+            params = {
+                "version": "v4",
+                "using_global_token": False,
+                "service": None,
+            }
 
-        with self.assertRaises(ValidationError):
-            determine_repo_and_owner_for_upload(params)
+            with self.assertRaises(ValidationError):
+                determine_repo_for_upload(params)
 
     def test_determine_upload_branch_to_use(self):
         with self.subTest("no branch and no pr provided"):
