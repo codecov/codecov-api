@@ -164,9 +164,9 @@ LOGGING = {
 
 MINIO_ACCESS_KEY = get_config('services', 'minio', 'access_key_id')
 MINIO_SECRET_KEY = get_config('services', 'minio', 'secret_access_key')
-MINIO_LOCATION = 'codecov.s3.amazonaws.com'
+MINIO_LOCATION = get_config('services', 'minio', 'host')
 MINIO_HASH_KEY = get_config('services', 'minio', 'hash_key')
-ARCHIVE_BUCKET_NAME = 'codecov'
+ARCHIVE_BUCKET_NAME = get_config('services', 'minio', 'bucket')
 ENCRYPTION_SECRET = get_config('setup', 'encryption_secret')
 
 
