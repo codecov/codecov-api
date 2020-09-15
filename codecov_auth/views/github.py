@@ -10,6 +10,7 @@ from codecov_auth.views.base import LoginMixin
 
 class GithubLoginView(View, LoginMixin):
     def get_is_enterprise(self):
+        # TODO Change when rolling out enterprise
         return False
 
     def get_url_to_redirect_to(self, scope):
