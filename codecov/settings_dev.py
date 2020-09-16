@@ -36,3 +36,5 @@ GITLAB_CLIENT_SECRET = "testq19ki95gaa4faunz92a97otmekrwczg60s8wdy3vx1ddfch2rff2
 
 
 CODECOV_DASHBOARD_URL = 'http://localhost:9000'
+
+COOKIES_DOMAIN = "localhost"

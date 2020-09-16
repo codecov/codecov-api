@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from django.urls import reverse
 from shared.torngit import Gitlab
 from codecov_auth.helpers import decode_token_from_cookie
@@ -5,21 +7,35 @@ from codecov_auth.models import Session
 from django.http.cookie import SimpleCookie
 
 
-def test_get_gitlab_redirect(client, settings):
-    settings.GITLAB_CLIENT_ID = "testfiuozujcfo5kxgigugr5x3xxx2ukgyandp16x6w566uits7f32crzl4yvmth"
-    settings.GITLAB_CLIENT_SECRET = "testi1iinnfrhnf2q6htycgexmp04f1z2mrd7w7u8bigskhwq2km6yls8e2mddzh"
+def test_get_gitlab_redirect(client, settings, mocker):
+    mocker.patch(
+        "codecov_auth.views.gitlab.uuid4",
+        return_value=UUID("fbdf86c6c8d64ed1b814e80b33df85c9"),
+    )
+    settings.GITLAB_CLIENT_ID = (
+        "testfiuozujcfo5kxgigugr5x3xxx2ukgyandp16x6w566uits7f32crzl4yvmth"
+    )
+    settings.GITLAB_CLIENT_SECRET = (
+        "testi1iinnfrhnf2q6htycgexmp04f1z2mrd7w7u8bigskhwq2km6yls8e2mddzh"
+    )
     url = reverse("gitlab-login")
     res = client.get(url, SERVER_NAME="localhost:8000")
     assert res.status_code == 302
     assert (
         res.url
-        == "https://gitlab.com/oauth/authorize?response_type=code&client_id=testfiuozujcfo5kxgigugr5x3xxx2ukgyandp16x6w566uits7f32crzl4yvmth&redirect_uri=http%3A%2F%2Flocalhost%3A8000%2Flogin%2Fgl&state=aaaaa"
+        == "https://gitlab.com/oauth/authorize?response_type=code&client_id=testfiuozujcfo5kxgigugr5x3xxx2ukgyandp16x6w566uits7f32crzl4yvmth&redirect_uri=http%3A%2F%2Flocalhost%3A8000%2Flogin%2Fgl&state=fbdf86c6c8d64ed1b814e80b33df85c9"
     )
 
 
-def test_get_github_already_with_code(client, mocker, db, settings):
-    settings.GITLAB_CLIENT_ID = "testfiuozujcfo5kxgigugr5x3xxx2ukgyandp16x6w566uits7f32crzl4yvmth"
-    settings.GITLAB_CLIENT_SECRET = "testi1iinnfrhnf2q6htycgexmp04f1z2mrd7w7u8bigskhwq2km6yls8e2mddzh"
+def test_get_gitlab_already_with_code(client, mocker, db, settings, mock_redis):
+    settings.GITLAB_CLIENT_ID = (
+        "testfiuozujcfo5kxgigugr5x3xxx2ukgyandp16x6w566uits7f32crzl4yvmth"
+    )
+    settings.GITLAB_CLIENT_SECRET = (
+        "testi1iinnfrhnf2q6htycgexmp04f1z2mrd7w7u8bigskhwq2km6yls8e2mddzh"
+    )
+    settings.COOKIES_DOMAIN = ".simple.site"
+
     async def helper_func(*args, **kwargs):
         return {
             "id": 3124507,
@@ -32,7 +48,24 @@ def test_get_github_already_with_code(client, mocker, db, settings):
             "scope": "api",
         }
 
+    async def helper_list_teams_func(*args, **kwargs):
+        return [
+            {
+                "email": "hello@codecov.io",
+                "id": "8226205",
+                "name": "Codecov",
+                "username": "codecov",
+            }
+        ]
+
     mocker.patch.object(Gitlab, "get_authenticated_user", side_effect=helper_func)
+    mocker.patch.object(Gitlab, "list_teams", side_effect=helper_list_teams_func)
+    mocker.patch(
+        "services.task.TaskService.refresh",
+        return_value=mocker.MagicMock(
+            as_tuple=mocker.MagicMock(return_value=("a", "b"))
+        ),
+    )
     url = reverse("gitlab-login")
     res = client.get(url, {"code": "aaaaaaa"})
     assert res.status_code == 302
@@ -42,8 +75,8 @@ def test_get_github_already_with_code(client, mocker, db, settings):
     username_cookie = res.cookies["gitlab-username"]
     cookie_token = decode_token_from_cookie(settings.COOKIE_SECRET, token_cookie.value)
     assert username_cookie.value == "ThiagoCodecov"
-    assert username_cookie.get("domain") == ".codecov.io"
-    assert token_cookie.get("domain") == ".codecov.io"
+    assert username_cookie.get("domain") == ".simple.site"
+    assert token_cookie.get("domain") == ".simple.site"
     session = Session.objects.get(token=cookie_token)
     owner = session.owner
     assert owner.username == "ThiagoCodecov"

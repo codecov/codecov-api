@@ -26,26 +26,20 @@ class GithubLoginView(View, LoginMixin):
         query_str = urlencode(query)
         return f"{base_url}?{query_str}"
 
-    def get_github_authorized_user(self, code):
+    async def fetch_user_data(self, code):
         repo_service = Github(
             oauth_consumer_token=dict(
                 key=settings.GITHUB_CLIENT_ID, secret=settings.GITHUB_CLIENT_SECRET
             )
         )
-        data = asyncio.run(repo_service.get_authenticated_user(code))
-        self.backfill_github_specific_information(repo_service, data)
-        return {
-            "service_id": data["id"],
-            "username": data["login"],
-            "access_token": data["access_token"],
-        }
-
-    def backfill_github_specific_information(self, repo_service, data):
-        pass
+        user_dict = await repo_service.get_authenticated_user(code)
+        user_orgs = await repo_service.list_teams()
+        return dict(user=user_dict, orgs=user_orgs)
 
     def get(self, request):
         if request.GET.get("code"):
-            user_dict = self.get_github_authorized_user(request.GET.get("code"))
+            code = request.GET.get("code")
+            user_dict = asyncio.run(self.fetch_user_data(code))
             response = redirect("/redirect_app")
             self.login_from_user_dict(user_dict, request, response)
             return response
