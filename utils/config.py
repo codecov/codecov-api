@@ -29,31 +29,25 @@ class MissingConfigException(Exception):
 log = logging.getLogger(__name__)
 
 default_config = {
-    'services': {
-        'minio': {
-            'access_key_id': 'codecov-default-key',
-            'secret_access_key': 'codecov-default-secret',
-            'verify_ssl': False,
-            'hash_key': None,
-            'bucket': 'archive',
-            'region': 'us-east-1',
-            'host': 'minio',
-            'port': 9000
+    "services": {
+        "minio": {
+            "access_key_id": "codecov-default-key",
+            "secret_access_key": "codecov-default-secret",
+            "verify_ssl": False,
+            "hash_key": None,
+            "bucket": "archive",
+            "region": "us-east-1",
+            "host": "minio",
+            "port": 9000,
         },
-        'database_url': 'postgres://postgres:@postgres:5432/postgres',
-        "redis_url": 'redis://redis:6379/0',
+        "database_url": "postgres://postgres:@postgres:5432/postgres",
+        "redis_url": "redis://redis:6379/0",
     },
-    'setup': {
-        'http': {
-            'timeouts': {
-                'connect': 15,
-                'receive': 30
-            },
-            'cookie_secret': 'abc123'
-        },
-        'encryption_secret': '',
-        'codecov_url': 'http://localhost:5100'
-    }
+    "setup": {
+        "http": {"timeouts": {"connect": 15, "receive": 30}, "cookie_secret": "abc123"},
+        "encryption_secret": "",
+        "codecov_url": "http://localhost:5100",
+    },
 }
 
 
@@ -68,14 +62,16 @@ def update(d, u):
 
 
 class ConfigHelper(object):
-
     def __init__(self):
         self._params = None
 
+    # Load config values from environment variables that are passed (and set) in GCP
     def load_env_var(self):
         val = {}
         for env_var in os.environ:
-            multiple_level_vars = env_var.split('__')
+            # Split env variables on "__" to get values for nested config fields
+            # For example: ONE__TWO__THREE='value' --> { 'one': { 'two': { 'three': 'value' }}}
+            multiple_level_vars = env_var.split("__")
             if len(multiple_level_vars) > 1:
                 current = val
                 for c in multiple_level_vars[:-1]:
@@ -85,6 +81,10 @@ class ConfigHelper(object):
 
     @property
     def params(self):
+        """
+            Construct the config by combining default values (defined above in "default_config"), yaml config, and OS env vars.
+            An env var overrides a yaml config value, which overrides the default values.
+        """
         if self._params is None:
             content = self.yaml_content()
             env_vars = self.load_env_var()
@@ -106,9 +106,9 @@ class ConfigHelper(object):
         return current_p
 
     def yaml_content(self):
-        yaml_path = os.getenv('CODECOV_YML', '/config/codecov.yml')
+        yaml_path = os.getenv("CODECOV_YML", "/config/codecov.yml")
         try:
-            with open(yaml_path, 'r') as c:
+            with open(yaml_path, "r") as c:
                 return yaml_load(c.read())
         except FileNotFoundError:
             return {}
