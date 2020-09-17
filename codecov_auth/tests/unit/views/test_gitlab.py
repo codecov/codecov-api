@@ -42,8 +42,8 @@ def test_get_github_already_with_code(client, mocker, db, settings):
     username_cookie = res.cookies["gitlab-username"]
     cookie_token = decode_token_from_cookie(settings.COOKIE_SECRET, token_cookie.value)
     assert username_cookie.value == "ThiagoCodecov"
-    assert username_cookie.get("domain") == "codecov.io"
-    assert token_cookie.get("domain") == "codecov.io"
+    assert username_cookie.get("domain") == ".codecov.io"
+    assert token_cookie.get("domain") == ".codecov.io"
     session = Session.objects.get(token=cookie_token)
     owner = session.owner
     assert owner.username == "ThiagoCodecov"
