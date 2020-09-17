@@ -170,6 +170,7 @@ ARCHIVE_BUCKET_NAME = 'codecov'
 ENCRYPTION_SECRET = get_config('setup', 'encryption_secret')
 
 COOKIE_SECRET = get_config("setup", "http", "cookie_secret")
+COOKIES_DOMAIN = ".codecov.io"
 
 
 GITHUB_CLIENT_ID = os.environ.get("GITHUB__CLIENT_ID")
