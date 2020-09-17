@@ -536,6 +536,29 @@ class TestRepositoryViewSetExtraActions(RepositoryViewSetTestSuite):
 
         assert response.data == stats
 
+    def test_stats_with_invalid_datetime_crashes(self):
+        with pytest.raises(ValueError):
+            self._get_stats(
+                data={'before_date': 'A'}
+            )
+
+    def test_stats_with_datetime_doesnt_crash(self):
+        response = self._get_stats(
+            data={'before_date': self.repo1Commit2.timestamp}
+        )
+        stats = {
+            "repos_count": 2,
+            "sum_lines": self.repo1Commit2.totals["n"] + self.repo2Commit2.totals["n"],
+            "sum_hits": self.repo1Commit2.totals["h"] + self.repo2Commit2.totals["h"],
+            "sum_partials": self.repo1Commit2.totals["p"] + self.repo2Commit2.totals["p"],
+            "sum_misses": self.repo1Commit2.totals["m"] + self.repo2Commit2.totals["m"],
+            "weighted_coverage": 25.0,
+            "average_complexity": 0,
+            "weighted_coverage_change": -41.6666666666667,
+        }
+
+        assert response.data == stats
+
 
 @patch("internal_api.repo.repository_accessors.RepoAccessors.get_repo_permissions")
 class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):

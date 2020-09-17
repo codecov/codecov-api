@@ -47,6 +47,63 @@ class GithubWebhookHandlerTests(APITestCase):
             active=True
         )
 
+    def test_get_repo_paths_dont_crash(self):
+        with self.subTest("with ownerid success"):
+            response = self._post_event_data(
+                event=GitHubWebhookEvents.REPOSITORY,
+                data={
+                    "action": "publicized",
+                    "repository": {
+                        "id": self.repo.service_id,
+                        "owner": {
+                            "id": self.repo.author.service_id
+                        }
+                    }
+                }
+            )
+
+        with self.subTest("with not found owner"):
+            response = self._post_event_data(
+                event=GitHubWebhookEvents.REPOSITORY,
+                data={
+                    "action": "publicized",
+                    "repository": {
+                        "id": self.repo.service_id,
+                        "owner": {
+                            "id": -239450
+                        }
+                    }
+                }
+            )
+
+        with self.subTest("with not found owner and not found repo"):
+            response = self._post_event_data(
+                event=GitHubWebhookEvents.REPOSITORY,
+                data={
+                    "action": "publicized",
+                    "repository": {
+                        "id": -1948503,
+                        "owner": {
+                            "id": -239450
+                        }
+                    }
+                }
+            )
+
+        with self.subTest("with owner and not found repo"):
+            response = self._post_event_data(
+                event=GitHubWebhookEvents.REPOSITORY,
+                data={
+                    "action": "publicized",
+                    "repository": {
+                        "id": -1948503,
+                        "owner": {
+                            "id": self.repo.author.service_id
+                        }
+                    }
+                }
+            )
+
     def test_ping_returns_pong_and_200(self):
         response = self._post_event_data(event=GitHubWebhookEvents.PING)
         assert response.status_code == status.HTTP_200_OK
