@@ -1,0 +1,51 @@
+from django.urls import reverse
+from shared.torngit import Gitlab
+from codecov_auth.helpers import decode_token_from_cookie
+from codecov_auth.models import Session
+from django.http.cookie import SimpleCookie
+
+
+def test_get_gitlab_redirect(client, settings):
+    settings.GITLAB_CLIENT_ID = "testfiuozujcfo5kxgigugr5x3xxx2ukgyandp16x6w566uits7f32crzl4yvmth"
+    settings.GITLAB_CLIENT_SECRET = "testi1iinnfrhnf2q6htycgexmp04f1z2mrd7w7u8bigskhwq2km6yls8e2mddzh"
+    url = reverse("gitlab-login")
+    res = client.get(url, SERVER_NAME="localhost:8000")
+    assert res.status_code == 302
+    assert (
+        res.url
+        == "https://gitlab.com/oauth/authorize?response_type=code&client_id=testfiuozujcfo5kxgigugr5x3xxx2ukgyandp16x6w566uits7f32crzl4yvmth&redirect_uri=http%3A%2F%2Flocalhost%3A8000%2Flogin%2Fgl&state=aaaaa"
+    )
+
+
+def test_get_github_already_with_code(client, mocker, db, settings):
+    settings.GITLAB_CLIENT_ID = "testfiuozujcfo5kxgigugr5x3xxx2ukgyandp16x6w566uits7f32crzl4yvmth"
+    settings.GITLAB_CLIENT_SECRET = "testi1iinnfrhnf2q6htycgexmp04f1z2mrd7w7u8bigskhwq2km6yls8e2mddzh"
+    async def helper_func(*args, **kwargs):
+        return {
+            "id": 3124507,
+            "name": "Thiago Ramos",
+            "username": "ThiagoCodecov",
+            "state": "active",
+            "access_token": "testp2twc8gxedplfn91tm4zn4r4ak2xgyr4ug96q86r2gr0re0143f20nuftka8",
+            "token_type": "Bearer",
+            "refresh_token": "testqyuk6z4s086jcvwoncxz8owl57o30qx1mhxlw3lgqliisujsiakh3ejq91tt",
+            "scope": "api",
+        }
+
+    mocker.patch.object(Gitlab, "get_authenticated_user", side_effect=helper_func)
+    url = reverse("gitlab-login")
+    res = client.get(url, {"code": "aaaaaaa"})
+    assert res.status_code == 302
+    assert "gitlab-token" in res.cookies
+    assert "gitlab-username" in res.cookies
+    token_cookie = res.cookies["gitlab-token"]
+    username_cookie = res.cookies["gitlab-username"]
+    cookie_token = decode_token_from_cookie(settings.COOKIE_SECRET, token_cookie.value)
+    assert username_cookie.value == "ThiagoCodecov"
+    assert username_cookie.get("domain") == ".codecov.io"
+    assert token_cookie.get("domain") == ".codecov.io"
+    session = Session.objects.get(token=cookie_token)
+    owner = session.owner
+    assert owner.username == "ThiagoCodecov"
+    assert owner.service_id == "3124507"
+    assert res.url == "/redirect_app"

@@ -27,12 +27,12 @@ class LoginMixin(object):
         )
         session.save()
         token = str(session.token)
-        signed_cookie_value = create_signed_value("github-token", token, version=None)
+        signed_cookie_value = create_signed_value(f"{self.cookie_prefix}-token", token, version=None)
         response.set_cookie(
-            "github-token", signed_cookie_value, domain=domain_to_use, httponly=True
+            f"{self.cookie_prefix}-token", signed_cookie_value, domain=domain_to_use, httponly=True
         )
         response.set_cookie(
-            "github-username", user.username, domain=domain_to_use, httponly=True
+            f"{self.cookie_prefix}-username", user.username, domain=domain_to_use, httponly=True
         )
 
     def _check_user_count_limitations(self):
@@ -41,7 +41,7 @@ class LoginMixin(object):
 
     def _get_or_create_user(self, user_dict):
         owner, was_created = Owner.objects.get_or_create(
-            service="github", service_id=user_dict["service_id"]
+            service=f"{self.cookie_prefix}", service_id=user_dict["service_id"]
         )
         owner.oauth_token = encryptor.encode(user_dict["access_token"])
         owner.username = user_dict["username"]
