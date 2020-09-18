@@ -237,6 +237,44 @@ class GithubWebhookHandlerTests(APITestCase):
 
         assert commit1.branch == unmerged_branch_name
         assert commit2.branch == unmerged_branch_name
+        assert not commit1.merged
+        assert not commit2.merged
+
+        assert merged_commit.branch == merged_branch_name
+
+    @patch('redis.Redis.sismember', lambda x, y, z: False)
+    def test_push_updates_commit_on_default_branch(self):
+        commit1 = CommitFactory(merged=False, repository=self.repo)
+        commit2 = CommitFactory(merged=False, repository=self.repo)
+
+        merged_branch_name = "merged"
+        repo_branch = self.repo.branch
+
+        merged_commit = CommitFactory(merged=True, repository=self.repo, branch=merged_branch_name)
+
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.PUSH,
+            data={
+                "ref": "refs/heads/" + repo_branch,
+                "repository": {
+                    "id": self.repo.service_id
+                },
+                "commits": [
+                    {"id": commit1.commitid, "message": commit1.message},
+                    {"id": commit2.commitid, "message": commit2.message},
+                    {"id": merged_commit.commitid, "message": merged_commit.message}
+                ]
+            }
+        )
+
+        commit1.refresh_from_db()
+        commit2.refresh_from_db()
+        merged_commit.refresh_from_db()
+
+        assert commit1.branch == repo_branch
+        assert commit2.branch == repo_branch
+        assert commit1.merged
+        assert commit2.merged
 
         assert merged_commit.branch == merged_branch_name
 
