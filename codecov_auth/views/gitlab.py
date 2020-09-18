@@ -42,7 +42,7 @@ class GitlabLoginView(View, LoginMixin):
         if request.GET.get("code"):
             code = request.GET.get("code")
             user_dict = user_dict = asyncio.run(self.fetch_user_data(request, code))
-            response = redirect("/redirect_app")
+            response = redirect("/gl")
             self.login_from_user_dict(user_dict, request, response)
             return response
         else:
