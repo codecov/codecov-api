@@ -1,5 +1,6 @@
 import asyncio
 from django.urls import reverse
+from uuid import uuid4
 
 from django.shortcuts import redirect
 from shared.torngit import Gitlab
@@ -20,32 +21,27 @@ class GitlabLoginView(View, LoginMixin):
             response_type="code",
             client_id=settings.GITLAB_CLIENT_ID,
             redirect_uri=redirect_uri,
-            state="aaaaa"
+            state=uuid4().hex,
         )
         query_str = urlencode(query)
         return f"{base_url}?{query_str}"
 
-    def get_gitlab_authorized_user(self, request, code):
+    async def fetch_user_data(self, request, code):
+        redirect_uri = request.build_absolute_uri(reverse("gitlab-login"))
         repo_service = Gitlab(
             oauth_consumer_token=dict(
                 key=settings.GITLAB_CLIENT_ID, secret=settings.GITLAB_CLIENT_SECRET
             )
         )
-        redirect_uri = request.build_absolute_uri(reverse("gitlab-login"))
-        data = asyncio.run(repo_service.get_authenticated_user(code, redirect_uri))
-        self.backfill_gitlab_specific_information(repo_service, data)
-        return {
-            "service_id": data["id"],
-            "username": data["username"],
-            "access_token": data["access_token"],
-        }
-
-    def backfill_gitlab_specific_information(self, repo_service, data):
-        pass
+        user_dict = await repo_service.get_authenticated_user(code, redirect_uri)
+        user_dict["login"] = user_dict["username"]
+        user_orgs = await repo_service.list_teams()
+        return dict(user=user_dict, orgs=user_orgs)
 
     def get(self, request):
         if request.GET.get("code"):
-            user_dict = self.get_gitlab_authorized_user(request, request.GET.get("code"))
+            code = request.GET.get("code")
+            user_dict = user_dict = asyncio.run(self.fetch_user_data(request, code))
             response = redirect("/redirect_app")
             self.login_from_user_dict(user_dict, request, response)
             return response
