@@ -81,4 +81,4 @@ def test_get_gitlab_already_with_code(client, mocker, db, settings, mock_redis):
     owner = session.owner
     assert owner.username == "ThiagoCodecov"
     assert owner.service_id == "3124507"
-    assert res.url == "/redirect_app"
+    assert res.url == "/gl"
