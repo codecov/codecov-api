@@ -4,7 +4,7 @@
 #
 #    pip-compile requirements.in
 #
--e git+https://github.com/codecov/shared.git@thiago/b/is-student#egg=shared  # via -r requirements.in
+-e git+https://github.com/codecov/shared.git@v0.3.34#egg=shared  # via -r requirements.in
 amqp==2.6.1               # via kombu
 analytics-python==1.3.0b1  # via shared
 asn1crypto==1.4.0         # via cryptography

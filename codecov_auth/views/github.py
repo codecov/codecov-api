@@ -52,7 +52,7 @@ class GithubLoginView(View, LoginMixin):
             return response
         else:
             scope = ["user:email", "read:org", "repo:status", "write:repo_hook"]
-            if self.get_is_enterprise() or request.COOKIES.get("ghpr") == "true":
+            if self.get_is_enterprise() or request.COOKIES.get("ghpr") == "true" or request.GET.get('private'):
                 scope.append("repo")
                 url_to_redirect_to = self.get_url_to_redirect_to(scope)
                 response = redirect(url_to_redirect_to)

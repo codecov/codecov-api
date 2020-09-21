@@ -33,6 +33,21 @@ def test_get_github_redirect_with_ghpr_cookie(client, settings):
     assert ghpr_cooke.get("domain") == ".simple.site"
 
 
+def test_get_github_redirect_with_private_url(client, settings):
+    settings.COOKIES_DOMAIN = ".simple.site"
+    url = reverse("github-login")
+    res = client.get(url,  {"private": "true"})
+    assert res.status_code == 302
+    assert (
+        res.url
+        == "https://github.com/login/oauth/authorize?response_type=code&scope=user%3Aemail%2Cread%3Aorg%2Crepo%3Astatus%2Cwrite%3Arepo_hook%2Crepo&client_id=3d44be0e772666136a13"
+    )
+    assert "ghpr" in res.cookies
+    ghpr_cooke = res.cookies["ghpr"]
+    assert ghpr_cooke.value == "true"
+    assert ghpr_cooke.get("domain") == ".simple.site"
+
+
 def test_get_github_already_with_code(client, mocker, db, mock_redis, settings):
     settings.COOKIES_DOMAIN = ".simple.site"
 
