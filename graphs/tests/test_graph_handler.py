@@ -1,0 +1,495 @@
+from rest_framework.test import APITestCase
+from rest_framework import status
+from codecov_auth.tests.factories import OwnerFactory
+from core.tests.factories import RepositoryFactory, BranchFactory, CommitFactory, PullFactory
+
+class TestGraphHandler(APITestCase):
+
+    def _get(self, graph_type, kwargs={}, data={}):
+        path = f"/{kwargs.get('service')}/{kwargs.get('owner_username')}/{kwargs.get('repo_name')}/graphs/{graph_type}.{kwargs.get('ext')}"
+        return self.client.get(path, data=data)
+
+    def _get_branch(self, graph_type, kwargs={}, data={}):
+        path = f"/{kwargs.get('service')}/{kwargs.get('owner_username')}/{kwargs.get('repo_name')}/branch/{kwargs.get('branch')}/graphs/{graph_type}.{kwargs.get('ext')}"
+        return self.client.get(path, data=data)
+
+    def _get_pull(self, graph_type, kwargs={}, data={}):
+        path = f"/{kwargs.get('service')}/{kwargs.get('owner_username')}/{kwargs.get('repo_name')}/pull/{kwargs.get('pull')}/graphs/{graph_type}.{kwargs.get('ext')}"
+        return self.client.get(path, data=data)
+
+    def test_invalid_extension(self):
+        response = self._get(
+            'tree',
+            kwargs={
+                'service': 'gh',
+                'owner_username': 'user',
+                'repo_name': 'repo',
+                'ext': 'json'
+            },
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.data['detail'] == "File extension should be .json for this type of graph"
+        
+        response = self._get(
+            'icicle',
+            kwargs={
+                'service': 'gh',
+                'owner_username': 'user',
+                'repo_name': 'repo',
+                'ext': 'json'
+            },
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.data['detail'] == "File extension should be .json for this type of graph"
+
+        response = self._get(
+            'sunburst',
+            kwargs={
+                'service': 'gh',
+                'owner_username': 'user',
+                'repo_name': 'repo',
+                'ext': 'json'
+            },
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.data['detail'] == "File extension should be .json for this type of graph"
+
+        response = self._get(
+            'commits',
+            kwargs={
+                'service': 'gh',
+                'owner_username': 'user',
+                'repo_name': 'repo',
+                'ext': 'txt'
+            },
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.data['detail'] == "File extension should be one of [ svg || json ]"
+
+    def test_tree_graph(self):
+        gh_owner = OwnerFactory(service='github')
+        repo = RepositoryFactory(author=gh_owner, active=True, private=False, name='repo1' )
+        commit = CommitFactory(repository=repo, author=gh_owner)
+        branch = BranchFactory(repository=repo, name="master", head=commit.commitid)
+        
+        # test default precision
+        response = self._get(
+            'tree',
+            kwargs={
+                'service': 'gh',
+                'owner_username': gh_owner.username,
+                'repo_name': 'repo1',
+                'ext': 'svg'
+            }
+        )
+
+        expected_graph = """<svg baseProfile="full" width="300" height="300" viewBox="0 0 300 300" version="1.1"
+            xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events"
+            xmlns:xlink="http://www.w3.org/1999/xlink">
+
+            <style>rect.s{mask:url(#mask);}</style>
+            <defs>
+            <pattern id="white" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <rect width="2" height="2" transform="translate(0,0)" fill="white"></rect>
+            </pattern>
+            <mask id="mask">
+                <rect x="0" y="0" width="100%" height="100%" fill="url(#white)"></rect>
+            </mask>
+            </defs>
+
+            <rect x="0" y="0" width="210.0" height="150.0" fill="#4c1" stroke="white" stroke-width="1" class=" tooltipped" data-content="tests/test_sample.py"><title>tests/test_sample.py</title></rect>
+            <rect x="210.0" y="0" width="90.0" height="150.0" fill="#e05d44" stroke="white" stroke-width="1" class=" tooltipped" data-content="tests/__init__.py"><title>tests/__init__.py</title></rect>
+            <rect x="0" y="150.0" width="300.0" height="150.0" fill="#efa41b" stroke="white" stroke-width="1" class=" tooltipped" data-content="awesome/__init__.py"><title>awesome/__init__.py</title></rect>
+        </svg>"""
+
+        graph = response.content.decode("utf-8")
+        graph = [line.strip() for line in graph.split('\n')]
+        expected_graph = [line.strip() for line in expected_graph.split('\n')]
+        assert expected_graph == graph
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_icicle_graph(self):
+        gh_owner = OwnerFactory(service='github')
+        repo = RepositoryFactory(author=gh_owner, active=True, private=False, name='repo1' )
+        commit = CommitFactory(repository=repo, author=gh_owner)
+        branch = BranchFactory(repository=repo, name="master", head=commit.commitid)
+        
+        # test default precision
+        response = self._get(
+            'icicle',
+            kwargs={
+                'service': 'gh',
+                'owner_username': gh_owner.username,
+                'repo_name': 'repo1',
+                'ext': 'svg'
+            }
+        )
+
+        expected_graph = """<svg baseProfile="full" width="750" height="150" viewBox="0 0 750 150" version="1.1"
+            xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events"
+            xmlns:xlink="http://www.w3.org/1999/xlink">
+
+            <style>rect.s{mask:url(#mask);}</style>
+            <defs>
+            <pattern id="white" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <rect width="2" height="2" transform="translate(0,0)" fill="white"></rect>
+            </pattern>
+            <mask id="mask">
+                <rect x="0" y="0" width="100%" height="100%" fill="url(#white)"></rect>
+            </mask>
+            </defs>
+
+            <rect x="37.5" y="7.5" width="675.0" height="67.5" fill="#c0b01b" stroke="white" stroke-width="1" class=" tooltipped" data-content="/"><title>/</title></rect>
+            <rect x="37.5" y="75.0" width="337.5" height="67.5" fill="#a3b114" stroke="white" stroke-width="1" class=" tooltipped" data-content="//tests"><title>//tests</title></rect>
+            <rect x="37.5" y="142.5" width="101.25" height="67.5" fill="#e05d44" stroke="white" stroke-width="1" class=" tooltipped" data-content="//tests/__init__.py"><title>//tests/__init__.py</title></rect>
+            <rect x="138.75" y="142.5" width="236.24999999999997" height="67.5" fill="#4c1" stroke="white" stroke-width="1" class=" tooltipped" data-content="//tests/test_sample.py"><title>//tests/test_sample.py</title></rect>
+            <rect x="375.0" y="75.0" width="337.5" height="67.5" fill="#efa41b" stroke="white" stroke-width="1" class=" tooltipped" data-content="//awesome"><title>//awesome</title></rect>
+            <rect x="375.0" y="142.5" width="337.5" height="67.5" fill="#efa41b" stroke="white" stroke-width="1" class=" tooltipped" data-content="//awesome/__init__.py"><title>//awesome/__init__.py</title></rect>
+        </svg>"""
+
+        graph = response.content.decode("utf-8")
+        graph = [line.strip() for line in graph.split('\n')]
+        expected_graph = [line.strip() for line in expected_graph.split('\n')]
+        assert expected_graph == graph
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_sunburst_graph(self):
+        gh_owner = OwnerFactory(service='github')
+        repo = RepositoryFactory(author=gh_owner, active=True, private=False, name='repo1' )
+        commit = CommitFactory(repository=repo, author=gh_owner)
+        branch = BranchFactory(repository=repo, name="master", head=commit.commitid)
+        
+        # test default precision
+        response = self._get(
+            'sunburst',
+            kwargs={
+                'service': 'gh',
+                'owner_username': gh_owner.username,
+                'repo_name': 'repo1',
+                'ext': 'svg'
+            }
+        )
+
+        expected_graph = """<svg baseProfile="full" width="300" height="300" viewBox="0 0 300 300" version="1.1"
+            xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events"
+            xmlns:xlink="http://www.w3.org/1999/xlink">
+
+            <style>rect.s{mask:url(#mask);}</style>
+            <defs>
+            <pattern id="white" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <rect width="2" height="2" transform="translate(0,0)" fill="white"></rect>
+            </pattern>
+            <mask id="mask">
+                <rect x="0" y="0" width="100%" height="100%" fill="url(#white)"></rect>
+            </mask>
+            </defs>
+
+            <circle cx="150.0" cy="150.0" fill="#c0b01b" r="71.25" stroke="white" stroke-width="1" />
+            <path d="M 150.0 221.25 L 150.0 292.5 A 142.5 142.5 0 0 0 150.00000000000003 7.5 L 150.0 78.75 A 71.25 71.25 0 0 1 150.0 221.25 z" fill="#a3b114" stroke="white" stroke-width="1" />
+            <path d="M 150.0 292.5 L 150.0 363.75 A 213.75 213.75 0 0 0 322.92738254764504 275.63909767751613 L 265.28492169843 233.75939845167744 A 142.5 142.5 0 0 1 150.0 292.5 z" fill="#e05d44" stroke="white" stroke-width="1" />
+            <path d="M 265.28492169843 233.75939845167744 L 322.92738254764504 275.63909767751613 A 213.75 213.75 0 0 0 150.00000000000003 -63.75 L 150.00000000000003 7.5 A 142.5 142.5 0 0 1 265.28492169843 233.75939845167744 z" fill="#4c1" stroke="white" stroke-width="1" />
+            <path d="M 150.0 78.75 L 150.00000000000003 7.5 A 142.5 142.5 0 0 0 149.99999999999997 292.5 L 149.99999999999997 221.25 A 71.25 71.25 0 0 1 150.0 78.75 z" fill="#efa41b" stroke="white" stroke-width="1" />
+            <path d="M 150.00000000000003 7.5 L 150.00000000000003 -63.75 A 213.75 213.75 0 0 0 149.99999999999994 363.75 L 149.99999999999997 292.5 A 142.5 142.5 0 0 1 150.00000000000003 7.5 z" fill="#efa41b" stroke="white" stroke-width="1" />
+        </svg>"""
+
+        graph = response.content.decode("utf-8")
+        graph = [line.strip() for line in graph.split('\n')]
+        expected_graph = [line.strip() for line in expected_graph.split('\n')]
+        assert expected_graph == graph
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_unkown_owner(self):
+        response = self._get(
+            'sunburst',
+            kwargs={
+                'service': 'gh',
+                'owner_username': 'gh_owner',
+                'repo_name': 'repo1',
+                'ext': 'svg'
+            }
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.data['detail'] == "Not found. Note: private repositories require ?token arguments"
+
+    def test_unkown_repo(self):
+        gh_owner = OwnerFactory(service='github')
+        response = self._get(
+            'sunburst',
+            kwargs={
+                'service': 'gh',
+                'owner_username': gh_owner.username,
+                'repo_name': 'repo1',
+                'ext': 'svg'
+            }
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.data['detail'] == "Not found. Note: private repositories require ?token arguments"
+
+    def test_private_repo_no_token(self):
+        gh_owner = OwnerFactory(service='github')
+        repo = RepositoryFactory(author=gh_owner, active=True, private=True, name='repo1', image_token='12345678')
+        response = self._get(
+            'sunburst',
+            kwargs={
+                'service': 'gh',
+                'owner_username': gh_owner.username,
+                'repo_name': 'repo1',
+                'ext': 'svg'
+            },
+            data={
+                'token': '123456'
+            }
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.data['detail'] == "Not found. Note: private repositories require ?token arguments"
+
+    def test_private_repo(self):
+        gh_owner = OwnerFactory(service='github')
+        repo = RepositoryFactory(author=gh_owner, active=True, private=True, name='repo1', image_token='12345678')
+        commit = CommitFactory(repository=repo, author=gh_owner)
+        branch = BranchFactory(repository=repo, name="master", head=commit.commitid)
+        
+        response = self._get(
+            'sunburst',
+            kwargs={
+                'service': 'gh',
+                'owner_username': gh_owner.username,
+                'repo_name': 'repo1',
+                'ext': 'svg'
+            },
+            data={
+                'token': '12345678'
+            }
+        )
+
+        expected_graph = """<svg baseProfile="full" width="300" height="300" viewBox="0 0 300 300" version="1.1"
+            xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events"
+            xmlns:xlink="http://www.w3.org/1999/xlink">
+
+            <style>rect.s{mask:url(#mask);}</style>
+            <defs>
+            <pattern id="white" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <rect width="2" height="2" transform="translate(0,0)" fill="white"></rect>
+            </pattern>
+            <mask id="mask">
+                <rect x="0" y="0" width="100%" height="100%" fill="url(#white)"></rect>
+            </mask>
+            </defs>
+
+            <circle cx="150.0" cy="150.0" fill="#c0b01b" r="71.25" stroke="white" stroke-width="1" />
+            <path d="M 150.0 221.25 L 150.0 292.5 A 142.5 142.5 0 0 0 150.00000000000003 7.5 L 150.0 78.75 A 71.25 71.25 0 0 1 150.0 221.25 z" fill="#a3b114" stroke="white" stroke-width="1" />
+            <path d="M 150.0 292.5 L 150.0 363.75 A 213.75 213.75 0 0 0 322.92738254764504 275.63909767751613 L 265.28492169843 233.75939845167744 A 142.5 142.5 0 0 1 150.0 292.5 z" fill="#e05d44" stroke="white" stroke-width="1" />
+            <path d="M 265.28492169843 233.75939845167744 L 322.92738254764504 275.63909767751613 A 213.75 213.75 0 0 0 150.00000000000003 -63.75 L 150.00000000000003 7.5 A 142.5 142.5 0 0 1 265.28492169843 233.75939845167744 z" fill="#4c1" stroke="white" stroke-width="1" />
+            <path d="M 150.0 78.75 L 150.00000000000003 7.5 A 142.5 142.5 0 0 0 149.99999999999997 292.5 L 149.99999999999997 221.25 A 71.25 71.25 0 0 1 150.0 78.75 z" fill="#efa41b" stroke="white" stroke-width="1" />
+            <path d="M 150.00000000000003 7.5 L 150.00000000000003 -63.75 A 213.75 213.75 0 0 0 149.99999999999994 363.75 L 149.99999999999997 292.5 A 142.5 142.5 0 0 1 150.00000000000003 7.5 z" fill="#efa41b" stroke="white" stroke-width="1" />
+        </svg>"""
+
+        graph = response.content.decode("utf-8")
+        graph = [line.strip() for line in graph.split('\n')]
+        expected_graph = [line.strip() for line in expected_graph.split('\n')]
+        assert expected_graph == graph
+        assert response.status_code == status.HTTP_200_OK
+        
+    def test_unkown_branch(self):
+        gh_owner = OwnerFactory(service='github')
+        repo = RepositoryFactory(author=gh_owner, active=True, private=False, name='repo1' )
+        
+        response = self._get(
+            'sunburst',
+            kwargs={
+                'service': 'gh',
+                'owner_username': gh_owner.username,
+                'repo_name': 'repo1',
+                'ext': 'svg'
+            }
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.data['detail'] == "Not found. Note: private repositories require ?token arguments"
+
+    def test_branch_graph(self):
+        gh_owner = OwnerFactory(service='github')
+        repo = RepositoryFactory(author=gh_owner, active=True, private=True, name='repo1', image_token='12345678', branch='branch1')
+        commit = CommitFactory(repository=repo, author=gh_owner)
+        branch = BranchFactory(repository=repo, name="master", head=commit.commitid)
+        commit_2_totals = {
+            'C': 0,
+            'M': 0,
+            'N': 0,
+            'b': 0,
+            'c': '95.00000',
+            'd': 0,
+            'diff': [1, 2, 1, 1, 0, '50.00000', 0, 0, 0, 0, 0, 0, 0],
+            'f': 3,
+            'h': 17,
+            'm': 3,
+            'n': 20,
+            'p': 0,
+            's': 1
+        }
+        commit_2 = CommitFactory(repository=repo, author=gh_owner, totals=commit_2_totals)
+        branch_2 = BranchFactory(repository=repo, name="branch1", head=commit_2.commitid)
+        # test default precision
+        response = self._get_branch(
+            'tree',
+            kwargs={
+                'service': 'gh',
+                'owner_username': gh_owner.username,
+                'repo_name': 'repo1',
+                'ext': 'svg',
+                'branch': 'branch1'
+            },
+            data={
+                'token': '12345678'
+            }
+        )
+        expected_graph = """<svg baseProfile="full" width="300" height="300" viewBox="0 0 300 300" version="1.1"
+            xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events"
+            xmlns:xlink="http://www.w3.org/1999/xlink">
+
+            <style>rect.s{mask:url(#mask);}</style>
+            <defs>
+            <pattern id="white" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <rect width="2" height="2" transform="translate(0,0)" fill="white"></rect>
+            </pattern>
+            <mask id="mask">
+                <rect x="0" y="0" width="100%" height="100%" fill="url(#white)"></rect>
+            </mask>
+            </defs>
+
+            <rect x="0" y="0" width="210.0" height="150.0" fill="#4c1" stroke="white" stroke-width="1" class=" tooltipped" data-content="tests/test_sample.py"><title>tests/test_sample.py</title></rect>
+            <rect x="210.0" y="0" width="90.0" height="150.0" fill="#e05d44" stroke="white" stroke-width="1" class=" tooltipped" data-content="tests/__init__.py"><title>tests/__init__.py</title></rect>
+            <rect x="0" y="150.0" width="300.0" height="150.0" fill="#efa41b" stroke="white" stroke-width="1" class=" tooltipped" data-content="awesome/__init__.py"><title>awesome/__init__.py</title></rect>
+        </svg>"""
+        graph = response.content.decode("utf-8")
+        graph = [line.strip() for line in graph.split('\n')]
+        expected_graph = [line.strip() for line in expected_graph.split('\n')]
+        assert expected_graph == graph
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_pull_graph(self):
+        gh_owner = OwnerFactory(service='github')
+        repo = RepositoryFactory(author=gh_owner, active=True, private=True, name='repo1', image_token='12345678', branch='branch1')
+        pull = PullFactory(
+            pullid=10, 
+            repository_id=repo.repoid, 
+            flare=[
+                {
+                    "name": "",
+                    "color": "#e05d44",
+                    "lines": 14,
+                    "_class": None,
+                    "children": [{
+                            "name": "tests.py",
+                            "color": "#baaf1b",
+                            "lines": 7,
+                            "_class": None,
+                            "coverage": "85.71429"
+                    }]
+                }
+            ]
+        )
+        # test default precision
+        response = self._get_pull(
+            'tree',
+            kwargs={
+                'service': 'gh',
+                'owner_username': gh_owner.username,
+                'repo_name': 'repo1',
+                'ext': 'svg',
+                'pull': 10
+            },
+            data={
+                'token': '12345678'
+            }
+        )
+        expected_graph = """<svg baseProfile="full" width="300" height="300" viewBox="0 0 300 300" version="1.1"
+            xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events"
+            xmlns:xlink="http://www.w3.org/1999/xlink">
+
+            <style>rect.s{mask:url(#mask);}</style>
+            <defs>
+            <pattern id="white" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <rect width="2" height="2" transform="translate(0,0)" fill="white"></rect>
+            </pattern>
+            <mask id="mask">
+                <rect x="0" y="0" width="100%" height="100%" fill="url(#white)"></rect>
+            </mask>
+            </defs>
+
+            <rect x="0" y="0" width="300.0" height="300.0" fill="#baaf1b" stroke="white" stroke-width="1" class=" tooltipped" data-content="tests.py"><title>tests.py</title></rect>
+        </svg>"""
+        graph = response.content.decode("utf-8")
+        graph = [line.strip() for line in graph.split('\n')]
+        expected_graph = [line.strip() for line in expected_graph.split('\n')]
+        assert expected_graph == graph
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_no_pull_graph(self):
+        gh_owner = OwnerFactory(service='github')
+        repo = RepositoryFactory(author=gh_owner, active=True, private=True, name='repo1', image_token='12345678', branch='branch1')
+        # test default precision
+        response = self._get_pull(
+            'tree',
+            kwargs={
+                'service': 'gh',
+                'owner_username': gh_owner.username,
+                'repo_name': 'repo1',
+                'ext': 'svg',
+                'pull': 10
+            },
+            data={
+                'token': '12345678'
+            }
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.data['detail'] == "Not found. Note: private repositories require ?token arguments"
+
+    def test_pull_no_flare_graph(self):
+        gh_owner = OwnerFactory(service='github')
+        repo = RepositoryFactory(author=gh_owner, active=True, private=True, name='repo1', image_token='12345678', branch='branch1')
+        pull = PullFactory(
+            pullid=10, 
+            repository_id=repo.repoid, 
+            flare=None
+        )
+        
+        # test default precision
+        response = self._get_pull(
+            'tree',
+            kwargs={
+                'service': 'gh',
+                'owner_username': gh_owner.username,
+                'repo_name': 'repo1',
+                'ext': 'svg',
+                'pull': 10
+            },
+            data={
+                'token': '12345678'
+            }
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.data['detail'] == "Not found. Note: private repositories require ?token arguments"
+
+    def test_pull_no_repo_graph(self):
+        gh_owner = OwnerFactory(service='github')
+        
+        # test default precision
+        response = self._get_pull(
+            'tree',
+            kwargs={
+                'service': 'gh',
+                'owner_username': gh_owner.username,
+                'repo_name': 'repo1',
+                'ext': 'svg',
+                'pull': 10
+            },
+            data={
+                'token': '12345678'
+            }
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.data['detail'] == "Not found. Note: private repositories require ?token arguments"
