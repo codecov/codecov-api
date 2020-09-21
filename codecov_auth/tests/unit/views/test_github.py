@@ -1,3 +1,5 @@
+from asyncio import Future
+
 from django.urls import reverse
 from shared.torngit import Github
 from codecov_auth.helpers import decode_token_from_cookie
@@ -39,6 +41,7 @@ def test_get_github_already_with_code(client, mocker, db, mock_redis, settings):
             "login": "ThiagoCodecov",
             "id": 44376991,
             "access_token": "testh04ph89fx0nkd3diauxcw75fyiuo3b86fw4j",
+            "scope": "read:org,repo:status,user:email,write:repo_hook",
         }
 
     async def helper_list_teams_func(*args, **kwargs):
@@ -53,6 +56,9 @@ def test_get_github_already_with_code(client, mocker, db, mock_redis, settings):
 
     mocker.patch.object(Github, "get_authenticated_user", side_effect=helper_func)
     mocker.patch.object(Github, "list_teams", side_effect=helper_list_teams_func)
+    f = Future()
+    f.set_result(False)
+    mocker.patch.object(Github, "is_student", return_value=f)
     mocker.patch(
         "services.task.TaskService.refresh",
         return_value=mocker.MagicMock(

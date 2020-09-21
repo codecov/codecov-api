@@ -32,10 +32,16 @@ class LoginMixin(object):
         for org in formatted_orgs:
             self.get_or_create_org(org)
         if self.get_is_enterprise() and get_config(self.service, "organizations"):
-            # TODO
+            # TODO Change when rolling out enterprise
             pass
         self._check_user_count_limitations()
         user, is_new_user = self._get_or_create_user(user_data)
+        if user_dict.get("is_student") != user.student:
+            user.student = user_dict.get("is_student")
+            if user.student_created_at is None:
+                user.student_created_at = timezone.now()
+            user.student_updated_at = timezone.now()
+        user.private_access = user_dict["has_private_access"]
         track_user(
             user.ownerid,
             {
@@ -93,7 +99,6 @@ class LoginMixin(object):
         pass
 
     def _get_or_create_user(self, user_dict):
-        print(user_dict)
         owner, was_created = Owner.objects.get_or_create(
             service=f"{self.cookie_prefix}", service_id=user_dict["id"]
         )
