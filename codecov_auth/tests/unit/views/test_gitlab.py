@@ -23,7 +23,7 @@ def test_get_gitlab_redirect(client, settings, mocker):
     assert res.status_code == 302
     assert (
         res.url
-        == "https://gitlab.com/oauth/authorize?response_type=code&client_id=testfiuozujcfo5kxgigugr5x3xxx2ukgyandp16x6w566uits7f32crzl4yvmth&redirect_uri=http%3A%2F%2Flocalhost%3A8000%2Flogin%2Fgl&state=fbdf86c6c8d64ed1b814e80b33df85c9"
+        == "https://gitlab.com/oauth/authorize?response_type=code&client_id=testfiuozujcfo5kxgigugr5x3xxx2ukgyandp16x6w566uits7f32crzl4yvmth&redirect_uri=https%3A%2F%2Fcodecov.io%2Flogin%2Fgitlab&state=fbdf86c6c8d64ed1b814e80b33df85c9"
     )
 
 
@@ -81,4 +81,4 @@ def test_get_gitlab_already_with_code(client, mocker, db, settings, mock_redis):
     owner = session.owner
     assert owner.username == "ThiagoCodecov"
     assert owner.service_id == "3124507"
-    assert res.url == "/redirect_app"
+    assert res.url == "/gl"

@@ -3,6 +3,6 @@ from .views import GithubLoginView
 from .views.gitlab import GitlabLoginView
 
 urlpatterns = [
-    path("gh", GithubLoginView.as_view(), name="github-login",),
-    path("gl", GitlabLoginView.as_view(), name="gitlab-login",),
+    path("github", GithubLoginView.as_view(), name="github-login",),
+    path("gitlab", GitlabLoginView.as_view(), name="gitlab-login",),
 ]

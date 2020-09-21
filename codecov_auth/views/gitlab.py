@@ -13,10 +13,10 @@ from codecov_auth.views.base import LoginMixin
 class GitlabLoginView(View, LoginMixin):
     cookie_prefix = "gitlab"
 
-    def get_url_to_redirect_to(self, request):
+    def get_url_to_redirect_to(self):
         repo_service = Gitlab
         base_url = urljoin(repo_service.service_url, "oauth/authorize")
-        redirect_uri = request.build_absolute_uri(reverse("gitlab-login"))
+        redirect_uri = settings.GITLAB_REDIRECT_URI
         query = dict(
             response_type="code",
             client_id=settings.GITLAB_CLIENT_ID,
@@ -42,10 +42,10 @@ class GitlabLoginView(View, LoginMixin):
         if request.GET.get("code"):
             code = request.GET.get("code")
             user_dict = user_dict = asyncio.run(self.fetch_user_data(request, code))
-            response = redirect("/redirect_app")
+            response = redirect("/gl")
             self.login_from_user_dict(user_dict, request, response)
             return response
         else:
-            url_to_redirect_to = self.get_url_to_redirect_to(request)
+            url_to_redirect_to = self.get_url_to_redirect_to()
             response = redirect(url_to_redirect_to)
             return response

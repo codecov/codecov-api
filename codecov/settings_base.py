@@ -175,7 +175,10 @@ COOKIES_DOMAIN = ".codecov.io"
 
 GITHUB_CLIENT_ID = os.environ.get("GITHUB__CLIENT_ID")
 GITHUB_CLIENT_SECRET = os.environ.get("GITHUB__CLIENT_SECRET")
+
 BITBUCKET_CLIENT_ID = os.environ.get("BITBUCKET__CLIENT_ID")
 BITBUCKET_CLIENT_SECRET = os.environ.get("BITBUCKET__CLIENT_SECRET")
+
 GITLAB_CLIENT_ID = os.environ.get("GITLAB__CLIENT_ID")
 GITLAB_CLIENT_SECRET = os.environ.get("GITLAB__CLIENT_SECRET")
+GITLAB_REDIRECT_URI = "https://codecov.io/login/gitlab"
