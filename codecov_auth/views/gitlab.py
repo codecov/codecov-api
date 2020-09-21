@@ -36,7 +36,9 @@ class GitlabLoginView(View, LoginMixin):
         user_dict = await repo_service.get_authenticated_user(code, redirect_uri)
         user_dict["login"] = user_dict["username"]
         user_orgs = await repo_service.list_teams()
-        return dict(user=user_dict, orgs=user_orgs)
+        return dict(
+            user=user_dict, orgs=user_orgs, is_student=False, has_private_access=True
+        )
 
     def get(self, request):
         if request.GET.get("code"):
