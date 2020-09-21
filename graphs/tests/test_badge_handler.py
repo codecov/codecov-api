@@ -40,7 +40,7 @@ class TestBadgeHandler(APITestCase):
             }
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert response.data['detail'] == "File extension should be one of [ .svg || .txt ]"
+        assert response.data['detail'] == "File extension should be one of [ svg || txt ]"
 
     @patch('redis.Redis.hset', lambda x, y, z : True)
     @patch('redis.Redis.hget', lambda x, y, z : None)
