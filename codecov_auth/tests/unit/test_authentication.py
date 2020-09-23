@@ -43,6 +43,12 @@ class TestAuthentication(BaseTestCase):
         with pytest.raises(rest_framework.exceptions.AuthenticationFailed):
             authenticator.decode_token_from_cookie(val)
 
+    def test_decode_token_bad_cookie_value_format(self):
+        val = "2|1:0|10:1557329312|15:bitbucket-token|OGY5YmM2Y2ItZmQxNC00M2JjLWJiYjUtYmUxZTdjOTQ4ZjM0|1335e04704e810cc3096150f30969432ab88116f9679bfcef070b0c5da0e0f23"
+        authenticator = CodecovSessionAuthentication()
+        with pytest.raises(rest_framework.exceptions.AuthenticationFailed):
+            authenticator.decode_token_from_cookie(val)
+
     def test_auth_no_token(self, db):
         SessionFactory.create()
         token = uuid4()

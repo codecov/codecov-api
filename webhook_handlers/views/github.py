@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, NotFound
 
 from core.models import Repository, Branch, Commit, Pull
 from codecov_auth.models import Owner
@@ -59,10 +59,30 @@ class GithubWebhookHandler(APIView):
         return Response(data=WebhookHandlerErrorMessages.UNSUPPORTED_EVENT)
 
     def _get_repo(self, request):
-        return Repository.objects.get(
-            author__service="github",
-            service_id=self.request.data.get("repository", {}).get("id")
-        )
+        """
+        Attempts to fetch the repo first via the index on o(wnerid, service_id),
+        then naively on service, service_id if that fails.
+        """
+        owner_service_id = self.request.data.get("repository", {}).get("owner", {}).get("id")
+        repo_service_id = self.request.data.get("repository", {}).get("id")
+        try:
+            owner = Owner.objects.get(service="github", service_id=owner_service_id)
+        except Owner.DoesNotExist:
+            log.info(
+                f"Error fetching owner with service_id {owner_service_id}, "
+                f"using repository service id to get repo"
+            )
+            try:
+                return Repository.objects.get(author__service="github", service_id=repo_service_id)
+            except Repository.DoesNotExist:
+                log.info(f"Received event for non-existent repository with service_id {repo_service_id}")
+                raise NotFound("Repository does not exist")
+        else:
+            try:
+                return Repository.objects.get(author__ownerid=owner.ownerid, service_id=repo_service_id)
+            except Repository.DoesNotExist:
+                log.info(f"Received event for non-existent repository with service_id {repo_service_id}")
+                raise NotFound("Repository does not exist")
 
     def ping(self, request, *args, **kwargs):
         return Response(data="pong")
@@ -72,48 +92,80 @@ class GithubWebhookHandler(APIView):
         if action == "publicized":
             repo.private, repo.activated = False, False
             repo.save()
+            log.info("Repository publicized", extra=dict(repoid=repo.repoid, github_webhook_event=self.event))
         elif action == "privatized":
             repo.private = True
             repo.save()
+            log.info("Repository privatized", extra=dict(repoid=repo.repoid, github_webhook_event=self.event))
         elif action == "deleted":
             log.info(f"Request to delete repository: {repo.repoid}")
             repo.deleted = True
             repo.activated = False
             repo.active = False
             repo.save(update_fields=["deleted", "activated", "active"])
-            log.info(f"Repository {repo.repoid} soft-deleted")
+            log.info("Repository soft-deleted", extra=dict(repoid=repo.repoid, github_webhook_event=self.event))
         else:
-            log.warn("Unknown 'repository' action: %s", action)
+            log.warn(f"Unknown repository action: {action}", extra=dict(repoid=repo.repoid))
         return Response()
 
     def delete(self, request, *args, **kwargs):
         ref_type = request.data.get("ref_type")
+        repo = self._get_repo(request)
         if ref_type != "branch":
+            log.info(
+                f"Unsupported ref type: {ref_type}, exiting",
+                extra=dict(
+                    repoid=repo.repoid,
+                    github_webhook_event=self.event
+                )
+            )
             return Response(f"Unsupported ref type: {ref_type}")
         branch_name = self.request.data.get('ref')[11:]
         Branch.objects.filter(repository=self._get_repo(request), name=branch_name).delete()
+        log.info("Branch '{branch_name}' deleted", extra=dict(repoid=repo.repoid, github_webhook_event=self.event))
         return Response()
 
     def public(self, request, *args, **kwargs):
         repo = self._get_repo(request)
         repo.private, repo.activated = False, False
         repo.save()
+        log.info("Repository publicized", extra=dict(repoid=repo.repoid, github_webhook_event=self.event))
         return Response()
 
     def push(self, request, *args, **kwargs):
         ref_type = "branch" if request.data.get("ref")[5:10] == "heads" else "tag"
+        repo = self._get_repo(request)
         if ref_type != "branch":
+            log.info(
+                "Ref is tag, not branch, ignoring push event",
+                extra=dict(
+                    repoid=repo.repoid,
+                    github_webhook_event=self.event
+                )
+            )
             return Response(f"Unsupported ref type: {ref_type}")
 
-        repo = self._get_repo(request)
-
         if not repo.active:
+            log.info(
+                "Repository is not active, ignoring push event",
+                extra=dict(
+                    repoid=repo.repoid,
+                    github_webhook_event=self.event
+                )
+            )
             return Response(data=WebhookHandlerErrorMessages.SKIP_NOT_ACTIVE)
 
         branch_name = self.request.data.get('ref')[11:]
         commits = self.request.data.get('commits', [])
 
         if not commits:
+            log.info(
+                f"No commits in webhook payload for branch {branch_name}",
+                extra=dict(
+                    repoid=repo.repoid,
+                    github_webhook_event=self.event
+                )
+            )
             return Response()
 
         Commit.objects.filter(
@@ -122,12 +174,36 @@ class GithubWebhookHandler(APIView):
             merged=False
         ).update(branch=branch_name)
 
+        log.info(
+            f"Branch name updated for commits to {branch_name}",
+            extra=dict(
+                repoid=repo.repoid,
+                github_webhook_event=self.event
+            )
+        )
+
         most_recent_commit = commits[-1]
 
         if regexp_ci_skip(most_recent_commit.get('message')):
+            log.info(
+                "CI skip tag on head commit, not setting status",
+                extra=dict(
+                    repoid=repo.repoid,
+                    commit=most_recent_commit.get("id"),
+                    github_webhook_event=self.event
+                )
+            )
             return Response(data="CI Skipped")
 
         if self.redis.sismember('beta.pending', repo.repoid):
+            log.info(
+                "Triggering status set pending task",
+                extra=dict(
+                    repoid=repo.repoid,
+                    commit=most_recent_commit.get("id"),
+                    github_webhook_event=self.event
+                )
+            )
             TaskService().status_set_pending(
                 repoid=repo.repoid,
                 commitid=most_recent_commit.get('id'),
@@ -139,19 +215,50 @@ class GithubWebhookHandler(APIView):
 
     def status(self, request, *args, **kwargs):
         repo = self._get_repo(request)
+        commitid = request.data.get("sha")
 
         if not repo.active:
+            log.info(
+                "Repository is not active, ignoring status event",
+                extra=dict(
+                    repoid=repo.repoid,
+                    commit=commitid,
+                    github_webhook_event=self.event
+                )
+            )
             return Response(data=WebhookHandlerErrorMessages.SKIP_NOT_ACTIVE)
         if request.data.get("context", "")[:8] == "codecov/":
+            log.info(
+                "Status is Codecov status, exiting",
+                extra=dict(
+                    repoid=repo.repoid,
+                    commit=commitid,
+                    github_webhook_event=self.event
+                )
+            )
             return Response(data=WebhookHandlerErrorMessages.SKIP_CODECOV_STATUS)
         if request.data.get("state") == "pending":
+            log.info(
+                "Commit in pending state, exiting",
+                extra=dict(
+                    repoid=repo.repoid,
+                    commit=commitid,
+                    github_webhook_event=self.event
+                )
+            )
             return Response(data=WebhookHandlerErrorMessages.SKIP_PENDING_STATUSES)
 
-        commitid = request.data.get("sha")
         if not Commit.objects.filter(repository=repo, commitid=commitid, state="complete").exists():
             return Response(data=WebhookHandlerErrorMessages.SKIP_PROCESSING)
 
-        log.info("Triggering notification from webhook for github: %s", commitid)
+        log.info(
+            "Triggering notify task",
+            extra=dict(
+                repoid=repo.repoid,
+                commit=commitid,
+                github_webhook_event=self.event
+            )
+        )
 
         TaskService().notify(repoid=repo.repoid, commitid=commitid)
 
@@ -161,13 +268,37 @@ class GithubWebhookHandler(APIView):
         repo = self._get_repo(request)
 
         if not repo.active:
+            log.info(
+                "Repository is not active, ignoring pull request event",
+                extra=dict(
+                    repoid=repo.repoid,
+                    github_webhook_event=self.event
+                )
+            )
             return Response(data=WebhookHandlerErrorMessages.SKIP_NOT_ACTIVE)
 
         action, pullid = request.data.get("action"), request.data.get("number")
 
         if action in ["opened", "closed", "reopened", "synchronize"]:
+            log.info(
+                f"Pull request action is '{action}', triggering pulls_sync task",
+                extra=dict(
+                    repoid=repo.repoid,
+                    github_webhook_event=self.event,
+                    pullid=pullid
+                )
+            )
             TaskService().pulls_sync(repoid=repo.repoid, pullid=pullid)
         elif action == "edited":
+            log.info(
+                f"Pull request action is 'edited', updating pull title to "
+                f"'{request.data.get('pull_request', {}).get('title')}'",
+                extra=dict(
+                    repoid=repo.repoid,
+                    github_webhook_event=self.event,
+                    pullid=pullid
+                )
+            )
             Pull.objects.filter(
                 repository=repo, pullid=pullid
             ).update(
@@ -191,10 +322,25 @@ class GithubWebhookHandler(APIView):
             owner.integration_id = None
             owner.save()
             owner.repository_set.all().update(using_integration=False, bot=None)
+            log.info(
+                "Owner deleted app integration",
+                extra=dict(
+                    ownerid=owner.ownerid,
+                    github_webhook_event=self.event
+                )
+            )
         else:
             if owner.integration_id is None:
                 owner.integration_id = request.data["installation"]["id"]
                 owner.save()
+
+            log.info(
+                "Triggering refresh task to sync repos",
+                extra=dict(
+                    ownerid=owner.ownerid,
+                    github_webhook_event=self.event
+                )
+            )
 
             TaskService().refresh(
                 ownerid=owner.ownerid,
@@ -217,7 +363,8 @@ class GithubWebhookHandler(APIView):
         if action == "member_removed":
             log.info(
                 f"Removing user with service-id {request.data['membership']['user']['id']} "
-                f"from organization with service-id {request.data['organization']['id']}"
+                f"from organization with service-id {request.data['organization']['id']}",
+                extra=dict(github_webhook_event=self.event)
             )
 
             try:
@@ -226,7 +373,8 @@ class GithubWebhookHandler(APIView):
                     service_id=request.data["organization"]["id"]
                 )
             except Owner.DoesNotExist:
-                log.info("Organization does not exist, exiting")
+                log.info(
+                    "Organization does not exist, exiting")
                 return Response(
                     status=status.HTTP_400_BAD_REQUEST,
                     data="Attempted to remove member from non-Codecov org failed"
@@ -240,7 +388,8 @@ class GithubWebhookHandler(APIView):
             except Owner.DoesNotExist:
                 log.info(
                     f"Member with service-id {request.data['membership']['user']['id']} "
-                    f"does not exist, exiting"
+                    f"does not exist, exiting",
+                    extra=dict(ownerid=org.ownerid, github_webhook_event=self.event)
                 )
                 return Response(
                     status=status.HTTP_400_BAD_REQUEST,
@@ -250,11 +399,15 @@ class GithubWebhookHandler(APIView):
             member.organizations = [ownerid for ownerid in member.organizations if ownerid != org.ownerid]
             member.save(update_fields=['organizations'])
 
-            log.info(f"User removal -- success")
+            log.info(
+                f"User removal of {member.ownerid}, success",
+                extra=dict(ownerid=org.ownerid, github_webhook_event=self.event)
+            )
 
         return Response()
 
     def _handle_marketplace_events(self, request, *args, **kwargs):
+        log.info("Triggering sync_plans task", extra=dict(github_webhook_event=self.event))
         TaskService().sync_plans(
             sender=request.data["sender"],
             account=request.data["marketplace_purchase"]["account"],
@@ -272,25 +425,34 @@ class GithubWebhookHandler(APIView):
         action = request.data["action"]
         if action == "removed":
             repo = self._get_repo(request)   
-            log.info(f"Request to remove read permissions for user, repo: {repo.repoid}")
+            log.info(
+                f"Request to remove read permissions for user",
+                extra=dict(repoid=repo.repoid, github_webhook_event=self.event)
+            )
             try:
                 member = Owner.objects.get(
                     service="github",
                     service_id=request.data["member"]["id"]
                 )
             except Owner.DoesNotExist:
-                log.info(f"Repo permissions unchanged -- owner doesn't exist")
+                log.info(
+                    f"Repository permissions unchanged -- owner doesn't exist",
+                    extra=dict(repoid=repo.repoid, github_webhook_event=self.event)
+                )
                 return Response(status=status.HTTP_404_NOT_FOUND)
             member.permission.remove(repo.repoid)
             member.save(update_fields=['permission'])
-            log.info(f"Successfully updated read permissions for repo: {repo.repoid}, owner {member.ownerid}")
+            log.info(
+                f"Successfully updated read permissions for repository",
+                extra=dict(repoid=repo.repoid, ownerid=member.ownerid, github_webhook_event=self.event)
+            )
         return Response()
 
     def post(self, request, *args, **kwargs):
         self.validate_signature(request)
 
-        event = self.request.META.get(GitHubHTTPHeaders.EVENT)
-        log.info("GitHub Webhook Handler invoked with: %s", event.upper())
-        handler = getattr(self, event, self.unhandled_webhook_event)
+        self.event = self.request.META.get(GitHubHTTPHeaders.EVENT)
+        log.info(f"GitHub Webhook Handler invoked", extra=dict(github_webhook_event=self.event))
+        handler = getattr(self, self.event, self.unhandled_webhook_event)
 
         return handler(request, *args, **kwargs)

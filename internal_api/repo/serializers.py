@@ -1,6 +1,3 @@
-from datetime import datetime
-
-from dateutil import parser
 from rest_framework import serializers
 
 from core.models import Repository, Commit
@@ -31,21 +28,14 @@ class RepoSerializer(serializers.ModelSerializer):
             "hookid",
             "activated",
             "using_integration",
-            "latest_commit",
+            "latest_commit"
         )
 
     def get_latest_commit(self, repo):
-        # Parsing the date given in parameters so we receive a datetime rather than a string
-        timestamp = parser.parse(self.context["request"].query_params.get("before_date", datetime.now().isoformat()))
+        if repo.latest_commitid is None:
+            return CommitSerializer(None).data
 
-        latest_commit = repo.commits.filter(
-            state=Commit.CommitStates.COMPLETE,
-            branch=self.context["request"].query_params.get("branch", None) or repo.branch,
-            # The __date cast function will case the datetime based timestamp on the commit to a date object that only
-            # contains the year, month and day. This allows us to filter through a daily granularity rather than
-            # a second granularity since this is the level of granularity we get from other parts of the API.
-            timestamp__date__lte=timestamp
-        ).select_related('author').order_by('-timestamp').first()
+        latest_commit = repo.commits.get(commitid=repo.latest_commitid)
         return CommitSerializer(latest_commit).data
 
 

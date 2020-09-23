@@ -1,8 +1,16 @@
+import time
+import hmac
+import hashlib
+import base64
+
 import requests
+from rest_framework import exceptions
 
 from codecov_auth.constants import GITLAB_BASE_URL
+from django.conf import settings
 
 GITLAB_PAYLOAD_AVATAR_URL_KEY = 'avatar_url'
+
 
 def get_gitlab_url(email, size):
     res = requests.get('{}/api/v4/avatar?email={}&size={}'.format(GITLAB_BASE_URL, email, size))
@@ -15,3 +23,90 @@ def get_gitlab_url(email, size):
             pass
 
     return url
+
+
+DEFAULT_SIGNED_VALUE_VERSION = 2
+
+
+def create_signed_value(name, value, version=None):
+    """
+        Signs and timestamps a string so it cannot be forged.
+        This is the function that we should call to generate signed cookies in a way that
+            tornado also understands
+        Implementation heavily from https://github.com/tornadoweb/tornado/blob/v4.5.2/tornado/web.py
+    """
+    secret = settings.COOKIE_SECRET
+    if version is None:
+        version = DEFAULT_SIGNED_VALUE_VERSION
+    if version != DEFAULT_SIGNED_VALUE_VERSION:
+        raise Exception("Unsupported version of signed cookie")
+    return do_create_signed_value_v2(
+        secret, name, value, version=version
+    )
+
+
+def do_create_signed_value_v2(
+    secret, name, value, version=None, clock=None
+):
+    """
+        Implementation to sign a cookie in a way that is compatible with tornado==4.5.2
+        Implementation heavily from https://github.com/tornadoweb/tornado/blob/v4.5.2/tornado/web.py
+
+        We are here dropping the "dict key" implementation from the tornado implemenation,
+            which allows for versioning of the key. This might be wanted in the future,
+            it just doesn't match our infra
+    """
+    if clock is None:
+        clock = time.time
+
+    timestamp = str(int(clock()))
+    value = base64.b64encode(value.encode()).decode()
+
+    def format_field(s):
+        return f"{len(s)}:{s}"
+    key_version = None
+
+    to_sign = "|".join(
+        [
+            "2",
+            format_field(str(key_version or 0)),
+            format_field(timestamp),
+            format_field(name),
+            format_field(value),
+            "",
+        ]
+    )
+
+    signature = create_signature_v2(secret, to_sign)
+    return to_sign + signature
+
+
+def create_signature_v2(secret: str, s: str) -> bytes:
+    hash_value = hmac.new(secret.encode(), digestmod=hashlib.sha256)
+    hash_value.update(s.encode())
+    return hash_value.hexdigest()
+
+
+def decode_token_from_cookie(secret, encoded_cookie):
+    """
+        From a cookie, extracts the original value meant from it.
+        Raises `exceptions.AuthenticationFailed` if the cookie does not have the proper format.
+        Ideally, this code is such that:
+
+            ```
+            decode_token_from_cookie(secret, do_create_signed_value_v2(secret, name, value)) == value
+            ```
+    """
+    cookie_fields = encoded_cookie.split('|')
+    if len(cookie_fields) < 6:
+        raise exceptions.AuthenticationFailed('No correct token format')
+    cookie_value, cookie_signature = "|".join(cookie_fields[:5]) + "|", cookie_fields[5]
+    expected_sig = create_signature_v2(secret, cookie_value)
+    print(expected_sig)
+    if not hmac.compare_digest(cookie_signature, expected_sig):
+        raise exceptions.AuthenticationFailed('Signature doesnt match')
+    splitted = cookie_fields[4].split(':')
+    if len(splitted) != 2:
+        raise exceptions.AuthenticationFailed('No correct token format')
+    _, encoded_token = splitted
+    return base64.b64decode(encoded_token).decode()

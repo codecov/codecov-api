@@ -64,7 +64,7 @@ jobs:
         name: codecov
         command: |
           apk add bash curl
-          bash -c "bash <(curl -s https://codecov.io/bash) -t a3f4746b-4e57-4fc6-90ee-b4007979c0d2 -F unit"
+          bash -c "bash <(curl -s https://codecov.io/bash) -t fcd1b412-6063-486f-bdb3-5f73f77fa1d6 -F unit"
     - run:
         name: codecov-staging
         command: |
