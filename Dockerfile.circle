@@ -2,5 +2,8 @@ ARG REQUIREMENTS_IMAGE
 
 FROM $REQUIREMENTS_IMAGE
 
+RUN             wget -q -O /usr/local/bin/berglas https://storage.googleapis.com/berglas/0.5.0/linux_amd64/berglas && \
+                chmod +x /usr/local/bin/berglas
+
 COPY            . /api
 WORKDIR         /api

@@ -26,6 +26,8 @@ class OwnerSerializer(serializers.ModelSerializer):
             'integration_id',
         )
 
+        read_only_fields = fields
+
     def get_stats(self, obj):
         if obj.cache and 'stats' in obj.cache:
             return obj.cache['stats']
@@ -88,7 +90,7 @@ class PlanSerializer(serializers.Serializer):
                 raise serializers.ValidationError(f"Field 'quantity' required for updating to paid plans")
             if plan["quantity"] < 5:
                 raise serializers.ValidationError(f"Quantity for paid plan must be greater than 5")
-            if plan["quantity"] < len(owner.plan_activated_users):
+            if plan["quantity"] < len(owner.plan_activated_users or []):
                 raise serializers.ValidationError(f"Quantity cannot be lower than currently activated user count")
         return plan
 
