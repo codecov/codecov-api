@@ -100,16 +100,14 @@ def _tree_height(tree):
         return 0
 
     subtrees = filter(None, (item.get('children', None) for item in tree))
+    
     if not subtrees:
         return 1
-
     children_map = list(map(_tree_height, subtrees))
+    if len(children_map) < 1:
+        return 1
 
-    l = list(map(_tree_height, subtrees))
-
-    if len(l) <= 0:
-        return 2
-    return 1 + max(list(map(_tree_height, subtrees)))
+    return 1 + max(children_map)
 
 def _svg_polar_rect(cx, cy, inner_radius, outer_radius,
                     start, end,
