@@ -6,14 +6,20 @@ from core.models import Repository
 
 from .serializers import CommitRefQueryParamSerializer, PullIDQueryParamSerializer
 
+short_services = {
+    'gh': 'github',
+    'bb': 'bitbucket',
+    'gl': 'gitlab'
+}
 
 class OwnerPropertyMixin:
     @cached_property
     def owner(self):
+        service = short_services[self.kwargs.get("service")] if self.kwargs.get("service") in short_services else self.kwargs.get("service")
         return get_object_or_404(
             Owner,
             username=self.kwargs.get("owner_username"),
-            service=self.kwargs.get("service")
+            service=service
         )
 
 
