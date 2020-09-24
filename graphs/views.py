@@ -127,6 +127,7 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
 
 
     def get_cached_coverage(self):
+        if self.request.query_params.get('flag'): return None
         coverage_key = ':'.join((self.kwargs["service"], self.kwargs.get("owner_username"), self.kwargs.get("repo_name"), self.kwargs.get('branch') or '')).lower()
         coverage = redis.hget('badge', coverage_key)
         if coverage:
