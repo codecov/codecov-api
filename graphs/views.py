@@ -77,7 +77,9 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
                   We also need to support service abbreviations for users already using them
         """
         coverage = self.get_cached_coverage()
+        log.info(f"Attemting to get cached coverage for badge: {self.kwargs.get('owner_username')} {self.kwargs.get('repo_name')} {self.kwargs.get('branch')}")
         if coverage is not None:
+            log.info(f"Cached coverage found for badge: {self.kwargs.get('owner_username')} {self.kwargs.get('repo_name')} {self.kwargs.get('branch')} : {coverage}")
             return coverage
         try:
             repo = self.repo
@@ -88,11 +90,13 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
             return None
        
         branch_name = self.kwargs.get('branch') or repo.branch
+        log.info(f"Attemting to get branch for badge: {self.kwargs.get('owner_username')} {self.kwargs.get('repo_name')}, branch: {branch_name}")
         branch = Branch.objects.filter(name=branch_name, repository_id=repo.repoid).first()
        
         if branch is None:
             return None
         try:
+            log.info(f"Attemting to get commit for badge: {self.kwargs.get('owner_username')} {self.kwargs.get('repo_name')}, commit: {branch.head}")
             commit = repo.commits.get(commitid=branch.head)
         except ObjectDoesNotExist:
             # if commit does not exist return None coverage
