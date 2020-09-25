@@ -118,9 +118,14 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         flag (string): name of flag
         commit (obj): commit object containing report
         """
+        if commit.report is None:
+            return None
         sessions = commit.report.get('sessions')
+        if sessions is None:
+            return None
         for key, data in sessions.items():
-            if flag in data.get('f', []):
+            f = data.get('f') or []
+            if flag in f:
                 totals = data.get('t', [])
                 return totals[5] if totals is not None and len(totals) > 5 else None
         return None
