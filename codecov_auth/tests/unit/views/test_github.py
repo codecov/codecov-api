@@ -1,3 +1,5 @@
+from asyncio import Future
+
 from django.urls import reverse
 from shared.torngit import Github
 from codecov_auth.helpers import decode_token_from_cookie
@@ -31,6 +33,21 @@ def test_get_github_redirect_with_ghpr_cookie(client, settings):
     assert ghpr_cooke.get("domain") == ".simple.site"
 
 
+def test_get_github_redirect_with_private_url(client, settings):
+    settings.COOKIES_DOMAIN = ".simple.site"
+    url = reverse("github-login")
+    res = client.get(url,  {"private": "true"})
+    assert res.status_code == 302
+    assert (
+        res.url
+        == "https://github.com/login/oauth/authorize?response_type=code&scope=user%3Aemail%2Cread%3Aorg%2Crepo%3Astatus%2Cwrite%3Arepo_hook%2Crepo&client_id=3d44be0e772666136a13"
+    )
+    assert "ghpr" in res.cookies
+    ghpr_cooke = res.cookies["ghpr"]
+    assert ghpr_cooke.value == "true"
+    assert ghpr_cooke.get("domain") == ".simple.site"
+
+
 def test_get_github_already_with_code(client, mocker, db, mock_redis, settings):
     settings.COOKIES_DOMAIN = ".simple.site"
 
@@ -39,6 +56,7 @@ def test_get_github_already_with_code(client, mocker, db, mock_redis, settings):
             "login": "ThiagoCodecov",
             "id": 44376991,
             "access_token": "testh04ph89fx0nkd3diauxcw75fyiuo3b86fw4j",
+            "scope": "read:org,repo:status,user:email,write:repo_hook",
         }
 
     async def helper_list_teams_func(*args, **kwargs):
@@ -53,6 +71,9 @@ def test_get_github_already_with_code(client, mocker, db, mock_redis, settings):
 
     mocker.patch.object(Github, "get_authenticated_user", side_effect=helper_func)
     mocker.patch.object(Github, "list_teams", side_effect=helper_list_teams_func)
+    f = Future()
+    f.set_result(False)
+    mocker.patch.object(Github, "is_student", return_value=f)
     mocker.patch(
         "services.task.TaskService.refresh",
         return_value=mocker.MagicMock(
