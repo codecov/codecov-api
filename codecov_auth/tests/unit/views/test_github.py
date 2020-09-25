@@ -95,4 +95,5 @@ def test_get_github_already_with_code(client, mocker, db, mock_redis, settings):
     owner = session.owner
     assert owner.username == "ThiagoCodecov"
     assert owner.service_id == "44376991"
+    assert owner.private_access == True
     assert res.url == "/gh"
