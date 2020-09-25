@@ -82,8 +82,7 @@ class LoginMixin(object):
         response.set_cookie(
             f"{self.cookie_prefix}-token",
             signed_cookie_value,
-            domain=domain_to_use,
-            httponly=True,
+            domain=domain_to_use
         )
         response.set_cookie(
             f"{self.cookie_prefix}-username",
