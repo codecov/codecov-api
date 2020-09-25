@@ -24,7 +24,6 @@ class LoginMixin(object):
         return owner
 
     def login_from_user_dict(self, user_dict, request, response):
-        user_data = user_dict["user"]
         user_orgs = user_dict["orgs"]
         formatted_orgs = [
             dict(username=org["username"], id=str(org["id"])) for org in user_orgs
@@ -35,13 +34,12 @@ class LoginMixin(object):
             # TODO Change when rolling out enterprise
             pass
         self._check_user_count_limitations()
-        user, is_new_user = self._get_or_create_user(user_data)
+        user, is_new_user = self._get_or_create_user(user_dict)
         if user_dict.get("is_student") != user.student:
             user.student = user_dict.get("is_student")
             if user.student_created_at is None:
                 user.student_created_at = timezone.now()
             user.student_updated_at = timezone.now()
-        user.private_access = user_dict["has_private_access"]
         track_user(
             user.ownerid,
             {
@@ -99,11 +97,13 @@ class LoginMixin(object):
         pass
 
     def _get_or_create_user(self, user_dict):
+        login_data = user_dict["user"]
         owner, was_created = Owner.objects.get_or_create(
-            service=f"{self.cookie_prefix}", service_id=user_dict["id"]
+            service=f"{self.cookie_prefix}", service_id=login_data["id"]
         )
-        owner.oauth_token = encryptor.encode(user_dict["access_token"]).decode()
-        owner.username = user_dict["login"]
+        owner.oauth_token = encryptor.encode(login_data["access_token"]).decode()
+        owner.username = login_data["login"]
+        owner.private_access = user_dict["has_private_access"]
         owner.save()
         return (owner, was_created)
 
