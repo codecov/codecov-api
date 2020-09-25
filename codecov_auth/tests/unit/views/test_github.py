@@ -56,7 +56,7 @@ def test_get_github_already_with_code(client, mocker, db, mock_redis, settings):
             "login": "ThiagoCodecov",
             "id": 44376991,
             "access_token": "testh04ph89fx0nkd3diauxcw75fyiuo3b86fw4j",
-            "scope": "read:org,repo:status,user:email,write:repo_hook",
+            "scope": "read:org,repo:status,user:email,write:repo_hook,repo",
         }
 
     async def helper_list_teams_func(*args, **kwargs):
