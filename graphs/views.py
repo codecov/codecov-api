@@ -11,12 +11,9 @@ from internal_api.mixins import RepoPropertyMixin
 from django.http import Http404
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.negotiation import DefaultContentNegotiation
-from services.redis import get_redis_connection
 from rest_framework.exceptions import NotFound
 from graphs.settings import settings
 from .mixins import GraphBadgeAPIMixin
-
-redis = get_redis_connection()
 
 import logging
 
@@ -76,11 +73,6 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
 
                   We also need to support service abbreviations for users already using them
         """
-        coverage = self.get_cached_coverage()
-        log.info(f"Attemting to get cached coverage for badge: {self.kwargs.get('owner_username')} {self.kwargs.get('repo_name')} {self.kwargs.get('branch')}")
-        if coverage is not None:
-            log.info(f"Cached coverage found for badge: {self.kwargs.get('owner_username')} {self.kwargs.get('repo_name')} {self.kwargs.get('branch')} : {coverage}")
-            return coverage
         try:
             repo = self.repo
         except Http404:
@@ -90,13 +82,11 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
             return None
        
         branch_name = self.kwargs.get('branch') or repo.branch
-        log.info(f"Attemting to get branch for badge: {self.kwargs.get('owner_username')} {self.kwargs.get('repo_name')}, branch: {branch_name}")
         branch = Branch.objects.filter(name=branch_name, repository_id=repo.repoid).first()
        
         if branch is None:
             return None
         try:
-            log.info(f"Attemting to get commit for badge: {self.kwargs.get('owner_username')} {self.kwargs.get('repo_name')}, commit: {branch.head}")
             commit = repo.commits.get(commitid=branch.head)
         except ObjectDoesNotExist:
             # if commit does not exist return None coverage
@@ -107,10 +97,6 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
             return self.flag_coverage(flag, commit)
 
         coverage = commit.totals.get('c') if commit is not None and commit.totals is not None else None
-
-        if coverage is not None and flag is None:
-            coverage_key = ':'.join((self.kwargs["service"], self.kwargs.get("owner_username"), self.kwargs.get("repo_name"), self.kwargs.get('branch') or '')).lower()
-            redis.hset('badge', coverage_key, json.dumps({'r': None, 'c': coverage, 't': repo.image_token if repo.private else None }))
 
         return coverage
 
@@ -133,22 +119,6 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
                 totals = data.get('t', [])
                 return totals[5] if totals is not None and len(totals) > 5 else None
         return None
-
-
-    def get_cached_coverage(self):
-        if self.request.query_params.get('flag'): return None
-        coverage_key = ':'.join((self.kwargs["service"], self.kwargs.get("owner_username"), self.kwargs.get("repo_name"), self.kwargs.get('branch') or '')).lower()
-        coverage = redis.hget('badge', coverage_key)
-        if coverage:
-            coverage = json.loads(coverage)
-            if coverage is None:
-                return None
-            token = coverage.get('t')
-            if token and token != self.request.query_params.get('token'):
-                return None
-            return coverage['c']
-        else:
-            return None
 
 class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
     permission_classes = [AllowAny]
