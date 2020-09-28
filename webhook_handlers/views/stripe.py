@@ -149,14 +149,12 @@ class StripeWebhookHandler(APIView):
 
         try:
             event = stripe.Webhook.construct_event(
-                json.dumps(self.request.data),
+                self.request.body,
                 self.request.META.get(StripeHTTPHeaders.SIGNATURE),
                 settings.STRIPE_ENDPOINT_SECRET,
             )
         except stripe.error.SignatureVerificationError as e:
             log.warning(f"Stripe webhook event received with invalid signature -- {e}")
-            log.info("STRIPE SIG HEADER: %s" % self.request.META.get(StripeHTTPHeaders.SIGNATURE))
-            log.info("PAYLOAD: %s" % json.dumps(self.request.data))
             return Response("Invalid signature", status=status.HTTP_400_BAD_REQUEST)
 
         if event.type not in StripeWebhookEvents.subscribed_events:
