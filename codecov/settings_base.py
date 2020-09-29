@@ -72,7 +72,7 @@ DATABASE_HOST = get_config('services', 'database', 'host', default='postgres')
 # this is the time in seconds django decides to keep the connection open after the request
 # the default is 0 seconds, meaning django closes the connection after every request
 # https://docs.djangoproject.com/en/3.1/ref/settings/#conn-max-age
-CONN_MAX_AGE = get_config('services', 'database', 'conn_max_age', default='postgres') or 0 
+CONN_MAX_AGE = int(get_config('services', 'database', 'conn_max_age', default=0))
 
 DATABASES = {
     'default': {
