@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 from django.conf import settings
 
-from rest_framework.test import APITestCase
+from rest_framework.test import APITestCase, APIRequestFactory
 from rest_framework.reverse import reverse
 from rest_framework import status
 
@@ -23,13 +23,19 @@ class StripeWebhookHandlerTests(APITestCase):
     def _send_event(self, payload):
         timestamp = time.time_ns()
 
+        request = APIRequestFactory().post(
+            reverse("stripe-webhook"), 
+            data=payload,
+            format="json"
+        )
+
         return self.client.post(
             reverse("stripe-webhook"),
             **{
                 StripeHTTPHeaders.SIGNATURE: "t={},v1={}".format(
                     timestamp,
                     stripe.WebhookSignature._compute_signature(
-                        "{}.{}".format(timestamp, json.dumps(payload)),
+                        "{}.{}".format(timestamp, request.body.decode("utf-8")),
                         settings.STRIPE_ENDPOINT_SECRET
                     )
                 )

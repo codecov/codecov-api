@@ -85,6 +85,8 @@ class Owner(models.Model):
     permission = ArrayField(models.IntegerField(null=True), null=True)
     bot = models.IntegerField(null=True)
     student = models.BooleanField(default=False)
+    student_created_at = models.DateTimeField(null=True)
+    student_updated_at = models.DateTimeField(null=True)
 
     objects = OwnerQuerySet.as_manager()
 

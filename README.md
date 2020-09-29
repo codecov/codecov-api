@@ -46,4 +46,4 @@ Make sure to have all the requirements from `requirements.txt` installed.
 
 ### Secret and Credential Management
 
-This project should store no secrets or credentials in its source. If you need to add to / modify / setup secrets for this project, contact Eli and he'll get you started. 
+This project should store no secrets or credentials in its source. If you need to add to / modify / setup secrets for this project, contact Eli and he'll get you started..

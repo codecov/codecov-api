@@ -69,6 +69,11 @@ DATABASE_NAME = get_config('services', 'database', 'name', default='postgres')
 DATABASE_PASSWORD = get_config('services', 'database', 'password', default='postgres')
 DATABASE_HOST = get_config('services', 'database', 'host', default='postgres')
 
+# this is the time in seconds django decides to keep the connection open after the request
+# the default is 0 seconds, meaning django closes the connection after every request
+# https://docs.djangoproject.com/en/3.1/ref/settings/#conn-max-age
+CONN_MAX_AGE = int(get_config('services', 'database', 'conn_max_age', default=0))
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
@@ -77,6 +82,7 @@ DATABASES = {
         'PASSWORD': DATABASE_PASSWORD,
         'HOST': DATABASE_HOST,
         'PORT': '5432',
+        'CONN_MAX_AGE': CONN_MAX_AGE
     }
 }
 
@@ -169,10 +175,16 @@ MINIO_HASH_KEY = get_config('services', 'minio', 'hash_key')
 ARCHIVE_BUCKET_NAME = 'codecov'
 ENCRYPTION_SECRET = get_config('setup', 'encryption_secret')
 
+COOKIE_SECRET = get_config("setup", "http", "cookie_secret")
+COOKIES_DOMAIN = ".codecov.io"
+
 
 GITHUB_CLIENT_ID = os.environ.get("GITHUB__CLIENT_ID")
 GITHUB_CLIENT_SECRET = os.environ.get("GITHUB__CLIENT_SECRET")
+
 BITBUCKET_CLIENT_ID = os.environ.get("BITBUCKET__CLIENT_ID")
 BITBUCKET_CLIENT_SECRET = os.environ.get("BITBUCKET__CLIENT_SECRET")
+
 GITLAB_CLIENT_ID = os.environ.get("GITLAB__CLIENT_ID")
 GITLAB_CLIENT_SECRET = os.environ.get("GITLAB__CLIENT_SECRET")
+GITLAB_REDIRECT_URI = "https://codecov.io/login/gitlab"

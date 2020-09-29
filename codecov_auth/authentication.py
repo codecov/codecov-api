@@ -8,6 +8,7 @@ from rest_framework import authentication
 from rest_framework import exceptions
 
 from codecov_auth.models import Session, Owner
+from codecov_auth.helpers import decode_token_from_cookie
 from utils.config import get_config
 
 
@@ -103,23 +104,7 @@ class CodecovSessionAuthentication(authentication.BaseAuthentication):
 
     def decode_token_from_cookie(self, encoded_cookie):
         secret = get_config('setup', 'http', 'cookie_secret')
-        cookie_fields = encoded_cookie.split('|')
-        if len(cookie_fields) < 6:
-            raise exceptions.AuthenticationFailed('No correct token format')
-        cookie_value, cookie_signature = "|".join(cookie_fields[:5]) + "|", cookie_fields[5]
-        expected_sig = self.create_signature(secret, cookie_value)
-        if not hmac.compare_digest(cookie_signature, expected_sig):
-            raise exceptions.AuthenticationFailed('Signature doesnt match')
-        splitted = cookie_fields[4].split(':')
-        if len(splitted) != 2:
-            raise exceptions.AuthenticationFailed('No correct token format')
-        _, encoded_token = splitted
-        return b64decode(encoded_token).decode()
-
-    def create_signature(self, secret: str, s: str) -> bytes:
-        hash = hmac.new(secret.encode(), digestmod=hashlib.sha256)
-        hash.update(s.encode())
-        return hash.hexdigest()
+        return decode_token_from_cookie(secret, encoded_cookie)
 
     def update_session(self, request, session):
         session.lastseen = datetime.now()

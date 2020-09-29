@@ -149,7 +149,7 @@ class StripeWebhookHandler(APIView):
 
         try:
             event = stripe.Webhook.construct_event(
-                json.dumps(self.request.data),
+                self.request.body,
                 self.request.META.get(StripeHTTPHeaders.SIGNATURE),
                 settings.STRIPE_ENDPOINT_SECRET,
             )
