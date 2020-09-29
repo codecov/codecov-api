@@ -168,11 +168,22 @@ class GithubWebhookHandler(APIView):
             )
             return Response()
 
-        Commit.objects.filter(
+        commits_queryset = Commit.objects.filter(
             repository=repo,
             commitid__in=[commit.get('id') for commit in commits],
             merged=False
-        ).update(branch=branch_name)
+        )
+        commits_queryset.update(branch=branch_name)
+        if branch_name == repo.branch:
+            commits_queryset.update(merged=True)
+            log.info(
+                "Pushed commits to default branch; setting merged to True",
+                extra=dict(
+                    repoid=repo.repoid,
+                    github_webhook_event=self.event,
+                    commits=[commit.get('id') for commit in commits]
+                )
+            )
 
         log.info(
             f"Branch name updated for commits to {branch_name}",
