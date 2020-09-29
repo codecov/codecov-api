@@ -139,12 +139,12 @@ class TestGraphHandler(APITestCase):
             </mask>
             </defs>
 
-            <rect x="37.5" y="7.5" width="675.0" height="67.5" fill="#c0b01b" stroke="white" stroke-width="1" class=" tooltipped" data-content="/"><title>/</title></rect>
-            <rect x="37.5" y="75.0" width="337.5" height="67.5" fill="#a3b114" stroke="white" stroke-width="1" class=" tooltipped" data-content="//tests"><title>//tests</title></rect>
-            <rect x="37.5" y="142.5" width="101.25" height="67.5" fill="#e05d44" stroke="white" stroke-width="1" class=" tooltipped" data-content="//tests/__init__.py"><title>//tests/__init__.py</title></rect>
-            <rect x="138.75" y="142.5" width="236.24999999999997" height="67.5" fill="#4c1" stroke="white" stroke-width="1" class=" tooltipped" data-content="//tests/test_sample.py"><title>//tests/test_sample.py</title></rect>
-            <rect x="375.0" y="75.0" width="337.5" height="67.5" fill="#efa41b" stroke="white" stroke-width="1" class=" tooltipped" data-content="//awesome"><title>//awesome</title></rect>
-            <rect x="375.0" y="142.5" width="337.5" height="67.5" fill="#efa41b" stroke="white" stroke-width="1" class=" tooltipped" data-content="//awesome/__init__.py"><title>//awesome/__init__.py</title></rect>
+            <rect x="37.5" y="7.5" width="675.0" height="45.0" fill="#c0b01b" stroke="white" stroke-width="1" class=" tooltipped" data-content="/"><title>/</title></rect>
+            <rect x="37.5" y="52.5" width="337.5" height="45.0" fill="#a3b114" stroke="white" stroke-width="1" class=" tooltipped" data-content="//tests"><title>//tests</title></rect>
+            <rect x="37.5" y="97.5" width="101.25" height="45.0" fill="#e05d44" stroke="white" stroke-width="1" class=" tooltipped" data-content="//tests/__init__.py"><title>//tests/__init__.py</title></rect>
+            <rect x="138.75" y="97.5" width="236.24999999999997" height="45.0" fill="#4c1" stroke="white" stroke-width="1" class=" tooltipped" data-content="//tests/test_sample.py"><title>//tests/test_sample.py</title></rect>
+            <rect x="375.0" y="52.5" width="337.5" height="45.0" fill="#efa41b" stroke="white" stroke-width="1" class=" tooltipped" data-content="//awesome"><title>//awesome</title></rect>
+            <rect x="375.0" y="97.5" width="337.5" height="45.0" fill="#efa41b" stroke="white" stroke-width="1" class=" tooltipped" data-content="//awesome/__init__.py"><title>//awesome/__init__.py</title></rect>
         </svg>"""
 
         graph = response.content.decode("utf-8")
@@ -184,12 +184,12 @@ class TestGraphHandler(APITestCase):
             </mask>
             </defs>
 
-            <circle cx="150.0" cy="150.0" fill="#c0b01b" r="71.25" stroke="white" stroke-width="1" />
-            <path d="M 150.0 221.25 L 150.0 292.5 A 142.5 142.5 0 0 0 150.00000000000003 7.5 L 150.0 78.75 A 71.25 71.25 0 0 1 150.0 221.25 z" fill="#a3b114" stroke="white" stroke-width="1" />
-            <path d="M 150.0 292.5 L 150.0 363.75 A 213.75 213.75 0 0 0 322.92738254764504 275.63909767751613 L 265.28492169843 233.75939845167744 A 142.5 142.5 0 0 1 150.0 292.5 z" fill="#e05d44" stroke="white" stroke-width="1" />
-            <path d="M 265.28492169843 233.75939845167744 L 322.92738254764504 275.63909767751613 A 213.75 213.75 0 0 0 150.00000000000003 -63.75 L 150.00000000000003 7.5 A 142.5 142.5 0 0 1 265.28492169843 233.75939845167744 z" fill="#4c1" stroke="white" stroke-width="1" />
-            <path d="M 150.0 78.75 L 150.00000000000003 7.5 A 142.5 142.5 0 0 0 149.99999999999997 292.5 L 149.99999999999997 221.25 A 71.25 71.25 0 0 1 150.0 78.75 z" fill="#efa41b" stroke="white" stroke-width="1" />
-            <path d="M 150.00000000000003 7.5 L 150.00000000000003 -63.75 A 213.75 213.75 0 0 0 149.99999999999994 363.75 L 149.99999999999997 292.5 A 142.5 142.5 0 0 1 150.00000000000003 7.5 z" fill="#efa41b" stroke="white" stroke-width="1" />
+            <circle cx="150.0" cy="150.0" fill="#c0b01b" r="47.5" stroke="white" stroke-width="1" />
+            <path d="M 150.0 197.5 L 150.0 245.0 A 95.0 95.0 0 0 0 150.0 55.0 L 150.0 102.5 A 47.5 47.5 0 0 1 150.0 197.5 z" fill="#a3b114" stroke="white" stroke-width="1" />
+            <path d="M 150.0 245.0 L 150.0 292.5 A 142.5 142.5 0 0 0 265.28492169843 233.75939845167744 L 226.85661446562 205.83959896778495 A 95.0 95.0 0 0 1 150.0 245.0 z" fill="#e05d44" stroke="white" stroke-width="1" />
+            <path d="M 226.85661446562 205.83959896778495 L 265.28492169843 233.75939845167744 A 142.5 142.5 0 0 0 150.00000000000003 7.5 L 150.0 55.0 A 95.0 95.0 0 0 1 226.85661446562 205.83959896778495 z" fill="#4c1" stroke="white" stroke-width="1" />
+            <path d="M 150.0 102.5 L 150.0 55.0 A 95.0 95.0 0 0 0 149.99999999999997 245.0 L 150.0 197.5 A 47.5 47.5 0 0 1 150.0 102.5 z" fill="#efa41b" stroke="white" stroke-width="1" />
+            <path d="M 150.0 55.0 L 150.00000000000003 7.5 A 142.5 142.5 0 0 0 149.99999999999997 292.5 L 149.99999999999997 245.0 A 95.0 95.0 0 0 1 150.0 55.0 z" fill="#efa41b" stroke="white" stroke-width="1" />
         </svg>"""
 
         graph = response.content.decode("utf-8")
@@ -279,12 +279,12 @@ class TestGraphHandler(APITestCase):
             </mask>
             </defs>
 
-            <circle cx="150.0" cy="150.0" fill="#c0b01b" r="71.25" stroke="white" stroke-width="1" />
-            <path d="M 150.0 221.25 L 150.0 292.5 A 142.5 142.5 0 0 0 150.00000000000003 7.5 L 150.0 78.75 A 71.25 71.25 0 0 1 150.0 221.25 z" fill="#a3b114" stroke="white" stroke-width="1" />
-            <path d="M 150.0 292.5 L 150.0 363.75 A 213.75 213.75 0 0 0 322.92738254764504 275.63909767751613 L 265.28492169843 233.75939845167744 A 142.5 142.5 0 0 1 150.0 292.5 z" fill="#e05d44" stroke="white" stroke-width="1" />
-            <path d="M 265.28492169843 233.75939845167744 L 322.92738254764504 275.63909767751613 A 213.75 213.75 0 0 0 150.00000000000003 -63.75 L 150.00000000000003 7.5 A 142.5 142.5 0 0 1 265.28492169843 233.75939845167744 z" fill="#4c1" stroke="white" stroke-width="1" />
-            <path d="M 150.0 78.75 L 150.00000000000003 7.5 A 142.5 142.5 0 0 0 149.99999999999997 292.5 L 149.99999999999997 221.25 A 71.25 71.25 0 0 1 150.0 78.75 z" fill="#efa41b" stroke="white" stroke-width="1" />
-            <path d="M 150.00000000000003 7.5 L 150.00000000000003 -63.75 A 213.75 213.75 0 0 0 149.99999999999994 363.75 L 149.99999999999997 292.5 A 142.5 142.5 0 0 1 150.00000000000003 7.5 z" fill="#efa41b" stroke="white" stroke-width="1" />
+            <circle cx="150.0" cy="150.0" fill="#c0b01b" r="47.5" stroke="white" stroke-width="1" />
+            <path d="M 150.0 197.5 L 150.0 245.0 A 95.0 95.0 0 0 0 150.0 55.0 L 150.0 102.5 A 47.5 47.5 0 0 1 150.0 197.5 z" fill="#a3b114" stroke="white" stroke-width="1" />
+            <path d="M 150.0 245.0 L 150.0 292.5 A 142.5 142.5 0 0 0 265.28492169843 233.75939845167744 L 226.85661446562 205.83959896778495 A 95.0 95.0 0 0 1 150.0 245.0 z" fill="#e05d44" stroke="white" stroke-width="1" />
+            <path d="M 226.85661446562 205.83959896778495 L 265.28492169843 233.75939845167744 A 142.5 142.5 0 0 0 150.00000000000003 7.5 L 150.0 55.0 A 95.0 95.0 0 0 1 226.85661446562 205.83959896778495 z" fill="#4c1" stroke="white" stroke-width="1" />
+            <path d="M 150.0 102.5 L 150.0 55.0 A 95.0 95.0 0 0 0 149.99999999999997 245.0 L 150.0 197.5 A 47.5 47.5 0 0 1 150.0 102.5 z" fill="#efa41b" stroke="white" stroke-width="1" />
+            <path d="M 150.0 55.0 L 150.00000000000003 7.5 A 142.5 142.5 0 0 0 149.99999999999997 292.5 L 149.99999999999997 245.0 A 95.0 95.0 0 0 1 150.0 55.0 z" fill="#efa41b" stroke="white" stroke-width="1" />
         </svg>"""
 
         graph = response.content.decode("utf-8")

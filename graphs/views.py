@@ -11,12 +11,9 @@ from internal_api.mixins import RepoPropertyMixin
 from django.http import Http404
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.negotiation import DefaultContentNegotiation
-from services.redis import get_redis_connection
 from rest_framework.exceptions import NotFound
 from graphs.settings import settings
 from .mixins import GraphBadgeAPIMixin
-
-redis = get_redis_connection()
 
 import logging
 
@@ -76,9 +73,6 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
 
                   We also need to support service abbreviations for users already using them
         """
-        coverage = self.get_cached_coverage()
-        if coverage is not None:
-            return coverage
         try:
             repo = self.repo
         except Http404:
@@ -104,10 +98,6 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
 
         coverage = commit.totals.get('c') if commit is not None and commit.totals is not None else None
 
-        if coverage is not None and flag is None:
-            coverage_key = ':'.join((self.kwargs["service"], self.kwargs.get("owner_username"), self.kwargs.get("repo_name"), self.kwargs.get('branch') or '')).lower()
-            redis.hset('badge', coverage_key, json.dumps({'r': None, 'c': coverage, 't': repo.image_token if repo.private else None }))
-
         return coverage
 
     def flag_coverage(self, flag, commit):
@@ -118,27 +108,17 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         flag (string): name of flag
         commit (obj): commit object containing report
         """
+        if commit.report is None:
+            return None
         sessions = commit.report.get('sessions')
+        if sessions is None:
+            return None
         for key, data in sessions.items():
-            if flag in data.get('f', []):
+            f = data.get('f') or []
+            if flag in f:
                 totals = data.get('t', [])
                 return totals[5] if totals is not None and len(totals) > 5 else None
         return None
-
-
-    def get_cached_coverage(self):
-        coverage_key = ':'.join((self.kwargs["service"], self.kwargs.get("owner_username"), self.kwargs.get("repo_name"), self.kwargs.get('branch') or '')).lower()
-        coverage = redis.hget('badge', coverage_key)
-        if coverage:
-            coverage = json.loads(coverage)
-            if coverage is None:
-                return None
-            token = coverage.get('t')
-            if token and token != self.request.query_params.get('token'):
-                return None
-            return coverage['c']
-        else:
-            return None
 
 class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
     permission_classes = [AllowAny]
