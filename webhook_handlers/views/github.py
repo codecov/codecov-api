@@ -180,7 +180,7 @@ class GithubWebhookHandler(APIView):
                 merged=False
             ).update(merged=True)
             log.info(
-                "Moved commits to default repo",
+                "Pushed commits to default branch; setting merged to True",
                 extra=dict(
                     repoid=repo.repoid,
                     github_webhook_event=self.event,
