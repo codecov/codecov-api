@@ -102,7 +102,8 @@ class StripeServiceTests(TestCase):
                 "obo_name": self.user.name,
                 "obo_email": self.user.email,
                 "obo": self.user.ownerid
-            }
+            },
+            proration_behavior='always_invoice'
         )
 
         owner.refresh_from_db()

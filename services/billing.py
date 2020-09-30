@@ -108,6 +108,7 @@ class StripeService(AbstractPaymentService):
                 }
             ],
             metadata=self._get_checkout_session_and_subscription_metadata(owner),
+            proration_behavior="always_invoice"
         )
 
         owner.plan = desired_plan["value"]
