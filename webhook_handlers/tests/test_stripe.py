@@ -54,9 +54,7 @@ class StripeWebhookHandlerTests(APITestCase):
                 "data": {
                     "object": {
                         "customer": self.owner.stripe_customer_id,
-                        "subscription": {
-                            "id": self.owner.stripe_subscription_id
-                        }
+                        "subscription": self.owner.stripe_subscription_id
                     }
                 }
             }
@@ -76,9 +74,7 @@ class StripeWebhookHandlerTests(APITestCase):
                 "data": {
                     "object": {
                         "customer": self.owner.stripe_customer_id,
-                        "subscription": {
-                            "id": self.owner.stripe_subscription_id
-                        }
+                        "subscription": self.owner.stripe_subscription_id
                     }
                 }
             }

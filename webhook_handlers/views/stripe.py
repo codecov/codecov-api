@@ -34,7 +34,7 @@ class StripeWebhookHandler(APIView):
         )
         updated = Owner.objects.filter(
             stripe_customer_id=invoice.customer,
-            stripe_subscription_id=invoice.subscription.id,
+            stripe_subscription_id=invoice.subscription,
         ).update(delinquent=False)
         self._log_updated(updated)
 
@@ -44,7 +44,7 @@ class StripeWebhookHandler(APIView):
         )
         updated = Owner.objects.filter(
             stripe_customer_id=invoice.customer,
-            stripe_subscription_id=invoice.subscription.id,
+            stripe_subscription_id=invoice.subscription,
         ).update(delinquent=True)
         self._log_updated(updated)
 
