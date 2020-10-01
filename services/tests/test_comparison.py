@@ -1,10 +1,12 @@
 from django.test import TestCase
+import asyncio
 
 from unittest.mock import patch, PropertyMock
 import pytest
 
 from shared.reports.resources import ReportFile
 from shared.reports.types import ReportLine, LineSession
+from shared.utils.merge import LineType
 
 from core.tests.factories import CommitFactory
 from codecov_auth.tests.factories import OwnerFactory
@@ -181,11 +183,40 @@ class FileComparisonTraverseManagerTests(TestCase):
 
         assert manager.traverse_finished() is False
 
+    def test_no_indexerror_if_basefile_longer_than_headfile_and_src_provided(self):
+        manager = FileComparisonTraverseManager(
+            head_file_eof=3,
+            base_file_eof=4,
+            src=["hey"] * 2 # head file eof minus 1, which is the typical case
+        )
+
+        # No indexerror should occur
+        manager.apply([lambda a, b, c, d: None])
+
+    def test_can_traverse_diff_with_line_numbers_greater_than_file_eof(self):
+        # This can happen when we have a file ending in a large multi-line
+        # expression, and a diff is made somewhere within that expression,
+        # but the start of the diff occurs after the start of the expression.
+        # The previous implementation of "traverse_finished" would end the traverse
+        # on account of not "traversing_diff", and having the line indices be
+        # greater than the respective files' EOF. The fix for this bug is stronger
+        # than that of the above comment and should handle both cases.
+        segments = [{"header": ["3", "4", "3", "4"], "lines": ["-Pro Team (billed monthly)", "+Pro Team"]}]
+        manager = FileComparisonTraverseManager(
+            head_file_eof=2,
+            base_file_eof=2,
+            segments=segments
+        )
+
+        visitor = LineNumberCollector()
+        manager.apply([visitor])
+        assert visitor.line_numbers == [(1, 1), (2, 2), (3, None), (None, 3)]
+
 
 class CreateLineComparisonVisitorTests(TestCase):
     def setUp(self):
-        self.head_file = ReportFile("file1", lines=[ReportLine(), None, ReportLine()])
-        self.base_file = ReportFile("file1", lines=[None, ReportLine(), None, ReportLine()])
+        self.head_file = ReportFile("file1", lines=[[0, '', [], 0, 0], None, [0, '', [], 0, 0]])
+        self.base_file = ReportFile("file1", lines=[None, [0, '', [], 0, 0], None, [0, '', [], 0, 0]])
 
     def test_skips_if_line_value_is_none(self):
         visitor = CreateLineComparisonVisitor(self.base_file, self.head_file)
@@ -195,8 +226,8 @@ class CreateLineComparisonVisitorTests(TestCase):
     def test_appends_line_comparison_with_relevant_fields_if_line_value_not_none(self):
         base_ln = 2
         head_ln = 1
-        base_line = self.base_file.get(base_ln)
-        head_line = self.head_file.get(head_ln)
+        base_line = self.base_file._lines[base_ln - 1]
+        head_line = self.head_file._lines[head_ln - 1]
         value = "sup dood"
         is_diff = True
 
@@ -206,8 +237,8 @@ class CreateLineComparisonVisitorTests(TestCase):
         line = visitor.lines[0]
         assert line.head_ln == head_ln
         assert line.base_ln == base_ln
-        assert line.head_line is head_line
-        assert line.base_line is base_line
+        assert line.head_line == head_line
+        assert line.base_line == base_line
         assert line.value == value
         assert line.is_diff == is_diff
 
@@ -232,8 +263,8 @@ class CreateLineComparisonVisitorTests(TestCase):
 
 class CreateChangeSummaryVisitorTests(TestCase):
     def setUp(self):
-        self.head_file = ReportFile("file1", lines=[ReportLine(coverage=1)])
-        self.base_file = ReportFile("file1", lines=[ReportLine(coverage=0)])
+        self.head_file = ReportFile("file1", lines=[[1, '', [], 0, 0]])
+        self.base_file = ReportFile("file1", lines=[[0, '', [], 0, 0]])
 
     def test_changed_lines_in_diff_do_not_affect_change_summary(self):
         visitor = CreateChangeSummaryVisitor(self.base_file, self.head_file)
@@ -249,8 +280,8 @@ class CreateChangeSummaryVisitorTests(TestCase):
         assert visitor.summary == {"misses": -1, "hits": 1}
 
     def test_summary_with_one_less_hit_and_one_more_partial(self):
-        self.base_file[1].coverage = 1
-        self.head_file[1].coverage = 2
+        self.base_file._lines[0][0] = 1
+        self.head_file._lines[0][0] = "1/2"
         visitor = CreateChangeSummaryVisitor(self.base_file, self.head_file)
         visitor(1, 1, "", True)
         assert visitor.summary == {"hits": -1, "partials": 1}
@@ -261,44 +292,48 @@ class LineComparisonTests(TestCase):
     def test_number_shows_number_from_base_and_head(self):
         base_ln = 3
         head_ln = 4
-        lc = LineComparison(ReportLine(), ReportLine(), base_ln, head_ln, "", False)
+        lc = LineComparison([0, '', [], 0, 0], [0, '', [], 0, 0], base_ln, head_ln, "", False)
         assert lc.number == {"base": base_ln, "head": head_ln}
 
     def test_number_shows_none_for_base_if_added(self):
         head_ln = 4
-        lc = LineComparison(ReportLine(), ReportLine(), 0, head_ln, "+", False)
+        lc = LineComparison(None, [0, '', [], 0, 0], 0, head_ln, "+", False)
         assert lc.number == {"base": None, "head": head_ln}
 
     def test_number_shows_none_for_head_if_removed(self):
         base_ln = 3
-        lc = LineComparison(ReportLine(), ReportLine(), base_ln, 0, "-", False)
+        lc = LineComparison([0, '', [], 0, 0], None, base_ln, 0, "-", False)
         assert lc.number == {"base": base_ln, "head": None}
 
     def test_coverage_shows_coverage_for_base_and_head(self):
         base_cov, head_cov = 0, 1
-        lc = LineComparison(ReportLine(base_cov), ReportLine(head_cov), 0, 0, "", False)
-        assert lc.coverage == {"base": base_cov, "head": head_cov}
+        lc = LineComparison([base_cov, '', [], 0, 0], [head_cov, '', [], 0, 0], 0, 0, "", False)
+        assert lc.coverage == {"base": LineType.miss, "head": LineType.hit}
 
     def test_coverage_shows_none_for_base_if_added(self):
         head_cov = 1
-        lc = LineComparison(ReportLine(0), ReportLine(head_cov), 0, 0, "+", False)
-        assert lc.coverage == {"base": None, "head": head_cov}
+        lc = LineComparison(None, [head_cov, '', [], 0, 0], 0, 0, "+", False)
+        assert lc.coverage == {"base": None, "head": LineType.hit}
 
     def test_coverage_shows_none_for_head_if_removed(self):
         base_cov = 0
-        lc = LineComparison(ReportLine(base_cov), ReportLine(1), 0, 0, "-", False)
-        assert lc.coverage == {"base": base_cov, "head": None}
+        lc = LineComparison([base_cov, '', [], 0, 0], None, 0, 0, "-", False)
+        assert lc.coverage == {"base": LineType.miss, "head": None}
 
     def test_sessions_returns_sessions_hit_in_head(self):
         lc = LineComparison(
             None,
-            ReportLine(
-                sessions=[
-                    LineSession(id=0, coverage=1),
-                    LineSession(id=1, coverage=2),
-                    LineSession(id=2, coverage=1)
-                ]
-            ),
+            [
+                1,
+                '',
+                [
+                    [0, 1, 0, 0, 0],
+                    [1, 2, 0, 0, 0],
+                    [2, 1, 0, 0, 0]
+                ],
+                0,
+                0
+            ],
             0, 0, "", False
         )
 
@@ -307,11 +342,15 @@ class LineComparisonTests(TestCase):
     def test_sessions_returns_none_if_no_coverage(self):
         lc = LineComparison(
             None,
-            ReportLine(
-                sessions=[
-                    LineSession(id=0, coverage=0),
-                ]
-            ),
+            [
+                0,
+                '',
+                [
+                    [0, 0, 0, 0, 0]
+                ],
+                0,
+                0
+            ],
             0, 0, "", False
         )
         assert lc.sessions is None
@@ -390,8 +429,8 @@ class FileComparisonTests(TestCase):
 
     # essentially a smoke/integration test
     def test_lines(self):
-        head_lines = [ReportLine(1), ReportLine(2), ReportLine(1)]
-        base_lines = [ReportLine(0), ReportLine(1), ReportLine(0)]
+        head_lines = [[1, '', [], 0, None], ["1/2", '', [], 0, None], [1, '', [], 0, None]]
+        base_lines = [[0, '', [], 0, None], [1, '', [], 0, None], [0, '', [], 0, None]]
 
         first_line_val = "unchanged line from src"
         second_line_val = "+this is an added line"
@@ -408,23 +447,23 @@ class FileComparisonTests(TestCase):
 
         assert self.file_comparison.lines[0].value == first_line_val
         assert self.file_comparison.lines[0].number == {"base": 1, "head": 1}
-        assert self.file_comparison.lines[0].coverage == {"base": 0, "head": 1}
+        assert self.file_comparison.lines[0].coverage == {"base": LineType.miss, "head": LineType.hit}
 
         assert self.file_comparison.lines[1].value == second_line_val
         assert self.file_comparison.lines[1].number == {"base": None, "head": 2}
-        assert self.file_comparison.lines[1].coverage == {"base": None, "head": 2}
+        assert self.file_comparison.lines[1].coverage == {"base": None, "head": LineType.partial}
 
         assert self.file_comparison.lines[2].value == third_line_val
         assert self.file_comparison.lines[2].number == {"base": 2, "head": None}
-        assert self.file_comparison.lines[2].coverage == {"base": 1, "head": None}
+        assert self.file_comparison.lines[2].coverage == {"base": LineType.hit, "head": None}
 
         assert self.file_comparison.lines[3].value == last_line_val
         assert self.file_comparison.lines[3].number == {"base": 3, "head": 3}
-        assert self.file_comparison.lines[3].coverage == {"base": 0, "head": 1}
+        assert self.file_comparison.lines[3].coverage == {"base": LineType.miss, "head": LineType.hit}
 
     def test_change_summary(self):
-        head_lines = [ReportLine(1), ReportLine(2), ReportLine(1)]
-        base_lines = [ReportLine(0), ReportLine(1), ReportLine(0)]
+        head_lines = [[1, '', [], 0, None], ["3/4", '', [], 0, None], [1, '', [], 0, None]]
+        base_lines = [[0, '', [], 0, None], [1, '', [], 0, None], [0, '', [], 0, None]]
 
         first_line_val = "unchanged line from src"
         second_line_val = "+this is an added line"
@@ -584,7 +623,6 @@ class ComparisonTests(TestCase):
         fc = self.comparison.get_file_comparison("both.py")
         assert fc.head_file.name == "both.py"
 
-
     @pytest.mark.xfail #TODO(pierce): investigate this feature
     def test_files_adds_deleted_files_that_were_tracked_in_base_report(
         self,
@@ -659,3 +697,29 @@ class ComparisonHeadReportTests(TestCase):
         self.comparison.head_report
 
         apply_diff_mock.assert_called_once_with(git_comparison_mock.return_value["diff"])
+
+
+@patch("services.repo_providers.RepoProviderService.get_adapter")
+class ComparisonHasUnmergedBaseCommitsTests(TestCase):
+    class MockFetchDiffCoro:
+        def __init__(self, commits):
+            self.commits = commits
+
+        async def get_compare(self, base, head):
+            return {"commits": self.commits}
+
+    def setUp(self):
+        owner = OwnerFactory()
+        base, head = CommitFactory(author=owner), CommitFactory(author=owner)
+        self.comparison = Comparison(base, head, owner)
+        asyncio.set_event_loop(asyncio.new_event_loop())
+
+    def test_returns_true_if_reverse_comparison_has_commits(self, get_adapter_mock):
+        commits = ["a", "b"]
+        get_adapter_mock.return_value = ComparisonHasUnmergedBaseCommitsTests.MockFetchDiffCoro(commits)
+        assert self.comparison.has_unmerged_base_commits is True
+
+    def test_returns_false_if_reverse_comparison_has_one_commit_or_less(self, get_adapter_mock):
+        commits = ["a"]
+        get_adapter_mock.return_value = ComparisonHasUnmergedBaseCommitsTests.MockFetchDiffCoro(commits)
+        assert self.comparison.has_unmerged_base_commits is False

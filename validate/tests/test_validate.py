@@ -102,3 +102,19 @@ class TestValidateYamlHandler(APITestCase):
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         expected_result = "Path: coverage->status->patch\n'nope' should be instance of 'dict'\n"
         assert response.content.decode() == expected_result
+
+    def test_request_body_not_parsable_as_dict(self):
+        # String
+        response = self._post(data="codecov.yml")
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+        expected_result = "No file posted."
+        assert response.content.decode() == expected_result
+
+        # Number
+        response = self._post(data=123)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+        expected_result = "No file posted."
+        assert response.content.decode() == expected_result
+

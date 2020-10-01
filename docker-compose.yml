@@ -19,8 +19,7 @@ services:
     volumes:
       - ./:/app
     environment:
-      - DEBUG=True
-      - DJANGO_ALLOWED_HOSTS=localhost,api.localhost
+      - RUN_ENV=DEV
   postgres:
     image: postgres:9.6-alpine
     volumes:

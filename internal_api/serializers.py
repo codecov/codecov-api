@@ -43,4 +43,4 @@ class PullIDQueryParamSerializer(serializers.Serializer):
                 "head": Commit.objects.get(commitid=pull.head, repository=repo)
             }
         except Commit.DoesNotExist:
-            raise serializers.ValidationError("Comparison requested for pull with nonexistant commit.")
+            raise NotFound("Comparison requested for pull with nonexistant commit.")

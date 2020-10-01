@@ -47,6 +47,63 @@ class GithubWebhookHandlerTests(APITestCase):
             active=True
         )
 
+    def test_get_repo_paths_dont_crash(self):
+        with self.subTest("with ownerid success"):
+            response = self._post_event_data(
+                event=GitHubWebhookEvents.REPOSITORY,
+                data={
+                    "action": "publicized",
+                    "repository": {
+                        "id": self.repo.service_id,
+                        "owner": {
+                            "id": self.repo.author.service_id
+                        }
+                    }
+                }
+            )
+
+        with self.subTest("with not found owner"):
+            response = self._post_event_data(
+                event=GitHubWebhookEvents.REPOSITORY,
+                data={
+                    "action": "publicized",
+                    "repository": {
+                        "id": self.repo.service_id,
+                        "owner": {
+                            "id": -239450
+                        }
+                    }
+                }
+            )
+
+        with self.subTest("with not found owner and not found repo"):
+            response = self._post_event_data(
+                event=GitHubWebhookEvents.REPOSITORY,
+                data={
+                    "action": "publicized",
+                    "repository": {
+                        "id": -1948503,
+                        "owner": {
+                            "id": -239450
+                        }
+                    }
+                }
+            )
+
+        with self.subTest("with owner and not found repo"):
+            response = self._post_event_data(
+                event=GitHubWebhookEvents.REPOSITORY,
+                data={
+                    "action": "publicized",
+                    "repository": {
+                        "id": -1948503,
+                        "owner": {
+                            "id": self.repo.author.service_id
+                        }
+                    }
+                }
+            )
+
     def test_ping_returns_pong_and_200(self):
         response = self._post_event_data(event=GitHubWebhookEvents.PING)
         assert response.status_code == status.HTTP_200_OK
@@ -180,6 +237,44 @@ class GithubWebhookHandlerTests(APITestCase):
 
         assert commit1.branch == unmerged_branch_name
         assert commit2.branch == unmerged_branch_name
+        assert not commit1.merged
+        assert not commit2.merged
+
+        assert merged_commit.branch == merged_branch_name
+
+    @patch('redis.Redis.sismember', lambda x, y, z: False)
+    def test_push_updates_commit_on_default_branch(self):
+        commit1 = CommitFactory(merged=False, repository=self.repo)
+        commit2 = CommitFactory(merged=False, repository=self.repo)
+
+        merged_branch_name = "merged"
+        repo_branch = self.repo.branch
+
+        merged_commit = CommitFactory(merged=True, repository=self.repo, branch=merged_branch_name)
+
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.PUSH,
+            data={
+                "ref": "refs/heads/" + repo_branch,
+                "repository": {
+                    "id": self.repo.service_id
+                },
+                "commits": [
+                    {"id": commit1.commitid, "message": commit1.message},
+                    {"id": commit2.commitid, "message": commit2.message},
+                    {"id": merged_commit.commitid, "message": merged_commit.message}
+                ]
+            }
+        )
+
+        commit1.refresh_from_db()
+        commit2.refresh_from_db()
+        merged_commit.refresh_from_db()
+
+        assert commit1.branch == repo_branch
+        assert commit2.branch == repo_branch
+        assert commit1.merged
+        assert commit2.merged
 
         assert merged_commit.branch == merged_branch_name
 
@@ -544,7 +639,7 @@ class GithubWebhookHandlerTests(APITestCase):
             ),
         ])
 
-    def test_membership_with_removed_action_removes_user_from_org(self):
+    def test_organization_with_removed_action_removes_user_from_org(self):
         org = OwnerFactory(service_id='4321')
         user = OwnerFactory(organizations=[org.ownerid], service_id='12')
 
@@ -566,6 +661,45 @@ class GithubWebhookHandlerTests(APITestCase):
         user.refresh_from_db()
 
         assert org.ownerid not in user.organizations
+
+    def test_organization_member_removed_with_nonexistent_org_doesnt_crash(self):
+        user = OwnerFactory(service_id='12')
+
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.ORGANIZATION,
+            data={
+                "action": "member_removed",
+                "membership": {
+                    "user": {
+                        "id": user.service_id
+                    }
+                },
+                "organization": {
+                    "id": 65000
+                }
+            }
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+    def test_organization_member_removed_with_nonexistent_member_doesnt_crash(self):
+        org = OwnerFactory(service_id='4321')
+
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.ORGANIZATION,
+            data={
+                "action": "member_removed",
+                "membership": {
+                    "user": {
+                        "id": 101010
+                    }
+                },
+                "organization": {
+                    "id": org.service_id
+                }
+            }
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     @patch('services.task.TaskService.sync_plans')
     def test_marketplace_subscription_triggers_sync_plans_task(self, sync_plans_mock):
@@ -606,6 +740,13 @@ class GithubWebhookHandlerTests(APITestCase):
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
+    @patch('webhook_handlers.views.github.get_config')
+    def test_signature_validation_with_string_key(self, get_config_mock):
+        # make get_config return string
+        get_config_mock.return_value = 'testixik8qdauiab1yiffydimvi72ekq'
+        response = self._post_event_data(event='', data={})
+        assert response.status_code == status.HTTP_200_OK
+
     def test_member_removes_repo_permissions_if_member_removed(self):
         member = OwnerFactory(permission=[self.repo.repoid], service_id=6098)
         response = self._post_event_data(
@@ -639,3 +780,16 @@ class GithubWebhookHandlerTests(APITestCase):
         )
 
         assert response.status_code == 404
+
+    def test_returns_404_if_repo_not_found(self):
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.REPOSITORY,
+            data={
+                "action": "publicized",
+                "repository": {
+                    "id": -29384
+                }
+            }
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND

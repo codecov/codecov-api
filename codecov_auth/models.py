@@ -3,20 +3,25 @@ import uuid
 import logging
 from time import time
 from hashlib import md5
+from enum import Enum
 
 from django.db import models
 from core.models import Repository
 from utils.config import get_config
 from django.contrib.postgres.fields import CITextField, JSONField, ArrayField
 
+from .managers import OwnerQuerySet
+
 from codecov_auth.constants import (
     AVATAR_GITHUB_BASE_URL,
     BITBUCKET_BASE_URL,
     GRAVATAR_BASE_URL,
     AVATARIO_BASE_URL,
+    USER_PLAN_REPRESENTATIONS,
 )
 
 from codecov_auth.helpers import get_gitlab_url
+
 
 SERVICE_GITHUB = 'github'
 SERVICE_GITHUB_ENTERPRISE = 'github_enterprise'
@@ -25,9 +30,21 @@ SERVICE_BITBUCKET_SERVER = 'bitbucket_server'
 SERVICE_GITLAB = 'gitlab'
 SERVICE_CODECOV_ENTERPRISE = 'enterprise'
 
+
 DEFAULT_AVATAR_SIZE = 55
 
+
 log = logging.getLogger(__name__)
+
+
+# TODO use this to refactor avatar_url
+class Service(Enum):
+    GITHUB = "github"
+    GITLAB = "gitlab"
+    BITBUCKET = "bitbucket"
+    GITHUB_ENTERPRISE = "github_enterprise"
+    GITLAB_ENTERPRISE = "gitlab_enterprise"
+    BITBUCKET_SERVER = "bitbucket_server"
 
 
 class Owner(models.Model):
@@ -51,7 +68,7 @@ class Owner(models.Model):
     private_access = models.BooleanField(null=True)
     staff = models.BooleanField(null=True, default=False)
     cache = JSONField(null=True)
-    plan = models.CharField(max_length=10, null=True)
+    plan = models.TextField(null=True)
     # plan_provider
     plan_user_count = models.SmallIntegerField(null=True)
     plan_auto_activate = models.BooleanField(null=True)
@@ -67,6 +84,11 @@ class Owner(models.Model):
     integration_id = models.IntegerField(null=True)
     permission = ArrayField(models.IntegerField(null=True), null=True)
     bot = models.IntegerField(null=True)
+    student = models.BooleanField(default=False)
+    student_created_at = models.DateTimeField(null=True)
+    student_updated_at = models.DateTimeField(null=True)
+
+    objects = OwnerQuerySet.as_manager()
 
     @property
     def has_legacy_plan(self):
@@ -100,6 +122,21 @@ class Owner(models.Model):
             active=True,
             author=self.ownerid
         ).order_by('-updatestamp')
+
+    @property
+    def activated_user_count(self):
+        if not self.plan_activated_users:
+            return 0
+        return Owner.objects.filter(ownerid__in=self.plan_activated_users, student=False).count()
+
+    @property
+    def inactive_user_count(self):
+        return Owner.objects.filter(
+            organizations__contains=[self.ownerid]
+        ).count() - self.activated_user_count
+
+    def is_admin(self, owner):
+        return self.ownerid == owner.ownerid or (bool(self.admins) and owner.ownerid in self.admins)
 
     @property
     def is_active(self):
@@ -159,18 +196,88 @@ class Owner(models.Model):
         else:
             return '{}/media/images/gafsi/avatar.svg'.format(get_config('setup', 'media', 'assets'))
 
+    @property
+    def pretty_plan(self):
+        if self.plan in USER_PLAN_REPRESENTATIONS:
+            plan_details = USER_PLAN_REPRESENTATIONS[self.plan].copy()
+
+            # update with quantity they've purchased
+            # allows api users to update the quantity
+            # by modifying the "plan", sidestepping
+            # some iffy data modeling
+
+            plan_details.update({"quantity": self.plan_user_count })
+            return plan_details
+
+    def can_activate_user(self, user):
+        return user.student or self.activated_user_count < self.plan_user_count + self.free
+
+    def activate_user(self, user):
+        log.info(f"Activating user {user.ownerid} in ownerid {self.ownerid}")
+        if isinstance(self.plan_activated_users, list):
+            if user.ownerid not in self.plan_activated_users:
+                self.plan_activated_users.append(user.ownerid)
+        else:
+            self.plan_activated_users = [user.ownerid]
+        self.save()
+
+    def deactivate_user(self, user):
+        log.info(f"Deactivating user {user.ownerid} in ownerid {self.ownerid}")
+        if isinstance(self.plan_activated_users, list):
+            try:
+                self.plan_activated_users.remove(user.ownerid)
+            except ValueError:
+                pass
+        self.save()
+
+    def add_admin(self, user):
+        log.info(f"Granting admin permissions to user {user.ownerid} within owner {self.ownerid}")
+        if isinstance(self.admins, list):
+            if user.ownerid not in self.admins:
+                self.admins.append(user.ownerid)
+        else:
+            self.admins = [user.ownerid]
+        self.save()
+
+    def remove_admin(self, user):
+        log.info(f"Revoking admin permissions for user {user.ownerid} within owner {self.ownerid}")
+        if isinstance(self.admins, list):
+            try:
+                self.admins.remove(user.ownerid)
+            except ValueError:
+                pass
+        self.save()
+
+    def set_free_plan(self):
+        log.info(f"Setting plan to users-free for owner {self.ownerid}")
+        self.plan = "users-free"
+        self.plan_auto_activate = True
+        self.plan_activated_users = None
+        self.plan_user_count = 5
+        self.stripe_subscription_id = None
+        self.save()
+
 
 class Session(models.Model):
 
     class Meta:
         db_table = 'sessions'
 
+    class SessionType:
+        API = "api"
+        LOGIN = "login"
+
+    SESSION_TYPE_CHOICES = (
+        (SessionType.API, SessionType.API),
+        (SessionType.LOGIN, SessionType.LOGIN),
+    )
+
     sessionid = models.AutoField(primary_key=True)
     token = models.UUIDField(default=uuid.uuid4, editable=False)
-    name = models.TextField()
-    useragent = models.TextField()
-    ip = models.TextField()
+    name = models.TextField(null=True)
+    useragent = models.TextField(null=True)
+    ip = models.TextField(null=True)
     owner = models.ForeignKey(
         Owner, db_column='ownerid', on_delete=models.CASCADE)
-    lastseen = models.DateTimeField()
-    # type
+    lastseen = models.DateTimeField(null=True)
+    type = models.CharField(max_length=10, choices=SESSION_TYPE_CHOICES, null=True)

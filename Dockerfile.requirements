@@ -8,10 +8,12 @@ RUN             apk update \
                 postgresql-dev \
                 musl-dev \
                 libxslt-dev \
-                python-dev \
+                python3-dev \
                 libffi-dev \
                 gcc \
+                libcurl \
                 bash \
+                curl-dev \
                 && pip install --upgrade pip
 
 ARG             GH_ACCESS_TOKEN
@@ -34,11 +36,16 @@ RUN             apk add --no-cache postgresql-libs && \
                 musl-dev \
                 postgresql-dev \
                 libxslt-dev \
-                python-dev \
+                python3-dev \
                 libffi-dev \
                 openssl-dev \
                 make \
-                python3-dev
+                python3-dev \
+                curl-dev \
+                libcurl
+                
+RUN             wget -q -O /usr/local/bin/berglas https://storage.googleapis.com/berglas/0.5.0/linux_amd64/berglas && \
+                chmod +x /usr/local/bin/berglas
 
 WORKDIR         /pip-packages/
 COPY            --from=build /pip-packages/ /pip-packages/

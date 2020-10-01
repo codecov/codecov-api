@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import functools
+import json
 
 from collections import Counter
 
@@ -8,6 +9,7 @@ from django.utils.functional import cached_property
 
 from shared.reports.resources import ReportFile
 from shared.reports.types import ReportTotals
+from shared.utils.merge import line_type, LineType
 
 from services.archive import ReportService
 from core.models import Commit
@@ -88,12 +90,17 @@ class FileComparisonTraverseManager:
 
         if self.segments:
             # Base offsets can be 0 if files are added or removed
-            self.base_ln, self.head_ln = min(1, int(self.segments[0]["header"][0])), min(1, int(self.segments[0]["header"][2]))
+            self.base_ln = min(1, int(self.segments[0]["header"][0]))
+            self.head_ln = min(1, int(self.segments[0]["header"][2]))
         else:
             self.base_ln, self.head_ln = 1, 1
 
     def traverse_finished(self):
-        return self.base_ln >= self.base_file_eof and self.head_ln >= self.head_file_eof and not self.traversing_diff()
+        if self.segments:
+            return False
+        if self.src:
+            return self.head_ln > len(self.src)
+        return self.head_ln >= self.head_file_eof and self.base_ln >= self.base_file_eof
 
     def traversing_diff(self):
         if self.segments == []:
@@ -160,17 +167,41 @@ class FileComparisonVisitor:
     all the edge cases.
     """
 
+    def _get_line(self, report_file, ln):
+        """
+        Kindof a hacky way to bypass the dataclasses used in `reports`
+        library, because they are extremely slow. This basically copies
+        some logic from ReportFile.get and ReportFile._line, which work
+        together to take an index and turn it into a ReportLine. Here
+        we do something similar, but just return the underlying array instead.
+        Not sure if this will be the final solution.
+
+        Note: the underlying array representation cn be seen here:
+        https://github.com/codecov/shared/blob/master/shared/reports/types.py#L75
+        The index in the array representation is 1-1 with the index of the
+        dataclass attribute for ReportLine.
+        """
+        if report_file is None or ln is None:
+            return None
+
+        # copied from ReportFile.get
+        try:
+            line = report_file._lines[ln - 1]
+        except IndexError:
+            return None 
+
+        # copied from ReportFile._line, minus dataclass instantiation
+        if line:
+            if type(line) is list:
+                return line
+            else:
+                # these are old versions
+                # note:(pierce) ^^ this comment is copied, not sure what it means
+                return json.loads(line)
+
     def _get_lines(self, base_ln, head_ln):
-        base_line, head_line = None, None
-
-        if base_ln and isinstance(self.base_file, ReportFile):
-            if base_ln in self.base_file:
-                base_line = self.base_file[base_ln]
-
-        if head_ln and isinstance(self.head_file, ReportFile):
-            if head_ln in self.head_file:
-                head_line = self.head_file[head_ln]
-
+        base_line = self._get_line(self.base_file, base_ln)
+        head_line = self._get_line(self.head_file, head_ln)
         return base_line, head_line
 
     def __call__(self, base_ln, head_ln, value, is_diff):
@@ -215,14 +246,20 @@ class CreateChangeSummaryVisitor(FileComparisonVisitor):
     def __init__(self, base_file, head_file):
         self.base_file, self.head_file = base_file, head_file
         self.summary = Counter()
+        self.coverage_type_map = {
+          LineType.hit: "hits",
+          LineType.miss: "misses",
+          LineType.partial: "partials"
+        }
 
-    def _get_coverage_type(self, integer_representation):
-        if integer_representation == 0:
-            return "misses"
-        if integer_representation == 1:
-            return "hits"
-        if integer_representation == 2:
-            return "partials"
+    def _update_summary(self, base_line, head_line):
+        """
+        Updates the change summary based on the coverage type (0
+        for miss, 1 for hit, 2 for partial) found at index 0 of the
+        line-array.
+        """
+        self.summary[self.coverage_type_map[line_type(base_line[0])]] -= 1
+        self.summary[self.coverage_type_map[line_type(head_line[0])]] += 1
 
     def __call__(self, base_ln, head_ln, value, is_diff):
         if value and value[0] in ["+", "-"]:
@@ -232,11 +269,10 @@ class CreateChangeSummaryVisitor(FileComparisonVisitor):
         if base_line is None or head_line is None:
             return
 
-        if base_line.coverage == head_line.coverage:
+        if line_type(base_line[0]) == line_type(head_line[0]):
             return
 
-        self.summary[self._get_coverage_type(base_line.coverage)] -= 1
-        self.summary[self._get_coverage_type(head_line.coverage)] += 1
+        self._update_summary(base_line, head_line)
 
 
 class LineComparison:
@@ -261,8 +297,8 @@ class LineComparison:
     @property
     def coverage(self):
         return {
-            "base": None if self.added or not self.base_line else self.base_line.coverage,
-            "head": None if self.removed or not self.head_line else self.head_line.coverage
+            "base": None if self.added or not self.base_line else line_type(self.base_line[0]),
+            "head": None if self.removed or not self.head_line else line_type(self.head_line[0])
         }
 
     @property
@@ -276,7 +312,7 @@ class LineComparison:
 
         # an array of 1's (like [1, 1, ...]) of length equal to the number of sessions
         # where each session's coverage == 1 (hit)
-        session_coverage = [session.coverage for session in self.head_line.sessions if session.coverage == 1]
+        session_coverage = [session[1] for session in self.head_line[2] if session[1] == 1]
         if session_coverage:
             return functools.reduce(lambda a, b: a + b, session_coverage)
 
@@ -383,7 +419,6 @@ class Comparison(object):
         self.head_commit = head_commit
         self.report_service = ReportService()
         self._base_report = None
-        self._git_comparison = None
         self._git_commits = None
         self._upload_commits = None
 
@@ -428,9 +463,7 @@ class Comparison(object):
 
     @property
     def git_comparison(self):
-        if self._git_comparison is None:
-            self._git_comparison = self._calculate_git_comparison()
-        return self._git_comparison
+        return self._fetch_comparison_and_reverse_comparison[0]
 
     @property
     def base_report(self):
@@ -453,13 +486,7 @@ class Comparison(object):
 
     @property
     def git_commits(self):
-        """
-            Returns the complete git commits between base and head.
-            :return: list of commit info with objects
-        """
-        if self._git_commits is None:
-            self._calculate_git_commits()
-        return self._git_commits
+        return self.git_comparison["commits"]
 
     @property
     def upload_commits(self):
@@ -473,18 +500,37 @@ class Comparison(object):
         commits_queryset.exclude(deleted=True)
         return commits_queryset
 
-    def _calculate_git_commits(self):
-        commits = self.git_comparison['commits']
-        self._git_commits = commits
-        return self._git_commits
-
-    def _calculate_git_comparison(self):
+    @cached_property
+    def _fetch_comparison_and_reverse_comparison(self):
+        """
+        Fetches comparison and reverse comparison concurrently, then
+        caches the result. Returns (comparison, reverse_comparison).
+        """
         loop = asyncio.get_event_loop()
-        base_commit_sha = self.base_commit.commitid
-        head_commit_sha = self.head_commit.commitid
-        task = RepoProviderService().get_adapter(
-            self.user, self.base_commit.repository).get_compare(base_commit_sha, head_commit_sha)
-        return loop.run_until_complete(task)
+
+        comparison_coro = RepoProviderService().get_adapter(
+            self.user,
+            self.base_commit.repository
+        ).get_compare(
+            self.base_commit.commitid,
+            self.head_commit.commitid
+        )
+
+        reverse_comparison_coro = RepoProviderService().get_adapter(
+            self.user,
+            self.base_commit.repository
+        ).get_compare(
+            self.head_commit.commitid,
+            self.base_commit.commitid
+        )
+
+        async def runnable():
+            return await asyncio.gather(
+                loop.create_task(comparison_coro),
+                loop.create_task(reverse_comparison_coro)
+            )
+
+        return loop.run_until_complete(runnable())
 
     def _calculate_base_report(self):
         return self.report_service.build_report_from_commit(self.base_commit)
@@ -495,6 +541,18 @@ class Comparison(object):
     @property
     def available_flags(self):
         return self.head_report.flags.keys()
+
+    @cached_property
+    def has_unmerged_base_commits(self):
+        """
+        We use reverse comparison to detect if any commits exist in the
+        base reference but not in the head reference. We use this information
+        to show a message in the UI urging the user to integrate the changes
+        in the base reference in order to see accurate coverage information.
+        We compare with 1 because torngit injects the base commit into the commits
+        array because reasons.
+        """
+        return len(self._fetch_comparison_and_reverse_comparison[1]["commits"]) > 1
 
 
 class FlagComparison(object):

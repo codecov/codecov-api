@@ -20,8 +20,7 @@ class TestOwnerModel(TestCase):
         self.owner = OwnerFactory(
             username="codecov_name",
             service_id="1234",
-            email="name@codecov.io",
-            ownerid="4",
+            email="name@codecov.io"
         )
 
     def test_repo_credits_returns_correct_repos_for_legacy_plan(self):
@@ -129,7 +128,7 @@ class TestOwnerModel(TestCase):
                 return 'codecov_url'
         mock_get_config.side_effect = side_effect
         self.owner.service = None
-        self.assertEqual(self.owner.avatar_url, f'codecov_url/users/4.png?size={DEFAULT_AVATAR_SIZE}')
+        self.assertEqual(self.owner.avatar_url, f'codecov_url/users/{self.owner.ownerid}.png?size={DEFAULT_AVATAR_SIZE}')
 
     @patch("codecov_auth.models.get_config")
     @patch("codecov_auth.models.os.getenv")
@@ -154,3 +153,148 @@ class TestOwnerModel(TestCase):
         self.owner.service = None
         self.owner.ownerid = None
         self.assertEqual(self.owner.avatar_url, 'codecov_url_media/media/images/gafsi/avatar.svg')
+
+    def test_is_admin_returns_false_if_admin_array_is_null(self):
+        assert self.owner.is_admin(OwnerFactory()) is False
+
+    def test_is_admin_returns_true_when_comparing_with_self(self):
+        assert self.owner.is_admin(self.owner) is True
+
+    def test_is_admin_returns_true_if_ownerid_in_admin_array(self):
+        owner = OwnerFactory()
+        self.owner.admins = [owner.ownerid]
+        assert self.owner.is_admin(owner) is True
+
+    def test_is_admin_returns_false_if_ownerid_not_in_admin_array(self):
+        owner = OwnerFactory()
+        self.owner.admins = []
+        assert self.owner.is_admin(owner) is False
+
+    def test_activated_user_count_returns_num_activated_users(self):
+        owner = OwnerFactory(plan_activated_users=[OwnerFactory().ownerid, OwnerFactory().ownerid])
+        assert owner.activated_user_count == 2
+
+    def test_activated_user_count_returns_0_if_plan_activated_users_is_null(self):
+        owner = OwnerFactory(plan_activated_users=None)
+        assert owner.plan_activated_users == None
+        assert owner.activated_user_count == 0
+
+    def test_activated_user_count_ignores_students(self):
+        student = OwnerFactory(student=True)
+        self.owner.plan_activated_users = [student.ownerid]
+        self.owner.save()
+        assert self.owner.activated_user_count == 0
+
+    def test_activate_user_adds_ownerid_to_plan_activated_users(self):
+        to_activate = OwnerFactory()
+        self.owner.activate_user(to_activate)
+        self.owner.refresh_from_db()
+        assert to_activate.ownerid in self.owner.plan_activated_users
+
+    def test_activate_user_does_nothing_if_user_is_activated(self):
+        to_activate = OwnerFactory()
+        self.owner.plan_activated_users = [to_activate.ownerid]
+        self.owner.save()
+        self.owner.activate_user(to_activate)
+        self.owner.refresh_from_db()
+        assert self.owner.plan_activated_users == [to_activate.ownerid]
+
+    def test_deactivate_removes_ownerid_from_plan_activated_users(self):
+        to_deactivate = OwnerFactory()
+        self.owner.plan_activated_users = [3, 4, to_deactivate.ownerid]
+        self.owner.save()
+        self.owner.deactivate_user(to_deactivate)
+        self.owner.refresh_from_db()
+        assert to_deactivate.ownerid not in self.owner.plan_activated_users
+
+    def test_deactivate_non_activated_user_doesnt_crash(self):
+        to_deactivate = OwnerFactory()
+        self.owner.plan_activated_users = []
+        self.owner.save()
+        self.owner.deactivate_user(to_deactivate)
+
+    def test_can_activate_user_returns_true_if_user_is_student(self):
+        student = OwnerFactory(student=True)
+        assert self.owner.can_activate_user(student) is True
+
+    def test_can_activate_user_returns_true_if_activated_user_count_not_maxed(self):
+        to_activate = OwnerFactory()
+        existing_user = OwnerFactory(ownerid=1000, student=False)
+        self.owner.plan_activated_users = [existing_user.ownerid]
+        self.owner.plan_user_count = 2
+        self.owner.save()
+        assert self.owner.can_activate_user(to_activate) is True
+
+    def test_can_activate_user_factors_free_seats_into_total_allowed(self):
+        to_activate = OwnerFactory()
+        self.owner.free = 1
+        self.owner.plan_user_count = 0
+        self.owner.save()
+        assert self.owner.can_activate_user(to_activate) is True
+
+    def test_add_admin_adds_ownerid_to_admin_array(self):
+        self.owner.admins = []
+        self.owner.save()
+        admin = OwnerFactory()
+        self.owner.add_admin(admin)
+
+        self.owner.refresh_from_db()
+        assert admin.ownerid in self.owner.admins
+
+    def test_add_admin_creates_array_if_null(self):
+        self.owner.admins = None
+        self.owner.save()
+        admin = OwnerFactory()
+        self.owner.add_admin(admin)
+
+        self.owner.refresh_from_db()
+        assert self.owner.admins == [admin.ownerid]
+
+    def test_add_admin_doesnt_add_if_ownerid_already_in_admins(self):
+        admin = OwnerFactory()
+        self.owner.admins = [admin.ownerid]
+        self.owner.save()
+
+        self.owner.add_admin(admin)
+
+        self.owner.refresh_from_db()
+        assert self.owner.admins == [admin.ownerid]
+
+    def test_remove_admin_removes_ownerid_from_admins(self):
+        admin1 = OwnerFactory()
+        admin2 = OwnerFactory()
+        self.owner.admins = [admin1.ownerid, admin2.ownerid]
+        self.owner.save()
+
+        self.owner.remove_admin(admin1)
+
+        self.owner.refresh_from_db()
+        assert self.owner.admins == [admin2.ownerid]
+
+    def test_remove_admin_does_nothing_if_user_not_admin(self):
+        admin1 = OwnerFactory()
+        admin2 = OwnerFactory()
+        self.owner.admins = [admin1.ownerid]
+        self.owner.save()
+
+        self.owner.remove_admin(admin2)
+
+        self.owner.refresh_from_db()
+        assert self.owner.admins == [admin1.ownerid]
+
+    def test_set_free_plan_sets_correct_values(self):
+        self.owner.plan = "users-inappy"
+        self.owner.stripe_subscription_id = "4kw23l4k"
+        self.owner.plan_user_count = 20
+        self.owner.plan_activated_users = [44]
+        self.owner.plan_auto_activate = False
+        self.owner.save()
+
+        self.owner.set_free_plan()
+        self.owner.refresh_from_db()
+
+        assert self.owner.plan == "users-free"
+        assert self.owner.plan_user_count == 5
+        assert self.owner.plan_activated_users == None
+        assert self.owner.plan_auto_activate == True
+        assert self.owner.stripe_subscription_id == None

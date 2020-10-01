@@ -3,6 +3,10 @@ from rest_framework.exceptions import APIException
 
 
 def torngit_safe(method):
+    """
+    Translatess torngit exceptions into DRF APIExceptions.
+    For use in DRF views.
+    """
     def exec_method(*args, **kwargs):
         try:
             return method(*args, **kwargs)

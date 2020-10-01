@@ -63,11 +63,49 @@ jobs:
     - run:
         name: codecov
         command: |
-          apk add wget
-          wget https://github.com/codecov/uploader/releases/download/v0.1.0_758/codecov-linux
-          chmod +x codecov-linux 
-          bash -c "./codecov-linux -t -t a3f4746b-4e57-4fc6-90ee-b4007979c0d2 -F unit"
-          
+          apk add bash curl
+          bash -c "bash <(curl -s https://codecov.io/bash) -t fcd1b412-6063-486f-bdb3-5f73f77fa1d6 -F unit"
+    - run:
+        name: codecov-staging
+        command: |
+          apk add bash curl
+          bash -c "bash <(curl -s https://stage-web.codecov.dev/bash) -t dfdd2ba4-4dbc-40a6-8a96-534c0a39c3a5 -F unit"
+
+
+  portable:
+    executor: codecov-deploy
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          <<: *gcloud_auth
+      - run: echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKER_USERNAME" --password-stdin
+      - run: make -f Makefile.circle docker-deploy
+
+  staging:
+    executor: codecov-deploy
+    steps:
+    - checkout
+    - setup_remote_docker
+    - run:
+        <<: *gcloud_auth
+    - run:
+        name: docker build, tag, and upload to staging
+        command: |
+          make -f Makefile.circle staging
+
+  production:
+    executor: codecov-deploy
+    steps:
+    - checkout
+    - setup_remote_docker
+    - run:
+        <<: *gcloud_auth
+    - run:
+        name: docker build, tag, and upload to production
+        command: |
+          make -f Makefile.circle production
+
   deploy:
     executor: codecov-deploy
     steps:
@@ -97,10 +135,34 @@ workflows:
           filters:
             tags:
               only: /.*/
+      - portable:
+          context: "DockerHub Push Context"
+          requires:
+            - build
+            - test
+          filters:
+            branches:
+              only:
+                - master
+                - /portable-.*/
+      - staging:
+          requires:
+            - build
+            - test
+          filters:
+            branches:
+              only: staging
+      - production:
+          requires:
+            - build
+            - test
+          filters:
+            branches:
+              only: master
       - deploy:
           requires:
             - build
             - test
           filters:
             branches:
-              only: production
+              only: master
