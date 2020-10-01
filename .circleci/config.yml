@@ -63,7 +63,7 @@ jobs:
     - run:
         name: codecov
         command: |
-          chmod +x codecov-linux 
+          chmod +x codecov-alpine 
           ./codecov-alpine -t fcd1b412-6063-486f-bdb3-5f73f77fa1d6 -F unit
     - run:
         name: codecov-staging
