@@ -11,7 +11,7 @@ from django.conf import settings
 from django.core.exceptions import MultipleObjectsReturned
 
 from codecov_auth.models import Owner
-from codecov_auth.constants import PAID_USER_PLAN_REPRESENTATIONS
+from codecov_auth.constants import PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS
 
 from ..constants import StripeHTTPHeaders, StripeWebhookEvents
 
@@ -75,7 +75,7 @@ class StripeWebhookHandler(APIView):
             log.warning("Subscription created missing plan id, exiting")
             return
 
-        if subscription.plan.name not in PAID_USER_PLAN_REPRESENTATIONS:
+        if subscription.plan.name not in PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS:
             log.warning(
                 f"Subscription creation requested for invalid plan "
                 f"'{subscription.plan.name}' -- doing nothing"
@@ -98,12 +98,6 @@ class StripeWebhookHandler(APIView):
         self._log_updated(updated)
 
     def customer_subscription_updated(self, subscription):
-        if subscription.plan.name not in PAID_USER_PLAN_REPRESENTATIONS:
-            log.warning(
-                f"Subscription update requested with invalid plan "
-                f"{subscription.plan.name} -- doing nothing "
-            )
-            return
         if subscription.status == "incomplete_expired":
             log.info(
                 f"Subscription {subscription.id} updated with status change "
@@ -115,6 +109,12 @@ class StripeWebhookHandler(APIView):
             )
             owner.set_free_plan()
             owner.repository_set.update(active=False, activated=False)
+            return
+        if subscription.plan.name not in PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS:
+            log.warning(
+                f"Subscription update requested with invalid plan "
+                f"{subscription.plan.name} -- doing nothing "
+            )
             return
 
         log.info(
