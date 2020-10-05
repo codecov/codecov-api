@@ -28,7 +28,7 @@ class PlansViewSetTests(APITestCase):
             },
             {
                 "marketing_name": "Pro Team",
-                "value": "users-inappm",
+                "value": "users-pr-inappm",
                 "billing_rate": "monthly",
                 "base_unit_price": 12,
                 "benefits": [
@@ -40,7 +40,7 @@ class PlansViewSetTests(APITestCase):
             },
             {
                 "marketing_name": "Pro Team",
-                "value": "users-inappy",
+                "value": "users-pr-inappy",
                 "billing_rate": "annually",
                 "base_unit_price": 10,
                 "benefits": [

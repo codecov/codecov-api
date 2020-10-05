@@ -224,7 +224,7 @@ class AccountViewSetTests(APITestCase):
             data={
                 "plan": {
                     "quantity": 25,
-                    "value": "users-inappy"
+                    "value": "users-pr-inappy"
                 }
             }
         )
@@ -244,7 +244,7 @@ class AccountViewSetTests(APITestCase):
         list_inv_mock
     ):
         desired_plan = {
-            "value": "users-inappm",
+            "value": "users-pr-inappm",
             "quantity": 12
         }
         self.user.stripe_customer_id = "flsoe"
@@ -267,7 +267,7 @@ class AccountViewSetTests(APITestCase):
         assert self.user.plan_user_count == desired_plan["quantity"]
 
     def test_update_requires_quantity_if_updating_to_paid_plan(self):
-        desired_plan = {"value": "users-inappy"}
+        desired_plan = {"value": "users-pr-inappy"}
         response = self._update(
             kwargs={"service": self.user.service, "owner_username": self.user.username},
             data={"plan": desired_plan}
@@ -277,7 +277,7 @@ class AccountViewSetTests(APITestCase):
     def test_update_quantity_must_be_greater_or_equal_to_current_activated_users_if_paid_plan(self):
         self.user.plan_activated_users = [1] * 15
         self.user.save()
-        desired_plan = {"value": "users-inappy", "quantity": 14}
+        desired_plan = {"value": "users-pr-inappy", "quantity": 14}
 
         response = self._update(
             kwargs={"service": self.user.service, "owner_username": self.user.username},
@@ -287,7 +287,7 @@ class AccountViewSetTests(APITestCase):
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_update_quantity_must_be_at_least_5_if_paid_plan(self):
-        desired_plan = {"value": "users-inappy", "quantity": 4}
+        desired_plan = {"value": "users-pr-inappy", "quantity": 4}
         response = self._update(
             kwargs={"service": self.user.service, "owner_username": self.user.username},
             data={"plan": desired_plan}

@@ -69,6 +69,11 @@ DATABASE_NAME = get_config('services', 'database', 'name', default='postgres')
 DATABASE_PASSWORD = get_config('services', 'database', 'password', default='postgres')
 DATABASE_HOST = get_config('services', 'database', 'host', default='postgres')
 
+# this is the time in seconds django decides to keep the connection open after the request
+# the default is 0 seconds, meaning django closes the connection after every request
+# https://docs.djangoproject.com/en/3.1/ref/settings/#conn-max-age
+CONN_MAX_AGE = int(get_config('services', 'database', 'conn_max_age', default=0))
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
@@ -77,6 +82,7 @@ DATABASES = {
         'PASSWORD': DATABASE_PASSWORD,
         'HOST': DATABASE_HOST,
         'PORT': '5432',
+        'CONN_MAX_AGE': CONN_MAX_AGE
     }
 }
 

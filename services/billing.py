@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 
 from django.conf import settings
 
-from codecov_auth.constants import USER_PLAN_REPRESENTATIONS
+from codecov_auth.constants import USER_PLAN_REPRESENTATIONS, PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS
 from codecov_auth.models import Owner
 
 
@@ -108,6 +108,7 @@ class StripeService(AbstractPaymentService):
                 }
             ],
             metadata=self._get_checkout_session_and_subscription_metadata(owner),
+            proration_behavior="always_invoice"
         )
 
         owner.plan = desired_plan["value"]
@@ -172,7 +173,7 @@ class BillingService:
                 self.payment_service.delete_subscription(owner)
             else:
                 owner.set_free_plan()
-        elif desired_plan["value"] in ("users-inappy", "users-inappm"):
+        elif desired_plan["value"] in PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS:
             if owner.stripe_subscription_id is not None:
                 self.payment_service.modify_subscription(owner, desired_plan)
             else:

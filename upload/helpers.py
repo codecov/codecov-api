@@ -1,11 +1,14 @@
+import re
 from cerberus import Validator
 from rest_framework.exceptions import ValidationError, NotFound
 from django.core.exceptions import ObjectDoesNotExist
 
-from core.models import Repository
+from core.models import Repository, Commit
 from codecov_auth.models import Owner
 from utils.config import get_config
 from .constants import ci, global_upload_token_providers
+
+is_pull_noted_in_branch = re.compile(r".*(pull|pr)\/(\d+).*")
 
 
 def parse_params(data):
@@ -29,6 +32,7 @@ def parse_params(data):
             "regex": r"^\d+:\w{12}|\w{40}$",
             "coerce": lambda value: value.lower(),
         },
+        "_did_change_merge_commit": {"type": "boolean"},
         "slug": {"type": "string", "regex": r"^[\w\-\.\~\/]+\/[\w\-\.]{1,255}$"},
         # owner username, we set this by splitting the value of "slug" on "/" if provided
         "owner": {
@@ -111,11 +115,14 @@ def parse_params(data):
         },
         "build_url": {"type": "string", "regex": r"^https?\:\/\/(.{,100})",},
         "flags": {"type": "string", "regex": r"^[\w\.\-\,]+$",},
-        # if prefixed with "origin/" or "refs/heads", the prefix will be removed
         "branch": {
             "type": "string",
+            "nullable": True,
             "coerce": (
-                lambda value: value[7:]
+                lambda value: None
+                if value == "HEAD"
+                # if prefixed with "origin/" or "refs/heads", the prefix will be removed
+                else value[7:]
                 if value[:7] == "origin/"
                 else value[11:]
                 if value[:11] == "refs/heads/"
@@ -145,6 +152,7 @@ def parse_params(data):
         "s3": {"type": "integer"},
         "yaml": {"type": "string"},
         "url": {"type": "string"},
+        "parent": {"type": "string"},
         "root": {"type": "string",},  # deprecated
     }
 
@@ -183,6 +191,44 @@ def determine_repo_for_upload(upload_params):
         
         # Get repo info from CI TODO
     """
+
+
+def determine_upload_branch_to_use(upload_params, repo_default_branch):
+    upload_params_branch = upload_params.get("branch")
+    upload_params_pr = upload_params.get("pr")
+
+    if not upload_params_branch and not upload_params_pr:
+        return repo_default_branch
+    elif upload_params_branch and not is_pull_noted_in_branch.match(
+        upload_params_branch
+    ):
+        return upload_params_branch
+    else:
+        return None
+
+
+def determine_upload_pr_to_use(upload_params):
+    pullid = is_pull_noted_in_branch.match(upload_params.get("branch", ""))
+    if pullid:
+        return pullid.groups()[1]
+    else:
+        return upload_params.get("pr")
+
+
+def determine_upload_commitid_to_use(upload_params):
+    service = upload_params.get("service") or ""
+    if service.startswith("github") and not upload_params.get(
+        "_did_change_merge_commit"
+    ):
+        # TODO fun with merge commits
+        pass
+    else:
+        return upload_params.get("commit")
+
+
+def insert_commit(commitid, branch, pr, repository, owner, parent=None):
+    # TODO implement
+    pass
 
 
 def get_global_tokens():

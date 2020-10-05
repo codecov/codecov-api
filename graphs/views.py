@@ -123,13 +123,10 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
 class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
     permission_classes = [AllowAny]
 
-    extensions = ['svg', 'json']
+    extensions = ['svg']
     filename = "graph"
 
     def get_object(self, request, *args, **kwargs):
-        
-        if self.kwargs.get('graph') != 'commits' and self.kwargs.get('ext') == 'json':
-            raise NotFound("File extension should be .json for this type of graph")
         
         options = dict()
         graph = self.kwargs.get('graph')
@@ -153,17 +150,20 @@ class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         pullid = self.kwargs.get('pullid')
 
         if not pullid:
-            commit = self.get_commit()
-
-            if commit is None:
-                raise NotFound("Not found. Note: private repositories require ?token arguments")
-            report = Report(files=commit.report['files'], sessions=commit.report['sessions'], totals=commit.totals)
-            return report.flare(None, [70,100])
+            return self.get_commit_flare()
         else:
             pull_flare = self.get_pull_flare(pullid)
             if pull_flare is None:
                 raise NotFound("Not found. Note: private repositories require ?token arguments")
             return pull_flare
+
+    def get_commit_flare(self):
+        commit = self.get_commit()
+
+        if commit is None:
+            raise NotFound("Not found. Note: private repositories require ?token arguments")
+        report = Report(files=commit.report['files'], sessions=commit.report['sessions'], totals=commit.totals)
+        return report.flare(None, [70,100])
 
     def get_pull_flare(self, pullid):
         try:
@@ -171,22 +171,20 @@ class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         except Http404:
             return None
         pull = Pull.objects.filter(pullid=pullid, repository_id=repo.repoid).first()
-        if pull is None:
-            raise NotFound("Not found. Note: private repositories require ?token arguments")
-        return pull.flare
+        if pull is not None:
+            if pull.flare is not None:
+                return pull.flare
+        return self.get_commit_flare()
 
     def get_commit(self):
         try:
             repo = self.repo
         except Http404:
             return None
-
         if repo.private and repo.image_token != self.request.query_params.get('token'):
             return None
-       
         branch_name = self.kwargs.get('branch') or repo.branch
         branch = Branch.objects.filter(name=branch_name, repository_id=repo.repoid).first()
-       
         if branch is None:
             return None
 
