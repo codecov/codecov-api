@@ -24,9 +24,9 @@ class StripeWebhookHandler(APIView):
 
     def _log_updated(self, updated):
         if updated >= 1:
-            log.warning(f"Could not find customer")
+            log.info(f"Successfully updated info for {updated} customer(s)")
         else:
-            log.info(f"Successfully updated customer info")
+            log.warning(f"Could not find customer")
 
     def invoice_payment_succeeded(self, invoice):
         log.info(
