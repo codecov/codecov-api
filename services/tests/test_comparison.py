@@ -501,7 +501,7 @@ class ComparisonTests(TestCase):
         base_report_mock.return_value = SerializableReport(files={})
         git_comparison_mock.return_value = {"diff": {"files": {}}}
 
-        assert len(self.comparison.files) == 2
+        assert sum(1 for x in  self.comparison.files) == 2
         for fc in self.comparison.files:
             assert isinstance(fc, FileComparison)
             assert fc.head_file.name in head_report_files
