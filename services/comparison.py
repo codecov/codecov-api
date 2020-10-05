@@ -424,7 +424,7 @@ class Comparison(object):
 
     @cached_property
     def files(self):
-        for file_name in self.head_report.files
+        for file_name in self.head_report.files:
             yield self.get_file_comparison(file_name)
 
     def get_file_comparison(self, file_name, with_src=False, bypass_max_diff=False):
