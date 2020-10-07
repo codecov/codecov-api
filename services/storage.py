@@ -64,11 +64,8 @@ class StorageService(object):
             pass
         except BucketAlreadyExists:
             pass
-        except ResponseError as e:
-            if e.code == "BucketNameUnavailable":
-                    pass
-            else:
-                raise
+        except ResponseError:
+            raise
 
     # Writes a file to storage will gzip if not compressed already
     def write_file(self, bucket, path, data, reduced_redundancy=False, gzipped=False):
