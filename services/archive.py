@@ -9,6 +9,8 @@ from shared.helpers.flag import Flag
 from datetime import datetime
 from hashlib import md5
 from base64 import b16encode
+from minio.error import (BucketNameUnavailable, BucketAlreadyOwnedByYou,
+                         BucketAlreadyExists)
 
 from utils.config import get_config
 from services.storage import StorageService
@@ -92,7 +94,10 @@ class ArchiveService(object):
 
         # create storage based on the root, this will throw acceptable
         # exceptions if the bucket exists. ResponseError if it doesn't.
-        self.create_root_storage()
+        try:
+            self.create_root_storage()
+        except BucketAlreadyOwnedByYou, BucketNameUnavailable, BucketAlreadyExists:
+            pass
 
     def create_root_storage(self):
         self.storage.create_root_storage(self.root, self.region)
