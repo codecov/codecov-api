@@ -23,8 +23,9 @@ class ProfileTest(InternalAPITest):
     def setUp(self):
         org = OwnerFactory(username="Codecov")
         RepositoryFactory(author=org)
-        self.user = OwnerFactory(username="codecov-user", organizations=[org.ownerid], private_access='f')
+        self.user = OwnerFactory(username="codecov-user", organizations=[org.ownerid])
         RepositoryFactory(author=self.user)
+        pass
 
     def test_get_profile_valid_user(self):
         self.client.force_login(user=self.user)
