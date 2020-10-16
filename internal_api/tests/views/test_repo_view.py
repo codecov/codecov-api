@@ -1018,3 +1018,13 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         mocked_fetch_and_create.assert_called()
         mocked_fetch_and_create.assert_called()
         self.assertEqual(response.status_code, 403)
+
+    def test_fetch_repo_with_fork_doesnt_crash(self, mocked_get_perms):
+        mocked_get_perms.return_value = True, True
+        author = OwnerFactory()
+        repo = RepositoryFactory(author=author, fork=RepositoryFactory())
+        self._retrieve(kwargs={
+            "service": repo.author.service,
+            "owner_username": author.username,
+            "repo_name": repo.name
+        })
