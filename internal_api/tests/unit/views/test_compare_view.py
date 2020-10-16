@@ -245,6 +245,8 @@ class TestCompareCommitsView(InternalAPITest):
         )
 
     @patch("services.comparison.Comparison.git_comparison", new_callable=PropertyMock)
+    @patch("redis.Redis.get", lambda self, key: None)
+    @patch("redis.Redis.set", lambda self, key, val, ex: None)
     def test_compare_commits_view_with_pullid(self, mocked_comparison):
         self._configure_mocked_comparison_with_commits(mocked_comparison)
         pull = PullFactory(

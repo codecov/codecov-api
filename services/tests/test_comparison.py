@@ -1,5 +1,6 @@
 from django.test import TestCase
 import asyncio
+import json
 
 from unittest.mock import patch, PropertyMock
 import pytest
@@ -480,6 +481,24 @@ class FileComparisonTests(TestCase):
 
         assert self.file_comparison.change_summary == {"hits": 2, "misses": -2}
 
+    @patch("services.comparison.FileComparisonTraverseManager.apply")
+    def test_does_not_calculate_changes_if_no_diff_and_should_search_for_changes_is_False(self, mocked_apply_traverse):
+        self.file_comparison.should_search_for_changes = False
+        self.file_comparison._calculated_changes_and_lines
+        mocked_apply_traverse.assert_not_called()
+
+    @patch("services.comparison.FileComparisonTraverseManager.apply")
+    def test_calculates_changes_if_no_diff_and_should_search_for_changes_is_None(self, mocked_apply_traverse):
+        self.file_comparison.should_search_for_changes = None
+        self.file_comparison._calculated_changes_and_lines
+        mocked_apply_traverse.assert_called_once()
+
+    @patch("services.comparison.FileComparisonTraverseManager.apply")
+    def test_calculates_changes_should_search_for_changes_is_True(self, mocked_apply_traverse):
+        self.file_comparison.should_search_for_changes = True
+        self.file_comparison._calculated_changes_and_lines
+        mocked_apply_traverse.assert_called_once()
+
 
 @patch('services.comparison.Comparison.git_comparison', new_callable=PropertyMock)
 @patch('services.comparison.Comparison.head_report', new_callable=PropertyMock)
@@ -673,6 +692,135 @@ class ComparisonTests(TestCase):
 
         assert self.comparison.totals["base"] == base_report_mock.return_value.totals
         assert self.comparison.totals["head"] is None
+
+    @patch('redis.Redis.get')
+    def test_stores_cached_files_array_in__files_with_changes(
+        self,
+        mocked_get,
+        base_report_mock,
+        head_report_mock,
+        git_comparison_mock
+    ):
+        filename = "something.py"
+        mocked_get.return_value = json.dumps([filename])
+
+        owner = OwnerFactory()
+        base, head = CommitFactory(author=owner), CommitFactory(author=owner)
+        comparison = Comparison(base, head, owner, pullid=5)
+
+        mocked_get.assert_called_once_with(
+            "/".join((
+                "compare-changed-files",
+                base.repository.author.service,
+                base.repository.author.username,
+                base.repository.name,
+                "5"
+            ))
+        )
+        assert comparison._files_with_changes == [filename]
+
+    @patch('redis.Redis.get')
+    def test_stores_none_if_no_files_with_changes(
+        self,
+        mocked_get,
+        base_report_mock,
+        head_report_mock,
+        git_comparison_mock
+    ):
+        mocked_get.return_value = None
+
+        owner = OwnerFactory()
+        base, head = CommitFactory(author=owner), CommitFactory(author=owner)
+        comparison = Comparison(base, head, owner, pullid=5)
+
+        mocked_get.assert_called_once_with(
+            "/".join((
+                "compare-changed-files",
+                base.repository.author.service,
+                base.repository.author.username,
+                base.repository.name,
+                "5"
+            ))
+        )
+        assert comparison._files_with_changes == None
+
+    @patch('redis.Redis.get')
+    def test_doesnt_crash_if_redis_connection_problem(
+        self,
+        mocked_get,
+        base_report_mock,
+        head_report_mock,
+        git_comparison_mock
+    ):
+        def raise_oserror(*args, **kwargs):
+            raise OSError
+        mocked_get.side_effect = raise_oserror
+        owner = OwnerFactory()
+        base, head = CommitFactory(author=owner), CommitFactory(author=owner)
+        comparison = Comparison(base, head, owner, pullid=5)
+
+    @patch('redis.Redis.get')
+    @patch('redis.Redis.set')
+    @patch('services.comparison.FileComparison.change_summary', new_callable=PropertyMock)
+    def test_files_populates_files_with_changes_in_redis_if_not_populated_and_pullid_is_set(
+        self,
+        mocked_change_summary,
+        mocked_redis_set,
+        mocked_redis_get,
+        base_report_mock,
+        head_report_mock,
+        git_comparison_mock
+    ):
+
+        mocked_redis_get.return_value = None
+        mocked_change_summary.return_value = {"hits": 1, "misses": -1}
+        head_report_files = {"file1": file_data, "file2": file_data}
+        head_report_mock.return_value = SerializableReport(files=head_report_files)
+        base_report_mock.return_value = SerializableReport(files={})
+        git_comparison_mock.return_value = {"diff": {"files": {}}}
+
+        owner = OwnerFactory()
+        base, head = CommitFactory(author=owner), CommitFactory(author=owner)
+        comparison = Comparison(base, head, owner, pullid=5)
+
+        list(comparison.files)
+
+        mocked_redis_set.assert_called_once_with(
+            "/".join((
+                "compare-changed-files",
+                base.repository.author.service,
+                base.repository.author.username,
+                base.repository.name,
+                f"{5}"
+            )),
+            json.dumps(["file1", "file2"]),
+            ex=86400 # 1 day in seconds
+        )
+
+    def test_get_file_comparison_with_should_search_for_changes_param(
+        self,
+        base_report_mock,
+        head_report_mock,
+        git_comparison_mock
+    ):
+        head_report_files = {"file1": file_data, "file2": file_data}
+        head_report_mock.return_value = SerializableReport(files=head_report_files)
+        base_report_mock.return_value = SerializableReport(files={})
+        git_comparison_mock.return_value = {"diff": {"files": {}}}
+
+        with self.subTest("it's None when nothing found in cache"):
+            fc = self.comparison.get_file_comparison("file1")
+            assert fc.should_search_for_changes is None
+
+        with self.subTest("it's True when file found in cached list"):
+            self.comparison._files_with_changes = ["file1"]
+            fc = self.comparison.get_file_comparison("file1")
+            assert fc.should_search_for_changes is True
+
+        with self.subTest("it's False when file not found in list"):
+            self.comparison._files_with_changes = ["file2"]
+            fc = self.comparison.get_file_comparison("file1")
+            assert fc.should_search_for_changes is False
 
 
 @patch('services.comparison.Comparison.git_comparison', new_callable=PropertyMock)

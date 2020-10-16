@@ -27,7 +27,12 @@ class CompareViewSet(CompareSlugMixin, mixins.RetrieveModelMixin, viewsets.Gener
 
     def get_object(self):
         base, head = self.get_commits()
-        comparison = Comparison(base_commit=base, head_commit=head, user=self.request.user)
+        comparison = Comparison(
+            base_commit=base,
+            head_commit=head,
+            user=self.request.user,
+            pullid=self.request.query_params.get("pullid")
+        )
         asyncio.set_event_loop(asyncio.new_event_loop())
         return comparison
 

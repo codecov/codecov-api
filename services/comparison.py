@@ -2,6 +2,7 @@ import asyncio
 import logging
 import functools
 import json
+import os
 
 from collections import Counter
 
@@ -14,9 +15,13 @@ from shared.utils.merge import line_type, LineType
 from services.archive import ReportService
 from core.models import Commit
 from services.repo_providers import RepoProviderService
+from services.redis import get_redis_connection
 
 
 log = logging.getLogger(__name__)
+
+
+redis = get_redis_connection()
 
 
 MAX_DIFF_SIZE = 170
@@ -318,8 +323,10 @@ class LineComparison:
 
 
 class FileComparison:
-    def __init__(self, base_file, head_file, diff_data=None, src=[], bypass_max_diff=False):
+    def __init__(self, base_file, head_file, diff_data=None, src=[], bypass_max_diff=False, should_search_for_changes=None):
         """
+        comparison -- the enclosing Comparison object that owns this FileComparison
+
         base_file -- the ReportFile for this file from the base report
 
         head_file -- the ReportFile for this file from the head report
@@ -340,6 +347,17 @@ class FileComparison:
         bypass_max_diff -- configuration paramater that tells this class to ignore max-diff truncating.
             default is used when retrieving full comparison; True is passed when fetching individual
             file comparison.
+
+        should_search_for_changes -- flag that indicates if this FileComparison has unexpected coverage changes,
+            according to a value cached during asynchronous processing. Has three values:
+            1. True - indicates this FileComparison has unexpected coverage changes according to worker,
+                and we should process the lines in this FileComparison using FileComparisonTraverseManager
+                to calculate a change summary.
+            2. False - indicates this FileComparison does not have unexpected coverage changes according to
+                worker, and we should not traverse this file or calculate a change summary.
+            3. None (default) - indicates we do not have information cached from worker to rely on here
+                (no value in cache), so we need to traverse this FileComparison and calculate a change
+                summary to find out.
         """
         self.base_file = base_file
         self.head_file = head_file
@@ -353,6 +371,7 @@ class FileComparison:
         ) if self.diff_data is not None and self.diff_data["segments"] else 0
 
         self.bypass_max_diff = bypass_max_diff
+        self.should_search_for_changes = should_search_for_changes
 
     @property
     def name(self):
@@ -387,15 +406,26 @@ class FileComparison:
 
     @cached_property
     def _calculated_changes_and_lines(self):
+        """
+        Applies visitors to the file to generate response data (line comparison representations
+        and change summary). Only applies visitors if
+
+          1. The file has a diff, in which case we need to generate response data for it anyway, or
+          2. The should_search_for_changes flag is defined (not None) and is True
+
+        This limitation improves performance by limiting searching for changes to only files that
+        have them.
+        """
         change_summary_visitor = CreateChangeSummaryVisitor(self.base_file, self.head_file)
         create_lines_visitor = CreateLineComparisonVisitor(self.base_file, self.head_file)
 
-        FileComparisonTraverseManager(
-            head_file_eof=self.head_file.eof if self.head_file is not None else 0,
-            base_file_eof=self.base_file.eof if self.base_file is not None else 0,
-            segments=self.diff_data["segments"] if self.diff_data else [],
-            src=self.src
-        ).apply([change_summary_visitor, create_lines_visitor])
+        if self.diff_data or self.should_search_for_changes is not False:
+            FileComparisonTraverseManager(
+                head_file_eof=self.head_file.eof if self.head_file is not None else 0,
+                base_file_eof=self.base_file.eof if self.base_file is not None else 0,
+                segments=self.diff_data["segments"] if self.diff_data else [],
+                src=self.src
+            ).apply([change_summary_visitor, create_lines_visitor])
 
         return change_summary_visitor.summary, create_lines_visitor.lines
 
@@ -407,13 +437,12 @@ class FileComparison:
     def lines(self):
         if self.total_diff_length > MAX_DIFF_SIZE and not self.bypass_max_diff:
             return None
-
         return self._calculated_changes_and_lines[1]
 
 
 class Comparison(object):
 
-    def __init__(self, base_commit, head_commit, user):
+    def __init__(self, base_commit, head_commit, user, pullid=None):
         self.user = user
         self.base_commit = base_commit
         self.head_commit = head_commit
@@ -421,11 +450,55 @@ class Comparison(object):
         self._base_report = None
         self._git_commits = None
         self._upload_commits = None
+        self.pullid = pullid
+        self._files_with_changes = self._retrieve_files_with_changes_from_cache()
+
+    def _retrieve_files_with_changes_from_cache(self):
+        if self.pullid is not None:
+            try:
+                return json.loads(
+                    redis.get(
+                        "/".join((
+                            "compare-changed-files",
+                            self.base_commit.repository.author.service,
+                            self.base_commit.repository.author.username,
+                            self.base_commit.repository.name,
+                            f"{self.pullid}"
+                        ))
+                    ) or json.dumps(None)
+                )
+            except OSError as e:
+                log.warning(
+                    f"Error connecting to redis: {e}",
+                    extra=dict(
+                        repoid=self.base_commit.repository.repoid,
+                        pullid=self.pullid
+                    )
+                )
+
+    def _set_files_with_changes_in_cache_if_not_already_set(self, files_with_changes):
+        if self._files_with_changes is None and self.pullid is not None:
+            redis.set(
+                "/".join((
+                    "compare-changed-files",
+                    self.base_commit.repository.author.service,
+                    self.base_commit.repository.author.username,
+                    self.base_commit.repository.name,
+                    f"{self.pullid}"
+                )),
+                json.dumps(files_with_changes),
+                ex=86400 # 1 day in seconds
+            )
 
     @cached_property
     def files(self):
+        files_with_changes = []
         for file_name in self.head_report.files:
-            yield self.get_file_comparison(file_name)
+            file_comparison = self.get_file_comparison(file_name)
+            if file_comparison.change_summary:
+                files_with_changes.append(file_name)
+            yield file_comparison
+        self._set_files_with_changes_in_cache_if_not_already_set(files_with_changes)
 
     def get_file_comparison(self, file_name, with_src=False, bypass_max_diff=False):
         head_file = self.head_report.get(file_name)
@@ -459,7 +532,8 @@ class Comparison(object):
             head_file=head_file,
             diff_data=diff_data,
             src=src,
-            bypass_max_diff=bypass_max_diff
+            bypass_max_diff=bypass_max_diff,
+            should_search_for_changes=None if self._files_with_changes is None else file_name in self._files_with_changes
         )
 
     @property

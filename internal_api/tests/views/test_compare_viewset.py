@@ -218,6 +218,8 @@ class TestCompareViewSetRetrieve(APITestCase):
 
         assert response.status_code == 403
 
+    @patch("redis.Redis.get", lambda self, key: None)
+    @patch("redis.Redis.set", lambda self, key, val, ex: None)
     def test_accepts_pullid_query_param(
         self, adapter_mock, base_report_mock, head_report_mock
     ):

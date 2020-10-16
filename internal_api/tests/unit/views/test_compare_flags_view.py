@@ -195,6 +195,8 @@ class TestCompareFlagsView(InternalAPITest):
 
         assert response.data == expected_result
 
+    @patch("redis.Redis.get", lambda self, key: None)
+    @patch("redis.Redis.set", lambda self, key, val, ex: None)
     def test_compare_flags_view_accepts_pullid_query_param(
         self, diff_totals_mock, root_storage_mock, read_chunks_mock, git_comparison_mock
     ):
