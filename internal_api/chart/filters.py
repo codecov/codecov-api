@@ -2,6 +2,7 @@ from dateutil import parser
 
 from django.db.models import Q, F
 from django.db.models.functions import Trunc
+from core.models import Repository
 
 
 def apply_default_filters(queryset):
@@ -25,8 +26,7 @@ def apply_simple_filters(queryset, data, user):
         # make sure we only return repositories that are either public or that the logged-in user has permission to view.
         # this is important because if no "repository" param was provided then the permissions check will succeed, but we still
         # want to make sure we return only all repositories the logged-in user has permissions to view.
-        Q(repository__private=False)
-        | Q(repository__repoid__in=user.permission) 
+        repository__in=Repository.objects.viewable_repos(user)
     )
 
     # Handle branch filtering

@@ -32,9 +32,9 @@ class ProfileTest(InternalAPITest):
         response = self.client.get("/internal/profile/")
         self.assertEqual(response.status_code, 200)
 
-    def test_get_profile_unauthed_user(self):
+    def test_get_profile_unauthed_user_returns_401(self):
         response = self.client.get("/internal/profile/")
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
     def test_update_profile_private_access(self):
         self.client.force_login(user=self.user)
@@ -74,6 +74,21 @@ class RepoPullList(InternalAPITest):
         PullFactory(pullid=12, author=other_org, repository=other_repo)
         self.correct_kwargs={"service": "github", "owner_username":"codecov", "repo_name":"testRepoName"}
         self.incorrect_kwargs={"service": "github", "owner_username":"codecov", "repo_name":"otherRepoName"}
+
+    def test_can_get_public_repo_pulls_when_not_authenticated(self, mock_provider):
+        self.client.logout()
+        mock_provider.return_value = True, True
+        author = OwnerFactory()
+        repo = RepositoryFactory(private=False, author=author)
+        response = self.client.get(
+            reverse("pulls-list", kwargs={
+                "service": author.service,
+                "owner_username": author.username,
+                "repo_name": repo.name
+            })
+        )
+        assert response.status_code == 200
+        assert response.data["results"] == []
 
     def test_get_pulls(self, mock_provider):
         mock_provider.return_value = True, True
@@ -239,6 +254,23 @@ class RepoPullDetail(InternalAPITest):
         PullFactory(pullid=10, author=self.org, repository=repo, state="open")
         PullFactory(pullid=11, author=self.org, repository=repo, state="closed")
 
+    def test_can_get_public_repo_pull_detail_when_not_authenticated(self, mock_provider):
+        self.client.logout()
+        mock_provider.return_value = True, True
+        author = OwnerFactory()
+        repo = RepositoryFactory(private=False, author=author)
+        pull = PullFactory(repository=repo)
+        response = self.client.get(
+            reverse("pulls-detail", kwargs={
+                "service": author.service,
+                "owner_username": author.username,
+                "repo_name": repo.name,
+                "pk": pull.pullid
+            })
+        )
+        assert response.status_code == 200
+        assert response.data["pullid"] == pull.pullid
+
     def test_get_pull(self, mock_provider):
         mock_provider.return_value = True, True
         self.client.force_login(user=self.user)
@@ -338,6 +370,20 @@ class RepoCommitList(InternalAPITest):
                 "diff": 0,
             },
         )
+
+    def test_can_get_public_repo_commits_if_not_authenticated(self, mocked_provider):
+        mocked_provider.return_value = True, True
+        self.client.logout()
+        author = OwnerFactory()
+        repo = RepositoryFactory(author=author, private=False)
+        response = self.client.get(
+            reverse("commits-list", kwargs={
+                "service": author.service,
+                "owner_username": author.username,
+                "repo_name": repo.name
+            })
+        )
+        assert response.status_code == 200
 
     def test_get_commits(self, mock_provider):
         mock_provider.return_value = True, True
@@ -500,6 +546,19 @@ class BranchViewSetTests(InternalAPITest):
         if not kwargs:
             kwargs = {"service": self.org.service, "owner_username": self.org.username, "repo_name": self.repo.name}
         return self.client.get(reverse('branches-list', kwargs=kwargs), data=query)
+
+    def test_can_get_public_repo_branches_if_not_authenticated(self, mocked_provider):
+        mocked_provider.return_value = True, True
+        self.client.logout()
+        author = OwnerFactory()
+        repo = RepositoryFactory(author=author, private=False)
+        response = self._get_branches(kwargs={
+            "service": author.service,
+            "owner_username": author.username,
+            "repo_name": repo.name
+        })
+        assert response.status_code == 200
+
 
     def test_list_returns_200_and_expected_branches(self, mock_provider):
         response = self._get_branches()

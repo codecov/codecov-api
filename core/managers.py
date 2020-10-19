@@ -11,11 +11,13 @@ class RepositoryQuerySet(QuerySet):
         Filters queryset so that result only includes repos viewable by the
         given owner.
         """
-        return self.filter(
-            Q(private=False)
-            | Q(author__ownerid=owner.ownerid)
-            | Q(repoid__in=owner.permission)
-        )
+        if owner.is_authenticated:
+            return self.filter(
+                Q(private=False)
+                | Q(author__ownerid=owner.ownerid)
+                | Q(repoid__in=owner.permission)
+            )
+        return self.filter(private=False)
 
     def exclude_uncovered(self):
         from core.models import Commit

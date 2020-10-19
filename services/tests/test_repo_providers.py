@@ -4,6 +4,8 @@ from codecov.tests.base_test import InternalAPITest
 from core.tests.factories import RepositoryFactory
 from codecov_auth.tests.factories import OwnerFactory
 from services.repo_providers import TorngitInitializationFailed, RepoProviderService
+from django.contrib.auth.models import AnonymousUser
+from django.conf import settings
 
 
 class TestRepoProviderService(InternalAPITest):
@@ -64,3 +66,25 @@ class TestRepoProviderService(InternalAPITest):
         )
 
         assert provider._oauth_consumer_token() is not None
+
+    def test_get_adapter_sets_token_to_bot_when_user_not_authenticated(self):
+        user = AnonymousUser()
+        repo_owner = OwnerFactory(service="github")
+        repo = RepositoryFactory(author=repo_owner)
+        adapter = RepoProviderService().get_adapter(user, repo)
+        assert adapter.token["key"] == settings.GITHUB_CLIENT_BOT
+
+    def test_get_by_name_sets_token_to_bot_when_user_not_authenticated(self):
+        user = AnonymousUser()
+        repo_name = 'gh-repo'
+        repo_owner_username = 'me'
+        repo_owner_service = 'github'
+
+        adapter = RepoProviderService().get_by_name(
+            user=user,
+            repo_name=repo_name,
+            repo_owner_username=repo_owner_username,
+            repo_owner_service=repo_owner_service
+        )
+
+        assert adapter.token["key"] == settings.GITHUB_CLIENT_BOT

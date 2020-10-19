@@ -9,7 +9,7 @@ from django.contrib.postgres.fields import ArrayField
 
 from rest_framework import generics, viewsets, mixins, filters, status
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied, NotFound, ValidationError
+from rest_framework.exceptions import PermissionDenied, NotFound, ValidationError, NotAuthenticated
 from rest_framework.response import Response
 
 from django_filters import rest_framework as django_filters
@@ -44,7 +44,9 @@ class ProfileViewSet(
     serializer_class = ProfileSerializer
 
     def get_object(self):
-        return self.request.user
+        if self.request.user.is_authenticated:
+            return self.request.user
+        raise NotAuthenticated()
 
 
 class OwnerViewSet(

@@ -186,6 +186,30 @@ class TestCompareViewSetRetrieve(APITestCase):
             content_type="application/json",
         )
 
+    def test_can_return_public_repo_comparison_with_not_authenticated(
+        self, adapter_mock, base_report_mock, head_report_mock
+    ):
+        adapter_mock.return_value = self.mocked_compare_adapter
+        base_report_mock.return_value = self.base_report
+        head_report_mock.return_value = self.head_report
+
+        public_repo = RepositoryFactory(author=self.org, private=False)
+        base, head = CommitFactory(repository=public_repo), CommitFactory(repository=public_repo)
+
+        self.client.logout()
+        response = self._get_comparison(
+            kwargs={
+                "service": self.org.service,
+                "owner_username": self.org.username,
+                "repo_name": public_repo.name
+            },
+            query_params={
+                "base": base.commitid,
+                "head": head.commitid
+            }
+        )
+        assert response.status_code == status.HTTP_200_OK
+
     def test_returns_200_and_expected_files_on_success(
         self, adapter_mock, base_report_mock, head_report_mock
     ):

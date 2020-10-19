@@ -87,6 +87,11 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
 
         self.client.force_login(user=self.user)
 
+    def test_can_retrieve_repo_list_if_not_authenticated(self):
+        self.client.logout()
+        response = self._list()
+        assert response.status_code == 200
+
     def test_order_by_updatestamp(self):
         response = self._list(
             query_params={'ordering': 'updatestamp'}
@@ -573,6 +578,18 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         )
 
         self.client.force_login(user=self.user)
+
+    def test_can_retrieve_repo_if_not_authenticated(self, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, True
+        self.client.logout()
+        author = OwnerFactory()
+        public_repo = RepositoryFactory(author=author, private=False)
+        response = self._retrieve(kwargs={
+            "service": public_repo.author.service,
+            "owner_username": public_repo.author.username,
+            "repo_name": public_repo.name
+        })
+        assert response.status_code == 200
 
     def test_retrieve_with_view_and_edit_permissions_succeeds(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, True

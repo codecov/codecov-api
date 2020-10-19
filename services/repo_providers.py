@@ -1,6 +1,6 @@
 from shared.torngit import get
 
-from codecov_auth.models import Owner
+from codecov_auth.models import Owner, SERVICE_GITHUB
 from core.models import Repository
 from utils.encryption import encryptor
 from utils.config import get_config
@@ -25,6 +25,13 @@ class RepoProviderService(object):
         :return:
         :raises: TorngitInitializationFailed
         """
+        if user.is_authenticated:
+            token = encryptor.decrypt_token(
+                user.oauth_token
+            )
+        else:
+            token = {"key": getattr(settings, f"{repo.service.upper()}_CLIENT_BOT")}
+
         adapter_params = dict(
             repo=dict(
                 name=repo.name,
@@ -33,12 +40,13 @@ class RepoProviderService(object):
                 private=repo.private
             ),
             owner=dict(username=repo.author.username),
-            token=encryptor.decrypt_token(user.oauth_token) if user.oauth_token else None,
+            token=token,
             oauth_consumer_token=dict(
                 key=getattr(settings, f"{repo.author.service.upper()}_CLIENT_ID", "unknown"),
                 secret=getattr(settings, f"{repo.author.service.upper()}_CLIENT_SECRET", "unknown")
             )
         )
+
         return self._get_provider(repo.author.service, adapter_params)
 
     def get_by_name(self, user, repo_name, repo_owner_username, repo_owner_service):
@@ -52,10 +60,17 @@ class RepoProviderService(object):
         :return:
         :raises: TorngitInitializationFailed
         """
+        if user.is_authenticated:
+            token = encryptor.decrypt_token(
+                user.oauth_token
+            )
+        else:
+            token = {"key": getattr(settings, f"{repo_owner_service.upper()}_CLIENT_BOT")}
+
         adapter_params = dict(
             repo=dict(name=repo_name),
             owner=dict(username=repo_owner_username),
-            token=encryptor.decrypt_token(user.oauth_token),
+            token=token,
             oauth_consumer_token=dict(
                 key=getattr(settings, f"{repo_owner_service.upper()}_CLIENT_ID", "unknown"),
                 secret=getattr(settings, f"{repo_owner_service.upper()}_CLIENT_SECRET", "unknown")
