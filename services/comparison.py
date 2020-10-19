@@ -410,7 +410,7 @@ class FileComparison:
         Applies visitors to the file to generate response data (line comparison representations
         and change summary). Only applies visitors if
 
-          1. The file has a diff, in which case we need to generate response data for it anyway, or
+          1. The file has a diff or src, in which case we need to generate response data for it anyway, or
           2. The should_search_for_changes flag is defined (not None) and is True
 
         This limitation improves performance by limiting searching for changes to only files that
@@ -419,7 +419,7 @@ class FileComparison:
         change_summary_visitor = CreateChangeSummaryVisitor(self.base_file, self.head_file)
         create_lines_visitor = CreateLineComparisonVisitor(self.base_file, self.head_file)
 
-        if self.diff_data or self.should_search_for_changes is not False:
+        if self.diff_data or self.src or self.should_search_for_changes is not False:
             FileComparisonTraverseManager(
                 head_file_eof=self.head_file.eof if self.head_file is not None else 0,
                 base_file_eof=self.base_file.eof if self.base_file is not None else 0,

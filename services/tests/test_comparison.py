@@ -499,6 +499,13 @@ class FileComparisonTests(TestCase):
         self.file_comparison._calculated_changes_and_lines
         mocked_apply_traverse.assert_called_once()
 
+    @patch("services.comparison.FileComparisonTraverseManager.apply")
+    def test_calculates_changes_if_traversing_src(self, mocked_apply_traverse):
+        self.file_comparison.should_search_for_changes = False
+        self.file_comparison.src = ["a truthy list"]
+        self.file_comparison._calculated_changes_and_lines
+        mocked_apply_traverse.assert_called_once()
+
 
 @patch('services.comparison.Comparison.git_comparison', new_callable=PropertyMock)
 @patch('services.comparison.Comparison.head_report', new_callable=PropertyMock)
