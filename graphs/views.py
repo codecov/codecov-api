@@ -55,7 +55,7 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         if not precision in self.precisions:
             raise NotFound("Coverage precision should be one of [ 0 || 1 || 2 ]")
 
-        coverage = self.get_coverage()
+        coverage, coverage_range = self.get_coverage()
 
         # Format coverage according to precision      
         coverage = format_coverage_precision(coverage, precision)
@@ -63,7 +63,7 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         if self.kwargs.get('ext') == 'txt':
             return coverage
 
-        return get_badge(coverage, [70, 100], precision)
+        return get_badge(coverage, coverage_range, precision)
 
     
     def get_coverage(self):
@@ -73,32 +73,38 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
 
                   We also need to support service abbreviations for users already using them
         """
+        coverage_range = [70, 100]
+
         try:
             repo = self.repo
         except Http404:
-            return None
+            return None, coverage_range
 
         if repo.private and repo.image_token != self.request.query_params.get('token'):
-            return None
+            return None, coverage_range
        
         branch_name = self.kwargs.get('branch') or repo.branch
         branch = Branch.objects.filter(name=branch_name, repository_id=repo.repoid).first()
        
         if branch is None:
-            return None
+            return None, coverage_range
         try:
             commit = repo.commits.get(commitid=branch.head)
         except ObjectDoesNotExist:
             # if commit does not exist return None coverage
-            return None
+            return None, coverage_range
+
+
+        if repo.yaml and repo.yaml.get('coverage', {}).get('range') is not None:
+            coverage_range = repo.yaml.get('coverage', {}).get('range')
 
         flag = self.request.query_params.get('flag')
         if flag:
-            return self.flag_coverage(flag, commit)
+            return self.flag_coverage(flag, commit), coverage_range
 
         coverage = commit.totals.get('c') if commit is not None and commit.totals is not None else None
 
-        return coverage
+        return coverage, coverage_range
 
     def flag_coverage(self, flag, commit):
         """
