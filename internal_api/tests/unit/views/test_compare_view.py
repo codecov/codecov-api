@@ -254,6 +254,7 @@ class TestCompareCommitsView(InternalAPITest):
             repository=self.repo,
             author=self.repo.author,
             base=self.commit_base.commitid,
+            compared_to=self.commit_base.commitid,
             head=self.commit_head.commitid,
         )
 

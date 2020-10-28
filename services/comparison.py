@@ -3,19 +3,20 @@ import logging
 import functools
 import json
 import os
+import minio
 
 from collections import Counter
 
 from django.utils.functional import cached_property
 
-from shared.reports.resources import ReportFile
-from shared.reports.types import ReportTotals
 from shared.utils.merge import line_type, LineType
+from shared.helpers.yaml import walk
 
 from services.archive import ReportService
 from core.models import Commit
 from services.repo_providers import RepoProviderService
 from services.redis import get_redis_connection
+from utils.config import get_config
 
 
 log = logging.getLogger(__name__)
@@ -33,6 +34,18 @@ def _is_added(line_value):
 
 def _is_removed(line_value):
     return line_value and line_value[0] == "-"
+
+
+class ComparisonException(Exception):
+    pass
+
+
+class MissingComparisonCommit(ComparisonException):
+    pass
+
+
+class MissingComparisonReport(ComparisonException):
+    pass
 
 
 class FileComparisonTraverseManager:
@@ -442,63 +455,16 @@ class FileComparison:
 
 class Comparison(object):
 
-    def __init__(self, base_commit, head_commit, user, pullid=None):
+    def __init__(self, user, base_commit, head_commit):
         self.user = user
         self.base_commit = base_commit
         self.head_commit = head_commit
         self.report_service = ReportService()
-        self._base_report = None
-        self._git_commits = None
-        self._upload_commits = None
-        self.pullid = pullid
-        self._files_with_changes = self._retrieve_files_with_changes_from_cache()
-
-    def _retrieve_files_with_changes_from_cache(self):
-        if self.pullid is not None:
-            try:
-                return json.loads(
-                    redis.get(
-                        "/".join((
-                            "compare-changed-files",
-                            self.base_commit.repository.author.service,
-                            self.base_commit.repository.author.username,
-                            self.base_commit.repository.name,
-                            f"{self.pullid}"
-                        ))
-                    ) or json.dumps(None)
-                )
-            except OSError as e:
-                log.warning(
-                    f"Error connecting to redis: {e}",
-                    extra=dict(
-                        repoid=self.base_commit.repository.repoid,
-                        pullid=self.pullid
-                    )
-                )
-
-    def _set_files_with_changes_in_cache_if_not_already_set(self, files_with_changes):
-        if self._files_with_changes is None and self.pullid is not None:
-            redis.set(
-                "/".join((
-                    "compare-changed-files",
-                    self.base_commit.repository.author.service,
-                    self.base_commit.repository.author.username,
-                    self.base_commit.repository.name,
-                    f"{self.pullid}"
-                )),
-                json.dumps(files_with_changes),
-                ex=86400 # 1 day in seconds
-            )
 
     @cached_property
     def files(self):
-        files_with_changes = []
         for file_name in self.head_report.files:
-            file_comparison = self.get_file_comparison(file_name)
-            if file_comparison.change_summary:
-                files_with_changes.append(file_name)
-            yield file_comparison
-        self._set_files_with_changes_in_cache_if_not_already_set(files_with_changes)
+            yield self.get_file_comparison(file_name)
 
     def get_file_comparison(self, file_name, with_src=False, bypass_max_diff=False):
         head_file = self.head_report.get(file_name)
@@ -516,7 +482,7 @@ class Comparison(object):
                 asyncio.run(
                     RepoProviderService().get_adapter(
                         user=self.user,
-                        repo=self.head_commit.repository
+                        repo=self.base_commit.repository
                     ).get_source(
                         file_name,
                         self.head_commit.commitid
@@ -532,23 +498,27 @@ class Comparison(object):
             head_file=head_file,
             diff_data=diff_data,
             src=src,
-            bypass_max_diff=bypass_max_diff,
-            should_search_for_changes=None if self._files_with_changes is None else file_name in self._files_with_changes
+            bypass_max_diff=bypass_max_diff
         )
 
     @property
     def git_comparison(self):
         return self._fetch_comparison_and_reverse_comparison[0]
 
-    @property
+    @cached_property
     def base_report(self):
-        if self._base_report is None:
-            self._base_report = self._calculate_base_report()
-        return self._base_report
+        try:
+            return self.report_service.build_report_from_commit(self.base_commit)
+        except minio.error.NoSuchKey:
+            raise MissingComparisonReport()
 
     @cached_property
     def head_report(self):
-        report = self.report_service.build_report_from_commit(self.head_commit)
+        try:
+            report = self.report_service.build_report_from_commit(self.head_commit)
+        except minio.error.NoSuchKey:
+            raise MissingComparisonReport()
+
         report.apply_diff(self.git_comparison["diff"])
         return report
 
@@ -570,8 +540,10 @@ class Comparison(object):
             :return: Queryset of core.models.Commit objects
         """
         commit_ids = [commit['commitid'] for commit in self.git_commits]
-        commits_queryset = Commit.objects.filter(commitid__in=commit_ids,
-                                                 repository=self.base_commit.repository)
+        commits_queryset = Commit.objects.filter(
+            commitid__in=commit_ids,
+            repository=self.base_commit.repository
+        )
         commits_queryset.exclude(deleted=True)
         return commits_queryset
 
@@ -606,9 +578,6 @@ class Comparison(object):
             )
 
         return loop.run_until_complete(runnable())
-
-    def _calculate_base_report(self):
-        return self.report_service.build_report_from_commit(self.base_commit)
 
     def flag_comparison(self, flag_name):
         return FlagComparison(self, flag_name)
@@ -650,3 +619,168 @@ class FlagComparison(object):
             return None
         git_comparison = self.comparison.git_comparison
         return self.head_report.apply_diff(git_comparison['diff'])
+
+
+class PullRequestComparison(Comparison):
+    """
+    A Comparison instantiated with a Pull. Contains relevant additional processing
+    required for Pulls, including caching of files-with-changes and support for
+    'pseudo-comparisons'.
+    """
+    def __init__(self, user, pull):
+        self.pull = pull
+
+        try:
+            super().__init__(
+                user=user,
+                base_commit=Commit.objects.get(
+                    repository=self.pull.repository,
+                    commitid=self.pull.compared_to if self.is_pseudo_comparison else pull.base
+                ),
+                head_commit=Commit.objects.get(repository=self.pull.repository, commitid=pull.head)
+            )
+        except Commit.DoesNotExist:
+            raise MissingComparisonCommit()
+
+    @cached_property
+    def _files_with_changes_hash_key(self):
+        return "/".join((
+            "compare-changed-files",
+            self.pull.repository.author.service,
+            self.pull.repository.author.username,
+            self.pull.repository.name,
+            f"{self.pull.pullid}"
+        ))
+
+    @cached_property
+    def _files_with_changes(self):
+        try:
+            key = self._files_with_changes_hash_key
+            changes = json.loads(redis.get(key) or json.dumps(None))
+            log.info(
+                f"Found {len(changes) if changes else 0} files with changes in cache.",
+                extra=dict(repoid=self.pull.repository.repoid, pullid=self.pull.pullid)
+            )
+            return changes
+        except OSError as e:
+            log.warning(
+                f"Error connecting to redis: {e}",
+                extra=dict(
+                    repoid=self.pull.repository.repoid,
+                    pullid=self.pull.pullid
+                )
+            )
+
+    def _set_files_with_changes_in_cache(self, files_with_changes):
+        redis.set(
+            self._files_with_changes_hash_key,
+            json.dumps(files_with_changes),
+            ex=86400 # 1 day in seconds
+        )
+        log.info(
+            f"Stored {len(files_with_changes)} files with changes in cache",
+            extra=dict(repoid=self.pull.repository.repoid, pullid=self.pull.pullid)
+        )
+
+    @cached_property
+    def files(self):
+        """
+        Overrides the 'files' property to do additional caching of
+        'files_with_changes', for future performance improvements.
+        """
+        files_with_changes = []
+        for file_comparison in super().files:
+            if file_comparison.change_summary:
+                files_with_changes.append(file_comparison.name["head"])
+            yield file_comparison
+        self._set_files_with_changes_in_cache(files_with_changes)
+
+    def get_file_comparison(self, file_name, with_src=False, bypass_max_diff=False):
+        """
+        Overrides the 'get_file_comparison' method to set the "should_search_for_changes"
+        field.
+        """
+        file_comparison = super().get_file_comparison(
+            file_name,
+            with_src=with_src,
+            bypass_max_diff=bypass_max_diff
+        )
+        file_comparison.should_search_for_changes = (
+            file_name in self._files_with_changes if self._files_with_changes is not None else None
+        )
+        return file_comparison
+
+    @cached_property
+    def is_pseudo_comparison(self):
+        """
+        Returns True if this comparison is a pseudo-comparison, False if not.
+
+        Depends on
+            1) The repository yaml or app yaml settings allow pseudo_comparisons
+            2) the pull request's 'compared_to' field is defined
+        """
+        return walk(
+            _dict=self.pull.repository.yaml,
+            keys=("codecov", "allow_pseudo_compare"),
+            _else=get_config(("site", "codecov", "allow_pseudo_compare"), default=True)
+        ) and bool(self.pull.compared_to)
+
+    @cached_property
+    def allow_coverage_offsets(self):
+        """
+        Returns True if "coverage offsets" are allowed, False if not, according
+        to repository yaml settings or app yaml settings if not defined in repository
+        yaml settings.
+        """
+        return walk(
+            _dict=self.pull.repository.yaml,
+            keys=("codecov", "allow_coverage_offsets"),
+            _else=get_config(("site", "codecov", "allow_coverage_offsets"), default=False)
+        )
+
+    @cached_property
+    def pseudo_diff(self):
+        """
+        Returns the diff between the 'self.pull.compared_to' field and the
+        'self.pull.base' field.
+        """
+        return asyncio.run(
+            RepoProviderService().get_adapter(
+                self.user,
+                self.pull.repository
+            ).get_compare(
+                self.pull.compared_to,
+                self.pull.base
+            )
+        )["diff"]
+
+    @cached_property
+    def pseudo_diff_adjusts_tracked_lines(self):
+        """
+        Returns True if we are doing a pull request pseudo-comparison, and tracked
+        lines have changed between the pull's 'base' and 'compared_to' fields. This
+        signifies an error-condition for the comparison, I think because if tracked lines
+        have been adjusted between the 'base' and 'compared_to' commits, the 'compared_to'
+        report can't be substituted for the 'base' report, since it will throw off the
+        unexpected coverage change results. If `self.allow_coverage_offests` is True,
+        client code can adjust the lines in the base report according to the diff
+        with `self.update_base_report_with_pseudo_diff'.
+
+        Ported from the block at: https://github.com/codecov/codecov.io/blob/master/app/handlers/compare.py#L137
+        """
+        if (
+            self.is_pseudo_comparison
+            and self.pull.base != self.pull.compared_to
+            and self.base_report is not None
+            and self.head_report is not None
+        ):
+            if self.pseudo_diff and self.pseudo_diff.get("files"):
+                return self.base_report.does_diff_adjust_tracked_lines(
+                    self.pseudo_diff,
+                    future_report=self.head_report,
+                    future_diff=self.git_comparison["diff"]
+                )
+        return False
+
+    def update_base_report_with_pseudo_diff(self):
+        self.base_report.shift_lines_by_diff(self.pseudo_diff, forward=True)

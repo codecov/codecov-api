@@ -1,6 +1,7 @@
 from django.test import TestCase
 import asyncio
 import json
+import minio
 
 from unittest.mock import patch, PropertyMock
 import pytest
@@ -9,7 +10,7 @@ from shared.reports.resources import ReportFile
 from shared.reports.types import ReportLine, LineSession
 from shared.utils.merge import LineType
 
-from core.tests.factories import CommitFactory
+from core.tests.factories import CommitFactory, RepositoryFactory, PullFactory
 from codecov_auth.tests.factories import OwnerFactory
 from services.archive import SerializableReport
 from services.comparison import (
@@ -19,6 +20,8 @@ from services.comparison import (
     LineComparison,
     FileComparison,
     Comparison,
+    PullRequestComparison,
+    MissingComparisonReport,
 )
 
 
@@ -514,7 +517,7 @@ class ComparisonTests(TestCase):
     def setUp(self):
         owner = OwnerFactory()
         base, head = CommitFactory(author=owner), CommitFactory(author=owner)
-        self.comparison = Comparison(base, head, owner)
+        self.comparison = Comparison(user=owner, base_commit=base, head_commit=head)
 
     def test_files_gets_file_comparison_for_each_file_in_head_report(
         self,
@@ -700,112 +703,95 @@ class ComparisonTests(TestCase):
         assert self.comparison.totals["base"] == base_report_mock.return_value.totals
         assert self.comparison.totals["head"] is None
 
+
+class PullRequestComparisonTests(TestCase):
+    def setUp(self):
+        owner = OwnerFactory()
+        repo = RepositoryFactory(author=owner)
+        base, head, compared_to = CommitFactory(repository=repo), CommitFactory(repository=repo), CommitFactory(repository=repo)
+
+        self.pull = PullFactory(
+            repository=repo,
+            base=base.commitid,
+            head=head.commitid,
+            compared_to=compared_to.commitid
+        )
+        self.comparison = PullRequestComparison(user=owner, pull=self.pull)
+
+    def test_files_with_changes_hash_key(self):
+        assert self.comparison._files_with_changes_hash_key == "/".join((
+            "compare-changed-files",
+            self.pull.repository.author.service,
+            self.pull.repository.author.username,
+            self.pull.repository.name,
+            str(self.pull.pullid)
+        ))
+
     @patch('redis.Redis.get')
-    def test_stores_cached_files_array_in__files_with_changes(
-        self,
-        mocked_get,
-        base_report_mock,
-        head_report_mock,
-        git_comparison_mock
-    ):
+    def test_files_with_changes_retrieves_from_redis(self, mocked_get):
         filename = "something.py"
         mocked_get.return_value = json.dumps([filename])
-
-        owner = OwnerFactory()
-        base, head = CommitFactory(author=owner), CommitFactory(author=owner)
-        comparison = Comparison(base, head, owner, pullid=5)
-
-        mocked_get.assert_called_once_with(
-            "/".join((
-                "compare-changed-files",
-                base.repository.author.service,
-                base.repository.author.username,
-                base.repository.name,
-                "5"
-            ))
-        )
-        assert comparison._files_with_changes == [filename]
+        assert self.comparison._files_with_changes == [filename]
 
     @patch('redis.Redis.get')
-    def test_stores_none_if_no_files_with_changes(
+    def test_files_with_changes_returns_none_if_no_files_with_changes(self, mocked_get):
+        mocked_get.return_value = None
+        assert self.comparison._files_with_changes == None
+
+    @patch('redis.Redis.get')
+    def test_files_with_changes_doesnt_crash_if_redis_connection_problem(self, mocked_get):
+        def raise_oserror(*args, **kwargs):
+            raise OSError
+        mocked_get.side_effect = raise_oserror
+        self.comparison._files_with_changes
+
+    @patch('redis.Redis.set')
+    def test_set_files_with_changes_in_cache_stores_in_redis(self, mocked_set):
+        files_with_changes = ["file1", "file2"]
+        self.comparison._set_files_with_changes_in_cache(files_with_changes)
+        mocked_set.assert_called_once_with(
+            self.comparison._files_with_changes_hash_key,
+            json.dumps(files_with_changes),
+            ex=86400 # 1 day in seconds
+        )
+
+    @patch('services.comparison.Comparison.git_comparison', new_callable=PropertyMock)
+    @patch('services.comparison.Comparison.head_report', new_callable=PropertyMock)
+    @patch('services.comparison.Comparison.base_report', new_callable=PropertyMock)
+    @patch('redis.Redis.set')
+    @patch('redis.Redis.get')
+    @patch('services.comparison.FileComparison.change_summary', new_callable=PropertyMock)
+    def test_files_populates_files_with_changes_in_redis(
         self,
+        mocked_change_summary,
         mocked_get,
+        mocked_set,
         base_report_mock,
         head_report_mock,
         git_comparison_mock
     ):
         mocked_get.return_value = None
-
-        owner = OwnerFactory()
-        base, head = CommitFactory(author=owner), CommitFactory(author=owner)
-        comparison = Comparison(base, head, owner, pullid=5)
-
-        mocked_get.assert_called_once_with(
-            "/".join((
-                "compare-changed-files",
-                base.repository.author.service,
-                base.repository.author.username,
-                base.repository.name,
-                "5"
-            ))
-        )
-        assert comparison._files_with_changes == None
-
-    @patch('redis.Redis.get')
-    def test_doesnt_crash_if_redis_connection_problem(
-        self,
-        mocked_get,
-        base_report_mock,
-        head_report_mock,
-        git_comparison_mock
-    ):
-        def raise_oserror(*args, **kwargs):
-            raise OSError
-        mocked_get.side_effect = raise_oserror
-        owner = OwnerFactory()
-        base, head = CommitFactory(author=owner), CommitFactory(author=owner)
-        comparison = Comparison(base, head, owner, pullid=5)
-
-    @patch('redis.Redis.get')
-    @patch('redis.Redis.set')
-    @patch('services.comparison.FileComparison.change_summary', new_callable=PropertyMock)
-    def test_files_populates_files_with_changes_in_redis_if_not_populated_and_pullid_is_set(
-        self,
-        mocked_change_summary,
-        mocked_redis_set,
-        mocked_redis_get,
-        base_report_mock,
-        head_report_mock,
-        git_comparison_mock
-    ):
-
-        mocked_redis_get.return_value = None
         mocked_change_summary.return_value = {"hits": 1, "misses": -1}
         head_report_files = {"file1": file_data, "file2": file_data}
         head_report_mock.return_value = SerializableReport(files=head_report_files)
         base_report_mock.return_value = SerializableReport(files={})
         git_comparison_mock.return_value = {"diff": {"files": {}}}
 
-        owner = OwnerFactory()
-        base, head = CommitFactory(author=owner), CommitFactory(author=owner)
-        comparison = Comparison(base, head, owner, pullid=5)
+        list(self.comparison.files)
 
-        list(comparison.files)
-
-        mocked_redis_set.assert_called_once_with(
-            "/".join((
-                "compare-changed-files",
-                base.repository.author.service,
-                base.repository.author.username,
-                base.repository.name,
-                f"{5}"
-            )),
+        mocked_set.assert_called_once_with(
+            self.comparison._files_with_changes_hash_key,
             json.dumps(["file1", "file2"]),
             ex=86400 # 1 day in seconds
         )
 
-    def test_get_file_comparison_with_should_search_for_changes_param(
+    @patch('services.comparison.Comparison.git_comparison', new_callable=PropertyMock)
+    @patch('services.comparison.Comparison.head_report', new_callable=PropertyMock)
+    @patch('services.comparison.Comparison.base_report', new_callable=PropertyMock)
+    @patch('services.comparison.PullRequestComparison._files_with_changes', new_callable=PropertyMock)
+    def test_get_file_comparison_sets_should_search_for_changes_correctly(
         self,
+        files_with_changes_mock,
         base_report_mock,
         head_report_mock,
         git_comparison_mock
@@ -816,18 +802,186 @@ class ComparisonTests(TestCase):
         git_comparison_mock.return_value = {"diff": {"files": {}}}
 
         with self.subTest("it's None when nothing found in cache"):
+            files_with_changes_mock.return_value = None
             fc = self.comparison.get_file_comparison("file1")
             assert fc.should_search_for_changes is None
 
         with self.subTest("it's True when file found in cached list"):
-            self.comparison._files_with_changes = ["file1"]
+            files_with_changes_mock.return_value = ["file1"]
             fc = self.comparison.get_file_comparison("file1")
             assert fc.should_search_for_changes is True
 
         with self.subTest("it's False when file not found in list"):
-            self.comparison._files_with_changes = ["file2"]
+            files_with_changes_mock.return_value = ["file2"]
             fc = self.comparison.get_file_comparison("file1")
             assert fc.should_search_for_changes is False
+
+    @patch('services.comparison.get_config')
+    def test_is_pseudo_comparison(self, get_config_mock):
+        owner = OwnerFactory()
+        repository = RepositoryFactory(author=owner)
+        pull = PullFactory(
+            pullid=44,
+            repository=repository,
+            compared_to=CommitFactory(repository=repository).commitid,
+            head=CommitFactory(repository=repository).commitid,
+            base=CommitFactory(repository=repository).commitid
+        )
+
+        with self.subTest("returns the result in the repo yaml if exists"):
+            repository.yaml = {"codecov": {"allow_pseudo_compare": True}}
+            repository.save()
+            comparison = PullRequestComparison(owner, pull)
+            assert comparison.is_pseudo_comparison is True
+
+            repository.yaml = {"codecov": {"allow_pseudo_compare": False}}
+            repository.save()
+            comparison = PullRequestComparison(owner, pull)
+            assert comparison.is_pseudo_comparison is False
+
+        with self.subTest("returns the result in app settings if repo yaml doesn't exist"):
+            repository.yaml = None
+            repository.save()
+            get_config_mock.return_value = True
+            comparison = PullRequestComparison(owner, pull)
+            assert comparison.is_pseudo_comparison is True
+
+        with self.subTest("returns the result in app settings if repo yaml doesn't exist"):
+            repository.yaml = None
+            repository.save()
+            get_config_mock.return_value = False
+            comparison = PullRequestComparison(owner, pull)
+            assert comparison.is_pseudo_comparison is False
+
+        with self.subTest("depends on the truthiness of the 'compared_to' commit"):
+            repository.yaml = {"codecov": {"allow_pseudo_compare": True}}
+            repository.save()
+            pull.compared_to = None
+            pull.save()
+            comparison = PullRequestComparison(owner, pull)
+            assert comparison.is_pseudo_comparison is False
+
+    @patch('services.comparison.get_config')
+    def test_allow_coverage_offsets(self, get_config_mock):
+        owner = OwnerFactory()
+        repository = RepositoryFactory(author=owner)
+        pull = PullFactory(
+            pullid=44,
+            repository=repository,
+            compared_to=CommitFactory(repository=repository).commitid,
+            head=CommitFactory(repository=repository).commitid,
+            base=CommitFactory(repository=repository).commitid
+        )
+
+        with self.subTest("returns result in repo yaml if exists"):
+            repository.yaml = {"codecov": {"allow_coverage_offsets": True}}
+            repository.save()
+            comparison = PullRequestComparison(owner, pull)
+            assert comparison.allow_coverage_offsets is True
+
+            repository.yaml = {"codecov": {"allow_coverage_offsets": False}}
+            repository.save()
+            comparison = PullRequestComparison(owner, pull)
+            assert comparison.allow_coverage_offsets is False
+
+        repository.yaml = None
+        repository.save()
+
+        with self.subTest("returns app settings value if exists, True if not"):
+            get_config_mock.return_value = True
+            comparison = PullRequestComparison(owner, pull)
+            comparison.allow_coverage_offsets is True
+
+            get_config_mock.return_value = False
+            comparison = PullRequestComparison(owner, pull)
+            comparison.allow_coverage_offsets is False
+
+    @patch('services.repo_providers.RepoProviderService.get_adapter')
+    def test_pseudo_diff_returns_diff_between_base_and_compared_to(self, get_adapter_mock):
+        expected_diff = "expected_diff"
+
+        class PseudoCompareAdapter:
+            async def get_compare(self, base, head):
+                self.base, self.head = base, head
+                return {"diff": expected_diff}
+
+        get_compare_adapter = PseudoCompareAdapter()
+        get_adapter_mock.return_value = get_compare_adapter
+
+        assert self.comparison.pseudo_diff == expected_diff
+        assert get_compare_adapter.base == self.pull.compared_to and get_compare_adapter.head == self.pull.base
+
+    @patch('services.comparison.Comparison.head_report', new_callable=PropertyMock)
+    @patch('services.comparison.Comparison.base_report', new_callable=PropertyMock)
+    @patch('services.comparison.Comparison.git_comparison', new_callable=PropertyMock)
+    @patch('services.comparison.PullRequestComparison.pseudo_diff', new_callable=PropertyMock)
+    @patch('shared.reports.resources.Report.does_diff_adjust_tracked_lines')
+    @patch('services.comparison.PullRequestComparison.is_pseudo_comparison', new_callable=PropertyMock)
+    def test_pseudo_diff_adjusts_tracked_lines(
+        self,
+        is_pseudo_comparison_mock,
+        does_diff_adjust_mock,
+        pseudo_diff_mock,
+        git_comparison_mock,
+        base_report_mock,
+        head_report_mock
+    ):
+        owner = OwnerFactory()
+        repository = RepositoryFactory(author=owner)
+        pull = PullFactory(
+            pullid=44,
+            repository=repository,
+            compared_to=CommitFactory(repository=repository).commitid,
+            head=CommitFactory(repository=repository).commitid,
+            base=CommitFactory(repository=repository).commitid
+        )
+
+        with self.subTest("returns True if reports exist and there is a diff that adjusts tracked lines"):
+            is_pseudo_comparison_mock.return_value = True
+            head_report_files = {"file1": file_data, "file2": file_data}
+            head_report_mock.return_value = SerializableReport(files=head_report_files)
+            base_report_mock.return_value = SerializableReport(files={})
+            git_comparison_mock.return_value = {"diff": {"files": {}}}
+            pseudo_diff_mock.return_value = {"files": {"file1": {}}}
+            does_diff_adjust_mock.return_value = True
+            comparison = PullRequestComparison(owner, pull)
+            assert comparison.pseudo_diff_adjusts_tracked_lines is True
+
+        with self.subTest("returns False if reports don't exist"):
+            head_report_mock.return_value = None
+            comparison = PullRequestComparison(owner, pull)
+            assert self.comparison.pseudo_diff_adjusts_tracked_lines is False
+
+            head_report_mock.return_value = SerializableReport(files=head_report_files)
+            base_report_mock.return_value = None
+            comparison = PullRequestComparison(owner, pull)
+            assert self.comparison.pseudo_diff_adjusts_tracked_lines is False
+
+        with self.subTest("returns False if compared to is same as base"):
+            self.comparison.pull.compared_to = self.comparison.pull.base
+            self.comparison.pull.save()
+            comparison = PullRequestComparison(owner, pull)
+            assert self.comparison.pseudo_diff_adjusts_tracked_lines is False
+
+        with self.subTest("returns False for non-pseudo comparisons"):
+            is_pseudo_comparison_mock.return_value = True
+            comparison = PullRequestComparison(owner, pull)
+            assert self.comparison.pseudo_diff_adjusts_tracked_lines is False
+
+    @patch('services.comparison.PullRequestComparison.pseudo_diff', new_callable=PropertyMock)
+    @patch('services.comparison.Comparison.base_report', new_callable=PropertyMock)
+    @patch('shared.reports.resources.Report.shift_lines_by_diff')
+    def test_update_base_report_with_pseudo_diff(
+        self,
+        shift_lines_by_diff_mock,
+        base_report_mock,
+        pseudo_diff_mock
+    ):
+        pseudo_diff_mock.return_value = {"files": {}}
+        base_report_files = {"file1": file_data, "file2": file_data}
+        base_report_mock.return_value = SerializableReport(files=base_report_files)
+        self.comparison.update_base_report_with_pseudo_diff()
+        shift_lines_by_diff_mock.assert_called_once_with({"files": {}}, forward=True)
 
 
 @patch('services.comparison.Comparison.git_comparison', new_callable=PropertyMock)
@@ -853,6 +1007,17 @@ class ComparisonHeadReportTests(TestCase):
 
         apply_diff_mock.assert_called_once_with(git_comparison_mock.return_value["diff"])
 
+    def test_head_report_and_base_report_translates_nosuchkey_into_missingcomparisonreport(
+        self,
+        build_report_from_commit_mock,
+        git_comparison_mock
+    ):
+        build_report_from_commit_mock.side_effect = minio.error.NoSuchKey()
+        with self.assertRaises(MissingComparisonReport):
+            self.comparison.head_report
+
+        with self.assertRaises(MissingComparisonReport):
+            self.comparison.base_report
 
 @patch("services.repo_providers.RepoProviderService.get_adapter")
 class ComparisonHasUnmergedBaseCommitsTests(TestCase):
@@ -866,7 +1031,7 @@ class ComparisonHasUnmergedBaseCommitsTests(TestCase):
     def setUp(self):
         owner = OwnerFactory()
         base, head = CommitFactory(author=owner), CommitFactory(author=owner)
-        self.comparison = Comparison(base, head, owner)
+        self.comparison = Comparison(user=owner, base_commit=base, head_commit=head)
         asyncio.set_event_loop(asyncio.new_event_loop())
 
     def test_returns_true_if_reverse_comparison_has_commits(self, get_adapter_mock):

@@ -51,10 +51,10 @@ class CompareSlugMixin(RepoPropertyMixin):
             return PullIDQueryParamSerializer
         return CommitRefQueryParamSerializer
 
-    def get_commits(self):
+    def get_compare_data(self):
         serializer = self._get_query_param_serializer_class()(
             data=self.request.query_params, context={"repo": self.repo}
         )
         serializer.is_valid(raise_exception=True)
         validated_data = serializer.validated_data
-        return validated_data["base"], validated_data["head"]
+        return validated_data

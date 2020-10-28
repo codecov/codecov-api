@@ -214,6 +214,7 @@ class TestCompareFlagsView(InternalAPITest):
                 "pullid": PullFactory(
                     base=self.parent_commit.commitid,
                     head=self.commit.commitid,
+                    compared_to=self.parent_commit.commitid,
                     pullid=2,
                     author=self.commit.author,
                     repository=self.repo,
