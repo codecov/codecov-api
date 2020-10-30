@@ -407,8 +407,19 @@ class GithubWebhookHandler(APIView):
                     data="Attempted to remove non Codecov user from Codecov org failed"
                 )
 
-            member.organizations = [ownerid for ownerid in member.organizations if ownerid != org.ownerid]
-            member.save(update_fields=['organizations'])
+            try:
+                if member.organizations:
+                    member.organizations.remove(org.ownerid)
+                    member.save(update_fields=['organizations'])
+            except ValueError:
+                pass
+
+            try:
+                if org.plan_activated_users:
+                    org.plan_activated_users.remove(member.ownerid)
+                    org.save(update_fields=['plan_activated_users'])
+            except ValueError:
+                pass
 
             log.info(
                 f"User removal of {member.ownerid}, success",
@@ -451,8 +462,13 @@ class GithubWebhookHandler(APIView):
                     extra=dict(repoid=repo.repoid, github_webhook_event=self.event)
                 )
                 return Response(status=status.HTTP_404_NOT_FOUND)
-            member.permission.remove(repo.repoid)
-            member.save(update_fields=['permission'])
+
+            try:
+                member.permission.remove(repo.repoid)
+                member.save(update_fields=['permission'])
+            except ValueError:
+                pass
+
             log.info(
                 f"Successfully updated read permissions for repository",
                 extra=dict(repoid=repo.repoid, ownerid=member.ownerid, github_webhook_event=self.event)

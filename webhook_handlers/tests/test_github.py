@@ -639,9 +639,11 @@ class GithubWebhookHandlerTests(APITestCase):
             ),
         ])
 
-    def test_organization_with_removed_action_removes_user_from_org(self):
+    def test_organization_with_removed_action_removes_user_from_org_and_activated_user_list(self):
         org = OwnerFactory(service_id='4321')
         user = OwnerFactory(organizations=[org.ownerid], service_id='12')
+        org.plan_activated_users = [user.ownerid]
+        org.save()
 
         response = self._post_event_data(
             event=GitHubWebhookEvents.ORGANIZATION,
@@ -659,8 +661,10 @@ class GithubWebhookHandlerTests(APITestCase):
         )
 
         user.refresh_from_db()
+        org.refresh_from_db()
 
         assert org.ownerid not in user.organizations
+        assert user.ownerid not in org.plan_activated_users
 
     def test_organization_member_removed_with_nonexistent_org_doesnt_crash(self):
         user = OwnerFactory(service_id='12')
@@ -681,6 +685,26 @@ class GithubWebhookHandlerTests(APITestCase):
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
+    def test_organization_member_removed_with_nonexistent_or_nonactivated_member(self):
+        org = OwnerFactory(service_id='4321', plan_activated_users=[50392])
+        user = OwnerFactory(service_id='12', organizations=[60798])
+
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.ORGANIZATION,
+            data={
+                "action": "member_removed",
+                "membership": {
+                    "user": {
+                        "id": user.service_id
+                    }
+                },
+                "organization": {
+                    "id": org.service_id
+                }
+            }
+        )
+
+        assert response.status_code == status.HTTP_200_OK
 
     def test_organization_member_removed_with_nonexistent_member_doesnt_crash(self):
         org = OwnerFactory(service_id='4321')
