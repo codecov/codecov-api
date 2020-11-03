@@ -8,7 +8,6 @@ from rest_framework import status
 from rest_framework.reverse import reverse
 
 from services.archive import SerializableReport
-from internal_api.commit.serializers import ReportSerializer
 from shared.reports.resources import ReportFile
 from services.archive import ArchiveService
 from codecov.tests.base_test import InternalAPITest

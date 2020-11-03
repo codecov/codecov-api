@@ -922,8 +922,8 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         mocked_get_permissions.return_value = True, True
         commit = CommitFactory(repository=self.repo)
 
-        from internal_api.commit.serializers import CommitWithReportSerializer
-        expected_commit_payload = CommitWithReportSerializer(commit).data
+        from internal_api.commit.serializers import CommitWithFileLevelReportSerializer
+        expected_commit_payload = CommitWithFileLevelReportSerializer(commit).data
 
         response = self._retrieve()
         assert response.status_code == 200
