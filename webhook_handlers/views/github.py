@@ -63,25 +63,43 @@ class GithubWebhookHandler(APIView):
         Attempts to fetch the repo first via the index on o(wnerid, service_id),
         then naively on service, service_id if that fails.
         """
-        owner_service_id = self.request.data.get("repository", {}).get("owner", {}).get("id")
-        repo_service_id = self.request.data.get("repository", {}).get("id")
+        repo_data = self.request.data.get("repository", {})
+        repo_service_id = repo_data.get("id")
+        owner_service_id = repo_data.get("owner", {}).get("id")
+        repo_slug = repo_data.get("full_name")
+
         try:
             owner = Owner.objects.get(service="github", service_id=owner_service_id)
         except Owner.DoesNotExist:
             log.info(
                 f"Error fetching owner with service_id {owner_service_id}, "
-                f"using repository service id to get repo"
+                f"using repository service id to get repo",
+                extra=dict(repo_service_id=repo_service_id, repo_slug=repo_slug)
             )
             try:
+                log.info(
+                    "Unable to find repository owner, fetching repo with service, service_id",
+                    extra=dict(repo_service_id=repo_service_id, repo_slug=repo_slug)
+                )
                 return Repository.objects.get(author__service="github", service_id=repo_service_id)
             except Repository.DoesNotExist:
-                log.info(f"Received event for non-existent repository with service_id {repo_service_id}")
+                log.info(
+                    f"Received event for non-existent repository",
+                    extra=dict(repo_service_id=repo_service_id, repo_slug=repo_slug)
+                )
                 raise NotFound("Repository does not exist")
         else:
             try:
+                log.info(
+                    "Found repository owner, fetching repo with ownerid, service_id",
+                    extra=dict(repo_service_id=repo_service_id, repo_slug=repo_slug)
+                )
                 return Repository.objects.get(author__ownerid=owner.ownerid, service_id=repo_service_id)
             except Repository.DoesNotExist:
-                log.info(f"Received event for non-existent repository with service_id {repo_service_id}")
+                log.info(
+                    f"Received event for non-existent repository",
+                    extra=dict(repo_service_id=repo_service_id, repo_slug=repo_slug)
+                )
                 raise NotFound("Repository does not exist")
 
     def ping(self, request, *args, **kwargs):
@@ -476,10 +494,9 @@ class GithubWebhookHandler(APIView):
         return Response()
 
     def post(self, request, *args, **kwargs):
-        self.validate_signature(request)
-
         self.event = self.request.META.get(GitHubHTTPHeaders.EVENT)
         log.info(f"GitHub Webhook Handler invoked", extra=dict(github_webhook_event=self.event))
+        self.validate_signature(request)
         handler = getattr(self, self.event, self.unhandled_webhook_event)
 
         return handler(request, *args, **kwargs)
