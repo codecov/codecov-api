@@ -688,7 +688,7 @@ class OrganizationCoverageChartTest(InternalAPITest):
 
         response = self._retrieve(kwargs=kwargs, data=data)
         
-        assert response.content == '{"coverage":[]}'
+        assert response.content == b'{"coverage":[]}'
         assert response.status_code == 200
 
     def test_get_chart(self, mocked_get_permissions):
