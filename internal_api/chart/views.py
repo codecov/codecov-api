@@ -157,7 +157,7 @@ class OrganizationChartHandler(APIView, RepositoriesMixin):
     }
     """
 
-    permission_classes = [IsAuthenticated, ChartPermissions]
+    permission_classes = [IsAuthenticated]
     parser_classes = [JSONParser]
 
     def post(self, request, *args, **kwargs):

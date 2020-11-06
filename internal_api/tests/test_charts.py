@@ -681,15 +681,15 @@ class OrganizationCoverageChartTest(InternalAPITest):
             "grouping_unit": "day",
             "agg_function": "max",
             "agg_value": "coverage",
-            "repositories": [self.repo1_org1.name, self.repo2_org1.name],
+            "repositories": ["SOMEONE-ELSE-REPO"],
         }
 
         kwargs = {"owner_username": self.org1.username, "service": "gh"}
 
-        mocked_get_permissions.return_value = False
         response = self._retrieve(kwargs=kwargs, data=data)
-
-        assert response.status_code == 403
+        
+        assert response.content == b'{"coverage":[]}'
+        assert response.status_code == 200
 
     def test_get_chart(self, mocked_get_permissions):
         data = {
