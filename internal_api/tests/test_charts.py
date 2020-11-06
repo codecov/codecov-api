@@ -686,10 +686,10 @@ class OrganizationCoverageChartTest(InternalAPITest):
 
         kwargs = {"owner_username": self.org1.username, "service": "gh"}
 
-        mocked_get_permissions.return_value = False
         response = self._retrieve(kwargs=kwargs, data=data)
-
-        assert response.status_code == 403
+        
+        assert response.content == '{"coverage":[]}'
+        assert response.status_code == 200
 
     def test_get_chart(self, mocked_get_permissions):
         data = {
