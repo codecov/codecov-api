@@ -53,6 +53,8 @@ class GithubWebhookHandler(APIView):
         ).hexdigest()
 
         if sig != request.META.get(GitHubHTTPHeaders.SIGNATURE):
+            log.info(f"{request.body}")
+            log.info(f"{request.META.get(GitHubHTTPHeaders.SIGNATURE)}")
             raise PermissionDenied()
 
     def unhandled_webhook_event(self, request, *args, **kwargs):
