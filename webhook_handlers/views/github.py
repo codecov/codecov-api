@@ -89,7 +89,6 @@ class GithubWebhookHandler(APIView):
                     f"Received event for non-existent repository",
                     extra=dict(repo_service_id=repo_service_id, repo_slug=repo_slug)
                 )
-                log.info(f"{request.body}")
                 raise NotFound("Repository does not exist")
         else:
             try:
@@ -97,14 +96,12 @@ class GithubWebhookHandler(APIView):
                     "Found repository owner, fetching repo with ownerid, service_id",
                     extra=dict(repo_service_id=repo_service_id, repo_slug=repo_slug)
                 )
-                log.info(f"{request.body}")
                 return Repository.objects.get(author__ownerid=owner.ownerid, service_id=repo_service_id)
             except Repository.DoesNotExist:
                 log.info(
                     f"Received event for non-existent repository",
                     extra=dict(repo_service_id=repo_service_id, repo_slug=repo_slug)
                 )
-                log.info(f"{request.body}")
                 raise NotFound("Repository does not exist")
 
     def ping(self, request, *args, **kwargs):
