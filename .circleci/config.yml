@@ -70,7 +70,7 @@ jobs:
         name: codecov-staging
         command: |
           apk add bash curl
-          bash -c "bash <(curl -s https://stage-web.codecov.dev/bash) -t dfdd2ba4-4dbc-40a6-8a96-534c0a39c3a5 -F unit"
+          bash -c "bash <(curl -s https://stage-web.codecov.dev/bash) -R . -t dfdd2ba4-4dbc-40a6-8a96-534c0a39c3a5 -F unit"
 
 
   portable:
