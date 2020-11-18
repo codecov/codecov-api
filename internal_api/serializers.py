@@ -4,6 +4,7 @@ from rest_framework.exceptions import NotFound
 from django.shortcuts import get_object_or_404
 
 from core.models import Commit, Branch, Pull
+from utils.config import get_config
 
 
 class CommitRefQueryParamSerializer(serializers.Serializer):
@@ -21,8 +22,8 @@ class CommitRefQueryParamSerializer(serializers.Serializer):
             head = Commit.objects.filter(repository=repo, commitid=branch.get().head)
             if head.exists():
                 return head.get()
-            raise NotFound(f"Invalid branch head: {branch.get().head}")
-        raise NotFound(f"Invalid commit or branch: {ref}")
+            raise NotFound(f"Head commit '{branch.get().head}' for branch '{ref}' not found!")
+        raise NotFound(f"Commit or branch '{ref}' not found!")
 
     def validate_base(self, base):
         return self._get_commit_or_branch(base)
@@ -37,10 +38,4 @@ class PullIDQueryParamSerializer(serializers.Serializer):
     def validate(self, obj):
         repo = self.context.get("repo")
         pull = get_object_or_404(Pull, pullid=obj.get("pullid"), repository=repo)
-        try:
-            return {
-                "base": Commit.objects.get(commitid=pull.base, repository=repo),
-                "head": Commit.objects.get(commitid=pull.head, repository=repo)
-            }
-        except Commit.DoesNotExist:
-            raise NotFound("Comparison requested for pull with nonexistant commit.")
+        return {"pull": pull}

@@ -1,8 +1,12 @@
+import requests
+import pytest
+from datetime import datetime
 from rest_framework.test import APITestCase
 from rest_framework.reverse import reverse
 from rest_framework import status
 from rest_framework.exceptions import ValidationError, NotFound
 from unittest.mock import patch
+from unittest import mock
 from json import dumps
 from yaml import YAMLError
 from django.test import TestCase
@@ -10,6 +14,8 @@ from django.conf import settings
 from django.test import RequestFactory
 from urllib.parse import urlencode
 from ddf import G
+from rest_framework.exceptions import NotFound
+
 
 from core.models import Repository
 from codecov_auth.models import Owner
@@ -23,6 +29,7 @@ from upload.helpers import (
     determine_upload_commitid_to_use,
 )
 
+from upload.tokenless import verify_travis
 
 def mock_get_config_side_effect(*args):
     if args == ("github", "global_upload_token"):
@@ -254,6 +261,80 @@ class UploadHandlerHelpersTest(TestCase):
             with self.assertRaises(ValidationError):
                 determine_repo_for_upload(params)
 
+    @patch.object(requests, 'get')
+    def test_determine_repo_upload_tokenless(self, mock_get):
+        org = G(Owner, username="codecov", service="github")
+        repo = G(Repository, author=org)
+        expected_response = {
+            "id": 732059764,
+            "allow_failure": None,
+            "number": "498.1",
+            "state": "passed",
+            "started_at": "2020-10-01T20:02:55Z",
+            "finished_at": f"{datetime.utcnow()}".split('.')[0],
+            "build": {
+                "@type": "build",
+                "@href": "/build/732059763",
+                "@representation": "minimal",
+                "id": 732059763,
+                "number": "498",
+                "state": "passed",
+                "duration": 84,
+                "event_type": "push",
+                "previous_state": "passed",
+                "pull_request_title": None,
+                "pull_request_number": None,
+                "started_at": "2020-10-01T20:01:31Z",
+                "finished_at": "2020-10-01T20:02:55Z",
+                "private": False,
+                "priority": False
+            },
+            "queue": "builds.gce",
+            "repository": {
+                "@type": "repository",
+                "@href": "/repo/25205338",
+                "@representation": "minimal",
+                "id": 25205338,
+                "name": "python-standard",
+                "slug": f"{org.username}/{repo.name}"
+            },
+            "commit": {
+                "@type": "commit",
+                "@representation": "minimal",
+                "id": 226208830,
+                "sha": "3be5c52bd748c508a7e96993c02cf3518c816e84",
+                "ref": "refs/heads/master",
+                "message": "New Build: 10/01/20 20:00:54",
+                "compare_url": "https://github.com/codecov/python-standard/compare/28392734979c...2485b28f9862",
+                "committed_at": "2020-10-01T20:00:55Z"
+            }
+        }
+
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.json.return_value = expected_response
+
+        params = {
+            "version": "v4",
+            "commit": "3be5c52bd748c508a7e96993c02cf3518c816e84",
+            "slug": f"{org.username}/{repo.name}",
+            "owner": org.username,
+            "repo": repo.name,
+            "service": "travis",
+            "pr": None,
+            "pull_request": None,
+            "flags": "this-is-a-flag,this-is-another-flag",
+            "param_doesn't_exist_but_still_should_not_error": True,
+            "s3": 123,
+            "build_url": "https://thisisabuildurl.com",
+            "job": 732059764,
+            "using_global_token": False,
+            "branch": None,
+            "_did_change_merge_commit": False,
+            "parent": "123abc",
+        }
+
+        assert repo == determine_repo_for_upload(params)
+
     def test_determine_upload_branch_to_use(self):
         with self.subTest("no branch and no pr provided"):
             upload_params = {"branch": None, "pr": None}
@@ -422,3 +503,575 @@ class UploadHandlerRouteTest(APITestCase):
             response = self._post(kwargs={"version": "v5"}, query=query_params)
 
             assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+class UploadHandlerTravisTokenlessTest(TestCase):
+
+    @patch.object(requests, 'get')
+    def test_travis_no_slug_match(self, mock_get):
+        expected_response = {
+            "id": 732059764,
+            "allow_failure": None,
+            "number": "498.1",
+            "state": "passed",
+            "started_at": "2020-10-01T20:01:31Z",
+            "finished_at": "2020-10-01T20:02:55Z",
+            "build": {
+                "@type": "build",
+                "@href": "/build/732059763",
+                "@representation": "minimal",
+                "id": 732059763,
+                "number": "498",
+                "state": "passed",
+                "duration": 84,
+                "event_type": "push",
+                "previous_state": "passed",
+                "pull_request_title": None,
+                "pull_request_number": None,
+                "started_at": "2020-10-01T20:01:31Z",
+                "finished_at": "2020-10-01T20:02:55Z",
+                "private": False,
+                "priority": False
+            },
+            "queue": "builds.gce",
+            "repository": {
+                "@type": "repository",
+                "@href": "/repo/25205338",
+                "@representation": "minimal",
+                "id": 25205338,
+                "name": "python-standard",
+                "slug": "codecov/python-standard"
+            },
+            "commit": {
+                "@type": "commit",
+                "@representation": "minimal",
+                "id": 226208830,
+                "sha": "2485b28f9862e98bcee576f02d8b37e6433f8c30",
+                "ref": "refs/heads/master",
+                "message": "New Build: 10/01/20 20:00:54",
+                "compare_url": "https://github.com/codecov/python-standard/compare/28392734979c...2485b28f9862",
+                "committed_at": "2020-10-01T20:00:55Z"
+            }
+        } 
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.json.return_value = expected_response
+
+        params = {
+            "version": "v4",
+            "commit": "3be5c52bd748c508a7e96993c02cf3518c816e84",
+            "slug": "codecov/codecov-api",
+            "owner": "codecov",
+            "repo": "codecov-api",
+            "token": "testbtznwf3ooi3xlrsnetkddj5od731pap9",
+            "service": "circleci",
+            "pr": None,
+            "pull_request": None,
+            "flags": "this-is-a-flag,this-is-another-flag",
+            "param_doesn't_exist_but_still_should_not_error": True,
+            "s3": 123,
+            "build_url": "https://thisisabuildurl.com",
+            "job": 732059764,
+            "using_global_token": False,
+            "branch": None,
+            "_did_change_merge_commit": False,
+            "parent": "123abc",
+        }
+
+        expected_error = """
+        ERROR: Tokenless uploads are only supported for public repositories on Travis that can be verified through the Travis API. Please use an upload token if your repository is private and specify it via the -t flag. You can find the token for this repository at the url below on codecov.io (login required):
+
+        Repo token: https://codecov.io/gh/codecov/codecov-api/settings
+        Documentation: https://docs.codecov.io/docs/about-the-codecov-bash-uploader#section-upload-token"""
+
+        with pytest.raises(NotFound) as e:
+            verify_travis(params)
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch.object(requests, 'get')
+    def test_travis_no_sha_match(self, mock_get):
+        expected_response = {
+            "id": 732059764,
+            "allow_failure": None,
+            "number": "498.1",
+            "state": "passed",
+            "started_at": "2020-10-01T20:01:31Z",
+            "finished_at": "2020-10-01T20:02:55Z",
+            "build": {
+                "@type": "build",
+                "@href": "/build/732059763",
+                "@representation": "minimal",
+                "id": 732059763,
+                "number": "498",
+                "state": "passed",
+                "duration": 84,
+                "event_type": "push",
+                "previous_state": "passed",
+                "pull_request_title": None,
+                "pull_request_number": None,
+                "started_at": "2020-10-01T20:01:31Z",
+                "finished_at": "2020-10-01T20:02:55Z",
+                "private": False,
+                "priority": False
+            },
+            "queue": "builds.gce",
+            "repository": {
+                "@type": "repository",
+                "@href": "/repo/25205338",
+                "@representation": "minimal",
+                "id": 25205338,
+                "name": "python-standard",
+                "slug": "codecov/codecov-api"
+            },
+            "commit": {
+                "@type": "commit",
+                "@representation": "minimal",
+                "id": 226208830,
+                "sha": "2485b28f9862e98bcee576f02d8b37e6433f8c30",
+                "ref": "refs/heads/master",
+                "message": "New Build: 10/01/20 20:00:54",
+                "compare_url": "https://github.com/codecov/python-standard/compare/28392734979c...2485b28f9862",
+                "committed_at": "2020-10-01T20:00:55Z"
+            }
+        } 
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.json.return_value = expected_response
+
+        params = {
+            "version": "v4",
+            "commit": "3be5c52bd748c508a7e96993c02cf3518c816e84",
+            "slug": "codecov/codecov-api",
+            "owner": "codecov",
+            "repo": "codecov-api",
+            "token": "testbtznwf3ooi3xlrsnetkddj5od731pap9",
+            "service": "circleci",
+            "pr": None,
+            "pull_request": None,
+            "flags": "this-is-a-flag,this-is-another-flag",
+            "param_doesn't_exist_but_still_should_not_error": True,
+            "s3": 123,
+            "build_url": "https://thisisabuildurl.com",
+            "job": 732059764,
+            "using_global_token": False,
+            "branch": None,
+            "_did_change_merge_commit": False,
+            "parent": "123abc",
+        }
+
+        expected_error = """
+        ERROR: Tokenless uploads are only supported for public repositories on Travis that can be verified through the Travis API. Please use an upload token if your repository is private and specify it via the -t flag. You can find the token for this repository at the url below on codecov.io (login required):
+
+        Repo token: https://codecov.io/gh/codecov/codecov-api/settings
+        Documentation: https://docs.codecov.io/docs/about-the-codecov-bash-uploader#section-upload-token"""
+
+        with pytest.raises(NotFound) as e:
+            verify_travis(params)
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+        
+    @patch.object(requests, 'get')
+    def test_travis_no_event_match(self, mock_get):
+        expected_response = {
+            "id": 732059764,
+            "allow_failure": None,
+            "number": "498.1",
+            "state": "passed",
+            "started_at": "2020-10-01T20:01:31Z",
+            "finished_at": "2020-10-01T20:02:55Z",
+            "build": {
+                "@type": "build",
+                "@href": "/build/732059763",
+                "@representation": "minimal",
+                "id": 732059763,
+                "number": "498",
+                "state": "passed",
+                "duration": 84,
+                "event_type": "push",
+                "previous_state": "passed",
+                "pull_request_title": None,
+                "pull_request_number": None,
+                "started_at": "2020-10-01T20:01:31Z",
+                "finished_at": "2020-10-01T20:02:55Z",
+                "private": False,
+                "priority": False
+            },
+            "queue": "builds.gce",
+            "repository": {
+                "@type": "repository",
+                "@href": "/repo/25205338",
+                "@representation": "minimal",
+                "id": 25205338,
+                "name": "python-standard",
+                "slug": "codecov/codecov-api"
+            },
+            "commit": {
+                "@type": "commit",
+                "@representation": "minimal",
+                "id": 226208830,
+                "sha": "2485b28f9862e98bcee576f02d8b37e6433f8c30",
+                "ref": "refs/heads/master",
+                "message": "New Build: 10/01/20 20:00:54",
+                "compare_url": "https://github.com/codecov/python-standard/compare/28392734979c...2485b28f9862",
+                "committed_at": "2020-10-01T20:00:55Z"
+            }
+        } 
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.json.return_value = expected_response
+
+        params = {
+            "version": "v4",
+            "commit": "3be5c52bd748c508a7e96993c02cf3518c816e84",
+            "slug": "codecov/codecov-api",
+            "owner": "codecov",
+            "repo": "codecov-api",
+            "token": "testbtznwf3ooi3xlrsnetkddj5od731pap9",
+            "service": "circleci",
+            "pr": None,
+            "pull_request": None,
+            "flags": "this-is-a-flag,this-is-another-flag",
+            "param_doesn't_exist_but_still_should_not_error": True,
+            "s3": 123,
+            "build_url": "https://thisisabuildurl.com",
+            "job": 732059764,
+            "using_global_token": False,
+            "branch": None,
+            "_did_change_merge_commit": False,
+            "parent": "123abc",
+        }
+
+        expected_error = """
+        ERROR: Tokenless uploads are only supported for public repositories on Travis that can be verified through the Travis API. Please use an upload token if your repository is private and specify it via the -t flag. You can find the token for this repository at the url below on codecov.io (login required):
+
+        Repo token: https://codecov.io/gh/codecov/codecov-api/settings
+        Documentation: https://docs.codecov.io/docs/about-the-codecov-bash-uploader#section-upload-token"""
+
+        with pytest.raises(NotFound) as e:
+            verify_travis(params)
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch.object(requests, 'get')
+    def test_travis_failed_requests(self, mock_get):
+        mock_get.side_effect = [requests.exceptions.ConnectionError('Not found'), requests.exceptions.ConnectionError('Not found')]
+        params = {
+            "version": "v4",
+            "commit": "3be5c52bd748c508a7e96993c02cf3518c816e84",
+            "slug": "codecov/codecov-api",
+            "owner": "codecov",
+            "repo": "codecov-api",
+            "token": "testbtznwf3ooi3xlrsnetkddj5od731pap9",
+            "service": "circleci",
+            "pr": None,
+            "pull_request": None,
+            "flags": "this-is-a-flag,this-is-another-flag",
+            "param_doesn't_exist_but_still_should_not_error": True,
+            "s3": 123,
+            "build_url": "https://thisisabuildurl.com",
+            "job": 732059764,
+            "using_global_token": False,
+            "branch": None,
+            "_did_change_merge_commit": False,
+            "parent": "123abc",
+        }
+
+        expected_error = """
+        ERROR: Tokenless uploads are only supported for public repositories on Travis that can be verified through the Travis API. Please use an upload token if your repository is private and specify it via the -t flag. You can find the token for this repository at the url below on codecov.io (login required):
+
+        Repo token: https://codecov.io/gh/codecov/codecov-api/settings
+        Documentation: https://docs.codecov.io/docs/about-the-codecov-bash-uploader#section-upload-token"""
+
+        with pytest.raises(NotFound) as e:
+            verify_travis(params)
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch.object(requests, 'get')
+    def test_travis_failed_requests_connection_error(self, mock_get):
+        mock_get.side_effect = [requests.exceptions.HTTPError('Not found'), requests.exceptions.HTTPError('Not found')]
+        params = {
+            "version": "v4",
+            "commit": "3be5c52bd748c508a7e96993c02cf3518c816e84",
+            "slug": "codecov/codecov-api",
+            "owner": "codecov",
+            "repo": "codecov-api",
+            "token": "testbtznwf3ooi3xlrsnetkddj5od731pap9",
+            "service": "circleci",
+            "pr": None,
+            "pull_request": None,
+            "flags": "this-is-a-flag,this-is-another-flag",
+            "param_doesn't_exist_but_still_should_not_error": True,
+            "s3": 123,
+            "build_url": "https://thisisabuildurl.com",
+            "job": 732059764,
+            "using_global_token": False,
+            "branch": None,
+            "_did_change_merge_commit": False,
+            "parent": "123abc",
+        }
+
+        expected_error = """
+        ERROR: Tokenless uploads are only supported for public repositories on Travis that can be verified through the Travis API. Please use an upload token if your repository is private and specify it via the -t flag. You can find the token for this repository at the url below on codecov.io (login required):
+
+        Repo token: https://codecov.io/gh/codecov/codecov-api/settings
+        Documentation: https://docs.codecov.io/docs/about-the-codecov-bash-uploader#section-upload-token"""
+
+        with pytest.raises(NotFound) as e:
+            verify_travis(params)
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch.object(requests, 'get')
+    def test_build_not_in_progress(self, mock_get):
+        expected_response = {
+            "id": 732059764,
+            "allow_failure": None,
+            "number": "498.1",
+            "state": "passed",
+            "started_at": "2020-10-01T20:01:31Z",
+            "finished_at": None,
+            "build": {
+                "@type": "build",
+                "@href": "/build/732059763",
+                "@representation": "minimal",
+                "id": 732059763,
+                "number": "498",
+                "state": "passed",
+                "duration": 84,
+                "event_type": "push",
+                "previous_state": "passed",
+                "pull_request_title": None,
+                "pull_request_number": None,
+                "started_at": "2020-10-01T20:01:31Z",
+                "finished_at": "2020-10-01T20:02:55Z",
+                "private": False,
+                "priority": False
+            },
+            "queue": "builds.gce",
+            "repository": {
+                "@type": "repository",
+                "@href": "/repo/25205338",
+                "@representation": "minimal",
+                "id": 25205338,
+                "name": "python-standard",
+                "slug": "codecov/codecov-api"
+            },
+            "commit": {
+                "@type": "commit",
+                "@representation": "minimal",
+                "id": 226208830,
+                "sha": "3be5c52bd748c508a7e96993c02cf3518c816e84",
+                "ref": "refs/heads/master",
+                "message": "New Build: 10/01/20 20:00:54",
+                "compare_url": "https://github.com/codecov/python-standard/compare/28392734979c...2485b28f9862",
+                "committed_at": "2020-10-01T20:00:55Z"
+            }
+        } 
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.json.return_value = expected_response
+
+        params = {
+            "version": "v4",
+            "commit": "3be5c52bd748c508a7e96993c02cf3518c816e84",
+            "slug": "codecov/codecov-api",
+            "owner": "codecov",
+            "repo": "codecov-api",
+            "token": "testbtznwf3ooi3xlrsnetkddj5od731pap9",
+            "service": "circleci",
+            "pr": None,
+            "pull_request": None,
+            "flags": "this-is-a-flag,this-is-another-flag",
+            "param_doesn't_exist_but_still_should_not_error": True,
+            "s3": 123,
+            "build_url": "https://thisisabuildurl.com",
+            "job": 732059764,
+            "using_global_token": False,
+            "branch": None,
+            "_did_change_merge_commit": False,
+            "parent": "123abc",
+        }
+
+        expected_error = """
+            ERROR: The build status does not indicate that the current build is in progress. Please make sure the build is in progress or was finished within the past 4 minutes to ensure reports upload properly."""
+
+        with pytest.raises(NotFound) as e:
+            verify_travis(params)
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch.object(requests, 'get')
+    def test_travis_no_job(self, mock_get):
+        mock_get.side_effect = [requests.exceptions.HTTPError('Not found'), None]
+        params = {
+            "version": "v4",
+            "commit": "3be5c52bd748c508a7e96993c02cf3518c816e84",
+            "slug": "codecov/codecov-api",
+            "owner": "codecov",
+            "repo": "codecov-api",
+            "token": "testbtznwf3ooi3xlrsnetkddj5od731pap9",
+            "service": "circleci",
+            "pr": None,
+            "pull_request": None,
+            "flags": "this-is-a-flag,this-is-another-flag",
+            "param_doesn't_exist_but_still_should_not_error": True,
+            "s3": 123,
+            "build_url": "https://thisisabuildurl.com",
+            "job": 732059764,
+            "using_global_token": False,
+            "branch": None,
+            "_did_change_merge_commit": False,
+            "parent": "123abc",
+        }
+
+        expected_error = """
+        ERROR: Tokenless uploads are only supported for public repositories on Travis that can be verified through the Travis API. Please use an upload token if your repository is private and specify it via the -t flag. You can find the token for this repository at the url below on codecov.io (login required):
+
+        Repo token: https://codecov.io/gh/codecov/codecov-api/settings
+        Documentation: https://docs.codecov.io/docs/about-the-codecov-bash-uploader#section-upload-token"""
+
+        with pytest.raises(NotFound) as e:
+            verify_travis(params)
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch.object(requests, 'get')
+    def test_success(self, mock_get):
+        expected_response = {
+            "id": 732059764,
+            "allow_failure": None,
+            "number": "498.1",
+            "state": "passed",
+            "started_at": "2020-10-01T20:02:55Z",
+            "finished_at": f"{datetime.utcnow()}".split('.')[0],
+            "build": {
+                "@type": "build",
+                "@href": "/build/732059763",
+                "@representation": "minimal",
+                "id": 732059763,
+                "number": "498",
+                "state": "passed",
+                "duration": 84,
+                "event_type": "push",
+                "previous_state": "passed",
+                "pull_request_title": None,
+                "pull_request_number": None,
+                "started_at": "2020-10-01T20:01:31Z",
+                "finished_at": "2020-10-01T20:02:55Z",
+                "private": False,
+                "priority": False
+            },
+            "queue": "builds.gce",
+            "repository": {
+                "@type": "repository",
+                "@href": "/repo/25205338",
+                "@representation": "minimal",
+                "id": 25205338,
+                "name": "python-standard",
+                "slug": "codecov/codecov-api"
+            },
+            "commit": {
+                "@type": "commit",
+                "@representation": "minimal",
+                "id": 226208830,
+                "sha": "3be5c52bd748c508a7e96993c02cf3518c816e84",
+                "ref": "refs/heads/master",
+                "message": "New Build: 10/01/20 20:00:54",
+                "compare_url": "https://github.com/codecov/python-standard/compare/28392734979c...2485b28f9862",
+                "committed_at": "2020-10-01T20:00:55Z"
+            }
+        } 
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.json.return_value = expected_response
+
+        params = {
+            "version": "v4",
+            "commit": "3be5c52bd748c508a7e96993c02cf3518c816e84",
+            "slug": "codecov/codecov-api",
+            "owner": "codecov",
+            "repo": "codecov-api",
+            "token": "testbtznwf3ooi3xlrsnetkddj5od731pap9",
+            "service": "circleci",
+            "pr": None,
+            "pull_request": None,
+            "flags": "this-is-a-flag,this-is-another-flag",
+            "param_doesn't_exist_but_still_should_not_error": True,
+            "s3": 123,
+            "build_url": "https://thisisabuildurl.com",
+            "job": 732059764,
+            "using_global_token": False,
+            "branch": None,
+            "_did_change_merge_commit": False,
+            "parent": "123abc",
+        }
+
+        res = verify_travis(params)
+        assert res == 'github'
+
+    @patch.object(requests, 'get')
+    def test_expired_build(self, mock_get):
+        expected_response = {
+            "id": 732059764,
+            "allow_failure": None,
+            "number": "498.1",
+            "state": "passed",
+            "started_at": "2020-10-01T20:02:55Z",
+            "finished_at": "2020-10-01T20:02:55Z",
+            "build": {
+                "@type": "build",
+                "@href": "/build/732059763",
+                "@representation": "minimal",
+                "id": 732059763,
+                "number": "498",
+                "state": "passed",
+                "duration": 84,
+                "event_type": "push",
+                "previous_state": "passed",
+                "pull_request_title": None,
+                "pull_request_number": None,
+                "started_at": "2020-10-01T20:01:31Z",
+                "finished_at": "2020-10-01T20:02:55Z",
+                "private": False,
+                "priority": False
+            },
+            "queue": "builds.gce",
+            "repository": {
+                "@type": "repository",
+                "@href": "/repo/25205338",
+                "@representation": "minimal",
+                "id": 25205338,
+                "name": "python-standard",
+                "slug": "codecov/codecov-api"
+            },
+            "commit": {
+                "@type": "commit",
+                "@representation": "minimal",
+                "id": 226208830,
+                "sha": "3be5c52bd748c508a7e96993c02cf3518c816e84",
+                "ref": "refs/heads/master",
+                "message": "New Build: 10/01/20 20:00:54",
+                "compare_url": "https://github.com/codecov/python-standard/compare/28392734979c...2485b28f9862",
+                "committed_at": "2020-10-01T20:00:55Z"
+            }
+        } 
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.json.return_value = expected_response
+
+        params = {
+            "version": "v4",
+            "commit": "3be5c52bd748c508a7e96993c02cf3518c816e84",
+            "slug": "codecov/codecov-api",
+            "owner": "codecov",
+            "repo": "codecov-api",
+            "token": "testbtznwf3ooi3xlrsnetkddj5od731pap9",
+            "service": "circleci",
+            "pr": None,
+            "pull_request": None,
+            "flags": "this-is-a-flag,this-is-another-flag",
+            "param_doesn't_exist_but_still_should_not_error": True,
+            "s3": 123,
+            "build_url": "https://thisisabuildurl.com",
+            "job": 732059764,
+            "using_global_token": False,
+            "branch": None,
+            "_did_change_merge_commit": False,
+            "parent": "123abc",
+        }
+
+        expected_error = """
+            ERROR: The coverage upload was rejected because the build is out of date. Please make sure the build is not stale for uploads to process correctly."""
+
+        with pytest.raises(NotFound) as e:
+            verify_travis(params)
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]

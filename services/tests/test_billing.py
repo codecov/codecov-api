@@ -68,7 +68,7 @@ class StripeServiceTests(TestCase):
         modify_mock
     ):
         owner = OwnerFactory(stripe_subscription_id="33043sdf")
-        desired_plan_name = "users-inappy"
+        desired_plan_name = "users-pr-inappy"
         desired_user_count = 20
         desired_plan = {
             "value": desired_plan_name,
@@ -120,7 +120,7 @@ class StripeServiceTests(TestCase):
         create_checkout_session_mock.return_value = {"id": expected_id} # only field relevant to implementation
         desired_quantity = 25
         desired_plan = {
-            "value": "users-inappm",
+            "value": "users-pr-inappm",
             "quantity": desired_quantity
         }
 
@@ -221,7 +221,7 @@ class BillingServiceTests(TestCase):
     ):
         owner = OwnerFactory(stripe_subscription_id=10)
         desired_plan = {
-            "value": "users-inappy",
+            "value": "users-pr-inappy",
             "quantity": 10
         }
         self.billing_service.update_plan(owner, desired_plan)
@@ -245,7 +245,7 @@ class BillingServiceTests(TestCase):
     ):
         owner = OwnerFactory(stripe_subscription_id=None)
         desired_plan = {
-            "value": "users-inappy",
+            "value": "users-pr-inappy",
             "quantity": 10
         }
         self.billing_service.update_plan(owner, desired_plan)

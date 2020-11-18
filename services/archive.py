@@ -95,7 +95,7 @@ class ArchiveService(object):
         self.create_root_storage()
 
     def create_root_storage(self):
-        self.storage.create_root_storage(self.root, self.region)
+        self.storage.create_root_storage(self.root)
 
     """
     Accessor for underlying StorageService. You typically shouldn't need

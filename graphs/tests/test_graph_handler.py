@@ -28,7 +28,7 @@ class TestGraphHandler(APITestCase):
             },
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert response.data['detail'] == "File extension should be .json for this type of graph"
+        assert response.data['detail'] == "File extension should be one of [ svg ]"
         
         response = self._get(
             'icicle',
@@ -40,7 +40,7 @@ class TestGraphHandler(APITestCase):
             },
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert response.data['detail'] == "File extension should be .json for this type of graph"
+        assert response.data['detail'] == "File extension should be one of [ svg ]"
 
         response = self._get(
             'sunburst',
@@ -52,7 +52,7 @@ class TestGraphHandler(APITestCase):
             },
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert response.data['detail'] == "File extension should be .json for this type of graph"
+        assert response.data['detail'] == "File extension should be one of [ svg ]"
 
         response = self._get(
             'commits',
@@ -64,7 +64,7 @@ class TestGraphHandler(APITestCase):
             },
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert response.data['detail'] == "File extension should be one of [ svg || json ]"
+        assert response.data['detail'] == "File extension should be one of [ svg ]"
 
     def test_tree_graph(self):
         gh_owner = OwnerFactory(service='github')
@@ -450,7 +450,9 @@ class TestGraphHandler(APITestCase):
 
     def test_pull_no_flare_graph(self):
         gh_owner = OwnerFactory(service='github')
-        repo = RepositoryFactory(author=gh_owner, active=True, private=True, name='repo1', image_token='12345678', branch='branch1')
+        repo = RepositoryFactory(author=gh_owner, active=True, private=True, name='repo1', image_token='12345678', branch='master')
+        commit = CommitFactory(repository=repo, author=gh_owner)
+        branch = BranchFactory(repository=repo, name="master", head=commit.commitid)
         pull = PullFactory(
             pullid=10, 
             repository_id=repo.repoid, 
@@ -471,8 +473,29 @@ class TestGraphHandler(APITestCase):
                 'token': '12345678'
             }
         )
-        assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert response.data['detail'] == "Not found. Note: private repositories require ?token arguments"
+        expected_graph = """<svg baseProfile="full" width="300" height="300" viewBox="0 0 300 300" version="1.1"
+            xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events"
+            xmlns:xlink="http://www.w3.org/1999/xlink">
+
+            <style>rect.s{mask:url(#mask);}</style>
+            <defs>
+            <pattern id="white" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <rect width="2" height="2" transform="translate(0,0)" fill="white"></rect>
+            </pattern>
+            <mask id="mask">
+                <rect x="0" y="0" width="100%" height="100%" fill="url(#white)"></rect>
+            </mask>
+            </defs>
+
+            <rect x="0" y="0" width="210.0" height="150.0" fill="#4c1" stroke="white" stroke-width="1" class=" tooltipped" data-content="tests/test_sample.py"><title>tests/test_sample.py</title></rect>
+            <rect x="210.0" y="0" width="90.0" height="150.0" fill="#e05d44" stroke="white" stroke-width="1" class=" tooltipped" data-content="tests/__init__.py"><title>tests/__init__.py</title></rect>
+            <rect x="0" y="150.0" width="300.0" height="150.0" fill="#efa41b" stroke="white" stroke-width="1" class=" tooltipped" data-content="awesome/__init__.py"><title>awesome/__init__.py</title></rect>
+        </svg>"""
+        graph = response.content.decode("utf-8")
+        graph = [line.strip() for line in graph.split('\n')]
+        expected_graph = [line.strip() for line in expected_graph.split('\n')]
+        assert response.status_code == status.HTTP_200_OK
+        assert expected_graph == graph
 
     def test_pull_no_repo_graph(self):
         gh_owner = OwnerFactory(service='github')

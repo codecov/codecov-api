@@ -3,7 +3,7 @@ import logging
 from datetime import datetime
 
 from rest_framework import filters, mixins, viewsets
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, NotAuthenticated
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import SAFE_METHODS # ['GET', 'HEAD', 'OPTIONS']
@@ -113,7 +113,17 @@ class RepositoryViewSet(
 
     @torngit_safe
     def check_object_permissions(self, request, repo):
-        self.can_view, self.can_edit = self.accessors.get_repo_permissions(self.request.user, repo)
+        # Below is some hacking to avoid requesting permissions from API in certain scenarios.
+        if not request.user.is_authenticated and not repo.private:
+            # Unauthenticated users only have read-access to public repositories,
+            # so we avoid this API call here
+            self.can_view, self.can_edit = True, False
+        elif not request.user.is_authenticated and repo.private:
+            raise NotAuthenticated(detail="You must be logged in to view private repository data.")
+        else:
+            # If the user is authenticated, we can fetch permissions from the provider
+            # to determine write permissions.
+            self.can_view, self.can_edit = self.accessors.get_repo_permissions(self.request.user, repo)
 
         if repo.private and not RepositoryPermissionsService().user_is_activated(self.request.user, self.owner):
             raise PermissionDenied("User not activated")

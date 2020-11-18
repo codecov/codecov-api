@@ -32,11 +32,16 @@ class RepoSerializer(serializers.ModelSerializer):
         )
 
     def get_latest_commit(self, repo):
-        if repo.latest_commitid is None:
-            return CommitSerializer(None).data
-
-        latest_commit = repo.commits.get(commitid=repo.latest_commitid)
-        return CommitSerializer(latest_commit).data
+        # TODO: Remove this field. Currently the UI relies on this in the repo-list
+        # view, but instead we can use subqueries to only retrieve relevant information
+        # about the latest commit. That will get us around the n + 1 queries problem
+        # we're incurring here.
+        return CommitSerializer(
+            repo.commits.filter(
+                state=Commit.CommitStates.COMPLETE,
+                branch=repo.branch
+            ).order_by('-timestamp').first()
+        ).data
 
 
 class RepoWithMetricsSerializer(RepoSerializer):
@@ -48,6 +53,11 @@ class RepoWithMetricsSerializer(RepoSerializer):
             'total_commit_count',
             'latest_coverage_change',
         ) + RepoSerializer.Meta.fields
+
+    def get_latest_commit(self, repo):
+        if hasattr(repo, "latest_commitid") and repo.latest_commitid is not None:
+            return CommitSerializer(repo.commits.filter(commitid=repo.latest_commitid).first()).data
+        return CommitSerializer(None).data
 
 
 class RepoDetailsSerializer(RepoSerializer):

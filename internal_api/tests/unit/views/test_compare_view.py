@@ -8,7 +8,6 @@ from rest_framework import status
 from rest_framework.reverse import reverse
 
 from services.archive import SerializableReport
-from internal_api.commit.serializers import ReportSerializer
 from shared.reports.resources import ReportFile
 from services.archive import ArchiveService
 from codecov.tests.base_test import InternalAPITest
@@ -245,6 +244,8 @@ class TestCompareCommitsView(InternalAPITest):
         )
 
     @patch("services.comparison.Comparison.git_comparison", new_callable=PropertyMock)
+    @patch("redis.Redis.get", lambda self, key: None)
+    @patch("redis.Redis.set", lambda self, key, val, ex: None)
     def test_compare_commits_view_with_pullid(self, mocked_comparison):
         self._configure_mocked_comparison_with_commits(mocked_comparison)
         pull = PullFactory(
@@ -252,6 +253,7 @@ class TestCompareCommitsView(InternalAPITest):
             repository=self.repo,
             author=self.repo.author,
             base=self.commit_base.commitid,
+            compared_to=self.commit_base.commitid,
             head=self.commit_head.commitid,
         )
 

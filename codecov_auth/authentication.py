@@ -48,13 +48,17 @@ class CodecovSessionAuthentication(authentication.BaseAuthentication):
         Which is the final token
 
     """
+    def authenticate_header(self, request):
+        return 'Bearer realm="api"'
 
     def authenticate(self, request):
         authorization = request.META.get('HTTP_AUTHORIZATION', '')
         if not authorization or ' ' not in authorization:
             return None
         val, encoded_cookie = authorization.split(' ')
-        if val != 'frontend':
+        if val not in ['Bearer', 'frontend']:
+            # We continue to allow 'frontend' above for compatibility
+            # with old client version until an update is deployed there.
             return None
         token = self.decode_token_from_cookie(encoded_cookie)
         try:

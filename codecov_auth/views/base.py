@@ -60,6 +60,7 @@ class LoginMixin(object):
         )
         self._set_proper_cookies_and_session(user, request, response)
         self._schedule_proper_tasks(user)
+        user.save()
         return user
 
     def _set_proper_cookies_and_session(self, user, request, response):
@@ -80,9 +81,7 @@ class LoginMixin(object):
             f"{self.cookie_prefix}-token", token, version=None
         )
         response.set_cookie(
-            f"{self.cookie_prefix}-token",
-            signed_cookie_value,
-            domain=domain_to_use
+            f"{self.cookie_prefix}-token", signed_cookie_value, domain=domain_to_use
         )
         response.set_cookie(
             f"{self.cookie_prefix}-username",

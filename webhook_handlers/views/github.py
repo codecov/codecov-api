@@ -53,6 +53,8 @@ class GithubWebhookHandler(APIView):
         ).hexdigest()
 
         if sig != request.META.get(GitHubHTTPHeaders.SIGNATURE):
+            log.info(f"{request.body}")
+            log.info(f"{request.META.get(GitHubHTTPHeaders.SIGNATURE)}")
             raise PermissionDenied()
 
     def unhandled_webhook_event(self, request, *args, **kwargs):
@@ -63,25 +65,46 @@ class GithubWebhookHandler(APIView):
         Attempts to fetch the repo first via the index on o(wnerid, service_id),
         then naively on service, service_id if that fails.
         """
-        owner_service_id = self.request.data.get("repository", {}).get("owner", {}).get("id")
-        repo_service_id = self.request.data.get("repository", {}).get("id")
+        repo_data = self.request.data.get("repository", {})
+        repo_service_id = repo_data.get("id")
+        owner_service_id = repo_data.get("owner", {}).get("id")
+        repo_slug = repo_data.get("full_name")
+
         try:
             owner = Owner.objects.get(service="github", service_id=owner_service_id)
         except Owner.DoesNotExist:
             log.info(
                 f"Error fetching owner with service_id {owner_service_id}, "
-                f"using repository service id to get repo"
+                f"using repository service id to get repo",
+                extra=dict(repo_service_id=repo_service_id, repo_slug=repo_slug)
             )
             try:
+                log.info(
+                    "Unable to find repository owner, fetching repo with service, service_id",
+                    extra=dict(repo_service_id=repo_service_id, repo_slug=repo_slug)
+                )
                 return Repository.objects.get(author__service="github", service_id=repo_service_id)
             except Repository.DoesNotExist:
-                log.info(f"Received event for non-existent repository with service_id {repo_service_id}")
+                log.info(
+                    f"Received event for non-existent repository",
+                    extra=dict(repo_service_id=repo_service_id, repo_slug=repo_slug)
+                )
+                log.info(f"{request.body}")
                 raise NotFound("Repository does not exist")
         else:
             try:
+                log.info(
+                    "Found repository owner, fetching repo with ownerid, service_id",
+                    extra=dict(repo_service_id=repo_service_id, repo_slug=repo_slug)
+                )
+                log.info(f"{request.body}")
                 return Repository.objects.get(author__ownerid=owner.ownerid, service_id=repo_service_id)
             except Repository.DoesNotExist:
-                log.info(f"Received event for non-existent repository with service_id {repo_service_id}")
+                log.info(
+                    f"Received event for non-existent repository",
+                    extra=dict(repo_service_id=repo_service_id, repo_slug=repo_slug)
+                )
+                log.info(f"{request.body}")
                 raise NotFound("Repository does not exist")
 
     def ping(self, request, *args, **kwargs):
@@ -407,8 +430,19 @@ class GithubWebhookHandler(APIView):
                     data="Attempted to remove non Codecov user from Codecov org failed"
                 )
 
-            member.organizations = [ownerid for ownerid in member.organizations if ownerid != org.ownerid]
-            member.save(update_fields=['organizations'])
+            try:
+                if member.organizations:
+                    member.organizations.remove(org.ownerid)
+                    member.save(update_fields=['organizations'])
+            except ValueError:
+                pass
+
+            try:
+                if org.plan_activated_users:
+                    org.plan_activated_users.remove(member.ownerid)
+                    org.save(update_fields=['plan_activated_users'])
+            except ValueError:
+                pass
 
             log.info(
                 f"User removal of {member.ownerid}, success",
@@ -451,8 +485,13 @@ class GithubWebhookHandler(APIView):
                     extra=dict(repoid=repo.repoid, github_webhook_event=self.event)
                 )
                 return Response(status=status.HTTP_404_NOT_FOUND)
-            member.permission.remove(repo.repoid)
-            member.save(update_fields=['permission'])
+
+            try:
+                member.permission.remove(repo.repoid)
+                member.save(update_fields=['permission'])
+            except ValueError:
+                pass
+
             log.info(
                 f"Successfully updated read permissions for repository",
                 extra=dict(repoid=repo.repoid, ownerid=member.ownerid, github_webhook_event=self.event)
@@ -460,10 +499,9 @@ class GithubWebhookHandler(APIView):
         return Response()
 
     def post(self, request, *args, **kwargs):
-        self.validate_signature(request)
-
         self.event = self.request.META.get(GitHubHTTPHeaders.EVENT)
         log.info(f"GitHub Webhook Handler invoked", extra=dict(github_webhook_event=self.event))
+        self.validate_signature(request)
         handler = getattr(self, self.event, self.unhandled_webhook_event)
 
         return handler(request, *args, **kwargs)

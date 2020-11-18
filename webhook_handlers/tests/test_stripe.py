@@ -54,9 +54,7 @@ class StripeWebhookHandlerTests(APITestCase):
                 "data": {
                     "object": {
                         "customer": self.owner.stripe_customer_id,
-                        "subscription": {
-                            "id": self.owner.stripe_subscription_id
-                        }
+                        "subscription": self.owner.stripe_subscription_id
                     }
                 }
             }
@@ -76,9 +74,7 @@ class StripeWebhookHandlerTests(APITestCase):
                 "data": {
                     "object": {
                         "customer": self.owner.stripe_customer_id,
-                        "subscription": {
-                            "id": self.owner.stripe_subscription_id
-                        }
+                        "subscription": self.owner.stripe_subscription_id
                     }
                 }
             }
@@ -207,7 +203,7 @@ class StripeWebhookHandlerTests(APITestCase):
 
         stripe_subscription_id = "FOEKDCDEQ"
         stripe_customer_id = "sdo050493"
-        plan_name = "users-inappy"
+        plan_name = "users-pr-inappy"
         quantity = 20
 
         response = self._send_event(
@@ -274,7 +270,7 @@ class StripeWebhookHandlerTests(APITestCase):
         self,
         set_free_plan_mock
     ):
-        self.owner.plan = "users-inappy"
+        self.owner.plan = "users-pr-inappy"
         self.owner.plan_user_count = 10
         self.owner.plan_auto_activate = False
         self.owner.save()
@@ -293,7 +289,7 @@ class StripeWebhookHandlerTests(APITestCase):
                         "customer": self.owner.stripe_customer_id, 
                         "plan": {
                             "id": "fieown4",
-                            "name": "users-inappy"
+                            "name": "users-pr-inappy"
                         },
                         "metadata": {
                             "obo_organization": self.owner.ownerid
@@ -314,7 +310,7 @@ class StripeWebhookHandlerTests(APITestCase):
         self.owner.plan_user_count = 5
         self.owner.plan_auto_activate = False
 
-        plan_name = "users-inappy"
+        plan_name = "users-pr-inappy"
         quantity = 20
 
         response = self._send_event(

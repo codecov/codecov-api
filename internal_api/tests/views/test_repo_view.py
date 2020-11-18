@@ -87,6 +87,11 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
 
         self.client.force_login(user=self.user)
 
+    def test_can_retrieve_repo_list_if_not_authenticated(self):
+        self.client.logout()
+        response = self._list()
+        assert response.status_code == 200
+
     def test_order_by_updatestamp(self):
         response = self._list(
             query_params={'ordering': 'updatestamp'}
@@ -574,6 +579,18 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
 
         self.client.force_login(user=self.user)
 
+    def test_can_retrieve_repo_if_not_authenticated(self, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, True
+        self.client.logout()
+        author = OwnerFactory()
+        public_repo = RepositoryFactory(author=author, private=False)
+        response = self._retrieve(kwargs={
+            "service": public_repo.author.service,
+            "owner_username": public_repo.author.username,
+            "repo_name": public_repo.name
+        })
+        assert response.status_code == 200
+
     def test_retrieve_with_view_and_edit_permissions_succeeds(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, True
         response = self._retrieve()
@@ -905,8 +922,8 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         mocked_get_permissions.return_value = True, True
         commit = CommitFactory(repository=self.repo)
 
-        from internal_api.commit.serializers import CommitWithReportSerializer
-        expected_commit_payload = CommitWithReportSerializer(commit).data
+        from internal_api.commit.serializers import CommitWithFileLevelReportSerializer
+        expected_commit_payload = CommitWithFileLevelReportSerializer(commit).data
 
         response = self._retrieve()
         assert response.status_code == 200
@@ -1018,3 +1035,13 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         mocked_fetch_and_create.assert_called()
         mocked_fetch_and_create.assert_called()
         self.assertEqual(response.status_code, 403)
+
+    def test_fetch_repo_with_fork_doesnt_crash(self, mocked_get_perms):
+        mocked_get_perms.return_value = True, True
+        author = OwnerFactory()
+        repo = RepositoryFactory(author=author, fork=RepositoryFactory())
+        self._retrieve(kwargs={
+            "service": repo.author.service,
+            "owner_username": author.username,
+            "repo_name": repo.name
+        })
