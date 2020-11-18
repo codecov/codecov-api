@@ -65,12 +65,12 @@ jobs:
         command: |
           apk add git
           chmod +x codecov-alpine 
-          ./codecov-alpine -t fcd1b412-6063-486f-bdb3-5f73f77fa1d6 -F unit
+          ./codecov-alpine -Z -R . -t fcd1b412-6063-486f-bdb3-5f73f77fa1d6 -F unit
     - run:
         name: codecov-staging
         command: |
           apk add bash curl
-          bash -c "bash <(curl -s https://stage-web.codecov.dev/bash) -Z -R . -t fcd1b412-6063-486f-bdb3-5f73f77fa1d6 -F unit"
+          bash -c "bash <(curl -s https://stage-web.codecov.dev/bash) -Z -R . -t dfdd2ba4-4dbc-40a6-8a96-534c0a39c3a5 -F unit"
 
 
   portable:
