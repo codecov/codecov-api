@@ -321,8 +321,15 @@ class CoverageChartHelpersTest(TestCase):
             )
 
     def test_annotate_commits_with_totals(self):
-        G(Commit, totals={"n": 0, "h": 0, "p": 0, "m": 0, "c": 0, "C": 0, "N": 0})
-        annotated_commits = annotate_commits_with_totals(Commit.objects.all())
+        with_complexity_commitid = "i230tky2"
+        G(
+            Commit,
+            commitid=with_complexity_commitid,
+            totals={"n": 0, "h": 0, "p": 0, "m": 0, "c": 0, "C": 0, "N": 1}
+        )
+        annotated_commits = annotate_commits_with_totals(
+            Commit.objects.filter(commitid=with_complexity_commitid)
+        )
 
         assert annotated_commits.count() > 0
         for commit in annotated_commits:
@@ -333,10 +340,28 @@ class CoverageChartHelpersTest(TestCase):
             assert isclose(commit.misses, commit.totals["m"])
             assert isclose(commit.complexity, commit.totals["C"])
             assert isclose(commit.complexity_total, commit.totals["N"])
-            assert isclose(
-                commit.complexity_ratio,
-                commit.totals["C"] / commit.totals["N"] if commit.totals["N"] else 0,
-            )
+            assert isclose(commit.complexity_ratio, commit.totals["C"] / commit.totals["N"])
+
+    def test_annotate_commit_with_totals_no_complexity_sets_ratio_to_None(self):
+        no_complexity_commitid = "sdfkjwepj42"
+        G(
+            Commit,
+            commitid=no_complexity_commitid,
+            totals={"n": 0, "h": 0, "p": 0, "m": 0, "c": 0, "C": 0, "N": 0}
+        )
+        annotated_commits = annotate_commits_with_totals(
+            Commit.objects.filter(commitid=no_complexity_commitid)
+        )
+
+        assert annotated_commits.count() > 0
+        for commit in annotated_commits:
+            assert isclose(commit.coverage, commit.totals["c"])
+            assert isclose(commit.lines, commit.totals["n"])
+            assert isclose(commit.hits, commit.totals["h"])
+            assert isclose(commit.misses, commit.totals["m"])
+            assert isclose(commit.complexity, commit.totals["C"])
+            assert isclose(commit.complexity_total, commit.totals["N"])
+            assert commit.complexity_ratio is None
 
     def test_apply_grouping(self):
         with self.subTest("min coverage"):

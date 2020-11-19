@@ -106,7 +106,7 @@ def annotate_commits_with_totals(queryset):
         complexity_total=complexity_total,
         complexity_ratio=Case(
             When(complexity_total__gt=0, then=complexity / complexity_total),
-            default=Value(0, output_field=FloatField()),
+            default=Value(None),
         ),
     )
 

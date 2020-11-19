@@ -93,7 +93,7 @@ class RepositoryChartHandler(APIView, RepositoriesMixin):
                     "complexity_ratio": commit.complexity_ratio,
                     "commitid": commit.commitid,
                 }
-                for commit in annotated_queryset.order_by(f"{coverage_ordering}timestamp")[:max_num_commits]
+                for commit in annotated_queryset.order_by(f"{coverage_ordering}timestamp")[:max_num_commits] if commit.complexity_ratio is not None
             ]
 
         else:
@@ -126,7 +126,7 @@ class RepositoryChartHandler(APIView, RepositoriesMixin):
                     "complexity_ratio": commit.complexity_ratio,
                     "commitid": commit.commitid,
                 }
-                for commit in complexity_grouped_queryset
+                for commit in complexity_grouped_queryset if commit.complexity_ratio is not None
             ]
 
         return Response(data={"coverage": coverage, "complexity": complexity})
