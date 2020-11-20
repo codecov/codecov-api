@@ -15,7 +15,7 @@ NON_PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
             "Configureable # of users",
             "Unlimited public repositories",
             "Unlimited private repositories",
-            "Priorty Support"
+            "Priority Support"
         ]
     },
     "users-inappy": {
@@ -27,7 +27,7 @@ NON_PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
             "Configureable # of users",
             "Unlimited public repositories",
             "Unlimited private repositories",
-            "Priorty Support"
+            "Priority Support"
         ]
     },
 }
@@ -43,7 +43,7 @@ PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
             "Configureable # of users",
             "Unlimited public repositories",
             "Unlimited private repositories",
-            "Priorty Support"
+            "Priority Support"
         ]
     },
     "users-pr-inappy": {
@@ -55,7 +55,7 @@ PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
             "Configureable # of users",
             "Unlimited public repositories",
             "Unlimited private repositories",
-            "Priorty Support"
+            "Priority Support"
         ]
     },
 }
