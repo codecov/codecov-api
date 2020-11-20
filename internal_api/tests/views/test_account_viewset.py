@@ -113,7 +113,7 @@ class AccountViewSetTests(APITestCase):
                 "Configureable # of users",
                 "Unlimited public repositories",
                 "Unlimited private repositories",
-                "Priorty Support"
+                "Priority Support"
             ],
             "quantity": self.user.plan_user_count
         }
@@ -133,7 +133,7 @@ class AccountViewSetTests(APITestCase):
                 "Configureable # of users",
                 "Unlimited public repositories",
                 "Unlimited private repositories",
-                "Priorty Support"
+                "Priority Support"
             ],
             "quantity": self.user.plan_user_count
         }
