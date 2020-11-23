@@ -10,7 +10,7 @@ from codecov.tests.base_test import InternalAPITest
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory, CommitFactory, PullFactory, BranchFactory
 from core.models import Repository
-from internal_api.commit.serializers import CommitSerializer
+from internal_api.commit.serializers import CommitTotalsSerializer
 
 
 class RepositoryViewSetTestSuite(InternalAPITest):
@@ -213,18 +213,18 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
             query_params={'names': 'A'}
         )
 
-        assert response.data["results"][0]["latest_commit"]["totals"]["files"] == default_totals['f']
-        assert response.data["results"][0]["latest_commit"]["totals"]["lines"] == default_totals['n']
-        assert response.data["results"][0]["latest_commit"]["totals"]["hits"] == default_totals['h']
-        assert response.data["results"][0]["latest_commit"]["totals"]["misses"] == default_totals['m']
-        assert response.data["results"][0]["latest_commit"]["totals"]["partials"] == default_totals['p']
-        assert response.data["results"][0]["latest_commit"]["totals"]["coverage"] == default_totals['c']
-        assert response.data["results"][0]["latest_commit"]["totals"]["branches"] == default_totals['b']
-        assert response.data["results"][0]["latest_commit"]["totals"]["methods"] == default_totals['d']
-        assert response.data["results"][0]["latest_commit"]["totals"]["sessions"] == default_totals['s']
-        assert response.data["results"][0]["latest_commit"]["totals"]["complexity"] == default_totals['C']
-        assert response.data["results"][0]["latest_commit"]["totals"]["complexity_total"] == default_totals['N']
-        assert response.data["results"][0]["latest_commit"]["totals"]["complexity_ratio"] == 0
+        assert response.data["results"][0]["latest_commit_totals"]["files"] == default_totals['f']
+        assert response.data["results"][0]["latest_commit_totals"]["lines"] == default_totals['n']
+        assert response.data["results"][0]["latest_commit_totals"]["hits"] == default_totals['h']
+        assert response.data["results"][0]["latest_commit_totals"]["misses"] == default_totals['m']
+        assert response.data["results"][0]["latest_commit_totals"]["partials"] == default_totals['p']
+        assert response.data["results"][0]["latest_commit_totals"]["coverage"] == default_totals['c']
+        assert response.data["results"][0]["latest_commit_totals"]["branches"] == default_totals['b']
+        assert response.data["results"][0]["latest_commit_totals"]["methods"] == default_totals['d']
+        assert response.data["results"][0]["latest_commit_totals"]["sessions"] == default_totals['s']
+        assert response.data["results"][0]["latest_commit_totals"]["complexity"] == default_totals['C']
+        assert response.data["results"][0]["latest_commit_totals"]["complexity_total"] == default_totals['N']
+        assert response.data["results"][0]["latest_commit_totals"]["complexity_ratio"] == 0
 
     def test_get_totals_with_timestamp(self):
         default_totals = {
@@ -254,7 +254,7 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         )
 
         # The fetching truncates the time, so it will not take into account the time part of the date time
-        assert response.data["results"][0]["latest_commit"]["totals"]["coverage"] == 100.0
+        assert response.data["results"][0]["latest_commit_totals"]["coverage"] == 100.0
 
     def test_get_repos_with_totals(self):
         default_totals = {
@@ -409,15 +409,15 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         response = self._list()
         repo1 = [repo for repo in response.data["results"] if repo["name"] == "A"][0]
 
-        # When the commit is missing, everything is set to None or empty string. Test with lines.
-        assert repo1["latest_commit"]["totals"]["lines"] is None
+        # When the commit is missing, its set to None or empty string. Test with lines.
+        assert repo1["latest_commit_totals"] is None
 
     def test_returns_latest_commit(self):
         commit = CommitFactory(repository=self.repo1)
         response = self._list()
         repo1 = [repo for repo in response.data["results"] if repo["name"] == "A"][0]
 
-        assert repo1["latest_commit"] == CommitSerializer(commit).data
+        assert repo1["latest_commit_totals"] == CommitTotalsSerializer(commit.totals).data
 
 
 class TestRepositoryViewSetExtraActions(RepositoryViewSetTestSuite):

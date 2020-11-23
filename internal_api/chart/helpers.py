@@ -85,23 +85,12 @@ def annotate_commits_with_totals(queryset):
     This is necessary when using Django aggregation functions, and otherwise is generally more convenient than wrangling with the totals JSON field.
     See "CommitTotalsSerializer" for reference on what the values ("c", "N", etc) represent
     """
-    coverage = Cast(KeyTextTransform("c", "totals"), output_field=FloatField())
-    lines = Cast(KeyTextTransform("n", "totals"), output_field=FloatField())
-    hits = Cast(KeyTextTransform("h", "totals"), output_field=FloatField())
-    misses = Cast(KeyTextTransform("m", "totals"), output_field=FloatField())
-    partials = Cast(KeyTextTransform("p", "totals"), output_field=FloatField())
-
     complexity = Cast(KeyTextTransform("C", "totals"), FloatField()) or 0
     complexity_total = (
         Cast(KeyTextTransform("N", "totals"), output_field=FloatField()) or 0
     )
-
     return queryset.annotate(
-        coverage=coverage,
-        lines=lines,
-        hits=hits,
-        misses=misses,
-        partials=partials,
+        coverage=Cast(KeyTextTransform("c", "totals"), output_field=FloatField()),
         complexity=complexity,
         complexity_total=complexity_total,
         complexity_ratio=Case(
@@ -152,10 +141,10 @@ def aggregate_across_repositories(grouped_queryset):
 
         # note: until we update to Django 3, can't call aggregate/annotate here or Django will freak out since we previously called "distinct" to group the queryset
         # see https://stackoverflow.com/questions/4048014/how-to-add-an-annotation-on-distinct-items
-        total_lines = sum([commit.lines for commit in commits])
-        total_hits = sum([commit.hits for commit in commits])
-        total_partials = sum([commit.partials for commit in commits])
-        total_misses = sum([commit.misses for commit in commits])
+        total_lines = sum([commit.totals["n"] for commit in commits])
+        total_hits = sum([commit.totals["h"] for commit in commits])
+        total_partials = sum([commit.totals["p"] for commit in commits])
+        total_misses = sum([commit.totals["m"] for commit in commits])
 
         weighted_coverage = (total_hits / total_lines) * 100
 

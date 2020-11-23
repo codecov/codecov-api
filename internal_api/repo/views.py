@@ -10,7 +10,7 @@ from rest_framework.permissions import SAFE_METHODS # ['GET', 'HEAD', 'OPTIONS']
 from rest_framework import status
 
 from django_filters import rest_framework as django_filters, BooleanFilter
-from internal_api.repo.filter import StringListFilter
+from internal_api.repo.filter import RepositoryFilters, RepositoryOrderingFilter
 
 from core.models import Repository
 from services.repo_providers import RepoProviderService
@@ -33,23 +33,6 @@ from .repository_actions import delete_webhook_on_provider, create_webhook_on_pr
 log = logging.getLogger(__name__)
 
 
-class RepositoryFilters(django_filters.FilterSet):
-    """Filter for active repositories"""
-    active = BooleanFilter(field_name='active', method='filter_active')
-
-    """Filter for getting multiple repositories by name"""
-    names = StringListFilter(query_param='names', field_name='name', lookup_expr='in')
-
-    def filter_active(self, queryset, name, value):
-        # The database currently stores 't' instead of 'true' for active repos, and nothing for inactive
-        # so if the query param active is set, we return repos with non-null value in active column
-        return queryset.filter(active__isnull=(not value))
-
-    class Meta:
-        model = Repository
-        fields = ['active', 'names']
-
-
 class RepositoryViewSet(
         mixins.ListModelMixin,
         mixins.RetrieveModelMixin,
@@ -59,7 +42,11 @@ class RepositoryViewSet(
         OwnerPropertyMixin
     ):
 
-    filter_backends = (django_filters.DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
+    filter_backends = (
+        django_filters.DjangoFilterBackend,
+        filters.SearchFilter,
+        RepositoryOrderingFilter
+    )
     filterset_class = RepositoryFilters
     search_fields = ('name',)
     ordering_fields = (
@@ -103,9 +90,10 @@ class RepositoryViewSet(
             if self.request.query_params.get("exclude_uncovered", False):
                 queryset = queryset.exclude_uncovered()
 
-            queryset = queryset.with_latest_commit_before(
+            queryset = queryset.with_latest_commit_totals_before(
                 self.request.query_params.get("before_date", datetime.now().isoformat()),
-                self.request.query_params.get("branch", None)
+                self.request.query_params.get("branch", None),
+                include_previous_totals=True
             ).with_latest_coverage_change(
             ).with_total_commit_count()
 
@@ -180,10 +168,10 @@ class RepositoryViewSet(
 
         # Then only get the repositories with totals and then annotate the latest commit
         results = queryset.exclude_uncovered(
-        ).with_latest_commit_before(
+        ).with_latest_commit_totals_before(
             self.request.query_params.get("before_date", datetime.now().isoformat()),
-            self.request.query_params.get("branch", None)
-        ).with_latest_coverage_change(
+            self.request.query_params.get("branch", None),
+            include_previous_totals=True
         ).get_aggregated_coverage()
 
         return Response(data={

@@ -335,9 +335,6 @@ class CoverageChartHelpersTest(TestCase):
         for commit in annotated_commits:
             # direct float equality checks in python are finicky so use "isclose" to check we got the expected value
             assert isclose(commit.coverage, commit.totals["c"])
-            assert isclose(commit.lines, commit.totals["n"])
-            assert isclose(commit.hits, commit.totals["h"])
-            assert isclose(commit.misses, commit.totals["m"])
             assert isclose(commit.complexity, commit.totals["C"])
             assert isclose(commit.complexity_total, commit.totals["N"])
             assert isclose(commit.complexity_ratio, commit.totals["C"] / commit.totals["N"])
@@ -355,12 +352,6 @@ class CoverageChartHelpersTest(TestCase):
 
         assert annotated_commits.count() > 0
         for commit in annotated_commits:
-            assert isclose(commit.coverage, commit.totals["c"])
-            assert isclose(commit.lines, commit.totals["n"])
-            assert isclose(commit.hits, commit.totals["h"])
-            assert isclose(commit.misses, commit.totals["m"])
-            assert isclose(commit.complexity, commit.totals["C"])
-            assert isclose(commit.complexity_total, commit.totals["N"])
             assert commit.complexity_ratio is None
 
     def test_apply_grouping(self):
