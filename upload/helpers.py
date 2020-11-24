@@ -8,9 +8,7 @@ from codecov_auth.models import Owner
 from utils.config import get_config
 from .constants import ci, global_upload_token_providers
 
-from .tokenless import (
-    verify_travis
-)
+from upload.tokenless.tokenless import TokenlessUploadHandler
 
 is_pull_noted_in_branch = re.compile(r".*(pull|pr)\/(\d+).*")
 
@@ -172,7 +170,7 @@ def determine_repo_for_upload(upload_params):
     token = upload_params.get("token")
     using_global_token = upload_params.get("using_global_token")
     service = upload_params.get("service")
-
+    
     if token and not using_global_token:
         try:
             repository = Repository.objects.get(upload_token=token)
@@ -180,13 +178,13 @@ def determine_repo_for_upload(upload_params):
             raise NotFound(
                 f"Could not find a repository associated with upload token {token}"
             )
-    elif service == 'travis':
-        try:
-            git_service = verify_travis(upload_params)
+    elif service:
+        git_service = TokenlessUploadHandler(service, upload_params).verify_upload()
+        try: 
             repository = Repository.objects.get(author__service=git_service, name=upload_params.get("repo"), author__username=upload_params.get("owner"))
         except ObjectDoesNotExist:
             raise NotFound(
-                f"Could not find a repository associated with upload token {token}"
+                f"Could not find a repository, try using upload token"
             )
     else:
         raise ValidationError(

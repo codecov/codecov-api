@@ -178,10 +178,12 @@ ENCRYPTION_SECRET = get_config('setup', 'encryption_secret')
 COOKIE_SECRET = get_config("setup", "http", "cookie_secret")
 COOKIES_DOMAIN = ".codecov.io"
 
+CIRCLECI_TOKEN = os.environ.get("CIRCLECI__TOKEN")
 
 GITHUB_CLIENT_ID = os.environ.get("GITHUB__CLIENT_ID")
 GITHUB_CLIENT_SECRET = os.environ.get("GITHUB__CLIENT_SECRET")
 GITHUB_CLIENT_BOT = os.environ.get("GITHUB__CLIENT_BOT")
+GITHUB_ACTIONS_TOKEN = os.environ.get("GITHUB__ACTIONS_TOKEN")
 
 BITBUCKET_CLIENT_ID = os.environ.get("BITBUCKET__CLIENT_ID")
 BITBUCKET_CLIENT_SECRET = os.environ.get("BITBUCKET__CLIENT_SECRET")

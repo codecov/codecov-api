@@ -1,6 +1,6 @@
 import requests
 import pytest
-from datetime import datetime
+from datetime import datetime, timedelta
 from rest_framework.test import APITestCase
 from rest_framework.reverse import reverse
 from rest_framework import status
@@ -29,7 +29,7 @@ from upload.helpers import (
     determine_upload_commitid_to_use,
 )
 
-from upload.tokenless import verify_travis
+from upload.tokenless.tokenless import TokenlessUploadHandler
 
 def mock_get_config_side_effect(*args):
     if args == ("github", "global_upload_token"):
@@ -267,11 +267,22 @@ class UploadHandlerHelpersTest(TestCase):
         repo = G(Repository, author=org)
         expected_response = {
             "id": 732059764,
+            'finishTime': f"{datetime.utcnow()}",
+            'status':'inProgress',
+            'sourceVersion':'3be5c52bd748c508a7e96993c02cf3518c816e84',
+            "buildNumber": "732059764",
             "allow_failure": None,
             "number": "498.1",
             "state": "passed",
             "started_at": "2020-10-01T20:02:55Z",
             "finished_at": f"{datetime.utcnow()}".split('.')[0],
+            'project': {
+                'visibility':'public',
+                'repositoryType': 'github'
+            },
+            'triggerInfo': {
+                'pr.sourceSha': '3be5c52bd748c508a7e96993c02cf3518c816e84'
+            },
             "build": {
                 "@type": "build",
                 "@href": "/build/732059763",
@@ -287,7 +298,12 @@ class UploadHandlerHelpersTest(TestCase):
                 "started_at": "2020-10-01T20:01:31Z",
                 "finished_at": "2020-10-01T20:02:55Z",
                 "private": False,
-                "priority": False
+                "priority": False,
+                'jobs': [
+                    {
+                        'jobId': '732059764',
+                    }
+                ]
             },
             "queue": "builds.gce",
             "repository": {
@@ -295,6 +311,7 @@ class UploadHandlerHelpersTest(TestCase):
                 "@href": "/repo/25205338",
                 "@representation": "minimal",
                 "id": 25205338,
+                'type': 'GitHub',
                 "name": "python-standard",
                 "slug": f"{org.username}/{repo.name}"
             },
@@ -326,14 +343,27 @@ class UploadHandlerHelpersTest(TestCase):
             "param_doesn't_exist_but_still_should_not_error": True,
             "s3": 123,
             "build_url": "https://thisisabuildurl.com",
-            "job": 732059764,
+            "job": "732059764",
+            "build": "732059764",
             "using_global_token": False,
             "branch": None,
+            "project": "p12",
+            "server_uri": "https://",
             "_did_change_merge_commit": False,
             "parent": "123abc",
         }
 
         assert repo == determine_repo_for_upload(params)
+
+        params['service'] = 'appveyor'
+
+
+        assert repo == determine_repo_for_upload(params)
+
+        params['service'] = 'azure_pipelines'
+
+        assert repo == determine_repo_for_upload(params)
+
 
     def test_determine_upload_branch_to_use(self):
         with self.subTest("no branch and no pr provided"):
@@ -584,7 +614,7 @@ class UploadHandlerTravisTokenlessTest(TestCase):
         Documentation: https://docs.codecov.io/docs/about-the-codecov-bash-uploader#section-upload-token"""
 
         with pytest.raises(NotFound) as e:
-            verify_travis(params)
+            TokenlessUploadHandler('travis', params).verify_upload()
         assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
 
     @patch.object(requests, 'get')
@@ -664,7 +694,7 @@ class UploadHandlerTravisTokenlessTest(TestCase):
         Documentation: https://docs.codecov.io/docs/about-the-codecov-bash-uploader#section-upload-token"""
 
         with pytest.raises(NotFound) as e:
-            verify_travis(params)
+            TokenlessUploadHandler('travis', params).verify_upload()
         assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
         
     @patch.object(requests, 'get')
@@ -744,7 +774,7 @@ class UploadHandlerTravisTokenlessTest(TestCase):
         Documentation: https://docs.codecov.io/docs/about-the-codecov-bash-uploader#section-upload-token"""
 
         with pytest.raises(NotFound) as e:
-            verify_travis(params)
+            TokenlessUploadHandler('travis', params).verify_upload()
         assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
 
     @patch.object(requests, 'get')
@@ -778,7 +808,7 @@ class UploadHandlerTravisTokenlessTest(TestCase):
         Documentation: https://docs.codecov.io/docs/about-the-codecov-bash-uploader#section-upload-token"""
 
         with pytest.raises(NotFound) as e:
-            verify_travis(params)
+            TokenlessUploadHandler('travis', params).verify_upload()
         assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
 
     @patch.object(requests, 'get')
@@ -812,7 +842,7 @@ class UploadHandlerTravisTokenlessTest(TestCase):
         Documentation: https://docs.codecov.io/docs/about-the-codecov-bash-uploader#section-upload-token"""
 
         with pytest.raises(NotFound) as e:
-            verify_travis(params)
+            TokenlessUploadHandler('travis', params).verify_upload()
         assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
 
     @patch.object(requests, 'get')
@@ -889,7 +919,7 @@ class UploadHandlerTravisTokenlessTest(TestCase):
             ERROR: The build status does not indicate that the current build is in progress. Please make sure the build is in progress or was finished within the past 4 minutes to ensure reports upload properly."""
 
         with pytest.raises(NotFound) as e:
-            verify_travis(params)
+            TokenlessUploadHandler('travis', params).verify_upload()
         assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
 
     @patch.object(requests, 'get')
@@ -923,7 +953,7 @@ class UploadHandlerTravisTokenlessTest(TestCase):
         Documentation: https://docs.codecov.io/docs/about-the-codecov-bash-uploader#section-upload-token"""
 
         with pytest.raises(NotFound) as e:
-            verify_travis(params)
+            TokenlessUploadHandler('travis', params).verify_upload()
         assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
 
     @patch.object(requests, 'get')
@@ -996,7 +1026,8 @@ class UploadHandlerTravisTokenlessTest(TestCase):
             "parent": "123abc",
         }
 
-        res = verify_travis(params)
+        res = TokenlessUploadHandler('travis', params).verify_upload()
+
         assert res == 'github'
 
     @patch.object(requests, 'get')
@@ -1073,5 +1104,592 @@ class UploadHandlerTravisTokenlessTest(TestCase):
             ERROR: The coverage upload was rejected because the build is out of date. Please make sure the build is not stale for uploads to process correctly."""
 
         with pytest.raises(NotFound) as e:
-            verify_travis(params)
+            TokenlessUploadHandler('travis', params).verify_upload()
         assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+
+class UploadHandlerAzureTokenlessTest(TestCase):
+
+    def test_azure_no_job(self):
+        params = {
+        }
+
+        expected_error = """Missing "job" argument. Please upload with the Codecov repository upload token to resolve issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('azure_pipelines', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    def test_azure_no_project(self):
+        params = {
+            "job": 732059764
+        }
+
+        expected_error = """Missing "project" argument. Please upload with the Codecov repository upload token to resolve issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('azure_pipelines', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    def test_azure_no_server_uri(self):
+        params = {
+            "project": "project123",
+            "job": 732059764
+        }
+    
+        expected_error = """Missing "server_uri" argument. Please upload with the Codecov repository upload token to resolve issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('azure_pipelines', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch.object(requests, 'get')
+    def test_azure_http_error(self, mock_get):
+        mock_get.side_effect = [requests.exceptions.HTTPError('Not found')]
+
+        params = {
+            "project": "project123",
+            "job": 732059764,
+            "server_uri": "https://"
+        }
+
+        expected_error = """Unable to locate build via Azure API. Please upload with the Codecov repository upload token to resolve issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('azure_pipelines', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch.object(requests, 'get')
+    def test_azure_connection_error(self, mock_get):
+        mock_get.side_effect = [requests.exceptions.ConnectionError('Not found')]
+
+        params = {
+            "project": "project123",
+            "job": 732059764,
+            "server_uri": "https://"
+        }
+
+        expected_error = """Unable to locate build via Azure API. Please upload with the Codecov repository upload token to resolve issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('azure_pipelines', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch.object(requests, 'get')
+    def test_azure_no_errors(self, mock_get):
+        expected_response = {
+            'finishTime':'NOW',
+            'buildNumber':'20190725.8',
+            'status':'inProgress',
+            'sourceVersion':'c739768fcac68144a3a6d82305b9c4106934d31a',
+            'project': {
+                'visibility':'public'
+            },
+            'repository': {
+                'type': 'GitHub'
+            },
+            'triggerInfo': {
+                'pr.sourceSha': 'c739768fcac68144a3a6d82305b9c4106934d31a'
+            }
+        }
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.json.return_value = expected_response
+
+        params = {
+            "project": "project123",
+            "job": 732059764,
+            "server_uri": "https://",
+            "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
+            "build": '20190725.8'
+        }
+
+        res = TokenlessUploadHandler('azure_pipelines', params).verify_upload()
+
+        assert res == 'github'
+
+    @patch.object(requests, 'get')
+    def test_azure_wrong_build_number(self, mock_get):
+        expected_response = {
+            'finishTime': f"{datetime.utcnow()}",
+            'buildNumber':'BADBUILDNUM',
+            'status':'completed',
+            'sourceVersion':'c739768fcac68144a3a6d82305b9c4106934d31a',
+            'project': {
+                'visibility':'public'
+            },
+            'repository': {
+                'type': 'GitHub'
+            }
+        }
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.json.return_value = expected_response
+
+        params = {
+            "project": "project123",
+            "job": 732059764,
+            "server_uri": "https://",
+            "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
+            "build": '20190725.8'
+        }
+
+        expected_error = """Build numbers do not match. Please upload with the Codecov repository upload token to resolve issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('azure_pipelines', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch.object(requests, 'get')
+    def test_azure_expired_build(self, mock_get):
+        expected_response = {
+            'finishTime': f"{datetime.utcnow() - timedelta(minutes=4)}",
+            'buildNumber':'20190725.8', 
+            'status':'completed',
+            'sourceVersion':'c739768fcac68144a3a6d82305b9c4106934d31a',
+            'project': {
+                'visibility': 'public'
+            },
+            'repository': {
+                'type': 'GitHub'
+            }
+        }
+
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.json.return_value = expected_response
+
+        params = {
+            "project": "project123",
+            "job": 732059764,
+            "server_uri": "https://",
+            "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
+            "build": '20190725.8'
+        }
+
+        expected_error = """Azure build has already finished. Please upload with the Codecov repository upload token to resolve issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('azure_pipelines', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch.object(requests, 'get')
+    def test_azure_invalid_status(self, mock_get):
+        expected_response = {
+            'finishTime': f"{datetime.utcnow()}",
+            'buildNumber':'20190725.8',
+            'status':'BADSTATUS',
+            'sourceVersion':'c739768fcac68144a3a6d82305b9c4106934d31a',
+            'project': {
+                'visibility':'public'
+            },
+            'repository': {
+                'type': 'GitHub'
+            }
+        }
+
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.json.return_value = expected_response
+
+        params = {
+            "project": "project123",
+            "job": 732059764,
+            "server_uri": "https://",
+            "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
+            "build": '20190725.8'
+        }
+
+        expected_error = """Azure build has already finished. Please upload with the Codecov repository upload token to resolve issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('azure_pipelines', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch.object(requests, 'get')
+    def test_azure_wrong_commit(self, mock_get):
+        expected_response = {
+            'finishTime':'NOW',
+            'buildNumber':'20190725.8',
+            'status':'inProgress',
+            'sourceVersion':'BADSHA',
+            'project': {
+                'visibility': 'public'
+            },
+            'repository': {
+                'type': 'GitHub'
+            }
+        }
+
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.json.return_value = expected_response
+
+        params = {
+            "project": "project123",
+            "job": 732059764,
+            "server_uri": "https://",
+            "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
+            "build": '20190725.8'
+        }
+
+        expected_error = """Commit sha does not match Azure build. Please upload with the Codecov repository upload token to resolve issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('azure_pipelines', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch.object(requests, 'get')
+    def test_azure_not_public(self, mock_get):
+        expected_response = {
+            'finishTime': 'NOW',
+            'buildNumber':'20190725.8',
+            'status': 'inProgress',
+            'sourceVersion': 'c739768fcac68144a3a6d82305b9c4106934d31a',
+            'project': {
+                'visibility':'private'
+            }, 
+            'repository': {
+                'type': 'GitHub'
+            }
+        }
+
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.json.return_value = expected_response
+
+        params = {
+            "project": "project123",
+            "job": 732059764,
+            "server_uri": "https://",
+            "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
+            "build": '20190725.8'
+        }
+
+        expected_error = """Project is not public. Please upload with the Codecov repository upload token to resolve issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('azure_pipelines', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+
+    @patch.object(requests, 'get')
+    def test_azure_wrong_service_type(self, mock_get):
+        expected_response = {
+            'finishTime': 'NOW',
+            'buildNumber':'20190725.8',
+            'status':'inProgress',
+            'sourceVersion':'c739768fcac68144a3a6d82305b9c4106934d31a',
+            'project': {
+                'visibility': 'public'
+            },
+            'repository': {
+                'type': 'BADREPOTYPE'
+            }
+        }
+
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.json.return_value = expected_response
+
+        params = {
+            "project": "project123",
+            "job": 732059764,
+            "server_uri": "https://",
+            "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
+            "build": '20190725.8'
+        }
+
+        expected_error = """Sorry this service is not supported. Codecov currently only works with GitHub, GitLab, and BitBucket repositories"""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('azure_pipelines', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+
+class UploadHandlerAppveyorTokenlessTest(TestCase):
+
+    def test_appveyor_no_job(self):
+        params = {
+        }
+
+        expected_error = """Missing "job" argument. Please upload with the Codecov repository upload token to resolve issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('appveyor', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch.object(requests, 'get')
+    def test_appveyor_http_error(self, mock_get):
+        mock_get.side_effect = [requests.exceptions.HTTPError('Not found')]
+
+        params = {
+            "project": "project123",
+            "job": "732059764",
+            "server_uri": "https://"
+        }
+
+        expected_error = """Unable to locate build via Appveyor API. Please upload with the Codecov repository upload token to resolve issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('appveyor', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch.object(requests, 'get')
+    def test_appveyor_connection_error(self, mock_get):
+        mock_get.side_effect = [requests.exceptions.ConnectionError('Not found')]
+
+        params = {
+            "project": "project123",
+            "job": "something/else/732059764",
+            "server_uri": "https://"
+        }
+
+        expected_error = """Unable to locate build via Appveyor API. Please upload with the Codecov repository upload token to resolve issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('appveyor', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch.object(requests, 'get')
+    def test_appveyor_finished_build(self, mock_get):
+        expected_response = {
+            'build': {
+                'jobs': [
+                    {
+                        'jobId': '732059764',
+                    }
+                ]
+            },
+            'finishTime':'NOW',
+            'buildNumber':'20190725.8',
+            'status':'inProgress',
+            'sourceVersion':'c739768fcac68144a3a6d82305b9c4106934d31a',
+            'project': {
+                'visibility':'public',
+                'repositoryType': 'github'
+            },
+            'repository': {
+                'type': 'GitHub'
+            },
+            'triggerInfo': {
+                'pr.sourceSha': 'c739768fcac68144a3a6d82305b9c4106934d31a'
+            }
+        }
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.json.return_value = expected_response
+
+        params = {
+            "project": "project123",
+            "job": "732059764",
+            "server_uri": "https://",
+            "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
+            "build": '20190725.8'
+        }
+
+        expected_error = """Build already finished, unable to accept new reports. Please upload with the Codecov repository upload token to resolve issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('appveyor', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+
+    @patch.object(requests, 'get')
+    def test_appveyor_no_errors(self, mock_get):
+        expected_response = {
+            'build': {
+                'jobs': [
+                    {
+                        'jobId': '732059764',
+                    }
+                ]
+            },
+            'finishTime':'NOW',
+            'buildNumber':'20190725.8',
+            'status':'inProgress',
+            'sourceVersion':'c739768fcac68144a3a6d82305b9c4106934d31a',
+            'project': {
+                'visibility':'public',
+                'repositoryType': 'github'
+            },
+            'repository': {
+                'type': 'GitHub'
+            },
+            'triggerInfo': {
+                'pr.sourceSha': 'c739768fcac68144a3a6d82305b9c4106934d31a'
+            }
+        }
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.json.return_value = expected_response
+
+        params = {
+            "project": "project123",
+            "job": "732059764",
+            "server_uri": "https://",
+            "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
+            "build": '732059764'
+        }
+
+        res = TokenlessUploadHandler('appveyor', params).verify_upload()
+
+        assert res == 'github'
+
+    @patch.object(requests, 'get')
+    def test_appveyor_invalid_service(self, mock_get):
+        expected_response = {
+            'build': {
+                'jobs': [
+                    {
+                        'jobId': '732059764',
+                    }
+                ]
+            },
+            'finishTime':'NOW',
+            'buildNumber':'20190725.8',
+            'status':'inProgress',
+            'sourceVersion':'c739768fcac68144a3a6d82305b9c4106934d31a',
+            'project': {
+                'visibility':'public',
+                'repositoryType': 'gitthub'
+            },
+            'repository': {
+                'type': 'GittHub'
+            },
+            'triggerInfo': {
+                'pr.sourceSha': 'c739768fcac68144a3a6d82305b9c4106934d31a'
+            }
+        }
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.json.return_value = expected_response
+
+        params = {
+            "project": "project123",
+            "job": "732059764",
+            "server_uri": "https://",
+            "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
+            "build": '732059764'
+        }
+        expected_error = """Sorry this service is not supported. Codecov currently only works with GitHub, GitLab, and BitBucket repositories"""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('appveyor', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+class UploadHandlerCircleciTokenlessTest(TestCase):
+
+    def test_circleci_no_build(self):
+        params = {            
+        }
+
+        expected_error = """Missing "build" argument. Please upload with the Codecov repository upload token to resolve issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('circleci', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    def test_circleci_no_owner(self):
+        params = {
+            "build": 1234
+        }
+
+        expected_error = """Missing "owner" argument. Please upload with the Codecov repository upload token to resolve issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('circleci', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    def test_circleci_no_repo(self):
+        params = {
+            "build": "12.34", 
+            "owner": "owner"
+        }
+
+        expected_error = """Missing "repo" argument. Please upload with the Codecov repository upload token to resolve issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('circleci', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch.object(requests, 'get')
+    def test_circleci_http_error(self, mock_get):
+        mock_get.side_effect = [requests.exceptions.HTTPError('Not found')]
+
+        params = {
+            "build": "12.34", 
+            "owner": "owner",
+            "repo": "repo"
+        }
+
+        expected_error = """Unable to locate build via CircleCI API. Please upload with the Codecov repository upload token to resolve issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('circleci', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch.object(requests, 'get')
+    def test_circleci_connection_error(self, mock_get):
+        mock_get.side_effect = [requests.exceptions.ConnectionError('Not found')]
+
+        params = {
+            "build": "12.34", 
+            "owner": "owner",
+            "repo": "repo"
+        }
+
+        expected_error = """Unable to locate build via CircleCI API. Please upload with the Codecov repository upload token to resolve issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('circleci', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch.object(requests, 'get')
+    def test_circleci_invalid_commit(self, mock_get):
+        expected_response = {
+            "vcs_revision": "739768fcac68144a3a6d82305b9c4106934d31a",
+        }
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.json.return_value = expected_response
+
+        params = {
+            "build": "12.34", 
+            "owner": "owner",
+            "repo": "repo",
+            "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
+        }
+        expected_error = """Commit sha does not match Circle build. Please upload with the Codecov repository upload token to resolve issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('circleci', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch.object(requests, 'get')
+    def test_circleci_invalid_stop_time(self, mock_get):
+        expected_response = {
+            "vcs_revision": "c739768fcac68144a3a6d82305b9c4106934d31a",
+        }
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.json.return_value = expected_response
+
+        params = {
+            "build": "12.34", 
+            "owner": "owner",
+            "repo": "repo",
+            "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
+        }
+        expected_error = """Build has already finished, uploads rejected."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('circleci', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch.object(requests, 'get')
+    def test_circleci_invalid_stop_time(self, mock_get):
+        expected_response = {
+            "vcs_revision": "c739768fcac68144a3a6d82305b9c4106934d31a",
+            "stop_time": "stops time",
+            "vcs_type": "github"
+        }
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.json.return_value = expected_response
+
+        params = {
+            "build": "12.34", 
+            "owner": "owner",
+            "repo": "repo",
+            "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
+        }
+
+        assert TokenlessUploadHandler('circleci', params).verify_upload() == 'github'
