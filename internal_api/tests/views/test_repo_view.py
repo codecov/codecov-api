@@ -364,55 +364,14 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         assert response.status_code == 200
         assert private_repo.name not in [repo["name"] for repo in response.data['results']]
 
-    def test_returns_total_commit_count_and_latest_coverage_change(self):
-        CommitFactory(
-            totals={
-            "f": 1,
-            "n": 4,
-            "h": 4,
-            "m": 0,
-            "p": 0,
-            "c": 100.0,
-            "b": 0,
-            "d": 0,
-            "s": 1,
-            "C": 0.0,
-            "N": 0.0,
-            "diff": ""
-            },
-            repository=self.repo1
-        )
-        CommitFactory(
-            totals={
-            "f": 1,
-            "n": 4,
-            "h": 4,
-            "m": 0,
-            "p": 0,
-            "c": 70.0,
-            "b": 0,
-            "d": 0,
-            "s": 1,
-            "C": 0.0,
-            "N": 0.0,
-            "diff": ""
-            },
-            repository=self.repo1
-        )
-
-        response = self._list()
-        repo1 = [repo for repo in response.data["results"] if repo["name"] == "A"][0]
-        assert repo1["total_commit_count"] == 2
-        assert repo1["latest_coverage_change"] == -30
-
     def test_latest_commit_null(self):
         response = self._list()
         repo1 = [repo for repo in response.data["results"] if repo["name"] == "A"][0]
 
-        # When the commit is missing, its set to None or empty string. Test with lines.
+        # When the commit is missing, its set to None or empty string.
         assert repo1["latest_commit_totals"] is None
 
-    def test_returns_latest_commit(self):
+    def test_returns_latest_commit_totals(self):
         commit = CommitFactory(repository=self.repo1)
         response = self._list()
         repo1 = [repo for repo in response.data["results"] if repo["name"] == "A"][0]

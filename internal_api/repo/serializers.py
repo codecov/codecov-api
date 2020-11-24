@@ -31,15 +31,11 @@ class RepoSerializer(serializers.ModelSerializer):
 
 
 class RepoWithMetricsSerializer(RepoSerializer):
-    total_commit_count = serializers.IntegerField()
     latest_commit_totals = CommitTotalsSerializer()
-    latest_coverage_change = serializers.FloatField()
 
     class Meta(RepoSerializer.Meta):
         fields = (
-            'total_commit_count',
             'latest_commit_totals',
-            'latest_coverage_change',
         ) + RepoSerializer.Meta.fields
 
 
