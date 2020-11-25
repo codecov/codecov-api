@@ -120,7 +120,7 @@ def apply_grouping(queryset, data):
         f"{date_ordering}truncated_date", "repository__name", f"{ordering}{agg_value}"
     ).distinct(
         "truncated_date", "repository__name"
-    )  # this will select the first row for a given date/repo combo, which since we've just ordered the commits
+    ) # this will select the first row for a given date/repo combo, which since we've just ordered the commits
     # should be the one with the min/max value we want to aggregate by
 
 
@@ -129,33 +129,26 @@ def aggregate_across_repositories(grouped_queryset):
     Used for the organization analytics chart, which shows total sums across all repositories for a given time unit.
     The grouped_queryset has the approprate commit for each repo grouped by time unit, we'll aggregate this to get the sum and weighted average. 
     """
-    result = []
-
     # Get the set of dates represented in the data, so we can retrieve the values for each repo within a given time window
-    truncated_dates = grouped_queryset.distinct("truncated_date").values_list(
-        "truncated_date", flat=True
-    )
+    items = grouped_queryset.values("truncated_date", "totals")
 
-    for truncated_date in truncated_dates:
-        commits = grouped_queryset.filter(truncated_date=truncated_date)
+    datapoints = {}
 
-        # note: until we update to Django 3, can't call aggregate/annotate here or Django will freak out since we previously called "distinct" to group the queryset
-        # see https://stackoverflow.com/questions/4048014/how-to-add-an-annotation-on-distinct-items
-        total_lines = sum([commit.totals["n"] for commit in commits])
-        total_hits = sum([commit.totals["h"] for commit in commits])
-        total_partials = sum([commit.totals["p"] for commit in commits])
-        total_misses = sum([commit.totals["m"] for commit in commits])
-
-        weighted_coverage = (total_hits / total_lines) * 100
-
-        result.append(
-            {
-                "date": truncated_date,
-                "weighted_coverage": weighted_coverage,
-                "total_lines": total_lines,
-                "total_hits": total_hits,
-                "total_partials": total_partials,
-                "total_misses": total_misses,
+    for item in items:
+        date_key = str(item["truncated_date"])
+        if date_key in datapoints:
+            datapoints[date_key]["total_lines"] += item["totals"]["n"]
+            datapoints[date_key]["total_hits"] += item["totals"]["h"]
+            datapoints[date_key]["total_partials"] += item["totals"]["p"]
+            datapoints[date_key]["total_misses"] += item["totals"]["m"]
+        else:
+            datapoints[date_key] = {
+                "date": item["truncated_date"],
+                "total_lines": item["totals"]["n"],
+                "total_hits": item["totals"]["h"],
+                "total_partials": item["totals"]["p"],
+                "total_misses": item["totals"]["m"]
             }
-        )
-    return result
+    for _, datapoint in datapoints.items():
+        datapoint["weighted_coverage"] = datapoint["total_hits"] / datapoint["total_lines"]
+    return list(datapoints.values())
