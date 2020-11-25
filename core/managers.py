@@ -69,6 +69,21 @@ class RepositoryQuerySet(QuerySet):
             )
         return queryset
 
+    def with_latest_coverage_change(self):
+        """
+        Annotates the queryset with the latest "coverage change" (cov of last commit
+        made to default branch, minus cov of second-to-last commit made to default
+        branch) of each repository. Depends on having called "with_latest_commit_totals_before" with 
+        "include_previous_totals=True".
+        """
+        from core.models import Commit
+        return self.annotate(
+            latest_coverage=Cast(KeyTextTransform("c", "latest_commit_totals"), output_field=FloatField()),
+            second_latest_coverage=Cast(KeyTextTransform("c", "prev_commit_totals"), output_field=FloatField())
+        ).annotate(
+            latest_coverage_change=F("latest_coverage") - F("second_latest_coverage")
+        )
+
     def get_aggregated_coverage(self):
         """
         Adds group_bys in the queryset to aggregate the repository coverage totals together to access

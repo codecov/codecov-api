@@ -94,7 +94,7 @@ class RepositoryViewSet(
                 self.request.query_params.get("before_date", datetime.now().isoformat()),
                 self.request.query_params.get("branch", None),
                 include_previous_totals=True
-            )
+            ).with_latest_coverage_change()
 
         return queryset
 

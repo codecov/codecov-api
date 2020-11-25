@@ -87,3 +87,13 @@ class RepositoryQuerySetTests(TestCase):
         assert stats["weighted_coverage"] == 54.5454545454545
         # We would expect the weighted coverage to be (54 / 110) * 100 - (45 / 100) * 100
         assert stats["weighted_coverage_change"] == 9.54545454545454
+
+    def test_with_latest_coverage_change(self):
+        CommitFactory(totals={"c": 99}, repository=self.repo1)
+        CommitFactory(totals={"c": 98}, repository=self.repo1)
+        assert Repository.objects.all(
+        ).with_latest_commit_totals_before(
+            datetime.now().isoformat(),
+            None,
+            True
+        ).with_latest_coverage_change()[0].latest_coverage_change == -1
