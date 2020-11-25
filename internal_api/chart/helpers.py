@@ -150,5 +150,5 @@ def aggregate_across_repositories(grouped_queryset):
                 "total_misses": item["totals"]["m"]
             }
     for _, datapoint in datapoints.items():
-        datapoint["weighted_coverage"] = datapoint["total_hits"] / datapoint["total_lines"]
+        datapoint["weighted_coverage"] = datapoint["total_hits"] / datapoint["total_lines"] * 100
     return list(datapoints.values())
