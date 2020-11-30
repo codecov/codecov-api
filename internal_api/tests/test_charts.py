@@ -726,7 +726,7 @@ class OrganizationCoverageChartTest(InternalAPITest):
         assert response.status_code == 200
         assert len(response.data["coverage"]) > 0
         for item in response.data["coverage"]:
-            assert "weighted_coverage" in item
+            assert "coverage" in item
             assert "total_lines" in item
             assert "total_hits" in item
             assert "total_partials" in item
@@ -747,7 +747,7 @@ class OrganizationCoverageChartTest(InternalAPITest):
         assert response.status_code == 200
         assert len(response.data["coverage"]) > 0
         for item in response.data["coverage"]:
-            assert "weighted_coverage" in item
+            assert "coverage" in item
             assert "total_lines" in item
             assert "total_hits" in item
             assert "total_partials" in item

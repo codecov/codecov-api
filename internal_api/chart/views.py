@@ -143,7 +143,7 @@ class OrganizationChartHandler(APIView, RepositoriesMixin):
         "coverage": [
             {
                 "date": "2019-06-01 00:00:00+00:00", <NOT the commit timestamp, the date for the time window>
-                "weighted_coverage": <coverage calculated by taking (total_lines + total_hits) / total_partials>,
+                "coverage": <coverage calculated by taking (total_lines + total_hits) / total_partials>,
                 "total_lines": <sum of lines across repositories from the commit we retrieved for the repo>,
                 "total_hits": <sum of hits across repositories>,
                 "total_partials": <sum of partials across repositories>,
