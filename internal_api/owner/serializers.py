@@ -10,12 +10,6 @@ from services.billing import BillingService
 
 log = logging.getLogger(__name__)
 
-short_services = {
-    'github': 'gh',
-    'bitbucket': 'bb',
-    'gitlab': 'gl',
-}
-
 class OwnerSerializer(serializers.ModelSerializer):
     stats = serializers.SerializerMethodField()
 
@@ -135,16 +129,11 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         if "pretty_plan" in validated_data:
-            base_path = f"/account/{short_services[instance.service]}/{instance.username}"
-            success_path = f"{base_path}?success"
-            cancel_path = f"{base_path}?cancelled"
             checkout_session_id_or_none = BillingService(
                 requesting_user=self.context["request"].user,
             ).update_plan(
                 instance,
-                validated_data.pop("pretty_plan"),
-                success_path=success_path,
-                cancel_path=cancel_path,
+                validated_data.pop("pretty_plan")
             )
 
             if checkout_session_id_or_none is not None:
