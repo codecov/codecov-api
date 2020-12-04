@@ -40,7 +40,7 @@ class AbstractPaymentService(ABC):
         pass
 
     @abstractmethod
-    def create_checkout_session(self, owner, plan):
+    def create_checkout_session(self, owner, plan, success_path, cancel_path):
         pass
 
 
@@ -118,7 +118,9 @@ class StripeService(AbstractPaymentService):
         log.info(f"Stripe subscription modified successfully for owner {owner.ownerid}")
 
     @_log_stripe_error
-    def create_checkout_session(self, owner, desired_plan):
+    def create_checkout_session(self, owner, desired_plan, success_path, cancel_path):
+        success_url = f"{settings.CODECOV_DASHBOARD_URL}{success_path}"
+        cancel_url = f"{settings.CODECOV_DASHBOARD_URL}{cancel_path}"
         log.info("Creating Stripe Checkout Session for owner: {owner.ownerid}")
         session = stripe.checkout.Session.create(
             billing_address_collection="required",
@@ -126,8 +128,8 @@ class StripeService(AbstractPaymentService):
             client_reference_id=owner.ownerid,
             customer=owner.stripe_customer_id,
             customer_email=owner.email,
-            success_url=settings.CLIENT_PLAN_CHANGE_SUCCESS_URL,
-            cancel_url=settings.CLIENT_PLAN_CHANGE_CANCEL_URL,
+            success_url=success_url,
+            cancel_url=cancel_url,
             subscription_data={
                 "items": [
                     {
@@ -162,7 +164,7 @@ class BillingService:
     def list_invoices(self, owner, limit=10):
         return self.payment_service.list_invoices(owner, limit)
 
-    def update_plan(self, owner, desired_plan):
+    def update_plan(self, owner, desired_plan, success_path = '', cancel_path = ''):
         """
         Takes an owner and desired plan, and updates the owner's plan. Depending
         on current state, might create a stripe checkout session and return
@@ -177,7 +179,7 @@ class BillingService:
             if owner.stripe_subscription_id is not None:
                 self.payment_service.modify_subscription(owner, desired_plan)
             else:
-                return self.payment_service.create_checkout_session(owner, desired_plan)
+                return self.payment_service.create_checkout_session(owner, desired_plan, success_path, cancel_path)
         else:
             log.warning(
                 f"Attempted to transition to non-existent or legacy plan: "
