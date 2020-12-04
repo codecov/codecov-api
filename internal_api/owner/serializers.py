@@ -10,7 +10,6 @@ from services.billing import BillingService
 
 log = logging.getLogger(__name__)
 
-
 class OwnerSerializer(serializers.ModelSerializer):
     stats = serializers.SerializerMethodField()
 

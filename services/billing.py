@@ -130,8 +130,20 @@ class StripeService(AbstractPaymentService):
 
         log.info(f"Stripe subscription modified successfully for owner {owner.ownerid}")
 
+    def _get_success_and_cancel_url(self, owner):
+        short_services = {
+            'github': 'gh',
+            'bitbucket': 'bb',
+            'gitlab': 'gl',
+        }
+        base_path = f"/account/{short_services[owner.service]}/{owner.username}"
+        success_url = f"{settings.CODECOV_DASHBOARD_URL}{base_path}?success"
+        cancel_url = f"{settings.CODECOV_DASHBOARD_URL}{base_path}?cancel"
+        return success_url, cancel_url
+
     @_log_stripe_error
     def create_checkout_session(self, owner, desired_plan):
+        success_url, cancel_url = self._get_success_and_cancel_url(owner)
         log.info("Creating Stripe Checkout Session for owner: {owner.ownerid}")
         session = stripe.checkout.Session.create(
             billing_address_collection="required",
@@ -139,8 +151,8 @@ class StripeService(AbstractPaymentService):
             client_reference_id=owner.ownerid,
             customer=owner.stripe_customer_id,
             customer_email=owner.email,
-            success_url=settings.CLIENT_PLAN_CHANGE_SUCCESS_URL,
-            cancel_url=settings.CLIENT_PLAN_CHANGE_CANCEL_URL,
+            success_url=success_url,
+            cancel_url=cancel_url,
             subscription_data={
                 "items": [
                     {
