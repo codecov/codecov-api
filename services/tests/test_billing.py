@@ -123,8 +123,10 @@ class StripeServiceTests(TestCase):
             "value": "users-pr-inappm",
             "quantity": desired_quantity
         }
+        success_path = '/success'
+        cancel_path = '/cancel'
 
-        assert self.stripe.create_checkout_session(owner, desired_plan) == expected_id
+        assert self.stripe.create_checkout_session(owner, desired_plan, success_path, cancel_path) == expected_id
 
         create_checkout_session_mock.assert_called_once_with(
             billing_address_collection="required",
@@ -132,8 +134,8 @@ class StripeServiceTests(TestCase):
             client_reference_id=owner.ownerid,
             customer=owner.stripe_customer_id,
             customer_email=owner.email,
-            success_url=settings.CLIENT_PLAN_CHANGE_SUCCESS_URL,
-            cancel_url=settings.CLIENT_PLAN_CHANGE_CANCEL_URL,
+            success_url=f"{settings.CODECOV_DASHBOARD_URL}{success_path}",
+            cancel_url=f"{settings.CODECOV_DASHBOARD_URL}{cancel_path}",
             subscription_data={
                 "items": [{
                     "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
@@ -248,9 +250,11 @@ class BillingServiceTests(TestCase):
             "value": "users-pr-inappy",
             "quantity": 10
         }
-        self.billing_service.update_plan(owner, desired_plan)
+        success_path = '/good'
+        cancel_path = '/cancel'
+        self.billing_service.update_plan(owner, desired_plan, success_path, cancel_path)
 
-        create_checkout_session_mock.assert_called_once_with(owner, desired_plan)
+        create_checkout_session_mock.assert_called_once_with(owner, desired_plan, success_path, cancel_path)
 
         set_free_plan_mock.assert_not_called()
         delete_subscription_mock.assert_not_called()
