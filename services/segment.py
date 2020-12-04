@@ -10,7 +10,7 @@ def segment_enabled(method):
     """
     def exec_method(*args, **kwargs):
         if settings.SEGMENT_ENABLED:
-            return method(*args, **kwargs):
+            return method(*args, **kwargs)
     return exec_method
 
 
@@ -83,13 +83,13 @@ class SegmentOwner:
             'plan_provider': self.owner.plan_provider,
             'plan_user_count': self.owner.plan_user_count,
             'delinquent': self.owner.delinquent,
-            'did_trial': self.owner_record.did_trial,
+            'did_trial': self.owner.did_trial,
             'student': self.owner.student,
             'student_created_at': self.owner.student_created_at,
             'student_updated_at': self.owner.student_updated_at,
             'staff': self.owner.staff,
             'bot': self.owner.bot,
-            'has_yaml': self.owner.has_yaml,
+            'has_yaml': self.owner.yaml is not None,
         }
 
     @property
@@ -116,13 +116,13 @@ class SegmentOwner:
             })
 
         if self.cookies:
-            marketo_cookie = cookies.get("_mkto_trk")
-            ga_cookie = cookies.get("_ga")
+            marketo_cookie = self.cookies.get("_mkto_trk")
+            ga_cookie = self.cookies.get("_ga")
             if marketo_cookie:
                 context["externalIds"].append({
                     "id": marketo_cookie,
                     "type": "marketo_cookie",
-                    "collection": users,
+                    "collection": "users",
                     "encoding": "none"
                 })
                 context["Marketo"] = {"marketo_cookie": marketo_cookie}
