@@ -151,6 +151,27 @@ class StripeServiceTests(TestCase):
             }
         )
 
+    def test_get_payment_method_when_no_subscription(self):
+        owner = OwnerFactory(stripe_subscription_id=None)
+        assert self.stripe.get_payment_method(owner) == None
+
+    @patch('services.billing.stripe.Subscription.retrieve')
+    @patch('services.billing.stripe.PaymentMethod.retrieve')
+    def test_get_payment_method_when_no_subscription(self, payment_method_retrieve_mock, subscription_retrieve_mock):
+        owner = OwnerFactory(stripe_subscription_id="abc")
+        # only including fields relevant to implementation
+        payment_method_id = 'pm_something_something'
+        subscription_retrieve_mock.return_value = {
+            "default_payment_method": payment_method_id
+        }
+        card = { "something": "something" }
+        payment_method_retrieve_mock.return_value = { "card": card }
+        assert self.stripe.get_payment_method(owner) == { "card": card }
+        subscription_retrieve_mock.assert_called_once_with(owner.stripe_subscription_id)
+        payment_method_retrieve_mock.assert_called_once_with(payment_method_id)
+
+
+
 
 class MockPaymentService(AbstractPaymentService):
     def list_invoices(self, owner, limit=10):
@@ -163,6 +184,9 @@ class MockPaymentService(AbstractPaymentService):
         pass
 
     def create_checkout_session(self, owner, plan):
+        pass
+
+    def get_payment_method(self, owner, plan):
         pass
 
 
@@ -277,3 +301,10 @@ class BillingServiceTests(TestCase):
         delete_subscription_mock.assert_not_called()
         modify_subscription_mock.assert_not_called()
         create_checkout_session_mock.assert_not_called()
+
+    @patch('services.tests.test_billing.MockPaymentService.get_payment_method')
+    def test_get_payment_method(self, get_payment_method_mock):
+        owner = OwnerFactory()
+        self.billing_service.get_payment_method(owner)
+
+        get_payment_method_mock.assert_called_once_with(owner)

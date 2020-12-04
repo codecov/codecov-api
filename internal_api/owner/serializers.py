@@ -64,6 +64,17 @@ class StripeInvoiceSerializer(serializers.Serializer):
     line_items = StripeLineItemSerializer(many=True, source="lines.data")
 
 
+class StripeCardSerializer(serializers.Serializer):
+    brand = serializers.CharField()
+    exp_month = serializers.IntegerField()
+    exp_year = serializers.IntegerField()
+    last4 = serializers.CharField()
+
+
+class StripePaymentMethodSerializer(serializers.Serializer):
+    card = StripeCardSerializer(read_only=True)
+
+
 class PlanSerializer(serializers.Serializer):
     marketing_name = serializers.CharField(read_only=True)
     value = serializers.CharField()
@@ -98,6 +109,7 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
     plan = PlanSerializer(source="pretty_plan")
     latest_invoice = serializers.SerializerMethodField()
     checkout_session_id = serializers.SerializerMethodField()
+    payment_method = serializers.SerializerMethodField()
 
     class Meta:
         model = Owner
@@ -108,18 +120,21 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
             'integration_id',
             'plan',
             'latest_invoice',
+            'payment_method',
             'checkout_session_id',
             'name',
             'email',
         )
 
+    def _get_billing_service(self):
+        return BillingService(requesting_user=self.context["request"].user)
+
+    def get_payment_method(self, owner):
+        payment_method = self._get_billing_service().get_payment_method(owner)
+        return StripePaymentMethodSerializer(payment_method).data
+
     def get_latest_invoice(self, owner):
-        invoices = BillingService(
-            requesting_user=self.context["request"].user
-        ).list_invoices(
-            owner,
-            limit=1
-        )
+        invoices = self._get_billing_service().list_invoices(owner, limit=1)
 
         if invoices:
             return StripeInvoiceSerializer(invoices[0]).data
