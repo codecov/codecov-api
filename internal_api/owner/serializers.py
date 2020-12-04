@@ -67,8 +67,8 @@ class StripeInvoiceSerializer(serializers.Serializer):
 
 class StripeCardSerializer(serializers.Serializer):
     brand = serializers.CharField()
-    exp_month = serializers.CharField()
-    exp_year = serializers.CharField()
+    exp_month = serializers.IntegerField()
+    exp_year = serializers.IntegerField()
     last4 = serializers.CharField()
 
 
