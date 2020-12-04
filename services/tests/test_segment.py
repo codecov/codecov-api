@@ -1,7 +1,8 @@
 from django.test import TestCase
 from codecov_auth.tests.factories import OwnerFactory
 
-from services.segment import SegmentOwner, SegmentService
+from services.segment import SegmentOwner, SegmentService, SegmentEvent
+from unittest.mock import patch
 
 
 class SegmentOwnerTests(TestCase):
@@ -77,11 +78,51 @@ class SegmentOwnerTests(TestCase):
 
 
 class SegmentServiceTests(TestCase):
-    def test_user_signed_up(self):
-        pass
+    def setUp(self):
+        self.segment_service = SegmentService()
+        self.owner = OwnerFactory()
+        self.segment_owner = SegmentOwner(self.owner)
 
-    def test_user_signed_in(self):
-        pass
+    @patch('analytics.identify')
+    def test_identify_user(self, identify_mock):
+        with self.settings(SEGMENT_ENABLED=True):
+            self.segment_service.identify_user(self.owner)
+            identify_mock.assert_called_once_with(
+                self.segment_owner.user_id,
+                self.segment_owner.traits,
+                self.segment_owner.context,
+                integrations={
+                    "Salesforce": False,
+                    "Marketo": False
+                }
+            )
 
-    def test_user_signed_out(self):
-        pass
+    @patch('analytics.track')
+    def test_user_signed_up(self, track_mock):
+        with self.settings(SEGMENT_ENABLED=True):
+            self.segment_service.user_signed_up(self.owner)
+            track_mock.assert_called_once_with(
+                self.segment_owner.user_id,
+                SegmentEvent.USER_SIGNED_UP.value,
+                self.segment_owner.traits
+            )
+
+    @patch('analytics.track')
+    def test_user_signed_in(self, track_mock):
+        with self.settings(SEGMENT_ENABLED=True):
+            self.segment_service.user_signed_in(self.owner)
+            track_mock.assert_called_once_with(
+                self.segment_owner.user_id,
+                SegmentEvent.USER_SIGNED_IN.value,
+                self.segment_owner.traits
+            )
+
+    @patch('analytics.track')
+    def test_user_signed_out(self, track_mock):
+        with self.settings(SEGMENT_ENABLED=True):
+            self.segment_service.user_signed_out(self.owner)
+            track_mock.assert_called_once_with(
+                self.segment_owner.user_id,
+                SegmentEvent.USER_SIGNED_OUT.value,
+                self.segment_owner.traits
+            )

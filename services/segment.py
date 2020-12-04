@@ -19,13 +19,13 @@ def inject_segment_owner(method):
     Decorator: promotes type of 'owner' keyword-arg to 'SegmentOwner'.
     """
     @segment_enabled
-    def exec_method(**kwargs):
-        kwargs["owner"] = SegmentOwner(kwargs["owner"], cookies=kwargs.get("cookies", {}))
-        return method(**kwargs)
+    def exec_method(self, owner, **kwargs):
+        segment_owner = SegmentOwner(owner, cookies=kwargs.get("cookies", {}))
+        return method(self, segment_owner, **kwargs)
     return exec_method
 
 
-class Event(Enum):
+class SegmentEvent(Enum):
     ACCOUNT_ACTIVATED_REPOSITORY_ON_UPLOAD = 'Account Activated Repository On Upload'
     ACCOUNT_ACTIVATED_REPOSITORY = 'Account Activated Repository'
     ACCOUNT_ACTIVATED_USER = 'Account Activated User'
@@ -159,13 +159,13 @@ class SegmentService:
         )
 
     @inject_segment_owner
-    def user_signed_up(self, owner):
-        analytics.track(owner.user_id, Event.USER_SIGNED_UP.value, owner.traits)
+    def user_signed_up(self, segment_owner):
+        analytics.track(segment_owner.user_id, SegmentEvent.USER_SIGNED_UP.value, segment_owner.traits)
 
     @inject_segment_owner
-    def user_signed_in(self, owner):
-        analytics.track(owner.user_id, Event.USER_SIGNED_IN.value, owner.traits)
+    def user_signed_in(self, segment_owner):
+        analytics.track(segment_owner.user_id, SegmentEvent.USER_SIGNED_IN.value, segment_owner.traits)
 
     @inject_segment_owner
-    def user_signed_out(self, owner):
-        analytics.track(owner.user_id, Event.USER_SIGNED_OUT.value, owner.traits)
+    def user_signed_out(self, segment_owner):
+        analytics.track(segment_owner.user_id, SegmentEvent.USER_SIGNED_OUT.value, segment_owner.traits)
