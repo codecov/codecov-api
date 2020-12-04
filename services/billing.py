@@ -43,6 +43,10 @@ class AbstractPaymentService(ABC):
     def create_checkout_session(self, owner, plan):
         pass
 
+    @abstractmethod
+    def get_payment_method(self, owner):
+        pass
+
 
 class StripeService(AbstractPaymentService):
     def __init__(self, requesting_user):
@@ -90,6 +94,15 @@ class StripeService(AbstractPaymentService):
             stripe.Subscription.modify(
                 owner.stripe_subscription_id, cancel_at_period_end=True
             )
+
+    @_log_stripe_error
+    def get_payment_method(self, owner):
+        if owner.stripe_subscription_id is None:
+            return None
+        subscription = stripe.Subscription.retrieve(owner.stripe_subscription_id)
+        payment_method_id = subscription["default_payment_method"]
+        payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
+        return payment_method
 
     @_log_stripe_error
     def modify_subscription(self, owner, desired_plan):
@@ -158,6 +171,9 @@ class BillingService:
             raise Exception(
                 "self.payment_service must subclass AbstractPaymentService!"
             )
+
+    def get_payment_method(self, owner):
+        return self.payment_service.get_payment_method(owner)
 
     def list_invoices(self, owner, limit=10):
         return self.payment_service.list_invoices(owner, limit)
