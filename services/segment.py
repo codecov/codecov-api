@@ -32,7 +32,7 @@ def segment_enabled(method):
 
 def inject_segment_owner(method):
     """
-    Decorator: promotes type of 'owner' keyword-arg to 'SegmentOwner'.
+    Decorator: promotes type of 'owner' arg to 'SegmentOwner'.
     """
     @segment_enabled
     def exec_method(self, owner, **kwargs):
