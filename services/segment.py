@@ -2,6 +2,22 @@ import analytics
 import re
 from enum import Enum
 from django.conf import settings
+import logging
+
+
+log = logging.getLogger(__name__)
+
+
+def on_segment_error(error):
+    log.error(f"Segment error: {error}")
+
+
+if settings.SEGMENT_ENABLED:
+    if not settings.SEGMENT_API_KEY:
+        log.warning("Segment enabled but segment API key not set")
+    analytics.write_key = settings.SEGMENT_API_KEY
+    analytics.debug = settings.DEBUG
+    analytics.on_error = on_segment_error
 
 
 def segment_enabled(method):

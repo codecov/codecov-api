@@ -10,9 +10,12 @@ from utils.encryption import encryptor
 from utils.config import get_config
 from services.task import TaskService
 from services.redis import get_redis_connection
+from services.segment import SegmentService
 
 
 class LoginMixin(object):
+    segment_service = SegmentService()
+
     def get_is_enterprise(self):
         # TODO Change when rolling out enterprise
         return False
@@ -103,6 +106,14 @@ class LoginMixin(object):
         owner.username = login_data["login"]
         owner.private_access = user_dict["has_private_access"]
         owner.save()
+
+        ## Segment tracking
+        self.segment_service.identify_user(owner)
+        if was_created:
+            self.segment_service.user_signed_up(owner)
+        else:
+            self.segment_service.user_signed_in(owner)
+
         return (owner, was_created)
 
     def _schedule_proper_tasks(self, user):

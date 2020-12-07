@@ -1,7 +1,7 @@
 from django.test import TestCase
 from codecov_auth.tests.factories import OwnerFactory
 
-from services.segment import SegmentOwner, SegmentService, SegmentEvent
+from services.segment import SegmentOwner, SegmentService, SegmentEvent, on_segment_error
 from unittest.mock import patch
 
 
@@ -82,6 +82,9 @@ class SegmentServiceTests(TestCase):
         self.segment_service = SegmentService()
         self.owner = OwnerFactory()
         self.segment_owner = SegmentOwner(self.owner)
+
+    def test_on_segment_error_doesnt_crash(self):
+        on_segment_error(Exception())
 
     @patch('analytics.identify')
     def test_identify_user(self, identify_mock):
