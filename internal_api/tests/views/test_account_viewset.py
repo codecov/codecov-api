@@ -182,7 +182,6 @@ class AccountViewSetTests(APITestCase):
             },
         }
 
-
     def test_update_can_set_plan_auto_activate_to_true(self):
         self.user.plan_auto_activate = False
         self.user.save()
@@ -316,6 +315,27 @@ class AccountViewSetTests(APITestCase):
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    @patch('services.billing.stripe.Subscription.retrieve')
+    @patch('services.billing.stripe.Subscription.modify')
+    @patch('services.billing.stripe.PaymentMethod.attach')
+    def test_update_payment_method(
+        self,
+        attach_payment_mock,
+        modify_subscription_mock,
+        _
+    ):
+        self.user.stripe_customer_id = "flsoe"
+        self.user.stripe_subscription_id = "djfos"
+        self.user.save()
+        payment_method_id = "pm_123"
+        response = self._update(
+            kwargs={"service": self.user.service, "owner_username": self.user.username},
+            data={"payment_method": payment_method_id}
+        )
+        assert response.status_code == status.HTTP_200_OK
+        attach_payment_mock.assert_called_once_with(payment_method_id, customer=self.user.stripe_customer_id)
+        modify_subscription_mock.assert_called_once_with(self.user.stripe_subscription_id, default_payment_method=payment_method_id)
 
     def test_update_without_admin_permissions_returns_403(self):
         owner = OwnerFactory()
