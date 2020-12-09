@@ -198,6 +198,14 @@ class SegmentService:
             segment_owner.traits
         )
 
+    @inject_segment_owner
+    def account_deleted(self, segment_owner):
+        analytics.track(
+            user_id=segment_owner.user_id,
+            properties=segment_owner.traits,
+            context={"groupId": segment_owner.user_id}
+        )
+
     @segment_enabled
     def account_activated_user(self, current_user_ownerid, ownerid_to_activate, org_ownerid, auto_activated=False):
         analytics.track(

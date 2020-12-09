@@ -202,3 +202,13 @@ class SegmentServiceTests(TestCase):
                 properties=plan_details,
                 context={"groupId": org.ownerid}
             )
+
+    @patch('analytics.track')
+    def test_account_deleted(self, track_mock):
+        with self.settings(SEGMENT_ENABLED=True):
+            self.segment_service.account_deleted(self.owner)
+            track_mock.assert_called_with(
+                user_id=self.segment_owner.user_id,
+                properties=self.segment_owner.traits,
+                context={"groupId": self.owner.ownerid}
+            )
