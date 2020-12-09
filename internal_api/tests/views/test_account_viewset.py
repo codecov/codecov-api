@@ -330,7 +330,8 @@ class AccountViewSetTests(APITestCase):
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     @patch("services.segment.SegmentService.account_deleted")
-    def test_destroy_triggers_segment_event(self, segment_account_deleted_mock):
+    @patch('services.task.TaskService.delete_owner')
+    def test_destroy_triggers_segment_event(self, delete_owner_mock, segment_account_deleted_mock):
         owner = OwnerFactory(admins=[self.user.ownerid])
         self._destroy(kwargs={"service": self.user.service, "owner_username": self.user.username})
         segment_account_deleted_mock.assert_called_once_with(self.user)

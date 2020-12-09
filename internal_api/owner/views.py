@@ -99,7 +99,7 @@ class AccountDetailsViewSet(
     permission_classes = [UserIsAdminPermissions]
 
     def destroy(self, request, *args, **kwargs):
-        if self.owner.ownerid is not request.user.ownerid:
+        if self.owner.ownerid != request.user.ownerid:
             raise PermissionDenied("You can only delete your own account")
 
         SegmentService().account_deleted(self.owner)
