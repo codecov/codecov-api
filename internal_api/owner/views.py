@@ -18,6 +18,7 @@ from codecov_auth.models import Owner, Service
 from codecov_auth.constants import CURRENTLY_OFFERED_PLANS
 from services.billing import BillingService
 from services.task import TaskService
+from services.segment import SegmentService
 
 from internal_api.mixins import OwnerPropertyMixin
 from internal_api.permissions import UserIsAdminPermissions
@@ -98,6 +99,11 @@ class AccountDetailsViewSet(
     permission_classes = [UserIsAdminPermissions]
 
     def destroy(self, request, *args, **kwargs):
+        if self.owner.ownerid is not request.user.ownerid:
+            raise PermissionDenied("You can only delete your own account")
+
+        SegmentService().account_deleted(self.owner)
+
         TaskService().delete_owner(self.owner.ownerid)
         return Response(status=status.HTTP_204_NO_CONTENT)
 

@@ -320,12 +320,17 @@ class AccountViewSetTests(APITestCase):
 
     @patch('services.task.TaskService.delete_owner')
     def test_destroy_triggers_delete_owner_task(self, delete_owner_mock):
+        response = self._destroy(kwargs={"service": self.user.service, "owner_username": self.user.username})
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        delete_owner_mock.assert_called_once_with(self.user.ownerid)
+
+    def test_destroy_not_own_account_returns_403(self):
         owner = OwnerFactory(admins=[self.user.ownerid])
         response = self._destroy(kwargs={"service": owner.service, "owner_username": owner.username})
-        assert response.status_code == status.HTTP_204_NO_CONTENT
-        delete_owner_mock.assert_called_once_with(owner.ownerid)
-
-    def test_destroy_without_admin_permissions_returns_403(self):
-        owner = OwnerFactory()
-        response = self._destroy(kwargs={"service": owner.service, "owner_username": owner.username})
         assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    @patch("services.segment.SegmentService.account_deleted")
+    def test_destroy_triggers_segment_event(self, segment_account_deleted_mock):
+        owner = OwnerFactory(admins=[self.user.ownerid])
+        self._destroy(kwargs={"service": self.user.service, "owner_username": self.user.username})
+        segment_account_deleted_mock.assert_called_once_with(self.user)
