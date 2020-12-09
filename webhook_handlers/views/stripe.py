@@ -12,6 +12,7 @@ from django.core.exceptions import MultipleObjectsReturned
 
 from codecov_auth.models import Owner
 from codecov_auth.constants import PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS
+from services.segment import SegmentService
 
 from ..constants import StripeHTTPHeaders, StripeWebhookEvents
 
@@ -125,15 +126,16 @@ class StripeWebhookHandler(APIView):
         self._log_updated(updated)
 
     def customer_subscription_updated(self, subscription):
+        owner = Owner.objects.get(
+            stripe_subscription_id=subscription.id,
+            stripe_customer_id=subscription.customer,
+        )
+
         if subscription.status == "incomplete_expired":
             log.info(
                 f"Subscription updated with status change "
                 f"to 'incomplete_expired' -- cancelling to free",
                 extra=dict(stripe_subscription_id=subscription.id)
-            )
-            owner = Owner.objects.get(
-                stripe_subscription_id=subscription.id,
-                stripe_customer_id=subscription.customer,
             )
             owner.set_free_plan()
             owner.repository_set.update(active=False, activated=False)
@@ -151,15 +153,34 @@ class StripeWebhookHandler(APIView):
             f"plan: {subscription.plan.name}, quantity: {subscription.quantity}",
             extra=dict(stripe_subscription_id=subscription.id)
         )
-        updated = Owner.objects.filter(
-            stripe_subscription_id=subscription.id,
-            stripe_customer_id=subscription.customer,
-        ).update(
-            plan=subscription.plan.name,
-            plan_user_count=subscription.quantity,
-            plan_auto_activate=True,
-        )
-        self._log_updated(updated)
+
+        # Segment tracking
+        if owner.plan_user_count:
+            if owner.plan_user_count < subscription.quantity:
+                SegmentService().account_increased_users(
+                    org_ownerid=owner.ownerid,
+                    plan_details={
+                        "new_quantity": subscription.quantity,
+                        "old_quantity": owner.plan_user_count,
+                        "plan": subscription.plan.name
+                    }
+                )
+            elif owner.plan_user_count > subscription.quantity:
+                SegmentService().account_decreased_users(
+                    org_ownerid=owner.ownerid,
+                    plan_details={
+                        "new_quantity": subscription.quantity,
+                        "old_quantity": owner.plan_user_count,
+                        "plan": subscription.plan.name
+                    }
+                )
+
+        owner.plan = subscription.plan.name
+        owner.plan_user_count = subscription.quantity
+        owner.plan_auto_activate = True
+        owner.save()
+
+        log.info("Successfully updated info for 1 customer")
 
     def checkout_session_completed(self, checkout_session):
         log.info(
