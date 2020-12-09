@@ -198,6 +198,7 @@ class SegmentService:
             segment_owner.traits
         )
 
+    @segment_enabled
     def account_activated_user(self, current_user_ownerid, ownerid_to_activate, org_ownerid, auto_activated=False):
         analytics.track(
             user_id=current_user_ownerid,
@@ -210,6 +211,7 @@ class SegmentService:
             context={"groupId": org_ownerid}
         )
 
+    @segment_enabled
     def account_deactivated_user(self, current_user_ownerid, ownerid_to_deactivate, org_ownerid):
         analytics.track(
             user_id=current_user_ownerid,
@@ -221,6 +223,7 @@ class SegmentService:
             context={"groupId": org_ownerid}
         )
 
+    @segment_enabled
     def account_increased_users(self, org_ownerid, plan_details):
         analytics.track(
             user_id=org_ownerid,
@@ -229,6 +232,7 @@ class SegmentService:
             context={"groupId": org_ownerid}
         )
 
+    @segment_enabled
     def account_decreased_users(self, org_ownerid, plan_details):
         analytics.track(
             user_id=org_ownerid,
