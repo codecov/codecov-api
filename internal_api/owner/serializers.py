@@ -51,7 +51,7 @@ class StripeInvoiceSerializer(serializers.Serializer):
     created = serializers.IntegerField()
     period_start = serializers.IntegerField()
     period_end = serializers.IntegerField()
-    due_date = serializers.CharField()
+    due_date = serializers.IntegerField()
     customer_name = serializers.CharField()
     customer_address = serializers.CharField()
     currency = serializers.CharField()
@@ -105,11 +105,17 @@ class PlanSerializer(serializers.Serializer):
         return plan
 
 
+class SubscriptionDetailSerializer(serializers.Serializer):
+    latest_invoice = StripeInvoiceSerializer()
+    default_payment_method = StripePaymentMethodSerializer()
+    cancel_at_period_end = serializers.BooleanField()
+    current_period_end = serializers.IntegerField()
+
+
 class AccountDetailsSerializer(serializers.ModelSerializer):
     plan = PlanSerializer(source="pretty_plan")
-    latest_invoice = serializers.SerializerMethodField()
     checkout_session_id = serializers.SerializerMethodField()
-    payment_method = serializers.SerializerMethodField()
+    subscription_detail = serializers.SerializerMethodField()
 
     class Meta:
         model = Owner
@@ -119,25 +125,19 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
             'plan_auto_activate',
             'integration_id',
             'plan',
-            'latest_invoice',
-            'payment_method',
+            'subscription_detail',
             'checkout_session_id',
             'name',
             'email',
         )
 
-    def _get_billing_service(self):
-        return BillingService(requesting_user=self.context["request"].user)
 
-    def get_payment_method(self, owner):
-        payment_method = self._get_billing_service().get_payment_method(owner)
-        return StripePaymentMethodSerializer(payment_method).data
-
-    def get_latest_invoice(self, owner):
-        invoices = self._get_billing_service().list_invoices(owner, limit=1)
-
-        if invoices:
-            return StripeInvoiceSerializer(invoices[0]).data
+    def get_subscription_detail(self, owner):
+        current_user = self.context["request"].user
+        billing_service = BillingService(requesting_user=current_user)
+        subscription_detail = billing_service.get_subscription(owner)
+        if subscription_detail:
+            return SubscriptionDetailSerializer(subscription_detail).data
 
     def get_checkout_session_id(self, _):
         return self.context.get("checkout_session_id")

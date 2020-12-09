@@ -63,27 +63,24 @@ class AccountViewSetTests(APITestCase):
         self.client.force_login(user=self.user)
 
     @patch('services.billing.stripe.Subscription.retrieve')
-    @patch('services.billing.stripe.PaymentMethod.retrieve')
     @patch('services.billing.stripe.Invoice.list')
     def test_retrieve_account_gets_account_fields(self, *args):
         owner = OwnerFactory(admins=[self.user.ownerid])
         response = self._retrieve(kwargs={"service": owner.service, "owner_username": owner.username})
         assert response.status_code == status.HTTP_200_OK
         assert response.data == {
-            "payment_method": {},
             "activated_user_count": 0,
             "integration_id": owner.integration_id,
             "plan_auto_activate": owner.plan_auto_activate,
             "inactive_user_count": 0,
             "plan": None, # TODO -- legacy plan
-            "latest_invoice": None,
+            "subscription_detail": None,
             "checkout_session_id": None,
             "name": owner.name,
             "email": owner.email
         }
 
     @patch('services.billing.stripe.Subscription.retrieve')
-    @patch('services.billing.stripe.PaymentMethod.retrieve')
     @patch('services.billing.stripe.Invoice.list')
     def test_account_with_free_user_plan(self, *args):
         self.user.plan = 'users-free'
@@ -153,22 +150,10 @@ class AccountViewSetTests(APITestCase):
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     @patch('services.billing.stripe.Subscription.retrieve')
-    @patch('services.billing.stripe.PaymentMethod.retrieve')
-    @patch('services.billing.stripe.Invoice.list')
-    def test_retrieve_account_with_stripe_invoice_data(self, mock_list_invoices, *args):
+    def test_retrieve_subscription_with_stripe_invoice_data(self, mock_subscription):
         f = open("./services/tests/samples/stripe_invoice.json")
-        mock_list_invoices.return_value = json.load(f)
 
-        response = self._retrieve()
-
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data['latest_invoice'] == self.expected_invoice
-
-    @patch('services.billing.stripe.Subscription.retrieve')
-    @patch('services.billing.stripe.Invoice.list')
-    @patch('services.billing.stripe.PaymentMethod.retrieve')
-    def test_retrieve_account_with_payment_method_data(self, mock_get_payment, *args):
-        payment_info = {
+        default_payment_method = {
             "card": {
                 "brand": "visa",
                 "exp_month": 12,
@@ -177,20 +162,32 @@ class AccountViewSetTests(APITestCase):
                 "should be": "removed"
             }
         }
+
+        mock_subscription.return_value = {
+            "latest_invoice": json.load(f)["data"][0],
+            "default_payment_method": default_payment_method,
+            "cancel_at_period_end": False,
+            "current_period_end": 1633512445
+        }
+
         self.user.stripe_subscription_id = "djfos"
         self.user.save()
-        mock_get_payment.return_value = payment_info
 
         response = self._retrieve()
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data['payment_method'] == {
-            "card": {
-                "brand": "visa",
-                "exp_month": 12,
-                "exp_year": 2024,
-                "last4": "abcd",
-            }
+        assert response.data['subscription_detail'] == {
+            "cancel_at_period_end": False,
+            "current_period_end": 1633512445,
+            "latest_invoice": self.expected_invoice,
+            "default_payment_method": {
+                "card": {
+                    "brand": "visa",
+                    "exp_month": 12,
+                    "exp_year": 2024,
+                    "last4": "abcd",
+                }
+            },
         }
 
 
