@@ -117,7 +117,7 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
     plan = PlanSerializer(source="pretty_plan")
     checkout_session_id = serializers.SerializerMethodField()
     subscription_detail = serializers.SerializerMethodField()
-    card = serializers.JSONField(write_only=True)
+    payment_method = serializers.CharField(write_only=True)
 
     class Meta:
         model = Owner
@@ -131,7 +131,7 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
             'checkout_session_id',
             'name',
             'email',
-            'card',
+            'payment_method',
         )
 
     def _get_billing(self):
@@ -147,8 +147,8 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
         return self.context.get("checkout_session_id")
 
     def update(self, instance, validated_data):
-        if "card" in validated_data:
-            self._get_billing().update_card(instance,validated_data.pop("card"))
+        if "payment_method" in validated_data:
+            self._get_billing().update_payment_method(instance, validated_data.pop("payment_method"))
 
         if "pretty_plan" in validated_data:
             checkout_session_id_or_none = self._get_billing().update_plan(
