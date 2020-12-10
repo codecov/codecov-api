@@ -745,6 +745,14 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         assert response.status_code == 403
         assert response.data["detail"] == "User not activated"
 
+    @patch("services.segment.SegmentService.account_erased_repository")
+    def test_erase_triggers_segment_event(self, account_erased_repo_mock, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, True
+        self.org.admins = [self.user.ownerid]
+        self.org.save()
+        response = self._erase()
+        account_erased_repo_mock.assert_called_once_with(self.user.ownerid, self.repo)
+
     def test_retrieve_returns_yaml(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, False
 

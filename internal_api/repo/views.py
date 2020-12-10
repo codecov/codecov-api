@@ -14,6 +14,7 @@ from internal_api.repo.filter import RepositoryFilters, RepositoryOrderingFilter
 
 from core.models import Repository
 from services.repo_providers import RepoProviderService
+from services.segment import SegmentService
 from services.decorators import torngit_safe
 from internal_api.permissions import RepositoryPermissionsService
 from internal_api.mixins import OwnerPropertyMixin
@@ -196,6 +197,7 @@ class RepositoryViewSet(
         self._assert_is_admin()
         repo = self.get_object()
         repo.flush()
+        SegmentService.account_erased_repository(self.request.user.ownerid, repo)
         return Response(self.get_serializer(repo).data)
 
     @action(detail=True, methods=['post'])
