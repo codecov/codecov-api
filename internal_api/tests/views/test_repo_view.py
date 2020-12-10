@@ -774,6 +774,29 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
 
         assert response.status_code == 403
 
+    @patch("services.segment.SegmentService.account_activated_repository")
+    @patch("services.segment.SegmentService.account_deactivated_repository")
+    def test_activation_and_deactivation_trigger_segment_events(
+        self,
+        account_deactivated_repo_mock,
+        account_activated_repo_mock,
+        mocked_get_permissions
+    ):
+        mocked_get_permissions.return_value = True, True
+        self.repo.active = False
+        self.repo.save()
+        self.org.plan = "v4-5m"
+        self.org.save()
+
+        activation_data, deactivation_data = {"active": True}, {"active": False}
+
+        response = self._update(data=activation_data)
+        account_activated_repo_mock.assert_called_once_with(self.user.ownerid, self.repo)
+
+        response = self._update(data=deactivation_data)
+        account_deactivated_repo_mock.assert_called_once_with(self.user.ownerid, self.repo)
+
+
     def test_encode_returns_200_on_success(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, True
 
