@@ -332,3 +332,57 @@ class SegmentService:
             properties=plan_details,
             context={"groupId": org_ownerid}
         )
+
+    @segment_enabled
+    def account_paid_subscription(self, org_ownerid, stripe_subscription_details):
+        analytics.track(
+            user_id=org_ownerid,
+            event=SegmentEvent.ACCOUNT_PAID_SUBSCRIPTION.value,
+            properties=stripe_subscription_details,
+            context={"groupId": org_ownerid}
+        )
+
+    @segment_enabled
+    def account_cancelled_subscription(self, org_ownerid, stripe_subscription_details):
+        analytics.track(
+            user_id=org_ownerid,
+            event=SegmentEvent.ACCOUNT_CANCELLED_SUBSCRIPTION.value,
+            properties=stripe_subscription_details,
+            context={"groupId": org_ownerid}
+        )
+
+    @segment_enabled
+    def account_changed_plan(self, org_ownerid, plan_change_details):
+        analytics.track(
+            user_id=org_ownerid,
+            event=SegmentEvent.ACCOUNT_CHANGED_PLAN.value,
+            properties=plan_change_details,
+            context={"groupId": org_ownerid}
+        )
+
+    @segment_enabled
+    def trial_started(self, org_ownerid, trial_details):
+        analytics.track(
+            user_id=org_ownerid,
+            event=SegmentEvent.TRIAL_STARTED.value,
+            properties=trial_details,
+            context={"groupId": org_ownerid}
+        )
+
+    @segment_enabled
+    def trial_ended(self, org_ownerid, trial_details):
+        analytics.track(
+            user_id=org_ownerid,
+            event=SegmentEvent.TRIAL_ENDED.value,
+            properties=trial_details,
+            context={"groupId": org_ownerid}
+        )
+
+    @segment_enabled
+    def account_completed_checkout(self, org_ownerid, checkout_session_details):
+        analytics.track(
+            user_id=org_ownerid,
+            event=SegmentEvent.ACCOUNT_COMPLETED_CHECKOUT.value,
+            properties=checkout_session_details,
+            context={"groupId": org_ownerid}
+        )
