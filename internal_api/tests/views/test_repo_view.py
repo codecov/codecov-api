@@ -644,6 +644,14 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         assert response.data["detail"] == "User not activated"
         assert Repository.objects.filter(name="repo1").exists()
 
+    @patch("services.segment.SegmentService.account_deleted_repository")
+    def test_destroy_triggers_segment_event(self, account_deleted_repo_mock, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, True
+        self.org.admins = [self.user.ownerid]
+        self.org.save()
+        response = self._destroy()
+        account_deleted_repo_mock.assert_called_once_with(self.user.ownerid, self.repo)
+
     def test_regenerate_upload_token_with_permissions_succeeds(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, True
         old_upload_token = self.repo.upload_token

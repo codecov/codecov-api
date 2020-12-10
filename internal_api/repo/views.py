@@ -155,6 +155,10 @@ class RepositoryViewSet(
                 raise PermissionDenied("Private repository limit reached.")
         return super().perform_update(serializer)
 
+    def destroy(self, request, *args, **kwargs):
+        SegmentService().account_deleted_repository(self.request.user.ownerid, self.get_object())
+        return super().destroy(request, *args, **kwargs)
+
     @action(detail=False, url_path='statistics')
     def statistics(self, request, *args, **kwargs):
         # Only get viewable repositories
