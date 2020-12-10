@@ -362,7 +362,7 @@ class SegmentServiceTests(TestCase):
     @patch('analytics.track')
     def test_account_completed_checkout(self, track_mock):
         owner = OwnerFactory()
-        stripe_subscription_details = {"plan": owner.plan, "userType": "org"}
+        stripe_subscription_details = {"plan": owner.plan, "userid_type": "org"}
         with self.settings(SEGMENT_ENABLED=True):
             self.segment_service.account_completed_checkout(owner.ownerid, stripe_subscription_details)
             track_mock.assert_called_once_with(
