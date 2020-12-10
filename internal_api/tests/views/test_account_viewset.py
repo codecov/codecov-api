@@ -316,6 +316,12 @@ class AccountViewSetTests(APITestCase):
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
+    def test_update_payment_method_without_body(self):
+        kwargs = {"service": self.user.service, "owner_username": self.user.username}
+        url = reverse("account_details-update-payment", kwargs=kwargs)
+        response = self.client.patch(url, format='json')
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
     @patch('services.billing.stripe.Subscription.retrieve')
     @patch('services.billing.stripe.Subscription.modify')
     @patch('services.billing.stripe.PaymentMethod.attach')
@@ -329,10 +335,10 @@ class AccountViewSetTests(APITestCase):
         self.user.stripe_subscription_id = "djfos"
         self.user.save()
         payment_method_id = "pm_123"
-        response = self._update(
-            kwargs={"service": self.user.service, "owner_username": self.user.username},
-            data={"payment_method": payment_method_id}
-        )
+        kwargs = {"service": self.user.service, "owner_username": self.user.username}
+        data={ "payment_method": payment_method_id }
+        url = reverse("account_details-update-payment", kwargs=kwargs)
+        response = self.client.patch(url, data=data, format='json')
         assert response.status_code == status.HTTP_200_OK
         attach_payment_mock.assert_called_once_with(payment_method_id, customer=self.user.stripe_customer_id)
         modify_subscription_mock.assert_called_once_with(self.user.stripe_subscription_id, default_payment_method=payment_method_id)
