@@ -151,26 +151,21 @@ class StripeServiceTests(TestCase):
             }
         )
 
-    def test_get_payment_method_when_no_subscription(self):
+    def test_get_subscription_when_no_subscription(self):
         owner = OwnerFactory(stripe_subscription_id=None)
-        assert self.stripe.get_payment_method(owner) == None
+        assert self.stripe.get_subscription(owner) == None
 
     @patch('services.billing.stripe.Subscription.retrieve')
-    @patch('services.billing.stripe.PaymentMethod.retrieve')
-    def test_get_payment_method_when_no_subscription(self, payment_method_retrieve_mock, subscription_retrieve_mock):
+    def test_get_subscription_returns_stripe_data(self, subscription_retrieve_mock):
         owner = OwnerFactory(stripe_subscription_id="abc")
         # only including fields relevant to implementation
-        payment_method_id = 'pm_something_something'
-        subscription_retrieve_mock.return_value = {
-            "default_payment_method": payment_method_id
+        stripe_data_subscription = {
+            "doesnt": "matter"
         }
-        card = { "something": "something" }
-        payment_method_retrieve_mock.return_value = { "card": card }
-        assert self.stripe.get_payment_method(owner) == { "card": card }
-        subscription_retrieve_mock.assert_called_once_with(owner.stripe_subscription_id)
-        payment_method_retrieve_mock.assert_called_once_with(payment_method_id)
-
-
+        payment_method_id = 'pm_something_something'
+        subscription_retrieve_mock.return_value = stripe_data_subscription
+        assert self.stripe.get_subscription(owner) == stripe_data_subscription
+        subscription_retrieve_mock.assert_called_once_with(owner.stripe_subscription_id, expand=['latest_invoice', 'default_payment_method'])
 
 
 class MockPaymentService(AbstractPaymentService):
@@ -186,7 +181,7 @@ class MockPaymentService(AbstractPaymentService):
     def create_checkout_session(self, owner, plan):
         pass
 
-    def get_payment_method(self, owner, plan):
+    def get_subscription(self, owner, plan):
         pass
 
 
@@ -302,9 +297,8 @@ class BillingServiceTests(TestCase):
         modify_subscription_mock.assert_not_called()
         create_checkout_session_mock.assert_not_called()
 
-    @patch('services.tests.test_billing.MockPaymentService.get_payment_method')
-    def test_get_payment_method(self, get_payment_method_mock):
+    @patch('services.tests.test_billing.MockPaymentService.get_subscription')
+    def test_get_subscription(self, get_subscription_mock):
         owner = OwnerFactory()
-        self.billing_service.get_payment_method(owner)
-
-        get_payment_method_mock.assert_called_once_with(owner)
+        self.billing_service.get_subscription(owner)
+        get_subscription_mock.assert_called_once_with(owner)
