@@ -84,7 +84,7 @@ class TokenlessCirrusHandler(BaseTokenlessUploadHandler):
 
         # Check repository
         if build['repository']['owner'] != owner or build['repository']['name'] != repo:
-            log.warn(f"Repository slug does not match Cirrus arguments",
+            log.warning(f"Repository slug does not match Cirrus arguments",
                 extra=dict(
                     build_info=build,
                     commit=commit,
@@ -97,7 +97,7 @@ class TokenlessCirrusHandler(BaseTokenlessUploadHandler):
 
         # Check commit SHA
         if build['changeIdInRepo'] != commit:
-            log.warn(f"Commit sha does not match Github actions arguments",
+            log.warning(f"Commit sha does not match Github actions arguments",
                 extra=dict(
                     build_info=build,
                     commit=commit,
@@ -127,7 +127,7 @@ class TokenlessCirrusHandler(BaseTokenlessUploadHandler):
                         repo_name=repo,
                     )
                 )
-                log.warn(f"Cirrus run is stale",
+                log.warning(f"Cirrus run is stale",
                     extra=dict(
                         build_info=build,
                         commit=commit,
