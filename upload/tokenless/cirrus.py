@@ -120,7 +120,7 @@ class TokenlessCirrusHandler(BaseTokenlessUploadHandler):
            if now > finishTimestamp:
                 log.error(f"Cirrus run is stale",
                     extra=dict(
-                        build_info=build
+                        build_info=build,
                         commit=commit,
                         job=self.upload_params.get('job'),
                         owner=owner,
@@ -129,7 +129,7 @@ class TokenlessCirrusHandler(BaseTokenlessUploadHandler):
                 )
                 log.warn(f"Cirrus run is stale",
                     extra=dict(
-                        build_info=build
+                        build_info=build,
                         commit=commit,
                         job=self.upload_params.get('job'),
                         owner=owner,
