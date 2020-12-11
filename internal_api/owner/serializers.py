@@ -132,11 +132,12 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
             'email',
         )
 
+    def _get_billing(self):
+        current_user = self.context["request"].user
+        return BillingService(requesting_user=current_user)
 
     def get_subscription_detail(self, owner):
-        current_user = self.context["request"].user
-        billing_service = BillingService(requesting_user=current_user)
-        subscription_detail = billing_service.get_subscription(owner)
+        subscription_detail = self._get_billing().get_subscription(owner)
         if subscription_detail:
             return SubscriptionDetailSerializer(subscription_detail).data
 
@@ -145,9 +146,7 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         if "pretty_plan" in validated_data:
-            checkout_session_id_or_none = BillingService(
-                requesting_user=self.context["request"].user,
-            ).update_plan(
+            checkout_session_id_or_none = self._get_billing().update_plan(
                 instance,
                 validated_data.pop("pretty_plan")
             )
