@@ -149,6 +149,7 @@ class StripeWebhookHandler(APIView):
                     "trial_start_date": subscription.trial_start
                 }
             )
+            self.segment_service.identify_user(owner)
 
         self._log_updated(1)
 
@@ -219,6 +220,7 @@ class StripeWebhookHandler(APIView):
                     "trial_start_date": subscription.trial_start
                 }
             )
+            self.segment_service.identify_user(owner)
 
         owner.plan = subscription.plan.name
         owner.plan_user_count = subscription.quantity
@@ -252,6 +254,8 @@ class StripeWebhookHandler(APIView):
             owner.ownerid,
             segment_checkout_session_details
         )
+
+        self.segment_service.identify_user(owner)
 
         self._log_updated(1)
 
