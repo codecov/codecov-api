@@ -157,7 +157,8 @@ class AccountViewSetTests(APITestCase):
             "latest_invoice": json.load(f)["data"][0],
             "default_payment_method": default_payment_method,
             "cancel_at_period_end": False,
-            "current_period_end": 1633512445
+            "current_period_end": 1633512445,
+            "customer": "cus_abc"
         }
 
         self.user.stripe_subscription_id = "djfos"
@@ -170,6 +171,7 @@ class AccountViewSetTests(APITestCase):
             "cancel_at_period_end": False,
             "current_period_end": 1633512445,
             "latest_invoice": self.expected_invoice,
+            "customer": "cus_abc",
             "default_payment_method": {
                 "card": {
                     "brand": "visa",
