@@ -110,6 +110,7 @@ class SubscriptionDetailSerializer(serializers.Serializer):
     default_payment_method = StripePaymentMethodSerializer()
     cancel_at_period_end = serializers.BooleanField()
     current_period_end = serializers.IntegerField()
+    customer = serializers.CharField()
 
 
 class AccountDetailsSerializer(serializers.ModelSerializer):
