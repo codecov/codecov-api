@@ -53,6 +53,7 @@ class RepositoryPermissionsService:
                     org_ownerid=owner.ownerid,
                     auto_activated=True
                 )
+                SegmentService().identify_user(user)
                 return True
             else:
                 log.info("Auto-activation failed -- not enough seats remaining")
