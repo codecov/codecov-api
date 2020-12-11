@@ -108,7 +108,7 @@ class AccountDetailsViewSet(
     def update_payment(self, request, *args, **kwargs):
         payment_method = request.data.get("payment_method")
         if not payment_method:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            raise ValidationError(detail="No payment_method sent")
         owner = self.get_object()
         billing = BillingService(requesting_user=request.user)
         billing.update_payment_method(owner, payment_method)
