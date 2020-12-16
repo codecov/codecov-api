@@ -199,7 +199,6 @@ class UserSerializer(serializers.ModelSerializer):
                 )
             else:
                 raise PermissionDenied(f"Cannot activate user {instance.username} -- not enough seats left.")
-            SegmentService.identify_user(instance)
 
         if "is_admin" in validated_data:
             if validated_data["is_admin"]:
