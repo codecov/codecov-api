@@ -110,6 +110,16 @@ class AccountDetailsViewSet(
     def get_object(self):
         return self.owner
 
+    @action(detail=False, methods=['patch'])
+    def update_payment(self, request, *args, **kwargs):
+        payment_method = request.data.get("payment_method")
+        if not payment_method:
+            raise ValidationError(detail="No payment_method sent")
+        owner = self.get_object()
+        billing = BillingService(requesting_user=request.user)
+        billing.update_payment_method(owner, payment_method)
+        return Response(self.get_serializer(owner).data)
+
 
 class UserViewSet(
     viewsets.GenericViewSet,

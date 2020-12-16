@@ -10,6 +10,7 @@ from upload.tokenless.travis import TokenlessTravisHandler
 from upload.tokenless.azure import TokenlessAzureHandler
 from upload.tokenless.appveyor import TokenlessAppveyorHandler
 from upload.tokenless.circleci import TokenlessCircleciHandler
+from upload.tokenless.github_actions import TokenlessGithubActionsHandler
 
 log = logging.getLogger(__name__)
 
@@ -19,7 +20,8 @@ class TokenlessUploadHandler(object):
         "appveyor": TokenlessAppveyorHandler,
         "azure_pipelines": TokenlessAzureHandler,
         "travis": TokenlessTravisHandler,
-        "circleci": TokenlessCircleciHandler
+        "circleci": TokenlessCircleciHandler,
+        "github_actions": TokenlessGithubActionsHandler
     }
 
     def __init__(self, ci_type, upload_params):
