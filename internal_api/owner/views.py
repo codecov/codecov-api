@@ -125,7 +125,7 @@ class UserViewSet(
     filter_backends = (django_filters.DjangoFilterBackend, filters.OrderingFilter,)
     filterset_class = UserFilters
     permission_classes = [UserIsAdminPermissions]
-    ordering_fields = ('name',)
+    ordering_fields = ('name','username', 'email')
     lookup_field = "user_username"
 
     def get_object(self):
