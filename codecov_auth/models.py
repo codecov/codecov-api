@@ -69,7 +69,7 @@ class Owner(models.Model):
     staff = models.BooleanField(null=True, default=False)
     cache = JSONField(null=True)
     plan = models.TextField(null=True)
-    # plan_provider
+    plan_provider = models.CharField(null=True, max_length=10) # postgres enum containing only "github"
     plan_user_count = models.SmallIntegerField(null=True)
     plan_auto_activate = models.BooleanField(null=True)
     plan_activated_users = ArrayField(models.IntegerField(null=True), null=True)

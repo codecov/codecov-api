@@ -193,3 +193,7 @@ GITLAB_CLIENT_ID = os.environ.get("GITLAB__CLIENT_ID")
 GITLAB_CLIENT_SECRET = os.environ.get("GITLAB__CLIENT_SECRET")
 GITLAB_REDIRECT_URI = "https://codecov.io/login/gitlab"
 GITLAB_CLIENT_BOT = os.environ.get("GITLAB__CLIENT_BOT")
+
+
+SEGMENT_API_KEY = get_config('setup', 'segment', 'key', default=None)
+SEGMENT_ENABLED = get_config('setup', 'segment', 'enabled', default=False) and not bool(get_config('setup', 'enterprise_license', default=False))
