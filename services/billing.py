@@ -6,6 +6,7 @@ from django.conf import settings
 
 from codecov_auth.constants import USER_PLAN_REPRESENTATIONS, PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS
 from codecov_auth.models import Owner
+from services.segment import SegmentService
 
 
 log = logging.getLogger(__name__)
@@ -111,6 +112,38 @@ class StripeService(AbstractPaymentService):
             proration_behavior="always_invoice"
         )
 
+        # Segment analytics
+        if owner.plan != desired_plan["value"]:
+            SegmentService().account_changed_plan(
+                current_user_ownerid=self.requesting_user.ownerid,
+                org_ownerid=owner.ownerid,
+                plan_details={
+                    "new_plan": desired_plan["value"],
+                    "previous_plan": owner.plan
+                }
+            )
+        if owner.plan_user_count and owner.plan_user_count < desired_plan["quantity"]:
+            SegmentService().account_increased_users(
+                current_user_ownerid=self.requesting_user.ownerid,
+                org_ownerid=owner.ownerid,
+                plan_details={
+                    "new_quantity": desired_plan["quantity"],
+                    "old_quantity": owner.plan_user_count,
+                    "plan": desired_plan["value"]
+                }
+            )
+        elif owner.plan_user_count and owner.plan_user_count > desired_plan["quantity"]:
+            SegmentService().account_decreased_users(
+                current_user_ownerid=self.requesting_user.ownerid,
+                org_ownerid=owner.ownerid,
+                plan_details={
+                    "new_quantity": desired_plan["quantity"],
+                    "old_quantity": owner.plan_user_count,
+                    "plan": desired_plan["value"]
+                }
+            )
+
+        # Actually do the thing
         owner.plan = desired_plan["value"]
         owner.plan_user_count = desired_plan["quantity"]
         owner.save()

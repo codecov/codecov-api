@@ -275,12 +275,10 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.owner.plan_auto_activate is True
         assert self.owner.plan == plan_name
 
-    @patch("services.segment.SegmentService.identify_user")
     @patch("services.segment.SegmentService.trial_started")
     def test_customer_subscription_created_can_trigger_identify_and_trialing_segment_events(
         self,
-        trial_started_mock,
-        identify_user_mock
+        trial_started_mock
     ):
         trial_start, trial_end = "ts", "te"
         stripe_subscription_id = "FOEKDCDEQ"
@@ -311,7 +309,6 @@ class StripeWebhookHandlerTests(APITestCase):
             }
         )
 
-        identify_user_mock.assert_called_once_with(self.owner)
         trial_started_mock.assert_called_once_with(
             self.owner.ownerid,
             {
@@ -427,129 +424,6 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.owner.plan == plan_name
         assert self.owner.plan_user_count == quantity
         assert self.owner.plan_auto_activate == True
-
-    @patch('services.segment.SegmentService.account_increased_users')
-    def test_customer_subscription_updated_triggers_segment_event_on_user_increase(self, increased_users_mock):
-        self.owner.plan = "users-free"
-        self.owner.plan_user_count = 5
-        self.owner.plan_auto_activate = False
-
-        plan_name = "users-pr-inappy"
-        quantity = 20
-
-        self.owner.save()
-
-        response = self._send_event(
-            payload={
-                "type": "customer.subscription.updated",
-                "data": {
-                    "object": {
-                        "id": self.owner.stripe_subscription_id,
-                        "customer": self.owner.stripe_customer_id, 
-                        "plan": {
-                            "id": "fieown4",
-                            "name": plan_name
-                        },
-                        "metadata": {
-                            "obo_organization": self.owner.ownerid
-                        },
-                        "quantity": quantity,
-                        "status": "active"
-                    }
-                }
-            }
-        )
-
-        increased_users_mock.assert_called_once_with(
-            org_ownerid=self.owner.ownerid,
-            plan_details={
-                "old_quantity": 5,
-                "new_quantity": 20,
-                "plan": plan_name
-            }
-        )
-
-
-    @patch('services.segment.SegmentService.account_decreased_users')
-    def test_customer_subscription_updated_triggers_segment_event_on_user_decrease(self, decreased_users_mock):
-        self.owner.plan = "users-free"
-        self.owner.plan_user_count = 5
-        self.owner.plan_auto_activate = False
-
-        plan_name = "users-pr-inappy"
-        quantity = 4
-
-        self.owner.save()
-
-        response = self._send_event(
-            payload={
-                "type": "customer.subscription.updated",
-                "data": {
-                    "object": {
-                        "id": self.owner.stripe_subscription_id,
-                        "customer": self.owner.stripe_customer_id, 
-                        "plan": {
-                            "id": "fieown4",
-                            "name": plan_name
-                        },
-                        "metadata": {
-                            "obo_organization": self.owner.ownerid
-                        },
-                        "quantity": quantity,
-                        "status": "active"
-                    }
-                }
-            }
-        )
-
-        decreased_users_mock.assert_called_once_with(
-            org_ownerid=self.owner.ownerid,
-            plan_details={
-                "old_quantity": 5,
-                "new_quantity": 4,
-                "plan": plan_name
-            }
-        )
-
-    @patch("services.segment.SegmentService.account_changed_plan")
-    def test_customer_subscription_updated_triggers_segment_event_on_plan_change(self, changed_plan_mock):
-        self.owner.plan = "users-free"
-        self.owner.plan_user_count = 5
-        self.owner.plan_auto_activate = False
-
-        plan_name = "users-pr-inappy"
-        quantity = 4
-
-        self.owner.save()
-
-        response = self._send_event(
-            payload={
-                "type": "customer.subscription.updated",
-                "data": {
-                    "object": {
-                        "id": self.owner.stripe_subscription_id,
-                        "customer": self.owner.stripe_customer_id, 
-                        "plan": {
-                            "id": "fieown4",
-                            "name": plan_name
-                        },
-                        "metadata": {
-                            "obo_organization": self.owner.ownerid
-                        },
-                        "quantity": quantity,
-                        "status": "active"
-                    }
-                }
-            }
-        )
-
-        changed_plan_mock.assert_called_once_with(
-            self.owner.ownerid,
-            {
-                "new_plan": plan_name,
-                "previous_plan": "users-free"
-            }
-        )
 
     @patch("services.segment.SegmentService.trial_ended")
     def test_customer_subscription_updated_triggers_segment_event_on_trial_end(

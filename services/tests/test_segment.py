@@ -178,11 +178,12 @@ class SegmentServiceTests(TestCase):
         org = OwnerFactory()
         with self.settings(SEGMENT_ENABLED=True):
             self.segment_service.account_increased_users(
+                current_user_ownerid=self.owner.ownerid,
                 org_ownerid=org.ownerid,
                 plan_details=plan_details,
             )
             track_mock.assert_called_once_with(
-                user_id=org.ownerid,
+                user_id=self.owner.ownerid,
                 event=SegmentEvent.ACCOUNT_INCREASED_USERS.value,
                 properties=plan_details,
                 context={"groupId": org.ownerid}
@@ -194,11 +195,12 @@ class SegmentServiceTests(TestCase):
         org = OwnerFactory()
         with self.settings(SEGMENT_ENABLED=True):
             self.segment_service.account_decreased_users(
+                current_user_ownerid=self.owner.ownerid,
                 org_ownerid=org.ownerid,
                 plan_details=plan_details,
             )
             track_mock.assert_called_once_with(
-                user_id=org.ownerid,
+                user_id=self.owner.ownerid,
                 event=SegmentEvent.ACCOUNT_DECREASED_USERS.value,
                 properties=plan_details,
                 context={"groupId": org.ownerid}
@@ -301,7 +303,6 @@ class SegmentServiceTests(TestCase):
         with self.settings(SEGMENT_ENABLED=True):
             self.segment_service.account_paid_subscription(owner.ownerid, stripe_subscription_details)
             track_mock.assert_called_once_with(
-                user_id=owner.ownerid,
                 event=SegmentEvent.ACCOUNT_PAID_SUBSCRIPTION.value,
                 properties=stripe_subscription_details,
                 context={"groupId": owner.ownerid}
@@ -314,7 +315,6 @@ class SegmentServiceTests(TestCase):
         with self.settings(SEGMENT_ENABLED=True):
             self.segment_service.account_cancelled_subscription(owner.ownerid, stripe_subscription_details)
             track_mock.assert_called_once_with(
-                user_id=owner.ownerid,
                 event=SegmentEvent.ACCOUNT_CANCELLED_SUBSCRIPTION.value,
                 properties=stripe_subscription_details,
                 context={"groupId": owner.ownerid}
@@ -325,9 +325,9 @@ class SegmentServiceTests(TestCase):
         owner = OwnerFactory(plan="users-inappm")
         plan_change_details = {"new_plan": "users_free", "previous_plan": owner.plan}
         with self.settings(SEGMENT_ENABLED=True):
-            self.segment_service.account_changed_plan(owner.ownerid, plan_change_details)
+            self.segment_service.account_changed_plan(self.owner.ownerid, owner.ownerid, plan_change_details)
             track_mock.assert_called_once_with(
-                user_id=owner.ownerid,
+                user_id=self.owner.ownerid,
                 event=SegmentEvent.ACCOUNT_CHANGED_PLAN.value,
                 properties=plan_change_details,
                 context={"groupId": owner.ownerid}
@@ -340,7 +340,6 @@ class SegmentServiceTests(TestCase):
         with self.settings(SEGMENT_ENABLED=True):
             self.segment_service.trial_started(owner.ownerid, trial_details)
             track_mock.assert_called_once_with(
-                user_id=owner.ownerid,
                 event=SegmentEvent.TRIAL_STARTED.value,
                 properties=trial_details,
                 context={"groupId": owner.ownerid}
@@ -353,7 +352,6 @@ class SegmentServiceTests(TestCase):
         with self.settings(SEGMENT_ENABLED=True):
             self.segment_service.trial_ended(owner.ownerid, trial_details)
             track_mock.assert_called_once_with(
-                user_id=owner.ownerid,
                 event=SegmentEvent.TRIAL_ENDED.value,
                 properties=trial_details,
                 context={"groupId": owner.ownerid}

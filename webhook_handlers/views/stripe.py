@@ -138,7 +138,6 @@ class StripeWebhookHandler(APIView):
 
         owner.save()
 
-        self.segment_service.identify_user(owner)
         if subscription.status == "trialing":
             self.segment_service.trial_started(
                 owner.ownerid,
@@ -149,7 +148,6 @@ class StripeWebhookHandler(APIView):
                     "trial_start_date": subscription.trial_start
                 }
             )
-            self.segment_service.identify_user(owner)
 
         self._log_updated(1)
 
@@ -182,34 +180,6 @@ class StripeWebhookHandler(APIView):
             extra=dict(stripe_subscription_id=subscription.id)
         )
 
-        # Segment analytics
-        self.segment_service.identify_user(owner.ownerid)
-        if owner.plan_user_count:
-            if owner.plan_user_count < subscription.quantity:
-                self.segment_service.account_increased_users(
-                    org_ownerid=owner.ownerid,
-                    plan_details={
-                        "new_quantity": subscription.quantity,
-                        "old_quantity": owner.plan_user_count,
-                        "plan": subscription.plan.name
-                    }
-                )
-            elif owner.plan_user_count > subscription.quantity:
-                self.segment_service.account_decreased_users(
-                    org_ownerid=owner.ownerid,
-                    plan_details={
-                        "new_quantity": subscription.quantity,
-                        "old_quantity": owner.plan_user_count,
-                        "plan": subscription.plan.name
-                    }
-                )
-
-        if owner.plan != subscription.plan.name:
-            self.segment_service.account_changed_plan(
-                owner.ownerid,
-                {"new_plan": subscription.plan.name, "previous_plan": owner.plan}
-            )
-
         if self.event.data.get("previous_attributes", {}).get("status") == "trialing":
             self.segment_service.trial_ended(
                 owner.ownerid,
@@ -220,7 +190,6 @@ class StripeWebhookHandler(APIView):
                     "trial_start_date": subscription.trial_start
                 }
             )
-            self.segment_service.identify_user(owner)
 
         owner.plan = subscription.plan.name
         owner.plan_user_count = subscription.quantity
@@ -254,8 +223,6 @@ class StripeWebhookHandler(APIView):
             owner.ownerid,
             segment_checkout_session_details
         )
-
-        self.segment_service.identify_user(owner)
 
         self._log_updated(1)
 

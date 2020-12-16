@@ -110,6 +110,110 @@ class StripeServiceTests(TestCase):
         assert owner.plan == desired_plan_name
         assert owner.plan_user_count == desired_user_count
 
+    @patch('services.billing.stripe.Subscription.modify')
+    @patch('services.billing.stripe.Subscription.retrieve')
+    @patch("services.segment.SegmentService.account_changed_plan")
+    def test_modify_subscription_triggers_segment_on_plan_change(
+        self,
+        changed_plan_mock,
+        retrieve_mock,
+        modify_mock
+    ):
+        owner = OwnerFactory(stripe_subscription_id="33043", plan="users-pr-inappm")
+        desired_plan_name = "users-pr-inappy"
+        desired_user_count = 20
+        desired_plan = {
+            "value": desired_plan_name,
+            "quantity": desired_user_count
+        }
+
+        subscription_item = {"id": 100}
+        retrieve_mock.return_value = {
+            "items": {
+                "data": [subscription_item]
+            }
+        }
+
+        self.stripe.modify_subscription(owner, desired_plan)
+        changed_plan_mock.assert_called_once_with(
+            current_user_ownerid=self.user.ownerid,
+            org_ownerid=owner.ownerid,
+            plan_details={
+                "new_plan": desired_plan_name,
+                "previous_plan": "users-pr-inappm"
+            }
+        )
+
+    @patch('services.billing.stripe.Subscription.modify')
+    @patch('services.billing.stripe.Subscription.retrieve')
+    @patch("services.segment.SegmentService.account_increased_users")
+    def test_modify_subscription_triggers_segment_on_user_increase(
+        self,
+        segment_increased_users_mock,
+        retrieve_mock,
+        modify_mock
+    ):
+        owner = OwnerFactory(stripe_subscription_id="33043", plan="users-pr-inappy", plan_user_count=19)
+        desired_plan_name = "users-pr-inappy"
+        desired_user_count = 20
+        desired_plan = {
+            "value": desired_plan_name,
+            "quantity": desired_user_count
+        }
+
+        subscription_item = {"id": 100}
+        retrieve_mock.return_value = {
+            "items": {
+                "data": [subscription_item]
+            }
+        }
+
+        self.stripe.modify_subscription(owner, desired_plan)
+        segment_increased_users_mock.assert_called_once_with(
+            current_user_ownerid=self.user.ownerid,
+            org_ownerid=owner.ownerid,
+            plan_details={
+                "new_quantity": desired_user_count,
+                "old_quantity": 19,
+                "plan": desired_plan_name
+            }
+        )
+
+    @patch('services.billing.stripe.Subscription.modify')
+    @patch('services.billing.stripe.Subscription.retrieve')
+    @patch("services.segment.SegmentService.account_decreased_users")
+    def test_modify_subscription_triggers_segment_on_user_increase(
+        self,
+        segment_decreased_users_mock,
+        retrieve_mock,
+        modify_mock
+    ):
+        owner = OwnerFactory(stripe_subscription_id="33043", plan="users-pr-inappy", plan_user_count=20)
+        desired_plan_name = "users-pr-inappy"
+        desired_user_count = 15
+        desired_plan = {
+            "value": desired_plan_name,
+            "quantity": desired_user_count
+        }
+
+        subscription_item = {"id": 100}
+        retrieve_mock.return_value = {
+            "items": {
+                "data": [subscription_item]
+            }
+        }
+
+        self.stripe.modify_subscription(owner, desired_plan)
+        segment_decreased_users_mock.assert_called_once_with(
+            current_user_ownerid=self.user.ownerid,
+            org_ownerid=owner.ownerid,
+            plan_details={
+                "new_quantity": desired_user_count,
+                "old_quantity": 20,
+                "plan": desired_plan_name
+            }
+        )
+
     @patch('services.billing.stripe.checkout.Session.create')
     def test_create_checkout_session_creates_with_correct_args_and_returns_id(
         self,
