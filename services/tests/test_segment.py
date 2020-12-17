@@ -130,6 +130,87 @@ class SegmentServiceTests(TestCase):
                 self.segment_owner.traits
             )
 
+    @patch('analytics.track')
+    def test_account_activated_user(self, track_mock):
+        owner_to_activate = OwnerFactory()
+        org = OwnerFactory()
+        with self.settings(SEGMENT_ENABLED=True):
+            self.segment_service.account_activated_user(
+                current_user_ownerid=self.owner.ownerid,
+                ownerid_to_activate=owner_to_activate.ownerid,
+                org_ownerid=org.ownerid
+            )
+            track_mock.assert_called_once_with(
+                user_id=self.owner.ownerid,
+                event=SegmentEvent.ACCOUNT_ACTIVATED_USER.value,
+                properties={
+                    "role": "admin",
+                    "user": owner_to_activate.ownerid,
+                    "auto_activated": False 
+                },
+                context={"groupId": org.ownerid}
+            )
+
+    @patch('analytics.track')
+    def test_account_deactivated_user(self, track_mock):
+        owner_to_deactivate = OwnerFactory()
+        org = OwnerFactory()
+        with self.settings(SEGMENT_ENABLED=True):
+            self.segment_service.account_deactivated_user(
+                current_user_ownerid=self.owner.ownerid,
+                ownerid_to_deactivate=owner_to_deactivate.ownerid,
+                org_ownerid=org.ownerid
+            )
+            track_mock.assert_called_once_with(
+                user_id=self.owner.ownerid,
+                event=SegmentEvent.ACCOUNT_DEACTIVATED_USER.value,
+                properties={
+                    "role": "admin",
+                    "user": owner_to_deactivate.ownerid,
+                },
+                context={"groupId": org.ownerid}
+            )
+
+    @patch('analytics.track')
+    def test_account_increased_users(self, track_mock):
+        plan_details = {"old_quantity": 2, "new_quantity": 3, "plan": "users-inappm"}
+        org = OwnerFactory()
+        with self.settings(SEGMENT_ENABLED=True):
+            self.segment_service.account_increased_users(
+                org_ownerid=org.ownerid,
+                plan_details=plan_details,
+            )
+            track_mock.assert_called_once_with(
+                event=SegmentEvent.ACCOUNT_INCREASED_USERS.value,
+                properties=plan_details,
+                context={"groupId": org.ownerid}
+            )
+            
+    @patch('analytics.track')
+    def test_account_decreased_users(self, track_mock):
+        plan_details = {"old_quantity": 3, "new_quantity": 2, "plan": "users-inappm"}
+        org = OwnerFactory()
+        with self.settings(SEGMENT_ENABLED=True):
+            self.segment_service.account_decreased_users(
+                org_ownerid=org.ownerid,
+                plan_details=plan_details,
+            )
+            track_mock.assert_called_once_with(
+                event=SegmentEvent.ACCOUNT_DECREASED_USERS.value,
+                properties=plan_details,
+                context={"groupId": org.ownerid}
+            )
+
+    @patch('analytics.track')
+    def test_account_deleted(self, track_mock):
+        with self.settings(SEGMENT_ENABLED=True):
+            self.segment_service.account_deleted(self.owner)
+            track_mock.assert_called_with(
+                user_id=self.segment_owner.user_id,
+                properties=self.segment_owner.traits,
+                context={"groupId": self.owner.ownerid}
+            )
+
     @patch("analytics.group")
     def test_group(self, group_mock):
         org1, org2 = OwnerFactory(), OwnerFactory()
