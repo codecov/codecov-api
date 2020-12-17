@@ -9,6 +9,7 @@ class UserFilters(django_filters.FilterSet):
     def filter_activated(self, queryset, name, value):
         return queryset.filter(activated=value)
 
+    """I Don't think filter_prefix is required now. Can we delete?"""
     def filter_prefix(self, queryset, name, value):
         return queryset.filter(name__istartswith=value)
 
