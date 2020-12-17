@@ -195,12 +195,73 @@ class SegmentService:
 
     @inject_segment_owner
     def user_signed_up(self, segment_owner):
-        analytics.track(segment_owner.user_id, SegmentEvent.USER_SIGNED_UP.value, segment_owner.traits)
+        analytics.track(
+            segment_owner.user_id,
+            SegmentEvent.USER_SIGNED_UP.value,
+            segment_owner.traits
+        )
 
     @inject_segment_owner
     def user_signed_in(self, segment_owner):
-        analytics.track(segment_owner.user_id, SegmentEvent.USER_SIGNED_IN.value, segment_owner.traits)
+        analytics.track(
+            segment_owner.user_id,
+            SegmentEvent.USER_SIGNED_IN.value,
+            segment_owner.traits
+        )
 
     @inject_segment_owner
     def user_signed_out(self, segment_owner):
-        analytics.track(segment_owner.user_id, SegmentEvent.USER_SIGNED_OUT.value, segment_owner.traits)
+        analytics.track(
+            segment_owner.user_id,
+            SegmentEvent.USER_SIGNED_OUT.value,
+            segment_owner.traits
+        )
+
+    @inject_segment_owner
+    def account_deleted(self, segment_owner):
+        analytics.track(
+            user_id=segment_owner.user_id,
+            properties=segment_owner.traits,
+            context={"groupId": segment_owner.user_id}
+        )
+
+    @segment_enabled
+    def account_activated_user(self, current_user_ownerid, ownerid_to_activate, org_ownerid, auto_activated=False):
+        analytics.track(
+            user_id=current_user_ownerid,
+            event=SegmentEvent.ACCOUNT_ACTIVATED_USER.value,
+            properties={
+                "role": "admin",
+                "user": ownerid_to_activate,
+                "auto_activated": auto_activated
+            },
+            context={"groupId": org_ownerid}
+        )
+
+    @segment_enabled
+    def account_deactivated_user(self, current_user_ownerid, ownerid_to_deactivate, org_ownerid):
+        analytics.track(
+            user_id=current_user_ownerid,
+            event=SegmentEvent.ACCOUNT_DEACTIVATED_USER.value,
+            properties={
+                "role": "admin",
+                "user": ownerid_to_deactivate,
+            },
+            context={"groupId": org_ownerid}
+        )
+
+    @segment_enabled
+    def account_increased_users(self, org_ownerid, plan_details):
+        analytics.track(
+            event=SegmentEvent.ACCOUNT_INCREASED_USERS.value,
+            properties=plan_details,
+            context={"groupId": org_ownerid}
+        )
+
+    @segment_enabled
+    def account_decreased_users(self, org_ownerid, plan_details):
+        analytics.track(
+            event=SegmentEvent.ACCOUNT_DECREASED_USERS.value,
+            properties=plan_details,
+            context={"groupId": org_ownerid}
+        )

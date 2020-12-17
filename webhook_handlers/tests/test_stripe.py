@@ -339,6 +339,88 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.owner.plan_user_count == quantity
         assert self.owner.plan_auto_activate == True
 
+    @patch('services.segment.SegmentService.account_increased_users')
+    def test_customer_subscription_triggers_segment_event_on_user_increase(self, increased_users_mock):
+        self.owner.plan = "users-free"
+        self.owner.plan_user_count = 5
+        self.owner.plan_auto_activate = False
+
+        plan_name = "users-pr-inappy"
+        quantity = 20
+
+        self.owner.save()
+
+        response = self._send_event(
+            payload={
+                "type": "customer.subscription.updated",
+                "data": {
+                    "object": {
+                        "id": self.owner.stripe_subscription_id,
+                        "customer": self.owner.stripe_customer_id, 
+                        "plan": {
+                            "id": "fieown4",
+                            "name": plan_name
+                        },
+                        "metadata": {
+                            "obo_organization": self.owner.ownerid
+                        },
+                        "quantity": quantity,
+                        "status": "active"
+                    }
+                }
+            }
+        )
+
+        increased_users_mock.assert_called_once_with(
+            org_ownerid=self.owner.ownerid,
+            plan_details={
+                "old_quantity": 5,
+                "new_quantity": 20,
+                "plan": plan_name
+            }
+        )
+
+    @patch('services.segment.SegmentService.account_decreased_users')
+    def test_customer_subscription_triggers_segment_event_on_user_decrease(self, decreased_users_mock):
+        self.owner.plan = "users-free"
+        self.owner.plan_user_count = 5
+        self.owner.plan_auto_activate = False
+
+        plan_name = "users-pr-inappy"
+        quantity = 4
+
+        self.owner.save()
+
+        response = self._send_event(
+            payload={
+                "type": "customer.subscription.updated",
+                "data": {
+                    "object": {
+                        "id": self.owner.stripe_subscription_id,
+                        "customer": self.owner.stripe_customer_id, 
+                        "plan": {
+                            "id": "fieown4",
+                            "name": plan_name
+                        },
+                        "metadata": {
+                            "obo_organization": self.owner.ownerid
+                        },
+                        "quantity": quantity,
+                        "status": "active"
+                    }
+                }
+            }
+        )
+
+        decreased_users_mock.assert_called_once_with(
+            org_ownerid=self.owner.ownerid,
+            plan_details={
+                "old_quantity": 5,
+                "new_quantity": 4,
+                "plan": plan_name
+            }
+        )
+
     def test_checkout_session_completed_sets_stripe_customer_id(self):
         self.owner.stripe_customer_id = None
         self.owner.save()
