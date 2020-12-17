@@ -286,7 +286,6 @@ class SegmentServiceTests(TestCase):
                 repo,
             )
             track_mock.assert_called_once_with(
-                user_id=owner.ownerid,
                 event=SegmentEvent.ACCOUNT_ACTIVATED_REPOSITORY_ON_UPLOAD.value,
                 properties=SegmentRepository(repo).traits,
                 context={"groupId": repo.author.ownerid}
