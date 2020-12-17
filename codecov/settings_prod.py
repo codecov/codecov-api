@@ -26,12 +26,6 @@ sentry_sdk.init(
     environment="PRODUCTION"
 )
 
-
-# TODO: prod URLs not defined yet
-CLIENT_PLAN_CHANGE_SUCCESS_URL = ''
-CLIENT_PLAN_CHANGE_CANCEL_URL = ''
-
-
 CORS_ORIGIN_WHITELIST = ['app.codecov.io', 'codecov.io']
 CORS_ALLOW_CREDENTIALS = True
 CODECOV_URL = 'https://codecov.io'

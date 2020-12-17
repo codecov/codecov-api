@@ -180,6 +180,8 @@ class StripeWebhookHandler(APIView):
         owner.plan_auto_activate = True
         owner.save()
 
+        SegmentService().identify_user(owner)
+
         log.info("Successfully updated info for 1 customer")
 
     def checkout_session_completed(self, checkout_session):

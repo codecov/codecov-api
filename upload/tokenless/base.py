@@ -8,3 +8,9 @@ class BaseTokenlessUploadHandler(object):
         if repository_type.lower() not in ('github', 'gitlab', 'bitbucket'):
             raise NotFound('Sorry this service is not supported. Codecov currently only works with GitHub, GitLab, and BitBucket repositories')
         return repository_type.lower()
+
+    def get_build(self):
+        raise NotImplementedError()
+
+    def verify(self):
+        raise NotImplementedError()

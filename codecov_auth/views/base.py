@@ -109,6 +109,7 @@ class LoginMixin(object):
 
         ## Segment tracking
         self.segment_service.identify_user(owner)
+        self.segment_service.group(owner)
         if was_created:
             self.segment_service.user_signed_up(owner)
         else:

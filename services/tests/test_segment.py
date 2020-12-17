@@ -3,7 +3,7 @@ from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
 
 from services.segment import SegmentOwner, SegmentService, SegmentEvent, on_segment_error, SegmentRepository
-from unittest.mock import patch
+from unittest.mock import patch, call
 
 
 class SegmentOwnerTests(TestCase):
@@ -182,7 +182,6 @@ class SegmentServiceTests(TestCase):
                 plan_details=plan_details,
             )
             track_mock.assert_called_once_with(
-                user_id=org.ownerid,
                 event=SegmentEvent.ACCOUNT_INCREASED_USERS.value,
                 properties=plan_details,
                 context={"groupId": org.ownerid}
@@ -198,7 +197,6 @@ class SegmentServiceTests(TestCase):
                 plan_details=plan_details,
             )
             track_mock.assert_called_once_with(
-                user_id=org.ownerid,
                 event=SegmentEvent.ACCOUNT_DECREASED_USERS.value,
                 properties=plan_details,
                 context={"groupId": org.ownerid}
@@ -293,3 +291,26 @@ class SegmentServiceTests(TestCase):
                 properties=SegmentRepository(repo).traits,
                 context={"groupId": repo.author.ownerid}
             )
+
+    @patch("analytics.group")
+    def test_group(self, group_mock):
+        org1, org2 = OwnerFactory(), OwnerFactory()
+        self.owner.organizations = [org1.ownerid, org2.ownerid]
+        self.owner.save()
+
+        with self.settings(SEGMENT_ENABLED=True):
+            self.segment_service.group(self.owner)
+            group_mock.assert_has_calls([
+                call(
+                    user_id=self.owner.ownerid,
+                    group_id=org1.ownerid,
+                    traits=SegmentOwner(org1, owner_collection_type="accounts").traits,
+                    context=SegmentOwner(org1, owner_collection_type="accounts").context
+                ),
+                call(
+                    user_id=self.owner.ownerid,
+                    group_id=org2.ownerid,
+                    traits=SegmentOwner(org2, owner_collection_type="accounts").traits,
+                    context=SegmentOwner(org2, owner_collection_type="accounts").context
+                )
+            ])

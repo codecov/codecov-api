@@ -1,11 +1,13 @@
 import requests
+import shared.torngit
 import pytest
 from datetime import datetime, timedelta
 from rest_framework.test import APITestCase
+from shared.torngit.exceptions import TorngitClientError
 from rest_framework.reverse import reverse
 from rest_framework import status
 from rest_framework.exceptions import ValidationError, NotFound
-from unittest.mock import patch
+from unittest.mock import patch, PropertyMock
 from unittest import mock
 from json import dumps
 from yaml import YAMLError
@@ -1693,3 +1695,157 @@ class UploadHandlerCircleciTokenlessTest(TestCase):
         }
 
         assert TokenlessUploadHandler('circleci', params).verify_upload() == 'github'
+
+class UploadHandlerGithubActionsTokenlessTest(TestCase):
+
+    def test_github_actions_no_owner(self):
+        params = {            
+        }
+
+        expected_error = """Missing "owner" argument. Please upload with the Codecov repository upload token to resolve issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('github_actions', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    def test_github_actions_no_repo(self):
+        params = {
+            "owner": "owner"
+        }
+
+        expected_error = """Missing "repo" argument. Please upload with the Codecov repository upload token to resolve issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('github_actions', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch('upload.tokenless.github_actions.TokenlessGithubActionsHandler.get_build', new_callable=PropertyMock)
+    def test_github_actions_client_error(self, mock_get):
+        mock_get.side_effect = [TorngitClientError(500, None, None)]
+
+        params = {
+            "build": "12.34", 
+            "owner": "owner",
+            "repo": "repo"
+        }
+
+        expected_error = """Unable to locate build via Github Actions API. Please upload with the Codecov repository upload token to resolve issue."""
+
+        with pytest.raises(TorngitClientError) as e:
+            TokenlessUploadHandler('github_actions', params).verify_upload()
+        assert e.value.args[0] == 500
+
+    @patch('upload.tokenless.github_actions.TokenlessGithubActionsHandler.get_build', new_callable=PropertyMock)
+    def test_github_actions_non_public(self, mock_get):
+        expected_response = {
+            "public": False,
+            "slug": "slug",
+            "commit_sha": "abc",
+        }
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.return_value = expected_response
+
+        params = {
+            "build": "12.34", 
+            "owner": "owner",
+            "repo": "repo",
+            "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
+        }
+
+        expected_error = """Repository slug or commit sha do not match Github actions build. Please upload with the Codecov repository upload token to resolve issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('github_actions', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch('upload.tokenless.github_actions.TokenlessGithubActionsHandler.get_build', new_callable=PropertyMock)
+    def test_github_actions_wrong_slug(self, mock_get):
+        expected_response = {
+            "slug": "slug",
+            "public": True,
+            "commit_sha": "abc",
+        }
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.return_value = expected_response
+
+        params = {
+            "build": "12.34", 
+            "owner": "owner",
+            "repo": "repo",
+            "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
+        }
+
+        expected_error = """Repository slug or commit sha do not match Github actions build. Please upload with the Codecov repository upload token to resolve issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('github_actions', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch('upload.tokenless.github_actions.TokenlessGithubActionsHandler.get_build', new_callable=PropertyMock)
+    def test_github_actions_wrong_commit(self, mock_get):
+        expected_response = {
+            "commit_sha": "abc",
+            "slug": "owner/repo",
+            "public": True
+        }
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.return_value = expected_response
+
+        params = {
+            "build": "12.34", 
+            "owner": "owner",
+            "repo": "repo",
+            "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
+        }
+
+        expected_error = """Repository slug or commit sha do not match Github actions build. Please upload with the Codecov repository upload token to resolve issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('github_actions', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch('upload.tokenless.github_actions.TokenlessGithubActionsHandler.get_build', new_callable=PropertyMock)
+    def test_github_actions_no_build_status(self, mock_get):
+        expected_response = {
+            "commit_sha": "c739768fcac68144a3a6d82305b9c4106934d31a",
+            "slug": "owner/repo",
+            "public": True,
+            "finish_time": f"{datetime.utcnow() - timedelta(minutes=4)}".split('.')[0]
+        }
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.return_value = expected_response
+
+        params = {
+            "build": "12.34", 
+            "owner": "owner",
+            "repo": "repo",
+            "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
+        }
+
+        expected_error = """Actions workflow run is stale"""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('github_actions', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch('upload.tokenless.github_actions.TokenlessGithubActionsHandler.get_build', new_callable=PropertyMock)
+    def test_github_actions(self, mock_get):
+        expected_response = {
+            "commit_sha": "c739768fcac68144a3a6d82305b9c4106934d31a",
+            "slug": "owner/repo",
+            "public": True,
+            "finish_time": f"{datetime.utcnow()}".split('.')[0]
+        }
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.return_value = expected_response
+
+        params = {
+            "build": "12.34", 
+            "owner": "owner",
+            "repo": "repo",
+            "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
+        }
+
+        expected_error = """Actions workflow run is stale"""
+
+        assert TokenlessUploadHandler('github_actions', params).verify_upload() == 'github'
