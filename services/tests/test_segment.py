@@ -181,7 +181,6 @@ class SegmentServiceTests(TestCase):
                 plan_details=plan_details,
             )
             track_mock.assert_called_once_with(
-                user_id=org.ownerid,
                 event=SegmentEvent.ACCOUNT_INCREASED_USERS.value,
                 properties=plan_details,
                 context={"groupId": org.ownerid}
@@ -197,7 +196,6 @@ class SegmentServiceTests(TestCase):
                 plan_details=plan_details,
             )
             track_mock.assert_called_once_with(
-                user_id=org.ownerid,
                 event=SegmentEvent.ACCOUNT_DECREASED_USERS.value,
                 properties=plan_details,
                 context={"groupId": org.ownerid}

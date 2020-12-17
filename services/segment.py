@@ -253,7 +253,6 @@ class SegmentService:
     @segment_enabled
     def account_increased_users(self, org_ownerid, plan_details):
         analytics.track(
-            user_id=org_ownerid,
             event=SegmentEvent.ACCOUNT_INCREASED_USERS.value,
             properties=plan_details,
             context={"groupId": org_ownerid}
@@ -262,7 +261,6 @@ class SegmentService:
     @segment_enabled
     def account_decreased_users(self, org_ownerid, plan_details):
         analytics.track(
-            user_id=org_ownerid,
             event=SegmentEvent.ACCOUNT_DECREASED_USERS.value,
             properties=plan_details,
             context={"groupId": org_ownerid}
