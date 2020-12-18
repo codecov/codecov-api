@@ -303,6 +303,7 @@ class SegmentService:
     @inject_segment_repository
     def account_activated_repository_on_upload(self, org_ownerid, segment_repository):
         analytics.track(
+            user_id="",
             event=SegmentEvent.ACCOUNT_ACTIVATED_REPOSITORY_ON_UPLOAD.value,
             properties=segment_repository.traits,
             context={"groupId": org_ownerid}
