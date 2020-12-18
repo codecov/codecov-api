@@ -2,24 +2,24 @@ import requests
 import shared.torngit
 import pytest
 from datetime import datetime, timedelta
-from rest_framework.test import APITestCase
+from rest_framework.test import APITestCase, APIRequestFactory
 from shared.torngit.exceptions import TorngitClientError
 from rest_framework.reverse import reverse
 from rest_framework import status
 from rest_framework.exceptions import ValidationError, NotFound
 from unittest.mock import patch, PropertyMock
 from unittest import mock
-from json import dumps
+from json import dumps, loads
 from yaml import YAMLError
 from django.test import TestCase
 from django.conf import settings
 from django.test import RequestFactory
 from urllib.parse import urlencode
 from ddf import G
+from core.tests.factories import CommitFactory
 from rest_framework.exceptions import NotFound
 
-
-from core.models import Repository
+from core.models import Repository, Commit
 from codecov_auth.models import Owner
 
 from upload.helpers import (
@@ -28,18 +28,48 @@ from upload.helpers import (
     determine_repo_for_upload,
     determine_upload_branch_to_use,
     determine_upload_pr_to_use,
-    determine_upload_commitid_to_use,
+    determine_upload_commit_to_use,
+    parse_headers,
+    insert_commit,
+    store_report_in_redis,
+    validate_upload,
+    dispatch_upload_task,
 )
 
 from upload.tokenless.tokenless import TokenlessUploadHandler
 
-def mock_get_config_side_effect(*args):
+def mock_get_config_global_upload_tokens(*args):
     if args == ("github", "global_upload_token"):
         return "githubuploadtoken"
     if args == ("gitlab", "global_upload_token"):
         return "gitlabuploadtoken"
     if args == ("bitbucket_server", "global_upload_token"):
         return "bitbucketserveruploadtoken"
+
+
+class MockRedis:
+    def __init__(self, blacklisted=False, *args, **kwargs):
+        self.blacklisted = blacklisted
+        self.expected_task_key = kwargs.get("expected_task_key")
+        self.expected_task_arguments = kwargs.get("expected_task_arguments")
+        self.expected_expire_time = kwargs.get("expected_expire_time")
+
+    def rpush(self, key, value):
+        assert key == self.expected_task_key
+        assert value == dumps(self.expected_task_arguments)
+
+    def expire(self, key, expire_time):
+        assert key == self.expected_task_key
+        assert expire_time == self.expected_expire_time
+
+    def sismember(self, key, repoid):
+        return self.blacklisted
+
+    def get(self, key):
+        return 10
+
+    def setex(self, redis_key, expire_time, report):
+        return
 
 
 class UploadHandlerHelpersTest(TestCase):
@@ -191,7 +221,7 @@ class UploadHandlerHelpersTest(TestCase):
 
     @patch("upload.helpers.get_config")
     def test_parse_params_recognizes_global_token(self, mock_get_config):
-        mock_get_config.side_effect = mock_get_config_side_effect
+        mock_get_config.side_effect = mock_get_config_global_upload_tokens
 
         request_params = {
             "version": "v4",
@@ -216,7 +246,7 @@ class UploadHandlerHelpersTest(TestCase):
 
     @patch("upload.helpers.get_config")
     def test_get_global_tokens(self, mock_get_config):
-        mock_get_config.side_effect = mock_get_config_side_effect
+        mock_get_config.side_effect = mock_get_config_global_upload_tokens
 
         expected_result = {
             "githubuploadtoken": "github",
@@ -423,20 +453,326 @@ class UploadHandlerHelpersTest(TestCase):
             expected_value = None
             assert expected_value == determine_upload_pr_to_use(upload_params)
 
-    def test_determine_upload_commitid_to_use(self):
+    @patch("upload.helpers.RepoProviderService")
+    def test_determine_upload_commit_to_use(self, mock_repo_provider_service):
+        class MockRepoProviderService:
+            def get_adapter(self, user, repo, use_ssl, token):
+                return MockRepoProvider()
+
+        class MockRepoProvider:
+            async def get_commit(self, commit, token):
+                return {
+                    "message": "Merge 1c78206f1a46dc6db8412a491fc770eb7d0f8a47 into 261aa931e8e3801ad95a31bbc3529de2bba436c8"
+                }
+
+        mock_repo_provider_service.return_value = MockRepoProviderService()
+
         with self.subTest("not a github commit"):
+            org = G(Owner, service="bitbucket")
+            repo = G(Repository, author=org)
             upload_params = {
                 "service": "bitbucket",
                 "commit": "3be5c52bd748c508a7e96993c02cf3518c816e84",
             }
+            assert (
+                "3be5c52bd748c508a7e96993c02cf3518c816e84"
+                == determine_upload_commit_to_use(upload_params, repo)
+            )
 
-            expected_value = "3be5c52bd748c508a7e96993c02cf3518c816e84"
+        with self.subTest("merge commit"):
+            org = G(Owner, service="github")
+            repo = G(Repository, author=org)
+            upload_params = {
+                "service": "github",
+                "commit": "3084886b7ff869dcf327ad1d28a8b7d34adc7584",
+            }
+            # Should use id from merge commit message, not from params
+            assert (
+                "1c78206f1a46dc6db8412a491fc770eb7d0f8a47"
+                == determine_upload_commit_to_use(upload_params, repo)
+            )
 
-            assert expected_value == determine_upload_commitid_to_use(upload_params)
+        with self.subTest("merge commit with did_change_merge_commit argument"):
+            org = G(Owner, service="github")
+            repo = G(Repository, author=org)
+            upload_params = {
+                "service": "github",
+                "commit": "3084886b7ff869dcf327ad1d28a8b7d34adc7584",
+                "_did_change_merge_commit": True,
+            }
+            # Should use the commit id provided in params, not the one from the commit message
+            assert (
+                "3084886b7ff869dcf327ad1d28a8b7d34adc7584"
+                == determine_upload_commit_to_use(upload_params, repo)
+            )
+
+    def test_insert_commit(self):
+        org = G(Owner)
+        repo = G(Repository, author=org)
+
+        with self.subTest("newly created"):
+            insert_commit(
+                "3084886b7ff869dcf327ad1d28a8b7d34adc7584", "test", "123", repo, org
+            )
+
+            commit = Commit.objects.get(
+                commitid="3084886b7ff869dcf327ad1d28a8b7d34adc7584"
+            )
+            assert commit.repository == repo
+            assert commit.state == "pending"
+            assert commit.branch == "test"
+            assert commit.pullid == 123
+            assert commit.merged == False
+            assert commit.parent_commit_id == None
+
+        with self.subTest("commit already in database"):
+            G(
+                Commit,
+                commitid="1c78206f1a46dc6db8412a491fc770eb7d0f8a47",
+                branch="apples",
+                pullid="456",
+                repository=repo,
+                parent_commit_id="parent_commit",
+            )
+            insert_commit(
+                "1c78206f1a46dc6db8412a491fc770eb7d0f8a47",
+                "oranges",
+                "123",
+                repo,
+                org,
+                parent_commit_id="different_parent_commit",
+            )
+
+            commit = Commit.objects.get(
+                commitid="1c78206f1a46dc6db8412a491fc770eb7d0f8a47"
+            )
+            assert commit.repository == repo
+            assert commit.state == "pending"
+            assert commit.branch == "apples"
+            assert commit.pullid == 456
+            assert commit.merged == None
+            assert commit.parent_commit_id == "parent_commit"
+
+        with self.subTest("parent provided"):
+            parent = G(Commit)
+            insert_commit(
+                "8458a8c72aafb5fb4c5cd58f467a2f71298f1b61",
+                "test",
+                None,
+                repo,
+                org,
+                parent_commit_id=parent.commitid,
+            )
+
+            commit = Commit.objects.get(
+                commitid="8458a8c72aafb5fb4c5cd58f467a2f71298f1b61"
+            )
+            assert commit.repository == repo
+            assert commit.state == "pending"
+            assert commit.branch == "test"
+            assert commit.pullid == None
+            assert commit.merged == None
+            assert commit.parent_commit_id == parent.commitid
+
+    def test_parse_request_headers(self):
+        with self.subTest("Invalid content disposition"):
+            with self.assertRaises(ValidationError):
+                parse_headers({"Content_Disposition": "not inline"}, {"version": "v2"})
+
+        with self.subTest("v2"):
+            assert parse_headers(
+                {"Content-Disposition": "inline"}, {"version": "v2"}
+            ) == {"content_type": "application/x-gzip", "reduced_redundancy": False,}
+
+        with self.subTest("v4"):
+            assert parse_headers(
+                {"X_Content_Type": "text/html", "X_Reduced_Redundancy": "false",},
+                {"version": "v4"},
+            ) == {"content_type": "text/plain", "reduced_redundancy": False,}
+
+            assert parse_headers(
+                {"X_Content_Type": "plain/text", "X_Reduced_Redundancy": "true"},
+                {"version": "v4"},
+            ) == {"content_type": "plain/text", "reduced_redundancy": True,}
+
+            assert parse_headers(
+                {
+                    "X_Content_Type": "application/x-gzip",
+                    "X_Reduced_Redundancy": "true",
+                },
+                {"version": "v4", "package": "node"},
+            ) == {"content_type": "application/x-gzip", "reduced_redundancy": False,}
+
+        with self.subTest("Unsafe content type"):
+            assert parse_headers(
+                {"Content_Disposition": None, "X_Content_Type": "multipart/form-data"},
+                {"version": "v4"},
+            ) == {"content_type": "text/plain", "reduced_redundancy": True}
+
+    def test_store_report_in_redis(self):
+
+        redis = MockRedis()
+
+        with self.subTest("redis key in headers"):
+            assert (
+                store_report_in_redis(APIRequestFactory().get('', X_REDIS_KEY="redis/key/in/headers"), "commit", "report", redis)
+                == "redis/key/in/headers"
+            )
+
+        with self.subTest("gzip encoding"):
+            assert (
+                store_report_in_redis(
+                    APIRequestFactory().get('', Content_Encoding="gzip"), "1c78206f1a46dc6db8412a491fc770eb7d0f8a47", "report", redis
+                )
+                == "upload/1c78206/report/gzip"
+            )
+
+        with self.subTest("plain encoding"):
+            assert (
+                store_report_in_redis(
+                    APIRequestFactory().get(''), "1c78206f1a46dc6db8412a491fc770eb7d0f8a47", "report", redis
+                )
+                == "upload/1c78206/report/plain"
+            )
+
+    def test_validate_upload(self):
+        with self.subTest("repository moved"):
+            redis = MockRedis()
+            owner = G(Owner, plan="users-free")
+            repo = G(Repository, author=owner, name="")
+            commit = G(Commit)
+
+            with self.assertRaises(ValidationError) as err:
+                validate_upload({"commit": commit.commitid}, repo, redis)
+
+            assert (
+                err.exception.detail[0]
+                == "This repository has moved or was deleted. Please login to Codecov to retrieve a new upload token."
+            )
+
+        with self.subTest("too many uploads for commit"):
+            redis = MockRedis()
+            owner = G(Owner, plan="users-free")
+            repo = G(Repository, author=owner,)
+            commit = G(Commit, totals={"s": 50}, repository=repo)
+
+            with self.assertRaises(ValidationError) as err:
+                validate_upload({"commit": commit.commitid}, repo, redis)
+            assert err.exception.detail[0] == "Too many uploads to this commit."
+
+        with self.subTest("repository blacklisted"):
+            redis = MockRedis(blacklisted=True)
+            owner = G(Owner, plan="users-free")
+            repo = G(Repository, author=owner)
+            commit = G(Commit)
+
+            with self.assertRaises(ValidationError) as err:
+                validate_upload({"commit": commit.commitid}, repo, redis)
+            assert (
+                err.exception.detail[0]
+                == "Uploads rejected for this project. Please contact Codecov staff for more details. Sorry for the inconvenience."
+            )
+
+        with self.subTest("per repo billing invalid"):
+            redis = MockRedis()
+            owner = G(Owner, plan="1m")
+            repo_already_activated = G(
+                Repository, author=owner, private=True, activated=True, active=True
+            )
+            repo = G(
+                Repository, author=owner, private=True, activated=False, active=False
+            )
+            commit = G(Commit)
+
+            with self.assertRaises(ValidationError) as err:
+                validate_upload({"commit": commit.commitid}, repo, redis)
+            assert (
+                err.exception.detail[0]
+                == "Sorry, but this team has no private repository credits left."
+            )
+
+        with self.subTest("gitlab subgroups"):
+            redis = MockRedis()
+            parent_group = G(Owner, plan="1m", parent_service_id=None, service="gitlab")
+            top_subgroup = G(
+                Owner,
+                plan="1m",
+                parent_service_id=parent_group.service_id,
+                service="gitlab",
+            )
+            bottom_subgroup = G(
+                Owner,
+                plan="1m",
+                parent_service_id=top_subgroup.service_id,
+                service="gitlab",
+            )
+            repo_already_activated = G(
+                Repository,
+                author=parent_group,
+                private=True,
+                activated=True,
+                active=True,
+            )
+            repo = G(Repository, author=bottom_subgroup, private=True, activated=False,)
+            commit = G(Commit)
+
+            with self.assertRaises(ValidationError) as err:
+                validate_upload({"commit": commit.commitid}, repo, redis)
+            assert (
+                err.exception.detail[0]
+                == "Sorry, but this team has no private repository credits left."
+            )
+
+        with self.subTest("valid upload repo not activated"):
+            redis = MockRedis()
+            owner = G(Owner, plan="users-free",)
+            repo = G(
+                Repository,
+                author=owner,
+                private=True,
+                activated=False,
+                deleted=False,
+                active=False,
+            )
+            commit = G(Commit)
+
+            validate_upload({"commit": commit.commitid}, repo, redis)
+            repo.refresh_from_db()
+            assert repo.activated == True
+            assert repo.active == True
+            assert repo.deleted == False
+
+        with self.subTest("valid upload repo activated"):
+            redis = MockRedis()
+            owner = G(Owner, plan="5m")
+            repo = G(Repository, author=owner, private=True, activated=True)
+            commit = G(Commit)
+
+            validate_upload({"commit": commit.commitid}, repo, redis)
+            repo.refresh_from_db()
+            assert repo.activated == True
+            assert repo.active == True
+            assert repo.deleted == False
+
+    @patch("services.task.TaskService.upload")
+    def test_dispatch_upload_task(self, mock_task_service_upload):
+        repo = G(Repository)
+        task_arguments = {"commit": "commit123", "version": "v4"}
+
+        expected_key = f"uploads/{repo.repoid}/commit123"
+
+        redis = MockRedis(
+            expected_task_key=expected_key,
+            expected_task_arguments=task_arguments,
+            expected_expire_time=86400,
+        )
+
+        dispatch_upload_task(task_arguments, repo, redis)
+        assert mock_task_service_upload.called
+        mock_task_service_upload.assert_called_with(repoid=repo.repoid, commitid=task_arguments.get('commit'), countdown=4)
 
 
 class UploadHandlerRouteTest(APITestCase):
-
     # Wrap client calls
     def _get(self, kwargs=None):
         return self.client.get(reverse("upload-handler", kwargs=kwargs))
@@ -444,14 +780,21 @@ class UploadHandlerRouteTest(APITestCase):
     def _options(self, kwargs=None, data=None):
         return self.client.options(reverse("upload-handler", kwargs=kwargs))
 
-    def _post(self, kwargs=None, data=None, query=None):
+    def _post(
+        self, kwargs=None, data=None, query=None, content_type="application/json"
+    ):
         query_string = f"?{urlencode(query)}" if query else ""
         url = reverse("upload-handler", kwargs=kwargs) + query_string
-        return self.client.post(url, data=data)
+        return self.client.post(url, data=data, content_type=content_type)
 
     def setUp(self):
-        self.org = G(Owner)
-        self.repo = G(Repository, author=self.org)
+        self.org = G(Owner, username="codecovtest", service="github")
+        self.repo = G(
+            Repository,
+            author=self.org,
+            name="upload-test-repo",
+            upload_token="test27s4f3uz3ha9pi0foipg5bqojtrmbt67",
+        )
 
     def test_get_request_returns_405(self):
         response = self._get(kwargs={"version": "v4"})
@@ -478,63 +821,112 @@ class UploadHandlerRouteTest(APITestCase):
             "Origin, Content-Type, Accept, X-User-Agent",
         )
 
-    def test_post_headers(self):
-        with self.subTest("v2"):
-            response = self._post(kwargs={"version": "v2"})
+    def test_invalid_request_params(self):
+        query_params = {
+            "pr": 9838,
+            "flags": "flags!!!",
+        }
 
-            headers = response._headers
+        response = self._post(kwargs={"version": "v5"}, query=query_params)
 
-            assert headers["access-control-allow-origin"] == (
-                "Access-Control-Allow-Origin",
-                "*",
-            )
-            assert headers["access-control-allow-headers"] == (
-                "Access-Control-Allow-Headers",
-                "Origin, Content-Type, Accept, X-User-Agent",
-            )
-            assert headers["content-type"] != ("Content-Type", "text/plain",)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-        with self.subTest("v4"):
-            response = self._post(kwargs={"version": "v4"})
+    @patch("upload.views.get_redis_connection")
+    @patch("upload.views.uuid4")
+    @patch("upload.views.dispatch_upload_task")
+    @patch("services.repo_providers.RepoProviderService.get_adapter")
+    def test_successful_upload_v2(
+        self,
+        mock_repo_provider_service,
+        mock_dispatch_upload,
+        mock_uuid4,
+        mock_get_redis,
+    ):
+        class MockRepoProviderAdapter:
+            async def get_commit(self, commit, token):
+                return {"message": "This is not a merge commit"}
 
-            headers = response._headers
+        mock_get_redis.return_value = MockRedis()
+        mock_repo_provider_service.return_value = MockRepoProviderAdapter()
+        mock_uuid4.return_value = (
+            "dec1f00b-1883-40d0-afd6-6dcb876510be"  # this will be the reportid
+        )
 
-            assert headers["access-control-allow-origin"] == (
-                "Access-Control-Allow-Origin",
-                "*",
-            )
-            assert headers["access-control-allow-headers"] == (
-                "Access-Control-Allow-Headers",
-                "Origin, Content-Type, Accept, X-User-Agent",
-            )
-            assert headers["content-type"] == ("Content-Type", "text/plain",)
+        query_params = {
+            "commit": "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
+            "token": "test27s4f3uz3ha9pi0foipg5bqojtrmbt67",
+            "pr": "456",
+            "branch": "",
+            "flags": "",
+            "build_url": "",
+        }
 
-    def test_param_parsing(self):
-        with self.subTest("valid"):
-            query_params = {
-                "commit": "3be5c52bd748c508a7e96993c02cf3518c816e84",
-                "token": self.repo.upload_token,
-                "pr": "",
-                "pull_request": "9838",
-                "branch": "",
-                "flags": "",
-                "build_url": "",
-                "travis_job_id": "abc",
-            }
+        response = self._post(
+            kwargs={"version": "v2"}, query=query_params, data="coverage report"
+        )
 
-            response = self._post(kwargs={"version": "v4"}, query=query_params)
+        assert response.status_code == 200
 
-            assert response.status_code == 200
+        headers = response._headers
 
-        with self.subTest("invalid"):
-            query_params = {
-                "pr": 9838,
-                "flags": "flags!!!",
-            }
+        assert headers["access-control-allow-origin"] == (
+            "Access-Control-Allow-Origin",
+            "*",
+        )
+        assert headers["access-control-allow-headers"] == (
+            "Access-Control-Allow-Headers",
+            "Origin, Content-Type, Accept, X-User-Agent",
+        )
+        assert headers["content-type"] != ("Content-Type", "text/plain",)
 
-            response = self._post(kwargs={"version": "v5"}, query=query_params)
+        assert mock_dispatch_upload.call_args[0][0] == {
+            "commit": "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
+            "token": "test27s4f3uz3ha9pi0foipg5bqojtrmbt67",
+            "pr": "456",
+            "version": "v2",
+            "service": None,
+            "owner": None,
+            "repo": None,
+            "using_global_token": False,
+            "build_url": None,
+            "branch": None,
+            "reportid": "dec1f00b-1883-40d0-afd6-6dcb876510be",
+            "redis_key": "upload/b521e55/dec1f00b-1883-40d0-afd6-6dcb876510be/plain",
+            "url": None,
+            "branch": None,
+            "job": None,
+        }
 
-            assert response.status_code == status.HTTP_400_BAD_REQUEST
+        result = loads(response.content)
+        assert result["message"] == "Coverage reports upload successfully"
+        assert result["uploaded"] == True
+        assert result["queued"] == True
+        assert result["id"] == "dec1f00b-1883-40d0-afd6-6dcb876510be"
+        assert (
+            result["url"]
+            == "https://codecov.io/github/codecovtest/upload-test-repo/commit/b521e55aef79b101f48e2544837ca99a7fa3bf6b"
+        )
+
+    """
+    TODO
+    def test_successful_upload_v4(self):
+        
+        response = self._post(
+            kwargs={"version": "v4"} # TODO add query params
+        )
+        # Check response headers
+        headers = response._headers
+        assert headers["access-control-allow-origin"] == (
+            "Access-Control-Allow-Origin",
+            "*",
+        )
+        assert headers["access-control-allow-headers"] == (
+            "Access-Control-Allow-Headers",
+            "Origin, Content-Type, Accept, X-User-Agent",
+        )
+        assert headers["content-type"] == ("Content-Type", "text/plain",)
+    """
+        # assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
 class UploadHandlerTravisTokenlessTest(TestCase):

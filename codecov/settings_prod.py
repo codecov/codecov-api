@@ -9,6 +9,11 @@ THIS_POD_IP = os.environ.get("THIS_POD_IP")
 ALLOWED_HOSTS = [".codecov.io", THIS_POD_IP] if THIS_POD_IP else [".codecov.io"]
 
 
+INSTALLED_APPS += [
+    'ddtrace.contrib.django'
+]
+
+
 WEBHOOK_URL = 'https://codecov.io'
 
 

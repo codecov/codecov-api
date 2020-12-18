@@ -26,7 +26,6 @@ INSTALLED_APPS = [
     'core',
     'codecov_auth',
     'internal_api',
-    'ddtrace.contrib.django'
 ]
 
 MIDDLEWARE = [
