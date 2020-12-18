@@ -1,7 +1,8 @@
 from django.test import TestCase
 from codecov_auth.tests.factories import OwnerFactory
+from core.tests.factories import RepositoryFactory
 
-from services.segment import SegmentOwner, SegmentService, SegmentEvent, on_segment_error
+from services.segment import SegmentOwner, SegmentService, SegmentEvent, on_segment_error, SegmentRepository
 from unittest.mock import patch, call
 
 
@@ -209,6 +210,86 @@ class SegmentServiceTests(TestCase):
                 user_id=self.segment_owner.user_id,
                 properties=self.segment_owner.traits,
                 context={"groupId": self.owner.ownerid}
+            )
+
+    @patch('analytics.track')
+    def test_account_activated_repository(self, track_mock):
+        owner = OwnerFactory()
+        repo = RepositoryFactory(author=owner)
+        with self.settings(SEGMENT_ENABLED=True):
+            self.segment_service.account_activated_repository(
+                owner.ownerid,
+                repo,
+            )
+            track_mock.assert_called_once_with(
+                user_id=owner.ownerid,
+                event=SegmentEvent.ACCOUNT_ACTIVATED_REPOSITORY.value,
+                properties=SegmentRepository(repo).traits,
+                context={"groupId": repo.author.ownerid}
+            )
+
+    @patch('analytics.track')
+    def test_account_deactivated_repository(self, track_mock):
+        owner = OwnerFactory()
+        repo = RepositoryFactory(author=owner)
+        with self.settings(SEGMENT_ENABLED=True):
+            self.segment_service.account_deactivated_repository(
+                owner.ownerid,
+                repo,
+            )
+            track_mock.assert_called_once_with(
+                user_id=owner.ownerid,
+                event=SegmentEvent.ACCOUNT_DEACTIVATED_REPOSITORY.value,
+                properties=SegmentRepository(repo).traits,
+                context={"groupId": repo.author.ownerid}
+            )
+
+    @patch('analytics.track')
+    def test_account_erased_repository(self, track_mock):
+        owner = OwnerFactory()
+        repo = RepositoryFactory(author=owner)
+        with self.settings(SEGMENT_ENABLED=True):
+            self.segment_service.account_erased_repository(
+                owner.ownerid,
+                repo,
+            )
+            track_mock.assert_called_once_with(
+                user_id=owner.ownerid,
+                event=SegmentEvent.ACCOUNT_ERASED_REPOSITORY.value,
+                properties=SegmentRepository(repo).traits,
+                context={"groupId": repo.author.ownerid}
+            )
+
+    @patch('analytics.track')
+    def test_account_deleted_repository(self, track_mock):
+        owner = OwnerFactory()
+        repo = RepositoryFactory(author=owner)
+        with self.settings(SEGMENT_ENABLED=True):
+            self.segment_service.account_deleted_repository(
+                owner.ownerid,
+                repo,
+            )
+            track_mock.assert_called_once_with(
+                user_id=owner.ownerid,
+                event=SegmentEvent.ACCOUNT_DELETED_REPOSITORY.value,
+                properties=SegmentRepository(repo).traits,
+                context={"groupId": repo.author.ownerid}
+            )
+
+    @patch('analytics.track')
+    def test_account_activated_repository_on_upload(self, track_mock):
+        owner = OwnerFactory()
+        repo = RepositoryFactory(author=owner)
+        with self.settings(SEGMENT_ENABLED=True):
+            self.segment_service.account_activated_repository_on_upload(
+                owner.ownerid,
+                repo,
+            )
+            track_mock.assert_called_once_with(
+                user_id="",
+                event=SegmentEvent.ACCOUNT_ACTIVATED_REPOSITORY_ON_UPLOAD.value,
+                properties=SegmentRepository(repo).traits,
+                context={"groupId": repo.author.ownerid}
             )
 
     @patch("analytics.group")

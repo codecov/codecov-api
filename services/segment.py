@@ -46,6 +46,17 @@ def inject_segment_owner(method):
     return exec_method
 
 
+def inject_segment_repository(method):
+    """
+    Decorator: promotes type of second parameter (a repository) to SegmentRepository
+    """
+    @segment_enabled
+    def exec_method(self, ownerid, repository):
+        segment_repository = SegmentRepository(repository)
+        return method(self, ownerid, segment_repository)
+    return exec_method
+
+
 class SegmentEvent(Enum):
     ACCOUNT_ACTIVATED_REPOSITORY_ON_UPLOAD = 'Account Activated Repository On Upload'
     ACCOUNT_ACTIVATED_REPOSITORY = 'Account Activated Repository'
@@ -60,7 +71,7 @@ class SegmentEvent(Enum):
     ACCOUNT_DECREASED_USERS = 'Account Decreased Users'
     ACCOUNT_DELETED_REPOSITORY = 'Account Deleted Repository'
     ACCOUNT_DELETED = 'Account Deleted'
-    ACCOUNT_ERASED_REPOSITIROY = 'Account Erased Repository'
+    ACCOUNT_ERASED_REPOSITORY = 'Account Erased Repository'
     ACCOUNT_INCREASED_USERS = 'Account Increased Users'
     ACCOUNT_INSTALLED_SOURCE_CONTROL_APP = 'Account Installed Source Control Service App'
     ACCOUNT_PAID_SUBSCRIPTION = 'Account Paid Subscription'
@@ -163,6 +174,34 @@ class SegmentOwner:
         return context
 
 
+class SegmentRepository:
+    """
+    Wrapper object around Repository to provide a similar "traits" field as in SegmentOwner above.
+    """
+    def __init__(self, repo):
+        self.repo = repo
+
+    @property
+    def traits(self):
+        return {
+            "repoid": self.repo.repoid,
+            "ownerid": self.repo.author.ownerid,
+            "service_id": self.repo.service_id,
+            "name": self.repo.name,
+            "private": self.repo.private,
+            "branch": self.repo.branch,
+            "updatestamp": self.repo.updatestamp,
+            "language": self.repo.language,
+            "active": self.repo.active,
+            "deleted": self.repo.deleted,
+            "activated": self.repo.activated,
+            "bot": self.repo.bot,
+            "using_integration": self.repo.using_integration,
+            "hookid": self.repo.hookid,
+            "has_yaml": self.repo.yaml is not None
+        }
+
+
 class SegmentService:
     """
     Various methods for emitting events related to user actions.
@@ -223,6 +262,51 @@ class SegmentService:
             user_id=segment_owner.user_id,
             properties=segment_owner.traits,
             context={"groupId": segment_owner.user_id}
+        )
+
+    @inject_segment_repository
+    def account_activated_repository(self, current_user_ownerid, segment_repository):
+        analytics.track(
+            user_id=current_user_ownerid,
+            event=SegmentEvent.ACCOUNT_ACTIVATED_REPOSITORY.value,
+            properties=segment_repository.traits,
+            context={"groupId": segment_repository.repo.author.ownerid}
+        )
+
+    @inject_segment_repository
+    def account_deactivated_repository(self, current_user_ownerid, segment_repository):
+        analytics.track(
+            user_id=current_user_ownerid,
+            event=SegmentEvent.ACCOUNT_DEACTIVATED_REPOSITORY.value,
+            properties=segment_repository.traits,
+            context={"groupId": segment_repository.repo.author.ownerid}
+        )
+
+    @inject_segment_repository
+    def account_erased_repository(self, current_user_ownerid, segment_repository):
+        analytics.track(
+            user_id=current_user_ownerid,
+            event=SegmentEvent.ACCOUNT_ERASED_REPOSITORY.value,
+            properties=segment_repository.traits,
+            context={"groupId": segment_repository.repo.author.ownerid}
+        )
+
+    @inject_segment_repository
+    def account_deleted_repository(self, current_user_ownerid, segment_repository):
+        analytics.track(
+            user_id=current_user_ownerid,
+            event=SegmentEvent.ACCOUNT_DELETED_REPOSITORY.value,
+            properties=segment_repository.traits,
+            context={"groupId": segment_repository.repo.author.ownerid}
+        )
+
+    @inject_segment_repository
+    def account_activated_repository_on_upload(self, org_ownerid, segment_repository):
+        analytics.track(
+            user_id="",
+            event=SegmentEvent.ACCOUNT_ACTIVATED_REPOSITORY_ON_UPLOAD.value,
+            properties=segment_repository.traits,
+            context={"groupId": org_ownerid}
         )
 
     @segment_enabled
