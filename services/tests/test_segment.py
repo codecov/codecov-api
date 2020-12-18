@@ -314,3 +314,50 @@ class SegmentServiceTests(TestCase):
                     context=SegmentOwner(org2, owner_collection_type="accounts").context
                 )
             ])
+    @patch("analytics.track")
+    def test_account_installed_source_control_service_app(self, track_mock):
+        owner = OwnerFactory()
+        app_details = {"platform": "github"}
+        with self.settings(SEGMENT_ENABLED=True):
+            self.segment_service.account_installed_source_control_service_app(
+                owner.ownerid,
+                app_details
+            )
+            track_mock.assert_called_once_with(
+                user_id=owner.ownerid,
+                event=SegmentEvent.ACCOUNT_INSTALLED_SOURCE_CONTROL_APP.value,
+                properties=app_details,
+                context={"groupId": owner.ownerid}
+            )
+
+    @patch("analytics.track")
+    def test_account_uninstalled_source_control_service_app(self, track_mock):
+        owner = OwnerFactory()
+        app_details = {"platform": "github"}
+        with self.settings(SEGMENT_ENABLED=True):
+            self.segment_service.account_uninstalled_source_control_service_app(
+                owner.ownerid,
+                app_details
+            )
+            track_mock.assert_called_once_with(
+                user_id=owner.ownerid,
+                event=SegmentEvent.ACCOUNT_UNINSTALLED_SOURCE_CONTROL_APP.value,
+                properties=app_details,
+                context={"groupId": owner.ownerid}
+            )
+
+    @patch("analytics.track")
+    def test_account_uploaded_coverage_report(self, track_mock):
+        owner = OwnerFactory()
+        upload_details = {"some": "dict"}
+        with self.settings(SEGMENT_ENABLED=True):
+            self.segment_service.account_uploaded_coverage_report(
+                owner.ownerid,
+                upload_details
+            )
+            track_mock.assert_called_once_with(
+                user_id="-1",
+                event=SegmentEvent.ACCOUNT_UPLOADED_COVERAGE_REPORT.value,
+                properties=upload_details,
+                context={"groupId": owner.ownerid}
+            )

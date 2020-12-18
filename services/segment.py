@@ -76,7 +76,7 @@ class SegmentEvent(Enum):
     ACCOUNT_INSTALLED_SOURCE_CONTROL_APP = 'Account Installed Source Control Service App'
     ACCOUNT_PAID_SUBSCRIPTION = 'Account Paid Subscription'
     ACCOUNT_REMOVED_USER = 'Account Removed User' # TODO: check with Jon how this is different from Account Deactivated User?
-    ACCOUNT_UNISTALLED_SOURCE_CONTROL_APP = 'Account Uninstalled Source Control Service App'
+    ACCOUNT_UNINSTALLED_SOURCE_CONTROL_APP = 'Account Uninstalled Source Control Service App'
     ACCOUNT_UPLOADED_COVERAGE_REPORT = 'Account Uploaded Coverage Report'
     TRIAL_ENDED = 'Trial Ended'
     TRIAL_STARTED = 'Trial Started'
@@ -347,5 +347,32 @@ class SegmentService:
         analytics.track(
             event=SegmentEvent.ACCOUNT_DECREASED_USERS.value,
             properties=plan_details,
+            context={"groupId": org_ownerid}
+        )
+
+    @segment_enabled
+    def account_installed_source_control_service_app(self, org_ownerid, app_details):
+        analytics.track(
+            user_id=org_ownerid,
+            event=SegmentEvent.ACCOUNT_INSTALLED_SOURCE_CONTROL_APP.value,
+            properties=app_details,
+            context={"groupId": org_ownerid}
+        )
+
+    @segment_enabled
+    def account_uninstalled_source_control_service_app(self, org_ownerid, app_details):
+        analytics.track(
+            user_id=org_ownerid,
+            event=SegmentEvent.ACCOUNT_UNINSTALLED_SOURCE_CONTROL_APP.value,
+            properties=app_details,
+            context={"groupId": org_ownerid}
+        )
+
+    @segment_enabled
+    def account_uploaded_coverage_report(self, org_ownerid, upload_details):
+        analytics.track(
+            user_id="-1",
+            event=SegmentEvent.ACCOUNT_UPLOADED_COVERAGE_REPORT.value,
+            properties=upload_details,
             context={"groupId": org_ownerid}
         )
