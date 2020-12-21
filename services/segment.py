@@ -9,6 +9,9 @@ from codecov_auth.models import Owner
 log = logging.getLogger(__name__)
 
 
+BLANK_SEGMENT_USER_ID = "-1"
+
+
 def on_segment_error(error):
     log.error(f"Segment error: {error}")
 
@@ -351,16 +354,16 @@ class SegmentService:
         )
 
     @segment_enabled
-    def account_installed_source_control_service_app(self, org_ownerid, app_details):
+    def account_installed_source_control_service_app(self, user_ownerid, org_ownerid, app_details):
         analytics.track(
-            user_id=org_ownerid,
+            user_id=user_ownerid,
             event=SegmentEvent.ACCOUNT_INSTALLED_SOURCE_CONTROL_APP.value,
             properties=app_details,
             context={"groupId": org_ownerid}
         )
 
     @segment_enabled
-    def account_uninstalled_source_control_service_app(self, org_ownerid, app_details):
+    def account_uninstalled_source_control_service_app(self, user_ownerid, org_ownerid, app_details):
         analytics.track(
             user_id=org_ownerid,
             event=SegmentEvent.ACCOUNT_UNINSTALLED_SOURCE_CONTROL_APP.value,
@@ -371,7 +374,7 @@ class SegmentService:
     @segment_enabled
     def account_uploaded_coverage_report(self, org_ownerid, upload_details):
         analytics.track(
-            user_id="-1",
+            user_id=BLANK_SEGMENT_USER_ID,
             event=SegmentEvent.ACCOUNT_UPLOADED_COVERAGE_REPORT.value,
             properties=upload_details,
             context={"groupId": org_ownerid}

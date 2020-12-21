@@ -321,6 +321,7 @@ class SegmentServiceTests(TestCase):
         with self.settings(SEGMENT_ENABLED=True):
             self.segment_service.account_installed_source_control_service_app(
                 owner.ownerid,
+                owner.ownerid,
                 app_details
             )
             track_mock.assert_called_once_with(
@@ -336,6 +337,7 @@ class SegmentServiceTests(TestCase):
         app_details = {"platform": "github"}
         with self.settings(SEGMENT_ENABLED=True):
             self.segment_service.account_uninstalled_source_control_service_app(
+                owner.ownerid,
                 owner.ownerid,
                 app_details
             )

@@ -520,6 +520,9 @@ class GithubWebhookHandlerTests(APITestCase):
                             "id": service_id,
                             "login": username
                         }
+                    },
+                    "sender": {
+                        "type": "User"
                     }
                 }
             )
@@ -561,7 +564,10 @@ class GithubWebhookHandlerTests(APITestCase):
                             "login": owner.username
                         }
                     },
-                    "action": "deleted"
+                    "action": "deleted",
+                    "sender": {
+                        "type": "User"
+                    }
                 }
             )
 
@@ -595,7 +601,10 @@ class GithubWebhookHandlerTests(APITestCase):
                             "login": owner.username
                         }
                     },
-                    "action": "added"
+                    "action": "added",
+                    "sender": {
+                        "type": "User"
+                    }
                 }
             )
 
@@ -618,7 +627,10 @@ class GithubWebhookHandlerTests(APITestCase):
                             "login": owner.username
                         }
                     },
-                    "action": "added"
+                    "action": "added",
+                    "sender": {
+                        "type": "User"
+                    }
                 }
             )
 
@@ -831,11 +843,14 @@ class GithubWebhookHandlerTests(APITestCase):
                         "login": owner.username
                     }
                 },
-                "action": "added"
+                "action": "added",
+                "sender": {
+                    "type": "User"
+                }
             }
         )
 
-        segment_install_mock.assert_called_once_with(owner.ownerid, {"platform": "github"})
+        segment_install_mock.assert_called_once_with(owner.ownerid, owner.ownerid, {"platform": "github"})
 
     @patch("services.segment.SegmentService.account_uninstalled_source_control_service_app")
     def test_installing_app_triggers_segment(self, segment_uninstall_mock):
@@ -850,8 +865,11 @@ class GithubWebhookHandlerTests(APITestCase):
                         "login": owner.username
                     }
                 },
-                "action": "deleted"
+                "action": "deleted",
+                "sender": {
+                    "type": "User"
+                }
             }
         )
 
-        segment_uninstall_mock.assert_called_once_with(owner.ownerid, {"platform": "github"})
+        segment_uninstall_mock.assert_called_once_with(owner.ownerid, owner.ownerid, {"platform": "github"})
