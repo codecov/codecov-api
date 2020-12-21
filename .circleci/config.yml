@@ -64,9 +64,9 @@ jobs:
     - run:
         name: codecov-staging
         command: |
-          apk add bash curl
-          bash -c "bash <(curl -s https://stage-web.codecov.dev/bash) -u https://stage-web.codecov.dev -Z -R . -t dfdd2ba4-4dbc-40a6-8a96-534c0a39c3a5 -F unit"
-
+          apk add git
+          chmod +x codecov-alpine 
+          ./codecov-alpine -Z -R . --url https://stage-web.codecov.dev -t dfdd2ba4-4dbc-40a6-8a96-534c0a39c3a5 -F unit
 
   portable:
     executor: codecov-deploy
