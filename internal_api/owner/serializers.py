@@ -6,6 +6,7 @@ from codecov_auth.models import Owner
 from codecov_auth.constants import PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS, CURRENTLY_OFFERED_PLANS
 
 from services.billing import BillingService
+from services.segment import SegmentService
 
 
 log = logging.getLogger(__name__)
@@ -110,6 +111,7 @@ class SubscriptionDetailSerializer(serializers.Serializer):
     default_payment_method = StripePaymentMethodSerializer()
     cancel_at_period_end = serializers.BooleanField()
     current_period_end = serializers.IntegerField()
+    customer = serializers.CharField()
 
 
 class AccountDetailsSerializer(serializers.ModelSerializer):
@@ -131,11 +133,12 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
             'email',
         )
 
+    def _get_billing(self):
+        current_user = self.context["request"].user
+        return BillingService(requesting_user=current_user)
 
     def get_subscription_detail(self, owner):
-        current_user = self.context["request"].user
-        billing_service = BillingService(requesting_user=current_user)
-        subscription_detail = billing_service.get_subscription(owner)
+        subscription_detail = self._get_billing().get_subscription(owner)
         if subscription_detail:
             return SubscriptionDetailSerializer(subscription_detail).data
 
@@ -144,9 +147,7 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         if "pretty_plan" in validated_data:
-            checkout_session_id_or_none = BillingService(
-                requesting_user=self.context["request"].user,
-            ).update_plan(
+            checkout_session_id_or_none = self._get_billing().update_plan(
                 instance,
                 validated_data.pop("pretty_plan")
             )
@@ -184,8 +185,18 @@ class UserSerializer(serializers.ModelSerializer):
         if "activated" in validated_data:
             if validated_data["activated"] is True and owner.can_activate_user(instance):
                 owner.activate_user(instance)
+                SegmentService().account_activated_user(
+                    current_user_ownerid=self.context["request"].user.ownerid,
+                    ownerid_to_activate=instance.ownerid,
+                    org_ownerid=owner.ownerid
+                )
             elif validated_data["activated"] is False:
                 owner.deactivate_user(instance)
+                SegmentService().account_deactivated_user(
+                    current_user_ownerid=self.context["request"].user.ownerid,
+                    ownerid_to_deactivate=instance.ownerid,
+                    org_ownerid=owner.ownerid
+                )
             else:
                 raise PermissionDenied(f"Cannot activate user {instance.username} -- not enough seats left.")
 

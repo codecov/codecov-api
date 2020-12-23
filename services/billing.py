@@ -47,6 +47,10 @@ class AbstractPaymentService(ABC):
     def get_subscription(self, owner):
         pass
 
+    @abstractmethod
+    def update_payment_method(self, owner, payment_method):
+        pass
+
 
 class StripeService(AbstractPaymentService):
     def __init__(self, requesting_user):
@@ -166,6 +170,20 @@ class StripeService(AbstractPaymentService):
         )
         return session["id"]
 
+    @_log_stripe_error
+    def update_payment_method(self, owner, payment_method):
+        log.info(f"Stripe update payment method for owner {owner.ownerid}")
+        if owner.stripe_subscription_id is None:
+            log.info(f"stripe_subscription_id is None, no updating card for owner {owner.ownerid}")
+            return None
+        stripe.PaymentMethod.attach(payment_method, customer=owner.stripe_customer_id)
+        subscription = stripe.Subscription.modify(
+            owner.stripe_subscription_id,
+            default_payment_method=payment_method
+        )
+        log.info(f"Stripe success update payment method for owner {owner.ownerid}")
+        return subscription
+
 
 class BillingService:
     payment_service = None
@@ -208,3 +226,11 @@ class BillingService:
                 f"Attempted to transition to non-existent or legacy plan: "
                 f"owner {owner.ownerid}, plan: {desired_plan}"
             )
+
+    def update_payment_method(self, owner, payment_method):
+        """
+        Takes an owner and a new card. card is an object coming directly from
+        the front-end; without any validation, as payment service can handle
+        the card data differently
+        """
+        return self.payment_service.update_payment_method(owner, payment_method)

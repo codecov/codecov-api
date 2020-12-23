@@ -167,6 +167,25 @@ class StripeServiceTests(TestCase):
         assert self.stripe.get_subscription(owner) == stripe_data_subscription
         subscription_retrieve_mock.assert_called_once_with(owner.stripe_subscription_id, expand=['latest_invoice', 'default_payment_method'])
 
+    def test_update_payment_method_when_no_subscription(self):
+        owner = OwnerFactory(stripe_subscription_id=None)
+        assert self.stripe.update_payment_method(owner, "abc") == None
+
+    @patch('services.billing.stripe.Subscription.modify')
+    @patch('services.billing.stripe.PaymentMethod.attach')
+    def test_update_payment_method(
+        self,
+        attach_payment_mock,
+        modify_subscription_mock
+    ):
+        payment_method_id = "pm_1234567"
+        subscription_id = "sub_abc"
+        customer_id = "cus_abc"
+        owner = OwnerFactory(stripe_subscription_id=subscription_id, stripe_customer_id=customer_id)
+        assert self.stripe.update_payment_method(owner, payment_method_id) != None
+        attach_payment_mock.assert_called_once_with(payment_method_id, customer=customer_id)
+        modify_subscription_mock.assert_called_once_with(subscription_id, default_payment_method=payment_method_id)
+
 
 class MockPaymentService(AbstractPaymentService):
     def list_invoices(self, owner, limit=10):
@@ -182,6 +201,9 @@ class MockPaymentService(AbstractPaymentService):
         pass
 
     def get_subscription(self, owner, plan):
+        pass
+
+    def update_payment_method(self, owner, plan):
         pass
 
 
@@ -302,3 +324,9 @@ class BillingServiceTests(TestCase):
         owner = OwnerFactory()
         self.billing_service.get_subscription(owner)
         get_subscription_mock.assert_called_once_with(owner)
+
+    @patch('services.tests.test_billing.MockPaymentService.update_payment_method')
+    def test_update_payment_method(self, get_subscription_mock):
+        owner = OwnerFactory()
+        self.billing_service.update_payment_method(owner, "abc")
+        get_subscription_mock.assert_called_once_with(owner, "abc")

@@ -4,6 +4,7 @@ from rest_framework.permissions import BasePermission
 from rest_framework.permissions import SAFE_METHODS  # ['GET', 'HEAD', 'OPTIONS']
 
 from services.decorators import torngit_safe
+from services.segment import SegmentService
 from internal_api.repo.repository_accessors import RepoAccessors
 
 
@@ -27,7 +28,7 @@ class RepositoryPermissionsService:
             or (
                 user.is_authenticated and (
                     repo.author.ownerid == user.ownerid
-                    or repo.repoid in user.permission
+                    or user.permission and repo.repoid in user.permission
                     or self._fetch_provider_permissions(user, repo)[0]
                 )
             )
@@ -46,6 +47,12 @@ class RepositoryPermissionsService:
             log.info(f"Attemping to auto-activate user {user.ownerid} in {owner.ownerid}")
             if owner.can_activate_user(user):
                 owner.activate_user(user)
+                SegmentService().account_activated_user(
+                    current_user_ownerid=user.ownerid,
+                    ownerid_to_activate=user.ownerid,
+                    org_ownerid=owner.ownerid,
+                    auto_activated=True
+                )
                 return True
             else:
                 log.info("Auto-activation failed -- not enough seats remaining")

@@ -14,6 +14,7 @@ from internal_api.repo.filter import RepositoryFilters, RepositoryOrderingFilter
 
 from core.models import Repository
 from services.repo_providers import RepoProviderService
+from services.segment import SegmentService
 from services.decorators import torngit_safe
 from internal_api.permissions import RepositoryPermissionsService
 from internal_api.mixins import OwnerPropertyMixin
@@ -154,6 +155,10 @@ class RepositoryViewSet(
                 raise PermissionDenied("Private repository limit reached.")
         return super().perform_update(serializer)
 
+    def destroy(self, request, *args, **kwargs):
+        SegmentService().account_deleted_repository(self.request.user.ownerid, self.get_object())
+        return super().destroy(request, *args, **kwargs)
+
     @action(detail=False, url_path='statistics')
     def statistics(self, request, *args, **kwargs):
         # Only get viewable repositories
@@ -196,6 +201,7 @@ class RepositoryViewSet(
         self._assert_is_admin()
         repo = self.get_object()
         repo.flush()
+        SegmentService.account_erased_repository(self.request.user.ownerid, repo)
         return Response(self.get_serializer(repo).data)
 
     @action(detail=True, methods=['post'])

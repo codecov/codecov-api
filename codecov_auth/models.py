@@ -23,12 +23,12 @@ from codecov_auth.constants import (
 from codecov_auth.helpers import get_gitlab_url
 
 
-SERVICE_GITHUB = 'github'
-SERVICE_GITHUB_ENTERPRISE = 'github_enterprise'
-SERVICE_BITBUCKET = 'bitbucket'
-SERVICE_BITBUCKET_SERVER = 'bitbucket_server'
-SERVICE_GITLAB = 'gitlab'
-SERVICE_CODECOV_ENTERPRISE = 'enterprise'
+SERVICE_GITHUB = "github"
+SERVICE_GITHUB_ENTERPRISE = "github_enterprise"
+SERVICE_BITBUCKET = "bitbucket"
+SERVICE_BITBUCKET_SERVER = "bitbucket_server"
+SERVICE_GITLAB = "gitlab"
+SERVICE_CODECOV_ENTERPRISE = "enterprise"
 
 
 DEFAULT_AVATAR_SIZE = 55
@@ -48,12 +48,11 @@ class Service(Enum):
 
 
 class Owner(models.Model):
-
     class Meta:
-        db_table = 'owners'
+        db_table = "owners"
 
     REQUIRED_FIELDS = []
-    USERNAME_FIELD = 'username'
+    USERNAME_FIELD = "username"
 
     ownerid = models.AutoField(primary_key=True)
     service = models.CharField(max_length=256)
@@ -65,11 +64,12 @@ class Owner(models.Model):
     stripe_subscription_id = models.TextField(null=True)
     createstamp = models.DateTimeField(auto_now_add=True)
     service_id = models.TextField()
+    parent_service_id = models.TextField(null=True)
     private_access = models.BooleanField(null=True)
     staff = models.BooleanField(null=True, default=False)
     cache = JSONField(null=True)
     plan = models.TextField(null=True)
-    # plan_provider
+    plan_provider = models.CharField(null=True, max_length=10) # postgres enum containing only "github"
     plan_user_count = models.SmallIntegerField(null=True)
     plan_auto_activate = models.BooleanField(null=True)
     plan_activated_users = ArrayField(models.IntegerField(null=True), null=True)
@@ -92,23 +92,25 @@ class Owner(models.Model):
 
     @property
     def has_legacy_plan(self):
-        return self.plan is None or not self.plan.startswith('users')
+        return self.plan is None or not self.plan.startswith("users")
 
     @property
     def repo_credits(self):
         # Returns the number of private repo credits remaining
         # Only meaningful for legacy plans
-        V4_PLAN_PREFIX = 'v4-'
+        V4_PLAN_PREFIX = "v4-"
 
         if not self.has_legacy_plan:
-            return float('inf')
+            return float("inf")
         if self.plan is None:
             repos = 1 + self.free or 0
         elif self.plan.startswith(V4_PLAN_PREFIX):
             repos = self.plan[3:-1]
         else:
             repos = self.plan[:-1]
-        return int(repos) - self.repository_set.filter(active=True, private=True).count()
+        return (
+            int(repos) - self.repository_set.filter(active=True, private=True).count()
+        )
 
     @property
     def orgs(self):
@@ -118,25 +120,29 @@ class Owner(models.Model):
 
     @property
     def active_repos(self):
-        return Repository.objects.filter(
-            active=True,
-            author=self.ownerid
-        ).order_by('-updatestamp')
+        return Repository.objects.filter(active=True, author=self.ownerid).order_by(
+            "-updatestamp"
+        )
 
     @property
     def activated_user_count(self):
         if not self.plan_activated_users:
             return 0
-        return Owner.objects.filter(ownerid__in=self.plan_activated_users, student=False).count()
+        return Owner.objects.filter(
+            ownerid__in=self.plan_activated_users, student=False
+        ).count()
 
     @property
     def inactive_user_count(self):
-        return Owner.objects.filter(
-            organizations__contains=[self.ownerid]
-        ).count() - self.activated_user_count
+        return (
+            Owner.objects.filter(organizations__contains=[self.ownerid]).count()
+            - self.activated_user_count
+        )
 
     def is_admin(self, owner):
-        return self.ownerid == owner.ownerid or (bool(self.admins) and owner.ownerid in self.admins)
+        return self.ownerid == owner.ownerid or (
+            bool(self.admins) and owner.ownerid in self.admins
+        )
 
     @property
     def is_active(self):
@@ -161,40 +167,64 @@ class Owner(models.Model):
     @property
     def avatar_url(self, size=DEFAULT_AVATAR_SIZE):
         if self.service == SERVICE_GITHUB and self.service_id:
-            return '{}/u/{}?v=3&s={}'.format(AVATAR_GITHUB_BASE_URL, self.service_id, size)
+            return "{}/u/{}?v=3&s={}".format(
+                AVATAR_GITHUB_BASE_URL, self.service_id, size
+            )
 
         elif self.service == SERVICE_GITHUB_ENTERPRISE and self.service_id:
-            return '{}/avatars/u/{}?v=3&s={}'.format(get_config('github_enterprise', 'url'), self.service_id, size)
+            return "{}/avatars/u/{}?v=3&s={}".format(
+                get_config("github_enterprise", "url"), self.service_id, size
+            )
 
         # Bitbucket
         elif self.service == SERVICE_BITBUCKET and self.username:
-            return '{}/account/{}/avatar/{}'.format(BITBUCKET_BASE_URL, self.username, size)
+            return "{}/account/{}/avatar/{}".format(
+                BITBUCKET_BASE_URL, self.username, size
+            )
 
-        elif self.service == SERVICE_BITBUCKET_SERVER and self.service_id and self.username:
-            if 'U' in self.service_id:
-                return '{}/users/{}/avatar.png?s={}'.format(get_config('bitbucket_server', 'url'), self.username, size)
+        elif (
+            self.service == SERVICE_BITBUCKET_SERVER
+            and self.service_id
+            and self.username
+        ):
+            if "U" in self.service_id:
+                return "{}/users/{}/avatar.png?s={}".format(
+                    get_config("bitbucket_server", "url"), self.username, size
+                )
             else:
-                return '{}/projects/{}/avatar.png?s={}'.format(get_config('bitbucket_server', 'url'), self.username, size)
+                return "{}/projects/{}/avatar.png?s={}".format(
+                    get_config("bitbucket_server", "url"), self.username, size
+                )
 
         # Gitlab
         elif self.service == SERVICE_GITLAB and self.email:
             return get_gitlab_url(self.email, size)
 
         # Codecov config
-        elif get_config('services', 'gravatar') and self.email:
-            return '{}/avatar/{}?s={}'.format(GRAVATAR_BASE_URL, md5(self.email.lower().encode()).hexdigest(), size)
+        elif get_config("services", "gravatar") and self.email:
+            return "{}/avatar/{}?s={}".format(
+                GRAVATAR_BASE_URL, md5(self.email.lower().encode()).hexdigest(), size
+            )
 
-        elif get_config('services', 'avatars.io') and self.email:
-            return '{}/avatar/{}/{}'.format(AVATARIO_BASE_URL, md5(self.email.lower().encode()).hexdigest(), size)
+        elif get_config("services", "avatars.io") and self.email:
+            return "{}/avatar/{}/{}".format(
+                AVATARIO_BASE_URL, md5(self.email.lower().encode()).hexdigest(), size
+            )
 
         elif self.ownerid:
-            return '{}/users/{}.png?size={}'.format(get_config('setup', 'codecov_url'), self.ownerid, size)
+            return "{}/users/{}.png?size={}".format(
+                get_config("setup", "codecov_url"), self.ownerid, size
+            )
 
-        elif os.getenv('APP_ENV') == SERVICE_CODECOV_ENTERPRISE:
-            return '{}/media/images/gafsi/avatar.svg'.format(get_config('setup', 'codecov_url'))
+        elif os.getenv("APP_ENV") == SERVICE_CODECOV_ENTERPRISE:
+            return "{}/media/images/gafsi/avatar.svg".format(
+                get_config("setup", "codecov_url")
+            )
 
         else:
-            return '{}/media/images/gafsi/avatar.svg'.format(get_config('setup', 'media', 'assets'))
+            return "{}/media/images/gafsi/avatar.svg".format(
+                get_config("setup", "media", "assets")
+            )
 
     @property
     def pretty_plan(self):
@@ -206,11 +236,13 @@ class Owner(models.Model):
             # by modifying the "plan", sidestepping
             # some iffy data modeling
 
-            plan_details.update({"quantity": self.plan_user_count })
+            plan_details.update({"quantity": self.plan_user_count})
             return plan_details
 
     def can_activate_user(self, user):
-        return user.student or self.activated_user_count < self.plan_user_count + self.free
+        return (
+            user.student or self.activated_user_count < self.plan_user_count + self.free
+        )
 
     def activate_user(self, user):
         log.info(f"Activating user {user.ownerid} in ownerid {self.ownerid}")
@@ -231,7 +263,9 @@ class Owner(models.Model):
         self.save()
 
     def add_admin(self, user):
-        log.info(f"Granting admin permissions to user {user.ownerid} within owner {self.ownerid}")
+        log.info(
+            f"Granting admin permissions to user {user.ownerid} within owner {self.ownerid}"
+        )
         if isinstance(self.admins, list):
             if user.ownerid not in self.admins:
                 self.admins.append(user.ownerid)
@@ -240,7 +274,9 @@ class Owner(models.Model):
         self.save()
 
     def remove_admin(self, user):
-        log.info(f"Revoking admin permissions for user {user.ownerid} within owner {self.ownerid}")
+        log.info(
+            f"Revoking admin permissions for user {user.ownerid} within owner {self.ownerid}"
+        )
         if isinstance(self.admins, list):
             try:
                 self.admins.remove(user.ownerid)
@@ -259,9 +295,8 @@ class Owner(models.Model):
 
 
 class Session(models.Model):
-
     class Meta:
-        db_table = 'sessions'
+        db_table = "sessions"
 
     class SessionType:
         API = "api"
@@ -277,7 +312,6 @@ class Session(models.Model):
     name = models.TextField(null=True)
     useragent = models.TextField(null=True)
     ip = models.TextField(null=True)
-    owner = models.ForeignKey(
-        Owner, db_column='ownerid', on_delete=models.CASCADE)
+    owner = models.ForeignKey(Owner, db_column="ownerid", on_delete=models.CASCADE)
     lastseen = models.DateTimeField(null=True)
     type = models.CharField(max_length=10, choices=SESSION_TYPE_CHOICES, null=True)
