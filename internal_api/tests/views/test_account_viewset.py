@@ -157,7 +157,8 @@ class AccountViewSetTests(APITestCase):
             "latest_invoice": json.load(f)["data"][0],
             "default_payment_method": default_payment_method,
             "cancel_at_period_end": False,
-            "current_period_end": 1633512445
+            "current_period_end": 1633512445,
+            "customer": "cus_abc"
         }
 
         self.user.stripe_subscription_id = "djfos"
@@ -170,6 +171,7 @@ class AccountViewSetTests(APITestCase):
             "cancel_at_period_end": False,
             "current_period_end": 1633512445,
             "latest_invoice": self.expected_invoice,
+            "customer": "cus_abc",
             "default_payment_method": {
                 "card": {
                     "brand": "visa",
@@ -179,7 +181,6 @@ class AccountViewSetTests(APITestCase):
                 }
             },
         }
-
 
     def test_update_can_set_plan_auto_activate_to_true(self):
         self.user.plan_auto_activate = False
@@ -315,6 +316,33 @@ class AccountViewSetTests(APITestCase):
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
+    def test_update_payment_method_without_body(self):
+        kwargs = {"service": self.user.service, "owner_username": self.user.username}
+        url = reverse("account_details-update-payment", kwargs=kwargs)
+        response = self.client.patch(url, format='json')
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    @patch('services.billing.stripe.Subscription.retrieve')
+    @patch('services.billing.stripe.Subscription.modify')
+    @patch('services.billing.stripe.PaymentMethod.attach')
+    def test_update_payment_method(
+        self,
+        attach_payment_mock,
+        modify_subscription_mock,
+        _
+    ):
+        self.user.stripe_customer_id = "flsoe"
+        self.user.stripe_subscription_id = "djfos"
+        self.user.save()
+        payment_method_id = "pm_123"
+        kwargs = {"service": self.user.service, "owner_username": self.user.username}
+        data={ "payment_method": payment_method_id }
+        url = reverse("account_details-update-payment", kwargs=kwargs)
+        response = self.client.patch(url, data=data, format='json')
+        assert response.status_code == status.HTTP_200_OK
+        attach_payment_mock.assert_called_once_with(payment_method_id, customer=self.user.stripe_customer_id)
+        modify_subscription_mock.assert_called_once_with(self.user.stripe_subscription_id, default_payment_method=payment_method_id)
+
     def test_update_without_admin_permissions_returns_403(self):
         owner = OwnerFactory()
         response = self._update(
@@ -339,12 +367,18 @@ class AccountViewSetTests(APITestCase):
 
     @patch('services.task.TaskService.delete_owner')
     def test_destroy_triggers_delete_owner_task(self, delete_owner_mock):
+        response = self._destroy(kwargs={"service": self.user.service, "owner_username": self.user.username})
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        delete_owner_mock.assert_called_once_with(self.user.ownerid)
+
+    def test_destroy_not_own_account_returns_403(self):
         owner = OwnerFactory(admins=[self.user.ownerid])
         response = self._destroy(kwargs={"service": owner.service, "owner_username": owner.username})
-        assert response.status_code == status.HTTP_204_NO_CONTENT
-        delete_owner_mock.assert_called_once_with(owner.ownerid)
-
-    def test_destroy_without_admin_permissions_returns_403(self):
-        owner = OwnerFactory()
-        response = self._destroy(kwargs={"service": owner.service, "owner_username": owner.username})
         assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    @patch("services.segment.SegmentService.account_deleted")
+    @patch('services.task.TaskService.delete_owner')
+    def test_destroy_triggers_segment_event(self, delete_owner_mock, segment_account_deleted_mock):
+        owner = OwnerFactory(admins=[self.user.ownerid])
+        self._destroy(kwargs={"service": self.user.service, "owner_username": self.user.username})
+        segment_account_deleted_mock.assert_called_once_with(self.user)

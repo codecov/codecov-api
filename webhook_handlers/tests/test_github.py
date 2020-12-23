@@ -520,6 +520,9 @@ class GithubWebhookHandlerTests(APITestCase):
                             "id": service_id,
                             "login": username
                         }
+                    },
+                    "sender": {
+                        "type": "User"
                     }
                 }
             )
@@ -561,7 +564,10 @@ class GithubWebhookHandlerTests(APITestCase):
                             "login": owner.username
                         }
                     },
-                    "action": "deleted"
+                    "action": "deleted",
+                    "sender": {
+                        "type": "User"
+                    }
                 }
             )
 
@@ -595,7 +601,10 @@ class GithubWebhookHandlerTests(APITestCase):
                             "login": owner.username
                         }
                     },
-                    "action": "added"
+                    "action": "added",
+                    "sender": {
+                        "type": "User"
+                    }
                 }
             )
 
@@ -618,7 +627,10 @@ class GithubWebhookHandlerTests(APITestCase):
                             "login": owner.username
                         }
                     },
-                    "action": "added"
+                    "action": "added",
+                    "sender": {
+                        "type": "User"
+                    }
                 }
             )
 
@@ -817,3 +829,47 @@ class GithubWebhookHandlerTests(APITestCase):
         )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    @patch("services.segment.SegmentService.account_installed_source_control_service_app")
+    def test_installing_app_triggers_segment(self, segment_install_mock):
+        owner = OwnerFactory()
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.INSTALLATION,
+            data={
+                "installation": {
+                    "id": 11,
+                    "account": {
+                        "id": owner.service_id,
+                        "login": owner.username
+                    }
+                },
+                "action": "added",
+                "sender": {
+                    "type": "User"
+                }
+            }
+        )
+
+        segment_install_mock.assert_called_once_with(owner.ownerid, owner.ownerid, {"platform": "github"})
+
+    @patch("services.segment.SegmentService.account_uninstalled_source_control_service_app")
+    def test_installing_app_triggers_segment(self, segment_uninstall_mock):
+        owner = OwnerFactory()
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.INSTALLATION,
+            data={
+                "installation": {
+                    "id": 11,
+                    "account": {
+                        "id": owner.service_id,
+                        "login": owner.username
+                    }
+                },
+                "action": "deleted",
+                "sender": {
+                    "type": "User"
+                }
+            }
+        )
+
+        segment_uninstall_mock.assert_called_once_with(owner.ownerid, owner.ownerid, {"platform": "github"})

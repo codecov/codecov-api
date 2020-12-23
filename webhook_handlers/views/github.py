@@ -15,6 +15,7 @@ from services.archive import ArchiveService
 from services.redis import get_redis_connection
 from services.task import TaskService
 from utils.config import get_config
+from services.segment import SegmentService, BLANK_SEGMENT_USER_ID
 
 from webhook_handlers.constants import GitHubHTTPHeaders, GitHubWebhookEvents, WebhookHandlerErrorMessages
 
@@ -34,6 +35,8 @@ class GithubWebhookHandler(APIView):
     """
     permission_classes = [AllowAny]
     redis = get_redis_connection()
+
+    segment_service = SegmentService()
 
     def validate_signature(self, request):
         key = get_config(
@@ -363,6 +366,11 @@ class GithubWebhookHandler(APIView):
                     github_webhook_event=self.event
                 )
             )
+            self.segment_service.account_uninstalled_source_control_service_app(
+                owner.ownerid if request.data["sender"]["type"] == "User" else BLANK_SEGMENT_USER_ID,
+                owner.ownerid,
+                {"platform": "github"}
+            )
         else:
             if owner.integration_id is None:
                 owner.integration_id = request.data["installation"]["id"]
@@ -374,6 +382,12 @@ class GithubWebhookHandler(APIView):
                     ownerid=owner.ownerid,
                     github_webhook_event=self.event
                 )
+            )
+
+            self.segment_service.account_installed_source_control_service_app(
+                owner.ownerid if request.data["sender"]["type"] == "User" else BLANK_SEGMENT_USER_ID,
+                owner.ownerid,
+                {"platform": "github"}
             )
 
             TaskService().refresh(

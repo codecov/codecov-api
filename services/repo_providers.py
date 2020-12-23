@@ -6,17 +6,19 @@ from utils.encryption import encryptor
 from utils.config import get_config
 
 from django.conf import settings
+from os import getenv
 
 
 class TorngitInitializationFailed(Exception):
     """
         Exception when initializing the torngit provider object.
     """
+
     pass
 
 
 class RepoProviderService(object):
-    def get_adapter(self, user: Owner, repo: Repository):
+    def get_adapter(self, user: Owner, repo: Repository, use_ssl=False, token=None):
         """
         Return the corresponding implementation for calling the repository provider
 
@@ -25,6 +27,15 @@ class RepoProviderService(object):
         :return:
         :raises: TorngitInitializationFailed
         """
+
+        if use_ssl:
+            verify_ssl = (
+                get_config(repo.author.service, "ssl_pem")
+                if get_config(repo.author.service, "verify_ssl") is not False
+                else getenv("REQUESTS_CA_BUNDLE")
+            )
+        else:
+            verify_ssl = None
         if user.is_authenticated:
             token = encryptor.decrypt_token(
                 user.oauth_token
@@ -37,14 +48,19 @@ class RepoProviderService(object):
                 name=repo.name,
                 using_integration=repo.using_integration or False,
                 service_id=repo.service_id,
-                private=repo.private
+                private=repo.private,
             ),
             owner=dict(username=repo.author.username),
+            verify_ssl=verify_ssl,
             token=token,
             oauth_consumer_token=dict(
-                key=getattr(settings, f"{repo.author.service.upper()}_CLIENT_ID", "unknown"),
-                secret=getattr(settings, f"{repo.author.service.upper()}_CLIENT_SECRET", "unknown")
-            )
+                key=getattr(
+                    settings, f"{repo.author.service.upper()}_CLIENT_ID", "unknown"
+                ),
+                secret=getattr(
+                    settings, f"{repo.author.service.upper()}_CLIENT_SECRET", "unknown"
+                ),
+            ),
         )
 
         return self._get_provider(repo.author.service, adapter_params)
@@ -72,21 +88,21 @@ class RepoProviderService(object):
             owner=dict(username=repo_owner_username),
             token=token,
             oauth_consumer_token=dict(
-                key=getattr(settings, f"{repo_owner_service.upper()}_CLIENT_ID", "unknown"),
-                secret=getattr(settings, f"{repo_owner_service.upper()}_CLIENT_SECRET", "unknown")
-            )
+                key=getattr(
+                    settings, f"{repo_owner_service.upper()}_CLIENT_ID", "unknown"
+                ),
+                secret=getattr(
+                    settings, f"{repo_owner_service.upper()}_CLIENT_SECRET", "unknown"
+                ),
+            ),
         )
         return self._get_provider(
-            service=repo_owner_service,
-            adapter_params=adapter_params
+            service=repo_owner_service, adapter_params=adapter_params
         )
 
     @classmethod
     def _get_provider(cls, service, adapter_params):
-        provider = get(
-            service,
-            **adapter_params
-        )
+        provider = get(service, **adapter_params)
         if provider:
             return provider
         else:

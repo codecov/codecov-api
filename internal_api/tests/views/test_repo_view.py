@@ -644,6 +644,14 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         assert response.data["detail"] == "User not activated"
         assert Repository.objects.filter(name="repo1").exists()
 
+    @patch("services.segment.SegmentService.account_deleted_repository")
+    def test_destroy_triggers_segment_event(self, account_deleted_repo_mock, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, True
+        self.org.admins = [self.user.ownerid]
+        self.org.save()
+        response = self._destroy()
+        account_deleted_repo_mock.assert_called_once_with(self.user.ownerid, self.repo)
+
     def test_regenerate_upload_token_with_permissions_succeeds(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, True
         old_upload_token = self.repo.upload_token
@@ -745,6 +753,14 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         assert response.status_code == 403
         assert response.data["detail"] == "User not activated"
 
+    @patch("services.segment.SegmentService.account_erased_repository")
+    def test_erase_triggers_segment_event(self, account_erased_repo_mock, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, True
+        self.org.admins = [self.user.ownerid]
+        self.org.save()
+        response = self._erase()
+        account_erased_repo_mock.assert_called_once_with(self.user.ownerid, self.repo)
+
     def test_retrieve_returns_yaml(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, False
 
@@ -773,6 +789,29 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         )
 
         assert response.status_code == 403
+
+    @patch("services.segment.SegmentService.account_activated_repository")
+    @patch("services.segment.SegmentService.account_deactivated_repository")
+    def test_activation_and_deactivation_trigger_segment_events(
+        self,
+        account_deactivated_repo_mock,
+        account_activated_repo_mock,
+        mocked_get_permissions
+    ):
+        mocked_get_permissions.return_value = True, True
+        self.repo.active = False
+        self.repo.save()
+        self.org.plan = "v4-5m"
+        self.org.save()
+
+        activation_data, deactivation_data = {"active": True}, {"active": False}
+
+        response = self._update(data=activation_data)
+        account_activated_repo_mock.assert_called_once_with(self.user.ownerid, self.repo)
+
+        response = self._update(data=deactivation_data)
+        account_deactivated_repo_mock.assert_called_once_with(self.user.ownerid, self.repo)
+
 
     def test_encode_returns_200_on_success(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, True
