@@ -14,6 +14,7 @@ from .constants import ci, global_upload_token_providers
 from services.repo_providers import RepoProviderService
 from services.task import TaskService
 from codecov_auth.constants import USER_PLAN_REPRESENTATIONS
+from shared.torngit.exceptions import TorngitObjectNotFoundError
 
 from upload.tokenless.tokenless import TokenlessUploadHandler
 
@@ -274,11 +275,21 @@ def determine_upload_commit_to_use(upload_params, repository):
         )
 
         # Get the commit message from the git provider and check if it's structured like a merge commit message
-        git_commit_data = asyncio.run(
-            RepoProviderService()
-            .get_adapter(repository.author, repository, use_ssl=True, token=token)
-            .get_commit(upload_params.get("commit"), token)
-        )
+        try:
+            git_commit_data = asyncio.run(
+                RepoProviderService()
+                .get_adapter(repository.author, repository, use_ssl=True, token=token)
+                .get_commit(upload_params.get("commit"), token)
+            )
+        except TorngitObjectNotFoundError as e:
+            log.error(
+                "Unable to fetch commit from github. Not found",
+                extra=dict(
+                    commit=upload_params.get("commit"),
+                ),
+            )
+            return upload_params.get("commit")
+
         git_commit_message = git_commit_data.get("message", "").strip()
         is_merge_commit = re.match(r"^Merge\s\w{40}\sinto\s\w{40}$", git_commit_message)
 
@@ -345,7 +356,7 @@ def validate_upload(upload_params, repository, redis):
         commit = Commit.objects.get(
             commitid=upload_params.get("commit"), repository=repository
         )
-        session_count = commit.totals.get("s") or 0
+        session_count = commit.totals.get("s", 0) if commit.totals else 0
         if (session_count or 0) > (get_config("setup", "max_sessions") or 30):
             raise ValidationError("Too many uploads to this commit.")
     except Commit.DoesNotExist:
@@ -416,13 +427,12 @@ def parse_headers(headers, upload_params):
 
 def store_report_in_redis(request, commitid, reportid, redis):
     if not request.META.get("X_REDIS_KEY"):
-        encoding = request.META.get("X_Content_Encoding") or request.META.get(
-            "Content_Encoding"
+        encoding = request.META.get("HTTP_X_CONTENT_ENCODING") or request.META.get(
+            "HTTP_CONTENT_ENCODING"
         )
         redis_key = f"upload/{commitid[:7]}/{reportid}/{'gzip' if encoding == 'gzip' else 'plain'}"
     else:
         redis_key = request.META.get("X_REDIS_KEY")
-
     redis.setex(redis_key, 10800, request.body)
 
     return redis_key

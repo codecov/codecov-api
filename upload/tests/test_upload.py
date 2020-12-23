@@ -622,7 +622,7 @@ class UploadHandlerHelpersTest(TestCase):
         with self.subTest("gzip encoding"):
             assert (
                 store_report_in_redis(
-                    APIRequestFactory().get('', Content_Encoding="gzip"), "1c78206f1a46dc6db8412a491fc770eb7d0f8a47", "report", redis
+                    APIRequestFactory().get('', HTTP_X_CONTENT_ENCODING="gzip"), "1c78206f1a46dc6db8412a491fc770eb7d0f8a47", "report", redis
                 )
                 == "upload/1c78206/report/gzip"
             )
@@ -649,6 +649,18 @@ class UploadHandlerHelpersTest(TestCase):
                 err.exception.detail[0]
                 == "This repository has moved or was deleted. Please login to Codecov to retrieve a new upload token."
             )
+
+        with self.subTest("empty totals"):
+            redis = MockRedis()
+            owner = G(Owner, plan="5m")
+            repo = G(Repository, author=owner,)
+            commit = G(Commit, totals=None, repository=repo)
+
+            validate_upload({"commit": commit.commitid}, repo, redis)
+            repo.refresh_from_db()
+            assert repo.activated == True
+            assert repo.active == True
+            assert repo.deleted == False
 
         with self.subTest("too many uploads for commit"):
             redis = MockRedis()
