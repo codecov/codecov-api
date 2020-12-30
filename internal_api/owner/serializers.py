@@ -6,6 +6,7 @@ from codecov_auth.models import Owner
 from codecov_auth.constants import PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS, CURRENTLY_OFFERED_PLANS
 
 from services.billing import BillingService
+from services.segment import SegmentService
 
 
 log = logging.getLogger(__name__)
@@ -186,8 +187,18 @@ class UserSerializer(serializers.ModelSerializer):
         if "activated" in validated_data:
             if validated_data["activated"] is True and owner.can_activate_user(instance):
                 owner.activate_user(instance)
+                SegmentService().account_activated_user(
+                    current_user_ownerid=self.context["request"].user.ownerid,
+                    ownerid_to_activate=instance.ownerid,
+                    org_ownerid=owner.ownerid
+                )
             elif validated_data["activated"] is False:
                 owner.deactivate_user(instance)
+                SegmentService().account_deactivated_user(
+                    current_user_ownerid=self.context["request"].user.ownerid,
+                    ownerid_to_deactivate=instance.ownerid,
+                    org_ownerid=owner.ownerid
+                )
             else:
                 raise PermissionDenied(f"Cannot activate user {instance.username} -- not enough seats left.")
 
