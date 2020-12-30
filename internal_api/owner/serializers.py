@@ -132,7 +132,7 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
             'name',
             'email',
             'nb_active_private_repos',
-            'repo_credits'
+            'repo_total_credits'
         )
 
     def _get_billing(self):
