@@ -130,6 +130,8 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
             'checkout_session_id',
             'name',
             'email',
+            'nb_active_private_repos',
+            'repo_credits'
         )
 
     def _get_billing(self):
