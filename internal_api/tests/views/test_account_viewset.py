@@ -75,7 +75,9 @@ class AccountViewSetTests(APITestCase):
             "subscription_detail": None,
             "checkout_session_id": None,
             "name": owner.name,
-            "email": owner.email
+            "email": owner.email,
+            "nb_active_private_repos": 0,
+            "repo_credits": 1
         }
 
     def test_account_with_free_user_plan(self):
