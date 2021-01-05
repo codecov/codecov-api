@@ -88,8 +88,8 @@ class StripeService(AbstractPaymentService):
         except stripe.error.InvalidRequestError as e:
             log.info(f"invoice {id} not found for owner {owner.ownerid}")
             return None
-        if invoice.customer != owner.stripe_customer_id:
-            log.info(f"customer id ({invoice.customer}) on invoice does not match the owner customer id ({owner.stripe_customer_id})")
+        if invoice["customer"] != owner.stripe_customer_id:
+            log.info(f"customer id ({invoice['customer']}) on invoice does not match the owner customer id ({owner.stripe_customer_id})")
             return None
         return invoice
 
