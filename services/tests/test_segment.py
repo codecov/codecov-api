@@ -2,8 +2,15 @@ from django.test import TestCase
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
 
-from services.segment import SegmentOwner, SegmentService, SegmentEvent, on_segment_error, SegmentRepository
-from unittest.mock import patch
+from services.segment import (
+    SegmentOwner,
+    SegmentService,
+    SegmentEvent,
+    on_segment_error,
+    SegmentRepository,
+    BLANK_SEGMENT_USER_ID
+)
+from unittest.mock import patch, call
 
 
 class SegmentOwnerTests(TestCase):
@@ -290,7 +297,7 @@ class SegmentServiceTests(TestCase):
                 repo,
             )
             track_mock.assert_called_once_with(
-                user_id=owner.ownerid,
+                user_id=BLANK_SEGMENT_USER_ID,
                 event=SegmentEvent.ACCOUNT_ACTIVATED_REPOSITORY_ON_UPLOAD.value,
                 properties=SegmentRepository(repo).traits,
                 context={"groupId": repo.author.ownerid}
@@ -303,6 +310,7 @@ class SegmentServiceTests(TestCase):
         with self.settings(SEGMENT_ENABLED=True):
             self.segment_service.account_paid_subscription(owner.ownerid, stripe_subscription_details)
             track_mock.assert_called_once_with(
+                user_id=BLANK_SEGMENT_USER_ID,
                 event=SegmentEvent.ACCOUNT_PAID_SUBSCRIPTION.value,
                 properties=stripe_subscription_details,
                 context={"groupId": owner.ownerid}
@@ -315,6 +323,7 @@ class SegmentServiceTests(TestCase):
         with self.settings(SEGMENT_ENABLED=True):
             self.segment_service.account_cancelled_subscription(owner.ownerid, stripe_subscription_details)
             track_mock.assert_called_once_with(
+                user_id=BLANK_SEGMENT_USER_ID,
                 event=SegmentEvent.ACCOUNT_CANCELLED_SUBSCRIPTION.value,
                 properties=stripe_subscription_details,
                 context={"groupId": owner.ownerid}
@@ -340,6 +349,7 @@ class SegmentServiceTests(TestCase):
         with self.settings(SEGMENT_ENABLED=True):
             self.segment_service.trial_started(owner.ownerid, trial_details)
             track_mock.assert_called_once_with(
+                user_id=BLANK_SEGMENT_USER_ID,
                 event=SegmentEvent.TRIAL_STARTED.value,
                 properties=trial_details,
                 context={"groupId": owner.ownerid}
@@ -352,6 +362,7 @@ class SegmentServiceTests(TestCase):
         with self.settings(SEGMENT_ENABLED=True):
             self.segment_service.trial_ended(owner.ownerid, trial_details)
             track_mock.assert_called_once_with(
+                user_id=BLANK_SEGMENT_USER_ID,
                 event=SegmentEvent.TRIAL_ENDED.value,
                 properties=trial_details,
                 context={"groupId": owner.ownerid}
@@ -364,8 +375,80 @@ class SegmentServiceTests(TestCase):
         with self.settings(SEGMENT_ENABLED=True):
             self.segment_service.account_completed_checkout(owner.ownerid, stripe_subscription_details)
             track_mock.assert_called_once_with(
-                user_id=owner.ownerid,
+                user_id=BLANK_SEGMENT_USER_ID,
                 event=SegmentEvent.ACCOUNT_COMPLETED_CHECKOUT.value,
                 properties=stripe_subscription_details,
+                context={"groupId": owner.ownerid}
+            )
+
+    @patch("analytics.group")
+    def test_group(self, group_mock):
+        org1, org2 = OwnerFactory(), OwnerFactory()
+        self.owner.organizations = [org1.ownerid, org2.ownerid]
+        self.owner.save()
+
+        with self.settings(SEGMENT_ENABLED=True):
+            self.segment_service.group(self.owner)
+            group_mock.assert_has_calls([
+                call(
+                    user_id=self.owner.ownerid,
+                    group_id=org1.ownerid,
+                    traits=SegmentOwner(org1, owner_collection_type="accounts").traits,
+                    context=SegmentOwner(org1, owner_collection_type="accounts").context
+                ),
+                call(
+                    user_id=self.owner.ownerid,
+                    group_id=org2.ownerid,
+                    traits=SegmentOwner(org2, owner_collection_type="accounts").traits,
+                    context=SegmentOwner(org2, owner_collection_type="accounts").context
+                )
+            ])
+    @patch("analytics.track")
+    def test_account_installed_source_control_service_app(self, track_mock):
+        owner = OwnerFactory()
+        app_details = {"platform": "github"}
+        with self.settings(SEGMENT_ENABLED=True):
+            self.segment_service.account_installed_source_control_service_app(
+                owner.ownerid,
+                owner.ownerid,
+                app_details
+            )
+            track_mock.assert_called_once_with(
+                user_id=owner.ownerid,
+                event=SegmentEvent.ACCOUNT_INSTALLED_SOURCE_CONTROL_APP.value,
+                properties=app_details,
+                context={"groupId": owner.ownerid}
+            )
+
+    @patch("analytics.track")
+    def test_account_uninstalled_source_control_service_app(self, track_mock):
+        owner = OwnerFactory()
+        app_details = {"platform": "github"}
+        with self.settings(SEGMENT_ENABLED=True):
+            self.segment_service.account_uninstalled_source_control_service_app(
+                owner.ownerid,
+                owner.ownerid,
+                app_details
+            )
+            track_mock.assert_called_once_with(
+                user_id=owner.ownerid,
+                event=SegmentEvent.ACCOUNT_UNINSTALLED_SOURCE_CONTROL_APP.value,
+                properties=app_details,
+                context={"groupId": owner.ownerid}
+            )
+
+    @patch("analytics.track")
+    def test_account_uploaded_coverage_report(self, track_mock):
+        owner = OwnerFactory()
+        upload_details = {"some": "dict"}
+        with self.settings(SEGMENT_ENABLED=True):
+            self.segment_service.account_uploaded_coverage_report(
+                owner.ownerid,
+                upload_details
+            )
+            track_mock.assert_called_once_with(
+                user_id=BLANK_SEGMENT_USER_ID,
+                event=SegmentEvent.ACCOUNT_UPLOADED_COVERAGE_REPORT.value,
+                properties=upload_details,
                 context={"groupId": owner.ownerid}
             )

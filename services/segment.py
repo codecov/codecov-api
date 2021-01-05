@@ -3,9 +3,13 @@ import re
 from enum import Enum
 from django.conf import settings
 import logging
+from codecov_auth.models import Owner
 
 
 log = logging.getLogger(__name__)
+
+
+BLANK_SEGMENT_USER_ID = "-1"
 
 
 def on_segment_error(error):
@@ -23,10 +27,14 @@ if settings.SEGMENT_ENABLED:
 def segment_enabled(method):
     """
     Decorator: checks that Segment is enabled before executing decorated method.
+    Also ensures any exception that occurs during execution doesn't crash us.
     """
     def exec_method(*args, **kwargs):
         if settings.SEGMENT_ENABLED:
-            return method(*args, **kwargs)
+            try:
+                return method(*args, **kwargs)
+            except Exception as e:
+                log.error(f"Segment raised an exception: {e}")
     return exec_method
 
 
@@ -71,7 +79,7 @@ class SegmentEvent(Enum):
     ACCOUNT_INSTALLED_SOURCE_CONTROL_APP = 'Account Installed Source Control Service App'
     ACCOUNT_PAID_SUBSCRIPTION = 'Account Paid Subscription'
     ACCOUNT_REMOVED_USER = 'Account Removed User' # TODO: check with Jon how this is different from Account Deactivated User?
-    ACCOUNT_UNISTALLED_SOURCE_CONTROL_APP = 'Account Uninstalled Source Control Service App'
+    ACCOUNT_UNINSTALLED_SOURCE_CONTROL_APP = 'Account Uninstalled Source Control Service App'
     ACCOUNT_UPLOADED_COVERAGE_REPORT = 'Account Uploaded Coverage Report'
     TRIAL_ENDED = 'Trial Ended'
     TRIAL_STARTED = 'Trial Started'
@@ -86,9 +94,10 @@ class SegmentOwner:
     and "context" properties.
     """
 
-    def __init__(self, owner, cookies={}):
+    def __init__(self, owner, cookies={}, owner_collection_type="users"):
         self.owner = owner
         self.cookies = cookies
+        self.owner_collection_type = owner_collection_type
 
     @property
     def user_id(self):
@@ -130,7 +139,7 @@ class SegmentOwner:
         context["externalIds"].append({
             "id": self.owner.service_id,
             "type": f"{self.owner.service}_id",
-            "collection": "users",
+            "collection": self.owner_collection_type,
             "encoding": "none"
         })
 
@@ -138,11 +147,11 @@ class SegmentOwner:
             context["externalIds"].append({
                 "id": self.owner.stripe_customer_id,
                 "type": "stripe_customer_id",
-                "collection": "users",
+                "collection": self.owner_collection_type,
                 "encoding": "none"
             })
 
-        if self.cookies:
+        if self.cookies and self.owner_collection_type == "users":
             marketo_cookie = self.cookies.get("_mkto_trk")
             ga_cookie = self.cookies.get("_ga")
             if marketo_cookie:
@@ -212,6 +221,19 @@ class SegmentService:
                 "Marketo": False
             }
         )
+
+    @segment_enabled
+    def group(self, owner):
+        if owner.organizations:
+            organizations = Owner.objects.filter(ownerid__in=owner.organizations)
+            for org in organizations:
+                segment_organization = SegmentOwner(org, owner_collection_type="accounts")
+                analytics.group(
+                    user_id=owner.ownerid,
+                    group_id=org.ownerid,
+                    traits=segment_organization.traits,
+                    context=segment_organization.context
+                )
 
     @inject_segment_owner
     def user_signed_up(self, segment_owner):
@@ -284,7 +306,7 @@ class SegmentService:
     @inject_segment_repository
     def account_activated_repository_on_upload(self, org_ownerid, segment_repository):
         analytics.track(
-            user_id=org_ownerid,
+            user_id=BLANK_SEGMENT_USER_ID,
             event=SegmentEvent.ACCOUNT_ACTIVATED_REPOSITORY_ON_UPLOAD.value,
             properties=segment_repository.traits,
             context={"groupId": org_ownerid}
@@ -336,6 +358,7 @@ class SegmentService:
     @segment_enabled
     def account_paid_subscription(self, org_ownerid, stripe_subscription_details):
         analytics.track(
+            user_id=BLANK_SEGMENT_USER_ID,
             event=SegmentEvent.ACCOUNT_PAID_SUBSCRIPTION.value,
             properties=stripe_subscription_details,
             context={"groupId": org_ownerid}
@@ -344,6 +367,7 @@ class SegmentService:
     @segment_enabled
     def account_cancelled_subscription(self, org_ownerid, stripe_subscription_details):
         analytics.track(
+            user_id=BLANK_SEGMENT_USER_ID,
             event=SegmentEvent.ACCOUNT_CANCELLED_SUBSCRIPTION.value,
             properties=stripe_subscription_details,
             context={"groupId": org_ownerid}
@@ -359,8 +383,18 @@ class SegmentService:
         )
 
     @segment_enabled
+    def account_completed_checkout(self, org_ownerid, checkout_session_details):
+        analytics.track(
+            user_id=BLANK_SEGMENT_USER_ID,
+            event=SegmentEvent.ACCOUNT_COMPLETED_CHECKOUT.value,
+            properties=checkout_session_details,
+            context={"groupId": org_ownerid}
+        )
+
+    @segment_enabled
     def trial_started(self, org_ownerid, trial_details):
         analytics.track(
+            user_id=BLANK_SEGMENT_USER_ID,
             event=SegmentEvent.TRIAL_STARTED.value,
             properties=trial_details,
             context={"groupId": org_ownerid}
@@ -369,16 +403,35 @@ class SegmentService:
     @segment_enabled
     def trial_ended(self, org_ownerid, trial_details):
         analytics.track(
+            user_id=BLANK_SEGMENT_USER_ID,
             event=SegmentEvent.TRIAL_ENDED.value,
             properties=trial_details,
             context={"groupId": org_ownerid}
         )
 
     @segment_enabled
-    def account_completed_checkout(self, org_ownerid, checkout_session_details):
+    def account_installed_source_control_service_app(self, user_ownerid, org_ownerid, app_details):
+        analytics.track(
+            user_id=user_ownerid,
+            event=SegmentEvent.ACCOUNT_INSTALLED_SOURCE_CONTROL_APP.value,
+            properties=app_details,
+            context={"groupId": org_ownerid}
+        )
+
+    @segment_enabled
+    def account_uninstalled_source_control_service_app(self, user_ownerid, org_ownerid, app_details):
         analytics.track(
             user_id=org_ownerid,
-            event=SegmentEvent.ACCOUNT_COMPLETED_CHECKOUT.value,
-            properties=checkout_session_details,
+            event=SegmentEvent.ACCOUNT_UNINSTALLED_SOURCE_CONTROL_APP.value,
+            properties=app_details,
+            context={"groupId": org_ownerid}
+        )
+
+    @segment_enabled
+    def account_uploaded_coverage_report(self, org_ownerid, upload_details):
+        analytics.track(
+            user_id=BLANK_SEGMENT_USER_ID,
+            event=SegmentEvent.ACCOUNT_UPLOADED_COVERAGE_REPORT.value,
+            properties=upload_details,
             context={"groupId": org_ownerid}
         )

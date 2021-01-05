@@ -62,8 +62,7 @@ class AccountViewSetTests(APITestCase):
 
         self.client.force_login(user=self.user)
 
-    @patch('services.billing.stripe.Invoice.list')
-    def test_retrieve_account_gets_account_fields(self, _):
+    def test_retrieve_account_gets_account_fields(self):
         owner = OwnerFactory(admins=[self.user.ownerid])
         response = self._retrieve(kwargs={"service": owner.service, "owner_username": owner.username})
         assert response.status_code == status.HTTP_200_OK
@@ -73,14 +72,13 @@ class AccountViewSetTests(APITestCase):
             "plan_auto_activate": owner.plan_auto_activate,
             "inactive_user_count": 0,
             "plan": None, # TODO -- legacy plan
-            "latest_invoice": None,
+            "subscription_detail": None,
             "checkout_session_id": None,
             "name": owner.name,
             "email": owner.email
         }
 
-    @patch('services.billing.stripe.Invoice.list')
-    def test_account_with_free_user_plan(self, _):
+    def test_account_with_free_user_plan(self):
         self.user.plan = 'users-free'
         self.user.save()
         response = self._retrieve()
@@ -98,8 +96,7 @@ class AccountViewSetTests(APITestCase):
             "quantity": self.user.plan_user_count
         }
 
-    @patch('services.billing.stripe.Invoice.list')
-    def test_account_with_paid_user_plan_billed_monthly(self, _):
+    def test_account_with_paid_user_plan_billed_monthly(self):
         self.user.plan = 'users-inappm'
         self.user.save()
         response = self._retrieve()
@@ -118,8 +115,7 @@ class AccountViewSetTests(APITestCase):
             "quantity": self.user.plan_user_count
         }
 
-    @patch('services.billing.stripe.Invoice.list')
-    def test_account_with_paid_user_plan_billed_annually(self, _):
+    def test_account_with_paid_user_plan_billed_annually(self):
         self.user.plan = 'users-inappy'
         self.user.save()
         response = self._retrieve()
@@ -143,18 +139,50 @@ class AccountViewSetTests(APITestCase):
         response = self._retrieve(kwargs={"service": owner.service, "owner_username": owner.username})
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    @patch('services.billing.stripe.Invoice.list')
-    def test_retrieve_account_with_stripe_invoice_data(self, mock_list_invoices):
+    @patch('services.billing.stripe.Subscription.retrieve')
+    def test_retrieve_subscription_with_stripe_invoice_data(self, mock_subscription):
         f = open("./services/tests/samples/stripe_invoice.json")
-        mock_list_invoices.return_value = json.load(f)
+
+        default_payment_method = {
+            "card": {
+                "brand": "visa",
+                "exp_month": 12,
+                "exp_year": 2024,
+                "last4": "abcd",
+                "should be": "removed"
+            }
+        }
+
+        mock_subscription.return_value = {
+            "latest_invoice": json.load(f)["data"][0],
+            "default_payment_method": default_payment_method,
+            "cancel_at_period_end": False,
+            "current_period_end": 1633512445,
+            "customer": "cus_abc"
+        }
+
+        self.user.stripe_subscription_id = "djfos"
+        self.user.save()
 
         response = self._retrieve()
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data['latest_invoice'] == self.expected_invoice
+        assert response.data['subscription_detail'] == {
+            "cancel_at_period_end": False,
+            "current_period_end": 1633512445,
+            "latest_invoice": self.expected_invoice,
+            "customer": "cus_abc",
+            "default_payment_method": {
+                "card": {
+                    "brand": "visa",
+                    "exp_month": 12,
+                    "exp_year": 2024,
+                    "last4": "abcd",
+                }
+            },
+        }
 
-    @patch('services.billing.stripe.Invoice.list')
-    def test_update_can_set_plan_auto_activate_to_true(self, _):
+    def test_update_can_set_plan_auto_activate_to_true(self):
         self.user.plan_auto_activate = False
         self.user.save()
 
@@ -170,8 +198,7 @@ class AccountViewSetTests(APITestCase):
         assert self.user.plan_auto_activate is True
         assert response.data['plan_auto_activate'] is True
 
-    @patch('services.billing.stripe.Invoice.list')
-    def test_update_can_set_plan_auto_activate_to_false(self, _):
+    def test_update_can_set_plan_auto_activate_to_false(self):
         self.user.plan_auto_activate = True
         self.user.save()
 
@@ -187,9 +214,7 @@ class AccountViewSetTests(APITestCase):
         assert self.user.plan_auto_activate is False
         assert response.data['plan_auto_activate'] is False
 
-    @patch('services.billing.stripe.Invoice.list')
-    @patch('services.billing.stripe.Subscription.delete')
-    def test_update_can_set_plan_to_users_free(self, delete_sub_mock, list_inv_mock):
+    def test_update_can_set_plan_to_users_free(self):
         self.user.plan = "users-inappy"
         self.user.save()
 
@@ -207,12 +232,10 @@ class AccountViewSetTests(APITestCase):
         assert self.user.plan_user_count == 5
         assert response.data["plan_auto_activate"] is True
 
-    @patch('services.billing.stripe.Invoice.list')
     @patch('services.billing.stripe.checkout.Session.create')
     def test_update_can_upgrade_to_paid_plan_for_new_customer_and_return_checkout_session_id(
         self,
         create_checkout_session_mock,
-        list_inv_mock
     ):
         expected_id = "this is the id"
         create_checkout_session_mock.return_value = {"id": expected_id}
@@ -234,14 +257,12 @@ class AccountViewSetTests(APITestCase):
         assert response.status_code == status.HTTP_200_OK
         assert response.data["checkout_session_id"] == expected_id
 
-    @patch('services.billing.stripe.Invoice.list')
     @patch('services.billing.stripe.Subscription.retrieve')
     @patch('services.billing.stripe.Subscription.modify')
     def test_update_can_upgrade_to_paid_plan_for_existing_customer_and_set_plan_info(
         self,
         modify_subscription_mock,
-        retrieve_subscription_mock,
-        list_inv_mock
+        _
     ):
         desired_plan = {
             "value": "users-pr-inappm",
@@ -295,6 +316,33 @@ class AccountViewSetTests(APITestCase):
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
+    def test_update_payment_method_without_body(self):
+        kwargs = {"service": self.user.service, "owner_username": self.user.username}
+        url = reverse("account_details-update-payment", kwargs=kwargs)
+        response = self.client.patch(url, format='json')
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    @patch('services.billing.stripe.Subscription.retrieve')
+    @patch('services.billing.stripe.Subscription.modify')
+    @patch('services.billing.stripe.PaymentMethod.attach')
+    def test_update_payment_method(
+        self,
+        attach_payment_mock,
+        modify_subscription_mock,
+        _
+    ):
+        self.user.stripe_customer_id = "flsoe"
+        self.user.stripe_subscription_id = "djfos"
+        self.user.save()
+        payment_method_id = "pm_123"
+        kwargs = {"service": self.user.service, "owner_username": self.user.username}
+        data={ "payment_method": payment_method_id }
+        url = reverse("account_details-update-payment", kwargs=kwargs)
+        response = self.client.patch(url, data=data, format='json')
+        assert response.status_code == status.HTTP_200_OK
+        attach_payment_mock.assert_called_once_with(payment_method_id, customer=self.user.stripe_customer_id)
+        modify_subscription_mock.assert_called_once_with(self.user.stripe_subscription_id, default_payment_method=payment_method_id)
+
     def test_update_without_admin_permissions_returns_403(self):
         owner = OwnerFactory()
         response = self._update(
@@ -304,8 +352,7 @@ class AccountViewSetTests(APITestCase):
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    @patch('services.billing.stripe.Invoice.list')
-    def test_update_can_change_name_and_email(self, _):
+    def test_update_can_change_name_and_email(self):
         expected_name, expected_email = "Scooby Doo", "scoob@snack.com"
         response = self._update(
             kwargs={"service": self.user.service, "owner_username": self.user.username},

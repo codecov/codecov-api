@@ -28,11 +28,6 @@ gcloud_auth: &gcloud_auth
     gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE}
     gcloud auth configure-docker
 
-k8s_auth: &k8s_auth
-  name: Copy k8s auth for kubectl
-  command: |-
-    gcloud container clusters get-credentials --zone ${GOOGLE_COMPUTE_ZONE} ${GOOGLE_CLUSTER_NAME}
-
 jobs:
   build:
     executor: codecov-deploy
@@ -69,9 +64,9 @@ jobs:
     - run:
         name: codecov-staging
         command: |
-          apk add bash curl
-          bash -c "bash <(curl -s https://stage-web.codecov.dev/bash) -u stage-web.codecov.dev -Z -R . -t dfdd2ba4-4dbc-40a6-8a96-534c0a39c3a5 -F unit"
-
+          apk add git
+          chmod +x codecov-alpine 
+          ./codecov-alpine -Z -R . --url https://stage-web.codecov.dev -t dfdd2ba4-4dbc-40a6-8a96-534c0a39c3a5 -F unit
 
   portable:
     executor: codecov-deploy
@@ -115,12 +110,9 @@ jobs:
     - run:
         <<: *gcloud_auth
     - run:
-        <<: *k8s_auth
-    - run:
         name: deploy to k8s
         command: |-
           make -f Makefile.circle tag
-          make -f Makefile.circle deploy
 
 workflows:
   version: 2
