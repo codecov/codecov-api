@@ -103,7 +103,7 @@ class SegmentServiceTests(TestCase):
                 self.segment_owner.traits,
                 self.segment_owner.context,
                 integrations={
-                    "Salesforce": False,
+                    "Salesforce": True,
                     "Marketo": False
                 }
             )

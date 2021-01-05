@@ -217,7 +217,7 @@ class SegmentService:
             segment_owner.traits,
             segment_owner.context,
             integrations={
-                "Salesforce": False,
+                "Salesforce": True,
                 "Marketo": False
             }
         )
