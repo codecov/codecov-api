@@ -95,7 +95,7 @@ class InvoiceViewSet(
         ).get_invoice(self.owner, invoice_id)
         if not invoice:
             raise NotFound(f"Invoice {invoice_id} does not exist for that owner")
-        return None
+        return invoice
 
 
 class AccountDetailsViewSet(
