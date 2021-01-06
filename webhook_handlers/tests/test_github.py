@@ -884,7 +884,7 @@ class GithubWebhookHandlerTests(APITestCase):
                     "id": 506003,
                     "name": "testrepo",
                     "private": False,
-                    "branch": "master",
+                    "default_branch": "master",
                     "owner": {
                         "id": owner.service_id
                     }

@@ -123,7 +123,7 @@ class RepositoryQuerySet(QuerySet):
             author=owner,
             service_id=git_repo.get('service_id') or git_repo.get("id"),
             private=git_repo['private'],
-            branch=git_repo['branch'],
+            branch=git_repo.get('branch') or git_repo.get("default_branch") or "master",
             name=git_repo['name']
         )
 
@@ -141,7 +141,7 @@ class RepositoryQuerySet(QuerySet):
                 author=fork_owner,
                 service_id=git_repo_fork['service_id'],
                 private=git_repo_fork['private'],
-                branch=git_repo_fork['branch'],
+                branch=git_repo_fork.get('branch') or git_repo_fork.get("default_branch"),
                 name=git_repo_fork['name']
             )
             repo.fork = fork
