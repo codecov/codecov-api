@@ -91,13 +91,6 @@ production:
 		--build-arg REQUIREMENTS_IMAGE=${GCR_REPO}:${REQUIREMENTS_TAG} && \
 	docker push ${GCR_REPO}:production-${VERSION}
 
-# CIRCLECI
-# job: deploy
-# deploys tagged version to production k8s
-deploy:
-	kubectl set image deployment/api api=${GCR_REPO}:${VERSION}
-	kubectl rollout status deployments api
-
 # LOCAL
 # used to test circleci jobs
 # example$ make circleci-local JOB=build

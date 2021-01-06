@@ -35,7 +35,7 @@ class PlansViewSetTests(APITestCase):
                     "Configureable # of users",
                     "Unlimited public repositories",
                     "Unlimited private repositories",
-                    "Priorty Support"
+                    "Priority Support"
                 ]
             },
             {
@@ -47,7 +47,7 @@ class PlansViewSetTests(APITestCase):
                     "Configureable # of users",
                     "Unlimited public repositories",
                     "Unlimited private repositories",
-                    "Priorty Support"
+                    "Priority Support"
                 ]
             },
         ]

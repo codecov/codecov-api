@@ -9,6 +9,11 @@ THIS_POD_IP = os.environ.get("THIS_POD_IP")
 ALLOWED_HOSTS = [".codecov.io", THIS_POD_IP] if THIS_POD_IP else [".codecov.io"]
 
 
+INSTALLED_APPS += [
+    'ddtrace.contrib.django'
+]
+
+
 WEBHOOK_URL = 'https://codecov.io'
 
 
@@ -25,12 +30,6 @@ sentry_sdk.init(
     integrations=[DjangoIntegration()],
     environment="PRODUCTION"
 )
-
-
-# TODO: prod URLs not defined yet
-CLIENT_PLAN_CHANGE_SUCCESS_URL = ''
-CLIENT_PLAN_CHANGE_CANCEL_URL = ''
-
 
 CORS_ORIGIN_WHITELIST = ['app.codecov.io', 'codecov.io']
 CORS_ALLOW_CREDENTIALS = True

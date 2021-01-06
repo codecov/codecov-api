@@ -16,12 +16,6 @@ STRIPE_PLAN_IDS = {
     "users-pr-inappy": "plan_H6P16wij3lUuxg"
 }
 
-
-# TODO: dev urls not defined yet -- but defining as such to make tests pass
-CLIENT_PLAN_CHANGE_SUCCESS_URL = 'http://localhost:9000'
-CLIENT_PLAN_CHANGE_CANCEL_URL = 'http://localhost:9000'
-
-
 CORS_ORIGIN_WHITELIST = ['localhost:9000', 'localhost']
 CORS_ALLOW_CREDENTIALS = True
 CODECOV_URL = 'localhost'
