@@ -109,6 +109,21 @@ class TestRepositoryPermissionsService(TestCase):
         owner.refresh_from_db()
         assert user.ownerid in owner.plan_activated_users
 
+    @patch("services.segment.SegmentService.account_activated_user")
+    def test_user_auto_activation_triggers_segment_event(self, segment_activate_user_mock):
+        user = OwnerFactory()
+        owner = OwnerFactory(plan="users-inappy", plan_auto_activate=True, plan_user_count=1)
+        user.organizations = [owner.ownerid]
+        user.save()
+
+        self.permissions_service.user_is_activated(user, owner)
+        segment_activate_user_mock.assert_called_once_with(
+            current_user_ownerid=user.ownerid,
+            ownerid_to_activate=user.ownerid,
+            org_ownerid=owner.ownerid,
+            auto_activated=True
+        )
+
     def test_user_is_activated_returns_false_if_cant_auto_activate(self):
         owner = OwnerFactory(plan="users-inappy", plan_user_count=10)
         user = OwnerFactory(organizations=[owner.ownerid])

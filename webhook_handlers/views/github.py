@@ -15,6 +15,7 @@ from services.archive import ArchiveService
 from services.redis import get_redis_connection
 from services.task import TaskService
 from utils.config import get_config
+from services.segment import SegmentService, BLANK_SEGMENT_USER_ID
 
 from webhook_handlers.constants import GitHubHTTPHeaders, GitHubWebhookEvents, WebhookHandlerErrorMessages
 
@@ -34,6 +35,8 @@ class GithubWebhookHandler(APIView):
     """
     permission_classes = [AllowAny]
     redis = get_redis_connection()
+
+    segment_service = SegmentService()
 
     def validate_signature(self, request):
         key = get_config(
@@ -100,6 +103,9 @@ class GithubWebhookHandler(APIView):
                 log.info(f"{request.body}")
                 return Repository.objects.get(author__ownerid=owner.ownerid, service_id=repo_service_id)
             except Repository.DoesNotExist:
+                if owner.integration_id:
+                    log.info("Repository no found but owner is using integration, creating repository")
+                    return Repository.objects.get_or_create_from_git_repo(repo_data, owner)[0]
                 log.info(
                     f"Received event for non-existent repository",
                     extra=dict(repo_service_id=repo_service_id, repo_slug=repo_slug)
@@ -363,6 +369,11 @@ class GithubWebhookHandler(APIView):
                     github_webhook_event=self.event
                 )
             )
+            self.segment_service.account_uninstalled_source_control_service_app(
+                owner.ownerid if request.data["sender"]["type"] == "User" else BLANK_SEGMENT_USER_ID,
+                owner.ownerid,
+                {"platform": "github"}
+            )
         else:
             if owner.integration_id is None:
                 owner.integration_id = request.data["installation"]["id"]
@@ -374,6 +385,12 @@ class GithubWebhookHandler(APIView):
                     ownerid=owner.ownerid,
                     github_webhook_event=self.event
                 )
+            )
+
+            self.segment_service.account_installed_source_control_service_app(
+                owner.ownerid if request.data["sender"]["type"] == "User" else BLANK_SEGMENT_USER_ID,
+                owner.ownerid,
+                {"platform": "github"}
             )
 
             TaskService().refresh(

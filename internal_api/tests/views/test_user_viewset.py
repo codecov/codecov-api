@@ -369,6 +369,47 @@ class UserViewSetTests(APITestCase):
         self.owner.refresh_from_db()
         assert self.users[0].ownerid not in self.owner.plan_activated_users
 
+    @patch('services.segment.SegmentService.account_deactivated_user')
+    @patch('services.segment.SegmentService.account_activated_user')
+    def test_user_activation_or_deactivation_triggers_segment_events(
+        self,
+        activated_event_mock,
+        deactivated_event_mock
+    ):
+        response = self._patch(
+            kwargs={
+                "service": self.owner.service,
+                "owner_username": self.owner.username,
+                "user_username": self.users[0].username
+            },
+            data={
+                'activated': True
+            }
+        )
+
+        activated_event_mock.assert_called_once_with(
+            current_user_ownerid=self.owner.ownerid,
+            ownerid_to_activate=self.users[0].ownerid,
+            org_ownerid=self.owner.ownerid,
+        )
+
+        response = self._patch(
+            kwargs={
+                "service": self.owner.service,
+                "owner_username": self.owner.username,
+                "user_username": self.users[0].username
+            },
+            data={
+                'activated': False
+            }
+        )
+
+        deactivated_event_mock.assert_called_once_with(
+            current_user_ownerid=self.owner.ownerid,
+            ownerid_to_deactivate=self.users[0].ownerid,
+            org_ownerid=self.owner.ownerid,
+        )
+
     @patch('codecov_auth.models.Owner.can_activate_user', lambda self, user: False)
     def test_patch_returns_403_if_cannot_activate_user(self):
         response = self._patch(

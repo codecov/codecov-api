@@ -7,6 +7,7 @@ from internal_api.commit.serializers import (
     CommitWithFileLevelReportSerializer,
     CommitTotalsSerializer,
 )
+from services.segment import SegmentService
 
 
 class RepoSerializer(serializers.ModelSerializer):
@@ -92,6 +93,16 @@ class RepoDetailsSerializer(RepoSerializer):
             del rep["upload_token"]
         return rep
 
+    def update(self, instance, validated_data):
+        # Segment tracking
+        segment = SegmentService()
+        if "active" in validated_data:
+            if validated_data["active"] and not instance.active:
+                segment.account_activated_repository(self.context["request"].user.ownerid, instance)
+            elif not validated_data["active"] and instance.active:
+                segment.account_deactivated_repository(self.context["request"].user.ownerid, instance)
+
+        return super().update(instance, validated_data)
 
 class SecretStringPayloadSerializer(serializers.Serializer):
     value = serializers.CharField(required=True)
