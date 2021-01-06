@@ -116,3 +116,35 @@ class RepositoryQuerySet(QuerySet):
             Sum(Cast(KeyTextTransform("n", "prev_commit_totals"), output_field=FloatField()))  * 100
             )
         )
+
+    def get_or_create_from_git_repo(self, git_repo, owner):
+        from codecov_auth.models import Owner
+        repo, created = self.get_or_create(
+            author=owner,
+            service_id=git_repo.get('service_id') or git_repo.get("id"),
+            private=git_repo['private'],
+            branch=git_repo['branch'],
+            name=git_repo['name']
+        )
+
+        # If this is a fork, create the forked repo and save it to the new repo
+        if git_repo.get('fork'):
+            git_repo_fork = git_repo['fork']['repo']
+            git_repo_fork_owner = git_repo['fork']['owner']
+
+            fork_owner, _ = Owner.objects.get_or_create(
+                service=owner.service,
+                username=git_repo_fork_owner['username'],
+                service_id=git_repo_fork_owner['service_id']
+            )
+            fork, _ = self.get_or_create(
+                author=fork_owner,
+                service_id=git_repo_fork['service_id'],
+                private=git_repo_fork['private'],
+                branch=git_repo_fork['branch'],
+                name=git_repo_fork['name']
+            )
+            repo.fork = fork
+            repo.save()
+
+        return repo, created
