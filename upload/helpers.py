@@ -13,6 +13,7 @@ from utils.config import get_config
 from .constants import ci, global_upload_token_providers
 from services.repo_providers import RepoProviderService
 from services.task import TaskService
+from services.segment import SegmentService
 from codecov_auth.constants import USER_PLAN_REPRESENTATIONS
 from shared.torngit.exceptions import TorngitObjectNotFoundError
 
@@ -393,6 +394,8 @@ def validate_upload(upload_params, repository, redis):
     repository.active = True
     repository.deleted = False
     repository.save()
+
+    SegmentService().account_activated_repository_on_upload(repository.author.ownerid, repository)
 
 
 def parse_headers(headers, upload_params):
