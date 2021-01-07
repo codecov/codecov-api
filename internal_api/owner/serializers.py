@@ -162,8 +162,8 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     activated = serializers.BooleanField()
     is_admin = serializers.BooleanField()
-    latest_private_pr_date = serializers.DateTimeField()
-    lastseen = serializers.DateTimeField()
+    latest_private_pr_date = serializers.DateTimeField(read_only=True)
+    lastseen = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = Owner

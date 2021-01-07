@@ -128,11 +128,12 @@ class UserViewSet(
     OwnerPropertyMixin
 ):
     serializer_class = UserSerializer
-    filter_backends = (django_filters.DjangoFilterBackend, filters.OrderingFilter,)
+    filter_backends = (django_filters.DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter)
     filterset_class = UserFilters
     permission_classes = [UserIsAdminPermissions]
-    ordering_fields = ('name',)
+    ordering_fields = ('name','username', 'email')
     lookup_field = "user_username"
+    search_fields = ['name', 'username', 'email']
 
     def get_object(self):
         return get_object_or_404(
