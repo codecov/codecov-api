@@ -34,6 +34,7 @@ class AccountViewSetTests(APITestCase):
         self.expected_invoice = {
             "number": "EF0A41E-0001",
             "status": "paid",
+            "id": "in_19yTU92eZvKYlo2C7uDjvu6v",
             "created": 1489789429,
             "period_start": 1487370220,
             "period_end": 1489789420,

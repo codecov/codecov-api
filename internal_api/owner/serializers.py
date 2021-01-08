@@ -47,6 +47,7 @@ class StripeLineItemSerializer(serializers.Serializer):
 
 
 class StripeInvoiceSerializer(serializers.Serializer):
+    id = serializers.CharField()
     number = serializers.CharField()
     status = serializers.CharField()
     created = serializers.IntegerField()

@@ -76,6 +76,7 @@ class OwnerViewSet(
 class InvoiceViewSet(
     viewsets.GenericViewSet,
     mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
     OwnerPropertyMixin
 ):
     serializer_class = StripeInvoiceSerializer
@@ -86,6 +87,15 @@ class InvoiceViewSet(
         return BillingService(
             requesting_user=self.request.user
         ).list_invoices(self.owner, 100)
+
+    def get_object(self):
+        invoice_id = self.kwargs.get("pk")
+        invoice = BillingService(
+            requesting_user=self.request.user
+        ).get_invoice(self.owner, invoice_id)
+        if not invoice:
+            raise NotFound(f"Invoice {invoice_id} does not exist for that account")
+        return invoice
 
 
 class AccountDetailsViewSet(
