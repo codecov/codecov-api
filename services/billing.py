@@ -29,7 +29,7 @@ def _log_stripe_error(method):
 
 class AbstractPaymentService(ABC):
     @abstractmethod
-    def get_invoice(self, owner, id):
+    def get_invoice(self, owner, invoice_id):
         pass
 
     @abstractmethod
@@ -81,12 +81,12 @@ class StripeService(AbstractPaymentService):
         }
 
     @_log_stripe_error
-    def get_invoice(self, owner, id):
-        log.info(f"Fetching invoice {id} from Stripe for ownerid {owner.ownerid}")
+    def get_invoice(self, owner, invoice_id):
+        log.info(f"Fetching invoice {invoice_id} from Stripe for ownerid {owner.ownerid}")
         try:
-            invoice = stripe.Invoice.retrieve(id)
+            invoice = stripe.Invoice.retrieve(invoice_id)
         except stripe.error.InvalidRequestError as e:
-            log.info(f"invoice {id} not found for owner {owner.ownerid}")
+            log.info(f"invoice {invoice_id} not found for owner {owner.ownerid}")
             return None
         if invoice["customer"] != owner.stripe_customer_id:
             log.info(f"customer id ({invoice['customer']}) on invoice does not match the owner customer id ({owner.stripe_customer_id})")
@@ -252,8 +252,8 @@ class BillingService:
     def get_subscription(self, owner):
         return self.payment_service.get_subscription(owner)
 
-    def get_invoice(self, owner, id):
-        return self.payment_service.get_invoice(owner, id)
+    def get_invoice(self, owner, invoice_id):
+        return self.payment_service.get_invoice(owner, invoice_id)
 
     def list_invoices(self, owner, limit=10):
         return self.payment_service.list_invoices(owner, limit)
