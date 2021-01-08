@@ -84,7 +84,7 @@ class StripeService(AbstractPaymentService):
     def get_invoice(self, owner, invoice_id):
         log.info(f"Fetching invoice {invoice_id} from Stripe for ownerid {owner.ownerid}")
         try:
-            invoice = stripe.Invoice.retrieve(invoice_id)
+            invoice = stripe.Invoice.retrieve(invoice_id, expand=["subscription.default_payment_method"])
         except stripe.error.InvalidRequestError as e:
             log.info(f"invoice {invoice_id} not found for owner {owner.ownerid}")
             return None

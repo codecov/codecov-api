@@ -44,6 +44,7 @@ class StripeLineItemSerializer(serializers.Serializer):
     amount = serializers.FloatField()
     currency = serializers.CharField()
     period = serializers.JSONField()
+    plan_name = serializers.CharField(source="plan.name")
 
 
 class StripeInvoiceSerializer(serializers.Serializer):
@@ -64,6 +65,13 @@ class StripeInvoiceSerializer(serializers.Serializer):
     subtotal = serializers.FloatField()
     invoice_pdf = serializers.CharField()
     line_items = StripeLineItemSerializer(many=True, source="lines.data")
+    subscription = serializers.SerializerMethodField()
+
+    def get_subscription(self, invoice):
+        subscription = invoice['subscription']
+        if isinstance(subscription, dict):
+            return SubscriptionDetailSerializer(invoice.subscription).data
+        return subscription
 
 
 class StripeCardSerializer(serializers.Serializer):
@@ -75,6 +83,7 @@ class StripeCardSerializer(serializers.Serializer):
 
 class StripePaymentMethodSerializer(serializers.Serializer):
     card = StripeCardSerializer(read_only=True)
+    billing_details = serializers.JSONField(read_only=True)
 
 
 class PlanSerializer(serializers.Serializer):
@@ -108,11 +117,23 @@ class PlanSerializer(serializers.Serializer):
 
 
 class SubscriptionDetailSerializer(serializers.Serializer):
-    latest_invoice = StripeInvoiceSerializer()
-    default_payment_method = StripePaymentMethodSerializer()
+    latest_invoice = serializers.SerializerMethodField()
+    default_payment_method = serializers.SerializerMethodField()
     cancel_at_period_end = serializers.BooleanField()
     current_period_end = serializers.IntegerField()
     customer = serializers.CharField()
+
+    def get_latest_invoice(self, subscription):
+        latest_invoice = subscription['latest_invoice']
+        if isinstance(latest_invoice, dict):
+            return StripeInvoiceSerializer(latest_invoice).data
+        return latest_invoice
+
+    def get_default_payment_method(self, subscription):
+        default_payment_method = subscription['default_payment_method']
+        if isinstance(default_payment_method, dict):
+            return StripePaymentMethodSerializer(default_payment_method).data
+        return default_payment_method
 
 
 class AccountDetailsSerializer(serializers.ModelSerializer):
