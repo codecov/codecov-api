@@ -47,6 +47,7 @@ class StripeLineItemSerializer(serializers.Serializer):
 
 
 class StripeInvoiceSerializer(serializers.Serializer):
+    id = serializers.CharField()
     number = serializers.CharField()
     status = serializers.CharField()
     created = serializers.IntegerField()
@@ -164,8 +165,8 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     activated = serializers.BooleanField()
     is_admin = serializers.BooleanField()
-    latest_private_pr_date = serializers.DateTimeField()
-    lastseen = serializers.DateTimeField()
+    latest_private_pr_date = serializers.DateTimeField(read_only=True)
+    lastseen = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = Owner

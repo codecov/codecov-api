@@ -25,6 +25,7 @@ from .helpers import (
 )
 from services.redis import get_redis_connection
 from services.archive import ArchiveService
+from services.segment import SegmentService
 from utils.config import get_config
 
 log = logging.getLogger(__name__)
@@ -241,6 +242,14 @@ class UploadHandler(APIView):
 
         # Send task to worker
         dispatch_upload_task(task_arguments, repository, redis)
+
+        # Segment Tracking
+        segment_upload_data = upload_params.copy()
+        segment_upload_data['repository_id'] = repository.repoid
+        segment_upload_data['repository_name'] = repository.name
+        segment_upload_data['version'] = version
+        segment_upload_data['userid_type'] = 'org'
+        SegmentService().account_uploaded_coverage_report(owner.ownerid, segment_upload_data)
 
         if version == "v4":
             response["Content-Type"] = "text/plain"
