@@ -47,6 +47,17 @@ class StripeLineItemSerializer(serializers.Serializer):
     plan_name = serializers.CharField(source="plan.name")
 
 
+def use_serializer_if_expanded(value, Serializer):
+    """
+    Stripe returns field as String if the field isn't expanded. If it's
+    expanded, it will return a Dict. This function is a helper to use
+    the serializer in parameter if the value is a dict otherwise return the dict
+    """
+    if isinstance(value, dict):
+        return Serializer(value).data
+    return value
+
+
 class StripeInvoiceSerializer(serializers.Serializer):
     id = serializers.CharField()
     number = serializers.CharField()
@@ -68,10 +79,8 @@ class StripeInvoiceSerializer(serializers.Serializer):
     subscription = serializers.SerializerMethodField()
 
     def get_subscription(self, invoice):
-        subscription = invoice['subscription']
-        if isinstance(subscription, dict):
-            return SubscriptionDetailSerializer(invoice.subscription).data
-        return subscription
+        value = invoice['subscription']
+        return use_serializer_if_expanded(value, SubscriptionDetailSerializer)
 
 
 class StripeCardSerializer(serializers.Serializer):
@@ -123,17 +132,13 @@ class SubscriptionDetailSerializer(serializers.Serializer):
     current_period_end = serializers.IntegerField()
     customer = serializers.CharField()
 
-    def get_latest_invoice(self, subscription):
-        latest_invoice = subscription['latest_invoice']
-        if isinstance(latest_invoice, dict):
-            return StripeInvoiceSerializer(latest_invoice).data
-        return latest_invoice
+    def get_latest_invoice(self, invoice):
+        value = invoice['latest_invoice']
+        return use_serializer_if_expanded(value, StripeInvoiceSerializer)
 
     def get_default_payment_method(self, subscription):
-        default_payment_method = subscription['default_payment_method']
-        if isinstance(default_payment_method, dict):
-            return StripePaymentMethodSerializer(default_payment_method).data
-        return default_payment_method
+        value = subscription['default_payment_method']
+        return use_serializer_if_expanded(value, StripePaymentMethodSerializer)
 
 
 class AccountDetailsSerializer(serializers.ModelSerializer):
@@ -163,8 +168,7 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
 
     def get_subscription_detail(self, owner):
         subscription_detail = self._get_billing().get_subscription(owner)
-        if subscription_detail:
-            return SubscriptionDetailSerializer(subscription_detail).data
+        return use_serializer_if_expanded(subscription_detail, SubscriptionDetailSerializer)
 
     def get_checkout_session_id(self, _):
         return self.context.get("checkout_session_id")
