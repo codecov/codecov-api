@@ -295,7 +295,7 @@ class StripeServiceTests(TestCase):
         invoice_id = "abc"
         retrieve_invoice_mock.side_effect = InvalidRequestError(message="not found", param=invoice_id)
         assert self.stripe.get_invoice(OwnerFactory(), invoice_id) == None
-        retrieve_invoice_mock.assert_called_once_with(invoice_id)
+        retrieve_invoice_mock.assert_called_once_with(invoice_id, expand=['subscription.default_payment_method'])
 
     @patch('services.billing.stripe.Invoice.retrieve')
     def test_get_invoice_customer_dont_match(self, retrieve_invoice_mock):
@@ -307,7 +307,7 @@ class StripeServiceTests(TestCase):
         }
         retrieve_invoice_mock.return_value = invoice
         assert self.stripe.get_invoice(owner, invoice_id) == None
-        retrieve_invoice_mock.assert_called_once_with(invoice_id)
+        retrieve_invoice_mock.assert_called_once_with(invoice_id, expand=['subscription.default_payment_method'])
 
     @patch('services.billing.stripe.Invoice.retrieve')
     def test_get_invoice(self, retrieve_invoice_mock):
@@ -320,7 +320,7 @@ class StripeServiceTests(TestCase):
         }
         retrieve_invoice_mock.return_value = invoice
         assert self.stripe.get_invoice(owner, invoice_id) == invoice
-        retrieve_invoice_mock.assert_called_once_with(invoice_id)
+        retrieve_invoice_mock.assert_called_once_with(invoice_id, expand=['subscription.default_payment_method'])
 
 
 class MockPaymentService(AbstractPaymentService):

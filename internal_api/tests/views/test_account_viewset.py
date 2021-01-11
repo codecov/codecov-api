@@ -48,11 +48,13 @@ class AccountViewSetTests(APITestCase):
             "total": 999,
             "subtotal": 999,
             "invoice_pdf": "https://pay.stripe.com/invoice/acct_1032D82eZvKYlo2C/invst_a7KV10HpLw2QxrihgVyuOkOjMZ/pdf",
+            "subscription": "sub_9lNL2lSXI8nYEQ",
             "line_items": [
               {
                 "description": "(10) users-inappm",
                 "amount": 120,
                 "currency": "usd",
+                "plan_name": "users-inappm",
                 "period": {
                     "end": 1521326190,
                     "start": 1518906990
@@ -265,7 +267,7 @@ class AccountViewSetTests(APITestCase):
     def test_update_can_upgrade_to_paid_plan_for_existing_customer_and_set_plan_info(
         self,
         modify_subscription_mock,
-        _
+        retrieve_subscription_mock,
     ):
         desired_plan = {
             "value": "users-pr-inappm",
@@ -274,6 +276,17 @@ class AccountViewSetTests(APITestCase):
         self.user.stripe_customer_id = "flsoe"
         self.user.stripe_subscription_id = "djfos"
         self.user.save()
+
+        retrieve_subscription_mock.return_value = {
+            "items": {
+                "data": [
+                    { "id": "abc" }
+                ]
+            },
+            "cancel_at_period_end": False,
+            "current_period_end": 1633512445,
+            "customer": self.user.stripe_customer_id
+        }
 
         response = self._update(
             kwargs={"service": self.user.service, "owner_username": self.user.username},
@@ -332,11 +345,21 @@ class AccountViewSetTests(APITestCase):
         self,
         attach_payment_mock,
         modify_subscription_mock,
-        _
+        retrieve_subscription_mock
     ):
         self.user.stripe_customer_id = "flsoe"
         self.user.stripe_subscription_id = "djfos"
         self.user.save()
+        retrieve_subscription_mock.return_value = {
+            "items": {
+                "data": [
+                    { "id": "abc" }
+                ]
+            },
+            "cancel_at_period_end": False,
+            "current_period_end": 1633512445,
+            "customer": self.user.stripe_customer_id
+        }
         payment_method_id = "pm_123"
         kwargs = {"service": self.user.service, "owner_username": self.user.username}
         data={ "payment_method": payment_method_id }

@@ -51,7 +51,8 @@ def use_serializer_if_expanded(value, Serializer):
     """
     Stripe returns field as String if the field isn't expanded. If it's
     expanded, it will return a Dict. This function is a helper to use
-    the serializer in parameter if the value is a dict otherwise return the dict
+    the serializer in parameter if the value is a dict otherwise
+    simply return the value
     """
     if isinstance(value, dict):
         return Serializer(value).data
@@ -79,7 +80,7 @@ class StripeInvoiceSerializer(serializers.Serializer):
     subscription = serializers.SerializerMethodField()
 
     def get_subscription(self, invoice):
-        value = invoice['subscription']
+        value = invoice.get("subscription")
         return use_serializer_if_expanded(value, SubscriptionDetailSerializer)
 
 
@@ -133,11 +134,11 @@ class SubscriptionDetailSerializer(serializers.Serializer):
     customer = serializers.CharField()
 
     def get_latest_invoice(self, invoice):
-        value = invoice['latest_invoice']
+        value = invoice.get("latest_invoice")
         return use_serializer_if_expanded(value, StripeInvoiceSerializer)
 
     def get_default_payment_method(self, subscription):
-        value = subscription['default_payment_method']
+        value = subscription.get("default_payment_method")
         return use_serializer_if_expanded(value, StripePaymentMethodSerializer)
 
 
