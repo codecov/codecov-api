@@ -8,7 +8,8 @@ from codecov_auth.models import (
     SERVICE_BITBUCKET,
     SERVICE_BITBUCKET_SERVER,
     SERVICE_CODECOV_ENTERPRISE,
-    DEFAULT_AVATAR_SIZE
+    DEFAULT_AVATAR_SIZE,
+    INFINITY
 )
 
 from codecov_auth.tests.factories import OwnerFactory
@@ -23,13 +24,20 @@ class TestOwnerModel(TestCase):
             email="name@codecov.io"
         )
 
-    def test_repo_credits_returns_correct_repos_for_legacy_plan(self):
+    def test_repo_total_credits_returns_correct_repos_for_legacy_plan(self):
         self.owner.plan = '5m'
-        assert self.owner.repo_credits == 5
+        assert self.owner.repo_total_credits == 5
 
-    def test_repo_credits_returns_correct_repos_for_v4_plan(self):
+    def test_repo_total_credits_returns_correct_repos_for_v4_plan(self):
         self.owner.plan = 'v4-100m'
-        assert self.owner.repo_credits == 100
+        assert self.owner.repo_total_credits == 100
+
+
+    def test_repo_total_credits_returns_infinity_for_user_plans(self):
+        users_plans = ('users', 'users-inappm', 'users-inappy', 'users-free')
+        for plan in users_plans:
+            self.owner.plan = plan
+            assert self.owner.repo_total_credits == INFINITY
 
     def test_repo_credits_accounts_for_currently_active_private_repos(self):
         self.owner.plan = '5m'
@@ -49,11 +57,19 @@ class TestOwnerModel(TestCase):
         users_plans = ('users', 'users-inappm', 'users-inappy', 'users-free')
         for plan in users_plans:
             self.owner.plan = plan
-            assert self.owner.repo_credits == float('inf')
+            assert self.owner.repo_credits == INFINITY
 
     def test_repo_credits_treats_null_plan_as_free_plan(self):
         assert self.owner.plan == None
         assert self.owner.repo_credits == 1 + self.owner.free or 0
+
+    def test_nb_active_private_repos(self):
+        RepositoryFactory(author=self.owner, active=True, private=True)
+        RepositoryFactory(author=self.owner, active=True, private=False)
+        RepositoryFactory(author=self.owner, active=False, private=True)
+        RepositoryFactory(author=self.owner, active=False, private=False)
+
+        assert self.owner.nb_active_private_repos == 1
 
     @patch("codecov_auth.models.get_config")
     def test_main_avatar_url_services(self, mock_get_config):

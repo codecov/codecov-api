@@ -22,6 +22,8 @@ from codecov_auth.constants import (
 
 from codecov_auth.helpers import get_gitlab_url
 
+# Large number to represent Infinity as float('int') isnt JSON serializable
+INFINITY = 99999999
 
 SERVICE_GITHUB = "github"
 SERVICE_GITHUB_ENTERPRISE = "github_enterprise"
@@ -95,22 +97,30 @@ class Owner(models.Model):
         return self.plan is None or not self.plan.startswith("users")
 
     @property
-    def repo_credits(self):
+    def repo_total_credits(self):
         # Returns the number of private repo credits remaining
         # Only meaningful for legacy plans
         V4_PLAN_PREFIX = "v4-"
-
         if not self.has_legacy_plan:
-            return float("inf")
+            return INFINITY
         if self.plan is None:
-            repos = 1 + self.free or 0
+            return int(1 + self.free or 0)
         elif self.plan.startswith(V4_PLAN_PREFIX):
-            repos = self.plan[3:-1]
+            return int(self.plan[3:-1])
         else:
-            repos = self.plan[:-1]
-        return (
-            int(repos) - self.repository_set.filter(active=True, private=True).count()
-        )
+            return int(self.plan[:-1])
+
+    @property
+    def nb_active_private_repos(self):
+        return self.repository_set.filter(active=True, private=True).count()
+
+    @property
+    def repo_credits(self):
+        # Returns the number of private repo credits remaining
+        # Only meaningful for legacy plans
+        if not self.has_legacy_plan:
+            return INFINITY
+        return self.repo_total_credits - self.nb_active_private_repos
 
     @property
     def orgs(self):
