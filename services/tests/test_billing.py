@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.conf import settings
 
 from unittest.mock import patch
-from stripe.error import StripeError
+from stripe.error import StripeError, InvalidRequestError
 
 from services.billing import BillingService, StripeService, AbstractPaymentService
 from codecov_auth.tests.factories import OwnerFactory
@@ -290,10 +290,45 @@ class StripeServiceTests(TestCase):
         attach_payment_mock.assert_called_once_with(payment_method_id, customer=customer_id)
         modify_subscription_mock.assert_called_once_with(subscription_id, default_payment_method=payment_method_id)
 
+    @patch('services.billing.stripe.Invoice.retrieve')
+    def test_get_invoice_not_found(self, retrieve_invoice_mock):
+        invoice_id = "abc"
+        retrieve_invoice_mock.side_effect = InvalidRequestError(message="not found", param=invoice_id)
+        assert self.stripe.get_invoice(OwnerFactory(), invoice_id) == None
+        retrieve_invoice_mock.assert_called_once_with(invoice_id)
+
+    @patch('services.billing.stripe.Invoice.retrieve')
+    def test_get_invoice_customer_dont_match(self, retrieve_invoice_mock):
+        owner = OwnerFactory(stripe_customer_id="something_very_very_random_cus_abc")
+        invoice_id = "abc"
+        invoice = {
+            "invoice_id": "abc",
+            "customer": "cus_abc"
+        }
+        retrieve_invoice_mock.return_value = invoice
+        assert self.stripe.get_invoice(owner, invoice_id) == None
+        retrieve_invoice_mock.assert_called_once_with(invoice_id)
+
+    @patch('services.billing.stripe.Invoice.retrieve')
+    def test_get_invoice(self, retrieve_invoice_mock):
+        customer_id = "cus_abc"
+        owner = OwnerFactory(stripe_customer_id=customer_id)
+        invoice_id = "abc"
+        invoice = {
+            "invoice_id": "abc",
+            "customer": customer_id
+        }
+        retrieve_invoice_mock.return_value = invoice
+        assert self.stripe.get_invoice(owner, invoice_id) == invoice
+        retrieve_invoice_mock.assert_called_once_with(invoice_id)
+
 
 class MockPaymentService(AbstractPaymentService):
     def list_invoices(self, owner, limit=10):
         return f"{owner.ownerid} {limit}"
+
+    def get_invoice(self, owner, id):
+        pass
 
     def delete_subscription(self, owner):
         pass
@@ -434,3 +469,9 @@ class BillingServiceTests(TestCase):
         owner = OwnerFactory()
         self.billing_service.update_payment_method(owner, "abc")
         get_subscription_mock.assert_called_once_with(owner, "abc")
+
+    @patch('services.tests.test_billing.MockPaymentService.get_invoice')
+    def test_get_invoice(self, get_invoice_mock):
+        owner = OwnerFactory()
+        self.billing_service.get_invoice(owner, "abc")
+        get_invoice_mock.assert_called_once_with(owner, "abc")
