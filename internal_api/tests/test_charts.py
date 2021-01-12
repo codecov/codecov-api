@@ -321,22 +321,38 @@ class CoverageChartHelpersTest(TestCase):
             )
 
     def test_annotate_commits_with_totals(self):
-        G(Commit, totals={"n": 0, "h": 0, "p": 0, "m": 0, "c": 0, "C": 0, "N": 0})
-        annotated_commits = annotate_commits_with_totals(Commit.objects.all())
+        with_complexity_commitid = "i230tky2"
+        G(
+            Commit,
+            commitid=with_complexity_commitid,
+            totals={"n": 0, "h": 0, "p": 0, "m": 0, "c": 0, "C": 0, "N": 1}
+        )
+        annotated_commits = annotate_commits_with_totals(
+            Commit.objects.filter(commitid=with_complexity_commitid)
+        )
 
         assert annotated_commits.count() > 0
         for commit in annotated_commits:
             # direct float equality checks in python are finicky so use "isclose" to check we got the expected value
             assert isclose(commit.coverage, commit.totals["c"])
-            assert isclose(commit.lines, commit.totals["n"])
-            assert isclose(commit.hits, commit.totals["h"])
-            assert isclose(commit.misses, commit.totals["m"])
             assert isclose(commit.complexity, commit.totals["C"])
             assert isclose(commit.complexity_total, commit.totals["N"])
-            assert isclose(
-                commit.complexity_ratio,
-                commit.totals["C"] / commit.totals["N"] if commit.totals["N"] else 0,
-            )
+            assert isclose(commit.complexity_ratio, commit.totals["C"] / commit.totals["N"])
+
+    def test_annotate_commit_with_totals_no_complexity_sets_ratio_to_None(self):
+        no_complexity_commitid = "sdfkjwepj42"
+        G(
+            Commit,
+            commitid=no_complexity_commitid,
+            totals={"n": 0, "h": 0, "p": 0, "m": 0, "c": 0, "C": 0, "N": 0}
+        )
+        annotated_commits = annotate_commits_with_totals(
+            Commit.objects.filter(commitid=no_complexity_commitid)
+        )
+
+        assert annotated_commits.count() > 0
+        for commit in annotated_commits:
+            assert commit.complexity_ratio is None
 
     def test_apply_grouping(self):
         with self.subTest("min coverage"):
@@ -681,15 +697,15 @@ class OrganizationCoverageChartTest(InternalAPITest):
             "grouping_unit": "day",
             "agg_function": "max",
             "agg_value": "coverage",
-            "repositories": [self.repo1_org1.name, self.repo2_org1.name],
+            "repositories": ["SOMEONE-ELSE-REPO"],
         }
 
         kwargs = {"owner_username": self.org1.username, "service": "gh"}
 
-        mocked_get_permissions.return_value = False
         response = self._retrieve(kwargs=kwargs, data=data)
-
-        assert response.status_code == 403
+        
+        assert response.content == b'{"coverage":[]}'
+        assert response.status_code == 200
 
     def test_get_chart(self, mocked_get_permissions):
         data = {
@@ -710,7 +726,7 @@ class OrganizationCoverageChartTest(InternalAPITest):
         assert response.status_code == 200
         assert len(response.data["coverage"]) > 0
         for item in response.data["coverage"]:
-            assert "weighted_coverage" in item
+            assert "coverage" in item
             assert "total_lines" in item
             assert "total_hits" in item
             assert "total_partials" in item
@@ -731,7 +747,7 @@ class OrganizationCoverageChartTest(InternalAPITest):
         assert response.status_code == 200
         assert len(response.data["coverage"]) > 0
         for item in response.data["coverage"]:
-            assert "weighted_coverage" in item
+            assert "coverage" in item
             assert "total_lines" in item
             assert "total_hits" in item
             assert "total_partials" in item

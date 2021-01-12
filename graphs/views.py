@@ -11,12 +11,9 @@ from internal_api.mixins import RepoPropertyMixin
 from django.http import Http404
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.negotiation import DefaultContentNegotiation
-from services.redis import get_redis_connection
 from rest_framework.exceptions import NotFound
 from graphs.settings import settings
 from .mixins import GraphBadgeAPIMixin
-
-redis = get_redis_connection()
 
 import logging
 
@@ -58,7 +55,7 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         if not precision in self.precisions:
             raise NotFound("Coverage precision should be one of [ 0 || 1 || 2 ]")
 
-        coverage = self.get_coverage()
+        coverage, coverage_range = self.get_coverage()
 
         # Format coverage according to precision      
         coverage = format_coverage_precision(coverage, precision)
@@ -66,7 +63,7 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         if self.kwargs.get('ext') == 'txt':
             return coverage
 
-        return get_badge(coverage, [70, 100], precision)
+        return get_badge(coverage, coverage_range, precision)
 
     
     def get_coverage(self):
@@ -76,39 +73,38 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
 
                   We also need to support service abbreviations for users already using them
         """
-        coverage = self.get_cached_coverage()
-        if coverage is not None:
-            return coverage
+        coverage_range = [70, 100]
+
         try:
             repo = self.repo
         except Http404:
-            return None
+            return None, coverage_range
 
         if repo.private and repo.image_token != self.request.query_params.get('token'):
-            return None
+            return None, coverage_range
        
         branch_name = self.kwargs.get('branch') or repo.branch
         branch = Branch.objects.filter(name=branch_name, repository_id=repo.repoid).first()
        
         if branch is None:
-            return None
+            return None, coverage_range
         try:
             commit = repo.commits.get(commitid=branch.head)
         except ObjectDoesNotExist:
             # if commit does not exist return None coverage
-            return None
+            return None, coverage_range
+
+
+        if repo.yaml and repo.yaml.get('coverage', {}).get('range') is not None:
+            coverage_range = repo.yaml.get('coverage', {}).get('range')
 
         flag = self.request.query_params.get('flag')
         if flag:
-            return self.flag_coverage(flag, commit)
+            return self.flag_coverage(flag, commit), coverage_range
 
         coverage = commit.totals.get('c') if commit is not None and commit.totals is not None else None
 
-        if coverage is not None and flag is None:
-            coverage_key = ':'.join((self.kwargs["service"], self.kwargs.get("owner_username"), self.kwargs.get("repo_name"), self.kwargs.get('branch') or '')).lower()
-            redis.hset('badge', coverage_key, json.dumps({'r': None, 'c': coverage, 't': repo.image_token if repo.private else None }))
-
-        return coverage
+        return coverage, coverage_range
 
     def flag_coverage(self, flag, commit):
         """
@@ -118,38 +114,25 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         flag (string): name of flag
         commit (obj): commit object containing report
         """
+        if commit.report is None:
+            return None
         sessions = commit.report.get('sessions')
+        if sessions is None:
+            return None
         for key, data in sessions.items():
-            if flag in data.get('f', []):
+            f = data.get('f') or []
+            if flag in f:
                 totals = data.get('t', [])
                 return totals[5] if totals is not None and len(totals) > 5 else None
         return None
 
-
-    def get_cached_coverage(self):
-        coverage_key = ':'.join((self.kwargs["service"], self.kwargs.get("owner_username"), self.kwargs.get("repo_name"), self.kwargs.get('branch') or '')).lower()
-        coverage = redis.hget('badge', coverage_key)
-        if coverage:
-            coverage = json.loads(coverage)
-            if coverage is None:
-                return None
-            token = coverage.get('t')
-            if token and token != self.request.query_params.get('token'):
-                return None
-            return coverage['c']
-        else:
-            return None
-
 class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
     permission_classes = [AllowAny]
 
-    extensions = ['svg', 'json']
+    extensions = ['svg']
     filename = "graph"
 
     def get_object(self, request, *args, **kwargs):
-        
-        if self.kwargs.get('graph') != 'commits' and self.kwargs.get('ext') == 'json':
-            raise NotFound("File extension should be .json for this type of graph")
         
         options = dict()
         graph = self.kwargs.get('graph')
@@ -173,17 +156,20 @@ class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         pullid = self.kwargs.get('pullid')
 
         if not pullid:
-            commit = self.get_commit()
-
-            if commit is None:
-                raise NotFound("Not found. Note: private repositories require ?token arguments")
-            report = Report(files=commit.report['files'], sessions=commit.report['sessions'], totals=commit.totals)
-            return report.flare(None, [70,100])
+            return self.get_commit_flare()
         else:
             pull_flare = self.get_pull_flare(pullid)
             if pull_flare is None:
                 raise NotFound("Not found. Note: private repositories require ?token arguments")
             return pull_flare
+
+    def get_commit_flare(self):
+        commit = self.get_commit()
+
+        if commit is None:
+            raise NotFound("Not found. Note: private repositories require ?token arguments")
+        report = Report(files=commit.report['files'], sessions=commit.report['sessions'], totals=commit.totals)
+        return report.flare(None, [70,100])
 
     def get_pull_flare(self, pullid):
         try:
@@ -191,22 +177,20 @@ class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         except Http404:
             return None
         pull = Pull.objects.filter(pullid=pullid, repository_id=repo.repoid).first()
-        if pull is None:
-            raise NotFound("Not found. Note: private repositories require ?token arguments")
-        return pull.flare
+        if pull is not None:
+            if pull.flare is not None:
+                return pull.flare
+        return self.get_commit_flare()
 
     def get_commit(self):
         try:
             repo = self.repo
         except Http404:
             return None
-
         if repo.private and repo.image_token != self.request.query_params.get('token'):
             return None
-       
         branch_name = self.kwargs.get('branch') or repo.branch
         branch = Branch.objects.filter(name=branch_name, repository_id=repo.repoid).first()
-       
         if branch is None:
             return None
 

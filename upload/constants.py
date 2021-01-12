@@ -198,6 +198,14 @@ ci = {
     },
 }
 
+errors = {
+    "travis": {
+        "tokenless-general-error": "\nERROR: Tokenless uploads are only supported for public repositories on Travis that can be verified through the Travis API. Please use an upload token if your repository is private and specify it via the -t flag. You can find the token for this repository at the url below on codecov.io (login required):\n\nRepo token: {}\nDocumentation: https://docs.codecov.io/docs/about-the-codecov-bash-uploader#section-upload-token",
+        "tokenless-stale-build": "\nERROR: The coverage upload was rejected because the build is out of date. Please make sure the build is not stale for uploads to process correctly.",
+        "tokenless-bad-status": "\nERROR: The build status does not indicate that the current build is in progress. Please make sure the build is in progress or was finished within the past 4 minutes to ensure reports upload properly.",
+    }
+}
+
 global_upload_token_providers = [
     "github",
     "github_enterprise",

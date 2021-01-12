@@ -13,34 +13,19 @@ class RepositoryQuerySetTests(TestCase):
         self.repo1 = RepositoryFactory()
         self.repo2 = RepositoryFactory()
 
-    def test_with_total_commit_count(self):
-        CommitFactory(repository=self.repo1)
-        CommitFactory(repository=self.repo1)
+    def test_with_latest_commit_totals_before(self):
+        totals = {
+            "n": 10,
+            "h": 5,
+            "m": 3,
+            "p": 2,
+            "c": 100.0,
+            "C": 80.0,
+        }
+        CommitFactory(totals=totals, repository=self.repo1)
 
-        assert Repository.objects.all().with_total_commit_count()[0].total_commit_count == 2
-
-    def test_with_latest_commit_before(self):
-        CommitFactory(
-            totals={
-                "n": 10,
-                "h": 5,
-                "m": 3,
-                "p": 2,
-                "c": 100.0,
-                "C": 80.0,
-            },
-            repository=self.repo1
-        )
-
-        repo = Repository.objects.all().with_latest_commit_before(datetime.now().isoformat(), None)[0]
-
-        assert repo.coverage == 100.0
-        assert repo.lines == 10
-        assert repo.hits == 5
-        assert repo.misses == 3
-        assert repo.partials == 2
-        assert repo.coverage == 100.0
-        assert repo.complexity == 80.0
+        repo = Repository.objects.all().with_latest_commit_totals_before(datetime.now().isoformat(), None)[0]
+        assert repo.latest_commit_totals == totals
 
     def test_get_aggregated_coverage(self):
         CommitFactory(
@@ -89,10 +74,10 @@ class RepositoryQuerySetTests(TestCase):
         )
 
         stats = Repository.objects.all(
-        ).with_latest_commit_before(
+        ).with_latest_commit_totals_before(
             datetime.now().isoformat(),
-            None
-        ).with_latest_coverage_change(
+            None,
+            include_previous_totals=True
         ).get_aggregated_coverage()
 
         assert stats["repo_count"] == 2
@@ -106,4 +91,9 @@ class RepositoryQuerySetTests(TestCase):
     def test_with_latest_coverage_change(self):
         CommitFactory(totals={"c": 99}, repository=self.repo1)
         CommitFactory(totals={"c": 98}, repository=self.repo1)
-        assert Repository.objects.all().with_latest_coverage_change()[0].latest_coverage_change == -1
+        assert Repository.objects.all(
+        ).with_latest_commit_totals_before(
+            datetime.now().isoformat(),
+            None,
+            True
+        ).with_latest_coverage_change()[0].latest_coverage_change == -1

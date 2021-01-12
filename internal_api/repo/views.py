@@ -3,17 +3,18 @@ import logging
 from datetime import datetime
 
 from rest_framework import filters, mixins, viewsets
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, NotAuthenticated
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import SAFE_METHODS # ['GET', 'HEAD', 'OPTIONS']
 from rest_framework import status
 
 from django_filters import rest_framework as django_filters, BooleanFilter
-from internal_api.repo.filter import StringListFilter
+from internal_api.repo.filter import RepositoryFilters, RepositoryOrderingFilter
 
 from core.models import Repository
 from services.repo_providers import RepoProviderService
+from services.segment import SegmentService
 from services.decorators import torngit_safe
 from internal_api.permissions import RepositoryPermissionsService
 from internal_api.mixins import OwnerPropertyMixin
@@ -33,23 +34,6 @@ from .repository_actions import delete_webhook_on_provider, create_webhook_on_pr
 log = logging.getLogger(__name__)
 
 
-class RepositoryFilters(django_filters.FilterSet):
-    """Filter for active repositories"""
-    active = BooleanFilter(field_name='active', method='filter_active')
-
-    """Filter for getting multiple repositories by name"""
-    names = StringListFilter(query_param='names', field_name='name', lookup_expr='in')
-
-    def filter_active(self, queryset, name, value):
-        # The database currently stores 't' instead of 'true' for active repos, and nothing for inactive
-        # so if the query param active is set, we return repos with non-null value in active column
-        return queryset.filter(active__isnull=(not value))
-
-    class Meta:
-        model = Repository
-        fields = ['active', 'names']
-
-
 class RepositoryViewSet(
         mixins.ListModelMixin,
         mixins.RetrieveModelMixin,
@@ -59,7 +43,11 @@ class RepositoryViewSet(
         OwnerPropertyMixin
     ):
 
-    filter_backends = (django_filters.DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
+    filter_backends = (
+        django_filters.DjangoFilterBackend,
+        filters.SearchFilter,
+        RepositoryOrderingFilter
+    )
     filterset_class = RepositoryFilters
     search_fields = ('name',)
     ordering_fields = (
@@ -103,17 +91,27 @@ class RepositoryViewSet(
             if self.request.query_params.get("exclude_uncovered", False):
                 queryset = queryset.exclude_uncovered()
 
-            queryset = queryset.with_latest_commit_before(
+            queryset = queryset.with_latest_commit_totals_before(
                 self.request.query_params.get("before_date", datetime.now().isoformat()),
-                self.request.query_params.get("branch", None)
-            ).with_latest_coverage_change(
-            ).with_total_commit_count()
+                self.request.query_params.get("branch", None),
+                include_previous_totals=True
+            ).with_latest_coverage_change()
 
         return queryset
 
     @torngit_safe
     def check_object_permissions(self, request, repo):
-        self.can_view, self.can_edit = self.accessors.get_repo_permissions(self.request.user, repo)
+        # Below is some hacking to avoid requesting permissions from API in certain scenarios.
+        if not request.user.is_authenticated and not repo.private:
+            # Unauthenticated users only have read-access to public repositories,
+            # so we avoid this API call here
+            self.can_view, self.can_edit = True, False
+        elif not request.user.is_authenticated and repo.private:
+            raise NotAuthenticated(detail="You must be logged in to view private repository data.")
+        else:
+            # If the user is authenticated, we can fetch permissions from the provider
+            # to determine write permissions.
+            self.can_view, self.can_edit = self.accessors.get_repo_permissions(self.request.user, repo)
 
         if repo.private and not RepositoryPermissionsService().user_is_activated(self.request.user, self.owner):
             raise PermissionDenied("User not activated")
@@ -157,6 +155,10 @@ class RepositoryViewSet(
                 raise PermissionDenied("Private repository limit reached.")
         return super().perform_update(serializer)
 
+    def destroy(self, request, *args, **kwargs):
+        SegmentService().account_deleted_repository(self.request.user.ownerid, self.get_object())
+        return super().destroy(request, *args, **kwargs)
+
     @action(detail=False, url_path='statistics')
     def statistics(self, request, *args, **kwargs):
         # Only get viewable repositories
@@ -170,10 +172,10 @@ class RepositoryViewSet(
 
         # Then only get the repositories with totals and then annotate the latest commit
         results = queryset.exclude_uncovered(
-        ).with_latest_commit_before(
+        ).with_latest_commit_totals_before(
             self.request.query_params.get("before_date", datetime.now().isoformat()),
-            self.request.query_params.get("branch", None)
-        ).with_latest_coverage_change(
+            self.request.query_params.get("branch", None),
+            include_previous_totals=True
         ).get_aggregated_coverage()
 
         return Response(data={
@@ -199,6 +201,7 @@ class RepositoryViewSet(
         self._assert_is_admin()
         repo = self.get_object()
         repo.flush()
+        SegmentService.account_erased_repository(self.request.user.ownerid, repo)
         return Response(self.get_serializer(repo).data)
 
     @action(detail=True, methods=['post'])

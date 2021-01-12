@@ -10,9 +10,12 @@ from utils.encryption import encryptor
 from utils.config import get_config
 from services.task import TaskService
 from services.redis import get_redis_connection
+from services.segment import SegmentService
 
 
 class LoginMixin(object):
+    segment_service = SegmentService()
+
     def get_is_enterprise(self):
         # TODO Change when rolling out enterprise
         return False
@@ -24,7 +27,6 @@ class LoginMixin(object):
         return owner
 
     def login_from_user_dict(self, user_dict, request, response):
-        user_data = user_dict["user"]
         user_orgs = user_dict["orgs"]
         formatted_orgs = [
             dict(username=org["username"], id=str(org["id"])) for org in user_orgs
@@ -32,10 +34,15 @@ class LoginMixin(object):
         for org in formatted_orgs:
             self.get_or_create_org(org)
         if self.get_is_enterprise() and get_config(self.service, "organizations"):
-            # TODO
+            # TODO Change when rolling out enterprise
             pass
         self._check_user_count_limitations()
-        user, is_new_user = self._get_or_create_user(user_data)
+        user, is_new_user = self._get_or_create_user(user_dict)
+        if user_dict.get("is_student") != user.student:
+            user.student = user_dict.get("is_student")
+            if user.student_created_at is None:
+                user.student_created_at = timezone.now()
+            user.student_updated_at = timezone.now()
         track_user(
             user.ownerid,
             {
@@ -56,6 +63,7 @@ class LoginMixin(object):
         )
         self._set_proper_cookies_and_session(user, request, response)
         self._schedule_proper_tasks(user)
+        user.save()
         return user
 
     def _set_proper_cookies_and_session(self, user, request, response):
@@ -76,10 +84,7 @@ class LoginMixin(object):
             f"{self.cookie_prefix}-token", token, version=None
         )
         response.set_cookie(
-            f"{self.cookie_prefix}-token",
-            signed_cookie_value,
-            domain=domain_to_use,
-            httponly=True,
+            f"{self.cookie_prefix}-token", signed_cookie_value, domain=domain_to_use
         )
         response.set_cookie(
             f"{self.cookie_prefix}-username",
@@ -93,13 +98,23 @@ class LoginMixin(object):
         pass
 
     def _get_or_create_user(self, user_dict):
-        print(user_dict)
+        login_data = user_dict["user"]
         owner, was_created = Owner.objects.get_or_create(
-            service=f"{self.cookie_prefix}", service_id=user_dict["id"]
+            service=f"{self.cookie_prefix}", service_id=login_data["id"]
         )
-        owner.oauth_token = encryptor.encode(user_dict["access_token"]).decode()
-        owner.username = user_dict["login"]
+        owner.oauth_token = encryptor.encode(login_data["access_token"]).decode()
+        owner.username = login_data["login"]
+        owner.private_access = user_dict["has_private_access"]
         owner.save()
+
+        ## Segment tracking
+        self.segment_service.identify_user(owner)
+        self.segment_service.group(owner)
+        if was_created:
+            self.segment_service.user_signed_up(owner)
+        else:
+            self.segment_service.user_signed_in(owner)
+
         return (owner, was_created)
 
     def _schedule_proper_tasks(self, user):

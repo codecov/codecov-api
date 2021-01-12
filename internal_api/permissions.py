@@ -4,6 +4,7 @@ from rest_framework.permissions import BasePermission
 from rest_framework.permissions import SAFE_METHODS  # ['GET', 'HEAD', 'OPTIONS']
 
 from services.decorators import torngit_safe
+from services.segment import SegmentService
 from internal_api.repo.repository_accessors import RepoAccessors
 
 
@@ -23,10 +24,14 @@ class RepositoryPermissionsService:
 
     def has_read_permissions(self, user, repo):
         return (
-            repo.author.ownerid == user.ownerid
-            or repo.repoid in user.permission
-            or not repo.private
-            or self._fetch_provider_permissions(user, repo)[0]
+            not repo.private
+            or (
+                user.is_authenticated and (
+                    repo.author.ownerid == user.ownerid
+                    or user.permission and repo.repoid in user.permission
+                    or self._fetch_provider_permissions(user, repo)[0]
+                )
+            )
         )
 
     def user_is_activated(self, user, owner):
@@ -42,6 +47,12 @@ class RepositoryPermissionsService:
             log.info(f"Attemping to auto-activate user {user.ownerid} in {owner.ownerid}")
             if owner.can_activate_user(user):
                 owner.activate_user(user)
+                SegmentService().account_activated_user(
+                    current_user_ownerid=user.ownerid,
+                    ownerid_to_activate=user.ownerid,
+                    org_ownerid=owner.ownerid,
+                    auto_activated=True
+                )
                 return True
             else:
                 log.info("Auto-activation failed -- not enough seats remaining")
@@ -66,7 +77,9 @@ class RepositoryArtifactPermissions(BasePermission):
 
     def has_permission(self, request, view):
         if view.repo.private:
-            user_activated_permissions = self.permissions_service.user_is_activated(request.user, view.owner)
+            user_activated_permissions = request.user.is_authenticated and self.permissions_service.user_is_activated(
+                request.user, view.owner
+            )
         else:
             user_activated_permissions = True
         return (
@@ -81,6 +94,9 @@ class ChartPermissions(BasePermission):
 
     def has_permission(self, request, view):
         for repo in view.repositories:
+            # TODO: this can cause a provider-api request for every repo in the list,
+            # can we just rely on our stored read permissions? In fact, it seems like
+            # permissioning is built into internal_api.charts.filter.add_simple_filters
             if not self.permissions_service.has_read_permissions(request.user, repo):
                 return False
         return True
@@ -94,4 +110,4 @@ class UserIsAdminPermissions(BasePermission):
     """
 
     def has_permission(self, request, view):
-        return view.owner.is_admin(request.user)
+        return request.user.is_authenticated and view.owner.is_admin(request.user)

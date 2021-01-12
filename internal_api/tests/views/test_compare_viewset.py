@@ -186,6 +186,30 @@ class TestCompareViewSetRetrieve(APITestCase):
             content_type="application/json",
         )
 
+    def test_can_return_public_repo_comparison_with_not_authenticated(
+        self, adapter_mock, base_report_mock, head_report_mock
+    ):
+        adapter_mock.return_value = self.mocked_compare_adapter
+        base_report_mock.return_value = self.base_report
+        head_report_mock.return_value = self.head_report
+
+        public_repo = RepositoryFactory(author=self.org, private=False)
+        base, head = CommitFactory(repository=public_repo), CommitFactory(repository=public_repo)
+
+        self.client.logout()
+        response = self._get_comparison(
+            kwargs={
+                "service": self.org.service,
+                "owner_username": self.org.username,
+                "repo_name": public_repo.name
+            },
+            query_params={
+                "base": base.commitid,
+                "head": head.commitid
+            }
+        )
+        assert response.status_code == status.HTTP_200_OK
+
     def test_returns_200_and_expected_files_on_success(
         self, adapter_mock, base_report_mock, head_report_mock
     ):
@@ -218,6 +242,8 @@ class TestCompareViewSetRetrieve(APITestCase):
 
         assert response.status_code == 403
 
+    @patch("redis.Redis.get", lambda self, key: None)
+    @patch("redis.Redis.set", lambda self, key, val, ex: None)
     def test_accepts_pullid_query_param(
         self, adapter_mock, base_report_mock, head_report_mock
     ):
@@ -230,6 +256,7 @@ class TestCompareViewSetRetrieve(APITestCase):
                 "pullid": PullFactory(
                     base=self.base.commitid,
                     head=self.head.commitid,
+                    compared_to=self.base.commitid,
                     pullid=2,
                     repository=self.repo,
                 ).pullid
@@ -353,7 +380,7 @@ class TestCompareViewSetRetrieve(APITestCase):
         self, adapter_mock, base_report_mock, head_report_mock
     ):
         base_report_mock.return_value = None
-        head_report_mock.side_effect = minio.error.NoSuchKey()
+        head_report_mock.side_effect = comparison.MissingComparisonReport()
         adapter_mock.return_value = self.mocked_compare_adapter
 
         response = self._get_comparison()
@@ -368,3 +395,77 @@ class TestCompareViewSetRetrieve(APITestCase):
 
         response = self._get_comparison()
         assert response.status_code == 403
+
+    @patch("redis.Redis.get", lambda self, key: None)
+    @patch("redis.Redis.set", lambda self, key, val, ex: None)
+    @patch('services.comparison.PullRequestComparison.pseudo_diff_adjusts_tracked_lines', new_callable=PropertyMock)
+    @patch('services.comparison.PullRequestComparison.allow_coverage_offsets', new_callable=PropertyMock)
+    @patch('services.comparison.PullRequestComparison.update_base_report_with_pseudo_diff')
+    def test_pull_request_pseudo_comparison_can_update_base_report(
+        self,
+        update_base_report_mock,
+        allow_coverage_offsets_mock,
+        pseudo_diff_adjusts_tracked_lines_mock,
+        adapter_mock,
+        base_report_mock,
+        head_report_mock
+    ):
+        adapter_mock.return_value = self.mocked_compare_adapter
+        base_report_mock.return_value = self.base_report
+        head_report_mock.return_value = self.head_report
+
+        allow_coverage_offsets_mock.return_value = True
+
+        pseudo_diff_adjusts_tracked_lines_mock.return_value = True
+
+        response = self._get_comparison(
+            query_params={
+                "pullid": PullFactory(
+                    base=self.base.commitid,
+                    head=self.head.commitid,
+                    compared_to=self.base.commitid,
+                    pullid=2,
+                    repository=self.repo,
+                ).pullid
+            }
+        )
+
+        update_base_report_mock.assert_called_once()
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["files"] == self.expected_files
+
+    @patch("redis.Redis.get", lambda self, key: None)
+    @patch("redis.Redis.set", lambda self, key, val, ex: None)
+    @patch('services.comparison.PullRequestComparison.pseudo_diff_adjusts_tracked_lines', new_callable=PropertyMock)
+    @patch('services.comparison.PullRequestComparison.allow_coverage_offsets', new_callable=PropertyMock)
+    @patch('services.comparison.PullRequestComparison.update_base_report_with_pseudo_diff')
+    def test_pull_request_pseudo_comparison_returns_error_if_coverage_offsets_not_allowed(
+        self,
+        update_base_report_mock,
+        allow_coverage_offsets_mock,
+        pseudo_diff_adjusts_tracked_lines_mock,
+        adapter_mock,
+        base_report_mock,
+        head_report_mock
+    ):
+        adapter_mock.return_value = self.mocked_compare_adapter
+        base_report_mock.return_value = self.base_report
+        head_report_mock.return_value = self.head_report
+
+        pseudo_diff_adjusts_tracked_lines_mock.return_value = True
+        allow_coverage_offsets_mock.return_value = False
+
+        response = self._get_comparison(
+            query_params={
+                "pullid": PullFactory(
+                    base=self.base.commitid,
+                    head=self.head.commitid,
+                    compared_to=self.base.commitid,
+                    pullid=2,
+                    repository=self.repo,
+                ).pullid
+            }
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST

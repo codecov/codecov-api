@@ -9,15 +9,16 @@ from django.contrib.postgres.fields import ArrayField
 
 from rest_framework import generics, viewsets, mixins, filters, status
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied, NotFound, ValidationError
+from rest_framework.exceptions import PermissionDenied, NotFound, ValidationError, NotAuthenticated
 from rest_framework.response import Response
 
 from django_filters import rest_framework as django_filters
 
 from codecov_auth.models import Owner, Service
-from codecov_auth.constants import USER_PLAN_REPRESENTATIONS
+from codecov_auth.constants import CURRENTLY_OFFERED_PLANS
 from services.billing import BillingService
 from services.task import TaskService
+from services.segment import SegmentService
 
 from internal_api.mixins import OwnerPropertyMixin
 from internal_api.permissions import UserIsAdminPermissions
@@ -44,7 +45,9 @@ class ProfileViewSet(
     serializer_class = ProfileSerializer
 
     def get_object(self):
-        return self.request.user
+        if self.request.user.is_authenticated:
+            return self.request.user
+        raise NotAuthenticated()
 
 
 class OwnerViewSet(
@@ -73,6 +76,7 @@ class OwnerViewSet(
 class InvoiceViewSet(
     viewsets.GenericViewSet,
     mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
     OwnerPropertyMixin
 ):
     serializer_class = StripeInvoiceSerializer
@@ -83,6 +87,15 @@ class InvoiceViewSet(
         return BillingService(
             requesting_user=self.request.user
         ).list_invoices(self.owner, 100)
+
+    def get_object(self):
+        invoice_id = self.kwargs.get("pk")
+        invoice = BillingService(
+            requesting_user=self.request.user
+        ).get_invoice(self.owner, invoice_id)
+        if not invoice:
+            raise NotFound(f"Invoice {invoice_id} does not exist for that account")
+        return invoice
 
 
 class AccountDetailsViewSet(
@@ -96,11 +109,26 @@ class AccountDetailsViewSet(
     permission_classes = [UserIsAdminPermissions]
 
     def destroy(self, request, *args, **kwargs):
+        if self.owner.ownerid != request.user.ownerid:
+            raise PermissionDenied("You can only delete your own account")
+
+        SegmentService().account_deleted(self.owner)
+
         TaskService().delete_owner(self.owner.ownerid)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def get_object(self):
         return self.owner
+
+    @action(detail=False, methods=['patch'])
+    def update_payment(self, request, *args, **kwargs):
+        payment_method = request.data.get("payment_method")
+        if not payment_method:
+            raise ValidationError(detail="No payment_method sent")
+        owner = self.get_object()
+        billing = BillingService(requesting_user=request.user)
+        billing.update_payment_method(owner, payment_method)
+        return Response(self.get_serializer(owner).data)
 
 
 class UserViewSet(
@@ -110,11 +138,12 @@ class UserViewSet(
     OwnerPropertyMixin
 ):
     serializer_class = UserSerializer
-    filter_backends = (django_filters.DjangoFilterBackend, filters.OrderingFilter,)
+    filter_backends = (django_filters.DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter)
     filterset_class = UserFilters
     permission_classes = [UserIsAdminPermissions]
-    ordering_fields = ('name',)
+    ordering_fields = ('name','username', 'email')
     lookup_field = "user_username"
+    search_fields = ['name', 'username', 'email']
 
     def get_object(self):
         return get_object_or_404(
@@ -138,4 +167,4 @@ class UserViewSet(
 
 class PlanViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
     def list(self, request, *args, **kwargs):
-        return Response([val for key, val in USER_PLAN_REPRESENTATIONS.items()])
+        return Response([val for key, val in CURRENTLY_OFFERED_PLANS.items()])

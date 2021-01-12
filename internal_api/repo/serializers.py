@@ -5,13 +5,13 @@ from core.models import Repository, Commit
 from internal_api.owner.serializers import OwnerSerializer
 from internal_api.commit.serializers import (
     CommitWithFileLevelReportSerializer,
-    CommitSerializer,
+    CommitTotalsSerializer,
 )
+from services.segment import SegmentService
 
 
 class RepoSerializer(serializers.ModelSerializer):
     author = OwnerSerializer()
-    latest_commit = serializers.SerializerMethodField()
 
     class Meta:
         model = Repository
@@ -28,24 +28,16 @@ class RepoSerializer(serializers.ModelSerializer):
             "hookid",
             "activated",
             "using_integration",
-            "latest_commit"
         )
-
-    def get_latest_commit(self, repo):
-        if repo.latest_commitid is None:
-            return CommitSerializer(None).data
-
-        latest_commit = repo.commits.get(commitid=repo.latest_commitid)
-        return CommitSerializer(latest_commit).data
 
 
 class RepoWithMetricsSerializer(RepoSerializer):
-    total_commit_count = serializers.IntegerField()
+    latest_commit_totals = CommitTotalsSerializer()
     latest_coverage_change = serializers.FloatField()
 
     class Meta(RepoSerializer.Meta):
         fields = (
-            'total_commit_count',
+            'latest_commit_totals',
             'latest_coverage_change',
         ) + RepoSerializer.Meta.fields
 
@@ -101,6 +93,16 @@ class RepoDetailsSerializer(RepoSerializer):
             del rep["upload_token"]
         return rep
 
+    def update(self, instance, validated_data):
+        # Segment tracking
+        segment = SegmentService()
+        if "active" in validated_data:
+            if validated_data["active"] and not instance.active:
+                segment.account_activated_repository(self.context["request"].user.ownerid, instance)
+            elif not validated_data["active"] and instance.active:
+                segment.account_deactivated_repository(self.context["request"].user.ownerid, instance)
+
+        return super().update(instance, validated_data)
 
 class SecretStringPayloadSerializer(serializers.Serializer):
     value = serializers.CharField(required=True)

@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 from django.conf import settings
 
-from rest_framework.test import APITestCase
+from rest_framework.test import APITestCase, APIRequestFactory
 from rest_framework.reverse import reverse
 from rest_framework import status
 
@@ -23,13 +23,19 @@ class StripeWebhookHandlerTests(APITestCase):
     def _send_event(self, payload):
         timestamp = time.time_ns()
 
+        request = APIRequestFactory().post(
+            reverse("stripe-webhook"), 
+            data=payload,
+            format="json"
+        )
+
         return self.client.post(
             reverse("stripe-webhook"),
             **{
                 StripeHTTPHeaders.SIGNATURE: "t={},v1={}".format(
                     timestamp,
                     stripe.WebhookSignature._compute_signature(
-                        "{}.{}".format(timestamp, json.dumps(payload)),
+                        "{}.{}".format(timestamp, request.body.decode("utf-8")),
                         settings.STRIPE_ENDPOINT_SECRET
                     )
                 )
@@ -48,9 +54,7 @@ class StripeWebhookHandlerTests(APITestCase):
                 "data": {
                     "object": {
                         "customer": self.owner.stripe_customer_id,
-                        "subscription": {
-                            "id": self.owner.stripe_subscription_id
-                        }
+                        "subscription": self.owner.stripe_subscription_id
                     }
                 }
             }
@@ -59,6 +63,22 @@ class StripeWebhookHandlerTests(APITestCase):
         self.owner.refresh_from_db()
         assert response.status_code == status.HTTP_204_NO_CONTENT
         assert self.owner.delinquent is False
+
+    @patch("services.segment.SegmentService.account_paid_subscription")
+    def test_invoice_payment_succeeded_triggers_segment_event(self, segment_paid_sub_mock):
+        response = self._send_event(
+            payload={
+                "type": "invoice.payment_succeeded",
+                "data": {
+                    "object": {
+                        "customer": self.owner.stripe_customer_id,
+                        "subscription": self.owner.stripe_subscription_id
+                    }
+                }
+            }
+        )
+
+        segment_paid_sub_mock.assert_called_once_with(self.owner.ownerid, {"plan": self.owner.plan})
 
     def test_invoice_payment_failed_sets_owner_delinquent_true(self):
         self.owner.delinquent = False
@@ -70,9 +90,7 @@ class StripeWebhookHandlerTests(APITestCase):
                 "data": {
                     "object": {
                         "customer": self.owner.stripe_customer_id,
-                        "subscription": {
-                            "id": self.owner.stripe_subscription_id
-                        }
+                        "subscription": self.owner.stripe_subscription_id
                     }
                 }
             }
@@ -94,7 +112,10 @@ class StripeWebhookHandlerTests(APITestCase):
                 "data": {
                     "object": {
                         "id": self.owner.stripe_subscription_id,
-                        "customer": self.owner.stripe_customer_id
+                        "customer": self.owner.stripe_customer_id,
+                        "plan": {
+                            "name": "users-inappm"
+                        }
                     }
                 }
             }
@@ -115,13 +136,35 @@ class StripeWebhookHandlerTests(APITestCase):
                 "data": {
                     "object": {
                         "id": self.owner.stripe_subscription_id,
-                        "customer": self.owner.stripe_customer_id
+                        "customer": self.owner.stripe_customer_id,
+                        "plan": {
+                            "name": "users-inappm"
+                        }
                     }
                 }
             }
         )
 
         assert self.owner.repository_set.filter(activated=True, active=True).count() == 0
+
+    @patch("services.segment.SegmentService.account_cancelled_subscription")
+    def test_customer_subscription_deleted_triggers_segment(self, account_deleted_subscription_mock):
+        response = self._send_event(
+            payload={
+                "type": "customer.subscription.deleted",
+                "data": {
+                    "object": {
+                        "id": self.owner.stripe_subscription_id,
+                        "customer": self.owner.stripe_customer_id,
+                        "plan": {
+                            "name": "users-inappm"
+                        }
+                    }
+                }
+            }
+        )
+
+        account_deleted_subscription_mock.assert_called_once_with(self.owner.ownerid, {"plan": "users-inappm"})
 
     def test_customer_created_logs_and_doesnt_crash(self):
         response = self._send_event(
@@ -201,7 +244,7 @@ class StripeWebhookHandlerTests(APITestCase):
 
         stripe_subscription_id = "FOEKDCDEQ"
         stripe_customer_id = "sdo050493"
-        plan_name = "users-inappy"
+        plan_name = "users-pr-inappy"
         quantity = 20
 
         response = self._send_event(
@@ -218,7 +261,8 @@ class StripeWebhookHandlerTests(APITestCase):
                         "metadata": {
                             "obo_organization": self.owner.ownerid
                         },
-                        "quantity": quantity
+                        "quantity": quantity,
+                        "status": "active"
                     }
                 }
             }
@@ -230,6 +274,50 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.owner.plan_user_count == quantity
         assert self.owner.plan_auto_activate is True
         assert self.owner.plan == plan_name
+
+    @patch("services.segment.SegmentService.trial_started")
+    def test_customer_subscription_created_can_trigger_identify_and_trialing_segment_events(
+        self,
+        trial_started_mock
+    ):
+        trial_start, trial_end = "ts", "te"
+        stripe_subscription_id = "FOEKDCDEQ"
+        stripe_customer_id = "sdo050493"
+        plan_name = "users-pr-inappy"
+        quantity = 20
+
+        response = self._send_event(
+            payload={
+                "type": "customer.subscription.created",
+                "data": {
+                    "object": {
+                        "id": stripe_subscription_id,
+                        "customer": stripe_customer_id,
+                        "plan": {
+                            "id": "fieown4",
+                            "name": plan_name
+                        },
+                        "metadata": {
+                            "obo_organization": self.owner.ownerid
+                        },
+                        "quantity": quantity,
+                        "status": "trialing",
+                        "trial_start": trial_start,
+                        "trial_end": trial_end
+                    }
+                }
+            }
+        )
+
+        trial_started_mock.assert_called_once_with(
+            self.owner.ownerid,
+            {
+                "trial_plan_name": plan_name,
+                "trial_plan_user_count": quantity,
+                "trial_end_date": trial_end,
+                "trial_start_date": trial_start
+            }
+        )
 
     def test_customer_subscription_updated_does_nothing_if_not_paid_user_plan(self):
         self.owner.plan = None
@@ -268,7 +356,7 @@ class StripeWebhookHandlerTests(APITestCase):
         self,
         set_free_plan_mock
     ):
-        self.owner.plan = "users-inappy"
+        self.owner.plan = "users-pr-inappy"
         self.owner.plan_user_count = 10
         self.owner.plan_auto_activate = False
         self.owner.save()
@@ -287,7 +375,7 @@ class StripeWebhookHandlerTests(APITestCase):
                         "customer": self.owner.stripe_customer_id, 
                         "plan": {
                             "id": "fieown4",
-                            "name": "users-inappy"
+                            "name": "users-pr-inappy"
                         },
                         "metadata": {
                             "obo_organization": self.owner.ownerid
@@ -308,7 +396,7 @@ class StripeWebhookHandlerTests(APITestCase):
         self.owner.plan_user_count = 5
         self.owner.plan_auto_activate = False
 
-        plan_name = "users-inappy"
+        plan_name = "users-pr-inappy"
         quantity = 20
 
         response = self._send_event(
@@ -337,6 +425,48 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.owner.plan_user_count == quantity
         assert self.owner.plan_auto_activate == True
 
+    @patch("services.segment.SegmentService.trial_ended")
+    def test_customer_subscription_updated_triggers_segment_event_on_trial_end(
+        self,
+        trial_ended_mock
+    ):
+        trial_start, trial_end = "ts", "te"
+        response = self._send_event(
+            payload={
+                "type": "customer.subscription.updated",
+                "data": {
+                    "object": {
+                        "id": self.owner.stripe_subscription_id,
+                        "customer": self.owner.stripe_customer_id, 
+                        "plan": {
+                            "id": "fieown4",
+                            "name": "users-pr-inappm"
+                        },
+                        "metadata": {
+                            "obo_organization": self.owner.ownerid
+                        },
+                        "quantity": 10,
+                        "status": "active",
+                        "trial_start": trial_start,
+                        "trial_end": trial_end
+                    },
+                    "previous_attributes": {
+                        "status": "trialing"
+                    }
+                }
+            }
+        )
+
+        trial_ended_mock.assert_called_once_with(
+            self.owner.ownerid,
+            {
+                "trial_plan_name": "users-pr-inappm",
+                "trial_plan_user_count": 10,
+                "trial_end_date": trial_end,
+                "trial_start_date": trial_start
+            }
+        )
+
     def test_checkout_session_completed_sets_stripe_customer_id(self):
         self.owner.stripe_customer_id = None
         self.owner.save()
@@ -357,3 +487,30 @@ class StripeWebhookHandlerTests(APITestCase):
 
         self.owner.refresh_from_db()
         assert self.owner.stripe_customer_id == expected_id
+
+    @patch("services.segment.SegmentService.account_completed_checkout")
+    def test_checkout_session_completed_triggers_segment_event(self, account_co_completed_mock):
+        plan = "users-pr-inappy"
+        response = self._send_event(
+            payload={
+                "type": "checkout.session.completed",
+                "data": {
+                    "object": {
+                        "customer": "fhjtwoo40",
+                        "client_reference_id": str(self.owner.ownerid),
+                        "display_items": [
+                            {
+                                "plan": {
+                                    "name": plan
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        )
+
+        account_co_completed_mock.assert_called_once_with(
+            self.owner.ownerid,
+            {"plan": plan, "userid_type": "org"}
+        )

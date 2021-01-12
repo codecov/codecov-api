@@ -4,8 +4,9 @@ from abc import ABC, abstractmethod
 
 from django.conf import settings
 
-from codecov_auth.constants import USER_PLAN_REPRESENTATIONS
+from codecov_auth.constants import USER_PLAN_REPRESENTATIONS, PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS
 from codecov_auth.models import Owner
+from services.segment import SegmentService
 
 
 log = logging.getLogger(__name__)
@@ -28,6 +29,10 @@ def _log_stripe_error(method):
 
 class AbstractPaymentService(ABC):
     @abstractmethod
+    def get_invoice(self, owner, invoice_id):
+        pass
+
+    @abstractmethod
     def list_invoices(self, owner, limit=10):
         pass
 
@@ -41,6 +46,14 @@ class AbstractPaymentService(ABC):
 
     @abstractmethod
     def create_checkout_session(self, owner, plan):
+        pass
+
+    @abstractmethod
+    def get_subscription(self, owner):
+        pass
+
+    @abstractmethod
+    def update_payment_method(self, owner, payment_method):
         pass
 
 
@@ -68,6 +81,19 @@ class StripeService(AbstractPaymentService):
         }
 
     @_log_stripe_error
+    def get_invoice(self, owner, invoice_id):
+        log.info(f"Fetching invoice {invoice_id} from Stripe for ownerid {owner.ownerid}")
+        try:
+            invoice = stripe.Invoice.retrieve(invoice_id)
+        except stripe.error.InvalidRequestError as e:
+            log.info(f"invoice {invoice_id} not found for owner {owner.ownerid}")
+            return None
+        if invoice["customer"] != owner.stripe_customer_id:
+            log.info(f"customer id ({invoice['customer']}) on invoice does not match the owner customer id ({owner.stripe_customer_id})")
+            return None
+        return invoice
+
+    @_log_stripe_error
     def list_invoices(self, owner, limit=10):
         log.info(f"Fetching invoices from Stripe for ownerid {owner.ownerid}")
         if owner.stripe_customer_id is None:
@@ -92,6 +118,12 @@ class StripeService(AbstractPaymentService):
             )
 
     @_log_stripe_error
+    def get_subscription(self, owner):
+        if owner.stripe_subscription_id is None:
+            return None
+        return stripe.Subscription.retrieve(owner.stripe_subscription_id, expand=['latest_invoice', 'default_payment_method'])
+
+    @_log_stripe_error
     def modify_subscription(self, owner, desired_plan):
         log.info(
             f"Updating Stripe subscription for owner {owner.ownerid} to {desired_plan['value']}"
@@ -108,16 +140,61 @@ class StripeService(AbstractPaymentService):
                 }
             ],
             metadata=self._get_checkout_session_and_subscription_metadata(owner),
+            proration_behavior="always_invoice"
         )
 
+        # Segment analytics
+        if owner.plan != desired_plan["value"]:
+            SegmentService().account_changed_plan(
+                current_user_ownerid=self.requesting_user.ownerid,
+                org_ownerid=owner.ownerid,
+                plan_details={
+                    "new_plan": desired_plan["value"],
+                    "previous_plan": owner.plan
+                }
+            )
+        if owner.plan_user_count and owner.plan_user_count < desired_plan["quantity"]:
+            SegmentService().account_increased_users(
+                current_user_ownerid=self.requesting_user.ownerid,
+                org_ownerid=owner.ownerid,
+                plan_details={
+                    "new_quantity": desired_plan["quantity"],
+                    "old_quantity": owner.plan_user_count,
+                    "plan": desired_plan["value"]
+                }
+            )
+        elif owner.plan_user_count and owner.plan_user_count > desired_plan["quantity"]:
+            SegmentService().account_decreased_users(
+                current_user_ownerid=self.requesting_user.ownerid,
+                org_ownerid=owner.ownerid,
+                plan_details={
+                    "new_quantity": desired_plan["quantity"],
+                    "old_quantity": owner.plan_user_count,
+                    "plan": desired_plan["value"]
+                }
+            )
+
+        # Actually do the thing
         owner.plan = desired_plan["value"]
         owner.plan_user_count = desired_plan["quantity"]
         owner.save()
 
         log.info(f"Stripe subscription modified successfully for owner {owner.ownerid}")
 
+    def _get_success_and_cancel_url(self, owner):
+        short_services = {
+            'github': 'gh',
+            'bitbucket': 'bb',
+            'gitlab': 'gl',
+        }
+        base_path = f"/account/{short_services[owner.service]}/{owner.username}"
+        success_url = f"{settings.CODECOV_DASHBOARD_URL}{base_path}?success"
+        cancel_url = f"{settings.CODECOV_DASHBOARD_URL}{base_path}?cancel"
+        return success_url, cancel_url
+
     @_log_stripe_error
     def create_checkout_session(self, owner, desired_plan):
+        success_url, cancel_url = self._get_success_and_cancel_url(owner)
         log.info("Creating Stripe Checkout Session for owner: {owner.ownerid}")
         session = stripe.checkout.Session.create(
             billing_address_collection="required",
@@ -125,8 +202,8 @@ class StripeService(AbstractPaymentService):
             client_reference_id=owner.ownerid,
             customer=owner.stripe_customer_id,
             customer_email=owner.email,
-            success_url=settings.CLIENT_PLAN_CHANGE_SUCCESS_URL,
-            cancel_url=settings.CLIENT_PLAN_CHANGE_CANCEL_URL,
+            success_url=success_url,
+            cancel_url=cancel_url,
             subscription_data={
                 "items": [
                     {
@@ -143,6 +220,20 @@ class StripeService(AbstractPaymentService):
         )
         return session["id"]
 
+    @_log_stripe_error
+    def update_payment_method(self, owner, payment_method):
+        log.info(f"Stripe update payment method for owner {owner.ownerid}")
+        if owner.stripe_subscription_id is None:
+            log.info(f"stripe_subscription_id is None, no updating card for owner {owner.ownerid}")
+            return None
+        stripe.PaymentMethod.attach(payment_method, customer=owner.stripe_customer_id)
+        subscription = stripe.Subscription.modify(
+            owner.stripe_subscription_id,
+            default_payment_method=payment_method
+        )
+        log.info(f"Stripe success update payment method for owner {owner.ownerid}")
+        return subscription
+
 
 class BillingService:
     payment_service = None
@@ -158,6 +249,12 @@ class BillingService:
                 "self.payment_service must subclass AbstractPaymentService!"
             )
 
+    def get_subscription(self, owner):
+        return self.payment_service.get_subscription(owner)
+
+    def get_invoice(self, owner, invoice_id):
+        return self.payment_service.get_invoice(owner, invoice_id)
+
     def list_invoices(self, owner, limit=10):
         return self.payment_service.list_invoices(owner, limit)
 
@@ -172,7 +269,7 @@ class BillingService:
                 self.payment_service.delete_subscription(owner)
             else:
                 owner.set_free_plan()
-        elif desired_plan["value"] in ("users-inappy", "users-inappm"):
+        elif desired_plan["value"] in PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS:
             if owner.stripe_subscription_id is not None:
                 self.payment_service.modify_subscription(owner, desired_plan)
             else:
@@ -182,3 +279,11 @@ class BillingService:
                 f"Attempted to transition to non-existent or legacy plan: "
                 f"owner {owner.ownerid}, plan: {desired_plan}"
             )
+
+    def update_payment_method(self, owner, payment_method):
+        """
+        Takes an owner and a new card. card is an object coming directly from
+        the front-end; without any validation, as payment service can handle
+        the card data differently
+        """
+        return self.payment_service.update_payment_method(owner, payment_method)

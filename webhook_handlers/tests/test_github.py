@@ -237,6 +237,44 @@ class GithubWebhookHandlerTests(APITestCase):
 
         assert commit1.branch == unmerged_branch_name
         assert commit2.branch == unmerged_branch_name
+        assert not commit1.merged
+        assert not commit2.merged
+
+        assert merged_commit.branch == merged_branch_name
+
+    @patch('redis.Redis.sismember', lambda x, y, z: False)
+    def test_push_updates_commit_on_default_branch(self):
+        commit1 = CommitFactory(merged=False, repository=self.repo)
+        commit2 = CommitFactory(merged=False, repository=self.repo)
+
+        merged_branch_name = "merged"
+        repo_branch = self.repo.branch
+
+        merged_commit = CommitFactory(merged=True, repository=self.repo, branch=merged_branch_name)
+
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.PUSH,
+            data={
+                "ref": "refs/heads/" + repo_branch,
+                "repository": {
+                    "id": self.repo.service_id
+                },
+                "commits": [
+                    {"id": commit1.commitid, "message": commit1.message},
+                    {"id": commit2.commitid, "message": commit2.message},
+                    {"id": merged_commit.commitid, "message": merged_commit.message}
+                ]
+            }
+        )
+
+        commit1.refresh_from_db()
+        commit2.refresh_from_db()
+        merged_commit.refresh_from_db()
+
+        assert commit1.branch == repo_branch
+        assert commit2.branch == repo_branch
+        assert commit1.merged
+        assert commit2.merged
 
         assert merged_commit.branch == merged_branch_name
 
@@ -482,6 +520,9 @@ class GithubWebhookHandlerTests(APITestCase):
                             "id": service_id,
                             "login": username
                         }
+                    },
+                    "sender": {
+                        "type": "User"
                     }
                 }
             )
@@ -523,7 +564,10 @@ class GithubWebhookHandlerTests(APITestCase):
                             "login": owner.username
                         }
                     },
-                    "action": "deleted"
+                    "action": "deleted",
+                    "sender": {
+                        "type": "User"
+                    }
                 }
             )
 
@@ -557,7 +601,10 @@ class GithubWebhookHandlerTests(APITestCase):
                             "login": owner.username
                         }
                     },
-                    "action": "added"
+                    "action": "added",
+                    "sender": {
+                        "type": "User"
+                    }
                 }
             )
 
@@ -580,7 +627,10 @@ class GithubWebhookHandlerTests(APITestCase):
                             "login": owner.username
                         }
                     },
-                    "action": "added"
+                    "action": "added",
+                    "sender": {
+                        "type": "User"
+                    }
                 }
             )
 
@@ -601,9 +651,11 @@ class GithubWebhookHandlerTests(APITestCase):
             ),
         ])
 
-    def test_organization_with_removed_action_removes_user_from_org(self):
+    def test_organization_with_removed_action_removes_user_from_org_and_activated_user_list(self):
         org = OwnerFactory(service_id='4321')
         user = OwnerFactory(organizations=[org.ownerid], service_id='12')
+        org.plan_activated_users = [user.ownerid]
+        org.save()
 
         response = self._post_event_data(
             event=GitHubWebhookEvents.ORGANIZATION,
@@ -621,8 +673,10 @@ class GithubWebhookHandlerTests(APITestCase):
         )
 
         user.refresh_from_db()
+        org.refresh_from_db()
 
         assert org.ownerid not in user.organizations
+        assert user.ownerid not in org.plan_activated_users
 
     def test_organization_member_removed_with_nonexistent_org_doesnt_crash(self):
         user = OwnerFactory(service_id='12')
@@ -643,6 +697,26 @@ class GithubWebhookHandlerTests(APITestCase):
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
+    def test_organization_member_removed_with_nonexistent_or_nonactivated_member(self):
+        org = OwnerFactory(service_id='4321', plan_activated_users=[50392])
+        user = OwnerFactory(service_id='12', organizations=[60798])
+
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.ORGANIZATION,
+            data={
+                "action": "member_removed",
+                "membership": {
+                    "user": {
+                        "id": user.service_id
+                    }
+                },
+                "organization": {
+                    "id": org.service_id
+                }
+            }
+        )
+
+        assert response.status_code == status.HTTP_200_OK
 
     def test_organization_member_removed_with_nonexistent_member_doesnt_crash(self):
         org = OwnerFactory(service_id='4321')
@@ -755,3 +829,67 @@ class GithubWebhookHandlerTests(APITestCase):
         )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    @patch("services.segment.SegmentService.account_installed_source_control_service_app")
+    def test_installing_app_triggers_segment(self, segment_install_mock):
+        owner = OwnerFactory()
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.INSTALLATION,
+            data={
+                "installation": {
+                    "id": 11,
+                    "account": {
+                        "id": owner.service_id,
+                        "login": owner.username
+                    }
+                },
+                "action": "added",
+                "sender": {
+                    "type": "User"
+                }
+            }
+        )
+
+        segment_install_mock.assert_called_once_with(owner.ownerid, owner.ownerid, {"platform": "github"})
+
+    @patch("services.segment.SegmentService.account_uninstalled_source_control_service_app")
+    def test_installing_app_triggers_segment(self, segment_uninstall_mock):
+        owner = OwnerFactory()
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.INSTALLATION,
+            data={
+                "installation": {
+                    "id": 11,
+                    "account": {
+                        "id": owner.service_id,
+                        "login": owner.username
+                    }
+                },
+                "action": "deleted",
+                "sender": {
+                    "type": "User"
+                }
+            }
+        )
+
+        segment_uninstall_mock.assert_called_once_with(owner.ownerid, owner.ownerid, {"platform": "github"})
+
+    def test_repo_not_found_when_owner_has_integration_creates_repo(self):
+        owner = OwnerFactory(integration_id=4850403, service_id=97968493)
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.REPOSITORY,
+            data={
+                "action": "publicized",
+                "repository": {
+                    "id": 506003,
+                    "name": "testrepo",
+                    "private": False,
+                    "default_branch": "master",
+                    "owner": {
+                        "id": owner.service_id
+                    }
+                }
+            }
+        )
+
+        assert owner.repository_set.filter(name="testrepo").exists()

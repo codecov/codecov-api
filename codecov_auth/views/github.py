@@ -32,9 +32,16 @@ class GithubLoginView(View, LoginMixin):
                 key=settings.GITHUB_CLIENT_ID, secret=settings.GITHUB_CLIENT_SECRET
             )
         )
-        user_dict = await repo_service.get_authenticated_user(code)
+        authenticated_user = await repo_service.get_authenticated_user(code)
         user_orgs = await repo_service.list_teams()
-        return dict(user=user_dict, orgs=user_orgs)
+        is_student = await repo_service.is_student()
+        has_private_access = "repo" in authenticated_user["scope"].split(",")
+        return dict(
+            user=authenticated_user,
+            orgs=user_orgs,
+            is_student=is_student,
+            has_private_access=has_private_access,
+        )
 
     def get(self, request):
         if request.GET.get("code"):
@@ -45,7 +52,7 @@ class GithubLoginView(View, LoginMixin):
             return response
         else:
             scope = ["user:email", "read:org", "repo:status", "write:repo_hook"]
-            if self.get_is_enterprise() or request.COOKIES.get("ghpr") == "true":
+            if self.get_is_enterprise() or request.COOKIES.get("ghpr") == "true" or request.GET.get('private'):
                 scope.append("repo")
                 url_to_redirect_to = self.get_url_to_redirect_to(scope)
                 response = redirect(url_to_redirect_to)

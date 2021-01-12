@@ -10,7 +10,7 @@ from codecov.tests.base_test import InternalAPITest
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory, CommitFactory, PullFactory, BranchFactory
 from core.models import Repository
-from internal_api.commit.serializers import CommitSerializer
+from internal_api.commit.serializers import CommitTotalsSerializer
 
 
 class RepositoryViewSetTestSuite(InternalAPITest):
@@ -86,6 +86,11 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         )
 
         self.client.force_login(user=self.user)
+
+    def test_can_retrieve_repo_list_if_not_authenticated(self):
+        self.client.logout()
+        response = self._list()
+        assert response.status_code == 200
 
     def test_order_by_updatestamp(self):
         response = self._list(
@@ -208,18 +213,18 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
             query_params={'names': 'A'}
         )
 
-        assert response.data["results"][0]["latest_commit"]["totals"]["files"] == default_totals['f']
-        assert response.data["results"][0]["latest_commit"]["totals"]["lines"] == default_totals['n']
-        assert response.data["results"][0]["latest_commit"]["totals"]["hits"] == default_totals['h']
-        assert response.data["results"][0]["latest_commit"]["totals"]["misses"] == default_totals['m']
-        assert response.data["results"][0]["latest_commit"]["totals"]["partials"] == default_totals['p']
-        assert response.data["results"][0]["latest_commit"]["totals"]["coverage"] == default_totals['c']
-        assert response.data["results"][0]["latest_commit"]["totals"]["branches"] == default_totals['b']
-        assert response.data["results"][0]["latest_commit"]["totals"]["methods"] == default_totals['d']
-        assert response.data["results"][0]["latest_commit"]["totals"]["sessions"] == default_totals['s']
-        assert response.data["results"][0]["latest_commit"]["totals"]["complexity"] == default_totals['C']
-        assert response.data["results"][0]["latest_commit"]["totals"]["complexity_total"] == default_totals['N']
-        assert response.data["results"][0]["latest_commit"]["totals"]["complexity_ratio"] == 0
+        assert response.data["results"][0]["latest_commit_totals"]["files"] == default_totals['f']
+        assert response.data["results"][0]["latest_commit_totals"]["lines"] == default_totals['n']
+        assert response.data["results"][0]["latest_commit_totals"]["hits"] == default_totals['h']
+        assert response.data["results"][0]["latest_commit_totals"]["misses"] == default_totals['m']
+        assert response.data["results"][0]["latest_commit_totals"]["partials"] == default_totals['p']
+        assert response.data["results"][0]["latest_commit_totals"]["coverage"] == default_totals['c']
+        assert response.data["results"][0]["latest_commit_totals"]["branches"] == default_totals['b']
+        assert response.data["results"][0]["latest_commit_totals"]["methods"] == default_totals['d']
+        assert response.data["results"][0]["latest_commit_totals"]["sessions"] == default_totals['s']
+        assert response.data["results"][0]["latest_commit_totals"]["complexity"] == default_totals['C']
+        assert response.data["results"][0]["latest_commit_totals"]["complexity_total"] == default_totals['N']
+        assert response.data["results"][0]["latest_commit_totals"]["complexity_ratio"] == 0
 
     def test_get_totals_with_timestamp(self):
         default_totals = {
@@ -249,7 +254,7 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         )
 
         # The fetching truncates the time, so it will not take into account the time part of the date time
-        assert response.data["results"][0]["latest_commit"]["totals"]["coverage"] == 100.0
+        assert response.data["results"][0]["latest_commit_totals"]["coverage"] == 100.0
 
     def test_get_repos_with_totals(self):
         default_totals = {
@@ -359,7 +364,7 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         assert response.status_code == 200
         assert private_repo.name not in [repo["name"] for repo in response.data['results']]
 
-    def test_returns_total_commit_count_and_latest_coverage_change(self):
+    def test_returns_latest_coverage_change(self):
         CommitFactory(
             totals={
             "f": 1,
@@ -397,22 +402,21 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
 
         response = self._list()
         repo1 = [repo for repo in response.data["results"] if repo["name"] == "A"][0]
-        assert repo1["total_commit_count"] == 2
         assert repo1["latest_coverage_change"] == -30
 
     def test_latest_commit_null(self):
         response = self._list()
         repo1 = [repo for repo in response.data["results"] if repo["name"] == "A"][0]
 
-        # When the commit is missing, everything is set to None or empty string. Test with lines.
-        assert repo1["latest_commit"]["totals"]["lines"] is None
+        # When the commit is missing, its set to None or empty string.
+        assert repo1["latest_commit_totals"] is None
 
-    def test_returns_latest_commit(self):
+    def test_returns_latest_commit_totals(self):
         commit = CommitFactory(repository=self.repo1)
         response = self._list()
         repo1 = [repo for repo in response.data["results"] if repo["name"] == "A"][0]
 
-        assert repo1["latest_commit"] == CommitSerializer(commit).data
+        assert repo1["latest_commit_totals"] == CommitTotalsSerializer(commit.totals).data
 
 
 class TestRepositoryViewSetExtraActions(RepositoryViewSetTestSuite):
@@ -574,6 +578,18 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
 
         self.client.force_login(user=self.user)
 
+    def test_can_retrieve_repo_if_not_authenticated(self, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, True
+        self.client.logout()
+        author = OwnerFactory()
+        public_repo = RepositoryFactory(author=author, private=False)
+        response = self._retrieve(kwargs={
+            "service": public_repo.author.service,
+            "owner_username": public_repo.author.username,
+            "repo_name": public_repo.name
+        })
+        assert response.status_code == 200
+
     def test_retrieve_with_view_and_edit_permissions_succeeds(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, True
         response = self._retrieve()
@@ -627,6 +643,14 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         assert response.status_code == 403
         assert response.data["detail"] == "User not activated"
         assert Repository.objects.filter(name="repo1").exists()
+
+    @patch("services.segment.SegmentService.account_deleted_repository")
+    def test_destroy_triggers_segment_event(self, account_deleted_repo_mock, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, True
+        self.org.admins = [self.user.ownerid]
+        self.org.save()
+        response = self._destroy()
+        account_deleted_repo_mock.assert_called_once_with(self.user.ownerid, self.repo)
 
     def test_regenerate_upload_token_with_permissions_succeeds(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, True
@@ -729,6 +753,14 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         assert response.status_code == 403
         assert response.data["detail"] == "User not activated"
 
+    @patch("services.segment.SegmentService.account_erased_repository")
+    def test_erase_triggers_segment_event(self, account_erased_repo_mock, mocked_get_permissions):
+        mocked_get_permissions.return_value = True, True
+        self.org.admins = [self.user.ownerid]
+        self.org.save()
+        response = self._erase()
+        account_erased_repo_mock.assert_called_once_with(self.user.ownerid, self.repo)
+
     def test_retrieve_returns_yaml(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, False
 
@@ -757,6 +789,29 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         )
 
         assert response.status_code == 403
+
+    @patch("services.segment.SegmentService.account_activated_repository")
+    @patch("services.segment.SegmentService.account_deactivated_repository")
+    def test_activation_and_deactivation_trigger_segment_events(
+        self,
+        account_deactivated_repo_mock,
+        account_activated_repo_mock,
+        mocked_get_permissions
+    ):
+        mocked_get_permissions.return_value = True, True
+        self.repo.active = False
+        self.repo.save()
+        self.org.plan = "v4-5m"
+        self.org.save()
+
+        activation_data, deactivation_data = {"active": True}, {"active": False}
+
+        response = self._update(data=activation_data)
+        account_activated_repo_mock.assert_called_once_with(self.user.ownerid, self.repo)
+
+        response = self._update(data=deactivation_data)
+        account_deactivated_repo_mock.assert_called_once_with(self.user.ownerid, self.repo)
+
 
     def test_encode_returns_200_on_success(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, True
@@ -905,8 +960,8 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         mocked_get_permissions.return_value = True, True
         commit = CommitFactory(repository=self.repo)
 
-        from internal_api.commit.serializers import CommitWithReportSerializer
-        expected_commit_payload = CommitWithReportSerializer(commit).data
+        from internal_api.commit.serializers import CommitWithFileLevelReportSerializer
+        expected_commit_payload = CommitWithFileLevelReportSerializer(commit).data
 
         response = self._retrieve()
         assert response.status_code == 200
@@ -1018,3 +1073,13 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         mocked_fetch_and_create.assert_called()
         mocked_fetch_and_create.assert_called()
         self.assertEqual(response.status_code, 403)
+
+    def test_fetch_repo_with_fork_doesnt_crash(self, mocked_get_perms):
+        mocked_get_perms.return_value = True, True
+        author = OwnerFactory()
+        repo = RepositoryFactory(author=author, fork=RepositoryFactory())
+        self._retrieve(kwargs={
+            "service": repo.author.service,
+            "owner_username": author.username,
+            "repo_name": repo.name
+        })

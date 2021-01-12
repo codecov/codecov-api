@@ -26,7 +26,6 @@ INSTALLED_APPS = [
     'core',
     'codecov_auth',
     'internal_api',
-    'ddtrace.contrib.django'
 ]
 
 MIDDLEWARE = [
@@ -69,6 +68,11 @@ DATABASE_NAME = get_config('services', 'database', 'name', default='postgres')
 DATABASE_PASSWORD = get_config('services', 'database', 'password', default='postgres')
 DATABASE_HOST = get_config('services', 'database', 'host', default='postgres')
 
+# this is the time in seconds django decides to keep the connection open after the request
+# the default is 0 seconds, meaning django closes the connection after every request
+# https://docs.djangoproject.com/en/3.1/ref/settings/#conn-max-age
+CONN_MAX_AGE = int(get_config('services', 'database', 'conn_max_age', default=0))
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
@@ -77,6 +81,7 @@ DATABASES = {
         'PASSWORD': DATABASE_PASSWORD,
         'HOST': DATABASE_HOST,
         'PORT': '5432',
+        'CONN_MAX_AGE': CONN_MAX_AGE
     }
 }
 
@@ -101,7 +106,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
     ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'codecov_auth.authentication.CodecovSessionAuthentication',
@@ -172,13 +177,22 @@ ENCRYPTION_SECRET = get_config('setup', 'encryption_secret')
 COOKIE_SECRET = get_config("setup", "http", "cookie_secret")
 COOKIES_DOMAIN = ".codecov.io"
 
+CIRCLECI_TOKEN = os.environ.get("CIRCLECI__TOKEN")
 
 GITHUB_CLIENT_ID = os.environ.get("GITHUB__CLIENT_ID")
 GITHUB_CLIENT_SECRET = os.environ.get("GITHUB__CLIENT_SECRET")
+GITHUB_CLIENT_BOT = os.environ.get("GITHUB__CLIENT_BOT")
+GITHUB_ACTIONS_TOKEN = os.environ.get("GITHUB__ACTIONS_TOKEN")
 
 BITBUCKET_CLIENT_ID = os.environ.get("BITBUCKET__CLIENT_ID")
 BITBUCKET_CLIENT_SECRET = os.environ.get("BITBUCKET__CLIENT_SECRET")
+BITBUCKET_CLIENT_BOT = os.environ.get("BITBUCKET__CLIENT_BOT")
 
 GITLAB_CLIENT_ID = os.environ.get("GITLAB__CLIENT_ID")
 GITLAB_CLIENT_SECRET = os.environ.get("GITLAB__CLIENT_SECRET")
 GITLAB_REDIRECT_URI = "https://codecov.io/login/gitlab"
+GITLAB_CLIENT_BOT = os.environ.get("GITLAB__CLIENT_BOT")
+
+
+SEGMENT_API_KEY = get_config('setup', 'segment', 'key', default=None)
+SEGMENT_ENABLED = get_config('setup', 'segment', 'enabled', default=False) and not bool(get_config('setup', 'enterprise_license', default=False))
