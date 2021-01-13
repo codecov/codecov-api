@@ -55,6 +55,7 @@ class AccountViewSetTests(APITestCase):
                 "amount": 120,
                 "currency": "usd",
                 "plan_name": "users-inappm",
+                "quantity": 1,
                 "period": {
                     "end": 1521326190,
                     "start": 1518906990

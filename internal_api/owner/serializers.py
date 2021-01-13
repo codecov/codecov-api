@@ -45,6 +45,7 @@ class StripeLineItemSerializer(serializers.Serializer):
     currency = serializers.CharField()
     period = serializers.JSONField()
     plan_name = serializers.CharField(source="plan.name")
+    quantity = serializers.IntegerField()
 
 
 def use_serializer_if_expanded(value, Serializer):

@@ -40,6 +40,7 @@ class InvoiceViewSetTests(APITestCase):
               {
                 "description": "(10) users-inappm",
                 "amount": 120,
+                "quantity": 1,
                 "currency": "usd",
                 "plan_name": "users-inappm",
                 "period": {
