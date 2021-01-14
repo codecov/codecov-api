@@ -2266,8 +2266,8 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
                         "owner": "google"
                     },
                     "status": "COMPLETED",
-                    "buildCreatedTimestamp": time.time() - 5,
-                    "durationInSecondds": 5,
+                    "buildCreatedTimestamp": time.time() - 90,
+                    "durationInSeconds": 90,
                 }
             }
         }
