@@ -116,9 +116,9 @@ class TokenlessCirrusHandler(BaseTokenlessUploadHandler):
            finishTimestamp = (
                build.get('buildCreatedTimestamp') +
                build.get('durationInSeconds') +
-               (4 * 60 * 1000)  # Add 4 minutes buffer
+               (4 * 60)  # Add 4 minutes buffer
            )
-           now = int(time.time() * 1000)  # to get this in milliseconds
+           now = time.time()
            log.info(now)
            log.info(finishTimestamp)
            if now > finishTimestamp:
