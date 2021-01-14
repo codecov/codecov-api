@@ -2255,7 +2255,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
 
         assert TokenlessUploadHandler('github_actions', params).verify_upload() == 'github'
 
-    @patch('upload.tokenless.github_actions.TokenlessGithubActionsHandler.get_build', new_callable=PropertyMock)
+    @patch('upload.tokenless.cirrus.TokenlessCirrusHandler.get_build', new_callable=PropertyMock)
     def test_cirrus_ci(self, mock_get):
         expected_response = {
             "data": {
@@ -2283,7 +2283,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
 
         assert TokenlessUploadHandler('cirrus_ci', params).verify_upload() == 'github'
 
-    @patch('upload.tokenless.github_actions.TokenlessGithubActionsHandler.get_build', new_callable=PropertyMock)
+    @patch('upload.tokenless.cirrus.TokenlessCirrusHandler.get_build', new_callable=PropertyMock)
     def test_cirrus_ci_executing(self, mock_get):
         expected_response = {
             "data": {
