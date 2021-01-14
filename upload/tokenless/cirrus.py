@@ -111,6 +111,7 @@ class TokenlessCirrusHandler(BaseTokenlessUploadHandler):
 
 
         # Check if current status is correct
+        log.info(build.get('status'))
         if build.get('status') != 'EXECUTING':
            finishTimestamp = (
                build.get('buildCreatedTimestamp') +
@@ -118,6 +119,8 @@ class TokenlessCirrusHandler(BaseTokenlessUploadHandler):
                (4 * 60 * 1000)  # Add 4 minutes buffer
            )
            now = int(time.time() * 1000)  # to get this in milliseconds
+           log.info(now)
+           log.info(finishTimestamp)
            if now > finishTimestamp:
                 log.error(f"Cirrus run is stale",
                     extra=dict(
