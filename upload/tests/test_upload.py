@@ -2272,7 +2272,6 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         mock_get.return_value.status_code.return_value = 200
         mock_get.return_value.return_value = expected_response
 
-
         params = {
             "build": "5699563004624896",
             "owner": "mtail",
