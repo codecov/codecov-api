@@ -2274,8 +2274,8 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
 
         params = {
             "build": "5699563004624896",
-            "owner": "mtail",
-            "repo": "google",
+            "owner": "google",
+            "repo": "mtail",
             "commit": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
         }
 
