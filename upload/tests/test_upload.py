@@ -1,6 +1,7 @@
 import requests
 import shared.torngit
 import pytest
+import time
 from datetime import datetime, timedelta
 from rest_framework.test import APITestCase, APIRequestFactory
 from shared.torngit.exceptions import TorngitClientError
@@ -2265,7 +2266,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
                         "owner": "google"
                     },
                     "status": "COMPLETED",
-                    "changeTimestamp": 1582675487000
+                    "changeTimestamp": time.time() * 1000,
                 }
             }
         }
