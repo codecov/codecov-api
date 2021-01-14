@@ -2281,3 +2281,29 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         }
 
         assert TokenlessUploadHandler('cirrus_ci', params).verify_upload() == 'github'
+
+    @patch('upload.tokenless.github_actions.TokenlessGithubActionsHandler.get_build', new_callable=PropertyMock)
+    def test_cirrus_ci_executing(self, mock_get):
+        expected_response = {
+            "data": {
+                "build": {
+                    "changeIdInRepo": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
+                    "repository": {
+                        "name": "mtail",
+                        "owner": "google"
+                    },
+                    "status": "EXECUTING",
+                }
+            }
+        }
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.return_value = expected_response
+
+        params = {
+            "build": "5699563004624896",
+            "owner": "google",
+            "repo": "mtail",
+            "commit": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
+        }
+
+        assert TokenlessUploadHandler('cirrus_ci', params).verify_upload() == 'github'
