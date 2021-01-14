@@ -1,5 +1,5 @@
 from django.urls import path, include
-from django.conf import urls
+from django.conf import urls, settings
 
 from internal_api.owner.views import (
     ProfileViewSet,
@@ -55,13 +55,18 @@ repository_artifacts_router.register(r"branches", BranchViewSet, basename="branc
 compare_router = RetrieveUpdateDestroyRouter()
 compare_router.register(r"compare", CompareViewSet, basename="compare")
 
-urlpatterns = [
-    path('', include(plans_router.urls)),
-    path('', include(profile_router.urls)),
-    path('<str:service>/', include(owners_router.urls)),
-    path('<str:service>/<str:owner_username>/', include(owner_artifacts_router.urls)),
-    path('<str:service>/<str:owner_username>/', include(account_details_router.urls)),
-    path('<str:service>/<str:owner_username>/<str:repo_name>/', include(repository_artifacts_router.urls)),
-    path('<str:service>/<str:owner_username>/<str:repo_name>/', include(compare_router.urls)),
-    path("charts/", include("internal_api.chart.urls"))
+url_patterns = [
+        path("charts/", include("internal_api.chart.urls")),
+        path('<str:service>/<str:owner_username>/<str:repo_name>/', include(repository_artifacts_router.urls)),
 ]
+
+if not settings.IS_ENTERPRISE:
+    urlpatterns += [
+        path('', include(plans_router.urls)),
+        path('', include(profile_router.urls)),
+        path('<str:service>/', include(owners_router.urls)),
+        path('<str:service>/<str:owner_username>/', include(owner_artifacts_router.urls)),
+        path('<str:service>/<str:owner_username>/', include(account_details_router.urls)),
+        path('<str:service>/<str:owner_username>/<str:repo_name>/', include(compare_router.urls)),
+        path("charts/", include("internal_api.chart.urls")),
+    ]

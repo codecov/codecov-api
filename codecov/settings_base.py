@@ -1,4 +1,4 @@
-from utils.config import get_config, get_settings_module
+from utils.config import get_config, get_settings_module, SettingsModule
 import os
 
 
@@ -159,7 +159,7 @@ LOGGING = {
     'handlers': {
         'default': {
             'level': 'INFO',
-            'formatter': 'standard' if get_settings_module() == 'codecov.settings_dev' else 'json',
+            'formatter': 'standard' if get_settings_module() == SettingsModule.DEV.value else 'json',
             'class': 'logging.StreamHandler',
             'stream': 'ext://sys.stdout',  # Default is stderr
         },
@@ -196,3 +196,5 @@ GITLAB_CLIENT_BOT = os.environ.get("GITLAB__CLIENT_BOT")
 
 SEGMENT_API_KEY = get_config('setup', 'segment', 'key', default=None)
 SEGMENT_ENABLED = get_config('setup', 'segment', 'enabled', default=False) and not bool(get_config('setup', 'enterprise_license', default=False))
+
+IS_ENTERPRISE = get_settings_module() == SettingsModule.ENTERPRISE.value
