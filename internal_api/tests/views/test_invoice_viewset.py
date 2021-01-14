@@ -35,7 +35,6 @@ class InvoiceViewSetTests(APITestCase):
             "total": 999,
             "subtotal": 999,
             "invoice_pdf": "https://pay.stripe.com/invoice/acct_1032D82eZvKYlo2C/invst_a7KV10HpLw2QxrihgVyuOkOjMZ/pdf",
-            "subscription": "sub_9lNL2lSXI8nYEQ",
             "line_items": [
               {
                 "description": "(10) users-inappm",

@@ -48,7 +48,6 @@ class AccountViewSetTests(APITestCase):
             "total": 999,
             "subtotal": 999,
             "invoice_pdf": "https://pay.stripe.com/invoice/acct_1032D82eZvKYlo2C/invst_a7KV10HpLw2QxrihgVyuOkOjMZ/pdf",
-            "subscription": "sub_9lNL2lSXI8nYEQ",
             "line_items": [
               {
                 "description": "(10) users-inappm",
@@ -278,6 +277,18 @@ class AccountViewSetTests(APITestCase):
         self.user.stripe_subscription_id = "djfos"
         self.user.save()
 
+        f = open("./services/tests/samples/stripe_invoice.json")
+
+        default_payment_method = {
+            "card": {
+                "brand": "visa",
+                "exp_month": 12,
+                "exp_year": 2024,
+                "last4": "abcd",
+                "should be": "removed"
+            }
+        }
+
         retrieve_subscription_mock.return_value = {
             "items": {
                 "data": [
@@ -286,7 +297,9 @@ class AccountViewSetTests(APITestCase):
             },
             "cancel_at_period_end": False,
             "current_period_end": 1633512445,
-            "customer": self.user.stripe_customer_id
+            "customer": self.user.stripe_customer_id,
+            "latest_invoice": json.load(f)["data"][0],
+            "default_payment_method": default_payment_method,
         }
 
         response = self._update(
@@ -351,6 +364,18 @@ class AccountViewSetTests(APITestCase):
         self.user.stripe_customer_id = "flsoe"
         self.user.stripe_subscription_id = "djfos"
         self.user.save()
+        f = open("./services/tests/samples/stripe_invoice.json")
+
+        default_payment_method = {
+            "card": {
+                "brand": "visa",
+                "exp_month": 12,
+                "exp_year": 2024,
+                "last4": "abcd",
+                "should be": "removed"
+            }
+        }
+
         retrieve_subscription_mock.return_value = {
             "items": {
                 "data": [
@@ -359,7 +384,9 @@ class AccountViewSetTests(APITestCase):
             },
             "cancel_at_period_end": False,
             "current_period_end": 1633512445,
-            "customer": self.user.stripe_customer_id
+            "customer": self.user.stripe_customer_id,
+            "latest_invoice": json.load(f)["data"][0],
+            "default_payment_method": default_payment_method,
         }
         payment_method_id = "pm_123"
         kwargs = {"service": self.user.service, "owner_username": self.user.username}
