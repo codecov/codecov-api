@@ -2279,4 +2279,4 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
             "commit": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
         }
 
-        assert TokenlessUploadHandler('cirrus-ci', params).verify_upload() == 'github'
+        assert TokenlessUploadHandler('cirrus_ci', params).verify_upload() == 'github'
