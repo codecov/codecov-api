@@ -103,6 +103,9 @@ class GithubWebhookHandler(APIView):
                 log.info(f"{request.body}")
                 return Repository.objects.get(author__ownerid=owner.ownerid, service_id=repo_service_id)
             except Repository.DoesNotExist:
+                if owner.integration_id:
+                    log.info("Repository no found but owner is using integration, creating repository")
+                    return Repository.objects.get_or_create_from_git_repo(repo_data, owner)[0]
                 log.info(
                     f"Received event for non-existent repository",
                     extra=dict(repo_service_id=repo_service_id, repo_slug=repo_slug)

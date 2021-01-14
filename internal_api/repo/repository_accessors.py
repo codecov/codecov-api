@@ -51,7 +51,7 @@ class RepoAccessors:
 
     def fetch_from_git_and_create_repo(self, user, repo_name, repo_owner_username, repo_owner_service):
         """
-            Fetch repository details for the provider and update the DB with new information.
+        Fetch repository details for the provider and update the DB with new information.
         """
         # Try to fetch the repo from the git provider using shared.torngit
         result = asyncio.run(
@@ -63,40 +63,10 @@ class RepoAccessors:
             ).get_repository()
         )
 
-        git_repo = result['repo']
-        git_repo_owner = result['owner']
-
         owner, _ = Owner.objects.get_or_create(
             service=repo_owner_service,
-            username=git_repo_owner['username'],
-            service_id=git_repo_owner['service_id']
-        )
-        created_repo, _ = Repository.objects.get_or_create(
-            author=owner,
-            service_id=git_repo['service_id'],
-            private=git_repo['private'],
-            branch=git_repo['branch'],
-            name=git_repo['name']
+            username=result["owner"]['username'],
+            service_id=result["owner"]['service_id']
         )
 
-        # If this is a fork, create the forked repo and save it to the new repo
-        if git_repo.get('fork'):
-            git_repo_fork = git_repo['fork']['repo']
-            git_repo_fork_owner = git_repo['fork']['owner']
-
-            fork_owner, _ = Owner.objects.get_or_create(
-                service=repo_owner_service,
-                username=git_repo_fork_owner['username'],
-                service_id=git_repo_fork_owner['service_id']
-            )
-            fork, _ = Repository.objects.get_or_create(
-                author=fork_owner,
-                service_id=git_repo_fork['service_id'],
-                private=git_repo_fork['private'],
-                branch=git_repo_fork['branch'],
-                name=git_repo_fork['name']
-            )
-            created_repo.fork = fork
-            created_repo.save()
-
-        return created_repo
+        return Repository.objects.get_or_create_from_git_repo(git_repo=result['repo'], owner=owner)[0]

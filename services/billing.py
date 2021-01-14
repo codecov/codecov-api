@@ -6,6 +6,7 @@ from django.conf import settings
 
 from codecov_auth.constants import USER_PLAN_REPRESENTATIONS, PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS
 from codecov_auth.models import Owner
+from services.segment import SegmentService
 
 
 log = logging.getLogger(__name__)
@@ -27,6 +28,10 @@ def _log_stripe_error(method):
 
 
 class AbstractPaymentService(ABC):
+    @abstractmethod
+    def get_invoice(self, owner, invoice_id):
+        pass
+
     @abstractmethod
     def list_invoices(self, owner, limit=10):
         pass
@@ -74,6 +79,19 @@ class StripeService(AbstractPaymentService):
             "obo_email": self.requesting_user.email,
             "obo": self.requesting_user.ownerid,
         }
+
+    @_log_stripe_error
+    def get_invoice(self, owner, invoice_id):
+        log.info(f"Fetching invoice {invoice_id} from Stripe for ownerid {owner.ownerid}")
+        try:
+            invoice = stripe.Invoice.retrieve(invoice_id)
+        except stripe.error.InvalidRequestError as e:
+            log.info(f"invoice {invoice_id} not found for owner {owner.ownerid}")
+            return None
+        if invoice["customer"] != owner.stripe_customer_id:
+            log.info(f"customer id ({invoice['customer']}) on invoice does not match the owner customer id ({owner.stripe_customer_id})")
+            return None
+        return invoice
 
     @_log_stripe_error
     def list_invoices(self, owner, limit=10):
@@ -125,6 +143,38 @@ class StripeService(AbstractPaymentService):
             proration_behavior="always_invoice"
         )
 
+        # Segment analytics
+        if owner.plan != desired_plan["value"]:
+            SegmentService().account_changed_plan(
+                current_user_ownerid=self.requesting_user.ownerid,
+                org_ownerid=owner.ownerid,
+                plan_details={
+                    "new_plan": desired_plan["value"],
+                    "previous_plan": owner.plan
+                }
+            )
+        if owner.plan_user_count and owner.plan_user_count < desired_plan["quantity"]:
+            SegmentService().account_increased_users(
+                current_user_ownerid=self.requesting_user.ownerid,
+                org_ownerid=owner.ownerid,
+                plan_details={
+                    "new_quantity": desired_plan["quantity"],
+                    "old_quantity": owner.plan_user_count,
+                    "plan": desired_plan["value"]
+                }
+            )
+        elif owner.plan_user_count and owner.plan_user_count > desired_plan["quantity"]:
+            SegmentService().account_decreased_users(
+                current_user_ownerid=self.requesting_user.ownerid,
+                org_ownerid=owner.ownerid,
+                plan_details={
+                    "new_quantity": desired_plan["quantity"],
+                    "old_quantity": owner.plan_user_count,
+                    "plan": desired_plan["value"]
+                }
+            )
+
+        # Actually do the thing
         owner.plan = desired_plan["value"]
         owner.plan_user_count = desired_plan["quantity"]
         owner.save()
@@ -201,6 +251,9 @@ class BillingService:
 
     def get_subscription(self, owner):
         return self.payment_service.get_subscription(owner)
+
+    def get_invoice(self, owner, invoice_id):
+        return self.payment_service.get_invoice(owner, invoice_id)
 
     def list_invoices(self, owner, limit=10):
         return self.payment_service.list_invoices(owner, limit)

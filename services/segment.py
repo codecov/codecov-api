@@ -217,7 +217,7 @@ class SegmentService:
             segment_owner.traits,
             segment_owner.context,
             integrations={
-                "Salesforce": False,
+                "Salesforce": True,
                 "Marketo": False
             }
         )
@@ -306,7 +306,7 @@ class SegmentService:
     @inject_segment_repository
     def account_activated_repository_on_upload(self, org_ownerid, segment_repository):
         analytics.track(
-            user_id="",
+            user_id=BLANK_SEGMENT_USER_ID,
             event=SegmentEvent.ACCOUNT_ACTIVATED_REPOSITORY_ON_UPLOAD.value,
             properties=segment_repository.traits,
             context={"groupId": org_ownerid}
@@ -338,18 +338,74 @@ class SegmentService:
         )
 
     @segment_enabled
-    def account_increased_users(self, org_ownerid, plan_details):
+    def account_increased_users(self, current_user_ownerid, org_ownerid, plan_details):
         analytics.track(
+            user_id=current_user_ownerid,
             event=SegmentEvent.ACCOUNT_INCREASED_USERS.value,
             properties=plan_details,
             context={"groupId": org_ownerid}
         )
 
     @segment_enabled
-    def account_decreased_users(self, org_ownerid, plan_details):
+    def account_decreased_users(self, current_user_ownerid, org_ownerid, plan_details):
         analytics.track(
+            user_id=current_user_ownerid,
             event=SegmentEvent.ACCOUNT_DECREASED_USERS.value,
             properties=plan_details,
+            context={"groupId": org_ownerid}
+        )
+
+    @segment_enabled
+    def account_paid_subscription(self, org_ownerid, stripe_subscription_details):
+        analytics.track(
+            user_id=BLANK_SEGMENT_USER_ID,
+            event=SegmentEvent.ACCOUNT_PAID_SUBSCRIPTION.value,
+            properties=stripe_subscription_details,
+            context={"groupId": org_ownerid}
+        )
+
+    @segment_enabled
+    def account_cancelled_subscription(self, org_ownerid, stripe_subscription_details):
+        analytics.track(
+            user_id=BLANK_SEGMENT_USER_ID,
+            event=SegmentEvent.ACCOUNT_CANCELLED_SUBSCRIPTION.value,
+            properties=stripe_subscription_details,
+            context={"groupId": org_ownerid}
+        )
+
+    @segment_enabled
+    def account_changed_plan(self, current_user_ownerid, org_ownerid, plan_change_details):
+        analytics.track(
+            user_id=current_user_ownerid,
+            event=SegmentEvent.ACCOUNT_CHANGED_PLAN.value,
+            properties=plan_change_details,
+            context={"groupId": org_ownerid}
+        )
+
+    @segment_enabled
+    def account_completed_checkout(self, org_ownerid, checkout_session_details):
+        analytics.track(
+            user_id=BLANK_SEGMENT_USER_ID,
+            event=SegmentEvent.ACCOUNT_COMPLETED_CHECKOUT.value,
+            properties=checkout_session_details,
+            context={"groupId": org_ownerid}
+        )
+
+    @segment_enabled
+    def trial_started(self, org_ownerid, trial_details):
+        analytics.track(
+            user_id=BLANK_SEGMENT_USER_ID,
+            event=SegmentEvent.TRIAL_STARTED.value,
+            properties=trial_details,
+            context={"groupId": org_ownerid}
+        )
+
+    @segment_enabled
+    def trial_ended(self, org_ownerid, trial_details):
+        analytics.track(
+            user_id=BLANK_SEGMENT_USER_ID,
+            event=SegmentEvent.TRIAL_ENDED.value,
+            properties=trial_details,
             context={"groupId": org_ownerid}
         )
 

@@ -34,6 +34,7 @@ class AccountViewSetTests(APITestCase):
         self.expected_invoice = {
             "number": "EF0A41E-0001",
             "status": "paid",
+            "id": "in_19yTU92eZvKYlo2C7uDjvu6v",
             "created": 1489789429,
             "period_start": 1487370220,
             "period_end": 1489789420,
@@ -75,7 +76,9 @@ class AccountViewSetTests(APITestCase):
             "subscription_detail": None,
             "checkout_session_id": None,
             "name": owner.name,
-            "email": owner.email
+            "email": owner.email,
+            "nb_active_private_repos": 0,
+            "repo_total_credits": 1
         }
 
     def test_account_with_free_user_plan(self):

@@ -873,3 +873,23 @@ class GithubWebhookHandlerTests(APITestCase):
         )
 
         segment_uninstall_mock.assert_called_once_with(owner.ownerid, owner.ownerid, {"platform": "github"})
+
+    def test_repo_not_found_when_owner_has_integration_creates_repo(self):
+        owner = OwnerFactory(integration_id=4850403, service_id=97968493)
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.REPOSITORY,
+            data={
+                "action": "publicized",
+                "repository": {
+                    "id": 506003,
+                    "name": "testrepo",
+                    "private": False,
+                    "default_branch": "master",
+                    "owner": {
+                        "id": owner.service_id
+                    }
+                }
+            }
+        )
+
+        assert owner.repository_set.filter(name="testrepo").exists()
