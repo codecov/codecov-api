@@ -51,7 +51,7 @@ class TokenlessCirrusHandler(BaseTokenlessUploadHandler):
                     repo_name=self.upload_params['repo'],
                 )
             )
-            raise NotFound('Unable to locate build via Cirrus CI API. Please upload with the Codecov repository upload token to resolve issue.')
+            raise NotFound('Unable to locate build via Cirrus CI API. Please upload with the Codecov repository upload token to resolve this issue.')
 
         build = response.json()
         if 'errors' in build or build.get('data') is None:
@@ -66,18 +66,18 @@ class TokenlessCirrusHandler(BaseTokenlessUploadHandler):
                     repo_name=self.upload_params['repo'],
                 )
             )
-            raise NotFound('Could not retrieve build via Cirrus CI API. Please upload with the Codecov repository upload token to resolve issue.')
+            raise NotFound('Could not retrieve build via Cirrus CI API. Please upload with the Codecov repository upload token to resolve this issue.')
 
         return build
 
     def verify(self):
-        if not self.upload_params.get('owner'): raise NotFound('Missing "owner" argument. Please upload with the Codecov repository upload token to resolve issue.')
+        if not self.upload_params.get('owner'): raise NotFound('Missing "owner" argument. Please upload with the Codecov repository upload token to resolve this issue.')
         owner = self.upload_params.get('owner')
 
-        if not self.upload_params.get('repo'): raise NotFound('Missing "repo" argument. Please upload with the Codecov repository upload token to resolve issue.')
+        if not self.upload_params.get('repo'): raise NotFound('Missing "repo" argument. Please upload with the Codecov repository upload token to resolve this issue.')
         repo = self.upload_params.get('repo')
 
-        if not self.upload_params.get('commit'): raise NotFound('Missing "commit" argument. Please upload with the Codecov repository upload token to resolve issue.')
+        if not self.upload_params.get('commit'): raise NotFound('Missing "commit" argument. Please upload with the Codecov repository upload token to resolve this issue.')
         commit = self.upload_params.get('commit')
 
         raw_build = self.get_build()
