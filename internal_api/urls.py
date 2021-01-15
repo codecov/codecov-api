@@ -57,7 +57,6 @@ repository_artifacts_router.register(r"branches", BranchViewSet, basename="branc
 compare_router = RetrieveUpdateDestroyRouter()
 compare_router.register(r"compare", CompareViewSet, basename="compare")
 
-# URLS being offered both in production and enterprise
 urlpatterns = []
 
 if not settings.IS_ENTERPRISE:
