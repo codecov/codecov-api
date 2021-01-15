@@ -216,7 +216,7 @@ class StripeWebhookHandler(APIView):
         try:
             segment_checkout_session_details['plan'] = checkout_session.display_items[0]['plan']['name']
         except:
-            log.warn(
+            log.warning(
                 "Could not find plan in checkout.session.completed event",
                 extra=dict(ownerid=checkout_session.client_reference_id)
             )

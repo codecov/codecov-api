@@ -55,10 +55,10 @@ class TokenlessTravisHandler(BaseTokenlessUploadHandler):
                 raise NotFound(errors['travis']['tokenless-general-error'].format(f"https://codecov.io/gh/{self.upload_params['owner']}/{self.upload_params['repo']}/settings"))
         if not build:
             raise NotFound(errors['travis']['tokenless-general-error'].format(f"https://codecov.io/gh/{self.upload_params['owner']}/{self.upload_params['repo']}/settings"))
-        
+
         return build.json()
 
-    def verify(self): 
+    def verify(self):
         # find repo in travis.com
         job = self.get_build()
 
@@ -73,7 +73,7 @@ class TokenlessTravisHandler(BaseTokenlessUploadHandler):
             or job['commit']['sha'] != self.upload_params['commit']
             and job['build']['event_type'] != 'pull_request'
         ):
-            log.warn(f"Repository slug: {slug} or commit sha: {self.upload_params['commit']} do not match travis arguments",
+            log.warning(f"Repository slug: {slug} or commit sha: {self.upload_params['commit']} do not match travis arguments",
                 extra=dict(
                     commit=self.upload_params['commit'],
                     repo_name=self.upload_params['repo'],
@@ -90,7 +90,7 @@ class TokenlessTravisHandler(BaseTokenlessUploadHandler):
             finishTimeWithBuffer = buildFinishDateObj + timedelta(minutes=4)
             now = datetime.utcnow()
             if not now <= finishTimeWithBuffer:
-                log.warn(f"Cancelling upload: 4 mins since build",
+                log.warning(f"Cancelling upload: 4 mins since build",
                     extra=dict(
                         commit=self.upload_params['commit'],
                         repo_name=self.upload_params['repo'],
@@ -102,7 +102,7 @@ class TokenlessTravisHandler(BaseTokenlessUploadHandler):
         else:
             # check if current state is correct (i.e not finished)
             if job['state'] != 'started':
-                log.warn(f"Cancelling upload: job state does not indicate that build is in progress",
+                log.warning(f"Cancelling upload: job state does not indicate that build is in progress",
                     extra=dict(
                         commit=self.upload_params['commit'],
                         repo_name=self.upload_params['repo'],
