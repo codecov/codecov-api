@@ -236,8 +236,8 @@ class StripeServiceTests(TestCase):
             client_reference_id=owner.ownerid,
             customer=owner.stripe_customer_id,
             customer_email=owner.email,
-            success_url=f"{settings.CODECOV_DASHBOARD_URL}/account/gh/{owner.username}?success",
-            cancel_url=f"{settings.CODECOV_DASHBOARD_URL}/account/gh/{owner.username}?cancel",
+            success_url=f"{settings.CODECOV_DASHBOARD_URL}/account/gh/{owner.username}/billing?success",
+            cancel_url=f"{settings.CODECOV_DASHBOARD_URL}/account/gh/{owner.username}/billing?cancel",
             subscription_data={
                 "items": [{
                     "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
