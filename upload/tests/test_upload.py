@@ -2373,7 +2373,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
             "data": {
                 "build": {
                     "repository": {
-                        "owner": "google"
+                        "owner": "google",
                         "name": "mtail",
                     },
                     "status": "EXECUTING",
@@ -2403,7 +2403,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
                 "build": {
                     "changeIdInRepo": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
                     "repository": {
-                        "owner": "test"
+                        "owner": "test",
                         "name": "test",
                     },
                     "status": "EXECUTING",
@@ -2433,7 +2433,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
                 "build": {
                     "changeIdInRepo": "testtesttesttest",
                     "repository": {
-                        "owner": "google"
+                        "owner": "google",
                         "name": "mtail",
                     },
                     "status": "EXECUTING",
@@ -2464,7 +2464,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
                     "changeIdInRepo": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
                     "repository": {
                         "name": "mtail",
-                        "owner": "google"
+                        "owner": "google",
                     },
                     "status": "COMPLETED",
                     "buildCreatedTimestamp": time.time() - 100000,
