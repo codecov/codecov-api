@@ -2308,3 +2308,182 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         }
 
         assert TokenlessUploadHandler('cirrus_ci', params).verify_upload() == 'github'
+
+    @patch('upload.tokenless.cirrus.TokenlessCirrusHandler.get_build', new_callable=PropertyMock)
+    def test_cirrus_ci_no_owner(self, mock_get):
+        expected_response = {
+            "data": {
+                "build": {
+                    "changeIdInRepo": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
+                    "repository": {
+                        "name": "mtail",
+                    },
+                    "status": "EXECUTING",
+                }
+            }
+        }
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.return_value = expected_response
+
+        params = {
+            "build": "5699563004624896",
+            "owner": "google",
+            "repo": "mtail",
+            "commit": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
+        }
+
+        expected_error = """Missing "owner" argument. Please upload with the Codecov repository upload token to resolve this issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('currus_ci', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch('upload.tokenless.cirrus.TokenlessCirrusHandler.get_build', new_callable=PropertyMock)
+    def test_cirrus_ci_no_repo(self, mock_get):
+        expected_response = {
+            "data": {
+                "build": {
+                    "changeIdInRepo": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
+                    "repository": {
+                        "owner": "google"
+                    },
+                    "status": "EXECUTING",
+                }
+            }
+        }
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.return_value = expected_response
+
+        params = {
+            "build": "5699563004624896",
+            "owner": "google",
+            "repo": "mtail",
+            "commit": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
+        }
+
+        expected_error = """Missing "repo" argument. Please upload with the Codecov repository upload token to resolve this issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('currus_ci', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch('upload.tokenless.cirrus.TokenlessCirrusHandler.get_build', new_callable=PropertyMock)
+    def test_cirrus_ci_no_commit(self, mock_get):
+        expected_response = {
+            "data": {
+                "build": {
+                    "repository": {
+                        "owner": "google"
+                        "name": "mtail",
+                    },
+                    "status": "EXECUTING",
+                }
+            }
+        }
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.return_value = expected_response
+
+        params = {
+            "build": "5699563004624896",
+            "owner": "google",
+            "repo": "mtail",
+            "commit": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
+        }
+
+        expected_error = """Missing "commit" argument. Please upload with the Codecov repository upload token to resolve this issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('currus_ci', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch('upload.tokenless.cirrus.TokenlessCirrusHandler.get_build', new_callable=PropertyMock)
+    def test_cirrus_ci_wrong_repository(self, mock_get):
+        expected_response = {
+            "data": {
+                "build": {
+                    "changeIdInRepo": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
+                    "repository": {
+                        "owner": "test"
+                        "name": "test",
+                    },
+                    "status": "EXECUTING",
+                }
+            }
+        }
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.return_value = expected_response
+
+        params = {
+            "build": "5699563004624896",
+            "owner": "google",
+            "repo": "mtail",
+            "commit": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
+        }
+
+        expected_error = """Repository slug does not match Cirrus CI build. Please upload with the Codecov repository upload token to resolve this issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('currus_ci', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch('upload.tokenless.cirrus.TokenlessCirrusHandler.get_build', new_callable=PropertyMock)
+    def test_cirrus_ci_wrong_commit(self, mock_get):
+        expected_response = {
+            "data": {
+                "build": {
+                    "changeIdInRepo": "testtesttesttest",
+                    "repository": {
+                        "owner": "google"
+                        "name": "mtail",
+                    },
+                    "status": "EXECUTING",
+                }
+            }
+        }
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.return_value = expected_response
+
+        params = {
+            "build": "5699563004624896",
+            "owner": "google",
+            "repo": "mtail",
+            "commit": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
+        }
+
+        expected_error = """Commit sha does not match Cirrus CI build. Please upload with the Codecov repository upload token to resolve issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('currus_ci', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch('upload.tokenless.cirrus.TokenlessCirrusHandler.get_build', new_callable=PropertyMock)
+    def test_cirrus_ci_stale(self, mock_get):
+        expected_response = {
+            "data": {
+                "build": {
+                    "changeIdInRepo": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
+                    "repository": {
+                        "name": "mtail",
+                        "owner": "google"
+                    },
+                    "status": "COMPLETED",
+                    "buildCreatedTimestamp": time.time() - 100000,
+                    "durationInSeconds": 1,
+                }
+            }
+        }
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.return_value = expected_response
+
+        params = {
+            "build": "5699563004624896",
+            "owner": "google",
+            "repo": "mtail",
+            "commit": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
+        }
+
+        expected_error = """Cirrus run is stale."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('currus_ci', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]

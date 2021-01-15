@@ -94,7 +94,7 @@ class TokenlessCirrusHandler(BaseTokenlessUploadHandler):
                     repo_name=repo,
                 )
             )
-            raise NotFound("Repository slug do not match Cirrus CI build. Please upload with the Codecov repository upload token to resolve issue.")
+            raise NotFound("Repository slug does not match Cirrus CI build. Please upload with the Codecov repository upload token to resolve this issue.")
 
         # Check commit SHA
         if build['changeIdInRepo'] != commit:
