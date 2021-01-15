@@ -2335,7 +2335,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         expected_error = """Missing "owner" argument. Please upload with the Codecov repository upload token to resolve this issue."""
 
         with pytest.raises(NotFound) as e:
-            TokenlessUploadHandler('currus_ci', params).verify_upload()
+            TokenlessUploadHandler('cirrus_ci', params).verify_upload()
         assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
 
     @patch('upload.tokenless.cirrus.TokenlessCirrusHandler.get_build', new_callable=PropertyMock)
@@ -2364,7 +2364,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         expected_error = """Missing "repo" argument. Please upload with the Codecov repository upload token to resolve this issue."""
 
         with pytest.raises(NotFound) as e:
-            TokenlessUploadHandler('currus_ci', params).verify_upload()
+            TokenlessUploadHandler('cirrus_ci', params).verify_upload()
         assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
 
     @patch('upload.tokenless.cirrus.TokenlessCirrusHandler.get_build', new_callable=PropertyMock)
@@ -2393,7 +2393,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         expected_error = """Missing "commit" argument. Please upload with the Codecov repository upload token to resolve this issue."""
 
         with pytest.raises(NotFound) as e:
-            TokenlessUploadHandler('currus_ci', params).verify_upload()
+            TokenlessUploadHandler('cirrus_ci', params).verify_upload()
         assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
 
     @patch('upload.tokenless.cirrus.TokenlessCirrusHandler.get_build', new_callable=PropertyMock)
@@ -2423,7 +2423,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         expected_error = """Repository slug does not match Cirrus CI build. Please upload with the Codecov repository upload token to resolve this issue."""
 
         with pytest.raises(NotFound) as e:
-            TokenlessUploadHandler('currus_ci', params).verify_upload()
+            TokenlessUploadHandler('cirrus_ci', params).verify_upload()
         assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
 
     @patch('upload.tokenless.cirrus.TokenlessCirrusHandler.get_build', new_callable=PropertyMock)
@@ -2453,7 +2453,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         expected_error = """Commit sha does not match Cirrus CI build. Please upload with the Codecov repository upload token to resolve issue."""
 
         with pytest.raises(NotFound) as e:
-            TokenlessUploadHandler('currus_ci', params).verify_upload()
+            TokenlessUploadHandler('cirrus_ci', params).verify_upload()
         assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
 
     @patch('upload.tokenless.cirrus.TokenlessCirrusHandler.get_build', new_callable=PropertyMock)
@@ -2485,5 +2485,5 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         expected_error = """Cirrus run is stale."""
 
         with pytest.raises(NotFound) as e:
-            TokenlessUploadHandler('currus_ci', params).verify_upload()
+            TokenlessUploadHandler('cirrus_ci', params).verify_upload()
         assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
