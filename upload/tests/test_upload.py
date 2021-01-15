@@ -2482,7 +2482,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
             "commit": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
         }
 
-        expected_error = """Cirrus run is stale."""
+        expected_error = """Cirrus run is stale"""
 
         with pytest.raises(NotFound) as e:
             TokenlessUploadHandler('cirrus_ci', params).verify_upload()
