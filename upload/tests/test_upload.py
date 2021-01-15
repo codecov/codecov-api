@@ -2316,6 +2316,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
                 "build": {
                     "changeIdInRepo": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
                     "repository": {
+                        "owner": "google",
                         "name": "mtail",
                     },
                     "status": "EXECUTING",
@@ -2327,7 +2328,6 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
 
         params = {
             "build": "5699563004624896",
-            "owner": "google",
             "repo": "mtail",
             "commit": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
         }
@@ -2345,7 +2345,8 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
                 "build": {
                     "changeIdInRepo": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
                     "repository": {
-                        "owner": "google"
+                        "owner": "google",
+                        "name": "mtail",
                     },
                     "status": "EXECUTING",
                 }
@@ -2357,7 +2358,6 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         params = {
             "build": "5699563004624896",
             "owner": "google",
-            "repo": "mtail",
             "commit": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
         }
 
@@ -2372,6 +2372,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         expected_response = {
             "data": {
                 "build": {
+                    "changeIdInRepo": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
                     "repository": {
                         "owner": "google",
                         "name": "mtail",
@@ -2387,7 +2388,6 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
             "build": "5699563004624896",
             "owner": "google",
             "repo": "mtail",
-            "commit": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
         }
 
         expected_error = """Missing "commit" argument. Please upload with the Codecov repository upload token to resolve this issue."""
