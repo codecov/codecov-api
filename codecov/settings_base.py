@@ -177,21 +177,21 @@ ENCRYPTION_SECRET = get_config('setup', 'encryption_secret')
 COOKIE_SECRET = get_config("setup", "http", "cookie_secret")
 COOKIES_DOMAIN = ".codecov.io"
 
-CIRCLECI_TOKEN = os.environ.get("CIRCLECI__TOKEN")
+CIRCLECI_TOKEN = get_config("circleci", "token")
 
-GITHUB_CLIENT_ID = os.environ.get("GITHUB__CLIENT_ID")
-GITHUB_CLIENT_SECRET = os.environ.get("GITHUB__CLIENT_SECRET")
-GITHUB_BOT_KEY = os.environ.get("GITHUB__BOT__KEY")
-GITHUB_ACTIONS_TOKEN = os.environ.get("GITHUB__ACTIONS_TOKEN")
+GITHUB_CLIENT_ID = get_config("github", "client_id")
+GITHUB_CLIENT_SECRET = get_config("github", "client_secret")
+GITHUB_BOT_KEY = get_config("github", "bot", "key")
+GITHUB_ACTIONS_TOKEN = get_config("github", "actions_token")
 
-BITBUCKET_CLIENT_ID = os.environ.get("BITBUCKET__CLIENT_ID")
-BITBUCKET_CLIENT_SECRET = os.environ.get("BITBUCKET__CLIENT_SECRET")
-BITBUCKET_BOT_KEY = os.environ.get("BITBUCKET__BOT__KEY")
+BITBUCKET_CLIENT_ID = get_config("bitbucket", "client_id")
+BITBUCKET_CLIENT_SECRET = get_config("bitbucket", "client_secret")
+BITBUCKET_BOT_KEY = get_config("bitbucket", "bot", "key")
 
-GITLAB_CLIENT_ID = os.environ.get("GITLAB__CLIENT_ID")
-GITLAB_CLIENT_SECRET = os.environ.get("GITLAB__CLIENT_SECRET")
+GITLAB_CLIENT_ID = get_config("gitlab", "client_id")
+GITLAB_CLIENT_SECRET = get_config("gitlab", "client_secret")
 GITLAB_REDIRECT_URI = "https://codecov.io/login/gitlab"
-GITLAB_BOT_KEY = os.environ.get("GITLAB__BOT__KEY")
+GITLAB_BOT_KEY = get_config("gitlab", "bot", "key")
 
 
 SEGMENT_API_KEY = get_config('setup', 'segment', 'key', default=None)
