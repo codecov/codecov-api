@@ -163,7 +163,7 @@ class TestRepoProviderService(InternalAPITest):
         repo_owner = OwnerFactory(service="github")
         repo = RepositoryFactory(author=repo_owner)
         adapter = RepoProviderService().get_adapter(user, repo)
-        assert adapter.token["key"] == settings.GITHUB_CLIENT_BOT
+        assert adapter.token["key"] == settings.GITHUB_BOT_KEY
 
     def test_get_by_name_sets_token_to_bot_when_user_not_authenticated(self):
         user = AnonymousUser()
@@ -178,5 +178,4 @@ class TestRepoProviderService(InternalAPITest):
             repo_owner_service=repo_owner_service
         )
 
-        assert adapter.token["key"] == settings.GITHUB_CLIENT_BOT
-
+        assert adapter.token["key"] == settings.GITHUB_BOT_KEY

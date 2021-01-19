@@ -23,7 +23,7 @@ CODECOV_URL = 'localhost'
 
 GITHUB_CLIENT_ID = "3d44be0e772666136a13"
 GITHUB_CLIENT_SECRET = "testrjumu7w1dfvxbr23q9sx3c7u3hgftcf1uho8"
-GITHUB_CLIENT_BOT = "testjltl8ckrcduovemrhp7upoqzs2sovquv9fzk"
+GITHUB_BOT_KEY = "testjltl8ckrcduovemrhp7upoqzs2sovquv9fzk"
 
 BITBUCKET_CLIENT_ID = "testqmo19ebdkseoby"
 BITBUCKET_CLIENT_SECRET = "testfi8hzehvz453qj8mhv21ca4rf83f"
