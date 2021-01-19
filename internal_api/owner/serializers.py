@@ -20,6 +20,7 @@ class OwnerSerializer(serializers.ModelSerializer):
             'avatar_url',
             'service',
             'username',
+            'name',
             'email',
             'stats',
             'ownerid',
@@ -44,6 +45,8 @@ class StripeLineItemSerializer(serializers.Serializer):
     amount = serializers.FloatField()
     currency = serializers.CharField()
     period = serializers.JSONField()
+    plan_name = serializers.CharField(source="plan.name")
+    quantity = serializers.IntegerField()
 
 
 class StripeInvoiceSerializer(serializers.Serializer):
@@ -75,6 +78,7 @@ class StripeCardSerializer(serializers.Serializer):
 
 class StripePaymentMethodSerializer(serializers.Serializer):
     card = StripeCardSerializer(read_only=True)
+    billing_details = serializers.JSONField(read_only=True)
 
 
 class PlanSerializer(serializers.Serializer):

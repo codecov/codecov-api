@@ -56,6 +56,7 @@
             },
             "plan": {
               "id": "ivory-freelance-040",
+              "name": "users-inappm",
               "object": "plan",
               "active": true,
               "aggregate_usage": null,

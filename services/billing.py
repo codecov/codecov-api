@@ -187,7 +187,7 @@ class StripeService(AbstractPaymentService):
             'bitbucket': 'bb',
             'gitlab': 'gl',
         }
-        base_path = f"/account/{short_services[owner.service]}/{owner.username}"
+        base_path = f"/account/{short_services[owner.service]}/{owner.username}/billing"
         success_url = f"{settings.CODECOV_DASHBOARD_URL}{base_path}?success"
         cancel_url = f"{settings.CODECOV_DASHBOARD_URL}{base_path}?cancel"
         return success_url, cancel_url

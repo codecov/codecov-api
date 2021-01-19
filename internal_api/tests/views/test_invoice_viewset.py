@@ -39,11 +39,13 @@ class InvoiceViewSetTests(APITestCase):
               {
                 "description": "(10) users-inappm",
                 "amount": 120,
+                "quantity": 1,
                 "currency": "usd",
+                "plan_name": "users-inappm",
                 "period": {
                     "end": 1521326190,
                     "start": 1518906990
-                  }
+                  },
               }
             ]
         }
