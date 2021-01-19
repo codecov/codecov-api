@@ -20,6 +20,7 @@ class OwnerSerializer(serializers.ModelSerializer):
             'avatar_url',
             'service',
             'username',
+            'name',
             'email',
             'stats',
             'ownerid',

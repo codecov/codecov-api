@@ -57,6 +57,7 @@ class SessionViewSetTests(APITestCase):
                 "service": self.user.service,
                 "username": self.user.username,
                 "email": self.user.email,
+                "name": self.user.name,
                 "stats": self.user.cache["stats"],
                 "ownerid": self.user.ownerid,
                 "integration_id": self.user.integration_id
