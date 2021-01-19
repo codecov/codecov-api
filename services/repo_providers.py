@@ -41,7 +41,7 @@ class RepoProviderService(object):
                 user.oauth_token
             )
         else:
-            token = {"key": getattr(settings, f"{repo.service.upper()}_CLIENT_BOT")}
+            token = {"key": getattr(settings, f"{repo.service.upper()}_BOT_KEY")}
 
         adapter_params = dict(
             repo=dict(
@@ -81,7 +81,7 @@ class RepoProviderService(object):
                 user.oauth_token
             )
         else:
-            token = {"key": getattr(settings, f"{repo_owner_service.upper()}_CLIENT_BOT")}
+            token = {"key": getattr(settings, f"{repo_owner_service.upper()}_BOT_KEY")}
 
         adapter_params = dict(
             repo=dict(name=repo_name),
