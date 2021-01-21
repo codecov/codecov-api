@@ -1,6 +1,7 @@
 import requests
 import shared.torngit
 import pytest
+import time
 from datetime import datetime, timedelta
 from rest_framework.test import APITestCase, APIRequestFactory
 from shared.torngit.exceptions import TorngitClientError
@@ -922,7 +923,7 @@ class UploadHandlerRouteTest(APITestCase):
     """
     TODO
     def test_successful_upload_v4(self):
-        
+
         response = self._post(
             kwargs={"version": "v4"} # TODO add query params
         )
@@ -988,7 +989,7 @@ class UploadHandlerTravisTokenlessTest(TestCase):
                 "compare_url": "https://github.com/codecov/python-standard/compare/28392734979c...2485b28f9862",
                 "committed_at": "2020-10-01T20:00:55Z"
             }
-        } 
+        }
         mock_get.return_value.status_code.return_value = 200
         mock_get.return_value.json.return_value = expected_response
 
@@ -1068,7 +1069,7 @@ class UploadHandlerTravisTokenlessTest(TestCase):
                 "compare_url": "https://github.com/codecov/python-standard/compare/28392734979c...2485b28f9862",
                 "committed_at": "2020-10-01T20:00:55Z"
             }
-        } 
+        }
         mock_get.return_value.status_code.return_value = 200
         mock_get.return_value.json.return_value = expected_response
 
@@ -1102,7 +1103,7 @@ class UploadHandlerTravisTokenlessTest(TestCase):
         with pytest.raises(NotFound) as e:
             TokenlessUploadHandler('travis', params).verify_upload()
         assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
-        
+
     @patch.object(requests, 'get')
     def test_travis_no_event_match(self, mock_get):
         expected_response = {
@@ -1148,7 +1149,7 @@ class UploadHandlerTravisTokenlessTest(TestCase):
                 "compare_url": "https://github.com/codecov/python-standard/compare/28392734979c...2485b28f9862",
                 "committed_at": "2020-10-01T20:00:55Z"
             }
-        } 
+        }
         mock_get.return_value.status_code.return_value = 200
         mock_get.return_value.json.return_value = expected_response
 
@@ -1296,7 +1297,7 @@ class UploadHandlerTravisTokenlessTest(TestCase):
                 "compare_url": "https://github.com/codecov/python-standard/compare/28392734979c...2485b28f9862",
                 "committed_at": "2020-10-01T20:00:55Z"
             }
-        } 
+        }
         mock_get.return_value.status_code.return_value = 200
         mock_get.return_value.json.return_value = expected_response
 
@@ -1407,7 +1408,7 @@ class UploadHandlerTravisTokenlessTest(TestCase):
                 "compare_url": "https://github.com/codecov/python-standard/compare/28392734979c...2485b28f9862",
                 "committed_at": "2020-10-01T20:00:55Z"
             }
-        } 
+        }
         mock_get.return_value.status_code.return_value = 200
         mock_get.return_value.json.return_value = expected_response
 
@@ -1481,7 +1482,7 @@ class UploadHandlerTravisTokenlessTest(TestCase):
                 "compare_url": "https://github.com/codecov/python-standard/compare/28392734979c...2485b28f9862",
                 "committed_at": "2020-10-01T20:00:55Z"
             }
-        } 
+        }
         mock_get.return_value.status_code.return_value = 200
         mock_get.return_value.json.return_value = expected_response
 
@@ -1542,7 +1543,7 @@ class UploadHandlerAzureTokenlessTest(TestCase):
             "project": "project123",
             "job": 732059764
         }
-    
+
         expected_error = """Missing "server_uri" argument. Please upload with the Codecov repository upload token to resolve issue."""
 
         with pytest.raises(NotFound) as e:
@@ -1648,7 +1649,7 @@ class UploadHandlerAzureTokenlessTest(TestCase):
     def test_azure_expired_build(self, mock_get):
         expected_response = {
             'finishTime': f"{datetime.utcnow() - timedelta(minutes=4)}",
-            'buildNumber':'20190725.8', 
+            'buildNumber':'20190725.8',
             'status':'completed',
             'sourceVersion':'c739768fcac68144a3a6d82305b9c4106934d31a',
             'project': {
@@ -1749,7 +1750,7 @@ class UploadHandlerAzureTokenlessTest(TestCase):
             'sourceVersion': 'c739768fcac68144a3a6d82305b9c4106934d31a',
             'project': {
                 'visibility':'private'
-            }, 
+            },
             'repository': {
                 'type': 'GitHub'
             }
@@ -1977,7 +1978,7 @@ class UploadHandlerAppveyorTokenlessTest(TestCase):
 class UploadHandlerCircleciTokenlessTest(TestCase):
 
     def test_circleci_no_build(self):
-        params = {            
+        params = {
         }
 
         expected_error = """Missing "build" argument. Please upload with the Codecov repository upload token to resolve issue."""
@@ -1999,7 +2000,7 @@ class UploadHandlerCircleciTokenlessTest(TestCase):
 
     def test_circleci_no_repo(self):
         params = {
-            "build": "12.34", 
+            "build": "12.34",
             "owner": "owner"
         }
 
@@ -2014,7 +2015,7 @@ class UploadHandlerCircleciTokenlessTest(TestCase):
         mock_get.side_effect = [requests.exceptions.HTTPError('Not found')]
 
         params = {
-            "build": "12.34", 
+            "build": "12.34",
             "owner": "owner",
             "repo": "repo"
         }
@@ -2030,7 +2031,7 @@ class UploadHandlerCircleciTokenlessTest(TestCase):
         mock_get.side_effect = [requests.exceptions.ConnectionError('Not found')]
 
         params = {
-            "build": "12.34", 
+            "build": "12.34",
             "owner": "owner",
             "repo": "repo"
         }
@@ -2050,7 +2051,7 @@ class UploadHandlerCircleciTokenlessTest(TestCase):
         mock_get.return_value.json.return_value = expected_response
 
         params = {
-            "build": "12.34", 
+            "build": "12.34",
             "owner": "owner",
             "repo": "repo",
             "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
@@ -2070,7 +2071,7 @@ class UploadHandlerCircleciTokenlessTest(TestCase):
         mock_get.return_value.json.return_value = expected_response
 
         params = {
-            "build": "12.34", 
+            "build": "12.34",
             "owner": "owner",
             "repo": "repo",
             "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
@@ -2092,7 +2093,7 @@ class UploadHandlerCircleciTokenlessTest(TestCase):
         mock_get.return_value.json.return_value = expected_response
 
         params = {
-            "build": "12.34", 
+            "build": "12.34",
             "owner": "owner",
             "repo": "repo",
             "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
@@ -2103,7 +2104,7 @@ class UploadHandlerCircleciTokenlessTest(TestCase):
 class UploadHandlerGithubActionsTokenlessTest(TestCase):
 
     def test_github_actions_no_owner(self):
-        params = {            
+        params = {
         }
 
         expected_error = """Missing "owner" argument. Please upload with the Codecov repository upload token to resolve issue."""
@@ -2128,7 +2129,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         mock_get.side_effect = [TorngitClientError(500, None, None)]
 
         params = {
-            "build": "12.34", 
+            "build": "12.34",
             "owner": "owner",
             "repo": "repo"
         }
@@ -2150,7 +2151,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         mock_get.return_value.return_value = expected_response
 
         params = {
-            "build": "12.34", 
+            "build": "12.34",
             "owner": "owner",
             "repo": "repo",
             "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
@@ -2173,7 +2174,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         mock_get.return_value.return_value = expected_response
 
         params = {
-            "build": "12.34", 
+            "build": "12.34",
             "owner": "owner",
             "repo": "repo",
             "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
@@ -2196,7 +2197,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         mock_get.return_value.return_value = expected_response
 
         params = {
-            "build": "12.34", 
+            "build": "12.34",
             "owner": "owner",
             "repo": "repo",
             "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
@@ -2220,7 +2221,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         mock_get.return_value.return_value = expected_response
 
         params = {
-            "build": "12.34", 
+            "build": "12.34",
             "owner": "owner",
             "repo": "repo",
             "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
@@ -2244,7 +2245,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         mock_get.return_value.return_value = expected_response
 
         params = {
-            "build": "12.34", 
+            "build": "12.34",
             "owner": "owner",
             "repo": "repo",
             "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
@@ -2253,3 +2254,236 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         expected_error = """Actions workflow run is stale"""
 
         assert TokenlessUploadHandler('github_actions', params).verify_upload() == 'github'
+
+    @patch('upload.tokenless.cirrus.TokenlessCirrusHandler.get_build', new_callable=PropertyMock)
+    def test_cirrus_ci(self, mock_get):
+        expected_response = {
+            "data": {
+                "build": {
+                    "changeIdInRepo": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
+                    "repository": {
+                        "name": "mtail",
+                        "owner": "google"
+                    },
+                    "status": "COMPLETED",
+                    "buildCreatedTimestamp": time.time() - 90,
+                    "durationInSeconds": 90,
+                }
+            }
+        }
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.return_value = expected_response
+
+        params = {
+            "build": "5699563004624896",
+            "owner": "google",
+            "repo": "mtail",
+            "commit": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
+        }
+
+        assert TokenlessUploadHandler('cirrus_ci', params).verify_upload() == 'github'
+
+    @patch('upload.tokenless.cirrus.TokenlessCirrusHandler.get_build', new_callable=PropertyMock)
+    def test_cirrus_ci_executing(self, mock_get):
+        expected_response = {
+            "data": {
+                "build": {
+                    "changeIdInRepo": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
+                    "repository": {
+                        "name": "mtail",
+                        "owner": "google"
+                    },
+                    "status": "EXECUTING",
+                }
+            }
+        }
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.return_value = expected_response
+
+        params = {
+            "build": "5699563004624896",
+            "owner": "google",
+            "repo": "mtail",
+            "commit": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
+        }
+
+        assert TokenlessUploadHandler('cirrus_ci', params).verify_upload() == 'github'
+
+    @patch('upload.tokenless.cirrus.TokenlessCirrusHandler.get_build', new_callable=PropertyMock)
+    def test_cirrus_ci_no_owner(self, mock_get):
+        expected_response = {
+            "data": {
+                "build": {
+                    "changeIdInRepo": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
+                    "repository": {
+                        "owner": "google",
+                        "name": "mtail",
+                    },
+                    "status": "EXECUTING",
+                }
+            }
+        }
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.return_value = expected_response
+
+        params = {
+            "build": "5699563004624896",
+            "repo": "mtail",
+            "commit": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
+        }
+
+        expected_error = """Missing "owner" argument. Please upload with the Codecov repository upload token to resolve this issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('cirrus_ci', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch('upload.tokenless.cirrus.TokenlessCirrusHandler.get_build', new_callable=PropertyMock)
+    def test_cirrus_ci_no_repo(self, mock_get):
+        expected_response = {
+            "data": {
+                "build": {
+                    "changeIdInRepo": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
+                    "repository": {
+                        "owner": "google",
+                        "name": "mtail",
+                    },
+                    "status": "EXECUTING",
+                }
+            }
+        }
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.return_value = expected_response
+
+        params = {
+            "build": "5699563004624896",
+            "owner": "google",
+            "commit": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
+        }
+
+        expected_error = """Missing "repo" argument. Please upload with the Codecov repository upload token to resolve this issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('cirrus_ci', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch('upload.tokenless.cirrus.TokenlessCirrusHandler.get_build', new_callable=PropertyMock)
+    def test_cirrus_ci_no_commit(self, mock_get):
+        expected_response = {
+            "data": {
+                "build": {
+                    "changeIdInRepo": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
+                    "repository": {
+                        "owner": "google",
+                        "name": "mtail",
+                    },
+                    "status": "EXECUTING",
+                }
+            }
+        }
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.return_value = expected_response
+
+        params = {
+            "build": "5699563004624896",
+            "owner": "google",
+            "repo": "mtail",
+        }
+
+        expected_error = """Missing "commit" argument. Please upload with the Codecov repository upload token to resolve this issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('cirrus_ci', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch('upload.tokenless.cirrus.TokenlessCirrusHandler.get_build', new_callable=PropertyMock)
+    def test_cirrus_ci_wrong_repository(self, mock_get):
+        expected_response = {
+            "data": {
+                "build": {
+                    "changeIdInRepo": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
+                    "repository": {
+                        "owner": "test",
+                        "name": "test",
+                    },
+                    "status": "EXECUTING",
+                }
+            }
+        }
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.return_value = expected_response
+
+        params = {
+            "build": "5699563004624896",
+            "owner": "google",
+            "repo": "mtail",
+            "commit": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
+        }
+
+        expected_error = """Repository slug does not match Cirrus CI build. Please upload with the Codecov repository upload token to resolve this issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('cirrus_ci', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch('upload.tokenless.cirrus.TokenlessCirrusHandler.get_build', new_callable=PropertyMock)
+    def test_cirrus_ci_wrong_commit(self, mock_get):
+        expected_response = {
+            "data": {
+                "build": {
+                    "changeIdInRepo": "testtesttesttest",
+                    "repository": {
+                        "owner": "google",
+                        "name": "mtail",
+                    },
+                    "status": "EXECUTING",
+                }
+            }
+        }
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.return_value = expected_response
+
+        params = {
+            "build": "5699563004624896",
+            "owner": "google",
+            "repo": "mtail",
+            "commit": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
+        }
+
+        expected_error = """Commit sha does not match Cirrus CI build. Please upload with the Codecov repository upload token to resolve issue."""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('cirrus_ci', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch('upload.tokenless.cirrus.TokenlessCirrusHandler.get_build', new_callable=PropertyMock)
+    def test_cirrus_ci_stale(self, mock_get):
+        expected_response = {
+            "data": {
+                "build": {
+                    "changeIdInRepo": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
+                    "repository": {
+                        "name": "mtail",
+                        "owner": "google",
+                    },
+                    "status": "COMPLETED",
+                    "buildCreatedTimestamp": time.time() - 100000,
+                    "durationInSeconds": 1,
+                }
+            }
+        }
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.return_value = expected_response
+
+        params = {
+            "build": "5699563004624896",
+            "owner": "google",
+            "repo": "mtail",
+            "commit": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
+        }
+
+        expected_error = """Cirrus run is stale"""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('cirrus_ci', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]

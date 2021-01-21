@@ -27,17 +27,17 @@ class TokenlessAzureHandler(BaseTokenlessUploadHandler):
                 )
             )
             raise NotFound('Unable to locate build via Azure API. Please upload with the Codecov repository upload token to resolve issue.')
-        
+
         if not build:
             raise NotFound('Unable to locate build via Azure API. Please upload with the Codecov repository upload token to resolve issue.')
-        
+
         return build.json()
 
     def verify(self):
 
         if not self.upload_params.get('job'): raise NotFound('Missing "job" argument. Please upload with the Codecov repository upload token to resolve issue.')
         self.job = self.upload_params.get('job')
-        
+
         if not self.upload_params.get('project'): raise NotFound('Missing "project" argument. Please upload with the Codecov repository upload token to resolve issue.')
         self.project = self.upload_params.get('project')
 
@@ -60,7 +60,7 @@ class TokenlessAzureHandler(BaseTokenlessUploadHandler):
 
         # Check build ID
         if build['buildNumber'] != self.upload_params.get('build'):
-            log.warn(f"Azure build numbers do not match. Upload build number: {self.upload_params.get('build')}, Azure build number: {self.upload_params.get('buildNumber')}",
+            log.warning(f"Azure build numbers do not match. Upload build number: {self.upload_params.get('build')}, Azure build number: {self.upload_params.get('buildNumber')}",
                 extra=dict(
                     commit=self.upload_params.get('commit'),
                     repo_name=self.upload_params.get('repo'),
@@ -72,7 +72,7 @@ class TokenlessAzureHandler(BaseTokenlessUploadHandler):
 
         # Make sure commit sha matches
         if build['sourceVersion'] != self.upload_params.get('commit') and (build.get('triggerInfo', {}).get('pr.sourceSha') != self.upload_params.get('commit')):
-            log.warn("Commit sha does not match Azure build",
+            log.warning("Commit sha does not match Azure build",
                 extra=dict(
                     commit=self.upload_params.get('commit'),
                     repo_name=self.upload_params.get('repo'),
@@ -83,7 +83,7 @@ class TokenlessAzureHandler(BaseTokenlessUploadHandler):
             raise NotFound('Commit sha does not match Azure build. Please upload with the Codecov repository upload token to resolve issue.')
 
         # No tokenless uploads allowed for private projects
-        if build['project']['visibility'] != 'public': 
+        if build['project']['visibility'] != 'public':
             raise NotFound('Project is not public. Please upload with the Codecov repository upload token to resolve issue.')
 
         # Azure supports various repo types, ensure current repo type is supported on Codecov
