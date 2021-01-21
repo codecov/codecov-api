@@ -1,3 +1,4 @@
+import pytest
 from django.test import TestCase
 from ddf import G
 from datetime import datetime, timedelta, date, time
@@ -597,6 +598,7 @@ class RepositoryCoverageChartTest(InternalAPITest):
         assert response.status_code == 403
 
     # when "grouping_unit" is commit we just return all the commits with no grouping/aggregation
+    @pytest.mark.skip(reason="flaky, skipping until re write")
     def test_get_commits_no_time_grouping(self, mocked_get_permissions):
         data = {
             "branch": "master",
