@@ -2103,6 +2103,26 @@ class UploadHandlerCircleciTokenlessTest(TestCase):
 
 class UploadHandlerGithubActionsTokenlessTest(TestCase):
 
+    @patch('upload.tokenless.github_actions.TokenlessGithubActionsHandler.get_build', new_callable=PropertyMock)
+    def test_underscore_replace(self, mock_get):
+        expected_response = {
+            "commit_sha": "c739768fcac68144a3a6d82305b9c4106934d31a",
+            "slug": "owner/repo",
+            "public": True,
+            "finish_time": f"{datetime.utcnow()}".split('.')[0]
+        }
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.return_value = expected_response
+
+        params = {
+            "build": "12.34", 
+            "owner": "owner",
+            "repo": "repo",
+            "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
+        }
+
+        assert TokenlessUploadHandler('github-actions', params).verify_upload() == 'github'
+
     def test_github_actions_no_owner(self):
         params = {
         }

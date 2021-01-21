@@ -36,12 +36,13 @@ class RepoProviderService(object):
             )
         else:
             verify_ssl = None
-        if user.is_authenticated:
-            token = encryptor.decrypt_token(
-                user.oauth_token
-            )
-        else:
-            token = {"key": getattr(settings, f"{repo.service.upper()}_BOT_KEY")}
+        if token is None:   
+            if user.is_authenticated:
+                token = encryptor.decrypt_token(
+                    user.oauth_token
+                )
+            else:
+                token = {"key": getattr(settings, f"{repo.service.upper()}_BOT_KEY")}
 
         adapter_params = dict(
             repo=dict(

@@ -28,7 +28,7 @@ class TokenlessUploadHandler(object):
     }
 
     def __init__(self, ci_type, upload_params):
-        self.verifier = self.ci_verifiers.get(ci_type, None)
+        self.verifier = self.ci_verifiers.get(ci_type.replace('-', '_'), None)
         self.upload_params = upload_params
         self.ci_type = ci_type
 

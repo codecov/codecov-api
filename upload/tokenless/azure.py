@@ -59,6 +59,8 @@ class TokenlessAzureHandler(BaseTokenlessUploadHandler):
                 raise NotFound('Azure build has already finished. Please upload with the Codecov repository upload token to resolve issue.')
 
         # Check build ID
+        build['buildNumber'] = build['buildNumber'].replace("+", " ")
+        self.upload_params['build'] = self.upload_params.get('build').replace("+", " ")
         if build['buildNumber'] != self.upload_params.get('build'):
             log.warning(f"Azure build numbers do not match. Upload build number: {self.upload_params.get('build')}, Azure build number: {self.upload_params.get('buildNumber')}",
                 extra=dict(

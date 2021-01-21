@@ -11,7 +11,7 @@ log = logging.getLogger(__name__)
 
 class TokenlessTravisHandler(BaseTokenlessUploadHandler):
     def get_build(self):
-        travisDotComJobReturned = True
+        travis_dot_com = False
 
         try:
             build = requests.get(
@@ -21,6 +21,7 @@ class TokenlessTravisHandler(BaseTokenlessUploadHandler):
                     'User-Agent': 'Codecov'
                 }
             )
+            travis_dot_com = build.json()['repository']['slug'] == f"{self.upload_params['owner']}/{self.upload_params['repo']}"
         except (ConnectionError, HTTPError) as e:
             log.error(f"Request error {e}",
                 extra=dict(
@@ -30,11 +31,18 @@ class TokenlessTravisHandler(BaseTokenlessUploadHandler):
                     owner=self.upload_params['owner']
                 )
             )
-            travisDotComJobReturned = False
             pass
 
         # if job not found in travis.com try travis.org
-        if not travisDotComJobReturned or travisDotComJobReturned and build.json()['repository']['slug'] != f"{self.upload_params['owner']}/{self.upload_params['repo']}":
+        if not travis_dot_com:
+            log.info(f"Unable to verify using travis.com, trying travis.org",
+                extra=dict(
+                    commit=self.upload_params['commit'],
+                    repo_name=self.upload_params['repo'],
+                    job=self.upload_params['job'],
+                    owner=self.upload_params['owner']
+                )
+            )
             try:
                 build = requests.get(
                     'https://api.travis-ci.org/job/{}'.format(self.upload_params['job']),
