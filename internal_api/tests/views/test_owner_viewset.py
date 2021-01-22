@@ -29,7 +29,7 @@ class OwnerViewSetTests(APITestCase):
         assert response.data['results'][0] == {
             "service": bb_owner.service,
             "username": bb_owner.username,
-            "email": bb_owner.email,
+            "name": bb_owner.name,
             "stats": bb_owner.cache["stats"],
             "avatar_url": bb_owner.avatar_url,
             "ownerid": bb_owner.ownerid,
@@ -47,7 +47,7 @@ class OwnerViewSetTests(APITestCase):
         assert response.data == {
            "service": owner.service,
            "username": owner.username,
-           "email": owner.email,
+           "name": owner.name,
            "stats": owner.cache["stats"],
            "avatar_url": owner.avatar_url,
            "ownerid": owner.ownerid,

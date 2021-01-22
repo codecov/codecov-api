@@ -131,7 +131,7 @@ class GithubWebhookHandler(APIView):
             repo.save(update_fields=["deleted", "activated", "active"])
             log.info("Repository soft-deleted", extra=dict(repoid=repo.repoid, github_webhook_event=self.event))
         else:
-            log.warn(f"Unknown repository action: {action}", extra=dict(repoid=repo.repoid))
+            log.warning(f"Unknown repository action: {action}", extra=dict(repoid=repo.repoid))
         return Response()
 
     def delete(self, request, *args, **kwargs):
@@ -483,7 +483,7 @@ class GithubWebhookHandler(APIView):
     def member(self, request, *args, **kwargs):
         action = request.data["action"]
         if action == "removed":
-            repo = self._get_repo(request)   
+            repo = self._get_repo(request)
             log.info(
                 f"Request to remove read permissions for user",
                 extra=dict(repoid=repo.repoid, github_webhook_event=self.event)

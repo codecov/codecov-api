@@ -53,6 +53,8 @@ class AccountViewSetTests(APITestCase):
                 "description": "(10) users-inappm",
                 "amount": 120,
                 "currency": "usd",
+                "plan_name": "users-inappm",
+                "quantity": 1,
                 "period": {
                     "end": 1521326190,
                     "start": 1518906990
@@ -265,7 +267,7 @@ class AccountViewSetTests(APITestCase):
     def test_update_can_upgrade_to_paid_plan_for_existing_customer_and_set_plan_info(
         self,
         modify_subscription_mock,
-        _
+        retrieve_subscription_mock,
     ):
         desired_plan = {
             "value": "users-pr-inappm",
@@ -274,6 +276,31 @@ class AccountViewSetTests(APITestCase):
         self.user.stripe_customer_id = "flsoe"
         self.user.stripe_subscription_id = "djfos"
         self.user.save()
+
+        f = open("./services/tests/samples/stripe_invoice.json")
+
+        default_payment_method = {
+            "card": {
+                "brand": "visa",
+                "exp_month": 12,
+                "exp_year": 2024,
+                "last4": "abcd",
+                "should be": "removed"
+            }
+        }
+
+        retrieve_subscription_mock.return_value = {
+            "items": {
+                "data": [
+                    { "id": "abc" }
+                ]
+            },
+            "cancel_at_period_end": False,
+            "current_period_end": 1633512445,
+            "customer": self.user.stripe_customer_id,
+            "latest_invoice": json.load(f)["data"][0],
+            "default_payment_method": default_payment_method,
+        }
 
         response = self._update(
             kwargs={"service": self.user.service, "owner_username": self.user.username},
@@ -332,11 +359,35 @@ class AccountViewSetTests(APITestCase):
         self,
         attach_payment_mock,
         modify_subscription_mock,
-        _
+        retrieve_subscription_mock
     ):
         self.user.stripe_customer_id = "flsoe"
         self.user.stripe_subscription_id = "djfos"
         self.user.save()
+        f = open("./services/tests/samples/stripe_invoice.json")
+
+        default_payment_method = {
+            "card": {
+                "brand": "visa",
+                "exp_month": 12,
+                "exp_year": 2024,
+                "last4": "abcd",
+                "should be": "removed"
+            }
+        }
+
+        retrieve_subscription_mock.return_value = {
+            "items": {
+                "data": [
+                    { "id": "abc" }
+                ]
+            },
+            "cancel_at_period_end": False,
+            "current_period_end": 1633512445,
+            "customer": self.user.stripe_customer_id,
+            "latest_invoice": json.load(f)["data"][0],
+            "default_payment_method": default_payment_method,
+        }
         payment_method_id = "pm_123"
         kwargs = {"service": self.user.service, "owner_username": self.user.username}
         data={ "payment_method": payment_method_id }
