@@ -21,7 +21,6 @@ class OwnerSerializer(serializers.ModelSerializer):
             'service',
             'username',
             'name',
-            'email',
             'stats',
             'ownerid',
             'integration_id',
@@ -37,7 +36,7 @@ class OwnerSerializer(serializers.ModelSerializer):
 class ProfileSerializer(OwnerSerializer):
     class Meta:
         model = Owner
-        fields = OwnerSerializer.Meta.fields + ('private_access',)
+        fields = OwnerSerializer.Meta.fields + ('private_access', 'email')
 
 
 class StripeLineItemSerializer(serializers.Serializer):
