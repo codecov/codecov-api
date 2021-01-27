@@ -5,8 +5,6 @@ from cerberus import Validator
 from json import dumps
 from rest_framework.exceptions import ValidationError, NotFound
 from django.core.exceptions import ObjectDoesNotExist
-from utils.config import get_config
-
 from core.models import Repository, Commit
 from codecov_auth.models import Owner
 from utils.config import get_config
