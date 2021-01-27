@@ -37,6 +37,7 @@ class ProfileSerializer(OwnerSerializer):
     class Meta:
         model = Owner
         fields = OwnerSerializer.Meta.fields + (
+            'service_id',
             'private_access',
             'email',
             'student',
