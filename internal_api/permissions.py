@@ -1,10 +1,12 @@
 import logging
+import asyncio
 
 from rest_framework.permissions import BasePermission
 from rest_framework.permissions import SAFE_METHODS  # ['GET', 'HEAD', 'OPTIONS']
 
 from services.decorators import torngit_safe
 from services.segment import SegmentService
+from services.repo_providers import get_generic_adapter_params, get_provider
 from internal_api.repo.repository_accessors import RepoAccessors
 
 
@@ -110,4 +112,15 @@ class UserIsAdminPermissions(BasePermission):
     """
 
     def has_permission(self, request, view):
-        return request.user.is_authenticated and view.owner.is_admin(request.user)
+        torngit_provider_adapter = get_provider(
+            view.owner.service,
+            {
+                **get_generic_adapter_params(request.user, view.owner.service),
+                **{"owner": view.owner.username}
+            }
+        )
+
+        return request.user.is_authenticated and (
+            view.owner.is_admin(request.user)
+            or asyncio.run(torngit_provider_adapter.get_is_admin(request.user))
+       )
