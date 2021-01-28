@@ -116,11 +116,19 @@ class UserIsAdminPermissions(BasePermission):
             view.owner.service,
             {
                 **get_generic_adapter_params(request.user, view.owner.service),
-                **{"owner": view.owner.username}
+                **{
+                    "owner": {
+                        "username": view.owner.username,
+                    }
+                }
             }
         )
 
         return request.user.is_authenticated and (
             view.owner.is_admin(request.user)
-            or asyncio.run(torngit_provider_adapter.get_is_admin(request.user))
+            or asyncio.run(
+                torngit_provider_adapter.get_is_admin(
+                    user={"username": request.user.username}
+                )
+            )
        )
