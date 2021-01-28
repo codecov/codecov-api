@@ -4,6 +4,7 @@ import os
 import sys
 import gzip
 import minio
+from datetime import timedelta
 from minio.error import (ResponseError, BucketAlreadyOwnedByYou,
                          BucketAlreadyExists)
 from io import BytesIO
@@ -141,3 +142,8 @@ class StorageService(object):
     def write(self, string, silence=False):
         if not silence:
             sys.stdout.write((string or '') + '\n')
+
+
+    def create_presigned_put(self, bucket, path, expires):
+        expires = timedelta(seconds=expires)
+        return MINIO_CLIENT.presigned_put_object(bucket, path, expires)

@@ -37,7 +37,7 @@ class RepoProviderService(object):
         else:
             verify_ssl = None
         if token is None:   
-            if user.is_authenticated:
+            if user.is_authenticated and user.oauth_token is not None:
                 token = encryptor.decrypt_token(
                     user.oauth_token
                 )

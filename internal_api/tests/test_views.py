@@ -411,7 +411,6 @@ class RepoCommitList(InternalAPITest):
                         "username": self.org.username,
                         "avatar_url": self.org.avatar_url,
                         "stats": self.org.cache['stats'] if self.org.cache and 'stats' in self.org.cache else None,
-                        "email": self.org.email,
                         "name": self.org.name,
                         "ownerid": self.org.ownerid,
                         "integration_id": self.org.integration_id
@@ -444,7 +443,6 @@ class RepoCommitList(InternalAPITest):
                         "username": self.org.username,
                         "avatar_url": self.org.avatar_url,
                         "stats": self.org.cache['stats'] if self.org.cache and 'stats' in self.org.cache else None,
-                        "email": self.org.email,
                         "name": self.org.name,
                         "ownerid": self.org.ownerid,
                         "integration_id": self.org.integration_id

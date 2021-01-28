@@ -19,7 +19,6 @@ from urllib.parse import urlencode
 from ddf import G
 from core.tests.factories import CommitFactory
 from rest_framework.exceptions import NotFound
-
 from core.models import Repository, Commit
 from codecov_auth.models import Owner
 
@@ -920,15 +919,61 @@ class UploadHandlerRouteTest(APITestCase):
             == "https://codecov.io/github/codecovtest/upload-test-repo/commit/b521e55aef79b101f48e2544837ca99a7fa3bf6b"
         )
 
-    """
-    TODO
-    def test_successful_upload_v4(self):
+    @patch("services.archive.ArchiveService.create_root_storage")
+    @patch("services.storage.MINIO_CLIENT.presigned_put_object")
+    @patch("services.archive.ArchiveService.get_archive_hash")
+    @patch("upload.views.get_redis_connection")
+    @patch("upload.views.uuid4")
+    @patch("upload.views.dispatch_upload_task")
+    @patch("services.repo_providers.RepoProviderService.get_adapter")
+    def test_upload_v4(
+        self,
+        mock_repo_provider_service,
+        mock_dispatch_upload,
+        mock_uuid4,
+        mock_get_redis,
+        mock_hash,
+        mock_storage_put,
+        mock_create_root
+    ):
+        class MockRepoProviderAdapter:
+            async def get_commit(self, commit, token):
+                return {"message": "This is not a merge commit"}
+
+        path = "/".join(
+            (
+                "v4/raw",
+                datetime.now().strftime("%Y-%m-%d"),
+                "awawaw",
+                "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
+            )
+        )
+
+        mock_create_root.return_value = True
+        mock_storage_put.return_value = path+"?AWS=PARAMS"
+        mock_get_redis.return_value = MockRedis()
+        mock_repo_provider_service.return_value = MockRepoProviderAdapter()
+        mock_uuid4.return_value = (
+            "dec1f00b-1883-40d0-afd6-6dcb876510be"  # this will be the reportid
+        )
+        mock_hash.return_value = "awawaw"
+        query_params = {
+            "commit": "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
+            "token": "test27s4f3uz3ha9pi0foipg5bqojtrmbt67",
+            "pr": "456",
+            "branch": "",
+            "flags": "",
+            "build_url": "",
+        }
 
         response = self._post(
-            kwargs={"version": "v4"} # TODO add query params
+            kwargs={"version": "v4"}, query=query_params, data="coverage report"
         )
-        # Check response headers
+
+        assert response.status_code == 200
+
         headers = response._headers
+
         assert headers["access-control-allow-origin"] == (
             "Access-Control-Allow-Origin",
             "*",
@@ -938,8 +983,16 @@ class UploadHandlerRouteTest(APITestCase):
             "Origin, Content-Type, Accept, X-User-Agent",
         )
         assert headers["content-type"] == ("Content-Type", "text/plain",)
-    """
-        # assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+        self.assertIn(path + "?AWS=PARAMS", response.content.decode("utf-8").split('\n')[1])
+
+        mock_storage_put.side_effect = [Exception()]
+
+        response = self._post(
+            kwargs={"version": "v4"}, query=query_params, data="coverage report"
+        )
+
+        assert response.status_code == 500
 
 
 class UploadHandlerTravisTokenlessTest(TestCase):

@@ -1,10 +1,10 @@
 import logging
-import datetime
+from datetime import datetime
 from rest_framework import status, renderers
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework.exceptions import ValidationError
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseServerError
 from django.utils.encoding import smart_text
 from urllib.parse import parse_qs
 from json import dumps
@@ -60,7 +60,7 @@ class UploadHandler(APIView):
         version = self.kwargs["version"]
 
         log.info(
-            "Received upload request",
+            f"Received upload request {version}",
             extra=dict(
                 version=version,
                 query_params=self.request.query_params,
@@ -174,38 +174,36 @@ class UploadHandler(APIView):
             )
 
         # v4 - generate presigned PUT url
-        minio = get_config(("services", "minio"), default={})
+        minio = get_config("services", "minio") or {}
         if minio and version == "v4":
             headers = parse_headers(request.META, upload_params)
 
-            archive_service = ArchiveService()
+            archive_service = ArchiveService(repository)
             path = "/".join(
                 (
                     "v4/raw",
                     datetime.now().strftime("%Y-%m-%d"),
-                    archive_service.get_archive_hash(),
+                    archive_service.get_archive_hash(repository),
                     commitid,
                     f"{reportid}.txt",
                 )
             )
 
-            """
-            TODO finish generating presigned put
-            upload_url = "TODO"
-            if bool(get_config("setup", "enterprise_license")):
-                upload_url = archive_service.create_raw_upload_presigned_put(
-                    commit_sha=commitid, filename=f"{reportid}.txt"
+            try:
+                upload_url = archive_service.create_raw_upload_presigned_put(commit_sha=commitid, filename='{}.txt'.format(reportid))
+            except Exception as e:
+                log.error(
+                    f"Error generating minio presign put {e}",
+                    extra=dict(
+                        commit=commitid,
+                        pr=pr,
+                        branch=branch,
+                        version=version,
+                        upload_params=upload_params,
+                    ),
                 )
-            else:
-                upload_url = get_upload_destination(
-                    path,
-                    **headers
-                    #internally=(version in ("v1", "v2")),
-                )
+                return HttpResponseServerError("Unknown error, please try again later")
             response.write(f"{destination_url}\n{upload_url}")
-            """
-
-        # --------- Send upload to worker and return response
 
         # Get build url
         if (
