@@ -112,23 +112,26 @@ class UserIsAdminPermissions(BasePermission):
     """
 
     def has_permission(self, request, view):
+        return request.user.is_authenticated and (
+            view.owner.is_admin(request.user)
+            or self._is_admin_on_provider(request.user, view.owner)
+       )
+
+    def _is_admin_on_provider(self, user, owner):
         torngit_provider_adapter = get_provider(
-            view.owner.service,
+            owner.service,
             {
-                **get_generic_adapter_params(request.user, view.owner.service),
+                **get_generic_adapter_params(user, owner.service),
                 **{
                     "owner": {
-                        "username": view.owner.username,
+                        "username": owner.username,
                     }
                 }
             }
         )
 
-        return request.user.is_authenticated and (
-            view.owner.is_admin(request.user)
-            or asyncio.run(
-                torngit_provider_adapter.get_is_admin(
-                    user={"username": request.user.username}
-                )
+        return asyncio.run(
+            torngit_provider_adapter.get_is_admin(
+                user={"username": user.username}
             )
-       )
+        )
