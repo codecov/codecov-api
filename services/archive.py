@@ -1,5 +1,6 @@
 import logging
 
+from uuid import uuid4
 from django.conf import settings
 from enum import Enum
 from minio import Minio
@@ -79,6 +80,11 @@ class ArchiveService(object):
     Boolean. True if enterprise, False if not.
     """
     enterprise = False
+
+    """
+    Time to life, how long presigned PUTs/GETs should live
+    """
+    ttl = 10
 
     def __init__(self, repository):
         self.root = get_config('services', 'minio',
@@ -230,6 +236,24 @@ class ArchiveService(object):
 
         self.delete_file(path)
 
+    def create_raw_upload_presigned_put(self, commit_sha, repo_hash=None, filename=None, expires=None):
+        if repo_hash is None:
+            repo_hash = self.storage_hash
+
+        if not filename: 
+            filename = '{}.txt'.format(uuid4())
+        
+        path = 'v4/raw/{}/{}/{}/{}'.format(
+            datetime.now().strftime('%Y-%m-%d'),
+            self.storage_hash, 
+            commit_sha,
+            filename
+        )
+
+        if expires is None:
+            expires = self.ttl
+
+        return self.storage.create_presigned_put(self.root, path, expires)
 
 class ReportService(object):
     """

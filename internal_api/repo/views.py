@@ -201,7 +201,7 @@ class RepositoryViewSet(
         self._assert_is_admin()
         repo = self.get_object()
         repo.flush()
-        SegmentService.account_erased_repository(self.request.user.ownerid, repo)
+        SegmentService().account_erased_repository(self.request.user.ownerid, repo)
         return Response(self.get_serializer(repo).data)
 
     @action(detail=True, methods=['post'])

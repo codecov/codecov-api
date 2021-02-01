@@ -6,11 +6,13 @@ from rest_framework import status
 from django.http import HttpResponse
 from requests.exceptions import ConnectionError, HTTPError
 from datetime import datetime, timedelta
-from upload.tokenless.travis import TokenlessTravisHandler
-from upload.tokenless.azure import TokenlessAzureHandler
+
 from upload.tokenless.appveyor import TokenlessAppveyorHandler
+from upload.tokenless.azure import TokenlessAzureHandler
 from upload.tokenless.circleci import TokenlessCircleciHandler
+from upload.tokenless.cirrus import TokenlessCirrusHandler
 from upload.tokenless.github_actions import TokenlessGithubActionsHandler
+from upload.tokenless.travis import TokenlessTravisHandler
 
 log = logging.getLogger(__name__)
 
@@ -19,13 +21,14 @@ class TokenlessUploadHandler(object):
     ci_verifiers = {
         "appveyor": TokenlessAppveyorHandler,
         "azure_pipelines": TokenlessAzureHandler,
-        "travis": TokenlessTravisHandler,
         "circleci": TokenlessCircleciHandler,
-        "github_actions": TokenlessGithubActionsHandler
+        "cirrus_ci": TokenlessCirrusHandler,
+        "github_actions": TokenlessGithubActionsHandler,
+        "travis": TokenlessTravisHandler,
     }
 
     def __init__(self, ci_type, upload_params):
-        self.verifier = self.ci_verifiers.get(ci_type, None)
+        self.verifier = self.ci_verifiers.get(ci_type.replace('-', '_'), None)
         self.upload_params = upload_params
         self.ci_type = ci_type
 

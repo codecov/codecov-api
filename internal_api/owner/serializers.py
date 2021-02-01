@@ -21,7 +21,6 @@ class OwnerSerializer(serializers.ModelSerializer):
             'service',
             'username',
             'name',
-            'email',
             'stats',
             'ownerid',
             'integration_id',
@@ -37,7 +36,14 @@ class OwnerSerializer(serializers.ModelSerializer):
 class ProfileSerializer(OwnerSerializer):
     class Meta:
         model = Owner
-        fields = OwnerSerializer.Meta.fields + ('private_access',)
+        fields = OwnerSerializer.Meta.fields + (
+            'service_id',
+            'private_access',
+            'email',
+            'student',
+            'student_created_at',
+            'student_updated_at',
+        )
 
 
 class StripeLineItemSerializer(serializers.Serializer):
@@ -137,7 +143,8 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
             'name',
             'email',
             'nb_active_private_repos',
-            'repo_total_credits'
+            'repo_total_credits',
+            'plan_provider'
         )
 
     def _get_billing(self):

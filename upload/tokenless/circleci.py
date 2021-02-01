@@ -49,7 +49,7 @@ class TokenlessCircleciHandler(BaseTokenlessUploadHandler):
     
         build = self.get_build()
 
-        if build['vcs_revision'] != self.upload_params['commit']:
+        if build.get('vcs_revision', '') != self.upload_params['commit']:
             raise NotFound('Commit sha does not match Circle build. Please upload with the Codecov repository upload token to resolve issue.')
     
         if build.get('stop_time') is None:

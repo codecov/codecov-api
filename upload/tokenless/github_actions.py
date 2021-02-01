@@ -25,11 +25,21 @@ class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
                 key=self.client_id,
                 secret=self.client_secret
             )
-        )       
+        )
 
         try:
             actions_response = asyncio.run(git.get_workflow_run(self.upload_params.get('build')))
         except TorngitClientError as e:
+            log.error(f"Request client error {e}",
+                extra=dict(
+                    commit=self.upload_params.get('commit'),
+                    repo_name=self.upload_params.get('repo'),
+                    job=self.upload_params.get('job'),
+                    owner=self.upload_params.get('owner')
+                )
+            )
+            raise NotFound('Unable to locate build via Github Actions API. Please upload with the Codecov repository upload token to resolve issue.')
+        except Exception as e:
             log.error(f"Request error {e}",
                 extra=dict(
                     commit=self.upload_params.get('commit'),
@@ -37,7 +47,7 @@ class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
                     job=self.upload_params.get('job'),
                     owner=self.upload_params.get('owner')
                 )
-            )            
+            )
             raise NotFound('Unable to locate build via Github Actions API. Please upload with the Codecov repository upload token to resolve issue.')
 
         return actions_response
@@ -45,24 +55,24 @@ class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
     def verify(self):
         if not self.upload_params.get('owner'): raise NotFound('Missing "owner" argument. Please upload with the Codecov repository upload token to resolve issue.')
         owner = self.upload_params.get('owner')
-        
+
         if not self.upload_params.get('repo'): raise NotFound('Missing "repo" argument. Please upload with the Codecov repository upload token to resolve issue.')
         repo = self.upload_params.get('repo')
-    
+
         build = self.get_build()
-       
+
         if (
             build['public'] != True or
             build['slug'] != f'{owner}/{repo}' or
             (build['commit_sha'] != self.upload_params.get('commit') and self.upload_params.get('pr') == None)):
-                log.warn(f"Repository slug or commit sha do not match Github actions arguments",
+                log.warning(f"Repository slug or commit sha do not match Github actions arguments",
                     extra=dict(
                         commit=self.upload_params.get('commit'),
                         repo_name=self.upload_params.get('repo'),
                         job=self.upload_params.get('job'),
                         owner=self.upload_params.get('owner')
                     )
-                )                
+                )
                 raise NotFound("Repository slug or commit sha do not match Github actions build. Please upload with the Codecov repository upload token to resolve issue.")
 
         # Check if current status is correct (not stale or in progress)
@@ -81,14 +91,14 @@ class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
                         owner=self.upload_params.get('owner')
                     )
                 )
-                log.warn(f"Actions workflow run is stale",
+                log.warning(f"Actions workflow run is stale",
                     extra=dict(
                         commit=self.upload_params.get('commit'),
                         repo_name=self.upload_params.get('repo'),
                         job=self.upload_params.get('job'),
                         owner=self.upload_params.get('owner')
                     )
-                )     
+                )
                 raise NotFound('Actions workflow run is stale')
 
         return 'github'
