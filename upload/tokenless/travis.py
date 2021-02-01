@@ -32,6 +32,15 @@ class TokenlessTravisHandler(BaseTokenlessUploadHandler):
                 )
             )
             pass
+        except Exception as e:
+            log.error(f"Error {e}",
+                extra=dict(
+                    commit=self.upload_params['commit'],
+                    repo_name=self.upload_params['repo'],
+                    job=self.upload_params['job'],
+                    owner=self.upload_params['owner']
+                )
+            )
 
         # if job not found in travis.com try travis.org
         if not travis_dot_com:
