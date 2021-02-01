@@ -81,7 +81,8 @@ class AccountViewSetTests(APITestCase):
             "name": owner.name,
             "email": owner.email,
             "nb_active_private_repos": 0,
-            "repo_total_credits": 1
+            "repo_total_credits": 1,
+            "plan_provider": owner.plan_provider
         }
 
     def test_account_with_free_user_plan(self):
