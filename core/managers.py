@@ -92,7 +92,8 @@ class RepositoryQuerySet(QuerySet):
 
         Does not return a queryset and instead returns the aggregated values, fetched from the database.
         """
-        return self.aggregate(
+
+        f = self.aggregate(
             repo_count=Count("repoid"),
             sum_hits=Sum(Cast(KeyTextTransform("h", "latest_commit_totals"), output_field=FloatField())),
             sum_lines=Sum(Cast(KeyTextTransform("n", "latest_commit_totals"), output_field=FloatField())),
@@ -116,6 +117,8 @@ class RepositoryQuerySet(QuerySet):
             Sum(Cast(KeyTextTransform("n", "prev_commit_totals"), output_field=FloatField()))  * 100
             )
         )
+        breakpoint()
+        return f
 
     def get_or_create_from_git_repo(self, git_repo, owner):
         from codecov_auth.models import Owner

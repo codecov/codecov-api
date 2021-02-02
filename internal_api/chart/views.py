@@ -13,6 +13,7 @@ from .helpers import (
 )
 from internal_api.permissions import ChartPermissions
 from internal_api.mixins import RepositoriesMixin
+from django.db import connection
 
 
 class RepositoryChartHandler(APIView, RepositoriesMixin):
@@ -163,14 +164,40 @@ class OrganizationChartHandler(APIView, RepositoriesMixin):
     def post(self, request, *args, **kwargs):
         request_params = {**self.request.data, **self.kwargs}
         validate_params(request_params)
-        queryset = apply_simple_filters(
-            apply_default_filters(Commit.objects.all()), request_params, self.request.user
-        )
+#        queryset = apply_simple_filters(
+#            apply_default_filters(Commit.objects.all()), request_params, self.request.user
+#        )
 
-        annotated_commits = annotate_commits_with_totals(queryset)
+#        annotated_commits = annotate_commits_with_totals(queryset)
 
-        grouped_commits = apply_grouping(annotated_commits, self.request.data)
+#        grouped_commits = apply_grouping(annotated_commits, self.request.data)
 
-        coverage = aggregate_across_repositories(grouped_commits)
+#        coverage = aggregate_across_repositories(grouped_commits)
+        organization = Owner.objects.get(service=kwargs["service"], username=kwargs["owner_username"])
+        repoid_set = organization.repository_set.viewable_repos(request.user).values_list("repoid", flat=True)
 
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT t, SUM(latest_commit_totals->hits)
+                  SELECT
+                    "repos"."repoid", (
+                      SELECT
+                        U0."totals"
+                      FROM "commits" U
+                      WHERE (U0."branch")
+                        AND U0."repoid" = ("repos"."repoid")
+                        AND U0."state" = complete
+                        AND (U0."timestamp" AT TIME ZONE \'UTC\')::date <= {timestamp}) 
+                      ORDER BY U0."timestamp" DESC LIMIT 1
+                    ) AS "latest_commit_totals"
+                  FROM "repos"
+                  INNER JOIN
+                    "owners" ON ("repos"."ownerid" = "owners"."ownerid")
+                  WHERE
+                    "owners"."username" = {}
+                  AND
+                    "repos"."repoid" in {}
+                """
+            )
         return Response(data={"coverage": coverage})
