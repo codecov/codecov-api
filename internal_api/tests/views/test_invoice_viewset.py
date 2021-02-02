@@ -10,6 +10,8 @@ from rest_framework import status
 
 from codecov_auth.tests.factories import OwnerFactory
 
+from internal_api.tests.test_utils import GetAdminProviderAdapter
+
 
 curr_path = os.path.dirname(__file__)
 
@@ -73,7 +75,9 @@ class InvoiceViewSetTests(APITestCase):
         assert len(response.data) == 100
         assert response.data == expected_invoices
 
-    def test_invoices_returns_403_if_user_not_admin(self):
+    @patch('internal_api.permissions.get_provider')
+    def test_invoices_returns_403_if_user_not_admin(self, get_provider_mock):
+        get_provider_mock.return_value = GetAdminProviderAdapter()
         owner = OwnerFactory()
         response = self._list(kwargs={"service": owner.service, "owner_username": owner.username})
         assert response.status_code == status.HTTP_403_FORBIDDEN
