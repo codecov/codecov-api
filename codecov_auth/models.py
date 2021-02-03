@@ -112,6 +112,25 @@ class Owner(models.Model):
             return int(self.plan[:-1])
 
     @property
+    def root_organization(self):
+        """
+        Find the root organization of Gitlab, by using the root_parent_service_id
+        if it exists, otherwise iterating through the parents and caches it in root_parent_service_id
+        """
+        if self.root_parent_service_id:
+            return Owner.objects.get(service_id=self.root_parent_service_id, service=self.service)
+
+        root = None
+        if self.service == "gitlab" and self.parent_service_id:
+            root = self
+            while root.parent_service_id is not None:
+                root = Owner.objects.get(service_id=root.parent_service_id, service=root.service)
+            self.root_parent_service_id = root.service_id
+            self.save()
+        return root
+
+
+    @property
     def nb_active_private_repos(self):
         return self.repository_set.filter(active=True, private=True).count()
 
