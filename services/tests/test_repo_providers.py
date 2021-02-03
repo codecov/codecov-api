@@ -90,7 +90,7 @@ class TestRepoProviderService(InternalAPITest):
 
         assert provider._oauth_consumer_token() is not None
 
-    @patch("services.repo_providers.RepoProviderService._get_provider")
+    @patch("services.repo_providers.get_provider")
     @patch("services.repo_providers.get_config")
     def test_get_adapter_verify_ssl_true(self, mock_get_config, mock_get_provider):
         mock_get_config.side_effect = mock_get_config_verify_ssl_true
@@ -122,7 +122,7 @@ class TestRepoProviderService(InternalAPITest):
             ),
         )
 
-    @patch("services.repo_providers.RepoProviderService._get_provider")
+    @patch("services.repo_providers.get_provider")
     @patch("services.repo_providers.get_config")
     @patch("services.repo_providers.getenv")
     def test_get_adapter_for_uploads_verify_ssl_false(
