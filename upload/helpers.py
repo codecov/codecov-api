@@ -13,7 +13,7 @@ from services.repo_providers import RepoProviderService
 from services.task import TaskService
 from services.segment import SegmentService
 from codecov_auth.constants import USER_PLAN_REPRESENTATIONS
-from shared.torngit.exceptions import TorngitObjectNotFoundError
+from shared.torngit.exceptions import TorngitObjectNotFoundError, TorngitClientError
 
 from upload.tokenless.tokenless import TokenlessUploadHandler
 
@@ -282,7 +282,15 @@ def determine_upload_commit_to_use(upload_params, repository):
             )
         except TorngitObjectNotFoundError as e:
             log.error(
-                "Unable to fetch commit from github. Not found",
+                "Unable to fetch commit. Not found",
+                extra=dict(
+                    commit=upload_params.get("commit"),
+                ),
+            )
+            return upload_params.get("commit")
+        except TorngitClientError as e:
+            log.error(
+                "Unable to fetch commit",
                 extra=dict(
                     commit=upload_params.get("commit"),
                 ),
