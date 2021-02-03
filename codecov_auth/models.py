@@ -67,6 +67,7 @@ class Owner(models.Model):
     createstamp = models.DateTimeField(auto_now_add=True)
     service_id = models.TextField()
     parent_service_id = models.TextField(null=True)
+    root_parent_service_id = models.TextField(null=True)
     private_access = models.BooleanField(null=True)
     staff = models.BooleanField(null=True, default=False)
     cache = JSONField(null=True)
