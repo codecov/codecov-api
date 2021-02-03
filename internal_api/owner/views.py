@@ -11,6 +11,7 @@ from rest_framework import generics, viewsets, mixins, filters, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, NotFound, ValidationError, NotAuthenticated
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 
 from django_filters import rest_framework as django_filters
 
@@ -131,6 +132,18 @@ class AccountDetailsViewSet(
         return Response(self.get_serializer(owner).data)
 
 
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 2
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+    def get_paginated_response(self, data):
+        response = super(StandardResultsSetPagination,
+                         self).get_paginated_response(data)
+        response.data['total_pages'] = self.page.paginator.num_pages
+        return response
+
+
 class UserViewSet(
     viewsets.GenericViewSet,
     mixins.ListModelMixin,
@@ -141,7 +154,8 @@ class UserViewSet(
     filter_backends = (django_filters.DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter)
     filterset_class = UserFilters
     permission_classes = [UserIsAdminPermissions]
-    ordering_fields = ('name','username', 'email')
+    pagination_class = StandardResultsSetPagination
+    ordering_fields = ('name', 'username', 'email')
     lookup_field = "user_username"
     search_fields = ['name', 'username', 'email']
 
