@@ -23,7 +23,7 @@ from .helpers import (
     store_report_in_redis,
     dispatch_upload_task,
 )
-from services.redis import get_redis_connection
+from services.redis_configuration import get_redis_connection
 from services.archive import ArchiveService
 from services.segment import SegmentService
 from utils.config import get_config

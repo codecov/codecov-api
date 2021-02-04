@@ -144,11 +144,11 @@ LOGGING = {
     'formatters': {
         'standard': {
             'format': '%(message)s %(asctime)s %(name)s %(levelname)s %(lineno)s %(pathname)s %(funcName)s %(threadName)s',
-            'class': 'utils.logging.CustomLocalJsonFormatter'
+            'class': 'utils.logging_configuration.CustomLocalJsonFormatter'
         },
         'json': {
             'format': '%(message)s %(asctime)s %(name)s %(levelname)s %(lineno)s %(pathname)s %(funcName)s %(threadName)s',
-            'class': 'utils.logging.CustomDatadogJsonFormatter'
+            'class': 'utils.logging_configuration.CustomDatadogJsonFormatter'
         },
     },
     'root': {

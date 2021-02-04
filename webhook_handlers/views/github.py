@@ -12,7 +12,7 @@ from rest_framework.exceptions import PermissionDenied, NotFound
 from core.models import Repository, Branch, Commit, Pull
 from codecov_auth.models import Owner
 from services.archive import ArchiveService
-from services.redis import get_redis_connection
+from services.redis_configuration import get_redis_connection
 from services.task import TaskService
 from utils.config import get_config
 from services.segment import SegmentService, BLANK_SEGMENT_USER_ID

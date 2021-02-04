@@ -1,6 +1,6 @@
 from graphs.settings import settings
 from operator import itemgetter
-from .graph_utils import _squarify, _layout, _worst_ratio, _max_aspect_ratio, _svg_rect, _make_svg, _tree_height, _svg_polar_rect
+from .graph_utils import _squarify, _layout, _worst_ratio, _max_aspect_ratio, _svg_rect, _make_svg, _tree_height, _svg_polar_rect, _make_anchor
 
 
 def tree(parsed_data, href=None, classes=None, **kwargs):

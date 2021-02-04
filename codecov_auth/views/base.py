@@ -9,7 +9,7 @@ from codecov_auth.models import Session, Owner
 from utils.encryption import encryptor
 from utils.config import get_config
 from services.task import TaskService
-from services.redis import get_redis_connection
+from services.redis_configuration import get_redis_connection
 from services.segment import SegmentService
 
 
