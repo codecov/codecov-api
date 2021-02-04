@@ -47,10 +47,7 @@ def tree(parsed_data, href=None, classes=None, **kwargs):
                                      stroke_width=options['border_size'],
                                      _class=_class,
                                      title=path)
-                    if href:
-                        svg_elements.append(_make_anchor(href.format(target='src', path=path), rect))
-                    else:
-                        svg_elements.append(rect)
+                    svg_elements.append(rect)
                     step.pop(-1)
 
     recursively_draw(parsed_data, [], 0, 0,
