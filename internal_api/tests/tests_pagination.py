@@ -21,7 +21,7 @@ class PageNumberPaginationTests(APITestCase):
                       "owner_username": self.owner.username}
         return self.client.get(reverse('users-list', kwargs=kwargs), data=query_params)
 
-    def test_pagination__returned_page_size(self):
+    def test_pagination_returned_page_size(self):
         response = self._list()
 
         assert response.data['total_pages'] == 1
