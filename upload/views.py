@@ -203,6 +203,13 @@ class UploadHandler(APIView):
                     ),
                 )
                 return HttpResponseServerError("Unknown error, please try again later")
+            log.info(
+                "Dispatching upload to worker (new upload)",
+                extra=dict(
+                    commit=commitid, repoid=repository.repoid, upload_url=upload_url
+                ),
+            )
+            response["Content-Type"] = "text/plain"
             response.write(f"{destination_url}\n{upload_url}")
 
         # Get build url
