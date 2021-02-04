@@ -313,15 +313,6 @@ class UserViewSetTests(APITestCase):
         assert [r['email']
                 for r in response.data['results']] == ['c', 'b', 'a']
 
-    def test_list_pagination_page_size(self):
-        response = self._list(query_params={"page_size": "1"})
-
-        assert response.data['total_pages'] == 3
-
-        response = self._list(query_params={"page_size": "100"})
-
-        assert response.data['total_pages'] == 1
-
     def test_patch_can_set_activated_to_true(self):
         response = self._patch(
             kwargs={
