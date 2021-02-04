@@ -1,0 +1,14 @@
+FROM codecov/api:latest as build
+
+# install cython 
+RUN pip install Cython
+
+# execute Cython script in app dir 
+COPY ./enterprise_compile.py /app/enterprise_compile.py
+RUN python enterprise_compile.py build_ext 
+
+# restructure project and remove unneeded files.
+COPY ./enterprise_cleanup.sh /app/enterprise_cleanup.sh
+RUN chmod +x /app/enterprise_cleanup.sh
+RUN ./enterprise_cleanup.sh
+
