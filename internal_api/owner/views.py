@@ -131,14 +131,14 @@ class AccountDetailsViewSet(
         billing.update_payment_method(owner, payment_method)
         return Response(self.get_serializer(owner).data)
 
-
-class StandardResultsSetPagination(PageNumberPagination):
-    page_size = 2
+# TODO: Make this the default pagination behavior to sync with design system.
+class UserViewSetPagination(PageNumberPagination):
+    page_size = 10
     page_size_query_param = 'page_size'
     max_page_size = 100
 
     def get_paginated_response(self, data):
-        response = super(StandardResultsSetPagination,
+        response = super(UserViewSetPagination,
                          self).get_paginated_response(data)
         response.data['total_pages'] = self.page.paginator.num_pages
         return response
@@ -154,7 +154,7 @@ class UserViewSet(
     filter_backends = (django_filters.DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter)
     filterset_class = UserFilters
     permission_classes = [UserIsAdminPermissions]
-    pagination_class = StandardResultsSetPagination
+    pagination_class = UserViewSetPagination
     ordering_fields = ('name', 'username', 'email')
     lookup_field = "user_username"
     search_fields = ['name', 'username', 'email']
