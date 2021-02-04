@@ -11,7 +11,6 @@ from rest_framework import generics, viewsets, mixins, filters, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, NotFound, ValidationError, NotAuthenticated
 from rest_framework.response import Response
-from rest_framework.pagination import PageNumberPagination
 
 from django_filters import rest_framework as django_filters
 
@@ -130,6 +129,7 @@ class AccountDetailsViewSet(
         billing = BillingService(requesting_user=request.user)
         billing.update_payment_method(owner, payment_method)
         return Response(self.get_serializer(owner).data)
+
 
 class UserViewSet(
     viewsets.GenericViewSet,
