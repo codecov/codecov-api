@@ -148,6 +148,16 @@ class UploadHandler(APIView):
 
         # v2 - store request body in redis
         if version == "v2":
+            log.info(
+                "Started V2 upload",
+                extra=dict(
+                    commit=commitid,
+                    pr=pr,
+                    branch=branch,
+                    version=version,
+                    upload_params=upload_params,
+                ),
+            )
             redis_key = store_report_in_redis(request, commitid, reportid, redis)
 
             log.info(
@@ -176,6 +186,18 @@ class UploadHandler(APIView):
         # v4 - generate presigned PUT url
         minio = get_config("services", "minio") or {}
         if minio and version == "v4":
+
+            log.info(
+                "Started V4 upload",
+                extra=dict(
+                    commit=commitid,
+                    pr=pr,
+                    branch=branch,
+                    version=version,
+                    upload_params=upload_params,
+                ),
+            )
+
             headers = parse_headers(request.META, upload_params)
 
             archive_service = ArchiveService(repository)
