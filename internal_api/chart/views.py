@@ -179,25 +179,67 @@ class OrganizationChartHandler(APIView, RepositoriesMixin):
         with connection.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT t, SUM(latest_commit_totals->hits)
-                  SELECT
-                    "repos"."repoid", (
-                      SELECT
-                        U0."totals"
-                      FROM "commits" U
-                      WHERE (U0."branch")
-                        AND U0."repoid" = ("repos"."repoid")
-                        AND U0."state" = complete
-                        AND (U0."timestamp" AT TIME ZONE \'UTC\')::date <= {timestamp}) 
-                      ORDER BY U0."timestamp" DESC LIMIT 1
-                    ) AS "latest_commit_totals"
-                  FROM "repos"
-                  INNER JOIN
-                    "owners" ON ("repos"."ownerid" = "owners"."ownerid")
-                  WHERE
-                    "owners"."username" = {}
-                  AND
-                    "repos"."repoid" in {}
+                WITH date_series AS (
+                	SELECT
+                		day::date AS "date"
+                	FROM generate_series(timestamp '2021-01-01', '2021-01-31', '1 day') day
+                ), graph_repos AS (
+                	SELECT
+                		r.repoid,
+                		r.name
+                	FROM 
+                		repos r
+                	WHERE r.repoid = 89448 OR r.repoid = 131645 -- codecov-bash or codecov-python
+                ), spine AS (
+                    SELECT
+                        ds.date,
+                        r.repoid
+                    FROM date_series ds
+                    CROSS JOIN graph_repos r
+                ), day_ranked_commits AS (
+                	SELECT
+                		ROW_NUMBER() OVER (PARTITION BY c.repoid, DATE(c.timestamp) ORDER BY timestamp DESC NULLS LAST) AS commit_rank,
+                		DATE(c.timestamp) AS "date",
+                		c.timestamp AS commit_timestamp,
+                		c.id,
+                		r.repoid
+                	FROM
+                		commits c
+                	INNER JOIN graph_repos r ON r.repoid = c.repoid
+                ), commits_spine AS (
+                	SELECT 
+                		s.date AS spine_date,
+                		drc.date AS commit_date,
+                		drc.commit_timestamp,
+                		drc.id AS commit_id,
+                		s.repoid
+                	FROM spine s
+                	LEFT JOIN day_ranked_commits drc ON drc.date = s.date AND drc.repoid = s.repoid AND drc.commit_rank = 1
+                ), grouped AS (
+                	SELECT
+                		spine_date,
+                		commit_date,
+                		commit_id,
+                		repoid,
+                		SUM(CASE WHEN commit_id IS NOT NULL THEN 1 END) OVER (PARTITION BY repoid ORDER BY spine_date) AS grp_commit
+                    FROM commits_spine
+                ), corrected AS (
+                	SELECT
+                	  	spine_date,
+                	    commit_date,
+                	    commit_id, 
+                	    FIRST_VALUE(commit_id) OVER (PARTITION BY repoid, grp_commit ORDER BY spine_date) AS corrected_commit
+                	FROM
+                		grouped
+                )
+                SELECT
+                	spine_date,
+                	SUM((c.totals->>'h')::numeric) AS hits_total
+                FROM
+                	corrected
+                LEFT JOIN commits c ON c.id = corrected_commit
+                GROUP BY spine_date;
+
                 """
             )
         return Response(data={"coverage": coverage})
