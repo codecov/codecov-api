@@ -3,6 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import JSONParser
 
+from codecov_auth.models import Owner
 from core.models import Commit
 from .filters import apply_default_filters, apply_simple_filters
 from .helpers import (
@@ -13,7 +14,23 @@ from .helpers import (
 )
 from internal_api.permissions import ChartPermissions
 from internal_api.mixins import RepositoriesMixin
+
 from django.db import connection
+from django.db.models import F
+from django.db.models.functions import Trunc
+from datetime import datetime
+
+
+def dictfetchall(cursor):
+    """
+    Return all rows from a cursor as a dict
+    Copied from: https://docs.djangoproject.com/en/3.1/topics/db/sql/#executing-custom-sql-directly
+    """
+    columns = [col[0] for col in cursor.description]
+    return [
+        dict(zip(columns, row))
+        for row in cursor.fetchall()
+    ]
 
 
 class RepositoryChartHandler(APIView, RepositoriesMixin):
@@ -164,61 +181,73 @@ class OrganizationChartHandler(APIView, RepositoriesMixin):
     def post(self, request, *args, **kwargs):
         request_params = {**self.request.data, **self.kwargs}
         validate_params(request_params)
-#        queryset = apply_simple_filters(
-#            apply_default_filters(Commit.objects.all()), request_params, self.request.user
-#        )
 
-#        annotated_commits = annotate_commits_with_totals(queryset)
-
-#        grouped_commits = apply_grouping(annotated_commits, self.request.data)
-
-#        coverage = aggregate_across_repositories(grouped_commits)
         organization = Owner.objects.get(service=kwargs["service"], username=kwargs["owner_username"])
-        repoid_set = organization.repository_set.viewable_repos(request.user).values_list("repoid", flat=True)
+        viewable_repoid_set = organization.repository_set.viewable_repos(request.user).values_list("repoid", flat=True)
+
+        # determine start date to use
+        if "start_date" in request_params:
+            start_date = parser.parse(request_params.get("start_date"))
+        else:
+            first_commit_date = Commit.objects.filter(
+                repository__repoid__in=viewable_repoid_set,
+                repository__branch=F('branch')
+            ).annotate(
+                truncated_date=Trunc('timestamp', request_params.get("grouping_unit"))
+            ).order_by('-timestamp').values_list('truncated_date', flat=True)[0]
+
+            start_date = datetime.date(first_commit_date)
+
+        # determine end date to use
+        if "end_date" in request_params:
+            end_date = parser.parse(request_params.get("end_date"))
+        else:
+            end_date = datetime.date(datetime.now())
 
         with connection.cursor() as cursor:
-            cursor.execute(
+            result = cursor.execute(
                 """
                 WITH date_series AS (
                 	SELECT
-                		day::date AS "date"
-                	FROM generate_series(timestamp '2021-01-01', '2021-01-31', '1 day') day
+                		t::date AS "date"
+                	FROM generate_series(timestamp '{start_date}', timestamp '{end_date}', '1 {grouping_unit}') t
                 ), graph_repos AS (
                 	SELECT
                 		r.repoid,
-                		r.name
+                		r.name,
+                        r.branch
                 	FROM 
                 		repos r
-                	WHERE r.repoid = 89448 OR r.repoid = 131645 -- codecov-bash or codecov-python
+                	WHERE r.repoid IN {viewable_repoid_set}
                 ), spine AS (
                     SELECT
                         ds.date,
                         r.repoid
                     FROM date_series ds
                     CROSS JOIN graph_repos r
-                ), day_ranked_commits AS (
+                ), t_ranked_commits AS (
                 	SELECT
-                		ROW_NUMBER() OVER (PARTITION BY c.repoid, DATE(c.timestamp) ORDER BY timestamp DESC NULLS LAST) AS commit_rank,
-                		DATE(c.timestamp) AS "date",
+                		ROW_NUMBER() OVER (PARTITION BY c.repoid, DATE_TRUNC('{grouping_unit}', c.timestamp) ORDER BY timestamp DESC NULLS LAST) AS commit_rank,
+                		DATE_TRUNC('{grouping_unit}', c.timestamp) AS "truncated_date",
                 		c.timestamp AS commit_timestamp,
                 		c.id,
                 		r.repoid
                 	FROM
                 		commits c
-                	INNER JOIN graph_repos r ON r.repoid = c.repoid
+                	INNER JOIN graph_repos r ON r.repoid = c.repoid AND r.branch = c.branch
                 ), commits_spine AS (
                 	SELECT 
                 		s.date AS spine_date,
-                		drc.date AS commit_date,
+                		drc.truncated_date AS truncated_commit_date,
                 		drc.commit_timestamp,
                 		drc.id AS commit_id,
                 		s.repoid
                 	FROM spine s
-                	LEFT JOIN day_ranked_commits drc ON drc.date = s.date AND drc.repoid = s.repoid AND drc.commit_rank = 1
+                	LEFT JOIN t_ranked_commits drc ON drc.truncated_date = s.date AND drc.repoid = s.repoid AND drc.commit_rank = 1
                 ), grouped AS (
                 	SELECT
                 		spine_date,
-                		commit_date,
+                		truncated_commit_date,
                 		commit_id,
                 		repoid,
                 		SUM(CASE WHEN commit_id IS NOT NULL THEN 1 END) OVER (PARTITION BY repoid ORDER BY spine_date) AS grp_commit
@@ -226,20 +255,35 @@ class OrganizationChartHandler(APIView, RepositoriesMixin):
                 ), corrected AS (
                 	SELECT
                 	  	spine_date,
-                	    commit_date,
+                	    truncated_commit_date,
                 	    commit_id, 
                 	    FIRST_VALUE(commit_id) OVER (PARTITION BY repoid, grp_commit ORDER BY spine_date) AS corrected_commit
                 	FROM
                 		grouped
                 )
                 SELECT
-                	spine_date,
-                	SUM((c.totals->>'h')::numeric) AS hits_total
+                	spine_date::timestamp at time zone 'UTC' AS date,
+                	SUM((c.totals->>'h')::numeric) AS total_hits,
+                	SUM((c.totals->>'m')::numeric) AS total_misses,
+                	SUM((c.totals->>'p')::numeric) AS total_partials,
+                	SUM((c.totals->>'n')::numeric) AS total_lines,
+                    SUM((c.totals->>'h')::numeric) / SUM((c.totals->>'n')::numeric) * 100 AS coverage
                 FROM
                 	corrected
                 LEFT JOIN commits c ON c.id = corrected_commit
-                GROUP BY spine_date;
-
-                """
+                GROUP BY spine_date
+                ORDER BY spine_date {ordering_param};
+                """.format(
+                    start_date=start_date,
+                    end_date=end_date,
+                    grouping_unit=request_params.get("grouping_unit"),
+                    viewable_repoid_set=tuple(viewable_repoid_set),
+                    ordering_param="DESC" if request_params.get("coverage_timestamp_ordering") == "decreasing" else ""
+                )
             )
-        return Response(data={"coverage": coverage})
+
+            return Response(
+                data={
+                    "coverage": dictfetchall(cursor)
+                }
+            )

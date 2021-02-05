@@ -117,7 +117,6 @@ class RepositoryQuerySet(QuerySet):
             Sum(Cast(KeyTextTransform("n", "prev_commit_totals"), output_field=FloatField()))  * 100
             )
         )
-        breakpoint()
         return f
 
     def get_or_create_from_git_repo(self, git_repo, owner):

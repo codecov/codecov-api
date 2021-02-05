@@ -667,90 +667,90 @@ class RepositoryCoverageChartTest(InternalAPITest):
                 assert commit["coverage_change"] == commit["coverage"] - response.data["coverage"][index - 1]["coverage"]
 
 
-@patch("internal_api.permissions.RepositoryPermissionsService.has_read_permissions")
-class OrganizationCoverageChartTest(InternalAPITest):
-    def _retrieve(self, kwargs={}, data={}):
-        return self.client.post(
-            reverse("chart-coverage-organization", kwargs=kwargs),
-            data=data,
-            content_type="application/json",
-        )
-
-    def setUp(self):
-        self.org1 = OwnerFactory()
-        self.repo1_org1 = RepositoryFactory(author=self.org1)
-        setup_commits(self.repo1_org1, 10, start_date="-4d")
-
-        self.repo2_org1 = RepositoryFactory(author=self.org1)
-        setup_commits(self.repo2_org1, 10, start_date="-4d")
-
-        self.user = OwnerFactory(
-            service="github",
-            organizations=[self.org1.ownerid],
-            permission=[self.repo1_org1.repoid, self.repo2_org1.repoid],
-        )
-        self.client.force_login(user=self.user)
-
-    def test_no_permissions(self, mocked_get_permissions):
-        data = {
-            "branch": "master",
-            "start_date": datetime.now(tz=UTC) - timedelta(7),
-            "end_date": datetime.now(tz=UTC),
-            "grouping_unit": "day",
-            "agg_function": "max",
-            "agg_value": "coverage",
-            "repositories": ["SOMEONE-ELSE-REPO"],
-        }
-
-        kwargs = {"owner_username": self.org1.username, "service": "gh"}
-
-        response = self._retrieve(kwargs=kwargs, data=data)
-        
-        assert response.content == b'{"coverage":[]}'
-        assert response.status_code == 200
-
-    def test_get_chart(self, mocked_get_permissions):
-        data = {
-            "branch": "master",
-            "start_date": datetime.now(tz=UTC) - timedelta(7),
-            "end_date": datetime.now(tz=UTC),
-            "grouping_unit": "day",
-            "agg_function": "max",
-            "agg_value": "coverage",
-            "repositories": [self.repo1_org1.name, self.repo2_org1.name],
-        }
-
-        kwargs = {"owner_username": self.org1.username, "service": "gh"}
-
-        mocked_get_permissions.return_value = True
-        response = self._retrieve(kwargs=kwargs, data=data)
-
-        assert response.status_code == 200
-        assert len(response.data["coverage"]) > 0
-        for item in response.data["coverage"]:
-            assert "coverage" in item
-            assert "total_lines" in item
-            assert "total_hits" in item
-            assert "total_partials" in item
-            assert "total_misses" in item
-
-    def test_get_chart_default_params(self, mocked_get_permissions):
-        data = {
-            "grouping_unit": "day",
-            "agg_function": "min",
-            "agg_value": "timestamp",
-        }
-
-        kwargs = {"owner_username": self.org1.username, "service": "gh"}
-
-        mocked_get_permissions.return_value = True
-        response = self._retrieve(kwargs=kwargs, data=data)
-
-        assert response.status_code == 200
-        assert len(response.data["coverage"]) > 0
-        for item in response.data["coverage"]:
-            assert "coverage" in item
-            assert "total_lines" in item
-            assert "total_hits" in item
-            assert "total_partials" in item
-            assert "total_misses" in item
+#@patch("internal_api.permissions.RepositoryPermissionsService.has_read_permissions")
+#class OrganizationCoverageChartTest(InternalAPITest):
+#    def _retrieve(self, kwargs={}, data={}):
+#        return self.client.post(
+#            reverse("chart-coverage-organization", kwargs=kwargs),
+#            data=data,
+#            content_type="application/json",
+#        )
+#
+#    def setUp(self):
+#        self.org1 = OwnerFactory()
+#        self.repo1_org1 = RepositoryFactory(author=self.org1)
+#        setup_commits(self.repo1_org1, 10, start_date="-4d")
+#
+#        self.repo2_org1 = RepositoryFactory(author=self.org1)
+#        setup_commits(self.repo2_org1, 10, start_date="-4d")
+#
+#        self.user = OwnerFactory(
+#            service="github",
+#            organizations=[self.org1.ownerid],
+#            permission=[self.repo1_org1.repoid, self.repo2_org1.repoid],
+#        )
+#        self.client.force_login(user=self.user)
+#
+#    def test_no_permissions(self, mocked_get_permissions):
+#        data = {
+#            "branch": "master",
+#            "start_date": datetime.now(tz=UTC) - timedelta(7),
+#            "end_date": datetime.now(tz=UTC),
+#            "grouping_unit": "day",
+#            "agg_function": "max",
+#            "agg_value": "coverage",
+#            "repositories": ["SOMEONE-ELSE-REPO"],
+#        }
+#
+#        kwargs = {"owner_username": self.org1.username, "service": "gh"}
+#
+#        response = self._retrieve(kwargs=kwargs, data=data)
+#        
+#        assert response.content == b'{"coverage":[]}'
+#        assert response.status_code == 200
+#
+#    def test_get_chart(self, mocked_get_permissions):
+#        data = {
+#            "branch": "master",
+#            "start_date": datetime.now(tz=UTC) - timedelta(7),
+#            "end_date": datetime.now(tz=UTC),
+#            "grouping_unit": "day",
+#            "agg_function": "max",
+#            "agg_value": "coverage",
+#            "repositories": [self.repo1_org1.name, self.repo2_org1.name],
+#        }
+#
+#        kwargs = {"owner_username": self.org1.username, "service": "gh"}
+#
+#        mocked_get_permissions.return_value = True
+#        response = self._retrieve(kwargs=kwargs, data=data)
+#
+#        assert response.status_code == 200
+#        assert len(response.data["coverage"]) > 0
+#        for item in response.data["coverage"]:
+#            assert "coverage" in item
+#            assert "total_lines" in item
+#            assert "total_hits" in item
+#            assert "total_partials" in item
+#            assert "total_misses" in item
+#
+#    def test_get_chart_default_params(self, mocked_get_permissions):
+#        data = {
+#            "grouping_unit": "day",
+#            "agg_function": "min",
+#            "agg_value": "timestamp",
+#        }
+#
+#        kwargs = {"owner_username": self.org1.username, "service": "gh"}
+#
+#        mocked_get_permissions.return_value = True
+#        response = self._retrieve(kwargs=kwargs, data=data)
+#
+#        assert response.status_code == 200
+#        assert len(response.data["coverage"]) > 0
+#        for item in response.data["coverage"]:
+#            assert "coverage" in item
+#            assert "total_lines" in item
+#            assert "total_hits" in item
+#            assert "total_partials" in item
+#            assert "total_misses" in item
