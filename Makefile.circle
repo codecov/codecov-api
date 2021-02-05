@@ -9,13 +9,15 @@ tag ?= $(shell echo $$(git rev-list --count HEAD)$$(git show -s --format=.%ad.%h
 branch = $(shell git branch | grep \* | cut -f2 -d' ')
 docker_version = $(shell git describe --always --tags --dirty | sed 's/^v//')
 release_env = master
+ssh_private_key = `cat ~/.ssh/id_rsa`
+
 
 ifneq ($(branch), master)
 release_env = pr
 endif
 
 GCR_REPO := gcr.io/genuine-polymer-165712/codecov-api
-REQUIREMENTS_TAG := requirements-v2-$(shell sha1sum requirements.txt | cut -d ' ' -f 1)
+REQUIREMENTS_TAG := requirements-v1-$(shell sha1sum requirements.txt | cut -d ' ' -f 1)
 VERSION := release-$(shell git rev-parse --short=7 HEAD)
 
 # CIRCLECI
@@ -29,7 +31,7 @@ build-requirements:
 	docker pull ${GCR_REPO}:${REQUIREMENTS_TAG} || docker build \
 		-f Dockerfile.requirements . \
 		-t ${GCR_REPO}:${REQUIREMENTS_TAG} \
-		--build-arg GH_ACCESS_TOKEN=${GH_ACCESS_TOKEN} \
+		--build-arg SSH_PRIVATE_KEY="${ssh_private_key}" \
 	&& docker push ${GCR_REPO}:${REQUIREMENTS_TAG}; true
 
 # CIRCLECI
