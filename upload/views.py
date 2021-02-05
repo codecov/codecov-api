@@ -204,7 +204,7 @@ class UploadHandler(APIView):
                 )
                 return HttpResponseServerError("Unknown error, please try again later")
             log.info(
-                "Dispatching upload to worker (new upload)",
+                "Returning presign put",
                 extra=dict(
                     commit=commitid, repoid=repository.repoid, upload_url=upload_url
                 ),
