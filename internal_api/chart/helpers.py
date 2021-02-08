@@ -124,31 +124,31 @@ def apply_grouping(queryset, data):
     # should be the one with the min/max value we want to aggregate by
 
 
-def aggregate_across_repositories(grouped_queryset):
-    """
-    Used for the organization analytics chart, which shows total sums across all repositories for a given time unit.
-    The grouped_queryset has the approprate commit for each repo grouped by time unit, we'll aggregate this to get the sum and weighted average. 
-    """
-    # Get the set of dates represented in the data, so we can retrieve the values for each repo within a given time window
-    items = grouped_queryset.values("truncated_date", "totals")
-
-    datapoints = {}
-
-    for item in items:
-        date_key = str(item["truncated_date"])
-        if date_key in datapoints:
-            datapoints[date_key]["total_lines"] += item["totals"]["n"]
-            datapoints[date_key]["total_hits"] += item["totals"]["h"]
-            datapoints[date_key]["total_partials"] += item["totals"]["p"]
-            datapoints[date_key]["total_misses"] += item["totals"]["m"]
-        else:
-            datapoints[date_key] = {
-                "date": item["truncated_date"],
-                "total_lines": item["totals"]["n"],
-                "total_hits": item["totals"]["h"],
-                "total_partials": item["totals"]["p"],
-                "total_misses": item["totals"]["m"]
-            }
-    for _, datapoint in datapoints.items():
-        datapoint["coverage"] = datapoint["total_hits"] / datapoint["total_lines"] * 100
-    return list(datapoints.values())
+#def aggregate_across_repositories(grouped_queryset):
+#    """
+#    Used for the organization analytics chart, which shows total sums across all repositories for a given time unit.
+#    The grouped_queryset has the approprate commit for each repo grouped by time unit, we'll aggregate this to get the sum and weighted average. 
+#    """
+#    # Get the set of dates represented in the data, so we can retrieve the values for each repo within a given time window
+#    items = grouped_queryset.values("truncated_date", "totals")
+#
+#    datapoints = {}
+#
+#    for item in items:
+#        date_key = str(item["truncated_date"])
+#        if date_key in datapoints:
+#            datapoints[date_key]["total_lines"] += item["totals"]["n"]
+#            datapoints[date_key]["total_hits"] += item["totals"]["h"]
+#            datapoints[date_key]["total_partials"] += item["totals"]["p"]
+#            datapoints[date_key]["total_misses"] += item["totals"]["m"]
+#        else:
+#            datapoints[date_key] = {
+#                "date": item["truncated_date"],
+#                "total_lines": item["totals"]["n"],
+#                "total_hits": item["totals"]["h"],
+#                "total_partials": item["totals"]["p"],
+#                "total_misses": item["totals"]["m"]
+#            }
+#    for _, datapoint in datapoints.items():
+#        datapoint["coverage"] = datapoint["total_hits"] / datapoint["total_lines"] * 100
+#    return list(datapoints.values())
