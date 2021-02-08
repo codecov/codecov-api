@@ -318,11 +318,23 @@ def determine_upload_commit_to_use(upload_params, repository):
 
 
 def insert_commit(commitid, branch, pr, repository, owner, parent_commit_id=None):
-    commit, created = Commit.objects.update_or_create(
-        commitid=commitid, repository=repository, defaults={"state": "pending"}
-    )
-
-    if created:
+    
+    try:
+        commit = Commit.objects.get(
+            commitid=commitid, repository=repository
+        )
+        commit.state = "pending"
+    except Commit.DoesNotExist:
+        log.info("Creating new commit for upload",                 
+            extra=dict(
+            commit=commitid,
+            branch=branch,
+            repository=repository,
+            owner=owner
+        ),)
+        commit = Commit(
+            commitid=commitid, repository=repository, state="pending"
+        )
         commit.branch = branch
         commit.pullid = pr
         commit.merged = False if pr is not None else None
