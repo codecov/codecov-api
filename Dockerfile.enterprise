@@ -1,14 +1,36 @@
 FROM codecov/api:latest as build
 
+# Pyinstaller necessities
+# PyInstaller needs zlib-dev, gcc, libc-dev, and musl-dev
+RUN apk --update --no-cache add \
+    zlib-dev \
+    musl-dev \
+    libc-dev \
+    libffi-dev \
+    gcc \
+    g++ \
+    git \
+    pwgen \
+    && pip install --upgrade pip
+
+# Build bootloader for alpine
+RUN git clone --depth 1 --single-branch --branch v3.4 https://github.com/pyinstaller/pyinstaller.git /tmp/pyinstaller \
+    && cd /tmp/pyinstaller/bootloader \
+    && CFLAGS="-Wno-stringop-overflow" python ./waf configure --no-lsb all \
+    && pip install .. \
+    && rm -Rf /tmp/pyinstaller
+
 # install cython 
-RUN pip install Cython
+RUN         pip install cython==3.0a1
 
 # execute Cython script in app dir 
-COPY ./enterprise_compile.py /app/enterprise_compile.py
+COPY ./enterprise/enterprise_compile.py /app/enterprise_compile.py
 RUN python enterprise_compile.py build_ext 
 
 # restructure project and remove unneeded files.
-COPY ./enterprise_cleanup.sh /app/enterprise_cleanup.sh
+COPY ./enterprise/enterprise_cleanup.sh /app/enterprise_cleanup.sh
 RUN chmod +x /app/enterprise_cleanup.sh
 RUN ./enterprise_cleanup.sh
 
+#Install Pycrypto 
+RUN pip install PyCrypto==2.6.1
