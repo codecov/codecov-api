@@ -1,5 +1,4 @@
 from django.test import TransactionTestCase
-from django.db import connection
 
 from unittest.mock import patch
 
