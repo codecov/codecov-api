@@ -488,7 +488,10 @@ class CoverageChartHelpersTest(TestCase):
                 assert results[i]["timestamp"] > results[i + 1]["timestamp"]
 
 
-class TestChartQueryRunner(TestCase):
+class TestChartQueryRunnerQuery(TestCase):
+    """
+    Tests for the querying-part of the ChartQueryRunner.
+    """
     def setUp(self):
         self.org = OwnerFactory()
         self.repo1 = RepositoryFactory(author=self.org)
@@ -601,6 +604,67 @@ class TestChartQueryRunner(TestCase):
         assert results[0]["date"] > results[1]["date"]
 
 
+class TestChartQueryRunnerHelperMethods(TestCase):
+    """
+    Tests for the non-querying-parts of the ChartQueryRunner, such
+    as validation and parameter transformation.
+    """
+    def setUp(self):
+        self.org = OwnerFactory()
+        self.user = OwnerFactory()
+
+    def test_repoids(self):
+        repo1, repo2 = RepositoryFactory(author=self.org), RepositoryFactory(author=self.org)
+        self.user.permission = [repo1.repoid, repo2.repoid]
+        self.user.save()
+        qr = ChartQueryRunner(
+            self.user,
+            {
+                "owner_username": self.org.username,
+                "service": self.org.service,
+                "grouping_unit": "day"
+            }
+        )
+
+        with self.subTest("returns repoids"):
+            assert set(qr.repoids) == set([repo1.repoid, repo2.repoid])
+
+        with self.subTest("filters by supplied repo names"):
+            qr = ChartQueryRunner(
+                self.user,
+                {
+                    "owner_username": self.org.username,
+                    "service": self.org.service,
+                    "grouping_unit": "day",
+                    "repositories": [repo1.name]
+                }
+            )
+            assert qr.repoids == (repo1.repoid,)
+
+    def test_interval(self):
+        with self.subTest("translates quarter into 3 months"):
+            pass
+
+        with self.subTest("transforms grouping unit into '1 {grouping_unit}'"):
+            pass
+
+    def test_first_commit_date_returns_date_of_first_commit_in_repoids(self):
+        pass
+
+    def test_start_date(self):
+        with self.subTest("returns parsed start date if supplied"):
+            pass
+        with self.subTest("returns first_commit_date if not supplied"):
+            pass
+
+    def test_end_date(self):
+        with self.subTest("returns parsed end date if supplied"):
+            pass
+
+        with self.subTest("returns datetime.now() if not supplied"):
+            pass
+
+
 @patch("internal_api.permissions.RepositoryPermissionsService.has_read_permissions")
 class RepositoryCoverageChartTest(InternalAPITest):
     def _retrieve(self, kwargs={}, data={}):
@@ -710,16 +774,4 @@ class RepositoryCoverageChartTest(InternalAPITest):
 
 class TestOrgAnalyticsChart(InternalAPITest):
     def setUp(self):
-        pass
-
-    def test_doesnt_include_repos_outside_of_viewable_repos(self):
-        pass
-
-    def test_response_for_two_commits_same_date(self):
-        pass
-
-    def test_response_for_two_commits_different_dates(self):
-        pass
-
-    def test_accepted_time_intervals(self):
         pass

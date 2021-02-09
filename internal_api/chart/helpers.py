@@ -87,34 +87,6 @@ def validate_params(data):
         raise ValidationError(v.errors)
 
 
-def validate_analytics_chart_params(request_params):
-    params_schema = {
-        "owner_username": {"type": "string", "required": True},
-        "service": {"type": "string", "required": False},
-        "repositories": {"type": "list"},
-        "start_date": {"type": "string"},
-        "end_date": {"type": "string"},
-        "grouping_unit": {
-            "type": "string",
-            "required": True,
-            "allowed": [
-                "day",
-                "week",
-                "month",
-                "quarter",
-                "year",
-            ], # Must be one acceptable by Postgres DATE_TRUNC
-        },
-        "coverage_timestamp_ordering": {
-            "type": "string",
-            "allowed": ["increasing", "decreasing"],
-        },
-    }
-    v = Validator(params_schema)
-    if not v.validate(data):
-        raise ValidationError(v.errors)
-
-
 def annotate_commits_with_totals(queryset):
     """
     Extract values from a commit's "totals" field and annotate the commit directly with those values.
@@ -198,10 +170,8 @@ class ChartQueryRunner:
         Returns 'end_date' to use in date spine.
         """
         if "end_date" in self.request_params:
-            end_date = parser.parse(self.request_params.get("end_date"))
-        else:
-            end_date = datetime.date(datetime.now())
-        return end_date
+            return parser.parse(self.request_params.get("end_date"))
+        return datetime.date(datetime.now())
 
     @property
     def interval(self):
@@ -243,7 +213,7 @@ class ChartQueryRunner:
         )
 
         if self.request_params.get("repositories", []):
-            repos = repos.filter(name__in=request_params.get("repositories", []))
+            repos = repos.filter(name__in=self.request_params.get("repositories", []))
 
         return tuple(repos.values_list("repoid", flat=True))
 
@@ -273,8 +243,8 @@ class ChartQueryRunner:
     def _validate_parameters(self):
         params_schema = {
             "owner_username": {"type": "string", "required": True},
-            "service": {"type": "string", "required": False},
-            "repositories": {"type": "list"},
+            "service": {"type": "string", "required": True},
+            "repositories": {"type": "list", "required": False},
             "start_date": {"type": "string", "required": False},
             "end_date": {"type": "string", "required": False},
             "grouping_unit": {
@@ -291,6 +261,7 @@ class ChartQueryRunner:
             "coverage_timestamp_ordering": {
                 "type": "string",
                 "allowed": ["increasing", "decreasing"],
+                "required": False
             },
         }
         v = Validator(params_schema)
