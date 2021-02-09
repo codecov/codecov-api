@@ -32,7 +32,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Commit',
             fields=[
-                ('commitid', models.TextField(primary_key=True, serialize=False)),
+                ('commitid', models.TextField(serialize=False)),
                 ('timestamp', models.DateTimeField(auto_now_add=True)),
                 ('updatestamp', models.DateTimeField(auto_now=True)),
                 ('ci_passed', models.BooleanField()),
