@@ -84,7 +84,7 @@ class Commit(models.Model):
         ERROR = 'error'
         SKIPPED = 'skipped'
 
-    commitid = models.TextField(primary_key=True)
+    commitid = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
     updatestamp = models.DateTimeField(auto_now=True)
     author = models.ForeignKey(

@@ -323,7 +323,13 @@ def insert_commit(commitid, branch, pr, repository, owner, parent_commit_id=None
         commit = Commit.objects.get(
             commitid=commitid, repository=repository
         )
-        commit.state = "pending"
+        if commit.state != "pending":
+           commit.state = "pending"
+           commit.save()
+        if parent_commit_id and commit.parent_commit_id is None:
+           commit.parent_commit_id = parent_commit_id
+           commit.save()
+            
     except Commit.DoesNotExist:
         log.info("Creating new commit for upload",                 
             extra=dict(
@@ -338,11 +344,8 @@ def insert_commit(commitid, branch, pr, repository, owner, parent_commit_id=None
         commit.branch = branch
         commit.pullid = pr
         commit.merged = False if pr is not None else None
-
-    if parent_commit_id and not commit.parent_commit_id:
         commit.parent_commit_id = parent_commit_id
-
-    commit.save()
+        commit.save()
 
 
 def get_global_tokens():
