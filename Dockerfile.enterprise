@@ -2,7 +2,7 @@ FROM codecov/api:latest as build
 
 # install cython 
 RUN pip install Cython
-
+ENV RUN_ENV=ENTERPRISE
 # execute Cython script in app dir 
 COPY ./enterprise_compile.py /app/enterprise_compile.py
 RUN python enterprise_compile.py build_ext 
@@ -11,4 +11,6 @@ RUN python enterprise_compile.py build_ext
 COPY ./enterprise_cleanup.sh /app/enterprise_cleanup.sh
 RUN chmod +x /app/enterprise_cleanup.sh
 RUN ./enterprise_cleanup.sh
-
+COPY ./enterprise.sh /app/enterprise.sh
+RUN chmod +x /app/enterprise.sh
+ENTRYPOINT ["./enterprise.sh"]

@@ -8,7 +8,7 @@ cp /app/manage.py /enterprise/manage.py
 cp /app/conftest.py /enterprise/conftest.py
 cp /app/celery_config.py /enterprise/celery_config.py
 
-# must copy over migrations becuase they don't compile.
+# must copy over migrations because they don't compile.
 cp -rf /app/core/migrations/ /enterprise/migrations
 
 # delete the .py files, etc

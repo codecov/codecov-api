@@ -3,7 +3,10 @@ import os
 from utils.config import get_config, get_settings_module
 
 DEBUG = False
+THIS_POD_IP = os.environ.get("THIS_POD_IP")
 ALLOWED_HOSTS = get_config("setup", "api_allowed_hosts", default=["*"])
+if THIS_POD_IP
+    ALLOWED_HOSTS.append(THIS_POD_IP)
 CORS_ALLOW_CREDENTIALS = True
 CODECOV_URL = get_config("setup", "codecov_url")
 
