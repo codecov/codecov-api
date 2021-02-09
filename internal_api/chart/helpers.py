@@ -1,11 +1,16 @@
 from django.db.models.functions import Trunc, Cast
 from django.db.models import FloatField, Case, When, Value, F
 from django.contrib.postgres.fields.jsonb import KeyTextTransform
+from django.utils.functional import cached_property
+from django.db import connection
+
 from rest_framework.exceptions import ValidationError
 from cerberus import Validator
-from django.db import connection
 from datetime import datetime
+from dateutil import parser
+
 from core.models import Commit
+from codecov_auth.models import Owner
 
 
 class ChartParamValidator(Validator):
@@ -155,10 +160,17 @@ def apply_grouping(queryset, data):
     # should be the one with the min/max value we want to aggregate by
 
 
+class ChartQueryRunner:
+    """
+    Houses the SQL query that retrieves data for analytics chart, and
+    the associated parameter validation + transformation required for it.
+    """
+    def __init__(self, user, request_params):
+        self.user = user
+        self.request_params = request_params
+        self._validate_parameters()
 
-
-def retrieve_org_analytics_data(repoids, start_date, end_date, grouping_unit, ordering=""):
-    def _dictfetchall(cursor):
+    def _dictfetchall(self, cursor):
         """
         Return all rows from a cursor as a dict
         Copied from: https://docs.djangoproject.com/en/3.1/topics/db/sql/#executing-custom-sql-directly
@@ -169,114 +181,236 @@ def retrieve_org_analytics_data(repoids, start_date, end_date, grouping_unit, or
             for row in cursor.fetchall()
         ]
 
-    # We get the first commit date, and begin the time series from there regardless
-    # of the start_date. We need to do this in order to pick up commit data from the past
-    # in case the start date is after the latest commit of one of the repos in 'repoids'.
-    # Then we limit the results to after the 'start_date' at the end of the query.
-    first_commit_date = datetime.date(
-        Commit.objects.filter(
-            repository__repoid__in=repoids,
-            repository__branch=F("branch")
-        ).annotate(
-            truncated_date=Trunc("timestamp", grouping_unit)
-        ).order_by("timestamp").values_list("truncated_date", flat=True)[0]
-    )
+    @property
+    def start_date(self):
+        """
+        Lower bound on the date-range of commit data returned by query.
+        Date of first commit made in any repo of 'repoids' is used if
+        not set.
+        """
+        if "start_date" in self.request_params:
+            return parser.parse(self.request_params.get("start_date"))
+        return self.first_commit_date
 
-    # Set start date if not provided
-    if start_date is None:
-        start_date = first_commit_date
+    @property
+    def end_date(self):
+        """
+        Returns 'end_date' to use in date spine.
+        """
+        if "end_date" in self.request_params:
+            end_date = parser.parse(self.request_params.get("end_date"))
+        else:
+            end_date = datetime.date(datetime.now())
+        return end_date
 
-    with connection.cursor() as cursor:
-        cursor.execute(
-            """
-            WITH date_series AS (
-                SELECT
-                    t::date AS "date"
-                FROM generate_series(timestamp '{first_commit_date}', timestamp '{end_date}', '1 {grouping_unit}') t
-            ), graph_repos AS (
-                SELECT
-                    r.repoid,
-                    r.name,
-                    r.branch
-                FROM
-                    repos r
-                WHERE r.repoid IN {repoids}
-            ), spine AS (
-                SELECT
-                    ds.date,
-                    r.repoid
-                FROM date_series ds
-                CROSS JOIN graph_repos r
-            ), t_ranked_commits AS (
-                SELECT
-                    ROW_NUMBER() OVER (PARTITION BY c.repoid, DATE_TRUNC('{grouping_unit}', c.timestamp) ORDER BY timestamp DESC NULLS LAST) AS commit_rank,
-                    DATE_TRUNC('{grouping_unit}', c.timestamp) AS "truncated_date",
-                    c.timestamp AS commit_timestamp,
-                    c.totals,
-                    r.repoid
-                FROM
-                    commits c
-                INNER JOIN graph_repos r ON r.repoid = c.repoid AND r.branch = c.branch AND c.state = 'complete'
-            ), commits_spine AS (
-                SELECT
-                    s.date AS spine_date,
-                    trc.truncated_date AS truncated_commit_date,
-                    trc.commit_timestamp,
-                    trc.totals AS totals,
-                    s.repoid
-                FROM spine s
-                LEFT JOIN t_ranked_commits trc ON trc.truncated_date = s.date AND trc.repoid = s.repoid AND trc.commit_rank = 1
-            ), grouped AS (
-                SELECT
-                    spine_date,
-                    truncated_commit_date,
-                    totals,
-                    repoid,
-                    SUM(CASE WHEN totals IS NOT NULL THEN 1 END) OVER (PARTITION BY repoid ORDER BY spine_date) AS grp_commit
-                FROM commits_spine
-            ), corrected AS (
-                SELECT
-                    spine_date,
-                    FIRST_VALUE(totals) OVER (PARTITION BY repoid, grp_commit ORDER BY spine_date) AS corrected_totals
-                FROM
-                    grouped
-            ), parsed_totals AS (
-                SELECT
-                    spine_date,
-                    (CASE WHEN corrected_totals IS NOT NULL then (corrected_totals->>'h')::numeric WHEN corrected_totals IS NULL then 0 END) as hits,
-                    (CASE WHEN corrected_totals IS NOT NULL then (corrected_totals->>'m')::numeric WHEN corrected_totals IS NULL then 0 END) as misses,
-                    (CASE WHEN corrected_totals IS NOT NULL then (corrected_totals->>'p')::numeric WHEN corrected_totals IS NULL then 0 END) as partials,
-                    (CASE WHEN corrected_totals IS NOT NULL then (corrected_totals->>'n')::numeric WHEN corrected_totals IS NULL then 0 END) as lines
-                FROM
-                    corrected
-            ), summed_totals AS (
-                SELECT
-                    spine_date::timestamp at time zone 'UTC' AS date,
-                    SUM(hits) AS total_hits,
-                    SUM(misses) AS total_misses,
-                    SUM(partials) AS total_partials,
-                    SUM(lines) AS total_lines,
-                    SUM(hits) / SUM(lines) * 100 AS coverage
-                FROM
-                    parsed_totals
-                GROUP BY spine_date
-                ORDER BY spine_date {ordering}
-            )
+    @property
+    def interval(self):
+        """
+        Time interval between datapoints constructed in query.
+        Derived from 'grouping_unit' request parameter.
+        """
+        if self.grouping_unit == "quarter":
+            return "3 months"
+        return f"1 {self.grouping_unit}"
 
-            SELECT
-                *
-            FROM summed_totals
-            WHERE date >= DATE_TRUNC('{grouping_unit}', timestamp '{start_date}');
-            """.format(
-                repoids=tuple(repoids),
-                first_commit_date=first_commit_date,
-                start_date=start_date,
-                end_date=end_date,
-                grouping_unit=grouping_unit,
-                ordering=ordering
-            )
+    @property
+    def grouping_unit(self):
+        return self.request_params.get("grouping_unit")
 
+    @property
+    def ordering(self):
+        """
+        Data ordering is by ascending date, unless "decreasing" is
+        supplied as ordering param.
+        """
+        if self.request_params.get("coverage_timestamp_ordering") == "decreasing":
+            return "DESC"
+        return ""
 
+    @cached_property
+    def repoids(self):
+        """
+        Returns a tuple of repoids of the repositories being queried.
+        """
+        organization = Owner.objects.get(
+            service=self.request_params["service"],
+            username=self.request_params["owner_username"]
         )
 
-        return _dictfetchall(cursor)
+        # Get list of relevant repoids
+        repos = organization.repository_set.viewable_repos(
+            self.user
+        )
+
+        if self.request_params.get("repositories", []):
+            repos = repos.filter(name__in=request_params.get("repositories", []))
+
+        return tuple(repos.values_list("repoid", flat=True))
+
+    @cached_property
+    def first_commit_date(self):
+        """
+        Date of first commit made to any repo in 'self.repoids'. Used as initial
+        date for date_spine query.
+        """
+        return datetime.date(
+            Commit.objects.filter(
+                repository__repoid__in=self.repoids,
+                repository__branch=F("branch")
+            ).annotate(
+                truncated_date=Trunc(
+                    "timestamp",
+                    self.request_params.get("grouping_unit")
+                )
+            ).order_by(
+                "timestamp"
+            ).values_list(
+                "truncated_date",
+                flat=True
+            )[0]
+        )
+
+    def _validate_parameters(self):
+        params_schema = {
+            "owner_username": {"type": "string", "required": True},
+            "service": {"type": "string", "required": False},
+            "repositories": {"type": "list"},
+            "start_date": {"type": "string", "required": False},
+            "end_date": {"type": "string", "required": False},
+            "grouping_unit": {
+                "type": "string",
+                "required": True,
+                "allowed": [
+                    "day",
+                    "week",
+                    "month",
+                    "quarter",
+                    "year",
+                ], # Must be one acceptable by Postgres DATE_TRUNC
+            },
+            "coverage_timestamp_ordering": {
+                "type": "string",
+                "allowed": ["increasing", "decreasing"],
+            },
+        }
+        v = Validator(params_schema)
+        if not v.validate(self.request_params):
+            raise ValidationError(v.errors)
+
+    def run_query(self):
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f"""
+                WITH date_series AS (
+                    SELECT
+                        t::date AS "date"
+                    FROM generate_series(
+                        timestamp '{self.first_commit_date}',
+                        timestamp '{self.end_date}',
+                        '{self.interval}'
+                    ) t
+                ), graph_repos AS (
+                    SELECT
+                        r.repoid,
+                        r.name,
+                        r.branch
+                    FROM
+                        repos r
+                    WHERE r.repoid IN {self.repoids}
+                ), spine AS (
+                    SELECT
+                        ds.date,
+                        r.repoid
+                    FROM date_series ds
+                    CROSS JOIN graph_repos r
+                ), t_ranked_commits AS (
+                    SELECT
+                        ROW_NUMBER() OVER (
+                            PARTITION BY c.repoid, DATE_TRUNC('{self.grouping_unit}', c.timestamp)
+                            ORDER BY timestamp DESC NULLS LAST
+                        ) AS commit_rank,
+                        DATE_TRUNC('{self.grouping_unit}', c.timestamp) AS "truncated_date",
+                        c.timestamp AS commit_timestamp,
+                        c.totals,
+                        r.repoid
+                    FROM
+                        commits c
+                    INNER JOIN graph_repos r ON r.repoid = c.repoid
+                        AND r.branch = c.branch
+                        AND c.state = 'complete'
+                ), commits_spine AS (
+                    SELECT
+                        s.date AS spine_date,
+                        trc.truncated_date AS truncated_commit_date,
+                        trc.commit_timestamp,
+                        trc.totals AS totals,
+                        s.repoid
+                    FROM spine s
+                    LEFT JOIN t_ranked_commits trc ON trc.truncated_date = s.date
+                      AND trc.repoid = s.repoid
+                      AND trc.commit_rank = 1
+                ), grouped AS (
+                    SELECT
+                        spine_date,
+                        truncated_commit_date,
+                        totals,
+                        repoid,
+                        SUM(CASE
+                            WHEN totals IS NOT NULL THEN 1 END
+                        ) OVER (
+                            PARTITION BY repoid
+                            ORDER BY spine_date
+                        ) AS grp_commit
+                    FROM commits_spine
+                ), corrected AS (
+                    SELECT
+                        spine_date,
+                        FIRST_VALUE(totals) OVER (
+                            PARTITION BY repoid, grp_commit
+                            ORDER BY spine_date
+                        ) AS corrected_totals
+                    FROM
+                        grouped
+                ), parsed_totals AS (
+                    SELECT
+                        spine_date,
+                        (CASE
+                            WHEN corrected_totals IS NOT NULL then (corrected_totals->>'h')::numeric
+                            WHEN corrected_totals IS NULL then 0 END
+                        ) as hits,
+                        (CASE
+                            WHEN corrected_totals IS NOT NULL then (corrected_totals->>'m')::numeric
+                            WHEN corrected_totals IS NULL then 0 END
+                        ) as misses,
+                        (CASE
+                            WHEN corrected_totals IS NOT NULL then (corrected_totals->>'p')::numeric
+                            WHEN corrected_totals IS NULL then 0 END
+                        ) as partials,
+                        (CASE
+                            WHEN corrected_totals IS NOT NULL then (corrected_totals->>'n')::numeric
+                            WHEN corrected_totals IS NULL then 0 END
+                        ) as lines
+                    FROM
+                        corrected
+                ), summed_totals AS (
+                    SELECT
+                        spine_date::timestamp at time zone 'UTC' AS date,
+                        SUM(hits) AS total_hits,
+                        SUM(misses) AS total_misses,
+                        SUM(partials) AS total_partials,
+                        SUM(lines) AS total_lines,
+                        SUM(hits) / SUM(lines) * 100 AS coverage
+                    FROM
+                        parsed_totals
+                    GROUP BY spine_date
+                    ORDER BY spine_date {self.ordering}
+                )
+
+                SELECT
+                    *
+                FROM summed_totals
+                WHERE date >= DATE_TRUNC('{self.grouping_unit}', timestamp '{self.start_date}');
+                """
+            )
+
+            return self._dictfetchall(cursor)

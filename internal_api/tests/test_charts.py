@@ -18,7 +18,7 @@ from internal_api.chart.helpers import (
     annotate_commits_with_totals,
     apply_grouping,
     validate_params,
-    retrieve_org_analytics_data
+    ChartQueryRunner,
 )
 from dateutil.relativedelta import relativedelta
 from rest_framework.exceptions import ValidationError
@@ -487,76 +487,118 @@ class CoverageChartHelpersTest(TestCase):
             for i in range(len(results) - 1):
                 assert results[i]["timestamp"] > results[i + 1]["timestamp"]
 
-    def test_retrieve_org_analytics_data(self):
-        with self.subTest("aggregates two repositories"):
-            repo1, repo2 = RepositoryFactory(author=self.org1), RepositoryFactory(author=self.org1)
-            commit1 = G(
-                model=Commit,
-                repository=repo1,
-                totals={"h": 100, "n": 120, "p": 10, "m": 10},
-                branch=repo1.branch,
-                state="complete"
-            )
-            commit2 = G(
-                model=Commit,
-                repository=repo2,
-                totals={"h": 14, "n": 25, "p": 6, "m": 5},
-                branch=repo2.branch,
-                state="complete"
-            )
-            results = retrieve_org_analytics_data(
-                repoids=[repo1.repoid, repo2.repoid],
-                start_date=min([commit1.timestamp, commit2.timestamp]),
-                end_date=datetime.now(),
-                grouping_unit="day"
+
+class TestChartQueryRunner(TestCase):
+    def setUp(self):
+        self.org = OwnerFactory()
+        self.repo1 = RepositoryFactory(author=self.org)
+        self.repo2 = RepositoryFactory(author=self.org)
+        self.user = OwnerFactory(permission=[self.repo1.repoid, self.repo2.repoid])
+        self.commit1 = G(
+            model=Commit,
+            repository=self.repo1,
+            totals={"h": 100, "n": 120, "p": 10, "m": 10},
+            branch=self.repo1.branch,
+            state="complete"
+        )
+        self.commit2 = G(
+            model=Commit,
+            repository=self.repo2,
+            totals={"h": 14, "n": 25, "p": 6, "m": 5},
+            branch=self.repo2.branch,
+            state="complete"
+        )
+
+    def test_query_aggregates_multiple_repository_totals(self):
+        query_runner = ChartQueryRunner(
+            user=self.user,
+            request_params={
+                "owner_username": self.org.username,
+                "service": self.org.service,
+                "end_date": str(datetime.now()),
+                "grouping_unit": "day"
+            }
+        )
+
+        results = query_runner.run_query()
+
+        assert len(results) == 1
+        assert results[0]["total_hits"] == 114
+        assert results[0]["total_lines"] == 145
+        assert results[0]["total_misses"] == 15
+        assert results[0]["total_partials"] == 16
+
+    def test_query_aggregates_with_latest_commit_if_no_recent_upload(self):
+        # set timestamp to past, before 'start_date'
+        self.commit1.timestamp = datetime.now() - timedelta(days=7)
+        self.commit1.save()
+
+        query_runner = ChartQueryRunner(
+            user=self.user,
+            request_params={
+                "owner_username": self.org.username,
+                "service": self.org.service,
+                "start_date": str(datetime.now() - timedelta(days=1)),
+                "grouping_unit": "day"
+            }
+        )
+
+        results = query_runner.run_query()
+
+        assert len(results) == 2
+
+        # Day before commit2 is created, a few days after commit1 is created
+        assert results[0]["total_hits"] == 100
+        assert results[0]["total_lines"] == 120
+        assert results[0]["total_misses"] == 10
+        assert results[0]["total_partials"] == 10
+        assert results[0]["coverage"] == Decimal('83.33333333333333333300')
+
+        # Day commit2 is created
+        assert results[1]["total_hits"] == 114
+        assert results[1]["total_lines"] == 145
+        assert results[1]["total_misses"] == 15
+        assert results[1]["total_partials"] == 16
+        assert results[1]["coverage"] == Decimal('78.62068965517241379300')
+
+    def test_query_supports_different_grouping_params(self):
+        self.commit1.timestamp = datetime.now() - timedelta(days=365)
+        self.commit1.save()
+        pairs = [("day", 365), ("week", 52), ("month", 12), ("quarter", 4), ("year", 1)]
+        for grouping_unit, expected_num_datapoints in pairs:
+            query_runner = ChartQueryRunner(
+                user=self.user,
+                request_params={
+                    "owner_username": self.org.username,
+                    "service": self.org.service,
+                    "start_date": str(datetime.now() - timedelta(days=365)),
+                    "grouping_unit": grouping_unit
+                }
             )
 
-            assert len(results) == 1
-            assert results[0]["total_hits"] == 114
-            assert results[0]["total_lines"] == 145
-            assert results[0]["total_misses"] == 15
-            assert results[0]["total_partials"] == 16
-            assert results[0]["coverage"] == Decimal('78.62068965517241379300')
+            results = query_runner.run_query()
 
-        with self.subTest("aggregates with latest commit if no recent upload"):
-            repo1, repo2 = RepositoryFactory(author=self.org1), RepositoryFactory(author=self.org1)
-            commit1 = G(
-                model=Commit,
-                repository=repo1,
-                totals={"h": 80, "n": 118, "p": 21, "m": 13},
-                branch=repo1.branch,
-                timestamp=datetime.now() - timedelta(days=7),
-                state="complete"
-            )
-            commit2 = G(
-                model=Commit,
-                repository=repo2,
-                totals={"h": 14, "n": 25, "p": 6, "m": 5},
-                branch=repo2.branch,
-                state="complete"
-            )
-            results = retrieve_org_analytics_data(
-                repoids=[repo1.repoid, repo2.repoid],
-                start_date=datetime.now() - timedelta(days=1),
-                end_date=datetime.now(),
-                grouping_unit="day"
-            )
+            assert len(results) == expected_num_datapoints + 1 # We add one because the date range is inclusive
 
-            assert len(results) == 2
+    def test_query_supports_reverse_ordering(self):
+        self.commit1.timestamp = datetime.now() - timedelta(days=7)
+        self.commit1.save()
 
-            # Day before commit2 is created, a few days after commit1 is created
-            assert results[0]["total_hits"] == 80
-            assert results[0]["total_lines"] == 118
-            assert results[0]["total_misses"] == 13
-            assert results[0]["total_partials"] == 21
-            assert results[0]["coverage"] == Decimal('67.79661016949152542400')
+        query_runner = ChartQueryRunner(
+            user=self.user,
+            request_params={
+                "owner_username": self.org.username,
+                "service": self.org.service,
+                "start_date": str(datetime.now() - timedelta(days=1)),
+                "grouping_unit": "day",
+                "coverage_timestamp_ordering": "decreasing"
+            }
+        )
 
-            # Day commit2 is created
-            assert results[1]["total_hits"] == 94
-            assert results[1]["total_lines"] == 143
-            assert results[1]["total_misses"] == 18
-            assert results[1]["total_partials"] == 27
-            assert results[1]["coverage"] == Decimal('65.73426573426573426600')
+        results = query_runner.run_query()
+
+        assert len(results) == 2
+        assert results[0]["date"] > results[1]["date"]
 
 
 @patch("internal_api.permissions.RepositoryPermissionsService.has_read_permissions")

@@ -10,10 +10,10 @@ from .helpers import (
     annotate_commits_with_totals,
     apply_grouping,
     validate_params,
-    validate_analytics_chart_params,
+    ChartQueryRunner,
 )
 from internal_api.permissions import ChartPermissions
-from internal_api.mixins import RepositoriesMixin
+from internal_api.mixins import RepositoriesMixin, OwnerPropertyMixin
 
 
 class RepositoryChartHandler(APIView, RepositoriesMixin):
@@ -133,12 +133,8 @@ class RepositoryChartHandler(APIView, RepositoriesMixin):
         return Response(data={"coverage": coverage, "complexity": complexity})
 
 
-class OrganizationChartHandler(APIView, RepositoriesMixin):
+class OrganizationChartHandler(APIView):
     """
-    Returns data used to populate the organization-level analytics chart. See "validate_params" for documentation on accepted parameters. 
-    Functions generally similarly to the repository chart, with a few exceptions: aggregates coverage across multiple repositories, 
-    doesn't return complexity, and doesn't support retrieving a list of commits (so coverage must be grouped by a unit of time).
-
     Responses take the following format: (example assumes grouping by month)
     {
         "coverage": [
@@ -161,54 +157,7 @@ class OrganizationChartHandler(APIView, RepositoriesMixin):
     permission_classes = [IsAuthenticated]
     parser_classes = [JSONParser]
 
-    def _get_ordering(self, request_params):
-        return "DESC" if request_params.get("ordering") == "decreasing" else ""
-
-    def _get_end_date(self, request_params):
-        # Determine end date to use, default is now
-        if "end_date" in request_params:
-            end_date = parser.parse(request_params.get("end_date"))
-        else:
-            end_date = datetime.date(datetime.now())
-        return end_date
-
-    def _get_start_date(self, request_params):
-        # Determine start date to use
-        if "start_date" in request_params:
-            start_date = parser.parse(request_params.get("start_date"))
-        else:
-            start_date = None
-        return start_date
-
-    def _get_repoids(self, user, request_params):
-        # Get organization
-        organization = Owner.objects.get(
-            service=request_params["service"],
-            username=request_params["owner_username"]
-        )
-
-        # Get list of relevant repoids
-        repoids = organization.repository_set.viewable_repos(
-            user
-        ).values_list("repoid", flat=True)
-
-        if request_params.get("repositories", []):
-            repoids = repoids.filter(name__in=request_params.get("repositories", []))
-
-        return repoids
-
     def post(self, request, *args, **kwargs):
-        request_params = {**self.request.data, **self.kwargs}
-        validate_analytics_chart_params(request_params)
-
-        return Response(
-            data={
-                "coverage": retrieve_org_analytics_data(
-                    repoids=self._get_repoids(request.user, request_params),
-                    start_date=self._get_start_date(request_params),
-                    end_date=self._get_end_date(request_params),
-                    grouping_unit=request_params.get("grouping_unit"),
-                    ordering=self._get_ordering(request_params)
-                )
-            }
-        )
+        query_runner = ChartQueryRunner(request_params={**kwargs, **request.data})
+        query_runner.validate_parameters()
+        return Response(data={"coverage": query_runner.run_query()})
