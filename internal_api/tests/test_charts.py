@@ -1,4 +1,5 @@
 import pytest
+from decimal import Decimal
 from django.test import TestCase
 from ddf import G
 from datetime import datetime, timedelta, date, time
@@ -16,8 +17,8 @@ from internal_api.chart.filters import apply_default_filters, apply_simple_filte
 from internal_api.chart.helpers import (
     annotate_commits_with_totals,
     apply_grouping,
-    aggregate_across_repositories,
     validate_params,
+    retrieve_org_analytics_data
 )
 from dateutil.relativedelta import relativedelta
 from rest_framework.exceptions import ValidationError
@@ -440,29 +441,6 @@ class CoverageChartHelpersTest(TestCase):
             grouped_queryset = apply_grouping(initial_queryset, data)
             check_grouping_correctness(grouped_queryset, initial_queryset, data)
 
-        with self.subTest("most recent commit, multiple repos"):
-            setup_commits(self.repo1_org1, 20, start_date="-365d")
-            setup_commits(self.repo2_org1, 20, start_date="-365d")
-
-            data = {
-                "owner_username": self.org1.username,
-                "grouping_unit": "quarter",
-                "agg_function": "max",
-                "agg_value": "timestamp",
-                "start_date": (datetime.now(tz=UTC) - relativedelta(months=12)).isoformat(),
-                "end_date": datetime.now(tz=UTC).isoformat(),
-                "repositories": [self.repo1_org1.name, self.repo2_org1.name],
-            }
-
-            initial_queryset = annotate_commits_with_totals(
-                apply_simple_filters(
-                    apply_default_filters(Commit.objects.all()), data, self.user
-                )
-            )
-            grouped_queryset = apply_grouping(initial_queryset, data)
-            check_grouping_correctness(grouped_queryset, initial_queryset, data)
-
-            aggregate_across_repositories(grouped_queryset)
 
     def test_ordering(self):
         with self.subTest("order by increasing dates"):
@@ -509,55 +487,76 @@ class CoverageChartHelpersTest(TestCase):
             for i in range(len(results) - 1):
                 assert results[i]["timestamp"] > results[i + 1]["timestamp"]
 
-    def test_aggregate_across_repositories(self):
-        repo2_org2 = RepositoryFactory(author=self.org2)
-        repo3_org2 = RepositoryFactory(author=self.org2)
-        repo4_org2 = RepositoryFactory(author=self.org2)
-        user2 = OwnerFactory(
-            service="github",
-            organizations=[self.org2.ownerid],
-            permission=[repo2_org2.repoid, repo3_org2.repoid, repo4_org2.repoid],
-        )
+    def test_retrieve_org_analytics_data(self):
+        with self.subTest("aggregates two repositories"):
+            repo1, repo2 = RepositoryFactory(author=self.org1), RepositoryFactory(author=self.org1)
+            commit1 = G(
+                model=Commit,
+                repository=repo1,
+                totals={"h": 100, "n": 120, "p": 10, "m": 10},
+                branch=repo1.branch,
+                state="complete"
+            )
+            commit2 = G(
+                model=Commit,
+                repository=repo2,
+                totals={"h": 14, "n": 25, "p": 6, "m": 5},
+                branch=repo2.branch,
+                state="complete"
+            )
+            results = retrieve_org_analytics_data(
+                repoids=[repo1.repoid, repo2.repoid],
+                start_date=min([commit1.timestamp, commit2.timestamp]),
+                end_date=datetime.now(),
+                grouping_unit="day"
+            )
 
-        setup_commits(
-            repo2_org2,
-            1,
-            start_date=datetime.today(),
-            lines=108,
-            hits=78,
-            partials=10.5,
-        )
-        setup_commits(
-            repo3_org2, 1, start_date=datetime.today(), lines=562, hits=208, partials=77
-        )
-        setup_commits(
-            repo4_org2, 1, start_date=datetime.today(), lines=342, hits=315, partials=1
-        )
+            assert len(results) == 1
+            assert results[0]["total_hits"] == 114
+            assert results[0]["total_lines"] == 145
+            assert results[0]["total_misses"] == 15
+            assert results[0]["total_partials"] == 16
+            assert results[0]["coverage"] == Decimal('78.62068965517241379300')
 
-        data = {
-            "owner_username": self.org2.username,
-            "grouping_unit": "day",
-            "agg_function": "max",
-            "agg_value": "timestamp",
-            "start_date": datetime.combine(date.today(), time(0, tzinfo=UTC)).isoformat(),
-            "repositories": [repo2_org2.name, repo3_org2.name, repo4_org2.name],
-        }
+        with self.subTest("aggregates with latest commit if no recent upload"):
+            repo1, repo2 = RepositoryFactory(author=self.org1), RepositoryFactory(author=self.org1)
+            commit1 = G(
+                model=Commit,
+                repository=repo1,
+                totals={"h": 80, "n": 118, "p": 21, "m": 13},
+                branch=repo1.branch,
+                timestamp=datetime.now() - timedelta(days=7),
+                state="complete"
+            )
+            commit2 = G(
+                model=Commit,
+                repository=repo2,
+                totals={"h": 14, "n": 25, "p": 6, "m": 5},
+                branch=repo2.branch,
+                state="complete"
+            )
+            results = retrieve_org_analytics_data(
+                repoids=[repo1.repoid, repo2.repoid],
+                start_date=datetime.now() - timedelta(days=1),
+                end_date=datetime.now(),
+                grouping_unit="day"
+            )
 
-        grouped_queryset = apply_grouping(
-            annotate_commits_with_totals(
-                apply_simple_filters(
-                    apply_default_filters(Commit.objects.all()), data, user2
-                )
-            ),
-            data,
-        )
+            assert len(results) == 2
 
-        result = aggregate_across_repositories(grouped_queryset)
-        assert len(result) == 1
-        assert result[0]["total_lines"] == 1012
-        assert result[0]["total_hits"] == 601
-        assert result[0]["total_partials"] == 88.5
-        assert result[0]["date"].date() == date.today()
+            # Day before commit2 is created, a few days after commit1 is created
+            assert results[0]["total_hits"] == 80
+            assert results[0]["total_lines"] == 118
+            assert results[0]["total_misses"] == 13
+            assert results[0]["total_partials"] == 21
+            assert results[0]["coverage"] == Decimal('67.79661016949152542400')
+
+            # Day commit2 is created
+            assert results[1]["total_hits"] == 94
+            assert results[1]["total_lines"] == 143
+            assert results[1]["total_misses"] == 18
+            assert results[1]["total_partials"] == 27
+            assert results[1]["coverage"] == Decimal('65.73426573426573426600')
 
 
 @patch("internal_api.permissions.RepositoryPermissionsService.has_read_permissions")
@@ -667,90 +666,18 @@ class RepositoryCoverageChartTest(InternalAPITest):
                 assert commit["coverage_change"] == commit["coverage"] - response.data["coverage"][index - 1]["coverage"]
 
 
-#@patch("internal_api.permissions.RepositoryPermissionsService.has_read_permissions")
-#class OrganizationCoverageChartTest(InternalAPITest):
-#    def _retrieve(self, kwargs={}, data={}):
-#        return self.client.post(
-#            reverse("chart-coverage-organization", kwargs=kwargs),
-#            data=data,
-#            content_type="application/json",
-#        )
-#
-#    def setUp(self):
-#        self.org1 = OwnerFactory()
-#        self.repo1_org1 = RepositoryFactory(author=self.org1)
-#        setup_commits(self.repo1_org1, 10, start_date="-4d")
-#
-#        self.repo2_org1 = RepositoryFactory(author=self.org1)
-#        setup_commits(self.repo2_org1, 10, start_date="-4d")
-#
-#        self.user = OwnerFactory(
-#            service="github",
-#            organizations=[self.org1.ownerid],
-#            permission=[self.repo1_org1.repoid, self.repo2_org1.repoid],
-#        )
-#        self.client.force_login(user=self.user)
-#
-#    def test_no_permissions(self, mocked_get_permissions):
-#        data = {
-#            "branch": "master",
-#            "start_date": datetime.now(tz=UTC) - timedelta(7),
-#            "end_date": datetime.now(tz=UTC),
-#            "grouping_unit": "day",
-#            "agg_function": "max",
-#            "agg_value": "coverage",
-#            "repositories": ["SOMEONE-ELSE-REPO"],
-#        }
-#
-#        kwargs = {"owner_username": self.org1.username, "service": "gh"}
-#
-#        response = self._retrieve(kwargs=kwargs, data=data)
-#        
-#        assert response.content == b'{"coverage":[]}'
-#        assert response.status_code == 200
-#
-#    def test_get_chart(self, mocked_get_permissions):
-#        data = {
-#            "branch": "master",
-#            "start_date": datetime.now(tz=UTC) - timedelta(7),
-#            "end_date": datetime.now(tz=UTC),
-#            "grouping_unit": "day",
-#            "agg_function": "max",
-#            "agg_value": "coverage",
-#            "repositories": [self.repo1_org1.name, self.repo2_org1.name],
-#        }
-#
-#        kwargs = {"owner_username": self.org1.username, "service": "gh"}
-#
-#        mocked_get_permissions.return_value = True
-#        response = self._retrieve(kwargs=kwargs, data=data)
-#
-#        assert response.status_code == 200
-#        assert len(response.data["coverage"]) > 0
-#        for item in response.data["coverage"]:
-#            assert "coverage" in item
-#            assert "total_lines" in item
-#            assert "total_hits" in item
-#            assert "total_partials" in item
-#            assert "total_misses" in item
-#
-#    def test_get_chart_default_params(self, mocked_get_permissions):
-#        data = {
-#            "grouping_unit": "day",
-#            "agg_function": "min",
-#            "agg_value": "timestamp",
-#        }
-#
-#        kwargs = {"owner_username": self.org1.username, "service": "gh"}
-#
-#        mocked_get_permissions.return_value = True
-#        response = self._retrieve(kwargs=kwargs, data=data)
-#
-#        assert response.status_code == 200
-#        assert len(response.data["coverage"]) > 0
-#        for item in response.data["coverage"]:
-#            assert "coverage" in item
-#            assert "total_lines" in item
-#            assert "total_hits" in item
-#            assert "total_partials" in item
-#            assert "total_misses" in item
+class TestOrgAnalyticsChart(InternalAPITest):
+    def setUp(self):
+        pass
+
+    def test_doesnt_include_repos_outside_of_viewable_repos(self):
+        pass
+
+    def test_response_for_two_commits_same_date(self):
+        pass
+
+    def test_response_for_two_commits_different_dates(self):
+        pass
+
+    def test_accepted_time_intervals(self):
+        pass

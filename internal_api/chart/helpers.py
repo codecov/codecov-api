@@ -1,8 +1,11 @@
 from django.db.models.functions import Trunc, Cast
+from django.db.models import FloatField, Case, When, Value, F
 from django.contrib.postgres.fields.jsonb import KeyTextTransform
-from django.db.models import FloatField, Case, When, Value
 from rest_framework.exceptions import ValidationError
 from cerberus import Validator
+from django.db import connection
+from datetime import datetime
+from core.models import Commit
 
 
 class ChartParamValidator(Validator):
@@ -79,6 +82,34 @@ def validate_params(data):
         raise ValidationError(v.errors)
 
 
+def validate_analytics_chart_params(request_params):
+    params_schema = {
+        "owner_username": {"type": "string", "required": True},
+        "service": {"type": "string", "required": False},
+        "repositories": {"type": "list"},
+        "start_date": {"type": "string"},
+        "end_date": {"type": "string"},
+        "grouping_unit": {
+            "type": "string",
+            "required": True,
+            "allowed": [
+                "day",
+                "week",
+                "month",
+                "quarter",
+                "year",
+            ], # Must be one acceptable by Postgres DATE_TRUNC
+        },
+        "coverage_timestamp_ordering": {
+            "type": "string",
+            "allowed": ["increasing", "decreasing"],
+        },
+    }
+    v = Validator(params_schema)
+    if not v.validate(data):
+        raise ValidationError(v.errors)
+
+
 def annotate_commits_with_totals(queryset):
     """
     Extract values from a commit's "totals" field and annotate the commit directly with those values.
@@ -124,31 +155,128 @@ def apply_grouping(queryset, data):
     # should be the one with the min/max value we want to aggregate by
 
 
-#def aggregate_across_repositories(grouped_queryset):
-#    """
-#    Used for the organization analytics chart, which shows total sums across all repositories for a given time unit.
-#    The grouped_queryset has the approprate commit for each repo grouped by time unit, we'll aggregate this to get the sum and weighted average. 
-#    """
-#    # Get the set of dates represented in the data, so we can retrieve the values for each repo within a given time window
-#    items = grouped_queryset.values("truncated_date", "totals")
-#
-#    datapoints = {}
-#
-#    for item in items:
-#        date_key = str(item["truncated_date"])
-#        if date_key in datapoints:
-#            datapoints[date_key]["total_lines"] += item["totals"]["n"]
-#            datapoints[date_key]["total_hits"] += item["totals"]["h"]
-#            datapoints[date_key]["total_partials"] += item["totals"]["p"]
-#            datapoints[date_key]["total_misses"] += item["totals"]["m"]
-#        else:
-#            datapoints[date_key] = {
-#                "date": item["truncated_date"],
-#                "total_lines": item["totals"]["n"],
-#                "total_hits": item["totals"]["h"],
-#                "total_partials": item["totals"]["p"],
-#                "total_misses": item["totals"]["m"]
-#            }
-#    for _, datapoint in datapoints.items():
-#        datapoint["coverage"] = datapoint["total_hits"] / datapoint["total_lines"] * 100
-#    return list(datapoints.values())
+
+
+def retrieve_org_analytics_data(repoids, start_date, end_date, grouping_unit, ordering=""):
+    def _dictfetchall(cursor):
+        """
+        Return all rows from a cursor as a dict
+        Copied from: https://docs.djangoproject.com/en/3.1/topics/db/sql/#executing-custom-sql-directly
+        """
+        columns = [col[0] for col in cursor.description]
+        return [
+            dict(zip(columns, row))
+            for row in cursor.fetchall()
+        ]
+
+    # We get the first commit date, and begin the time series from there regardless
+    # of the start_date. We need to do this in order to pick up commit data from the past
+    # in case the start date is after the latest commit of one of the repos in 'repoids'.
+    # Then we limit the results to after the 'start_date' at the end of the query.
+    first_commit_date = datetime.date(
+        Commit.objects.filter(
+            repository__repoid__in=repoids,
+            repository__branch=F("branch")
+        ).annotate(
+            truncated_date=Trunc("timestamp", grouping_unit)
+        ).order_by("timestamp").values_list("truncated_date", flat=True)[0]
+    )
+
+    # Set start date if not provided
+    if start_date is None:
+        start_date = first_commit_date
+
+    with connection.cursor() as cursor:
+        cursor.execute(
+            """
+            WITH date_series AS (
+                SELECT
+                    t::date AS "date"
+                FROM generate_series(timestamp '{first_commit_date}', timestamp '{end_date}', '1 {grouping_unit}') t
+            ), graph_repos AS (
+                SELECT
+                    r.repoid,
+                    r.name,
+                    r.branch
+                FROM
+                    repos r
+                WHERE r.repoid IN {repoids}
+            ), spine AS (
+                SELECT
+                    ds.date,
+                    r.repoid
+                FROM date_series ds
+                CROSS JOIN graph_repos r
+            ), t_ranked_commits AS (
+                SELECT
+                    ROW_NUMBER() OVER (PARTITION BY c.repoid, DATE_TRUNC('{grouping_unit}', c.timestamp) ORDER BY timestamp DESC NULLS LAST) AS commit_rank,
+                    DATE_TRUNC('{grouping_unit}', c.timestamp) AS "truncated_date",
+                    c.timestamp AS commit_timestamp,
+                    c.totals,
+                    r.repoid
+                FROM
+                    commits c
+                INNER JOIN graph_repos r ON r.repoid = c.repoid AND r.branch = c.branch AND c.state = 'complete'
+            ), commits_spine AS (
+                SELECT
+                    s.date AS spine_date,
+                    trc.truncated_date AS truncated_commit_date,
+                    trc.commit_timestamp,
+                    trc.totals AS totals,
+                    s.repoid
+                FROM spine s
+                LEFT JOIN t_ranked_commits trc ON trc.truncated_date = s.date AND trc.repoid = s.repoid AND trc.commit_rank = 1
+            ), grouped AS (
+                SELECT
+                    spine_date,
+                    truncated_commit_date,
+                    totals,
+                    repoid,
+                    SUM(CASE WHEN totals IS NOT NULL THEN 1 END) OVER (PARTITION BY repoid ORDER BY spine_date) AS grp_commit
+                FROM commits_spine
+            ), corrected AS (
+                SELECT
+                    spine_date,
+                    FIRST_VALUE(totals) OVER (PARTITION BY repoid, grp_commit ORDER BY spine_date) AS corrected_totals
+                FROM
+                    grouped
+            ), parsed_totals AS (
+                SELECT
+                    spine_date,
+                    (CASE WHEN corrected_totals IS NOT NULL then (corrected_totals->>'h')::numeric WHEN corrected_totals IS NULL then 0 END) as hits,
+                    (CASE WHEN corrected_totals IS NOT NULL then (corrected_totals->>'m')::numeric WHEN corrected_totals IS NULL then 0 END) as misses,
+                    (CASE WHEN corrected_totals IS NOT NULL then (corrected_totals->>'p')::numeric WHEN corrected_totals IS NULL then 0 END) as partials,
+                    (CASE WHEN corrected_totals IS NOT NULL then (corrected_totals->>'n')::numeric WHEN corrected_totals IS NULL then 0 END) as lines
+                FROM
+                    corrected
+            ), summed_totals AS (
+                SELECT
+                    spine_date::timestamp at time zone 'UTC' AS date,
+                    SUM(hits) AS total_hits,
+                    SUM(misses) AS total_misses,
+                    SUM(partials) AS total_partials,
+                    SUM(lines) AS total_lines,
+                    SUM(hits) / SUM(lines) * 100 AS coverage
+                FROM
+                    parsed_totals
+                GROUP BY spine_date
+                ORDER BY spine_date {ordering}
+            )
+
+            SELECT
+                *
+            FROM summed_totals
+            WHERE date >= DATE_TRUNC('{grouping_unit}', timestamp '{start_date}');
+            """.format(
+                repoids=tuple(repoids),
+                first_commit_date=first_commit_date,
+                start_date=start_date,
+                end_date=end_date,
+                grouping_unit=grouping_unit,
+                ordering=ordering
+            )
+
+
+        )
+
+        return _dictfetchall(cursor)
