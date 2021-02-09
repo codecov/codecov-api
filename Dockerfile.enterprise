@@ -21,16 +21,25 @@ RUN git clone --depth 1 --single-branch --branch v3.4 https://github.com/pyinsta
     && rm -Rf /tmp/pyinstaller
 
 # install cython 
-RUN         pip install cython==3.0a1
+RUN pip install cython==3.0a1
+RUN pip install PyCrypto==2.6.1
 
 # execute Cython script in app dir 
-COPY ./enterprise/enterprise_compile.py /app/enterprise_compile.py
-RUN python enterprise_compile.py build_ext 
-
-# restructure project and remove unneeded files.
-COPY ./enterprise/enterprise_cleanup.sh /app/enterprise_cleanup.sh
-RUN chmod +x /app/enterprise_cleanup.sh
-RUN ./enterprise_cleanup.sh
+COPY enterprise/ldd /pyinstaller/ldd
+COPY enterprise/setup.py setup.py
+COPY enterprise/cythonize.sh /pyinstaller/cythonize_everything.sh
 
 #Install Pycrypto 
-RUN pip install PyCrypto==2.6.1
+
+COPY enterprise/package.sh /pyinstaller/package.sh
+COPY enterprise/generate_pyinstaller_args.py /pyinstaller/generate_pyinstaller_args.py
+RUN  chmod a+x /pyinstaller/*
+RUN         ["/pyinstaller/cythonize_everything.sh"]
+
+RUN cat /pyinstaller/installer_args.txt
+
+RUN         ["/pyinstaller/package.sh"]
+
+USER        codecov
+
+WORKDIR     /home
