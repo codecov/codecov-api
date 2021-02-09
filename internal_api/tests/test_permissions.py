@@ -6,7 +6,8 @@ from unittest.mock import patch
 from core.tests.factories import RepositoryFactory
 from codecov_auth.tests.factories import OwnerFactory
 
-from internal_api.permissions import RepositoryPermissionsService
+from internal_api.permissions import RepositoryPermissionsService, UserIsAdminPermissions
+from internal_api.tests.test_utils import GetAdminProviderAdapter
 
 
 class MockedPermissionsAdapter:
@@ -140,3 +141,19 @@ class TestRepositoryPermissionsService(TestCase):
             owner.save()
             assert self.permissions_service.user_is_activated(user, owner) is False
 
+
+class TestUserIsAdminPermissions(TestCase):
+    def setUp(self):
+        self.permissions_class = UserIsAdminPermissions()
+
+    @patch('internal_api.permissions.get_provider')
+    def test_is_admin_on_provider_invokes_torngit_adapter_when_user_not_in_admin_array(
+        self,
+        mocked_get_adapter
+    ):
+        org = OwnerFactory()
+        user = OwnerFactory()
+
+        mocked_get_adapter.return_value = GetAdminProviderAdapter()
+        self.permissions_class._is_admin_on_provider(user, org)
+        assert mocked_get_adapter.return_value.last_call_args == {"username": user.username, "service_id": user.service_id}
