@@ -48,17 +48,21 @@ def generate_files_to_be_cythonized():
 def main():
     hidden_imports = set(
         [
+            'codecov',
+            'codecov.settings_base',
+            'codecov.settings_enterprise',
+            'codecov_auth',
+            'core',
             'corsheaders',
+            'internal_api',
             'rest_framework',
             'rest_framework.apps',
             'rest_framework.metadata',
             'rest_framework.mixins',
             'rest_framework.filters',
             'rest_framework.status',
-            'core',
-            'codecov',
-            'codecov_auth',
-            'internal_api',
+            'utils',
+            'utils.config'
         ]
     )
 

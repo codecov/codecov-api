@@ -24,6 +24,17 @@ RUN git clone --depth 1 --single-branch --branch v3.4 https://github.com/pyinsta
 RUN pip install cython==3.0a1
 RUN pip install PyCrypto==2.6.1
 
+# Remove the settings dev and enterprise files.
+# These should *never* make it to enterprise. 
+RUN rm /app/codecov/settings_dev.py
+RUN rm /app/codecov/settings_prod.py
+
+# Remove and rewrite the settings module to the
+# enterprise variant. This removes all reference to 
+# dev and prod settings. 
+RUN rm /app/utils/config.py
+COPY enterprise/config.py /app/utils/config.py
+
 # execute Cython script in app dir 
 COPY enterprise/ldd /pyinstaller/ldd
 COPY enterprise/setup.py setup.py
@@ -41,5 +52,6 @@ RUN         ["/pyinstaller/package.sh"]
 # we should run this as non priviledged user.
 # RUN             addgroup -S application \
 #     && adduser -S codecov -G application
-ENV RUN_ENV ENTERPRISE
+
+# copy the enterprise settings module.
 WORKDIR     /home
