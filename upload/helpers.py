@@ -5,8 +5,6 @@ from cerberus import Validator
 from json import dumps
 from rest_framework.exceptions import ValidationError, NotFound
 from django.core.exceptions import ObjectDoesNotExist
-from utils.config import get_config
-
 from core.models import Repository, Commit
 from codecov_auth.models import Owner
 from utils.config import get_config
@@ -15,7 +13,7 @@ from services.repo_providers import RepoProviderService
 from services.task import TaskService
 from services.segment import SegmentService
 from codecov_auth.constants import USER_PLAN_REPRESENTATIONS
-from shared.torngit.exceptions import TorngitObjectNotFoundError
+from shared.torngit.exceptions import TorngitObjectNotFoundError, TorngitClientError
 
 from upload.tokenless.tokenless import TokenlessUploadHandler
 
@@ -284,7 +282,15 @@ def determine_upload_commit_to_use(upload_params, repository):
             )
         except TorngitObjectNotFoundError as e:
             log.error(
-                "Unable to fetch commit from github. Not found",
+                "Unable to fetch commit. Not found",
+                extra=dict(
+                    commit=upload_params.get("commit"),
+                ),
+            )
+            return upload_params.get("commit")
+        except TorngitClientError as e:
+            log.error(
+                "Unable to fetch commit",
                 extra=dict(
                     commit=upload_params.get("commit"),
                 ),
@@ -312,19 +318,34 @@ def determine_upload_commit_to_use(upload_params, repository):
 
 
 def insert_commit(commitid, branch, pr, repository, owner, parent_commit_id=None):
-    commit, created = Commit.objects.update_or_create(
-        commitid=commitid, repository=repository, defaults={"state": "pending"}
-    )
-
-    if created:
+    
+    try:
+        commit = Commit.objects.get(
+            commitid=commitid, repository=repository
+        )
+        if commit.state != "pending":
+           commit.state = "pending"
+           commit.save()
+        if parent_commit_id and commit.parent_commit_id is None:
+           commit.parent_commit_id = parent_commit_id
+           commit.save()
+            
+    except Commit.DoesNotExist:
+        log.info("Creating new commit for upload",                 
+            extra=dict(
+            commit=commitid,
+            branch=branch,
+            repository=repository,
+            owner=owner
+        ),)
+        commit = Commit(
+            commitid=commitid, repository=repository, state="pending"
+        )
         commit.branch = branch
         commit.pullid = pr
         commit.merged = False if pr is not None else None
-
-    if parent_commit_id and not commit.parent_commit_id:
         commit.parent_commit_id = parent_commit_id
-
-    commit.save()
+        commit.save()
 
 
 def get_global_tokens():

@@ -125,10 +125,29 @@ class RepositoryQuerySet(QuerySet):
             name=git_repo['name']
         )
 
-        # If this is a fork, create the forked repo and save it to the new repo
-        if git_repo.get('fork'):
-            git_repo_fork = git_repo['fork']['repo']
-            git_repo_fork_owner = git_repo['fork']['owner']
+        # If this is a fork, create the forked repo and save it to the new repo.
+        # Depending on the source of this data, 'fork' may either be a boolean or a dict
+        # containing data of the fork. In the case it is a boolean, the forked repo's data
+        # is contained in the 'parent' field.
+        fork = git_repo.get('fork')
+        if fork:
+            if isinstance(fork, dict):
+                git_repo_fork = git_repo['fork']['repo']
+                git_repo_fork_owner = git_repo['fork']['owner']
+
+            elif isinstance(fork, bool):
+                parent = git_repo.get("parent")
+                git_repo_fork_owner = {
+                    "service_id": parent["owner"]["id"],
+                    "username": parent["owner"]["login"]
+                }
+                git_repo_fork = {
+                    "service_id": parent["id"],
+                    "private": parent["private"],
+                    "language": parent["language"],
+                    "branch": parent["default_branch"],
+                    "name": parent["name"]
+                }
 
             fork_owner, _ = Owner.objects.get_or_create(
                 service=owner.service,

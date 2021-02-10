@@ -35,3 +35,5 @@ CORS_ORIGIN_WHITELIST = ['app.codecov.io', 'codecov.io']
 CORS_ALLOW_CREDENTIALS = True
 CODECOV_URL = 'https://codecov.io'
 CODECOV_DASHBOARD_URL = 'https://app.codecov.io'
+
+DATA_UPLOAD_MAX_MEMORY_SIZE = 15000000

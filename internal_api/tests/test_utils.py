@@ -11,3 +11,16 @@ def to_drf_datetime_str(datetime):
     if value.endswith('+00:00'):
         value = value[:-6] + 'Z'
     return value
+
+
+class GetAdminProviderAdapter:
+    """
+    Mock adapter providing the `get_is_admin` coroutine, which returns `self.result`.
+    """
+    def __init__(self, result=False):
+        self.result = result
+        self.last_call_args = None
+
+    async def get_is_admin(self, user):
+        self.last_call_args = user
+        return self.result

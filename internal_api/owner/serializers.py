@@ -37,6 +37,7 @@ class ProfileSerializer(OwnerSerializer):
     class Meta:
         model = Owner
         fields = OwnerSerializer.Meta.fields + (
+            'service_id',
             'private_access',
             'email',
             'student',
@@ -124,10 +125,21 @@ class SubscriptionDetailSerializer(serializers.Serializer):
     customer = serializers.CharField()
 
 
+class RootOrganizationSerializer(serializers.Serializer):
+    """
+    Minimalist serializer to expose the root organization of a sub group
+    so we can expose the minimal data required for the UI while hiding data
+    that might only be for admin (invoice, billing data, etc)
+    """
+    username = serializers.CharField()
+    plan = PlanSerializer(source="pretty_plan")
+
+
 class AccountDetailsSerializer(serializers.ModelSerializer):
     plan = PlanSerializer(source="pretty_plan")
     checkout_session_id = serializers.SerializerMethodField()
     subscription_detail = serializers.SerializerMethodField()
+    root_organization = RootOrganizationSerializer()
 
     class Meta:
         model = Owner
@@ -142,7 +154,9 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
             'name',
             'email',
             'nb_active_private_repos',
-            'repo_total_credits'
+            'repo_total_credits',
+            'plan_provider',
+            'root_organization'
         )
 
     def _get_billing(self):

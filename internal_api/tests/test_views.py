@@ -385,6 +385,7 @@ class RepoCommitList(InternalAPITest):
         )
         assert response.status_code == 200
 
+    # TODO: Improve this test to not assert the pagination data
     def test_get_commits(self, mock_provider):
         mock_provider.return_value = True, True
         self.client.force_login(user=self.user)
@@ -400,6 +401,7 @@ class RepoCommitList(InternalAPITest):
             "count": 2,
             "next": None,
             "previous": None,
+            "total_pages": 1,
             "results": [
                 {
                     "commitid": self.second_test_commit.commitid,

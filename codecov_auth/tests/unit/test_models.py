@@ -1,4 +1,4 @@
-from django.test import TestCase
+from django.test import TransactionTestCase
 
 from unittest.mock import patch
 
@@ -16,7 +16,7 @@ from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
 
 
-class TestOwnerModel(TestCase):
+class TestOwnerModel(TransactionTestCase):
     def setUp(self):
         self.owner = OwnerFactory(
             username="codecov_name",
@@ -314,3 +314,22 @@ class TestOwnerModel(TestCase):
         assert self.owner.plan_activated_users == None
         assert self.owner.plan_auto_activate == True
         assert self.owner.stripe_subscription_id == None
+
+    def test_access_no_root_organization(self):
+        assert self.owner.root_organization == None
+
+    def test_access_root_organization(self):
+        root = OwnerFactory(service_id="1", service="gitlab")
+        parent = OwnerFactory(service_id="2", parent_service_id=root.service_id, service="gitlab")
+        self.owner.parent_service_id = parent.service_id
+        self.owner.service = "gitlab"
+        self.owner.save()
+
+        with self.assertNumQueries(3):
+            assert self.owner.root_organization == root
+
+        # cache the root organization id
+        assert self.owner.root_parent_service_id == root.service_id
+
+        with self.assertNumQueries(1):
+            self.owner.root_organization

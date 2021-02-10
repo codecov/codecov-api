@@ -7,6 +7,7 @@ from datetime import datetime
 from rest_framework.test import APITestCase
 from rest_framework.reverse import reverse
 from rest_framework import status
+from internal_api.tests.test_utils import GetAdminProviderAdapter
 
 from codecov_auth.tests.factories import OwnerFactory, SessionFactory
 from core.models import Pull, Repository
@@ -51,7 +52,9 @@ class UserViewSetTests(APITestCase):
         ]
 
     @patch('codecov_auth.models.Owner.is_admin', lambda self, owner: False)
-    def test_list_returns_403_if_user_not_admin(self):
+    @patch('internal_api.permissions.get_provider')
+    def test_list_returns_403_if_user_not_admin(self, get_provider_mock):
+        get_provider_mock.return_value = GetAdminProviderAdapter()
         response = self._list()
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
