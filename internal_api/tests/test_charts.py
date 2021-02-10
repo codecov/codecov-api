@@ -555,14 +555,14 @@ class TestChartQueryRunnerQuery(TestCase):
         assert results[0]["total_lines"] == 120
         assert results[0]["total_misses"] == 10
         assert results[0]["total_partials"] == 10
-        assert results[0]["coverage"] == Decimal('83.33333333333333333300')
+        assert results[0]["coverage"] == Decimal('91.66666666666666666700')
 
         # Day commit2 is created
         assert results[1]["total_hits"] == 114
         assert results[1]["total_lines"] == 145
         assert results[1]["total_misses"] == 15
         assert results[1]["total_partials"] == 16
-        assert results[1]["coverage"] == Decimal('78.62068965517241379300')
+        assert results[1]["coverage"] == Decimal('89.65517241379310344800')
 
     def test_query_supports_different_grouping_params(self):
         self.commit1.timestamp = datetime.now() - timedelta(days=365)

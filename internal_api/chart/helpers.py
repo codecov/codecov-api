@@ -157,8 +157,8 @@ class ChartQueryRunner:
     def start_date(self):
         """
         Lower bound on the date-range of commit data returned by query.
-        Date of first commit made in any repo of 'repoids' is used if
-        not set.
+        Returns date of first commit made in any repo of 'repoids' is
+        used if not set.
         """
         if "start_date" in self.request_params:
             return datetime.date(
@@ -388,7 +388,7 @@ class ChartQueryRunner:
                         SUM(misses) AS total_misses,
                         SUM(partials) AS total_partials,
                         SUM(lines) AS total_lines,
-                        SUM(hits) / SUM(lines) * 100 AS coverage
+                        (SUM(hits) + SUM(partials)) / SUM(lines) * 100 AS coverage
                     FROM
                         parsed_totals
                     GROUP BY spine_date

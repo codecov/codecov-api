@@ -135,6 +135,24 @@ class RepositoryChartHandler(APIView, RepositoriesMixin):
 
 class OrganizationChartHandler(APIView):
     """
+    Returns array of datapoints retrieved by ChartQueryRunner.
+    Response data format is:
+    {
+        "coverage": [
+            {
+                "date": "2019-06-01 00:00:00+00:00", <date for the time window>
+                "coverage": <coverage calculated by taking (total_partials + total_hits) / total_lines>,
+                "total_lines": <sum of lines across repositories from the commit we retrieved for the repo>,
+                "total_hits": <sum of hits across repositories>,
+                "total_partials": <sum of partials across repositories>,
+            },
+            {
+                "date": "2019-07-01 00:00:00+00:00",
+                ...
+            },
+            ...
+        ]
+    }
     """
     permission_classes = [IsAuthenticated]
     parser_classes = [JSONParser]
