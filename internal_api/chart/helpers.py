@@ -257,6 +257,8 @@ class ChartQueryRunner:
             "repositories": {"type": "list", "required": False},
             "start_date": {"type": "string", "required": False},
             "end_date": {"type": "string", "required": False},
+            "agg_function": {"type": "string", "required": False}, # Deprecated
+            "agg_value": {"type": "string", "required": False}, # Deprecated
             "grouping_unit": {
                 "type": "string",
                 "required": True,
