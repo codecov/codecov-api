@@ -735,7 +735,7 @@ class TestChartQueryRunnerHelperMethods(TestCase):
                     "grouping_unit": "day",
                     "start_date": str(start_date)
                 }
-            ).start_date == start_date
+            ).start_date == datetime.date(start_date)
 
         with self.subTest("returns first_commit_date if not supplied"):
             repo = RepositoryFactory(author=self.org)
