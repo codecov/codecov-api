@@ -31,7 +31,7 @@ jobs:
     - run:
         name: build container
         command: |-
-          make -f Makefile.circle build-requirements GH_ACCESS_TOKEN=$GH_ACCESS_TOKEN
+          make -f Makefile.circle build-requirements
           make -f Makefile.circle build VERSION=$CIRCLE_TAG
           make -f Makefile.circle push
   test:
