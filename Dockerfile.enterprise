@@ -1,16 +1,60 @@
-FROM codecov/api:latest as build
+FROM codecov/api:latest
+
+# Pyinstaller necessities
+# PyInstaller needs zlib-dev, gcc, libc-dev, and musl-dev
+RUN apk --update --no-cache add \
+    zlib-dev \
+    musl-dev \
+    libc-dev \
+    libffi-dev \
+    gcc \
+    g++ \
+    git \
+    pwgen \
+    && pip install --upgrade pip
+
+# Build bootloader for alpine
+RUN git clone --depth 1 --single-branch --branch v3.4 https://github.com/pyinstaller/pyinstaller.git /tmp/pyinstaller \
+    && cd /tmp/pyinstaller/bootloader \
+    && CFLAGS="-Wno-stringop-overflow" python ./waf configure --no-lsb all \
+    && pip install .. \
+    && rm -Rf /tmp/pyinstaller
 
 # install cython 
-RUN pip install Cython
-ENV RUN_ENV=ENTERPRISE
-# execute Cython script in app dir 
-COPY ./enterprise_compile.py /app/enterprise_compile.py
-RUN python enterprise_compile.py build_ext 
+RUN pip install cython==3.0a1
+RUN pip install PyCrypto==2.6.1
 
-# restructure project and remove unneeded files.
-COPY ./enterprise_cleanup.sh /app/enterprise_cleanup.sh
-RUN chmod +x /app/enterprise_cleanup.sh
-RUN ./enterprise_cleanup.sh
+# Remove the settings dev and enterprise files.
+# These should *never* make it to enterprise.
+RUN rm /app/codecov/settings_dev.py
+RUN rm /app/codecov/settings_prod.py
+
+# Remove and rewrite the settings module to the
+# enterprise variant. This removes all reference to
+# dev and prod settings.
+RUN rm /app/utils/config.py
+COPY enterprise/config.py /app/utils/config.py
+
+# execute Cython script in app dir 
+COPY enterprise/ldd /pyinstaller/ldd
+COPY enterprise/setup.py setup.py
+COPY enterprise/cythonize.sh /pyinstaller/cythonize_everything.sh
+
+# Not the cleanest,  but this helps with layer caching.
+RUN  chmod a+x /pyinstaller/*
+RUN         ["/pyinstaller/cythonize_everything.sh"]
+
+COPY enterprise/package.sh /pyinstaller/package.sh
+COPY enterprise/generate_pyinstaller_args.py /pyinstaller/generate_pyinstaller_args.py
+RUN  chmod a+x /pyinstaller/*
+RUN         ["/pyinstaller/package.sh"]
+ENV RUN_ENV=ENTERPRISE
+# we should run this as non priviledged user.
+# RUN             addgroup -S application \
+#     && adduser -S codecov -G application
+
+# copy the enterprise settings module.
+WORKDIR     /home
 COPY ./enterprise.sh /app/enterprise.sh
 RUN chmod +x /app/enterprise.sh
 ENTRYPOINT ["./enterprise.sh"]
