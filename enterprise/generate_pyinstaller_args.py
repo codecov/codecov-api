@@ -28,7 +28,9 @@ def find_imported_modules(filename):
 def generate_files_to_be_cythonized():
     files_to_exclude = [
         "codecov_auth/migrations/*.py",
-        "core/migrations/*.py"
+        "core/migrations/*.py",
+        "codecov/settings_dev.py",
+        "codecov/settings_enterprise.py"
     ]
     locations = get_relevant_paths('.')
     files = []
@@ -45,7 +47,19 @@ def generate_files_to_be_cythonized():
 
 def main():
     hidden_imports = set(
-        []
+        [
+            'corsheaders',
+            'rest_framework',
+            'rest_framework.apps',
+            'rest_framework.metadata',
+            'rest_framework.mixins',
+            'rest_framework.filters',
+            'rest_framework.status',
+            'core',
+            'codecov',
+            'codecov_auth',
+            'internal_api',
+        ]
     )
 
     base = celery.__file__.rsplit("/", 1)[0]

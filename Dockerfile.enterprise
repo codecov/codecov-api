@@ -1,4 +1,4 @@
-FROM codecov/api:latest as build
+FROM codecov/api:latest
 
 # Pyinstaller necessities
 # PyInstaller needs zlib-dev, gcc, libc-dev, and musl-dev
@@ -29,17 +29,17 @@ COPY enterprise/ldd /pyinstaller/ldd
 COPY enterprise/setup.py setup.py
 COPY enterprise/cythonize.sh /pyinstaller/cythonize_everything.sh
 
-#Install Pycrypto 
+# Not the cleanest,  but this helps with layer caching.
+RUN  chmod a+x /pyinstaller/*
+RUN         ["/pyinstaller/cythonize_everything.sh"]
 
 COPY enterprise/package.sh /pyinstaller/package.sh
 COPY enterprise/generate_pyinstaller_args.py /pyinstaller/generate_pyinstaller_args.py
 RUN  chmod a+x /pyinstaller/*
-RUN         ["/pyinstaller/cythonize_everything.sh"]
-
-RUN cat /pyinstaller/installer_args.txt
-
 RUN         ["/pyinstaller/package.sh"]
 
-USER        codecov
-
+# we should run this as non priviledged user.
+# RUN             addgroup -S application \
+#     && adduser -S codecov -G application
+ENV RUN_ENV ENTERPRISE
 WORKDIR     /home
