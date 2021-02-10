@@ -88,14 +88,17 @@ class RepositoryViewSet(
         )
 
         if self.action == 'list':
-            if self.request.query_params.get("exclude_uncovered", False):
-                queryset = queryset.exclude_uncovered()
+            before_date = self.request.query_params.get("before_date", datetime.now().isoformat())
+            branch=self.request.query_params.get("branch", None)
 
             queryset = queryset.with_latest_commit_totals_before(
-                self.request.query_params.get("before_date", datetime.now().isoformat()),
-                self.request.query_params.get("branch", None),
+                before_date=before_date,
+                branch=branch,
                 include_previous_totals=True
             ).with_latest_coverage_change()
+
+            if self.request.query_params.get("exclude_uncovered", False):
+                queryset = queryset.exclude_uncovered()
 
         return queryset
 
@@ -171,12 +174,11 @@ class RepositoryViewSet(
             queryset = queryset.filter(name__in=self.request.query_params.get("names", []))
 
         # Then only get the repositories with totals and then annotate the latest commit
-        results = queryset.exclude_uncovered(
-        ).with_latest_commit_totals_before(
+        results = queryset.with_latest_commit_totals_before(
             self.request.query_params.get("before_date", datetime.now().isoformat()),
             self.request.query_params.get("branch", None),
             include_previous_totals=True
-        ).get_aggregated_coverage()
+        ).exclude_uncovered().get_aggregated_coverage()
 
         return Response(data={
             "repos_count": results["repo_count"],

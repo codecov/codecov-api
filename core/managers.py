@@ -21,20 +21,17 @@ class RepositoryQuerySet(QuerySet):
         return self.filter(private=False)
 
     def exclude_uncovered(self):
+        """
+        Excludes repositories with no latest-commit val. Requires calling
+        'with_latest_commit_totals_before' on queryset first.
+        """
         from core.models import Commit
-        return self.annotate(
-            latest_commit_totals=Subquery(
-                Commit.objects.filter(
-                    repository_id=OuterRef('repoid'),
-                    branch=OuterRef('branch')
-                ).order_by('-timestamp').values('totals')[:1]
-            )
-        ).exclude(latest_commit_totals__isnull=True)
+        return self.exclude(latest_commit_totals__isnull=True)
 
     def with_latest_commit_totals_before(
         self,
         before_date,
-        branch_param,
+        branch,
         include_previous_totals=False
     ):
         """
@@ -48,7 +45,7 @@ class RepositoryQuerySet(QuerySet):
         commit_query_set = Commit.objects.filter(
             repository_id=OuterRef('repoid'),
             state=Commit.CommitStates.COMPLETE,
-            branch=branch_param or OuterRef("branch"),
+            branch=branch or OuterRef("branch"),
             # The __date cast function will case the datetime based timestamp on the commit to a date object that only
             # contains the year, month and day. This allows us to filter through a daily granularity rather than
             # a second granularity since this is the level of granularity we get from other parts of the API.
