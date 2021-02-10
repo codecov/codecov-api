@@ -893,3 +893,35 @@ class GithubWebhookHandlerTests(APITestCase):
         )
 
         assert owner.repository_set.filter(name="testrepo").exists()
+
+    def test_repo_creation_doesnt_crash_for_forked_repo(self):
+        owner = OwnerFactory(integration_id=4850403, service_id=97968493)
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.REPOSITORY,
+            data={
+                "action": "publicized",
+                "repository": {
+                    "id": 506003,
+                    "name": "testrepo",
+                    "private": False,
+                    "default_branch": "master",
+                    "owner": {
+                        "id": owner.service_id
+                    },
+                    "fork": True,
+                    "parent": {
+                        "name": "mainrepo",
+                        "language": "python",
+                        "id": 7940284,
+                        "private": False,
+                        "default_branch": "master",
+                        "owner": {
+                            "id": 8495712939,
+                            "login": "alogin"
+                        }
+                    }
+                }
+            }
+        )
+
+        assert owner.repository_set.filter(name="testrepo").exists()

@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from rest_framework.test import APITestCase
 from rest_framework.reverse import reverse
 from rest_framework import status
@@ -6,6 +8,7 @@ from codecov_auth.tests.factories import SessionFactory, OwnerFactory
 from codecov_auth.models import Session
 
 from internal_api.tests.test_utils import to_drf_datetime_str
+from internal_api.tests.test_utils import GetAdminProviderAdapter
 
 
 class SessionViewSetTests(APITestCase):
@@ -68,14 +71,18 @@ class SessionViewSetTests(APITestCase):
         assert response.status_code == status.HTTP_204_NO_CONTENT
         assert Session.objects.all().count() == 0
 
-    def test_list_requires_admin_rights(self):
+    @patch('internal_api.permissions.get_provider')
+    def test_list_requires_admin_rights(self, get_provider_mock):
+        get_provider_mock.return_value = GetAdminProviderAdapter()
         self.org.admins = None
         self.org.save()
 
         response = self._list()
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    def test_delete_requires_admin_rights(self):
+    @patch('internal_api.permissions.get_provider')
+    def test_delete_requires_admin_rights(self, get_provider_mock):
+        get_provider_mock.return_value = GetAdminProviderAdapter()
         self.org.admins = None
         self.org.save()
 

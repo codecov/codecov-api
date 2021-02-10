@@ -1,7 +1,9 @@
 from pathlib import Path
 
 from services.archive import build_report, ArchiveService, MinioEndpoints, ReportService
-from core.tests.factories import CommitFactory
+from core.tests.factories import CommitFactory, RepositoryFactory
+from services.storage import StorageService
+from core.models import Repository
 
 
 current_file = Path(__file__)
@@ -122,3 +124,10 @@ class TestReport(object):
         commit = CommitFactory(report=None)
         report = ReportService().build_report_from_commit(commit)
         assert report is None
+
+    def test_create_raw_upload_presigned_put(self, db, mocker, codecov_vcr):
+        mocked = mocker.patch.object(StorageService, 'create_presigned_put')
+        mocked.return_value = 'presigned url'
+        repo = RepositoryFactory.create()
+        service = ArchiveService(repo)
+        assert service.create_raw_upload_presigned_put('ABCD') == 'presigned url'

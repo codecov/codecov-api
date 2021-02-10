@@ -16,7 +16,7 @@ from core.models import Repository
 from services.repo_providers import RepoProviderService
 from services.segment import SegmentService
 from services.decorators import torngit_safe
-from internal_api.permissions import RepositoryPermissionsService
+from internal_api.permissions import RepositoryPermissionsService, UserIsAdminPermissions
 from internal_api.mixins import OwnerPropertyMixin
 
 from .repository_accessors import RepoAccessors
@@ -66,7 +66,8 @@ class RepositoryViewSet(
     accessors = RepoAccessors()
 
     def _assert_is_admin(self):
-        if not self.owner.is_admin(self.request.user):
+        admin_permissions = UserIsAdminPermissions()
+        if not admin_permissions.has_permission(self.request, self):
             raise PermissionDenied()
 
     def get_serializer_class(self):

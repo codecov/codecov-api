@@ -11,6 +11,7 @@ from rest_framework import status
 from codecov_auth.tests.factories import OwnerFactory
 from codecov_auth.models import Owner
 from codecov_auth.constants import USER_PLAN_REPRESENTATIONS
+from internal_api.tests.test_utils import GetAdminProviderAdapter
 
 
 curr_path = os.path.dirname(__file__)
@@ -71,6 +72,7 @@ class AccountViewSetTests(APITestCase):
         assert response.status_code == status.HTTP_200_OK
         assert response.data == {
             "activated_user_count": 0,
+            "root_organization": None,
             "integration_id": owner.integration_id,
             "plan_auto_activate": owner.plan_auto_activate,
             "inactive_user_count": 0,
@@ -80,7 +82,8 @@ class AccountViewSetTests(APITestCase):
             "name": owner.name,
             "email": owner.email,
             "nb_active_private_repos": 0,
-            "repo_total_credits": 1
+            "repo_total_credits": 1,
+            "plan_provider": owner.plan_provider
         }
 
     def test_account_with_free_user_plan(self):
@@ -139,7 +142,9 @@ class AccountViewSetTests(APITestCase):
             "quantity": self.user.plan_user_count
         }
 
-    def test_retrieve_account_returns_403_if_user_not_admin(self):
+    @patch('internal_api.permissions.get_provider')
+    def test_retrieve_account_returns_403_if_user_not_admin(self, get_provider_mock):
+        get_provider_mock.return_value = GetAdminProviderAdapter()
         owner = OwnerFactory()
         response = self._retrieve(kwargs={"service": owner.service, "owner_username": owner.username})
         assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -397,7 +402,9 @@ class AccountViewSetTests(APITestCase):
         attach_payment_mock.assert_called_once_with(payment_method_id, customer=self.user.stripe_customer_id)
         modify_subscription_mock.assert_called_once_with(self.user.stripe_subscription_id, default_payment_method=payment_method_id)
 
-    def test_update_without_admin_permissions_returns_403(self):
+    @patch('internal_api.permissions.get_provider')
+    def test_update_without_admin_permissions_returns_403(self, get_provider_mock):
+        get_provider_mock.return_value = GetAdminProviderAdapter()
         owner = OwnerFactory()
         response = self._update(
             kwargs={"service": owner.service, "owner_username": owner.username},

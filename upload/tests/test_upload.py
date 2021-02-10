@@ -4,7 +4,7 @@ import pytest
 import time
 from datetime import datetime, timedelta
 from rest_framework.test import APITestCase, APIRequestFactory
-from shared.torngit.exceptions import TorngitClientError
+from shared.torngit.exceptions import TorngitClientError, TorngitObjectNotFoundError
 from rest_framework.reverse import reverse
 from rest_framework import status
 from rest_framework.exceptions import ValidationError, NotFound
@@ -19,7 +19,6 @@ from urllib.parse import urlencode
 from ddf import G
 from core.tests.factories import CommitFactory
 from rest_framework.exceptions import NotFound
-
 from core.models import Repository, Commit
 from codecov_auth.models import Owner
 
@@ -455,18 +454,12 @@ class UploadHandlerHelpersTest(TestCase):
             assert expected_value == determine_upload_pr_to_use(upload_params)
 
     @patch("upload.helpers.RepoProviderService")
-    def test_determine_upload_commit_to_use(self, mock_repo_provider_service):
-        class MockRepoProviderService:
-            def get_adapter(self, user, repo, use_ssl, token):
-                return MockRepoProvider()
+    @patch("asyncio.run")
+    def test_determine_upload_commit_to_use(self, mock_repo_provider_service, mock_async):
 
-        class MockRepoProvider:
-            async def get_commit(self, commit, token):
-                return {
-                    "message": "Merge 1c78206f1a46dc6db8412a491fc770eb7d0f8a47 into 261aa931e8e3801ad95a31bbc3529de2bba436c8"
-                }
-
-        mock_repo_provider_service.return_value = MockRepoProviderService()
+        mock_repo_provider_service.return_value = {
+            "message": "Merge 1c78206f1a46dc6db8412a491fc770eb7d0f8a47 into 261aa931e8e3801ad95a31bbc3529de2bba436c8"
+        }
 
         with self.subTest("not a github commit"):
             org = G(Owner, service="bitbucket")
@@ -502,6 +495,36 @@ class UploadHandlerHelpersTest(TestCase):
                 "_did_change_merge_commit": True,
             }
             # Should use the commit id provided in params, not the one from the commit message
+            assert (
+                "3084886b7ff869dcf327ad1d28a8b7d34adc7584"
+                == determine_upload_commit_to_use(upload_params, repo)
+            )
+
+        mock_async.side_effect = [TorngitClientError(500, None, None)]
+
+        with self.subTest("HTTP error"):
+            org = G(Owner, service="github")
+            repo = G(Repository, author=org)
+            upload_params = {
+                "service": "github",
+                "commit": "3084886b7ff869dcf327ad1d28a8b7d34adc7584",
+                "_did_change_merge_commit": False,
+            }
+            assert (
+                "3084886b7ff869dcf327ad1d28a8b7d34adc7584"
+                == determine_upload_commit_to_use(upload_params, repo)
+            )
+
+        mock_async.side_effect = [TorngitObjectNotFoundError(500, None)]
+
+        with self.subTest("HTTP error"):
+            org = G(Owner, service="github")
+            repo = G(Repository, author=org)
+            upload_params = {
+                "service": "github",
+                "commit": "3084886b7ff869dcf327ad1d28a8b7d34adc7584",
+                "_did_change_merge_commit": False,
+            }
             assert (
                 "3084886b7ff869dcf327ad1d28a8b7d34adc7584"
                 == determine_upload_commit_to_use(upload_params, repo)
@@ -920,15 +943,61 @@ class UploadHandlerRouteTest(APITestCase):
             == "https://codecov.io/github/codecovtest/upload-test-repo/commit/b521e55aef79b101f48e2544837ca99a7fa3bf6b"
         )
 
-    """
-    TODO
-    def test_successful_upload_v4(self):
+    @patch("services.archive.ArchiveService.create_root_storage")
+    @patch("services.storage.MINIO_CLIENT.presigned_put_object")
+    @patch("services.archive.ArchiveService.get_archive_hash")
+    @patch("upload.views.get_redis_connection")
+    @patch("upload.views.uuid4")
+    @patch("upload.views.dispatch_upload_task")
+    @patch("services.repo_providers.RepoProviderService.get_adapter")
+    def test_upload_v4(
+        self,
+        mock_repo_provider_service,
+        mock_dispatch_upload,
+        mock_uuid4,
+        mock_get_redis,
+        mock_hash,
+        mock_storage_put,
+        mock_create_root
+    ):
+        class MockRepoProviderAdapter:
+            async def get_commit(self, commit, token):
+                return {"message": "This is not a merge commit"}
+
+        path = "/".join(
+            (
+                "v4/raw",
+                datetime.now().strftime("%Y-%m-%d"),
+                "awawaw",
+                "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
+            )
+        )
+
+        mock_create_root.return_value = True
+        mock_storage_put.return_value = path+"?AWS=PARAMS"
+        mock_get_redis.return_value = MockRedis()
+        mock_repo_provider_service.return_value = MockRepoProviderAdapter()
+        mock_uuid4.return_value = (
+            "dec1f00b-1883-40d0-afd6-6dcb876510be"  # this will be the reportid
+        )
+        mock_hash.return_value = "awawaw"
+        query_params = {
+            "commit": "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
+            "token": "test27s4f3uz3ha9pi0foipg5bqojtrmbt67",
+            "pr": "456",
+            "branch": "",
+            "flags": "",
+            "build_url": "",
+        }
 
         response = self._post(
-            kwargs={"version": "v4"} # TODO add query params
+            kwargs={"version": "v4"}, query=query_params, data="coverage report"
         )
-        # Check response headers
+
+        assert response.status_code == 200
+
         headers = response._headers
+
         assert headers["access-control-allow-origin"] == (
             "Access-Control-Allow-Origin",
             "*",
@@ -938,8 +1007,16 @@ class UploadHandlerRouteTest(APITestCase):
             "Origin, Content-Type, Accept, X-User-Agent",
         )
         assert headers["content-type"] == ("Content-Type", "text/plain",)
-    """
-        # assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+        self.assertIn(path + "?AWS=PARAMS", response.content.decode("utf-8").split('\n')[1])
+
+        mock_storage_put.side_effect = [Exception()]
+
+        response = self._post(
+            kwargs={"version": "v4"}, query=query_params, data="coverage report"
+        )
+
+        assert response.status_code == 500
 
 
 class UploadHandlerTravisTokenlessTest(TestCase):
@@ -1221,6 +1298,40 @@ class UploadHandlerTravisTokenlessTest(TestCase):
     @patch.object(requests, 'get')
     def test_travis_failed_requests_connection_error(self, mock_get):
         mock_get.side_effect = [requests.exceptions.HTTPError('Not found'), requests.exceptions.HTTPError('Not found')]
+        params = {
+            "version": "v4",
+            "commit": "3be5c52bd748c508a7e96993c02cf3518c816e84",
+            "slug": "codecov/codecov-api",
+            "owner": "codecov",
+            "repo": "codecov-api",
+            "token": "testbtznwf3ooi3xlrsnetkddj5od731pap9",
+            "service": "circleci",
+            "pr": None,
+            "pull_request": None,
+            "flags": "this-is-a-flag,this-is-another-flag",
+            "param_doesn't_exist_but_still_should_not_error": True,
+            "s3": 123,
+            "build_url": "https://thisisabuildurl.com",
+            "job": 732059764,
+            "using_global_token": False,
+            "branch": None,
+            "_did_change_merge_commit": False,
+            "parent": "123abc",
+        }
+
+        expected_error = """
+        ERROR: Tokenless uploads are only supported for public repositories on Travis that can be verified through the Travis API. Please use an upload token if your repository is private and specify it via the -t flag. You can find the token for this repository at the url below on codecov.io (login required):
+
+        Repo token: https://codecov.io/gh/codecov/codecov-api/settings
+        Documentation: https://docs.codecov.io/docs/about-the-codecov-bash-uploader#section-upload-token"""
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('travis', params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+    @patch.object(requests, 'get')
+    def test_travis_failed_requests_connection_error(self, mock_get):
+        mock_get.side_effect = [Exception('Not found'), requests.exceptions.HTTPError('Not found')]
         params = {
             "version": "v4",
             "commit": "3be5c52bd748c508a7e96993c02cf3518c816e84",
@@ -2144,7 +2255,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
             TokenlessUploadHandler('github_actions', params).verify_upload()
         assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
 
-    @patch('upload.tokenless.github_actions.TokenlessGithubActionsHandler.get_build', new_callable=PropertyMock)
+    @patch('asyncio.run', new_callable=PropertyMock)
     def test_github_actions_client_error(self, mock_get):
         mock_get.side_effect = [TorngitClientError(500, None, None)]
 
@@ -2154,11 +2265,15 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
             "repo": "repo"
         }
 
-        expected_error = """Unable to locate build via Github Actions API. Please upload with the Codecov repository upload token to resolve issue."""
-
-        with pytest.raises(TorngitClientError) as e:
+        with pytest.raises(NotFound) as e:
             TokenlessUploadHandler('github_actions', params).verify_upload()
-        assert e.value.args[0] == 500
+        assert e.value.args[0] == "Unable to locate build via Github Actions API. Please upload with the Codecov repository upload token to resolve issue."
+        
+        mock_get.side_effect = [Exception('Not Found')]
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('github_actions', params).verify_upload()
+        assert e.value.args[0] == "Unable to locate build via Github Actions API. Please upload with the Codecov repository upload token to resolve issue."
 
     @patch('upload.tokenless.github_actions.TokenlessGithubActionsHandler.get_build', new_callable=PropertyMock)
     def test_github_actions_non_public(self, mock_get):

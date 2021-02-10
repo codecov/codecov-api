@@ -11,6 +11,7 @@ from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory, CommitFactory, PullFactory, BranchFactory
 from core.models import Repository
 from internal_api.commit.serializers import CommitTotalsSerializer
+from internal_api.tests.test_utils import GetAdminProviderAdapter
 
 
 class RepositoryViewSetTestSuite(InternalAPITest):
@@ -624,7 +625,17 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         assert response.status_code == 204
         assert not Repository.objects.filter(name="repo1").exists()
 
-    def test_destroy_repo_without_admin_rights_returns_403(self, mocked_get_permissions):
+    @patch('internal_api.permissions.get_provider')
+    def test_destroy_repo_with_provider_admin_rights_succeedes(self, mocked_get_provider, mocked_get_permissions):
+        mocked_get_provider.return_value = GetAdminProviderAdapter(result=True)
+        mocked_get_permissions.return_value = True, True
+        response = self._destroy()
+        assert response.status_code == 204
+        assert not Repository.objects.filter(name="repo1").exists()
+
+    @patch('internal_api.permissions.get_provider')
+    def test_destroy_repo_without_admin_rights_returns_403(self, mocked_get_provider, mocked_get_permissions):
+        mocked_get_provider.return_value = GetAdminProviderAdapter()
         mocked_get_permissions.return_value = True, True
 
         assert self.user.ownerid not in self.org.admins
@@ -734,7 +745,9 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         assert self.repo.yaml == None
         assert self.repo.cache == None
 
-    def test_erase_without_admin_rights_returns_403(self, mocked_get_permissions):
+    @patch('internal_api.permissions.get_provider')
+    def test_erase_without_admin_rights_returns_403(self, mocked_get_provider, mocked_get_permissions):
+        mocked_get_provider.return_value = GetAdminProviderAdapter()
         mocked_get_permissions.return_value = True, True
 
         assert self.user.ownerid not in self.org.admins

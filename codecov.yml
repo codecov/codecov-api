@@ -44,3 +44,17 @@ site:
     require_changes: no
     require_base: no
     require_head: yes
+
+
+services:
+  minio: 
+    hash_key: testixik8qdauiab1yiffydimvi72ekq
+    verify_ssl: false
+    host: 'minio'
+    port: 9000
+    # bucket: <bucket-name>
+    # region: <bucket-region>
+    access_key_id: codecov-default-key
+    secret_access_key: codecov-default-secret
+    client_uploads: true
+    dsn: https://stage-web.codecov.dev

@@ -1,4 +1,4 @@
-from utils.config import get_config, get_settings_module
+from utils.config import get_config, get_settings_module, SettingsModule
 import os
 
 
@@ -113,7 +113,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ),
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'DEFAULT_PAGINATION_CLASS': 'internal_api.pagination.StandardPageNumberPagination',
     'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',),
     'PAGE_SIZE': 20
 }
@@ -159,7 +159,7 @@ LOGGING = {
     'handlers': {
         'default': {
             'level': 'INFO',
-            'formatter': 'standard' if get_settings_module() == 'codecov.settings_dev' else 'json',
+            'formatter': 'standard' if get_settings_module() == SettingsModule.DEV.value else 'json',
             'class': 'logging.StreamHandler',
             'stream': 'ext://sys.stdout',  # Default is stderr
         },
@@ -177,22 +177,24 @@ ENCRYPTION_SECRET = get_config('setup', 'encryption_secret')
 COOKIE_SECRET = get_config("setup", "http", "cookie_secret")
 COOKIES_DOMAIN = ".codecov.io"
 
-CIRCLECI_TOKEN = os.environ.get("CIRCLECI__TOKEN")
+CIRCLECI_TOKEN = get_config("circleci", "token")
 
-GITHUB_CLIENT_ID = os.environ.get("GITHUB__CLIENT_ID")
-GITHUB_CLIENT_SECRET = os.environ.get("GITHUB__CLIENT_SECRET")
-GITHUB_BOT_KEY = os.environ.get("GITHUB__BOT__KEY")
-GITHUB_ACTIONS_TOKEN = os.environ.get("GITHUB__ACTIONS_TOKEN")
+GITHUB_CLIENT_ID = get_config("github", "client_id")
+GITHUB_CLIENT_SECRET = get_config("github", "client_secret")
+GITHUB_BOT_KEY = get_config("github", "bot", "key")
+GITHUB_ACTIONS_TOKEN = get_config("github", "actions_token")
 
-BITBUCKET_CLIENT_ID = os.environ.get("BITBUCKET__CLIENT_ID")
-BITBUCKET_CLIENT_SECRET = os.environ.get("BITBUCKET__CLIENT_SECRET")
-BITBUCKET_BOT_KEY = os.environ.get("BITBUCKET__BOT__KEY")
+BITBUCKET_CLIENT_ID = get_config("bitbucket", "client_id")
+BITBUCKET_CLIENT_SECRET = get_config("bitbucket", "client_secret")
+BITBUCKET_BOT_KEY = get_config("bitbucket", "bot", "key")
 
-GITLAB_CLIENT_ID = os.environ.get("GITLAB__CLIENT_ID")
-GITLAB_CLIENT_SECRET = os.environ.get("GITLAB__CLIENT_SECRET")
+GITLAB_CLIENT_ID = get_config("gitlab", "client_id")
+GITLAB_CLIENT_SECRET = get_config("gitlab", "client_secret")
 GITLAB_REDIRECT_URI = "https://codecov.io/login/gitlab"
-GITLAB_BOT_KEY = os.environ.get("GITLAB__BOT__KEY")
+GITLAB_BOT_KEY = get_config("gitlab", "bot", "key")
 
 
 SEGMENT_API_KEY = get_config('setup', 'segment', 'key', default=None)
 SEGMENT_ENABLED = get_config('setup', 'segment', 'enabled', default=False) and not bool(get_config('setup', 'enterprise_license', default=False))
+
+IS_ENTERPRISE = get_settings_module() == SettingsModule.ENTERPRISE.value

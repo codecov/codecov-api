@@ -36,3 +36,5 @@ CORS_ALLOW_CREDENTIALS = True
 
 CODECOV_URL = 'https://stage-web.codecov.dev'
 CODECOV_DASHBOARD_URL = 'https://stage-app.codecov.dev'
+
+DATA_UPLOAD_MAX_MEMORY_SIZE = 15000000
