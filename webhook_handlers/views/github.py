@@ -500,16 +500,37 @@ class GithubWebhookHandler(APIView):
                 )
                 return Response(status=status.HTTP_404_NOT_FOUND)
 
-            try:
-                member.permission.remove(repo.repoid)
-                member.save(update_fields=['permission'])
-            except ValueError:
-                pass
+            if member.permission:
+                try:
+                    member.permission.remove(repo.repoid)
+                    member.save(update_fields=['permission'])
+                    log.info(
+                        "Successfully updated read permissions for repository",
+                        extra=dict(
+                            repoid=repo.repoid,
+                            ownerid=member.ownerid,
+                            github_webhook_event=self.event
+                        )
+                    )
+                except ValueError:
+                    log.info(
+                        f"Member didn't have read permissions, didn't update",
+                        extra=dict(
+                            repoid=repo.repoid,
+                            ownerid=member.ownerid,
+                            github_webhook_event=self.event
+                        )
+                    )
+            else:
+                log.info(
+                    f"Member didn't have read permissions, didn't update",
+                    extra=dict(
+                        repoid=repo.repoid,
+                        ownerid=member.ownerid,
+                        github_webhook_event=self.event
+                    )
+                )
 
-            log.info(
-                f"Successfully updated read permissions for repository",
-                extra=dict(repoid=repo.repoid, ownerid=member.ownerid, github_webhook_event=self.event)
-            )
         return Response()
 
     def post(self, request, *args, **kwargs):
