@@ -55,12 +55,19 @@ jobs:
           make test.unit
           # make test.integration
 
+  codecov_upload:
+    executor: codecov-api
+    steps:
     - run:
         name: codecov
         command: |
           apk add git
           chmod +x codecov-alpine 
           ./codecov-alpine -Z -R . -t fcd1b412-6063-486f-bdb3-5f73f77fa1d6 -F unit
+
+  staging_upload:
+    executor: codecov-api
+    steps:
     - run:
         name: codecov-staging
         command: |
@@ -128,6 +135,12 @@ workflows:
           filters:
             tags:
               only: /.*/
+      - staging_upload:
+          requires:
+            - test
+      - codecov_upload:
+          requires:
+            - test
       - portable:
           context: "DockerHub Push Context"
           requires:
