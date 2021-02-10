@@ -388,7 +388,7 @@ class ChartQueryRunner:
                         SUM(misses) AS total_misses,
                         SUM(partials) AS total_partials,
                         SUM(lines) AS total_lines,
-                        (SUM(hits) + SUM(partials)) / SUM(lines) * 100 AS coverage
+                        ROUND((SUM(hits) + SUM(partials)) / SUM(lines) * 100, 2) AS coverage
                     FROM
                         parsed_totals
                     GROUP BY spine_date

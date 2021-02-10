@@ -25,7 +25,6 @@ class RepositoryQuerySet(QuerySet):
         Excludes repositories with no latest-commit val. Requires calling
         'with_latest_commit_totals_before' on queryset first.
         """
-        from core.models import Commit
         return self.exclude(latest_commit_totals__isnull=True)
 
     def with_latest_commit_totals_before(
