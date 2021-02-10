@@ -603,6 +603,31 @@ class TestChartQueryRunnerQuery(TestCase):
         assert len(results) == 2
         assert results[0]["date"] > results[1]["date"]
 
+    def test_query_doesnt_crash_if_no_commits(self):
+        with self.subTest("no repos case"):
+            self.org.repository_set.all().delete()
+            ChartQueryRunner(
+                user=self.user,
+                request_params={
+                    "owner_username": self.org.username,
+                    "service": self.org.service,
+                    "grouping_unit": "day"
+                }
+            ).run_query()
+
+        with self.subTest("no commits case"):
+            repo = RepositoryFactory(author=self.org)
+            self.user.permission = [repo.repoid]
+            self.user.save()
+            ChartQueryRunner(
+                user=self.user,
+                request_params={
+                    "owner_username": self.org.username,
+                    "service": self.org.service,
+                    "grouping_unit": "day"
+                }
+            ).run_query()
+
 
 class TestChartQueryRunnerHelperMethods(TestCase):
     """
@@ -643,26 +668,117 @@ class TestChartQueryRunnerHelperMethods(TestCase):
 
     def test_interval(self):
         with self.subTest("translates quarter into 3 months"):
-            pass
+            assert ChartQueryRunner(
+                self.user,
+                {
+                    "owner_username": self.org.username,
+                    "service": self.org.service,
+                    "grouping_unit": "quarter"
+                }
+            ).interval == "3 months"
 
         with self.subTest("transforms grouping unit into '1 {grouping_unit}'"):
-            pass
+            for grouping_unit in ["day", "week", "month", "year"]:
+                assert ChartQueryRunner(
+                    self.user,
+                    {
+                        "owner_username": self.org.username,
+                        "service": self.org.service,
+                        "grouping_unit": grouping_unit
+                    }
+                ).interval == f"1 {grouping_unit}"
 
-    def test_first_commit_date_returns_date_of_first_commit_in_repoids(self):
-        pass
+    def test_first_complete_commit_date_returns_date_of_first_complete_commit_in_repoids(self):
+        repo1, repo2 = RepositoryFactory(author=self.org), RepositoryFactory(author=self.org)
+        self.user.permission = [repo1.repoid, repo2.repoid]
+        self.user.save()
+        older_incomplete_commit = G(
+            model=Commit,
+            repository=repo1,
+            branch=repo1.branch,
+            state="pending",
+            timestamp=datetime.now() - timedelta(days=7)
+        )
+        commit1 = G(
+            model=Commit,
+            repository=repo1,
+            branch=repo1.branch,
+            state="complete",
+            timestamp=datetime.now() - timedelta(days=3)
+        )
+        commit2 = G(
+            model=Commit,
+            repository=repo2,
+            branch=repo2.branch,
+            state="complete"
+        )
+
+        qr = ChartQueryRunner(
+            self.user,
+            {
+                "owner_username": self.org.username,
+                "service": self.org.service,
+                "grouping_unit": "day"
+            }
+        )
+
+        assert qr.first_complete_commit_date == datetime.date(commit1.timestamp)
 
     def test_start_date(self):
         with self.subTest("returns parsed start date if supplied"):
-            pass
+            start_date = datetime.now()
+            assert ChartQueryRunner(
+                self.user,
+                {
+                    "owner_username": self.org.username,
+                    "service": self.org.service,
+                    "grouping_unit": "day",
+                    "start_date": str(start_date)
+                }
+            ).start_date == start_date
+
         with self.subTest("returns first_commit_date if not supplied"):
-            pass
+            repo = RepositoryFactory(author=self.org)
+            self.user.permission = [repo.repoid]
+            self.user.save()
+            commit = G(
+                model=Commit,
+                repository=repo,
+                branch=repo.branch,
+                state="complete",
+                timestamp=datetime.now() - timedelta(days=3)
+            )
+            assert ChartQueryRunner(
+                self.user,
+                {
+                    "owner_username": self.org.username,
+                    "service": self.org.service,
+                    "grouping_unit": "day",
+                }
+            ).start_date == datetime.date(commit.timestamp)
 
     def test_end_date(self):
         with self.subTest("returns parsed end date if supplied"):
-            pass
+            end_date = datetime.now() - timedelta(days=7)
+            assert ChartQueryRunner(
+                self.user,
+                {
+                    "owner_username": self.org.username,
+                    "service": self.org.service,
+                    "grouping_unit": "day",
+                    "end_date": str(end_date)
+                }
+            ).end_date == datetime.date(end_date)
 
         with self.subTest("returns datetime.now() if not supplied"):
-            pass
+            assert ChartQueryRunner(
+                self.user,
+                {
+                    "owner_username": self.org.username,
+                    "service": self.org.service,
+                    "grouping_unit": "day",
+                }
+            ).end_date == datetime.date(datetime.now())
 
 
 @patch("internal_api.permissions.RepositoryPermissionsService.has_read_permissions")

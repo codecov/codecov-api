@@ -161,8 +161,12 @@ class ChartQueryRunner:
         not set.
         """
         if "start_date" in self.request_params:
-            return parser.parse(self.request_params.get("start_date"))
-        return self.first_commit_date
+            return datetime.date(
+                parser.parse(
+                    self.request_params.get("start_date")
+                )
+            )
+        return self.first_complete_commit_date
 
     @property
     def end_date(self):
@@ -170,7 +174,11 @@ class ChartQueryRunner:
         Returns 'end_date' to use in date spine.
         """
         if "end_date" in self.request_params:
-            return parser.parse(self.request_params.get("end_date"))
+            return datetime.date(
+                parser.parse(
+                    self.request_params.get("end_date")
+                )
+            )
         return datetime.date(datetime.now())
 
     @property
@@ -218,27 +226,29 @@ class ChartQueryRunner:
         return tuple(repos.values_list("repoid", flat=True))
 
     @cached_property
-    def first_commit_date(self):
+    def first_complete_commit_date(self):
         """
         Date of first commit made to any repo in 'self.repoids'. Used as initial
         date for date_spine query.
         """
-        return datetime.date(
-            Commit.objects.filter(
-                repository__repoid__in=self.repoids,
-                repository__branch=F("branch")
-            ).annotate(
-                truncated_date=Trunc(
-                    "timestamp",
-                    self.request_params.get("grouping_unit")
-                )
-            ).order_by(
-                "timestamp"
-            ).values_list(
-                "truncated_date",
-                flat=True
-            )[0]
+        commit_dates = Commit.objects.filter(
+            repository__repoid__in=self.repoids,
+            repository__branch=F("branch"),
+            state="complete"
+        ).annotate(
+            truncated_date=Trunc(
+                "timestamp",
+                self.request_params.get("grouping_unit")
+            )
+        ).order_by(
+            "timestamp"
+        ).values_list(
+            "truncated_date",
+            flat=True
         )
+
+        if commit_dates:
+            return datetime.date(commit_dates[0])
 
     def _validate_parameters(self):
         params_schema = {
@@ -269,6 +279,12 @@ class ChartQueryRunner:
             raise ValidationError(v.errors)
 
     def run_query(self):
+        # Edge cases -- no repos or no commits
+        if not self.repoids:
+            return []
+        if not self.first_complete_commit_date:
+            return []
+
         with connection.cursor() as cursor:
             cursor.execute(
                 f"""
@@ -276,7 +292,7 @@ class ChartQueryRunner:
                     SELECT
                         t::date AS "date"
                     FROM generate_series(
-                        timestamp '{self.first_commit_date}',
+                        timestamp '{self.first_complete_commit_date}',
                         timestamp '{self.end_date}',
                         '{self.interval}'
                     ) t

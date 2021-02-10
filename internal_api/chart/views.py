@@ -135,29 +135,14 @@ class RepositoryChartHandler(APIView, RepositoriesMixin):
 
 class OrganizationChartHandler(APIView):
     """
-    Responses take the following format: (example assumes grouping by month)
-    {
-        "coverage": [
-            {
-                "date": "2019-06-01 00:00:00+00:00", <NOT the commit timestamp, the date for the time window>
-                "coverage": <coverage calculated by taking (total_lines + total_hits) / total_partials>,
-                "total_lines": <sum of lines across repositories from the commit we retrieved for the repo>,
-                "total_hits": <sum of hits across repositories>,
-                "total_partials": <sum of partials across repositories>,
-            },
-            {
-                "date": "2019-07-01 00:00:00+00:00",
-                ...
-            },
-            ...
-        ]
-    }
     """
-
     permission_classes = [IsAuthenticated]
     parser_classes = [JSONParser]
 
     def post(self, request, *args, **kwargs):
-        query_runner = ChartQueryRunner(request_params={**kwargs, **request.data})
+        query_runner = ChartQueryRunner(
+            user=request.user,
+            request_params={**kwargs, **request.data}
+        )
         query_runner.validate_parameters()
         return Response(data={"coverage": query_runner.run_query()})
