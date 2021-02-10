@@ -144,5 +144,4 @@ class OrganizationChartHandler(APIView):
             user=request.user,
             request_params={**kwargs, **request.data}
         )
-        query_runner.validate_parameters()
         return Response(data={"coverage": query_runner.run_query()})

@@ -888,6 +888,48 @@ class RepositoryCoverageChartTest(InternalAPITest):
                 assert commit["coverage_change"] == commit["coverage"] - response.data["coverage"][index - 1]["coverage"]
 
 
-class TestOrgAnalyticsChart(InternalAPITest):
+class TestOrganizationChartHandler(InternalAPITest):
     def setUp(self):
-        pass
+        self.org = OwnerFactory()
+        self.repo1 = RepositoryFactory(author=self.org)
+        self.repo2 = RepositoryFactory(author=self.org)
+        self.user = OwnerFactory(permission=[self.repo1.repoid, self.repo2.repoid])
+        self.commit1 = G(
+            model=Commit,
+            repository=self.repo1,
+            totals={"h": 100, "n": 120, "p": 10, "m": 10},
+            branch=self.repo1.branch,
+            state="complete"
+        )
+        self.commit2 = G(
+            model=Commit,
+            repository=self.repo2,
+            totals={"h": 14, "n": 25, "p": 6, "m": 5},
+            branch=self.repo2.branch,
+            state="complete"
+        )
+        self.client.force_login(user=self.user)
+
+    def _post(self, kwargs={}, data={}):
+        return self.client.post(
+            reverse("chart-coverage-organization", kwargs=kwargs),
+            data=data,
+            content_type="application/json",
+        )
+
+    def test_basic_success(self):
+        response = self._post(
+            kwargs={
+                "owner_username": self.org.username,
+                "service": self.org.service,
+            },
+            data={
+                "grouping_unit": "day",
+            }
+        )
+
+        assert len(response.data["coverage"]) == 1
+        assert response.data["coverage"][0]["total_hits"] == 114
+        assert response.data["coverage"][0]["total_lines"] == 145
+        assert response.data["coverage"][0]["total_misses"] == 15
+        assert response.data["coverage"][0]["total_partials"] == 16
