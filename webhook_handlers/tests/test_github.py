@@ -801,6 +801,36 @@ class GithubWebhookHandlerTests(APITestCase):
         member.refresh_from_db()
         assert self.repo.repoid not in member.permission
 
+    def test_member_doesnt_crash_if_member_permission_array_is_None(self):
+        member = OwnerFactory(permission=None, service_id=6098)
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.MEMBER,
+            data={
+                "action": "removed",
+                "member": {
+                    "id": member.service_id
+                },
+                "repository": {
+                    "id": self.repo.service_id
+                }
+            }
+        )
+
+    def test_member_doesnt_crash_if_member_didnt_have_permission(self):
+        member = OwnerFactory(permission=[self.repo.service_id + 1], service_id=6098)
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.MEMBER,
+            data={
+                "action": "removed",
+                "member": {
+                    "id": member.service_id
+                },
+                "repository": {
+                    "id": self.repo.service_id
+                }
+            }
+        )
+
     def test_member_doesnt_crash_if_member_dne(self):
         response = self._post_event_data(
             event=GitHubWebhookEvents.MEMBER,

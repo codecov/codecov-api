@@ -503,13 +503,24 @@ class GithubWebhookHandler(APIView):
             try:
                 member.permission.remove(repo.repoid)
                 member.save(update_fields=['permission'])
-            except ValueError:
-                pass
+                log.info(
+                    "Successfully updated read permissions for repository",
+                    extra=dict(
+                        repoid=repo.repoid,
+                        ownerid=member.ownerid,
+                        github_webhook_event=self.event
+                    )
+                )
+            except (ValueError, AttributeError):
+                log.info(
+                    f"Member didn't have read permissions, didn't update",
+                    extra=dict(
+                        repoid=repo.repoid,
+                        ownerid=member.ownerid,
+                        github_webhook_event=self.event
+                    )
+                )
 
-            log.info(
-                f"Successfully updated read permissions for repository",
-                extra=dict(repoid=repo.repoid, ownerid=member.ownerid, github_webhook_event=self.event)
-            )
         return Response()
 
     def post(self, request, *args, **kwargs):
