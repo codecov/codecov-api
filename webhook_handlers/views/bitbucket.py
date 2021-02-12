@@ -96,7 +96,7 @@ class BitbucketWebhookHandler(APIView):
         return Response()
 
     def _handle_repo_commit_status_change(self, repo):
-        if not self.request.data["commit_status"]["key"].startswith("codecov"):
+        if self.request.data["commit_status"]["key"].startswith("codecov"):
             # not a codecov/* context
             return Response(data=WebhookHandlerErrorMessages.SKIP_CODECOV_STATUS)
 
