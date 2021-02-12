@@ -97,7 +97,7 @@ class BitbucketWebhookHandler(APIView):
 
     def _handle_repo_commit_status_change(self, repo):
         if self.request.data["commit_status"]["key"].startswith("codecov"):
-            # not a codecov/* context
+            # a codecov/* context
             return Response(data=WebhookHandlerErrorMessages.SKIP_CODECOV_STATUS)
 
         if self.request.data["commit_status"]["state"] == "INPROGRESS":
