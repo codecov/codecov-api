@@ -5,7 +5,7 @@ set -x
 
 find . -wholename "**/tests**" -delete
 
-# python /pyinstaller/generate_pyinstaller_args.py > /pyinstaller/installer_args.txt
+python /pyinstaller/generate_pyinstaller_args.py > /pyinstaller/installer_args.txt
 
 python setup.py build_ext -b .
 
@@ -15,4 +15,4 @@ rm -rf build
 
 echo $(find .)
 
-# cat /pyinstaller/installer_args.txt
+cat /pyinstaller/installer_args.txt

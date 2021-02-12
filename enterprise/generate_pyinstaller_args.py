@@ -15,8 +15,8 @@ def get_relevant_paths(path):
     extensions = list()
     for filepath in init_files:
         dir_path = os.path.dirname(filepath)
-        if "migrations" not in dir_path:
-            extensions.append("{}/{}".format(dir_path, "*.py"))
+        extensions.append("{}/{}".format(dir_path, "*.py"))
+        extensions.append("{}/**/{}".format(dir_path, "*.py"))
     return extensions
 
 def find_imported_modules(filename):
@@ -26,13 +26,9 @@ def find_imported_modules(filename):
 
 
 def generate_files_to_be_cythonized():
-    files_to_exclude = [
-        "codecov_auth/migrations/*.py",
-        "core/migrations/*.py",
-        "codecov/settings_dev.py",
-        "codecov/settings_enterprise.py"
-    ]
+    files_to_exclude = []
     locations = get_relevant_paths('.')
+    
     files = []
     for loc in locations:
         files.extend(
@@ -42,19 +38,18 @@ def generate_files_to_be_cythonized():
                 if not os.path.basename(fn).endswith("__init__.py")
             ]
         )
+      
     return [f for f in files if f not in files_to_exclude]
 
 
 def main():
     hidden_imports = set(
         [
-            'codecov',
-            'codecov.settings_base',
-            'codecov.settings_enterprise',
-            'codecov_auth',
-            'core',
+            'celery_config',
             'corsheaders',
-            'internal_api',
+            'dataclasses',
+            'pythonjsonlogger',
+            'pythonjsonlogger.jsonlogger',
             'rest_framework',
             'rest_framework.apps',
             'rest_framework.metadata',
@@ -62,7 +57,9 @@ def main():
             'rest_framework.filters',
             'rest_framework.status',
             'utils',
-            'utils.config'
+            'utils.config',
+            'utils.encryption',
+            'utils.logging_configuration'
         ]
     )
 

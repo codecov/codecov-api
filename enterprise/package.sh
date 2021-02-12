@@ -3,9 +3,6 @@
 set -e
 set -x
 
-#generate the pyinstaller args
-python /pyinstaller/generate_pyinstaller_args.py > /pyinstaller/installer_args.txt
-
 # Generate a random key for encryption
 random_key=$(pwgen -s 16 1)
 
