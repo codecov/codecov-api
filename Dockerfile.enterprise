@@ -24,6 +24,9 @@ RUN git clone --depth 1 --single-branch --branch v3.5 https://github.com/pyinsta
 RUN pip install cython==3.0a1
 RUN pip install PyCrypto==2.6.1
 
+# set settings module
+ENV DJANGO_SETTINGS_MODULE "codecov.settings_enterprise"
+
 # Remove the settings dev and enterprise files.
 # These should *never* make it to enterprise. 
 RUN rm /app/codecov/settings_dev.py
@@ -50,6 +53,8 @@ COPY enterprise/cythonize.sh /pyinstaller/cythonize_everything.sh
 COPY enterprise/package.sh /pyinstaller/package.sh
 COPY enterprise/generate_pyinstaller_args.py /pyinstaller/generate_pyinstaller_args.py
 
+#Copy Hooks
+COPY enterprise/hooks /hooks
 
 # Not the cleanest,  but this helps with layer caching.
 RUN  chmod a+x /pyinstaller/*

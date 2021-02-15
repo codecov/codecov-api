@@ -19,6 +19,17 @@ def get_relevant_paths(path):
         extensions.append("{}/**/{}".format(dir_path, "*.py"))
     return extensions
 
+def get_relevant_dirs(path):
+    extensions = list()
+    for it in os.scandir(path):
+        if it.is_dir() and "tests" not in it.path:
+            extensions.append(it.path)
+            extensions + get_relevant_dirs(it)
+    return extensions
+
+
+
+
 def find_imported_modules(filename):
     finder.run_script(filename)
     for name, mod in finder.modules.items():
@@ -46,8 +57,12 @@ def main():
     hidden_imports = set(
         [
             'celery_config',
+            'codecov.graphs',
+            'core.migrations',
             'corsheaders',
+            'coreheaders.middleware',
             'dataclasses',
+            'hooks',
             'pythonjsonlogger',
             'pythonjsonlogger.jsonlogger',
             'rest_framework',
@@ -72,6 +87,10 @@ def main():
         ]
     )
 
+    module_dirs = get_relevant_dirs('.')
+    hidden_imports.update(
+        [x.replace("/", ".") for x in module_dirs]
+    )
     cythonized_files = generate_files_to_be_cythonized()
     hidden_imports.update(
         [x.replace(".py", "").replace("/", ".") for x in cythonized_files]
@@ -92,6 +111,11 @@ def main():
         [
             f"--hiddenimport {x}"
             for x in sorted(hidden_imports, key=lambda x: (len(x.split(".")), x))
+        ]
+    )
+    args.extend(
+        [ 
+            f"--additional-hooks-dir /hooks"
         ]
     )
 
