@@ -3,9 +3,6 @@
 set -e
 set -x
 
-#generate the pyinstaller args
-python /pyinstaller/generate_pyinstaller_args.py > /pyinstaller/installer_args.txt
-
 # Generate a random key for encryption
 random_key=$(pwgen -s 16 1)
 
@@ -18,16 +15,22 @@ echo $(find . -name "*.so")
 mkdir src
 echo 'true' > src/is_enterprise
 
+# move migrations from app folders to api dir for sideloading. 
+# cd /app
+# find -type d | grep -i /migrations | sed 's|^./||' | xargs -i mkdir -p /app/dist/{}
+# find -type f | grep -i /migrations/ | sed 's|^./||' | xargs -i cp -rf {} /app/dist/{}
+
 # # Exclude pycrypto and PyInstaller from built packages
 pyinstaller -F --debug=imports --exclude-module pycrypto --exclude-module PyInstaller --add-data src:/src --name api --clean --key $random_key ${args_to_use} ${pyinstaller_args} /app/manage.py
 
 cat api.spec
 
+
 # Clean up
-mv /app/dist/api /
 cd /
 rm -rf /home/*
+rm -rf /hooks
+mv -v app/dist/* /home
 rm -rf /app
-mv /api /home
 rm -rf /pyinstaller
 rm -rf /usr/local/lib/python3.8/site-packages

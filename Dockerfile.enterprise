@@ -14,7 +14,7 @@ RUN apk --update --no-cache add \
     && pip install --upgrade pip
 
 # Build bootloader for alpine
-RUN git clone --depth 1 --single-branch --branch v3.4 https://github.com/pyinstaller/pyinstaller.git /tmp/pyinstaller \
+RUN git clone --depth 1 --single-branch --branch v3.5 https://github.com/pyinstaller/pyinstaller.git /tmp/pyinstaller \
     && cd /tmp/pyinstaller/bootloader \
     && CFLAGS="-Wno-stringop-overflow" python ./waf configure --no-lsb all \
     && pip install .. \
@@ -24,10 +24,19 @@ RUN git clone --depth 1 --single-branch --branch v3.4 https://github.com/pyinsta
 RUN pip install cython==3.0a1
 RUN pip install PyCrypto==2.6.1
 
+# set settings module
+ENV DJANGO_SETTINGS_MODULE "codecov.settings_enterprise"
+
 # Remove the settings dev and enterprise files.
 # These should *never* make it to enterprise.
 RUN rm /app/codecov/settings_dev.py
 RUN rm /app/codecov/settings_prod.py
+RUN rm /app/codecov/settings_test.py
+RUN rm /app/codecov/settings_staging.py
+
+# Remove unneeded folders
+RUN rm -rf /app/.github
+RUN rm -rf /app/.circleci
 
 # Remove and rewrite the settings module to the
 # enterprise variant. This removes all reference to
@@ -35,17 +44,22 @@ RUN rm /app/codecov/settings_prod.py
 RUN rm /app/utils/config.py
 COPY enterprise/config.py /app/utils/config.py
 
+
 # execute Cython script in app dir 
 COPY enterprise/ldd /pyinstaller/ldd
 COPY enterprise/setup.py setup.py
 COPY enterprise/cythonize.sh /pyinstaller/cythonize_everything.sh
 
+COPY enterprise/package.sh /pyinstaller/package.sh
+COPY enterprise/generate_pyinstaller_args.py /pyinstaller/generate_pyinstaller_args.py
+
+#Copy Hooks
+COPY enterprise/hooks /hooks
+
 # Not the cleanest,  but this helps with layer caching.
 RUN  chmod a+x /pyinstaller/*
 RUN         ["/pyinstaller/cythonize_everything.sh"]
 
-COPY enterprise/package.sh /pyinstaller/package.sh
-COPY enterprise/generate_pyinstaller_args.py /pyinstaller/generate_pyinstaller_args.py
 RUN  chmod a+x /pyinstaller/*
 RUN         ["/pyinstaller/package.sh"]
 ENV RUN_ENV=ENTERPRISE

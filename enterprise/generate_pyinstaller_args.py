@@ -15,9 +15,20 @@ def get_relevant_paths(path):
     extensions = list()
     for filepath in init_files:
         dir_path = os.path.dirname(filepath)
-        if "migrations" not in dir_path:
-            extensions.append("{}/{}".format(dir_path, "*.py"))
+        extensions.append("{}/{}".format(dir_path, "*.py"))
+        extensions.append("{}/**/{}".format(dir_path, "*.py"))
     return extensions
+
+def get_relevant_dirs(path):
+    extensions = list()
+    for it in os.scandir(path):
+        if it.is_dir() and "tests" not in it.path:
+            extensions.append(it.path)
+            extensions + get_relevant_dirs(it)
+    return extensions
+
+
+
 
 def find_imported_modules(filename):
     finder.run_script(filename)
@@ -26,13 +37,9 @@ def find_imported_modules(filename):
 
 
 def generate_files_to_be_cythonized():
-    files_to_exclude = [
-        "codecov_auth/migrations/*.py",
-        "core/migrations/*.py",
-        "codecov/settings_dev.py",
-        "codecov/settings_enterprise.py"
-    ]
+    files_to_exclude = []
     locations = get_relevant_paths('.')
+    
     files = []
     for loc in locations:
         files.extend(
@@ -42,19 +49,22 @@ def generate_files_to_be_cythonized():
                 if not os.path.basename(fn).endswith("__init__.py")
             ]
         )
+      
     return [f for f in files if f not in files_to_exclude]
 
 
 def main():
     hidden_imports = set(
         [
-            'codecov',
-            'codecov.settings_base',
-            'codecov.settings_enterprise',
-            'codecov_auth',
-            'core',
+            'celery_config',
+            'codecov.graphs',
+            'core.migrations',
             'corsheaders',
-            'internal_api',
+            'coreheaders.middleware',
+            'dataclasses',
+            'hooks',
+            'pythonjsonlogger',
+            'pythonjsonlogger.jsonlogger',
             'rest_framework',
             'rest_framework.apps',
             'rest_framework.metadata',
@@ -62,7 +72,9 @@ def main():
             'rest_framework.filters',
             'rest_framework.status',
             'utils',
-            'utils.config'
+            'utils.config',
+            'utils.encryption',
+            'utils.logging_configuration'
         ]
     )
 
@@ -75,6 +87,10 @@ def main():
         ]
     )
 
+    module_dirs = get_relevant_dirs('.')
+    hidden_imports.update(
+        [x.replace("/", ".") for x in module_dirs]
+    )
     cythonized_files = generate_files_to_be_cythonized()
     hidden_imports.update(
         [x.replace(".py", "").replace("/", ".") for x in cythonized_files]
@@ -95,6 +111,11 @@ def main():
         [
             f"--hiddenimport {x}"
             for x in sorted(hidden_imports, key=lambda x: (len(x.split(".")), x))
+        ]
+    )
+    args.extend(
+        [ 
+            f"--additional-hooks-dir /hooks"
         ]
     )
 
