@@ -1,13 +1,7 @@
 from rest_framework.routers import DefaultRouter, Route, DynamicRoute
 
 
-class OptionalTrailingSlashRouter(DefaultRouter):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.trailing_slash = "/?"
-
-
-class RetrieveUpdateDestroyRouter(OptionalTrailingSlashRouter):
+class RetrieveUpdateDestroyRouter(DefaultRouter):
     """
     A router that maps GET /resource/ -> retrieve, as opposed to list.
 

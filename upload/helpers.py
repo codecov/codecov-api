@@ -323,11 +323,17 @@ def insert_commit(commitid, branch, pr, repository, owner, parent_commit_id=None
         commit = Commit.objects.get(
             commitid=commitid, repository=repository
         )
+        edited = False
+
         if commit.state != "pending":
            commit.state = "pending"
-           commit.save()
+           edited = True
+
         if parent_commit_id and commit.parent_commit_id is None:
            commit.parent_commit_id = parent_commit_id
+           edited = True
+
+        if edited:
            commit.save()
             
     except Commit.DoesNotExist:
