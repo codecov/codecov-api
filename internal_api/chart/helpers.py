@@ -360,37 +360,49 @@ class ChartQueryRunner:
                         ) AS corrected_totals
                     FROM
                         grouped
-                ), parsed_totals AS (
-                    SELECT
-                        spine_date,
-                        (CASE
-                            WHEN corrected_totals IS NOT NULL then (corrected_totals->>'h')::numeric
-                            WHEN corrected_totals IS NULL then 0 END
-                        ) as hits,
-                        (CASE
-                            WHEN corrected_totals IS NOT NULL then (corrected_totals->>'m')::numeric
-                            WHEN corrected_totals IS NULL then 0 END
-                        ) as misses,
-                        (CASE
-                            WHEN corrected_totals IS NOT NULL then (corrected_totals->>'p')::numeric
-                            WHEN corrected_totals IS NULL then 0 END
-                        ) as partials,
-                        (CASE
-                            WHEN corrected_totals IS NOT NULL then (corrected_totals->>'n')::numeric
-                            WHEN corrected_totals IS NULL then 0 END
-                        ) as lines
-                    FROM
-                        corrected
                 ), summed_totals AS (
                     SELECT
-                        spine_date::timestamp at time zone 'UTC' AS date,
-                        SUM(hits) AS total_hits,
-                        SUM(misses) AS total_misses,
-                        SUM(partials) AS total_partials,
-                        SUM(lines) AS total_lines,
-                        ROUND((SUM(hits) + SUM(partials)) / SUM(lines) * 100, 2) AS coverage
-                    FROM
-                        parsed_totals
+                        spine_date as date,
+                        SUM((CASE
+                            WHEN corrected_totals IS NOT NULL then (corrected_totals->>'h')::numeric
+                            WHEN corrected_totals IS NULL then 0 END
+                        )) as total_hits,
+                        SUM((CASE
+                            WHEN corrected_totals IS NOT NULL then (corrected_totals->>'m')::numeric
+                            WHEN corrected_totals IS NULL then 0 END
+                        )) as total_misses,
+                        SUM((CASE
+                            WHEN corrected_totals IS NOT NULL then (corrected_totals->>'p')::numeric
+                            WHEN corrected_totals IS NULL then 0 END
+                        )) as total_partials,
+                        SUM((CASE
+                            WHEN corrected_totals IS NOT NULL then (corrected_totals->>'n')::numeric
+                            WHEN corrected_totals IS NULL then 0 END
+                        )) as total_lines,
+                        ROUND(
+                            (
+                                SUM(
+                                    (CASE
+                                        WHEN corrected_totals IS NOT NULL then (corrected_totals->>'h')::numeric
+                                        WHEN corrected_totals IS NULL then 0 END
+                                    )
+                                )
+                                + SUM(
+                                    (CASE
+                                        WHEN corrected_totals IS NOT NULL then (corrected_totals->>'p')::numeric
+                                        WHEN corrected_totals IS NULL then 0 END
+                                    )
+                                )
+                            ) /
+                            SUM(
+                                (CASE
+                                    WHEN corrected_totals IS NOT NULL then (corrected_totals->>'n')::numeric
+                                    WHEN corrected_totals IS NULL then 0 END
+                                )
+                            ) * 100,
+                            2
+                        ) AS coverage
+                    FROM corrected
                     GROUP BY spine_date
                     ORDER BY spine_date {self.ordering}
                 )
