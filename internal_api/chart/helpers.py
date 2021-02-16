@@ -362,7 +362,7 @@ class ChartQueryRunner:
                         grouped
                 ), summed_totals AS (
                     SELECT
-                        spine_date as date,
+                        spine_date::timestamp at time zone 'UTC' AS date,
                         SUM((CASE
                             WHEN corrected_totals IS NOT NULL then (corrected_totals->>'h')::numeric
                             WHEN corrected_totals IS NULL then 0 END
