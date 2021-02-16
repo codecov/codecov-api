@@ -1,15 +1,15 @@
-from django.urls import path
+from django.urls import path, re_path
 from .views import RepositoryChartHandler, OrganizationChartHandler
 
 
 urlpatterns = [
-    path(
-        "<str:service>/<str:owner_username>/coverage/repository/?",
+    re_path(
+        r"^(?P<service>\w+)/(?P<owner_username>[\w|-]+)/coverage/repository\/?$",
         RepositoryChartHandler.as_view(),
         name="chart-coverage-repository",
     ),
-    path(
-        "<str:service>/<str:owner_username>/coverage/organization/?",
+    re_path(
+        r"^(?P<service>\w+)/(?P<owner_username>[\w|-]+)/coverage/organization\/?$",
         OrganizationChartHandler.as_view(),
         name="chart-coverage-organization",
     ),
