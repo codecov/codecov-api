@@ -60,7 +60,7 @@ def main():
             'codecov.graphs',
             'core.migrations',
             'corsheaders',
-            'coreheaders.middleware',
+            'corsheaders.middleware',
             'dataclasses',
             'hooks',
             'pythonjsonlogger',

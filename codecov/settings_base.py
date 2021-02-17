@@ -1,4 +1,5 @@
 from utils.config import get_config, get_settings_module, SettingsModule
+from urllib.parse import urlparse
 import os
 
 
@@ -67,7 +68,15 @@ DATABASE_USER = get_config('services', 'database', 'username', default='postgres
 DATABASE_NAME = get_config('services', 'database', 'name', default='postgres')
 DATABASE_PASSWORD = get_config('services', 'database', 'password', default='postgres')
 DATABASE_HOST = get_config('services', 'database', 'host', default='postgres')
-
+DATABASE_PORT = get_config('services', 'database', 'port', default=5432)
+db_url = get_config('services', 'database_url', default=False)
+if(db_url != False):
+    db_conf = urlparse(db_url)
+    DATABASE_HOST = db_conf.hostname
+    DATABASE_NAME = db_conf.query
+    DATABASE_PASSWORD = db_conf.password
+    DATABASE_USER = db_conf.username
+    DATABASE_PORT = db_conf.port
 # this is the time in seconds django decides to keep the connection open after the request
 # the default is 0 seconds, meaning django closes the connection after every request
 # https://docs.djangoproject.com/en/3.1/ref/settings/#conn-max-age
@@ -80,7 +89,7 @@ DATABASES = {
         'USER': DATABASE_USER,
         'PASSWORD': DATABASE_PASSWORD,
         'HOST': DATABASE_HOST,
-        'PORT': '5432',
+        'PORT': DATABASE_PORT,
         'CONN_MAX_AGE': CONN_MAX_AGE
     }
 }

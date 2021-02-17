@@ -69,6 +69,6 @@ ENV RUN_ENV=ENTERPRISE
 
 # copy the enterprise settings module.
 WORKDIR     /home
-COPY ./enterprise.sh /app/enterprise.sh
-RUN chmod +x /app/enterprise.sh
+COPY ./enterprise.sh /home/enterprise.sh
+RUN chmod +x /home/enterprise.sh
 ENTRYPOINT ["./enterprise.sh"]

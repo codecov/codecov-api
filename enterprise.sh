@@ -12,5 +12,6 @@ SUB="ddtrace-run "
 else
 SUB=""
 fi
-${SUB}gunicorn codecov.wsgi:application --workers=2 --bind 0.0.0.0:8000 --access-logfile '-' ${PARAMS}
+./api runserver 0.0.0.0:8000
+#${SUB}gunicorn codecov.wsgi:application --workers=2 --bind 0.0.0.0:8000 --access-logfile '-' ${PARAMS}
 
