@@ -36,7 +36,7 @@ RUN             pip wheel -r /requirements.txt
 FROM            python:3.7.9-alpine3.13
 
 RUN             apk update && \
-                apk upgrade libexpat && \
+                apk upgrade expat && \
                 apk add --no-cache postgresql-libs && \
                 apk add --no-cache --virtual .build-deps gcc \
                 musl-dev \
