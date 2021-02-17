@@ -35,7 +35,9 @@ RUN             pip wheel -r /requirements.txt
 # RUNTIME STAGE - Copy packages from build stage and install runtime dependencies
 FROM            python:3.7.9-alpine3.13
 
-RUN             apk add --no-cache postgresql-libs && \
+RUN             apk update && \
+                apk upgrade expat && \
+                apk add --no-cache postgresql-libs && \
                 apk add --no-cache --virtual .build-deps gcc \
                 musl-dev \
                 postgresql-dev \

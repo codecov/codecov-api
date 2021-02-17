@@ -39,7 +39,7 @@ class PlainTextRenderer(renderers.BaseRenderer):
 
 class UploadHandler(APIView):
     permission_classes = [AllowAny]
-    renderer_classes = [PlainTextRenderer]
+    renderer_classes = [PlainTextRenderer, renderers.JSONRenderer]
 
     def get(self, request, *args, **kwargs):
         return HttpResponse(status=status.HTTP_405_METHOD_NOT_ALLOWED)

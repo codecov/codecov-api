@@ -6,7 +6,7 @@ from rest_framework import status
 from django.http import HttpResponse
 from requests.exceptions import ConnectionError, HTTPError
 from datetime import datetime, timedelta
-
+from rest_framework.exceptions import NotFound
 from upload.tokenless.appveyor import TokenlessAppveyorHandler
 from upload.tokenless.azure import TokenlessAzureHandler
 from upload.tokenless.circleci import TokenlessCircleciHandler
@@ -41,4 +41,7 @@ class TokenlessUploadHandler(object):
                 owner=self.upload_params.get('owner')
             )
         )
-        return self.verifier(self.upload_params).verify()
+        try:
+            return self.verifier(self.upload_params).verify()
+        except TypeError as e:
+            raise NotFound("Your CI provider is not compatible with tokenless uploads, please upload using your repository token to resolve this.")
