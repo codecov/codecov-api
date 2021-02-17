@@ -3,16 +3,17 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import JSONParser
 
+from codecov_auth.models import Owner
 from core.models import Commit
 from .filters import apply_default_filters, apply_simple_filters
 from .helpers import (
     annotate_commits_with_totals,
     apply_grouping,
-    aggregate_across_repositories,
     validate_params,
+    ChartQueryRunner,
 )
 from internal_api.permissions import ChartPermissions
-from internal_api.mixins import RepositoriesMixin
+from internal_api.mixins import RepositoriesMixin, OwnerPropertyMixin
 
 
 class RepositoryChartHandler(APIView, RepositoriesMixin):
@@ -132,18 +133,15 @@ class RepositoryChartHandler(APIView, RepositoriesMixin):
         return Response(data={"coverage": coverage, "complexity": complexity})
 
 
-class OrganizationChartHandler(APIView, RepositoriesMixin):
+class OrganizationChartHandler(APIView):
     """
-    Returns data used to populate the organization-level analytics chart. See "validate_params" for documentation on accepted parameters. 
-    Functions generally similarly to the repository chart, with a few exceptions: aggregates coverage across multiple repositories, 
-    doesn't return complexity, and doesn't support retrieving a list of commits (so coverage must be grouped by a unit of time).
-
-    Responses take the following format: (example assumes grouping by month)
+    Returns array of datapoints retrieved by ChartQueryRunner.
+    Response data format is:
     {
         "coverage": [
             {
-                "date": "2019-06-01 00:00:00+00:00", <NOT the commit timestamp, the date for the time window>
-                "coverage": <coverage calculated by taking (total_lines + total_hits) / total_partials>,
+                "date": "2019-06-01 00:00:00+00:00", <date for the time window>
+                "coverage": <coverage calculated by taking (total_partials + total_hits) / total_lines>,
                 "total_lines": <sum of lines across repositories from the commit we retrieved for the repo>,
                 "total_hits": <sum of hits across repositories>,
                 "total_partials": <sum of partials across repositories>,
@@ -156,21 +154,12 @@ class OrganizationChartHandler(APIView, RepositoriesMixin):
         ]
     }
     """
-
     permission_classes = [IsAuthenticated]
     parser_classes = [JSONParser]
 
     def post(self, request, *args, **kwargs):
-        request_params = {**self.request.data, **self.kwargs}
-        validate_params(request_params)
-        queryset = apply_simple_filters(
-            apply_default_filters(Commit.objects.all()), request_params, self.request.user
+        query_runner = ChartQueryRunner(
+            user=request.user,
+            request_params={**kwargs, **request.data}
         )
-
-        annotated_commits = annotate_commits_with_totals(queryset)
-
-        grouped_commits = apply_grouping(annotated_commits, self.request.data)
-
-        coverage = aggregate_across_repositories(grouped_commits)
-
-        return Response(data={"coverage": coverage})
+        return Response(data={"coverage": query_runner.run_query()})
