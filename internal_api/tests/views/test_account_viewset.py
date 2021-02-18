@@ -72,6 +72,7 @@ class AccountViewSetTests(APITestCase):
         assert response.status_code == status.HTTP_200_OK
         assert response.data == {
             "activated_user_count": 0,
+            "root_organization": None,
             "integration_id": owner.integration_id,
             "plan_auto_activate": owner.plan_auto_activate,
             "inactive_user_count": 0,

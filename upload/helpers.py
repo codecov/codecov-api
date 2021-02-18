@@ -318,19 +318,40 @@ def determine_upload_commit_to_use(upload_params, repository):
 
 
 def insert_commit(commitid, branch, pr, repository, owner, parent_commit_id=None):
-    commit, created = Commit.objects.update_or_create(
-        commitid=commitid, repository=repository, defaults={"state": "pending"}
-    )
+    
+    try:
+        commit = Commit.objects.get(
+            commitid=commitid, repository=repository
+        )
+        edited = False
 
-    if created:
+        if commit.state != "pending":
+           commit.state = "pending"
+           edited = True
+
+        if parent_commit_id and commit.parent_commit_id is None:
+           commit.parent_commit_id = parent_commit_id
+           edited = True
+
+        if edited:
+           commit.save()
+            
+    except Commit.DoesNotExist:
+        log.info("Creating new commit for upload",                 
+            extra=dict(
+            commit=commitid,
+            branch=branch,
+            repository=repository,
+            owner=owner
+        ),)
+        commit = Commit(
+            commitid=commitid, repository=repository, state="pending"
+        )
         commit.branch = branch
         commit.pullid = pr
         commit.merged = False if pr is not None else None
-
-    if parent_commit_id and not commit.parent_commit_id:
         commit.parent_commit_id = parent_commit_id
-
-    commit.save()
+        commit.save()
 
 
 def get_global_tokens():

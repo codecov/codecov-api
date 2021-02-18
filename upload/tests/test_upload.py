@@ -556,7 +556,7 @@ class UploadHandlerHelpersTest(TestCase):
                 branch="apples",
                 pullid="456",
                 repository=repo,
-                parent_commit_id="parent_commit",
+                parent_commit_id=None,
             )
             insert_commit(
                 "1c78206f1a46dc6db8412a491fc770eb7d0f8a47",
@@ -575,7 +575,7 @@ class UploadHandlerHelpersTest(TestCase):
             assert commit.branch == "apples"
             assert commit.pullid == 456
             assert commit.merged == None
-            assert commit.parent_commit_id == "parent_commit"
+            assert commit.parent_commit_id == "different_parent_commit"
 
         with self.subTest("parent provided"):
             parent = G(Commit)
@@ -1100,6 +1100,9 @@ class UploadHandlerTravisTokenlessTest(TestCase):
         with pytest.raises(NotFound) as e:
             TokenlessUploadHandler('travis', params).verify_upload()
         assert [line.strip() for line in e.value.args[0].split('\n')] == [line.strip() for line in expected_error.split('\n')]
+
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler('something', params).verify_upload()
 
     @patch.object(requests, 'get')
     def test_travis_no_sha_match(self, mock_get):
