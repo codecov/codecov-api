@@ -69,7 +69,7 @@ class RepositoryQuerySet(QuerySet):
         """
         Annotates the queryset with the latest "coverage change" (cov of last commit
         made to default branch, minus cov of second-to-last commit made to default
-        branch) of each repository. Depends on having called "with_latest_commit_totals_before" with 
+        branch) of each repository. Depends on having called "with_latest_commit_totals_before" with
         "include_previous_totals=True".
         """
         from core.models import Commit

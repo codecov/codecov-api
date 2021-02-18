@@ -3,6 +3,7 @@ from django.db.models import FloatField, Case, When, Value, F
 from django.contrib.postgres.fields.jsonb import KeyTextTransform
 from django.utils.functional import cached_property
 from django.db import connection
+from pytz import UTC
 
 from rest_framework.exceptions import ValidationError
 from cerberus import Validator
@@ -179,7 +180,7 @@ class ChartQueryRunner:
                     self.request_params.get("end_date")
                 )
             )
-        return datetime.date(datetime.now())
+        return datetime.date(datetime.now(tz=UTC))
 
     @property
     def interval(self):

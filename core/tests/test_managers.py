@@ -1,4 +1,5 @@
 from datetime import datetime
+from pytz import UTC
 
 from django.test import TestCase
 
@@ -75,7 +76,7 @@ class RepositoryQuerySetTests(TestCase):
 
         stats = Repository.objects.all(
         ).with_latest_commit_totals_before(
-            datetime.now().isoformat(),
+            datetime.now(tz=UTC).isoformat(),
             None,
             include_previous_totals=True
         ).get_aggregated_coverage()
@@ -92,7 +93,7 @@ class RepositoryQuerySetTests(TestCase):
         CommitFactory(totals={"c": 99}, repository=self.repo1)
         CommitFactory(totals={"c": 98}, repository=self.repo1)
         assert Repository.objects.filter(repoid=self.repo1.repoid).with_latest_commit_totals_before(
-            datetime.now().isoformat(),
+            datetime.now(tz=UTC).isoformat(),
             None,
             True
         ).with_latest_coverage_change()[0].latest_coverage_change == -1

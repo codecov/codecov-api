@@ -1,8 +1,8 @@
+from django.utils import timezone
 import logging
 from base64 import b64decode
 import hmac
 import hashlib
-from datetime import datetime
 
 from rest_framework import authentication
 from rest_framework import exceptions
@@ -111,7 +111,7 @@ class CodecovSessionAuthentication(authentication.BaseAuthentication):
         return decode_token_from_cookie(secret, encoded_cookie)
 
     def update_session(self, request, session):
-        session.lastseen = datetime.now()
+        session.lastseen = timezone.now()
         session.useragent = request.META.get("User-Agent")
         http_x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
         if http_x_forwarded_for:
