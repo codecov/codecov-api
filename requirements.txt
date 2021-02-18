@@ -203,7 +203,7 @@ pyyaml==3.13
     #   vcrpy
 redis==3.2.0
     # via -r requirements.in
-requests==2.22.0
+requests==2.25.1
     # via
     #   -r requirements.in
     #   analytics-python
