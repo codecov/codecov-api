@@ -2,7 +2,7 @@ from django_filters import rest_framework as django_filters, BooleanFilter
 from rest_framework import filters
 from core.models import Repository
 from django.db.models.functions import Cast
-from django.contrib.postgres.fields.jsonb import KeyTextTransform
+from django.db.models.fields.json import KeyTextTransform
 from django.db.models import FloatField
 
 

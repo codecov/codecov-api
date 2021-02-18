@@ -8,7 +8,7 @@ from enum import Enum
 from django.db import models
 from core.models import Repository
 from utils.config import get_config
-from django.contrib.postgres.fields import CITextField, JSONField, ArrayField
+from django.contrib.postgres.fields import CITextField, ArrayField
 
 from .managers import OwnerQuerySet
 
@@ -71,7 +71,7 @@ class Owner(models.Model):
     root_parent_service_id = models.TextField(null=True)
     private_access = models.BooleanField(null=True)
     staff = models.BooleanField(null=True, default=False)
-    cache = JSONField(null=True)
+    cache = models.JSONField(null=True)
     plan = models.TextField(null=True)
     plan_provider = models.CharField(null=True, max_length=10) # postgres enum containing only "github"
     plan_user_count = models.SmallIntegerField(null=True)
@@ -81,7 +81,7 @@ class Owner(models.Model):
     free = models.SmallIntegerField(default=0)
     invoice_details = models.TextField(null=True)
     delinquent = models.BooleanField(null=True)
-    yaml = JSONField(null=True)
+    yaml = models.JSONField(null=True)
     updatestamp = models.DateTimeField(auto_now=True)
     organizations = ArrayField(models.IntegerField(null=True), null=True)
     admins = ArrayField(models.IntegerField(null=True), null=True)

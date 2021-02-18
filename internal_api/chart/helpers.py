@@ -1,6 +1,6 @@
 from django.db.models.functions import Trunc, Cast
 from django.db.models import FloatField, Case, When, Value, F
-from django.contrib.postgres.fields.jsonb import KeyTextTransform
+from django.db.models.fields.json import KeyTextTransform
 from django.utils.functional import cached_property
 from django.db import connection
 from pytz import UTC

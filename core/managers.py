@@ -1,9 +1,8 @@
 from dateutil import parser
 
-from django.db.models import QuerySet, Subquery, OuterRef, Q, Count, F, FloatField, Avg, Sum, IntegerField
-from django.contrib.postgres.fields import JSONField
+from django.db.models import QuerySet, Subquery, OuterRef, Q, Count, F, FloatField, Avg, Sum, IntegerField, JSONField
 from django.db.models.functions import Cast
-from django.contrib.postgres.fields.jsonb import KeyTextTransform
+from django.db.models.fields.json import KeyTextTransform
 
 
 class RepositoryQuerySet(QuerySet):
