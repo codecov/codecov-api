@@ -67,7 +67,8 @@ django==2.2.18
     #   -r requirements.in
     #   django-cors-headers
     #   django-filter
-djangorestframework==3.9.0
+    #   djangorestframework
+djangorestframework==3.12.2
     # via -r requirements.in
 docutils==0.15.2
     # via botocore

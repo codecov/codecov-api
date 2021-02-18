@@ -1,6 +1,6 @@
 git+ssh://git@github.com/codecov/shared.git@v0.4.12#egg=shared
 Django==2.2.18
-djangorestframework==3.9.0
+djangorestframework==3.12.2
 gunicorn==20.0.4
 factory-boy==2.11.1
 minio==6.0.0
