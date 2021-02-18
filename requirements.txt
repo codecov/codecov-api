@@ -247,7 +247,7 @@ sqlparse==0.4.1
     # via django
 statsd==3.3.0
     # via shared
-stripe==2.47.0
+stripe==2.55.2
     # via -r requirements.in
 tenacity==6.2.0
     # via ddtrace
