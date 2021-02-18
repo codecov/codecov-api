@@ -47,6 +47,7 @@ class Repository(models.Model):
 
     class Meta:
         db_table = 'repos'
+        ordering = ['-repoid']
 
     objects = RepositoryQuerySet.as_manager()
 
@@ -136,3 +137,4 @@ class Pull(models.Model):
 
     class Meta:
         db_table = 'pulls'
+        ordering = ['-pullid']

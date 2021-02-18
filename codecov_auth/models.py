@@ -52,6 +52,7 @@ class Service(Enum):
 class Owner(models.Model):
     class Meta:
         db_table = "owners"
+        ordering = ['ownerid']
 
     REQUIRED_FIELDS = []
     USERNAME_FIELD = "username"
@@ -327,6 +328,7 @@ class Owner(models.Model):
 class Session(models.Model):
     class Meta:
         db_table = "sessions"
+        ordering = ['-lastseen']
 
     class SessionType:
         API = "api"
