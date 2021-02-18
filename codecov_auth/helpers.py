@@ -81,7 +81,7 @@ def do_create_signed_value_v2(
     return to_sign + signature
 
 
-def create_signature_v2(secret: str, s: str) -> bytes:
+def create_signature_v2(secret: str, s: str) -> str:
     hash_value = hmac.new(secret.encode(), digestmod=hashlib.sha256)
     hash_value.update(s.encode())
     return hash_value.hexdigest()

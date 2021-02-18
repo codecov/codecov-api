@@ -125,6 +125,7 @@ class UserIsAdminPermissions(BasePermission):
                 **{
                     "owner": {
                         "username": owner.username,
+                        "service_id": owner.service_id,
                     }
                 }
             }
@@ -132,6 +133,6 @@ class UserIsAdminPermissions(BasePermission):
 
         return asyncio.run(
             torngit_provider_adapter.get_is_admin(
-                user={"username": user.username}
+                user={"username": user.username, "service_id": user.service_id}
             )
         )

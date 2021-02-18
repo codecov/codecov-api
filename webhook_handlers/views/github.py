@@ -56,8 +56,13 @@ class GithubWebhookHandler(APIView):
         ).hexdigest()
 
         if sig != request.META.get(GitHubHTTPHeaders.SIGNATURE):
-            log.info(f"{request.body}")
-            log.info(f"{request.META.get(GitHubHTTPHeaders.SIGNATURE)}")
+            log.info(
+                "Signature validation failed",
+                extra=dict(
+                    github_webhook_event=self.event,
+                    delivery=request.META.get(GitHubHTTPHeaders.DELIVERY_TOKEN)
+                )
+            )
             raise PermissionDenied()
 
     def unhandled_webhook_event(self, request, *args, **kwargs):
@@ -503,19 +508,41 @@ class GithubWebhookHandler(APIView):
             try:
                 member.permission.remove(repo.repoid)
                 member.save(update_fields=['permission'])
-            except ValueError:
-                pass
+                log.info(
+                    "Successfully updated read permissions for repository",
+                    extra=dict(
+                        repoid=repo.repoid,
+                        ownerid=member.ownerid,
+                        github_webhook_event=self.event
+                    )
+                )
+            except (ValueError, AttributeError):
+                log.info(
+                    f"Member didn't have read permissions, didn't update",
+                    extra=dict(
+                        repoid=repo.repoid,
+                        ownerid=member.ownerid,
+                        github_webhook_event=self.event
+                    )
+                )
 
-            log.info(
-                f"Successfully updated read permissions for repository",
-                extra=dict(repoid=repo.repoid, ownerid=member.ownerid, github_webhook_event=self.event)
-            )
         return Response()
 
     def post(self, request, *args, **kwargs):
         self.event = self.request.META.get(GitHubHTTPHeaders.EVENT)
-        log.info(f"GitHub Webhook Handler invoked", extra=dict(github_webhook_event=self.event))
-        self.validate_signature(request)
-        handler = getattr(self, self.event, self.unhandled_webhook_event)
+        log.info(
+            "GitHub Webhook Handler invoked",
+            extra=dict(
+                github_webhook_event=self.event,
+                delivery=self.request.META.get(GitHubHTTPHeaders.DELIVERY_TOKEN)
+            )
+        )
 
-        return handler(request, *args, **kwargs)
+        self.validate_signature(request)
+
+        # temporarily disable for most events for debugging
+        if self.event in [GitHubWebhookEvents.MEMBER, GitHubWebhookEvents.ORGANIZATION]:
+            handler = getattr(self, self.event, self.unhandled_webhook_event)
+            return handler(request, *args, **kwargs)
+
+        return Response()

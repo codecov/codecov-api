@@ -11,6 +11,7 @@ from utils.config import get_config
 from django.contrib.postgres.fields import CITextField, JSONField, ArrayField
 
 from .managers import OwnerQuerySet
+from core.managers import RepositoryQuerySet
 
 from codecov_auth.constants import (
     AVATAR_GITHUB_BASE_URL,
@@ -67,6 +68,7 @@ class Owner(models.Model):
     createstamp = models.DateTimeField(auto_now_add=True)
     service_id = models.TextField()
     parent_service_id = models.TextField(null=True)
+    root_parent_service_id = models.TextField(null=True)
     private_access = models.BooleanField(null=True)
     staff = models.BooleanField(null=True, default=False)
     cache = JSONField(null=True)
@@ -92,6 +94,8 @@ class Owner(models.Model):
 
     objects = OwnerQuerySet.as_manager()
 
+    repository_set = RepositoryQuerySet.as_manager()
+
     @property
     def has_legacy_plan(self):
         return self.plan is None or not self.plan.startswith("users")
@@ -109,6 +113,25 @@ class Owner(models.Model):
             return int(self.plan[3:-1])
         else:
             return int(self.plan[:-1])
+
+    @property
+    def root_organization(self):
+        """
+        Find the root organization of Gitlab, by using the root_parent_service_id
+        if it exists, otherwise iterating through the parents and caches it in root_parent_service_id
+        """
+        if self.root_parent_service_id:
+            return Owner.objects.get(service_id=self.root_parent_service_id, service=self.service)
+
+        root = None
+        if self.service == "gitlab" and self.parent_service_id:
+            root = self
+            while root.parent_service_id is not None:
+                root = Owner.objects.get(service_id=root.parent_service_id, service=root.service)
+            self.root_parent_service_id = root.service_id
+            self.save()
+        return root
+
 
     @property
     def nb_active_private_repos(self):

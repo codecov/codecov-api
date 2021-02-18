@@ -1,5 +1,5 @@
 # BUILD STAGE - Download dependencies from GitHub that require SSH access
-FROM python:3.7.4-alpine as build
+FROM            python:3.7.9-alpine3.13 as build
 
 RUN             apk update \
                 && apk add --update --no-cache \
@@ -8,11 +8,13 @@ RUN             apk update \
                 postgresql-dev \
                 musl-dev \
                 libxslt-dev \
-                python-dev \
+                python3-dev \
                 libffi-dev \
                 gcc \
                 bash \
                 curl-dev \
+                rust \
+                cargo \
                 libcurl \
                 && pip install --upgrade pip
 
@@ -24,22 +26,23 @@ RUN             chmod 600 /root/.ssh/id_rsa
 
 COPY            requirements.txt /
 WORKDIR         /pip-packages/
-RUN             git config --global url."git@github.com:".insteadOf "https://github.com/"
-RUN             pip download -r /requirements.txt
-RUN             pip download setuptools wheel
+
+RUN             pip wheel -r /requirements.txt
 
 
 
 
 # RUNTIME STAGE - Copy packages from build stage and install runtime dependencies
-FROM            python:3.7.4-alpine
+FROM            python:3.7.9-alpine3.13
 
-RUN             apk add --no-cache postgresql-libs && \
+RUN             apk update && \
+                apk upgrade expat && \
+                apk add --no-cache postgresql-libs && \
                 apk add --no-cache --virtual .build-deps gcc \
                 musl-dev \
                 postgresql-dev \
                 libxslt-dev \
-                python-dev \
+                python3-dev \
                 libffi-dev \
                 openssl-dev \
                 make \
@@ -53,7 +56,7 @@ WORKDIR         /pip-packages/
 COPY            --from=build /pip-packages/ /pip-packages/
 
 RUN             rm -rf /pip-packages/src
-RUN             pip install --find-links=/pip-packages/ /pip-packages/*
+RUN             pip install --no-deps --find-links=/pip-packages/ /pip-packages/*
 
 EXPOSE          8000
 
