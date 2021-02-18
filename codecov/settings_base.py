@@ -73,7 +73,7 @@ db_url = get_config('services', 'database_url', default=False)
 if(db_url != False):
     db_conf = urlparse(db_url)
     DATABASE_HOST = db_conf.hostname
-    DATABASE_NAME = db_conf.query
+    DATABASE_NAME = db_conf.path.replace('/','')
     DATABASE_PASSWORD = db_conf.password
     DATABASE_USER = db_conf.username
     DATABASE_PORT = db_conf.port
@@ -93,7 +93,6 @@ DATABASES = {
         'CONN_MAX_AGE': CONN_MAX_AGE
     }
 }
-
 # Password validation
 # https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators
 
