@@ -15,7 +15,7 @@ tlslite-ng==0.7.5
 vcrpy==2.0.1
 pytest-mock==1.10.1
 PyYAML==3.13
-django-cors-headers==2.5.2
+django-cors-headers==3.7.0
 django-filter==2.4.0
 celery==4.3.0
 redis==3.2.0

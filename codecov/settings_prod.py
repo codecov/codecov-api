@@ -31,9 +31,9 @@ sentry_sdk.init(
     environment="PRODUCTION"
 )
 
-CORS_ORIGIN_WHITELIST = ['app.codecov.io', 'codecov.io']
 CORS_ALLOW_CREDENTIALS = True
 CODECOV_URL = 'https://codecov.io'
 CODECOV_DASHBOARD_URL = 'https://app.codecov.io'
+CORS_ALLOWED_ORIGINS = [CODECOV_URL, CODECOV_DASHBOARD_URL]
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 15000000

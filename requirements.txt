@@ -54,7 +54,7 @@ cryptography==2.7
     # via shared
 ddtrace==0.41.2
     # via -r requirements.in
-django-cors-headers==2.5.2
+django-cors-headers==3.7.0
     # via -r requirements.in
 django-dynamic-fixture==3.1.1
     # via -r requirements.in
