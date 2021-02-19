@@ -208,7 +208,7 @@ class ChartQueryRunner:
     @cached_property
     def repoids(self):
         """
-        Returns a tuple of repoids of the repositories being queried.
+        Returns a string of repoids of the repositories being queried.
         """
         organization = Owner.objects.get(
             service=self.request_params["service"],
@@ -223,7 +223,14 @@ class ChartQueryRunner:
         if self.request_params.get("repositories", []):
             repos = repos.filter(name__in=self.request_params.get("repositories", []))
 
-        return tuple(repos.values_list("repoid", flat=True))
+        if repos:
+            # Get repoids into a format easily plugged into raw SQL
+            return "(" + ",".join(
+                map(
+                    str,
+                    list(repos.values_list("repoid", flat=True))
+                )
+            ) + ")"
 
     @cached_property
     def first_complete_commit_date(self):
@@ -243,7 +250,7 @@ class ChartQueryRunner:
                 )
 
                 SELECT
-                    DATE_TRUNC('day', c.timestamp AT TIME ZONE 'UTC') as truncated_date
+                    DATE_TRUNC('{self.grouping_unit}', c.timestamp AT TIME ZONE 'UTC') as truncated_date
                 FROM commits c
                 INNER JOIN relevant_repo_branches r ON c.repoid = r.repoid AND c.branch = r.branch
                 WHERE c.state = 'complete'

@@ -652,7 +652,7 @@ class TestChartQueryRunnerHelperMethods(TestCase):
         )
 
         with self.subTest("returns repoids"):
-            assert set(qr.repoids) == set([repo1.repoid, repo2.repoid])
+            assert qr.repoids == f"({repo2.repoid},{repo1.repoid})"
 
         with self.subTest("filters by supplied repo names"):
             qr = ChartQueryRunner(
@@ -664,7 +664,7 @@ class TestChartQueryRunnerHelperMethods(TestCase):
                     "repositories": [repo1.name]
                 }
             )
-            assert qr.repoids == (repo1.repoid,)
+            assert qr.repoids == f"({repo1.repoid})"
 
     def test_interval(self):
         with self.subTest("translates quarter into 3 months"):
