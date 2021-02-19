@@ -231,24 +231,29 @@ class ChartQueryRunner:
         Date of first commit made to any repo in 'self.repoids'. Used as initial
         date for date_spine query.
         """
-        commit_dates = Commit.objects.filter(
-            repository__repoid__in=self.repoids,
-            repository__branch=F("branch"),
-            state="complete"
-        ).annotate(
-            truncated_date=Trunc(
-                "timestamp",
-                self.request_params.get("grouping_unit")
-            )
-        ).order_by(
-            "timestamp"
-        ).values_list(
-            "truncated_date",
-            flat=True
-        )
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f"""
+                WITH relevant_repo_branches AS (
+                    SELECT
+                        r.repoid,
+                        r.branch
+                    FROM repos r
+                    WHERE r.repoid IN {self.repoids}
+                )
 
-        if commit_dates:
-            return datetime.date(commit_dates[0])
+                SELECT
+                    DATE_TRUNC('day', c.timestamp AT TIME ZONE 'UTC') as truncated_date
+                FROM commits c
+                INNER JOIN relevant_repo_branches r ON c.repoid = r.repoid AND c.branch = r.branch
+                WHERE c.state = 'complete'
+                ORDER BY c.timestamp ASC LIMIT 1;
+                """
+            )
+            date = self._dictfetchall(cursor)
+
+        if date:
+            return datetime.date(date[0]["truncated_date"])
 
     def _validate_parameters(self):
         params_schema = {
