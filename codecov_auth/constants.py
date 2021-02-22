@@ -21,7 +21,7 @@ NON_PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
     "users-inappy": {
         "marketing_name": "Pro Team",
         "value": "users-inappy",
-        "billing_rate": "annually",
+        "billing_rate": "annual",
         "base_unit_price": 10,
         "benefits": [
             "Configureable # of users",
@@ -49,7 +49,7 @@ PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
     "users-pr-inappy": {
         "marketing_name": "Pro Team",
         "value": "users-pr-inappy",
-        "billing_rate": "annually",
+        "billing_rate": "annual",
         "base_unit_price": 10,
         "benefits": [
             "Configureable # of users",
