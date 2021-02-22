@@ -157,9 +157,9 @@ class OrganizationChartHandler(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [JSONParser]
 
-    def post(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         query_runner = ChartQueryRunner(
             user=request.user,
-            request_params={**kwargs, **request.data}
+            request_params={**kwargs, **request.query_params.dict()}
         )
         return Response(data={"coverage": query_runner.run_query()})

@@ -910,15 +910,15 @@ class TestOrganizationChartHandler(InternalAPITest):
         )
         self.client.force_login(user=self.user)
 
-    def _post(self, kwargs={}, data={}):
-        return self.client.post(
+    def _get(self, kwargs={}, data={}):
+        return self.client.get(
             reverse("chart-coverage-organization", kwargs=kwargs),
             data=data,
             content_type="application/json",
         )
 
     def test_basic_success(self):
-        response = self._post(
+        response = self._get(
             kwargs={
                 "owner_username": self.org.username,
                 "service": self.org.service,
