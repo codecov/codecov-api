@@ -8,9 +8,7 @@ CORS_ALLOW_CREDENTIALS = True
 CODECOV_URL = get_config("setup", "codecov_url")
 
 # select out CODECOV_URL domain
-DEFAULT_WHITELISTED_DOMAIN = CODECOV_URL
-
-CORS_ALLOWED_ORIGINS = get_config("setup", "api_CORS_ALLOWED_ORIGINS", default=[DEFAULT_WHITELISTED_DOMAIN])
+CORS_ALLOWED_ORIGINS = get_config("setup", "api_cors_allowed_origins", default=[CODECOV_URL])
 
 # Referenced at module level of services/billing.py, so it needs to be defined
 STRIPE_API_KEY = None
