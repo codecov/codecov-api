@@ -200,7 +200,7 @@ class UserViewSetTests(APITestCase):
 
         response = self._list(query_params={"search": "tho"})
         assert response.status_code == status.HTTP_200_OK
-        assert response.data['results'] == [
+        expected_result = [
             {
                 'name': 'thor23',
                 'activated': False,
@@ -224,6 +224,10 @@ class UserViewSetTests(APITestCase):
                 'lastseen': None
             },
         ]
+        assert response.data['results'][0] == expected_result[0]
+        assert response.data['results'][1] == expected_result[1]
+        assert response.data['results'] == expected_result
+
     @pytest.mark.skip(reason="flaky, skipping until re write")
     def test_list_can_search_by_email(self):
         # set up some names

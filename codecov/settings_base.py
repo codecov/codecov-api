@@ -187,6 +187,7 @@ GITHUB_ACTIONS_TOKEN = get_config("github", "actions_token")
 BITBUCKET_CLIENT_ID = get_config("bitbucket", "client_id")
 BITBUCKET_CLIENT_SECRET = get_config("bitbucket", "client_secret")
 BITBUCKET_BOT_KEY = get_config("bitbucket", "bot", "key")
+BITBUCKET_REDIRECT_URI = "https://codecov.io/login/bitbucket"
 
 GITLAB_CLIENT_ID = get_config("gitlab", "client_id")
 GITLAB_CLIENT_SECRET = get_config("gitlab", "client_secret")
