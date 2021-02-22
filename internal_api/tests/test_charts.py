@@ -565,7 +565,8 @@ class TestChartQueryRunnerQuery(TestCase):
         assert results[1]["coverage"] == Decimal('89.66')
 
     def test_query_supports_different_grouping_params(self):
-        self.commit1.timestamp = datetime.now() - timedelta(days=365)
+        end_date = datetime.fromisoformat('2019-01-01')
+        self.commit1.timestamp = end_date - timedelta(days=365)
         self.commit1.save()
         pairs = [("day", 365), ("week", 52), ("month", 12), ("quarter", 4), ("year", 1)]
         for grouping_unit, expected_num_datapoints in pairs:
@@ -574,7 +575,8 @@ class TestChartQueryRunnerQuery(TestCase):
                 request_params={
                     "owner_username": self.org.username,
                     "service": self.org.service,
-                    "start_date": str(datetime.now() - timedelta(days=365)),
+                    "start_date": str(end_date - timedelta(days=365)),
+                    "end_date": str(end_date),
                     "grouping_unit": grouping_unit
                 }
             )
