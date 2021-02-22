@@ -157,9 +157,17 @@ class OrganizationChartHandler(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [JSONParser]
 
+    # this method is deprecated and will be removed
     def post(self, request, *args, **kwargs):
         query_runner = ChartQueryRunner(
             user=request.user,
             request_params={**kwargs, **request.data}
+        )
+        return Response(data={"coverage": query_runner.run_query()})
+
+    def get(self, request, *args, **kwargs):
+        query_runner = ChartQueryRunner(
+            user=request.user,
+            request_params={**kwargs, **request.query_params.dict()}
         )
         return Response(data={"coverage": query_runner.run_query()})
