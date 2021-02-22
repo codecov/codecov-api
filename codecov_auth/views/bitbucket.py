@@ -1,13 +1,15 @@
 import asyncio
 import base64
 import logging
+from urllib.parse import urlencode
 
+from django.conf import settings
 from django.shortcuts import redirect
 from django.urls import reverse
-from shared.torngit import Bitbucket
-from urllib.parse import urlencode
 from django.views import View
-from django.conf import settings
+from shared.torngit import Bitbucket
+from shared.torngit.exceptions import TorngitServerFailureError
+
 from codecov_auth.views.base import LoginMixin
 
 log = logging.getLogger(__name__)
@@ -15,10 +17,6 @@ log = logging.getLogger(__name__)
 
 class BitbucketLoginView(View, LoginMixin):
     cookie_prefix = "bitbucket"
-
-    def get_is_enterprise(self):
-        # TODO Change when rolling out enterprise
-        return False
 
     async def fetch_user_data(self, token):
         repo_service = Bitbucket(
@@ -63,7 +61,7 @@ class BitbucketLoginView(View, LoginMixin):
             + b"|"
             + base64.b64encode(oauth_token_secret.encode())
         ).decode()
-        response.set_cookie("_oauth_request_token", data)
+        response.set_cookie("_oauth_request_token", data, domain=settings.COOKIES_DOMAIN)
         return response
 
     def actual_login_step(self, request):
@@ -90,13 +88,19 @@ class BitbucketLoginView(View, LoginMixin):
         )
         user_dict = asyncio.run(self.fetch_user_data(token))
         response = redirect("/bb")
-        response.delete_cookie("_oauth_request_token")
-        self.login_from_user_dict(user_dict, request, response)
+        response.delete_cookie("_oauth_request_token", domain=settings.COOKIES_DOMAIN)
+        user = self.login_from_user_dict(user_dict, request, response)
+        log.info("User successfully logged in", extra=dict(ownerid=user.ownerid))
         return response
 
     def get(self, request):
-        if request.GET.get("oauth_verifier"):
-            log.info("Logging into Bitbucket")
-            return self.actual_login_step(request)
-        else:
-            return self.redirect_to_bitbucket_step(request)
+        try:
+            if request.GET.get("oauth_verifier"):
+                log.info("Logging into bitbucket after authorization")
+                return self.actual_login_step(request)
+            else:
+                log.info("Redirecting user to bitbucket for authorization")
+                return self.redirect_to_bitbucket_step(request)
+        except TorngitServerFailureError:
+            log.warning("Bitbucket not available for login")
+            return redirect(reverse("bitbucket-login"))
