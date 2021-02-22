@@ -564,6 +564,7 @@ class TestChartQueryRunnerQuery(TestCase):
         assert results[1]["total_partials"] == 16
         assert results[1]["coverage"] == Decimal('89.66')
 
+    @pytest.mark.skip(reason="flaky, skipping until re write")
     def test_query_supports_different_grouping_params(self):
         end_date = datetime.fromisoformat('2019-01-01')
         self.commit1.timestamp = end_date - timedelta(days=365)
