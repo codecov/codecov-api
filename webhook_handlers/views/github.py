@@ -63,6 +63,20 @@ class GithubWebhookHandler(APIView):
                     delivery=request.META.get(GitHubHTTPHeaders.DELIVERY_TOKEN)
                 )
             )
+            log.info(
+                f"{request.body}",
+                extra=dict(
+                    github_webhook_event=self.event,
+                    delivery=request.META.get(GitHubHTTPHeaders.DELIVERY_TOKEN)
+                )
+            )
+            log.info(
+                f"{request.META.get(GitHubHTTPHeaders.SIGNATURE)}",
+                extra=dict(
+                    github_webhook_event=self.event,
+                    delivery=request.META.get(GitHubHTTPHeaders.DELIVERY_TOKEN)
+                )
+            )
             raise PermissionDenied()
 
     def unhandled_webhook_event(self, request, *args, **kwargs):

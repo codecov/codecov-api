@@ -208,7 +208,7 @@ class ChartQueryRunner:
     @cached_property
     def repoids(self):
         """
-        Returns a tuple of repoids of the repositories being queried.
+        Returns a string of repoids of the repositories being queried.
         """
         organization = Owner.objects.get(
             service=self.request_params["service"],
@@ -221,7 +221,14 @@ class ChartQueryRunner:
         if self.request_params.get("repositories", []):
             repos = repos.filter(name__in=self.request_params.get("repositories", []))
 
-        return tuple(repos.values_list("repoid", flat=True))
+        if repos:
+            # Get repoids into a format easily plugged into raw SQL
+            return "(" + ",".join(
+                map(
+                    str,
+                    list(repos.values_list("repoid", flat=True))
+                )
+            ) + ")"
 
     @cached_property
     def first_complete_commit_date(self):
@@ -229,24 +236,29 @@ class ChartQueryRunner:
         Date of first commit made to any repo in 'self.repoids'. Used as initial
         date for date_spine query.
         """
-        commit_dates = Commit.objects.filter(
-            repository__repoid__in=self.repoids,
-            repository__branch=F("branch"),
-            state="complete"
-        ).annotate(
-            truncated_date=Trunc(
-                "timestamp",
-                self.request_params.get("grouping_unit")
-            )
-        ).order_by(
-            "timestamp"
-        ).values_list(
-            "truncated_date",
-            flat=True
-        )
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f"""
+                WITH relevant_repo_branches AS (
+                    SELECT
+                        r.repoid,
+                        r.branch
+                    FROM repos r
+                    WHERE r.repoid IN {self.repoids}
+                )
 
-        if commit_dates:
-            return datetime.date(commit_dates[0])
+                SELECT
+                    DATE_TRUNC('{self.grouping_unit}', c.timestamp AT TIME ZONE 'UTC') as truncated_date
+                FROM commits c
+                INNER JOIN relevant_repo_branches r ON c.repoid = r.repoid AND c.branch = r.branch
+                WHERE c.state = 'complete'
+                ORDER BY c.timestamp ASC LIMIT 1;
+                """
+            )
+            date = self._dictfetchall(cursor)
+
+        if date:
+            return datetime.date(date[0]["truncated_date"])
 
     def _validate_parameters(self):
         params_schema = {

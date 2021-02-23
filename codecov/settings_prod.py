@@ -6,7 +6,7 @@ from sentry_sdk.integrations.django import DjangoIntegration
 
 DEBUG = False
 THIS_POD_IP = os.environ.get("THIS_POD_IP")
-ALLOWED_HOSTS = [".codecov.io", THIS_POD_IP] if THIS_POD_IP else [".codecov.io"]
+ALLOWED_HOSTS = ["codecov.io-shadow", ".codecov.io", THIS_POD_IP] if THIS_POD_IP else [".codecov.io"]
 
 
 INSTALLED_APPS += [
