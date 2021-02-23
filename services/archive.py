@@ -7,7 +7,7 @@ from minio import Minio
 from shared.reports.resources import Report
 from shared.helpers.flag import Flag
 
-from pytz import UTC
+from django.utils import timezone
 from datetime import datetime
 from hashlib import md5
 from base64 import b16encode
@@ -164,7 +164,7 @@ class ArchiveService(object):
         # write the file.
         path = '/'.join((
             'v4/raw',
-            datetime.now(tz=UTC).strftime('%Y-%m-%d'),
+            timezone.now().strftime('%Y-%m-%d'),
             self.storage_hash,
             commit_sha,
             '%s.txt' % report_id
@@ -245,7 +245,7 @@ class ArchiveService(object):
             filename = '{}.txt'.format(uuid4())
 
         path = 'v4/raw/{}/{}/{}/{}'.format(
-            datetime.now(tz=UTC).strftime('%Y-%m-%d'),
+            timezone.now().strftime('%Y-%m-%d'),
             self.storage_hash,
             commit_sha,
             filename

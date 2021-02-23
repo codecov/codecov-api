@@ -9,7 +9,7 @@ from django.utils.encoding import smart_text
 from urllib.parse import parse_qs
 from json import dumps
 from uuid import uuid4
-from pytz import UTC
+from django.utils import timezone
 
 from .helpers import (
     parse_params,
@@ -205,7 +205,7 @@ class UploadHandler(APIView):
             path = "/".join(
                 (
                     "v4/raw",
-                    datetime.now(tz=UTC).strftime("%Y-%m-%d"),
+                    timezone.now().strftime("%Y-%m-%d"),
                     archive_service.get_archive_hash(repository),
                     commitid,
                     f"{reportid}.txt",

@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime
-from pytz import UTC
+from django.utils import timezone
 
 from unittest.mock import patch
 
@@ -247,7 +247,7 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
 
         CommitFactory(repository=self.repo1, totals={**default_totals, "c": older_coverage})
         # We're testing that the lte works as expected, so we're not sending the exact same timestamp
-        fetching_time = datetime.now(tz=UTC).isoformat()
+        fetching_time = timezone.now().isoformat()
 
         CommitFactory(repository=self.repo1, totals=default_totals)
 

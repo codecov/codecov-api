@@ -3,7 +3,7 @@ from django.db.models import FloatField, Case, When, Value, F
 from django.db.models.fields.json import KeyTextTransform
 from django.utils.functional import cached_property
 from django.db import connection
-from pytz import UTC
+from django.utils import timezone
 
 from rest_framework.exceptions import ValidationError
 from cerberus import Validator
@@ -180,7 +180,7 @@ class ChartQueryRunner:
                     self.request_params.get("end_date")
                 )
             )
-        return datetime.date(datetime.now(tz=UTC))
+        return datetime.date(timezone.now())
 
     @property
     def interval(self):

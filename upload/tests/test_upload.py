@@ -2,7 +2,7 @@ import requests
 import shared.torngit
 import pytest
 import time
-from pytz import UTC
+from django.utils import timezone
 from datetime import datetime, timedelta
 from rest_framework.test import APITestCase, APIRequestFactory
 from shared.torngit.exceptions import TorngitClientError, TorngitObjectNotFoundError
@@ -968,7 +968,7 @@ class UploadHandlerRouteTest(APITestCase):
         path = "/".join(
             (
                 "v4/raw",
-                datetime.now(tz=UTC).strftime("%Y-%m-%d"),
+                timezone.now().strftime("%Y-%m-%d"),
                 "awawaw",
                 "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
             )
