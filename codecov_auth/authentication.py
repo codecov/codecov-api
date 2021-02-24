@@ -52,11 +52,14 @@ class CodecovSessionAuthentication(authentication.BaseAuthentication):
         return 'Bearer realm="api"'
 
     def authenticate(self, request):
-        authorization = request.META.get('HTTP_AUTHORIZATION', '')
-        encoded_cookie = False
         if "github-token" in request.COOKIES:
             encoded_cookie = request.COOKIES["github-token"]
+        elif "gitlab-token" in request.COOKIES:
+            encoded_cookie = request.COOKIES["gitlab-token"]
+        elif "bitbucket-token" in request.COOKIES:
+            encoded_cookie = request.COOKIES["bitbucket-token"]
         else:
+            authorization = request.META.get('HTTP_AUTHORIZATION', '')
             if not authorization or ' ' not in authorization:
                 return None
             val, encoded_cookie = authorization.split(' ')
