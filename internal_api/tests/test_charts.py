@@ -928,9 +928,11 @@ class TestOrganizationChartHandler(InternalAPITest):
             },
             data={
                 "grouping_unit": "day",
+                "repositories": [self.repo1.name, self.repo2.name]
             }
         )
 
+        assert response.status_code == 200
         assert len(response.data["coverage"]) == 1
         assert response.data["coverage"][0]["total_hits"] == 114
         assert response.data["coverage"][0]["total_lines"] == 145
