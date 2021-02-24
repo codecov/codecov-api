@@ -53,13 +53,17 @@ class CodecovSessionAuthentication(authentication.BaseAuthentication):
 
     def authenticate(self, request):
         authorization = request.META.get('HTTP_AUTHORIZATION', '')
-        if not authorization or ' ' not in authorization:
-            return None
-        val, encoded_cookie = authorization.split(' ')
-        if val not in ['Bearer', 'frontend']:
-            # We continue to allow 'frontend' above for compatibility
-            # with old client version until an update is deployed there.
-            return None
+        encoded_cookie = False
+        if "github-token" in request.COOKIES:
+            encoded_cookie = request.COOKIES["github-token"]
+        else:
+            if not authorization or ' ' not in authorization:
+                return None
+            val, encoded_cookie = authorization.split(' ')
+            if val not in ['Bearer', 'frontend']:
+                # We continue to allow 'frontend' above for compatibility
+                # with old client version until an update is deployed there.
+                return None
         token = self.decode_token_from_cookie(encoded_cookie)
         try:
             session = Session.objects.get(token=token)
