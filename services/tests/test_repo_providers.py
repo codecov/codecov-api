@@ -179,3 +179,10 @@ class TestRepoProviderService(InternalAPITest):
         )
 
         assert adapter.token["key"] == settings.GITHUB_BOT_KEY
+
+    def test_get_adapter_sets_owner_service_id(self):
+        owner = OwnerFactory()
+        repo = RepositoryFactory(author=owner)
+        user = OwnerFactory()
+        adapter = RepoProviderService().get_adapter(user=user, repo=repo)
+        assert adapter.data["owner"]["service_id"] == owner.service_id
