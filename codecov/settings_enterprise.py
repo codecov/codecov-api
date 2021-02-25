@@ -7,6 +7,20 @@ ALLOWED_HOSTS = get_config("setup", "api_allowed_hosts", default=["*"])
 CORS_ALLOW_CREDENTIALS = True
 CODECOV_URL = get_config("setup", "codecov_url")
 
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+    ),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'codecov_auth.authentication.CodecovSessionAuthentication',
+    ),
+    'DEFAULT_PAGINATION_CLASS': 'internal_api.pagination.StandardPageNumberPagination',
+    'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',),
+    'PAGE_SIZE': 20
+}
+
+
 # select out CODECOV_URL domain
 if CODECOV_URL.startswith("https://"):
     DEFAULT_WHITELISTED_DOMAIN = CODECOV_URL[8:]
