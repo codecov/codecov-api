@@ -129,17 +129,16 @@ class CodecovSessionAuthentication(authentication.SessionAuthentication, Codecov
 
     """
 
+    # TODO: When this handles the /profile route, we will have to
+    # add a 'service' url-param there
     def authenticate(self, request):
+        service = request.parser_context["kwargs"].get("service")
+        encoded_cookie = request.COOKIES.get(f"{service}-token")
+
+        if not encoded_cookie:
+            return None
+
         self.enforce_csrf(request)
 
-        encoded_cookie = None
-        if "github-token" in request.COOKIES:
-            encoded_cookie = request.COOKIES["github-token"]
-        elif "gitlab-token" in request.COOKIES:
-            encoded_cookie = request.COOKIES["gitlab-token"]
-        elif "bitbucket-token" in request.COOKIES:
-            encoded_cookie = request.COOKIES["bitbucket-token"]
-
-        if encoded_cookie:
-            token = self.decode_token_from_cookie(encoded_cookie)
-            return self.get_user_and_session(token, request)
+        token = self.decode_token_from_cookie(encoded_cookie)
+        return self.get_user_and_session(token, request)

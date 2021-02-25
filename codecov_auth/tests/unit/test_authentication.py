@@ -5,13 +5,14 @@ from django.test import TestCase
 from rest_framework.test import APIRequestFactory
 from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
 from rest_framework.request import Request
+from rest_framework.reverse import reverse
 
 import pytest
 import rest_framework
 
 from utils.test_utils import BaseTestCase
 from codecov_auth.tests.factories import SessionFactory, OwnerFactory
-from codecov_auth.authentication import CodecovTokenAuthentication
+from codecov_auth.authentication import CodecovTokenAuthentication, CodecovSessionAuthentication
 
 
 # Using the standard RequestFactory API to create a form POST request
@@ -179,3 +180,37 @@ class CodecovAuthMixinImpersonationTests(TestCase):
 
         user, session = self.authenticator.authenticate(request)
         assert user == self.impersonated_user
+
+
+class CodecovSessionAuthenticationTests(TestCase):
+    def _build_request(self, service, token):
+        request_factory = APIRequestFactory()
+        request_factory.cookies[f"{service}-token"] = token
+        request = request_factory.get('')
+        request.parser_context = {"kwargs": {"service": service}}
+        return request
+
+    def test_cookie_auth_github(self):
+        a = "2|1:0|10:1557329312|15:bitbucket-token|48:OGY5YmM2Y2ItZmQxNC00M2JjLWJiYjUtYmUxZTdjOTQ4ZjM0|459669157b19d2e220f461e02c07c377a455bc532ad0c2b8b69b2648cfbe3914"
+        session = SessionFactory.create(token="8f9bc6cb-fd14-43bc-bbb5-be1e7c948f34")
+        authenticator = CodecovSessionAuthentication()
+        request = self._build_request("github", a)
+        result = authenticator.authenticate(request)
+        assert result is not None
+        user, token = result
+        assert user == session.owner
+        assert token == session
+
+    def test_cookie_auth_github(self):
+        a = "2|1:0|10:1557329312|15:bitbucket-token|48:OGY5YmM2Y2ItZmQxNC00M2JjLWJiYjUtYmUxZTdjOTQ4ZjM0|459669157b19d2e220f461e02c07c377a455bc532ad0c2b8b69b2648cfbe3914"
+        session = SessionFactory.create(
+            token="8f9bc6cb-fd14-43bc-bbb5-be1e7c948f34",
+            owner=OwnerFactory(service="bitbucket")
+        )
+        request = self._build_request("bitbucket", a)
+        authenticator = CodecovSessionAuthentication()
+        result = authenticator.authenticate(request)
+        assert result is not None
+        user, token = result
+        assert user == session.owner
+        assert token == session
