@@ -1,6 +1,7 @@
 import uuid
 import logging
 from datetime import datetime
+from django.utils import timezone
 
 from rest_framework import filters, mixins, viewsets
 from rest_framework.exceptions import PermissionDenied, NotAuthenticated
@@ -89,7 +90,7 @@ class RepositoryViewSet(
         )
 
         if self.action == 'list':
-            before_date = self.request.query_params.get("before_date", datetime.now().isoformat())
+            before_date = self.request.query_params.get("before_date", timezone.now().isoformat())
             branch=self.request.query_params.get("branch", None)
 
             queryset = queryset.with_latest_commit_totals_before(
@@ -176,7 +177,7 @@ class RepositoryViewSet(
 
         # Then only get the repositories with totals and then annotate the latest commit
         results = queryset.with_latest_commit_totals_before(
-            self.request.query_params.get("before_date", datetime.now().isoformat()),
+            self.request.query_params.get("before_date", timezone.now().isoformat()),
             self.request.query_params.get("branch", None),
             include_previous_totals=True
         ).exclude_uncovered().get_aggregated_coverage()
