@@ -3,7 +3,7 @@ import string
 import random
 
 from django.db import models
-from django.contrib.postgres.fields import JSONField, CITextField, ArrayField
+from django.contrib.postgres.fields import CITextField, ArrayField
 from django.utils.functional import cached_property
 
 from .encoders import ReportJSONEncoder
@@ -29,16 +29,16 @@ class Repository(models.Model):
     service_id = models.TextField()
     private = models.BooleanField()
     updatestamp = models.DateTimeField(auto_now=True)
-    active = models.NullBooleanField()
+    active = models.BooleanField(null=True)
     language = models.TextField(null=True, blank=True)
     fork = models.ForeignKey('core.Repository', db_column='forkid',
                              on_delete=models.DO_NOTHING, null=True, blank=True)
     branch = models.TextField(null=True, default='master')
     upload_token = models.UUIDField(default=uuid.uuid4)
-    yaml = JSONField(null=True)
-    cache = JSONField(null=True)
+    yaml = models.JSONField(null=True)
+    cache = models.JSONField(null=True)
     image_token = models.CharField(max_length=10, default=_gen_image_token)
-    using_integration = models.NullBooleanField()
+    using_integration = models.BooleanField(null=True)
     hookid = models.TextField(null=True)
     bot = models.ForeignKey('codecov_auth.Owner', db_column="bot",
                             null=True, on_delete=models.SET_NULL, related_name="bot_repos")
@@ -47,6 +47,7 @@ class Repository(models.Model):
 
     class Meta:
         db_table = 'repos'
+        ordering = ['-repoid']
 
     objects = RepositoryQuerySet.as_manager()
 
@@ -91,13 +92,13 @@ class Commit(models.Model):
         'codecov_auth.Owner', db_column='author', on_delete=models.SET_NULL, null=True)
     repository = models.ForeignKey(
         'core.Repository', db_column='repoid', on_delete=models.CASCADE, related_name='commits')
-    ci_passed = models.NullBooleanField()
-    totals = JSONField(null=True)
+    ci_passed = models.BooleanField(null=True)
+    totals = models.JSONField(null=True)
     # Use custom JSON to properly serialize custom data classes on reports
-    report = JSONField(null=True, encoder=ReportJSONEncoder)
-    merged = models.NullBooleanField()
-    deleted = models.NullBooleanField()
-    notified = models.NullBooleanField()
+    report = models.JSONField(null=True, encoder=ReportJSONEncoder)
+    merged = models.BooleanField(null=True)
+    deleted = models.BooleanField(null=True)
+    notified = models.BooleanField(null=True)
     branch = models.TextField(null=True)
     pullid = models.IntegerField(null=True)
     message = models.TextField(null=True)
@@ -131,8 +132,9 @@ class Pull(models.Model):
     author = models.ForeignKey(
         'codecov_auth.Owner', db_column='author', on_delete=models.SET_NULL, null=True)
     updatestamp = models.DateTimeField(auto_now_add=True)
-    diff = JSONField(null=True)
-    flare = JSONField(null=True)
+    diff = models.JSONField(null=True)
+    flare = models.JSONField(null=True)
 
     class Meta:
         db_table = 'pulls'
+        ordering = ['-pullid']
