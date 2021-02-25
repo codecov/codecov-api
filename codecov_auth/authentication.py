@@ -130,8 +130,6 @@ class CodecovSessionAuthentication(authentication.SessionAuthentication, Codecov
     """
 
     def authenticate(self, request):
-        self.enforce_csrf(request)
-
         encoded_cookie = None
         if "github-token" in request.COOKIES:
             encoded_cookie = request.COOKIES["github-token"]
@@ -140,6 +138,10 @@ class CodecovSessionAuthentication(authentication.SessionAuthentication, Codecov
         elif "bitbucket-token" in request.COOKIES:
             encoded_cookie = request.COOKIES["bitbucket-token"]
 
-        if encoded_cookie:
-            token = self.decode_token_from_cookie(encoded_cookie)
-            return self.get_user_and_session(token, request)
+        if not encoded_cookie:
+            return None
+
+        self.enforce_csrf(request)
+
+        token = self.decode_token_from_cookie(encoded_cookie)
+        return self.get_user_and_session(token, request)
