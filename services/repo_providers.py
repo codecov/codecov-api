@@ -75,7 +75,8 @@ class RepoProviderService(object):
                 "private": repo.private,
             },
             "owner": {
-                "username": repo.author.username
+                "username": repo.author.username,
+                "service_id": repo.author.service_id
             }
         }
 
