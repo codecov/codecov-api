@@ -2,6 +2,7 @@ import requests
 import shared.torngit
 import pytest
 import time
+from django.utils import timezone
 from datetime import datetime, timedelta
 from rest_framework.test import APITestCase, APIRequestFactory
 from shared.torngit.exceptions import TorngitClientError, TorngitObjectNotFoundError
@@ -967,7 +968,7 @@ class UploadHandlerRouteTest(APITestCase):
         path = "/".join(
             (
                 "v4/raw",
-                datetime.now().strftime("%Y-%m-%d"),
+                timezone.now().strftime("%Y-%m-%d"),
                 "awawaw",
                 "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
             )
@@ -2228,7 +2229,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         mock_get.return_value.return_value = expected_response
 
         params = {
-            "build": "12.34", 
+            "build": "12.34",
             "owner": "owner",
             "repo": "repo",
             "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
@@ -2270,7 +2271,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         with pytest.raises(NotFound) as e:
             TokenlessUploadHandler('github_actions', params).verify_upload()
         assert e.value.args[0] == "Unable to locate build via Github Actions API. Please upload with the Codecov repository upload token to resolve issue."
-        
+
         mock_get.side_effect = [Exception('Not Found')]
 
         with pytest.raises(NotFound) as e:
