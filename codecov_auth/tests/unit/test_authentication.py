@@ -5,13 +5,14 @@ from django.test import TestCase
 from rest_framework.test import APIRequestFactory
 from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
 from rest_framework.request import Request
+from rest_framework.reverse import reverse
 
 import pytest
 import rest_framework
 
 from utils.test_utils import BaseTestCase
 from codecov_auth.tests.factories import SessionFactory, OwnerFactory
-from codecov_auth.authentication import CodecovSessionAuthentication
+from codecov_auth.authentication import CodecovTokenAuthentication, CodecovSessionAuthentication
 
 
 # Using the standard RequestFactory API to create a form POST request
@@ -23,7 +24,7 @@ class TestAuthentication(BaseTestCase):
         session = SessionFactory.create(token="8f9bc6cb-fd14-43bc-bbb5-be1e7c948f34")
         request_factory = APIRequestFactory()
         request = request_factory.post('/notes/', {'title': 'new idea'}, HTTP_AUTHORIZATION=f'frontend {a}')
-        authenticator = CodecovSessionAuthentication()
+        authenticator = CodecovTokenAuthentication()
         result = authenticator.authenticate(request)
         assert result is not None
         user, token = result
@@ -33,19 +34,19 @@ class TestAuthentication(BaseTestCase):
     def test_decode_token_from_cookie(self):
         val = "2|1:0|10:1557329312|15:bitbucket-token|48:OGY5YmM2Y2ItZmQxNC00M2JjLWJiYjUtYmUxZTdjOTQ4ZjM0|459669157b19d2e220f461e02c07c377a455bc532ad0c2b8b69b2648cfbe3914"
         expected_response = "8f9bc6cb-fd14-43bc-bbb5-be1e7c948f34"
-        authenticator = CodecovSessionAuthentication()
+        authenticator = CodecovTokenAuthentication()
         assert expected_response == authenticator.decode_token_from_cookie(val)
 
     def test_decode_token_bad_signature(self):
         val = "2|1:0|10:1557329312|15:bitbucket-token|48:OGY5YmM2Y2ItZmQxNC00M2JjLWJiYjUtYmUxZTdjOTQ4ZjM0|aaaaaaaa7baad2e220faaae02c07c377aaaabca32ad0c2b8baab2aa8cfbe3aaa"
         expected_response = "8f9bc6cb-fd14-43bc-bbb5-be1e7c948f34"
-        authenticator = CodecovSessionAuthentication()
+        authenticator = CodecovTokenAuthentication()
         with pytest.raises(rest_framework.exceptions.AuthenticationFailed):
             authenticator.decode_token_from_cookie(val)
 
     def test_decode_token_bad_cookie_value_format(self):
         val = "2|1:0|10:1557329312|15:bitbucket-token|OGY5YmM2Y2ItZmQxNC00M2JjLWJiYjUtYmUxZTdjOTQ4ZjM0|1335e04704e810cc3096150f30969432ab88116f9679bfcef070b0c5da0e0f23"
-        authenticator = CodecovSessionAuthentication()
+        authenticator = CodecovTokenAuthentication()
         with pytest.raises(rest_framework.exceptions.AuthenticationFailed):
             authenticator.decode_token_from_cookie(val)
 
@@ -55,7 +56,7 @@ class TestAuthentication(BaseTestCase):
         request_factory = APIRequestFactory()
         request = request_factory.post(
             '/notes/', {'title': 'new idea'}, HTTP_AUTHORIZATION=f'frontend {token}')
-        authenticator = CodecovSessionAuthentication()
+        authenticator = CodecovTokenAuthentication()
         with pytest.raises(rest_framework.exceptions.AuthenticationFailed):
             authenticator.authenticate(request)
 
@@ -70,7 +71,7 @@ class TestAuthentication(BaseTestCase):
             '',
             **headers
         )
-        authenticator = CodecovSessionAuthentication()
+        authenticator = CodecovTokenAuthentication()
         authenticator.update_session(
             request,
             session
@@ -94,7 +95,7 @@ class TestAuthentication(BaseTestCase):
             '',
             **headers
         )
-        authenticator = CodecovSessionAuthentication()
+        authenticator = CodecovTokenAuthentication()
         authenticator.update_session(
             request,
             session
@@ -110,15 +111,15 @@ class TestAuthentication(BaseTestCase):
         request_factory = APIRequestFactory()
         request = request_factory.post('/notes/', {'title': 'new idea'}, HTTP_AUTHORIZATION=f'frontend {a}')
         mocked_verify_session = mocker.patch(
-            'codecov_auth.authentication.CodecovSessionAuthentication.update_session'
+            'codecov_auth.authentication.CodecovTokenAuthentication.update_session'
         )
-        authenticator = CodecovSessionAuthentication()
+        authenticator = CodecovTokenAuthentication()
         authenticator.authenticate(request)
 
         mocked_verify_session.assert_called_once_with(request, session)
 
 
-class CodecovSessionAuthenticationImpersonationTests(TestCase):
+class CodecovAuthMixinImpersonationTests(TestCase):
     def setUp(self):
         token = "2|1:0|10:1557329312|15:bitbucket-token|48:OGY5YmM2Y2ItZmQxNC00M2JjLWJiYjUtYmUxZTdjOTQ4ZjM0|459669157b19d2e220f461e02c07c377a455bc532ad0c2b8b69b2648cfbe3914"
         self.session = SessionFactory(
@@ -129,7 +130,7 @@ class CodecovSessionAuthenticationImpersonationTests(TestCase):
         self.authorization_header = f'frontend {token}'
         self.user_to_impersonate = 'codecov'
         self.impersonated_user = OwnerFactory(username=self.user_to_impersonate)
-        self.authenticator = CodecovSessionAuthentication()
+        self.authenticator = CodecovTokenAuthentication()
         self.request_factory = APIRequestFactory()
 
     def _create_request(self, cookie='', service=''):
@@ -179,3 +180,37 @@ class CodecovSessionAuthenticationImpersonationTests(TestCase):
 
         user, session = self.authenticator.authenticate(request)
         assert user == self.impersonated_user
+
+
+class CodecovSessionAuthenticationTests(TestCase):
+    def _build_request(self, service, token):
+        request_factory = APIRequestFactory()
+        request_factory.cookies[f"{service}-token"] = token
+        request = request_factory.get('')
+        request.parser_context = {"kwargs": {"service": service}}
+        return request
+
+    def test_cookie_auth_github(self):
+        a = "2|1:0|10:1557329312|15:bitbucket-token|48:OGY5YmM2Y2ItZmQxNC00M2JjLWJiYjUtYmUxZTdjOTQ4ZjM0|459669157b19d2e220f461e02c07c377a455bc532ad0c2b8b69b2648cfbe3914"
+        session = SessionFactory.create(token="8f9bc6cb-fd14-43bc-bbb5-be1e7c948f34")
+        authenticator = CodecovSessionAuthentication()
+        request = self._build_request("github", a)
+        result = authenticator.authenticate(request)
+        assert result is not None
+        user, token = result
+        assert user == session.owner
+        assert token == session
+
+    def test_cookie_auth_bitbucket(self):
+        a = "2|1:0|10:1557329312|15:bitbucket-token|48:OGY5YmM2Y2ItZmQxNC00M2JjLWJiYjUtYmUxZTdjOTQ4ZjM0|459669157b19d2e220f461e02c07c377a455bc532ad0c2b8b69b2648cfbe3914"
+        session = SessionFactory.create(
+            token="8f9bc6cb-fd14-43bc-bbb5-be1e7c948f34",
+            owner=OwnerFactory(service="bitbucket")
+        )
+        request = self._build_request("bitbucket", a)
+        authenticator = CodecovSessionAuthentication()
+        result = authenticator.authenticate(request)
+        assert result is not None
+        user, token = result
+        assert user == session.owner
+        assert token == session
