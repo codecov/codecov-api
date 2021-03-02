@@ -416,13 +416,15 @@ def validate_upload(upload_params, repository, redis):
                 "Sorry, but this team has no private repository credits left."
             )
 
+    if not repository.activated:
+        SegmentService().account_activated_repository_on_upload(repository.author.ownerid, repository)
+
     # Activate the repository
     repository.activated = True
     repository.active = True
     repository.deleted = False
     repository.save()
 
-    SegmentService().account_activated_repository_on_upload(repository.author.ownerid, repository)
 
 
 def parse_headers(headers, upload_params):
