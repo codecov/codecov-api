@@ -1,17 +1,22 @@
 #!/bin/sh
 
 # Starts the enterprise gunicorn server (no --reload)
-echo "Starting gunicorn in production mode"
-if [[ "$STATSD_HOST" ]]; then
-PARAMS="--statsd-host ${STATSD_HOST}:${STATSD_PORT:-8125}"
-else
-PARAMS=""
-fi
-if [[ "$DD_ENABLED" ]]; then
-SUB="ddtrace-run "
+echo "Starting api"
+
+if [[ "$CODECOV_WRAPPER" ]]; then
+SUB="$CODECOV_WRAPPER"
 else
 SUB=""
 fi
-./api runserver 0.0.0.0:8000
-#${SUB}gunicorn codecov.wsgi:application --workers=2 --bind 0.0.0.0:8000 --access-logfile '-' ${PARAMS}
+if [[ "$DD_ENABLED" ]]; then
+DDTRACE="ddtrace-run "
+else
+DDTRACE=""
+fi
+if [[ "$CODECOV_WRAPPER_POST" ]]; then
+POST="$CODECOV_WRAPPER_POST"
+else
+POST=""
+fi
+${SUB}${DDTRACE}./api runserver 0.0.0.0:8000${POST}
 
