@@ -96,6 +96,7 @@ class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
                         now=now,
                         owner=self.upload_params.get('owner'),
                         repo_name=self.upload_params.get('repo'),
+                        time_diff=now-finish_time_with_buffer,
                     )
                 )
                 log.warning(
@@ -108,6 +109,7 @@ class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
                         now=now,
                         owner=self.upload_params.get('owner'),
                         repo_name=self.upload_params.get('repo'),
+                        time_diff=now-finish_time_with_buffer,
                     )
                 )
                 raise NotFound('Actions workflow run is stale')
