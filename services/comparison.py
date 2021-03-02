@@ -488,7 +488,7 @@ class Comparison(object):
                 )
             )["content"]
             # make sure the file is str utf-8
-            if type(file_content) is not "str":
+            if type(file_content) is not str:
                 file_content = str(file_content, 'utf-8')
             src = file_content.splitlines()
         else:
