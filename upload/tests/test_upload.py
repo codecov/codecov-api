@@ -2359,7 +2359,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
             "commit_sha": "c739768fcac68144a3a6d82305b9c4106934d31a",
             "slug": "owner/repo",
             "public": True,
-            "finish_time": f"{datetime.utcnow() - timedelta(minutes=4)}".split('.')[0]
+            "finish_time": f"{datetime.utcnow() - timedelta(minutes=10)}".split('.')[0]
         }
         mock_get.return_value.status_code.return_value = 200
         mock_get.return_value.return_value = expected_response
@@ -2394,8 +2394,6 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
             "repo": "repo",
             "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
         }
-
-        expected_error = """Actions workflow run is stale"""
 
         assert TokenlessUploadHandler('github_actions', params).verify_upload() == 'github'
 
