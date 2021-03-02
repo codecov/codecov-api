@@ -95,6 +95,18 @@ class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
                         status=build.get('status'),
                     )
                 )
+                log.warning(f"Actions workflow run is stale",
+                    extra=dict(
+                        commit=self.upload_params.get('commit'),
+                        finishTime=build['finish_time'],
+                        finishTimeWithBuffer=finishTimeWithBuffer,
+                        job=self.upload_params.get('job'),
+                        now=now,
+                        owner=self.upload_params.get('owner'),
+                        repo_name=self.upload_params.get('repo'),
+                        status=build.get('status'),
+                    )
+                )
                 raise NotFound('Actions workflow run is stale')
 
         return 'github'
