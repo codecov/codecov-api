@@ -78,16 +78,20 @@ class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
         # Check if current status is correct (not stale or in progress)
         if build.get('status') != 'in_progress':
             # Verify workflow finished within the last 4 minutes because it's not in-progress
-            finishTimestamp = build['finish_time'].replace('T',' ').replace('Z','')
-            buildFinishDateObj = datetime.strptime(finishTimestamp, '%Y-%m-%d %H:%M:%S')
-            finishTimeWithBuffer = buildFinishDateObj + timedelta(minutes=4)
+            try:
+                build_finish_date_obj = datetime.strptime(build['finish_time'], '%Y-%m-%dT%H:%M:%SZ')
+            except ValueError:
+                build_finish_date_obj = datetime.strptime(build['finish_time'], '%Y-%m-%d %H:%M:%S')
+
+            finish_time_with_buffer = build_finish_date_obj + timedelta(minutes=4)
             now = datetime.utcnow()
-            if not now <= finishTimeWithBuffer:
-                log.error(f"Actions workflow run is stale",
+            if not now <= finish_time_with_buffer:
+                log.error(
+                    "Actions workflow run is stale",
                     extra=dict(
                         commit=self.upload_params.get('commit'),
-                        finishTime=build['finish_time'],
-                        finishTimeWithBuffer=finishTimeWithBuffer,
+                        finish_time=build['finish_time'],
+                        finish_time_with_buffer=finish_time_with_buffer,
                         job=self.upload_params.get('job'),
                         now=now,
                         owner=self.upload_params.get('owner'),
@@ -95,11 +99,12 @@ class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
                         status=build.get('status'),
                     )
                 )
-                log.warning(f"Actions workflow run is stale",
+                log.warning(
+                    "Actions workflow run is stale",
                     extra=dict(
                         commit=self.upload_params.get('commit'),
-                        finishTime=build['finish_time'],
-                        finishTimeWithBuffer=finishTimeWithBuffer,
+                        finish_time=build['finish_time'],
+                        finish_time_with_buffer=finish_time_with_buffer,
                         job=self.upload_params.get('job'),
                         now=now,
                         owner=self.upload_params.get('owner'),
