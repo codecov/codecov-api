@@ -41,5 +41,6 @@ ALLOWED_HOSTS.append(DEFAULT_WHITELISTED_DOMAIN)
 # only add api domain if it is different than codecov url
 if API_DOMAIN != DEFAULT_WHITELISTED_DOMAIN:
     ALLOWED_HOSTS.append(API_DOMAIN)
+
 # Referenced at module level of services/billing.py, so it needs to be defined
 STRIPE_API_KEY = None
