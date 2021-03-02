@@ -773,7 +773,10 @@ class UploadHandlerHelpersTest(TestCase):
             )
             commit = G(Commit)
 
-            validate_upload({"commit": commit.commitid}, repo, redis)
+            with patch("services.segment.SegmentService.account_activated_repository_on_upload") as mock_segment_event:
+                validate_upload({"commit": commit.commitid}, repo, redis)
+                assert mock_segment_event.called
+
             repo.refresh_from_db()
             assert repo.activated == True
             assert repo.active == True
@@ -785,7 +788,10 @@ class UploadHandlerHelpersTest(TestCase):
             repo = G(Repository, author=owner, private=True, activated=True)
             commit = G(Commit)
 
-            validate_upload({"commit": commit.commitid}, repo, redis)
+            with patch("services.segment.SegmentService.account_activated_repository_on_upload") as mock_segment_event:
+                validate_upload({"commit": commit.commitid}, repo, redis)
+                assert not mock_segment_event.called
+
             repo.refresh_from_db()
             assert repo.activated == True
             assert repo.active == True
