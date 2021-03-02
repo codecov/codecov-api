@@ -83,33 +83,33 @@ class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
             except ValueError:
                 build_finish_date_obj = datetime.strptime(build['finish_time'], '%Y-%m-%d %H:%M:%S')
 
-            finish_time_with_buffer = build_finish_date_obj + timedelta(minutes=4)
+            finish_time_with_buffer = build_finish_date_obj + timedelta(minutes=10)
             now = datetime.utcnow()
             if not now <= finish_time_with_buffer:
                 log.error(
                     "Actions workflow run is stale",
                     extra=dict(
+                        build=build,
                         commit=self.upload_params.get('commit'),
-                        finish_time=build['finish_time'],
                         finish_time_with_buffer=finish_time_with_buffer,
                         job=self.upload_params.get('job'),
                         now=now,
                         owner=self.upload_params.get('owner'),
                         repo_name=self.upload_params.get('repo'),
-                        status=build.get('status'),
+                        time_diff=now-finish_time_with_buffer,
                     )
                 )
                 log.warning(
                     "Actions workflow run is stale",
                     extra=dict(
+                        build=build,
                         commit=self.upload_params.get('commit'),
-                        finish_time=build['finish_time'],
                         finish_time_with_buffer=finish_time_with_buffer,
                         job=self.upload_params.get('job'),
                         now=now,
                         owner=self.upload_params.get('owner'),
                         repo_name=self.upload_params.get('repo'),
-                        status=build.get('status'),
+                        time_diff=now-finish_time_with_buffer,
                     )
                 )
                 raise NotFound('Actions workflow run is stale')
