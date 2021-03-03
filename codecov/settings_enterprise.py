@@ -36,7 +36,7 @@ if CODECOV_API_URL.startswith("https://"):
 elif CODECOV_API_URL.startswith("http://"):
     API_DOMAIN = CODECOV_API_URL[7:]
 
-CORS_ORIGIN_WHITELIST = get_config("setup", "api_cors_origin_whitelist", default=[DEFAULT_WHITELISTED_DOMAIN])
+CORS_ALLOWED_ORIGINS = get_config("setup", "api_cors_allowed_origins", default=[CODECOV_URL])
 ALLOWED_HOSTS.append(DEFAULT_WHITELISTED_DOMAIN)
 # only add api domain if it is different than codecov url
 if API_DOMAIN != DEFAULT_WHITELISTED_DOMAIN:
