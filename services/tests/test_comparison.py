@@ -637,6 +637,31 @@ class ComparisonTests(TestCase):
         fc = self.comparison.get_file_comparison(file_name, with_src=True)
         assert fc.src == ["two", "lines"]
 
+    @patch('services.repo_providers.RepoProviderService.get_adapter')
+    def test_get_file_comparison_can_parse_string_src(
+        self,
+        mocked_comparison_adapter,
+        base_report_mock,
+        head_report_mock,
+        git_comparison_mock
+    ):
+        from internal_api.tests.views.test_compare_viewset import MockedComparisonAdapter
+        src = "two\nlines"
+        git_comparison_mock.return_value = {"diff": {"files": {}}}
+        mocked_comparison_adapter.return_value = MockedComparisonAdapter(
+            {"diff": {"files": {}}},
+            test_lines=src
+        )
+
+        file_name = "f"
+
+        base_report_mock.return_value = SerializableReport(files={})
+        head_report_files = {file_name : file_data}
+        head_report_mock.return_value = SerializableReport(files=head_report_files)
+
+        fc = self.comparison.get_file_comparison(file_name, with_src=True)
+        assert fc.src == ["two", "lines"]
+
     def test_get_file_comparison_with_no_base_report_doesnt_crash(
         self,
         base_report_mock,

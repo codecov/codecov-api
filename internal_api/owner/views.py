@@ -152,8 +152,6 @@ class UserViewSet(
         )
 
     def get_queryset(self):
-        if self.owner.has_legacy_plan:
-            raise ValidationError(detail="Users API not accessible for legacy plans")
         return Owner.objects.users_of(
             owner=self.owner
         ).annotate_activated_in(
