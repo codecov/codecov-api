@@ -773,7 +773,10 @@ class UploadHandlerHelpersTest(TestCase):
             )
             commit = G(Commit)
 
-            validate_upload({"commit": commit.commitid}, repo, redis)
+            with patch("services.segment.SegmentService.account_activated_repository_on_upload") as mock_segment_event:
+                validate_upload({"commit": commit.commitid}, repo, redis)
+                assert mock_segment_event.called
+
             repo.refresh_from_db()
             assert repo.activated == True
             assert repo.active == True
@@ -785,7 +788,10 @@ class UploadHandlerHelpersTest(TestCase):
             repo = G(Repository, author=owner, private=True, activated=True)
             commit = G(Commit)
 
-            validate_upload({"commit": commit.commitid}, repo, redis)
+            with patch("services.segment.SegmentService.account_activated_repository_on_upload") as mock_segment_event:
+                validate_upload({"commit": commit.commitid}, repo, redis)
+                assert not mock_segment_event.called
+
             repo.refresh_from_db()
             assert repo.activated == True
             assert repo.active == True
@@ -2353,7 +2359,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
             "commit_sha": "c739768fcac68144a3a6d82305b9c4106934d31a",
             "slug": "owner/repo",
             "public": True,
-            "finish_time": f"{datetime.utcnow() - timedelta(minutes=4)}".split('.')[0]
+            "finish_time": f"{datetime.utcnow() - timedelta(minutes=10)}".split('.')[0]
         }
         mock_get.return_value.status_code.return_value = 200
         mock_get.return_value.return_value = expected_response
@@ -2388,8 +2394,6 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
             "repo": "repo",
             "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
         }
-
-        expected_error = """Actions workflow run is stale"""
 
         assert TokenlessUploadHandler('github_actions', params).verify_upload() == 'github'
 
