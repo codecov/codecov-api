@@ -15,11 +15,6 @@ echo $(find . -name "*.so")
 mkdir src
 echo 'true' > src/is_enterprise
 
-# move migrations from app folders to api dir for sideloading. 
-# cd /app
-# find -type d | grep -i /migrations | sed 's|^./||' | xargs -i mkdir -p /app/dist/{}
-# find -type f | grep -i /migrations/ | sed 's|^./||' | xargs -i cp -rf {} /app/dist/{}
-
 # # Exclude pycrypto and PyInstaller from built packages
 pyinstaller -F --debug=imports --exclude-module pycrypto --exclude-module PyInstaller --add-data src:/src --name api --clean --key $random_key ${args_to_use} ${pyinstaller_args} /app/manage.py
 
