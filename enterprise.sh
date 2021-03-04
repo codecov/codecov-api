@@ -18,5 +18,15 @@ POST="$CODECOV_WRAPPER_POST"
 else
 POST=""
 fi
-${SUB}${DDTRACE}/home/api runserver 0.0.0.0:8000 --noreload${POST}
+if [ "$1" = "api" ];
+then
+  ${SUB}${DDTRACE}/home/api runserver 0.0.0.0:8000 --noreload${POST}
+elif [ -z "$1" ];
+then
+  ${SUB}${DDTRACE}/home/api runserver 0.0.0.0:8000 --noreload${POST}
+else
+  exec "$@"
+fi
+
+
 
