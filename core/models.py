@@ -42,7 +42,7 @@ class Repository(models.Model):
     hookid = models.TextField(null=True)
     bot = models.ForeignKey('codecov_auth.Owner', db_column="bot",
                             null=True, on_delete=models.SET_NULL, related_name="bot_repos")
-    activated = models.NullBooleanField(default=False)
+    activated = models.BooleanField(null=True, default=False)
     deleted = models.BooleanField(default=False)
 
     class Meta:

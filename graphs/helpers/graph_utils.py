@@ -81,10 +81,6 @@ def _svg_rect(x, y, width, height,
            '</rect>' \
         .format(x, y, width, height, fill, stroke, stroke_width, title, _class or '')
 
-
-def _make_anchor(href, child):
-    return '<a xlink:href="{0}">{1}</a>'.format(href, child)
-
 def _make_svg(width, height, elements, viewPortWidth=None, viewPortHeight=None):
     return '<svg baseProfile="full" width="{0}" height="{1}" viewBox="0 0 {4} {5}" version="1.1"\n' \
            'xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events"\n' \
