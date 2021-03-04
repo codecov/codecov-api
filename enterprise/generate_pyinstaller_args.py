@@ -60,6 +60,7 @@ def main():
             'codecov.graphs',
             'core.migrations',
             'corsheaders',
+            'corsheaders.apps',
             'corsheaders.middleware',
             'dataclasses',
             'hooks',

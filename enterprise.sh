@@ -18,5 +18,5 @@ POST="$CODECOV_WRAPPER_POST"
 else
 POST=""
 fi
-${SUB}${DDTRACE}./api runserver 0.0.0.0:8000${POST}
+${SUB}${DDTRACE}/home/api runserver 0.0.0.0:8000 --noreload${POST}
 

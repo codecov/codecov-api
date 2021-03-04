@@ -63,12 +63,16 @@ RUN         ["/pyinstaller/cythonize_everything.sh"]
 RUN  chmod a+x /pyinstaller/*
 RUN         ["/pyinstaller/package.sh"]
 ENV RUN_ENV=ENTERPRISE
-# we should run this as non priviledged user.
-# RUN             addgroup -S application \
-#     && adduser -S codecov -G application
+# Create the codecov user to run the container as
+ RUN             addgroup -S application \
+     && adduser -S codecov -G application
+RUN mkdir -p /config && chown codecov:application /config
 
 # copy the enterprise settings module.
 WORKDIR     /home
 COPY ./enterprise.sh /home/enterprise.sh
-RUN chmod +x /home/enterprise.sh
+RUN chown codecov:application /home/enterprise.sh && \
+    chmod +x /home/enterprise.sh && \
+    chown codecov:application /home/api
+USER codecov
 ENTRYPOINT ["./enterprise.sh"]
