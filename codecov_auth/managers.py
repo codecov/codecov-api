@@ -59,7 +59,7 @@ class OwnerQuerySet(QuerySet):
         """
         return self.annotate(
             latest_private_pr_date=Subquery(
-                Pull.objects.filter(
+                Pull.objects.exclude(updatestamp=None).filter(
                     author__ownerid=OuterRef("ownerid"),
                     repository__private=True,
                     repository__author__ownerid=owner.ownerid
