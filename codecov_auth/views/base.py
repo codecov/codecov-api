@@ -31,8 +31,9 @@ class LoginMixin(object):
         formatted_orgs = [
             dict(username=org["username"], id=str(org["id"])) for org in user_orgs
         ]
+        upserted_orgs = []
         for org in formatted_orgs:
-            self.get_or_create_org(org)
+            upserted_orgs.append(self.get_or_create_org(org))
         if self.get_is_enterprise() and get_config(self.service, "organizations"):
             # TODO Change when rolling out enterprise
             pass
@@ -43,6 +44,8 @@ class LoginMixin(object):
             if user.student_created_at is None:
                 user.student_created_at = timezone.now()
             user.student_updated_at = timezone.now()
+        if user.organizations is None:
+            user.organizations = [o.ownerid for o in upserted_orgs]
         track_user(
             user.ownerid,
             {
@@ -105,6 +108,10 @@ class LoginMixin(object):
         owner.oauth_token = encryptor.encode(login_data["access_token"]).decode()
         owner.username = login_data["login"]
         owner.private_access = user_dict["has_private_access"]
+        if user_dict["user"].get("name"):
+            owner.name = user_dict["user"]["name"]
+        if user_dict["user"].get("email"):
+            owner.email = user_dict["user"].get("email")
         owner.save()
 
         ## Segment tracking
