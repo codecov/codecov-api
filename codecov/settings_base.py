@@ -1,4 +1,5 @@
 from utils.config import get_config, get_settings_module, SettingsModule
+from urllib.parse import urlparse
 import os
 
 
@@ -62,11 +63,20 @@ WSGI_APPLICATION = 'codecov.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
-
-DATABASE_USER = get_config('services', 'database', 'username', default='postgres')
-DATABASE_NAME = get_config('services', 'database', 'name', default='postgres')
-DATABASE_PASSWORD = get_config('services', 'database', 'password', default='postgres')
-DATABASE_HOST = get_config('services', 'database', 'host', default='postgres')
+db_url = get_config('services', 'database_url', default=False)
+if db_url != False:
+    db_conf = urlparse(db_url)
+    DATABASE_USER = db_conf.username
+    DATABASE_NAME = db_conf.path.replace('/','')
+    DATABASE_PASSWORD = db_conf.password
+    DATABASE_HOST = db_conf.hostname
+    DATABASE_PORT = db_conf.port
+else:
+    DATABASE_USER = get_config('services', 'database', 'username', default='postgres')
+    DATABASE_NAME = get_config('services', 'database', 'name', default='postgres')
+    DATABASE_PASSWORD = get_config('services', 'database', 'password', default='postgres')
+    DATABASE_HOST = get_config('services', 'database', 'host', default='postgres')
+    DATABASE_PORT = get_config('services', 'database', 'port', default=5432)
 
 # this is the time in seconds django decides to keep the connection open after the request
 # the default is 0 seconds, meaning django closes the connection after every request
@@ -80,11 +90,10 @@ DATABASES = {
         'USER': DATABASE_USER,
         'PASSWORD': DATABASE_PASSWORD,
         'HOST': DATABASE_HOST,
-        'PORT': '5432',
+        'PORT': DATABASE_PORT,
         'CONN_MAX_AGE': CONN_MAX_AGE
     }
 }
-
 # Password validation
 # https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators
 
@@ -144,11 +153,11 @@ LOGGING = {
     'formatters': {
         'standard': {
             'format': '%(message)s %(asctime)s %(name)s %(levelname)s %(lineno)s %(pathname)s %(funcName)s %(threadName)s',
-            'class': 'utils.logging.CustomLocalJsonFormatter'
+            'class': 'utils.logging_configuration.CustomLocalJsonFormatter'
         },
         'json': {
             'format': '%(message)s %(asctime)s %(name)s %(levelname)s %(lineno)s %(pathname)s %(funcName)s %(threadName)s',
-            'class': 'utils.logging.CustomDatadogJsonFormatter'
+            'class': 'utils.logging_configuration.CustomDatadogJsonFormatter'
         },
     },
     'root': {

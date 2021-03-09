@@ -19,7 +19,7 @@ def codecov_vcr(request):
 
 @pytest.fixture
 def mock_redis(mocker):
-    m = mocker.patch('services.redis._get_redis_instance_from_url')
+    m = mocker.patch('services.redis_configuration._get_redis_instance_from_url')
     redis_server = mocker.MagicMock()
     m.return_value = redis_server
     yield redis_server

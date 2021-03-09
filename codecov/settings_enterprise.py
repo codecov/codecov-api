@@ -3,9 +3,13 @@ import os
 from utils.config import get_config, get_settings_module
 
 DEBUG = False
+THIS_POD_IP = os.environ.get("THIS_POD_IP")
 ALLOWED_HOSTS = get_config("setup", "api_allowed_hosts", default=["*"])
+if THIS_POD_IP:
+    ALLOWED_HOSTS.append(THIS_POD_IP)
 CORS_ALLOW_CREDENTIALS = True
 CODECOV_URL = get_config("setup", "codecov_url")
+CODECOV_API_URL = get_config("setup", "codecov_api_url", default=CODECOV_URL)
 
 
 REST_FRAMEWORK = {
@@ -22,7 +26,20 @@ REST_FRAMEWORK = {
 
 
 # select out CODECOV_URL domain
-CORS_ALLOWED_ORIGINS = get_config("setup", "api_cors_allowed_origins", default=[CODECOV_URL])
+if CODECOV_URL.startswith("https://"):
+    DEFAULT_WHITELISTED_DOMAIN = CODECOV_URL[8:]
+elif CODECOV_URL.startswith("http://"):
+    DEFAULT_WHITELISTED_DOMAIN = CODECOV_URL[7:]
+# select out CODECOV_API_URL domain
+if CODECOV_API_URL.startswith("https://"):
+    API_DOMAIN = CODECOV_API_URL[8:]
+elif CODECOV_API_URL.startswith("http://"):
+    API_DOMAIN = CODECOV_API_URL[7:]
 
+CORS_ALLOWED_ORIGINS = get_config("setup", "api_cors_allowed_origins", default=[CODECOV_URL])
+ALLOWED_HOSTS.append(DEFAULT_WHITELISTED_DOMAIN)
+# only add api domain if it is different than codecov url
+if API_DOMAIN != DEFAULT_WHITELISTED_DOMAIN:
+    ALLOWED_HOSTS.append(API_DOMAIN)
 # Referenced at module level of services/billing.py, so it needs to be defined
 STRIPE_API_KEY = None
