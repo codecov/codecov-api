@@ -1,10 +1,11 @@
-from asyncio import Future
-
 from django.urls import reverse
+from django.utils import timezone
 from shared.torngit import Github
 from codecov_auth.helpers import decode_token_from_cookie
 from codecov_auth.models import Session
 from django.http.cookie import SimpleCookie
+
+from codecov_auth.models import Owner
 
 
 def test_get_github_redirect(client):
@@ -50,9 +51,132 @@ def test_get_github_redirect_with_private_url(client, settings):
 
 def test_get_github_already_with_code(client, mocker, db, mock_redis, settings):
     settings.COOKIES_DOMAIN = ".simple.site"
+    now = timezone.now()
 
     async def helper_func(*args, **kwargs):
         return {
+            "login": "ThiagoCodecov",
+            "id": 44376991,
+            "node_id": "MDQ6VXNlcjQ0Mzc2OTkx",
+            "avatar_url": "https://avatars3.githubusercontent.com/u/44376991?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/ThiagoCodecov",
+            "html_url": "https://github.com/ThiagoCodecov",
+            "followers_url": "https://api.github.com/users/ThiagoCodecov/followers",
+            "following_url": "https://api.github.com/users/ThiagoCodecov/following{/other_user}",
+            "gists_url": "https://api.github.com/users/ThiagoCodecov/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/ThiagoCodecov/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/ThiagoCodecov/subscriptions",
+            "organizations_url": "https://api.github.com/users/ThiagoCodecov/orgs",
+            "repos_url": "https://api.github.com/users/ThiagoCodecov/repos",
+            "events_url": "https://api.github.com/users/ThiagoCodecov/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/ThiagoCodecov/received_events",
+            "type": "User",
+            "site_admin": False,
+            "name": "Thiago",
+            "company": "@codecov ",
+            "blog": "",
+            "location": None,
+            "email": None,
+            "hireable": None,
+            "bio": None,
+            "twitter_username": None,
+            "public_repos": 3,
+            "public_gists": 0,
+            "followers": 0,
+            "following": 0,
+            "created_at": "2018-10-22T17:51:44Z",
+            "updated_at": "2020-10-14T17:58:13Z",
+            "access_token": "test3k5zz19xqwhgr3eitwcm0lis74s9o0dlovnr",
+            "token_type": "bearer",
+            "scope": "read:org,repo:status,user:email,write:repo_hook,repo",
+        }
+
+    async def helper_list_teams_func(*args, **kwargs):
+        return [
+            {
+                "email": "hello@codecov.io",
+                "id": "8226205",
+                "name": "Codecov",
+                "username": "codecov",
+            }
+        ]
+
+    async def is_student(*args, **kwargs):
+        return False
+
+    mocker.patch.object(Github, "get_authenticated_user", side_effect=helper_func)
+    mocker.patch.object(Github, "list_teams", side_effect=helper_list_teams_func)
+    mocker.patch.object(Github, "is_student", side_effect=is_student)
+    mocker.patch(
+        "services.task.TaskService.refresh",
+        return_value=mocker.MagicMock(
+            as_tuple=mocker.MagicMock(return_value=("a", "b"))
+        ),
+    )
+    url = reverse("github-login")
+    res = client.get(url, {"code": "aaaaaaa"})
+    assert res.status_code == 302
+    assert "github-token" in res.cookies
+    assert "github-username" in res.cookies
+    token_cookie = res.cookies["github-token"]
+    username_cookie = res.cookies["github-username"]
+    cookie_token = decode_token_from_cookie(settings.COOKIE_SECRET, token_cookie.value)
+    assert username_cookie.value == "ThiagoCodecov"
+    assert username_cookie.get("domain") == ".simple.site"
+    assert token_cookie.get("domain") == ".simple.site"
+    session = Session.objects.get(token=cookie_token)
+    owner = session.owner
+    assert owner.username == "ThiagoCodecov"
+    assert owner.service_id == "44376991"
+    assert owner.email is None
+    assert owner.private_access is True
+    assert owner.service == "github"
+    assert owner.name == "Thiago"
+    assert owner.oauth_token is not None  # cannot test exact value
+    assert owner.stripe_customer_id is None
+    assert owner.stripe_subscription_id is None
+    assert owner.createstamp > now
+    assert owner.service_id == "44376991"
+    assert owner.parent_service_id is None
+    assert owner.root_parent_service_id is None
+    assert not owner.staff
+    assert owner.cache is None
+    assert owner.plan is None
+    assert owner.plan_provider is None
+    assert owner.plan_user_count is None
+    assert owner.plan_auto_activate is None
+    assert owner.plan_activated_users is None
+    assert owner.did_trial is None
+    assert owner.free == 0
+    assert owner.invoice_details is None
+    assert owner.delinquent is None
+    assert owner.yaml is None
+    assert owner.updatestamp > now
+    assert owner.admins is None
+    assert owner.integration_id is None
+    assert owner.permission is None
+    assert owner.bot is None
+    assert owner.student is False
+    assert owner.student_created_at is None
+    assert owner.student_updated_at is None
+    # testing orgs
+    assert owner.organizations is not None
+    assert len(owner.organizations) == 1
+    org = Owner.objects.get(ownerid=owner.organizations[0])
+    assert org.service_id == "8226205"
+    assert org.service == "github"
+    assert res.url == "/gh"
+
+
+def test_get_github_already_with_code_with_email(
+    client, mocker, db, mock_redis, settings
+):
+    settings.COOKIES_DOMAIN = ".simple.site"
+
+    async def helper_func(*args, **kwargs):
+        return {
+            "email": "thiago@codecov.io",
             "login": "ThiagoCodecov",
             "id": 44376991,
             "access_token": "testh04ph89fx0nkd3diauxcw75fyiuo3b86fw4j",
@@ -96,6 +220,7 @@ def test_get_github_already_with_code(client, mocker, db, mock_redis, settings):
     owner = session.owner
     assert owner.username == "ThiagoCodecov"
     assert owner.service_id == "44376991"
+    assert owner.email == "thiago@codecov.io"
     assert owner.private_access is True
     assert res.url == "/gh"
 
@@ -150,6 +275,7 @@ def test_get_github_already_with_code_is_student(
     owner = session.owner
     owner.refresh_from_db()
     assert owner.username == "ThiagoCodecov"
+    assert owner.email is None
     assert owner.service_id == "44376991"
     assert owner.private_access is True
     assert res.url == "/gh"

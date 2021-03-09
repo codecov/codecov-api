@@ -167,9 +167,23 @@ class Owner(models.Model):
         ).count()
 
     @property
+    def activated_student_count(self):
+        if not self.plan_activated_users:
+            return 0
+        return Owner.objects.filter(
+            ownerid__in=self.plan_activated_users, student=True
+        ).count()
+
+    @property
+    def student_count(self):
+        return Owner.objects.filter(
+            organizations__contains=[self.ownerid], student=True
+        ).count()
+
+    @property
     def inactive_user_count(self):
         return (
-            Owner.objects.filter(organizations__contains=[self.ownerid]).count()
+            Owner.objects.filter(organizations__contains=[self.ownerid], student=False).count()
             - self.activated_user_count
         )
 

@@ -156,7 +156,9 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
             'nb_active_private_repos',
             'repo_total_credits',
             'plan_provider',
-            'root_organization'
+            'root_organization',
+            'activated_student_count',
+            'student_count'
         )
 
     def _get_billing(self):
