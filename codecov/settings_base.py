@@ -21,11 +21,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'graphene_django',
     'corsheaders',
     'rest_framework',
     'core',
     'codecov_auth',
     'internal_api',
+    'graphql_api',
 ]
 
 MIDDLEWARE = [
@@ -200,3 +202,7 @@ SEGMENT_API_KEY = get_config('setup', 'segment', 'key', default=None)
 SEGMENT_ENABLED = get_config('setup', 'segment', 'enabled', default=False) and not bool(get_config('setup', 'enterprise_license', default=False))
 
 IS_ENTERPRISE = get_settings_module() == SettingsModule.ENTERPRISE.value
+
+GRAPHENE = {
+    "SCHEMA": "graphql_api.graphene.schema"
+}
