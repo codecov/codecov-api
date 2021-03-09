@@ -14,7 +14,7 @@ CODECOV_API_URL = get_config("setup", "codecov_api_url", default=CODECOV_URL)
 
 db_url = get_config('services', 'database_url')
 db_conf = urlparse(db_url)
-DATABASE_URL_USER = db_conf.username
+DATABASE_USER = db_conf.username
 DATABASE_NAME = db_conf.path.replace('/','')
 DATABASE_PASSWORD = db_conf.password
 DATABASE_HOST = db_conf.hostname
