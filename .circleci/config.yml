@@ -101,7 +101,17 @@ jobs:
         name: docker build, tag, and upload to production
         command: |
           make -f Makefile.circle production
-
+  enterprise:
+    executor: codecov-deploy
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          <<: *gcloud_auth
+      - run:
+          name: docker build, tag, and upload to enterprise qa
+          command: |
+            make -f Makefile.circle enterprise
   deploy:
     executor: codecov-deploy
     steps:
@@ -152,6 +162,13 @@ workflows:
           filters:
             branches:
               only: master
+      - enterprise:
+          requires:
+            - build
+            - test
+          filters:
+            branches:
+              only: feature/circle-enterprise
       - deploy:
           requires:
             - build
