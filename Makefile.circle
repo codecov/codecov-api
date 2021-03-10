@@ -111,6 +111,7 @@ production:
 	docker push ${GCR_REPO}:production-${VERSION}
 
 enterprise:
+    docker pull ${ENTERPRISE_GCR_REPO}:latest
 	docker tag ${ENTERPRISE_GCR_REPO}:latest ${ENTERPRISE_GCR_REPO}:enterprise-${VERSION}
 	docker push ${ENTERPRISE_GCR_REPO}:enterprise-${VERSION}
 
