@@ -15,7 +15,7 @@ from shared.helpers.yaml import walk
 from services.archive import ReportService
 from core.models import Commit
 from services.repo_providers import RepoProviderService
-from services.redis import get_redis_connection
+from services.redis_configuration import get_redis_connection
 from utils.config import get_config
 
 

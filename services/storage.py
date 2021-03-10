@@ -56,7 +56,7 @@ class StorageService(object):
         )
 
     # writes the initial storage bucket to storage via minio.
-    def create_root_storage(self, bucket='archive'):
+    def create_root_storage(self, bucket='archive', region='us-east-1'):
         if not MINIO_CLIENT.bucket_exists(bucket):
             MINIO_CLIENT.make_bucket(bucket, location=region)
             MINIO_CLIENT.set_bucket_policy(bucket, '*', "readonly")

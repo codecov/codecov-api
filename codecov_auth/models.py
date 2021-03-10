@@ -11,6 +11,7 @@ from utils.config import get_config
 from django.contrib.postgres.fields import CITextField, ArrayField
 
 from .managers import OwnerQuerySet
+from core.managers import RepositoryQuerySet
 
 from codecov_auth.constants import (
     AVATAR_GITHUB_BASE_URL,
@@ -93,6 +94,8 @@ class Owner(models.Model):
     student_updated_at = models.DateTimeField(null=True)
 
     objects = OwnerQuerySet.as_manager()
+
+    repository_set = RepositoryQuerySet.as_manager()
 
     @property
     def has_legacy_plan(self):

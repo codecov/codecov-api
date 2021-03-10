@@ -102,7 +102,6 @@ def decode_token_from_cookie(secret, encoded_cookie):
         raise exceptions.AuthenticationFailed('No correct token format')
     cookie_value, cookie_signature = "|".join(cookie_fields[:5]) + "|", cookie_fields[5]
     expected_sig = create_signature_v2(secret, cookie_value)
-    print(expected_sig)
     if not hmac.compare_digest(cookie_signature, expected_sig):
         raise exceptions.AuthenticationFailed('Signature doesnt match')
     splitted = cookie_fields[4].split(':')

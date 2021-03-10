@@ -83,7 +83,9 @@ class RepositoryViewSet(
         return context
 
     def get_queryset(self):
-        queryset = self.owner.repository_set.viewable_repos(
+        queryset = Repository.objects.filter(
+            author=self.owner
+        ).viewable_repos(
             self.request.user
         ).select_related(
             "author"

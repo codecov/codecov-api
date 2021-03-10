@@ -10,7 +10,7 @@ from cerberus import Validator
 from datetime import datetime
 from dateutil import parser
 
-from core.models import Commit
+from core.models import Commit, Repository
 from codecov_auth.models import Owner
 
 
@@ -217,9 +217,7 @@ class ChartQueryRunner:
         )
 
         # Get list of relevant repoids
-        repos = organization.repository_set.viewable_repos(
-            self.user
-        )
+        repos = Repository.objects.filter(author=organization).viewable_repos(self.user)
 
         if self.request_params.get("repositories", []):
             repos = repos.filter(name__in=self.request_params.get("repositories", []))
