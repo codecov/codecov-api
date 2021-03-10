@@ -27,3 +27,6 @@ django-dynamic-fixture==3.1.1
 cerberus==1.3.2
 ddtrace==0.46
 pytest-cov==2.11.1
+git+git://github.com/graphql-python/graphene-django@fe66b48d38a01e6a3acd8f870a6b5bc4e49381fd
+whitenoise
+git+git://github.com/mirumee/ariadne.git@a732a7cbb60e38977c37bea666acc554b47548e1
