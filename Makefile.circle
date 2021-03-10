@@ -111,10 +111,7 @@ production:
 	docker push ${GCR_REPO}:production-${VERSION}
 
 enterprise:
-	docker build \
-		-f  Dockerfile.circle-enterprise . \
-		-t ${ENTERPRISE_GCR_REPO}:enterprise-${VERSION} \
-		--build-arg REQUIREMENTS_IMAGE=${GCR_REPO}:${REQUIREMENTS_TAG} && \
+	docker tag ${ENTERPRISE_GCR_REPO}:latest ${ENTERPRISE_GCR_REPO}:enterprise-${VERSION} && \
 	docker push ${ENTERPRISE_GCR_REPO}:enterprise-${VERSION}
 
 # LOCAL
