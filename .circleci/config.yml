@@ -28,6 +28,15 @@ gcloud_auth: &gcloud_auth
     gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE}
     gcloud auth configure-docker
 
+gcloud_auth_enterprise: &gcloud_auth_enterprise
+  name: Copy gcloud auth for docker push
+  command: |-
+    echo "$GCLOUD_SERVICE_KEY" > service.json
+    gcloud auth activate-service-account --key-file=service.json
+    gcloud --quiet config set project ${GOOGLE_ENTERPRISE_PROJECT_ID}
+    gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE}
+    gcloud auth configure-docker
+
 jobs:
   build:
     executor: codecov-deploy
@@ -48,7 +57,7 @@ jobs:
     - checkout
     - setup_remote_docker
     - run:
-        <<: *gcloud_auth
+        <<: *gcloud_auth_enterprise
     - run:
         name: build container
         command: |-
@@ -120,7 +129,7 @@ jobs:
       - checkout
       - setup_remote_docker
       - run:
-          <<: *gcloud_auth
+          <<: *gcloud_auth_enterprise
       - run:
           name: docker build, tag, and upload to enterprise qa
           command: |
