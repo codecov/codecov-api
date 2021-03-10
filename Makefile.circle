@@ -116,8 +116,8 @@ enterprise:
 
 enterprise-release:
     docker pull ${ENTERPRISE_GCR_REPO}:enterprise-${VERSION} && \
-	docker tag ${ENTERPRISE_GCR_REPO}:enterprise-${VERSION} codecov/enterprise-api-private:${tag} && \
-	docker codecov/enterprise-api-private:${tag}
+	docker tag ${ENTERPRISE_GCR_REPO}:enterprise-${VERSION} codecov/enterprise-api-private:$(tag) && \
+	docker codecov/enterprise-api-private:$(tag)
 
 # LOCAL
 # used to test circleci jobs
