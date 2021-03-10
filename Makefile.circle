@@ -96,7 +96,7 @@ production:
 
 enterprise:
 	docker build \
-		-f  Dockerfile.circle . \
+		-f  Dockerfile.circle-enterprise . \
 		-t ${ENTERPRISE_GCR_REPO}:enterprise-${VERSION} \
 		--build-arg REQUIREMENTS_IMAGE=${ENTERPRISE_GCR_REPO}:${REQUIREMENTS_TAG} && \
 	docker push ${ENTERPRISE_GCR_REPO}:enterprise-${VERSION}
