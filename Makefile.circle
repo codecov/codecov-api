@@ -17,6 +17,7 @@ release_env = pr
 endif
 
 GCR_REPO := gcr.io/genuine-polymer-165712/codecov-api
+ENTERPRISE_GCR_REPO := gcr.io/codecov-dev-sandbox/codecov-api
 REQUIREMENTS_TAG := requirements-v1-$(shell sha1sum requirements.txt | cut -d ' ' -f 1)
 VERSION := release-$(shell git rev-parse --short=7 HEAD)
 
@@ -92,6 +93,13 @@ production:
 		-t ${GCR_REPO}:production-${VERSION} \
 		--build-arg REQUIREMENTS_IMAGE=${GCR_REPO}:${REQUIREMENTS_TAG} && \
 	docker push ${GCR_REPO}:production-${VERSION}
+
+enterprise:
+	docker build \
+		-f  Dockerfile.circle . \
+		-t ${ENTERPRISE_GCR_REPO}:enterprise-${VERSION} \
+		--build-arg REQUIREMENTS_IMAGE=${ENTERPRISE_GCR_REPO}:${REQUIREMENTS_TAG} && \
+	docker push ${ENTERPRISE_GCR_REPO}:enterprise-${VERSION}
 
 # LOCAL
 # used to test circleci jobs
