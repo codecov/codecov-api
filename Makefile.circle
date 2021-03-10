@@ -46,6 +46,16 @@ build:
 		--build-arg REQUIREMENTS_IMAGE=${GCR_REPO}:${REQUIREMENTS_TAG}
 
 # CIRCLECI
+# job: build-enterprise
+# pulls intermediate dependencies image and adds app code
+build-enterprise:
+	docker pull ${GCR_REPO}:${REQUIREMENTS_TAG}
+	docker build \
+		-f Dockerfile.circle-enterprise . \
+		-t ${ENTERPRISE_GCR_REPO}:latest \
+		--build-arg REQUIREMENTS_IMAGE=${GCR_REPO}:${REQUIREMENTS_TAG}
+
+# CIRCLECI
 # job: portable
 # builds an image for deploying a portable version of the containers
 build-portable: build-requirements
@@ -64,6 +74,12 @@ build-portable: build-requirements
 # used to push latest image tag after a successful test
 push:
 	docker push ${GCR_REPO}:latest
+
+# CIRCLECI
+# job: test
+# used to push latest image tag after a successful test
+push-enterprise:
+	docker push ${ENTERPRISE_GCR_REPO}:latest
 
 # CIRCLECI
 # job: deploy
@@ -98,7 +114,7 @@ enterprise:
 	docker build \
 		-f  Dockerfile.circle-enterprise . \
 		-t ${ENTERPRISE_GCR_REPO}:enterprise-${VERSION} \
-		--build-arg REQUIREMENTS_IMAGE=${ENTERPRISE_GCR_REPO}:${REQUIREMENTS_TAG} && \
+		--build-arg REQUIREMENTS_IMAGE=${GCR_REPO}:${REQUIREMENTS_TAG} && \
 	docker push ${ENTERPRISE_GCR_REPO}:enterprise-${VERSION}
 
 # LOCAL

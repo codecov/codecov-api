@@ -42,6 +42,19 @@ jobs:
           make -f Makefile.circle build-requirements
           make -f Makefile.circle build VERSION=$CIRCLE_TAG
           make -f Makefile.circle push
+  build-enterprise:
+    executor: codecov-deploy
+    steps:
+    - checkout
+    - setup_remote_docker
+    - run:
+        <<: *gcloud_auth
+    - run:
+        name: build container
+        command: |-
+          make -f Makefile.circle build-requirements
+          make -f Makefile.circle build-enterprise VERSION=$CIRCLE_TAG
+          make -f Makefile.circle push-enterprise
   test:
     executor: codecov-api
     steps:
@@ -132,6 +145,10 @@ workflows:
           filters:
             tags:
               only: /.*/
+      - build-enterprise:
+          filters:
+            tags:
+              only: feature/circle-enterprise
       - test:
           requires:
             - build
@@ -164,7 +181,7 @@ workflows:
               only: master
       - enterprise:
           requires:
-            - build
+            - build-enterprise
             - test
           filters:
             branches:

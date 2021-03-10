@@ -15,6 +15,9 @@ RUN apk --update --no-cache add \
     pwgen \
     && pip install --upgrade pip
 
+COPY            . /app
+WORKDIR         /app
+
 # Build bootloader for alpine
 RUN git clone --depth 1 --single-branch --branch v3.5 https://github.com/pyinstaller/pyinstaller.git /tmp/pyinstaller \
     && cd /tmp/pyinstaller/bootloader \
