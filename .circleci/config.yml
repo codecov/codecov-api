@@ -145,6 +145,7 @@ jobs:
       - run:
           name: docker build, tag, and upload to enterprise qa
           command: |
+            make -B -f Makefile.circle enterprise
             make -B -f Makefile.circle release-enterprise
   deploy:
     executor: codecov-deploy
