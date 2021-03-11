@@ -171,7 +171,9 @@ workflows:
             - build
           filters:
             tags:
-              only: feature/circle-enterprise
+              only:
+                - feature/circle-enterprise
+                - /enterprise-.*/
       - test:
           requires:
             - build
@@ -210,6 +212,7 @@ workflows:
             branches:
               only: feature/circle-enterprise
       - enterprise-release:
+          context: "DockerHub Push Context"
           requires:
             - build-enterprise
             - test
