@@ -78,6 +78,7 @@ def main():
             'utils.logging_configuration',
             'ariadne.contrib.django.apps',
             'whitenoise',
+            'whitenoise.middleware',
             'graphene_django',
             'graphql_api'
         ]
