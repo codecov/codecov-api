@@ -215,7 +215,7 @@ workflows:
             - test
             - enterprise
           filters:
-            branches:
+            tags:
               only:
                 - /enterprise-.*/
       - deploy:
