@@ -8,3 +8,10 @@ me_bindable = ObjectType("Me")
 @me_bindable.field("user")
 def resolve_user(user, info):
     return user
+
+@me_bindable.field("owner")
+def resolve_owner(user, info):
+    """
+    Current user is also an owner in which we can fetch repositories
+    """
+    return user

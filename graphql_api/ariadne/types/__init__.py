@@ -1,11 +1,13 @@
 from .query import query, query_bindable
 from .me import me, me_bindable
 from .user import user, user_bindable
+from .owner import owner, owner_bindable
 
-types = [query, me, user]
+types = [query, me, user, owner]
 
 bindables = [
     query_bindable,
     me_bindable,
-    user_bindable
+    user_bindable,
+    owner_bindable,
 ]
