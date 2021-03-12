@@ -182,6 +182,21 @@ class CodecovAuthMixinImpersonationTests(TestCase):
         assert user == self.impersonated_user
 
 
+    def test_impersonation_with_short_git_provider(self):
+        non_github_provider = 'bitbucket'
+        self.impersonated_user.service = non_github_provider
+        self.impersonated_user.save()
+
+        request = self._create_request(
+            cookie=self.user_to_impersonate,
+            service='bb'
+        )
+
+        user, session = self.authenticator.authenticate(request)
+        assert user == self.impersonated_user
+
+
+
 class CodecovSessionAuthenticationTests(TestCase):
     def _build_request(self, service, token):
         request_factory = APIRequestFactory()
