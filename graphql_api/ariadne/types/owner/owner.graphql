@@ -1,3 +1,4 @@
 type Owner {
   username: String!
+  repositories: [Repository]!
 }
