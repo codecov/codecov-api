@@ -76,15 +76,26 @@ class AccountViewSetTests(APITestCase):
             "integration_id": owner.integration_id,
             "plan_auto_activate": owner.plan_auto_activate,
             "inactive_user_count": 0,
-            "plan": None, # TODO -- legacy plan
+            "plan": {
+                "marketing_name": "Basic",
+                "value": "users-free",
+                "billing_rate": None,
+                "base_unit_price": 0,
+                "benefits": [
+                    "Up to 5 users",
+                    "Unlimited public repositories",
+                    "Unlimited private repositories",
+                ],
+                "quantity": 5,
+            },
             "subscription_detail": None,
             "checkout_session_id": None,
             "name": owner.name,
             "email": owner.email,
             "nb_active_private_repos": 0,
-            "repo_total_credits": 1,
+            "repo_total_credits": 99999999,
             "plan_provider": owner.plan_provider,
-            'activated_student_count': 0, 
+            'activated_student_count': 0,
             'student_count': 0
         }
 
@@ -100,15 +111,15 @@ class AccountViewSetTests(APITestCase):
             "integration_id": owner.integration_id,
             "plan_auto_activate": owner.plan_auto_activate,
             "inactive_user_count": 0,
-            "plan": None, 
+            "plan": response.data['plan'],
             "subscription_detail": None,
             "checkout_session_id": None,
             "name": owner.name,
             "email": owner.email,
             "nb_active_private_repos": 0,
-            "repo_total_credits": 1,
+            "repo_total_credits": 99999999,
             "plan_provider": owner.plan_provider,
-            'activated_student_count': 1, 
+            'activated_student_count': 1,
             'student_count': 2
         }
 

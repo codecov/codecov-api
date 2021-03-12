@@ -1,13 +1,26 @@
 from django.test import TestCase
-from ariadne import graphql_sync
 
-from graphql_api.ariadne import schema
+from codecov_auth.tests.factories import OwnerFactory
+from .helper import GraphQLTestHelper
 
-class ArianeTestCase(TestCase):
+class GrapheneTestCase(GraphQLTestHelper, TestCase):
 
-    def test_hello_world(self):
-        response = self.client.post('/graphql/graphene', {
-            "query": "{ hello }"
-        }, content_type="application/json")
-        assert response.status_code == 200
-        assert response.json()['data'] == {'hello': 'hi'}
+    def setUp(self):
+        self.user = OwnerFactory(username="codecov-user")
+
+    def test_when_unauthenticated(self):
+        query = "{ me { user { username }} }"
+        data = self.gql_request('/graphql/gh/graphene', query)
+        assert data == {'me': None }
+
+    def test_when_authenticated(self):
+        self.client.force_login(self.user)
+        query = "{ me { user { username }} }"
+        data = self.gql_request('/graphql/gh/graphene', query)
+        assert data == {
+            'me': {
+                'user': {
+                    'username': self.user.username,
+                }
+            }
+        }

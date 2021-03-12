@@ -228,6 +228,7 @@ class RepoPullList(InternalAPITest):
 
     def test_get_pulls_as_inactive_user_returns_403(self, mock_provider):
         self.org.plan = "users-inappm"
+        self.org.plan_auto_activate = False
         self.org.save()
         self.client.force_login(user=self.user)
         response = self.client.get(reverse("pulls-list", kwargs=self.correct_kwargs))
@@ -290,6 +291,7 @@ class RepoPullDetail(InternalAPITest):
     def test_get_pull_as_inactive_user_returns_403(self, mock_provider):
         mock_provider = True, True
         self.org.plan = "users-inappm"
+        self.org.plan_auto_activate = False
         self.org.save()
         self.client.force_login(user=self.user)
         response = self.client.get("/internal/github/codecov/testRepoName/pulls/10/")
@@ -520,6 +522,7 @@ class RepoCommitList(InternalAPITest):
     def test_fetch_commits_inactive_user_returns_403(self, mock_provider):
         mock_provider = True, True
         self.org.plan = "users-inappm"
+        self.org.plan_auto_activate = False
         self.org.save()
 
         self.client.force_login(user=self.user)
@@ -603,6 +606,7 @@ class BranchViewSetTests(InternalAPITest):
 
     def test_list_as_inactive_user_returns_403(self, mock_provider):
         self.org.plan = "users-inappy"
+        self.org.plan_auto_activate = False
         self.org.save()
 
         response = self._get_branches()

@@ -142,10 +142,10 @@ def test_get_github_already_with_code(client, mocker, db, mock_redis, settings):
     assert owner.root_parent_service_id is None
     assert not owner.staff
     assert owner.cache is None
-    assert owner.plan is None
+    assert owner.plan == "users-free"
     assert owner.plan_provider is None
-    assert owner.plan_user_count is None
-    assert owner.plan_auto_activate is None
+    assert owner.plan_user_count is 5
+    assert owner.plan_auto_activate is True
     assert owner.plan_activated_users is None
     assert owner.did_trial is None
     assert owner.free == 0
