@@ -30,3 +30,4 @@ pytest-cov==2.11.1
 git+git://github.com/graphql-python/graphene-django@fe66b48d38a01e6a3acd8f870a6b5bc4e49381fd
 whitenoise
 git+git://github.com/mirumee/ariadne.git@a732a7cbb60e38977c37bea666acc554b47548e1
+git+git://github.com/photocrowd/django-cursor-pagination.git@f8aa41ff7c515511fccb79e33fb2ac22cb7af765
