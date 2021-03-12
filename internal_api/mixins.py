@@ -5,17 +5,12 @@ from codecov_auth.models import Owner
 from core.models import Repository
 
 from .serializers import CommitRefQueryParamSerializer, PullIDQueryParamSerializer
-
-short_services = {
-    'gh': 'github',
-    'bb': 'bitbucket',
-    'gl': 'gitlab'
-}
+from utils.services import get_long_service_name
 
 class OwnerPropertyMixin:
     @cached_property
     def owner(self):
-        service = short_services[self.kwargs.get("service")] if self.kwargs.get("service") in short_services else self.kwargs.get("service")
+        service = get_long_service_name(self.kwargs.get("service"))
         return get_object_or_404(
             Owner,
             username=self.kwargs.get("owner_username"),
