@@ -46,8 +46,8 @@ build:
 		--build-arg REQUIREMENTS_IMAGE=${GCR_REPO}:${REQUIREMENTS_TAG}
 
 # CIRCLECI
-# job: build-enterprise
-# pulls intermediate dependencies image and adds app code
+# job: enterprise
+# pulls intermediate dependencies image and adds app code. Cythonize and pyinstall.
 build-enterprise:
 	docker pull ${GCR_REPO}:${REQUIREMENTS_TAG}
 	docker build \
@@ -76,7 +76,7 @@ push:
 	docker push ${GCR_REPO}:latest
 
 # CIRCLECI
-# job: test
+# job: enterprise
 # used to push latest image tag after a successful test
 push-enterprise:
 	docker push ${ENTERPRISE_GCR_REPO}:latest
@@ -110,6 +110,9 @@ production:
 		--build-arg REQUIREMENTS_IMAGE=${GCR_REPO}:${REQUIREMENTS_TAG} && \
 	docker push ${GCR_REPO}:production-${VERSION}
 
+# CIRCLECI
+# job: enterprise
+# deploys tagged version of the private enterprise-api
 enterprise:
 	docker pull ${ENTERPRISE_GCR_REPO}:latest
 	docker tag ${ENTERPRISE_GCR_REPO}:latest ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION}
@@ -117,6 +120,9 @@ enterprise:
 	docker push ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION}
 	docker push codecov/api-private:${SEMANTIC_VERSION}-${VERSION}
 
+# CIRCLECI
+# job: enterprise-release
+# deploys tagged version of the public enterprise-api
 release-enterprise:
 	docker pull ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION}
 	docker tag ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION} codecov/enterprise-api:${SEMANTIC_VERSION}

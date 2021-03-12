@@ -222,8 +222,9 @@ workflows:
             - enterprise
           filters:
             tags:
-              only:
-                - /enterprise-.*/
+              only: /^enterprise-.*/
+            branches:
+              ignore: /.*/
       - deploy:
           requires:
             - build
