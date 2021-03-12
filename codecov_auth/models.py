@@ -19,6 +19,7 @@ from codecov_auth.constants import (
     GRAVATAR_BASE_URL,
     AVATARIO_BASE_URL,
     USER_PLAN_REPRESENTATIONS,
+    FREE_PLAN_NAME
 )
 
 from codecov_auth.helpers import get_gitlab_url
@@ -73,10 +74,10 @@ class Owner(models.Model):
     private_access = models.BooleanField(null=True)
     staff = models.BooleanField(null=True, default=False)
     cache = models.JSONField(null=True)
-    plan = models.TextField(null=True)
+    plan = models.TextField(null=True, default=FREE_PLAN_NAME)
     plan_provider = models.CharField(null=True, max_length=10) # postgres enum containing only "github"
-    plan_user_count = models.SmallIntegerField(null=True)
-    plan_auto_activate = models.BooleanField(null=True)
+    plan_user_count = models.SmallIntegerField(null=True, default=5)
+    plan_auto_activate = models.BooleanField(null=True, default=True)
     plan_activated_users = ArrayField(models.IntegerField(null=True), null=True)
     did_trial = models.BooleanField(null=True)
     free = models.SmallIntegerField(default=0)
