@@ -213,7 +213,7 @@ workflows:
             - test
           filters:
             branches:
-              only: feature/circle-enterprise
+              only: master
       - enterprise-release:
           context: "DockerHub Push Context"
           requires:
