@@ -130,6 +130,7 @@ jobs:
       - setup_remote_docker
       - run:
           <<: *gcloud_auth_enterprise
+      - run: echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKER_USERNAME" --password-stdin
       - run:
           name: docker build, tag, and upload to enterprise qa
           command: |
@@ -206,6 +207,7 @@ workflows:
             branches:
               only: master
       - enterprise:
+          context: "DockerHub Push Context"
           requires:
             - build-enterprise
             - test

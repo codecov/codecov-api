@@ -10,7 +10,7 @@ branch = $(shell git branch | grep \* | cut -f2 -d' ')
 docker_version = $(shell git describe --always --tags --dirty | sed 's/^v//')
 release_env = master
 ssh_private_key = `cat ~/.ssh/id_rsa`
-
+SEMANTIC_VERSION := `cat VERSION`
 
 ifneq ($(branch), master)
 release_env = pr
@@ -112,13 +112,17 @@ production:
 
 enterprise:
 	docker pull ${ENTERPRISE_GCR_REPO}:latest
-	docker tag ${ENTERPRISE_GCR_REPO}:latest ${ENTERPRISE_GCR_REPO}:enterprise-${VERSION}
-	docker push ${ENTERPRISE_GCR_REPO}:enterprise-${VERSION}
+	docker tag ${ENTERPRISE_GCR_REPO}:latest ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION}
+	docker tag ${ENTERPRISE_GCR_REPO}:latest codecov/api-private:${SEMANTIC_VERSION}-${VERSION}
+	docker push ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION}
+	docker push codecov/api-private:${SEMANTIC_VERSION}-${VERSION}
 
 release-enterprise:
-	docker pull ${ENTERPRISE_GCR_REPO}:enterprise-${VERSION}
-	docker tag ${ENTERPRISE_GCR_REPO}:enterprise-${VERSION} codecov/api-private:$(tag)
-	docker push codecov/api-private:$(tag)
+	docker pull ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION}
+	docker tag ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION} codecov/enterprise-api:${SEMANTIC_VERSION}
+	docker tag ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION} codecov/enterprise-api:latest-stable
+	docker push codecov/enterprise-api:${SEMANTIC_VERSION}
+	docker push codecov/enterprise-api:latest-stable
 
 # LOCAL
 # used to test circleci jobs
