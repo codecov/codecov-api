@@ -1,12 +1,14 @@
 from django.urls import path
-from ariadne.contrib.django.views import GraphQLView as AriadneView
-from graphene_django.views import GraphQLView as GrapheneView
 from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
 
 from .ariadne import schema as ariadne_schema
 from .graphene import schema as graphene_schema
 
+
+from .views import  GrapheneView, AriadneView
+
 urlpatterns = [
-    path('ariadne', AriadneView.as_view(schema=ariadne_schema), name='graphql'),
-    path("graphene", GrapheneView.as_view(schema=graphene_schema, graphiql=settings.DEBUG)),
+    path('<str:service>/ariadne', csrf_exempt(AriadneView.as_view(schema=ariadne_schema)), name='graphql'),
+    path('<str:service>/graphene', GrapheneView.as_view(schema=graphene_schema, graphiql=settings.DEBUG)),
 ]
