@@ -60,7 +60,8 @@ class TestOwnerModel(TransactionTestCase):
             assert self.owner.repo_credits == INFINITY
 
     def test_repo_credits_treats_null_plan_as_free_plan(self):
-        assert self.owner.plan == None
+        self.owner.plan = None
+        self.owner.save()
         assert self.owner.repo_credits == 1 + self.owner.free or 0
 
     def test_nb_active_private_repos(self):

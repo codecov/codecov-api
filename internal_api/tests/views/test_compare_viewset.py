@@ -391,6 +391,7 @@ class TestCompareViewSetRetrieve(APITestCase):
         self, adapter_mock, base_report_mock, head_report_mock
     ):
         self.org.plan = "users-inappy"
+        self.org.plan_auto_activate = False
         self.org.save()
 
         response = self._get_comparison()

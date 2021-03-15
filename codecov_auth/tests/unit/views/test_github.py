@@ -2,6 +2,7 @@ from django.urls import reverse
 from django.utils import timezone
 from shared.torngit import Github
 from codecov_auth.helpers import decode_token_from_cookie
+from codecov_auth.tests.factories import OwnerFactory
 from codecov_auth.models import Session
 from django.http.cookie import SimpleCookie
 
@@ -142,10 +143,10 @@ def test_get_github_already_with_code(client, mocker, db, mock_redis, settings):
     assert owner.root_parent_service_id is None
     assert not owner.staff
     assert owner.cache is None
-    assert owner.plan is None
+    assert owner.plan == "users-free"
     assert owner.plan_provider is None
-    assert owner.plan_user_count is None
-    assert owner.plan_auto_activate is None
+    assert owner.plan_user_count is 5
+    assert owner.plan_auto_activate is True
     assert owner.plan_activated_users is None
     assert owner.did_trial is None
     assert owner.free == 0
@@ -280,3 +281,67 @@ def test_get_github_already_with_code_is_student(
     assert owner.private_access is True
     assert res.url == "/gh"
     assert owner.student is True
+
+
+def test_get_github_already_owner_already_exist(
+    client, mocker, db, mock_redis, settings
+):
+    the_bot = OwnerFactory.create(service="github")
+    the_bot.save()
+    owner = OwnerFactory.create(
+        bot=the_bot.ownerid, service="github", service_id="44376991"
+    )
+    owner.save()
+    old_ownerid = owner.ownerid
+    assert owner.bot is not None
+    settings.COOKIES_DOMAIN = ".simple.site"
+
+    async def helper_func(*args, **kwargs):
+        return {
+            "login": "ThiagoCodecov",
+            "id": 44376991,
+            "access_token": "testh04ph89fx0nkd3diauxcw75fyiuo3b86fw4j",
+            "scope": "read:org,repo:status,user:email,write:repo_hook,repo",
+        }
+
+    async def helper_list_teams_func(*args, **kwargs):
+        return [
+            {
+                "email": "hello@codecov.io",
+                "id": "8226205",
+                "name": "Codecov",
+                "username": "codecov",
+            }
+        ]
+
+    async def is_student(*args, **kwargs):
+        return True
+
+    mocker.patch.object(Github, "get_authenticated_user", side_effect=helper_func)
+    mocker.patch.object(Github, "list_teams", side_effect=helper_list_teams_func)
+    mocker.patch.object(Github, "is_student", side_effect=is_student)
+    mocker.patch(
+        "services.task.TaskService.refresh",
+        return_value=mocker.MagicMock(
+            as_tuple=mocker.MagicMock(return_value=("a", "b"))
+        ),
+    )
+    url = reverse("github-login")
+    res = client.get(url, {"code": "aaaaaaa"})
+    assert res.status_code == 302
+    assert "github-token" in res.cookies
+    assert "github-username" in res.cookies
+    token_cookie = res.cookies["github-token"]
+    username_cookie = res.cookies["github-username"]
+    cookie_token = decode_token_from_cookie(settings.COOKIE_SECRET, token_cookie.value)
+    assert username_cookie.value == "ThiagoCodecov"
+    assert username_cookie.get("domain") == ".simple.site"
+    assert token_cookie.get("domain") == ".simple.site"
+    session = Session.objects.get(token=cookie_token)
+    owner = session.owner
+    assert owner.username == "ThiagoCodecov"
+    assert owner.ownerid == old_ownerid
+    assert owner.bot is None
+    assert owner.service_id == "44376991"
+    assert owner.private_access is True
+    assert res.url == "/gh"
