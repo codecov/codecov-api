@@ -14,6 +14,8 @@ def resolve_repositories(owner, info, first=None, after=None, last=None, before=
     actor = info.context['request'].user
     queryset = list_repository_for_owner(actor, owner)
     paginator = CursorPaginator(queryset, ordering=('-repoid',))
+    if not first and not after:
+        first = 100
     page = paginator.page(first=first, after=after, last=last, before=before)
     return {
         "edges": [
