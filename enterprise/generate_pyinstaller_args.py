@@ -75,7 +75,12 @@ def main():
             'utils',
             'utils.config',
             'utils.encryption',
-            'utils.logging_configuration'
+            'utils.logging_configuration',
+            'ariadne.contrib.django.apps',
+            'whitenoise',
+            'whitenoise.middleware',
+            'graphene_django',
+            'graphql_api'
         ]
     )
 

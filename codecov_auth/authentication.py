@@ -10,7 +10,7 @@ from rest_framework import exceptions
 from codecov_auth.models import Session, Owner
 from codecov_auth.helpers import decode_token_from_cookie
 from utils.config import get_config
-
+from utils.services import get_long_service_name
 
 log = logging.getLogger(__name__)
 
@@ -31,7 +31,6 @@ class CodecovAuthMixin:
             session = Session.objects.get(token=token)
         except Session.DoesNotExist:
             raise exceptions.AuthenticationFailed('No such user')
-
         if "staff_user" in request.COOKIES and "service" in request.parser_context["kwargs"]:
             return self.attempt_impersonation(
                 user=session.owner,
@@ -47,7 +46,7 @@ class CodecovAuthMixin:
             f"Impersonation attempted --"
             f" {user.username} impersonating {username_to_impersonate}"
         ))
-
+        service = get_long_service_name(service)
         if not user.staff:
             log.info(f"Impersonation attempted by non-staff user: {user.username}")
             raise exceptions.PermissionDenied()
