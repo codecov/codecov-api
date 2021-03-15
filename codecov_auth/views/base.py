@@ -62,7 +62,7 @@ class LoginMixin(object):
             user.bot = None
             fields_to_update.append("bot")
         if fields_to_update:
-            user.save(update_fields=fields_to_update)
+            user.save(update_fields=fields_to_update + ["updatestamp"])
 
         track_user(
             user.ownerid,
