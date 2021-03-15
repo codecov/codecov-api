@@ -1,7 +1,8 @@
 from json import dumps
+import logging
+
 from django.utils import timezone
 from django.conf import settings
-
 from shared.analytics_tracking import track_event, track_user
 
 from codecov_auth.helpers import create_signed_value
@@ -11,6 +12,8 @@ from utils.config import get_config
 from services.task import TaskService
 from services.redis_configuration import get_redis_connection
 from services.segment import SegmentService
+
+log = logging.getLogger(__name__)
 
 
 class LoginMixin(object):
@@ -39,13 +42,28 @@ class LoginMixin(object):
             pass
         self._check_user_count_limitations()
         user, is_new_user = self._get_or_create_user(user_dict)
+        fields_to_update = []
         if user_dict.get("is_student") != user.student:
             user.student = user_dict.get("is_student")
             if user.student_created_at is None:
                 user.student_created_at = timezone.now()
             user.student_updated_at = timezone.now()
+            fields_to_update.extend(
+                ["student", "student_created_at", "student_updated_at"]
+            )
         if user.organizations is None:
             user.organizations = [o.ownerid for o in upserted_orgs]
+            fields_to_update.extend(["organizations"])
+        if user.bot is not None:
+            log.info(
+                "Clearing user bot field",
+                extra=dict(ownerid=user.ownerid, old_bot=user.bot),
+            )
+            user.bot = None
+            fields_to_update.append("bot")
+        if fields_to_update:
+            user.save(update_fields=fields_to_update)
+
         track_user(
             user.ownerid,
             {
@@ -66,7 +84,7 @@ class LoginMixin(object):
         )
         self._set_proper_cookies_and_session(user, request, response)
         self._schedule_proper_tasks(user)
-        user.save()
+        log.info("User is logging in", extra=dict(ownerid=user.ownerid))
         return user
 
     def _set_proper_cookies_and_session(self, user, request, response):
@@ -101,18 +119,23 @@ class LoginMixin(object):
         pass
 
     def _get_or_create_user(self, user_dict):
+        fields_to_update = ["oauth_token", "private_access", "updatestamp"]
         login_data = user_dict["user"]
         owner, was_created = Owner.objects.get_or_create(
             service=f"{self.cookie_prefix}", service_id=login_data["id"]
         )
+        if login_data["login"] != owner.username:
+            fields_to_update.append("username")
+            owner.username = login_data["login"]
         owner.oauth_token = encryptor.encode(login_data["access_token"]).decode()
-        owner.username = login_data["login"]
         owner.private_access = user_dict["has_private_access"]
         if user_dict["user"].get("name"):
             owner.name = user_dict["user"]["name"]
+            fields_to_update.append("name")
         if user_dict["user"].get("email"):
             owner.email = user_dict["user"].get("email")
-        owner.save()
+            fields_to_update.append("email")
+        owner.save(update_fields=fields_to_update)
 
         ## Segment tracking
         self.segment_service.identify_user(owner)
