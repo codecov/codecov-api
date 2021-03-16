@@ -86,3 +86,39 @@ class GrapheneTestCase(GraphQLTestHelper, TestCase):
         assert connection['edges'][0]['node'] == { "name": 'a' }
         pageInfo = connection['pageInfo']
         assert pageInfo['hasNextPage'] == False
+
+    def test_fetching_viewable_repositories(self):
+        self.client.force_login(self.user)
+        query =  """{
+            me {
+                viewableRepositories {
+                    edges {
+                        node {
+                            name
+                        }
+                    }
+                }
+            }
+        }
+        """
+        data = self.gql_request('/graphql/gh/graphene', query)
+        repos = paginate_connection(data['me']['viewableRepositories'])
+        assert repos == [{'name': 'b'}, {'name': 'a'}]
+
+    def test_fetching_viewable_repositories_text_search(self):
+        self.client.force_login(self.user)
+        query =  """{
+            me {
+                viewableRepositories(filters: { term: "a"}) {
+                    edges {
+                        node {
+                            name
+                        }
+                    }
+                }
+            }
+        }
+        """
+        data = self.gql_request('/graphql/gh/graphene', query)
+        repos = paginate_connection(data['me']['viewableRepositories'])
+        assert repos == [{'name': 'a'}]
