@@ -3,7 +3,7 @@ from .views import BadgeHandler, GraphHandler
 
 urlpatterns = [
     re_path(
-        'branch/(?P<branch>[^/]+)/(graph|graphs)/badge.(?P<ext>[^/]+)',
+        'branch/(?P<branch>.+)/(graph|graphs)/badge.(?P<ext>[^/]+)',
         BadgeHandler.as_view(),
         name="branch-badge",
     ),
