@@ -11,6 +11,7 @@ class OwnerType(DjangoObjectType):
     class Meta:
         model = Owner
         fields = ("username",)
+        interfaces = (relay.Node,)
 
     repositories = DjangoConnectionField(RepositoryType)
 
