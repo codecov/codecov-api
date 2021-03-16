@@ -1,9 +1,9 @@
 from ariadne import ObjectType
 from cursor_pagination import CursorPaginator
 
-from graphql_api.helpers import ariadne_load_local_graphql
 from graphql_api.actions.repository import list_repository_for_owner
 
+from graphql_api.helpers.ariadne import ariadne_load_local_graphql
 
 owner = ariadne_load_local_graphql(__file__, "owner.graphql")
 owner_bindable = ObjectType("Owner")
