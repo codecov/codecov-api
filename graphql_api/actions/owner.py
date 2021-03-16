@@ -1,4 +1,5 @@
-def search_my_owners(current_user, filters = {}):
+def search_my_owners(current_user, filters):
+    filters = filters if filters else {}
     term = filters.get('term')
     queryset = current_user.orgs
     if term:
