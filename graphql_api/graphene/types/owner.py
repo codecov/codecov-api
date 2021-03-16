@@ -15,5 +15,5 @@ class OwnerType(DjangoObjectType):
     repositories = DjangoConnectionField(RepositoryType)
 
     def resolve_repositories(self, info, *args, **kwargs):
-        actor = info.context.user
-        return list_repository_for_owner(actor, self)
+        current_user = info.context.user
+        return list_repository_for_owner(current_user, self)

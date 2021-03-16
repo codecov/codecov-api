@@ -11,8 +11,8 @@ owner_bindable = ObjectType("Owner")
 
 @owner_bindable.field("repositories")
 def resolve_repositories(owner, info, first=None, after=None, last=None, before=None):
-    actor = info.context['request'].user
-    queryset = list_repository_for_owner(actor, owner)
+    current_user = info.context['request'].user
+    queryset = list_repository_for_owner(current_user, owner)
     paginator = CursorPaginator(queryset, ordering=('-repoid',))
     if not first and not after:
         first = 100

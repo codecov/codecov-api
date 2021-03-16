@@ -1,8 +1,8 @@
 from core.models import Repository
 
 
-def list_repository_for_owner(actor, owner):
+def list_repository_for_owner(current_user, owner):
     queryset = Repository.objects\
-        .viewable_repos(actor)\
+        .viewable_repos(current_user)\
         .filter(author=owner)
     return queryset
