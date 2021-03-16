@@ -27,6 +27,7 @@ sentry_sdk.init(
 
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^(https:\/\/)?deploy-preview-\d+--codecov\.netlify\.app$",
+    r"^(https:\/\/)?deploy-preview-\d+--stage-app\.netlify\.app$",
     r"^(https:\/\/)?deploy-preview-\d+--codecov-stage\.netlify\.app$",
     r"^(https:\/\/)?deploy-preview-\d+--gazebo\.netlify\.app$",
     r"^(https:\/\/)?\w+--gazebo\.netlify\.app$",
