@@ -1,13 +1,7 @@
 from ariadne import ObjectType
+from graphql_api.helpers import ariadne_load_local_graphql
 
-user = """
-    type User {
-        username: String!
-        name: String
-        avatarUrl: String
-        student: Boolean!
-    }
-"""
+user = ariadne_load_local_graphql(__file__, "user.graphql")
 
 user_bindable = ObjectType("User")
 
