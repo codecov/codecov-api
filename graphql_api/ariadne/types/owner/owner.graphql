@@ -2,21 +2,3 @@ type Owner {
   username: String!
   repositories(first: Int, after: String, last: Int, before: String): RepositoryConnection!
 }
-
-type RepositoryConnection {
-  edges: [RepositoryEdge]
-  totalCount: Int!
-  pageInfo: PageInfo!
-}
-
-type RepositoryEdge {
-  cursor: String!
-  node: Repository
-}
-
-type PageInfo {
-  hasNextPage: Boolean!
-  hasPreviousPage: Boolean!
-  startCursor: String
-  endCursor: String
-}
