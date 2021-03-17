@@ -40,8 +40,4 @@ class MeType(graphene.ObjectType):
         return search_repos(current_user, kwargs.get('filters', {}))
 
     def resolve_my_organizations(current_user, info, *args, **kwargs):
-        try:
-            print(search_my_owners(current_user, kwargs.get('filters')))
-        except e:
-            print(e)
         return search_my_owners(current_user, kwargs.get('filters', {}))
