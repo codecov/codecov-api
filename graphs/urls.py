@@ -15,12 +15,12 @@ urlpatterns = [
     re_path(
         'pull/(?P<pullid>[^/]+)/(graph|graphs)/(?P<graph>tree|icicle|sunburst|commits).(?P<ext>[^/]+)',
         GraphHandler.as_view(),
-        name="default-graph"
+        name="pull-graph"
     ),
     re_path(
-        'branch/(?P<branch>[^/]+)/(graph|graphs)/(?P<graph>tree|icicle|sunburst|commits).(?P<ext>[^/]+)',
+        'branch/(?P<branch>[^/].+)/(graph|graphs)/(?P<graph>tree|icicle|sunburst|commits).(?P<ext>[^/]+)',
         GraphHandler.as_view(),
-        name="default-graph"
+        name="branch-graph"
     ),
     re_path(
         '(graph|graphs)/(?P<graph>tree|icicle|sunburst|commits).(?P<ext>[^/]+)',
