@@ -1,5 +1,6 @@
 from django.test import TestCase
 from rest_framework.test import APIRequestFactory
+from rest_framework.exceptions import APIException
 
 from unittest.mock import patch
 
@@ -7,7 +8,7 @@ from core.tests.factories import RepositoryFactory
 from codecov_auth.tests.factories import OwnerFactory
 
 from internal_api.permissions import RepositoryPermissionsService, UserIsAdminPermissions
-from internal_api.tests.test_utils import GetAdminProviderAdapter
+from internal_api.tests.test_utils import GetAdminProviderAdapter, GetAdminErrorProviderAdapter
 
 
 class MockedPermissionsAdapter:
@@ -157,3 +158,13 @@ class TestUserIsAdminPermissions(TestCase):
         mocked_get_adapter.return_value = GetAdminProviderAdapter()
         self.permissions_class._is_admin_on_provider(user, org)
         assert mocked_get_adapter.return_value.last_call_args == {"username": user.username, "service_id": user.service_id}
+
+    @patch('internal_api.permissions.get_provider')
+    def test_is_admin_on_provider_handles_torngit_exception(self, mock_get_provider):
+        code, message = 404, "uh oh"
+        mock_get_provider.return_value = GetAdminErrorProviderAdapter(code, message)
+        org = OwnerFactory()
+        user = OwnerFactory()
+
+        with self.assertRaises(APIException) as e:
+            self.permissions_class._is_admin_on_provider(user, org)
