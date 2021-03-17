@@ -33,6 +33,12 @@ class ArianeTestCase(GraphQLTestHelper, TestCase):
         RepositoryFactory(author=self.user, active=True, private=True, name="a")
         RepositoryFactory(author=self.user, active=True, private=True, name="b")
         RepositoryFactory(author=random_user, active=True, private=True, name="not")
+        self.user.organizations = [
+            OwnerFactory(username="codecov").ownerid,
+            OwnerFactory(username="facebook").ownerid,
+            OwnerFactory(username="spotify").ownerid,
+        ]
+        self.user.save()
 
     def test_when_unauthenticated(self):
         query = "{ me { user { username }} }"
@@ -126,3 +132,45 @@ class ArianeTestCase(GraphQLTestHelper, TestCase):
         data = self.gql_request('/graphql/gh/ariadne', query)
         repos = paginate_connection(data['me']['viewableRepositories'])
         assert repos == [{'name': 'a'}]
+
+    def test_fetching_my_orgs(self):
+        self.client.force_login(self.user)
+        query =  """{
+            me {
+                myOrganizations {
+                    edges {
+                        node {
+                            username
+                        }
+                    }
+                }
+            }
+        }
+        """
+        data = self.gql_request('/graphql/gh/ariadne', query)
+        orgs = paginate_connection(data['me']['myOrganizations'])
+        assert orgs == [
+            {'username': 'spotify'},
+            {'username': 'facebook'},
+            {'username': 'codecov'}
+        ]
+
+    def test_fetching_my_orgs_with_search(self):
+        self.client.force_login(self.user)
+        query =  """{
+            me {
+                myOrganizations(filters: { term: "spot"}) {
+                    edges {
+                        node {
+                            username
+                        }
+                    }
+                }
+            }
+        }
+        """
+        data = self.gql_request('/graphql/gh/ariadne', query)
+        orgs = paginate_connection(data['me']['myOrganizations'])
+        assert orgs == [
+            {'username': 'spotify'},
+        ]

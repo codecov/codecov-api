@@ -2,7 +2,7 @@ from django.test import TestCase
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
-from .helper import GraphQLTestHelper
+from .helper import GraphQLTestHelper, paginate_connection
 
 query_repositories = """{
     me {
@@ -31,6 +31,12 @@ class GrapheneTestCase(GraphQLTestHelper, TestCase):
         RepositoryFactory(author=self.user, active=True, private=True, name="a")
         RepositoryFactory(author=self.user, active=True, private=True, name="b")
         RepositoryFactory(author=random_user, active=True, private=True, name="not")
+        self.user.organizations = [
+            OwnerFactory(username="codecov").ownerid,
+            OwnerFactory(username="facebook").ownerid,
+            OwnerFactory(username="spotify").ownerid,
+        ]
+        self.user.save()
 
     def test_when_unauthenticated(self):
         query = "{ me { user { username }} }"
@@ -122,3 +128,45 @@ class GrapheneTestCase(GraphQLTestHelper, TestCase):
         data = self.gql_request('/graphql/gh/graphene', query)
         repos = paginate_connection(data['me']['viewableRepositories'])
         assert repos == [{'name': 'a'}]
+
+    def test_fetching_my_orgs(self):
+        self.client.force_login(self.user)
+        query =  """{
+            me {
+                myOrganizations {
+                    edges {
+                        node {
+                            username
+                        }
+                    }
+                }
+            }
+        }
+        """
+        data = self.gql_request('/graphql/gh/graphene', query)
+        orgs = paginate_connection(data['me']['myOrganizations'])
+        assert orgs == [
+            {'username': 'codecov'},
+            {'username': 'facebook'},
+            {'username': 'spotify'},
+        ]
+
+    def test_fetching_my_orgs_with_search(self):
+        self.client.force_login(self.user)
+        query =  """{
+            me {
+                myOrganizations(filters: { term: "spot"}) {
+                    edges {
+                        node {
+                            username
+                        }
+                    }
+                }
+            }
+        }
+        """
+        data = self.gql_request('/graphql/gh/graphene', query)
+        orgs = paginate_connection(data['me']['myOrganizations'])
+        assert orgs == [
+            {'username': 'spotify'},
+        ]
