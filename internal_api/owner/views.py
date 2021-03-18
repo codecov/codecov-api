@@ -19,6 +19,7 @@ from codecov_auth.constants import CURRENTLY_OFFERED_PLANS
 from services.billing import BillingService
 from services.task import TaskService
 from services.segment import SegmentService
+from services.decorators import stripe_safe
 
 from internal_api.mixins import OwnerPropertyMixin
 from internal_api.permissions import UserIsAdminPermissions
@@ -108,6 +109,14 @@ class AccountDetailsViewSet(
     serializer_class = AccountDetailsSerializer
     permission_classes = [UserIsAdminPermissions]
 
+    @stripe_safe
+    def retrieve(self, *args, **kwargs):
+        return super().retrieve(*args, **kwargs)
+
+    @stripe_safe
+    def update(self, *args, **kwargs):
+        return super().update(*args, **kwargs)
+
     def destroy(self, request, *args, **kwargs):
         if self.owner.ownerid != request.user.ownerid:
             raise PermissionDenied("You can only delete your own account")
@@ -121,6 +130,7 @@ class AccountDetailsViewSet(
         return self.owner
 
     @action(detail=False, methods=['patch'])
+    @stripe_safe
     def update_payment(self, request, *args, **kwargs):
         payment_method = request.data.get("payment_method")
         if not payment_method:
