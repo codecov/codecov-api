@@ -28,7 +28,7 @@ def resolve_owner(user, info):
 def resolve_viewable_repositories(user, info, filters = None, **kwargs):
     current_user = info.context['request'].user
     queryset = search_repos(current_user, filters)
-    ordering=('-repoid',)
+    ordering = ('-repoid',)
     return queryset_to_connection(queryset, ordering, **kwargs)
 
 
