@@ -229,6 +229,18 @@ class AccountViewSetTests(APITestCase):
             },
         }
 
+    @patch('services.billing.stripe.Subscription.retrieve')
+    def test_retrieve_handles_stripe_error(self, mock_get_subscription):
+        code, message = 404, "Didn't find that"
+        mock_get_subscription.side_effect = StripeError(message=message, http_status=code)
+        self.user.stripe_subscription_id = "djfos"
+        self.user.save()
+
+        response = self._retrieve()
+
+        assert response.status_code == code
+        assert response.data["detail"] == message
+
     def test_update_can_set_plan_auto_activate_to_true(self):
         self.user.plan_auto_activate = False
         self.user.save()
@@ -439,6 +451,23 @@ class AccountViewSetTests(APITestCase):
         attach_payment_mock.assert_called_once_with(payment_method_id, customer=self.user.stripe_customer_id)
         modify_subscription_mock.assert_called_once_with(self.user.stripe_subscription_id, default_payment_method=payment_method_id)
 
+    @patch('services.billing.StripeService.update_payment_method')
+    def test_update_payment_method_handles_stripe_error(self, upm_mock):
+        code, message = 402, "Oops, nope"
+        self.user.stripe_customer_id = "flsoe"
+        self.user.stripe_subscription_id = "djfos"
+        self.user.save()
+
+        upm_mock.side_effect = StripeError(message=message, http_status=code)
+
+        payment_method_id = "pm_123"
+        kwargs = {"service": self.user.service, "owner_username": self.user.username}
+        data={ "payment_method": payment_method_id }
+        url = reverse("account_details-update-payment", kwargs=kwargs)
+        response = self.client.patch(url, data=data, format='json')
+        assert response.status_code == code
+        assert response.data["detail"] == message
+
     @patch('internal_api.permissions.get_provider')
     def test_update_without_admin_permissions_returns_403(self, get_provider_mock):
         get_provider_mock.return_value = GetAdminProviderAdapter()
@@ -462,6 +491,27 @@ class AccountViewSetTests(APITestCase):
         self.user.refresh_from_db()
         assert self.user.name == expected_name
         assert self.user.email == expected_email
+
+    @patch('services.billing.StripeService.modify_subscription')
+    def test_update_handles_stripe_error(self, modify_sub_mock):
+        code, message = 402, "Not right, wrong in fact"
+        desired_plan = {
+            "value": "users-pr-inappm",
+            "quantity": 12
+        }
+        self.user.stripe_customer_id = "flsoe"
+        self.user.stripe_subscription_id = "djfos"
+        self.user.save()
+
+        modify_sub_mock.side_effect = StripeError(message=message, http_status=code)
+
+        response = self._update(
+            kwargs={"service": self.user.service, "owner_username": self.user.username},
+            data={"plan": desired_plan}
+        )
+
+        assert response.status_code == code
+        assert response.data["detail"] == message
 
     @patch('services.task.TaskService.delete_owner')
     def test_destroy_triggers_delete_owner_task(self, delete_owner_mock):
