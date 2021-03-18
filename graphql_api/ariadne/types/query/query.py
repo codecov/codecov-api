@@ -1,6 +1,6 @@
 from ariadne import ObjectType
 
-from graphql_api.helpers import ariadne_load_local_graphql
+from graphql_api.helpers.ariadne import ariadne_load_local_graphql
 
 query = ariadne_load_local_graphql(__file__, "query.graphql")
 query_bindable = ObjectType("Query")
