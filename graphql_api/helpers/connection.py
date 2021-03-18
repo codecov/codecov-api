@@ -1,26 +1,20 @@
 from cursor_pagination import CursorPaginator
 
 
-def build_connection_graphql(name, type_node):
-    template = """
-    type {connection_name} {{
-      edges: [{edge_name}]
-      totalCount: Int!
-      pageInfo: PageInfo!
-    }}
-
-    type {edge_name} {{
-      cursor: String!
-      node: {type_node}
-    }}
-    """
-    data = {
-        "connection_name": name,
-        "edge_name": name + 'Edge',
-        "type_node": type_node
-    }
-    return template.format(**data)
-
+def build_connection_graphql(connection_name, type_node):
+    edge_name = connection_name + 'Edge'
+    return (
+        f"type {connection_name} {{"
+        f"  edges: [{edge_name}]"
+        "   totalCount: Int!"
+        "   pageInfo: PageInfo!"
+        "}"
+        ""
+        f"type {edge_name} {{"
+        "  cursor: String!"
+        f"  node: {type_node}"
+        "}"
+    )
 
 def queryset_to_connection(queryset, ordering, first=None, after=None, last=None, before=None):
     if not first and not after:
