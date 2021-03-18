@@ -248,7 +248,7 @@ def determine_upload_pr_to_use(upload_params):
     - If a branch was provided and the branch name contains "pull" or "pr" followed by digits, extract the digits and use that as the PR number.
     - Otherwise, use the value provided in the request parameters.
     """
-    pullid = is_pull_noted_in_branch.match(upload_params.get("branch", ""))
+    pullid = is_pull_noted_in_branch.match(upload_params.get("branch") or "")
     if pullid:
         return pullid.groups()[1]
     else:
