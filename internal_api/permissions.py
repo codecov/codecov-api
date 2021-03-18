@@ -117,6 +117,7 @@ class UserIsAdminPermissions(BasePermission):
             or self._is_admin_on_provider(request.user, view.owner)
        )
 
+    @torngit_safe
     def _is_admin_on_provider(self, user, owner):
         torngit_provider_adapter = get_provider(
             owner.service,
