@@ -36,5 +36,5 @@ def resolve_viewable_repositories(user, info, filters = None, **kwargs):
 def resolve_my_organizations(user, info, filters = None, **kwargs):
     current_user = info.context['request'].user
     queryset = search_my_owners(current_user, filters)
-    ordering=('-ownerid',)
+    ordering = ('-ownerid',)
     return queryset_to_connection(queryset, ordering, **kwargs)
