@@ -1,3 +1,5 @@
+from shared.torngit.exceptions import TorngitClientError
+
 def to_drf_datetime_str(datetime):
     """
     DRF does custom datetime representation, which makes comparing
@@ -24,3 +26,15 @@ class GetAdminProviderAdapter:
     async def get_is_admin(self, user):
         self.last_call_args = user
         return self.result
+
+
+class GetAdminErrorProviderAdapter:
+    """
+    Mock adapter that raises a torngit error.
+    """
+    def __init__(self, code, message):
+        self.code = code
+        self.message = message
+
+    async def get_is_admin(self, user):
+        raise TorngitClientError(code=self.code, response=None, message=self.message)

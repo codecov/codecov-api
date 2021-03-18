@@ -454,6 +454,12 @@ class UploadHandlerHelpersTest(TestCase):
             expected_value = None
             assert expected_value == determine_upload_pr_to_use(upload_params)
 
+        with self.subTest("pullid not provided, branch not provided"):
+            upload_params = {"branch": None, "pr": None}
+
+            expected_value = None
+            assert expected_value == determine_upload_pr_to_use(upload_params)
+
     @patch("upload.helpers.RepoProviderService")
     @patch("asyncio.run")
     def test_determine_upload_commit_to_use(self, mock_repo_provider_service, mock_async):
