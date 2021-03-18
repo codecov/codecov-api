@@ -119,7 +119,7 @@ class RepositoryViewSet(
 
         if repo.private and not RepositoryPermissionsService().user_is_activated(self.request.user, self.owner):
             log.info(
-                'An inactive user attempted to access a dashboard page',
+                'An inactive user attempted to access a repo page',
                 extra=dict(user=self.request.user.username, owner=self.owner.username, repo=repo.name)
             )
             raise PermissionDenied("User not activated")
