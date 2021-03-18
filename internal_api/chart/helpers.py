@@ -1,15 +1,16 @@
 from django.db.models.functions import Trunc, Cast
 from django.db.models import FloatField, Case, When, Value, F
-from django.contrib.postgres.fields.jsonb import KeyTextTransform
+from django.db.models.fields.json import KeyTextTransform
 from django.utils.functional import cached_property
 from django.db import connection
+from django.utils import timezone
 
 from rest_framework.exceptions import ValidationError
 from cerberus import Validator
 from datetime import datetime
 from dateutil import parser
 
-from core.models import Commit
+from core.models import Commit, Repository
 from codecov_auth.models import Owner
 
 
@@ -179,7 +180,7 @@ class ChartQueryRunner:
                     self.request_params.get("end_date")
                 )
             )
-        return datetime.date(datetime.now())
+        return datetime.date(timezone.now())
 
     @property
     def interval(self):
@@ -216,9 +217,7 @@ class ChartQueryRunner:
         )
 
         # Get list of relevant repoids
-        repos = organization.repository_set.viewable_repos(
-            self.user
-        )
+        repos = Repository.objects.filter(author=organization).viewable_repos(self.user)
 
         if self.request_params.get("repositories", []):
             repos = repos.filter(name__in=self.request_params.get("repositories", []))

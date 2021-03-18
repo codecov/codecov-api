@@ -8,9 +8,10 @@ from enum import Enum
 from django.db import models
 from core.models import Repository
 from utils.config import get_config
-from django.contrib.postgres.fields import CITextField, JSONField, ArrayField
+from django.contrib.postgres.fields import CITextField, ArrayField
 
 from .managers import OwnerQuerySet
+from core.managers import RepositoryQuerySet
 
 from codecov_auth.constants import (
     AVATAR_GITHUB_BASE_URL,
@@ -18,6 +19,7 @@ from codecov_auth.constants import (
     GRAVATAR_BASE_URL,
     AVATARIO_BASE_URL,
     USER_PLAN_REPRESENTATIONS,
+    FREE_PLAN_NAME
 )
 
 from codecov_auth.helpers import get_gitlab_url
@@ -52,6 +54,7 @@ class Service(Enum):
 class Owner(models.Model):
     class Meta:
         db_table = "owners"
+        ordering = ['ownerid']
 
     REQUIRED_FIELDS = []
     USERNAME_FIELD = "username"
@@ -70,17 +73,17 @@ class Owner(models.Model):
     root_parent_service_id = models.TextField(null=True)
     private_access = models.BooleanField(null=True)
     staff = models.BooleanField(null=True, default=False)
-    cache = JSONField(null=True)
-    plan = models.TextField(null=True)
+    cache = models.JSONField(null=True)
+    plan = models.TextField(null=True, default=FREE_PLAN_NAME)
     plan_provider = models.CharField(null=True, max_length=10) # postgres enum containing only "github"
-    plan_user_count = models.SmallIntegerField(null=True)
-    plan_auto_activate = models.BooleanField(null=True)
+    plan_user_count = models.SmallIntegerField(null=True, default=5)
+    plan_auto_activate = models.BooleanField(null=True, default=True)
     plan_activated_users = ArrayField(models.IntegerField(null=True), null=True)
     did_trial = models.BooleanField(null=True)
     free = models.SmallIntegerField(default=0)
     invoice_details = models.TextField(null=True)
     delinquent = models.BooleanField(null=True)
-    yaml = JSONField(null=True)
+    yaml = models.JSONField(null=True)
     updatestamp = models.DateTimeField(auto_now=True)
     organizations = ArrayField(models.IntegerField(null=True), null=True)
     admins = ArrayField(models.IntegerField(null=True), null=True)
@@ -92,6 +95,8 @@ class Owner(models.Model):
     student_updated_at = models.DateTimeField(null=True)
 
     objects = OwnerQuerySet.as_manager()
+
+    repository_set = RepositoryQuerySet.as_manager()
 
     @property
     def has_legacy_plan(self):
@@ -163,9 +168,23 @@ class Owner(models.Model):
         ).count()
 
     @property
+    def activated_student_count(self):
+        if not self.plan_activated_users:
+            return 0
+        return Owner.objects.filter(
+            ownerid__in=self.plan_activated_users, student=True
+        ).count()
+
+    @property
+    def student_count(self):
+        return Owner.objects.filter(
+            organizations__contains=[self.ownerid], student=True
+        ).count()
+
+    @property
     def inactive_user_count(self):
         return (
-            Owner.objects.filter(organizations__contains=[self.ownerid]).count()
+            Owner.objects.filter(organizations__contains=[self.ownerid], student=False).count()
             - self.activated_user_count
         )
 
@@ -327,6 +346,7 @@ class Owner(models.Model):
 class Session(models.Model):
     class Meta:
         db_table = "sessions"
+        ordering = ['-lastseen']
 
     class SessionType:
         API = "api"

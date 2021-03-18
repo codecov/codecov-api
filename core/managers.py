@@ -1,9 +1,8 @@
 from dateutil import parser
 
-from django.db.models import QuerySet, Subquery, OuterRef, Q, Count, F, FloatField, Avg, Sum, IntegerField
-from django.contrib.postgres.fields import JSONField
+from django.db.models import QuerySet, Subquery, OuterRef, Q, Count, F, FloatField, Avg, Sum, IntegerField, JSONField
 from django.db.models.functions import Cast
-from django.contrib.postgres.fields.jsonb import KeyTextTransform
+from django.db.models.fields.json import KeyTextTransform
 
 
 class RepositoryQuerySet(QuerySet):
@@ -69,7 +68,7 @@ class RepositoryQuerySet(QuerySet):
         """
         Annotates the queryset with the latest "coverage change" (cov of last commit
         made to default branch, minus cov of second-to-last commit made to default
-        branch) of each repository. Depends on having called "with_latest_commit_totals_before" with 
+        branch) of each repository. Depends on having called "with_latest_commit_totals_before" with
         "include_previous_totals=True".
         """
         from core.models import Commit

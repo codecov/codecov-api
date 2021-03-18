@@ -31,12 +31,13 @@ def get_generic_adapter_params(user, service, use_ssl=False, token=None):
             token = encryptor.decrypt_token(
                 user.oauth_token
             )
+            token["username"] = user.username
         else:
             token = {"key": getattr(settings, f"{service.upper()}_BOT_KEY")}
-
     return dict(
         verify_ssl=verify_ssl,
         token=token,
+        timeouts=(5, 15),
         oauth_consumer_token=dict(
             key=getattr(
                 settings, f"{service.upper()}_CLIENT_ID", "unknown"
@@ -75,7 +76,8 @@ class RepoProviderService(object):
                 "private": repo.private,
             },
             "owner": {
-                "username": repo.author.username
+                "username": repo.author.username,
+                "service_id": repo.author.service_id
             }
         }
 

@@ -15,7 +15,7 @@ from shared.helpers.yaml import walk
 from services.archive import ReportService
 from core.models import Commit
 from services.repo_providers import RepoProviderService
-from services.redis import get_redis_connection
+from services.redis_configuration import get_redis_connection
 from utils.config import get_config
 
 
@@ -478,18 +478,19 @@ class Comparison(object):
             base_file = None
 
         if with_src:
-            src = str(
-                asyncio.run(
-                    RepoProviderService().get_adapter(
-                        user=self.user,
-                        repo=self.base_commit.repository
-                    ).get_source(
-                        file_name,
-                        self.head_commit.commitid
-                    )
-                )["content"],
-                'utf-8'
-            ).splitlines()
+            file_content = asyncio.run(
+                RepoProviderService().get_adapter(
+                    user=self.user,
+                    repo=self.base_commit.repository
+                ).get_source(
+                    file_name,
+                    self.head_commit.commitid
+                )
+            )["content"]
+            # make sure the file is str utf-8
+            if type(file_content) is not str:
+                file_content = str(file_content, 'utf-8')
+            src = file_content.splitlines()
         else:
             src = []
 

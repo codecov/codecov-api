@@ -9,6 +9,7 @@ from django.utils.encoding import smart_text
 from urllib.parse import parse_qs
 from json import dumps
 from uuid import uuid4
+from django.utils import timezone
 
 from .helpers import (
     parse_params,
@@ -23,7 +24,7 @@ from .helpers import (
     store_report_in_redis,
     dispatch_upload_task,
 )
-from services.redis import get_redis_connection
+from services.redis_configuration import get_redis_connection
 from services.archive import ArchiveService
 from services.segment import SegmentService
 from utils.config import get_config
@@ -204,7 +205,7 @@ class UploadHandler(APIView):
             path = "/".join(
                 (
                     "v4/raw",
-                    datetime.now().strftime("%Y-%m-%d"),
+                    timezone.now().strftime("%Y-%m-%d"),
                     archive_service.get_archive_hash(repository),
                     commitid,
                     f"{reportid}.txt",

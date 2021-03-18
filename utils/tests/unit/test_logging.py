@@ -1,6 +1,6 @@
 import os
 
-from utils.logging import CustomLocalJsonFormatter
+from utils.logging_configuration import CustomLocalJsonFormatter
 
 
 class TestLoggingConfig(object):

@@ -5,14 +5,14 @@ DEBUG = True
 ALLOWED_HOSTS = ['localhost']
 WEBHOOK_URL = '' # NGROK TUNNEL HERE
 STRIPE_API_KEY = ''
-CORS_ORIGIN_WHITELIST = ['localhost:9000', 'localhost']
+CORS_ALLOWED_ORIGINS = ['http://localhost:9000', 'http://localhost']
 CORS_ALLOW_CREDENTIALS = True
 CODECOV_URL = 'localhost'
 DATABASE_HOST = 'localhost'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'ENGINE': 'django.db.backends.postgresql',
         'NAME': DATABASE_NAME,
         'USER': DATABASE_USER,
         'PASSWORD': DATABASE_PASSWORD,

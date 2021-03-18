@@ -25,16 +25,18 @@ sentry_sdk.init(
     environment="STAGING"
 )
 
-CORS_ORIGIN_WHITELIST = ["stage-app.codecov.dev", "stage-web.codecov.dev", "gazebo.netlify.app"]
-CORS_ORIGIN_REGEX_WHITELIST = [
+CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^(https:\/\/)?deploy-preview-\d+--codecov\.netlify\.app$",
+    r"^(https:\/\/)?deploy-preview-\d+--stage-app\.netlify\.app$",
     r"^(https:\/\/)?deploy-preview-\d+--codecov-stage\.netlify\.app$",
     r"^(https:\/\/)?deploy-preview-\d+--gazebo\.netlify\.app$",
+    r"^(https:\/\/)?\w+--gazebo\.netlify\.app$",
 ]
 CORS_ALLOW_CREDENTIALS = True
 
 
 CODECOV_URL = 'https://stage-web.codecov.dev'
 CODECOV_DASHBOARD_URL = 'https://stage-app.codecov.dev'
+CORS_ALLOWED_ORIGINS = [CODECOV_URL, CODECOV_DASHBOARD_URL, "https://gazebo.netlify.app"]
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 15000000

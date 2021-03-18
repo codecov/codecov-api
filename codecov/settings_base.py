@@ -21,15 +21,19 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'graphene_django',
+    'ariadne.contrib.django',
     'corsheaders',
     'rest_framework',
     'core',
     'codecov_auth',
     'internal_api',
+    'graphql_api',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -62,12 +66,11 @@ WSGI_APPLICATION = 'codecov.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
-
 DATABASE_USER = get_config('services', 'database', 'username', default='postgres')
 DATABASE_NAME = get_config('services', 'database', 'name', default='postgres')
 DATABASE_PASSWORD = get_config('services', 'database', 'password', default='postgres')
 DATABASE_HOST = get_config('services', 'database', 'host', default='postgres')
-
+DATABASE_PORT = get_config('services', 'database', 'port', default=5432)
 # this is the time in seconds django decides to keep the connection open after the request
 # the default is 0 seconds, meaning django closes the connection after every request
 # https://docs.djangoproject.com/en/3.1/ref/settings/#conn-max-age
@@ -75,16 +78,15 @@ CONN_MAX_AGE = int(get_config('services', 'database', 'conn_max_age', default=0)
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'ENGINE': 'django.db.backends.postgresql',
         'NAME': DATABASE_NAME,
         'USER': DATABASE_USER,
         'PASSWORD': DATABASE_PASSWORD,
         'HOST': DATABASE_HOST,
-        'PORT': '5432',
+        'PORT': DATABASE_PORT,
         'CONN_MAX_AGE': CONN_MAX_AGE
     }
 }
-
 # Password validation
 # https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators
 
@@ -109,7 +111,7 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticatedOrReadOnly',
     ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'codecov_auth.authentication.CodecovSessionAuthentication',
+        'codecov_auth.authentication.CodecovTokenAuthentication',
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ),
@@ -144,11 +146,11 @@ LOGGING = {
     'formatters': {
         'standard': {
             'format': '%(message)s %(asctime)s %(name)s %(levelname)s %(lineno)s %(pathname)s %(funcName)s %(threadName)s',
-            'class': 'utils.logging.CustomLocalJsonFormatter'
+            'class': 'utils.logging_configuration.CustomLocalJsonFormatter'
         },
         'json': {
             'format': '%(message)s %(asctime)s %(name)s %(levelname)s %(lineno)s %(pathname)s %(funcName)s %(threadName)s',
-            'class': 'utils.logging.CustomDatadogJsonFormatter'
+            'class': 'utils.logging_configuration.CustomDatadogJsonFormatter'
         },
     },
     'root': {

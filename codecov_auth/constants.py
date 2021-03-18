@@ -4,6 +4,7 @@ GITLAB_BASE_URL = 'https://gitlab.com'
 GRAVATAR_BASE_URL = 'https://www.gravatar.com'
 AVATARIO_BASE_URL = 'https://avatars.io'
 
+FREE_PLAN_NAME = "users-free"
 
 NON_PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
     "users-inappm": {
@@ -62,9 +63,9 @@ PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
 
 
 USER_PLAN_REPRESENTATIONS = {
-    "users-free": {
+    FREE_PLAN_NAME: {
         "marketing_name": "Basic",
-        "value": "users-free",
+        "value": FREE_PLAN_NAME,
         "billing_rate": None,
         "base_unit_price": 0,
         "benefits": [
@@ -79,9 +80,9 @@ USER_PLAN_REPRESENTATIONS = {
 
 
 CURRENTLY_OFFERED_PLANS = {
-    "users-free": {
+    FREE_PLAN_NAME: {
         "marketing_name": "Basic",
-        "value": "users-free",
+        "value": FREE_PLAN_NAME,
         "billing_rate": None,
         "base_unit_price": 0,
         "benefits": [

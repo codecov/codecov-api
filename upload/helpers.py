@@ -318,35 +318,30 @@ def determine_upload_commit_to_use(upload_params, repository):
 
 
 def insert_commit(commitid, branch, pr, repository, owner, parent_commit_id=None):
-    
+
     try:
-        commit = Commit.objects.get(
-            commitid=commitid, repository=repository
-        )
+        commit = Commit.objects.get(commitid=commitid, repository=repository)
         edited = False
 
         if commit.state != "pending":
-           commit.state = "pending"
-           edited = True
+            commit.state = "pending"
+            edited = True
 
         if parent_commit_id and commit.parent_commit_id is None:
-           commit.parent_commit_id = parent_commit_id
-           edited = True
+            commit.parent_commit_id = parent_commit_id
+            edited = True
 
         if edited:
-           commit.save()
-            
+            commit.save(update_fields=["parent_commit_id", "state"])
+
     except Commit.DoesNotExist:
-        log.info("Creating new commit for upload",                 
+        log.info(
+            "Creating new commit for upload",
             extra=dict(
-            commit=commitid,
-            branch=branch,
-            repository=repository,
-            owner=owner
-        ),)
-        commit = Commit(
-            commitid=commitid, repository=repository, state="pending"
+                commit=commitid, branch=branch, repository=repository, owner=owner
+            ),
         )
+        commit = Commit(commitid=commitid, repository=repository, state="pending")
         commit.branch = branch
         commit.pullid = pr
         commit.merged = False if pr is not None else None
@@ -386,6 +381,14 @@ def validate_upload(upload_params, repository, redis):
         )
         session_count = commit.totals.get("s", 0) if commit.totals else 0
         if (session_count or 0) > (get_config("setup", "max_sessions") or 100):
+            log.error(
+                "Unable to fetch commit. Not found",
+                extra=dict(
+                    commit=upload_params.get("commit"),
+                    session_count=session_count,
+                    repository=repository.repoid
+                ),
+            )
             raise ValidationError("Too many uploads to this commit.")
     except Commit.DoesNotExist:
         pass
@@ -416,13 +419,15 @@ def validate_upload(upload_params, repository, redis):
                 "Sorry, but this team has no private repository credits left."
             )
 
+    if not repository.activated:
+        SegmentService().account_activated_repository_on_upload(repository.author.ownerid, repository)
+
     # Activate the repository
     repository.activated = True
     repository.active = True
     repository.deleted = False
     repository.save()
 
-    SegmentService().account_activated_repository_on_upload(repository.author.ownerid, repository)
 
 
 def parse_headers(headers, upload_params):

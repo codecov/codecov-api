@@ -76,14 +76,51 @@ class AccountViewSetTests(APITestCase):
             "integration_id": owner.integration_id,
             "plan_auto_activate": owner.plan_auto_activate,
             "inactive_user_count": 0,
-            "plan": None, # TODO -- legacy plan
+            "plan": {
+                "marketing_name": "Basic",
+                "value": "users-free",
+                "billing_rate": None,
+                "base_unit_price": 0,
+                "benefits": [
+                    "Up to 5 users",
+                    "Unlimited public repositories",
+                    "Unlimited private repositories",
+                ],
+                "quantity": 5,
+            },
             "subscription_detail": None,
             "checkout_session_id": None,
             "name": owner.name,
             "email": owner.email,
             "nb_active_private_repos": 0,
-            "repo_total_credits": 1,
-            "plan_provider": owner.plan_provider
+            "repo_total_credits": 99999999,
+            "plan_provider": owner.plan_provider,
+            'activated_student_count': 0,
+            'student_count': 0
+        }
+
+    def test_retrieve_account_gets_account_students(self):
+        owner = OwnerFactory(admins=[self.user.ownerid], plan_activated_users=[OwnerFactory(student=True).ownerid])
+        student_1 = OwnerFactory(organizations=[owner.ownerid], student=True)
+        student_2 = OwnerFactory(organizations=[owner.ownerid], student=True)
+        response = self._retrieve(kwargs={"service": owner.service, "owner_username": owner.username})
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "activated_user_count": 0,
+            "root_organization": None,
+            "integration_id": owner.integration_id,
+            "plan_auto_activate": owner.plan_auto_activate,
+            "inactive_user_count": 0,
+            "plan": response.data['plan'],
+            "subscription_detail": None,
+            "checkout_session_id": None,
+            "name": owner.name,
+            "email": owner.email,
+            "nb_active_private_repos": 0,
+            "repo_total_credits": 99999999,
+            "plan_provider": owner.plan_provider,
+            'activated_student_count': 1,
+            'student_count': 2
         }
 
     def test_account_with_free_user_plan(self):

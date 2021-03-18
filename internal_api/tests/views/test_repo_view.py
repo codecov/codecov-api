@@ -1,5 +1,6 @@
 import pytest
 from datetime import datetime
+from django.utils import timezone
 
 from unittest.mock import patch
 
@@ -246,7 +247,7 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
 
         CommitFactory(repository=self.repo1, totals={**default_totals, "c": older_coverage})
         # We're testing that the lte works as expected, so we're not sending the exact same timestamp
-        fetching_time = datetime.now().isoformat()
+        fetching_time = timezone.now().isoformat()
 
         CommitFactory(repository=self.repo1, totals=default_totals)
 
@@ -605,6 +606,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
     def test_retrieve_for_inactive_user_returns_403(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, True
         self.org.plan = "users-inappy"
+        self.org.plan_auto_activate = False
         self.org.save()
 
         response = self._retrieve()
@@ -648,6 +650,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         mocked_get_permissions.return_value = True, True
         self.org.admins = [self.user.ownerid]
         self.org.plan = "users-inappy"
+        self.org.plan_auto_activate = False
         self.org.save()
 
         response = self._destroy()
@@ -682,6 +685,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
     def test_regenerate_upload_token_as_inactive_user_returns_403(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, True
         self.org.plan = "users-inappy"
+        self.org.plan_auto_activate = False
         self.org.save()
 
         response = self._regenerate_upload_token()
@@ -758,6 +762,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
     def test_erase_as_inactive_user_returns_403(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, True
         self.org.plan = "users-inappy"
+        self.org.plan_auto_activate = False
         self.org.admins = [self.user.ownerid]
         self.org.save()
 
@@ -770,6 +775,8 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
     def test_erase_triggers_segment_event(self, analytics_track_mock, mocked_get_permissions):
         mocked_get_permissions.return_value = True, True
         self.org.admins = [self.user.ownerid]
+        self.org.plan_activated_users = [self.user.ownerid]
+        self.user.organizations = [self.org.ownerid]
         self.org.save()
         with self.settings(SEGMENT_ENABLED=True):
             response = self._erase()

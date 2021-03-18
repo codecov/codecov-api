@@ -2,6 +2,7 @@ import requests
 import shared.torngit
 import pytest
 import time
+from django.utils import timezone
 from datetime import datetime, timedelta
 from rest_framework.test import APITestCase, APIRequestFactory
 from shared.torngit.exceptions import TorngitClientError, TorngitObjectNotFoundError
@@ -772,7 +773,10 @@ class UploadHandlerHelpersTest(TestCase):
             )
             commit = G(Commit)
 
-            validate_upload({"commit": commit.commitid}, repo, redis)
+            with patch("services.segment.SegmentService.account_activated_repository_on_upload") as mock_segment_event:
+                validate_upload({"commit": commit.commitid}, repo, redis)
+                assert mock_segment_event.called
+
             repo.refresh_from_db()
             assert repo.activated == True
             assert repo.active == True
@@ -784,7 +788,10 @@ class UploadHandlerHelpersTest(TestCase):
             repo = G(Repository, author=owner, private=True, activated=True)
             commit = G(Commit)
 
-            validate_upload({"commit": commit.commitid}, repo, redis)
+            with patch("services.segment.SegmentService.account_activated_repository_on_upload") as mock_segment_event:
+                validate_upload({"commit": commit.commitid}, repo, redis)
+                assert not mock_segment_event.called
+
             repo.refresh_from_db()
             assert repo.activated == True
             assert repo.active == True
@@ -967,7 +974,7 @@ class UploadHandlerRouteTest(APITestCase):
         path = "/".join(
             (
                 "v4/raw",
-                datetime.now().strftime("%Y-%m-%d"),
+                timezone.now().strftime("%Y-%m-%d"),
                 "awawaw",
                 "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
             )
@@ -2228,7 +2235,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         mock_get.return_value.return_value = expected_response
 
         params = {
-            "build": "12.34", 
+            "build": "12.34",
             "owner": "owner",
             "repo": "repo",
             "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
@@ -2270,7 +2277,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         with pytest.raises(NotFound) as e:
             TokenlessUploadHandler('github_actions', params).verify_upload()
         assert e.value.args[0] == "Unable to locate build via Github Actions API. Please upload with the Codecov repository upload token to resolve issue."
-        
+
         mock_get.side_effect = [Exception('Not Found')]
 
         with pytest.raises(NotFound) as e:
@@ -2352,7 +2359,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
             "commit_sha": "c739768fcac68144a3a6d82305b9c4106934d31a",
             "slug": "owner/repo",
             "public": True,
-            "finish_time": f"{datetime.utcnow() - timedelta(minutes=4)}".split('.')[0]
+            "finish_time": f"{datetime.utcnow() - timedelta(minutes=10)}".split('.')[0]
         }
         mock_get.return_value.status_code.return_value = 200
         mock_get.return_value.return_value = expected_response
@@ -2387,8 +2394,6 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
             "repo": "repo",
             "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
         }
-
-        expected_error = """Actions workflow run is stale"""
 
         assert TokenlessUploadHandler('github_actions', params).verify_upload() == 'github'
 
