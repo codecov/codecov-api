@@ -29,6 +29,17 @@ class RepoSerializer(serializers.ModelSerializer):
             "activated",
             "using_integration",
         )
+        read_only_fields = (
+            "repoid",
+            "service_id",
+            "name",
+            "private",
+            "updatestamp",
+            "author",
+            "language",
+            "hookid",
+            "using_integration"
+        )
 
 
 class RepoWithMetricsSerializer(RepoSerializer):
@@ -63,6 +74,12 @@ class RepoDetailsSerializer(RepoSerializer):
             'image_token',
             'bot'
         ) + RepoSerializer.Meta.fields
+        read_only_fields = (
+            'fork',
+            'upload_token',
+            'yaml',
+            'image_token',
+        ) + RepoSerializer.Meta.read_only_fields
 
     def get_bot(self, repo):
         if repo.bot:
