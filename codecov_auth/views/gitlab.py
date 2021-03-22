@@ -1,17 +1,23 @@
-import asyncio
-from django.urls import reverse
-from uuid import uuid4
-
-from django.shortcuts import redirect
-from shared.torngit import Gitlab
 from urllib.parse import urljoin, urlencode
-from django.views import View
+from uuid import uuid4
+import asyncio
+import logging
+
 from django.conf import settings
+from django.shortcuts import redirect
+from django.urls import reverse
+from django.views import View
+from shared.torngit import Gitlab
+from shared.torngit.exceptions import TorngitError
+
 from codecov_auth.views.base import LoginMixin
+
+log = logging.getLogger(__name__)
 
 
 class GitlabLoginView(View, LoginMixin):
     cookie_prefix = "gitlab"
+    error_redirection_page = "/"
 
     def get_url_to_redirect_to(self):
         repo_service = Gitlab
@@ -40,13 +46,20 @@ class GitlabLoginView(View, LoginMixin):
             user=user_dict, orgs=user_orgs, is_student=False, has_private_access=True
         )
 
+    def actual_login_step(self, request):
+        code = request.GET.get("code")
+        try:
+            user_dict = asyncio.run(self.fetch_user_data(request, code))
+        except TorngitError:
+            log.warning("Unable to log in due to problem on Github", exc_info=True)
+            return redirect(self.error_redirection_page)
+        response = redirect("/gl")
+        self.login_from_user_dict(user_dict, request, response)
+        return response
+
     def get(self, request):
         if request.GET.get("code"):
-            code = request.GET.get("code")
-            user_dict = user_dict = asyncio.run(self.fetch_user_data(request, code))
-            response = redirect("/gl")
-            self.login_from_user_dict(user_dict, request, response)
-            return response
+            return self.actual_login_step(request)
         else:
             url_to_redirect_to = self.get_url_to_redirect_to()
             response = redirect(url_to_redirect_to)
