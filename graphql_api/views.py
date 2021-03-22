@@ -1,13 +1,11 @@
 from ariadne.contrib.django.views import GraphQLView as BaseAriadneView
-from graphene_django.views import GraphQLView as BaseGrapheneView
 from django.conf import settings
 
 from codecov_auth.authentication import CodecovTokenAuthentication
-from .ariadne import schema as ariadne_schema
-from .graphene import schema as graphene_schema
 
 
-class AuthenticateMixin:
+class AriadneView(BaseAriadneView):
+    graphiql = settings.DEBUG
 
     def authenticate(self, request):
         try:
@@ -21,11 +19,3 @@ class AuthenticateMixin:
     def dispatch(self, request, *args, **kwargs):
         self.authenticate(request)
         return super().dispatch(request, *args, **kwargs)
-
-
-class GrapheneView(AuthenticateMixin, BaseGrapheneView):
-    pass
-
-
-class AriadneView(AuthenticateMixin, BaseAriadneView):
-    graphiql = settings.DEBUG
