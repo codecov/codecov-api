@@ -2,9 +2,11 @@ from uuid import UUID
 
 from django.urls import reverse
 from shared.torngit import Gitlab
+from shared.torngit.exceptions import TorngitClientError
+
+
 from codecov_auth.helpers import decode_token_from_cookie
 from codecov_auth.models import Session
-from django.http.cookie import SimpleCookie
 
 
 def test_get_gitlab_redirect(client, settings, mocker):
@@ -82,3 +84,20 @@ def test_get_gitlab_already_with_code(client, mocker, db, settings, mock_redis):
     assert owner.username == "ThiagoCodecov"
     assert owner.service_id == "3124507"
     assert res.url == "/gl"
+
+
+def test_get_github_already_with_code_github_error(
+    client, mocker, db, mock_redis, settings
+):
+    settings.COOKIES_DOMAIN = ".simple.site"
+
+    async def helper_func(*args, **kwargs):
+        raise TorngitClientError(403, "response", "message")
+
+    mocker.patch.object(Gitlab, "get_authenticated_user", side_effect=helper_func)
+    url = reverse("gitlab-login")
+    res = client.get(url, {"code": "aaaaaaa"})
+    assert res.status_code == 302
+    assert "gitlab-token" not in res.cookies
+    assert "gitlab-username" not in res.cookies
+    assert res.url == "/"
