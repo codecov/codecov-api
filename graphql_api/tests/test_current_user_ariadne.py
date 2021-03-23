@@ -42,13 +42,13 @@ class ArianeTestCase(GraphQLTestHelper, TestCase):
 
     def test_when_unauthenticated(self):
         query = "{ me { user { username }} }"
-        data = self.gql_request('/graphql/gh/ariadne', query)
+        data = self.gql_request(query)
         assert data == {'me': None }
 
     def test_when_authenticated(self):
         self.client.force_login(self.user)
         query = "{ me { user { username avatarUrl }} }"
-        data = self.gql_request('/graphql/gh/ariadne', query)
+        data = self.gql_request(query)
         assert data == {
             'me': {
                 'user': {
@@ -61,7 +61,7 @@ class ArianeTestCase(GraphQLTestHelper, TestCase):
     def test_fetching_repositories(self):
         self.client.force_login(self.user)
         query = query_repositories % ("", "")
-        data = self.gql_request('/graphql/gh/ariadne', query)
+        data = self.gql_request(query)
         assert data == {
             'me': {
                 'owner': {
@@ -83,7 +83,7 @@ class ArianeTestCase(GraphQLTestHelper, TestCase):
         self.client.force_login(self.user)
         query = query_repositories % ("(first: 1)", "endCursor")
         # Check on the first page if we have the repository b
-        data_page_one = self.gql_request('/graphql/gh/ariadne', query)
+        data_page_one = self.gql_request(query)
         connection = data_page_one['me']['owner']['repositories']
         assert connection['edges'][0]['node'] == { "name": 'b' }
         pageInfo = connection['pageInfo']
@@ -91,7 +91,7 @@ class ArianeTestCase(GraphQLTestHelper, TestCase):
         next_cursor = pageInfo['endCursor']
         # Check on the second page if we have the other repository, by using the cursor
         query = query_repositories % (f"(first: 1, after: \"{next_cursor}\")", "endCursor")
-        data_page_two = self.gql_request('/graphql/gh/ariadne', query)
+        data_page_two = self.gql_request(query)
         connection = data_page_two['me']['owner']['repositories']
         assert connection['edges'][0]['node'] == { "name": 'a' }
         pageInfo = connection['pageInfo']
@@ -111,7 +111,7 @@ class ArianeTestCase(GraphQLTestHelper, TestCase):
             }
         }
         """
-        data = self.gql_request('/graphql/gh/ariadne', query)
+        data = self.gql_request(query)
         repos = paginate_connection(data['me']['viewableRepositories'])
         assert repos == [{'name': 'b'}, {'name': 'a'}]
 
@@ -129,7 +129,7 @@ class ArianeTestCase(GraphQLTestHelper, TestCase):
             }
         }
         """
-        data = self.gql_request('/graphql/gh/ariadne', query)
+        data = self.gql_request(query)
         repos = paginate_connection(data['me']['viewableRepositories'])
         assert repos == [{'name': 'a'}]
 
@@ -147,7 +147,7 @@ class ArianeTestCase(GraphQLTestHelper, TestCase):
             }
         }
         """
-        data = self.gql_request('/graphql/gh/ariadne', query)
+        data = self.gql_request(query)
         orgs = paginate_connection(data['me']['myOrganizations'])
         assert orgs == [
             {'username': 'spotify'},
@@ -169,7 +169,7 @@ class ArianeTestCase(GraphQLTestHelper, TestCase):
             }
         }
         """
-        data = self.gql_request('/graphql/gh/ariadne', query)
+        data = self.gql_request(query)
         orgs = paginate_connection(data['me']['myOrganizations'])
         assert orgs == [
             {'username': 'spotify'},

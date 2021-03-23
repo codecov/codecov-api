@@ -39,7 +39,7 @@ def find_imported_modules(filename):
 def generate_files_to_be_cythonized():
     files_to_exclude = []
     locations = get_relevant_paths('.')
-    
+
     files = []
     for loc in locations:
         files.extend(
@@ -49,7 +49,7 @@ def generate_files_to_be_cythonized():
                 if not os.path.basename(fn).endswith("__init__.py")
             ]
         )
-      
+
     return [f for f in files if f not in files_to_exclude]
 
 
@@ -79,7 +79,6 @@ def main():
             'ariadne.contrib.django.apps',
             'whitenoise',
             'whitenoise.middleware',
-            'graphene_django',
             'graphql_api'
         ]
     )
@@ -120,7 +119,7 @@ def main():
         ]
     )
     args.extend(
-        [ 
+        [
             f"--additional-hooks-dir /hooks"
         ]
     )
