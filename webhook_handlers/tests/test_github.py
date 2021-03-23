@@ -47,7 +47,6 @@ class GithubWebhookHandlerTests(APITestCase):
             active=True
         )
 
-    @pytest.mark.xfail
     def test_get_repo_paths_dont_crash(self):
         with self.subTest("with ownerid success"):
             response = self._post_event_data(
@@ -105,12 +104,10 @@ class GithubWebhookHandlerTests(APITestCase):
                 }
             )
 
-    @pytest.mark.xfail
     def test_ping_returns_pong_and_200(self):
         response = self._post_event_data(event=GitHubWebhookEvents.PING)
         assert response.status_code == status.HTTP_200_OK
 
-    @pytest.mark.xfail
     def test_repository_publicized_sets_activated_false_and_private_false(self):
         self.repo.private = True
         self.repo.activated = True
@@ -134,7 +131,6 @@ class GithubWebhookHandlerTests(APITestCase):
         assert self.repo.private == False
         assert self.repo.activated == False
 
-    @pytest.mark.xfail
     def test_repository_privatized_sets_private_true(self):
         self.repo.private = False
         self.repo.save()
@@ -155,7 +151,6 @@ class GithubWebhookHandlerTests(APITestCase):
 
         assert self.repo.private == True
 
-    @pytest.mark.xfail
     def test_repository_deleted_sets_deleted_activated_and_active(self):
         repository_id = self.repo.repoid
 
@@ -175,7 +170,6 @@ class GithubWebhookHandlerTests(APITestCase):
         assert self.repo.active is False
         assert self.repo.activated is False
 
-    @pytest.mark.xfail
     def test_delete_event_deletes_branch(self):
         branch = BranchFactory(repository=self.repo)
 
@@ -193,7 +187,6 @@ class GithubWebhookHandlerTests(APITestCase):
         assert response.status_code == status.HTTP_200_OK
         assert not self.repo.branches.filter(name=branch.name).exists()
 
-    @pytest.mark.xfail
     def test_public_sets_repo_private_false_and_activated_false(self):
         self.repo.private = True
         self.repo.activated = True
@@ -213,7 +206,6 @@ class GithubWebhookHandlerTests(APITestCase):
         assert not self.repo.private
         assert not self.repo.activated
 
-    @pytest.mark.xfail
     @patch('redis.Redis.sismember', lambda x, y, z: False)
     def test_push_updates_only_unmerged_commits_with_branch_name(self):
         commit1 = CommitFactory(merged=False, repository=self.repo)
@@ -250,7 +242,6 @@ class GithubWebhookHandlerTests(APITestCase):
 
         assert merged_commit.branch == merged_branch_name
 
-    @pytest.mark.xfail
     @patch('redis.Redis.sismember', lambda x, y, z: False)
     def test_push_updates_commit_on_default_branch(self):
         commit1 = CommitFactory(merged=False, repository=self.repo)
@@ -287,7 +278,6 @@ class GithubWebhookHandlerTests(APITestCase):
 
         assert merged_commit.branch == merged_branch_name
 
-    @pytest.mark.xfail
     def test_push_exits_early_with_200_if_repo_not_active(self):
         self.repo.active = False
         self.repo.save()
@@ -312,7 +302,6 @@ class GithubWebhookHandlerTests(APITestCase):
         unmerged_commit.refresh_from_db()
         assert unmerged_commit.branch != branch_name
 
-    @pytest.mark.xfail
     @patch('redis.Redis.sismember', lambda x, y, z: True)
     @patch('services.task.TaskService.status_set_pending')
     def test_push_triggers_set_pending_task_on_most_recent_commit(self, set_pending_mock):
@@ -341,7 +330,6 @@ class GithubWebhookHandlerTests(APITestCase):
             on_a_pull_request=False
         )
 
-    @pytest.mark.xfail
     @patch('redis.Redis.sismember', lambda x, y, z: False)
     @patch('services.task.TaskService.status_set_pending')
     def test_push_doesnt_trigger_task_if_repo_not_part_of_beta_set(self, set_pending_mock):
@@ -363,7 +351,6 @@ class GithubWebhookHandlerTests(APITestCase):
 
         set_pending_mock.assert_not_called()
 
-    @pytest.mark.xfail
     @patch('redis.Redis.sismember', lambda x, y, z: True)
     @patch('services.task.TaskService.status_set_pending')
     def test_push_doesnt_trigger_task_if_ci_skipped(self, set_pending_mock):
@@ -386,7 +373,6 @@ class GithubWebhookHandlerTests(APITestCase):
         assert response.data == "CI Skipped"
         set_pending_mock.assert_not_called()
 
-    @pytest.mark.xfail
     def test_status_exits_early_if_repo_not_active(self):
         self.repo.active = False
         self.repo.save()
@@ -403,7 +389,6 @@ class GithubWebhookHandlerTests(APITestCase):
         assert response.status_code == status.HTTP_200_OK
         assert response.data == WebhookHandlerErrorMessages.SKIP_NOT_ACTIVE
 
-    @pytest.mark.xfail
     def test_status_exits_early_for_codecov_statuses(self):
         response = self._post_event_data(
             event=GitHubWebhookEvents.STATUS,
@@ -418,7 +403,6 @@ class GithubWebhookHandlerTests(APITestCase):
         assert response.status_code == status.HTTP_200_OK
         assert response.data == WebhookHandlerErrorMessages.SKIP_CODECOV_STATUS
 
-    @pytest.mark.xfail
     def test_status_exits_early_for_pending_statuses(self):
         response = self._post_event_data(
             event=GitHubWebhookEvents.STATUS,
@@ -433,7 +417,6 @@ class GithubWebhookHandlerTests(APITestCase):
         assert response.status_code == status.HTTP_200_OK
         assert response.data == WebhookHandlerErrorMessages.SKIP_PENDING_STATUSES
 
-    @pytest.mark.xfail
     def test_status_exits_early_if_commit_not_complete(self):
         response = self._post_event_data(
             event=GitHubWebhookEvents.STATUS,
@@ -448,7 +431,6 @@ class GithubWebhookHandlerTests(APITestCase):
         assert response.status_code == status.HTTP_200_OK
         assert response.data == WebhookHandlerErrorMessages.SKIP_PROCESSING
 
-    @pytest.mark.xfail
     @patch('services.task.TaskService.notify')
     def test_status_triggers_notify_task(self, notify_mock):
         commit = CommitFactory(repository=self.repo)
@@ -465,7 +447,6 @@ class GithubWebhookHandlerTests(APITestCase):
         assert response.status_code == status.HTTP_200_OK
         notify_mock.assert_called_once_with(repoid=self.repo.repoid, commitid=commit.commitid)
 
-    @pytest.mark.xfail
     def test_pull_request_exits_early_if_repo_not_active(self):
         self.repo.active = False
         self.repo.save()
@@ -482,7 +463,6 @@ class GithubWebhookHandlerTests(APITestCase):
         assert response.status_code == status.HTTP_200_OK
         assert response.data == WebhookHandlerErrorMessages.SKIP_NOT_ACTIVE
 
-    @pytest.mark.xfail
     @patch('services.task.TaskService.pulls_sync')
     def test_pull_request_triggers_pulls_sync_task_for_valid_actions(self, pulls_sync_mock):
         pull = PullFactory(repository=self.repo)
@@ -503,8 +483,6 @@ class GithubWebhookHandlerTests(APITestCase):
 
         pulls_sync_mock.assert_has_calls([call(repoid=self.repo.repoid, pullid=pull.pullid)] * len(valid_actions))
 
-
-    @pytest.mark.xfail
     def test_pull_request_updates_title_if_edited(self):
         pull = PullFactory(repository=self.repo)
         new_title = "brand new dang title"
@@ -527,7 +505,6 @@ class GithubWebhookHandlerTests(APITestCase):
         pull.refresh_from_db()
         assert pull.title == new_title
 
-    @pytest.mark.xfail
     @patch('services.task.TaskService.refresh', lambda self, ownerid, username, sync_teams, sync_repos, using_integration: None)
     def test_installation_events_creates_new_owner_if_dne(self):
         username, service_id = 'newuser', 123456
@@ -560,7 +537,6 @@ class GithubWebhookHandlerTests(APITestCase):
             # clear to check next event also creates
             owner.delete()
 
-    @pytest.mark.xfail
     def test_installation_events_with_deleted_action_nulls_values(self):
         # Should set integration_id to null for owner,
         # and set using_integration=False and bot=null for repos
@@ -605,7 +581,6 @@ class GithubWebhookHandlerTests(APITestCase):
             assert repo1.bot == None
             assert repo2.bot == None
 
-    @pytest.mark.xfail
     @patch('services.task.TaskService.refresh', lambda self, ownerid, username, sync_teams, sync_repos, using_integration: None)
     def test_installation_events_with_other_actions_sets_owner_itegration_id_if_none(self):
         integration_id = 44
@@ -636,7 +611,6 @@ class GithubWebhookHandlerTests(APITestCase):
 
             assert owner.integration_id == integration_id
 
-    @pytest.mark.xfail
     @patch('services.task.TaskService.refresh')
     def test_installation_events_trigger_refresh_with_other_actions(self, refresh_mock):
         owner = OwnerFactory(service="github")
@@ -762,7 +736,6 @@ class GithubWebhookHandlerTests(APITestCase):
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    @pytest.mark.xfail
     @patch('services.task.TaskService.sync_plans')
     def test_marketplace_subscription_triggers_sync_plans_task(self, sync_plans_mock):
         sender = {
@@ -802,7 +775,6 @@ class GithubWebhookHandlerTests(APITestCase):
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    @pytest.mark.xfail
     @patch('webhook_handlers.views.github.get_config')
     def test_signature_validation_with_string_key(self, get_config_mock):
         # make get_config return string
@@ -810,7 +782,6 @@ class GithubWebhookHandlerTests(APITestCase):
         response = self._post_event_data(event='', data={})
         assert response.status_code == status.HTTP_200_OK
 
-    @pytest.mark.xfail
     def test_member_removes_repo_permissions_if_member_removed(self):
         member = OwnerFactory(permission=[self.repo.repoid], service_id=6098)
         response = self._post_event_data(
@@ -829,7 +800,6 @@ class GithubWebhookHandlerTests(APITestCase):
         member.refresh_from_db()
         assert self.repo.repoid not in member.permission
 
-    @pytest.mark.xfail
     def test_member_doesnt_crash_if_member_permission_array_is_None(self):
         member = OwnerFactory(permission=None, service_id=6098)
         response = self._post_event_data(
@@ -845,7 +815,6 @@ class GithubWebhookHandlerTests(APITestCase):
             }
         )
 
-    @pytest.mark.xfail
     def test_member_doesnt_crash_if_member_didnt_have_permission(self):
         member = OwnerFactory(permission=[self.repo.service_id + 1], service_id=6098)
         response = self._post_event_data(
@@ -861,7 +830,6 @@ class GithubWebhookHandlerTests(APITestCase):
             }
         )
 
-    @pytest.mark.xfail
     def test_member_doesnt_crash_if_member_dne(self):
         response = self._post_event_data(
             event=GitHubWebhookEvents.MEMBER,
@@ -878,7 +846,6 @@ class GithubWebhookHandlerTests(APITestCase):
 
         assert response.status_code == 404
 
-    @pytest.mark.xfail
     def test_returns_404_if_repo_not_found(self):
         response = self._post_event_data(
             event=GitHubWebhookEvents.REPOSITORY,
@@ -892,7 +859,6 @@ class GithubWebhookHandlerTests(APITestCase):
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    @pytest.mark.xfail
     @patch("services.segment.SegmentService.account_installed_source_control_service_app")
     def test_installing_app_triggers_segment(self, segment_install_mock):
         owner = OwnerFactory()
@@ -915,7 +881,6 @@ class GithubWebhookHandlerTests(APITestCase):
 
         segment_install_mock.assert_called_once_with(owner.ownerid, owner.ownerid, {"platform": "github"})
 
-    @pytest.mark.xfail
     @patch("services.segment.SegmentService.account_uninstalled_source_control_service_app")
     def test_installing_app_triggers_segment(self, segment_uninstall_mock):
         owner = OwnerFactory()
@@ -938,7 +903,6 @@ class GithubWebhookHandlerTests(APITestCase):
 
         segment_uninstall_mock.assert_called_once_with(owner.ownerid, owner.ownerid, {"platform": "github"})
 
-    @pytest.mark.xfail
     def test_repo_not_found_when_owner_has_integration_creates_repo(self):
         owner = OwnerFactory(integration_id=4850403, service_id=97968493)
         response = self._post_event_data(
@@ -959,7 +923,6 @@ class GithubWebhookHandlerTests(APITestCase):
 
         assert owner.repository_set.filter(name="testrepo").exists()
 
-    @pytest.mark.xfail
     def test_repo_creation_doesnt_crash_for_forked_repo(self):
         owner = OwnerFactory(integration_id=4850403, service_id=97968493)
         response = self._post_event_data(
