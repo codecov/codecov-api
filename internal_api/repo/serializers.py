@@ -15,19 +15,21 @@ class RepoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Repository
-        fields = (
+        read_only_fields = (
             'repoid',
             'service_id',
             'name',
-            'branch',
             'private',
             'updatestamp',
             'author',
-            'active',
             'language',
-            "hookid",
-            "activated",
-            "using_integration",
+            'hookid',
+            'using_integration',
+        )
+        fields = read_only_fields + (
+            'branch',
+            'active',
+            'activated',
         )
 
 
@@ -53,16 +55,18 @@ class RepoDetailsSerializer(RepoSerializer):
     can_edit = serializers.SerializerMethodField()
 
     class Meta(RepoSerializer.Meta):
-        fields = (
+        read_only_fields = (
             'fork',
             'upload_token',
+            'yaml',
+            'image_token',
+        ) + RepoSerializer.Meta.read_only_fields
+        fields = (
             'can_edit',
             'can_view',
             'latest_commit',
-            'yaml',
-            'image_token',
             'bot'
-        ) + RepoSerializer.Meta.fields
+        ) + RepoSerializer.Meta.fields + read_only_fields
 
     def get_bot(self, repo):
         if repo.bot:
