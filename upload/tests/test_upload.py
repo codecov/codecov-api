@@ -2403,6 +2403,44 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
 
         assert TokenlessUploadHandler('github_actions', params).verify_upload() == 'github'
 
+    @patch('upload.tokenless.github_actions.TokenlessGithubActionsHandler.get_build', new_callable=PropertyMock)
+    def test_github_actions_in_progress(self, mock_get):
+        expected_response = {
+            "commit_sha": "c739768fcac68144a3a6d82305b9c4106934d31a",
+            "slug": "owner/repo",
+            "public": True,
+            "status": "in_progress",
+        }
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.return_value = expected_response
+
+        params = {
+            "build": "12.34",
+            "owner": "owner",
+            "repo": "repo",
+            "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
+        }
+        assert TokenlessUploadHandler('github_actions', params).verify_upload() == 'github'
+
+    @patch('upload.tokenless.github_actions.TokenlessGithubActionsHandler.get_build', new_callable=PropertyMock)
+    def test_github_actions_queued(self, mock_get):
+        expected_response = {
+            "commit_sha": "c739768fcac68144a3a6d82305b9c4106934d31a",
+            "slug": "owner/repo",
+            "public": True,
+            "status": "queued",
+        }
+        mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.return_value = expected_response
+
+        params = {
+            "build": "12.34",
+            "owner": "owner",
+            "repo": "repo",
+            "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
+        }
+        assert TokenlessUploadHandler('github_actions', params).verify_upload() == 'github'
+
     @patch('upload.tokenless.cirrus.TokenlessCirrusHandler.get_build', new_callable=PropertyMock)
     def test_cirrus_ci(self, mock_get):
         expected_response = {

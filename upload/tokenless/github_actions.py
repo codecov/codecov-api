@@ -76,7 +76,7 @@ class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
                 raise NotFound("Repository slug or commit sha do not match Github actions build. Please upload with the Codecov repository upload token to resolve issue.")
 
         # Check if current status is correct (not stale or in progress)
-        if build.get('status') != 'in_progress':
+        if build.get('status') not in ['in_progress', 'queued']:
             # Verify workflow finished within the last 4 minutes because it's not in-progress
             try:
                 build_finish_date_obj = datetime.strptime(build['finish_time'], '%Y-%m-%dT%H:%M:%SZ')
