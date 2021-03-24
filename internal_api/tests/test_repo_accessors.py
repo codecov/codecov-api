@@ -23,6 +23,12 @@ class RepositoryAccessorsTestCase(TestCase):
 
         self.client.force_login(user=self.user)
 
+    def test_get_repo_permissions_when_author(self):
+        user = OwnerFactory(username='myself', service='github')
+        repo = RepositoryFactory(author=user, active=True, private=True, name='A')
+        can_view, can_edit = RepoAccessors().get_repo_permissions(user, repo)
+        assert (can_view, can_edit) == (True, True)
+
     def test_get_repo_details_if_exists(self):
         repo = RepoAccessors.get_repo_details(self, self.user, self.repo1.name, self.org.username, self.org.service)
         self.assertEqual(repo, self.repo1)
