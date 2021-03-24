@@ -130,8 +130,7 @@ class SegmentOwner:
             "bot": self.owner.bot or False,
             "delinquent": self.owner.delinquent or False,
             "did_trial": self.owner.did_trial or False,
-            "private_access": self.owner.private_access
-            or True,  # this should default to true if null at the database level, but populate a default here just in case
+            "private_access": self.owner.private_access or False,
             "plan_provider": self.owner.plan_provider or "",
             "plan_user_count": self.owner.plan_user_count or 5,
             # Set ms to 0 on dates to match date format required by Salesforce

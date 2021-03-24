@@ -95,7 +95,7 @@ class SegmentOwnerTests(TestCase):
             else "",
             "service": segment_owner_missing_traits.owner.service,
             "service_id": segment_owner_missing_traits.owner.service_id,
-            "private_access": True,
+            "private_access": False,
             "plan": segment_owner_missing_traits.owner.plan,
             "plan_provider": "",
             "plan_user_count": 5,
