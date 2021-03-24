@@ -1,6 +1,7 @@
 class GraphQLTestHelper:
 
-    def gql_request(self, url, query):
+    def gql_request(self, query, provider = 'gh'):
+        url = f'/graphql/{provider}'
         response = self.client.post(url, {
             "query": query
         }, content_type="application/json")

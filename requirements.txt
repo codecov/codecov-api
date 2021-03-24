@@ -8,9 +8,7 @@ amqp==2.6.1
     # via kombu
 analytics-python==1.3.0b1
     # via shared
-aniso8601==8.1.1
-    # via graphene
-git+git://github.com/mirumee/ariadne.git@a732a7cbb60e38977c37bea666acc554b47548e1
+ariadne==0.13.0
     # via -r requirements.in
 asgiref==3.3.1
     # via django
@@ -74,7 +72,6 @@ django==3.1.6
     #   django-cors-headers
     #   django-filter
     #   djangorestframework
-    #   graphene-django
 djangorestframework==3.12.2
     # via -r requirements.in
 docutils==0.15.2
@@ -103,18 +100,8 @@ google-resumable-media==1.0.0
     # via google-cloud-storage
 googleapis-common-protos==1.52.0
     # via google-api-core
-git+git://github.com/graphql-python/graphene-django@fe66b48d38a01e6a3acd8f870a6b5bc4e49381fd
-    # via -r requirements.in
-graphene==3.0b7
-    # via graphene-django
 graphql-core==3.1.3
-    # via
-    #   ariadne
-    #   graphene
-    #   graphene-django
-    #   graphql-relay
-graphql-relay==3.1.0
-    # via graphene
+    # via ariadne
 gunicorn==20.0.4
     # via -r requirements.in
 h11==0.12.0
@@ -165,8 +152,6 @@ packaging==20.9
     # via pytest
 pluggy==0.13.1
     # via pytest
-promise==2.3
-    # via graphene-django
 protobuf==3.13.0
     # via
     #   ddtrace
@@ -255,7 +240,6 @@ six==1.15.0
     #   google-api-core
     #   google-auth
     #   google-resumable-media
-    #   promise
     #   protobuf
     #   python-dateutil
     #   shared
@@ -278,9 +262,7 @@ stripe==2.55.2
 tenacity==6.2.0
     # via ddtrace
 text-unidecode==1.3
-    # via
-    #   faker
-    #   graphene-django
+    # via faker
 tlslite-ng==0.7.5
     # via
     #   -r requirements.in
@@ -292,7 +274,6 @@ tornado==6.0.4
 typing-extensions==3.7.4.3
     # via
     #   ariadne
-    #   graphql-relay
     #   importlib-metadata
     #   yarl
 urllib3==1.25.10
