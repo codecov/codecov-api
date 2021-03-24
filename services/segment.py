@@ -135,8 +135,12 @@ class SegmentOwner:
             "plan_provider": self.owner.plan_provider or "",
             "plan_user_count": self.owner.plan_user_count or 5,
             # Set ms to 0 on dates to match date format required by Salesforce
-            "createdAt": self.owner.createstamp.replace(microsecond=0),
-            "updatedAt": self.owner.updatestamp.replace(microsecond=0),
+            "createdAt": self.owner.createstamp.replace(microsecond=0)
+            if self.owner.createstamp
+            else "",
+            "updatedAt": self.owner.updatestamp.replace(microsecond=0)
+            if self.owner.updatestamp
+            else "",
             "student_created_at": self.owner.student_created_at.replace(microsecond=0)
             if self.owner.student_created_at
             else "",
