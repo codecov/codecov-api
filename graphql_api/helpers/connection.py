@@ -28,11 +28,11 @@ def queryset_to_connection(queryset, ordering, first=None, after=None, last=None
                 "node": repository,
             } for pos, repository in enumerate(page)
         ],
-        "totalCount": queryset.count(),
-        "pageInfo": {
-            "hasNextPage": page.has_next,
-            "hasPreviousPage": page.has_previous,
-            "startCursor": paginator.cursor(page[0]) if len(page) > 0 else None,
-            "endCursor": paginator.cursor(page[-1]) if len(page) > 0 else None,
+        "total_count": queryset.count(),
+        "page_info": {
+            "has_next_page": page.has_next,
+            "has_previous_page": page.has_previous,
+            "start_cursor": paginator.cursor(page[0]) if len(page) > 0 else None,
+            "end_cursor": paginator.cursor(page[-1]) if len(page) > 0 else None,
         }
     }
