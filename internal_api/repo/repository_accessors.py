@@ -28,6 +28,8 @@ class RepoAccessors:
         :param org_name:
         :return:
         """
+        if user == repo.author:
+            return True, True
         return asyncio.run(
             RepoProviderService().get_adapter(
                 user=user,
