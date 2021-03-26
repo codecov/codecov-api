@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "core",
     "codecov_auth",
+    "reports",
     "internal_api",
     "graphql_api",
 ]

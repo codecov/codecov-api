@@ -106,6 +106,7 @@ class Commit(models.Model):
         ERROR = "error"
         SKIPPED = "skipped"
 
+    id = models.BigAutoField(primary_key=True)
     commitid = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
     updatestamp = models.DateTimeField(auto_now=True)
@@ -169,5 +170,39 @@ class Pull(models.Model):
     flare = models.JSONField(null=True)
 
     class Meta:
-        db_table = "pulls"
-        ordering = ["-pullid"]
+        db_table = 'pulls'
+        ordering = ['-pullid']
+
+
+class CommitNotification(models.Model):
+    class NotificationTypes(models.TextChoices):
+        COMMENT = 'comment'
+        GITTER = 'gitter'
+        HIPCHAT = 'hipchat'
+        IRC = 'irc'
+        SLACK = 'slack'
+        STATUS_CHANGES = 'status_changes'
+        STATUS_PATCH = 'status_patch'
+        STATUS_PROJECT = 'status_project'
+        WEBHOOK = 'webhook'
+
+    class DecorationTypes(models.TextChoices):
+        STANDARD = 'standard'
+        UPGRADE = 'upgrade'
+
+    class States(models.TextChoices):
+        PENDING = 'pending'
+        SUCCESS = 'success'
+        ERROR = 'error'
+
+    id = models.BigAutoField(primary_key=True)
+    commit = models.ForeignKey('core.Commit', on_delete=models.CASCADE, related_name='notifications')
+    notification_type = models.CharField(max_length=32, choices=NotificationTypes.choices)
+    decoration_type = models.CharField(max_length=32, choices=DecorationTypes.choices, null=True)
+    state = models.CharField(max_length=32, choices=States.choices, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now_add=True)
+    state = models.CharField(max_length=32, null=True)
+
+    class Meta:
+        db_table = 'commit_notifications'
