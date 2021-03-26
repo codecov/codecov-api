@@ -140,14 +140,18 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
     checkout_session_id = serializers.SerializerMethodField()
     subscription_detail = serializers.SerializerMethodField()
     root_organization = RootOrganizationSerializer()
-
+    
     class Meta:
         model = Owner
-        fields = (
+
+        read_only_fields = (
+            'integration_id',
+        )
+
+        fields = read_only_fields + (
             'activated_user_count',
             'inactive_user_count',
             'plan_auto_activate',
-            'integration_id',
             'plan',
             'subscription_detail',
             'checkout_session_id',
@@ -158,7 +162,7 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
             'plan_provider',
             'root_organization',
             'activated_student_count',
-            'student_count'
+            'student_count',
         )
 
     def _get_billing(self):
