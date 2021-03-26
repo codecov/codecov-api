@@ -78,14 +78,14 @@ class CommitSerializer(serializers.ModelSerializer):
     class Meta:
         model = Commit
         fields = (
-            'commitid',
-            'message',
-            'timestamp',
-            'ci_passed',
-            'author',
-            'branch',
-            'totals',
-            'state',
+            "commitid",
+            "message",
+            "timestamp",
+            "ci_passed",
+            "author",
+            "branch",
+            "totals",
+            "state",
         )
 
 
@@ -99,13 +99,13 @@ class CommitWithFileLevelReportSerializer(CommitSerializer):
             "files": [
                 {
                     "name": file_name,
-                    "totals": CommitTotalsSerializer({
-                        key: val for key, val in zip(TOTALS_MAP, totals[1])
-                    }).data
+                    "totals": CommitTotalsSerializer(
+                        {key: val for key, val in zip(TOTALS_MAP, totals[1])}
+                    ).data,
                 }
                 for file_name, totals in obj.report["files"].items()
             ],
-            "totals": CommitTotalsSerializer(obj.totals).data
+            "totals": CommitTotalsSerializer(obj.totals).data,
         }
 
     class Meta:

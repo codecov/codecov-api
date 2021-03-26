@@ -6,19 +6,19 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0006_repository_bot'),
+        ("core", "0006_repository_bot"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='repository',
-            name='hookid',
-            field=models.TextField(default=''),
+            model_name="repository",
+            name="hookid",
+            field=models.TextField(default=""),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='repository',
-            name='using_integration',
+            model_name="repository",
+            name="using_integration",
             field=models.BooleanField(default=False),
             preserve_default=False,
         ),

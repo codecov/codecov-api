@@ -31,12 +31,14 @@ from utils.config import get_config
 
 log = logging.getLogger(__name__)
 
+
 class PlainTextRenderer(renderers.BaseRenderer):
-    media_type = 'text/plain'
-    format = 'txt'
+    media_type = "text/plain"
+    format = "txt"
 
     def render(self, data, media_type=None, renderer_context=None):
         return smart_text(data, encoding=self.charset)
+
 
 class UploadHandler(APIView):
     permission_classes = [AllowAny]
@@ -213,7 +215,9 @@ class UploadHandler(APIView):
             )
 
             try:
-                upload_url = archive_service.create_raw_upload_presigned_put(commit_sha=commitid, filename='{}.txt'.format(reportid))
+                upload_url = archive_service.create_raw_upload_presigned_put(
+                    commit_sha=commitid, filename="{}.txt".format(reportid)
+                )
             except Exception as e:
                 log.error(
                     f"Error generating minio presign put {e}",
@@ -273,11 +277,13 @@ class UploadHandler(APIView):
 
         # Segment Tracking
         segment_upload_data = upload_params.copy()
-        segment_upload_data['repository_id'] = repository.repoid
-        segment_upload_data['repository_name'] = repository.name
-        segment_upload_data['version'] = version
-        segment_upload_data['userid_type'] = 'org'
-        SegmentService().account_uploaded_coverage_report(owner.ownerid, segment_upload_data)
+        segment_upload_data["repository_id"] = repository.repoid
+        segment_upload_data["repository_name"] = repository.name
+        segment_upload_data["version"] = version
+        segment_upload_data["userid_type"] = "org"
+        SegmentService().account_uploaded_coverage_report(
+            owner.ownerid, segment_upload_data
+        )
 
         if version == "v4":
             response["Content-Type"] = "text/plain"

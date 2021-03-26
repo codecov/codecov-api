@@ -19,7 +19,7 @@ from codecov_auth.constants import (
     GRAVATAR_BASE_URL,
     AVATARIO_BASE_URL,
     USER_PLAN_REPRESENTATIONS,
-    FREE_PLAN_NAME
+    FREE_PLAN_NAME,
 )
 
 from codecov_auth.helpers import get_gitlab_url
@@ -54,7 +54,7 @@ class Service(Enum):
 class Owner(models.Model):
     class Meta:
         db_table = "owners"
-        ordering = ['ownerid']
+        ordering = ["ownerid"]
 
     REQUIRED_FIELDS = []
     USERNAME_FIELD = "username"
@@ -75,7 +75,9 @@ class Owner(models.Model):
     staff = models.BooleanField(null=True, default=False)
     cache = models.JSONField(null=True)
     plan = models.TextField(null=True, default=FREE_PLAN_NAME)
-    plan_provider = models.CharField(null=True, max_length=10) # postgres enum containing only "github"
+    plan_provider = models.CharField(
+        null=True, max_length=10
+    )  # postgres enum containing only "github"
     plan_user_count = models.SmallIntegerField(null=True, default=5)
     plan_auto_activate = models.BooleanField(null=True, default=True)
     plan_activated_users = ArrayField(models.IntegerField(null=True), null=True)
@@ -123,17 +125,20 @@ class Owner(models.Model):
         if it exists, otherwise iterating through the parents and caches it in root_parent_service_id
         """
         if self.root_parent_service_id:
-            return Owner.objects.get(service_id=self.root_parent_service_id, service=self.service)
+            return Owner.objects.get(
+                service_id=self.root_parent_service_id, service=self.service
+            )
 
         root = None
         if self.service == "gitlab" and self.parent_service_id:
             root = self
             while root.parent_service_id is not None:
-                root = Owner.objects.get(service_id=root.parent_service_id, service=root.service)
+                root = Owner.objects.get(
+                    service_id=root.parent_service_id, service=root.service
+                )
             self.root_parent_service_id = root.service_id
             self.save()
         return root
-
 
     @property
     def nb_active_private_repos(self):
@@ -184,7 +189,9 @@ class Owner(models.Model):
     @property
     def inactive_user_count(self):
         return (
-            Owner.objects.filter(organizations__contains=[self.ownerid], student=False).count()
+            Owner.objects.filter(
+                organizations__contains=[self.ownerid], student=False
+            ).count()
             - self.activated_user_count
         )
 
@@ -346,7 +353,7 @@ class Owner(models.Model):
 class Session(models.Model):
     class Meta:
         db_table = "sessions"
-        ordering = ['-lastseen']
+        ordering = ["-lastseen"]
 
     class SessionType:
         API = "api"

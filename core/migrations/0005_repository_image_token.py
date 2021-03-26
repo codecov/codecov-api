@@ -7,13 +7,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0004_auto_20190930_2341'),
+        ("core", "0004_auto_20190930_2341"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='repository',
-            name='image_token',
+            model_name="repository",
+            name="image_token",
             field=models.CharField(default=core.models._gen_image_token, max_length=10),
         ),
     ]

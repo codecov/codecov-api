@@ -4,8 +4,8 @@ from rest_framework import status
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory, BranchFactory, CommitFactory
 
-class TestBadgeHandler(APITestCase):
 
+class TestBadgeHandler(APITestCase):
     def _get(self, kwargs={}, data={}):
         path = f"/{kwargs.get('service')}/{kwargs.get('owner_username')}/{kwargs.get('repo_name')}/graphs/badge.{kwargs.get('ext')}"
         return self.client.get(path, data=data)
@@ -17,37 +17,40 @@ class TestBadgeHandler(APITestCase):
     def test_invalid_precision(self):
         response = self._get(
             kwargs={
-                'service': 'gh',
-                'owner_username': 'user',
-                'repo_name': 'repo',
-                'ext': 'svg'
+                "service": "gh",
+                "owner_username": "user",
+                "repo_name": "repo",
+                "ext": "svg",
             },
-            data={
-                'precision': '3'
-            }
+            data={"precision": "3"},
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert response.data['detail'] == "Coverage precision should be one of [ 0 || 1 || 2 ]"
+        assert (
+            response.data["detail"]
+            == "Coverage precision should be one of [ 0 || 1 || 2 ]"
+        )
 
     def test_invalid_extension(self):
         response = self._get(
             kwargs={
-                'service': 'gh',
-                'owner_username': 'user',
-                'repo_name': 'repo',
-                'ext': 'png'
+                "service": "gh",
+                "owner_username": "user",
+                "repo_name": "repo",
+                "ext": "png",
             }
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert response.data['detail'] == "File extension should be one of [ svg || txt ]"
+        assert (
+            response.data["detail"] == "File extension should be one of [ svg || txt ]"
+        )
 
     def test_unknown_bagde_incorrect_service(self):
         response = self._get(
             kwargs={
-                'service': 'gih',
-                'owner_username': 'user',
-                'repo_name': 'repo',
-                'ext': 'svg'
+                "service": "gih",
+                "owner_username": "user",
+                "repo_name": "repo",
+                "ext": "svg",
             }
         )
         expected_badge = """<svg xmlns="http://www.w3.org/2000/svg" width="137" height="20">
@@ -75,18 +78,18 @@ class TestBadgeHandler(APITestCase):
             </svg>
         """
         badge = response.content.decode("utf-8")
-        badge = [line.strip() for line in badge.split('\n')]
-        expected_badge = [line.strip() for line in expected_badge.split('\n')]
+        badge = [line.strip() for line in badge.split("\n")]
+        expected_badge = [line.strip() for line in expected_badge.split("\n")]
         assert expected_badge == badge
         assert response.status_code == status.HTTP_200_OK
 
     def test_unknown_bagde_incorrect_owner(self):
         response = self._get(
             kwargs={
-                'service': 'gh',
-                'owner_username': 'user1233',
-                'repo_name': 'repo',
-                'ext': 'svg'
+                "service": "gh",
+                "owner_username": "user1233",
+                "repo_name": "repo",
+                "ext": "svg",
             }
         )
         expected_badge = """<svg xmlns="http://www.w3.org/2000/svg" width="137" height="20">
@@ -114,19 +117,19 @@ class TestBadgeHandler(APITestCase):
             </svg>
         """
         badge = response.content.decode("utf-8")
-        badge = [line.strip() for line in badge.split('\n')]
-        expected_badge = [line.strip() for line in expected_badge.split('\n')]
+        badge = [line.strip() for line in badge.split("\n")]
+        expected_badge = [line.strip() for line in expected_badge.split("\n")]
         assert expected_badge == badge
         assert response.status_code == status.HTTP_200_OK
 
     def test_unknown_bagde_incorrect_repo(self):
-        gh_owner = OwnerFactory(service='github')
+        gh_owner = OwnerFactory(service="github")
         response = self._get(
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo',
-                'ext': 'svg'
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo",
+                "ext": "svg",
             }
         )
         expected_badge = """<svg xmlns="http://www.w3.org/2000/svg" width="137" height="20">
@@ -154,20 +157,22 @@ class TestBadgeHandler(APITestCase):
             </svg>
         """
         badge = response.content.decode("utf-8")
-        badge = [line.strip() for line in badge.split('\n')]
-        expected_badge = [line.strip() for line in expected_badge.split('\n')]
+        badge = [line.strip() for line in badge.split("\n")]
+        expected_badge = [line.strip() for line in expected_badge.split("\n")]
         assert expected_badge == badge
         assert response.status_code == status.HTTP_200_OK
 
     def test_unknown_bagde_no_branch(self):
-        gh_owner = OwnerFactory(service='github')
-        repo = RepositoryFactory(author=gh_owner, active=True, private=False, name='repo1' )
+        gh_owner = OwnerFactory(service="github")
+        repo = RepositoryFactory(
+            author=gh_owner, active=True, private=False, name="repo1"
+        )
         response = self._get(
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo1',
-                'ext': 'svg'
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "svg",
             }
         )
         expected_badge = """<svg xmlns="http://www.w3.org/2000/svg" width="137" height="20">
@@ -195,21 +200,23 @@ class TestBadgeHandler(APITestCase):
             </svg>
         """
         badge = response.content.decode("utf-8")
-        badge = [line.strip() for line in badge.split('\n')]
-        expected_badge = [line.strip() for line in expected_badge.split('\n')]
+        badge = [line.strip() for line in badge.split("\n")]
+        expected_badge = [line.strip() for line in expected_badge.split("\n")]
         assert expected_badge == badge
         assert response.status_code == status.HTTP_200_OK
 
     def test_unknown_bagde_no_commit(self):
-        gh_owner = OwnerFactory(service='github')
-        repo = RepositoryFactory(author=gh_owner, active=True, private=False, name='repo1' )
+        gh_owner = OwnerFactory(service="github")
+        repo = RepositoryFactory(
+            author=gh_owner, active=True, private=False, name="repo1"
+        )
         branch = BranchFactory(repository=repo, name="master")
         response = self._get(
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo1',
-                'ext': 'svg'
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "svg",
             }
         )
         expected_badge = """<svg xmlns="http://www.w3.org/2000/svg" width="137" height="20">
@@ -237,22 +244,24 @@ class TestBadgeHandler(APITestCase):
             </svg>
         """
         badge = response.content.decode("utf-8")
-        badge = [line.strip() for line in badge.split('\n')]
-        expected_badge = [line.strip() for line in expected_badge.split('\n')]
+        badge = [line.strip() for line in badge.split("\n")]
+        expected_badge = [line.strip() for line in expected_badge.split("\n")]
         assert expected_badge == badge
         assert response.status_code == status.HTTP_200_OK
 
     def test_unknown_bagde_no_totals(self):
-        gh_owner = OwnerFactory(service='github')
-        repo = RepositoryFactory(author=gh_owner, active=True, private=False, name='repo1' )
+        gh_owner = OwnerFactory(service="github")
+        repo = RepositoryFactory(
+            author=gh_owner, active=True, private=False, name="repo1"
+        )
         commit = CommitFactory(repository=repo, author=gh_owner, totals=None)
         branch = BranchFactory(repository=repo, name="master", head=commit.commitid)
         response = self._get(
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo1',
-                'ext': 'svg'
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "svg",
             }
         )
         expected_badge = """<svg xmlns="http://www.w3.org/2000/svg" width="137" height="20">
@@ -280,78 +289,78 @@ class TestBadgeHandler(APITestCase):
             </svg>
         """
         badge = response.content.decode("utf-8")
-        badge = [line.strip() for line in badge.split('\n')]
-        expected_badge = [line.strip() for line in expected_badge.split('\n')]
+        badge = [line.strip() for line in badge.split("\n")]
+        expected_badge = [line.strip() for line in expected_badge.split("\n")]
         assert expected_badge == badge
         assert response.status_code == status.HTTP_200_OK
 
     def test_text_badge(self):
-        gh_owner = OwnerFactory(service='github')
-        repo = RepositoryFactory(author=gh_owner, active=True, private=False, name='repo1' )
+        gh_owner = OwnerFactory(service="github")
+        repo = RepositoryFactory(
+            author=gh_owner, active=True, private=False, name="repo1"
+        )
         commit = CommitFactory(repository=repo, author=gh_owner)
         branch = BranchFactory(repository=repo, name="master", head=commit.commitid)
 
         # test default precision
         response = self._get(
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo1',
-                'ext': 'txt'
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "txt",
             }
         )
 
         badge = response.content.decode("utf-8")
-        assert badge == '85'
+        assert badge == "85"
         assert response.status_code == status.HTTP_200_OK
 
         # test precision = 1
         response = self._get(
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo1',
-                'ext': 'txt'
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "txt",
             },
-            data={
-                'precision': '1'
-            }
+            data={"precision": "1"},
         )
 
         badge = response.content.decode("utf-8")
-        assert badge == '85.0'
+        assert badge == "85.0"
         assert response.status_code == status.HTTP_200_OK
 
         # test precision = 1
         response = self._get(
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo1',
-                'ext': 'txt'
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "txt",
             },
-            data={
-                'precision': '2'
-            }
+            data={"precision": "2"},
         )
 
         badge = response.content.decode("utf-8")
-        assert badge == '85.00'
+        assert badge == "85.00"
         assert response.status_code == status.HTTP_200_OK
 
     def test_svg_badge(self):
-        gh_owner = OwnerFactory(service='github')
-        repo = RepositoryFactory(author=gh_owner, active=True, private=False, name='repo1' )
+        gh_owner = OwnerFactory(service="github")
+        repo = RepositoryFactory(
+            author=gh_owner, active=True, private=False, name="repo1"
+        )
         commit = CommitFactory(repository=repo, author=gh_owner)
         branch = BranchFactory(repository=repo, name="master", head=commit.commitid)
 
         # test default precision
         response = self._get(
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo1',
-                'ext': 'svg'
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "svg",
             }
         )
 
@@ -380,22 +389,20 @@ class TestBadgeHandler(APITestCase):
             </svg>"""
 
         badge = response.content.decode("utf-8")
-        badge = [line.strip() for line in badge.split('\n')]
-        expected_badge = [line.strip() for line in expected_badge.split('\n')]
+        badge = [line.strip() for line in badge.split("\n")]
+        expected_badge = [line.strip() for line in expected_badge.split("\n")]
         assert expected_badge == badge
         assert response.status_code == status.HTTP_200_OK
 
         # test precision = 1
         response = self._get(
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo1',
-                'ext': 'svg'
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "svg",
             },
-            data={
-                'precision': '1'
-            }
+            data={"precision": "1"},
         )
 
         expected_badge = """<svg xmlns="http://www.w3.org/2000/svg" width="122" height="20">
@@ -423,21 +430,19 @@ class TestBadgeHandler(APITestCase):
             </svg>"""
 
         badge = response.content.decode("utf-8")
-        badge = [line.strip() for line in badge.split('\n')]
-        expected_badge = [line.strip() for line in expected_badge.split('\n')]
+        badge = [line.strip() for line in badge.split("\n")]
+        expected_badge = [line.strip() for line in expected_badge.split("\n")]
         assert response.status_code == status.HTTP_200_OK
 
         # test precision = 1
         response = self._get(
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo1',
-                'ext': 'svg'
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "svg",
             },
-            data={
-                'precision': '2'
-            }
+            data={"precision": "2"},
         )
 
         expected_badge = """<svg xmlns="http://www.w3.org/2000/svg" width="132" height="20">
@@ -465,23 +470,29 @@ class TestBadgeHandler(APITestCase):
             </svg>"""
 
         badge = response.content.decode("utf-8")
-        badge = [line.strip() for line in badge.split('\n')]
-        expected_badge = [line.strip() for line in expected_badge.split('\n')]
+        badge = [line.strip() for line in badge.split("\n")]
+        expected_badge = [line.strip() for line in expected_badge.split("\n")]
         assert response.status_code == status.HTTP_200_OK
 
     def test_private_badge_no_token(self):
-        gh_owner = OwnerFactory(service='github')
-        repo = RepositoryFactory(author=gh_owner, active=True, private=True, name='repo1', image_token='12345678')
+        gh_owner = OwnerFactory(service="github")
+        repo = RepositoryFactory(
+            author=gh_owner,
+            active=True,
+            private=True,
+            name="repo1",
+            image_token="12345678",
+        )
         commit = CommitFactory(repository=repo, author=gh_owner)
         branch = BranchFactory(repository=repo, name="master", head=commit.commitid)
 
         # test default precision
         response = self._get(
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo1',
-                'ext': 'svg'
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "svg",
             }
         )
         expected_badge = """<svg xmlns="http://www.w3.org/2000/svg" width="137" height="20">
@@ -509,28 +520,32 @@ class TestBadgeHandler(APITestCase):
             </svg>
         """
         badge = response.content.decode("utf-8")
-        badge = [line.strip() for line in badge.split('\n')]
-        expected_badge = [line.strip() for line in expected_badge.split('\n')]
+        badge = [line.strip() for line in badge.split("\n")]
+        expected_badge = [line.strip() for line in expected_badge.split("\n")]
         assert expected_badge == badge
         assert response.status_code == status.HTTP_200_OK
 
     def test_private_badge(self):
-        gh_owner = OwnerFactory(service='github')
-        repo = RepositoryFactory(author=gh_owner, active=True, private=True, name='repo1', image_token='12345678')
+        gh_owner = OwnerFactory(service="github")
+        repo = RepositoryFactory(
+            author=gh_owner,
+            active=True,
+            private=True,
+            name="repo1",
+            image_token="12345678",
+        )
         commit = CommitFactory(repository=repo, author=gh_owner)
         branch = BranchFactory(repository=repo, name="master", head=commit.commitid)
 
         # test default precision
         response = self._get(
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo1',
-                'ext': 'svg'
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "svg",
             },
-            data={
-                'token': '12345678'
-            }
+            data={"token": "12345678"},
         )
         expected_badge = """<svg xmlns="http://www.w3.org/2000/svg" width="112" height="20">
                 <linearGradient id="b" x2="0" y2="100%">
@@ -556,45 +571,54 @@ class TestBadgeHandler(APITestCase):
                 </svg>
             </svg>"""
         badge = response.content.decode("utf-8")
-        badge = [line.strip() for line in badge.split('\n')]
-        expected_badge = [line.strip() for line in expected_badge.split('\n')]
+        badge = [line.strip() for line in badge.split("\n")]
+        expected_badge = [line.strip() for line in expected_badge.split("\n")]
         assert expected_badge == badge
         assert response.status_code == status.HTTP_200_OK
 
     def test_branch_badge(self):
-        gh_owner = OwnerFactory(service='github')
-        repo = RepositoryFactory(author=gh_owner, active=True, private=True, name='repo1', image_token='12345678', branch='branch1')
+        gh_owner = OwnerFactory(service="github")
+        repo = RepositoryFactory(
+            author=gh_owner,
+            active=True,
+            private=True,
+            name="repo1",
+            image_token="12345678",
+            branch="branch1",
+        )
         commit = CommitFactory(repository=repo, author=gh_owner)
         branch = BranchFactory(repository=repo, name="master", head=commit.commitid)
         commit_2_totals = {
-            'C': 0,
-            'M': 0,
-            'N': 0,
-            'b': 0,
-            'c': '95.00000',
-            'd': 0,
-            'diff': [1, 2, 1, 1, 0, '50.00000', 0, 0, 0, 0, 0, 0, 0],
-            'f': 3,
-            'h': 17,
-            'm': 3,
-            'n': 20,
-            'p': 0,
-            's': 1
+            "C": 0,
+            "M": 0,
+            "N": 0,
+            "b": 0,
+            "c": "95.00000",
+            "d": 0,
+            "diff": [1, 2, 1, 1, 0, "50.00000", 0, 0, 0, 0, 0, 0, 0],
+            "f": 3,
+            "h": 17,
+            "m": 3,
+            "n": 20,
+            "p": 0,
+            "s": 1,
         }
-        commit_2 = CommitFactory(repository=repo, author=gh_owner, totals=commit_2_totals)
-        branch_2 = BranchFactory(repository=repo, name="branch1", head=commit_2.commitid)
+        commit_2 = CommitFactory(
+            repository=repo, author=gh_owner, totals=commit_2_totals
+        )
+        branch_2 = BranchFactory(
+            repository=repo, name="branch1", head=commit_2.commitid
+        )
         # test default precision
         response = self._get_branch(
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo1',
-                'ext': 'svg',
-                'branch': 'branch1'
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "svg",
+                "branch": "branch1",
             },
-            data={
-                'token': '12345678'
-            }
+            data={"token": "12345678"},
         )
         expected_badge = """<svg xmlns="http://www.w3.org/2000/svg" width="112" height="20">
                 <linearGradient id="b" x2="0" y2="100%">
@@ -620,45 +644,54 @@ class TestBadgeHandler(APITestCase):
                 </svg>
             </svg>"""
         badge = response.content.decode("utf-8")
-        badge = [line.strip() for line in badge.split('\n')]
-        expected_badge = [line.strip() for line in expected_badge.split('\n')]
+        badge = [line.strip() for line in badge.split("\n")]
+        expected_badge = [line.strip() for line in expected_badge.split("\n")]
         assert expected_badge == badge
         assert response.status_code == status.HTTP_200_OK
 
     def test_branch_badge_with_slash(self):
-        gh_owner = OwnerFactory(service='github')
-        repo = RepositoryFactory(author=gh_owner, active=True, private=True, name='repo1', image_token='12345678', branch='branch1')
+        gh_owner = OwnerFactory(service="github")
+        repo = RepositoryFactory(
+            author=gh_owner,
+            active=True,
+            private=True,
+            name="repo1",
+            image_token="12345678",
+            branch="branch1",
+        )
         commit = CommitFactory(repository=repo, author=gh_owner)
         branch = BranchFactory(repository=repo, name="master", head=commit.commitid)
         commit_2_totals = {
-            'C': 0,
-            'M': 0,
-            'N': 0,
-            'b': 0,
-            'c': '95.00000',
-            'd': 0,
-            'diff': [1, 2, 1, 1, 0, '50.00000', 0, 0, 0, 0, 0, 0, 0],
-            'f': 3,
-            'h': 17,
-            'm': 3,
-            'n': 20,
-            'p': 0,
-            's': 1
+            "C": 0,
+            "M": 0,
+            "N": 0,
+            "b": 0,
+            "c": "95.00000",
+            "d": 0,
+            "diff": [1, 2, 1, 1, 0, "50.00000", 0, 0, 0, 0, 0, 0, 0],
+            "f": 3,
+            "h": 17,
+            "m": 3,
+            "n": 20,
+            "p": 0,
+            "s": 1,
         }
-        commit_2 = CommitFactory(repository=repo, author=gh_owner, totals=commit_2_totals)
-        branch_2 = BranchFactory(repository=repo, name="test/branch1", head=commit_2.commitid)
+        commit_2 = CommitFactory(
+            repository=repo, author=gh_owner, totals=commit_2_totals
+        )
+        branch_2 = BranchFactory(
+            repository=repo, name="test/branch1", head=commit_2.commitid
+        )
         # test default precision
         response = self._get_branch(
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo1',
-                'ext': 'svg',
-                'branch': 'test%2Fbranch1'
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "svg",
+                "branch": "test%2Fbranch1",
             },
-            data={
-                'token': '12345678'
-            }
+            data={"token": "12345678"},
         )
         expected_badge = """<svg xmlns="http://www.w3.org/2000/svg" width="112" height="20">
                 <linearGradient id="b" x2="0" y2="100%">
@@ -684,28 +717,30 @@ class TestBadgeHandler(APITestCase):
                 </svg>
             </svg>"""
         badge = response.content.decode("utf-8")
-        badge = [line.strip() for line in badge.split('\n')]
-        expected_badge = [line.strip() for line in expected_badge.split('\n')]
+        badge = [line.strip() for line in badge.split("\n")]
+        expected_badge = [line.strip() for line in expected_badge.split("\n")]
         assert expected_badge == badge
         assert response.status_code == status.HTTP_200_OK
 
     def test_flag_badge(self):
-        gh_owner = OwnerFactory(service='github')
-        repo = RepositoryFactory(author=gh_owner, active=True, private=False, name='repo1' )
+        gh_owner = OwnerFactory(service="github")
+        repo = RepositoryFactory(
+            author=gh_owner, active=True, private=False, name="repo1"
+        )
         report = {
-            'sessions': {
-                '0': {
-                    'N': None,
-                    'a': 'v4/raw/2019-01-10/4434BC2A2EC4FCA57F77B473D83F928C/abf6d4df662c47e32460020ab14abf9303581429/9ccc55a1-8b41-4bb1-a946-ee7a33a7fb56.txt',
-                    'c': None,
-                    'd': 1547084427,
-                    'e': None,
-                    'f': ['unittests'],
-                    'j': None,
-                    'n': None,
-                    'p': None,
-                    't': [3, 20, 17, 3, 0, '95.00000', 0, 0, 0, 0, 0, 0, 0],
-                    '': None
+            "sessions": {
+                "0": {
+                    "N": None,
+                    "a": "v4/raw/2019-01-10/4434BC2A2EC4FCA57F77B473D83F928C/abf6d4df662c47e32460020ab14abf9303581429/9ccc55a1-8b41-4bb1-a946-ee7a33a7fb56.txt",
+                    "c": None,
+                    "d": 1547084427,
+                    "e": None,
+                    "f": ["unittests"],
+                    "j": None,
+                    "n": None,
+                    "p": None,
+                    "t": [3, 20, 17, 3, 0, "95.00000", 0, 0, 0, 0, 0, 0, 0],
+                    "": None,
                 }
             }
         }
@@ -715,14 +750,12 @@ class TestBadgeHandler(APITestCase):
         # test default precision
         response = self._get(
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo1',
-                'ext': 'svg'
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "svg",
             },
-            data={
-                'flag': 'unittests'
-            }
+            data={"flag": "unittests"},
         )
 
         expected_badge = """<svg xmlns="http://www.w3.org/2000/svg" width="112" height="20">
@@ -750,28 +783,30 @@ class TestBadgeHandler(APITestCase):
             </svg>"""
 
         badge = response.content.decode("utf-8")
-        badge = [line.strip() for line in badge.split('\n')]
-        expected_badge = [line.strip() for line in expected_badge.split('\n')]
+        badge = [line.strip() for line in badge.split("\n")]
+        expected_badge = [line.strip() for line in expected_badge.split("\n")]
         assert expected_badge == badge
         assert response.status_code == status.HTTP_200_OK
 
     def test_none_flag_badge(self):
-        gh_owner = OwnerFactory(service='github')
-        repo = RepositoryFactory(author=gh_owner, active=True, private=False, name='repo1' )
+        gh_owner = OwnerFactory(service="github")
+        repo = RepositoryFactory(
+            author=gh_owner, active=True, private=False, name="repo1"
+        )
         report = {
-            'sessions': {
-                '0': {
-                    'N': None,
-                    'a': 'v4/raw/2019-01-10/4434BC2A2EC4FCA57F77B473D83F928C/abf6d4df662c47e32460020ab14abf9303581429/9ccc55a1-8b41-4bb1-a946-ee7a33a7fb56.txt',
-                    'c': None,
-                    'd': 1547084427,
-                    'e': None,
-                    'f': ['unittests'],
-                    'j': None,
-                    'n': None,
-                    'p': None,
-                    't': None,
-                    '': None
+            "sessions": {
+                "0": {
+                    "N": None,
+                    "a": "v4/raw/2019-01-10/4434BC2A2EC4FCA57F77B473D83F928C/abf6d4df662c47e32460020ab14abf9303581429/9ccc55a1-8b41-4bb1-a946-ee7a33a7fb56.txt",
+                    "c": None,
+                    "d": 1547084427,
+                    "e": None,
+                    "f": ["unittests"],
+                    "j": None,
+                    "n": None,
+                    "p": None,
+                    "t": None,
+                    "": None,
                 }
             }
         }
@@ -781,14 +816,12 @@ class TestBadgeHandler(APITestCase):
         # test default precision
         response = self._get(
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo1',
-                'ext': 'svg'
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "svg",
             },
-            data={
-                'flag': 'unittests'
-            }
+            data={"flag": "unittests"},
         )
 
         expected_badge = """<svg xmlns="http://www.w3.org/2000/svg" width="137" height="20">
@@ -817,28 +850,30 @@ class TestBadgeHandler(APITestCase):
         """
 
         badge = response.content.decode("utf-8")
-        badge = [line.strip() for line in badge.split('\n')]
-        expected_badge = [line.strip() for line in expected_badge.split('\n')]
+        badge = [line.strip() for line in badge.split("\n")]
+        expected_badge = [line.strip() for line in expected_badge.split("\n")]
         assert expected_badge == badge
         assert response.status_code == status.HTTP_200_OK
 
     def test_unknown_flag_badge(self):
-        gh_owner = OwnerFactory(service='github')
-        repo = RepositoryFactory(author=gh_owner, active=True, private=False, name='repo1' )
+        gh_owner = OwnerFactory(service="github")
+        repo = RepositoryFactory(
+            author=gh_owner, active=True, private=False, name="repo1"
+        )
         report = {
-            'sessions': {
-                '0': {
-                    'N': None,
-                    'a': 'v4/raw/2019-01-10/4434BC2A2EC4FCA57F77B473D83F928C/abf6d4df662c47e32460020ab14abf9303581429/9ccc55a1-8b41-4bb1-a946-ee7a33a7fb56.txt',
-                    'c': None,
-                    'd': 1547084427,
-                    'e': None,
-                    'f': None,
-                    'j': None,
-                    'n': None,
-                    'p': None,
-                    't': [3, 20, 17, 3, 0, '95.00000', 0, 0, 0, 0, 0, 0, 0],
-                    '': None
+            "sessions": {
+                "0": {
+                    "N": None,
+                    "a": "v4/raw/2019-01-10/4434BC2A2EC4FCA57F77B473D83F928C/abf6d4df662c47e32460020ab14abf9303581429/9ccc55a1-8b41-4bb1-a946-ee7a33a7fb56.txt",
+                    "c": None,
+                    "d": 1547084427,
+                    "e": None,
+                    "f": None,
+                    "j": None,
+                    "n": None,
+                    "p": None,
+                    "t": [3, 20, 17, 3, 0, "95.00000", 0, 0, 0, 0, 0, 0, 0],
+                    "": None,
                 }
             }
         }
@@ -848,14 +883,12 @@ class TestBadgeHandler(APITestCase):
         # test default precision
         response = self._get(
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo1',
-                'ext': 'svg'
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "svg",
             },
-            data={
-                'flag': 'unittests'
-            }
+            data={"flag": "unittests"},
         )
 
         expected_badge = """<svg xmlns="http://www.w3.org/2000/svg" width="137" height="20">
@@ -884,14 +917,16 @@ class TestBadgeHandler(APITestCase):
         """
 
         badge = response.content.decode("utf-8")
-        badge = [line.strip() for line in badge.split('\n')]
-        expected_badge = [line.strip() for line in expected_badge.split('\n')]
+        badge = [line.strip() for line in badge.split("\n")]
+        expected_badge = [line.strip() for line in expected_badge.split("\n")]
         assert expected_badge == badge
         assert response.status_code == status.HTTP_200_OK
 
     def test_unknown_sessions_flag_badge(self):
-        gh_owner = OwnerFactory(service='github')
-        repo = RepositoryFactory(author=gh_owner, active=True, private=False, name='repo1' )
+        gh_owner = OwnerFactory(service="github")
+        repo = RepositoryFactory(
+            author=gh_owner, active=True, private=False, name="repo1"
+        )
         report = {}
         commit = CommitFactory(repository=repo, author=gh_owner, report=report)
         branch = BranchFactory(repository=repo, name="master", head=commit.commitid)
@@ -899,14 +934,12 @@ class TestBadgeHandler(APITestCase):
         # test default precision
         response = self._get(
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo1',
-                'ext': 'svg'
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "svg",
             },
-            data={
-                'flag': 'unittests'
-            }
+            data={"flag": "unittests"},
         )
 
         expected_badge = """<svg xmlns="http://www.w3.org/2000/svg" width="137" height="20">
@@ -935,14 +968,16 @@ class TestBadgeHandler(APITestCase):
         """
 
         badge = response.content.decode("utf-8")
-        badge = [line.strip() for line in badge.split('\n')]
-        expected_badge = [line.strip() for line in expected_badge.split('\n')]
+        badge = [line.strip() for line in badge.split("\n")]
+        expected_badge = [line.strip() for line in expected_badge.split("\n")]
         assert expected_badge == badge
         assert response.status_code == status.HTTP_200_OK
 
     def test_unknown_report_flag_badge(self):
-        gh_owner = OwnerFactory(service='github')
-        repo = RepositoryFactory(author=gh_owner, active=True, private=False, name='repo1' )
+        gh_owner = OwnerFactory(service="github")
+        repo = RepositoryFactory(
+            author=gh_owner, active=True, private=False, name="repo1"
+        )
         report = None
         commit = CommitFactory(repository=repo, author=gh_owner, report=report)
         branch = BranchFactory(repository=repo, name="master", head=commit.commitid)
@@ -950,14 +985,12 @@ class TestBadgeHandler(APITestCase):
         # test default precision
         response = self._get(
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo1',
-                'ext': 'svg'
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "svg",
             },
-            data={
-                'flag': 'unittests'
-            }
+            data={"flag": "unittests"},
         )
 
         expected_badge = """<svg xmlns="http://www.w3.org/2000/svg" width="137" height="20">
@@ -986,24 +1019,30 @@ class TestBadgeHandler(APITestCase):
         """
 
         badge = response.content.decode("utf-8")
-        badge = [line.strip() for line in badge.split('\n')]
-        expected_badge = [line.strip() for line in expected_badge.split('\n')]
+        badge = [line.strip() for line in badge.split("\n")]
+        expected_badge = [line.strip() for line in expected_badge.split("\n")]
         assert expected_badge == badge
         assert response.status_code == status.HTTP_200_OK
 
     def test_yaml_range(self):
-        gh_owner = OwnerFactory(service='github')
-        repo = RepositoryFactory(author=gh_owner, active=True, private=False, name='repo1', yaml={"coverage": {"range": [0.0, 0.8]}} )
+        gh_owner = OwnerFactory(service="github")
+        repo = RepositoryFactory(
+            author=gh_owner,
+            active=True,
+            private=False,
+            name="repo1",
+            yaml={"coverage": {"range": [0.0, 0.8]}},
+        )
         commit = CommitFactory(repository=repo, author=gh_owner)
         branch = BranchFactory(repository=repo, name="master", head=commit.commitid)
 
         # test default precision
         response = self._get(
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo1',
-                'ext': 'svg'
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "svg",
             }
         )
 
@@ -1032,24 +1071,30 @@ class TestBadgeHandler(APITestCase):
             </svg>"""
 
         badge = response.content.decode("utf-8")
-        badge = [line.strip() for line in badge.split('\n')]
-        expected_badge = [line.strip() for line in expected_badge.split('\n')]
+        badge = [line.strip() for line in badge.split("\n")]
+        expected_badge = [line.strip() for line in expected_badge.split("\n")]
         assert expected_badge == badge
         assert response.status_code == status.HTTP_200_OK
 
     def test_yaml_empty_range(self):
-        gh_owner = OwnerFactory(service='github')
-        repo = RepositoryFactory(author=gh_owner, active=True, private=False, name='repo1', yaml={"coverage": {}} )
+        gh_owner = OwnerFactory(service="github")
+        repo = RepositoryFactory(
+            author=gh_owner,
+            active=True,
+            private=False,
+            name="repo1",
+            yaml={"coverage": {}},
+        )
         commit = CommitFactory(repository=repo, author=gh_owner)
         branch = BranchFactory(repository=repo, name="master", head=commit.commitid)
 
         # test default precision
         response = self._get(
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo1',
-                'ext': 'svg'
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "svg",
             }
         )
 
@@ -1078,7 +1123,7 @@ class TestBadgeHandler(APITestCase):
             </svg>"""
 
         badge = response.content.decode("utf-8")
-        badge = [line.strip() for line in badge.split('\n')]
-        expected_badge = [line.strip() for line in expected_badge.split('\n')]
+        badge = [line.strip() for line in badge.split("\n")]
+        expected_badge = [line.strip() for line in expected_badge.split("\n")]
         assert expected_badge == badge
         assert response.status_code == status.HTTP_200_OK

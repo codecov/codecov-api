@@ -194,19 +194,19 @@ class TestCompareViewSetRetrieve(APITestCase):
         head_report_mock.return_value = self.head_report
 
         public_repo = RepositoryFactory(author=self.org, private=False)
-        base, head = CommitFactory(repository=public_repo), CommitFactory(repository=public_repo)
+        base, head = (
+            CommitFactory(repository=public_repo),
+            CommitFactory(repository=public_repo),
+        )
 
         self.client.logout()
         response = self._get_comparison(
             kwargs={
                 "service": self.org.service,
                 "owner_username": self.org.username,
-                "repo_name": public_repo.name
+                "repo_name": public_repo.name,
             },
-            query_params={
-                "base": base.commitid,
-                "head": head.commitid
-            }
+            query_params={"base": base.commitid, "head": head.commitid},
         )
         assert response.status_code == status.HTTP_200_OK
 
@@ -399,9 +399,17 @@ class TestCompareViewSetRetrieve(APITestCase):
 
     @patch("redis.Redis.get", lambda self, key: None)
     @patch("redis.Redis.set", lambda self, key, val, ex: None)
-    @patch('services.comparison.PullRequestComparison.pseudo_diff_adjusts_tracked_lines', new_callable=PropertyMock)
-    @patch('services.comparison.PullRequestComparison.allow_coverage_offsets', new_callable=PropertyMock)
-    @patch('services.comparison.PullRequestComparison.update_base_report_with_pseudo_diff')
+    @patch(
+        "services.comparison.PullRequestComparison.pseudo_diff_adjusts_tracked_lines",
+        new_callable=PropertyMock,
+    )
+    @patch(
+        "services.comparison.PullRequestComparison.allow_coverage_offsets",
+        new_callable=PropertyMock,
+    )
+    @patch(
+        "services.comparison.PullRequestComparison.update_base_report_with_pseudo_diff"
+    )
     def test_pull_request_pseudo_comparison_can_update_base_report(
         self,
         update_base_report_mock,
@@ -409,7 +417,7 @@ class TestCompareViewSetRetrieve(APITestCase):
         pseudo_diff_adjusts_tracked_lines_mock,
         adapter_mock,
         base_report_mock,
-        head_report_mock
+        head_report_mock,
     ):
         adapter_mock.return_value = self.mocked_compare_adapter
         base_report_mock.return_value = self.base_report
@@ -438,9 +446,17 @@ class TestCompareViewSetRetrieve(APITestCase):
 
     @patch("redis.Redis.get", lambda self, key: None)
     @patch("redis.Redis.set", lambda self, key, val, ex: None)
-    @patch('services.comparison.PullRequestComparison.pseudo_diff_adjusts_tracked_lines', new_callable=PropertyMock)
-    @patch('services.comparison.PullRequestComparison.allow_coverage_offsets', new_callable=PropertyMock)
-    @patch('services.comparison.PullRequestComparison.update_base_report_with_pseudo_diff')
+    @patch(
+        "services.comparison.PullRequestComparison.pseudo_diff_adjusts_tracked_lines",
+        new_callable=PropertyMock,
+    )
+    @patch(
+        "services.comparison.PullRequestComparison.allow_coverage_offsets",
+        new_callable=PropertyMock,
+    )
+    @patch(
+        "services.comparison.PullRequestComparison.update_base_report_with_pseudo_diff"
+    )
     def test_pull_request_pseudo_comparison_returns_error_if_coverage_offsets_not_allowed(
         self,
         update_base_report_mock,
@@ -448,7 +464,7 @@ class TestCompareViewSetRetrieve(APITestCase):
         pseudo_diff_adjusts_tracked_lines_mock,
         adapter_mock,
         base_report_mock,
-        head_report_mock
+        head_report_mock,
     ):
         adapter_mock.return_value = self.mocked_compare_adapter
         base_report_mock.return_value = self.base_report

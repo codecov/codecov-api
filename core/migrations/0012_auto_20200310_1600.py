@@ -10,18 +10,25 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0011_auto_20200220_0216'),
+        ("core", "0011_auto_20200220_0216"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='commit',
-            name='author',
-            field=models.ForeignKey(db_column='author', null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL),
+            model_name="commit",
+            name="author",
+            field=models.ForeignKey(
+                db_column="author",
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AlterField(
-            model_name='commit',
-            name='report',
-            field=django.contrib.postgres.fields.jsonb.JSONField(encoder=core.encoders.ReportJSONEncoder, null=True),
+            model_name="commit",
+            name="report",
+            field=django.contrib.postgres.fields.jsonb.JSONField(
+                encoder=core.encoders.ReportJSONEncoder, null=True
+            ),
         ),
     ]

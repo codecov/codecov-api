@@ -6,23 +6,25 @@ import os
 
 DEBUG = False
 THIS_POD_IP = os.environ.get("THIS_POD_IP")
-ALLOWED_HOSTS = ['stage-api.codecov.dev', THIS_POD_IP] if THIS_POD_IP else ['stage-api.codecov.dev']
-WEBHOOK_URL = 'https://stage-api.codecov.dev'
+ALLOWED_HOSTS = (
+    ["stage-api.codecov.dev", THIS_POD_IP] if THIS_POD_IP else ["stage-api.codecov.dev"]
+)
+WEBHOOK_URL = "https://stage-api.codecov.dev"
 
 
 # TODO: there are secrets for these in the staging env -- why?
-STRIPE_API_KEY = 'sk_test_testsn3sc2tirvdea6mqp31t'
+STRIPE_API_KEY = "sk_test_testsn3sc2tirvdea6mqp31t"
 STRIPE_ENDPOINT_SECRET = "whsec_testzrff0orrbsv3bdekbbz8cz964dan"
 STRIPE_PLAN_IDS = {
     "users-pr-inappm": "plan_H6P3KZXwmAbqPS",
-    "users-pr-inappy": "plan_H6P16wij3lUuxg"
+    "users-pr-inappy": "plan_H6P16wij3lUuxg",
 }
 
 
 sentry_sdk.init(
     dsn="https://570709366d674aeca773669feb989415@o26192.ingest.sentry.io/5215654",
     integrations=[DjangoIntegration()],
-    environment="STAGING"
+    environment="STAGING",
 )
 
 CORS_ALLOWED_ORIGIN_REGEXES = [
@@ -35,8 +37,12 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
 CORS_ALLOW_CREDENTIALS = True
 
 
-CODECOV_URL = 'https://stage-web.codecov.dev'
-CODECOV_DASHBOARD_URL = 'https://stage-app.codecov.dev'
-CORS_ALLOWED_ORIGINS = [CODECOV_URL, CODECOV_DASHBOARD_URL, "https://gazebo.netlify.app"]
+CODECOV_URL = "https://stage-web.codecov.dev"
+CODECOV_DASHBOARD_URL = "https://stage-app.codecov.dev"
+CORS_ALLOWED_ORIGINS = [
+    CODECOV_URL,
+    CODECOV_DASHBOARD_URL,
+    "https://gazebo.netlify.app",
+]
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 15000000

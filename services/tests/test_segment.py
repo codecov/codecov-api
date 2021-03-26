@@ -511,4 +511,3 @@ class SegmentServiceTests(TestCase):
                 properties=upload_details,
                 context={"groupId": owner.ownerid},
             )
-

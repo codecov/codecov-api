@@ -6,17 +6,20 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0001_initial'),
+        ("core", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Version',
+            name="Version",
             fields=[
-                ('version', models.TextField(db_column='version', primary_key=True, serialize=False)),
+                (
+                    "version",
+                    models.TextField(
+                        db_column="version", primary_key=True, serialize=False
+                    ),
+                ),
             ],
-            options={
-                'db_table': 'version',
-            },
+            options={"db_table": "version",},
         ),
     ]
