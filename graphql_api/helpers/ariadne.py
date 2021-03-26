@@ -1,6 +1,7 @@
 from ariadne import load_schema_from_path
 import pathlib
 
+
 def ariadne_load_local_graphql(current_file, graphql_file):
     """
     Given the current_file (__file__) of the caller and a graphql file name

@@ -7,18 +7,18 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0003_auto_20190725_2147'),
+        ("core", "0003_auto_20190725_2147"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='repository',
-            name='cache',
+            model_name="repository",
+            name="cache",
             field=django.contrib.postgres.fields.jsonb.JSONField(null=True),
         ),
         migrations.AddField(
-            model_name='repository',
-            name='yaml',
+            model_name="repository",
+            name="yaml",
             field=django.contrib.postgres.fields.jsonb.JSONField(null=True),
         ),
     ]

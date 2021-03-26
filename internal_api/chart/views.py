@@ -65,10 +65,17 @@ class RepositoryChartHandler(APIView, RepositoriesMixin):
     def post(self, request, *args, **kwargs):
         request_params = {**self.request.data, **self.kwargs}
         validate_params(request_params)
-        coverage_ordering = "" if request_params.get("coverage_timestamp_order", "increasing") == "increasing" else "-"
+        coverage_ordering = (
+            ""
+            if request_params.get("coverage_timestamp_order", "increasing")
+            == "increasing"
+            else "-"
+        )
 
         queryset = apply_simple_filters(
-            apply_default_filters(Commit.objects.all()), request_params, self.request.user
+            apply_default_filters(Commit.objects.all()),
+            request_params,
+            self.request.user,
         )
 
         annotated_queryset = annotate_commits_with_totals(queryset)
@@ -76,13 +83,15 @@ class RepositoryChartHandler(APIView, RepositoriesMixin):
         # if grouping_unit doesn't specify time, return all values
         if self.request.data.get("grouping_unit") == "commit":
             max_num_commits = 1000
-            commits = annotated_queryset.order_by(f"{coverage_ordering}timestamp")[:max_num_commits]
+            commits = annotated_queryset.order_by(f"{coverage_ordering}timestamp")[
+                :max_num_commits
+            ]
             coverage = [
                 {
                     "date": commits[index].timestamp,
                     "coverage": commits[index].coverage,
-                    "coverage_change": commits[index].coverage -
-                                       commits[max(index - 1, 0)].coverage,
+                    "coverage_change": commits[index].coverage
+                    - commits[max(index - 1, 0)].coverage,
                     "commitid": commits[index].commitid,
                 }
                 for index in range(len(commits))
@@ -94,7 +103,10 @@ class RepositoryChartHandler(APIView, RepositoriesMixin):
                     "complexity_ratio": commit.complexity_ratio,
                     "commitid": commit.commitid,
                 }
-                for commit in annotated_queryset.order_by(f"{coverage_ordering}timestamp")[:max_num_commits] if commit.complexity_ratio is not None
+                for commit in annotated_queryset.order_by(
+                    f"{coverage_ordering}timestamp"
+                )[:max_num_commits]
+                if commit.complexity_ratio is not None
             ]
 
         else:
@@ -108,8 +120,8 @@ class RepositoryChartHandler(APIView, RepositoriesMixin):
                 {
                     "date": commits[index].truncated_date,
                     "coverage": commits[index].coverage,
-                    "coverage_change": commits[index].coverage -
-                                       commits[max(index - 1, 0)].coverage,
+                    "coverage_change": commits[index].coverage
+                    - commits[max(index - 1, 0)].coverage,
                     "commitid": commits[index].commitid,
                 }
                 for index in range(len(commits))
@@ -127,7 +139,8 @@ class RepositoryChartHandler(APIView, RepositoriesMixin):
                     "complexity_ratio": commit.complexity_ratio,
                     "commitid": commit.commitid,
                 }
-                for commit in complexity_grouped_queryset if commit.complexity_ratio is not None
+                for commit in complexity_grouped_queryset
+                if commit.complexity_ratio is not None
             ]
 
         return Response(data={"coverage": coverage, "complexity": complexity})
@@ -154,14 +167,14 @@ class OrganizationChartHandler(APIView):
         ]
     }
     """
+
     permission_classes = [IsAuthenticated]
     parser_classes = [JSONParser]
 
     # this method is deprecated and will be removed
     def post(self, request, *args, **kwargs):
         query_runner = ChartQueryRunner(
-            user=request.user,
-            request_params={**kwargs, **request.data}
+            user=request.user, request_params={**kwargs, **request.data}
         )
         return Response(data={"coverage": query_runner.run_query()})
 
@@ -171,10 +184,11 @@ class OrganizationChartHandler(APIView):
         # method clobbers list values
         request_params_dict = request.query_params.dict()
         if "repositories" in request.query_params:
-            request_params_dict.update({"repositories": request.query_params.getlist("repositories")})
+            request_params_dict.update(
+                {"repositories": request.query_params.getlist("repositories")}
+            )
 
         query_runner = ChartQueryRunner(
-            user=request.user,
-            request_params={**kwargs, **request_params_dict}
+            user=request.user, request_params={**kwargs, **request_params_dict}
         )
         return Response(data={"coverage": query_runner.run_query()})

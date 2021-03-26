@@ -7,103 +7,89 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0009_auto_20200213_2144'),
+        ("core", "0009_auto_20200213_2144"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='branch',
-            name='base',
-            field=models.TextField(null=True),
+            model_name="branch", name="base", field=models.TextField(null=True),
         ),
         migrations.AddField(
-            model_name='repository',
-            name='deleted',
+            model_name="repository",
+            name="deleted",
             field=models.BooleanField(default=False),
         ),
         migrations.AlterField(
-            model_name='commit',
-            name='branch',
-            field=models.TextField(null=True),
+            model_name="commit", name="branch", field=models.TextField(null=True),
         ),
         migrations.AlterField(
-            model_name='commit',
-            name='ci_passed',
-            field=models.NullBooleanField(),
+            model_name="commit", name="ci_passed", field=models.NullBooleanField(),
         ),
         migrations.AlterField(
-            model_name='commit',
-            name='message',
-            field=models.TextField(null=True),
+            model_name="commit", name="message", field=models.TextField(null=True),
         ),
         migrations.AlterField(
-            model_name='commit',
-            name='parent_commit_id',
-            field=models.TextField(db_column='parent', null=True),
+            model_name="commit",
+            name="parent_commit_id",
+            field=models.TextField(db_column="parent", null=True),
         ),
         migrations.AlterField(
-            model_name='commit',
-            name='pullid',
-            field=models.IntegerField(null=True),
+            model_name="commit", name="pullid", field=models.IntegerField(null=True),
         ),
         migrations.AlterField(
-            model_name='commit',
-            name='report',
+            model_name="commit",
+            name="report",
             field=django.contrib.postgres.fields.jsonb.JSONField(null=True),
         ),
         migrations.AlterField(
-            model_name='commit',
-            name='totals',
+            model_name="commit",
+            name="totals",
             field=django.contrib.postgres.fields.jsonb.JSONField(null=True),
         ),
         migrations.AlterField(
-            model_name='pull',
-            name='commentid',
+            model_name="pull",
+            name="commentid",
             field=models.CharField(max_length=100, null=True),
         ),
         migrations.AlterField(
-            model_name='pull',
-            name='diff',
+            model_name="pull",
+            name="diff",
             field=django.contrib.postgres.fields.jsonb.JSONField(null=True),
         ),
         migrations.AlterField(
-            model_name='pull',
-            name='flare',
+            model_name="pull",
+            name="flare",
             field=django.contrib.postgres.fields.jsonb.JSONField(null=True),
         ),
         migrations.AlterField(
-            model_name='pull',
-            name='issueid',
-            field=models.IntegerField(null=True),
+            model_name="pull", name="issueid", field=models.IntegerField(null=True),
         ),
         migrations.AlterField(
-            model_name='pull',
-            name='state',
-            field=models.CharField(default='open', max_length=100),
+            model_name="pull",
+            name="state",
+            field=models.CharField(default="open", max_length=100),
         ),
         migrations.AlterField(
-            model_name='pull',
-            name='title',
+            model_name="pull",
+            name="title",
             field=models.CharField(max_length=100, null=True),
         ),
         migrations.AlterField(
-            model_name='repository',
-            name='activated',
+            model_name="repository",
+            name="activated",
             field=models.NullBooleanField(default=False),
         ),
         migrations.AlterField(
-            model_name='repository',
-            name='branch',
-            field=models.TextField(default='master', null=True),
+            model_name="repository",
+            name="branch",
+            field=models.TextField(default="master", null=True),
         ),
         migrations.AlterField(
-            model_name='repository',
-            name='hookid',
-            field=models.TextField(null=True),
+            model_name="repository", name="hookid", field=models.TextField(null=True),
         ),
         migrations.AlterField(
-            model_name='repository',
-            name='using_integration',
+            model_name="repository",
+            name="using_integration",
             field=models.NullBooleanField(),
         ),
     ]

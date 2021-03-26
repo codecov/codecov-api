@@ -9,13 +9,19 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('core', '0005_repository_image_token'),
+        ("core", "0005_repository_image_token"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='repository',
-            name='bot',
-            field=models.ForeignKey(db_column='bot', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='bot_repos', to=settings.AUTH_USER_MODEL),
+            model_name="repository",
+            name="bot",
+            field=models.ForeignKey(
+                db_column="bot",
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="bot_repos",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
     ]

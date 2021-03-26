@@ -5,7 +5,6 @@ from django.test import TestCase
 
 
 class InternalAPITest(TestCase):
-
     @classmethod
     def setUpClass(cls):
         super().setUpClass()

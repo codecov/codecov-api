@@ -7,81 +7,57 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0014_auto_20200807_2003'),
+        ("core", "0014_auto_20200807_2003"),
     ]
 
     operations = [
+        migrations.AlterModelOptions(name="pull", options={"ordering": ["-pullid"]},),
         migrations.AlterModelOptions(
-            name='pull',
-            options={'ordering': ['-pullid']},
-        ),
-        migrations.AlterModelOptions(
-            name='repository',
-            options={'ordering': ['-repoid']},
+            name="repository", options={"ordering": ["-repoid"]},
         ),
         migrations.AlterField(
-            model_name='commit',
-            name='ci_passed',
-            field=models.BooleanField(null=True),
+            model_name="commit", name="ci_passed", field=models.BooleanField(null=True),
         ),
         migrations.AlterField(
-            model_name='commit',
-            name='commitid',
-            field=models.TextField(),
+            model_name="commit", name="commitid", field=models.TextField(),
         ),
         migrations.AlterField(
-            model_name='commit',
-            name='deleted',
-            field=models.BooleanField(null=True),
+            model_name="commit", name="deleted", field=models.BooleanField(null=True),
         ),
         migrations.AlterField(
-            model_name='commit',
-            name='merged',
-            field=models.BooleanField(null=True),
+            model_name="commit", name="merged", field=models.BooleanField(null=True),
         ),
         migrations.AlterField(
-            model_name='commit',
-            name='notified',
-            field=models.BooleanField(null=True),
+            model_name="commit", name="notified", field=models.BooleanField(null=True),
         ),
         migrations.AlterField(
-            model_name='commit',
-            name='report',
+            model_name="commit",
+            name="report",
             field=models.JSONField(encoder=core.encoders.ReportJSONEncoder, null=True),
         ),
         migrations.AlterField(
-            model_name='commit',
-            name='totals',
-            field=models.JSONField(null=True),
+            model_name="commit", name="totals", field=models.JSONField(null=True),
         ),
         migrations.AlterField(
-            model_name='pull',
-            name='diff',
-            field=models.JSONField(null=True),
+            model_name="pull", name="diff", field=models.JSONField(null=True),
         ),
         migrations.AlterField(
-            model_name='pull',
-            name='flare',
-            field=models.JSONField(null=True),
+            model_name="pull", name="flare", field=models.JSONField(null=True),
         ),
         migrations.AlterField(
-            model_name='repository',
-            name='active',
+            model_name="repository",
+            name="active",
             field=models.BooleanField(null=True),
         ),
         migrations.AlterField(
-            model_name='repository',
-            name='cache',
-            field=models.JSONField(null=True),
+            model_name="repository", name="cache", field=models.JSONField(null=True),
         ),
         migrations.AlterField(
-            model_name='repository',
-            name='using_integration',
+            model_name="repository",
+            name="using_integration",
             field=models.BooleanField(null=True),
         ),
         migrations.AlterField(
-            model_name='repository',
-            name='yaml',
-            field=models.JSONField(null=True),
+            model_name="repository", name="yaml", field=models.JSONField(null=True),
         ),
     ]

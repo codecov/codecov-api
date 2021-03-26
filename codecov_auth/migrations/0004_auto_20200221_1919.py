@@ -6,13 +6,11 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('codecov_auth', '0003_auto_20200221_1919'),
+        ("codecov_auth", "0003_auto_20200221_1919"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='owner',
-            name='free',
-            field=models.SmallIntegerField(default=0),
+            model_name="owner", name="free", field=models.SmallIntegerField(default=0),
         ),
     ]

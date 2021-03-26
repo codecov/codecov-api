@@ -1,2 +1,1 @@
-
-INTERNAL_API_PREFIX = 'internal/'
+INTERNAL_API_PREFIX = "internal/"

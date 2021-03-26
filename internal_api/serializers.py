@@ -22,7 +22,9 @@ class CommitRefQueryParamSerializer(serializers.Serializer):
             head = Commit.objects.filter(repository=repo, commitid=branch.get().head)
             if head.exists():
                 return head.get()
-            raise NotFound(f"Head commit '{branch.get().head}' for branch '{ref}' not found!")
+            raise NotFound(
+                f"Head commit '{branch.get().head}' for branch '{ref}' not found!"
+            )
         raise NotFound(f"Commit or branch '{ref}' not found!")
 
     def validate_base(self, base):

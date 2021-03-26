@@ -8,13 +8,18 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0010_reconcile_fields_with_legacy'),
+        ("core", "0010_reconcile_fields_with_legacy"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='pull',
-            name='author',
-            field=models.ForeignKey(db_column='author', null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL),
+            model_name="pull",
+            name="author",
+            field=models.ForeignKey(
+                db_column="author",
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
     ]

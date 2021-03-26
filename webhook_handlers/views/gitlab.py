@@ -31,16 +31,13 @@ class GitLabWebhookHandler(APIView):
 
         log.info("GitLab webhook message received", extra=dict(event=event))
 
-        project_id = request.data.get("project_id") or request.data.get("object_attributes", {}).get("target_project_id")
-        if (
-            project_id
-            and request.data.get("event_name") != "project_create"
-        ):
+        project_id = request.data.get("project_id") or request.data.get(
+            "object_attributes", {}
+        ).get("target_project_id")
+        if project_id and request.data.get("event_name") != "project_create":
             # make sure the repo exists in the repos table
             repo = get_object_or_404(
-                Repository,
-                author__service="gitlab",
-                service_id=project_id
+                Repository, author__service="gitlab", service_id=project_id
             )
 
         if event == GitLabWebhookEvents.PUSH:
