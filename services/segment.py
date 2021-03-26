@@ -1,5 +1,6 @@
 import analytics
 import re
+from datetime import datetime
 from enum import Enum
 from django.conf import settings
 import logging
@@ -136,16 +137,16 @@ class SegmentOwner:
             # Set ms to 0 on dates to match date format required by Salesforce
             "createdAt": self.owner.createstamp.replace(microsecond=0)
             if self.owner.createstamp
-            else "",
+            else datetime(2014, 1, 1, 12, 0, 0),
             "updatedAt": self.owner.updatestamp.replace(microsecond=0)
             if self.owner.updatestamp
-            else "",
+            else datetime(2014, 1, 1, 12, 0, 0),
             "student_created_at": self.owner.student_created_at.replace(microsecond=0)
             if self.owner.student_created_at
-            else "",
+            else datetime(2014, 1, 1, 12, 0, 0),
             "student_updated_at": self.owner.student_updated_at.replace(microsecond=0)
             if self.owner.student_updated_at
-            else "",
+            else datetime(2014, 1, 1, 12, 0, 0),
         }
 
     @property
