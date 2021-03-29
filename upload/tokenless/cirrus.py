@@ -42,7 +42,7 @@ class TokenlessCirrusHandler(BaseTokenlessUploadHandler):
                 },
             )
         except (ConnectionError, HTTPError) as e:
-            log.error(f"Request error {e}",
+            log.warning(f"Request error {e}",
                 extra=dict(
                     build=self.upload_params['build'],
                     commit=self.upload_params['commit'],
@@ -55,7 +55,7 @@ class TokenlessCirrusHandler(BaseTokenlessUploadHandler):
 
         build = response.json()
         if 'errors' in build or build.get('data') is None:
-            log.error(
+            log.warning(
                 "Build Error",
                 extra=dict(
                     build=self.upload_params['build'],
@@ -119,7 +119,7 @@ class TokenlessCirrusHandler(BaseTokenlessUploadHandler):
            )
            now = time.time()
            if now > finishTimestamp:
-                log.error(f"Cirrus run is stale",
+                log.warning(f"Cirrus run is stale",
                     extra=dict(
                         build_info=build,
                         commit=commit,

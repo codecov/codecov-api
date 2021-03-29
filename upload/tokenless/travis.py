@@ -23,7 +23,7 @@ class TokenlessTravisHandler(BaseTokenlessUploadHandler):
             )
             travis_dot_com = build.json()['repository']['slug'] == f"{self.upload_params['owner']}/{self.upload_params['repo']}"
         except (ConnectionError, HTTPError) as e:
-            log.error(f"Request error {e}",
+            log.warning(f"Request error {e}",
                 extra=dict(
                     commit=self.upload_params['commit'],
                     repo_name=self.upload_params['repo'],
@@ -33,7 +33,7 @@ class TokenlessTravisHandler(BaseTokenlessUploadHandler):
             )
             pass
         except Exception as e:
-            log.error(f"Error {e}",
+            log.warning(f"Error {e}",
                 extra=dict(
                     commit=self.upload_params['commit'],
                     repo_name=self.upload_params['repo'],
@@ -61,7 +61,7 @@ class TokenlessTravisHandler(BaseTokenlessUploadHandler):
                     },
                 )
             except (ConnectionError, HTTPError) as e:
-                log.error(f"Request error {e}",
+                log.warning(f"Request error {e}",
                     extra=dict(
                         commit=self.upload_params['commit'],
                         repo_name=self.upload_params['repo'],

@@ -281,7 +281,7 @@ def determine_upload_commit_to_use(upload_params, repository):
                 .get_commit(upload_params.get("commit"), token)
             )
         except TorngitObjectNotFoundError as e:
-            log.error(
+            log.warning(
                 "Unable to fetch commit. Not found",
                 extra=dict(
                     commit=upload_params.get("commit"),
@@ -289,7 +289,7 @@ def determine_upload_commit_to_use(upload_params, repository):
             )
             return upload_params.get("commit")
         except TorngitClientError as e:
-            log.error(
+            log.warning(
                 "Unable to fetch commit",
                 extra=dict(
                     commit=upload_params.get("commit"),
@@ -381,7 +381,7 @@ def validate_upload(upload_params, repository, redis):
         )
         session_count = commit.totals.get("s", 0) if commit.totals else 0
         if (session_count or 0) > (get_config("setup", "max_sessions") or 100):
-            log.error(
+            log.warning(
                 "Too many uploads to this commit",
                 extra=dict(
                     commit=upload_params.get("commit"),

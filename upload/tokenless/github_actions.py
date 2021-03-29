@@ -30,7 +30,7 @@ class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
         try:
             actions_response = asyncio.run(git.get_workflow_run(self.upload_params.get('build')))
         except TorngitClientError as e:
-            log.error(f"Request client error {e}",
+            log.warning(f"Request client error {e}",
                 extra=dict(
                     commit=self.upload_params.get('commit'),
                     repo_name=self.upload_params.get('repo'),
@@ -40,7 +40,7 @@ class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
             )
             raise NotFound('Unable to locate build via Github Actions API. Please upload with the Codecov repository upload token to resolve issue.')
         except Exception as e:
-            log.error(f"Request error {e}",
+            log.warning(f"Request error {e}",
                 extra=dict(
                     commit=self.upload_params.get('commit'),
                     repo_name=self.upload_params.get('repo'),
@@ -86,7 +86,7 @@ class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
             finish_time_with_buffer = build_finish_date_obj + timedelta(minutes=10)
             now = datetime.utcnow()
             if not now <= finish_time_with_buffer:
-                log.error(
+                log.warning(
                     "Actions workflow run is stale",
                     extra=dict(
                         build=build,

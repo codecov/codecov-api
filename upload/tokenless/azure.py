@@ -18,7 +18,7 @@ class TokenlessAzureHandler(BaseTokenlessUploadHandler):
                 }
             )
         except (ConnectionError, HTTPError) as e:
-            log.error(f"Request error {e}",
+            log.warning(f"Request error {e}",
                 extra=dict(
                     commit=self.upload_params.get('commit'),
                     repo_name=self.upload_params.get('repo'),
