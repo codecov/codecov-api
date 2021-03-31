@@ -3,6 +3,7 @@
 from django.conf import settings
 import django.contrib.postgres.fields
 import django.contrib.postgres.fields.citext
+from django.contrib.postgres.operations import CITextExtension
 from django.db import migrations, models
 import django.db.models.deletion
 import uuid
@@ -16,6 +17,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        CITextExtension(),
         migrations.CreateModel(
             name='Owner',
             fields=[
