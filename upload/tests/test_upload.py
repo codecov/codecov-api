@@ -22,6 +22,7 @@ from core.tests.factories import CommitFactory
 from rest_framework.exceptions import NotFound
 from core.models import Repository, Commit
 from codecov_auth.models import Owner
+from codecov_auth.tests.factories import OwnerFactory
 
 from upload.helpers import (
     parse_params,
@@ -496,6 +497,23 @@ class UploadHandlerHelpersTest(TestCase):
             # Should use the commit id provided in params, not the one from the commit message
             assert (
                 "3084886b7ff869dcf327ad1d28a8b7d34adc7584"
+                == determine_upload_commit_to_use(upload_params, repo)
+            )
+
+        with self.subTest("use repo bot token when available"):
+            bot = OwnerFactory()
+            org = G(Owner, service="github")
+            repo = G(Repository, author=org, bot=bot)
+
+            upload_params = {
+                "service": "github",
+                "commit": "3084886b7ff869dcf327ad1d28a8b7d34adc7584",
+            }
+
+            determine_upload_commit_to_use(upload_params, repo)
+            
+            assert (
+                "1c78206f1a46dc6db8412a491fc770eb7d0f8a47"
                 == determine_upload_commit_to_use(upload_params, repo)
             )
 

@@ -1,6 +1,7 @@
 import re
 import asyncio
 import logging
+from utils.encryption import encryptor
 from cerberus import Validator
 from json import dumps
 from rest_framework.exceptions import ValidationError, NotFound
@@ -278,11 +279,10 @@ def determine_upload_commit_to_use(upload_params, repository):
         "_did_change_merge_commit"
     ):
         token = (
-            repository.bot.oauth_token
+            encryptor.decrypt_token(repository.bot.oauth_token)
             if repository.bot and repository.bot.oauth_token
             else get_config(service, "bot")
         )
-
         # Get the commit message from the git provider and check if it's structured like a merge commit message
         try:
             git_commit_data = asyncio.run(
