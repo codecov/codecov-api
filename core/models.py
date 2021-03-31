@@ -104,10 +104,13 @@ class Branch(models.Model):
 
     class Meta:
         db_table = "branches"
+        constraints = [
+            models.UniqueConstraint(fields=["name", "repository"], name="branches_repoid_branch")
+        ]
 
 
 class Commit(models.Model):
-    class CommitStates:
+    class CommitStates(models.TextChoices):
         COMPLETE = "complete"
         PENDING = "pending"
         ERROR = "error"
@@ -115,8 +118,8 @@ class Commit(models.Model):
 
     id = models.BigAutoField(primary_key=True)
     commitid = models.TextField()
-    timestamp = models.DateTimeField(auto_now_add=True)
-    updatestamp = models.DateTimeField(auto_now=True)
+    timestamp = DateTimeWithoutTZField(auto_now_add=True)
+    updatestamp = DateTimeWithoutTZField(auto_now=True)
     author = models.ForeignKey(
         "codecov_auth.Owner", db_column="author", on_delete=models.SET_NULL, null=True
     )
@@ -137,7 +140,7 @@ class Commit(models.Model):
     pullid = models.IntegerField(null=True)
     message = models.TextField(null=True)
     parent_commit_id = models.TextField(null=True, db_column="parent")
-    state = models.CharField(max_length=256)
+    state = models.TextField(null=True, choices=CommitStates.choices)  # Really an ENUM in db
 
     @cached_property
     def parent_commit(self):
@@ -147,6 +150,13 @@ class Commit(models.Model):
 
     class Meta:
         db_table = "commits"
+        constraints = [
+            models.UniqueConstraint(fields=["repository", "commitid"], name="commits_repoid_commitid")
+        ]
+        indexes = [
+            models.Index(fields=["repository", "-timestamp"], name="commits_repoid_timestamp_desc"),
+            models.Index(fields=["repository", "pullid"], name="commits_on_pull", condition=~models.Q(deleted=True))
+        ]
 
 
 class Pull(models.Model):
