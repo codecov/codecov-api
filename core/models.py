@@ -40,7 +40,7 @@ class Repository(models.Model):
     private = models.BooleanField()
     updatestamp = models.DateTimeField(auto_now=True)
     active = models.BooleanField(null=True)
-    language = models.TextField(null=True, blank=True)
+    language = models.TextField(null=True, blank=True)  # Really an ENUM in db
     fork = models.ForeignKey(
         "core.Repository",
         db_column="forkid",
@@ -48,11 +48,11 @@ class Repository(models.Model):
         null=True,
         blank=True,
     )
-    branch = models.TextField(null=True, default="master")
-    upload_token = models.UUIDField(default=uuid.uuid4)
+    branch = models.TextField(default="master")
+    upload_token = models.UUIDField(unique=True, default=uuid.uuid4)
     yaml = models.JSONField(null=True)
     cache = models.JSONField(null=True)
-    image_token = models.CharField(max_length=10, default=_gen_image_token)
+    image_token = models.TextField(null=True, default=_gen_image_token)
     using_integration = models.BooleanField(null=True)
     hookid = models.TextField(null=True)
     bot = models.ForeignKey(
@@ -68,6 +68,10 @@ class Repository(models.Model):
     class Meta:
         db_table = "repos"
         ordering = ["-repoid"]
+        constraints = [
+            models.UniqueConstraint(fields=["author", "name"], name="repos_slug"),
+            models.UniqueConstraint(fields=["author", "service_id"], name="repos_service_ids")
+        ]
 
     objects = RepositoryQuerySet.as_manager()
 
@@ -118,8 +122,8 @@ class Commit(models.Model):
 
     id = models.BigAutoField(primary_key=True)
     commitid = models.TextField()
-    timestamp = DateTimeWithoutTZField(auto_now_add=True)
-    updatestamp = DateTimeWithoutTZField(auto_now=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    updatestamp = models.DateTimeField(auto_now=True)
     author = models.ForeignKey(
         "codecov_auth.Owner", db_column="author", on_delete=models.SET_NULL, null=True
     )
@@ -158,27 +162,26 @@ class Commit(models.Model):
             models.Index(fields=["repository", "pullid"], name="commits_on_pull", condition=~models.Q(deleted=True))
         ]
 
-
-class Pull(models.Model):
-    class PullStates:
+class PullStates(models.TextChoices):
         OPEN = "open"
         MERGED = "merged"
         CLOSED = "closed"
 
+class Pull(models.Model):
     repository = models.ForeignKey(
         "core.Repository",
         db_column="repoid",
         on_delete=models.CASCADE,
         related_name="pull_requests",
     )
-    pullid = models.IntegerField(primary_key=True)
+    pullid = models.IntegerField()
     issueid = models.IntegerField(null=True)
-    state = models.CharField(max_length=100, default="open")
-    title = models.CharField(max_length=100, null=True)
+    state = models.TextField(choices=PullStates.choices, default=PullStates.OPEN.value)  # Really an ENUM in db
+    title = models.TextField(null=True)
     base = models.TextField(null=True)
     head = models.TextField(null=True)
     compared_to = models.TextField(null=True)
-    commentid = models.CharField(max_length=100, null=True)
+    commentid = models.TextField(null=True)
     author = models.ForeignKey(
         "codecov_auth.Owner", db_column="author", on_delete=models.SET_NULL, null=True
     )
@@ -189,6 +192,12 @@ class Pull(models.Model):
     class Meta:
         db_table = "pulls"
         ordering = ["-pullid"]
+        constraints = [
+            models.UniqueConstraint(fields=["repository", "pullid"], name="pulls_repoid_pullid")
+        ]
+        indexes = [
+            models.Index(fields=["repository"], name="pulls_repoid_state_open", condition=models.Q(state=PullStates.OPEN.value))
+        ]
 
 
 class CommitNotification(models.Model):
@@ -223,8 +232,8 @@ class CommitNotification(models.Model):
         choices=DecorationTypes.choices, null=True
     )  # Really an ENUM in db
     state = models.TextField(choices=States.choices, null=True)  # Really an ENUM in db
-    created_at = DateTimeWithoutTZField(auto_now_add=True)
-    updated_at = DateTimeWithoutTZField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = "commit_notifications"

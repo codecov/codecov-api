@@ -7,7 +7,7 @@ from rest_framework import status
 
 from core.models import Commit
 from core.tests.factories import RepositoryFactory, CommitFactory, PullFactory
-from core.models import Repository, Pull
+from core.models import Repository, Pull, PullStates
 from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
 
@@ -183,7 +183,7 @@ class TestGitlabWebhookHandler(APITestCase):
             author=self.repo.author,
             repository=self.repo,
             pullid=1,
-            state=Pull.PullStates.OPEN,
+            state=PullStates.OPEN,
         )
 
         response = self._post_event_data(
@@ -201,7 +201,7 @@ class TestGitlabWebhookHandler(APITestCase):
         assert response.data == "Pull request closed"
 
         pull.refresh_from_db()
-        assert pull.state == Pull.PullStates.CLOSED
+        assert pull.state == PullStates.CLOSED
 
     @patch("services.task.TaskService.pulls_sync")
     def test_merge_request_event_action_merge(self, pulls_sync_mock):

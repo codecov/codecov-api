@@ -13,7 +13,7 @@ from core.tests.factories import (
     CommitFactory,
     PullFactory,
 )
-from core.models import Repository, Pull, Branch, Commit
+from core.models import Repository, Pull, Branch, Commit, PullStates
 from codecov_auth.tests.factories import OwnerFactory
 
 from webhook_handlers.constants import (
@@ -45,7 +45,7 @@ class TestBitbucketWebhookHandler(APITestCase):
             author=self.repo.author,
             repository=self.repo,
             pullid=1,
-            state=Pull.PullStates.OPEN,
+            state=PullStates.OPEN,
         )
 
     def test_unknown_repo(self):
@@ -93,7 +93,7 @@ class TestBitbucketWebhookHandler(APITestCase):
         )
         assert response.status_code == status.HTTP_200_OK
         self.pull.refresh_from_db()
-        assert self.pull.state == Pull.PullStates.MERGED
+        assert self.pull.state == PullStates.MERGED
 
     def test_pull_request_rejected(self):
         pullid = 1
@@ -106,7 +106,7 @@ class TestBitbucketWebhookHandler(APITestCase):
         )
         assert response.status_code == status.HTTP_200_OK
         self.pull.refresh_from_db()
-        assert self.pull.state == Pull.PullStates.CLOSED
+        assert self.pull.state == PullStates.CLOSED
 
     def test_repo_push_branch_deleted(self):
         branch = BranchFactory(repository=self.repo, name="name-of-branch")

@@ -24,7 +24,7 @@ class SegmentOwnerTests(TestCase):
                 delinquent=True,
                 did_trial=True,
                 student=True,
-                bot=True,
+                bot=OwnerFactory(),
                 email="user@codecov.io",
                 student_created_at=datetime(2017, 1, 1, 12, 0, 0, 5000),
                 student_updated_at=datetime(2018, 1, 1, 12, 0, 0, 5000),
