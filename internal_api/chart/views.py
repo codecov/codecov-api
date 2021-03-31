@@ -100,7 +100,7 @@ class RepositoryChartHandler(APIView, RepositoriesMixin):
             complexity = [
                 {
                     "date": commit.timestamp,
-                    "complexity_ratio": round(commit.complexity_ratio * 100 / 2),
+                    "complexity_ratio": round(commit.complexity_ratio * 100, 2),
                     "commitid": commit.commitid,
                 }
                 for commit in annotated_queryset.order_by(
