@@ -18,7 +18,7 @@ class TokenlessAppveyorHandler(BaseTokenlessUploadHandler):
                 headers={"Accept": "application/json", "User-Agent": "Codecov"},
             )
         except (ConnectionError, HTTPError) as e:
-            log.error(
+            log.warning(
                 f"HTTP error {e}",
                 extra=dict(
                     commit=self.upload_params.get("commit"),

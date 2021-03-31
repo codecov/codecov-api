@@ -22,7 +22,7 @@ class TokenlessCircleciHandler(BaseTokenlessUploadHandler):
             )
             return build.json()
         except (ConnectionError, HTTPError) as e:
-            log.error(
+            log.warning(
                 f"Request error {e}",
                 extra=dict(
                     commit=self.upload_params.get("commit"),
