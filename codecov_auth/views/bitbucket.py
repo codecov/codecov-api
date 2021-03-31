@@ -61,7 +61,9 @@ class BitbucketLoginView(View, LoginMixin):
             + b"|"
             + base64.b64encode(oauth_token_secret.encode())
         ).decode()
-        response.set_cookie("_oauth_request_token", data, domain=settings.COOKIES_DOMAIN)
+        response.set_cookie(
+            "_oauth_request_token", data, domain=settings.COOKIES_DOMAIN
+        )
         return response
 
     def actual_login_step(self, request):

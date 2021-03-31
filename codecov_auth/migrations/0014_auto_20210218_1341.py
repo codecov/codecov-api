@@ -6,26 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('codecov_auth', '0013_owner_root_parent_service_id'),
+        ("codecov_auth", "0013_owner_root_parent_service_id"),
     ]
 
     operations = [
+        migrations.AlterModelOptions(name="owner", options={"ordering": ["ownerid"]},),
         migrations.AlterModelOptions(
-            name='owner',
-            options={'ordering': ['ownerid']},
-        ),
-        migrations.AlterModelOptions(
-            name='session',
-            options={'ordering': ['-lastseen']},
+            name="session", options={"ordering": ["-lastseen"]},
         ),
         migrations.AlterField(
-            model_name='owner',
-            name='cache',
-            field=models.JSONField(null=True),
+            model_name="owner", name="cache", field=models.JSONField(null=True),
         ),
         migrations.AlterField(
-            model_name='owner',
-            name='yaml',
-            field=models.JSONField(null=True),
+            model_name="owner", name="yaml", field=models.JSONField(null=True),
         ),
     ]

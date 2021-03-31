@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0007_auto_20200106_1822'),
+        ("core", "0007_auto_20200106_1822"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='repository',
-            name='activated',
+            model_name="repository",
+            name="activated",
             field=models.BooleanField(default=False),
         ),
     ]

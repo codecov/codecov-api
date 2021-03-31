@@ -328,7 +328,7 @@ class CoverageChartHelpersTest(TestCase):
         G(
             Commit,
             commitid=with_complexity_commitid,
-            totals={"n": 0, "h": 0, "p": 0, "m": 0, "c": 0, "C": 0, "N": 1}
+            totals={"n": 0, "h": 0, "p": 0, "m": 0, "c": 0, "C": 0, "N": 1},
         )
         annotated_commits = annotate_commits_with_totals(
             Commit.objects.filter(commitid=with_complexity_commitid)
@@ -340,14 +340,16 @@ class CoverageChartHelpersTest(TestCase):
             assert isclose(commit.coverage, commit.totals["c"])
             assert isclose(commit.complexity, commit.totals["C"])
             assert isclose(commit.complexity_total, commit.totals["N"])
-            assert isclose(commit.complexity_ratio, commit.totals["C"] / commit.totals["N"])
+            assert isclose(
+                commit.complexity_ratio, commit.totals["C"] / commit.totals["N"]
+            )
 
     def test_annotate_commit_with_totals_no_complexity_sets_ratio_to_None(self):
         no_complexity_commitid = "sdfkjwepj42"
         G(
             Commit,
             commitid=no_complexity_commitid,
-            totals={"n": 0, "h": 0, "p": 0, "m": 0, "c": 0, "C": 0, "N": 0}
+            totals={"n": 0, "h": 0, "p": 0, "m": 0, "c": 0, "C": 0, "N": 0},
         )
         annotated_commits = annotate_commits_with_totals(
             Commit.objects.filter(commitid=no_complexity_commitid)
@@ -442,7 +444,6 @@ class CoverageChartHelpersTest(TestCase):
             grouped_queryset = apply_grouping(initial_queryset, data)
             check_grouping_correctness(grouped_queryset, initial_queryset, data)
 
-
     def test_ordering(self):
         with self.subTest("order by increasing dates"):
             data = {
@@ -493,6 +494,7 @@ class TestChartQueryRunnerQuery(TestCase):
     """
     Tests for the querying-part of the ChartQueryRunner.
     """
+
     def setUp(self):
         self.org = OwnerFactory()
         self.repo1 = RepositoryFactory(author=self.org)
@@ -503,14 +505,14 @@ class TestChartQueryRunnerQuery(TestCase):
             repository=self.repo1,
             totals={"h": 100, "n": 120, "p": 10, "m": 10},
             branch=self.repo1.branch,
-            state="complete"
+            state="complete",
         )
         self.commit2 = G(
             model=Commit,
             repository=self.repo2,
             totals={"h": 14, "n": 25, "p": 6, "m": 5},
             branch=self.repo2.branch,
-            state="complete"
+            state="complete",
         )
 
     def test_query_aggregates_multiple_repository_totals(self):
@@ -520,8 +522,8 @@ class TestChartQueryRunnerQuery(TestCase):
                 "owner_username": self.org.username,
                 "service": self.org.service,
                 "end_date": str(timezone.now()),
-                "grouping_unit": "day"
-            }
+                "grouping_unit": "day",
+            },
         )
 
         results = query_runner.run_query()
@@ -543,8 +545,8 @@ class TestChartQueryRunnerQuery(TestCase):
                 "owner_username": self.org.username,
                 "service": self.org.service,
                 "start_date": str(timezone.now() - timedelta(days=1)),
-                "grouping_unit": "day"
-            }
+                "grouping_unit": "day",
+            },
         )
 
         results = query_runner.run_query()
@@ -556,18 +558,18 @@ class TestChartQueryRunnerQuery(TestCase):
         assert results[0]["total_lines"] == 120
         assert results[0]["total_misses"] == 10
         assert results[0]["total_partials"] == 10
-        assert results[0]["coverage"] == Decimal('91.67')
+        assert results[0]["coverage"] == Decimal("91.67")
 
         # Day commit2 is created
         assert results[1]["total_hits"] == 114
         assert results[1]["total_lines"] == 145
         assert results[1]["total_misses"] == 15
         assert results[1]["total_partials"] == 16
-        assert results[1]["coverage"] == Decimal('89.66')
+        assert results[1]["coverage"] == Decimal("89.66")
 
     @pytest.mark.skip(reason="flaky, skipping until re write")
     def test_query_supports_different_grouping_params(self):
-        end_date = datetime.fromisoformat('2019-01-01')
+        end_date = datetime.fromisoformat("2019-01-01")
         self.commit1.timestamp = end_date - timedelta(days=365)
         self.commit1.save()
         pairs = [("day", 365), ("week", 52), ("month", 12), ("quarter", 4), ("year", 1)]
@@ -579,13 +581,15 @@ class TestChartQueryRunnerQuery(TestCase):
                     "service": self.org.service,
                     "start_date": str(end_date - timedelta(days=365)),
                     "end_date": str(end_date),
-                    "grouping_unit": grouping_unit
-                }
+                    "grouping_unit": grouping_unit,
+                },
             )
 
             results = query_runner.run_query()
 
-            assert len(results) == expected_num_datapoints + 1 # We add one because the date range is inclusive
+            assert (
+                len(results) == expected_num_datapoints + 1
+            )  # We add one because the date range is inclusive
 
     def test_query_supports_reverse_ordering(self):
         self.commit1.timestamp = timezone.now() - timedelta(days=7)
@@ -598,8 +602,8 @@ class TestChartQueryRunnerQuery(TestCase):
                 "service": self.org.service,
                 "start_date": str(timezone.now() - timedelta(days=1)),
                 "grouping_unit": "day",
-                "coverage_timestamp_ordering": "decreasing"
-            }
+                "coverage_timestamp_ordering": "decreasing",
+            },
         )
 
         results = query_runner.run_query()
@@ -615,8 +619,8 @@ class TestChartQueryRunnerQuery(TestCase):
                 request_params={
                     "owner_username": self.org.username,
                     "service": self.org.service,
-                    "grouping_unit": "day"
-                }
+                    "grouping_unit": "day",
+                },
             ).run_query()
 
         with self.subTest("no commits case"):
@@ -628,8 +632,8 @@ class TestChartQueryRunnerQuery(TestCase):
                 request_params={
                     "owner_username": self.org.username,
                     "service": self.org.service,
-                    "grouping_unit": "day"
-                }
+                    "grouping_unit": "day",
+                },
             ).run_query()
 
 
@@ -638,12 +642,16 @@ class TestChartQueryRunnerHelperMethods(TestCase):
     Tests for the non-querying-parts of the ChartQueryRunner, such
     as validation and parameter transformation.
     """
+
     def setUp(self):
         self.org = OwnerFactory()
         self.user = OwnerFactory()
 
     def test_repoids(self):
-        repo1, repo2 = RepositoryFactory(author=self.org), RepositoryFactory(author=self.org)
+        repo1, repo2 = (
+            RepositoryFactory(author=self.org),
+            RepositoryFactory(author=self.org),
+        )
         self.user.permission = [repo1.repoid, repo2.repoid]
         self.user.save()
         qr = ChartQueryRunner(
@@ -651,8 +659,8 @@ class TestChartQueryRunnerHelperMethods(TestCase):
             {
                 "owner_username": self.org.username,
                 "service": self.org.service,
-                "grouping_unit": "day"
-            }
+                "grouping_unit": "day",
+            },
         )
 
         with self.subTest("returns repoids"):
@@ -665,35 +673,46 @@ class TestChartQueryRunnerHelperMethods(TestCase):
                     "owner_username": self.org.username,
                     "service": self.org.service,
                     "grouping_unit": "day",
-                    "repositories": [repo1.name]
-                }
+                    "repositories": [repo1.name],
+                },
             )
             assert qr.repoids == f"({repo1.repoid})"
 
     def test_interval(self):
         with self.subTest("translates quarter into 3 months"):
-            assert ChartQueryRunner(
-                self.user,
-                {
-                    "owner_username": self.org.username,
-                    "service": self.org.service,
-                    "grouping_unit": "quarter"
-                }
-            ).interval == "3 months"
-
-        with self.subTest("transforms grouping unit into '1 {grouping_unit}'"):
-            for grouping_unit in ["day", "week", "month", "year"]:
-                assert ChartQueryRunner(
+            assert (
+                ChartQueryRunner(
                     self.user,
                     {
                         "owner_username": self.org.username,
                         "service": self.org.service,
-                        "grouping_unit": grouping_unit
-                    }
-                ).interval == f"1 {grouping_unit}"
+                        "grouping_unit": "quarter",
+                    },
+                ).interval
+                == "3 months"
+            )
 
-    def test_first_complete_commit_date_returns_date_of_first_complete_commit_in_repoids(self):
-        repo1, repo2 = RepositoryFactory(author=self.org), RepositoryFactory(author=self.org)
+        with self.subTest("transforms grouping unit into '1 {grouping_unit}'"):
+            for grouping_unit in ["day", "week", "month", "year"]:
+                assert (
+                    ChartQueryRunner(
+                        self.user,
+                        {
+                            "owner_username": self.org.username,
+                            "service": self.org.service,
+                            "grouping_unit": grouping_unit,
+                        },
+                    ).interval
+                    == f"1 {grouping_unit}"
+                )
+
+    def test_first_complete_commit_date_returns_date_of_first_complete_commit_in_repoids(
+        self,
+    ):
+        repo1, repo2 = (
+            RepositoryFactory(author=self.org),
+            RepositoryFactory(author=self.org),
+        )
         self.user.permission = [repo1.repoid, repo2.repoid]
         self.user.save()
         older_incomplete_commit = G(
@@ -701,20 +720,17 @@ class TestChartQueryRunnerHelperMethods(TestCase):
             repository=repo1,
             branch=repo1.branch,
             state="pending",
-            timestamp=timezone.now() - timedelta(days=7)
+            timestamp=timezone.now() - timedelta(days=7),
         )
         commit1 = G(
             model=Commit,
             repository=repo1,
             branch=repo1.branch,
             state="complete",
-            timestamp=timezone.now() - timedelta(days=3)
+            timestamp=timezone.now() - timedelta(days=3),
         )
         commit2 = G(
-            model=Commit,
-            repository=repo2,
-            branch=repo2.branch,
-            state="complete"
+            model=Commit, repository=repo2, branch=repo2.branch, state="complete"
         )
 
         qr = ChartQueryRunner(
@@ -722,8 +738,8 @@ class TestChartQueryRunnerHelperMethods(TestCase):
             {
                 "owner_username": self.org.username,
                 "service": self.org.service,
-                "grouping_unit": "day"
-            }
+                "grouping_unit": "day",
+            },
         )
 
         assert qr.first_complete_commit_date == datetime.date(commit1.timestamp)
@@ -737,8 +753,8 @@ class TestChartQueryRunnerHelperMethods(TestCase):
                     "owner_username": self.org.username,
                     "service": self.org.service,
                     "grouping_unit": "day",
-                    "start_date": str(start_date)
-                }
+                    "start_date": str(start_date),
+                },
             ).start_date == datetime.date(start_date)
 
         with self.subTest("returns first_commit_date if not supplied"):
@@ -750,7 +766,7 @@ class TestChartQueryRunnerHelperMethods(TestCase):
                 repository=repo,
                 branch=repo.branch,
                 state="complete",
-                timestamp=timezone.now() - timedelta(days=3)
+                timestamp=timezone.now() - timedelta(days=3),
             )
             assert ChartQueryRunner(
                 self.user,
@@ -758,7 +774,7 @@ class TestChartQueryRunnerHelperMethods(TestCase):
                     "owner_username": self.org.username,
                     "service": self.org.service,
                     "grouping_unit": "day",
-                }
+                },
             ).start_date == datetime.date(commit.timestamp)
 
     def test_end_date(self):
@@ -770,8 +786,8 @@ class TestChartQueryRunnerHelperMethods(TestCase):
                     "owner_username": self.org.username,
                     "service": self.org.service,
                     "grouping_unit": "day",
-                    "end_date": str(end_date)
-                }
+                    "end_date": str(end_date),
+                },
             ).end_date == datetime.date(end_date)
 
         with self.subTest("returns timezone.now() if not supplied"):
@@ -781,7 +797,7 @@ class TestChartQueryRunnerHelperMethods(TestCase):
                     "owner_username": self.org.username,
                     "service": self.org.service,
                     "grouping_unit": "day",
-                }
+                },
             ).end_date == datetime.date(timezone.now())
 
 
@@ -889,7 +905,11 @@ class RepositoryCoverageChartTest(InternalAPITest):
             if index == 0:
                 assert commit["coverage_change"] == 0
             else:
-                assert commit["coverage_change"] == commit["coverage"] - response.data["coverage"][index - 1]["coverage"]
+                assert (
+                    commit["coverage_change"]
+                    == commit["coverage"]
+                    - response.data["coverage"][index - 1]["coverage"]
+                )
 
 
 class TestOrganizationChartHandler(InternalAPITest):
@@ -903,14 +923,14 @@ class TestOrganizationChartHandler(InternalAPITest):
             repository=self.repo1,
             totals={"h": 100, "n": 120, "p": 10, "m": 10},
             branch=self.repo1.branch,
-            state="complete"
+            state="complete",
         )
         self.commit2 = G(
             model=Commit,
             repository=self.repo2,
             totals={"h": 14, "n": 25, "p": 6, "m": 5},
             branch=self.repo2.branch,
-            state="complete"
+            state="complete",
         )
         self.client.force_login(user=self.user)
 
@@ -923,14 +943,11 @@ class TestOrganizationChartHandler(InternalAPITest):
 
     def test_basic_success(self):
         response = self._get(
-            kwargs={
-                "owner_username": self.org.username,
-                "service": self.org.service,
-            },
+            kwargs={"owner_username": self.org.username, "service": self.org.service,},
             data={
                 "grouping_unit": "day",
-                "repositories": [self.repo1.name, self.repo2.name]
-            }
+                "repositories": [self.repo1.name, self.repo2.name],
+            },
         )
 
         assert response.status_code == 200

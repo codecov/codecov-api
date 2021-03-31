@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0013_auto_20200807_1949'),
+        ("core", "0013_auto_20200807_1949"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='pull',
-            name='updatestamp',
+            model_name="pull",
+            name="updatestamp",
             field=models.DateTimeField(auto_now_add=True),
         ),
     ]

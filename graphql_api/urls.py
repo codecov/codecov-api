@@ -6,5 +6,7 @@ from .schema import schema
 from .views import AriadneView
 
 urlpatterns = [
-    path('<str:service>', csrf_exempt(AriadneView.as_view(schema=schema)), name='graphql'),
+    path(
+        "<str:service>", csrf_exempt(AriadneView.as_view(schema=schema)), name="graphql"
+    ),
 ]

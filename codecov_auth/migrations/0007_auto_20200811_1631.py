@@ -6,23 +6,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('codecov_auth', '0006_owner_student'),
+        ("codecov_auth", "0006_owner_student"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='session',
-            name='ip',
-            field=models.TextField(null=True),
+            model_name="session", name="ip", field=models.TextField(null=True),
         ),
         migrations.AlterField(
-            model_name='session',
-            name='name',
-            field=models.TextField(null=True),
+            model_name="session", name="name", field=models.TextField(null=True),
         ),
         migrations.AlterField(
-            model_name='session',
-            name='useragent',
-            field=models.TextField(null=True),
+            model_name="session", name="useragent", field=models.TextField(null=True),
         ),
     ]

@@ -128,8 +128,14 @@ def parse_params(data):
                 else value
             ),
         },
-        "build_url": {"type": "string", "regex": r"^https?\:\/\/(.{,100})",},
-        "flags": {"type": "string", "regex": r"^[\w\.\-\,]+$",},
+        "build_url": {
+            "type": "string",
+            "regex": r"^https?\:\/\/(.{,100})",
+        },
+        "flags": {
+            "type": "string",
+            "regex": r"^[\w\.\-\,]+$",
+        },
         "branch": {
             "type": "string",
             "nullable": True,
@@ -173,7 +179,9 @@ def parse_params(data):
         "package": {"type": "string"},
         "project": {"type": "string"},
         "server_uri": {"type": "string"},
-        "root": {"type": "string",},  # deprecated
+        "root": {
+            "type": "string",
+        },  # deprecated
     }
 
     v = Validator(params_schema, allow_unknown=True)
@@ -188,7 +196,7 @@ def determine_repo_for_upload(upload_params):
     token = upload_params.get("token")
     using_global_token = upload_params.get("using_global_token")
     service = upload_params.get("service")
-    
+
     if token and not using_global_token:
         try:
             repository = Repository.objects.get(upload_token=token)
@@ -198,12 +206,14 @@ def determine_repo_for_upload(upload_params):
             )
     elif service:
         git_service = TokenlessUploadHandler(service, upload_params).verify_upload()
-        try: 
-            repository = Repository.objects.get(author__service=git_service, name=upload_params.get("repo"), author__username=upload_params.get("owner"))
-        except ObjectDoesNotExist:
-            raise NotFound(
-                f"Could not find a repository, try using upload token"
+        try:
+            repository = Repository.objects.get(
+                author__service=git_service,
+                name=upload_params.get("repo"),
+                author__username=upload_params.get("owner"),
             )
+        except ObjectDoesNotExist:
+            raise NotFound(f"Could not find a repository, try using upload token")
     else:
         raise ValidationError(
             "Need either a token or service to determine target repository"
@@ -386,7 +396,7 @@ def validate_upload(upload_params, repository, redis):
                 extra=dict(
                     commit=upload_params.get("commit"),
                     session_count=session_count,
-                    repository=repository.repoid
+                    repository=repository.repoid,
                 ),
             )
             raise ValidationError("Too many uploads to this commit.")
@@ -411,7 +421,9 @@ def validate_upload(upload_params, repository, redis):
         if owner.service == "gitlab":
             # Gitlab authors have a "subgroup" structure, so find the parent group before checking repo credits
             while owner.parent_service_id is not None:
-                owner = Owner.objects.get(service_id=owner.parent_service_id, service=owner.service)
+                owner = Owner.objects.get(
+                    service_id=owner.parent_service_id, service=owner.service
+                )
 
         # If author is on per repo billing, check their repo credits
         if owner.plan not in USER_PLAN_REPRESENTATIONS and owner.repo_credits <= 0:
@@ -420,14 +432,15 @@ def validate_upload(upload_params, repository, redis):
             )
 
     if not repository.activated:
-        SegmentService().account_activated_repository_on_upload(repository.author.ownerid, repository)
+        SegmentService().account_activated_repository_on_upload(
+            repository.author.ownerid, repository
+        )
 
     # Activate the repository
     repository.activated = True
     repository.active = True
     repository.deleted = False
     repository.save()
-
 
 
 def parse_headers(headers, upload_params):
@@ -481,7 +494,8 @@ def dispatch_upload_task(task_arguments, repository, redis):
 
     redis.rpush(repo_queue_key, dumps(task_arguments))
     redis.expire(
-        repo_queue_key, cache_uploads_eta if cache_uploads_eta is not True else 86400,
+        repo_queue_key,
+        cache_uploads_eta if cache_uploads_eta is not True else 86400,
     )
 
     # Send task to worker

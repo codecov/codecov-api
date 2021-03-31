@@ -6,13 +6,15 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('codecov_auth', '0008_auto_20200811_1632'),
+        ("codecov_auth", "0008_auto_20200811_1632"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='session',
-            name='type',
-            field=models.CharField(choices=[('api', 'api'), ('login', 'login')], max_length=10, null=True),
+            model_name="session",
+            name="type",
+            field=models.CharField(
+                choices=[("api", "api"), ("login", "login")], max_length=10, null=True
+            ),
         ),
     ]

@@ -14,14 +14,14 @@ class PullSerializer(serializers.ModelSerializer):
     class Meta:
         model = Pull
         fields = (
-            'pullid',
-            'title',
-            'most_recent_commiter',
-            'base_totals',
-            'head_totals',
-            'updatestamp',
-            'state',
-            'ci_passed'
+            "pullid",
+            "title",
+            "most_recent_commiter",
+            "base_totals",
+            "head_totals",
+            "updatestamp",
+            "state",
+            "ci_passed",
         )
 
 
@@ -30,4 +30,4 @@ class PullDetailSerializer(PullSerializer):
 
     class Meta:
         model = Pull
-        fields = PullSerializer.Meta.fields + ('author',)
+        fields = PullSerializer.Meta.fields + ("author",)

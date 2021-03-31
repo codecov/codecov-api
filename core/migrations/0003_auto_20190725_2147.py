@@ -8,33 +8,39 @@ import uuid
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0002_version'),
+        ("core", "0002_version"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='repository',
-            name='branch',
+            model_name="repository",
+            name="branch",
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='repository',
-            name='fork',
-            field=models.ForeignKey(blank=True, db_column='forkid', null=True, on_delete=django.db.models.deletion.DO_NOTHING, to='core.Repository'),
+            model_name="repository",
+            name="fork",
+            field=models.ForeignKey(
+                blank=True,
+                db_column="forkid",
+                null=True,
+                on_delete=django.db.models.deletion.DO_NOTHING,
+                to="core.Repository",
+            ),
         ),
         migrations.AddField(
-            model_name='repository',
-            name='language',
+            model_name="repository",
+            name="language",
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='repository',
-            name='upload_token',
+            model_name="repository",
+            name="upload_token",
             field=models.UUIDField(default=uuid.uuid4),
         ),
         migrations.AlterField(
-            model_name='version',
-            name='version',
+            model_name="version",
+            name="version",
             field=models.TextField(primary_key=True, serialize=False),
         ),
     ]

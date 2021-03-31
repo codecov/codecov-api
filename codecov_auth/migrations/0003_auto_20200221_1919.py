@@ -7,13 +7,15 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('codecov_auth', '0002_owner_plan'),
+        ("codecov_auth", "0002_owner_plan"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='owner',
-            name='plan_activated_users',
-            field=django.contrib.postgres.fields.ArrayField(base_field=models.IntegerField(null=True), null=True, size=None),
+            model_name="owner",
+            name="plan_activated_users",
+            field=django.contrib.postgres.fields.ArrayField(
+                base_field=models.IntegerField(null=True), null=True, size=None
+            ),
         ),
     ]

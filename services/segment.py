@@ -474,4 +474,3 @@ class SegmentService:
             properties=upload_details,
             context={"groupId": org_ownerid},
         )
-

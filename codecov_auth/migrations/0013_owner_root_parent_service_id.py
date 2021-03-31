@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('codecov_auth', '0012_owner_parent_service_id'),
+        ("codecov_auth", "0012_owner_parent_service_id"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='owner',
-            name='root_parent_service_id',
+            model_name="owner",
+            name="root_parent_service_id",
             field=models.TextField(null=True),
         ),
     ]

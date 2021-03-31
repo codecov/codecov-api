@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('codecov_auth', '0007_auto_20200811_1631'),
+        ("codecov_auth", "0007_auto_20200811_1631"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='session',
-            name='lastseen',
+            model_name="session",
+            name="lastseen",
             field=models.DateTimeField(null=True),
         ),
     ]

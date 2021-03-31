@@ -73,7 +73,8 @@ class BitbucketWebhookHandler(APIView):
 
         Pull.objects.filter(
             repository__repoid=repo.repoid,
-            pullid=self.request.data["pullrequest"]["id"]).update(state=state)
+            pullid=self.request.data["pullrequest"]["id"],
+        ).update(state=state)
 
         return Response()
 
@@ -104,7 +105,9 @@ class BitbucketWebhookHandler(APIView):
             # skip pending
             return Response(data=WebhookHandlerErrorMessages.SKIP_PENDING_STATUSES)
 
-        commitid = self.request.data["commit_status"]["links"]["commit"]["href"].split("/")[-1]
+        commitid = self.request.data["commit_status"]["links"]["commit"]["href"].split(
+            "/"
+        )[-1]
 
         if not Commit.objects.filter(
             repository=repo, commitid=commitid, state=Commit.CommitStates.COMPLETE

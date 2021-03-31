@@ -32,7 +32,11 @@ class SessionViewSetTests(APITestCase):
         if not kwargs:
             kwargs = {"owner_username": self.org.username, "service": self.org.service}
         if not data:
-            data = {"name": "an-api-session", "type": Session.SessionType.API, "owner": self.user.ownerid}
+            data = {
+                "name": "an-api-session",
+                "type": Session.SessionType.API,
+                "owner": self.user.ownerid,
+            }
         return self.client.post(reverse("sessions-list", kwargs=kwargs), data=data)
 
     def _delete(self, kwargs={}):
@@ -40,7 +44,7 @@ class SessionViewSetTests(APITestCase):
             kwargs = {
                 "owner_username": self.org.username,
                 "service": self.org.service,
-                "pk": self.session.sessionid
+                "pk": self.session.sessionid,
             }
         return self.client.delete(reverse("sessions-detail", kwargs=kwargs))
 
@@ -62,8 +66,8 @@ class SessionViewSetTests(APITestCase):
                 "name": self.user.name,
                 "stats": self.user.cache["stats"],
                 "ownerid": self.user.ownerid,
-                "integration_id": self.user.integration_id
-            }
+                "integration_id": self.user.integration_id,
+            },
         }
 
     def test_delete_session_returns_204_and_deletes_session(self):
@@ -71,7 +75,7 @@ class SessionViewSetTests(APITestCase):
         assert response.status_code == status.HTTP_204_NO_CONTENT
         assert Session.objects.all().count() == 0
 
-    @patch('internal_api.permissions.get_provider')
+    @patch("internal_api.permissions.get_provider")
     def test_list_requires_admin_rights(self, get_provider_mock):
         get_provider_mock.return_value = GetAdminProviderAdapter()
         self.org.admins = None
@@ -80,7 +84,7 @@ class SessionViewSetTests(APITestCase):
         response = self._list()
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    @patch('internal_api.permissions.get_provider')
+    @patch("internal_api.permissions.get_provider")
     def test_delete_requires_admin_rights(self, get_provider_mock):
         get_provider_mock.return_value = GetAdminProviderAdapter()
         self.org.admins = None
@@ -95,17 +99,29 @@ class SessionViewSetTests(APITestCase):
 
     def test_create_required_fields(self):
         with self.subTest("missing name"):
-            response = self._create(data={"type": Session.SessionType.API, "owner": self.user.ownerid})
+            response = self._create(
+                data={"type": Session.SessionType.API, "owner": self.user.ownerid}
+            )
             assert response.status_code == status.HTTP_400_BAD_REQUEST
 
         with self.subTest("missing type"):
-            response = self._create(data={"name": "api-token", "owner": self.user.ownerid})
+            response = self._create(
+                data={"name": "api-token", "owner": self.user.ownerid}
+            )
             assert response.status_code == status.HTTP_400_BAD_REQUEST
 
         with self.subTest("non-api type"):
-            response = self._create(data={"name": "api-token", "type": Session.SessionType.LOGIN, "owner": self.user.ownerid})
+            response = self._create(
+                data={
+                    "name": "api-token",
+                    "type": Session.SessionType.LOGIN,
+                    "owner": self.user.ownerid,
+                }
+            )
             assert response.status_code == status.HTTP_400_BAD_REQUEST
 
         with self.subTest("missing owner"):
-            response = self._create(data={"name": "api-token", "type": Session.SessionType.API})
+            response = self._create(
+                data={"name": "api-token", "type": Session.SessionType.API}
+            )
             assert response.status_code == status.HTTP_400_BAD_REQUEST

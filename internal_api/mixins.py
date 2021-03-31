@@ -7,14 +7,13 @@ from core.models import Repository
 from .serializers import CommitRefQueryParamSerializer, PullIDQueryParamSerializer
 from utils.services import get_long_service_name
 
+
 class OwnerPropertyMixin:
     @cached_property
     def owner(self):
         service = get_long_service_name(self.kwargs.get("service"))
         return get_object_or_404(
-            Owner,
-            username=self.kwargs.get("owner_username"),
-            service=service
+            Owner, username=self.kwargs.get("owner_username"), service=service
         )
 
 
@@ -22,9 +21,7 @@ class RepoPropertyMixin(OwnerPropertyMixin):
     @cached_property
     def repo(self):
         return get_object_or_404(
-            Repository,
-            name=self.kwargs.get("repo_name"),
-            author=self.owner
+            Repository, name=self.kwargs.get("repo_name"), author=self.owner
         )
 
 

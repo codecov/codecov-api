@@ -3,5 +3,5 @@ from .views import ValidateYamlHandler
 
 
 urlpatterns = [
-    path('', ValidateYamlHandler.as_view(), name='validate-yaml'),
+    path("", ValidateYamlHandler.as_view(), name="validate-yaml"),
 ]

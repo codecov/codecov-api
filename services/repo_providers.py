@@ -13,6 +13,7 @@ class TorngitInitializationFailed(Exception):
     """
         Exception when initializing the torngit provider object.
     """
+
     pass
 
 
@@ -28,9 +29,7 @@ def get_generic_adapter_params(user, service, use_ssl=False, token=None):
 
     if token is None:
         if user.is_authenticated and user.oauth_token is not None:
-            token = encryptor.decrypt_token(
-                user.oauth_token
-            )
+            token = encryptor.decrypt_token(user.oauth_token)
             token["username"] = user.username
         else:
             token = {"key": getattr(settings, f"{service.upper()}_BOT_KEY")}
@@ -39,12 +38,8 @@ def get_generic_adapter_params(user, service, use_ssl=False, token=None):
         token=token,
         timeouts=(5, 15),
         oauth_consumer_token=dict(
-            key=getattr(
-                settings, f"{service.upper()}_CLIENT_ID", "unknown"
-            ),
-            secret=getattr(
-                settings, f"{service.upper()}_CLIENT_SECRET", "unknown"
-            ),
+            key=getattr(settings, f"{service.upper()}_CLIENT_ID", "unknown"),
+            secret=getattr(settings, f"{service.upper()}_CLIENT_SECRET", "unknown"),
         ),
     )
 
@@ -67,7 +62,9 @@ class RepoProviderService(object):
         :return:
         :raises: TorngitInitializationFailed
         """
-        generic_adapter_params = get_generic_adapter_params(user, repo.author.service, use_ssl, token)
+        generic_adapter_params = get_generic_adapter_params(
+            user, repo.author.service, use_ssl, token
+        )
         owner_and_repo_params = {
             "repo": {
                 "name": repo.name,
@@ -77,11 +74,13 @@ class RepoProviderService(object):
             },
             "owner": {
                 "username": repo.author.username,
-                "service_id": repo.author.service_id
-            }
+                "service_id": repo.author.service_id,
+            },
         }
 
-        return get_provider(repo.author.service, {**generic_adapter_params, **owner_and_repo_params})
+        return get_provider(
+            repo.author.service, {**generic_adapter_params, **owner_and_repo_params}
+        )
 
     def get_by_name(self, user, repo_name, repo_owner_username, repo_owner_service):
         """
@@ -96,11 +95,9 @@ class RepoProviderService(object):
         """
         generic_adapter_params = get_generic_adapter_params(user, repo_owner_service)
         owner_and_repo_params = {
-            "repo": {
-                "name": repo_name
-            },
-            "owner": {
-                "username": repo_owner_username
-            }
+            "repo": {"name": repo_name},
+            "owner": {"username": repo_owner_username},
         }
-        return get_provider(repo_owner_service, {**generic_adapter_params, **owner_and_repo_params})
+        return get_provider(
+            repo_owner_service, {**generic_adapter_params, **owner_and_repo_params}
+        )

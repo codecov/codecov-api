@@ -193,8 +193,14 @@ class TestCompareFlagsView(InternalAPITest):
             },
         ]
 
-        assert response.data[0]["base_report_totals"] == expected_result[0]["base_report_totals"]
-        assert response.data[0]["head_report_totals"] == expected_result[0]["head_report_totals"]
+        assert (
+            response.data[0]["base_report_totals"]
+            == expected_result[0]["base_report_totals"]
+        )
+        assert (
+            response.data[0]["head_report_totals"]
+            == expected_result[0]["head_report_totals"]
+        )
         assert response.data[0] == expected_result[0]
         assert response.data[1] == expected_result[1]
         assert response.data == expected_result
