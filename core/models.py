@@ -10,6 +10,11 @@ from .encoders import ReportJSONEncoder
 from .managers import RepositoryQuerySet
 
 
+class DateTimeWithoutTZField(models.DateTimeField):
+    def db_type(self, connection):
+        return 'timestamp'
+
+
 class Version(models.Model):
     version = models.TextField(primary_key=True)
 
@@ -197,12 +202,11 @@ class CommitNotification(models.Model):
 
     id = models.BigAutoField(primary_key=True)
     commit = models.ForeignKey('core.Commit', on_delete=models.CASCADE, related_name='notifications')
-    notification_type = models.CharField(max_length=32, choices=NotificationTypes.choices)
-    decoration_type = models.CharField(max_length=32, choices=DecorationTypes.choices, null=True)
-    state = models.CharField(max_length=32, choices=States.choices, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now_add=True)
-    state = models.CharField(max_length=32, null=True)
+    notification_type = models.TextField(choices=NotificationTypes.choices)   # Really an ENUM in db
+    decoration_type = models.TextField(choices=DecorationTypes.choices, null=True)  # Really an ENUM in db
+    state = models.TextField(choices=States.choices, null=True)  # Really an ENUM in db
+    created_at = DateTimeWithoutTZField(auto_now_add=True)
+    updated_at = DateTimeWithoutTZField(auto_now_add=True)
 
     class Meta:
         db_table = 'commit_notifications'
