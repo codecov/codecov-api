@@ -40,17 +40,14 @@ class OwnerSerializer(serializers.ModelSerializer):
 class ProfileSerializer(OwnerSerializer):
     class Meta:
         model = Owner
-        fields = (
+        read_only_fields = (
             "avatar_url",
             "service",
             "username",
-            "name",
-            "email",
             "stats",
             "ownerid",
             "integration_id",
             "staff",
-            "private_access",
             "service_id",
             "plan",
             "plan_provider",
@@ -66,6 +63,7 @@ class ProfileSerializer(OwnerSerializer):
             "student_created_at",
             "student_updated_at",
         )
+        fields = read_only_fields + ("email", "name", "private_access")
 
 
 class StripeLineItemSerializer(serializers.Serializer):
