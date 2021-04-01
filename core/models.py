@@ -10,6 +10,10 @@ from django.utils.functional import cached_property
 from .encoders import ReportJSONEncoder
 from .managers import RepositoryQuerySet
 
+class DateTimeWithoutTZField(models.DateTimeField):
+    def db_type(self, connection):
+        return 'timestamp'
+
 
 class DateTimeWithoutTZField(models.DateTimeField):
     def db_type(self, connection):
@@ -30,6 +34,28 @@ def _gen_image_token():
 
 
 class Repository(models.Model):
+    class Languages(models.TextChoices):
+        JAVASCRIPT = 'javascript'
+        SHELL = 'shell'
+        PYTHON = 'python'
+        RUBY = 'ruby'
+        PERL = 'perl'
+        DART = 'dart'
+        JAVA = 'java'
+        C = 'c'
+        CLOJURE = 'clojure'
+        D = 'd'
+        FORTRAN = 'fortran'
+        GO = 'go'
+        GROOVY = 'groovy'
+        KOTLIN = 'kotlin'
+        PHP = 'php'
+        R = 'r'
+        SCALA = 'scala'
+        SWIFT = 'swift'
+        OBJECTIVE_C = 'objective-c'
+        XTEND = 'xtend'
+
     repoid = models.AutoField(primary_key=True)
     name = CITextField()
     author = models.ForeignKey(
@@ -41,7 +67,7 @@ class Repository(models.Model):
     private = models.BooleanField()
     updatestamp = models.DateTimeField(auto_now=True)
     active = models.BooleanField(null=True)
-    language = models.TextField(null=True, blank=True)  # Really an ENUM in db
+    language = models.TextField(null=True, blank=True, choices=Languages.choices)  # Really an ENUM in db
     fork = models.ForeignKey(
         "core.Repository",
         db_column="forkid",
@@ -157,6 +183,10 @@ class Commit(models.Model):
         self.updatestamp = datetime.now()
         super().save(*args, **kwargs)
 
+    def save(self, *args, **kwargs):
+        self.updatestamp = datetime.now()
+        super().save(*args, **kwargs)
+
     @cached_property
     def parent_commit(self):
         return Commit.objects.filter(
@@ -224,6 +254,10 @@ class Pull(models.Model):
     updatestamp = DateTimeWithoutTZField(default=datetime.now)
     diff = models.JSONField(null=True)
     flare = models.JSONField(null=True)
+
+    def save(self, *args, **kwargs):
+        self.updatestamp = datetime.now()
+        super().save(*args, **kwargs)
 
     class Meta:
         db_table = "pulls"

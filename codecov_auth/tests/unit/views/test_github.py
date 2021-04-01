@@ -1,5 +1,4 @@
 from datetime import datetime
-
 from django.urls import reverse
 from django.utils import timezone
 from shared.torngit import Github

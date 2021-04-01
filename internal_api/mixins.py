@@ -1,7 +1,8 @@
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils.functional import cached_property
 
-from codecov_auth.models import Owner
+from codecov_auth.models import Owner, Service
 from core.models import Repository
 
 from .serializers import CommitRefQueryParamSerializer, PullIDQueryParamSerializer
@@ -12,6 +13,9 @@ class OwnerPropertyMixin:
     @cached_property
     def owner(self):
         service = get_long_service_name(self.kwargs.get("service"))
+        if service not in Service:
+            raise Http404
+
         return get_object_or_404(
             Owner, username=self.kwargs.get("owner_username"), service=service
         )
