@@ -1,6 +1,7 @@
 import re
 import asyncio
 import logging
+from utils.encryption import encryptor
 from cerberus import Validator
 from json import dumps
 from rest_framework.exceptions import ValidationError, NotFound
@@ -128,8 +129,14 @@ def parse_params(data):
                 else value
             ),
         },
-        "build_url": {"type": "string", "regex": r"^https?\:\/\/(.{,100})",},
-        "flags": {"type": "string", "regex": r"^[\w\.\-\,]+$",},
+        "build_url": {
+            "type": "string",
+            "regex": r"^https?\:\/\/(.{,100})",
+        },
+        "flags": {
+            "type": "string",
+            "regex": r"^[\w\.\-\,]+$",
+        },
         "branch": {
             "type": "string",
             "nullable": True,
@@ -173,7 +180,9 @@ def parse_params(data):
         "package": {"type": "string"},
         "project": {"type": "string"},
         "server_uri": {"type": "string"},
-        "root": {"type": "string",},  # deprecated
+        "root": {
+            "type": "string",
+        },  # deprecated
     }
 
     v = Validator(params_schema, allow_unknown=True)
@@ -270,11 +279,10 @@ def determine_upload_commit_to_use(upload_params, repository):
         "_did_change_merge_commit"
     ):
         token = (
-            repository.bot.oauth_token
+            encryptor.decrypt_token(repository.bot.oauth_token)
             if repository.bot and repository.bot.oauth_token
             else get_config(service, "bot")
         )
-
         # Get the commit message from the git provider and check if it's structured like a merge commit message
         try:
             git_commit_data = asyncio.run(
@@ -283,15 +291,19 @@ def determine_upload_commit_to_use(upload_params, repository):
                 .get_commit(upload_params.get("commit"), token)
             )
         except TorngitObjectNotFoundError as e:
-            log.error(
+            log.warning(
                 "Unable to fetch commit. Not found",
-                extra=dict(commit=upload_params.get("commit"),),
+                extra=dict(
+                    commit=upload_params.get("commit"),
+                ),
             )
             return upload_params.get("commit")
         except TorngitClientError as e:
-            log.error(
+            log.warning(
                 "Unable to fetch commit",
-                extra=dict(commit=upload_params.get("commit"),),
+                extra=dict(
+                    commit=upload_params.get("commit"),
+                ),
             )
             return upload_params.get("commit")
 
@@ -379,7 +391,7 @@ def validate_upload(upload_params, repository, redis):
         )
         session_count = commit.totals.get("s", 0) if commit.totals else 0
         if (session_count or 0) > (get_config("setup", "max_sessions") or 100):
-            log.error(
+            log.warning(
                 "Too many uploads to this commit",
                 extra=dict(
                     commit=upload_params.get("commit"),
@@ -482,7 +494,8 @@ def dispatch_upload_task(task_arguments, repository, redis):
 
     redis.rpush(repo_queue_key, dumps(task_arguments))
     redis.expire(
-        repo_queue_key, cache_uploads_eta if cache_uploads_eta is not True else 86400,
+        repo_queue_key,
+        cache_uploads_eta if cache_uploads_eta is not True else 86400,
     )
 
     # Send task to worker

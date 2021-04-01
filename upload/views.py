@@ -87,7 +87,7 @@ class UploadHandler(APIView):
             # note: try to avoid mutating upload_params past this point, to make it easier to reason about the state of this variable
             upload_params = parse_params(request_params)
         except ValidationError as e:
-            log.error(
+            log.warning(
                 "Failed to parse upload request params",
                 extra=dict(request_params=request_params, errors=str(e)),
             )
@@ -219,7 +219,7 @@ class UploadHandler(APIView):
                     commit_sha=commitid, filename="{}.txt".format(reportid)
                 )
             except Exception as e:
-                log.error(
+                log.warning(
                     f"Error generating minio presign put {e}",
                     extra=dict(
                         commit=commitid,

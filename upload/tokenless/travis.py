@@ -24,7 +24,7 @@ class TokenlessTravisHandler(BaseTokenlessUploadHandler):
                 == f"{self.upload_params['owner']}/{self.upload_params['repo']}"
             )
         except (ConnectionError, HTTPError) as e:
-            log.error(
+            log.warning(
                 f"Request error {e}",
                 extra=dict(
                     commit=self.upload_params["commit"],
@@ -35,7 +35,7 @@ class TokenlessTravisHandler(BaseTokenlessUploadHandler):
             )
             pass
         except Exception as e:
-            log.error(
+            log.warning(
                 f"Error {e}",
                 extra=dict(
                     commit=self.upload_params["commit"],
@@ -64,7 +64,7 @@ class TokenlessTravisHandler(BaseTokenlessUploadHandler):
                     headers={"Travis-API-Version": "3", "User-Agent": "Codecov"},
                 )
             except (ConnectionError, HTTPError) as e:
-                log.error(
+                log.warning(
                     f"Request error {e}",
                     extra=dict(
                         commit=self.upload_params["commit"],

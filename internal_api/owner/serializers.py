@@ -172,11 +172,13 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Owner
-        fields = (
+
+        read_only_fields = ("integration_id",)
+
+        fields = read_only_fields + (
             "activated_user_count",
             "inactive_user_count",
             "plan_auto_activate",
-            "integration_id",
             "plan",
             "subscription_detail",
             "checkout_session_id",
