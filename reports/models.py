@@ -33,7 +33,9 @@ class AbstractTotals(BaseCodecovModel):
 
 class CommitReport(BaseCodecovModel):
     commit = models.ForeignKey(
-        "core.Commit", related_name="reports", on_delete=models.CASCADE,
+        "core.Commit",
+        related_name="reports",
+        on_delete=models.CASCADE,
     )
 
 
@@ -48,7 +50,10 @@ class ReportLevelTotals(AbstractTotals):
 
 class ReportSessionError(BaseCodecovModel):
     report_session = models.ForeignKey(
-        "ReportSession", db_column="upload_id", related_name="errors", on_delete=models.CASCADE,
+        "ReportSession",
+        db_column="upload_id",
+        related_name="errors",
+        on_delete=models.CASCADE,
     )
     error_code = models.CharField(max_length=100)
     error_params = models.JSONField(default=dict)
@@ -58,7 +63,9 @@ class ReportSessionError(BaseCodecovModel):
 
 
 class ReportSessionFlagMembership(models.Model):
-    report_session = models.ForeignKey("ReportSession", db_column="upload_id", on_delete=models.CASCADE)
+    report_session = models.ForeignKey(
+        "ReportSession", db_column="upload_id", on_delete=models.CASCADE
+    )
     flag = models.ForeignKey("RepositoryFlag", on_delete=models.CASCADE)
     id = models.BigAutoField(primary_key=True)
 
@@ -68,7 +75,9 @@ class ReportSessionFlagMembership(models.Model):
 
 class RepositoryFlag(BaseCodecovModel):
     repository = models.ForeignKey(
-        "core.Repository", related_name="flags", on_delete=models.CASCADE,
+        "core.Repository",
+        related_name="flags",
+        on_delete=models.CASCADE,
     )
     flag_name = models.CharField(max_length=255)
 
@@ -82,7 +91,9 @@ class ReportSession(BaseCodecovModel):
     name = models.CharField(null=True, max_length=100)
     provider = models.CharField(max_length=50, null=True)
     report = models.ForeignKey(
-        "CommitReport", related_name="sessions", on_delete=models.CASCADE,
+        "CommitReport",
+        related_name="sessions",
+        on_delete=models.CASCADE,
     )
     state = models.CharField(max_length=100)
     storage_path = models.TextField()
@@ -93,7 +104,9 @@ class ReportSession(BaseCodecovModel):
 
 
 class SessionLevelTotals(AbstractTotals):
-    report_session = models.OneToOneField(ReportSession, db_column="upload_id", on_delete=models.CASCADE)
+    report_session = models.OneToOneField(
+        ReportSession, db_column="upload_id", on_delete=models.CASCADE
+    )
 
     class Meta:
         db_table = "reports_uploadleveltotals"
