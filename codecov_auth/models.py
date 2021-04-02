@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 import uuid
 import logging
@@ -6,7 +7,7 @@ from hashlib import md5
 from enum import Enum
 
 from django.db import models
-from core.models import Repository
+from core.models import Repository, DateTimeWithoutTZField
 from utils.config import get_config
 from django.contrib.postgres.fields import CITextField, ArrayField
 
@@ -71,7 +72,11 @@ class Owner(models.Model):
     oauth_token = models.TextField(null=True)
     stripe_customer_id = models.TextField(null=True)
     stripe_subscription_id = models.TextField(null=True)
-    createstamp = models.DateTimeField(auto_now_add=True)
+
+    # createstamp seems to be used by legacy to track first login
+    # so we shouldn't touch this outside login
+    createstamp = models.DateTimeField(null=True)
+    
     service_id = models.TextField(null=False)
     parent_service_id = models.TextField(null=True)
     root_parent_service_id = models.TextField(null=True)
@@ -88,19 +93,23 @@ class Owner(models.Model):
     invoice_details = models.TextField(null=True)
     delinquent = models.BooleanField(null=True)
     yaml = models.JSONField(null=True)
-    updatestamp = models.DateTimeField(auto_now=True)
+    updatestamp = DateTimeWithoutTZField(default=datetime.now)
     organizations = ArrayField(models.IntegerField(null=True), null=True)
     admins = ArrayField(models.IntegerField(null=True), null=True)
     integration_id = models.IntegerField(null=True)
     permission = ArrayField(models.IntegerField(null=True), null=True)
     bot = models.ForeignKey('Owner', null=True, on_delete=models.SET_NULL)
     student = models.BooleanField(default=False)
-    student_created_at = models.DateTimeField(null=True)
-    student_updated_at = models.DateTimeField(null=True)
+    student_created_at = DateTimeWithoutTZField(null=True)
+    student_updated_at = DateTimeWithoutTZField(null=True)
 
     objects = OwnerQuerySet.as_manager()
 
     repository_set = RepositoryQuerySet.as_manager()
+
+    def save(self, *args, **kwargs):
+        self.updatestamp = datetime.now()
+        super().save(*args, **kwargs)
 
     @property
     def has_legacy_plan(self):

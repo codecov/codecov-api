@@ -37,7 +37,7 @@ class SegmentOwnerTests(TestCase):
             "name": self.segment_owner.owner.name,
             "username": self.segment_owner.owner.username,
             "avatar": self.segment_owner.owner.avatar_url,
-            "createdAt": self.segment_owner.owner.createstamp.replace(microsecond=0),
+            "createdAt": "",
             "updatedAt": self.segment_owner.owner.updatestamp.replace(microsecond=0),
             "service": self.segment_owner.owner.service,
             "service_id": self.segment_owner.owner.service_id,

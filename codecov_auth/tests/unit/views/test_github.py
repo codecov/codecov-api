@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.urls import reverse
 from django.utils import timezone
 from shared.torngit import Github
@@ -53,7 +55,7 @@ def test_get_github_redirect_with_private_url(client, settings):
 
 def test_get_github_already_with_code(client, mocker, db, mock_redis, settings):
     settings.COOKIES_DOMAIN = ".simple.site"
-    now = timezone.now()
+    now = datetime.now()
 
     async def helper_func(*args, **kwargs):
         return {
@@ -138,7 +140,7 @@ def test_get_github_already_with_code(client, mocker, db, mock_redis, settings):
     assert owner.oauth_token is not None  # cannot test exact value
     assert owner.stripe_customer_id is None
     assert owner.stripe_subscription_id is None
-    assert owner.createstamp > now
+    assert owner.createstamp is None
     assert owner.service_id == "44376991"
     assert owner.parent_service_id is None
     assert owner.root_parent_service_id is None

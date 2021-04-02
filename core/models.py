@@ -1,3 +1,4 @@
+from datetime import datetime
 import uuid
 import string
 import random
@@ -122,8 +123,8 @@ class Commit(models.Model):
 
     id = models.BigAutoField(primary_key=True)
     commitid = models.TextField()
-    timestamp = models.DateTimeField(auto_now_add=True)
-    updatestamp = models.DateTimeField(auto_now=True)
+    timestamp = DateTimeWithoutTZField(default=datetime.now)
+    updatestamp = DateTimeWithoutTZField(default=datetime.now)
     author = models.ForeignKey(
         "codecov_auth.Owner", db_column="author", on_delete=models.SET_NULL, null=True
     )
@@ -145,6 +146,10 @@ class Commit(models.Model):
     message = models.TextField(null=True)
     parent_commit_id = models.TextField(null=True, db_column="parent")
     state = models.TextField(null=True, choices=CommitStates.choices)  # Really an ENUM in db
+
+    def save(self, *args, **kwargs):
+        self.updatestamp = datetime.now()
+        super().save(*args, **kwargs)
 
     @cached_property
     def parent_commit(self):
@@ -185,7 +190,7 @@ class Pull(models.Model):
     author = models.ForeignKey(
         "codecov_auth.Owner", db_column="author", on_delete=models.SET_NULL, null=True
     )
-    updatestamp = models.DateTimeField(auto_now_add=True)
+    updatestamp = DateTimeWithoutTZField(default=datetime.now)
     diff = models.JSONField(null=True)
     flare = models.JSONField(null=True)
 
@@ -198,6 +203,10 @@ class Pull(models.Model):
         indexes = [
             models.Index(fields=["repository"], name="pulls_repoid_state_open", condition=models.Q(state=PullStates.OPEN.value))
         ]
+
+    def save(self, *args, **kwargs):
+        self.updatestamp = datetime.now()
+        super().save(*args, **kwargs)
 
 
 class CommitNotification(models.Model):
@@ -232,8 +241,12 @@ class CommitNotification(models.Model):
         choices=DecorationTypes.choices, null=True
     )  # Really an ENUM in db
     state = models.TextField(choices=States.choices, null=True)  # Really an ENUM in db
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now_add=True)
+    created_at = DateTimeWithoutTZField(default=datetime.now)
+    updated_at = DateTimeWithoutTZField(default=datetime.now)
+
+    def save(self, *args, **kwargs):
+        self.updated_at = datetime.now()
+        super().save(*args, **kwargs)
 
     class Meta:
         db_table = "commit_notifications"

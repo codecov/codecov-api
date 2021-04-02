@@ -246,8 +246,8 @@ class CoverageChartHelpersTest(TestCase):
         setup_commits(self.repo1_org1, 10, start_date="-7d")
         setup_commits(self.repo1_org1, 2, branch="production", start_date="-7d")
 
-        start_date = timezone.now() - relativedelta(days=7)
-        end_date = timezone.now()
+        start_date = datetime.now() - relativedelta(days=7)
+        end_date = datetime.now()
         data = {
             "owner_username": self.org1.username,
             "branch": "master",
