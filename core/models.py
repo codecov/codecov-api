@@ -71,7 +71,9 @@ class Repository(models.Model):
         ordering = ["-repoid"]
         constraints = [
             models.UniqueConstraint(fields=["author", "name"], name="repos_slug"),
-            models.UniqueConstraint(fields=["author", "service_id"], name="repos_service_ids")
+            models.UniqueConstraint(
+                fields=["author", "service_id"], name="repos_service_ids"
+            ),
         ]
 
     objects = RepositoryQuerySet.as_manager()
@@ -110,7 +112,9 @@ class Branch(models.Model):
     class Meta:
         db_table = "branches"
         constraints = [
-            models.UniqueConstraint(fields=["name", "repository"], name="branches_repoid_branch")
+            models.UniqueConstraint(
+                fields=["name", "repository"], name="branches_repoid_branch"
+            )
         ]
 
 
@@ -145,7 +149,9 @@ class Commit(models.Model):
     pullid = models.IntegerField(null=True)
     message = models.TextField(null=True)
     parent_commit_id = models.TextField(null=True, db_column="parent")
-    state = models.TextField(null=True, choices=CommitStates.choices)  # Really an ENUM in db
+    state = models.TextField(
+        null=True, choices=CommitStates.choices
+    )  # Really an ENUM in db
 
     def save(self, *args, **kwargs):
         self.updatestamp = datetime.now()
@@ -160,17 +166,28 @@ class Commit(models.Model):
     class Meta:
         db_table = "commits"
         constraints = [
-            models.UniqueConstraint(fields=["repository", "commitid"], name="commits_repoid_commitid")
+            models.UniqueConstraint(
+                fields=["repository", "commitid"], name="commits_repoid_commitid"
+            )
         ]
         indexes = [
-            models.Index(fields=["repository", "-timestamp"], name="commits_repoid_timestamp_desc"),
-            models.Index(fields=["repository", "pullid"], name="commits_on_pull", condition=~models.Q(deleted=True))
+            models.Index(
+                fields=["repository", "-timestamp"],
+                name="commits_repoid_timestamp_desc",
+            ),
+            models.Index(
+                fields=["repository", "pullid"],
+                name="commits_on_pull",
+                condition=~models.Q(deleted=True),
+            ),
         ]
 
+
 class PullStates(models.TextChoices):
-        OPEN = "open"
-        MERGED = "merged"
-        CLOSED = "closed"
+    OPEN = "open"
+    MERGED = "merged"
+    CLOSED = "closed"
+
 
 class Pull(models.Model):
     repository = models.ForeignKey(
@@ -181,7 +198,9 @@ class Pull(models.Model):
     )
     pullid = models.IntegerField()
     issueid = models.IntegerField(null=True)
-    state = models.TextField(choices=PullStates.choices, default=PullStates.OPEN.value)  # Really an ENUM in db
+    state = models.TextField(
+        choices=PullStates.choices, default=PullStates.OPEN.value
+    )  # Really an ENUM in db
     title = models.TextField(null=True)
     base = models.TextField(null=True)
     head = models.TextField(null=True)
@@ -198,10 +217,16 @@ class Pull(models.Model):
         db_table = "pulls"
         ordering = ["-pullid"]
         constraints = [
-            models.UniqueConstraint(fields=["repository", "pullid"], name="pulls_repoid_pullid")
+            models.UniqueConstraint(
+                fields=["repository", "pullid"], name="pulls_repoid_pullid"
+            )
         ]
         indexes = [
-            models.Index(fields=["repository"], name="pulls_repoid_state_open", condition=models.Q(state=PullStates.OPEN.value))
+            models.Index(
+                fields=["repository"],
+                name="pulls_repoid_state_open",
+                condition=models.Q(state=PullStates.OPEN.value),
+            )
         ]
 
     def save(self, *args, **kwargs):

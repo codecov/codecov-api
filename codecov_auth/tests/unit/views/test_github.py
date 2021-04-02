@@ -308,9 +308,7 @@ def test_get_github_already_owner_already_exist(
 ):
     the_bot = OwnerFactory.create(service="github")
     the_bot.save()
-    owner = OwnerFactory.create(
-        bot=the_bot, service="github", service_id="44376991"
-    )
+    owner = OwnerFactory.create(bot=the_bot, service="github", service_id="44376991")
     owner.save()
     old_ownerid = owner.ownerid
     assert owner.bot is not None

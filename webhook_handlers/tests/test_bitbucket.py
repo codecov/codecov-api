@@ -51,7 +51,9 @@ class TestBitbucketWebhookHandler(APITestCase):
     def test_unknown_repo(self):
         response = self._post_event_data(
             event=BitbucketWebhookEvents.REPO_PUSH,
-            data={"repository": {"uuid": "{94f4c9b4-254f-46cf-a39e-97ce03fe58af}"},},
+            data={
+                "repository": {"uuid": "{94f4c9b4-254f-46cf-a39e-97ce03fe58af}"},
+            },
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -60,7 +62,9 @@ class TestBitbucketWebhookHandler(APITestCase):
         self.repo.save()
         response = self._post_event_data(
             event=BitbucketWebhookEvents.REPO_PUSH,
-            data={"repository": {"uuid": "{673a6070-3421-46c9-9d48-90745f7bfe8e}"},},
+            data={
+                "repository": {"uuid": "{673a6070-3421-46c9-9d48-90745f7bfe8e}"},
+            },
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == WebhookHandlerErrorMessages.SKIP_NOT_ACTIVE
@@ -79,7 +83,8 @@ class TestBitbucketWebhookHandler(APITestCase):
         assert response.data == "Opening pull request in Codecov"
 
         pulls_sync_mock.assert_called_once_with(
-            repoid=self.repo.repoid, pullid=pullid,
+            repoid=self.repo.repoid,
+            pullid=pullid,
         )
 
     def test_pull_request_fulfilled(self):

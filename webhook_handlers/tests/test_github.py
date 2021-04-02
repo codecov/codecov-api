@@ -52,7 +52,9 @@ class GithubWebhookHandlerTests(APITestCase):
 
     def setUp(self):
         self.repo = RepositoryFactory(
-            author=OwnerFactory(service=Service.GITHUB.value), service_id=12345, active=True
+            author=OwnerFactory(service=Service.GITHUB.value),
+            service_id=12345,
+            active=True,
         )
 
     def test_get_repo_paths_dont_crash(self):
@@ -347,7 +349,9 @@ class GithubWebhookHandlerTests(APITestCase):
 
         response = self._post_event_data(
             event=GitHubWebhookEvents.STATUS,
-            data={"repository": {"id": self.repo.service_id},},
+            data={
+                "repository": {"id": self.repo.service_id},
+            },
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -356,7 +360,10 @@ class GithubWebhookHandlerTests(APITestCase):
     def test_status_exits_early_for_codecov_statuses(self):
         response = self._post_event_data(
             event=GitHubWebhookEvents.STATUS,
-            data={"context": "codecov/", "repository": {"id": self.repo.service_id},},
+            data={
+                "context": "codecov/",
+                "repository": {"id": self.repo.service_id},
+            },
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -365,7 +372,10 @@ class GithubWebhookHandlerTests(APITestCase):
     def test_status_exits_early_for_pending_statuses(self):
         response = self._post_event_data(
             event=GitHubWebhookEvents.STATUS,
-            data={"state": "pending", "repository": {"id": self.repo.service_id},},
+            data={
+                "state": "pending",
+                "repository": {"id": self.repo.service_id},
+            },
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -402,7 +412,9 @@ class GithubWebhookHandlerTests(APITestCase):
 
         response = self._post_event_data(
             event=GitHubWebhookEvents.PULL_REQUEST,
-            data={"repository": {"id": self.repo.service_id},},
+            data={
+                "repository": {"id": self.repo.service_id},
+            },
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -439,7 +451,9 @@ class GithubWebhookHandlerTests(APITestCase):
                 "repository": {"id": self.repo.service_id},
                 "action": "edited",
                 "number": pull.pullid,
-                "pull_request": {"title": new_title,},
+                "pull_request": {
+                    "title": new_title,
+                },
             },
         )
 
@@ -597,7 +611,9 @@ class GithubWebhookHandlerTests(APITestCase):
         self,
     ):
         org = OwnerFactory(service_id="4321", service=Service.GITHUB.value)
-        user = OwnerFactory(organizations=[org.ownerid], service_id="12", service=Service.GITHUB.value)
+        user = OwnerFactory(
+            organizations=[org.ownerid], service_id="12", service=Service.GITHUB.value
+        )
         org.plan_activated_users = [user.ownerid]
         org.save()
 
@@ -630,8 +646,14 @@ class GithubWebhookHandlerTests(APITestCase):
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_organization_member_removed_with_nonexistent_or_nonactivated_member(self):
-        org = OwnerFactory(service_id="4321", plan_activated_users=[50392], service=Service.GITHUB.value)
-        user = OwnerFactory(service_id="12", organizations=[60798], service=Service.GITHUB.value)
+        org = OwnerFactory(
+            service_id="4321",
+            plan_activated_users=[50392],
+            service=Service.GITHUB.value,
+        )
+        user = OwnerFactory(
+            service_id="12", organizations=[60798], service=Service.GITHUB.value
+        )
 
         response = self._post_event_data(
             event=GitHubWebhookEvents.ORGANIZATION,
@@ -697,7 +719,9 @@ class GithubWebhookHandlerTests(APITestCase):
         assert response.status_code == status.HTTP_200_OK
 
     def test_member_removes_repo_permissions_if_member_removed(self):
-        member = OwnerFactory(permission=[self.repo.repoid], service_id=6098, service=Service.GITHUB.value)
+        member = OwnerFactory(
+            permission=[self.repo.repoid], service_id=6098, service=Service.GITHUB.value
+        )
         response = self._post_event_data(
             event=GitHubWebhookEvents.MEMBER,
             data={
@@ -711,7 +735,9 @@ class GithubWebhookHandlerTests(APITestCase):
         assert self.repo.repoid not in member.permission
 
     def test_member_doesnt_crash_if_member_permission_array_is_None(self):
-        member = OwnerFactory(permission=None, service_id=6098, service=Service.GITHUB.value)
+        member = OwnerFactory(
+            permission=None, service_id=6098, service=Service.GITHUB.value
+        )
         response = self._post_event_data(
             event=GitHubWebhookEvents.MEMBER,
             data={
@@ -722,7 +748,11 @@ class GithubWebhookHandlerTests(APITestCase):
         )
 
     def test_member_doesnt_crash_if_member_didnt_have_permission(self):
-        member = OwnerFactory(permission=[self.repo.service_id + 1], service_id=6098, service=Service.GITHUB.value)
+        member = OwnerFactory(
+            permission=[self.repo.service_id + 1],
+            service_id=6098,
+            service=Service.GITHUB.value,
+        )
         response = self._post_event_data(
             event=GitHubWebhookEvents.MEMBER,
             data={
@@ -795,7 +825,9 @@ class GithubWebhookHandlerTests(APITestCase):
         )
 
     def test_repo_not_found_when_owner_has_integration_creates_repo(self):
-        owner = OwnerFactory(integration_id=4850403, service_id=97968493, service=Service.GITHUB.value)
+        owner = OwnerFactory(
+            integration_id=4850403, service_id=97968493, service=Service.GITHUB.value
+        )
         response = self._post_event_data(
             event=GitHubWebhookEvents.REPOSITORY,
             data={
@@ -813,7 +845,9 @@ class GithubWebhookHandlerTests(APITestCase):
         assert owner.repository_set.filter(name="testrepo").exists()
 
     def test_repo_creation_doesnt_crash_for_forked_repo(self):
-        owner = OwnerFactory(integration_id=4850403, service_id=97968493, service=Service.GITHUB.value)
+        owner = OwnerFactory(
+            integration_id=4850403, service_id=97968493, service=Service.GITHUB.value
+        )
         response = self._post_event_data(
             event=GitHubWebhookEvents.REPOSITORY,
             data={

@@ -225,7 +225,10 @@ class SegmentServiceTests(TestCase):
             track_mock.assert_called_once_with(
                 user_id=self.owner.ownerid,
                 event=SegmentEvent.ACCOUNT_DEACTIVATED_USER.value,
-                properties={"role": "admin", "user": owner_to_deactivate.ownerid,},
+                properties={
+                    "role": "admin",
+                    "user": owner_to_deactivate.ownerid,
+                },
                 context={"groupId": org.ownerid},
             )
 
@@ -279,7 +282,8 @@ class SegmentServiceTests(TestCase):
         repo = RepositoryFactory(author=owner)
         with self.settings(SEGMENT_ENABLED=True):
             self.segment_service.account_activated_repository(
-                owner.ownerid, repo,
+                owner.ownerid,
+                repo,
             )
             track_mock.assert_called_once_with(
                 user_id=owner.ownerid,
@@ -294,7 +298,8 @@ class SegmentServiceTests(TestCase):
         repo = RepositoryFactory(author=owner)
         with self.settings(SEGMENT_ENABLED=True):
             self.segment_service.account_deactivated_repository(
-                owner.ownerid, repo,
+                owner.ownerid,
+                repo,
             )
             track_mock.assert_called_once_with(
                 user_id=owner.ownerid,
@@ -309,7 +314,8 @@ class SegmentServiceTests(TestCase):
         repo = RepositoryFactory(author=owner)
         with self.settings(SEGMENT_ENABLED=True):
             self.segment_service.account_erased_repository(
-                owner.ownerid, repo,
+                owner.ownerid,
+                repo,
             )
             track_mock.assert_called_once_with(
                 user_id=owner.ownerid,
@@ -324,7 +330,8 @@ class SegmentServiceTests(TestCase):
         repo = RepositoryFactory(author=owner)
         with self.settings(SEGMENT_ENABLED=True):
             self.segment_service.account_deleted_repository(
-                owner.ownerid, repo,
+                owner.ownerid,
+                repo,
             )
             track_mock.assert_called_once_with(
                 user_id=owner.ownerid,
@@ -339,7 +346,8 @@ class SegmentServiceTests(TestCase):
         repo = RepositoryFactory(author=owner)
         with self.settings(SEGMENT_ENABLED=True):
             self.segment_service.account_activated_repository_on_upload(
-                owner.ownerid, repo,
+                owner.ownerid,
+                repo,
             )
             track_mock.assert_called_once_with(
                 user_id=BLANK_SEGMENT_USER_ID,

@@ -21,153 +21,340 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Commit',
+            name="Commit",
             fields=[
-                ('id', models.BigAutoField(primary_key=True, serialize=False)),
-                ('commitid', models.TextField()),
-                ('timestamp', core.models.DateTimeWithoutTZField(default=datetime.datetime.now)),
-                ('updatestamp', core.models.DateTimeWithoutTZField(default=datetime.datetime.now)),
-                ('ci_passed', models.BooleanField(null=True)),
-                ('totals', models.JSONField(null=True)),
-                ('report', models.JSONField(encoder=core.encoders.ReportJSONEncoder, null=True)),
-                ('merged', models.BooleanField(null=True)),
-                ('deleted', models.BooleanField(null=True)),
-                ('notified', models.BooleanField(null=True)),
-                ('branch', models.TextField(null=True)),
-                ('pullid', models.IntegerField(null=True)),
-                ('message', models.TextField(null=True)),
-                ('parent_commit_id', models.TextField(db_column='parent', null=True)),
-                ('state', models.TextField(choices=[('complete', 'Complete'), ('pending', 'Pending'), ('error', 'Error'), ('skipped', 'Skipped')], null=True)),
-                ('author', models.ForeignKey(db_column='author', null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL)),
+                ("id", models.BigAutoField(primary_key=True, serialize=False)),
+                ("commitid", models.TextField()),
+                (
+                    "timestamp",
+                    core.models.DateTimeWithoutTZField(default=datetime.datetime.now),
+                ),
+                (
+                    "updatestamp",
+                    core.models.DateTimeWithoutTZField(default=datetime.datetime.now),
+                ),
+                ("ci_passed", models.BooleanField(null=True)),
+                ("totals", models.JSONField(null=True)),
+                (
+                    "report",
+                    models.JSONField(
+                        encoder=core.encoders.ReportJSONEncoder, null=True
+                    ),
+                ),
+                ("merged", models.BooleanField(null=True)),
+                ("deleted", models.BooleanField(null=True)),
+                ("notified", models.BooleanField(null=True)),
+                ("branch", models.TextField(null=True)),
+                ("pullid", models.IntegerField(null=True)),
+                ("message", models.TextField(null=True)),
+                ("parent_commit_id", models.TextField(db_column="parent", null=True)),
+                (
+                    "state",
+                    models.TextField(
+                        choices=[
+                            ("complete", "Complete"),
+                            ("pending", "Pending"),
+                            ("error", "Error"),
+                            ("skipped", "Skipped"),
+                        ],
+                        null=True,
+                    ),
+                ),
+                (
+                    "author",
+                    models.ForeignKey(
+                        db_column="author",
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'db_table': 'commits',
+                "db_table": "commits",
             },
         ),
         migrations.CreateModel(
-            name='Version',
+            name="Version",
             fields=[
-                ('version', models.TextField(primary_key=True, serialize=False)),
+                ("version", models.TextField(primary_key=True, serialize=False)),
             ],
             options={
-                'db_table': 'version',
+                "db_table": "version",
             },
         ),
         migrations.CreateModel(
-            name='Repository',
+            name="Repository",
             fields=[
-                ('repoid', models.AutoField(primary_key=True, serialize=False)),
-                ('name', django.contrib.postgres.fields.citext.CITextField()),
-                ('service_id', models.TextField()),
-                ('private', models.BooleanField()),
-                ('updatestamp', models.DateTimeField(auto_now=True)),
-                ('active', models.BooleanField(null=True)),
-                ('language', models.TextField(blank=True, null=True)),
-                ('branch', models.TextField(default='master')),
-                ('upload_token', models.UUIDField(default=uuid.uuid4, unique=True)),
-                ('yaml', models.JSONField(null=True)),
-                ('cache', models.JSONField(null=True)),
-                ('image_token', models.TextField(default=core.models._gen_image_token, null=True)),
-                ('using_integration', models.BooleanField(null=True)),
-                ('hookid', models.TextField(null=True)),
-                ('activated', models.BooleanField(default=False, null=True)),
-                ('deleted', models.BooleanField(default=False)),
-                ('author', models.ForeignKey(db_column='ownerid', on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
-                ('bot', models.ForeignKey(db_column='bot', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='bot_repos', to=settings.AUTH_USER_MODEL)),
-                ('fork', models.ForeignKey(blank=True, db_column='forkid', null=True, on_delete=django.db.models.deletion.DO_NOTHING, to='core.repository')),
+                ("repoid", models.AutoField(primary_key=True, serialize=False)),
+                ("name", django.contrib.postgres.fields.citext.CITextField()),
+                ("service_id", models.TextField()),
+                ("private", models.BooleanField()),
+                ("updatestamp", models.DateTimeField(auto_now=True)),
+                ("active", models.BooleanField(null=True)),
+                ("language", models.TextField(blank=True, null=True)),
+                ("branch", models.TextField(default="master")),
+                ("upload_token", models.UUIDField(default=uuid.uuid4, unique=True)),
+                ("yaml", models.JSONField(null=True)),
+                ("cache", models.JSONField(null=True)),
+                (
+                    "image_token",
+                    models.TextField(default=core.models._gen_image_token, null=True),
+                ),
+                ("using_integration", models.BooleanField(null=True)),
+                ("hookid", models.TextField(null=True)),
+                ("activated", models.BooleanField(default=False, null=True)),
+                ("deleted", models.BooleanField(default=False)),
+                (
+                    "author",
+                    models.ForeignKey(
+                        db_column="ownerid",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "bot",
+                    models.ForeignKey(
+                        db_column="bot",
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="bot_repos",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "fork",
+                    models.ForeignKey(
+                        blank=True,
+                        db_column="forkid",
+                        null=True,
+                        on_delete=django.db.models.deletion.DO_NOTHING,
+                        to="core.repository",
+                    ),
+                ),
             ],
             options={
-                'db_table': 'repos',
-                'ordering': ['-repoid'],
+                "db_table": "repos",
+                "ordering": ["-repoid"],
             },
         ),
         migrations.CreateModel(
-            name='Pull',
+            name="Pull",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('pullid', models.IntegerField()),
-                ('issueid', models.IntegerField(null=True)),
-                ('state', models.TextField(choices=[('open', 'Open'), ('merged', 'Merged'), ('closed', 'Closed')], default='open')),
-                ('title', models.TextField(null=True)),
-                ('base', models.TextField(null=True)),
-                ('head', models.TextField(null=True)),
-                ('compared_to', models.TextField(null=True)),
-                ('commentid', models.TextField(null=True)),
-                ('updatestamp', core.models.DateTimeWithoutTZField(default=datetime.datetime.now)),
-                ('diff', models.JSONField(null=True)),
-                ('flare', models.JSONField(null=True)),
-                ('author', models.ForeignKey(db_column='author', null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL)),
-                ('repository', models.ForeignKey(db_column='repoid', on_delete=django.db.models.deletion.CASCADE, related_name='pull_requests', to='core.repository')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("pullid", models.IntegerField()),
+                ("issueid", models.IntegerField(null=True)),
+                (
+                    "state",
+                    models.TextField(
+                        choices=[
+                            ("open", "Open"),
+                            ("merged", "Merged"),
+                            ("closed", "Closed"),
+                        ],
+                        default="open",
+                    ),
+                ),
+                ("title", models.TextField(null=True)),
+                ("base", models.TextField(null=True)),
+                ("head", models.TextField(null=True)),
+                ("compared_to", models.TextField(null=True)),
+                ("commentid", models.TextField(null=True)),
+                (
+                    "updatestamp",
+                    core.models.DateTimeWithoutTZField(default=datetime.datetime.now),
+                ),
+                ("diff", models.JSONField(null=True)),
+                ("flare", models.JSONField(null=True)),
+                (
+                    "author",
+                    models.ForeignKey(
+                        db_column="author",
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "repository",
+                    models.ForeignKey(
+                        db_column="repoid",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="pull_requests",
+                        to="core.repository",
+                    ),
+                ),
             ],
             options={
-                'db_table': 'pulls',
-                'ordering': ['-pullid'],
+                "db_table": "pulls",
+                "ordering": ["-pullid"],
             },
         ),
         migrations.CreateModel(
-            name='CommitNotification',
+            name="CommitNotification",
             fields=[
-                ('id', models.BigAutoField(primary_key=True, serialize=False)),
-                ('notification_type', models.TextField(choices=[('comment', 'Comment'), ('gitter', 'Gitter'), ('hipchat', 'Hipchat'), ('irc', 'Irc'), ('slack', 'Slack'), ('status_changes', 'Status Changes'), ('status_patch', 'Status Patch'), ('status_project', 'Status Project'), ('webhook', 'Webhook')])),
-                ('decoration_type', models.TextField(choices=[('standard', 'Standard'), ('upgrade', 'Upgrade')], null=True)),
-                ('state', models.TextField(choices=[('pending', 'Pending'), ('success', 'Success'), ('error', 'Error')], null=True)),
-                ('created_at', core.models.DateTimeWithoutTZField(default=datetime.datetime.now)),
-                ('updated_at', core.models.DateTimeWithoutTZField(default=datetime.datetime.now)),
-                ('commit', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='notifications', to='core.commit')),
+                ("id", models.BigAutoField(primary_key=True, serialize=False)),
+                (
+                    "notification_type",
+                    models.TextField(
+                        choices=[
+                            ("comment", "Comment"),
+                            ("gitter", "Gitter"),
+                            ("hipchat", "Hipchat"),
+                            ("irc", "Irc"),
+                            ("slack", "Slack"),
+                            ("status_changes", "Status Changes"),
+                            ("status_patch", "Status Patch"),
+                            ("status_project", "Status Project"),
+                            ("webhook", "Webhook"),
+                        ]
+                    ),
+                ),
+                (
+                    "decoration_type",
+                    models.TextField(
+                        choices=[("standard", "Standard"), ("upgrade", "Upgrade")],
+                        null=True,
+                    ),
+                ),
+                (
+                    "state",
+                    models.TextField(
+                        choices=[
+                            ("pending", "Pending"),
+                            ("success", "Success"),
+                            ("error", "Error"),
+                        ],
+                        null=True,
+                    ),
+                ),
+                (
+                    "created_at",
+                    core.models.DateTimeWithoutTZField(default=datetime.datetime.now),
+                ),
+                (
+                    "updated_at",
+                    core.models.DateTimeWithoutTZField(default=datetime.datetime.now),
+                ),
+                (
+                    "commit",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="notifications",
+                        to="core.commit",
+                    ),
+                ),
             ],
             options={
-                'db_table': 'commit_notifications',
+                "db_table": "commit_notifications",
             },
         ),
         migrations.AddField(
-            model_name='commit',
-            name='repository',
-            field=models.ForeignKey(db_column='repoid', on_delete=django.db.models.deletion.CASCADE, related_name='commits', to='core.repository'),
+            model_name="commit",
+            name="repository",
+            field=models.ForeignKey(
+                db_column="repoid",
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="commits",
+                to="core.repository",
+            ),
         ),
         migrations.CreateModel(
-            name='Branch',
+            name="Branch",
             fields=[
-                ('name', models.TextField(db_column='branch', primary_key=True, serialize=False)),
-                ('authors', django.contrib.postgres.fields.ArrayField(base_field=models.IntegerField(blank=True, null=True), blank=True, db_column='authors', null=True, size=None)),
-                ('head', models.TextField()),
-                ('base', models.TextField(null=True)),
-                ('updatestamp', models.DateTimeField(auto_now=True)),
-                ('repository', models.ForeignKey(db_column='repoid', on_delete=django.db.models.deletion.CASCADE, related_name='branches', to='core.repository')),
+                (
+                    "name",
+                    models.TextField(
+                        db_column="branch", primary_key=True, serialize=False
+                    ),
+                ),
+                (
+                    "authors",
+                    django.contrib.postgres.fields.ArrayField(
+                        base_field=models.IntegerField(blank=True, null=True),
+                        blank=True,
+                        db_column="authors",
+                        null=True,
+                        size=None,
+                    ),
+                ),
+                ("head", models.TextField()),
+                ("base", models.TextField(null=True)),
+                ("updatestamp", models.DateTimeField(auto_now=True)),
+                (
+                    "repository",
+                    models.ForeignKey(
+                        db_column="repoid",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="branches",
+                        to="core.repository",
+                    ),
+                ),
             ],
             options={
-                'db_table': 'branches',
+                "db_table": "branches",
             },
         ),
         migrations.AddConstraint(
-            model_name='repository',
-            constraint=models.UniqueConstraint(fields=('author', 'name'), name='repos_slug'),
+            model_name="repository",
+            constraint=models.UniqueConstraint(
+                fields=("author", "name"), name="repos_slug"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='repository',
-            constraint=models.UniqueConstraint(fields=('author', 'service_id'), name='repos_service_ids'),
+            model_name="repository",
+            constraint=models.UniqueConstraint(
+                fields=("author", "service_id"), name="repos_service_ids"
+            ),
         ),
         migrations.AddIndex(
-            model_name='pull',
-            index=models.Index(condition=models.Q(state='open'), fields=['repository'], name='pulls_repoid_state_open'),
+            model_name="pull",
+            index=models.Index(
+                condition=models.Q(state="open"),
+                fields=["repository"],
+                name="pulls_repoid_state_open",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='pull',
-            constraint=models.UniqueConstraint(fields=('repository', 'pullid'), name='pulls_repoid_pullid'),
+            model_name="pull",
+            constraint=models.UniqueConstraint(
+                fields=("repository", "pullid"), name="pulls_repoid_pullid"
+            ),
         ),
         migrations.AddIndex(
-            model_name='commit',
-            index=models.Index(fields=['repository', '-timestamp'], name='commits_repoid_timestamp_desc'),
+            model_name="commit",
+            index=models.Index(
+                fields=["repository", "-timestamp"],
+                name="commits_repoid_timestamp_desc",
+            ),
         ),
         migrations.AddIndex(
-            model_name='commit',
-            index=models.Index(condition=models.Q(_negated=True, deleted=True), fields=['repository', 'pullid'], name='commits_on_pull'),
+            model_name="commit",
+            index=models.Index(
+                condition=models.Q(_negated=True, deleted=True),
+                fields=["repository", "pullid"],
+                name="commits_on_pull",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='commit',
-            constraint=models.UniqueConstraint(fields=('repository', 'commitid'), name='commits_repoid_commitid'),
+            model_name="commit",
+            constraint=models.UniqueConstraint(
+                fields=("repository", "commitid"), name="commits_repoid_commitid"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='branch',
-            constraint=models.UniqueConstraint(fields=('name', 'repository'), name='branches_repoid_branch'),
+            model_name="branch",
+            constraint=models.UniqueConstraint(
+                fields=("name", "repository"), name="branches_repoid_branch"
+            ),
         ),
     ]

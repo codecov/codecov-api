@@ -15,77 +15,140 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         CITextExtension(),
         migrations.CreateModel(
-            name='Owner',
+            name="Owner",
             fields=[
-                ('ownerid', models.AutoField(primary_key=True, serialize=False)),
-                ('service', models.TextField(choices=[('github', 'Github'), ('gitlab', 'Gitlab'), ('bitbucket', 'Bitbucket'), ('github_enterprise', 'Github Enterprise'), ('gitlab_enterprise', 'Gitlab Enterprise'), ('bitbucket_server', 'Bitbucket Server')])),
-                ('username', django.contrib.postgres.fields.citext.CITextField(null=True, unique=True)),
-                ('email', models.TextField(null=True)),
-                ('name', models.TextField(null=True)),
-                ('oauth_token', models.TextField(null=True)),
-                ('stripe_customer_id', models.TextField(null=True)),
-                ('stripe_subscription_id', models.TextField(null=True)),
-                ('createstamp', models.DateTimeField(null=True)),
-                ('service_id', models.TextField()),
-                ('parent_service_id', models.TextField(null=True)),
-                ('root_parent_service_id', models.TextField(null=True)),
-                ('private_access', models.BooleanField(null=True)),
-                ('staff', models.BooleanField(default=False, null=True)),
-                ('cache', models.JSONField(null=True)),
-                ('plan', models.TextField(default='users-free', null=True)),
-                ('plan_provider', models.TextField(null=True)),
-                ('plan_user_count', models.SmallIntegerField(default=5, null=True)),
-                ('plan_auto_activate', models.BooleanField(default=True, null=True)),
-                ('plan_activated_users', django.contrib.postgres.fields.ArrayField(base_field=models.IntegerField(null=True), null=True, size=None)),
-                ('did_trial', models.BooleanField(null=True)),
-                ('free', models.SmallIntegerField(default=0)),
-                ('invoice_details', models.TextField(null=True)),
-                ('delinquent', models.BooleanField(null=True)),
-                ('yaml', models.JSONField(null=True)),
-                ('updatestamp', core.models.DateTimeWithoutTZField(default=datetime.datetime.now)),
-                ('organizations', django.contrib.postgres.fields.ArrayField(base_field=models.IntegerField(null=True), null=True, size=None)),
-                ('admins', django.contrib.postgres.fields.ArrayField(base_field=models.IntegerField(null=True), null=True, size=None)),
-                ('integration_id', models.IntegerField(null=True)),
-                ('permission', django.contrib.postgres.fields.ArrayField(base_field=models.IntegerField(null=True), null=True, size=None)),
-                ('student', models.BooleanField(default=False)),
-                ('student_created_at', core.models.DateTimeWithoutTZField(null=True)),
-                ('student_updated_at', core.models.DateTimeWithoutTZField(null=True)),
-                ('bot', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL)),
+                ("ownerid", models.AutoField(primary_key=True, serialize=False)),
+                (
+                    "service",
+                    models.TextField(
+                        choices=[
+                            ("github", "Github"),
+                            ("gitlab", "Gitlab"),
+                            ("bitbucket", "Bitbucket"),
+                            ("github_enterprise", "Github Enterprise"),
+                            ("gitlab_enterprise", "Gitlab Enterprise"),
+                            ("bitbucket_server", "Bitbucket Server"),
+                        ]
+                    ),
+                ),
+                (
+                    "username",
+                    django.contrib.postgres.fields.citext.CITextField(
+                        null=True, unique=True
+                    ),
+                ),
+                ("email", models.TextField(null=True)),
+                ("name", models.TextField(null=True)),
+                ("oauth_token", models.TextField(null=True)),
+                ("stripe_customer_id", models.TextField(null=True)),
+                ("stripe_subscription_id", models.TextField(null=True)),
+                ("createstamp", models.DateTimeField(null=True)),
+                ("service_id", models.TextField()),
+                ("parent_service_id", models.TextField(null=True)),
+                ("root_parent_service_id", models.TextField(null=True)),
+                ("private_access", models.BooleanField(null=True)),
+                ("staff", models.BooleanField(default=False, null=True)),
+                ("cache", models.JSONField(null=True)),
+                ("plan", models.TextField(default="users-free", null=True)),
+                ("plan_provider", models.TextField(null=True)),
+                ("plan_user_count", models.SmallIntegerField(default=5, null=True)),
+                ("plan_auto_activate", models.BooleanField(default=True, null=True)),
+                (
+                    "plan_activated_users",
+                    django.contrib.postgres.fields.ArrayField(
+                        base_field=models.IntegerField(null=True), null=True, size=None
+                    ),
+                ),
+                ("did_trial", models.BooleanField(null=True)),
+                ("free", models.SmallIntegerField(default=0)),
+                ("invoice_details", models.TextField(null=True)),
+                ("delinquent", models.BooleanField(null=True)),
+                ("yaml", models.JSONField(null=True)),
+                (
+                    "updatestamp",
+                    core.models.DateTimeWithoutTZField(default=datetime.datetime.now),
+                ),
+                (
+                    "organizations",
+                    django.contrib.postgres.fields.ArrayField(
+                        base_field=models.IntegerField(null=True), null=True, size=None
+                    ),
+                ),
+                (
+                    "admins",
+                    django.contrib.postgres.fields.ArrayField(
+                        base_field=models.IntegerField(null=True), null=True, size=None
+                    ),
+                ),
+                ("integration_id", models.IntegerField(null=True)),
+                (
+                    "permission",
+                    django.contrib.postgres.fields.ArrayField(
+                        base_field=models.IntegerField(null=True), null=True, size=None
+                    ),
+                ),
+                ("student", models.BooleanField(default=False)),
+                ("student_created_at", core.models.DateTimeWithoutTZField(null=True)),
+                ("student_updated_at", core.models.DateTimeWithoutTZField(null=True)),
+                (
+                    "bot",
+                    models.ForeignKey(
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'db_table': 'owners',
-                'ordering': ['ownerid'],
+                "db_table": "owners",
+                "ordering": ["ownerid"],
             },
         ),
         migrations.CreateModel(
-            name='Session',
+            name="Session",
             fields=[
-                ('sessionid', models.AutoField(primary_key=True, serialize=False)),
-                ('token', models.UUIDField(default=uuid.uuid4, editable=False, unique=True)),
-                ('name', models.TextField(null=True)),
-                ('useragent', models.TextField(null=True)),
-                ('ip', models.TextField(null=True)),
-                ('lastseen', models.DateTimeField(null=True)),
-                ('type', models.TextField(choices=[('api', 'Api'), ('login', 'Login')])),
-                ('owner', models.ForeignKey(db_column='ownerid', on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                ("sessionid", models.AutoField(primary_key=True, serialize=False)),
+                (
+                    "token",
+                    models.UUIDField(default=uuid.uuid4, editable=False, unique=True),
+                ),
+                ("name", models.TextField(null=True)),
+                ("useragent", models.TextField(null=True)),
+                ("ip", models.TextField(null=True)),
+                ("lastseen", models.DateTimeField(null=True)),
+                (
+                    "type",
+                    models.TextField(choices=[("api", "Api"), ("login", "Login")]),
+                ),
+                (
+                    "owner",
+                    models.ForeignKey(
+                        db_column="ownerid",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'db_table': 'sessions',
-                'ordering': ['-lastseen'],
+                "db_table": "sessions",
+                "ordering": ["-lastseen"],
             },
         ),
         migrations.AddConstraint(
-            model_name='owner',
-            constraint=models.UniqueConstraint(fields=('service', 'username'), name='owner_service_username'),
+            model_name="owner",
+            constraint=models.UniqueConstraint(
+                fields=("service", "username"), name="owner_service_username"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='owner',
-            constraint=models.UniqueConstraint(fields=('service', 'service_id'), name='owner_service_ids'),
+            model_name="owner",
+            constraint=models.UniqueConstraint(
+                fields=("service", "service_id"), name="owner_service_ids"
+            ),
         ),
     ]

@@ -57,8 +57,12 @@ class Owner(models.Model):
         db_table = "owners"
         ordering = ["ownerid"]
         constraints = [
-            models.UniqueConstraint(fields=["service", "username"], name="owner_service_username"),
-            models.UniqueConstraint(fields=["service", "service_id"], name="owner_service_ids")
+            models.UniqueConstraint(
+                fields=["service", "username"], name="owner_service_username"
+            ),
+            models.UniqueConstraint(
+                fields=["service", "service_id"], name="owner_service_ids"
+            ),
         ]
 
     REQUIRED_FIELDS = []
@@ -66,7 +70,9 @@ class Owner(models.Model):
 
     ownerid = models.AutoField(primary_key=True)
     service = models.TextField(choices=Service.choices)  # Really an ENUM in db
-    username = CITextField(unique=True, null=True)  # No actual unique constraint on this in the DB
+    username = CITextField(
+        unique=True, null=True
+    )  # No actual unique constraint on this in the DB
     email = models.TextField(null=True)
     name = models.TextField(null=True)
     oauth_token = models.TextField(null=True)
@@ -76,7 +82,7 @@ class Owner(models.Model):
     # createstamp seems to be used by legacy to track first login
     # so we shouldn't touch this outside login
     createstamp = models.DateTimeField(null=True)
-    
+
     service_id = models.TextField(null=False)
     parent_service_id = models.TextField(null=True)
     root_parent_service_id = models.TextField(null=True)
@@ -84,7 +90,9 @@ class Owner(models.Model):
     staff = models.BooleanField(null=True, default=False)
     cache = models.JSONField(null=True)
     plan = models.TextField(null=True, default=FREE_PLAN_NAME)  # Really an ENUM in db
-    plan_provider = models.TextField(null=True)  # postgres enum containing only "github"
+    plan_provider = models.TextField(
+        null=True
+    )  # postgres enum containing only "github"
     plan_user_count = models.SmallIntegerField(null=True, default=5)
     plan_auto_activate = models.BooleanField(null=True, default=True)
     plan_activated_users = ArrayField(models.IntegerField(null=True), null=True)
@@ -98,7 +106,7 @@ class Owner(models.Model):
     admins = ArrayField(models.IntegerField(null=True), null=True)
     integration_id = models.IntegerField(null=True)
     permission = ArrayField(models.IntegerField(null=True), null=True)
-    bot = models.ForeignKey('Owner', null=True, on_delete=models.SET_NULL)
+    bot = models.ForeignKey("Owner", null=True, on_delete=models.SET_NULL)
     student = models.BooleanField(default=False)
     student_created_at = DateTimeWithoutTZField(null=True)
     student_updated_at = DateTimeWithoutTZField(null=True)

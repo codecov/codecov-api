@@ -16,13 +16,13 @@ class OwnerFactory(DjangoModelFactory):
     name = factory.Faker("name")
     username = factory.Faker("user_name")
     service = factory.Iterator([service.value for service in Service])
-    service_id = factory.Sequence(lambda n: f'{n}')
+    service_id = factory.Sequence(lambda n: f"{n}")
     plan_activated_users = []
     admins = []
     permission = []
     free = 0
     unencrypted_oauth_token = factory.LazyFunction(lambda: uuid4().hex)
-    cache = { "stats": { "repos": 1, "members": 2, "users": 1 }}
+    cache = {"stats": {"repos": 1, "members": 2, "users": 1}}
     oauth_token = factory.LazyAttribute(
         lambda o: encryptor.encode(o.unencrypted_oauth_token).decode()
     )
