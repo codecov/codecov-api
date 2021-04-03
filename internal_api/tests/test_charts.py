@@ -1,14 +1,15 @@
 import pytest
 from decimal import Decimal
-from django.test import TestCase
 from ddf import G
 from datetime import datetime, timedelta, date, time
-from django.utils import timezone
-from pytz import UTC
 from random import randint
 from math import isclose
-from factory.faker import faker
 from unittest.mock import patch
+
+from django.test import TestCase
+from django.utils import timezone
+from factory.faker import faker
+from pytz import UTC
 from rest_framework.reverse import reverse
 
 from core.tests.factories import RepositoryFactory, OwnerFactory
