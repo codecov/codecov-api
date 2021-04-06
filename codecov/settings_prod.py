@@ -12,8 +12,7 @@ if THIS_POD_IP:
 
 INSTALLED_APPS += ["ddtrace.contrib.django"]
 
-
-WEBHOOK_URL = "https://codecov.io"
+WEBHOOK_URL = get_config("setup", "webhook_url", default="https://codecov.io")
 
 
 STRIPE_API_KEY = os.environ.get("SERVICES__STRIPE__API_KEY", None)
@@ -31,8 +30,8 @@ sentry_sdk.init(
 )
 
 CORS_ALLOW_CREDENTIALS = True
-CODECOV_URL = "https://codecov.io"
-CODECOV_DASHBOARD_URL = "https://app.codecov.io"
+CODECOV_URL = get_config("setup", "codecov_url", default="https://codecov.io")
+CODECOV_DASHBOARD_URL = get_config("setup", "codecov_dashboard_url", default="https://app.codecov.io")
 CORS_ALLOWED_ORIGINS = [CODECOV_URL, CODECOV_DASHBOARD_URL]
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 15000000
