@@ -1,3 +1,4 @@
+from datetime import datetime
 from django.test import TestCase
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
@@ -25,6 +26,8 @@ class SegmentOwnerTests(TestCase):
                 student=True,
                 bot=True,
                 email="user@codecov.io",
+                student_created_at=datetime(2017, 1, 1, 12, 0, 0, 5000),
+                student_updated_at=datetime(2018, 1, 1, 12, 0, 0, 5000),
             )
         )
 
@@ -45,16 +48,8 @@ class SegmentOwnerTests(TestCase):
             "delinquent": self.segment_owner.owner.delinquent,
             "did_trial": self.segment_owner.owner.did_trial,
             "student": self.segment_owner.owner.student,
-            "student_created_at": self.segment_owner.owner.student_created_at.replace(
-                microsecond=0
-            )
-            if self.segment_owner.owner.student_created_at
-            else "",
-            "student_updated_at": self.segment_owner.owner.student_updated_at.replace(
-                microsecond=0
-            )
-            if self.segment_owner.owner.student_updated_at
-            else "",
+            "student_created_at": datetime(2017, 1, 1, 12, 0, 0),
+            "student_updated_at": datetime(2018, 1, 1, 12, 0, 0),
             "staff": self.segment_owner.owner.staff,
             "bot": self.segment_owner.owner.bot,
             "has_yaml": self.segment_owner.owner.yaml is not None,
@@ -75,6 +70,8 @@ class SegmentOwnerTests(TestCase):
                 did_trial=None,
                 student=0,
                 bot=None,
+                student_created_at=None,
+                student_updated_at=None,
             )
         )
 
@@ -83,16 +80,8 @@ class SegmentOwnerTests(TestCase):
             "name": "unknown",
             "username": "unknown",
             "avatar": segment_owner_missing_traits.owner.avatar_url,
-            "createdAt": segment_owner_missing_traits.owner.createstamp.replace(
-                microsecond=0
-            )
-            if segment_owner_missing_traits.owner.createstamp
-            else "",
-            "updatedAt": segment_owner_missing_traits.owner.updatestamp.replace(
-                microsecond=0
-            )
-            if segment_owner_missing_traits.owner.updatestamp
-            else "",
+            "createdAt": self.segment_owner.owner.createstamp.replace(microsecond=0),
+            "updatedAt": self.segment_owner.owner.updatestamp.replace(microsecond=0),
             "service": segment_owner_missing_traits.owner.service,
             "service_id": segment_owner_missing_traits.owner.service_id,
             "private_access": False,
@@ -102,16 +91,8 @@ class SegmentOwnerTests(TestCase):
             "delinquent": False,
             "did_trial": False,
             "student": False,
-            "student_created_at": segment_owner_missing_traits.owner.student_created_at.replace(
-                microsecond=0
-            )
-            if segment_owner_missing_traits.owner.student_created_at
-            else "",
-            "student_updated_at": segment_owner_missing_traits.owner.student_updated_at.replace(
-                microsecond=0
-            )
-            if segment_owner_missing_traits.owner.student_updated_at
-            else "",
+            "student_created_at": datetime(2014, 1, 1, 12, 0, 0),
+            "student_updated_at": datetime(2014, 1, 1, 12, 0, 0),
             "staff": segment_owner_missing_traits.owner.staff,
             "bot": False,
             "has_yaml": segment_owner_missing_traits.owner.yaml is not None,
