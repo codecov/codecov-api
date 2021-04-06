@@ -10,6 +10,11 @@ from .encoders import ReportJSONEncoder
 from .managers import RepositoryQuerySet
 
 
+class DateTimeWithoutTZField(models.DateTimeField):
+    def db_type(self, connection):
+        return "timestamp"
+
+
 class Version(models.Model):
     version = models.TextField(primary_key=True)
 
@@ -27,7 +32,9 @@ class Repository(models.Model):
     repoid = models.AutoField(primary_key=True)
     name = CITextField()
     author = models.ForeignKey(
-        "codecov_auth.Owner", db_column="ownerid", on_delete=models.CASCADE,
+        "codecov_auth.Owner",
+        db_column="ownerid",
+        on_delete=models.CASCADE,
     )
     service_id = models.TextField()
     private = models.BooleanField()
@@ -106,6 +113,7 @@ class Commit(models.Model):
         ERROR = "error"
         SKIPPED = "skipped"
 
+    id = models.BigAutoField(primary_key=True)
     commitid = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
     updatestamp = models.DateTimeField(auto_now=True)
@@ -171,3 +179,42 @@ class Pull(models.Model):
     class Meta:
         db_table = "pulls"
         ordering = ["-pullid"]
+
+
+class CommitNotification(models.Model):
+    class NotificationTypes(models.TextChoices):
+        COMMENT = "comment"
+        GITTER = "gitter"
+        HIPCHAT = "hipchat"
+        IRC = "irc"
+        SLACK = "slack"
+        STATUS_CHANGES = "status_changes"
+        STATUS_PATCH = "status_patch"
+        STATUS_PROJECT = "status_project"
+        WEBHOOK = "webhook"
+
+    class DecorationTypes(models.TextChoices):
+        STANDARD = "standard"
+        UPGRADE = "upgrade"
+
+    class States(models.TextChoices):
+        PENDING = "pending"
+        SUCCESS = "success"
+        ERROR = "error"
+
+    id = models.BigAutoField(primary_key=True)
+    commit = models.ForeignKey(
+        "core.Commit", on_delete=models.CASCADE, related_name="notifications"
+    )
+    notification_type = models.TextField(
+        choices=NotificationTypes.choices
+    )  # Really an ENUM in db
+    decoration_type = models.TextField(
+        choices=DecorationTypes.choices, null=True
+    )  # Really an ENUM in db
+    state = models.TextField(choices=States.choices, null=True)  # Really an ENUM in db
+    created_at = DateTimeWithoutTZField(auto_now_add=True)
+    updated_at = DateTimeWithoutTZField(auto_now_add=True)
+
+    class Meta:
+        db_table = "commit_notifications"

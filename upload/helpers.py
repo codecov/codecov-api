@@ -131,7 +131,7 @@ def parse_params(data):
         },
         "build_url": {
             "type": "string",
-            "regex": r"^https?\:\/\/(.{,100})",
+            "regex": r"^https?\:\/\/(.{,200})",
         },
         "flags": {
             "type": "string",
