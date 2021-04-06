@@ -6,9 +6,10 @@ import os
 
 DEBUG = False
 THIS_POD_IP = os.environ.get("THIS_POD_IP")
-ALLOWED_HOSTS = (
-    ["stage-api.codecov.dev", THIS_POD_IP] if THIS_POD_IP else ["stage-api.codecov.dev"]
-)
+ALLOWED_HOSTS = get_config("setup", "api_allowed_hosts", default=["stage-api.codecov.dev"])
+if THIS_POD_IP:
+    ALLOWED_HOSTS.append(THIS_POD_IP)
+
 WEBHOOK_URL = "https://stage-api.codecov.dev"
 
 
