@@ -18,11 +18,11 @@ from internal_api.mixins import RepositoriesMixin, OwnerPropertyMixin
 
 class RepositoryChartHandler(APIView, RepositoriesMixin):
     """
-    Returns data used to populate the repository-level coverage chart. See "validate_params" for documentation on accepted parameters. 
+    Returns data used to populate the repository-level coverage chart. See "validate_params" for documentation on accepted parameters.
     Can either group and aggregate commits by a unit of time, or just return latest commits from the repo within the given time frame.
     When aggregating by coverage, will also apply aggregation based on complexity ratio and return that.
 
-    Responses take the following format (semantics of the response depend on whether we're grouping by time or not):     
+    Responses take the following format (semantics of the response depend on whether we're grouping by time or not):
     {
         "coverage": [
             {
@@ -51,8 +51,8 @@ class RepositoryChartHandler(APIView, RepositoriesMixin):
                 "commitid": <commit id>
             },
             {
-                "date": "2019-07-01 00:00:00+00:00",     
-                ...   
+                "date": "2019-07-01 00:00:00+00:00",
+                ...
             },
             ...
         ]
@@ -72,8 +72,10 @@ class RepositoryChartHandler(APIView, RepositoriesMixin):
             else "-"
         )
 
+        # We don't use the "report" field in this endpoint and it can be many MBs of JSON choosing not to
+        # fetch it for perf reasons
         queryset = apply_simple_filters(
-            apply_default_filters(Commit.objects.all()),
+            apply_default_filters(Commit.objects.defer("report").all()),
             request_params,
             self.request.user,
         )
