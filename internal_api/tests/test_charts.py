@@ -246,8 +246,8 @@ class CoverageChartHelpersTest(TestCase):
         setup_commits(self.repo1_org1, 10, start_date="-7d")
         setup_commits(self.repo1_org1, 2, branch="production", start_date="-7d")
 
-        start_date = timezone.now() - relativedelta(days=7)
-        end_date = timezone.now()
+        start_date = datetime.now() - relativedelta(days=7)
+        end_date = datetime.now()
         data = {
             "owner_username": self.org1.username,
             "branch": "master",
@@ -267,8 +267,8 @@ class CoverageChartHelpersTest(TestCase):
 
     def test_apply_simple_filters_repo_filtering(self):
         """
-            This test verifies that when no "repository" parameters are returned, we only return all repositories
-            in the organization that the logged-in user has permissions to view.
+        This test verifies that when no "repository" parameters are returned, we only return all repositories
+        in the organization that the logged-in user has permissions to view.
         """
         no_permissions_repo = RepositoryFactory(
             author=self.org1, name="no_permissions_to_this_repo", private=True
@@ -748,15 +748,18 @@ class TestChartQueryRunnerHelperMethods(TestCase):
     def test_start_date(self):
         with self.subTest("returns parsed start date if supplied"):
             start_date = timezone.now()
-            assert ChartQueryRunner(
-                self.user,
-                {
-                    "owner_username": self.org.username,
-                    "service": self.org.service,
-                    "grouping_unit": "day",
-                    "start_date": str(start_date),
-                },
-            ).start_date == datetime.date(start_date)
+            assert (
+                ChartQueryRunner(
+                    self.user,
+                    {
+                        "owner_username": self.org.username,
+                        "service": self.org.service,
+                        "grouping_unit": "day",
+                        "start_date": str(start_date),
+                    },
+                ).start_date
+                == datetime.date(start_date)
+            )
 
         with self.subTest("returns first_commit_date if not supplied"):
             repo = RepositoryFactory(author=self.org)
@@ -769,37 +772,46 @@ class TestChartQueryRunnerHelperMethods(TestCase):
                 state="complete",
                 timestamp=timezone.now() - timedelta(days=3),
             )
-            assert ChartQueryRunner(
-                self.user,
-                {
-                    "owner_username": self.org.username,
-                    "service": self.org.service,
-                    "grouping_unit": "day",
-                },
-            ).start_date == datetime.date(commit.timestamp)
+            assert (
+                ChartQueryRunner(
+                    self.user,
+                    {
+                        "owner_username": self.org.username,
+                        "service": self.org.service,
+                        "grouping_unit": "day",
+                    },
+                ).start_date
+                == datetime.date(commit.timestamp)
+            )
 
     def test_end_date(self):
         with self.subTest("returns parsed end date if supplied"):
             end_date = timezone.now() - timedelta(days=7)
-            assert ChartQueryRunner(
-                self.user,
-                {
-                    "owner_username": self.org.username,
-                    "service": self.org.service,
-                    "grouping_unit": "day",
-                    "end_date": str(end_date),
-                },
-            ).end_date == datetime.date(end_date)
+            assert (
+                ChartQueryRunner(
+                    self.user,
+                    {
+                        "owner_username": self.org.username,
+                        "service": self.org.service,
+                        "grouping_unit": "day",
+                        "end_date": str(end_date),
+                    },
+                ).end_date
+                == datetime.date(end_date)
+            )
 
         with self.subTest("returns timezone.now() if not supplied"):
-            assert ChartQueryRunner(
-                self.user,
-                {
-                    "owner_username": self.org.username,
-                    "service": self.org.service,
-                    "grouping_unit": "day",
-                },
-            ).end_date == datetime.date(timezone.now())
+            assert (
+                ChartQueryRunner(
+                    self.user,
+                    {
+                        "owner_username": self.org.username,
+                        "service": self.org.service,
+                        "grouping_unit": "day",
+                    },
+                ).end_date
+                == datetime.date(timezone.now())
+            )
 
 
 @patch("internal_api.permissions.RepositoryPermissionsService.has_read_permissions")
@@ -944,7 +956,10 @@ class TestOrganizationChartHandler(InternalAPITest):
 
     def test_basic_success(self):
         response = self._get(
-            kwargs={"owner_username": self.org.username, "service": self.org.service,},
+            kwargs={
+                "owner_username": self.org.username,
+                "service": self.org.service,
+            },
             data={
                 "grouping_unit": "day",
                 "repositories": [self.repo1.name, self.repo2.name],
