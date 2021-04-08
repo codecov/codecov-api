@@ -107,9 +107,7 @@ class UserViewSetTests(APITestCase):
 
         response = self._list()
         assert (
-            dateutil.parser.parse(
-                response.data["results"][0]["latest_private_pr_date"], ignoretz=True
-            )
+            dateutil.parser.parse(response.data["results"][0]["latest_private_pr_date"])
             == pull.updatestamp
         )
 

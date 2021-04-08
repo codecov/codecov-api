@@ -5,8 +5,6 @@ from unittest.mock import patch
 from stripe.error import StripeError, InvalidRequestError
 
 from services.billing import BillingService, StripeService, AbstractPaymentService
-
-from codecov_auth.models import Service
 from codecov_auth.tests.factories import OwnerFactory
 
 
@@ -187,7 +185,7 @@ class StripeServiceTests(TestCase):
     def test_create_checkout_session_creates_with_correct_args_and_returns_id(
         self, create_checkout_session_mock
     ):
-        owner = OwnerFactory(service=Service.GITHUB.value)
+        owner = OwnerFactory()
         expected_id = "fkkgosd"
         create_checkout_session_mock.return_value = {
             "id": expected_id

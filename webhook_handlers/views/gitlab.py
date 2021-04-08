@@ -8,7 +8,7 @@ from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
 
 from codecov_auth.models import Owner
-from core.models import Repository, Branch, Commit, Pull, PullStates
+from core.models import Repository, Branch, Commit, Pull
 from services.task import TaskService
 from utils.config import get_config
 
@@ -107,7 +107,7 @@ class GitLabWebhookHandler(APIView):
 
         elif action == "close":
             Pull.objects.filter(repository__repoid=repoid, pullid=pull["iid"]).update(
-                state=PullStates.CLOSED
+                state=Pull.PullStates.CLOSED
             )
             message = "Pull request closed"
 
