@@ -1,21 +1,26 @@
-from ariadne.contrib.django.views import GraphQLView as BaseAriadneView
-from django.conf import settings
+from contextlib import suppress
+from .ariadne.views import GraphQLView
 
+from ariadne.contrib.tracing.apollotracing import ApolloTracingExtension
 from codecov_auth.authentication import CodecovTokenAuthentication
+from asgiref.sync import async_to_sync, sync_to_async
 
+from .schema import schema
 
-class AriadneView(BaseAriadneView):
-    graphiql = settings.DEBUG
+@sync_to_async
+def get_user(request):
+    with suppress(Exception):
+        return CodecovTokenAuthentication().authenticate(request)[0]
 
-    def authenticate(self, request):
-        try:
-            auth = CodecovTokenAuthentication().authenticate(request)
-            if auth:
-                request.user = auth[0]
-        except:
-            # we make authentication fail silently
-            pass
+BaseAriadneView = GraphQLView.as_view(
+    schema=schema,
+    extensions=[ApolloTracingExtension]
+)
 
-    def dispatch(self, request, *args, **kwargs):
-        self.authenticate(request)
-        return super().dispatch(request, *args, **kwargs)
+async def AriadneView(request, service):
+    user = await get_user(request)
+    if user:
+        request.user = user
+    return await BaseAriadneView(request)
+
+AriadneView.csrf_exempt = True
