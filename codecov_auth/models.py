@@ -106,7 +106,9 @@ class Owner(models.Model):
     admins = ArrayField(models.IntegerField(null=True), null=True)
     integration_id = models.IntegerField(null=True)
     permission = ArrayField(models.IntegerField(null=True), null=True)
-    bot = models.ForeignKey("Owner", null=True, on_delete=models.SET_NULL)
+    bot = models.ForeignKey(
+        "Owner", db_column="bot", null=True, on_delete=models.SET_NULL
+    )
     student = models.BooleanField(default=False)
     student_created_at = DateTimeWithoutTZField(null=True)
     student_updated_at = DateTimeWithoutTZField(null=True)
