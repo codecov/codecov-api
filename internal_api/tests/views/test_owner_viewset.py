@@ -18,7 +18,7 @@ class OwnerViewSetTests(APITestCase):
 
     def setUp(self):
         self.service = "bitbucket"
-        self.user = OwnerFactory(stripe_customer_id=1000)
+        self.user = OwnerFactory(service="github", stripe_customer_id=1000)
 
     def test_list_owners_returns_owners_for_service(self):
         bb_owner, gh_owner = (
