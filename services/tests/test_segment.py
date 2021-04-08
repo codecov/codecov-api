@@ -24,7 +24,7 @@ class SegmentOwnerTests(TestCase):
                 delinquent=True,
                 did_trial=True,
                 student=True,
-                bot=OwnerFactory(),
+                bot=True,
                 email="user@codecov.io",
                 student_created_at=datetime(2017, 1, 1, 12, 0, 0, 5000),
                 student_updated_at=datetime(2018, 1, 1, 12, 0, 0, 5000),
@@ -37,7 +37,7 @@ class SegmentOwnerTests(TestCase):
             "name": self.segment_owner.owner.name,
             "username": self.segment_owner.owner.username,
             "avatar": self.segment_owner.owner.avatar_url,
-            "createdAt": datetime(2014, 1, 1, 12, 0, 0),
+            "createdAt": self.segment_owner.owner.createstamp.replace(microsecond=0),
             "updatedAt": self.segment_owner.owner.updatestamp.replace(microsecond=0),
             "service": self.segment_owner.owner.service,
             "service_id": self.segment_owner.owner.service_id,
@@ -80,7 +80,7 @@ class SegmentOwnerTests(TestCase):
             "name": "unknown",
             "username": "unknown",
             "avatar": segment_owner_missing_traits.owner.avatar_url,
-            "createdAt": datetime(2014, 1, 1, 12, 0, 0),
+            "createdAt": self.segment_owner.owner.createstamp.replace(microsecond=0),
             "updatedAt": self.segment_owner.owner.updatestamp.replace(microsecond=0),
             "service": segment_owner_missing_traits.owner.service,
             "service_id": segment_owner_missing_traits.owner.service_id,
@@ -225,10 +225,7 @@ class SegmentServiceTests(TestCase):
             track_mock.assert_called_once_with(
                 user_id=self.owner.ownerid,
                 event=SegmentEvent.ACCOUNT_DEACTIVATED_USER.value,
-                properties={
-                    "role": "admin",
-                    "user": owner_to_deactivate.ownerid,
-                },
+                properties={"role": "admin", "user": owner_to_deactivate.ownerid,},
                 context={"groupId": org.ownerid},
             )
 
@@ -282,8 +279,7 @@ class SegmentServiceTests(TestCase):
         repo = RepositoryFactory(author=owner)
         with self.settings(SEGMENT_ENABLED=True):
             self.segment_service.account_activated_repository(
-                owner.ownerid,
-                repo,
+                owner.ownerid, repo,
             )
             track_mock.assert_called_once_with(
                 user_id=owner.ownerid,
@@ -298,8 +294,7 @@ class SegmentServiceTests(TestCase):
         repo = RepositoryFactory(author=owner)
         with self.settings(SEGMENT_ENABLED=True):
             self.segment_service.account_deactivated_repository(
-                owner.ownerid,
-                repo,
+                owner.ownerid, repo,
             )
             track_mock.assert_called_once_with(
                 user_id=owner.ownerid,
@@ -314,8 +309,7 @@ class SegmentServiceTests(TestCase):
         repo = RepositoryFactory(author=owner)
         with self.settings(SEGMENT_ENABLED=True):
             self.segment_service.account_erased_repository(
-                owner.ownerid,
-                repo,
+                owner.ownerid, repo,
             )
             track_mock.assert_called_once_with(
                 user_id=owner.ownerid,
@@ -330,8 +324,7 @@ class SegmentServiceTests(TestCase):
         repo = RepositoryFactory(author=owner)
         with self.settings(SEGMENT_ENABLED=True):
             self.segment_service.account_deleted_repository(
-                owner.ownerid,
-                repo,
+                owner.ownerid, repo,
             )
             track_mock.assert_called_once_with(
                 user_id=owner.ownerid,
@@ -346,8 +339,7 @@ class SegmentServiceTests(TestCase):
         repo = RepositoryFactory(author=owner)
         with self.settings(SEGMENT_ENABLED=True):
             self.segment_service.account_activated_repository_on_upload(
-                owner.ownerid,
-                repo,
+                owner.ownerid, repo,
             )
             track_mock.assert_called_once_with(
                 user_id=BLANK_SEGMENT_USER_ID,

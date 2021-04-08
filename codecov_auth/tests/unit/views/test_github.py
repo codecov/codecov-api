@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from django.urls import reverse
 from django.utils import timezone
 from shared.torngit import Github
@@ -55,7 +53,7 @@ def test_get_github_redirect_with_private_url(client, settings):
 
 def test_get_github_already_with_code(client, mocker, db, mock_redis, settings):
     settings.COOKIES_DOMAIN = ".simple.site"
-    now = datetime.now()
+    now = timezone.now()
 
     async def helper_func(*args, **kwargs):
         return {
@@ -140,7 +138,7 @@ def test_get_github_already_with_code(client, mocker, db, mock_redis, settings):
     assert owner.oauth_token is not None  # cannot test exact value
     assert owner.stripe_customer_id is None
     assert owner.stripe_subscription_id is None
-    assert owner.createstamp is None
+    assert owner.createstamp > now
     assert owner.service_id == "44376991"
     assert owner.parent_service_id is None
     assert owner.root_parent_service_id is None
@@ -308,7 +306,9 @@ def test_get_github_already_owner_already_exist(
 ):
     the_bot = OwnerFactory.create(service="github")
     the_bot.save()
-    owner = OwnerFactory.create(bot=the_bot, service="github", service_id="44376991")
+    owner = OwnerFactory.create(
+        bot=the_bot.ownerid, service="github", service_id="44376991"
+    )
     owner.save()
     old_ownerid = owner.ownerid
     assert owner.bot is not None

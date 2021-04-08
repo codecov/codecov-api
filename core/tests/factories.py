@@ -15,12 +15,11 @@ class RepositoryFactory(DjangoModelFactory):
 
     private = True
     name = factory.Faker("word")
-    service_id = factory.Sequence(lambda n: f"{n}")
     author = factory.SubFactory(OwnerFactory)
     language = factory.Faker("word")
     fork = None
     branch = "master"
-    upload_token = factory.Faker("uuid4")
+    upload_token = uuid.uuid4()
     using_integration = False
 
 

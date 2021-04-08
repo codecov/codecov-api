@@ -8,7 +8,7 @@ from rest_framework import status
 
 from shared.helpers.yaml import walk
 from codecov_auth.models import Owner
-from core.models import Repository, Branch, Commit, Pull, PullStates
+from core.models import Repository, Branch, Commit, Pull
 from services.task import TaskService
 
 from webhook_handlers.constants import (
@@ -67,8 +67,8 @@ class BitbucketWebhookHandler(APIView):
 
     def _handle_pull_request_state_change(self, repo):
         state = {
-            BitbucketWebhookEvents.PULL_REQUEST_FULFILLED: PullStates.MERGED,
-            BitbucketWebhookEvents.PULL_REQUEST_REJECTED: PullStates.CLOSED,
+            BitbucketWebhookEvents.PULL_REQUEST_FULFILLED: Pull.PullStates.MERGED,
+            BitbucketWebhookEvents.PULL_REQUEST_REJECTED: Pull.PullStates.CLOSED,
         }.get(self.event)
 
         Pull.objects.filter(
