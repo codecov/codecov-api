@@ -171,7 +171,7 @@ class Commit(models.Model):
         is the case for performance reasons.
         """
         return Commit.objects.raw(
-            "SELECT id, json_data.key as file_name, json_data.value->1 as totals FROM commits, jsonb_each(commits.report->'files') as json_data WHERE commits.id = %s LIMIT 1",
+            "SELECT id, json_data.key as file_name, json_data.value->1 as totals FROM commits, jsonb_each(commits.report->'files') as json_data WHERE commits.id = %s;",
             [commit_id],
         )
 
