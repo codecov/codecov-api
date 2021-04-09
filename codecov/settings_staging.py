@@ -24,7 +24,7 @@ STRIPE_PLAN_IDS = {
 
 
 sentry_sdk.init(
-    dsn="https://570709366d674aeca773669feb989415@o26192.ingest.sentry.io/5215654",
+    dsn=os.environ.get("SERVICES__SENTRY__SERVER_DSN", None),
     integrations=[DjangoIntegration()],
     environment="STAGING",
 )
