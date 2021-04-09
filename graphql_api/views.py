@@ -1,3 +1,5 @@
+from asyncio import iscoroutine
+
 from contextlib import suppress
 from .ariadne.views import GraphQLView
 
@@ -21,6 +23,9 @@ async def AriadneView(request, service):
     user = await get_user(request)
     if user:
         request.user = user
-    return await BaseAriadneView(request)
+    response = BaseAriadneView(request)
+    if iscoroutine(response):
+        response = await response
+    return response
 
 AriadneView.csrf_exempt = True
