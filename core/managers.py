@@ -201,18 +201,28 @@ class RepositoryQuerySet(QuerySet):
                 git_repo_fork_owner = git_repo["fork"]["owner"]
 
             elif isinstance(fork, bool):
+                # This is supposed to indicate that the repo json comes
+                # in the form of a github API repo
+                # (https://docs.github.com/en/rest/reference/repos#get-a-repository)
+                # but sometimes this will unexpectedly be missing the 'parent' field,
+                # which contains information about a fork's parent. So we check again
+                # below.
                 parent = git_repo.get("parent")
-                git_repo_fork_owner = {
-                    "service_id": parent["owner"]["id"],
-                    "username": parent["owner"]["login"],
-                }
-                git_repo_fork = {
-                    "service_id": parent["id"],
-                    "private": parent["private"],
-                    "language": parent["language"],
-                    "branch": parent["default_branch"],
-                    "name": parent["name"],
-                }
+                if parent:
+                    git_repo_fork_owner = {
+                        "service_id": parent["owner"]["id"],
+                        "username": parent["owner"]["login"],
+                    }
+                    git_repo_fork = {
+                        "service_id": parent["id"],
+                        "private": parent["private"],
+                        "language": parent["language"],
+                        "branch": parent["default_branch"],
+                        "name": parent["name"],
+                    }
+                else:
+                    # If the parent data doesn't exist, there is nothing else to do.
+                    return repo, created
 
             fork_owner, _ = Owner.objects.get_or_create(
                 service=owner.service,
