@@ -6,6 +6,7 @@ from django.test import TestCase
 from core.models import Repository
 
 from .factories import RepositoryFactory, CommitFactory
+from codecov_auth.tests.factories import OwnerFactory
 
 
 class RepositoryQuerySetTests(TestCase):
@@ -73,3 +74,17 @@ class RepositoryQuerySetTests(TestCase):
             .latest_coverage_change
             == -1
         )
+
+    def test_get_or_create_from_github_repo_data(self):
+        owner = OwnerFactory()
+
+        with self.subTest("doesnt crash when fork but no parent"):
+            repo_data = {
+                "id": 45,
+                "default_branch": "master",
+                "private": True,
+                "name": "test",
+                "fork": True
+            }
+
+            Repository.objects.get_or_create_from_git_repo(repo_data, owner)
