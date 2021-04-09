@@ -4,6 +4,7 @@ input MyOrganizationFilters {
 
 input ViewableRepositoryFilters {
   term: String
+  active: Boolean
 }
 
 type Me {
