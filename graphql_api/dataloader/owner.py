@@ -8,7 +8,7 @@ class OwnerLoader(DataLoader):
     @sync_to_async
     def batch_load_fn(self, ids):
         owners = Owner.objects.in_bulk(ids, field_name='ownerid')
-        return [owners.get(id) for id in owners]
+        return [owners.get(id) for id in ids]
 
 
 CONTEXT_KEY = "__owner_loader"
