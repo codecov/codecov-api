@@ -1,5 +1,6 @@
 type Repository {
   name: String!
   active: Boolean
-  private: Boolean 
+  private: Boolean
+  coverage: Float
 }
