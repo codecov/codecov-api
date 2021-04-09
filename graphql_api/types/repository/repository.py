@@ -6,4 +6,4 @@ repository_bindable = ObjectType("Repository")
 
 @repository_bindable.field("author")
 def resolve_author(repository, info):
-    return load_owner_by_id(info, 2)
+    return load_owner_by_id(info, repository.author_id)
