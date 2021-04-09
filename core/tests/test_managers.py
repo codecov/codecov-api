@@ -87,4 +87,9 @@ class RepositoryQuerySetTests(TestCase):
                 "fork": True
             }
 
-            Repository.objects.get_or_create_from_git_repo(repo_data, owner)
+            repo, created = Repository.objects.get_or_create_from_git_repo(repo_data, owner)
+            assert created
+            assert repo.service_id == 45
+            assert repo.branch == "master"
+            assert repo.private
+            assert repo.name == "test"

@@ -222,7 +222,7 @@ class RepositoryQuerySet(QuerySet):
                     }
                 else:
                     # If the parent data doesn't exist, there is nothing else to do.
-                    return
+                    return repo, created
 
             fork_owner, _ = Owner.objects.get_or_create(
                 service=owner.service,
