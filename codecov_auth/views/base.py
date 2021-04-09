@@ -3,7 +3,6 @@ import logging
 
 from django.utils import timezone
 from django.conf import settings
-from shared.analytics_tracking import track_event, track_user
 
 from codecov_auth.helpers import create_signed_value
 from codecov_auth.models import Session, Owner
@@ -64,24 +63,6 @@ class LoginMixin(object):
         if fields_to_update:
             user.save(update_fields=fields_to_update + ["updatestamp"])
 
-        track_user(
-            user.ownerid,
-            {
-                "username": user.username,
-                "ownerid": user.ownerid,
-                "student": user.student,
-                "student_created_at": user.student_created_at,
-            },
-        )
-        track_event(
-            user.ownerid,
-            "User Signed Up" if is_new_user else "User Signed In",
-            {
-                "organizations": formatted_orgs,
-                "username": user.username,
-                "userid_type": "user",
-            },
-        )
         self._set_proper_cookies_and_session(user, request, response)
         self._schedule_proper_tasks(user)
         log.info("User is logging in", extra=dict(ownerid=user.ownerid))
