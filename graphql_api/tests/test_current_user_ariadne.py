@@ -16,6 +16,10 @@ query_repositories = """{
                 edges {
                     node {
                         name
+
+                        author {
+                            username
+                        }
                     }
                 }
                 pageInfo {
@@ -68,7 +72,10 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
                 "owner": {
                     "repositories": {
                         "totalCount": 2,
-                        "edges": [{"node": {"name": "b"}}, {"node": {"name": "a"}},],
+                        "edges": [
+                            {"node": {"name": "b", "author": {"username": self.user.username}}},
+                            {"node": {"name": "a", "author": {"username": self.user.username}}},
+                        ],
                         "pageInfo": {"hasNextPage": False,},
                     }
                 }
@@ -80,7 +87,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
         # Check on the first page if we have the repository b
         data_page_one = await self.gql_request(query, user=self.user)
         connection = data_page_one["me"]["owner"]["repositories"]
-        assert connection["edges"][0]["node"] == {"name": "b"}
+        assert connection["edges"][0]["node"] == {"name": "b", "author": {"username": self.user.username}}
         pageInfo = connection["pageInfo"]
         assert pageInfo["hasNextPage"] == True
         next_cursor = pageInfo["endCursor"]
@@ -91,7 +98,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
         )
         data_page_two = await self.gql_request(query, user=self.user)
         connection = data_page_two["me"]["owner"]["repositories"]
-        assert connection["edges"][0]["node"] == {"name": "a"}
+        assert connection["edges"][0]["node"] == {"name": "a", "author": {"username": self.user.username}}
         pageInfo = connection["pageInfo"]
         assert pageInfo["hasNextPage"] == False
 
