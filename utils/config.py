@@ -56,8 +56,7 @@ default_config = {
     },
     "setup": {
         "http": {"timeouts": {"connect": 15, "receive": 30}, "cookie_secret": "abc123"},
-        "encryption_secret": "",
-        "codecov_url": "http://localhost:5100",
+        "encryption_secret": ""
     },
 }
 
