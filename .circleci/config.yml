@@ -88,7 +88,7 @@ jobs:
         command: |
           apk add git
           chmod +x codecov-alpine 
-          ./codecov-alpine -Z -R . --url https://stage-web.codecov.dev -F unit
+          ./codecov-alpine -Z -R . --url https://stage-web.codecov.dev -t $CODECOV_STAGING_TOKEN -F unit
 
   portable:
     executor: codecov-deploy
