@@ -2,20 +2,27 @@ from django.test import TestCase
 from unittest.mock import patch
 from codecov_auth.views.base import LoginMixin
 from codecov_auth.tests.factories import OwnerFactory
+from rest_framework.test import APIRequestFactory
 
 
 class LoginMixinTests(TestCase):
     def setUp(self):
         self.mixin_instance = LoginMixin()
         self.mixin_instance.cookie_prefix = "github"
+        self.request = APIRequestFactory().get("", {})
 
     @patch("services.segment.SegmentService.identify_user")
     def test_get_or_create_user_calls_segment_identify_user(self, identify_user_mock):
         self.mixin_instance._get_or_create_user(
             {
-                "user": {"id": 12345, "access_token": "4567", "login": "testuser",},
+                "user": {
+                    "id": 12345,
+                    "access_token": "4567",
+                    "login": "testuser",
+                },
                 "has_private_access": False,
-            }
+            },
+            self.request,
         )
         identify_user_mock.assert_called_once()
 
@@ -25,9 +32,14 @@ class LoginMixinTests(TestCase):
     ):
         self.mixin_instance._get_or_create_user(
             {
-                "user": {"id": 12345, "access_token": "4567", "login": "testuser",},
+                "user": {
+                    "id": 12345,
+                    "access_token": "4567",
+                    "login": "testuser",
+                },
                 "has_private_access": False,
-            }
+            },
+            self.request,
         )
         user_signed_up_mock.assert_called_once()
 
@@ -44,6 +56,7 @@ class LoginMixinTests(TestCase):
                     "login": owner.username,
                 },
                 "has_private_access": owner.private_access,
-            }
+            },
+            self.request,
         )
         user_signed_in_mock.assert_called_once()

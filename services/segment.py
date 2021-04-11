@@ -152,8 +152,8 @@ class SegmentOwner:
     @property
     def context(self):
         """
-            Mostly copied from
-            https://github.com/codecov/codecov.io/blob/master/app/services/analytics_tracking.py#L107
+        Mostly copied from
+        https://github.com/codecov/codecov.io/blob/master/app/services/analytics_tracking.py#L107
         """
         context = {"externalIds": []}
 
@@ -265,19 +265,39 @@ class SegmentService:
                 )
 
     @inject_segment_owner
-    def user_signed_up(self, segment_owner):
+    def user_signed_up(self, segment_owner, **kwargs):
+        event_properties = {
+            **segment_owner.traits,
+            "signup_department": kwargs.get("utm_department") or "marketing",
+            "signup_campaign": kwargs.get("utm_campaign") or "",
+            "signup_medium": kwargs.get("utm_medium") or "",
+            "signup_source": kwargs.get("utm_source") or "direct",
+            "signup_content": kwargs.get("utm_content") or "",
+            "signup_term": kwargs.get("utm_term") or "",
+        }
         analytics.track(
             segment_owner.user_id,
             SegmentEvent.USER_SIGNED_UP.value,
-            segment_owner.traits,
+            event_properties,
         )
 
     @inject_segment_owner
-    def user_signed_in(self, segment_owner):
+    def user_signed_in(self, segment_owner, **kwargs):
+        print("INSIDE USER SIGNED IN!")
+        event_properties = {
+            **segment_owner.traits,
+            "signup_department": kwargs.get("utm_department") or "marketing",
+            "signup_campaign": kwargs.get("utm_campaign") or "",
+            "signup_medium": kwargs.get("utm_medium") or "",
+            "signup_source": kwargs.get("utm_source") or "direct",
+            "signup_content": kwargs.get("utm_content") or "",
+            "signup_term": kwargs.get("utm_term") or "",
+        }
+        print("ABOUT TO CALL TRACK!")
         analytics.track(
             segment_owner.user_id,
             SegmentEvent.USER_SIGNED_IN.value,
-            segment_owner.traits,
+            event_properties,
         )
 
     @inject_segment_owner
@@ -367,7 +387,10 @@ class SegmentService:
         analytics.track(
             user_id=current_user_ownerid,
             event=SegmentEvent.ACCOUNT_DEACTIVATED_USER.value,
-            properties={"role": "admin", "user": ownerid_to_deactivate,},
+            properties={
+                "role": "admin",
+                "user": ownerid_to_deactivate,
+            },
             context={"groupId": org_ownerid},
         )
 

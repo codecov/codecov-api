@@ -164,21 +164,47 @@ class SegmentServiceTests(TestCase):
     @patch("analytics.track")
     def test_user_signed_up(self, track_mock):
         with self.settings(SEGMENT_ENABLED=True):
+            expected_event_properties = {
+                **self.segment_owner.traits,
+                "signup_department": "marketing",
+                "signup_campaign": "",
+                "signup_medium": "",
+                "signup_source": "direct",
+                "signup_content": "",
+                "signup_term": "",
+            }
             self.segment_service.user_signed_up(self.owner)
             track_mock.assert_called_once_with(
                 self.segment_owner.user_id,
                 SegmentEvent.USER_SIGNED_UP.value,
-                self.segment_owner.traits,
+                expected_event_properties,
             )
 
     @patch("analytics.track")
     def test_user_signed_in(self, track_mock):
         with self.settings(SEGMENT_ENABLED=True):
-            self.segment_service.user_signed_in(self.owner)
+            tracking_params = {
+                "utm_department": "sales",
+                "utm_campaign": "campaign",
+                "utm_medium": "medium",
+                "utm_source": "source",
+                "utm_content": "content",
+                "utm_term": "term",
+            }
+            expected_event_properties = {
+                **self.segment_owner.traits,
+                "signup_department": "sales",
+                "signup_campaign": "campaign",
+                "signup_medium": "medium",
+                "signup_source": "source",
+                "signup_content": "content",
+                "signup_term": "term",
+            }
+            self.segment_service.user_signed_in(self.owner, **tracking_params)
             track_mock.assert_called_once_with(
                 self.segment_owner.user_id,
                 SegmentEvent.USER_SIGNED_IN.value,
-                self.segment_owner.traits,
+                expected_event_properties,
             )
 
     @patch("analytics.track")
