@@ -19,3 +19,9 @@ class AriadneView(BaseAriadneView):
     def dispatch(self, request, *args, **kwargs):
         self.authenticate(request)
         return super().dispatch(request, *args, **kwargs)
+
+    def context_value(self, request):
+        return {
+            "request": request,
+            "service": request.resolver_match.kwargs['service']
+        }
