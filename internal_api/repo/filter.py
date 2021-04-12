@@ -2,7 +2,7 @@ from django_filters import rest_framework as django_filters, BooleanFilter
 from rest_framework import filters
 from core.models import Repository
 from django.db.models.functions import Cast
-from django.contrib.postgres.fields.jsonb import KeyTextTransform
+from django.db.models.fields.json import KeyTextTransform
 from django.db.models import FloatField
 
 
@@ -19,17 +19,18 @@ class StringListFilter(django_filters.Filter):
 
         values = request.GET.getlist(self.query_param)
         if len(values) > 0:
-            return qs.filter(**{'%s__%s'%(self.field_name, self.lookup_expr):values})
+            return qs.filter(**{"%s__%s" % (self.field_name, self.lookup_expr): values})
 
         return qs
 
 
 class RepositoryFilters(django_filters.FilterSet):
     """Filter for active repositories"""
-    active = BooleanFilter(field_name='active', method='filter_active')
+
+    active = BooleanFilter(field_name="active", method="filter_active")
 
     """Filter for getting multiple repositories by name"""
-    names = StringListFilter(query_param='names', field_name='name', lookup_expr='in')
+    names = StringListFilter(query_param="names", field_name="name", lookup_expr="in")
 
     def filter_active(self, queryset, name, value):
         # The database currently stores 't' instead of 'true' for active repos, and nothing for inactive
@@ -38,7 +39,7 @@ class RepositoryFilters(django_filters.FilterSet):
 
     class Meta:
         model = Repository
-        fields = ['active', 'names']
+        fields = ["active", "names"]
 
 
 class RepositoryOrderingFilter(filters.OrderingFilter):
@@ -50,17 +51,47 @@ class RepositoryOrderingFilter(filters.OrderingFilter):
 
     def _order_by_totals_field(self, ordering_field, queryset):
         if ordering_field in ["coverage", "-coverage"]:
-            annotation_args = dict(coverage=Cast(KeyTextTransform("c", "latest_commit_totals"), output_field=FloatField()))
+            annotation_args = dict(
+                coverage=Cast(
+                    KeyTextTransform("c", "latest_commit_totals"),
+                    output_field=FloatField(),
+                )
+            )
         elif ordering_field in ["lines", "-lines"]:
-            annotation_args = dict(lines=Cast(KeyTextTransform("n", "latest_commit_totals"), output_field=FloatField()))
+            annotation_args = dict(
+                lines=Cast(
+                    KeyTextTransform("n", "latest_commit_totals"),
+                    output_field=FloatField(),
+                )
+            )
         elif ordering_field in ["hits", "-hits"]:
-            annotation_args = dict(hits=Cast(KeyTextTransform("h", "latest_commit_totals"), output_field=FloatField()))
+            annotation_args = dict(
+                hits=Cast(
+                    KeyTextTransform("h", "latest_commit_totals"),
+                    output_field=FloatField(),
+                )
+            )
         elif ordering_field in ["partials", "-partials"]:
-            annotation_args = dict(partials=Cast(KeyTextTransform("p", "latest_commit_totals"), output_field=FloatField()))
+            annotation_args = dict(
+                partials=Cast(
+                    KeyTextTransform("p", "latest_commit_totals"),
+                    output_field=FloatField(),
+                )
+            )
         elif ordering_field in ["misses", "-misses"]:
-            annotation_args = dict(misses=Cast(KeyTextTransform("m", "latest_commit_totals"), output_field=FloatField()))
+            annotation_args = dict(
+                misses=Cast(
+                    KeyTextTransform("m", "latest_commit_totals"),
+                    output_field=FloatField(),
+                )
+            )
         elif ordering_field in ["complexity", "-complexity"]:
-            annotation_args = dict(complexity=Cast(KeyTextTransform("C", "latest_commit_totals"), output_field=FloatField()))
+            annotation_args = dict(
+                complexity=Cast(
+                    KeyTextTransform("C", "latest_commit_totals"),
+                    output_field=FloatField(),
+                )
+            )
         else:
             return queryset.order_by(ordering_field)
 

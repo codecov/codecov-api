@@ -1,21 +1,32 @@
 import os
 import logging
+import collections
+from enum import Enum
+from yaml import load as yaml_load
 from copy import deepcopy
 
-from yaml import load as yaml_load
-import collections
+
+class SettingsModule(Enum):
+    DEV = "codecov.settings_dev"
+    STAGING = "codecov.settings_staging"
+    TESTING = "codecov.settings_test"
+    ENTERPRISE = "codecov.settings_enterprise"
+    PRODUCTION = "codecov.settings_prod"
 
 
 RUN_ENV = os.environ.get("RUN_ENV", "PRODUCTION")
 
+
 if RUN_ENV == "DEV":
-    settings_module = "codecov.settings_dev"
+    settings_module = SettingsModule.DEV.value
 elif RUN_ENV == "STAGING":
-    settings_module = "codecov.settings_staging"
+    settings_module = SettingsModule.STAGING.value
 elif RUN_ENV == "TESTING":
-    settings_module = "codecov.settings_test"
+    settings_module = SettingsModule.TESTING.value
+elif RUN_ENV == "ENTERPRISE":
+    settings_module = SettingsModule.ENTERPRISE.value
 else:
-    settings_module = "codecov.settings_prod"
+    settings_module = SettingsModule.PRODUCTION.value
 
 
 def get_settings_module():
@@ -45,8 +56,7 @@ default_config = {
     },
     "setup": {
         "http": {"timeouts": {"connect": 15, "receive": 30}, "cookie_secret": "abc123"},
-        "encryption_secret": "",
-        "codecov_url": "http://localhost:5100",
+        "encryption_secret": ""
     },
 }
 
@@ -54,7 +64,7 @@ default_config = {
 def update(d, u):
     d = deepcopy(d)
     for k, v in u.items():
-        if isinstance(v, collections.Mapping):
+        if isinstance(v, collections.abc.Mapping):
             d[k] = update(d.get(k, {}), v)
         else:
             d[k] = v

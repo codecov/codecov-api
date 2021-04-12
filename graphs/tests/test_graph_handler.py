@@ -1,10 +1,15 @@
 from rest_framework.test import APITestCase
 from rest_framework import status
 from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import RepositoryFactory, BranchFactory, CommitFactory, PullFactory
+from core.tests.factories import (
+    RepositoryFactory,
+    BranchFactory,
+    CommitFactory,
+    PullFactory,
+)
+
 
 class TestGraphHandler(APITestCase):
-
     def _get(self, graph_type, kwargs={}, data={}):
         path = f"/{kwargs.get('service')}/{kwargs.get('owner_username')}/{kwargs.get('repo_name')}/graphs/{graph_type}.{kwargs.get('ext')}"
         return self.client.get(path, data=data)
@@ -19,68 +24,70 @@ class TestGraphHandler(APITestCase):
 
     def test_invalid_extension(self):
         response = self._get(
-            'tree',
+            "tree",
             kwargs={
-                'service': 'gh',
-                'owner_username': 'user',
-                'repo_name': 'repo',
-                'ext': 'json'
+                "service": "gh",
+                "owner_username": "user",
+                "repo_name": "repo",
+                "ext": "json",
             },
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert response.data['detail'] == "File extension should be one of [ svg ]"
-        
-        response = self._get(
-            'icicle',
-            kwargs={
-                'service': 'gh',
-                'owner_username': 'user',
-                'repo_name': 'repo',
-                'ext': 'json'
-            },
-        )
-        assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert response.data['detail'] == "File extension should be one of [ svg ]"
+        assert response.data["detail"] == "File extension should be one of [ svg ]"
 
         response = self._get(
-            'sunburst',
+            "icicle",
             kwargs={
-                'service': 'gh',
-                'owner_username': 'user',
-                'repo_name': 'repo',
-                'ext': 'json'
+                "service": "gh",
+                "owner_username": "user",
+                "repo_name": "repo",
+                "ext": "json",
             },
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert response.data['detail'] == "File extension should be one of [ svg ]"
+        assert response.data["detail"] == "File extension should be one of [ svg ]"
 
         response = self._get(
-            'commits',
+            "sunburst",
             kwargs={
-                'service': 'gh',
-                'owner_username': 'user',
-                'repo_name': 'repo',
-                'ext': 'txt'
+                "service": "gh",
+                "owner_username": "user",
+                "repo_name": "repo",
+                "ext": "json",
             },
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert response.data['detail'] == "File extension should be one of [ svg ]"
+        assert response.data["detail"] == "File extension should be one of [ svg ]"
+
+        response = self._get(
+            "commits",
+            kwargs={
+                "service": "gh",
+                "owner_username": "user",
+                "repo_name": "repo",
+                "ext": "txt",
+            },
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.data["detail"] == "File extension should be one of [ svg ]"
 
     def test_tree_graph(self):
-        gh_owner = OwnerFactory(service='github')
-        repo = RepositoryFactory(author=gh_owner, active=True, private=False, name='repo1' )
+        gh_owner = OwnerFactory(service="github")
+        repo = RepositoryFactory(
+            author=gh_owner, active=True, private=False, name="repo1"
+        )
         commit = CommitFactory(repository=repo, author=gh_owner)
         branch = BranchFactory(repository=repo, name="master", head=commit.commitid)
-        
+
         # test default precision
         response = self._get(
-            'tree',
+            "tree",
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo1',
-                'ext': 'svg'
-            }
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "svg",
+            },
         )
 
         expected_graph = """<svg baseProfile="full" width="300" height="300" viewBox="0 0 300 300" version="1.1"
@@ -103,26 +110,28 @@ class TestGraphHandler(APITestCase):
         </svg>"""
 
         graph = response.content.decode("utf-8")
-        graph = [line.strip() for line in graph.split('\n')]
-        expected_graph = [line.strip() for line in expected_graph.split('\n')]
+        graph = [line.strip() for line in graph.split("\n")]
+        expected_graph = [line.strip() for line in expected_graph.split("\n")]
         assert expected_graph == graph
         assert response.status_code == status.HTTP_200_OK
 
     def test_icicle_graph(self):
-        gh_owner = OwnerFactory(service='github')
-        repo = RepositoryFactory(author=gh_owner, active=True, private=False, name='repo1' )
+        gh_owner = OwnerFactory(service="github")
+        repo = RepositoryFactory(
+            author=gh_owner, active=True, private=False, name="repo1"
+        )
         commit = CommitFactory(repository=repo, author=gh_owner)
         branch = BranchFactory(repository=repo, name="master", head=commit.commitid)
-        
+
         # test default precision
         response = self._get(
-            'icicle',
+            "icicle",
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo1',
-                'ext': 'svg'
-            }
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "svg",
+            },
         )
 
         expected_graph = """<svg baseProfile="full" width="750" height="150" viewBox="0 0 750 150" version="1.1"
@@ -148,26 +157,28 @@ class TestGraphHandler(APITestCase):
         </svg>"""
 
         graph = response.content.decode("utf-8")
-        graph = [line.strip() for line in graph.split('\n')]
-        expected_graph = [line.strip() for line in expected_graph.split('\n')]
+        graph = [line.strip() for line in graph.split("\n")]
+        expected_graph = [line.strip() for line in expected_graph.split("\n")]
         assert expected_graph == graph
         assert response.status_code == status.HTTP_200_OK
 
     def test_sunburst_graph(self):
-        gh_owner = OwnerFactory(service='github')
-        repo = RepositoryFactory(author=gh_owner, active=True, private=False, name='repo1' )
+        gh_owner = OwnerFactory(service="github")
+        repo = RepositoryFactory(
+            author=gh_owner, active=True, private=False, name="repo1"
+        )
         commit = CommitFactory(repository=repo, author=gh_owner)
         branch = BranchFactory(repository=repo, name="master", head=commit.commitid)
-        
+
         # test default precision
         response = self._get(
-            'sunburst',
+            "sunburst",
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo1',
-                'ext': 'svg'
-            }
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "svg",
+            },
         )
 
         expected_graph = """<svg baseProfile="full" width="300" height="300" viewBox="0 0 300 300" version="1.1"
@@ -193,76 +204,93 @@ class TestGraphHandler(APITestCase):
         </svg>"""
 
         graph = response.content.decode("utf-8")
-        graph = [line.strip() for line in graph.split('\n')]
-        expected_graph = [line.strip() for line in expected_graph.split('\n')]
+        graph = [line.strip() for line in graph.split("\n")]
+        expected_graph = [line.strip() for line in expected_graph.split("\n")]
         assert expected_graph == graph
         assert response.status_code == status.HTTP_200_OK
 
     def test_unkown_owner(self):
         response = self._get(
-            'sunburst',
+            "sunburst",
             kwargs={
-                'service': 'gh',
-                'owner_username': 'gh_owner',
-                'repo_name': 'repo1',
-                'ext': 'svg'
-            }
+                "service": "gh",
+                "owner_username": "gh_owner",
+                "repo_name": "repo1",
+                "ext": "svg",
+            },
         )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert response.data['detail'] == "Not found. Note: private repositories require ?token arguments"
+        assert (
+            response.data["detail"]
+            == "Not found. Note: private repositories require ?token arguments"
+        )
 
     def test_unkown_repo(self):
-        gh_owner = OwnerFactory(service='github')
+        gh_owner = OwnerFactory(service="github")
         response = self._get(
-            'sunburst',
+            "sunburst",
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo1',
-                'ext': 'svg'
-            }
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "svg",
+            },
         )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert response.data['detail'] == "Not found. Note: private repositories require ?token arguments"
+        assert (
+            response.data["detail"]
+            == "Not found. Note: private repositories require ?token arguments"
+        )
 
     def test_private_repo_no_token(self):
-        gh_owner = OwnerFactory(service='github')
-        repo = RepositoryFactory(author=gh_owner, active=True, private=True, name='repo1', image_token='12345678')
+        gh_owner = OwnerFactory(service="github")
+        repo = RepositoryFactory(
+            author=gh_owner,
+            active=True,
+            private=True,
+            name="repo1",
+            image_token="12345678",
+        )
         response = self._get(
-            'sunburst',
+            "sunburst",
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo1',
-                'ext': 'svg'
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "svg",
             },
-            data={
-                'token': '123456'
-            }
+            data={"token": "123456"},
         )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert response.data['detail'] == "Not found. Note: private repositories require ?token arguments"
+        assert (
+            response.data["detail"]
+            == "Not found. Note: private repositories require ?token arguments"
+        )
 
     def test_private_repo(self):
-        gh_owner = OwnerFactory(service='github')
-        repo = RepositoryFactory(author=gh_owner, active=True, private=True, name='repo1', image_token='12345678')
+        gh_owner = OwnerFactory(service="github")
+        repo = RepositoryFactory(
+            author=gh_owner,
+            active=True,
+            private=True,
+            name="repo1",
+            image_token="12345678",
+        )
         commit = CommitFactory(repository=repo, author=gh_owner)
         branch = BranchFactory(repository=repo, name="master", head=commit.commitid)
-        
+
         response = self._get(
-            'sunburst',
+            "sunburst",
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo1',
-                'ext': 'svg'
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "svg",
             },
-            data={
-                'token': '12345678'
-            }
+            data={"token": "12345678"},
         )
 
         expected_graph = """<svg baseProfile="full" width="300" height="300" viewBox="0 0 300 300" version="1.1"
@@ -288,63 +316,77 @@ class TestGraphHandler(APITestCase):
         </svg>"""
 
         graph = response.content.decode("utf-8")
-        graph = [line.strip() for line in graph.split('\n')]
-        expected_graph = [line.strip() for line in expected_graph.split('\n')]
+        graph = [line.strip() for line in graph.split("\n")]
+        expected_graph = [line.strip() for line in expected_graph.split("\n")]
         assert expected_graph == graph
         assert response.status_code == status.HTTP_200_OK
-        
+
     def test_unkown_branch(self):
-        gh_owner = OwnerFactory(service='github')
-        repo = RepositoryFactory(author=gh_owner, active=True, private=False, name='repo1' )
-        
+        gh_owner = OwnerFactory(service="github")
+        repo = RepositoryFactory(
+            author=gh_owner, active=True, private=False, name="repo1"
+        )
+
         response = self._get(
-            'sunburst',
+            "sunburst",
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo1',
-                'ext': 'svg'
-            }
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "svg",
+            },
         )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert response.data['detail'] == "Not found. Note: private repositories require ?token arguments"
+        assert (
+            response.data["detail"]
+            == "Not found. Note: private repositories require ?token arguments"
+        )
 
     def test_branch_graph(self):
-        gh_owner = OwnerFactory(service='github')
-        repo = RepositoryFactory(author=gh_owner, active=True, private=True, name='repo1', image_token='12345678', branch='branch1')
+        gh_owner = OwnerFactory(service="github")
+        repo = RepositoryFactory(
+            author=gh_owner,
+            active=True,
+            private=True,
+            name="repo1",
+            image_token="12345678",
+            branch="branch1",
+        )
         commit = CommitFactory(repository=repo, author=gh_owner)
         branch = BranchFactory(repository=repo, name="master", head=commit.commitid)
         commit_2_totals = {
-            'C': 0,
-            'M': 0,
-            'N': 0,
-            'b': 0,
-            'c': '95.00000',
-            'd': 0,
-            'diff': [1, 2, 1, 1, 0, '50.00000', 0, 0, 0, 0, 0, 0, 0],
-            'f': 3,
-            'h': 17,
-            'm': 3,
-            'n': 20,
-            'p': 0,
-            's': 1
+            "C": 0,
+            "M": 0,
+            "N": 0,
+            "b": 0,
+            "c": "95.00000",
+            "d": 0,
+            "diff": [1, 2, 1, 1, 0, "50.00000", 0, 0, 0, 0, 0, 0, 0],
+            "f": 3,
+            "h": 17,
+            "m": 3,
+            "n": 20,
+            "p": 0,
+            "s": 1,
         }
-        commit_2 = CommitFactory(repository=repo, author=gh_owner, totals=commit_2_totals)
-        branch_2 = BranchFactory(repository=repo, name="branch1", head=commit_2.commitid)
+        commit_2 = CommitFactory(
+            repository=repo, author=gh_owner, totals=commit_2_totals
+        )
+        branch_2 = BranchFactory(
+            repository=repo, name="branch1", head=commit_2.commitid
+        )
         # test default precision
         response = self._get_branch(
-            'tree',
+            "tree",
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo1',
-                'ext': 'svg',
-                'branch': 'branch1'
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "svg",
+                "branch": "branch1",
             },
-            data={
-                'token': '12345678'
-            }
+            data={"token": "12345678"},
         )
         expected_graph = """<svg baseProfile="full" width="300" height="300" viewBox="0 0 300 300" version="1.1"
             xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events"
@@ -365,46 +407,53 @@ class TestGraphHandler(APITestCase):
             <rect x="0" y="150.0" width="300.0" height="150.0" fill="#efa41b" stroke="white" stroke-width="1" class=" tooltipped" data-content="awesome/__init__.py"><title>awesome/__init__.py</title></rect>
         </svg>"""
         graph = response.content.decode("utf-8")
-        graph = [line.strip() for line in graph.split('\n')]
-        expected_graph = [line.strip() for line in expected_graph.split('\n')]
+        graph = [line.strip() for line in graph.split("\n")]
+        expected_graph = [line.strip() for line in expected_graph.split("\n")]
         assert expected_graph == graph
         assert response.status_code == status.HTTP_200_OK
 
     def test_pull_graph(self):
-        gh_owner = OwnerFactory(service='github')
-        repo = RepositoryFactory(author=gh_owner, active=True, private=True, name='repo1', image_token='12345678', branch='branch1')
+        gh_owner = OwnerFactory(service="github")
+        repo = RepositoryFactory(
+            author=gh_owner,
+            active=True,
+            private=True,
+            name="repo1",
+            image_token="12345678",
+            branch="branch1",
+        )
         pull = PullFactory(
-            pullid=10, 
-            repository_id=repo.repoid, 
+            pullid=10,
+            repository_id=repo.repoid,
             flare=[
                 {
                     "name": "",
                     "color": "#e05d44",
                     "lines": 14,
                     "_class": None,
-                    "children": [{
+                    "children": [
+                        {
                             "name": "tests.py",
                             "color": "#baaf1b",
                             "lines": 7,
                             "_class": None,
-                            "coverage": "85.71429"
-                    }]
+                            "coverage": "85.71429",
+                        }
+                    ],
                 }
-            ]
+            ],
         )
         # test default precision
         response = self._get_pull(
-            'tree',
+            "tree",
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo1',
-                'ext': 'svg',
-                'pull': 10
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "svg",
+                "pull": 10,
             },
-            data={
-                'token': '12345678'
-            }
+            data={"token": "12345678"},
         )
         expected_graph = """<svg baseProfile="full" width="300" height="300" viewBox="0 0 300 300" version="1.1"
             xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events"
@@ -423,55 +472,64 @@ class TestGraphHandler(APITestCase):
             <rect x="0" y="0" width="300.0" height="300.0" fill="#baaf1b" stroke="white" stroke-width="1" class=" tooltipped" data-content="tests.py"><title>tests.py</title></rect>
         </svg>"""
         graph = response.content.decode("utf-8")
-        graph = [line.strip() for line in graph.split('\n')]
-        expected_graph = [line.strip() for line in expected_graph.split('\n')]
+        graph = [line.strip() for line in graph.split("\n")]
+        expected_graph = [line.strip() for line in expected_graph.split("\n")]
         assert expected_graph == graph
         assert response.status_code == status.HTTP_200_OK
 
     def test_no_pull_graph(self):
-        gh_owner = OwnerFactory(service='github')
-        repo = RepositoryFactory(author=gh_owner, active=True, private=True, name='repo1', image_token='12345678', branch='branch1')
+        gh_owner = OwnerFactory(service="github")
+        repo = RepositoryFactory(
+            author=gh_owner,
+            active=True,
+            private=True,
+            name="repo1",
+            image_token="12345678",
+            branch="branch1",
+        )
         # test default precision
         response = self._get_pull(
-            'tree',
+            "tree",
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo1',
-                'ext': 'svg',
-                'pull': 10
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "svg",
+                "pull": 10,
             },
-            data={
-                'token': '12345678'
-            }
+            data={"token": "12345678"},
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert response.data['detail'] == "Not found. Note: private repositories require ?token arguments"
+        assert (
+            response.data["detail"]
+            == "Not found. Note: private repositories require ?token arguments"
+        )
 
     def test_pull_no_flare_graph(self):
-        gh_owner = OwnerFactory(service='github')
-        repo = RepositoryFactory(author=gh_owner, active=True, private=True, name='repo1', image_token='12345678', branch='master')
+        gh_owner = OwnerFactory(service="github")
+        repo = RepositoryFactory(
+            author=gh_owner,
+            active=True,
+            private=True,
+            name="repo1",
+            image_token="12345678",
+            branch="master",
+        )
         commit = CommitFactory(repository=repo, author=gh_owner)
         branch = BranchFactory(repository=repo, name="master", head=commit.commitid)
-        pull = PullFactory(
-            pullid=10, 
-            repository_id=repo.repoid, 
-            flare=None
-        )
-        
+        pull = PullFactory(pullid=10, repository_id=repo.repoid, flare=None)
+
         # test default precision
         response = self._get_pull(
-            'tree',
+            "tree",
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo1',
-                'ext': 'svg',
-                'pull': 10
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "svg",
+                "pull": 10,
             },
-            data={
-                'token': '12345678'
-            }
+            data={"token": "12345678"},
         )
         expected_graph = """<svg baseProfile="full" width="300" height="300" viewBox="0 0 300 300" version="1.1"
             xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events"
@@ -492,27 +550,28 @@ class TestGraphHandler(APITestCase):
             <rect x="0" y="150.0" width="300.0" height="150.0" fill="#efa41b" stroke="white" stroke-width="1" class=" tooltipped" data-content="awesome/__init__.py"><title>awesome/__init__.py</title></rect>
         </svg>"""
         graph = response.content.decode("utf-8")
-        graph = [line.strip() for line in graph.split('\n')]
-        expected_graph = [line.strip() for line in expected_graph.split('\n')]
+        graph = [line.strip() for line in graph.split("\n")]
+        expected_graph = [line.strip() for line in expected_graph.split("\n")]
         assert response.status_code == status.HTTP_200_OK
         assert expected_graph == graph
 
     def test_pull_no_repo_graph(self):
-        gh_owner = OwnerFactory(service='github')
-        
+        gh_owner = OwnerFactory(service="github")
+
         # test default precision
         response = self._get_pull(
-            'tree',
+            "tree",
             kwargs={
-                'service': 'gh',
-                'owner_username': gh_owner.username,
-                'repo_name': 'repo1',
-                'ext': 'svg',
-                'pull': 10
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "svg",
+                "pull": 10,
             },
-            data={
-                'token': '12345678'
-            }
+            data={"token": "12345678"},
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert response.data['detail'] == "Not found. Note: private repositories require ?token arguments"
+        assert (
+            response.data["detail"]
+            == "Not found. Note: private repositories require ?token arguments"
+        )

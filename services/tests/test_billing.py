@@ -5,8 +5,9 @@ from unittest.mock import patch
 from stripe.error import StripeError, InvalidRequestError
 
 from services.billing import BillingService, StripeService, AbstractPaymentService
-from codecov_auth.tests.factories import OwnerFactory
 
+from codecov_auth.models import Service
+from codecov_auth.tests.factories import OwnerFactory
 
 class StripeServiceTests(TestCase):
     def setUp(self):
@@ -17,71 +18,62 @@ class StripeServiceTests(TestCase):
         with self.assertRaises(Exception):
             StripeService(None)
 
-    @patch('services.billing.stripe.Invoice.list')
-    def test_list_invoices_calls_stripe_invoice_list_with_customer_stripe_id(self, invoice_list_mock):
+    @patch("services.billing.stripe.Invoice.list")
+    def test_list_invoices_calls_stripe_invoice_list_with_customer_stripe_id(
+        self, invoice_list_mock
+    ):
         owner = OwnerFactory(stripe_customer_id=-1)
         self.stripe.list_invoices(owner)
-        invoice_list_mock.assert_called_once_with(customer=owner.stripe_customer_id, limit=10)
+        invoice_list_mock.assert_called_once_with(
+            customer=owner.stripe_customer_id, limit=10
+        )
 
-    @patch('stripe.Invoice.list')
-    def test_list_invoices_returns_emptylist_if_stripe_customer_id_is_None(self, invoice_list_mock):
+    @patch("stripe.Invoice.list")
+    def test_list_invoices_returns_emptylist_if_stripe_customer_id_is_None(
+        self, invoice_list_mock
+    ):
         owner = OwnerFactory()
         invoices = self.stripe.list_invoices(owner)
 
         invoice_list_mock.assert_not_called()
         assert invoices == []
 
-    @patch('codecov_auth.models.Owner.set_free_plan')
-    @patch('services.billing.stripe.Subscription.delete')
-    @patch('services.billing.stripe.Subscription.modify')
+    @patch("codecov_auth.models.Owner.set_free_plan")
+    @patch("services.billing.stripe.Subscription.delete")
+    @patch("services.billing.stripe.Subscription.modify")
     def test_delete_subscription_deletes_and_prorates_if_owner_not_on_user_plan(
-        self,
-        modify_mock,
-        delete_mock,
-        set_free_plan_mock
+        self, modify_mock, delete_mock, set_free_plan_mock
     ):
         owner = OwnerFactory(stripe_subscription_id="fowdldjfjwe", plan="v4-50m")
         self.stripe.delete_subscription(owner)
-        delete_mock.assert_called_once_with(owner.stripe_subscription_id, prorate=True)
+        delete_mock.assert_called_once_with(owner.stripe_subscription_id, prorate=False)
         set_free_plan_mock.assert_called_once()
 
-    @patch('codecov_auth.models.Owner.set_free_plan')
-    @patch('services.billing.stripe.Subscription.delete')
-    @patch('services.billing.stripe.Subscription.modify')
+    @patch("codecov_auth.models.Owner.set_free_plan")
+    @patch("services.billing.stripe.Subscription.delete")
+    @patch("services.billing.stripe.Subscription.modify")
     def test_delete_subscription_modifies_subscription_to_delete_at_end_of_billing_cycle_if_user_plan(
-        self,
-        modify_mock,
-        delete_mock,
-        set_free_plan_mock
+        self, modify_mock, delete_mock, set_free_plan_mock
     ):
         owner = OwnerFactory(stripe_subscription_id="fowdldjfjwe", plan="users-inappy")
         self.stripe.delete_subscription(owner)
         delete_mock.assert_not_called()
         set_free_plan_mock.assert_not_called()
-        modify_mock.assert_called_once_with(owner.stripe_subscription_id, cancel_at_period_end=True)
+        modify_mock.assert_called_once_with(owner.stripe_subscription_id, cancel_at_period_end=True, prorate=False)
 
-    @patch('services.billing.stripe.Subscription.modify')
-    @patch('services.billing.stripe.Subscription.retrieve')
+    @patch("services.billing.stripe.Subscription.modify")
+    @patch("services.billing.stripe.Subscription.retrieve")
     def test_modify_subscription_retrieves_subscription_and_modifies_first_item(
-        self,
-        retrieve_mock,
-        modify_mock
+        self, retrieve_mock, modify_mock
     ):
         owner = OwnerFactory(stripe_subscription_id="33043sdf")
         desired_plan_name = "users-pr-inappy"
         desired_user_count = 20
-        desired_plan = {
-            "value": desired_plan_name,
-            "quantity": desired_user_count
-        }
+        desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
 
         # only including fields relevant to implementation
         subscription_item = {"id": 100}
-        retrieve_mock.return_value = {
-            "items": {
-                "data": [subscription_item]
-            }
-        }
+        retrieve_mock.return_value = {"items": {"data": [subscription_item]}}
 
         self.stripe.modify_subscription(owner, desired_plan)
 
@@ -92,7 +84,7 @@ class StripeServiceTests(TestCase):
                 {
                     "id": subscription_item["id"],
                     "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                    "quantity": desired_plan["quantity"]
+                    "quantity": desired_plan["quantity"],
                 }
             ],
             metadata={
@@ -101,38 +93,28 @@ class StripeServiceTests(TestCase):
                 "username": owner.username,
                 "obo_name": self.user.name,
                 "obo_email": self.user.email,
-                "obo": self.user.ownerid
+                "obo": self.user.ownerid,
             },
-            proration_behavior='always_invoice'
+            proration_behavior='none'
         )
 
         owner.refresh_from_db()
         assert owner.plan == desired_plan_name
         assert owner.plan_user_count == desired_user_count
 
-    @patch('services.billing.stripe.Subscription.modify')
-    @patch('services.billing.stripe.Subscription.retrieve')
+    @patch("services.billing.stripe.Subscription.modify")
+    @patch("services.billing.stripe.Subscription.retrieve")
     @patch("services.segment.SegmentService.account_changed_plan")
     def test_modify_subscription_triggers_segment_on_plan_change(
-        self,
-        changed_plan_mock,
-        retrieve_mock,
-        modify_mock
+        self, changed_plan_mock, retrieve_mock, modify_mock
     ):
         owner = OwnerFactory(stripe_subscription_id="33043", plan="users-pr-inappm")
         desired_plan_name = "users-pr-inappy"
         desired_user_count = 20
-        desired_plan = {
-            "value": desired_plan_name,
-            "quantity": desired_user_count
-        }
+        desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
 
         subscription_item = {"id": 100}
-        retrieve_mock.return_value = {
-            "items": {
-                "data": [subscription_item]
-            }
-        }
+        retrieve_mock.return_value = {"items": {"data": [subscription_item]}}
 
         self.stripe.modify_subscription(owner, desired_plan)
         changed_plan_mock.assert_called_once_with(
@@ -140,33 +122,41 @@ class StripeServiceTests(TestCase):
             org_ownerid=owner.ownerid,
             plan_details={
                 "new_plan": desired_plan_name,
-                "previous_plan": "users-pr-inappm"
-            }
+                "previous_plan": "users-pr-inappm",
+            },
         )
 
-    @patch('services.billing.stripe.Subscription.modify')
-    @patch('services.billing.stripe.Subscription.retrieve')
+    def test_get_proration_params(self):
+        # Test same plan, increased users
+        owner = OwnerFactory(plan="users-pr-inappy", plan_user_count=10)
+        desired_plan = {"value": "users-pr-inappy", "quantity": 14}
+        self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+
+        # Test same plan, drecrease users
+        owner = OwnerFactory(plan="users-pr-inappy", plan_user_count=20)
+        desired_plan = {"value": "users-pr-inappy", "quantity": 14}
+        self.stripe._get_proration_params(owner, desired_plan) == "none"
+
+        # Test going from monthly to yearly
+        owner = OwnerFactory(plan="users-pr-inappm", plan_user_count=20)
+        desired_plan = {"value": "users-pr-inappy", "quantity": 14}
+        self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+
+    @patch("services.billing.stripe.Subscription.modify")
+    @patch("services.billing.stripe.Subscription.retrieve")
     @patch("services.segment.SegmentService.account_increased_users")
     def test_modify_subscription_triggers_segment_on_user_increase(
-        self,
-        segment_increased_users_mock,
-        retrieve_mock,
-        modify_mock
+        self, segment_increased_users_mock, retrieve_mock, modify_mock
     ):
-        owner = OwnerFactory(stripe_subscription_id="33043", plan="users-pr-inappy", plan_user_count=19)
+        owner = OwnerFactory(
+            stripe_subscription_id="33043", plan="users-pr-inappy", plan_user_count=19
+        )
         desired_plan_name = "users-pr-inappy"
         desired_user_count = 20
-        desired_plan = {
-            "value": desired_plan_name,
-            "quantity": desired_user_count
-        }
+        desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
 
         subscription_item = {"id": 100}
-        retrieve_mock.return_value = {
-            "items": {
-                "data": [subscription_item]
-            }
-        }
+        retrieve_mock.return_value = {"items": {"data": [subscription_item]}}
 
         self.stripe.modify_subscription(owner, desired_plan)
         segment_increased_users_mock.assert_called_once_with(
@@ -175,33 +165,25 @@ class StripeServiceTests(TestCase):
             plan_details={
                 "new_quantity": desired_user_count,
                 "old_quantity": 19,
-                "plan": desired_plan_name
-            }
+                "plan": desired_plan_name,
+            },
         )
 
-    @patch('services.billing.stripe.Subscription.modify')
-    @patch('services.billing.stripe.Subscription.retrieve')
+    @patch("services.billing.stripe.Subscription.modify")
+    @patch("services.billing.stripe.Subscription.retrieve")
     @patch("services.segment.SegmentService.account_decreased_users")
     def test_modify_subscription_triggers_segment_on_user_increase(
-        self,
-        segment_decreased_users_mock,
-        retrieve_mock,
-        modify_mock
+        self, segment_decreased_users_mock, retrieve_mock, modify_mock
     ):
-        owner = OwnerFactory(stripe_subscription_id="33043", plan="users-pr-inappy", plan_user_count=20)
+        owner = OwnerFactory(
+            stripe_subscription_id="33043", plan="users-pr-inappy", plan_user_count=20
+        )
         desired_plan_name = "users-pr-inappy"
         desired_user_count = 15
-        desired_plan = {
-            "value": desired_plan_name,
-            "quantity": desired_user_count
-        }
+        desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
 
         subscription_item = {"id": 100}
-        retrieve_mock.return_value = {
-            "items": {
-                "data": [subscription_item]
-            }
-        }
+        retrieve_mock.return_value = {"items": {"data": [subscription_item]}}
 
         self.stripe.modify_subscription(owner, desired_plan)
         segment_decreased_users_mock.assert_called_once_with(
@@ -210,23 +192,21 @@ class StripeServiceTests(TestCase):
             plan_details={
                 "new_quantity": desired_user_count,
                 "old_quantity": 20,
-                "plan": desired_plan_name
-            }
+                "plan": desired_plan_name,
+            },
         )
 
-    @patch('services.billing.stripe.checkout.Session.create')
+    @patch("services.billing.stripe.checkout.Session.create")
     def test_create_checkout_session_creates_with_correct_args_and_returns_id(
-        self,
-        create_checkout_session_mock
+        self, create_checkout_session_mock
     ):
-        owner = OwnerFactory()
+        owner = OwnerFactory(service=Service.GITHUB.value)
         expected_id = "fkkgosd"
-        create_checkout_session_mock.return_value = {"id": expected_id} # only field relevant to implementation
+        create_checkout_session_mock.return_value = {
+            "id": expected_id
+        }  # only field relevant to implementation
         desired_quantity = 25
-        desired_plan = {
-            "value": "users-pr-inappm",
-            "quantity": desired_quantity
-        }
+        desired_plan = {"value": "users-pr-inappm", "quantity": desired_quantity}
 
         assert self.stripe.create_checkout_session(owner, desired_plan) == expected_id
 
@@ -236,13 +216,15 @@ class StripeServiceTests(TestCase):
             client_reference_id=owner.ownerid,
             customer=owner.stripe_customer_id,
             customer_email=owner.email,
-            success_url=f"{settings.CODECOV_DASHBOARD_URL}/account/gh/{owner.username}?success",
-            cancel_url=f"{settings.CODECOV_DASHBOARD_URL}/account/gh/{owner.username}?cancel",
+            success_url=f"{settings.CODECOV_DASHBOARD_URL}/account/gh/{owner.username}/billing?success",
+            cancel_url=f"{settings.CODECOV_DASHBOARD_URL}/account/gh/{owner.username}/billing?cancel",
             subscription_data={
-                "items": [{
-                    "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                    "quantity": desired_quantity
-                }],
+                "items": [
+                    {
+                        "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                        "quantity": desired_quantity,
+                    }
+                ],
                 "payment_behavior": "allow_incomplete",
                 "metadata": {
                     "service": owner.service,
@@ -250,74 +232,73 @@ class StripeServiceTests(TestCase):
                     "username": owner.username,
                     "obo_name": self.user.name,
                     "obo_email": self.user.email,
-                    "obo": self.user.ownerid
-                }
-            }
+                    "obo": self.user.ownerid,
+                },
+            },
         )
 
     def test_get_subscription_when_no_subscription(self):
         owner = OwnerFactory(stripe_subscription_id=None)
         assert self.stripe.get_subscription(owner) == None
 
-    @patch('services.billing.stripe.Subscription.retrieve')
+    @patch("services.billing.stripe.Subscription.retrieve")
     def test_get_subscription_returns_stripe_data(self, subscription_retrieve_mock):
         owner = OwnerFactory(stripe_subscription_id="abc")
         # only including fields relevant to implementation
-        stripe_data_subscription = {
-            "doesnt": "matter"
-        }
-        payment_method_id = 'pm_something_something'
+        stripe_data_subscription = {"doesnt": "matter"}
+        payment_method_id = "pm_something_something"
         subscription_retrieve_mock.return_value = stripe_data_subscription
         assert self.stripe.get_subscription(owner) == stripe_data_subscription
-        subscription_retrieve_mock.assert_called_once_with(owner.stripe_subscription_id, expand=['latest_invoice', 'default_payment_method'])
+        subscription_retrieve_mock.assert_called_once_with(
+            owner.stripe_subscription_id,
+            expand=["latest_invoice", "default_payment_method"],
+        )
 
     def test_update_payment_method_when_no_subscription(self):
         owner = OwnerFactory(stripe_subscription_id=None)
         assert self.stripe.update_payment_method(owner, "abc") == None
 
-    @patch('services.billing.stripe.Subscription.modify')
-    @patch('services.billing.stripe.PaymentMethod.attach')
-    def test_update_payment_method(
-        self,
-        attach_payment_mock,
-        modify_subscription_mock
-    ):
+    @patch("services.billing.stripe.Subscription.modify")
+    @patch("services.billing.stripe.PaymentMethod.attach")
+    def test_update_payment_method(self, attach_payment_mock, modify_subscription_mock):
         payment_method_id = "pm_1234567"
         subscription_id = "sub_abc"
         customer_id = "cus_abc"
-        owner = OwnerFactory(stripe_subscription_id=subscription_id, stripe_customer_id=customer_id)
+        owner = OwnerFactory(
+            stripe_subscription_id=subscription_id, stripe_customer_id=customer_id
+        )
         assert self.stripe.update_payment_method(owner, payment_method_id) != None
-        attach_payment_mock.assert_called_once_with(payment_method_id, customer=customer_id)
-        modify_subscription_mock.assert_called_once_with(subscription_id, default_payment_method=payment_method_id)
+        attach_payment_mock.assert_called_once_with(
+            payment_method_id, customer=customer_id
+        )
+        modify_subscription_mock.assert_called_once_with(
+            subscription_id, default_payment_method=payment_method_id
+        )
 
-    @patch('services.billing.stripe.Invoice.retrieve')
+    @patch("services.billing.stripe.Invoice.retrieve")
     def test_get_invoice_not_found(self, retrieve_invoice_mock):
         invoice_id = "abc"
-        retrieve_invoice_mock.side_effect = InvalidRequestError(message="not found", param=invoice_id)
+        retrieve_invoice_mock.side_effect = InvalidRequestError(
+            message="not found", param=invoice_id
+        )
         assert self.stripe.get_invoice(OwnerFactory(), invoice_id) == None
         retrieve_invoice_mock.assert_called_once_with(invoice_id)
 
-    @patch('services.billing.stripe.Invoice.retrieve')
+    @patch("services.billing.stripe.Invoice.retrieve")
     def test_get_invoice_customer_dont_match(self, retrieve_invoice_mock):
         owner = OwnerFactory(stripe_customer_id="something_very_very_random_cus_abc")
         invoice_id = "abc"
-        invoice = {
-            "invoice_id": "abc",
-            "customer": "cus_abc"
-        }
+        invoice = {"invoice_id": "abc", "customer": "cus_abc"}
         retrieve_invoice_mock.return_value = invoice
         assert self.stripe.get_invoice(owner, invoice_id) == None
         retrieve_invoice_mock.assert_called_once_with(invoice_id)
 
-    @patch('services.billing.stripe.Invoice.retrieve')
+    @patch("services.billing.stripe.Invoice.retrieve")
     def test_get_invoice(self, retrieve_invoice_mock):
         customer_id = "cus_abc"
         owner = OwnerFactory(stripe_customer_id=customer_id)
         invoice_id = "abc"
-        invoice = {
-            "invoice_id": "abc",
-            "customer": customer_id
-        }
+        invoice = {"invoice_id": "abc", "customer": customer_id}
         retrieve_invoice_mock.return_value = invoice
         assert self.stripe.get_invoice(owner, invoice_id) == invoice
         retrieve_invoice_mock.assert_called_once_with(invoice_id)
@@ -353,31 +334,35 @@ class BillingServiceTests(TestCase):
 
     def test_default_payment_service_is_stripe(self):
         requesting_user = OwnerFactory()
-        assert isinstance(BillingService(requesting_user=requesting_user).payment_service, StripeService)
+        assert isinstance(
+            BillingService(requesting_user=requesting_user).payment_service,
+            StripeService,
+        )
 
     def test_list_invoices_calls_payment_service_list_invoices_with_limit(self):
         owner = OwnerFactory()
-        assert self.billing_service.list_invoices(owner) == self.mock_payment_service.list_invoices(owner)
+        assert self.billing_service.list_invoices(
+            owner
+        ) == self.mock_payment_service.list_invoices(owner)
 
-    @patch('services.tests.test_billing.MockPaymentService.delete_subscription')
+    @patch("services.tests.test_billing.MockPaymentService.delete_subscription")
     def test_update_plan_to_users_free_deletes_subscription_if_user_has_stripe_subscription(
-        self,
-        delete_subscription_mock
+        self, delete_subscription_mock
     ):
         owner = OwnerFactory(stripe_subscription_id="tor_dsoe")
         self.billing_service.update_plan(owner, {"value": "users-free"})
         delete_subscription_mock.assert_called_once_with(owner)
 
-    @patch('codecov_auth.models.Owner.set_free_plan')
-    @patch('services.tests.test_billing.MockPaymentService.create_checkout_session')
-    @patch('services.tests.test_billing.MockPaymentService.modify_subscription')
-    @patch('services.tests.test_billing.MockPaymentService.delete_subscription')
+    @patch("codecov_auth.models.Owner.set_free_plan")
+    @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
+    @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
+    @patch("services.tests.test_billing.MockPaymentService.delete_subscription")
     def test_update_plan_to_users_free_sets_plan_if_no_subscription_id(
         self,
         delete_subscription_mock,
         modify_subscription_mock,
         create_checkout_session_mock,
-        set_free_plan_mock
+        set_free_plan_mock,
     ):
         owner = OwnerFactory()
         self.billing_service.update_plan(owner, {"value": "users-free"})
@@ -388,22 +373,19 @@ class BillingServiceTests(TestCase):
         modify_subscription_mock.assert_not_called()
         create_checkout_session_mock.assert_not_called()
 
-    @patch('codecov_auth.models.Owner.set_free_plan')
-    @patch('services.tests.test_billing.MockPaymentService.create_checkout_session')
-    @patch('services.tests.test_billing.MockPaymentService.modify_subscription')
-    @patch('services.tests.test_billing.MockPaymentService.delete_subscription')
+    @patch("codecov_auth.models.Owner.set_free_plan")
+    @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
+    @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
+    @patch("services.tests.test_billing.MockPaymentService.delete_subscription")
     def test_update_plan_modifies_subscription_if_user_plan_and_subscription_exists(
         self,
         delete_subscription_mock,
         modify_subscription_mock,
         create_checkout_session_mock,
-        set_free_plan_mock
+        set_free_plan_mock,
     ):
         owner = OwnerFactory(stripe_subscription_id=10)
-        desired_plan = {
-            "value": "users-pr-inappy",
-            "quantity": 10
-        }
+        desired_plan = {"value": "users-pr-inappy", "quantity": 10}
         self.billing_service.update_plan(owner, desired_plan)
 
         modify_subscription_mock.assert_called_once_with(owner, desired_plan)
@@ -412,22 +394,19 @@ class BillingServiceTests(TestCase):
         delete_subscription_mock.assert_not_called()
         create_checkout_session_mock.assert_not_called()
 
-    @patch('codecov_auth.models.Owner.set_free_plan')
-    @patch('services.tests.test_billing.MockPaymentService.create_checkout_session')
-    @patch('services.tests.test_billing.MockPaymentService.modify_subscription')
-    @patch('services.tests.test_billing.MockPaymentService.delete_subscription')
+    @patch("codecov_auth.models.Owner.set_free_plan")
+    @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
+    @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
+    @patch("services.tests.test_billing.MockPaymentService.delete_subscription")
     def test_update_plan_creates_checkout_session_if_user_plan_and_no_subscription(
         self,
         delete_subscription_mock,
         modify_subscription_mock,
         create_checkout_session_mock,
-        set_free_plan_mock
+        set_free_plan_mock,
     ):
         owner = OwnerFactory(stripe_subscription_id=None)
-        desired_plan = {
-            "value": "users-pr-inappy",
-            "quantity": 10
-        }
+        desired_plan = {"value": "users-pr-inappy", "quantity": 10}
         self.billing_service.update_plan(owner, desired_plan)
 
         create_checkout_session_mock.assert_called_once_with(owner, desired_plan)
@@ -436,21 +415,19 @@ class BillingServiceTests(TestCase):
         delete_subscription_mock.assert_not_called()
         modify_subscription_mock.assert_not_called()
 
-    @patch('codecov_auth.models.Owner.set_free_plan')
-    @patch('services.tests.test_billing.MockPaymentService.create_checkout_session')
-    @patch('services.tests.test_billing.MockPaymentService.modify_subscription')
-    @patch('services.tests.test_billing.MockPaymentService.delete_subscription')
+    @patch("codecov_auth.models.Owner.set_free_plan")
+    @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
+    @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
+    @patch("services.tests.test_billing.MockPaymentService.delete_subscription")
     def test_update_plan_does_nothing_if_not_switching_to_user_plan(
         self,
         delete_subscription_mock,
         modify_subscription_mock,
         create_checkout_session_mock,
-        set_free_plan_mock
+        set_free_plan_mock,
     ):
         owner = OwnerFactory()
-        desired_plan = {
-            "value": "v4-50m"
-        }
+        desired_plan = {"value": "v4-50m"}
         self.billing_service.update_plan(owner, desired_plan)
 
         set_free_plan_mock.assert_not_called()
@@ -458,19 +435,19 @@ class BillingServiceTests(TestCase):
         modify_subscription_mock.assert_not_called()
         create_checkout_session_mock.assert_not_called()
 
-    @patch('services.tests.test_billing.MockPaymentService.get_subscription')
+    @patch("services.tests.test_billing.MockPaymentService.get_subscription")
     def test_get_subscription(self, get_subscription_mock):
         owner = OwnerFactory()
         self.billing_service.get_subscription(owner)
         get_subscription_mock.assert_called_once_with(owner)
 
-    @patch('services.tests.test_billing.MockPaymentService.update_payment_method')
+    @patch("services.tests.test_billing.MockPaymentService.update_payment_method")
     def test_update_payment_method(self, get_subscription_mock):
         owner = OwnerFactory()
         self.billing_service.update_payment_method(owner, "abc")
         get_subscription_mock.assert_called_once_with(owner, "abc")
 
-    @patch('services.tests.test_billing.MockPaymentService.get_invoice')
+    @patch("services.tests.test_billing.MockPaymentService.get_invoice")
     def test_get_invoice(self, get_invoice_mock):
         owner = OwnerFactory()
         self.billing_service.get_invoice(owner, "abc")

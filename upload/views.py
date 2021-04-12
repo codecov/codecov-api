@@ -1,14 +1,15 @@
 import logging
-import datetime
+from datetime import datetime
 from rest_framework import status, renderers
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework.exceptions import ValidationError
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseServerError
 from django.utils.encoding import smart_text
 from urllib.parse import parse_qs
 from json import dumps
 from uuid import uuid4
+from django.utils import timezone
 
 from .helpers import (
     parse_params,
@@ -23,23 +24,25 @@ from .helpers import (
     store_report_in_redis,
     dispatch_upload_task,
 )
-from services.redis import get_redis_connection
+from services.redis_configuration import get_redis_connection
 from services.archive import ArchiveService
 from services.segment import SegmentService
 from utils.config import get_config
 
 log = logging.getLogger(__name__)
 
+
 class PlainTextRenderer(renderers.BaseRenderer):
-    media_type = 'text/plain'
-    format = 'txt'
+    media_type = "text/plain"
+    format = "txt"
 
     def render(self, data, media_type=None, renderer_context=None):
         return smart_text(data, encoding=self.charset)
 
+
 class UploadHandler(APIView):
     permission_classes = [AllowAny]
-    renderer_classes = [PlainTextRenderer]
+    renderer_classes = [PlainTextRenderer, renderers.JSONRenderer]
 
     def get(self, request, *args, **kwargs):
         return HttpResponse(status=status.HTTP_405_METHOD_NOT_ALLOWED)
@@ -60,7 +63,7 @@ class UploadHandler(APIView):
         version = self.kwargs["version"]
 
         log.info(
-            "Received upload request",
+            f"Received upload request {version}",
             extra=dict(
                 version=version,
                 query_params=self.request.query_params,
@@ -84,7 +87,7 @@ class UploadHandler(APIView):
             # note: try to avoid mutating upload_params past this point, to make it easier to reason about the state of this variable
             upload_params = parse_params(request_params)
         except ValidationError as e:
-            log.error(
+            log.warning(
                 "Failed to parse upload request params",
                 extra=dict(request_params=request_params, errors=str(e)),
             )
@@ -148,6 +151,16 @@ class UploadHandler(APIView):
 
         # v2 - store request body in redis
         if version == "v2":
+            log.info(
+                "Started V2 upload",
+                extra=dict(
+                    commit=commitid,
+                    pr=pr,
+                    branch=branch,
+                    version=version,
+                    upload_params=upload_params,
+                ),
+            )
             redis_key = store_report_in_redis(request, commitid, reportid, redis)
 
             log.info(
@@ -174,38 +187,57 @@ class UploadHandler(APIView):
             )
 
         # v4 - generate presigned PUT url
-        minio = get_config(("services", "minio"), default={})
+        minio = get_config("services", "minio") or {}
         if minio and version == "v4":
+
+            log.info(
+                "Started V4 upload",
+                extra=dict(
+                    commit=commitid,
+                    pr=pr,
+                    branch=branch,
+                    version=version,
+                    upload_params=upload_params,
+                ),
+            )
+
             headers = parse_headers(request.META, upload_params)
 
-            archive_service = ArchiveService()
+            archive_service = ArchiveService(repository)
             path = "/".join(
                 (
                     "v4/raw",
-                    datetime.now().strftime("%Y-%m-%d"),
-                    archive_service.get_archive_hash(),
+                    timezone.now().strftime("%Y-%m-%d"),
+                    archive_service.get_archive_hash(repository),
                     commitid,
                     f"{reportid}.txt",
                 )
             )
 
-            """
-            TODO finish generating presigned put
-            upload_url = "TODO"
-            if bool(get_config("setup", "enterprise_license")):
+            try:
                 upload_url = archive_service.create_raw_upload_presigned_put(
-                    commit_sha=commitid, filename=f"{reportid}.txt"
+                    commit_sha=commitid, filename="{}.txt".format(reportid)
                 )
-            else:
-                upload_url = get_upload_destination(
-                    path,
-                    **headers
-                    #internally=(version in ("v1", "v2")),
+            except Exception as e:
+                log.warning(
+                    f"Error generating minio presign put {e}",
+                    extra=dict(
+                        commit=commitid,
+                        pr=pr,
+                        branch=branch,
+                        version=version,
+                        upload_params=upload_params,
+                    ),
                 )
+                return HttpResponseServerError("Unknown error, please try again later")
+            log.info(
+                "Returning presign put",
+                extra=dict(
+                    commit=commitid, repoid=repository.repoid, upload_url=upload_url
+                ),
+            )
+            response["Content-Type"] = "text/plain"
             response.write(f"{destination_url}\n{upload_url}")
-            """
-
-        # --------- Send upload to worker and return response
 
         # Get build url
         if (
@@ -245,11 +277,13 @@ class UploadHandler(APIView):
 
         # Segment Tracking
         segment_upload_data = upload_params.copy()
-        segment_upload_data['repository_id'] = repository.repoid
-        segment_upload_data['repository_name'] = repository.name
-        segment_upload_data['version'] = version
-        segment_upload_data['userid_type'] = 'org'
-        SegmentService().account_uploaded_coverage_report(owner.ownerid, segment_upload_data)
+        segment_upload_data["repository_id"] = repository.repoid
+        segment_upload_data["repository_name"] = repository.name
+        segment_upload_data["version"] = version
+        segment_upload_data["userid_type"] = "org"
+        SegmentService().account_uploaded_coverage_report(
+            owner.ownerid, segment_upload_data
+        )
 
         if version == "v4":
             response["Content-Type"] = "text/plain"

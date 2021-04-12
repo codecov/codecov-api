@@ -13,7 +13,7 @@ from core.tests.factories import (
     CommitFactory,
     PullFactory,
 )
-from core.models import Repository, Pull, Branch, Commit
+from core.models import Repository, Pull, Branch, Commit, PullStates
 from codecov_auth.tests.factories import OwnerFactory
 
 from webhook_handlers.constants import (
@@ -45,13 +45,15 @@ class TestBitbucketWebhookHandler(APITestCase):
             author=self.repo.author,
             repository=self.repo,
             pullid=1,
-            state=Pull.PullStates.OPEN,
+            state=PullStates.OPEN,
         )
 
     def test_unknown_repo(self):
         response = self._post_event_data(
             event=BitbucketWebhookEvents.REPO_PUSH,
-            data={"repository": {"uuid": "{94f4c9b4-254f-46cf-a39e-97ce03fe58af}"},},
+            data={
+                "repository": {"uuid": "{94f4c9b4-254f-46cf-a39e-97ce03fe58af}"},
+            },
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -60,7 +62,9 @@ class TestBitbucketWebhookHandler(APITestCase):
         self.repo.save()
         response = self._post_event_data(
             event=BitbucketWebhookEvents.REPO_PUSH,
-            data={"repository": {"uuid": "{673a6070-3421-46c9-9d48-90745f7bfe8e}"},},
+            data={
+                "repository": {"uuid": "{673a6070-3421-46c9-9d48-90745f7bfe8e}"},
+            },
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == WebhookHandlerErrorMessages.SKIP_NOT_ACTIVE
@@ -79,7 +83,8 @@ class TestBitbucketWebhookHandler(APITestCase):
         assert response.data == "Opening pull request in Codecov"
 
         pulls_sync_mock.assert_called_once_with(
-            repoid=self.repo.repoid, pullid=pullid,
+            repoid=self.repo.repoid,
+            pullid=pullid,
         )
 
     def test_pull_request_fulfilled(self):
@@ -93,7 +98,7 @@ class TestBitbucketWebhookHandler(APITestCase):
         )
         assert response.status_code == status.HTTP_200_OK
         self.pull.refresh_from_db()
-        assert self.pull.state == Pull.PullStates.MERGED
+        assert self.pull.state == PullStates.MERGED
 
     def test_pull_request_rejected(self):
         pullid = 1
@@ -106,7 +111,7 @@ class TestBitbucketWebhookHandler(APITestCase):
         )
         assert response.status_code == status.HTTP_200_OK
         self.pull.refresh_from_db()
-        assert self.pull.state == Pull.PullStates.CLOSED
+        assert self.pull.state == PullStates.CLOSED
 
     def test_repo_push_branch_deleted(self):
         branch = BranchFactory(repository=self.repo, name="name-of-branch")
@@ -240,7 +245,7 @@ class TestBitbucketWebhookHandler(APITestCase):
                     "name": "Unit Tests (Python)",
                     "description": "Build started",
                     "state": "INPROGRESS",
-                    "key": "not_codecov_context",
+                    "key": "codecov",
                     "url": "https://my-build-tool.com/builds/MY-PROJECT/BUILD-777",
                     "type": "build",
                     "created_on": "2015-11-19T20:37:35.547563+00:00",
@@ -269,7 +274,7 @@ class TestBitbucketWebhookHandler(APITestCase):
                     "name": "Unit Tests (Python)",
                     "description": "Build started",
                     "state": "INPROGRESS",
-                    "key": "codecov",
+                    "key": "not_codecov_context",
                     "url": "https://my-build-tool.com/builds/MY-PROJECT/BUILD-777",
                     "type": "build",
                     "created_on": "2015-11-19T20:37:35.547563+00:00",
@@ -302,7 +307,7 @@ class TestBitbucketWebhookHandler(APITestCase):
                     "name": "Unit Tests (Python)",
                     "description": "Build started",
                     "state": "SUCCESSFUL",
-                    "key": "codecov",
+                    "key": "not_codecov_context",
                     "url": "https://my-build-tool.com/builds/MY-PROJECT/BUILD-777",
                     "type": "build",
                     "created_on": "2015-11-19T20:37:35.547563+00:00",
@@ -336,7 +341,7 @@ class TestBitbucketWebhookHandler(APITestCase):
                     "name": "Unit Tests (Python)",
                     "description": "Build started",
                     "state": "SUCCESSFUL",
-                    "key": "codecov",
+                    "key": "not_codecov_context",
                     "url": "https://my-build-tool.com/builds/MY-PROJECT/BUILD-777",
                     "type": "build",
                     "created_on": "2015-11-19T20:37:35.547563+00:00",

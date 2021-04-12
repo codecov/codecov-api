@@ -8,7 +8,7 @@ from rest_framework import status
 
 from shared.helpers.yaml import walk
 from codecov_auth.models import Owner
-from core.models import Repository, Branch, Commit, Pull
+from core.models import Repository, Branch, Commit, Pull, PullStates
 from services.task import TaskService
 
 from webhook_handlers.constants import (
@@ -67,13 +67,14 @@ class BitbucketWebhookHandler(APIView):
 
     def _handle_pull_request_state_change(self, repo):
         state = {
-            BitbucketWebhookEvents.PULL_REQUEST_FULFILLED: Pull.PullStates.MERGED,
-            BitbucketWebhookEvents.PULL_REQUEST_REJECTED: Pull.PullStates.CLOSED,
+            BitbucketWebhookEvents.PULL_REQUEST_FULFILLED: PullStates.MERGED,
+            BitbucketWebhookEvents.PULL_REQUEST_REJECTED: PullStates.CLOSED,
         }.get(self.event)
 
         Pull.objects.filter(
             repository__repoid=repo.repoid,
-            pullid=self.request.data["pullrequest"]["id"]).update(state=state)
+            pullid=self.request.data["pullrequest"]["id"],
+        ).update(state=state)
 
         return Response()
 
@@ -96,15 +97,17 @@ class BitbucketWebhookHandler(APIView):
         return Response()
 
     def _handle_repo_commit_status_change(self, repo):
-        if not self.request.data["commit_status"]["key"].startswith("codecov"):
-            # not a codecov/* context
+        if self.request.data["commit_status"]["key"].startswith("codecov"):
+            # a codecov/* context
             return Response(data=WebhookHandlerErrorMessages.SKIP_CODECOV_STATUS)
 
         if self.request.data["commit_status"]["state"] == "INPROGRESS":
             # skip pending
             return Response(data=WebhookHandlerErrorMessages.SKIP_PENDING_STATUSES)
 
-        commitid = self.request.data["commit_status"]["links"]["commit"]["href"].split("/")[-1]
+        commitid = self.request.data["commit_status"]["links"]["commit"]["href"].split(
+            "/"
+        )[-1]
 
         if not Commit.objects.filter(
             repository=repo, commitid=commitid, state=Commit.CommitStates.COMPLETE

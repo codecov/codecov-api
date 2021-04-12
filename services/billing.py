@@ -4,7 +4,10 @@ from abc import ABC, abstractmethod
 
 from django.conf import settings
 
-from codecov_auth.constants import USER_PLAN_REPRESENTATIONS, PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS
+from codecov_auth.constants import (
+    USER_PLAN_REPRESENTATIONS,
+    PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
+)
 from codecov_auth.models import Owner
 from services.segment import SegmentService
 
@@ -82,14 +85,18 @@ class StripeService(AbstractPaymentService):
 
     @_log_stripe_error
     def get_invoice(self, owner, invoice_id):
-        log.info(f"Fetching invoice {invoice_id} from Stripe for ownerid {owner.ownerid}")
+        log.info(
+            f"Fetching invoice {invoice_id} from Stripe for ownerid {owner.ownerid}"
+        )
         try:
             invoice = stripe.Invoice.retrieve(invoice_id)
         except stripe.error.InvalidRequestError as e:
             log.info(f"invoice {invoice_id} not found for owner {owner.ownerid}")
             return None
         if invoice["customer"] != owner.stripe_customer_id:
-            log.info(f"customer id ({invoice['customer']}) on invoice does not match the owner customer id ({owner.stripe_customer_id})")
+            log.info(
+                f"customer id ({invoice['customer']}) on invoice does not match the owner customer id ({owner.stripe_customer_id})"
+            )
             return None
         return invoice
 
@@ -109,19 +116,22 @@ class StripeService(AbstractPaymentService):
             log.info(
                 f"Downgrade to free plan from legacy plan for owner {owner.ownerid}"
             )
-            stripe.Subscription.delete(owner.stripe_subscription_id, prorate=True)
+            stripe.Subscription.delete(owner.stripe_subscription_id, prorate=False)
             owner.set_free_plan()
         else:
             log.info(f"Downgrade to free plan from user plan for owner {owner.ownerid}")
             stripe.Subscription.modify(
-                owner.stripe_subscription_id, cancel_at_period_end=True
+                owner.stripe_subscription_id, cancel_at_period_end=True, prorate=False
             )
 
     @_log_stripe_error
     def get_subscription(self, owner):
         if owner.stripe_subscription_id is None:
             return None
-        return stripe.Subscription.retrieve(owner.stripe_subscription_id, expand=['latest_invoice', 'default_payment_method'])
+        return stripe.Subscription.retrieve(
+            owner.stripe_subscription_id,
+            expand=["latest_invoice", "default_payment_method"],
+        )
 
     @_log_stripe_error
     def modify_subscription(self, owner, desired_plan):
@@ -129,6 +139,9 @@ class StripeService(AbstractPaymentService):
             f"Updating Stripe subscription for owner {owner.ownerid} to {desired_plan['value']}"
         )
         subscription = stripe.Subscription.retrieve(owner.stripe_subscription_id)
+
+        proration_behavior = self._get_proration_params(owner, desired_plan)
+
         stripe.Subscription.modify(
             owner.stripe_subscription_id,
             cancel_at_period_end=False,
@@ -140,7 +153,7 @@ class StripeService(AbstractPaymentService):
                 }
             ],
             metadata=self._get_checkout_session_and_subscription_metadata(owner),
-            proration_behavior="always_invoice"
+            proration_behavior=proration_behavior
         )
 
         # Segment analytics
@@ -150,8 +163,8 @@ class StripeService(AbstractPaymentService):
                 org_ownerid=owner.ownerid,
                 plan_details={
                     "new_plan": desired_plan["value"],
-                    "previous_plan": owner.plan
-                }
+                    "previous_plan": owner.plan,
+                },
             )
         if owner.plan_user_count and owner.plan_user_count < desired_plan["quantity"]:
             SegmentService().account_increased_users(
@@ -160,8 +173,8 @@ class StripeService(AbstractPaymentService):
                 plan_details={
                     "new_quantity": desired_plan["quantity"],
                     "old_quantity": owner.plan_user_count,
-                    "plan": desired_plan["value"]
-                }
+                    "plan": desired_plan["value"],
+                },
             )
         elif owner.plan_user_count and owner.plan_user_count > desired_plan["quantity"]:
             SegmentService().account_decreased_users(
@@ -170,8 +183,8 @@ class StripeService(AbstractPaymentService):
                 plan_details={
                     "new_quantity": desired_plan["quantity"],
                     "old_quantity": owner.plan_user_count,
-                    "plan": desired_plan["value"]
-                }
+                    "plan": desired_plan["value"],
+                },
             )
 
         # Actually do the thing
@@ -180,14 +193,29 @@ class StripeService(AbstractPaymentService):
         owner.save()
 
         log.info(f"Stripe subscription modified successfully for owner {owner.ownerid}")
+    
+    def _get_proration_params(self, owner, desired_plan):
+        proration_behavior = "none"
+        if owner.plan == desired_plan["value"]:
+            # Same product, increased number of seats
+            if owner.plan_user_count and owner.plan_user_count < desired_plan["quantity"]:
+                return 'always_invoice'
+            # Same product, decreased nummber of seats
+            return proration_behavior
+
+        elif "m" in owner.plan and "y" in desired_plan["value"]:
+            # From monthly to yearly
+            return 'always_invoice'
+        return proration_behavior
+
 
     def _get_success_and_cancel_url(self, owner):
         short_services = {
-            'github': 'gh',
-            'bitbucket': 'bb',
-            'gitlab': 'gl',
+            "github": "gh",
+            "bitbucket": "bb",
+            "gitlab": "gl",
         }
-        base_path = f"/account/{short_services[owner.service]}/{owner.username}"
+        base_path = f"/account/{short_services[owner.service]}/{owner.username}/billing"
         success_url = f"{settings.CODECOV_DASHBOARD_URL}{base_path}?success"
         cancel_url = f"{settings.CODECOV_DASHBOARD_URL}{base_path}?cancel"
         return success_url, cancel_url
@@ -224,12 +252,13 @@ class StripeService(AbstractPaymentService):
     def update_payment_method(self, owner, payment_method):
         log.info(f"Stripe update payment method for owner {owner.ownerid}")
         if owner.stripe_subscription_id is None:
-            log.info(f"stripe_subscription_id is None, no updating card for owner {owner.ownerid}")
+            log.info(
+                f"stripe_subscription_id is None, no updating card for owner {owner.ownerid}"
+            )
             return None
         stripe.PaymentMethod.attach(payment_method, customer=owner.stripe_customer_id)
         subscription = stripe.Subscription.modify(
-            owner.stripe_subscription_id,
-            default_payment_method=payment_method
+            owner.stripe_subscription_id, default_payment_method=payment_method
         )
         log.info(f"Stripe success update payment method for owner {owner.ownerid}")
         return subscription

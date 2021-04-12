@@ -13,7 +13,7 @@ current_file = Path(__file__)
 @patch("services.comparison.Comparison.git_comparison", new_callable=PropertyMock)
 @patch("services.archive.ArchiveService.read_chunks")
 @patch("services.archive.ArchiveService.create_root_storage")
-@patch("services.archive.SerializableReport.apply_diff")
+@patch("shared.reports.filtered.FilteredReport.apply_diff")
 @patch(
     "internal_api.repo.repository_accessors.RepoAccessors.get_repo_permissions",
     lambda self, repo, user: (True, True),
@@ -105,7 +105,7 @@ class TestCompareFlagsView(InternalAPITest):
                     "methods": 0,
                     "misses": 5,
                     "partials": 0,
-                    "sessions": 2,
+                    "sessions": 1,
                 },
                 "diff_totals": {
                     "branches": 0,
@@ -137,7 +137,7 @@ class TestCompareFlagsView(InternalAPITest):
                     "methods": 0,
                     "misses": 5,
                     "partials": 0,
-                    "sessions": 2,
+                    "sessions": 1,
                 },
             },
             {
@@ -156,7 +156,7 @@ class TestCompareFlagsView(InternalAPITest):
                     "methods": 0,
                     "misses": 5,
                     "partials": 0,
-                    "sessions": 2,
+                    "sessions": 1,
                 },
                 "diff_totals": {
                     "branches": 0,
@@ -188,11 +188,21 @@ class TestCompareFlagsView(InternalAPITest):
                     "methods": 0,
                     "misses": 11,
                     "partials": 0,
-                    "sessions": 2,
+                    "sessions": 1,
                 },
             },
         ]
 
+        assert (
+            response.data[0]["base_report_totals"]
+            == expected_result[0]["base_report_totals"]
+        )
+        assert (
+            response.data[0]["head_report_totals"]
+            == expected_result[0]["head_report_totals"]
+        )
+        assert response.data[0] == expected_result[0]
+        assert response.data[1] == expected_result[1]
         assert response.data == expected_result
 
     @patch("redis.Redis.get", lambda self, key: None)
@@ -208,7 +218,7 @@ class TestCompareFlagsView(InternalAPITest):
             kwargs={
                 "service": self.repo.author.service,
                 "owner_username": self.repo.author.username,
-                "repo_name": self.repo.name
+                "repo_name": self.repo.name,
             },
             query_params={
                 "pullid": PullFactory(
@@ -243,7 +253,7 @@ class TestCompareFlagsView(InternalAPITest):
             kwargs={
                 "service": self.repo.author.service,
                 "owner_username": self.repo.author.username,
-                "repo_name": self.repo.name
+                "repo_name": self.repo.name,
             },
             query_params={
                 "base": self.parent_commit.commitid,
@@ -276,7 +286,7 @@ class TestCompareFlagsView(InternalAPITest):
             methods=0,
             misses=5,
             partials=0,
-            sessions=2
+            sessions=2,
         )
 
         # should not crash
@@ -284,10 +294,10 @@ class TestCompareFlagsView(InternalAPITest):
             kwargs={
                 "service": self.repo.author.service,
                 "owner_username": self.repo.author.username,
-                "repo_name": self.repo.name
+                "repo_name": self.repo.name,
             },
             query_params={
                 "base": self.parent_commit.commitid,
                 "head": self.commit.commitid,
-            }
+            },
         )

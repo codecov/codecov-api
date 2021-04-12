@@ -9,7 +9,12 @@ from django.contrib.postgres.fields import ArrayField
 
 from rest_framework import generics, viewsets, mixins, filters, status
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied, NotFound, ValidationError, NotAuthenticated
+from rest_framework.exceptions import (
+    PermissionDenied,
+    NotFound,
+    ValidationError,
+    NotAuthenticated,
+)
 from rest_framework.response import Response
 
 from django_filters import rest_framework as django_filters
@@ -19,6 +24,7 @@ from codecov_auth.constants import CURRENTLY_OFFERED_PLANS
 from services.billing import BillingService
 from services.task import TaskService
 from services.segment import SegmentService
+from services.decorators import stripe_safe
 
 from internal_api.mixins import OwnerPropertyMixin
 from internal_api.permissions import UserIsAdminPermissions
@@ -38,9 +44,7 @@ log = logging.getLogger(__name__)
 
 
 class ProfileViewSet(
-    viewsets.GenericViewSet,
-    mixins.RetrieveModelMixin,
-    mixins.UpdateModelMixin
+    viewsets.GenericViewSet, mixins.RetrieveModelMixin, mixins.UpdateModelMixin
 ):
     serializer_class = ProfileSerializer
 
@@ -51,9 +55,7 @@ class ProfileViewSet(
 
 
 class OwnerViewSet(
-    viewsets.GenericViewSet,
-    mixins.ListModelMixin,
-    mixins.RetrieveModelMixin
+    viewsets.GenericViewSet, mixins.ListModelMixin, mixins.RetrieveModelMixin
 ):
     lookup_field = "username"
     serializer_class = OwnerSerializer
@@ -70,29 +72,30 @@ class OwnerViewSet(
         return get_object_or_404(
             self.get_queryset(),
             username=self.kwargs.get("username"),
-            service=self.kwargs.get("service")
+            service=self.kwargs.get("service"),
         )
+
 
 class InvoiceViewSet(
     viewsets.GenericViewSet,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
-    OwnerPropertyMixin
+    OwnerPropertyMixin,
 ):
     serializer_class = StripeInvoiceSerializer
     permission_classes = [UserIsAdminPermissions]
     pagination_class = None
 
     def get_queryset(self):
-        return BillingService(
-            requesting_user=self.request.user
-        ).list_invoices(self.owner, 100)
+        return BillingService(requesting_user=self.request.user).list_invoices(
+            self.owner, 100
+        )
 
     def get_object(self):
         invoice_id = self.kwargs.get("pk")
-        invoice = BillingService(
-            requesting_user=self.request.user
-        ).get_invoice(self.owner, invoice_id)
+        invoice = BillingService(requesting_user=self.request.user).get_invoice(
+            self.owner, invoice_id
+        )
         if not invoice:
             raise NotFound(f"Invoice {invoice_id} does not exist for that account")
         return invoice
@@ -103,10 +106,18 @@ class AccountDetailsViewSet(
     mixins.UpdateModelMixin,
     mixins.RetrieveModelMixin,
     mixins.DestroyModelMixin,
-    OwnerPropertyMixin
+    OwnerPropertyMixin,
 ):
     serializer_class = AccountDetailsSerializer
     permission_classes = [UserIsAdminPermissions]
+
+    @stripe_safe
+    def retrieve(self, *args, **kwargs):
+        return super().retrieve(*args, **kwargs)
+
+    @stripe_safe
+    def update(self, *args, **kwargs):
+        return super().update(*args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
         if self.owner.ownerid != request.user.ownerid:
@@ -120,7 +131,8 @@ class AccountDetailsViewSet(
     def get_object(self):
         return self.owner
 
-    @action(detail=False, methods=['patch'])
+    @action(detail=False, methods=["patch"])
+    @stripe_safe
     def update_payment(self, request, *args, **kwargs):
         payment_method = request.data.get("payment_method")
         if not payment_method:
@@ -135,34 +147,33 @@ class UserViewSet(
     viewsets.GenericViewSet,
     mixins.ListModelMixin,
     mixins.UpdateModelMixin,
-    OwnerPropertyMixin
+    OwnerPropertyMixin,
 ):
     serializer_class = UserSerializer
-    filter_backends = (django_filters.DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter)
+    filter_backends = (
+        django_filters.DjangoFilterBackend,
+        filters.OrderingFilter,
+        filters.SearchFilter,
+    )
     filterset_class = UserFilters
     permission_classes = [UserIsAdminPermissions]
-    ordering_fields = ('name','username', 'email')
+    ordering_fields = ("name", "username", "email")
     lookup_field = "user_username"
-    search_fields = ['name', 'username', 'email']
+    search_fields = ["name", "username", "email"]
 
     def get_object(self):
         return get_object_or_404(
-            self.get_queryset(),
-            username=self.kwargs.get("user_username")
+            self.get_queryset(), username=self.kwargs.get("user_username")
         )
 
     def get_queryset(self):
-        if self.owner.has_legacy_plan:
-            raise ValidationError(detail="Users API not accessible for legacy plans")
-        return Owner.objects.users_of(
-            owner=self.owner
-        ).annotate_activated_in(
-            owner=self.owner
-        ).annotate_is_admin_in(
-            owner=self.owner
-        ).annotate_with_latest_private_pr_date_in(
-            owner=self.owner
-        ).annotate_with_lastseen()
+        return (
+            Owner.objects.users_of(owner=self.owner)
+            .annotate_activated_in(owner=self.owner)
+            .annotate_is_admin_in(owner=self.owner)
+            .annotate_with_latest_private_pr_date_in(owner=self.owner)
+            .annotate_with_lastseen()
+        )
 
 
 class PlanViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):

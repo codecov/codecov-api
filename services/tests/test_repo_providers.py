@@ -90,7 +90,7 @@ class TestRepoProviderService(InternalAPITest):
 
         assert provider._oauth_consumer_token() is not None
 
-    @patch("services.repo_providers.RepoProviderService._get_provider")
+    @patch("services.repo_providers.get_provider")
     @patch("services.repo_providers.get_config")
     def test_get_adapter_verify_ssl_true(self, mock_get_config, mock_get_provider):
         mock_get_config.side_effect = mock_get_config_verify_ssl_true
@@ -122,7 +122,7 @@ class TestRepoProviderService(InternalAPITest):
             ),
         )
 
-    @patch("services.repo_providers.RepoProviderService._get_provider")
+    @patch("services.repo_providers.get_provider")
     @patch("services.repo_providers.get_config")
     @patch("services.repo_providers.getenv")
     def test_get_adapter_for_uploads_verify_ssl_false(
@@ -163,20 +163,26 @@ class TestRepoProviderService(InternalAPITest):
         repo_owner = OwnerFactory(service="github")
         repo = RepositoryFactory(author=repo_owner)
         adapter = RepoProviderService().get_adapter(user, repo)
-        assert adapter.token["key"] == settings.GITHUB_CLIENT_BOT
+        assert adapter.token["key"] == settings.GITHUB_BOT_KEY
 
     def test_get_by_name_sets_token_to_bot_when_user_not_authenticated(self):
         user = AnonymousUser()
-        repo_name = 'gh-repo'
-        repo_owner_username = 'me'
-        repo_owner_service = 'github'
+        repo_name = "gh-repo"
+        repo_owner_username = "me"
+        repo_owner_service = "github"
 
         adapter = RepoProviderService().get_by_name(
             user=user,
             repo_name=repo_name,
             repo_owner_username=repo_owner_username,
-            repo_owner_service=repo_owner_service
+            repo_owner_service=repo_owner_service,
         )
 
-        assert adapter.token["key"] == settings.GITHUB_CLIENT_BOT
+        assert adapter.token["key"] == settings.GITHUB_BOT_KEY
 
+    def test_get_adapter_sets_owner_service_id(self):
+        owner = OwnerFactory()
+        repo = RepositoryFactory(author=owner)
+        user = OwnerFactory()
+        adapter = RepoProviderService().get_adapter(user=user, repo=repo)
+        assert adapter.data["owner"]["service_id"] == owner.service_id

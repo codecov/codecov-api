@@ -11,4 +11,4 @@ class BranchSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Branch
-        fields = ('name', 'most_recent_commiter', 'updatestamp')
+        fields = ("name", "most_recent_commiter", "updatestamp")

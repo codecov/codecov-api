@@ -9,13 +9,16 @@ tag ?= $(shell echo $$(git rev-list --count HEAD)$$(git show -s --format=.%ad.%h
 branch = $(shell git branch | grep \* | cut -f2 -d' ')
 docker_version = $(shell git describe --always --tags --dirty | sed 's/^v//')
 release_env = master
+ssh_private_key = `cat ~/.ssh/id_rsa`
+SEMANTIC_VERSION := `cat VERSION`
 
 ifneq ($(branch), master)
 release_env = pr
 endif
 
 GCR_REPO := gcr.io/genuine-polymer-165712/codecov-api
-REQUIREMENTS_TAG := requirements-v2-$(shell sha1sum requirements.txt | cut -d ' ' -f 1)
+ENTERPRISE_GCR_REPO := gcr.io/codecov-enterprise-sandbox/codecov-api
+REQUIREMENTS_TAG := requirements-v1-$(shell sha1sum requirements.txt | cut -d ' ' -f 1)
 VERSION := release-$(shell git rev-parse --short=7 HEAD)
 
 # CIRCLECI
@@ -29,7 +32,7 @@ build-requirements:
 	docker pull ${GCR_REPO}:${REQUIREMENTS_TAG} || docker build \
 		-f Dockerfile.requirements . \
 		-t ${GCR_REPO}:${REQUIREMENTS_TAG} \
-		--build-arg GH_ACCESS_TOKEN=${GH_ACCESS_TOKEN} \
+		--build-arg SSH_PRIVATE_KEY="${ssh_private_key}" \
 	&& docker push ${GCR_REPO}:${REQUIREMENTS_TAG}; true
 
 # CIRCLECI
@@ -40,6 +43,16 @@ build:
 	docker build \
 		-f Dockerfile.circle . \
 		-t ${GCR_REPO}:latest \
+		--build-arg REQUIREMENTS_IMAGE=${GCR_REPO}:${REQUIREMENTS_TAG}
+
+# CIRCLECI
+# job: enterprise
+# pulls intermediate dependencies image and adds app code. Cythonize and pyinstall.
+build-enterprise:
+	docker pull ${GCR_REPO}:${REQUIREMENTS_TAG}
+	docker build \
+		-f Dockerfile.circle-enterprise . \
+		-t ${ENTERPRISE_GCR_REPO}:latest \
 		--build-arg REQUIREMENTS_IMAGE=${GCR_REPO}:${REQUIREMENTS_TAG}
 
 # CIRCLECI
@@ -61,6 +74,12 @@ build-portable: build-requirements
 # used to push latest image tag after a successful test
 push:
 	docker push ${GCR_REPO}:latest
+
+# CIRCLECI
+# job: enterprise
+# used to push latest image tag after a successful test
+push-enterprise:
+	docker push ${ENTERPRISE_GCR_REPO}:latest
 
 # CIRCLECI
 # job: deploy
@@ -90,6 +109,26 @@ production:
 		-t ${GCR_REPO}:production-${VERSION} \
 		--build-arg REQUIREMENTS_IMAGE=${GCR_REPO}:${REQUIREMENTS_TAG} && \
 	docker push ${GCR_REPO}:production-${VERSION}
+
+# CIRCLECI
+# job: enterprise
+# deploys tagged version of the private enterprise-api
+enterprise:
+	docker pull ${ENTERPRISE_GCR_REPO}:latest
+	docker tag ${ENTERPRISE_GCR_REPO}:latest ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION}
+	docker tag ${ENTERPRISE_GCR_REPO}:latest codecov/api-private:${SEMANTIC_VERSION}-${VERSION}
+	docker push ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION}
+	docker push codecov/api-private:${SEMANTIC_VERSION}-${VERSION}
+
+# CIRCLECI
+# job: enterprise-release
+# deploys tagged version of the public enterprise-api
+release-enterprise:
+	docker pull ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION}
+	docker tag ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION} codecov/enterprise-api:${SEMANTIC_VERSION}
+	docker tag ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION} codecov/enterprise-api:latest-stable
+	docker push codecov/enterprise-api:${SEMANTIC_VERSION}
+	docker push codecov/enterprise-api:latest-stable
 
 # LOCAL
 # used to test circleci jobs

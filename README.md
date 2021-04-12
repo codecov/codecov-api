@@ -61,3 +61,16 @@ Steps 2 and 3 are important to limit interaction between features not yet merged
 ### Secret and Credential Management
 
 This project should store no secrets or credentials in its source. If you need to add to / modify / setup secrets for this project, contact Eli and he'll get you started..
+
+### Adding dependencies
+This repository uses `pip-tools` to manage dependencies, so make sure you've installed it with `pip install pip-tools`. To add or update dependencies, change `requirements.in`,  Then run
+
+```
+pip-compile requirements.in
+```
+
+Do not change `requirements.txt` directly.
+
+### Formatting
+
+This project uses `black` for formatting.

@@ -1,12 +1,11 @@
 import re
 import asyncio
 import logging
+from utils.encryption import encryptor
 from cerberus import Validator
 from json import dumps
 from rest_framework.exceptions import ValidationError, NotFound
 from django.core.exceptions import ObjectDoesNotExist
-from utils.config import get_config
-
 from core.models import Repository, Commit
 from codecov_auth.models import Owner
 from utils.config import get_config
@@ -15,7 +14,7 @@ from services.repo_providers import RepoProviderService
 from services.task import TaskService
 from services.segment import SegmentService
 from codecov_auth.constants import USER_PLAN_REPRESENTATIONS
-from shared.torngit.exceptions import TorngitObjectNotFoundError
+from shared.torngit.exceptions import TorngitObjectNotFoundError, TorngitClientError
 
 from upload.tokenless.tokenless import TokenlessUploadHandler
 
@@ -130,8 +129,14 @@ def parse_params(data):
                 else value
             ),
         },
-        "build_url": {"type": "string", "regex": r"^https?\:\/\/(.{,100})",},
-        "flags": {"type": "string", "regex": r"^[\w\.\-\,]+$",},
+        "build_url": {
+            "type": "string",
+            "regex": r"^https?\:\/\/(.{,200})",
+        },
+        "flags": {
+            "type": "string",
+            "regex": r"^[\w\.\-\,]+$",
+        },
         "branch": {
             "type": "string",
             "nullable": True,
@@ -175,7 +180,9 @@ def parse_params(data):
         "package": {"type": "string"},
         "project": {"type": "string"},
         "server_uri": {"type": "string"},
-        "root": {"type": "string",},  # deprecated
+        "root": {
+            "type": "string",
+        },  # deprecated
     }
 
     v = Validator(params_schema, allow_unknown=True)
@@ -190,7 +197,7 @@ def determine_repo_for_upload(upload_params):
     token = upload_params.get("token")
     using_global_token = upload_params.get("using_global_token")
     service = upload_params.get("service")
-    
+
     if token and not using_global_token:
         try:
             repository = Repository.objects.get(upload_token=token)
@@ -200,12 +207,14 @@ def determine_repo_for_upload(upload_params):
             )
     elif service:
         git_service = TokenlessUploadHandler(service, upload_params).verify_upload()
-        try: 
-            repository = Repository.objects.get(author__service=git_service, name=upload_params.get("repo"), author__username=upload_params.get("owner"))
-        except ObjectDoesNotExist:
-            raise NotFound(
-                f"Could not find a repository, try using upload token"
+        try:
+            repository = Repository.objects.get(
+                author__service=git_service,
+                name=upload_params.get("repo"),
+                author__username=upload_params.get("owner"),
             )
+        except ObjectDoesNotExist:
+            raise NotFound(f"Could not find a repository, try using upload token")
     else:
         raise ValidationError(
             "Need either a token or service to determine target repository"
@@ -250,7 +259,7 @@ def determine_upload_pr_to_use(upload_params):
     - If a branch was provided and the branch name contains "pull" or "pr" followed by digits, extract the digits and use that as the PR number.
     - Otherwise, use the value provided in the request parameters.
     """
-    pullid = is_pull_noted_in_branch.match(upload_params.get("branch", ""))
+    pullid = is_pull_noted_in_branch.match(upload_params.get("branch") or "")
     if pullid:
         return pullid.groups()[1]
     else:
@@ -270,11 +279,10 @@ def determine_upload_commit_to_use(upload_params, repository):
         "_did_change_merge_commit"
     ):
         token = (
-            repository.bot.oauth_token
+            encryptor.decrypt_token(repository.bot.oauth_token)
             if repository.bot and repository.bot.oauth_token
             else get_config(service, "bot")
         )
-
         # Get the commit message from the git provider and check if it's structured like a merge commit message
         try:
             git_commit_data = asyncio.run(
@@ -283,8 +291,16 @@ def determine_upload_commit_to_use(upload_params, repository):
                 .get_commit(upload_params.get("commit"), token)
             )
         except TorngitObjectNotFoundError as e:
-            log.error(
-                "Unable to fetch commit from github. Not found",
+            log.warning(
+                "Unable to fetch commit. Not found",
+                extra=dict(
+                    commit=upload_params.get("commit"),
+                ),
+            )
+            return upload_params.get("commit")
+        except TorngitClientError as e:
+            log.warning(
+                "Unable to fetch commit",
                 extra=dict(
                     commit=upload_params.get("commit"),
                 ),
@@ -312,19 +328,35 @@ def determine_upload_commit_to_use(upload_params, repository):
 
 
 def insert_commit(commitid, branch, pr, repository, owner, parent_commit_id=None):
-    commit, created = Commit.objects.update_or_create(
-        commitid=commitid, repository=repository, defaults={"state": "pending"}
-    )
 
-    if created:
+    try:
+        commit = Commit.objects.get(commitid=commitid, repository=repository)
+        edited = False
+
+        if commit.state != "pending":
+            commit.state = "pending"
+            edited = True
+
+        if parent_commit_id and commit.parent_commit_id is None:
+            commit.parent_commit_id = parent_commit_id
+            edited = True
+
+        if edited:
+            commit.save(update_fields=["parent_commit_id", "state"])
+
+    except Commit.DoesNotExist:
+        log.info(
+            "Creating new commit for upload",
+            extra=dict(
+                commit=commitid, branch=branch, repository=repository, owner=owner
+            ),
+        )
+        commit = Commit(commitid=commitid, repository=repository, state="pending")
         commit.branch = branch
         commit.pullid = pr
         commit.merged = False if pr is not None else None
-
-    if parent_commit_id and not commit.parent_commit_id:
         commit.parent_commit_id = parent_commit_id
-
-    commit.save()
+        commit.save()
 
 
 def get_global_tokens():
@@ -358,7 +390,15 @@ def validate_upload(upload_params, repository, redis):
             commitid=upload_params.get("commit"), repository=repository
         )
         session_count = commit.totals.get("s", 0) if commit.totals else 0
-        if (session_count or 0) > (get_config("setup", "max_sessions") or 30):
+        if (session_count or 0) > (get_config("setup", "max_sessions") or 100):
+            log.warning(
+                "Too many uploads to this commit",
+                extra=dict(
+                    commit=upload_params.get("commit"),
+                    session_count=session_count,
+                    repository=repository.repoid,
+                ),
+            )
             raise ValidationError("Too many uploads to this commit.")
     except Commit.DoesNotExist:
         pass
@@ -381,7 +421,9 @@ def validate_upload(upload_params, repository, redis):
         if owner.service == "gitlab":
             # Gitlab authors have a "subgroup" structure, so find the parent group before checking repo credits
             while owner.parent_service_id is not None:
-                owner = Owner.objects.get(service_id=owner.parent_service_id, service=owner.service)
+                owner = Owner.objects.get(
+                    service_id=owner.parent_service_id, service=owner.service
+                )
 
         # If author is on per repo billing, check their repo credits
         if owner.plan not in USER_PLAN_REPRESENTATIONS and owner.repo_credits <= 0:
@@ -389,13 +431,16 @@ def validate_upload(upload_params, repository, redis):
                 "Sorry, but this team has no private repository credits left."
             )
 
+    if not repository.activated:
+        SegmentService().account_activated_repository_on_upload(
+            repository.author.ownerid, repository
+        )
+
     # Activate the repository
     repository.activated = True
     repository.active = True
     repository.deleted = False
     repository.save()
-
-    SegmentService().account_activated_repository_on_upload(repository.author.ownerid, repository)
 
 
 def parse_headers(headers, upload_params):
@@ -449,7 +494,8 @@ def dispatch_upload_task(task_arguments, repository, redis):
 
     redis.rpush(repo_queue_key, dumps(task_arguments))
     redis.expire(
-        repo_queue_key, cache_uploads_eta if cache_uploads_eta is not True else 86400,
+        repo_queue_key,
+        cache_uploads_eta if cache_uploads_eta is not True else 86400,
     )
 
     # Send task to worker

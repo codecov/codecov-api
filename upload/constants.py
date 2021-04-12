@@ -30,7 +30,7 @@ ci = {
     "cirrus-ci": {
         "title": "Cirrus CI",
         "icon": "cirrus-ci",
-        "require_token_when_public": True,
+        "require_token_when_public": False,
         "instructions": "generic",
         "build_url": "https://cirrus-ci.com/build/{session.build}",
     },
@@ -214,4 +214,3 @@ global_upload_token_providers = [
     "bitbucket",
     "bitbucket_server",
 ]
-

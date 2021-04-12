@@ -1,8 +1,10 @@
 from django.http import HttpResponse, HttpResponseRedirect
 from django.conf import settings
 
+
 def health(request):
     return HttpResponse("api is live!")
+
 
 def redirect_app(request):
     """

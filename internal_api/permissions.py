@@ -1,10 +1,12 @@
 import logging
+import asyncio
 
 from rest_framework.permissions import BasePermission
 from rest_framework.permissions import SAFE_METHODS  # ['GET', 'HEAD', 'OPTIONS']
 
 from services.decorators import torngit_safe
 from services.segment import SegmentService
+from services.repo_providers import get_generic_adapter_params, get_provider
 from internal_api.repo.repository_accessors import RepoAccessors
 
 
@@ -23,14 +25,13 @@ class RepositoryPermissionsService:
         return can_view, can_edit
 
     def has_read_permissions(self, user, repo):
-        return (
-            not repo.private
-            or (
-                user.is_authenticated and (
-                    repo.author.ownerid == user.ownerid
-                    or user.permission and repo.repoid in user.permission
-                    or self._fetch_provider_permissions(user, repo)[0]
-                )
+        return not repo.private or (
+            user.is_authenticated
+            and (
+                repo.author.ownerid == user.ownerid
+                or user.permission
+                and repo.repoid in user.permission
+                or self._fetch_provider_permissions(user, repo)[0]
             )
         )
 
@@ -44,14 +45,16 @@ class RepositoryPermissionsService:
         if owner.plan_activated_users and user.ownerid in owner.plan_activated_users:
             return True
         if owner.plan_auto_activate:
-            log.info(f"Attemping to auto-activate user {user.ownerid} in {owner.ownerid}")
+            log.info(
+                f"Attemping to auto-activate user {user.ownerid} in {owner.ownerid}"
+            )
             if owner.can_activate_user(user):
                 owner.activate_user(user)
                 SegmentService().account_activated_user(
                     current_user_ownerid=user.ownerid,
                     ownerid_to_activate=user.ownerid,
                     org_ownerid=owner.ownerid,
-                    auto_activated=True
+                    auto_activated=True,
                 )
                 return True
             else:
@@ -77,8 +80,9 @@ class RepositoryArtifactPermissions(BasePermission):
 
     def has_permission(self, request, view):
         if view.repo.private:
-            user_activated_permissions = request.user.is_authenticated and self.permissions_service.user_is_activated(
-                request.user, view.owner
+            user_activated_permissions = (
+                request.user.is_authenticated
+                and self.permissions_service.user_is_activated(request.user, view.owner)
             )
         else:
             user_activated_permissions = True
@@ -110,4 +114,28 @@ class UserIsAdminPermissions(BasePermission):
     """
 
     def has_permission(self, request, view):
-        return request.user.is_authenticated and view.owner.is_admin(request.user)
+        return request.user.is_authenticated and (
+            view.owner.is_admin(request.user)
+            or self._is_admin_on_provider(request.user, view.owner)
+        )
+
+    @torngit_safe
+    def _is_admin_on_provider(self, user, owner):
+        torngit_provider_adapter = get_provider(
+            owner.service,
+            {
+                **get_generic_adapter_params(user, owner.service),
+                **{
+                    "owner": {
+                        "username": owner.username,
+                        "service_id": owner.service_id,
+                    }
+                },
+            },
+        )
+
+        return asyncio.run(
+            torngit_provider_adapter.get_is_admin(
+                user={"username": user.username, "service_id": user.service_id}
+            )
+        )

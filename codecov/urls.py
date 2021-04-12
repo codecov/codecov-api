@@ -20,16 +20,22 @@ import codecov.views as views
 from django.conf import settings
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    path(INTERNAL_API_PREFIX, include("internal_api.urls")),
+    re_path("^validate/?", include("validate.urls")),
     path("health/", views.health),
     path("", views.health),
-    path("<str:service>/<str:owner_username>/<str:repo_name>/", include("graphs.urls")),
-    re_path(r'^redirect_app', views.redirect_app),
-    path("login/", include("codecov_auth.urls"))
 ]
 
-urlpatterns.append(path(INTERNAL_API_PREFIX, include("internal_api.urls")))
-urlpatterns.append(path("webhooks/", include("webhook_handlers.urls")))
-urlpatterns.append(path("upload/<str:version>", include("upload.urls")))
-# Use regex to make the trailing slash optional
-urlpatterns.append(re_path("^validate/?", include("validate.urls")))
+if not settings.IS_ENTERPRISE:
+    urlpatterns += [
+        path("admin/", admin.site.urls),
+        path(
+            "<str:service>/<str:owner_username>/<str:repo_name>/",
+            include("graphs.urls"),
+        ),
+        re_path(r"^redirect_app", views.redirect_app),
+        path("login/", include("codecov_auth.urls")),
+        path("webhooks/", include("webhook_handlers.urls")),
+        path("upload/<str:version>", include("upload.urls")),
+        path("graphql/", include("graphql_api.urls")),
+    ]
