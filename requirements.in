@@ -30,3 +30,4 @@ pre-commit==2.11.1
 whitenoise
 ariadne
 git+git://github.com/photocrowd/django-cursor-pagination.git@f8aa41ff7c515511fccb79e33fb2ac22cb7af765
+freezegun
