@@ -1,3 +1,5 @@
+from ariadne.contrib.django.scalars import datetime_scalar
+
 from .query import query, query_bindable
 from .me import me, me_bindable
 from .user import user, user_bindable
@@ -12,4 +14,5 @@ bindables = [
     user_bindable,
     owner_bindable,
     repository_bindable,
+    datetime_scalar
 ]

@@ -3,4 +3,5 @@ type Repository {
   active: Boolean
   private: Boolean
   coverage: Float
+  updatedAt: DateTime
 }
