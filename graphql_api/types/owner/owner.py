@@ -14,8 +14,8 @@ owner_bindable = ObjectType("Owner")
 
 
 @owner_bindable.field("repositories")
-def resolve_repositories(owner, info, **kwargs):
+def resolve_repositories(owner, info, filters=None, **kwargs):
     current_user = info.context["request"].user
-    queryset = list_repository_for_owner(current_user, owner)
+    queryset = list_repository_for_owner(current_user, owner, filters)
     ordering = ("-repoid",)
     return queryset_to_connection(queryset, ordering, **kwargs)
