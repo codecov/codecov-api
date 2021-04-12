@@ -11,10 +11,5 @@ def search_my_owners(current_user, filters):
 
 
 def get_owner(service, username):
-    print(username)
-    print(service)
-    print(get_long_service_name(service))
-    return Owner.objects.filter(
-        username=username,
-        service=get_long_service_name(service)
-    ).first()
+    long_service = get_long_service_name(service)
+    return Owner.objects.filter(username=username, service=long_service).first()
