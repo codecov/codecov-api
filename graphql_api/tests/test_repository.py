@@ -27,7 +27,7 @@ query_repository = """{
 }
 """
 
-class ArianeTestCase(GraphQLTestHelper, TestCase):
+class TestFetchRepository(GraphQLTestHelper, TestCase):
 
     def fetch_repository(self):
         self.client.force_login(self.user)
