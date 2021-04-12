@@ -28,6 +28,15 @@ gcloud_auth: &gcloud_auth
     gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE}
     gcloud auth configure-docker
 
+gcloud_auth_enterprise: &gcloud_auth_enterprise
+  name: Copy gcloud auth for docker push
+  command: |-
+    echo "$GCLOUD_SERVICE_KEY" > service.json
+    gcloud auth activate-service-account --key-file=service.json
+    gcloud --quiet config set project ${GOOGLE_ENTERPRISE_PROJECT_ID}
+    gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE}
+    gcloud auth configure-docker
+
 jobs:
   build:
     executor: codecov-deploy
@@ -42,6 +51,19 @@ jobs:
           make -f Makefile.circle build-requirements
           make -f Makefile.circle build VERSION=$CIRCLE_TAG
           make -f Makefile.circle push
+  build-enterprise:
+    executor: codecov-deploy
+    steps:
+    - checkout
+    - setup_remote_docker
+    - run:
+        <<: *gcloud_auth_enterprise
+    - run:
+        name: build container
+        command: |-
+          make -f Makefile.circle build-requirements
+          make -f Makefile.circle build-enterprise VERSION=$CIRCLE_TAG
+          make -f Makefile.circle push-enterprise
   test:
     executor: codecov-api
     steps:
@@ -60,13 +82,13 @@ jobs:
         command: |
           apk add git
           chmod +x codecov-alpine 
-          ./codecov-alpine -Z -R . -t fcd1b412-6063-486f-bdb3-5f73f77fa1d6 -F unit
+          ./codecov-alpine -Z -R . -F unit
     - run:
         name: codecov-staging
         command: |
           apk add git
           chmod +x codecov-alpine 
-          ./codecov-alpine -Z -R . --url https://stage-web.codecov.dev -t dfdd2ba4-4dbc-40a6-8a96-534c0a39c3a5 -F unit
+          ./codecov-alpine -Z -R . --url https://stage-web.codecov.dev -t $CODECOV_STAGING_TOKEN -F unit
 
   portable:
     executor: codecov-deploy
@@ -101,7 +123,31 @@ jobs:
         name: docker build, tag, and upload to production
         command: |
           make -f Makefile.circle production
-
+  enterprise:
+    executor: codecov-deploy
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          <<: *gcloud_auth_enterprise
+      - run: echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKER_USERNAME" --password-stdin
+      - run:
+          name: docker build, tag, and upload to enterprise qa
+          command: |
+            make -B -f Makefile.circle enterprise
+  enterprise-release:
+    executor: codecov-deploy
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          <<: *gcloud_auth_enterprise
+      - run: echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKER_USERNAME" --password-stdin
+      - run:
+          name: docker build, tag, and upload to enterprise qa
+          command: |
+            make -B -f Makefile.circle enterprise
+            make -B -f Makefile.circle release-enterprise
   deploy:
     executor: codecov-deploy
     steps:
@@ -122,6 +168,15 @@ workflows:
           filters:
             tags:
               only: /.*/
+      - build-enterprise:
+          requires:
+            - build
+          filters:
+            branches:
+              only: master
+            tags:
+              only:
+                - /enterprise-.*/
       - test:
           requires:
             - build
@@ -152,6 +207,25 @@ workflows:
           filters:
             branches:
               only: master
+      - enterprise:
+          context: "DockerHub Push Context"
+          requires:
+            - build-enterprise
+            - test
+          filters:
+            branches:
+              only: master
+      - enterprise-release:
+          context: "DockerHub Push Context"
+          requires:
+            - build-enterprise
+            - test
+            - enterprise
+          filters:
+            tags:
+              only: /^enterprise-.*/
+            branches:
+              ignore: /.*/
       - deploy:
           requires:
             - build

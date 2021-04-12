@@ -7,7 +7,7 @@ from rest_framework import status
 
 from core.models import Commit
 from core.tests.factories import RepositoryFactory, CommitFactory, PullFactory
-from core.models import Repository, Pull
+from core.models import Repository, Pull, PullStates
 from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
 
@@ -19,8 +19,9 @@ from webhook_handlers.constants import (
 
 
 def has_enterprise_license_side_effect(*args):
-    if (args == ("setup", "enterprise_license")):
+    if args == ("setup", "enterprise_license"):
         return True
+
 
 class TestGitlabWebhookHandler(APITestCase):
     def _post_event_data(self, event, data={}):
@@ -38,14 +39,20 @@ class TestGitlabWebhookHandler(APITestCase):
 
     def test_unknown_repo(self):
         response = self._post_event_data(
-            event=GitLabWebhookEvents.PUSH, data={"project_id": 1404,},
+            event=GitLabWebhookEvents.PUSH,
+            data={
+                "project_id": 1404,
+            },
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_push_event_no_yaml_cached(self):
         response = self._post_event_data(
             event=GitLabWebhookEvents.PUSH,
-            data={"object_kind": "push", "project_id": self.repo.service_id,},
+            data={
+                "object_kind": "push",
+                "project_id": self.repo.service_id,
+            },
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == "No yaml cached yet."
@@ -56,7 +63,10 @@ class TestGitlabWebhookHandler(APITestCase):
 
         response = self._post_event_data(
             event=GitLabWebhookEvents.PUSH,
-            data={"object_kind": "push", "project_id": self.repo.service_id,},
+            data={
+                "object_kind": "push",
+                "project_id": self.repo.service_id,
+            },
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == "Synchronize codecov.yml"
@@ -64,7 +74,11 @@ class TestGitlabWebhookHandler(APITestCase):
     def test_job_event_build_pending(self):
         response = self._post_event_data(
             event=GitLabWebhookEvents.JOB,
-            data={"object_kind": "build", "project_id": self.repo.service_id, "build_status": "pending"},
+            data={
+                "object_kind": "build",
+                "project_id": self.repo.service_id,
+                "build_status": "pending",
+            },
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == WebhookHandlerErrorMessages.SKIP_PENDING_STATUSES
@@ -75,7 +89,11 @@ class TestGitlabWebhookHandler(APITestCase):
 
         response = self._post_event_data(
             event=GitLabWebhookEvents.JOB,
-            data={"object_kind": "build", "project_id": self.repo.service_id, "build_status": "success"},
+            data={
+                "object_kind": "build",
+                "project_id": self.repo.service_id,
+                "build_status": "success",
+            },
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == WebhookHandlerErrorMessages.SKIP_PROCESSING
@@ -83,7 +101,11 @@ class TestGitlabWebhookHandler(APITestCase):
     def test_job_event_commit_not_found(self):
         response = self._post_event_data(
             event=GitLabWebhookEvents.JOB,
-            data={"object_kind": "build", "project_id": self.repo.service_id, "build_status": "success"},
+            data={
+                "object_kind": "build",
+                "project_id": self.repo.service_id,
+                "build_status": "success",
+            },
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == WebhookHandlerErrorMessages.SKIP_PROCESSING
@@ -131,7 +153,8 @@ class TestGitlabWebhookHandler(APITestCase):
         assert response.status_code == status.HTTP_200_OK
         assert response.data == "Notify queued."
         notify_mock.assert_called_once_with(
-            repoid=self.repo.repoid, commitid=commit.commitid,
+            repoid=self.repo.repoid,
+            commitid=commit.commitid,
         )
 
     def test_merge_request_event_repo_not_found(self):
@@ -162,7 +185,8 @@ class TestGitlabWebhookHandler(APITestCase):
         assert response.data == "Opening pull request in Codecov"
 
         pulls_sync_mock.assert_called_once_with(
-            repoid=self.repo.repoid, pullid=pullid,
+            repoid=self.repo.repoid,
+            pullid=pullid,
         )
 
     def test_merge_request_event_action_close(self):
@@ -170,7 +194,7 @@ class TestGitlabWebhookHandler(APITestCase):
             author=self.repo.author,
             repository=self.repo,
             pullid=1,
-            state=Pull.PullStates.OPEN,
+            state=PullStates.OPEN,
         )
 
         response = self._post_event_data(
@@ -188,7 +212,7 @@ class TestGitlabWebhookHandler(APITestCase):
         assert response.data == "Pull request closed"
 
         pull.refresh_from_db()
-        assert pull.state == Pull.PullStates.CLOSED
+        assert pull.state == PullStates.CLOSED
 
     @patch("services.task.TaskService.pulls_sync")
     def test_merge_request_event_action_merge(self, pulls_sync_mock):
@@ -208,7 +232,8 @@ class TestGitlabWebhookHandler(APITestCase):
         assert response.data == "Pull request merged"
 
         pulls_sync_mock.assert_called_once_with(
-            repoid=self.repo.repoid, pullid=pullid,
+            repoid=self.repo.repoid,
+            pullid=pullid,
         )
 
     @patch("services.task.TaskService.pulls_sync")
@@ -229,13 +254,14 @@ class TestGitlabWebhookHandler(APITestCase):
         assert response.data == "Pull request synchronize queued"
 
         pulls_sync_mock.assert_called_once_with(
-            repoid=self.repo.repoid, pullid=pullid,
+            repoid=self.repo.repoid,
+            pullid=pullid,
         )
 
     @patch("webhook_handlers.views.gitlab.get_config")
     def test_handle_system_hook_not_enterprise(self, mock_get_config):
         def side_effect(*args):
-            if (args == ("setup", "enterprise_license")):
+            if args == ("setup", "enterprise_license"):
                 return None
 
         mock_get_config.side_effect = side_effect
@@ -259,7 +285,7 @@ class TestGitlabWebhookHandler(APITestCase):
             },
         )
         assert response.status_code == status.HTTP_403_FORBIDDEN
-        assert response.data.get('detail') == "No enterprise license detected"
+        assert response.data.get("detail") == "No enterprise license detected"
 
         new_repo = Repository.objects.filter(
             author__ownerid=owner.ownerid, service_id=project_id
@@ -300,7 +326,7 @@ class TestGitlabWebhookHandler(APITestCase):
         assert new_repo.name == "storecloud"
 
     @patch("webhook_handlers.views.gitlab.get_config")
-    def test_handle_system_hook_project_destroy(self,  mock_get_config):
+    def test_handle_system_hook_project_destroy(self, mock_get_config):
         mock_get_config.side_effect = has_enterprise_license_side_effect
         username = "jsmith"
         project_id = 73
@@ -432,19 +458,27 @@ class TestGitlabWebhookHandler(APITestCase):
         assert response.status_code == status.HTTP_200_OK
         assert response.data == "User created"
 
-        new_user = Owner.objects.get(service="gitlab", service_id=gl_user_id,)
+        new_user = Owner.objects.get(
+            service="gitlab",
+            service_id=gl_user_id,
+        )
         assert new_user.name == "John Smith"
         assert new_user.email == "js@gitlabhq.com"
         assert new_user.username == "js"
 
     @patch("webhook_handlers.views.gitlab.get_config")
-    def test_handle_system_hook_user_add_to_team_no_existing_permissions(self, mock_get_config):
+    def test_handle_system_hook_user_add_to_team_no_existing_permissions(
+        self, mock_get_config
+    ):
         mock_get_config.side_effect = has_enterprise_license_side_effect
         gl_user_id = 41
         project_id = 74
         username = "johnsmith"
         user = OwnerFactory(
-            service="gitlab", service_id=gl_user_id, username=username, permission=None,
+            service="gitlab",
+            service_id=gl_user_id,
+            username=username,
+            permission=None,
         )
         repo = RepositoryFactory(
             author=user,
@@ -563,7 +597,7 @@ class TestGitlabWebhookHandler(APITestCase):
 
         user.refresh_from_db()
 
-        assert user.permission == [1, 2, 3, 100] # no change
+        assert user.permission == [1, 2, 3, 100]  # no change
 
     @patch("webhook_handlers.views.gitlab.get_config")
     def test_handle_system_hook_user_remove_from_team(self, mock_get_config):

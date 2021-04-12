@@ -19,11 +19,15 @@ get_permissions_method = (
 
 
 class ProfileTest(InternalAPITest):
-
     def setUp(self):
         org = OwnerFactory(username="Codecov")
         RepositoryFactory(author=org)
-        self.user = OwnerFactory(username="codecov-user", organizations=[org.ownerid])
+        self.user = OwnerFactory(
+            username="codecov-user",
+            organizations=[org.ownerid],
+            private_access=False,
+            staff=False,
+        )
         RepositoryFactory(author=self.user)
         pass
 
@@ -38,11 +42,27 @@ class ProfileTest(InternalAPITest):
 
     def test_update_profile_private_access(self):
         self.client.force_login(user=self.user)
-        response = self.client.patch("/internal/profile/", data={"private_access": True}, content_type="application/json")
+        response = self.client.patch(
+            "/internal/profile/",
+            data={"private_access": True},
+            content_type="application/json",
+        )
 
         self.user.refresh_from_db()
         assert self.user.private_access is True
         assert response.data["private_access"] is True
+
+    def test_update_profile_read_only(self):
+        self.client.force_login(user=self.user)
+        response = self.client.patch(
+            "/internal/profile/",
+            data={"staff": True},
+            content_type="application/json",
+        )
+
+        self.user.refresh_from_db()
+        assert self.user.staff is False
+        assert response.data["staff"] is False
 
 
 @patch(get_permissions_method)
@@ -72,8 +92,16 @@ class RepoPullList(InternalAPITest):
         )
         PullFactory(pullid=11, author=self.org, repository=self.repo, state="closed")
         PullFactory(pullid=12, author=other_org, repository=other_repo)
-        self.correct_kwargs={"service": "github", "owner_username":"codecov", "repo_name":"testRepoName"}
-        self.incorrect_kwargs={"service": "github", "owner_username":"codecov", "repo_name":"otherRepoName"}
+        self.correct_kwargs = {
+            "service": "github",
+            "owner_username": "codecov",
+            "repo_name": "testRepoName",
+        }
+        self.incorrect_kwargs = {
+            "service": "github",
+            "owner_username": "codecov",
+            "repo_name": "otherRepoName",
+        }
 
     def test_can_get_public_repo_pulls_when_not_authenticated(self, mock_provider):
         self.client.logout()
@@ -81,11 +109,14 @@ class RepoPullList(InternalAPITest):
         author = OwnerFactory()
         repo = RepositoryFactory(private=False, author=author)
         response = self.client.get(
-            reverse("pulls-list", kwargs={
-                "service": author.service,
-                "owner_username": author.username,
-                "repo_name": repo.name
-            })
+            reverse(
+                "pulls-list",
+                kwargs={
+                    "service": author.service,
+                    "owner_username": author.username,
+                    "repo_name": repo.name,
+                },
+            )
         )
         assert response.status_code == 200
         assert response.data["results"] == []
@@ -129,29 +160,29 @@ class RepoPullList(InternalAPITest):
         self.client.force_login(user=self.user)
         # Test increasing ordering
         response = self.client.get(
-            reverse("pulls-list", kwargs=self.correct_kwargs), data={"ordering": "pullid"}
+            reverse("pulls-list", kwargs=self.correct_kwargs),
+            data={"ordering": "pullid"},
         )
         content = self.json_content(response)
-        pullids = [r['pullid'] for r in content['results']]
-        self.assertEqual(pullids, [10,11])
+        pullids = [r["pullid"] for r in content["results"]]
+        self.assertEqual(pullids, [10, 11])
         # Test decreasing ordering
         response = self.client.get(
-            reverse("pulls-list", kwargs=self.correct_kwargs), data={"ordering": "-pullid"}
+            reverse("pulls-list", kwargs=self.correct_kwargs),
+            data={"ordering": "-pullid"},
         )
         content = self.json_content(response)
-        pullids = [r['pullid'] for r in content['results']]
-        self.assertEqual(pullids, [11,10])
+        pullids = [r["pullid"] for r in content["results"]]
+        self.assertEqual(pullids, [11, 10])
 
     def test_get_pulls_default_ordering(self, mock_provider):
         mock_provider.return_value = True, True
         self.client.force_login(user=self.user)
         # Test default ordering
-        response = self.client.get(
-            reverse("pulls-list", kwargs=self.correct_kwargs)
-        )
+        response = self.client.get(reverse("pulls-list", kwargs=self.correct_kwargs))
         content = self.json_content(response)
-        pullids = [r['pullid'] for r in content['results']]
-        self.assertEqual(pullids, [11,10])
+        pullids = [r["pullid"] for r in content["results"]]
+        self.assertEqual(pullids, [11, 10])
 
     def test_get_pull_wrong_org(self, mock_provider):
         mock_provider.return_value = True, True
@@ -228,6 +259,7 @@ class RepoPullList(InternalAPITest):
 
     def test_get_pulls_as_inactive_user_returns_403(self, mock_provider):
         self.org.plan = "users-inappm"
+        self.org.plan_auto_activate = False
         self.org.save()
         self.client.force_login(user=self.user)
         response = self.client.get(reverse("pulls-list", kwargs=self.correct_kwargs))
@@ -254,19 +286,24 @@ class RepoPullDetail(InternalAPITest):
         PullFactory(pullid=10, author=self.org, repository=repo, state="open")
         PullFactory(pullid=11, author=self.org, repository=repo, state="closed")
 
-    def test_can_get_public_repo_pull_detail_when_not_authenticated(self, mock_provider):
+    def test_can_get_public_repo_pull_detail_when_not_authenticated(
+        self, mock_provider
+    ):
         self.client.logout()
         mock_provider.return_value = True, True
         author = OwnerFactory()
         repo = RepositoryFactory(private=False, author=author)
         pull = PullFactory(repository=repo)
         response = self.client.get(
-            reverse("pulls-detail", kwargs={
-                "service": author.service,
-                "owner_username": author.username,
-                "repo_name": repo.name,
-                "pk": pull.pullid
-            })
+            reverse(
+                "pulls-detail",
+                kwargs={
+                    "service": author.service,
+                    "owner_username": author.username,
+                    "repo_name": repo.name,
+                    "pk": pull.pullid,
+                },
+            )
         )
         assert response.status_code == 200
         assert response.data["pullid"] == pull.pullid
@@ -290,6 +327,7 @@ class RepoPullDetail(InternalAPITest):
     def test_get_pull_as_inactive_user_returns_403(self, mock_provider):
         mock_provider = True, True
         self.org.plan = "users-inappm"
+        self.org.plan_auto_activate = False
         self.org.save()
         self.client.force_login(user=self.user)
         response = self.client.get("/internal/github/codecov/testRepoName/pulls/10/")
@@ -377,11 +415,14 @@ class RepoCommitList(InternalAPITest):
         author = OwnerFactory()
         repo = RepositoryFactory(author=author, private=False)
         response = self.client.get(
-            reverse("commits-list", kwargs={
-                "service": author.service,
-                "owner_username": author.username,
-                "repo_name": repo.name
-            })
+            reverse(
+                "commits-list",
+                kwargs={
+                    "service": author.service,
+                    "owner_username": author.username,
+                    "repo_name": repo.name,
+                },
+            )
         )
         assert response.status_code == 200
 
@@ -406,16 +447,20 @@ class RepoCommitList(InternalAPITest):
                 {
                     "commitid": self.second_test_commit.commitid,
                     "message": self.second_test_commit.message,
-                    "timestamp": self.second_test_commit.timestamp.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+                    "timestamp": self.second_test_commit.timestamp.strftime(
+                        "%Y-%m-%dT%H:%M:%S.%fZ"
+                    ),
                     "ci_passed": self.second_test_commit.ci_passed,
                     "author": {
                         "service": self.org.service,
                         "username": self.org.username,
                         "avatar_url": self.org.avatar_url,
-                        "stats": self.org.cache['stats'] if self.org.cache and 'stats' in self.org.cache else None,
+                        "stats": self.org.cache["stats"]
+                        if self.org.cache and "stats" in self.org.cache
+                        else None,
                         "name": self.org.name,
                         "ownerid": self.org.ownerid,
-                        "integration_id": self.org.integration_id
+                        "integration_id": self.org.integration_id,
                     },
                     "branch": self.second_test_commit.branch,
                     "totals": {
@@ -438,16 +483,20 @@ class RepoCommitList(InternalAPITest):
                 {
                     "commitid": self.first_test_commit.commitid,
                     "message": self.first_test_commit.message,
-                    "timestamp": self.first_test_commit.timestamp.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+                    "timestamp": self.first_test_commit.timestamp.strftime(
+                        "%Y-%m-%dT%H:%M:%S.%fZ"
+                    ),
                     "ci_passed": self.first_test_commit.ci_passed,
                     "author": {
                         "service": self.org.service,
                         "username": self.org.username,
                         "avatar_url": self.org.avatar_url,
-                        "stats": self.org.cache['stats'] if self.org.cache and 'stats' in self.org.cache else None,
+                        "stats": self.org.cache["stats"]
+                        if self.org.cache and "stats" in self.org.cache
+                        else None,
                         "name": self.org.name,
                         "ownerid": self.org.ownerid,
-                        "integration_id": self.org.integration_id
+                        "integration_id": self.org.integration_id,
                     },
                     "branch": self.first_test_commit.branch,
                     "totals": {
@@ -502,7 +551,9 @@ class RepoCommitList(InternalAPITest):
         assert len(content["results"]) == 2
         assert content["results"][0]["commitid"] == commit_non_master.commitid
 
-        response = self.client.get("/internal/github/codecov-user/banana/commits/?branch=other-branch")
+        response = self.client.get(
+            "/internal/github/codecov-user/banana/commits/?branch=other-branch"
+        )
         content = json.loads(response.content.decode())
         assert len(content["results"]) == 1
         assert content["results"][0]["commitid"] == commit_non_master.commitid
@@ -520,6 +571,7 @@ class RepoCommitList(InternalAPITest):
     def test_fetch_commits_inactive_user_returns_403(self, mock_provider):
         mock_provider = True, True
         self.org.plan = "users-inappm"
+        self.org.plan_auto_activate = False
         self.org.save()
 
         self.client.force_login(user=self.user)
@@ -534,39 +586,46 @@ class BranchViewSetTests(InternalAPITest):
     def setUp(self):
         self.org = OwnerFactory()
         self.repo = RepositoryFactory(author=self.org)
-        self.user = OwnerFactory(permission=[self.repo.repoid], organizations=[self.org.ownerid])
+        self.user = OwnerFactory(
+            permission=[self.repo.repoid], organizations=[self.org.ownerid]
+        )
         self.other_user = OwnerFactory(permission=[self.repo.repoid])
 
         self.branches = [
             BranchFactory(repository=self.repo),
-            BranchFactory(repository=self.repo)
+            BranchFactory(repository=self.repo),
         ]
 
         self.client.force_login(user=self.user)
 
     def _get_branches(self, kwargs={}, query={}):
         if not kwargs:
-            kwargs = {"service": self.org.service, "owner_username": self.org.username, "repo_name": self.repo.name}
-        return self.client.get(reverse('branches-list', kwargs=kwargs), data=query)
+            kwargs = {
+                "service": self.org.service,
+                "owner_username": self.org.username,
+                "repo_name": self.repo.name,
+            }
+        return self.client.get(reverse("branches-list", kwargs=kwargs), data=query)
 
     def test_can_get_public_repo_branches_if_not_authenticated(self, mocked_provider):
         mocked_provider.return_value = True, True
         self.client.logout()
         author = OwnerFactory()
         repo = RepositoryFactory(author=author, private=False)
-        response = self._get_branches(kwargs={
-            "service": author.service,
-            "owner_username": author.username,
-            "repo_name": repo.name
-        })
+        response = self._get_branches(
+            kwargs={
+                "service": author.service,
+                "owner_username": author.username,
+                "repo_name": repo.name,
+            }
+        )
         assert response.status_code == 200
-
 
     def test_list_returns_200_and_expected_branches(self, mock_provider):
         response = self._get_branches()
         assert response.status_code == 200
-        assert response.data['results'][0]['name'] == self.branches[1].name
-        assert response.data['results'][1]['name'] == self.branches[0].name
+        assert response.data["results"][0]["name"] == self.branches[1].name
+        assert response.data["results"][1]["name"] == self.branches[0].name
 
     def test_list_without_permission_returns_403(self, mock_provider):
         mock_provider.return_value = False, False
@@ -575,34 +634,45 @@ class BranchViewSetTests(InternalAPITest):
             kwargs={
                 "service": self.org.service,
                 "owner_username": self.org.username,
-                "repo_name": repo_no_permissions.name
+                "repo_name": repo_no_permissions.name,
             }
         )
         assert response.status_code == 403
 
     def test_list_with_nonexistent_repo_returns_404(self, mock_provider):
-        nonexistent_repo_name = 'existant'
-        response = self._get_branches(kwargs={
-            "service": self.org.service,
-            "owner_username": self.org.username,
-            "repo_name": nonexistent_repo_name
+        nonexistent_repo_name = "existant"
+        response = self._get_branches(
+            kwargs={
+                "service": self.org.service,
+                "owner_username": self.org.username,
+                "repo_name": nonexistent_repo_name,
             }
         )
         assert response.status_code == 404
 
-    def test_branch_data_includes_most_recent_commiter_of_each_branch(self, mock_provider):
-        self.branches[0].head = CommitFactory(repository=self.repo, author=self.user, branch=self.branches[0].name).commitid
+    def test_branch_data_includes_most_recent_commiter_of_each_branch(
+        self, mock_provider
+    ):
+        self.branches[0].head = CommitFactory(
+            repository=self.repo, author=self.user, branch=self.branches[0].name
+        ).commitid
         self.branches[0].save()
-        self.branches[1].head = CommitFactory(repository=self.repo, author=self.other_user, branch=self.branches[1].name).commitid
+        self.branches[1].head = CommitFactory(
+            repository=self.repo, author=self.other_user, branch=self.branches[1].name
+        ).commitid
         self.branches[1].save()
 
         response = self._get_branches()
 
-        assert response.data['results'][0]['most_recent_commiter'] == self.other_user.username
-        assert response.data['results'][1]['most_recent_commiter'] == self.user.username
+        assert (
+            response.data["results"][0]["most_recent_commiter"]
+            == self.other_user.username
+        )
+        assert response.data["results"][1]["most_recent_commiter"] == self.user.username
 
     def test_list_as_inactive_user_returns_403(self, mock_provider):
         self.org.plan = "users-inappy"
+        self.org.plan_auto_activate = False
         self.org.save()
 
         response = self._get_branches()

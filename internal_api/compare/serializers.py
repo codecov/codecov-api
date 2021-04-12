@@ -31,10 +31,10 @@ class FileComparisonSerializer(serializers.Serializer):
 
 
 class ComparisonSerializer(serializers.Serializer):
-    base_commit = serializers.CharField(source='base_commit.commitid')
-    head_commit = serializers.CharField(source='head_commit.commitid')
+    base_commit = serializers.CharField(source="base_commit.commitid")
+    head_commit = serializers.CharField(source="head_commit.commitid")
     totals = TotalsComparisonSerializer()
-    commit_uploads = CommitSerializer(many=True, source='upload_commits')
+    commit_uploads = CommitSerializer(many=True, source="upload_commits")
     diff = serializers.SerializerMethodField()
     files = FileComparisonSerializer(many=True)
     untracked = serializers.SerializerMethodField()
@@ -42,20 +42,20 @@ class ComparisonSerializer(serializers.Serializer):
 
     def get_untracked(self, comparison):
         return [
-            f for f, _ in comparison.git_comparison["diff"]["files"].items()
-            if f not in (comparison.base_report or []) and f not in comparison.head_report
+            f
+            for f, _ in comparison.git_comparison["diff"]["files"].items()
+            if f not in (comparison.base_report or [])
+            and f not in comparison.head_report
         ]
 
     def get_diff(self, comparison):
-        return {
-            "git_commits": comparison.git_commits
-        }
+        return {"git_commits": comparison.git_commits}
 
 
 class FlagComparisonSerializer(serializers.Serializer):
-    name = serializers.CharField(source='flag_name')
+    name = serializers.CharField(source="flag_name")
     base_report_totals = serializers.SerializerMethodField()
-    head_report_totals = ReportTotalsSerializer(source="head_report.totals") 
+    head_report_totals = ReportTotalsSerializer(source="head_report.totals")
     diff_totals = ReportTotalsSerializer()
 
     def get_base_report_totals(self, obj):
