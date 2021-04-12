@@ -116,12 +116,12 @@ class StripeService(AbstractPaymentService):
             log.info(
                 f"Downgrade to free plan from legacy plan for owner {owner.ownerid}"
             )
-            stripe.Subscription.delete(owner.stripe_subscription_id, prorate=True)
+            stripe.Subscription.delete(owner.stripe_subscription_id, prorate=False)
             owner.set_free_plan()
         else:
             log.info(f"Downgrade to free plan from user plan for owner {owner.ownerid}")
             stripe.Subscription.modify(
-                owner.stripe_subscription_id, cancel_at_period_end=True
+                owner.stripe_subscription_id, cancel_at_period_end=True, prorate=False
             )
 
     @_log_stripe_error
@@ -139,6 +139,9 @@ class StripeService(AbstractPaymentService):
             f"Updating Stripe subscription for owner {owner.ownerid} to {desired_plan['value']}"
         )
         subscription = stripe.Subscription.retrieve(owner.stripe_subscription_id)
+
+        proration_behavior = self._get_proration_params(owner, desired_plan)
+
         stripe.Subscription.modify(
             owner.stripe_subscription_id,
             cancel_at_period_end=False,
@@ -150,7 +153,7 @@ class StripeService(AbstractPaymentService):
                 }
             ],
             metadata=self._get_checkout_session_and_subscription_metadata(owner),
-            proration_behavior="always_invoice",
+            proration_behavior=proration_behavior
         )
 
         # Segment analytics
@@ -190,6 +193,21 @@ class StripeService(AbstractPaymentService):
         owner.save()
 
         log.info(f"Stripe subscription modified successfully for owner {owner.ownerid}")
+    
+    def _get_proration_params(self, owner, desired_plan):
+        proration_behavior = "none"
+        if owner.plan == desired_plan["value"]:
+            # Same product, increased number of seats
+            if owner.plan_user_count and owner.plan_user_count < desired_plan["quantity"]:
+                return 'always_invoice'
+            # Same product, decreased nummber of seats
+            return proration_behavior
+
+        elif "m" in owner.plan and "y" in desired_plan["value"]:
+            # From monthly to yearly
+            return 'always_invoice'
+        return proration_behavior
+
 
     def _get_success_and_cancel_url(self, owner):
         short_services = {
