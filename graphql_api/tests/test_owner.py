@@ -30,12 +30,6 @@ query_repositories = """{
 
 class TestOwnerType(GraphQLTestHelper, TestCase):
 
-    def fetch_repository(self):
-
-        self.client.force_login(self.user)
-        data = self.gql_request(query_repository)
-        return data["me"]["owner"]["repositories"]["edges"][0]["node"]
-
     def setUp(self):
         self.user = OwnerFactory(username="codecov-user")
         random_user = OwnerFactory(username="random-user")
