@@ -46,7 +46,7 @@ Make sure to have all the requirements from `requirements.txt` installed.
 
 ### Deploying
 
-All work merged into the `master` branch is immediately deployed to the production environment.
+All work merged into the `master` branch is immediately deployed to the production environment. More context on this strategy can be found [here](https://codecovio.atlassian.net/wiki/spaces/ENG/pages/507445249/Branching+and+Continuous+Delivery+Strategy+Proposal).
 
 ### Deploying to Staging environment
 
