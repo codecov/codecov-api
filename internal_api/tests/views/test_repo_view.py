@@ -810,7 +810,9 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         )
 
         PullFactory(
-            pullid=2, repository=self.repo, author=self.repo.author,
+            pullid=2,
+            repository=self.repo,
+            author=self.repo.author,
         )
 
         BranchFactory(authors=[self.org.ownerid], repository=self.repo)
@@ -1072,9 +1074,28 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
 
     @patch("services.archive.ArchiveService.create_root_storage", lambda _: None)
     @patch("services.archive.ArchiveService.read_chunks", lambda obj, _: "")
-    def test_retrieve_returns_latest_commit_data(self, mocked_get_permissions):
+    def test_retrieve_returns_latest_commit_data_asd(self, mocked_get_permissions):
+        self.maxDiff = None
         mocked_get_permissions.return_value = True, True
-        commit = CommitFactory(repository=self.repo)
+        commit = CommitFactory(
+            repository=self.repo,
+            report={
+                "files": {
+                    "test_file_1.py": [
+                        2,
+                        [1, 10, 8, 2, 5, "80.00000", 6, 7, 9, 8, 20, 40, 13],
+                        [[0, 10, 8, 2, 0, "80.00000", 0, 0, 0, 0, 0, 0, 0]],
+                        [0, 2, 1, 1, 0, "50.00000", 0, 0, 0, 0, 0, 0, 0],
+                    ],
+                    "test_file_2.py": [
+                        0,
+                        [1, 3, 2, 1, 0, "66.66667", 0, 0, 0, 0, 0, 0, 0],
+                        [[0, 3, 2, 1, 0, "66.66667", 0, 0, 0, 0, 0, 0, 0]],
+                        None,
+                    ],
+                }
+            },
+        )
 
         from internal_api.commit.serializers import CommitWithFileLevelReportSerializer
 
@@ -1085,6 +1106,47 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         assert (
             response.data["latest_commit"]["report"]["totals"]
             == expected_commit_payload["report"]["totals"]
+        )
+        self.assertEquals(
+            response.data["latest_commit"]["report"]["files"],
+            [
+                {
+                    "name": "test_file_1.py",
+                    "totals": {
+                        "files": 1,
+                        "lines": 10,
+                        "hits": 8,
+                        "misses": 2,
+                        "partials": 5,
+                        "coverage": 80.0,
+                        "branches": 6,
+                        "methods": 7,
+                        "sessions": 8,
+                        "complexity": 20.0,
+                        "complexity_total": 40.0,
+                        "complexity_ratio": 50.0,
+                        "diff": None,
+                    },
+                },
+                {
+                    "name": "test_file_2.py",
+                    "totals": {
+                        "files": 1,
+                        "lines": 3,
+                        "hits": 2,
+                        "misses": 1,
+                        "partials": 0,
+                        "coverage": 66.67,
+                        "branches": 0,
+                        "methods": 0,
+                        "sessions": 0,
+                        "complexity": 0,
+                        "complexity_total": 0,
+                        "complexity_ratio": 0,
+                        "diff": None,
+                    },
+                },
+            ],
         )
 
     @patch("services.archive.ArchiveService.create_root_storage", lambda _: None)
