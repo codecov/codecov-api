@@ -163,6 +163,18 @@ class Commit(models.Model):
             repository=self.repository, commitid=self.parent_commit_id
         ).first()
 
+    @classmethod
+    def report_totals_by_file_name(cls, commit_id):
+        """
+        Commit.report can contain very large JSON blobs. Most of this data is report data per file per run, whereas
+        for certain calculations only the totals over the entire runs are needed. This query should be used when that
+        is the case for performance reasons.
+        """
+        return Commit.objects.raw(
+            "SELECT id, json_data.key as file_name, json_data.value->1 as totals FROM commits, jsonb_each(commits.report->'files') as json_data WHERE commits.id = %s;",
+            [commit_id],
+        )
+
     class Meta:
         db_table = "commits"
         constraints = [
