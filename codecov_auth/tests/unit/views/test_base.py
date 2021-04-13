@@ -1,15 +1,14 @@
-from django.test import TestCase
+from django.test import TestCase, RequestFactory
 from unittest.mock import patch
 from codecov_auth.views.base import LoginMixin
 from codecov_auth.tests.factories import OwnerFactory
-from rest_framework.test import APIRequestFactory
 
 
 class LoginMixinTests(TestCase):
     def setUp(self):
         self.mixin_instance = LoginMixin()
         self.mixin_instance.cookie_prefix = "github"
-        self.request = APIRequestFactory().get("", {})
+        self.request = RequestFactory().get("", {})
 
     @patch("services.segment.SegmentService.identify_user")
     def test_get_or_create_user_calls_segment_identify_user(self, identify_user_mock):

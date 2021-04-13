@@ -283,7 +283,6 @@ class SegmentService:
 
     @inject_segment_owner
     def user_signed_in(self, segment_owner, **kwargs):
-        print("INSIDE USER SIGNED IN!")
         event_properties = {
             **segment_owner.traits,
             "signup_department": kwargs.get("utm_department") or "marketing",
