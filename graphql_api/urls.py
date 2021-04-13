@@ -1,7 +1,7 @@
 from django.urls import path
 
-from .views import AriadneView
+from .views import ariadne_view
 
 urlpatterns = [
-    path("<str:service>", AriadneView, name="graphql"),
+    path("<str:service>", ariadne_view, name="graphql"),
 ]
