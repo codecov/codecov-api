@@ -1,10 +1,6 @@
-from django.test import TestCase, TransactionTestCase
-from ariadne import graphql_sync
-
-from asgiref.sync import async_to_sync
+from django.test import TransactionTestCase
 
 from codecov_auth.tests.factories import OwnerFactory
-from core.models import Repository
 from core.tests.factories import RepositoryFactory
 from .helper import GraphQLTestHelper, paginate_connection
 
@@ -73,10 +69,22 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
                     "repositories": {
                         "totalCount": 2,
                         "edges": [
-                            {"node": {"name": "b", "author": {"username": self.user.username}}},
-                            {"node": {"name": "a", "author": {"username": self.user.username}}},
+                            {
+                                "node": {
+                                    "name": "b",
+                                    "author": {"username": self.user.username},
+                                }
+                            },
+                            {
+                                "node": {
+                                    "name": "a",
+                                    "author": {"username": self.user.username},
+                                }
+                            },
                         ],
-                        "pageInfo": {"hasNextPage": False,},
+                        "pageInfo": {
+                            "hasNextPage": False,
+                        },
                     }
                 }
             }
@@ -87,9 +95,12 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
         # Check on the first page if we have the repository b
         data_page_one = await self.gql_request(query, user=self.user)
         connection = data_page_one["me"]["owner"]["repositories"]
-        assert connection["edges"][0]["node"] == {"name": "b", "author": {"username": self.user.username}}
+        assert connection["edges"][0]["node"] == {
+            "name": "b",
+            "author": {"username": self.user.username},
+        }
         pageInfo = connection["pageInfo"]
-        assert pageInfo["hasNextPage"] == True
+        assert pageInfo["hasNextPage"] is True
         next_cursor = pageInfo["endCursor"]
         # Check on the second page if we have the other repository, by using the cursor
         query = query_repositories % (
@@ -98,9 +109,12 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
         )
         data_page_two = await self.gql_request(query, user=self.user)
         connection = data_page_two["me"]["owner"]["repositories"]
-        assert connection["edges"][0]["node"] == {"name": "a", "author": {"username": self.user.username}}
+        assert connection["edges"][0]["node"] == {
+            "name": "a",
+            "author": {"username": self.user.username},
+        }
         pageInfo = connection["pageInfo"]
-        assert pageInfo["hasNextPage"] == False
+        assert pageInfo["hasNextPage"] is False
 
     async def test_fetching_viewable_repositories(self):
         query = """{
