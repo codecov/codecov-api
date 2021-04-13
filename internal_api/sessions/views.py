@@ -11,7 +11,7 @@ class SessionViewSet(
     mixins.ListModelMixin,
     mixins.CreateModelMixin,
     mixins.DestroyModelMixin,
-    OwnerPropertyMixin
+    OwnerPropertyMixin,
 ):
     permission_classes = [UserIsAdminPermissions]
 
@@ -22,7 +22,7 @@ class SessionViewSet(
 
     def get_queryset(self):
         return Session.objects.filter(
-            owner__ownerid__in=Owner.objects.users_of(
-                owner=self.owner
-            ).values_list("ownerid", flat=True)
+            owner__ownerid__in=Owner.objects.users_of(owner=self.owner).values_list(
+                "ownerid", flat=True
+            )
         ).select_related("owner")

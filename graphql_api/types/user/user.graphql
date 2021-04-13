@@ -1,0 +1,6 @@
+type User {
+  username: String!
+  name: String
+  avatarUrl: String
+  student: Boolean!
+}

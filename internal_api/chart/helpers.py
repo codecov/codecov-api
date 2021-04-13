@@ -1,15 +1,16 @@
 from django.db.models.functions import Trunc, Cast
 from django.db.models import FloatField, Case, When, Value, F
-from django.contrib.postgres.fields.jsonb import KeyTextTransform
+from django.db.models.fields.json import KeyTextTransform
 from django.utils.functional import cached_property
 from django.db import connection
+from django.utils import timezone
 
 from rest_framework.exceptions import ValidationError
 from cerberus import Validator
 from datetime import datetime
 from dateutil import parser
 
-from core.models import Commit
+from core.models import Commit, Repository
 from codecov_auth.models import Owner
 
 
@@ -128,7 +129,7 @@ def apply_grouping(queryset, data):
         f"{date_ordering}truncated_date", "repository__name", f"{ordering}{agg_value}"
     ).distinct(
         "truncated_date", "repository__name"
-    ) # this will select the first row for a given date/repo combo, which since we've just ordered the commits
+    )  # this will select the first row for a given date/repo combo, which since we've just ordered the commits
     # should be the one with the min/max value we want to aggregate by
 
 
@@ -137,6 +138,7 @@ class ChartQueryRunner:
     Houses the SQL query that retrieves data for analytics chart, and
     the associated parameter validation + transformation required for it.
     """
+
     def __init__(self, user, request_params):
         self.user = user
         self.request_params = request_params
@@ -148,10 +150,7 @@ class ChartQueryRunner:
         Copied from: https://docs.djangoproject.com/en/3.1/topics/db/sql/#executing-custom-sql-directly
         """
         columns = [col[0] for col in cursor.description]
-        return [
-            dict(zip(columns, row))
-            for row in cursor.fetchall()
-        ]
+        return [dict(zip(columns, row)) for row in cursor.fetchall()]
 
     @property
     def start_date(self):
@@ -161,11 +160,7 @@ class ChartQueryRunner:
         used if not set.
         """
         if "start_date" in self.request_params:
-            return datetime.date(
-                parser.parse(
-                    self.request_params.get("start_date")
-                )
-            )
+            return datetime.date(parser.parse(self.request_params.get("start_date")))
         return self.first_complete_commit_date
 
     @property
@@ -174,12 +169,8 @@ class ChartQueryRunner:
         Returns 'end_date' to use in date spine.
         """
         if "end_date" in self.request_params:
-            return datetime.date(
-                parser.parse(
-                    self.request_params.get("end_date")
-                )
-            )
-        return datetime.date(datetime.now())
+            return datetime.date(parser.parse(self.request_params.get("end_date")))
+        return datetime.date(timezone.now())
 
     @property
     def interval(self):
@@ -208,22 +199,26 @@ class ChartQueryRunner:
     @cached_property
     def repoids(self):
         """
-        Returns a tuple of repoids of the repositories being queried.
+        Returns a string of repoids of the repositories being queried.
         """
         organization = Owner.objects.get(
             service=self.request_params["service"],
-            username=self.request_params["owner_username"]
+            username=self.request_params["owner_username"],
         )
 
         # Get list of relevant repoids
-        repos = organization.repository_set.viewable_repos(
-            self.user
-        )
+        repos = Repository.objects.filter(author=organization).viewable_repos(self.user)
 
         if self.request_params.get("repositories", []):
             repos = repos.filter(name__in=self.request_params.get("repositories", []))
 
-        return tuple(repos.values_list("repoid", flat=True))
+        if repos:
+            # Get repoids into a format easily plugged into raw SQL
+            return (
+                "("
+                + ",".join(map(str, list(repos.values_list("repoid", flat=True))))
+                + ")"
+            )
 
     @cached_property
     def first_complete_commit_date(self):
@@ -231,24 +226,29 @@ class ChartQueryRunner:
         Date of first commit made to any repo in 'self.repoids'. Used as initial
         date for date_spine query.
         """
-        commit_dates = Commit.objects.filter(
-            repository__repoid__in=self.repoids,
-            repository__branch=F("branch"),
-            state="complete"
-        ).annotate(
-            truncated_date=Trunc(
-                "timestamp",
-                self.request_params.get("grouping_unit")
-            )
-        ).order_by(
-            "timestamp"
-        ).values_list(
-            "truncated_date",
-            flat=True
-        )
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f"""
+                WITH relevant_repo_branches AS (
+                    SELECT
+                        r.repoid,
+                        r.branch
+                    FROM repos r
+                    WHERE r.repoid IN {self.repoids}
+                )
 
-        if commit_dates:
-            return datetime.date(commit_dates[0])
+                SELECT
+                    DATE_TRUNC('{self.grouping_unit}', c.timestamp AT TIME ZONE 'UTC') as truncated_date
+                FROM commits c
+                INNER JOIN relevant_repo_branches r ON c.repoid = r.repoid AND c.branch = r.branch
+                WHERE c.state = 'complete'
+                ORDER BY c.timestamp ASC LIMIT 1;
+                """
+            )
+            date = self._dictfetchall(cursor)
+
+        if date:
+            return datetime.date(date[0]["truncated_date"])
 
     def _validate_parameters(self):
         params_schema = {
@@ -257,8 +257,8 @@ class ChartQueryRunner:
             "repositories": {"type": "list", "required": False},
             "start_date": {"type": "string", "required": False},
             "end_date": {"type": "string", "required": False},
-            "agg_function": {"type": "string", "required": False}, # Deprecated
-            "agg_value": {"type": "string", "required": False}, # Deprecated
+            "agg_function": {"type": "string", "required": False},  # Deprecated
+            "agg_value": {"type": "string", "required": False},  # Deprecated
             "grouping_unit": {
                 "type": "string",
                 "required": True,
@@ -268,12 +268,12 @@ class ChartQueryRunner:
                     "month",
                     "quarter",
                     "year",
-                ], # Must be one acceptable by Postgres DATE_TRUNC
+                ],  # Must be one acceptable by Postgres DATE_TRUNC
             },
             "coverage_timestamp_ordering": {
                 "type": "string",
                 "allowed": ["increasing", "decreasing"],
-                "required": False
+                "required": False,
             },
         }
         v = Validator(params_schema)
@@ -360,49 +360,37 @@ class ChartQueryRunner:
                         ) AS corrected_totals
                     FROM
                         grouped
+                ), parsed_totals AS (
+                    SELECT
+                        spine_date,
+                        (CASE
+                            WHEN corrected_totals IS NOT NULL then (corrected_totals->>'h')::numeric
+                            WHEN corrected_totals IS NULL then 0 END
+                        ) as hits,
+                        (CASE
+                            WHEN corrected_totals IS NOT NULL then (corrected_totals->>'m')::numeric
+                            WHEN corrected_totals IS NULL then 0 END
+                        ) as misses,
+                        (CASE
+                            WHEN corrected_totals IS NOT NULL then (corrected_totals->>'p')::numeric
+                            WHEN corrected_totals IS NULL then 0 END
+                        ) as partials,
+                        (CASE
+                            WHEN corrected_totals IS NOT NULL then (corrected_totals->>'n')::numeric
+                            WHEN corrected_totals IS NULL then 0 END
+                        ) as lines
+                    FROM
+                        corrected
                 ), summed_totals AS (
                     SELECT
                         spine_date::timestamp at time zone 'UTC' AS date,
-                        SUM((CASE
-                            WHEN corrected_totals IS NOT NULL then (corrected_totals->>'h')::numeric
-                            WHEN corrected_totals IS NULL then 0 END
-                        )) as total_hits,
-                        SUM((CASE
-                            WHEN corrected_totals IS NOT NULL then (corrected_totals->>'m')::numeric
-                            WHEN corrected_totals IS NULL then 0 END
-                        )) as total_misses,
-                        SUM((CASE
-                            WHEN corrected_totals IS NOT NULL then (corrected_totals->>'p')::numeric
-                            WHEN corrected_totals IS NULL then 0 END
-                        )) as total_partials,
-                        SUM((CASE
-                            WHEN corrected_totals IS NOT NULL then (corrected_totals->>'n')::numeric
-                            WHEN corrected_totals IS NULL then 0 END
-                        )) as total_lines,
-                        ROUND(
-                            (
-                                SUM(
-                                    (CASE
-                                        WHEN corrected_totals IS NOT NULL then (corrected_totals->>'h')::numeric
-                                        WHEN corrected_totals IS NULL then 0 END
-                                    )
-                                )
-                                + SUM(
-                                    (CASE
-                                        WHEN corrected_totals IS NOT NULL then (corrected_totals->>'p')::numeric
-                                        WHEN corrected_totals IS NULL then 0 END
-                                    )
-                                )
-                            ) /
-                            SUM(
-                                (CASE
-                                    WHEN corrected_totals IS NOT NULL then (corrected_totals->>'n')::numeric
-                                    WHEN corrected_totals IS NULL then 0 END
-                                )
-                            ) * 100,
-                            2
-                        ) AS coverage
-                    FROM corrected
+                        SUM(hits) AS total_hits,
+                        SUM(misses) AS total_misses,
+                        SUM(partials) AS total_partials,
+                        SUM(lines) AS total_lines,
+                        ROUND((SUM(hits) + SUM(partials)) / SUM(lines) * 100, 2) AS coverage
+                    FROM
+                        parsed_totals
                     GROUP BY spine_date
                     ORDER BY spine_date {self.ordering}
                 )

@@ -22,16 +22,20 @@ from django.conf import settings
 urlpatterns = [
     path(INTERNAL_API_PREFIX, include("internal_api.urls")),
     re_path("^validate/?", include("validate.urls")),
+    path("health/", views.health),
+    path("", views.health),
 ]
 
 if not settings.IS_ENTERPRISE:
     urlpatterns += [
         path("admin/", admin.site.urls),
-        path("health/", views.health),
-        path("", views.health),
-        path("<str:service>/<str:owner_username>/<str:repo_name>/", include("graphs.urls")),
-        re_path(r'^redirect_app', views.redirect_app),
+        path(
+            "<str:service>/<str:owner_username>/<str:repo_name>/",
+            include("graphs.urls"),
+        ),
+        re_path(r"^redirect_app", views.redirect_app),
         path("login/", include("codecov_auth.urls")),
         path("webhooks/", include("webhook_handlers.urls")),
         path("upload/<str:version>", include("upload.urls")),
+        path("graphql/", include("graphql_api.urls")),
     ]

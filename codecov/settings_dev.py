@@ -3,22 +3,22 @@ import logging
 
 
 DEBUG = True
-ALLOWED_HOSTS = ['localhost']
+ALLOWED_HOSTS = ["localhost"]
 
 
-WEBHOOK_URL = '' # NGROK TUNNEL HERE
+WEBHOOK_URL = ""  # NGROK TUNNEL HERE
 
 
-STRIPE_API_KEY = 'sk_test_testsn3sc2tirvdea6mqp31t'
+STRIPE_API_KEY = "sk_test_testsn3sc2tirvdea6mqp31t"
 STRIPE_ENDPOINT_SECRET = "whsec_testzrff0orrbsv3bdekbbz8cz964dan"
 STRIPE_PLAN_IDS = {
     "users-pr-inappm": "plan_H6P3KZXwmAbqPS",
-    "users-pr-inappy": "plan_H6P16wij3lUuxg"
+    "users-pr-inappy": "plan_H6P16wij3lUuxg",
 }
 
-CORS_ORIGIN_WHITELIST = ['localhost:9000', 'localhost']
+CORS_ALLOWED_ORIGINS = ["http://localhost:9000", "http://localhost"]
 CORS_ALLOW_CREDENTIALS = True
-CODECOV_URL = 'localhost'
+CODECOV_URL = "localhost"
 
 
 GITHUB_CLIENT_ID = "3d44be0e772666136a13"
@@ -29,9 +29,11 @@ BITBUCKET_CLIENT_ID = "testqmo19ebdkseoby"
 BITBUCKET_CLIENT_SECRET = "testfi8hzehvz453qj8mhv21ca4rf83f"
 
 GITLAB_CLIENT_ID = "testq117krewaffvh4y2ktl1cpof8ufldd397vygenzuy24wb220rqg83cdaps4w"
-GITLAB_CLIENT_SECRET = "testq19ki95gaa4faunz92a97otmekrwczg60s8wdy3vx1ddfch2rff2oagsozsr"
+GITLAB_CLIENT_SECRET = (
+    "testq19ki95gaa4faunz92a97otmekrwczg60s8wdy3vx1ddfch2rff2oagsozsr"
+)
 
 
-CODECOV_DASHBOARD_URL = 'http://localhost:9000'
+CODECOV_DASHBOARD_URL = "http://localhost:9000"
 
 COOKIES_DOMAIN = "localhost"

@@ -39,33 +39,33 @@ class IgnoreClientContentNegotiation(DefaultContentNegotiation):
             )
             return (renderers[0], renderers[0].media_type)
 
+
 class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
 
     content_negotiation_class = IgnoreClientContentNegotiation
 
     permission_classes = [AllowAny]
 
-    extensions = ['svg', 'txt']
-    precisions = ['0', '1', '2']
+    extensions = ["svg", "txt"]
+    precisions = ["0", "1", "2"]
     filename = "badge"
 
-    def get_object(self, request, *args, **kwargs):        
+    def get_object(self, request, *args, **kwargs):
         # Validate coverage precision
-        precision = self.request.query_params.get('precision', '0')
+        precision = self.request.query_params.get("precision", "0")
         if not precision in self.precisions:
             raise NotFound("Coverage precision should be one of [ 0 || 1 || 2 ]")
 
         coverage, coverage_range = self.get_coverage()
 
-        # Format coverage according to precision      
+        # Format coverage according to precision
         coverage = format_coverage_precision(coverage, precision)
-        
-        if self.kwargs.get('ext') == 'txt':
+
+        if self.kwargs.get("ext") == "txt":
             return coverage
 
         return get_badge(coverage, coverage_range, precision)
 
-    
     def get_coverage(self):
         """
             Note: This endpoint has the behaviour of returning a gray badge with the word 'unknwon' instead of returning a 404
@@ -80,12 +80,14 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         except Http404:
             return None, coverage_range
 
-        if repo.private and repo.image_token != self.request.query_params.get('token'):
+        if repo.private and repo.image_token != self.request.query_params.get("token"):
             return None, coverage_range
-       
-        branch_name = self.kwargs.get('branch') or repo.branch
-        branch = Branch.objects.filter(name=branch_name, repository_id=repo.repoid).first()
-       
+
+        branch_name = self.kwargs.get("branch") or repo.branch
+        branch = Branch.objects.filter(
+            name=branch_name, repository_id=repo.repoid
+        ).first()
+
         if branch is None:
             return None, coverage_range
         try:
@@ -94,15 +96,18 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
             # if commit does not exist return None coverage
             return None, coverage_range
 
+        if repo.yaml and repo.yaml.get("coverage", {}).get("range") is not None:
+            coverage_range = repo.yaml.get("coverage", {}).get("range")
 
-        if repo.yaml and repo.yaml.get('coverage', {}).get('range') is not None:
-            coverage_range = repo.yaml.get('coverage', {}).get('range')
-
-        flag = self.request.query_params.get('flag')
+        flag = self.request.query_params.get("flag")
         if flag:
             return self.flag_coverage(flag, commit), coverage_range
 
-        coverage = commit.totals.get('c') if commit is not None and commit.totals is not None else None
+        coverage = (
+            commit.totals.get("c")
+            if commit is not None and commit.totals is not None
+            else None
+        )
 
         return coverage, coverage_range
 
@@ -116,60 +121,93 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         """
         if commit.report is None:
             return None
-        sessions = commit.report.get('sessions')
+        sessions = commit.report.get("sessions")
         if sessions is None:
             return None
         for key, data in sessions.items():
-            f = data.get('f') or []
+            f = data.get("f") or []
             if flag in f:
-                totals = data.get('t', [])
+                totals = data.get("t", [])
                 return totals[5] if totals is not None and len(totals) > 5 else None
         return None
+
 
 class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
     permission_classes = [AllowAny]
 
-    extensions = ['svg']
+    extensions = ["svg"]
     filename = "graph"
 
     def get_object(self, request, *args, **kwargs):
-        
+
         options = dict()
-        graph = self.kwargs.get('graph')
+        graph = self.kwargs.get("graph")
 
         flare = self.get_flare()
 
-        if graph == 'tree':
-            options['width'] = int(self.request.query_params.get('width', settings['sunburst']['options']['width']))
-            options['height'] = int(self.request.query_params.get('height', settings['sunburst']['options']['height']))
+        if graph == "tree":
+            options["width"] = int(
+                self.request.query_params.get(
+                    "width", settings["sunburst"]["options"]["width"]
+                )
+            )
+            options["height"] = int(
+                self.request.query_params.get(
+                    "height", settings["sunburst"]["options"]["height"]
+                )
+            )
             return tree(flare, None, None, **options)
-        elif graph == 'icicle':
-            options['width'] = int(self.request.query_params.get('width', settings['icicle']['options']['width']))
-            options['height'] = int(self.request.query_params.get('height', settings['icicle']['options']['height']))
+        elif graph == "icicle":
+            options["width"] = int(
+                self.request.query_params.get(
+                    "width", settings["icicle"]["options"]["width"]
+                )
+            )
+            options["height"] = int(
+                self.request.query_params.get(
+                    "height", settings["icicle"]["options"]["height"]
+                )
+            )
             return icicle(flare, **options)
-        elif graph == 'sunburst':
-            options['width'] = int(self.request.query_params.get('width', settings['sunburst']['options']['width']))
-            options['height'] = int(self.request.query_params.get('height', settings['sunburst']['options']['height']))
+        elif graph == "sunburst":
+            options["width"] = int(
+                self.request.query_params.get(
+                    "width", settings["sunburst"]["options"]["width"]
+                )
+            )
+            options["height"] = int(
+                self.request.query_params.get(
+                    "height", settings["sunburst"]["options"]["height"]
+                )
+            )
             return sunburst(flare, **options)
 
     def get_flare(self):
-        pullid = self.kwargs.get('pullid')
+        pullid = self.kwargs.get("pullid")
 
         if not pullid:
             return self.get_commit_flare()
         else:
             pull_flare = self.get_pull_flare(pullid)
             if pull_flare is None:
-                raise NotFound("Not found. Note: private repositories require ?token arguments")
+                raise NotFound(
+                    "Not found. Note: private repositories require ?token arguments"
+                )
             return pull_flare
 
     def get_commit_flare(self):
         commit = self.get_commit()
 
         if commit is None:
-            raise NotFound("Not found. Note: private repositories require ?token arguments")
-        report = Report(files=commit.report['files'], sessions=commit.report['sessions'], totals=commit.totals)
-        return report.flare(None, [70,100])
+            raise NotFound(
+                "Not found. Note: private repositories require ?token arguments"
+            )
+        report = Report(
+            files=commit.report["files"],
+            sessions=commit.report["sessions"],
+            totals=commit.totals,
+        )
+        return report.flare(None, [70, 100])
 
     def get_pull_flare(self, pullid):
         try:
@@ -187,10 +225,12 @@ class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
             repo = self.repo
         except Http404:
             return None
-        if repo.private and repo.image_token != self.request.query_params.get('token'):
+        if repo.private and repo.image_token != self.request.query_params.get("token"):
             return None
-        branch_name = self.kwargs.get('branch') or repo.branch
-        branch = Branch.objects.filter(name=branch_name, repository_id=repo.repoid).first()
+        branch_name = self.kwargs.get("branch") or repo.branch
+        branch = Branch.objects.filter(
+            name=branch_name, repository_id=repo.repoid
+        ).first()
         if branch is None:
             return None
 

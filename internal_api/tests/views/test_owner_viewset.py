@@ -18,22 +18,25 @@ class OwnerViewSetTests(APITestCase):
 
     def setUp(self):
         self.service = "bitbucket"
-        self.user = OwnerFactory(stripe_customer_id=1000)
+        self.user = OwnerFactory(service="github", stripe_customer_id=1000)
 
     def test_list_owners_returns_owners_for_service(self):
-        bb_owner, gh_owner = OwnerFactory(service='bitbucket'), OwnerFactory(service='github')
+        bb_owner, gh_owner = (
+            OwnerFactory(service="bitbucket"),
+            OwnerFactory(service="github"),
+        )
         response = self._list()
 
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data['results']) == 1
-        assert response.data['results'][0] == {
+        assert len(response.data["results"]) == 1
+        assert response.data["results"][0] == {
             "service": bb_owner.service,
             "username": bb_owner.username,
             "name": bb_owner.name,
             "stats": bb_owner.cache["stats"],
             "avatar_url": bb_owner.avatar_url,
             "ownerid": bb_owner.ownerid,
-            "integration_id": bb_owner.integration_id
+            "integration_id": bb_owner.integration_id,
         }
 
     def test_list_owners_unknown_service_returns_404(self):
@@ -42,16 +45,18 @@ class OwnerViewSetTests(APITestCase):
 
     def test_retrieve_returns_owner_with_username(self):
         owner = OwnerFactory()
-        response = self._retrieve(kwargs={"service": owner.service, "username": owner.username})
+        response = self._retrieve(
+            kwargs={"service": owner.service, "username": owner.username}
+        )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == {
-           "service": owner.service,
-           "username": owner.username,
-           "name": owner.name,
-           "stats": owner.cache["stats"],
-           "avatar_url": owner.avatar_url,
-           "ownerid": owner.ownerid,
-           "integration_id": owner.integration_id
+            "service": owner.service,
+            "username": owner.username,
+            "name": owner.name,
+            "stats": owner.cache["stats"],
+            "avatar_url": owner.avatar_url,
+            "ownerid": owner.ownerid,
+            "integration_id": owner.integration_id,
         }
 
     def test_retrieve_returns_404_if_no_matching_username(self):

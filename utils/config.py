@@ -56,8 +56,7 @@ default_config = {
     },
     "setup": {
         "http": {"timeouts": {"connect": 15, "receive": 30}, "cookie_secret": "abc123"},
-        "encryption_secret": "",
-        "codecov_url": "http://localhost:5100",
+        "encryption_secret": ""
     },
 }
 
@@ -65,7 +64,7 @@ default_config = {
 def update(d, u):
     d = deepcopy(d)
     for k, v in u.items():
-        if isinstance(v, collections.Mapping):
+        if isinstance(v, collections.abc.Mapping):
             d[k] = update(d.get(k, {}), v)
         else:
             d[k] = v

@@ -2,7 +2,7 @@ import django_filters
 
 
 class UserFilters(django_filters.FilterSet):
-    activated = django_filters.BooleanFilter(method='filter_activated')
+    activated = django_filters.BooleanFilter(method="filter_activated")
     is_admin = django_filters.BooleanFilter(method="filter_is_admin")
 
     def filter_activated(self, queryset, name, value):

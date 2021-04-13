@@ -167,15 +167,22 @@ class TestRepoProviderService(InternalAPITest):
 
     def test_get_by_name_sets_token_to_bot_when_user_not_authenticated(self):
         user = AnonymousUser()
-        repo_name = 'gh-repo'
-        repo_owner_username = 'me'
-        repo_owner_service = 'github'
+        repo_name = "gh-repo"
+        repo_owner_username = "me"
+        repo_owner_service = "github"
 
         adapter = RepoProviderService().get_by_name(
             user=user,
             repo_name=repo_name,
             repo_owner_username=repo_owner_username,
-            repo_owner_service=repo_owner_service
+            repo_owner_service=repo_owner_service,
         )
 
         assert adapter.token["key"] == settings.GITHUB_BOT_KEY
+
+    def test_get_adapter_sets_owner_service_id(self):
+        owner = OwnerFactory()
+        repo = RepositoryFactory(author=owner)
+        user = OwnerFactory()
+        adapter = RepoProviderService().get_adapter(user=user, repo=repo)
+        assert adapter.data["owner"]["service_id"] == owner.service_id

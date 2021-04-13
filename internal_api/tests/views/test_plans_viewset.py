@@ -12,7 +12,7 @@ class PlansViewSetTests(APITestCase):
         self.client.force_login(user=user)
 
     def test_list_plans_returns_200_and_plans(self):
-        response = self.client.get(reverse('plans-list'))
+        response = self.client.get(reverse("plans-list"))
         assert response.status_code == status.HTTP_200_OK
         assert response.data == [
             {
@@ -23,8 +23,8 @@ class PlansViewSetTests(APITestCase):
                 "benefits": [
                     "Up to 5 users",
                     "Unlimited public repositories",
-                    "Unlimited private repositories"
-                ]
+                    "Unlimited private repositories",
+                ],
             },
             {
                 "marketing_name": "Pro Team",
@@ -35,19 +35,19 @@ class PlansViewSetTests(APITestCase):
                     "Configureable # of users",
                     "Unlimited public repositories",
                     "Unlimited private repositories",
-                    "Priority Support"
-                ]
+                    "Priority Support",
+                ],
             },
             {
                 "marketing_name": "Pro Team",
                 "value": "users-pr-inappy",
-                "billing_rate": "annually",
+                "billing_rate": "annual",
                 "base_unit_price": 10,
                 "benefits": [
                     "Configureable # of users",
                     "Unlimited public repositories",
                     "Unlimited private repositories",
-                    "Priority Support"
-                ]
+                    "Priority Support",
+                ],
             },
         ]

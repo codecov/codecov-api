@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 
 from rest_framework import serializers
@@ -78,14 +79,14 @@ class CommitSerializer(serializers.ModelSerializer):
     class Meta:
         model = Commit
         fields = (
-            'commitid',
-            'message',
-            'timestamp',
-            'ci_passed',
-            'author',
-            'branch',
-            'totals',
-            'state',
+            "commitid",
+            "message",
+            "timestamp",
+            "ci_passed",
+            "author",
+            "branch",
+            "totals",
+            "state",
         )
 
 
@@ -95,17 +96,18 @@ class CommitWithFileLevelReportSerializer(CommitSerializer):
     def get_report(self, obj):
         # TODO: Re-evaluate this data-format when we start writing
         # the new UI components that use it.
+        report_totals_by_file_name = Commit.report_totals_by_file_name(obj.id)
         return {
             "files": [
                 {
-                    "name": file_name,
-                    "totals": CommitTotalsSerializer({
-                        key: val for key, val in zip(TOTALS_MAP, totals[1])
-                    }).data
+                    "name": report.file_name,
+                    "totals": CommitTotalsSerializer(
+                        {key: val for key, val in zip(TOTALS_MAP, report.totals)}
+                    ).data,
                 }
-                for file_name, totals in obj.report["files"].items()
+                for report in report_totals_by_file_name
             ],
-            "totals": CommitTotalsSerializer(obj.totals).data
+            "totals": CommitTotalsSerializer(obj.totals).data,
         }
 
     class Meta:

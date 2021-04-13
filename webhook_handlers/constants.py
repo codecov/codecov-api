@@ -1,7 +1,7 @@
 class GitHubHTTPHeaders:
-    EVENT = 'HTTP_X_GITHUB_EVENT'
-    DELIVERY_TOKEN = 'HTTP_X_GITHUB_DELIVERY'
-    SIGNATURE = 'HTTP_X_HUB_SIGNATURE'
+    EVENT = "HTTP_X_GITHUB_EVENT"
+    DELIVERY_TOKEN = "HTTP_X_GITHUB_DELIVERY"
+    SIGNATURE = "HTTP_X_HUB_SIGNATURE"
 
 
 class GitHubWebhookEvents:
@@ -17,14 +17,14 @@ class GitHubWebhookEvents:
     ORGANIZATION = "organization"
     MARKETPLACE_PURCHASE = "marketplace_purchase"
     MARKETPLACE_SUBSCRIPTION = "marketplace_subscription"
-    MEMBER = 'member'
+    MEMBER = "member"
 
     repository_events = [PULL_REQUEST, DELETE, PUSH, PUBLIC, STATUS, REPOSITORY, MEMBER]
 
 
 class BitbucketHTTPHeaders:
-    EVENT = 'HTTP_X_EVENT_KEY'
-    UUID = 'HTTP_X_HOOK_UUID'
+    EVENT = "HTTP_X_EVENT_KEY"
+    UUID = "HTTP_X_HOOK_UUID"
 
 
 class BitbucketWebhookEvents:
@@ -36,8 +36,14 @@ class BitbucketWebhookEvents:
     REPO_COMMIT_STATUS_CREATED = "repo:commit_status_created"
     REPO_COMMIT_STATUS_UPDATED = "repo:commit_status_updated"
 
-    subscribed_events = [PULL_REQUEST_CREATED, PULL_REQUEST_UPDATED, PULL_REQUEST_FULFILLED,
-                          REPO_PUSH, REPO_COMMIT_STATUS_CREATED, REPO_COMMIT_STATUS_UPDATED]
+    subscribed_events = [
+        PULL_REQUEST_CREATED,
+        PULL_REQUEST_UPDATED,
+        PULL_REQUEST_FULFILLED,
+        REPO_PUSH,
+        REPO_COMMIT_STATUS_CREATED,
+        REPO_COMMIT_STATUS_UPDATED,
+    ]
 
 
 class GitLabHTTPHeaders:
@@ -59,17 +65,17 @@ class GitLabWebhookEvents:
         "job_events": False,
         "build_events": True,
         "pipeline_events": True,
-        "wiki_events": False
+        "wiki_events": False,
     }
 
 
 class WebhookHandlerErrorMessages:
-    LICENSE_EXPIRED =  "License expired/invalid. Webhook rejected.",
-    INVALID_SIGNATURE = "Invalid signature",
-    UNSUPPORTED_EVENT = "Unsupported event",
-    SKIP_CODECOV_STATUS = "Ok. Skip Codecov status updates.",
-    SKIP_NOT_ACTIVE = "OK. Skip because repo is not active.",
-    SKIP_PROCESSING = "OK. Skip because commit not found or is processing.",
+    LICENSE_EXPIRED = ("License expired/invalid. Webhook rejected.",)
+    INVALID_SIGNATURE = ("Invalid signature",)
+    UNSUPPORTED_EVENT = ("Unsupported event",)
+    SKIP_CODECOV_STATUS = ("Ok. Skip Codecov status updates.",)
+    SKIP_NOT_ACTIVE = ("OK. Skip because repo is not active.",)
+    SKIP_PROCESSING = ("OK. Skip because commit not found or is processing.",)
     SKIP_PENDING_STATUSES = "Ok. Skip because status is pending."
 
 
@@ -77,8 +83,9 @@ class StripeHTTPHeaders:
     """
     Header-strings associated with Stripe webhook events.
     """
+
     # https://stripe.com/docs/webhooks/signatures#verify-official-libraries
-    SIGNATURE = 'HTTP_STRIPE_SIGNATURE'
+    SIGNATURE = "HTTP_STRIPE_SIGNATURE"
 
 
 class StripeWebhookEvents:

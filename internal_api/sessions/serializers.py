@@ -4,6 +4,7 @@ from internal_api.owner.serializers import OwnerSerializer
 
 
 import logging
+
 log = logging.getLogger(__name__)
 
 
@@ -30,9 +31,7 @@ class SessionWithTokenSerializer(SessionSerializer):
 
     class Meta:
         model = Session
-        fields = (
-            "token",
-        ) + SessionSerializer.Meta.fields
+        fields = ("token",) + SessionSerializer.Meta.fields
 
     def validate_type(self, type_val):
         if type_val != Session.SessionType.API:
@@ -45,5 +44,5 @@ class SessionWithTokenSerializer(SessionSerializer):
         return Session.objects.create(
             name=validated_data["name"],
             owner=validated_data["owner"],
-            type=validated_data["type"]
+            type=validated_data["type"],
         )
