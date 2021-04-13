@@ -28,14 +28,17 @@ query_repositories = """{
 }
 """
 
-class TestOwnerType(GraphQLTestHelper, TestCase):
 
+class TestOwnerType(GraphQLTestHelper, TestCase):
     def setUp(self):
         self.user = OwnerFactory(username="codecov-user")
         random_user = OwnerFactory(username="random-user")
         RepositoryFactory(author=self.user, active=True, private=True, name="a")
         RepositoryFactory(author=self.user, active=False, private=True, name="b")
         RepositoryFactory(author=random_user, active=True, private=True, name="not")
+        RepositoryFactory(
+            author=random_user, active=True, private=False, name="still-not"
+        )
 
     def test_fetching_repositories(self):
         self.client.force_login(self.user)
@@ -46,8 +49,13 @@ class TestOwnerType(GraphQLTestHelper, TestCase):
                 "owner": {
                     "repositories": {
                         "totalCount": 2,
-                        "edges": [{"node": {"name": "b"}}, {"node": {"name": "a"}},],
-                        "pageInfo": {"hasNextPage": False,},
+                        "edges": [
+                            {"node": {"name": "b"}},
+                            {"node": {"name": "a"}},
+                        ],
+                        "pageInfo": {
+                            "hasNextPage": False,
+                        },
                     }
                 }
             }
@@ -79,15 +87,11 @@ class TestOwnerType(GraphQLTestHelper, TestCase):
         query = query_repositories % ("(filters: { active: true })", "")
         data = self.gql_request(query)
         repos = paginate_connection(data["me"]["owner"]["repositories"])
-        assert repos == [
-            {"name": "a"}
-        ]
+        assert repos == [{"name": "a"}]
 
     def test_fetching_repositories_by_name(self):
         self.client.force_login(self.user)
         query = query_repositories % ('(filters: { term: "a" })', "")
         data = self.gql_request(query)
         repos = paginate_connection(data["me"]["owner"]["repositories"])
-        assert repos == [
-            {"name": "a"}
-        ]
+        assert repos == [{"name": "a"}]
