@@ -78,11 +78,7 @@ class Owner(models.Model):
     oauth_token = models.TextField(null=True)
     stripe_customer_id = models.TextField(null=True)
     stripe_subscription_id = models.TextField(null=True)
-
-    # createstamp seems to be used by legacy to track first login
-    # so we shouldn't touch this outside login
-    createstamp = models.DateTimeField(null=True)
-
+    createstamp = models.DateTimeField(null=True, auto_now_add=True)
     service_id = models.TextField(null=False)
     parent_service_id = models.TextField(null=True)
     root_parent_service_id = models.TextField(null=True)
