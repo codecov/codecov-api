@@ -36,9 +36,11 @@ class LoginMixin(object):
         upserted_orgs = []
         for org in formatted_orgs:
             upserted_orgs.append(self.get_or_create_org(org))
+
         if self.get_is_enterprise() and get_config(self.service, "organizations"):
             # TODO Change when rolling out enterprise
             pass
+
         self._check_user_count_limitations()
         user, is_new_user = self._get_or_create_user(user_dict)
         fields_to_update = []
@@ -50,9 +52,11 @@ class LoginMixin(object):
             fields_to_update.extend(
                 ["student", "student_created_at", "student_updated_at"]
             )
+
         if user.organizations is None:
             user.organizations = [o.ownerid for o in upserted_orgs]
             fields_to_update.extend(["organizations"])
+
         if user.bot is not None:
             log.info(
                 "Clearing user bot field",
@@ -60,6 +64,7 @@ class LoginMixin(object):
             )
             user.bot = None
             fields_to_update.append("bot")
+
         if fields_to_update:
             user.save(update_fields=fields_to_update + ["updatestamp"])
 
@@ -103,19 +108,24 @@ class LoginMixin(object):
         fields_to_update = ["oauth_token", "private_access", "updatestamp"]
         login_data = user_dict["user"]
         owner, was_created = Owner.objects.get_or_create(
-            service=f"{self.cookie_prefix}", service_id=login_data["id"]
+            service=f"{self.cookie_prefix}",
+            service_id=login_data["id"],
+            defaults={"createstamp": timezone.now()},
         )
         if login_data["login"] != owner.username:
             fields_to_update.append("username")
             owner.username = login_data["login"]
+
         owner.oauth_token = encryptor.encode(login_data["access_token"]).decode()
         owner.private_access = user_dict["has_private_access"]
         if user_dict["user"].get("name"):
             owner.name = user_dict["user"]["name"]
             fields_to_update.append("name")
+
         if user_dict["user"].get("email"):
             owner.email = user_dict["user"].get("email")
             fields_to_update.append("email")
+
         owner.save(update_fields=fields_to_update)
 
         ## Segment tracking
