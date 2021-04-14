@@ -21,7 +21,7 @@ try:
         # sets are faster than list to check if something is in it
         owner_in_security_disclosure = set(content_file.split(","))
 except Exception as e:
-    print(e)
+    log.info(e)
 
 
 class OwnerSerializer(serializers.ModelSerializer):
