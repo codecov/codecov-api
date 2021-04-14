@@ -43,14 +43,14 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
         ]
         self.user.save()
 
-    async def test_when_unauthenticated(self):
+    def test_when_unauthenticated(self):
         query = "{ me { user { username }} }"
-        data = await self.gql_request(query)
+        data = self.gql_request(query)
         assert data == {"me": None}
 
-    async def test_when_authenticated(self):
+    def test_when_authenticated(self):
         query = "{ me { user { username avatarUrl }} }"
-        data = await self.gql_request(query, user=self.user)
+        data = self.gql_request(query, user=self.user)
         assert data == {
             "me": {
                 "user": {
@@ -60,9 +60,9 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
-    async def test_fetching_repositories(self):
+    def test_fetching_repositories(self):
         query = query_repositories % ("", "")
-        data = await self.gql_request(query, user=self.user)
+        data = self.gql_request(query, user=self.user)
         assert data == {
             "me": {
                 "owner": {
@@ -90,10 +90,10 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
-    async def test_fetching_repositories_with_pagination(self):
+    def test_fetching_repositories_with_pagination(self):
         query = query_repositories % ("(first: 1)", "endCursor")
         # Check on the first page if we have the repository b
-        data_page_one = await self.gql_request(query, user=self.user)
+        data_page_one = self.gql_request(query, user=self.user)
         connection = data_page_one["me"]["owner"]["repositories"]
         assert connection["edges"][0]["node"] == {
             "name": "b",
@@ -107,7 +107,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             f'(first: 1, after: "{next_cursor}")',
             "endCursor",
         )
-        data_page_two = await self.gql_request(query, user=self.user)
+        data_page_two = self.gql_request(query, user=self.user)
         connection = data_page_two["me"]["owner"]["repositories"]
         assert connection["edges"][0]["node"] == {
             "name": "a",
@@ -116,7 +116,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
         pageInfo = connection["pageInfo"]
         assert pageInfo["hasNextPage"] is False
 
-    async def test_fetching_viewable_repositories(self):
+    def test_fetching_viewable_repositories(self):
         query = """{
             me {
                 viewableRepositories {
@@ -129,11 +129,11 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             }
         }
         """
-        data = await self.gql_request(query, user=self.user)
+        data = self.gql_request(query, user=self.user)
         repos = paginate_connection(data["me"]["viewableRepositories"])
         assert repos == [{"name": "b"}, {"name": "a"}]
 
-    async def test_fetching_viewable_repositories_text_search(self):
+    def test_fetching_viewable_repositories_text_search(self):
         query = """{
             me {
                 viewableRepositories(filters: { term: "a"}) {
@@ -146,11 +146,11 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             }
         }
         """
-        data = await self.gql_request(query, user=self.user)
+        data = self.gql_request(query, user=self.user)
         repos = paginate_connection(data["me"]["viewableRepositories"])
         assert repos == [{"name": "a"}]
 
-    async def test_fetching_my_orgs(self):
+    def test_fetching_my_orgs(self):
         query = """{
             me {
                 myOrganizations {
@@ -163,7 +163,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             }
         }
         """
-        data = await self.gql_request(query, user=self.user)
+        data = self.gql_request(query, user=self.user)
         orgs = paginate_connection(data["me"]["myOrganizations"])
         assert orgs == [
             {"username": "spotify"},
@@ -171,7 +171,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             {"username": "codecov"},
         ]
 
-    async def test_fetching_my_orgs_with_search(self):
+    def test_fetching_my_orgs_with_search(self):
         query = """{
             me {
                 myOrganizations(filters: { term: "spot"}) {
@@ -184,7 +184,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             }
         }
         """
-        data = await self.gql_request(query, user=self.user)
+        data = self.gql_request(query, user=self.user)
         orgs = paginate_connection(data["me"]["myOrganizations"])
         assert orgs == [
             {"username": "spotify"},

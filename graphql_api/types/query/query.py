@@ -1,5 +1,7 @@
 from ariadne import ObjectType
 from asgiref.sync import sync_to_async
+from core.models import Pull
+from django.db import connection
 
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
 
@@ -8,7 +10,6 @@ query_bindable = ObjectType("Query")
 
 
 @query_bindable.field("me")
-@sync_to_async
 def resolve_me(_, info):
     user = info.context["request"].user
     if not user.is_authenticated:
