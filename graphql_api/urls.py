@@ -8,10 +8,20 @@ from .views import AriadneView
 from ariadne.contrib.tracing.opentracing import OpenTracingExtensionSync
 
 from ddtrace.opentracer import Tracer, set_global_tracer
+from opentracing.scope_managers import ThreadLocalScopeManager
+import ddtrace
 
-tracer = Tracer("GraphQL")
+
+class MyTracer(Tracer):
+    def __init__(self, service_name):
+        # Pull out commonly used properties for performance
+        self._service_name = "codecov-api"
+        self._scope_manager = ThreadLocalScopeManager()
+        self._dd_tracer = ddtrace.tracer
+
+
+tracer = MyTracer("GraphQL")
 set_global_tracer(tracer)
-
 
 urlpatterns = [
     path(
