@@ -40,7 +40,7 @@ class LoginMixin(object):
             # TODO Change when rolling out enterprise
             pass
         self._check_user_count_limitations()
-        user, is_new_user = self._get_or_create_user(user_dict)
+        user, is_new_user = self._get_or_create_user(user_dict, request)
         fields_to_update = []
         if user_dict.get("is_student") != user.student:
             user.student = user_dict.get("is_student")
@@ -99,7 +99,7 @@ class LoginMixin(object):
         # TODO (Thiago): Do when on enterprise
         pass
 
-    def _get_or_create_user(self, user_dict):
+    def _get_or_create_user(self, user_dict, request):
         fields_to_update = ["oauth_token", "private_access", "updatestamp"]
         login_data = user_dict["user"]
         owner, was_created = Owner.objects.get_or_create(
@@ -122,9 +122,9 @@ class LoginMixin(object):
         self.segment_service.identify_user(owner)
         self.segment_service.group(owner)
         if was_created:
-            self.segment_service.user_signed_up(owner)
+            self.segment_service.user_signed_up(owner, **request.GET.dict())
         else:
-            self.segment_service.user_signed_in(owner)
+            self.segment_service.user_signed_in(owner, **request.GET.dict())
 
         return (owner, was_created)
 
