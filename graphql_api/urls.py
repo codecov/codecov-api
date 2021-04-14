@@ -7,21 +7,21 @@ from .views import AriadneView
 
 from ariadne.contrib.tracing.opentracing import OpenTracingExtensionSync
 
-from ddtrace.opentracer import Tracer, set_global_tracer
-from opentracing.scope_managers import ThreadLocalScopeManager
-import ddtrace
+from ddtrace.opentracer import Tracer
 
 
-class MyTracer(Tracer):
-    def __init__(self, service_name):
-        # Pull out commonly used properties for performance
-        self._service_name = "codecov-api"
-        self._scope_manager = ThreadLocalScopeManager()
-        self._dd_tracer = ddtrace.tracer
+def init_tracer(service_name):
+    from os import environ
 
+    config = {
+        "agent_hostname": environ.get("STATSD_HOST"),
+        "agent_port": environ.get("STATSD_PORT"),
+    }
+    tracer = Tracer("Codecov-GraphQL", config=config)
+    import opentracing
 
-tracer = MyTracer("GraphQL")
-set_global_tracer(tracer)
+    opentracing.tracer = tracer
+
 
 urlpatterns = [
     path(
@@ -32,3 +32,22 @@ urlpatterns = [
         name="graphql",
     ),
 ]
+
+# config = {
+#     "agent_hostname": None,
+#     "agent_https": None,
+#     "agent_port": None,
+#     "debug": None,
+#     "enabled": None,
+#     "global_tags": [],
+#     "sampler": None,
+#     "priority_sampling": None,
+#     "uds_path": None,
+#     "settings": None,
+# }
+#
+#
+# tracer = MyTracer("Codecov-Graphql", config=config)
+# scope = tracer.start_active_span("GraphQL Query")
+# scope.span.set_tag("component", "graphql")
+# scope.close()
