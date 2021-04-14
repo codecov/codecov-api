@@ -329,7 +329,11 @@ class UploadHandlerHelpersTest(TestCase):
                 "finished_at": "2020-10-01T20:02:55Z",
                 "private": False,
                 "priority": False,
-                "jobs": [{"jobId": "732059764",}],
+                "jobs": [
+                    {
+                        "jobId": "732059764",
+                    }
+                ],
             },
             "queue": "builds.gce",
             "repository": {
@@ -451,6 +455,12 @@ class UploadHandlerHelpersTest(TestCase):
             expected_value = None
             assert expected_value == determine_upload_pr_to_use(upload_params)
 
+        with self.subTest("pullid set to True"):
+            upload_params = {"branch": None, "pr": True}
+
+            expected_value = None
+            assert expected_value == determine_upload_pr_to_use(upload_params)
+
     @patch("upload.helpers.RepoProviderService")
     @patch("asyncio.run")
     def test_determine_upload_commit_to_use(
@@ -511,7 +521,7 @@ class UploadHandlerHelpersTest(TestCase):
             }
 
             determine_upload_commit_to_use(upload_params, repo)
-            
+
             assert (
                 "1c78206f1a46dc6db8412a491fc770eb7d0f8a47"
                 == determine_upload_commit_to_use(upload_params, repo)
@@ -623,18 +633,30 @@ class UploadHandlerHelpersTest(TestCase):
         with self.subTest("v2"):
             assert parse_headers(
                 {"Content-Disposition": "inline"}, {"version": "v2"}
-            ) == {"content_type": "application/x-gzip", "reduced_redundancy": False,}
+            ) == {
+                "content_type": "application/x-gzip",
+                "reduced_redundancy": False,
+            }
 
         with self.subTest("v4"):
             assert parse_headers(
-                {"X_Content_Type": "text/html", "X_Reduced_Redundancy": "false",},
+                {
+                    "X_Content_Type": "text/html",
+                    "X_Reduced_Redundancy": "false",
+                },
                 {"version": "v4"},
-            ) == {"content_type": "text/plain", "reduced_redundancy": False,}
+            ) == {
+                "content_type": "text/plain",
+                "reduced_redundancy": False,
+            }
 
             assert parse_headers(
                 {"X_Content_Type": "plain/text", "X_Reduced_Redundancy": "true"},
                 {"version": "v4"},
-            ) == {"content_type": "plain/text", "reduced_redundancy": True,}
+            ) == {
+                "content_type": "plain/text",
+                "reduced_redundancy": True,
+            }
 
             assert parse_headers(
                 {
@@ -642,13 +664,22 @@ class UploadHandlerHelpersTest(TestCase):
                     "X_Reduced_Redundancy": "true",
                 },
                 {"version": "v4", "package": "node"},
-            ) == {"content_type": "application/x-gzip", "reduced_redundancy": False,}
+            ) == {
+                "content_type": "application/x-gzip",
+                "reduced_redundancy": False,
+            }
 
         with self.subTest("Unsafe content type"):
-            assert parse_headers(
-                {"Content_Disposition": None, "X_Content_Type": "multipart/form-data"},
-                {"version": "v4"},
-            ) == {"content_type": "text/plain", "reduced_redundancy": True}
+            assert (
+                parse_headers(
+                    {
+                        "Content_Disposition": None,
+                        "X_Content_Type": "multipart/form-data",
+                    },
+                    {"version": "v4"},
+                )
+                == {"content_type": "text/plain", "reduced_redundancy": True}
+            )
 
     def test_store_report_in_redis(self):
 
@@ -705,7 +736,10 @@ class UploadHandlerHelpersTest(TestCase):
         with self.subTest("empty totals"):
             redis = MockRedis()
             owner = G(Owner, plan="5m")
-            repo = G(Repository, author=owner,)
+            repo = G(
+                Repository,
+                author=owner,
+            )
             commit = G(Commit, totals=None, repository=repo)
 
             validate_upload({"commit": commit.commitid}, repo, redis)
@@ -717,7 +751,10 @@ class UploadHandlerHelpersTest(TestCase):
         with self.subTest("too many uploads for commit"):
             redis = MockRedis()
             owner = G(Owner, plan="users-free")
-            repo = G(Repository, author=owner,)
+            repo = G(
+                Repository,
+                author=owner,
+            )
             commit = G(Commit, totals={"s": 101}, repository=repo)
 
             with self.assertRaises(ValidationError) as err:
@@ -777,7 +814,12 @@ class UploadHandlerHelpersTest(TestCase):
                 activated=True,
                 active=True,
             )
-            repo = G(Repository, author=bottom_subgroup, private=True, activated=False,)
+            repo = G(
+                Repository,
+                author=bottom_subgroup,
+                private=True,
+                activated=False,
+            )
             commit = G(Commit)
 
             with self.assertRaises(ValidationError) as err:
@@ -789,7 +831,10 @@ class UploadHandlerHelpersTest(TestCase):
 
         with self.subTest("valid upload repo not activated"):
             redis = MockRedis()
-            owner = G(Owner, plan="users-free",)
+            owner = G(
+                Owner,
+                plan="users-free",
+            )
             repo = G(
                 Repository,
                 author=owner,
@@ -953,7 +998,10 @@ class UploadHandlerRouteTest(APITestCase):
             "Access-Control-Allow-Headers",
             "Origin, Content-Type, Accept, X-User-Agent",
         )
-        assert headers["content-type"] != ("Content-Type", "text/plain",)
+        assert headers["content-type"] != (
+            "Content-Type",
+            "text/plain",
+        )
 
         assert mock_dispatch_upload.call_args[0][0] == {
             "commit": "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
@@ -1046,7 +1094,10 @@ class UploadHandlerRouteTest(APITestCase):
             "Access-Control-Allow-Headers",
             "Origin, Content-Type, Accept, X-User-Agent",
         )
-        assert headers["content-type"] == ("Content-Type", "text/plain",)
+        assert headers["content-type"] == (
+            "Content-Type",
+            "text/plain",
+        )
 
         self.assertIn(
             path + "?AWS=PARAMS", response.content.decode("utf-8").split("\n")[1]
@@ -2012,7 +2063,13 @@ class UploadHandlerAppveyorTokenlessTest(TestCase):
     @patch.object(requests, "get")
     def test_appveyor_finished_build(self, mock_get):
         expected_response = {
-            "build": {"jobs": [{"jobId": "732059764",}]},
+            "build": {
+                "jobs": [
+                    {
+                        "jobId": "732059764",
+                    }
+                ]
+            },
             "finishTime": "NOW",
             "buildNumber": "20190725.8",
             "status": "inProgress",
@@ -2043,7 +2100,13 @@ class UploadHandlerAppveyorTokenlessTest(TestCase):
     @patch.object(requests, "get")
     def test_appveyor_no_errors(self, mock_get):
         expected_response = {
-            "build": {"jobs": [{"jobId": "732059764",}]},
+            "build": {
+                "jobs": [
+                    {
+                        "jobId": "732059764",
+                    }
+                ]
+            },
             "finishTime": "NOW",
             "buildNumber": "20190725.8",
             "status": "inProgress",
@@ -2070,7 +2133,13 @@ class UploadHandlerAppveyorTokenlessTest(TestCase):
     @patch.object(requests, "get")
     def test_appveyor_invalid_service(self, mock_get):
         expected_response = {
-            "build": {"jobs": [{"jobId": "732059764",}]},
+            "build": {
+                "jobs": [
+                    {
+                        "jobId": "732059764",
+                    }
+                ]
+            },
             "finishTime": "NOW",
             "buildNumber": "20190725.8",
             "status": "inProgress",
@@ -2538,7 +2607,10 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
             "data": {
                 "build": {
                     "changeIdInRepo": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
-                    "repository": {"owner": "google", "name": "mtail",},
+                    "repository": {
+                        "owner": "google",
+                        "name": "mtail",
+                    },
                     "status": "EXECUTING",
                 }
             }
@@ -2569,7 +2641,10 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
             "data": {
                 "build": {
                     "changeIdInRepo": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
-                    "repository": {"owner": "google", "name": "mtail",},
+                    "repository": {
+                        "owner": "google",
+                        "name": "mtail",
+                    },
                     "status": "EXECUTING",
                 }
             }
@@ -2600,7 +2675,10 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
             "data": {
                 "build": {
                     "changeIdInRepo": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
-                    "repository": {"owner": "google", "name": "mtail",},
+                    "repository": {
+                        "owner": "google",
+                        "name": "mtail",
+                    },
                     "status": "EXECUTING",
                 }
             }
@@ -2631,7 +2709,10 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
             "data": {
                 "build": {
                     "changeIdInRepo": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
-                    "repository": {"owner": "test", "name": "test",},
+                    "repository": {
+                        "owner": "test",
+                        "name": "test",
+                    },
                     "status": "EXECUTING",
                 }
             }
@@ -2663,7 +2744,10 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
             "data": {
                 "build": {
                     "changeIdInRepo": "testtesttesttest",
-                    "repository": {"owner": "google", "name": "mtail",},
+                    "repository": {
+                        "owner": "google",
+                        "name": "mtail",
+                    },
                     "status": "EXECUTING",
                 }
             }
@@ -2695,7 +2779,10 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
             "data": {
                 "build": {
                     "changeIdInRepo": "bbeefc070d847ff1ed526d412b7f97c5e743b1c1",
-                    "repository": {"name": "mtail", "owner": "google",},
+                    "repository": {
+                        "name": "mtail",
+                        "owner": "google",
+                    },
                     "status": "COMPLETED",
                     "buildCreatedTimestamp": time.time() - 100000,
                     "durationInSeconds": 1,

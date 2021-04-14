@@ -1,7 +1,7 @@
 from freezegun import freeze_time
 import datetime
 
-from django.test import TestCase
+from django.test import TransactionTestCase
 from ariadne import graphql_sync
 
 from codecov_auth.tests.factories import OwnerFactory
@@ -29,7 +29,7 @@ query_repositories = """{
 """
 
 
-class TestOwnerType(GraphQLTestHelper, TestCase):
+class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
         self.user = OwnerFactory(username="codecov-user")
         random_user = OwnerFactory(username="random-user")
@@ -41,9 +41,8 @@ class TestOwnerType(GraphQLTestHelper, TestCase):
         )
 
     def test_fetching_repositories(self):
-        self.client.force_login(self.user)
         query = query_repositories % ("", "")
-        data = self.gql_request(query)
+        data = self.gql_request(query, user=self.user)
         assert data == {
             "me": {
                 "owner": {
@@ -62,10 +61,9 @@ class TestOwnerType(GraphQLTestHelper, TestCase):
         }
 
     def test_fetching_repositories_with_pagination(self):
-        self.client.force_login(self.user)
         query = query_repositories % ("(first: 1)", "endCursor")
         # Check on the first page if we have the repository b
-        data_page_one = self.gql_request(query)
+        data_page_one = self.gql_request(query, user=self.user)
         connection = data_page_one["me"]["owner"]["repositories"]
         assert connection["edges"][0]["node"] == {"name": "b"}
         pageInfo = connection["pageInfo"]
@@ -76,22 +74,20 @@ class TestOwnerType(GraphQLTestHelper, TestCase):
             f'(first: 1, after: "{next_cursor}")',
             "endCursor",
         )
-        data_page_two = self.gql_request(query)
+        data_page_two = self.gql_request(query, user=self.user)
         connection = data_page_two["me"]["owner"]["repositories"]
         assert connection["edges"][0]["node"] == {"name": "a"}
         pageInfo = connection["pageInfo"]
         assert pageInfo["hasNextPage"] == False
 
     def test_fetching_active_repositories(self):
-        self.client.force_login(self.user)
         query = query_repositories % ("(filters: { active: true })", "")
-        data = self.gql_request(query)
+        data = self.gql_request(query, user=self.user)
         repos = paginate_connection(data["me"]["owner"]["repositories"])
         assert repos == [{"name": "a"}]
 
     def test_fetching_repositories_by_name(self):
-        self.client.force_login(self.user)
         query = query_repositories % ('(filters: { term: "a" })', "")
-        data = self.gql_request(query)
+        data = self.gql_request(query, user=self.user)
         repos = paginate_connection(data["me"]["owner"]["repositories"])
         assert repos == [{"name": "a"}]

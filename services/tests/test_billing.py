@@ -9,7 +9,6 @@ from services.billing import BillingService, StripeService, AbstractPaymentServi
 from codecov_auth.models import Service
 from codecov_auth.tests.factories import OwnerFactory
 
-
 class StripeServiceTests(TestCase):
     def setUp(self):
         self.user = OwnerFactory()
@@ -47,7 +46,7 @@ class StripeServiceTests(TestCase):
     ):
         owner = OwnerFactory(stripe_subscription_id="fowdldjfjwe", plan="v4-50m")
         self.stripe.delete_subscription(owner)
-        delete_mock.assert_called_once_with(owner.stripe_subscription_id, prorate=True)
+        delete_mock.assert_called_once_with(owner.stripe_subscription_id, prorate=False)
         set_free_plan_mock.assert_called_once()
 
     @patch("codecov_auth.models.Owner.set_free_plan")
@@ -60,9 +59,7 @@ class StripeServiceTests(TestCase):
         self.stripe.delete_subscription(owner)
         delete_mock.assert_not_called()
         set_free_plan_mock.assert_not_called()
-        modify_mock.assert_called_once_with(
-            owner.stripe_subscription_id, cancel_at_period_end=True
-        )
+        modify_mock.assert_called_once_with(owner.stripe_subscription_id, cancel_at_period_end=True, prorate=False)
 
     @patch("services.billing.stripe.Subscription.modify")
     @patch("services.billing.stripe.Subscription.retrieve")
@@ -98,7 +95,7 @@ class StripeServiceTests(TestCase):
                 "obo_email": self.user.email,
                 "obo": self.user.ownerid,
             },
-            proration_behavior="always_invoice",
+            proration_behavior='none'
         )
 
         owner.refresh_from_db()
@@ -128,6 +125,22 @@ class StripeServiceTests(TestCase):
                 "previous_plan": "users-pr-inappm",
             },
         )
+
+    def test_get_proration_params(self):
+        # Test same plan, increased users
+        owner = OwnerFactory(plan="users-pr-inappy", plan_user_count=10)
+        desired_plan = {"value": "users-pr-inappy", "quantity": 14}
+        self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+
+        # Test same plan, drecrease users
+        owner = OwnerFactory(plan="users-pr-inappy", plan_user_count=20)
+        desired_plan = {"value": "users-pr-inappy", "quantity": 14}
+        self.stripe._get_proration_params(owner, desired_plan) == "none"
+
+        # Test going from monthly to yearly
+        owner = OwnerFactory(plan="users-pr-inappm", plan_user_count=20)
+        desired_plan = {"value": "users-pr-inappy", "quantity": 14}
+        self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
 
     @patch("services.billing.stripe.Subscription.modify")
     @patch("services.billing.stripe.Subscription.retrieve")

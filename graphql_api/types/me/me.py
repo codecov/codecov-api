@@ -1,4 +1,4 @@
-from ariadne import ObjectType, load_schema_from_path
+from ariadne import ObjectType
 
 from graphql_api.actions.repository import search_repos
 from graphql_api.actions.owner import search_my_owners
@@ -15,12 +15,12 @@ me_bindable = ObjectType("Me")
 
 
 @me_bindable.field("user")
-def resolve_user(user, info):
+def resolve_user(user, _):
     return user
 
 
 @me_bindable.field("owner")
-def resolve_owner(user, info):
+def resolve_owner(user, _):
     """
     Current user is also an owner in which we can fetch repositories
     """
@@ -28,16 +28,14 @@ def resolve_owner(user, info):
 
 
 @me_bindable.field("viewableRepositories")
-def resolve_viewable_repositories(user, info, filters=None, **kwargs):
-    current_user = info.context["request"].user
+def resolve_viewable_repositories(current_user, _, filters=None, **kwargs):
     queryset = search_repos(current_user, filters)
     ordering = ("-repoid",)
     return queryset_to_connection(queryset, ordering, **kwargs)
 
 
 @me_bindable.field("myOrganizations")
-def resolve_my_organizations(user, info, filters=None, **kwargs):
-    current_user = info.context["request"].user
+def resolve_my_organizations(current_user, _, filters=None, **kwargs):
     queryset = search_my_owners(current_user, filters)
     ordering = ("-ownerid",)
     return queryset_to_connection(queryset, ordering, **kwargs)

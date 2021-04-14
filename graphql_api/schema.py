@@ -1,9 +1,4 @@
-from ariadne import (
-    QueryType,
-    gql,
-    make_executable_schema,
-    snake_case_fallback_resolvers,
-)
+from ariadne import make_executable_schema, snake_case_fallback_resolvers
 
 from .types import types, bindables
 
