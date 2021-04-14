@@ -35,3 +35,4 @@ class SessionFactory(DjangoModelFactory):
     owner = factory.SubFactory(OwnerFactory)
     lastseen = timezone.now()
     type = Session.SessionType.API.value
+    token = factory.Faker("uuid4")
