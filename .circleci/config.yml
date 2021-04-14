@@ -76,19 +76,18 @@ jobs:
         command: |
           make test.unit
           # make test.integration
-
     - run:
         name: codecov
         command: |
           apk add git
           chmod +x codecov-alpine 
-          ./codecov-alpine -Z -R . -F unit
+          ./codecov-alpine -R . -F unit
     - run:
         name: codecov-staging
         command: |
           apk add git
           chmod +x codecov-alpine 
-          ./codecov-alpine -Z -R . --url https://stage-web.codecov.dev -t $CODECOV_STAGING_TOKEN -F unit
+          ./codecov-alpine -R . --url https://stage-web.codecov.dev -t $CODECOV_STAGING_TOKEN -F unit
 
   portable:
     executor: codecov-deploy
