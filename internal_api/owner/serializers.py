@@ -78,8 +78,6 @@ class ProfileSerializer(OwnerSerializer):
         fields = read_only_fields + ("email", "name", "private_access")
 
     def get_security_disclosure(self, obj):
-        print(obj.ownerid)
-        print(owner_in_security_disclosure)
         return str(obj.ownerid) in owner_in_security_disclosure
 
 
