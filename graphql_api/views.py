@@ -26,7 +26,6 @@ async def ariadne_view(request, service):
     if user:
         request.user = user
 
-    # force_evaluate(request)
     response = BaseAriadneView(request, service)
     if iscoroutine(response):
         response = await response
