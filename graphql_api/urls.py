@@ -10,7 +10,7 @@ from ariadne.contrib.tracing.opentracing import OpenTracingExtensionSync
 from ddtrace.opentracer import Tracer
 
 
-def init_tracer(service_name):
+def init_tracer():
     from os import environ
 
     config = {
@@ -22,6 +22,8 @@ def init_tracer(service_name):
 
     opentracing.tracer = tracer
 
+
+init_tracer()
 
 urlpatterns = [
     path(
