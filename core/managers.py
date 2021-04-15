@@ -31,6 +31,19 @@ class RepositoryQuerySet(QuerySet):
             )
         return self.filter(private=False)
 
+    def collaborating_repos(self, owner):
+        """
+        Filters queryset so that result only includes repos that the given owner
+        is can access: personal repositories, public repositories in the user's
+        org, private they are granted access to (as external collaborator, or
+        private repos from the organization)
+        """
+        return self.filter(
+            Q(author__ownerid=owner.ownerid)
+            | Q(repoid__in=owner.permission)
+            | (Q(private=False) & Q(author__ownerid__in=owner.organizations))
+        )
+
     def exclude_uncovered(self):
         """
         Excludes repositories with no latest-commit val. Requires calling
