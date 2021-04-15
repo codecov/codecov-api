@@ -1,3 +1,5 @@
+from asgiref.sync import sync_to_async
+
 from cursor_pagination import CursorPaginator
 
 
@@ -17,6 +19,7 @@ def build_connection_graphql(connection_name, type_node):
     """
 
 
+@sync_to_async
 def queryset_to_connection(
     queryset, ordering, first=None, after=None, last=None, before=None
 ):

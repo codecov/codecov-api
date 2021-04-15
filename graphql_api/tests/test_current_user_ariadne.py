@@ -1,5 +1,4 @@
-from django.test import TestCase
-from ariadne import graphql_sync
+from django.test import TransactionTestCase
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
@@ -13,6 +12,10 @@ query_repositories = """{
                 edges {
                     node {
                         name
+
+                        author {
+                            username
+                        }
                     }
                 }
                 pageInfo {
@@ -26,7 +29,7 @@ query_repositories = """{
 """
 
 
-class ArianeTestCase(GraphQLTestHelper, TestCase):
+class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
         self.user = OwnerFactory(username="codecov-user")
         random_user = OwnerFactory(username="random-user")
@@ -46,9 +49,8 @@ class ArianeTestCase(GraphQLTestHelper, TestCase):
         assert data == {"me": None}
 
     def test_when_authenticated(self):
-        self.client.force_login(self.user)
         query = "{ me { user { username avatarUrl }} }"
-        data = self.gql_request(query)
+        data = self.gql_request(query, user=self.user)
         assert data == {
             "me": {
                 "user": {
@@ -59,44 +61,62 @@ class ArianeTestCase(GraphQLTestHelper, TestCase):
         }
 
     def test_fetching_repositories(self):
-        self.client.force_login(self.user)
         query = query_repositories % ("", "")
-        data = self.gql_request(query)
+        data = self.gql_request(query, user=self.user)
         assert data == {
             "me": {
                 "owner": {
                     "repositories": {
                         "totalCount": 2,
-                        "edges": [{"node": {"name": "b"}}, {"node": {"name": "a"}},],
-                        "pageInfo": {"hasNextPage": False,},
+                        "edges": [
+                            {
+                                "node": {
+                                    "name": "b",
+                                    "author": {"username": self.user.username},
+                                }
+                            },
+                            {
+                                "node": {
+                                    "name": "a",
+                                    "author": {"username": self.user.username},
+                                }
+                            },
+                        ],
+                        "pageInfo": {
+                            "hasNextPage": False,
+                        },
                     }
                 }
             }
         }
 
     def test_fetching_repositories_with_pagination(self):
-        self.client.force_login(self.user)
         query = query_repositories % ("(first: 1)", "endCursor")
         # Check on the first page if we have the repository b
-        data_page_one = self.gql_request(query)
+        data_page_one = self.gql_request(query, user=self.user)
         connection = data_page_one["me"]["owner"]["repositories"]
-        assert connection["edges"][0]["node"] == {"name": "b"}
+        assert connection["edges"][0]["node"] == {
+            "name": "b",
+            "author": {"username": self.user.username},
+        }
         pageInfo = connection["pageInfo"]
-        assert pageInfo["hasNextPage"] == True
+        assert pageInfo["hasNextPage"] is True
         next_cursor = pageInfo["endCursor"]
         # Check on the second page if we have the other repository, by using the cursor
         query = query_repositories % (
             f'(first: 1, after: "{next_cursor}")',
             "endCursor",
         )
-        data_page_two = self.gql_request(query)
+        data_page_two = self.gql_request(query, user=self.user)
         connection = data_page_two["me"]["owner"]["repositories"]
-        assert connection["edges"][0]["node"] == {"name": "a"}
+        assert connection["edges"][0]["node"] == {
+            "name": "a",
+            "author": {"username": self.user.username},
+        }
         pageInfo = connection["pageInfo"]
-        assert pageInfo["hasNextPage"] == False
+        assert pageInfo["hasNextPage"] is False
 
     def test_fetching_viewable_repositories(self):
-        self.client.force_login(self.user)
         query = """{
             me {
                 viewableRepositories {
@@ -109,12 +129,11 @@ class ArianeTestCase(GraphQLTestHelper, TestCase):
             }
         }
         """
-        data = self.gql_request(query)
+        data = self.gql_request(query, user=self.user)
         repos = paginate_connection(data["me"]["viewableRepositories"])
         assert repos == [{"name": "b"}, {"name": "a"}]
 
     def test_fetching_viewable_repositories_text_search(self):
-        self.client.force_login(self.user)
         query = """{
             me {
                 viewableRepositories(filters: { term: "a"}) {
@@ -127,12 +146,11 @@ class ArianeTestCase(GraphQLTestHelper, TestCase):
             }
         }
         """
-        data = self.gql_request(query)
+        data = self.gql_request(query, user=self.user)
         repos = paginate_connection(data["me"]["viewableRepositories"])
         assert repos == [{"name": "a"}]
 
     def test_fetching_my_orgs(self):
-        self.client.force_login(self.user)
         query = """{
             me {
                 myOrganizations {
@@ -145,7 +163,7 @@ class ArianeTestCase(GraphQLTestHelper, TestCase):
             }
         }
         """
-        data = self.gql_request(query)
+        data = self.gql_request(query, user=self.user)
         orgs = paginate_connection(data["me"]["myOrganizations"])
         assert orgs == [
             {"username": "spotify"},
@@ -154,7 +172,6 @@ class ArianeTestCase(GraphQLTestHelper, TestCase):
         ]
 
     def test_fetching_my_orgs_with_search(self):
-        self.client.force_login(self.user)
         query = """{
             me {
                 myOrganizations(filters: { term: "spot"}) {
@@ -167,7 +184,7 @@ class ArianeTestCase(GraphQLTestHelper, TestCase):
             }
         }
         """
-        data = self.gql_request(query)
+        data = self.gql_request(query, user=self.user)
         orgs = paginate_connection(data["me"]["myOrganizations"])
         assert orgs == [
             {"username": "spotify"},

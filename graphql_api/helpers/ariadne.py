@@ -1,5 +1,6 @@
-from ariadne import load_schema_from_path
 import pathlib
+
+from ariadne import load_schema_from_path
 
 
 def ariadne_load_local_graphql(current_file, graphql_file):
