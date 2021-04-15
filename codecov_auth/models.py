@@ -126,10 +126,6 @@ class Owner(models.Model):
         self.updatestamp = datetime.now()
         super().save(*args, **kwargs)
 
-    def save(self, *args, **kwargs):
-        self.updatestamp = datetime.now()
-        super().save(*args, **kwargs)
-
     @property
     def has_legacy_plan(self):
         return self.plan is None or not self.plan.startswith("users")
