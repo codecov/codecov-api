@@ -123,30 +123,3 @@ class RepositoryQuerySetTests(TestCase):
             assert repo.branch == "master"
             assert repo.private
             assert repo.name == "test"
-
-    def test_collaboration_repos(self):
-        org_1 = OwnerFactory()
-        org_2 = OwnerFactory()
-        current_user = OwnerFactory(organizations=[org_1.ownerid])
-        repo_public_org_1 = RepositoryFactory(author=org_1, private=False)
-        repo_private_org_1 = RepositoryFactory(author=org_1, private=True)
-        repo_public_org_2 = RepositoryFactory(author=org_2, private=False)
-        repo_private_org_2 = RepositoryFactory(author=org_2, private=True)
-        random_private_repo = RepositoryFactory(private=True)
-        current_user_repo_private = RepositoryFactory(author=current_user, private=True)
-        current_user_repo_public = RepositoryFactory(author=current_user, private=False)
-        current_user.permission = [random_private_repo.repoid]
-        current_user.save()
-
-        should_be_in_list = [
-            repo_public_org_1.repoid,  # public repo of org the user belongs to
-            random_private_repo.repoid,  # in user permission
-            current_user_repo_private.repoid,  # belongs to user
-            current_user_repo_public.repoid,  # belongs to user
-        ]
-
-        results = Repository.objects.collaborating_repos(current_user).values_list(
-            "repoid", flat=True
-        )
-
-        assert sorted(should_be_in_list) == sorted(results)

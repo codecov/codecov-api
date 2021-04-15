@@ -38,6 +38,21 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
         }
 
     def test_fetching_viewable_repositories(self):
+        org_1 = OwnerFactory()
+        org_2 = OwnerFactory()
+        current_user = OwnerFactory(organizations=[org_1.ownerid])
+        repos_in_db = [
+            RepositoryFactory(private=True, name="0"),
+            RepositoryFactory(author=org_1, private=False, name="1"),
+            RepositoryFactory(author=org_1, private=True, name="2"),
+            RepositoryFactory(author=org_2, private=False, name="3"),
+            RepositoryFactory(author=org_2, private=True, name="4"),
+            RepositoryFactory(private=True, name="5"),
+            RepositoryFactory(author=current_user, private=True, name="6"),
+            RepositoryFactory(author=current_user, private=False, name="7"),
+        ]
+        current_user.permission = [repos_in_db[2].repoid]
+        current_user.save()
         query = """{
             me {
                 viewableRepositories {
@@ -50,9 +65,15 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             }
         }
         """
-        data = self.gql_request(query, user=self.user)
+        data = self.gql_request(query, user=current_user)
         repos = paginate_connection(data["me"]["viewableRepositories"])
-        assert repos == [{"name": "b"}, {"name": "a"}]
+        repos_name = [repo["name"] for repo in repos]
+        assert sorted(repos_name) == [
+            "1",  # public repo in org of user
+            "2",  # private repo in org of user and in user permission
+            "6",  # personal private repo
+            "7",  # personal public repo
+        ]
 
     def test_fetching_viewable_repositories_text_search(self):
         query = """{

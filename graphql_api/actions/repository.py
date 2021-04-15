@@ -19,6 +19,9 @@ def list_repository_for_owner(current_user, owner, filters):
 
 
 def search_repos(current_user, filters):
-    queryset = Repository.objects.collaborating_repos(current_user)
+    authors_from = [current_user.ownerid] + (current_user.organizations or [])
+    queryset = Repository.objects.viewable_repos(current_user).filter(
+        author__ownerid__in=authors_from
+    )
     queryset = apply_filters_to_queryset(queryset, filters)
     return queryset
