@@ -269,6 +269,35 @@ def determine_upload_pr_to_use(upload_params):
         return upload_params.get("pr")
 
 
+def try_to_get_best_possible_bot_token(repository):
+    service = repository.author.service
+    if repository.bot is not None and repository.bot.oauth_token is not None:
+        log.info(
+            "Repo has specific bot",
+            extra=dict(repoid=repository.repoid, botid=repository.bot.ownerid),
+        )
+        return encryptor.decrypt_token(repository.bot.oauth_token)
+    if repository.author.bot is not None and repository.author.bot.oauth_token is not None:
+        log.info(
+            "Repo Owner has specific bot",
+            extra=dict(
+                repoid=repository.repoid,
+                botid=repository.author.bot.ownerid,
+                ownerid=repository.author.ownerid,
+            ),
+        )
+        return encryptor.decrypt_token(repository.author.bot.oauth_token)
+    if repository.author.oauth_token is not None:
+        log.info(
+            "Using repository owner as bot fallback",
+            extra=dict(repoid=repository.repoid, ownerid=repository.author.ownerid),
+        )
+        return encryptor.decrypt_token(repository.author.oauth_token)
+    if not repository.private:
+        return get_config(service, "bot")
+    return None
+
+
 def determine_upload_commit_to_use(upload_params, repository):
     """
     Do processing on the upload request parameters to determine which commit to use for the upload:
@@ -281,11 +310,9 @@ def determine_upload_commit_to_use(upload_params, repository):
     if service.startswith("github") and not upload_params.get(
         "_did_change_merge_commit"
     ):
-        token = (
-            encryptor.decrypt_token(repository.bot.oauth_token)
-            if repository.bot and repository.bot.oauth_token
-            else get_config(service, "bot")
-        )
+        token = try_to_get_best_possible_bot_token(repository)
+        if token is None:
+            return upload_params.get("commit")
         # Get the commit message from the git provider and check if it's structured like a merge commit message
         try:
             git_commit_data = asyncio.run(
