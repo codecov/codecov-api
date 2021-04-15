@@ -1,0 +1,14 @@
+input MyOrganizationFilters {
+  term: String
+}
+
+input ViewableRepositoryFilters {
+  term: String
+}
+
+type Me {
+  user: User!
+  owner: Owner!
+  viewableRepositories(filters: ViewableRepositoryFilters, first: Int, after: String, last: Int, before: String): ViewableRepositoryConnection!
+  myOrganizations(filters: MyOrganizationFilters, first: Int, after: String, last: Int, before: String): MyOrganizationConnection!
+}

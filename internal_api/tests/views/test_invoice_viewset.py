@@ -38,18 +38,15 @@ class InvoiceViewSetTests(APITestCase):
             "subtotal": 999,
             "invoice_pdf": "https://pay.stripe.com/invoice/acct_1032D82eZvKYlo2C/invst_a7KV10HpLw2QxrihgVyuOkOjMZ/pdf",
             "line_items": [
-              {
-                "description": "(10) users-inappm",
-                "amount": 120,
-                "quantity": 1,
-                "currency": "usd",
-                "plan_name": "users-inappm",
-                "period": {
-                    "end": 1521326190,
-                    "start": 1518906990
-                  },
-              }
-            ]
+                {
+                    "description": "(10) users-inappm",
+                    "amount": 120,
+                    "quantity": 1,
+                    "currency": "usd",
+                    "plan_name": "users-inappm",
+                    "period": {"end": 1521326190, "start": 1518906990},
+                }
+            ],
         }
 
         self.client.force_login(user=self.user)
@@ -60,7 +57,7 @@ class InvoiceViewSetTests(APITestCase):
     def _retrieve(self, kwargs):
         return self.client.get(reverse("invoices-detail", kwargs=kwargs))
 
-    @patch('services.billing.stripe.Invoice.list')
+    @patch("services.billing.stripe.Invoice.list")
     def test_invoices_returns_100_recent_invoices(self, mock_list_invoices):
         with open("./services/tests/samples/stripe_invoice.json") as f:
             stripe_invoice_response = json.load(f)
@@ -69,40 +66,62 @@ class InvoiceViewSetTests(APITestCase):
         mock_list_invoices.return_value = stripe_invoice_response
         expected_invoices = [self.expected_invoice] * 100
 
-        response = self._list(kwargs={"service": self.user.service, "owner_username": self.user.username})
+        response = self._list(
+            kwargs={"service": self.user.service, "owner_username": self.user.username}
+        )
 
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data) == 100
         assert response.data == expected_invoices
 
-    @patch('internal_api.permissions.get_provider')
+    @patch("internal_api.permissions.get_provider")
     def test_invoices_returns_403_if_user_not_admin(self, get_provider_mock):
         get_provider_mock.return_value = GetAdminProviderAdapter()
         owner = OwnerFactory()
-        response = self._list(kwargs={"service": owner.service, "owner_username": owner.username})
+        response = self._list(
+            kwargs={"service": owner.service, "owner_username": owner.username}
+        )
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    @patch('services.billing.stripe.Invoice.retrieve')
+    @patch("services.billing.stripe.Invoice.retrieve")
     def test_invoice(self, mock_retrieve_invoice):
         with open("./services/tests/samples/stripe_invoice.json") as f:
             stripe_invoice_response = json.load(f)
         invoice = stripe_invoice_response["data"][0]
         invoice["customer"] = self.user.stripe_customer_id
         mock_retrieve_invoice.return_value = invoice
-        response = self._retrieve(kwargs={"service": self.user.service, "owner_username": self.user.username, "pk": invoice["id"]})
+        response = self._retrieve(
+            kwargs={
+                "service": self.user.service,
+                "owner_username": self.user.username,
+                "pk": invoice["id"],
+            }
+        )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == self.expected_invoice
 
-    @patch('services.billing.stripe.Invoice.retrieve')
+    @patch("services.billing.stripe.Invoice.retrieve")
     def test_when_invoice_not_found(self, mock_retrieve_invoice):
-        mock_retrieve_invoice.side_effect = InvalidRequestError(message="not found", param="abc")
-        response = self._retrieve(kwargs={"service": self.user.service, "owner_username": self.user.username, "pk": "abc"})
+        mock_retrieve_invoice.side_effect = InvalidRequestError(
+            message="not found", param="abc"
+        )
+        response = self._retrieve(
+            kwargs={
+                "service": self.user.service,
+                "owner_username": self.user.username,
+                "pk": "abc",
+            }
+        )
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    @patch('services.billing.stripe.Invoice.retrieve')
+    @patch("services.billing.stripe.Invoice.retrieve")
     def test_when_no_customer_dont_match(self, mock_retrieve_invoice):
-        mock_retrieve_invoice.return_value = {
-            "customer": "123456789"
-        }
-        response = self._retrieve(kwargs={"service": self.user.service, "owner_username": self.user.username, "pk": "abc"})
+        mock_retrieve_invoice.return_value = {"customer": "123456789"}
+        response = self._retrieve(
+            kwargs={
+                "service": self.user.service,
+                "owner_username": self.user.username,
+                "pk": "abc",
+            }
+        )
         assert response.status_code == status.HTTP_404_NOT_FOUND

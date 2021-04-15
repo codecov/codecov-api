@@ -1,15 +1,21 @@
 import asyncio
-
-from django.shortcuts import redirect
-from shared.torngit import Github
+import logging
 from urllib.parse import urljoin, urlencode
-from django.views import View
+
 from django.conf import settings
+from django.shortcuts import redirect
+from django.views import View
+from shared.torngit import Github
+from shared.torngit.exceptions import TorngitError
+
 from codecov_auth.views.base import LoginMixin
+
+log = logging.getLogger(__name__)
 
 
 class GithubLoginView(View, LoginMixin):
     cookie_prefix = "github"
+    error_redirection_page = "/"
 
     def get_is_enterprise(self):
         # TODO Change when rolling out enterprise
@@ -43,16 +49,27 @@ class GithubLoginView(View, LoginMixin):
             has_private_access=has_private_access,
         )
 
+    def actual_login_step(self, request):
+        code = request.GET.get("code")
+        try:
+            user_dict = asyncio.run(self.fetch_user_data(code))
+        except TorngitError:
+            log.warning("Unable to log in due to problem on Github", exc_info=True)
+            return redirect(self.error_redirection_page)
+        response = redirect("/gh")
+        self.login_from_user_dict(user_dict, request, response)
+        return response
+
     def get(self, request):
         if request.GET.get("code"):
-            code = request.GET.get("code")
-            user_dict = asyncio.run(self.fetch_user_data(code))
-            response = redirect("/gh")
-            self.login_from_user_dict(user_dict, request, response)
-            return response
+            return self.actual_login_step(request)
         else:
             scope = ["user:email", "read:org", "repo:status", "write:repo_hook"]
-            if self.get_is_enterprise() or request.COOKIES.get("ghpr") == "true" or request.GET.get('private'):
+            if (
+                self.get_is_enterprise()
+                or request.COOKIES.get("ghpr") == "true"
+                or request.GET.get("private")
+            ):
                 scope.append("repo")
                 url_to_redirect_to = self.get_url_to_redirect_to(scope)
                 response = redirect(url_to_redirect_to)

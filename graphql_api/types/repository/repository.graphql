@@ -1,0 +1,6 @@
+type Repository {
+  name: String!
+  active: Boolean
+  private: Boolean
+  author: Owner!
+}

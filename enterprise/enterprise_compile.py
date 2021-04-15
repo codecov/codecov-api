@@ -9,7 +9,6 @@ import shutil
 import os.path
 
 
-
 class MyBuildExt(build_ext):
     def run(self):
         build_ext.run(self)
@@ -18,15 +17,17 @@ class MyBuildExt(build_ext):
         root_dir = Path(__file__).parent
 
         target_dir = build_dir if not self.inplace else root_dir
-        
-        # To get the imports right, we need all the __init__.py's. 
-        # Ideally we'll do this using some kind of recursive search so 
-        # we don't have to maintain a list. 
-        p = Path('.')
-        init_files = list(p.glob('**/__init__.py'))
+
+        # To get the imports right, we need all the __init__.py's.
+        # Ideally we'll do this using some kind of recursive search so
+        # we don't have to maintain a list.
+        p = Path(".")
+        init_files = list(p.glob("**/__init__.py"))
 
         for init_file in init_files:
-            if "tests" not in os.path.dirname(init_file) and "migrations" not in os.path.dirname(init_file):
+            if "tests" not in os.path.dirname(
+                init_file
+            ) and "migrations" not in os.path.dirname(init_file):
                 self.copy_file(init_file, root_dir, target_dir)
 
     def copy_file(self, path, source_dir, destination_dir):
@@ -34,10 +35,11 @@ class MyBuildExt(build_ext):
             return
 
         shutil.copyfile(str(source_dir / path), str(destination_dir / path))
-    
+
+
 def get_extensions(path):
     p = Path(path)
-    init_files = list(p.glob('**/__init__.py'))
+    init_files = list(p.glob("**/__init__.py"))
     extensions = list()
     for filepath in init_files:
         dir_path = os.path.dirname(filepath)
@@ -45,19 +47,18 @@ def get_extensions(path):
             dot_name = "{}.*".format(str.replace(dir_path, "/", "."))
             new_ext = Extension(dot_name, ["{}/*.py".format(dir_path)])
             extensions.append(new_ext)
-    #return an array of extensions
+    # return an array of extensions
     print(extensions)
     return extensions
 
+
 setup(
     name="mypkg",
-    ext_modules=cythonize(get_extensions('.'),
+    ext_modules=cythonize(
+        get_extensions("."),
         build_dir="build",
-        compiler_directives=dict(
-            always_allow_keywords=True
-        )),
-    cmdclass=dict(
-        build_ext=MyBuildExt
+        compiler_directives=dict(always_allow_keywords=True),
     ),
-    packages=[]
+    cmdclass=dict(build_ext=MyBuildExt),
+    packages=[],
 )

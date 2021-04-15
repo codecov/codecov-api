@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 import uuid
 import logging
@@ -6,7 +7,7 @@ from hashlib import md5
 from enum import Enum
 
 from django.db import models
-from core.models import Repository
+from core.models import Repository, DateTimeWithoutTZField
 from utils.config import get_config
 from django.contrib.postgres.fields import CITextField, ArrayField
 
@@ -19,6 +20,7 @@ from codecov_auth.constants import (
     GRAVATAR_BASE_URL,
     AVATARIO_BASE_URL,
     USER_PLAN_REPRESENTATIONS,
+    FREE_PLAN_NAME,
 )
 
 from codecov_auth.helpers import get_gitlab_url
@@ -41,7 +43,7 @@ log = logging.getLogger(__name__)
 
 
 # TODO use this to refactor avatar_url
-class Service(Enum):
+class Service(models.TextChoices):
     GITHUB = "github"
     GITLAB = "gitlab"
     BITBUCKET = "bitbucket"
@@ -53,49 +55,71 @@ class Service(Enum):
 class Owner(models.Model):
     class Meta:
         db_table = "owners"
-        ordering = ['ownerid']
+        ordering = ["ownerid"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["service", "username"], name="owner_service_username"
+            ),
+            models.UniqueConstraint(
+                fields=["service", "service_id"], name="owner_service_ids"
+            ),
+        ]
 
     REQUIRED_FIELDS = []
     USERNAME_FIELD = "username"
 
     ownerid = models.AutoField(primary_key=True)
-    service = models.CharField(max_length=256)
-    username = CITextField(null=True, unique=True)
+    service = models.TextField(choices=Service.choices)  # Really an ENUM in db
+    username = CITextField(
+        unique=True, null=True
+    )  # No actual unique constraint on this in the DB
     email = models.TextField(null=True)
     name = models.TextField(null=True)
     oauth_token = models.TextField(null=True)
     stripe_customer_id = models.TextField(null=True)
     stripe_subscription_id = models.TextField(null=True)
-    createstamp = models.DateTimeField(auto_now_add=True)
-    service_id = models.TextField()
+
+    # createstamp seems to be used by legacy to track first login
+    # so we shouldn't touch this outside login
+    createstamp = models.DateTimeField(null=True)
+
+    service_id = models.TextField(null=False)
     parent_service_id = models.TextField(null=True)
     root_parent_service_id = models.TextField(null=True)
     private_access = models.BooleanField(null=True)
     staff = models.BooleanField(null=True, default=False)
     cache = models.JSONField(null=True)
-    plan = models.TextField(null=True)
-    plan_provider = models.CharField(null=True, max_length=10) # postgres enum containing only "github"
-    plan_user_count = models.SmallIntegerField(null=True)
-    plan_auto_activate = models.BooleanField(null=True)
+    plan = models.TextField(null=True, default=FREE_PLAN_NAME)  # Really an ENUM in db
+    plan_provider = models.TextField(
+        null=True
+    )  # postgres enum containing only "github"
+    plan_user_count = models.SmallIntegerField(null=True, default=5)
+    plan_auto_activate = models.BooleanField(null=True, default=True)
     plan_activated_users = ArrayField(models.IntegerField(null=True), null=True)
     did_trial = models.BooleanField(null=True)
     free = models.SmallIntegerField(default=0)
     invoice_details = models.TextField(null=True)
     delinquent = models.BooleanField(null=True)
     yaml = models.JSONField(null=True)
-    updatestamp = models.DateTimeField(auto_now=True)
+    updatestamp = DateTimeWithoutTZField(default=datetime.now)
     organizations = ArrayField(models.IntegerField(null=True), null=True)
     admins = ArrayField(models.IntegerField(null=True), null=True)
     integration_id = models.IntegerField(null=True)
     permission = ArrayField(models.IntegerField(null=True), null=True)
-    bot = models.IntegerField(null=True)
+    bot = models.ForeignKey(
+        "Owner", db_column="bot", null=True, on_delete=models.SET_NULL
+    )
     student = models.BooleanField(default=False)
-    student_created_at = models.DateTimeField(null=True)
-    student_updated_at = models.DateTimeField(null=True)
+    student_created_at = DateTimeWithoutTZField(null=True)
+    student_updated_at = DateTimeWithoutTZField(null=True)
 
     objects = OwnerQuerySet.as_manager()
 
     repository_set = RepositoryQuerySet.as_manager()
+
+    def save(self, *args, **kwargs):
+        self.updatestamp = datetime.now()
+        super().save(*args, **kwargs)
 
     @property
     def has_legacy_plan(self):
@@ -122,17 +146,20 @@ class Owner(models.Model):
         if it exists, otherwise iterating through the parents and caches it in root_parent_service_id
         """
         if self.root_parent_service_id:
-            return Owner.objects.get(service_id=self.root_parent_service_id, service=self.service)
+            return Owner.objects.get(
+                service_id=self.root_parent_service_id, service=self.service
+            )
 
         root = None
         if self.service == "gitlab" and self.parent_service_id:
             root = self
             while root.parent_service_id is not None:
-                root = Owner.objects.get(service_id=root.parent_service_id, service=root.service)
+                root = Owner.objects.get(
+                    service_id=root.parent_service_id, service=root.service
+                )
             self.root_parent_service_id = root.service_id
             self.save()
         return root
-
 
     @property
     def nb_active_private_repos(self):
@@ -183,7 +210,9 @@ class Owner(models.Model):
     @property
     def inactive_user_count(self):
         return (
-            Owner.objects.filter(organizations__contains=[self.ownerid], student=False).count()
+            Owner.objects.filter(
+                organizations__contains=[self.ownerid], student=False
+            ).count()
             - self.activated_user_count
         )
 
@@ -345,22 +374,17 @@ class Owner(models.Model):
 class Session(models.Model):
     class Meta:
         db_table = "sessions"
-        ordering = ['-lastseen']
+        ordering = ["-lastseen"]
 
-    class SessionType:
+    class SessionType(models.TextChoices):
         API = "api"
         LOGIN = "login"
 
-    SESSION_TYPE_CHOICES = (
-        (SessionType.API, SessionType.API),
-        (SessionType.LOGIN, SessionType.LOGIN),
-    )
-
     sessionid = models.AutoField(primary_key=True)
-    token = models.UUIDField(default=uuid.uuid4, editable=False)
+    token = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
     name = models.TextField(null=True)
     useragent = models.TextField(null=True)
     ip = models.TextField(null=True)
     owner = models.ForeignKey(Owner, db_column="ownerid", on_delete=models.CASCADE)
     lastseen = models.DateTimeField(null=True)
-    type = models.CharField(max_length=10, choices=SESSION_TYPE_CHOICES, null=True)
+    type = models.TextField(choices=SessionType.choices)  # Really an ENUM in db

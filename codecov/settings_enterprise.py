@@ -1,5 +1,6 @@
 from .settings_base import *
 import os
+from urllib.parse import urlparse
 from utils.config import get_config, get_settings_module
 
 DEBUG = False
@@ -11,17 +12,42 @@ CORS_ALLOW_CREDENTIALS = True
 CODECOV_URL = get_config("setup", "codecov_url")
 CODECOV_API_URL = get_config("setup", "codecov_api_url", default=CODECOV_URL)
 
+db_url = get_config("services", "database_url")
+db_conf = urlparse(db_url)
+DATABASE_USER = db_conf.username
+DATABASE_NAME = db_conf.path.replace("/", "")
+DATABASE_PASSWORD = db_conf.password
+DATABASE_HOST = db_conf.hostname
+DATABASE_PORT = db_conf.port
+
+
+# this is the time in seconds django decides to keep the connection open after the request
+# the default is 0 seconds, meaning django closes the connection after every request
+# https://docs.djangoproject.com/en/3.1/ref/settings/#conn-max-age
+CONN_MAX_AGE = int(get_config("services", "database", "conn_max_age", default=0))
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": DATABASE_NAME,
+        "USER": DATABASE_USER,
+        "PASSWORD": DATABASE_PASSWORD,
+        "HOST": DATABASE_HOST,
+        "PORT": DATABASE_PORT,
+        "CONN_MAX_AGE": CONN_MAX_AGE,
+    }
+}
 
 REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+    "DEFAULT_PERMISSION_CLASSES": (
+        "rest_framework.permissions.IsAuthenticatedOrReadOnly",
     ),
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'codecov_auth.authentication.CodecovSessionAuthentication',
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "codecov_auth.authentication.CodecovSessionAuthentication",
     ),
-    'DEFAULT_PAGINATION_CLASS': 'internal_api.pagination.StandardPageNumberPagination',
-    'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',),
-    'PAGE_SIZE': 20
+    "DEFAULT_PAGINATION_CLASS": "internal_api.pagination.StandardPageNumberPagination",
+    "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
+    "PAGE_SIZE": 20,
 }
 
 
@@ -36,7 +62,9 @@ if CODECOV_API_URL.startswith("https://"):
 elif CODECOV_API_URL.startswith("http://"):
     API_DOMAIN = CODECOV_API_URL[7:]
 
-CORS_ALLOWED_ORIGINS = get_config("setup", "api_cors_allowed_origins", default=[CODECOV_URL])
+CORS_ALLOWED_ORIGINS = get_config(
+    "setup", "api_cors_allowed_origins", default=[CODECOV_URL]
+)
 ALLOWED_HOSTS.append(DEFAULT_WHITELISTED_DOMAIN)
 # only add api domain if it is different than codecov url
 if API_DOMAIN != DEFAULT_WHITELISTED_DOMAIN:

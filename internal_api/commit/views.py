@@ -14,4 +14,10 @@ class CommitsViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, RepoPropert
     permission_classes = [RepositoryArtifactPermissions]
 
     def get_queryset(self):
-        return self.repo.commits.select_related("author").order_by("-timestamp")
+        # We don't use the "report" field in this endpoint and it can be many MBs of JSON choosing not to
+        # fetch it for perf reasons
+        return (
+            self.repo.commits.defer("report")
+            .select_related("author")
+            .order_by("-timestamp")
+        )

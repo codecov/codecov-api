@@ -3,9 +3,11 @@ from django.conf import settings
 
 from core.models import Version
 
+
 def health(request):
     version = Version.objects.last()
     return HttpResponse("%s is live!" % version.version)
+
 
 def redirect_app(request):
     """

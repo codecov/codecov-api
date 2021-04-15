@@ -10,8 +10,10 @@ class SettingsModule(Enum):
     ENTERPRISE = "codecov.settings_enterprise"
     DEV = None
 
+
 def get_settings_module():
     return SettingsModule.ENTERPRISE.value
+
 
 class MissingConfigException(Exception):
     pass
