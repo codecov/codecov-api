@@ -498,6 +498,19 @@ class UploadHandlerHelpersTest(TestCase):
                 == determine_upload_commit_to_use(upload_params, repo)
             )
 
+        with self.subTest("just no bot available"):
+            org = G(Owner, service="github", oauth_token=None)
+            repo = G(Repository, author=org, private=True)
+            upload_params = {
+                "service": "github",
+                "commit": "3084886b7ff869dcf327ad1d28a8b7d34adc7584",
+            }
+            # Should use id from merge commit message, not from params
+            assert (
+                "3084886b7ff869dcf327ad1d28a8b7d34adc7584"
+                == determine_upload_commit_to_use(upload_params, repo)
+            )
+
         with self.subTest("merge commit with did_change_merge_commit argument"):
             org = G(Owner, service="github", oauth_token=encryptor.encode("hahahahaha").decode())
             repo = G(Repository, author=org)
