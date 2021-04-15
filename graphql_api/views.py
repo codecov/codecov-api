@@ -16,16 +16,27 @@ def get_user(request):
         return CodecovTokenAuthentication().authenticate(request)[0]
 
 
-BaseAriadneView = GraphQLView.as_view(
-    schema=schema, extensions=[get_tracer_extension()]
-)
+class AsyncGraphqlView(GraphQLView):
+    schema = schema
+    extensions = [get_tracer_extension()]
+
+    async def authenticate(self, request):
+        user = await get_user(request)
+        if user:
+            request.user = user
+
+    async def post(self, request, *args, **kwargs):
+        await self.authenticate(request)
+        return await super().post(request, *args, **kwargs)
+
+    def context_value(self, request):
+        return {"request": request, "service": request.resolver_match.kwargs["service"]}
+
+
+BaseAriadneView = AsyncGraphqlView.as_view()
 
 
 async def ariadne_view(request, service):
-    user = await get_user(request)
-    if user:
-        request.user = user
-
     response = BaseAriadneView(request, service)
     if iscoroutine(response):
         response = await response
