@@ -1,13 +1,13 @@
 from asyncio import iscoroutine
 from contextlib import suppress
 
-from ariadne.contrib.tracing.apollotracing import ApolloTracingExtension
 from asgiref.sync import sync_to_async
 
 from codecov_auth.authentication import CodecovTokenAuthentication
 
 from .ariadne.views import GraphQLView
 from .schema import schema
+from .tracing import get_tracer_extension
 
 
 @sync_to_async
@@ -17,7 +17,7 @@ def get_user(request):
 
 
 BaseAriadneView = GraphQLView.as_view(
-    schema=schema, extensions=[ApolloTracingExtension]
+    schema=schema, extensions=[get_tracer_extension()]
 )
 
 
