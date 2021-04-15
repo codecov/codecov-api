@@ -1,4 +1,5 @@
 from ariadne import ObjectType
+from asgiref.sync import sync_to_async
 
 from graphql_api.actions.owner import get_owner
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql

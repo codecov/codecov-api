@@ -9,7 +9,7 @@ from rest_framework.reverse import reverse
 from rest_framework import status
 
 from codecov_auth.tests.factories import OwnerFactory
-from codecov_auth.models import Owner
+from codecov_auth.models import Owner, Service
 from codecov_auth.constants import USER_PLAN_REPRESENTATIONS
 from internal_api.tests.test_utils import GetAdminProviderAdapter
 
@@ -36,7 +36,7 @@ class AccountViewSetTests(APITestCase):
 
     def setUp(self):
         self.service = "gitlab"
-        self.user = OwnerFactory(stripe_customer_id=1000, service=self.service)
+        self.user = OwnerFactory(stripe_customer_id=1000, service=Service.GITHUB.value)
         self.expected_invoice = {
             "number": "EF0A41E-0001",
             "status": "paid",
@@ -306,7 +306,8 @@ class AccountViewSetTests(APITestCase):
 
     @patch("services.billing.stripe.checkout.Session.create")
     def test_update_can_upgrade_to_paid_plan_for_new_customer_and_return_checkout_session_id(
-        self, create_checkout_session_mock,
+        self,
+        create_checkout_session_mock,
     ):
         expected_id = "this is the id"
         create_checkout_session_mock.return_value = {"id": expected_id}
@@ -326,7 +327,9 @@ class AccountViewSetTests(APITestCase):
     @patch("services.billing.stripe.Subscription.retrieve")
     @patch("services.billing.stripe.Subscription.modify")
     def test_update_can_upgrade_to_paid_plan_for_existing_customer_and_set_plan_info(
-        self, modify_subscription_mock, retrieve_subscription_mock,
+        self,
+        modify_subscription_mock,
+        retrieve_subscription_mock,
     ):
         desired_plan = {"value": "users-pr-inappm", "quantity": 12}
         self.user.stripe_customer_id = "flsoe"

@@ -44,6 +44,20 @@ If you would like to use pytest directly (Either through an IDE like PyCharm or 
 
 Make sure to have all the requirements from `requirements.txt` installed.
 
+### Deploying
+
+All work merged into the `master` branch is immediately deployed to the production environment. More context on this strategy can be found [here](https://codecovio.atlassian.net/wiki/spaces/ENG/pages/507445249/Branching+and+Continuous+Delivery+Strategy+Proposal).
+
+### Deploying to Staging environment
+
+To deploy to our staging environment it's crucial to follow these steps:
+
+1. Check in Slack to see if anyone is currently using the staging environment
+2. If not, delete the current `staging` branch
+3. Create a new `staging` branch and merge your feature branch into it
+
+Steps 2 and 3 are important to limit interaction between features not yet merged into master. This approach was inspired by this document: https://codecovio.atlassian.net/wiki/spaces/ENG/pages/507445249/Branching+and+Continuous+Delivery+Strategy+Proposal
+
 ### Secret and Credential Management
 
 This project should store no secrets or credentials in its source. If you need to add to / modify / setup secrets for this project, contact Eli and he'll get you started..

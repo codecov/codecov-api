@@ -1,5 +1,4 @@
-from django.test import TestCase
-from ariadne import graphql_sync
+from django.test import TransactionTestCase
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
@@ -7,7 +6,7 @@ from core.tests.factories import RepositoryFactory
 from .helper import GraphQLTestHelper, paginate_connection
 
 
-class ArianeTestCase(GraphQLTestHelper, TestCase):
+class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
         self.user = OwnerFactory(username="codecov-user")
         random_user = OwnerFactory(username="random-user")
@@ -27,9 +26,8 @@ class ArianeTestCase(GraphQLTestHelper, TestCase):
         assert data == {"me": None}
 
     def test_when_authenticated(self):
-        self.client.force_login(self.user)
         query = "{ me { user { username avatarUrl }} }"
-        data = self.gql_request(query)
+        data = self.gql_request(query, user=self.user)
         assert data == {
             "me": {
                 "user": {
@@ -40,7 +38,21 @@ class ArianeTestCase(GraphQLTestHelper, TestCase):
         }
 
     def test_fetching_viewable_repositories(self):
-        self.client.force_login(self.user)
+        org_1 = OwnerFactory()
+        org_2 = OwnerFactory()
+        current_user = OwnerFactory(organizations=[org_1.ownerid])
+        repos_in_db = [
+            RepositoryFactory(private=True, name="0"),
+            RepositoryFactory(author=org_1, private=False, name="1"),
+            RepositoryFactory(author=org_1, private=True, name="2"),
+            RepositoryFactory(author=org_2, private=False, name="3"),
+            RepositoryFactory(author=org_2, private=True, name="4"),
+            RepositoryFactory(private=True, name="5"),
+            RepositoryFactory(author=current_user, private=True, name="6"),
+            RepositoryFactory(author=current_user, private=False, name="7"),
+        ]
+        current_user.permission = [repos_in_db[2].repoid]
+        current_user.save()
         query = """{
             me {
                 viewableRepositories {
@@ -53,12 +65,17 @@ class ArianeTestCase(GraphQLTestHelper, TestCase):
             }
         }
         """
-        data = self.gql_request(query)
+        data = self.gql_request(query, user=current_user)
         repos = paginate_connection(data["me"]["viewableRepositories"])
-        assert repos == [{"name": "b"}, {"name": "a"}]
+        repos_name = [repo["name"] for repo in repos]
+        assert sorted(repos_name) == [
+            "1",  # public repo in org of user
+            "2",  # private repo in org of user and in user permission
+            "6",  # personal private repo
+            "7",  # personal public repo
+        ]
 
     def test_fetching_viewable_repositories_text_search(self):
-        self.client.force_login(self.user)
         query = """{
             me {
                 viewableRepositories(filters: { term: "a"}) {
@@ -71,12 +88,11 @@ class ArianeTestCase(GraphQLTestHelper, TestCase):
             }
         }
         """
-        data = self.gql_request(query)
+        data = self.gql_request(query, user=self.user)
         repos = paginate_connection(data["me"]["viewableRepositories"])
         assert repos == [{"name": "a"}]
 
     def test_fetching_my_orgs(self):
-        self.client.force_login(self.user)
         query = """{
             me {
                 myOrganizations {
@@ -89,7 +105,7 @@ class ArianeTestCase(GraphQLTestHelper, TestCase):
             }
         }
         """
-        data = self.gql_request(query)
+        data = self.gql_request(query, user=self.user)
         orgs = paginate_connection(data["me"]["myOrganizations"])
         assert orgs == [
             {"username": "spotify"},
@@ -98,7 +114,6 @@ class ArianeTestCase(GraphQLTestHelper, TestCase):
         ]
 
     def test_fetching_my_orgs_with_search(self):
-        self.client.force_login(self.user)
         query = """{
             me {
                 myOrganizations(filters: { term: "spot"}) {
@@ -111,7 +126,7 @@ class ArianeTestCase(GraphQLTestHelper, TestCase):
             }
         }
         """
-        data = self.gql_request(query)
+        data = self.gql_request(query, user=self.user)
         orgs = paginate_connection(data["me"]["myOrganizations"])
         assert orgs == [
             {"username": "spotify"},

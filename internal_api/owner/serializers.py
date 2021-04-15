@@ -14,6 +14,15 @@ from services.segment import SegmentService
 
 log = logging.getLogger(__name__)
 
+owner_in_security_disclosure = []
+try:
+    with open("/app/impacted-users.txt") as f:
+        content_file = f.read().strip()
+        # sets are faster than list to check if something is in it
+        owner_in_security_disclosure = set(content_file.split(","))
+except Exception as e:
+    log.info(e)
+
 
 class OwnerSerializer(serializers.ModelSerializer):
     stats = serializers.SerializerMethodField()
@@ -38,6 +47,8 @@ class OwnerSerializer(serializers.ModelSerializer):
 
 
 class ProfileSerializer(OwnerSerializer):
+    security_disclosure = serializers.SerializerMethodField()
+
     class Meta:
         model = Owner
         read_only_fields = (
@@ -62,8 +73,12 @@ class ProfileSerializer(OwnerSerializer):
             "updatestamp",
             "student_created_at",
             "student_updated_at",
+            "security_disclosure",
         )
         fields = read_only_fields + ("email", "name", "private_access")
+
+    def get_security_disclosure(self, obj):
+        return str(obj.ownerid) in owner_in_security_disclosure
 
 
 class StripeLineItemSerializer(serializers.Serializer):

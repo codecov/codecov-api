@@ -1,7 +1,7 @@
 from freezegun import freeze_time
 import datetime
 
-from django.test import TestCase
+from django.test import TransactionTestCase
 from ariadne import graphql_sync
 
 from codecov_auth.tests.factories import OwnerFactory
@@ -27,11 +27,10 @@ query_repository = """{
 }
 """
 
-class TestFetchRepository(GraphQLTestHelper, TestCase):
 
+class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
     def fetch_repository(self):
-        self.client.force_login(self.user)
-        data = self.gql_request(query_repository)
+        data = self.gql_request(query_repository, user=self.user)
         return data["me"]["owner"]["repositories"]["edges"][0]["node"]
 
     def setUp(self):
@@ -45,7 +44,7 @@ class TestFetchRepository(GraphQLTestHelper, TestCase):
             "active": True,
             "private": True,
             "coverage": None,
-            "updatedAt": '2021-01-01T00:00:00+00:00',
+            "updatedAt": "2021-01-01T00:00:00+00:00",
         }
 
     @freeze_time("2021-01-01")
@@ -55,18 +54,12 @@ class TestFetchRepository(GraphQLTestHelper, TestCase):
             active=True,
             private=True,
             name="a",
-            cache={
-                "commit": {
-                    "totals": {
-                        "c": 75
-                    }
-                }
-            }
+            cache={"commit": {"totals": {"c": 75}}},
         )
         assert self.fetch_repository() == {
             "name": "a",
             "active": True,
             "private": True,
             "coverage": 75,
-            "updatedAt": '2021-01-01T00:00:00+00:00',
+            "updatedAt": "2021-01-01T00:00:00+00:00",
         }
