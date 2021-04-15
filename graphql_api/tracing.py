@@ -4,6 +4,7 @@ from django.conf import settings
 
 from opentracing.scope_managers import ThreadLocalScopeManager
 from ddtrace.opentracer import Tracer
+import ddtrace
 import opentracing
 
 
