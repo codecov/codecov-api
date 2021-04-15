@@ -1,6 +1,6 @@
 from ariadne.contrib.tracing.apollotracing import ApolloTracingExtension
 from ariadne.contrib.tracing.opentracing import OpenTracingExtension
-
+from django.conf import settings
 
 from opentracing.scope_managers import ThreadLocalScopeManager
 from ddtrace.opentracer import Tracer
@@ -16,7 +16,7 @@ class MyTracer(Tracer):
 
 
 def get_tracer_extension():
-    if debug:
+    if settings.DEBUG:
         return ApolloTracingExtension
     # patch the datadog opentracing adapter so it uses the right _dd_tracer
     # under the hood (ddtrace.tracer) instead of creating a new one
