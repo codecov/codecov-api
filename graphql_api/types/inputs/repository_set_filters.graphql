@@ -1,0 +1,4 @@
+input RepositorySetFilters {
+  term: String
+  active: Boolean
+}

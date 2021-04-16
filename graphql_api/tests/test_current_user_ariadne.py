@@ -2,31 +2,8 @@ from django.test import TransactionTestCase
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
+
 from .helper import GraphQLTestHelper, paginate_connection
-
-query_repositories = """{
-    me {
-        owner {
-            repositories%s {
-                totalCount
-                edges {
-                    node {
-                        name
-
-                        author {
-                            username
-                        }
-                    }
-                }
-                pageInfo {
-                    hasNextPage
-                    %s
-                }
-            }
-        }
-    }
-}
-"""
 
 
 class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
@@ -60,63 +37,22 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
-    def test_fetching_repositories(self):
-        query = query_repositories % ("", "")
-        data = self.gql_request(query, user=self.user)
-        assert data == {
-            "me": {
-                "owner": {
-                    "repositories": {
-                        "totalCount": 2,
-                        "edges": [
-                            {
-                                "node": {
-                                    "name": "b",
-                                    "author": {"username": self.user.username},
-                                }
-                            },
-                            {
-                                "node": {
-                                    "name": "a",
-                                    "author": {"username": self.user.username},
-                                }
-                            },
-                        ],
-                        "pageInfo": {
-                            "hasNextPage": False,
-                        },
-                    }
-                }
-            }
-        }
-
-    def test_fetching_repositories_with_pagination(self):
-        query = query_repositories % ("(first: 1)", "endCursor")
-        # Check on the first page if we have the repository b
-        data_page_one = self.gql_request(query, user=self.user)
-        connection = data_page_one["me"]["owner"]["repositories"]
-        assert connection["edges"][0]["node"] == {
-            "name": "b",
-            "author": {"username": self.user.username},
-        }
-        pageInfo = connection["pageInfo"]
-        assert pageInfo["hasNextPage"] is True
-        next_cursor = pageInfo["endCursor"]
-        # Check on the second page if we have the other repository, by using the cursor
-        query = query_repositories % (
-            f'(first: 1, after: "{next_cursor}")',
-            "endCursor",
-        )
-        data_page_two = self.gql_request(query, user=self.user)
-        connection = data_page_two["me"]["owner"]["repositories"]
-        assert connection["edges"][0]["node"] == {
-            "name": "a",
-            "author": {"username": self.user.username},
-        }
-        pageInfo = connection["pageInfo"]
-        assert pageInfo["hasNextPage"] is False
-
     def test_fetching_viewable_repositories(self):
+        org_1 = OwnerFactory()
+        org_2 = OwnerFactory()
+        current_user = OwnerFactory(organizations=[org_1.ownerid])
+        repos_in_db = [
+            RepositoryFactory(private=True, name="0"),
+            RepositoryFactory(author=org_1, private=False, name="1"),
+            RepositoryFactory(author=org_1, private=True, name="2"),
+            RepositoryFactory(author=org_2, private=False, name="3"),
+            RepositoryFactory(author=org_2, private=True, name="4"),
+            RepositoryFactory(private=True, name="5"),
+            RepositoryFactory(author=current_user, private=True, name="6"),
+            RepositoryFactory(author=current_user, private=False, name="7"),
+        ]
+        current_user.permission = [repos_in_db[2].repoid]
+        current_user.save()
         query = """{
             me {
                 viewableRepositories {
@@ -129,9 +65,15 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             }
         }
         """
-        data = self.gql_request(query, user=self.user)
+        data = self.gql_request(query, user=current_user)
         repos = paginate_connection(data["me"]["viewableRepositories"])
-        assert repos == [{"name": "b"}, {"name": "a"}]
+        repos_name = [repo["name"] for repo in repos]
+        assert sorted(repos_name) == [
+            "1",  # public repo in org of user
+            "2",  # private repo in org of user and in user permission
+            "6",  # personal private repo
+            "7",  # personal public repo
+        ]
 
     def test_fetching_viewable_repositories_text_search(self):
         query = """{

@@ -2,5 +2,7 @@ type Repository {
   name: String!
   active: Boolean
   private: Boolean
+  coverage: Float
+  updatedAt: DateTime
   author: Owner!
 }
