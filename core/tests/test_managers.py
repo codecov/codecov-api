@@ -2,6 +2,7 @@ from datetime import datetime
 from django.utils import timezone
 
 from django.test import TestCase
+from django.contrib.auth.models import AnonymousUser
 
 from core.models import Repository
 
@@ -93,3 +94,39 @@ class RepositoryQuerySetTests(TestCase):
             assert repo.branch == "master"
             assert repo.private
             assert repo.name == "test"
+
+    def test_viewable_repos(self):
+        private_repo = RepositoryFactory(private=True)
+        public_repo = RepositoryFactory(private=False)
+
+        with self.subTest("when owner permission is none doesnt crash"):
+            owner = OwnerFactory(permission=None)
+            owned_repo = RepositoryFactory(author=owner)
+
+            repos = Repository.objects.viewable_repos(owner)
+            assert repos.count() == 2
+
+            repoids = repos.values_list("repoid", flat=True)
+            assert public_repo.repoid in repoids
+            assert owned_repo.repoid in repoids
+
+        with self.subTest("when owner permission is not none, returns repos"):
+            owner = OwnerFactory(permission=[private_repo.repoid])
+            owned_repo = RepositoryFactory(author=owner)
+
+            repos = Repository.objects.viewable_repos(owner)
+            assert repos.count() == 3
+
+            repoids = repos.values_list("repoid", flat=True)
+            assert public_repo.repoid in repoids
+            assert owned_repo.repoid in repoids
+            assert private_repo.repoid in repoids
+
+        with self.subTest("when user not authed, returns only public"):
+            user = AnonymousUser()
+
+            repos = Repository.objects.viewable_repos(user)
+            assert repos.count() == 1
+
+            repoids = repos.values_list("repoid", flat=True)
+            assert public_repo.repoid in repoids
