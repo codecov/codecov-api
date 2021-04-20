@@ -8,9 +8,10 @@ from .user import user, user_bindable
 from .owner import owner, owner_bindable
 from .repository import repository, repository_bindable
 from .session import session, session_bindable
+from .mutation import mutation, mutation_bindable
 
 inputs = ariadne_load_local_graphql(__file__, "./inputs")
-types = [query, me, user, owner, repository, inputs, session]
+types = [query, me, user, owner, repository, inputs, session, mutation]
 
 bindables = [
     query_bindable,
@@ -19,5 +20,6 @@ bindables = [
     owner_bindable,
     repository_bindable,
     session_bindable,
+    mutation_bindable,
     datetime_scalar,
 ]
