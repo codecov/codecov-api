@@ -1,0 +1,8 @@
+type Session {
+  ip: String
+  lastseen: DateTime
+  useragent: String
+  type: String!
+  name: String
+  lastFour: String
+}
