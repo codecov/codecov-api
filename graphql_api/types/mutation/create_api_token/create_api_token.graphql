@@ -1,4 +1,4 @@
-type createApiTokenPayload {
+type CreateApiTokenPayload {
     error: String
     session: Session
 }
