@@ -17,3 +17,7 @@ def search_my_owners(current_user, filters):
 def get_owner(service, username):
     long_service = get_long_service_name(service)
     return Owner.objects.filter(username=username, service=long_service).first()
+
+
+def get_owner_sessions(current_user):
+    return current_user.session_set.all()
