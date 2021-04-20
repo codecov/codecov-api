@@ -25,11 +25,15 @@ def queryset_to_connection(
 ):
     if not first and not after:
         first = 100
+
     paginator = CursorPaginator(queryset, ordering=ordering)
     page = paginator.page(first=first, after=after, last=last, before=before)
     return {
         "edges": [
-            {"cursor": paginator.cursor(page[pos]), "node": repository,}
+            {
+                "cursor": paginator.cursor(page[pos]),
+                "node": repository,
+            }
             for pos, repository in enumerate(page)
         ],
         "total_count": queryset.count(),

@@ -1,3 +1,4 @@
+from asgiref.sync import async_to_sync
 from ariadne import ObjectType
 
 from graphql_api.actions.repository import search_repos
@@ -7,6 +8,7 @@ from graphql_api.helpers.connection import (
     build_connection_graphql,
     queryset_to_connection,
 )
+from graphql_api.types.enums import OrderingDirection
 
 me = ariadne_load_local_graphql(__file__, "me.graphql")
 me = me + build_connection_graphql("ViewableRepositoryConnection", "Repository")
@@ -29,10 +31,27 @@ def resolve_owner(user, _):
 
 
 @me_bindable.field("viewableRepositories")
-def resolve_viewable_repositories(current_user, _, filters=None, **kwargs):
+def resolve_viewable_repositories(
+    current_user,
+    _,
+    filters=None,
+    ordering="",
+    orderingDirection=OrderingDirection.ASC,
+    **kwargs,
+):
     queryset = search_repos(current_user, filters)
-    ordering = ("-repoid",)
-    return queryset_to_connection(queryset, ordering, **kwargs)
+    default_ordering_value = (
+        "-repoid" if orderingDirection == OrderingDirection.DESC else "repoid"
+    )
+    connection_ordering = (default_ordering_value,)
+    if ordering:
+        ordering_value = ordering.value
+        if orderingDirection == OrderingDirection.DESC:
+            ordering_value = f"-{ordering_value}"
+
+        connection_ordering = (ordering_value,) + connection_ordering
+
+    return queryset_to_connection(queryset, connection_ordering, **kwargs)
 
 
 @me_bindable.field("myOrganizations")

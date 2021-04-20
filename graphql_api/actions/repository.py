@@ -1,6 +1,10 @@
 from core.models import Repository
 
 
+def apply_ordering_to_query(queryset, ordering):
+    pass
+
+
 def apply_filters_to_queryset(queryset, filters):
     filters = filters or {}
     term = filters.get("term")

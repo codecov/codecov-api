@@ -75,6 +75,62 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             "7",  # personal public repo
         ]
 
+    def test_fetching_viewable_repositories_ordering(self):
+        current_user = OwnerFactory()
+
+        def build_query(ordering, ordering_direction=""):
+            params = f"ordering: {ordering}"
+            if ordering_direction:
+                params += f", orderingDirection: {ordering_direction}"
+
+            return (
+                """{
+                me {
+                    viewableRepositories(%s) {
+                        edges {
+                            node {
+                                name
+                            }
+                        }
+                    }
+                }
+            }
+            """
+                % params
+            )
+
+        repo_1 = RepositoryFactory(author=current_user)
+        repo_2 = RepositoryFactory(author=current_user)
+        repo_3 = RepositoryFactory(author=current_user)
+
+        with self.subTest("NAME"):
+            repo_1.name = "A"
+            repo_1.save()
+
+            repo_2.name = "B"
+            repo_2.save()
+
+            repo_3.name = "C"
+            repo_3.save()
+
+            with self.subTest("no ordering Direction"):
+                data = self.gql_request(build_query("NAME"), user=current_user)
+                repos = paginate_connection(data["me"]["viewableRepositories"])
+                repos_name = [repo["name"] for repo in repos]
+                self.assertEqual(repos_name, ["A", "B", "C"])
+
+            with self.subTest("ASC"):
+                data = self.gql_request(build_query("NAME", "ASC"), user=current_user)
+                repos = paginate_connection(data["me"]["viewableRepositories"])
+                repos_name = [repo["name"] for repo in repos]
+                self.assertEqual(repos_name, ["A", "B", "C"])
+
+            with self.subTest("DESC"):
+                data = self.gql_request(build_query("NAME", "DESC"), user=current_user)
+                repos = paginate_connection(data["me"]["viewableRepositories"])
+                repos_name = [repo["name"] for repo in repos]
+                self.assertEqual(repos_name, ["C", "B", "A"])
+
     def test_fetching_viewable_repositories_text_search(self):
         query = """{
             me {
