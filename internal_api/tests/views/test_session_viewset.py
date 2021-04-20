@@ -97,20 +97,6 @@ class SessionViewSetTests(APITestCase):
         response = self._create()
         assert response.data.get("token") is not None
 
-    def test_create_returns_400_for_other_owner_and_session_with_token(self):
-        otherowner = OwnerFactory()
-        import pdb
-
-        pdb.set_trace()
-        response = self._create(
-            data={
-                "name": "an-api-session",
-                "type": Session.SessionType.API,
-                "owner": otherowner.ownerid,
-            }
-        )
-        assert response.data.get("token") is not None
-
     def test_create_required_fields(self):
         with self.subTest("missing name"):
             response = self._create(
