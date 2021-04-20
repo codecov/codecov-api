@@ -1,0 +1,3 @@
+input CreateApiTokenInput {
+  name: String!
+}
