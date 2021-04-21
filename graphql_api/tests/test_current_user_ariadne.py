@@ -110,7 +110,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
                 data = self.gql_request(build_query(), user=current_user)
                 repos = paginate_connection(data["me"]["viewableRepositories"])
                 repos_name = [repo["name"] for repo in repos]
-                self.assertEqual(repos_name, ["A", "B", "C"])
+                self.assertEqual(repos_name, ["C", "B", "A"])
 
             with self.subTest("ASC"):
                 data = self.gql_request(
@@ -133,7 +133,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
                 data = self.gql_request(build_query("NAME"), user=current_user)
                 repos = paginate_connection(data["me"]["viewableRepositories"])
                 repos_name = [repo["name"] for repo in repos]
-                self.assertEqual(repos_name, ["A", "B", "C"])
+                self.assertEqual(repos_name, ["C", "B", "A"])
 
             with self.subTest("ASC"):
                 data = self.gql_request(build_query("NAME", "ASC"), user=current_user)
@@ -157,7 +157,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
                 data = self.gql_request(build_query("COMMIT_DATE"), user=current_user)
                 repos = paginate_connection(data["me"]["viewableRepositories"])
                 repos_name = [repo["name"] for repo in repos]
-                self.assertEqual(repos_name, ["A", "B", "C"])
+                self.assertEqual(repos_name, ["C", "B", "A"])
 
             with self.subTest("ASC"):
                 data = self.gql_request(
@@ -189,7 +189,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
                 data = self.gql_request(build_query("COVERAGE"), user=current_user)
                 repos = paginate_connection(data["me"]["viewableRepositories"])
                 repos_name = [repo["name"] for repo in repos]
-                self.assertEqual(repos_name, ["C", "A", "B"])
+                self.assertEqual(repos_name, ["B", "A", "C"])
 
             with self.subTest("ASC"):
                 data = self.gql_request(

@@ -37,7 +37,7 @@ def resolve_viewable_repositories(
     _,
     filters=None,
     ordering=RepositoryOrdering.ID,
-    ordering_direction=OrderingDirection.ASC,
+    ordering_direction=OrderingDirection.DESC,
     **kwargs,
 ):
     queryset = search_repos(current_user, filters, ordering)
@@ -64,4 +64,9 @@ def resolve_my_organizations(current_user, _, filters=None, **kwargs):
 @me_bindable.field("sessions")
 def resolve_sessions(current_user, _, **kwargs):
     queryset = get_owner_sessions(current_user)
-    return queryset_to_connection(queryset, primary_ordering="sessionid", ordering_direction=OrderingDirection.DESC, **kwargs)
+    return queryset_to_connection(
+        queryset,
+        primary_ordering="sessionid",
+        ordering_direction=OrderingDirection.DESC,
+        **kwargs,
+    )

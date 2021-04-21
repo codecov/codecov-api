@@ -21,7 +21,7 @@ def resolve_repositories(
     info,
     filters=None,
     ordering=RepositoryOrdering.ID,
-    ordering_direction=OrderingDirection.ASC,
+    ordering_direction=OrderingDirection.DESC,
     **kwargs
 ):
     current_user = info.context["request"].user
