@@ -176,13 +176,13 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
                 self.assertEqual(repos_name, ["C", "B", "A"])
 
         with self.subTest("COVERAGE"):
-            repo_1.cache = {"commit": {"totals": {"c": 2}}}
+            repo_1.cache = {"commit": {"totals": {"c": "42"}}}
             repo_1.save()
 
-            repo_2.cache = {"commit": {"totals": {"c": 4}}}
+            repo_2.cache = {"commit": {"totals": {"c": "100.2"}}}
             repo_2.save()
 
-            repo_3.cache = {"commit": {"totals": {"c": 1}}}
+            repo_3.cache = {"commit": {"totals": {"c": "0"}}}
             repo_3.save()
 
             with self.subTest("no ordering Direction"):

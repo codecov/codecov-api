@@ -1,4 +1,6 @@
-from django.db.models.fields.json import KeyTransform
+from django.db.models import FloatField
+from django.db.models.functions import Cast
+from django.db.models.fields.json import KeyTextTransform
 
 from core.models import Repository
 from graphql_api.types.enums import RepositoryOrdering
@@ -7,8 +9,11 @@ from graphql_api.types.enums import RepositoryOrdering
 def apply_ordering_annotations_to_queryset(queryset, ordering):
     if ordering == RepositoryOrdering.COVERAGE:
         queryset = queryset.annotate(
-            coverage=KeyTransform(
-                "c", KeyTransform("totals", KeyTransform("commit", "cache"))
+            coverage=Cast(
+                KeyTextTransform(
+                    "c", KeyTextTransform("totals", KeyTextTransform("commit", "cache"))
+                ),
+                output_field=FloatField(),
             )
         )
 
