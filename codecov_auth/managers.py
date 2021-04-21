@@ -1,4 +1,4 @@
-from django.db.models import OuterRef, Exists, Func, QuerySet, F, Subquery, OuterRef
+from django.db.models import OuterRef, Exists, Func, QuerySet, F, Subquery, OuterRef, Q
 from core.models import Pull
 
 
@@ -6,9 +6,13 @@ class OwnerQuerySet(QuerySet):
     def users_of(self, owner):
         """
         Returns users of "owner", which is defined as Owner objects
-        whose "organizations" field contains the "owner"s ownerid.
+        whose "organizations" field contains the "owner"s ownerid
+        or is one of the "owner"s "plan_activated_users".
         """
-        return self.filter(organizations__contains=[owner.ownerid])
+        return self.filter(
+            Q(organizations__contains=[owner.ownerid])
+            | Q(ownerid__in=owner.plan_activated_users)
+        )
 
     def annotate_activated_in(self, owner):
         """
