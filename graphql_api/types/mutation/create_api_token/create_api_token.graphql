@@ -1,0 +1,4 @@
+type CreateApiTokenPayload {
+    error: String
+    session: Session
+}

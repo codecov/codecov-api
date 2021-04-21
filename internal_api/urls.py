@@ -14,7 +14,6 @@ from internal_api.commit.views import CommitsViewSet
 from internal_api.branch.views import BranchViewSet
 from internal_api.repo.views import RepositoryViewSet
 from internal_api.compare.views import CompareViewSet
-from internal_api.sessions.views import SessionViewSet
 
 
 from rest_framework.routers import DefaultRouter
@@ -39,7 +38,6 @@ owners_router.register(r"owners", OwnerViewSet, basename="owners")
 owner_artifacts_router = OptionalTrailingSlashRouter()
 owner_artifacts_router.register(r"users", UserViewSet, basename="users")
 owner_artifacts_router.register(r"invoices", InvoiceViewSet, basename="invoices")
-owner_artifacts_router.register(r"sessions", SessionViewSet, basename="sessions")
 
 account_details_router = RetrieveUpdateDestroyRouter()
 account_details_router.register(

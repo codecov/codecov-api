@@ -2,7 +2,12 @@ import json
 from typing import cast
 
 from django.conf import settings
-from django.http import HttpRequest, HttpResponseBadRequest, JsonResponse
+from django.http import (
+    HttpRequest,
+    HttpResponseBadRequest,
+    JsonResponse,
+    HttpResponseNotAllowed,
+)
 from graphql import GraphQLSchema
 
 from ariadne.exceptions import HttpBadRequestError
@@ -16,6 +21,12 @@ from ariadne.contrib.django.views import GraphQLView as BaseGraphQLView
 class GraphQLView(BaseGraphQLView):
     async def __call__(self, *args, **kwargs):
         return super().__call__(self, *args, **kwargs)
+
+    def get(self, *args, **kwargs):
+        if settings.DEBUG:
+            return super().get(*args, **kwargs)
+        # No GraphqlPlayground if no settings.DEBUG
+        return HttpResponseNotAllowed(["POST"])
 
     async def post(
         self, request: HttpRequest, *args, **kwargs

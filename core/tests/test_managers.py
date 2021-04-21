@@ -2,6 +2,7 @@ from datetime import datetime
 from django.utils import timezone
 
 from django.test import TestCase
+from django.contrib.auth.models import AnonymousUser
 
 from core.models import Repository
 
@@ -32,19 +33,47 @@ class RepositoryQuerySetTests(TestCase):
 
     def test_get_aggregated_coverage(self):
         CommitFactory(
-            totals={"n": 10, "h": 5, "m": 5, "p": 0, "c": 50.0, "C": 0.0,},
+            totals={
+                "n": 10,
+                "h": 5,
+                "m": 5,
+                "p": 0,
+                "c": 50.0,
+                "C": 0.0,
+            },
             repository=self.repo1,
         )
         CommitFactory(
-            totals={"n": 10, "h": 10, "m": 0, "p": 0, "c": 100.0, "C": 0.0,},
+            totals={
+                "n": 10,
+                "h": 10,
+                "m": 0,
+                "p": 0,
+                "c": 100.0,
+                "C": 0.0,
+            },
             repository=self.repo1,
         )
         CommitFactory(
-            totals={"n": 90, "h": 40, "m": 50, "p": 0, "c": 60.0, "C": 0.0,},
+            totals={
+                "n": 90,
+                "h": 40,
+                "m": 50,
+                "p": 0,
+                "c": 60.0,
+                "C": 0.0,
+            },
             repository=self.repo2,
         )
         CommitFactory(
-            totals={"n": 100, "h": 50, "m": 50, "p": 0, "c": 50.0, "C": 0.0,},
+            totals={
+                "n": 100,
+                "h": 50,
+                "m": 50,
+                "p": 0,
+                "c": 50.0,
+                "C": 0.0,
+            },
             repository=self.repo2,
         )
 
@@ -84,12 +113,50 @@ class RepositoryQuerySetTests(TestCase):
                 "default_branch": "master",
                 "private": True,
                 "name": "test",
-                "fork": True
+                "fork": True,
             }
 
-            repo, created = Repository.objects.get_or_create_from_git_repo(repo_data, owner)
+            repo, created = Repository.objects.get_or_create_from_git_repo(
+                repo_data, owner
+            )
             assert created
             assert repo.service_id == 45
             assert repo.branch == "master"
             assert repo.private
             assert repo.name == "test"
+
+    def test_viewable_repos(self):
+        private_repo = RepositoryFactory(private=True)
+        public_repo = RepositoryFactory(private=False)
+
+        with self.subTest("when owner permission is none doesnt crash"):
+            owner = OwnerFactory(permission=None)
+            owned_repo = RepositoryFactory(author=owner)
+
+            repos = Repository.objects.viewable_repos(owner)
+            assert repos.count() == 2
+
+            repoids = repos.values_list("repoid", flat=True)
+            assert public_repo.repoid in repoids
+            assert owned_repo.repoid in repoids
+
+        with self.subTest("when owner permission is not none, returns repos"):
+            owner = OwnerFactory(permission=[private_repo.repoid])
+            owned_repo = RepositoryFactory(author=owner)
+
+            repos = Repository.objects.viewable_repos(owner)
+            assert repos.count() == 3
+
+            repoids = repos.values_list("repoid", flat=True)
+            assert public_repo.repoid in repoids
+            assert owned_repo.repoid in repoids
+            assert private_repo.repoid in repoids
+
+        with self.subTest("when user not authed, returns only public"):
+            user = AnonymousUser()
+
+            repos = Repository.objects.viewable_repos(user)
+            assert repos.count() == 1
+
+            repoids = repos.values_list("repoid", flat=True)
+            assert public_repo.repoid in repoids
