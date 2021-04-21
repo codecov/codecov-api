@@ -7,7 +7,12 @@ from codecov_auth.tests.factories import SessionFactory
 class GraphQLTestHelper:
     @patch("codecov_auth.authentication.decode_token_from_cookie")
     def gql_request(
-        self, query, mock_decode_token_from_cookie, provider="gh", user=None
+        self,
+        query,
+        mock_decode_token_from_cookie,
+        provider="gh",
+        user=None,
+        variables={},
     ):
         url = f"/graphql/{provider}"
         headers = {}
@@ -19,8 +24,12 @@ class GraphQLTestHelper:
             self.client.force_login(user)
 
         response = self.client.post(
-            url, {"query": query}, content_type="application/json", **headers
+            url,
+            {"query": query, "variables": variables},
+            content_type="application/json",
+            **headers,
         )
+
         return response.json()["data"]
 
 

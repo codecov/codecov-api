@@ -1,7 +1,7 @@
 from asgiref.sync import sync_to_async
 
 from utils.services import get_long_service_name
-from codecov_auth.models import Owner
+from codecov_auth.models import Owner, Session
 
 
 def search_my_owners(current_user, filters):
@@ -21,3 +21,9 @@ def get_owner(service, username):
 
 def get_owner_sessions(current_user):
     return current_user.session_set.all()
+
+
+@sync_to_async
+def create_api_token(current_user, name):
+    type = Session.SessionType.API
+    return Session.objects.create(name=name, owner=current_user, type=type)
