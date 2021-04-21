@@ -770,7 +770,7 @@ class UploadHandlerHelpersTest(TestCase):
                 Repository,
                 author=owner,
             )
-            commit = G(Commit, totals={"s": 101}, repository=repo)
+            commit = G(Commit, totals={"s": 151}, repository=repo)
 
             with self.assertRaises(ValidationError) as err:
                 validate_upload({"commit": commit.commitid}, repo, redis)
