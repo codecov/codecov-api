@@ -420,7 +420,7 @@ def validate_upload(upload_params, repository, redis):
             commitid=upload_params.get("commit"), repository=repository
         )
         session_count = commit.totals.get("s", 0) if commit.totals else 0
-        if (session_count or 0) > (get_config("setup", "max_sessions") or 100):
+        if (session_count or 0) > (get_config("setup", "max_sessions") or 150):
             log.warning(
                 "Too many uploads to this commit",
                 extra=dict(
