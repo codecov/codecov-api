@@ -102,3 +102,13 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query)
         repos = paginate_connection(data["owner"]["repositories"])
         assert repos == [{"name": "b"}]
+
+    def test_fetching_repositories_with_ordering(self):
+        query = query_repositories % (
+            self.user.username,
+            "(ordering: NAME, orderingDirection: DESC)",
+            "",
+        )
+        data = self.gql_request(query, user=self.user)
+        repos = paginate_connection(data["owner"]["repositories"])
+        assert repos == [{"name": "b"}, {"name": "a"}]

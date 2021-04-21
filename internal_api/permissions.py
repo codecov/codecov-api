@@ -114,9 +114,6 @@ class UserIsAdminPermissions(BasePermission):
     """
 
     def has_permission(self, request, view):
-        import pdb
-
-        pdb.set_trace()
         return request.user.is_authenticated and (
             view.owner.is_admin(request.user)
             or self._is_admin_on_provider(request.user, view.owner)
