@@ -105,7 +105,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
         repo_2 = RepositoryFactory(author=current_user, name="B")
         repo_3 = RepositoryFactory(author=current_user, name="C")
 
-        with self.subTest("No ordering"):
+        with self.subTest("No ordering (defaults to order by repoid)"):
             with self.subTest("no ordering Direction"):
                 data = self.gql_request(build_query(), user=current_user)
                 repos = paginate_connection(data["me"]["viewableRepositories"])
