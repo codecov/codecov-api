@@ -33,8 +33,6 @@ class SessionTestCase(GraphQLTestHelper, TransactionTestCase):
     @freeze_time("2021-01-01")
     def test_fetching_session(self):
         data = self.gql_request(query, user=self.user)
-        print(self.user.session_set.all())
-        print(data)
         sessions = paginate_connection(data["me"]["sessions"])
         current_session = self.user.session_set.first()
         assert sessions == [
