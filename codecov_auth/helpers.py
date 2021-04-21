@@ -9,12 +9,14 @@ from rest_framework import exceptions
 from codecov_auth.constants import GITLAB_BASE_URL
 from django.conf import settings
 
-GITLAB_PAYLOAD_AVATAR_URL_KEY = 'avatar_url'
+GITLAB_PAYLOAD_AVATAR_URL_KEY = "avatar_url"
 
 
 def get_gitlab_url(email, size):
-    res = requests.get('{}/api/v4/avatar?email={}&size={}'.format(GITLAB_BASE_URL, email, size))
-    url = ''
+    res = requests.get(
+        "{}/api/v4/avatar?email={}&size={}".format(GITLAB_BASE_URL, email, size)
+    )
+    url = ""
     if res.status_code == 200:
         data = res.json()
         try:
@@ -40,14 +42,10 @@ def create_signed_value(name, value, version=None):
         version = DEFAULT_SIGNED_VALUE_VERSION
     if version != DEFAULT_SIGNED_VALUE_VERSION:
         raise Exception("Unsupported version of signed cookie")
-    return do_create_signed_value_v2(
-        secret, name, value, version=version
-    )
+    return do_create_signed_value_v2(secret, name, value, version=version)
 
 
-def do_create_signed_value_v2(
-    secret, name, value, version=None, clock=None
-):
+def do_create_signed_value_v2(secret, name, value, version=None, clock=None):
     """
         Implementation to sign a cookie in a way that is compatible with tornado==4.5.2
         Implementation heavily from https://github.com/tornadoweb/tornado/blob/v4.5.2/tornado/web.py
@@ -64,6 +62,7 @@ def do_create_signed_value_v2(
 
     def format_field(s):
         return f"{len(s)}:{s}"
+
     key_version = None
 
     to_sign = "|".join(
@@ -97,16 +96,15 @@ def decode_token_from_cookie(secret, encoded_cookie):
             decode_token_from_cookie(secret, do_create_signed_value_v2(secret, name, value)) == value
             ```
     """
-    cookie_fields = encoded_cookie.split('|')
+    cookie_fields = encoded_cookie.split("|")
     if len(cookie_fields) < 6:
-        raise exceptions.AuthenticationFailed('No correct token format')
+        raise exceptions.AuthenticationFailed("No correct token format")
     cookie_value, cookie_signature = "|".join(cookie_fields[:5]) + "|", cookie_fields[5]
     expected_sig = create_signature_v2(secret, cookie_value)
-    print(expected_sig)
     if not hmac.compare_digest(cookie_signature, expected_sig):
-        raise exceptions.AuthenticationFailed('Signature doesnt match')
-    splitted = cookie_fields[4].split(':')
+        raise exceptions.AuthenticationFailed("Signature doesnt match")
+    splitted = cookie_fields[4].split(":")
     if len(splitted) != 2:
-        raise exceptions.AuthenticationFailed('No correct token format')
+        raise exceptions.AuthenticationFailed("No correct token format")
     _, encoded_token = splitted
     return base64.b64decode(encoded_token).decode()

@@ -24,17 +24,17 @@ class PullViewSet(
     RepoPropertyMixin,
     viewsets.GenericViewSet,
     mixins.ListModelMixin,
-    mixins.RetrieveModelMixin
+    mixins.RetrieveModelMixin,
 ):
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
-    filterset_fields = ['state']
-    ordering_fields = ('pullid',)
+    filterset_fields = ["state"]
+    ordering_fields = ("pullid",)
     permission_classes = [RepositoryArtifactPermissions]
 
     def get_serializer_class(self):
-        if self.action == 'retrieve':
+        if self.action == "retrieve":
             return PullDetailSerializer
-        elif self.action == 'list':
+        elif self.action == "list":
             return PullSerializer
 
     def get_object(self):
@@ -45,26 +45,22 @@ class PullViewSet(
         return self.repo.pull_requests.annotate(
             base_totals=Subquery(
                 Commit.objects.filter(
-                    commitid=OuterRef("base"),
-                    repository=OuterRef('repository')
-                ).values('totals')[:1]
+                    commitid=OuterRef("base"), repository=OuterRef("repository")
+                ).values("totals")[:1]
             ),
             head_totals=Subquery(
                 Commit.objects.filter(
-                    commitid=OuterRef("head"),
-                    repository=OuterRef('repository')
-                ).values('totals')[:1]
+                    commitid=OuterRef("head"), repository=OuterRef("repository")
+                ).values("totals")[:1]
             ),
             ci_passed=Subquery(
                 Commit.objects.filter(
-                    commitid=OuterRef("head"),
-                    repository=OuterRef('repository')
-                ).values('ci_passed')[:1]
+                    commitid=OuterRef("head"), repository=OuterRef("repository")
+                ).values("ci_passed")[:1]
             ),
             most_recent_commiter=Subquery(
                 Commit.objects.filter(
-                    commitid=OuterRef("head"),
-                    repository=OuterRef('repository')
-                ).values('author__username')[:1]
-            )
+                    commitid=OuterRef("head"), repository=OuterRef("repository")
+                ).values("author__username")[:1]
+            ),
         )

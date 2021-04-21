@@ -12,5 +12,5 @@ urlpatterns = [
         r"^(?P<service>\w+)/(?P<owner_username>[\w|-]+)/coverage/organization\/?$",
         OrganizationChartHandler.as_view(),
         name="chart-coverage-organization",
-    )
+    ),
 ]

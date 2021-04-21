@@ -10,7 +10,7 @@ from cerberus import Validator
 from datetime import datetime
 from dateutil import parser
 
-from core.models import Commit
+from core.models import Commit, Repository
 from codecov_auth.models import Owner
 
 
@@ -129,7 +129,7 @@ def apply_grouping(queryset, data):
         f"{date_ordering}truncated_date", "repository__name", f"{ordering}{agg_value}"
     ).distinct(
         "truncated_date", "repository__name"
-    ) # this will select the first row for a given date/repo combo, which since we've just ordered the commits
+    )  # this will select the first row for a given date/repo combo, which since we've just ordered the commits
     # should be the one with the min/max value we want to aggregate by
 
 
@@ -138,6 +138,7 @@ class ChartQueryRunner:
     Houses the SQL query that retrieves data for analytics chart, and
     the associated parameter validation + transformation required for it.
     """
+
     def __init__(self, user, request_params):
         self.user = user
         self.request_params = request_params
@@ -149,10 +150,7 @@ class ChartQueryRunner:
         Copied from: https://docs.djangoproject.com/en/3.1/topics/db/sql/#executing-custom-sql-directly
         """
         columns = [col[0] for col in cursor.description]
-        return [
-            dict(zip(columns, row))
-            for row in cursor.fetchall()
-        ]
+        return [dict(zip(columns, row)) for row in cursor.fetchall()]
 
     @property
     def start_date(self):
@@ -162,11 +160,7 @@ class ChartQueryRunner:
         used if not set.
         """
         if "start_date" in self.request_params:
-            return datetime.date(
-                parser.parse(
-                    self.request_params.get("start_date")
-                )
-            )
+            return datetime.date(parser.parse(self.request_params.get("start_date")))
         return self.first_complete_commit_date
 
     @property
@@ -175,11 +169,7 @@ class ChartQueryRunner:
         Returns 'end_date' to use in date spine.
         """
         if "end_date" in self.request_params:
-            return datetime.date(
-                parser.parse(
-                    self.request_params.get("end_date")
-                )
-            )
+            return datetime.date(parser.parse(self.request_params.get("end_date")))
         return datetime.date(timezone.now())
 
     @property
@@ -213,25 +203,22 @@ class ChartQueryRunner:
         """
         organization = Owner.objects.get(
             service=self.request_params["service"],
-            username=self.request_params["owner_username"]
+            username=self.request_params["owner_username"],
         )
 
         # Get list of relevant repoids
-        repos = organization.repository_set.viewable_repos(
-            self.user
-        )
+        repos = Repository.objects.filter(author=organization).viewable_repos(self.user)
 
         if self.request_params.get("repositories", []):
             repos = repos.filter(name__in=self.request_params.get("repositories", []))
 
         if repos:
             # Get repoids into a format easily plugged into raw SQL
-            return "(" + ",".join(
-                map(
-                    str,
-                    list(repos.values_list("repoid", flat=True))
-                )
-            ) + ")"
+            return (
+                "("
+                + ",".join(map(str, list(repos.values_list("repoid", flat=True))))
+                + ")"
+            )
 
     @cached_property
     def first_complete_commit_date(self):
@@ -270,8 +257,8 @@ class ChartQueryRunner:
             "repositories": {"type": "list", "required": False},
             "start_date": {"type": "string", "required": False},
             "end_date": {"type": "string", "required": False},
-            "agg_function": {"type": "string", "required": False}, # Deprecated
-            "agg_value": {"type": "string", "required": False}, # Deprecated
+            "agg_function": {"type": "string", "required": False},  # Deprecated
+            "agg_value": {"type": "string", "required": False},  # Deprecated
             "grouping_unit": {
                 "type": "string",
                 "required": True,
@@ -281,12 +268,12 @@ class ChartQueryRunner:
                     "month",
                     "quarter",
                     "year",
-                ], # Must be one acceptable by Postgres DATE_TRUNC
+                ],  # Must be one acceptable by Postgres DATE_TRUNC
             },
             "coverage_timestamp_ordering": {
                 "type": "string",
                 "allowed": ["increasing", "decreasing"],
-                "required": False
+                "required": False,
             },
         }
         v = Validator(params_schema)

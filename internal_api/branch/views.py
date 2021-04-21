@@ -17,15 +17,15 @@ class BranchViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, RepoProperty
     serializer_class = BranchSerializer
     filter_backends = (DjangoFilterBackend, filters.OrderingFilter)
     filterset_class = BranchFilters
-    ordering_fields = ('updatestamp', 'name')
+    ordering_fields = ("updatestamp", "name")
     permission_classes = [RepositoryArtifactPermissions]
 
     def get_queryset(self):
         return self.repo.branches.annotate(
             most_recent_commiter=Subquery(
                 Commit.objects.filter(
-                    commitid=OuterRef('head'),
-                    repository_id=OuterRef('repository__repoid')
-                ).values('author__username')[:1]
+                    commitid=OuterRef("head"),
+                    repository_id=OuterRef("repository__repoid"),
+                ).values("author__username")[:1]
             )
-        ).order_by(F('updatestamp').desc(nulls_last=True))
+        ).order_by(F("updatestamp").desc(nulls_last=True))

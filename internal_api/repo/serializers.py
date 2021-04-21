@@ -15,19 +15,21 @@ class RepoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Repository
-        fields = (
-            'repoid',
-            'service_id',
-            'name',
-            'branch',
-            'private',
-            'updatestamp',
-            'author',
-            'active',
-            'language',
+        read_only_fields = (
+            "repoid",
+            "service_id",
+            "name",
+            "private",
+            "updatestamp",
+            "author",
+            "language",
             "hookid",
-            "activated",
             "using_integration",
+        )
+        fields = read_only_fields + (
+            "branch",
+            "active",
+            "activated",
         )
 
 
@@ -37,15 +39,14 @@ class RepoWithMetricsSerializer(RepoSerializer):
 
     class Meta(RepoSerializer.Meta):
         fields = (
-            'latest_commit_totals',
-            'latest_coverage_change',
+            "latest_commit_totals",
+            "latest_coverage_change",
         ) + RepoSerializer.Meta.fields
 
 
 class RepoDetailsSerializer(RepoSerializer):
     fork = RepoSerializer()
-    latest_commit = serializers.SerializerMethodField(
-        source="get_latest_commit")
+    latest_commit = serializers.SerializerMethodField(source="get_latest_commit")
     bot = serializers.SerializerMethodField()
 
     # Permissions
@@ -53,27 +54,32 @@ class RepoDetailsSerializer(RepoSerializer):
     can_edit = serializers.SerializerMethodField()
 
     class Meta(RepoSerializer.Meta):
+        read_only_fields = (
+            "fork",
+            "upload_token",
+            "yaml",
+            "image_token",
+        ) + RepoSerializer.Meta.read_only_fields
         fields = (
-            'fork',
-            'upload_token',
-            'can_edit',
-            'can_view',
-            'latest_commit',
-            'yaml',
-            'image_token',
-            'bot'
-        ) + RepoSerializer.Meta.fields
+            ("can_edit", "can_view", "latest_commit", "bot")
+            + RepoSerializer.Meta.fields
+            + read_only_fields
+        )
 
     def get_bot(self, repo):
         if repo.bot:
             return repo.bot.username
 
     def get_latest_commit(self, repo):
-        commits_queryset = repo.commits.filter(
-            state=Commit.CommitStates.COMPLETE,
-        ).order_by('-timestamp')
+        commits_queryset = (
+            repo.commits.filter(
+                state=Commit.CommitStates.COMPLETE,
+            )
+            .defer("report")
+            .order_by("-timestamp")
+        )
 
-        branch_param = self.context['request'].query_params.get('branch', None)
+        branch_param = self.context["request"].query_params.get("branch", None)
 
         commits_queryset = commits_queryset.filter(branch=branch_param or repo.branch)
 
@@ -98,11 +104,16 @@ class RepoDetailsSerializer(RepoSerializer):
         segment = SegmentService()
         if "active" in validated_data:
             if validated_data["active"] and not instance.active:
-                segment.account_activated_repository(self.context["request"].user.ownerid, instance)
+                segment.account_activated_repository(
+                    self.context["request"].user.ownerid, instance
+                )
             elif not validated_data["active"] and instance.active:
-                segment.account_deactivated_repository(self.context["request"].user.ownerid, instance)
+                segment.account_deactivated_repository(
+                    self.context["request"].user.ownerid, instance
+                )
 
         return super().update(instance, validated_data)
+
 
 class SecretStringPayloadSerializer(serializers.Serializer):
     value = serializers.CharField(required=True)

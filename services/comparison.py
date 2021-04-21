@@ -15,7 +15,7 @@ from shared.helpers.yaml import walk
 from services.archive import ReportService
 from core.models import Commit
 from services.repo_providers import RepoProviderService
-from services.redis import get_redis_connection
+from services.redis_configuration import get_redis_connection
 from utils.config import get_config
 
 
@@ -54,6 +54,7 @@ class FileComparisonTraverseManager:
     of arbitrary actions on each line in a FileComparison. The main entrypoint to
     this class is the '.apply()' method, which is the only method client code should invoke.
     """
+
     def __init__(self, head_file_eof=0, base_file_eof=0, segments=[], src=[]):
         """
         head_file_eof -- end-line of the head_file we are traversing, plus 1
@@ -99,7 +100,9 @@ class FileComparisonTraverseManager:
             the line value passed to the visitors will be the line at src[self.head_ln - 1].
         """
         if src:
-            assert head_file_eof - 1 <= len(src), "If source provided, it must be full source"
+            assert head_file_eof - 1 <= len(
+                src
+            ), "If source provided, it must be full source"
 
         self.head_file_eof = head_file_eof
         self.base_file_eof = base_file_eof
@@ -127,12 +130,14 @@ class FileComparisonTraverseManager:
         base_ln_within_offset = (
             int(self.segments[0]["header"][0])
             <= self.base_ln
-            < int(self.segments[0]["header"][0]) + int(self.segments[0]["header"][1] or 1)
+            < int(self.segments[0]["header"][0])
+            + int(self.segments[0]["header"][1] or 1)
         )
         head_ln_within_offset = (
             int(self.segments[0]["header"][2])
             <= self.head_ln
-            < int(self.segments[0]["header"][2]) + int(self.segments[0]["header"][3] or 1)
+            < int(self.segments[0]["header"][2])
+            + int(self.segments[0]["header"][3] or 1)
         )
         return base_ln_within_offset or head_ln_within_offset
 
@@ -161,7 +166,7 @@ class FileComparisonTraverseManager:
                     None if _is_added(line_value) else self.base_ln,
                     None if _is_removed(line_value) else self.head_ln,
                     line_value,
-                    self.traversing_diff() # TODO(pierce): remove when upon combining diff + changes tabs in UI
+                    self.traversing_diff(),  # TODO(pierce): remove when upon combining diff + changes tabs in UI
                 )
 
             if _is_added(line_value):
@@ -206,7 +211,7 @@ class FileComparisonVisitor:
         try:
             line = report_file._lines[ln - 1]
         except IndexError:
-            return None 
+            return None
 
         # copied from ReportFile._line, minus dataclass instantiation
         if line:
@@ -232,6 +237,7 @@ class CreateLineComparisonVisitor(FileComparisonVisitor):
     result in self.lines. Only operates on lines that have
     code-values derived from segments or src in FileComparisonTraverseManager.
     """
+
     def __init__(self, base_file, head_file):
         self.base_file, self.head_file = base_file, head_file
         self.lines = []
@@ -249,7 +255,7 @@ class CreateLineComparisonVisitor(FileComparisonVisitor):
                 base_ln=base_ln,
                 head_ln=head_ln,
                 value=value,
-                is_diff=is_diff
+                is_diff=is_diff,
             )
         )
 
@@ -261,13 +267,14 @@ class CreateChangeSummaryVisitor(FileComparisonVisitor):
     in the source code, which are prefixed with '+' or '-'. Result
     is stored in self.summary.
     """
+
     def __init__(self, base_file, head_file):
         self.base_file, self.head_file = base_file, head_file
         self.summary = Counter()
         self.coverage_type_map = {
-          LineType.hit: "hits",
-          LineType.miss: "misses",
-          LineType.partial: "partials"
+            LineType.hit: "hits",
+            LineType.miss: "misses",
+            LineType.partial: "partials",
         }
 
     def _update_summary(self, base_line, head_line):
@@ -309,14 +316,18 @@ class LineComparison:
     def number(self):
         return {
             "base": self.base_ln if not self.added else None,
-            "head": self.head_ln if not self.removed else None
+            "head": self.head_ln if not self.removed else None,
         }
 
     @property
     def coverage(self):
         return {
-            "base": None if self.added or not self.base_line else line_type(self.base_line[0]),
-            "head": None if self.removed or not self.head_line else line_type(self.head_line[0])
+            "base": None
+            if self.added or not self.base_line
+            else line_type(self.base_line[0]),
+            "head": None
+            if self.removed or not self.head_line
+            else line_type(self.head_line[0]),
         }
 
     @property
@@ -330,13 +341,23 @@ class LineComparison:
 
         # an array of 1's (like [1, 1, ...]) of length equal to the number of sessions
         # where each session's coverage == 1 (hit)
-        session_coverage = [session[1] for session in self.head_line[2] if session[1] == 1]
+        session_coverage = [
+            session[1] for session in self.head_line[2] if session[1] == 1
+        ]
         if session_coverage:
             return functools.reduce(lambda a, b: a + b, session_coverage)
 
 
 class FileComparison:
-    def __init__(self, base_file, head_file, diff_data=None, src=[], bypass_max_diff=False, should_search_for_changes=None):
+    def __init__(
+        self,
+        base_file,
+        head_file,
+        diff_data=None,
+        src=[],
+        bypass_max_diff=False,
+        should_search_for_changes=None,
+    ):
         """
         comparison -- the enclosing Comparison object that owns this FileComparison
 
@@ -378,10 +399,14 @@ class FileComparison:
         self.src = src
 
         # Some extra fields for truncating large diffs in the initial response
-        self.total_diff_length = functools.reduce(
-            lambda a, b: a + b,
-            [len(segment["lines"]) for segment in self.diff_data["segments"]]
-        ) if self.diff_data is not None and self.diff_data["segments"] else 0
+        self.total_diff_length = (
+            functools.reduce(
+                lambda a, b: a + b,
+                [len(segment["lines"]) for segment in self.diff_data["segments"]],
+            )
+            if self.diff_data is not None and self.diff_data["segments"]
+            else 0
+        )
 
         self.bypass_max_diff = bypass_max_diff
         self.should_search_for_changes = should_search_for_changes
@@ -390,7 +415,7 @@ class FileComparison:
     def name(self):
         return {
             "base": self.base_file.name if self.base_file is not None else None,
-            "head": self.head_file.name if self.head_file is not None else None
+            "head": self.head_file.name if self.head_file is not None else None,
         }
 
     @property
@@ -403,10 +428,10 @@ class FileComparison:
         # to the head_totals' 'diff' attribute. It is absolutely worth considering
         # modifying the behavior of shared.reports to implement something similar.
         if head_totals and self.diff_data:
-            head_totals.diff = self.diff_data.get('totals', 0)
+            head_totals.diff = self.diff_data.get("totals", 0)
         return {
             "base": self.base_file.totals if self.base_file is not None else None,
-            "head": head_totals
+            "head": head_totals,
         }
 
     @property
@@ -429,15 +454,19 @@ class FileComparison:
         This limitation improves performance by limiting searching for changes to only files that
         have them.
         """
-        change_summary_visitor = CreateChangeSummaryVisitor(self.base_file, self.head_file)
-        create_lines_visitor = CreateLineComparisonVisitor(self.base_file, self.head_file)
+        change_summary_visitor = CreateChangeSummaryVisitor(
+            self.base_file, self.head_file
+        )
+        create_lines_visitor = CreateLineComparisonVisitor(
+            self.base_file, self.head_file
+        )
 
         if self.diff_data or self.src or self.should_search_for_changes is not False:
             FileComparisonTraverseManager(
                 head_file_eof=self.head_file.eof if self.head_file is not None else 0,
                 base_file_eof=self.base_file.eof if self.base_file is not None else 0,
                 segments=self.diff_data["segments"] if self.diff_data else [],
-                src=self.src
+                src=self.src,
             ).apply([change_summary_visitor, create_lines_visitor])
 
         return change_summary_visitor.summary, create_lines_visitor.lines
@@ -454,7 +483,6 @@ class FileComparison:
 
 
 class Comparison(object):
-
     def __init__(self, user, base_commit, head_commit):
         self.user = user
         self.base_commit = base_commit
@@ -479,17 +507,13 @@ class Comparison(object):
 
         if with_src:
             file_content = asyncio.run(
-                RepoProviderService().get_adapter(
-                    user=self.user,
-                    repo=self.base_commit.repository
-                ).get_source(
-                    file_name,
-                    self.head_commit.commitid
-                )
+                RepoProviderService()
+                .get_adapter(user=self.user, repo=self.base_commit.repository)
+                .get_source(file_name, self.head_commit.commitid)
             )["content"]
             # make sure the file is str utf-8
             if type(file_content) is not str:
-                file_content = str(file_content, 'utf-8')
+                file_content = str(file_content, "utf-8")
             src = file_content.splitlines()
         else:
             src = []
@@ -499,7 +523,7 @@ class Comparison(object):
             head_file=head_file,
             diff_data=diff_data,
             src=src,
-            bypass_max_diff=bypass_max_diff
+            bypass_max_diff=bypass_max_diff,
         )
 
     @property
@@ -540,10 +564,9 @@ class Comparison(object):
             Returns the commits that have uploads between base and head.
             :return: Queryset of core.models.Commit objects
         """
-        commit_ids = [commit['commitid'] for commit in self.git_commits]
+        commit_ids = [commit["commitid"] for commit in self.git_commits]
         commits_queryset = Commit.objects.filter(
-            commitid__in=commit_ids,
-            repository=self.base_commit.repository
+            commitid__in=commit_ids, repository=self.base_commit.repository
         )
         commits_queryset.exclude(deleted=True)
         return commits_queryset
@@ -556,26 +579,22 @@ class Comparison(object):
         """
         loop = asyncio.get_event_loop()
 
-        comparison_coro = RepoProviderService().get_adapter(
-            self.user,
-            self.base_commit.repository
-        ).get_compare(
-            self.base_commit.commitid,
-            self.head_commit.commitid
+        comparison_coro = (
+            RepoProviderService()
+            .get_adapter(self.user, self.base_commit.repository)
+            .get_compare(self.base_commit.commitid, self.head_commit.commitid)
         )
 
-        reverse_comparison_coro = RepoProviderService().get_adapter(
-            self.user,
-            self.base_commit.repository
-        ).get_compare(
-            self.head_commit.commitid,
-            self.base_commit.commitid
+        reverse_comparison_coro = (
+            RepoProviderService()
+            .get_adapter(self.user, self.base_commit.repository)
+            .get_compare(self.head_commit.commitid, self.base_commit.commitid)
         )
 
         async def runnable():
             return await asyncio.gather(
                 loop.create_task(comparison_coro),
-                loop.create_task(reverse_comparison_coro)
+                loop.create_task(reverse_comparison_coro),
             )
 
         return loop.run_until_complete(runnable())
@@ -601,7 +620,6 @@ class Comparison(object):
 
 
 class FlagComparison(object):
-
     def __init__(self, comparison, flag_name):
         self.comparison = comparison
         self.flag_name = flag_name
@@ -619,7 +637,7 @@ class FlagComparison(object):
         if self.head_report is None:
             return None
         git_comparison = self.comparison.git_comparison
-        return self.head_report.apply_diff(git_comparison['diff'])
+        return self.head_report.apply_diff(git_comparison["diff"])
 
 
 class PullRequestComparison(Comparison):
@@ -628,6 +646,7 @@ class PullRequestComparison(Comparison):
     required for Pulls, including caching of files-with-changes and support for
     'pseudo-comparisons'.
     """
+
     def __init__(self, user, pull):
         self.pull = pull
 
@@ -636,22 +655,28 @@ class PullRequestComparison(Comparison):
                 user=user,
                 base_commit=Commit.objects.get(
                     repository=self.pull.repository,
-                    commitid=self.pull.compared_to if self.is_pseudo_comparison else pull.base
+                    commitid=self.pull.compared_to
+                    if self.is_pseudo_comparison
+                    else pull.base,
                 ),
-                head_commit=Commit.objects.get(repository=self.pull.repository, commitid=pull.head)
+                head_commit=Commit.objects.get(
+                    repository=self.pull.repository, commitid=pull.head
+                ),
             )
         except Commit.DoesNotExist:
             raise MissingComparisonCommit()
 
     @cached_property
     def _files_with_changes_hash_key(self):
-        return "/".join((
-            "compare-changed-files",
-            self.pull.repository.author.service,
-            self.pull.repository.author.username,
-            self.pull.repository.name,
-            f"{self.pull.pullid}"
-        ))
+        return "/".join(
+            (
+                "compare-changed-files",
+                self.pull.repository.author.service,
+                self.pull.repository.author.username,
+                self.pull.repository.name,
+                f"{self.pull.pullid}",
+            )
+        )
 
     @cached_property
     def _files_with_changes(self):
@@ -660,27 +685,24 @@ class PullRequestComparison(Comparison):
             changes = json.loads(redis.get(key) or json.dumps(None))
             log.info(
                 f"Found {len(changes) if changes else 0} files with changes in cache.",
-                extra=dict(repoid=self.pull.repository.repoid, pullid=self.pull.pullid)
+                extra=dict(repoid=self.pull.repository.repoid, pullid=self.pull.pullid),
             )
             return changes
         except OSError as e:
             log.warning(
                 f"Error connecting to redis: {e}",
-                extra=dict(
-                    repoid=self.pull.repository.repoid,
-                    pullid=self.pull.pullid
-                )
+                extra=dict(repoid=self.pull.repository.repoid, pullid=self.pull.pullid),
             )
 
     def _set_files_with_changes_in_cache(self, files_with_changes):
         redis.set(
             self._files_with_changes_hash_key,
             json.dumps(files_with_changes),
-            ex=86400 # 1 day in seconds
+            ex=86400,  # 1 day in seconds
         )
         log.info(
             f"Stored {len(files_with_changes)} files with changes in cache",
-            extra=dict(repoid=self.pull.repository.repoid, pullid=self.pull.pullid)
+            extra=dict(repoid=self.pull.repository.repoid, pullid=self.pull.pullid),
         )
 
     @cached_property
@@ -702,12 +724,12 @@ class PullRequestComparison(Comparison):
         field.
         """
         file_comparison = super().get_file_comparison(
-            file_name,
-            with_src=with_src,
-            bypass_max_diff=bypass_max_diff
+            file_name, with_src=with_src, bypass_max_diff=bypass_max_diff
         )
         file_comparison.should_search_for_changes = (
-            file_name in self._files_with_changes if self._files_with_changes is not None else None
+            file_name in self._files_with_changes
+            if self._files_with_changes is not None
+            else None
         )
         return file_comparison
 
@@ -723,7 +745,7 @@ class PullRequestComparison(Comparison):
         return walk(
             _dict=self.pull.repository.yaml,
             keys=("codecov", "allow_pseudo_compare"),
-            _else=get_config(("site", "codecov", "allow_pseudo_compare"), default=True)
+            _else=get_config(("site", "codecov", "allow_pseudo_compare"), default=True),
         ) and bool(self.pull.compared_to)
 
     @cached_property
@@ -736,7 +758,9 @@ class PullRequestComparison(Comparison):
         return walk(
             _dict=self.pull.repository.yaml,
             keys=("codecov", "allow_coverage_offsets"),
-            _else=get_config(("site", "codecov", "allow_coverage_offsets"), default=False)
+            _else=get_config(
+                ("site", "codecov", "allow_coverage_offsets"), default=False
+            ),
         )
 
     @cached_property
@@ -746,13 +770,9 @@ class PullRequestComparison(Comparison):
         'self.pull.base' field.
         """
         return asyncio.run(
-            RepoProviderService().get_adapter(
-                self.user,
-                self.pull.repository
-            ).get_compare(
-                self.pull.compared_to,
-                self.pull.base
-            )
+            RepoProviderService()
+            .get_adapter(self.user, self.pull.repository)
+            .get_compare(self.pull.compared_to, self.pull.base)
         )["diff"]
 
     @cached_property
@@ -779,7 +799,7 @@ class PullRequestComparison(Comparison):
                 return self.base_report.does_diff_adjust_tracked_lines(
                     self.pseudo_diff,
                     future_report=self.head_report,
-                    future_diff=self.git_comparison["diff"]
+                    future_diff=self.git_comparison["diff"],
                 )
         return False
 

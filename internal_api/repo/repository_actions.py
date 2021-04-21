@@ -1,7 +1,11 @@
 from django.conf import settings
 
 from utils.config import get_config
-from webhook_handlers.constants import GitHubWebhookEvents, GitLabWebhookEvents, BitbucketWebhookEvents
+from webhook_handlers.constants import (
+    GitHubWebhookEvents,
+    GitLabWebhookEvents,
+    BitbucketWebhookEvents,
+)
 
 import asyncio
 
@@ -18,7 +22,7 @@ WEBHOOK_EVENTS = {
         "push",
         "public",
         "status",
-        "repository"
+        "repository",
     ],
     "bitbucket": BitbucketWebhookEvents.subscribed_events,
     # https://confluence.atlassian.com/bitbucketserver/post-service-webhook-for-bitbucket-server-776640367.html
@@ -42,13 +46,20 @@ def create_webhook_on_provider(repository_service, repo):
 
     webhook_url = settings.WEBHOOK_URL
 
-    log.info("Resetting webhook with webhook url: %s" % f'{webhook_url}/webhooks/{repository_service.service}')
+    log.info(
+        "Resetting webhook with webhook url: %s"
+        % f"{webhook_url}/webhooks/{repository_service.service}"
+    )
 
     return asyncio.run(
         repository_service.post_webhook(
-            f'Codecov Webhook. {webhook_url}',
-            f'{webhook_url}/webhooks/{repository_service.service}',
+            f"Codecov Webhook. {webhook_url}",
+            f"{webhook_url}/webhooks/{repository_service.service}",
             WEBHOOK_EVENTS[repository_service.service],
-            get_config(repository_service.service, 'webhook_secret', default='testixik8qdauiab1yiffydimvi72ekq')
+            get_config(
+                repository_service.service,
+                "webhook_secret",
+                default="testixik8qdauiab1yiffydimvi72ekq",
+            ),
         )
-    ).get('id')
+    ).get("id")

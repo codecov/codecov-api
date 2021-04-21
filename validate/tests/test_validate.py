@@ -1,4 +1,3 @@
-
 from rest_framework.test import APITestCase
 from rest_framework.reverse import reverse
 from rest_framework import status
@@ -10,14 +9,14 @@ from django.conf import settings
 
 
 class TestValidateYamlHandler(APITestCase):
-    
+
     # Wrap get and post client calls
 
     def _get(self):
-        return self.client.get(reverse('validate-yaml'))
+        return self.client.get(reverse("validate-yaml"))
 
     def _post(self, data=None):
-        return self.client.post(reverse('validate-yaml'), data=data, format="json")
+        return self.client.post(reverse("validate-yaml"), data=data, format="json")
 
     # Unit tests
 
@@ -36,7 +35,7 @@ class TestValidateYamlHandler(APITestCase):
         expected_result = "No content posted."
         assert response.content.decode() == expected_result
 
-    @patch('validate.views.safe_load')
+    @patch("validate.views.safe_load")
     def test_post_malformed_yaml(self, mock_safe_load):
         mock_safe_load.side_effect = YAMLError("Can't parse YAML")
 
@@ -49,28 +48,20 @@ class TestValidateYamlHandler(APITestCase):
 
     def test_post_valid_yaml(self):
         yaml = {
-            "ignore": [
-                "Pods/.*",
-            ],
+            "ignore": ["Pods/.*",],
             "coverage": {
                 "round": "down",
                 "precision": 2,
                 "range": [70.0, 100.0],
-                "status": {
-                    "project": {
-                        "default": {
-                            "base": "auto",
-                        }
-                    }
-                },
+                "status": {"project": {"default": {"base": "auto",}}},
                 "notify": {
                     "slack": {
                         "default": {
                             "url": "secret:c/nCgqn5v1HY5VFIs9i4W3UY6eleB2rTBdBKK/ilhPR7Ch4N0FE1aO6SRfAxp3Zlm4tLNusaPY7ettH6dTYj/YhiRohxiNqJMJ4L9YQmESo="
                         }
                     }
-                }
-            }
+                },
+            },
         }
         response = self._post(data=yaml)
 
@@ -80,27 +71,20 @@ class TestValidateYamlHandler(APITestCase):
 
     def test_post_invalid_yaml(self):
         yaml = {
-            "ignore": [
-                "Pods/.*",
-            ],
+            "ignore": ["Pods/.*",],
             "coverage": {
                 "round": "down",
                 "precision": 2,
                 "range": [70.0, 100.0],
-                "status": {
-                    "project": {
-                        "default": {
-                            "base": "auto",
-                        }
-                    },
-                    "patch": "nope"
-                },
-            }
+                "status": {"project": {"default": {"base": "auto",}}, "patch": "nope"},
+            },
         }
 
         response = self._post(data=yaml)
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        expected_result = "Path: coverage->status->patch\n'nope' should be instance of 'dict'\n"
+        expected_result = (
+            "Path: coverage->status->patch\n'nope' should be instance of 'dict'\n"
+        )
         assert response.content.decode() == expected_result
 
     def test_request_body_not_parsable_as_dict(self):
@@ -117,4 +101,3 @@ class TestValidateYamlHandler(APITestCase):
 
         expected_result = "No file posted."
         assert response.content.decode() == expected_result
-
