@@ -14,7 +14,7 @@ class OwnerPropertyMixin:
     def owner(self):
         service = get_long_service_name(self.kwargs.get("service"))
         if service not in Service:
-            raise Http404
+            raise Http404("Invalid service for Owner.")
 
         return get_object_or_404(
             Owner, username=self.kwargs.get("owner_username"), service=service
