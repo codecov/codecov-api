@@ -9,10 +9,11 @@ class OwnerQuerySet(QuerySet):
         whose "organizations" field contains the "owner"s ownerid
         or is one of the "owner"s "plan_activated_users".
         """
-        return self.filter(
-            Q(organizations__contains=[owner.ownerid])
-            | Q(ownerid__in=owner.plan_activated_users)
-        )
+        filters = Q(organizations__contains=[owner.ownerid])
+        if owner.plan_activated_users:
+            filters = filters | Q(ownerid__in=owner.plan_activated_users)
+
+        return self.filter(filters)
 
     def annotate_activated_in(self, owner):
         """
