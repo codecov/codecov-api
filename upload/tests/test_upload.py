@@ -24,6 +24,8 @@ from core.models import Repository, Commit
 from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
 
+from utils.encryption import encryptor
+
 from upload.helpers import (
     parse_params,
     get_global_tokens,
@@ -472,7 +474,7 @@ class UploadHandlerHelpersTest(TestCase):
         }
 
         with self.subTest("not a github commit"):
-            org = G(Owner, service="bitbucket")
+            org = G(Owner, service="bitbucket", oauth_token=encryptor.encode("hahahahaha").decode())
             repo = G(Repository, author=org)
             upload_params = {
                 "service": "bitbucket",
@@ -484,7 +486,7 @@ class UploadHandlerHelpersTest(TestCase):
             )
 
         with self.subTest("merge commit"):
-            org = G(Owner, service="github")
+            org = G(Owner, service="github", oauth_token=encryptor.encode("hahahahaha").decode())
             repo = G(Repository, author=org)
             upload_params = {
                 "service": "github",
@@ -496,8 +498,21 @@ class UploadHandlerHelpersTest(TestCase):
                 == determine_upload_commit_to_use(upload_params, repo)
             )
 
+        with self.subTest("just no bot available"):
+            org = G(Owner, service="github", oauth_token=None)
+            repo = G(Repository, author=org, private=True)
+            upload_params = {
+                "service": "github",
+                "commit": "3084886b7ff869dcf327ad1d28a8b7d34adc7584",
+            }
+            # Should use id from merge commit message, not from params
+            assert (
+                "3084886b7ff869dcf327ad1d28a8b7d34adc7584"
+                == determine_upload_commit_to_use(upload_params, repo)
+            )
+
         with self.subTest("merge commit with did_change_merge_commit argument"):
-            org = G(Owner, service="github")
+            org = G(Owner, service="github", oauth_token=encryptor.encode("hahahahaha").decode())
             repo = G(Repository, author=org)
             upload_params = {
                 "service": "github",
@@ -755,7 +770,7 @@ class UploadHandlerHelpersTest(TestCase):
                 Repository,
                 author=owner,
             )
-            commit = G(Commit, totals={"s": 101}, repository=repo)
+            commit = G(Commit, totals={"s": 151}, repository=repo)
 
             with self.assertRaises(ValidationError) as err:
                 validate_upload({"commit": commit.commitid}, repo, redis)
