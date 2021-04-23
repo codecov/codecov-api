@@ -22,41 +22,11 @@ def build_connection_graphql(connection_name, type_node):
     """
 
 
-def _build_paginator_ordering(
-    primary_ordering, ordering_direction, unique_ordering=None
-):
-    """
-    A method to build an ordering tuple based on the specified ordering.
-    Examples:
-        primary_ordering: 'name'
-        ordering_direction: ASC
-        unique_ordering: None
-        result: ('name')
-
-        primary_ordering: 'name'
-        ordering_direction: DESC
-        unique_ordering: None
-        result: ('-name')
-
-        primary_ordering: 'name'
-        ordering_direction: ASC
-        unique_ordering: 'id'
-        result: ('name', 'id')
-
-        primary_ordering: 'name'
-        ordering_direction: DESC
-        unique_ordering: None
-        result: ('-name', '-id')
-    """
+def _build_paginator_ordering(primary_ordering, ordering_direction, unique_ordering):
     primary_ordering_value = (
         primary_ordering.value
         if isinstance(primary_ordering, enum.Enum)
         else primary_ordering
-    )
-    unique_ordering_value = (
-        unique_ordering.value
-        if isinstance(unique_ordering, enum.Enum)
-        else unique_ordering
     )
 
     primary_ordering_with_direction = (
@@ -64,25 +34,24 @@ def _build_paginator_ordering(
         if ordering_direction == OrderingDirection.DESC
         else primary_ordering_value
     )
-    paginator_ordering = (primary_ordering_with_direction,)
-    if unique_ordering:
-        unique_ordering_with_direction = (
-            f"-{unique_ordering_value}"
-            if ordering_direction == OrderingDirection.DESC
-            else unique_ordering_value
-        )
-        paginator_ordering = paginator_ordering + (unique_ordering_with_direction,)
+    unique_ordering_with_direction = (
+        f"-{unique_ordering}"
+        if ordering_direction == OrderingDirection.DESC
+        else unique_ordering
+    )
 
-    return paginator_ordering
+    return (
+        primary_ordering_with_direction,
+        unique_ordering_with_direction,
+    )
 
 
 @sync_to_async
 def queryset_to_connection(
     queryset,
     *,
-    primary_ordering,
+    ordering,
     ordering_direction,
-    unique_ordering=None,
     first=None,
     after=None,
     last=None,
@@ -90,13 +59,12 @@ def queryset_to_connection(
 ):
     """
     A method to take a queryset and return it in paginated order based on the cursor pattern.
-    "unique_ordering" is needed when the primary ordering is not unique on its own.
     """
     if not first and not after:
         first = 100
 
     paginator_ordering = _build_paginator_ordering(
-        primary_ordering, ordering_direction, unique_ordering=unique_ordering
+        ordering, ordering_direction, queryset.model._meta.pk.name
     )
     paginator = CursorPaginator(queryset, ordering=paginator_ordering)
     page = paginator.page(first=first, after=after, last=last, before=before)

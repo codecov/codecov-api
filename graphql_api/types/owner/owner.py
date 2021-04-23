@@ -21,15 +21,11 @@ def resolve_repositories(
     info,
     filters=None,
     ordering=RepositoryOrdering.ID,
-    ordering_direction=OrderingDirection.DESC,
+    ordering_direction=OrderingDirection.ASC,
     **kwargs
 ):
     current_user = info.context["request"].user
     queryset = list_repository_for_owner(current_user, owner, filters, ordering)
     return queryset_to_connection(
-        queryset,
-        primary_ordering=ordering,
-        ordering_direction=ordering_direction,
-        unique_ordering=RepositoryOrdering.ID,
-        **kwargs
+        queryset, ordering=ordering, ordering_direction=ordering_direction, **kwargs
     )
