@@ -15,8 +15,14 @@ from core.models import Pull, Repository
 
 class UserViewSetTests(APITestCase):
     def setUp(self):
-        self.owner = OwnerFactory(plan="users-free", plan_user_count=5)
+        non_org_active_user = OwnerFactory()
+        self.owner = OwnerFactory(
+            plan="users-free",
+            plan_user_count=5,
+            plan_activated_users=[non_org_active_user.ownerid],
+        )
         self.users = [
+            non_org_active_user,
             OwnerFactory(organizations=[self.owner.ownerid]),
             OwnerFactory(organizations=[self.owner.ownerid]),
             OwnerFactory(organizations=[self.owner.ownerid]),
@@ -38,11 +44,11 @@ class UserViewSetTests(APITestCase):
     def test_list_returns_200_and_user_list_on_success(self):
         response = self._list()
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["results"] == [
+        expected = [
             {
                 "name": user.name,
                 "is_admin": False,
-                "activated": False,
+                "activated": user.ownerid in self.owner.plan_activated_users,
                 "username": user.username,
                 "email": user.email,
                 "ownerid": user.ownerid,
@@ -52,6 +58,7 @@ class UserViewSetTests(APITestCase):
             }
             for user in self.users
         ]
+        self.assertCountEqual(response.data["results"], expected)
 
     @patch("codecov_auth.models.Owner.is_admin", lambda self, owner: False)
     @patch("internal_api.permissions.get_provider")
@@ -282,14 +289,16 @@ class UserViewSetTests(APITestCase):
         self.users[1].save()
         self.users[2].name = "c"
         self.users[2].save()
+        self.users[3].name = "d"
+        self.users[3].save()
 
         response = self._list(query_params={"ordering": "name"})
 
-        assert [r["name"] for r in response.data["results"]] == ["a", "b", "c"]
+        assert [r["name"] for r in response.data["results"]] == ["a", "b", "c", "d"]
 
         response = self._list(query_params={"ordering": "-name"})
 
-        assert [r["name"] for r in response.data["results"]] == ["c", "b", "a"]
+        assert [r["name"] for r in response.data["results"]] == ["d", "c", "b", "a"]
 
     def test_list_can_order_by_username(self):
         self.users[0].username = "a"
@@ -298,14 +307,16 @@ class UserViewSetTests(APITestCase):
         self.users[1].save()
         self.users[2].username = "c"
         self.users[2].save()
+        self.users[3].username = "d"
+        self.users[3].save()
 
         response = self._list(query_params={"ordering": "username"})
 
-        assert [r["username"] for r in response.data["results"]] == ["a", "b", "c"]
+        assert [r["username"] for r in response.data["results"]] == ["a", "b", "c", "d"]
 
         response = self._list(query_params={"ordering": "-username"})
 
-        assert [r["username"] for r in response.data["results"]] == ["c", "b", "a"]
+        assert [r["username"] for r in response.data["results"]] == ["d", "c", "b", "a"]
 
     def test_list_can_order_by_email(self):
         self.users[0].email = "a"
@@ -314,14 +325,16 @@ class UserViewSetTests(APITestCase):
         self.users[1].save()
         self.users[2].email = "c"
         self.users[2].save()
+        self.users[3].email = "d"
+        self.users[3].save()
 
         response = self._list(query_params={"ordering": "email"})
 
-        assert [r["email"] for r in response.data["results"]] == ["a", "b", "c"]
+        assert [r["email"] for r in response.data["results"]] == ["a", "b", "c", "d"]
 
         response = self._list(query_params={"ordering": "-email"})
 
-        assert [r["email"] for r in response.data["results"]] == ["c", "b", "a"]
+        assert [r["email"] for r in response.data["results"]] == ["d", "c", "b", "a"]
 
     def test_patch_can_set_activated_to_true(self):
         response = self._patch(
@@ -351,33 +364,33 @@ class UserViewSetTests(APITestCase):
 
     def test_patch_can_set_activated_to_false(self):
         # setup activated user
-        self.owner.plan_activated_users = [self.users[0].ownerid]
+        self.owner.plan_activated_users = [self.users[1].ownerid]
         self.owner.save()
 
         response = self._patch(
             kwargs={
                 "service": self.owner.service,
                 "owner_username": self.owner.username,
-                "user_username": self.users[0].username,
+                "user_username": self.users[1].username,
             },
             data={"activated": False},
         )
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data == {
-            "name": self.users[0].name,
+            "name": self.users[1].name,
             "activated": False,
             "is_admin": False,
-            "username": self.users[0].username,
-            "email": self.users[0].email,
-            "ownerid": self.users[0].ownerid,
-            "student": self.users[0].student,
+            "username": self.users[1].username,
+            "email": self.users[1].email,
+            "ownerid": self.users[1].ownerid,
+            "student": self.users[1].student,
             "latest_private_pr_date": None,
             "lastseen": None,
         }
 
         self.owner.refresh_from_db()
-        assert self.users[0].ownerid not in self.owner.plan_activated_users
+        assert self.users[1].ownerid not in self.owner.plan_activated_users
 
     @patch("services.segment.SegmentService.account_deactivated_user")
     @patch("services.segment.SegmentService.account_activated_user")

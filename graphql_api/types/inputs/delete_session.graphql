@@ -1,0 +1,3 @@
+input DeleteSessionInput {
+  sessionid: Int!
+}
