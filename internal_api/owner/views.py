@@ -161,14 +161,17 @@ class UserViewSet(
     lookup_field = "user_username"
     search_fields = ["name", "username", "email"]
 
+    def _base_queryset(self):
+        return Owner.objects.users_of(owner=self.owner)
+
     def get_object(self):
         return get_object_or_404(
-            self.get_queryset(), username=self.kwargs.get("user_username")
+            self._base_queryset(), username=self.kwargs.get("user_username")
         )
 
     def get_queryset(self):
         return (
-            Owner.objects.users_of(owner=self.owner)
+            self._base_queryset()
             .annotate_activated_in(owner=self.owner)
             .annotate_is_admin_in(owner=self.owner)
             .annotate_with_latest_private_pr_date_in(owner=self.owner)
