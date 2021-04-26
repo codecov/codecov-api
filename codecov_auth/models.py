@@ -13,6 +13,7 @@ from django.contrib.postgres.fields import CITextField, ArrayField
 
 from .managers import OwnerQuerySet
 from core.managers import RepositoryQuerySet
+from core.models import DateTimeWithoutTZField
 
 from codecov_auth.constants import (
     AVATAR_GITHUB_BASE_URL,
@@ -50,6 +51,10 @@ class Service(models.TextChoices):
     GITHUB_ENTERPRISE = "github_enterprise"
     GITLAB_ENTERPRISE = "gitlab_enterprise"
     BITBUCKET_SERVER = "bitbucket_server"
+
+
+class PlanProviders(models.TextChoices):
+    GITHUB = "github"
 
 
 class Owner(models.Model):
@@ -91,7 +96,7 @@ class Owner(models.Model):
     cache = models.JSONField(null=True)
     plan = models.TextField(null=True, default=FREE_PLAN_NAME)  # Really an ENUM in db
     plan_provider = models.TextField(
-        null=True
+        null=True, choices=PlanProviders.choices
     )  # postgres enum containing only "github"
     plan_user_count = models.SmallIntegerField(null=True, default=5)
     plan_auto_activate = models.BooleanField(null=True, default=True)
