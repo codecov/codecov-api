@@ -1,4 +1,5 @@
 type Session {
+  sessionid: Int
   ip: String
   lastseen: DateTime
   useragent: String
