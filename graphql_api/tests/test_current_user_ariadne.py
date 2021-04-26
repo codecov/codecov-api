@@ -77,17 +77,10 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
 
     def test_fetching_viewable_repositories_ordering(self):
         current_user = OwnerFactory()
-
-        def build_query(ordering="", ordering_direction=""):
-            params = tuple()
-            if ordering:
-                params += (f"ordering: {ordering}",)
-            if ordering_direction:
-                params += (f"orderingDirection: {ordering_direction}",)
-
-            query = """{
+        query = """
+            query MeOrderingRespoitories($orderingDirection: OrderingDirection, $ordering: RepositoryOrdering) {
                 me {
-                    viewableRepositories%s {
+                    viewableRepositories(orderingDirection: $orderingDirection, ordering: $ordering) {
                         edges {
                             node {
                                 name
@@ -96,10 +89,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
                     }
                 }
             }
-            """ % (
-                f"({','.join(params)})" if params else ""
-            )
-            return query
+        """
 
         repo_1 = RepositoryFactory(author=current_user, name="A")
         repo_2 = RepositoryFactory(author=current_user, name="B")
@@ -107,14 +97,14 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
 
         with self.subTest("No ordering (defaults to order by repoid)"):
             with self.subTest("no ordering Direction"):
-                data = self.gql_request(build_query(), user=current_user)
+                data = self.gql_request(query, user=current_user)
                 repos = paginate_connection(data["me"]["viewableRepositories"])
                 repos_name = [repo["name"] for repo in repos]
                 self.assertEqual(repos_name, ["A", "B", "C"])
 
             with self.subTest("ASC"):
                 data = self.gql_request(
-                    build_query(ordering_direction="ASC"), user=current_user
+                    query, user=current_user, variables={"orderingDirection": "ASC"}
                 )
                 repos = paginate_connection(data["me"]["viewableRepositories"])
                 repos_name = [repo["name"] for repo in repos]
@@ -122,7 +112,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
 
             with self.subTest("DESC"):
                 data = self.gql_request(
-                    build_query(ordering_direction="DESC"), user=current_user
+                    query, user=current_user, variables={"orderingDirection": "DESC"}
                 )
                 repos = paginate_connection(data["me"]["viewableRepositories"])
                 repos_name = [repo["name"] for repo in repos]
@@ -130,19 +120,29 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
 
         with self.subTest("NAME"):
             with self.subTest("no ordering Direction"):
-                data = self.gql_request(build_query("NAME"), user=current_user)
+                data = self.gql_request(
+                    query, user=current_user, variables={"ordering": "NAME"}
+                )
                 repos = paginate_connection(data["me"]["viewableRepositories"])
                 repos_name = [repo["name"] for repo in repos]
                 self.assertEqual(repos_name, ["A", "B", "C"])
 
             with self.subTest("ASC"):
-                data = self.gql_request(build_query("NAME", "ASC"), user=current_user)
+                data = self.gql_request(
+                    query,
+                    user=current_user,
+                    variables={"ordering": "NAME", "orderingDirection": "ASC"},
+                )
                 repos = paginate_connection(data["me"]["viewableRepositories"])
                 repos_name = [repo["name"] for repo in repos]
                 self.assertEqual(repos_name, ["A", "B", "C"])
 
             with self.subTest("DESC"):
-                data = self.gql_request(build_query("NAME", "DESC"), user=current_user)
+                data = self.gql_request(
+                    query,
+                    user=current_user,
+                    variables={"ordering": "NAME", "orderingDirection": "DESC"},
+                )
                 repos = paginate_connection(data["me"]["viewableRepositories"])
                 repos_name = [repo["name"] for repo in repos]
                 self.assertEqual(repos_name, ["C", "B", "A"])
@@ -154,14 +154,18 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             repo_3.save()
 
             with self.subTest("no ordering Direction"):
-                data = self.gql_request(build_query("COMMIT_DATE"), user=current_user)
+                data = self.gql_request(
+                    query, user=current_user, variables={"ordering": "COMMIT_DATE"}
+                )
                 repos = paginate_connection(data["me"]["viewableRepositories"])
                 repos_name = [repo["name"] for repo in repos]
                 self.assertEqual(repos_name, ["A", "B", "C"])
 
             with self.subTest("ASC"):
                 data = self.gql_request(
-                    build_query("COMMIT_DATE", "ASC"), user=current_user
+                    query,
+                    user=current_user,
+                    variables={"ordering": "COMMIT_DATE", "orderingDirection": "ASC"},
                 )
                 repos = paginate_connection(data["me"]["viewableRepositories"])
                 repos_name = [repo["name"] for repo in repos]
@@ -169,7 +173,9 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
 
             with self.subTest("DESC"):
                 data = self.gql_request(
-                    build_query("COMMIT_DATE", "DESC"), user=current_user
+                    query,
+                    user=current_user,
+                    variables={"ordering": "COMMIT_DATE", "orderingDirection": "DESC"},
                 )
                 repos = paginate_connection(data["me"]["viewableRepositories"])
                 repos_name = [repo["name"] for repo in repos]
@@ -186,14 +192,18 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             repo_3.save()
 
             with self.subTest("no ordering Direction"):
-                data = self.gql_request(build_query("COVERAGE"), user=current_user)
+                data = self.gql_request(
+                    query, user=current_user, variables={"ordering": "COVERAGE"}
+                )
                 repos = paginate_connection(data["me"]["viewableRepositories"])
                 repos_name = [repo["name"] for repo in repos]
                 self.assertEqual(repos_name, ["C", "A", "B"])
 
             with self.subTest("ASC"):
                 data = self.gql_request(
-                    build_query("COVERAGE", "ASC"), user=current_user
+                    query,
+                    user=current_user,
+                    variables={"ordering": "COVERAGE", "orderingDirection": "ASC"},
                 )
                 repos = paginate_connection(data["me"]["viewableRepositories"])
                 repos_name = [repo["name"] for repo in repos]
@@ -201,7 +211,9 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
 
             with self.subTest("DESC"):
                 data = self.gql_request(
-                    build_query("COVERAGE", "DESC"), user=current_user
+                    query,
+                    user=current_user,
+                    variables={"ordering": "COVERAGE", "orderingDirection": "DESC"},
                 )
                 repos = paginate_connection(data["me"]["viewableRepositories"])
                 repos_name = [repo["name"] for repo in repos]
