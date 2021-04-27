@@ -2,6 +2,7 @@ import uuid
 import logging
 from datetime import datetime
 from django.utils import timezone
+from django.http import Http404
 
 from rest_framework import filters, mixins, viewsets
 from rest_framework.exceptions import PermissionDenied, NotAuthenticated
@@ -115,9 +116,7 @@ class RepositoryViewSet(
             # so we avoid this API call here
             self.can_view, self.can_edit = True, False
         elif not request.user.is_authenticated and repo.private:
-            raise NotAuthenticated(
-                detail="You must be logged in to view private repository data."
-            )
+            raise Http404()
         else:
             # If the user is authenticated, we can fetch permissions from the provider
             # to determine write permissions.
@@ -142,7 +141,7 @@ class RepositoryViewSet(
         if self.request.method == "DELETE":
             self._assert_is_admin()
         if not self.can_view:
-            raise PermissionDenied()
+            raise Http404()
 
     @torngit_safe
     def get_object(self):

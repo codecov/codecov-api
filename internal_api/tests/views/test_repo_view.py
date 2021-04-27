@@ -659,12 +659,12 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         self.assertEqual(response.status_code, 200)
         assert "upload_token" in response.data
 
-    def test_retrieve_without_read_permissions_returns_403(
+    def test_retrieve_without_read_permissions_returns_404(
         self, mocked_get_permissions
     ):
         mocked_get_permissions.return_value = False, False
         response = self._retrieve()
-        assert response.status_code == 403
+        assert response.status_code == 404
 
     def test_retrieve_for_inactive_user_returns_403(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, True
