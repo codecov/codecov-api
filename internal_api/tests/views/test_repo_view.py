@@ -651,6 +651,22 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         )
         assert response.status_code == 200
 
+    def test_cant_access_private_repo_if_not_authenticated(
+        self, mocked_get_permissions
+    ):
+        mocked_get_permissions.return_value = False, False
+        self.client.logout()
+        author = OwnerFactory()
+        public_repo = RepositoryFactory(author=author, private=True)
+        response = self._retrieve(
+            kwargs={
+                "service": public_repo.author.service,
+                "owner_username": public_repo.author.username,
+                "repo_name": public_repo.name,
+            }
+        )
+        assert response.status_code == 404
+
     def test_retrieve_with_view_and_edit_permissions_succeeds(
         self, mocked_get_permissions
     ):
