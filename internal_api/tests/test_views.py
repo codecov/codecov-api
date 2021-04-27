@@ -129,7 +129,7 @@ class RepoPullList(InternalAPITest):
         content = self.json_content(response)
         self.assertEqual(
             len(content["results"]),
-            2,
+            3,
             "got the wrong number of pulls: {}".format(content["results"]),
         )
 
@@ -151,7 +151,7 @@ class RepoPullList(InternalAPITest):
         content = self.json_content(response)
         self.assertEqual(
             len(content["results"]),
-            1,
+            2,
             "got the wrong number of open pulls: {}".format(content["results"]),
         )
 
@@ -165,7 +165,7 @@ class RepoPullList(InternalAPITest):
         )
         content = self.json_content(response)
         pullids = [r["pullid"] for r in content["results"]]
-        self.assertEqual(pullids, [10, 11])
+        self.assertEqual(pullids, [1, 10, 11])
         # Test decreasing ordering
         response = self.client.get(
             reverse("pulls-list", kwargs=self.correct_kwargs),
@@ -173,7 +173,7 @@ class RepoPullList(InternalAPITest):
         )
         content = self.json_content(response)
         pullids = [r["pullid"] for r in content["results"]]
-        self.assertEqual(pullids, [11, 10])
+        self.assertEqual(pullids, [11, 10, 1])
 
     def test_get_pulls_default_ordering(self, mock_provider):
         mock_provider.return_value = True, True
@@ -182,7 +182,7 @@ class RepoPullList(InternalAPITest):
         response = self.client.get(reverse("pulls-list", kwargs=self.correct_kwargs))
         content = self.json_content(response)
         pullids = [r["pullid"] for r in content["results"]]
-        self.assertEqual(pullids, [11, 10])
+        self.assertEqual(pullids, [11, 10, 1])
 
     def test_get_pull_wrong_org(self, mock_provider):
         mock_provider.return_value = True, True

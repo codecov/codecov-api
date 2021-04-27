@@ -30,6 +30,28 @@ def _gen_image_token():
 
 
 class Repository(models.Model):
+    class Languages(models.TextChoices):
+        JAVASCRIPT = "javascript"
+        SHELL = "shell"
+        PYTHON = "python"
+        RUBY = "ruby"
+        PERL = "perl"
+        DART = "dart"
+        JAVA = "java"
+        C = "c"
+        CLOJURE = "clojure"
+        D = "d"
+        FORTRAN = "fortran"
+        GO = "go"
+        GROOVY = "groovy"
+        KOTLIN = "kotlin"
+        PHP = "php"
+        R = "r"
+        SCALA = "scala"
+        SWIFT = "swift"
+        OBJECTIVE_C = "objective-c"
+        XTEND = "xtend"
+
     repoid = models.AutoField(primary_key=True)
     name = CITextField()
     author = models.ForeignKey(
@@ -41,7 +63,9 @@ class Repository(models.Model):
     private = models.BooleanField()
     updatestamp = models.DateTimeField(auto_now=True)
     active = models.BooleanField(null=True)
-    language = models.TextField(null=True, blank=True)  # Really an ENUM in db
+    language = models.TextField(
+        null=True, blank=True, choices=Languages.choices
+    )  # Really an ENUM in db
     fork = models.ForeignKey(
         "core.Repository",
         db_column="forkid",

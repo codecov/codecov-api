@@ -901,10 +901,10 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
     ):
         mocked_get_permissions.return_value = True, True
 
-        self.org.plan = "v4-5m"
+        self.org.plan = "v4-10m"
         self.org.save()
 
-        for i in range(4):  # including the one used by other tests, should be 5 total
+        for i in range(9):  # including the one used by other tests, should be 10 total
             RepositoryFactory(
                 name=str(i) + "random", author=self.org, private=True, active=True
             )
@@ -927,7 +927,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         mocked_get_permissions.return_value = True, True
         self.repo.active = False
         self.repo.save()
-        self.org.plan = "v4-5m"
+        self.org.plan = "v4-10m"
         self.org.save()
 
         activation_data, deactivation_data = {"active": True}, {"active": False}
