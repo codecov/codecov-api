@@ -77,7 +77,6 @@ class TestGraphHandler(APITestCase):
             author=gh_owner, active=True, private=False, name="repo1"
         )
         commit = CommitFactory(repository=repo, author=gh_owner)
-        branch = BranchFactory(repository=repo, name="master", head=commit.commitid)
 
         # test default precision
         response = self._get(
@@ -121,7 +120,6 @@ class TestGraphHandler(APITestCase):
             author=gh_owner, active=True, private=False, name="repo1"
         )
         commit = CommitFactory(repository=repo, author=gh_owner)
-        branch = BranchFactory(repository=repo, name="master", head=commit.commitid)
 
         # test default precision
         response = self._get(
@@ -168,7 +166,6 @@ class TestGraphHandler(APITestCase):
             author=gh_owner, active=True, private=False, name="repo1"
         )
         commit = CommitFactory(repository=repo, author=gh_owner)
-        branch = BranchFactory(repository=repo, name="master", head=commit.commitid)
 
         # test default precision
         response = self._get(
@@ -280,7 +277,6 @@ class TestGraphHandler(APITestCase):
             image_token="12345678",
         )
         commit = CommitFactory(repository=repo, author=gh_owner)
-        branch = BranchFactory(repository=repo, name="master", head=commit.commitid)
 
         response = self._get(
             "sunburst",
@@ -354,7 +350,6 @@ class TestGraphHandler(APITestCase):
             branch="branch1",
         )
         commit = CommitFactory(repository=repo, author=gh_owner)
-        branch = BranchFactory(repository=repo, name="master", head=commit.commitid)
         commit_2_totals = {
             "C": 0,
             "M": 0,
@@ -516,7 +511,6 @@ class TestGraphHandler(APITestCase):
             branch="master",
         )
         commit = CommitFactory(repository=repo, author=gh_owner)
-        branch = BranchFactory(repository=repo, name="master", head=commit.commitid)
         pull = PullFactory(pullid=10, repository_id=repo.repoid, flare=None)
 
         # test default precision
