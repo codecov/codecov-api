@@ -180,6 +180,19 @@ class RepositoryQuerySet(QuerySet):
             ),
         )
 
+    def with_cache_coverage(self):
+        """
+        Annotates queryset with coverage based on a Repository's cache
+        """
+        return self.annotate(
+            coverage=Cast(
+                KeyTextTransform(
+                    "c", KeyTextTransform("totals", KeyTextTransform("commit", "cache"))
+                ),
+                output_field=FloatField(),
+            )
+        )
+
     def get_or_create_from_git_repo(self, git_repo, owner):
         from codecov_auth.models import Owner
 

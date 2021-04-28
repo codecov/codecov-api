@@ -1,0 +1,6 @@
+enum RepositoryOrdering {
+  COMMIT_DATE
+  COVERAGE
+  ID
+  NAME
+}

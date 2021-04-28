@@ -2,8 +2,7 @@ import logging
 
 from django.utils.functional import cached_property
 from django.shortcuts import get_object_or_404
-
-from django.db.models import OuterRef, Exists, Func
+from django.db.models import OuterRef, Exists, Func, Value, BooleanField
 
 from django.contrib.postgres.fields import ArrayField
 
@@ -161,16 +160,27 @@ class UserViewSet(
     lookup_field = "user_username"
     search_fields = ["name", "username", "email"]
 
-    def get_object(self):
-        return get_object_or_404(
-            self.get_queryset(), username=self.kwargs.get("user_username")
-        )
-
-    def get_queryset(self):
+    def _base_queryset(self):
         return (
             Owner.objects.users_of(owner=self.owner)
             .annotate_activated_in(owner=self.owner)
             .annotate_is_admin_in(owner=self.owner)
+        )
+
+    def get_object(self):
+        # Force latest_private_pr_date and lastseen to set on the model
+        # but with a null value so the serializer fields don't crash
+        null_annotation = Value(None, output_field=BooleanField(null=True))
+        queryset = (
+            self._base_queryset()
+            .annotate(latest_private_pr_date=null_annotation)
+            .annotate(lastseen=null_annotation)
+        )
+        return get_object_or_404(queryset, username=self.kwargs.get("user_username"))
+
+    def get_queryset(self):
+        return (
+            self._base_queryset()
             .annotate_with_latest_private_pr_date_in(owner=self.owner)
             .annotate_with_lastseen()
         )

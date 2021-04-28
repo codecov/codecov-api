@@ -46,8 +46,8 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 "repositories": {
                     "totalCount": 2,
                     "edges": [
-                        {"node": {"name": "b"}},
                         {"node": {"name": "a"}},
+                        {"node": {"name": "b"}},
                     ],
                     "pageInfo": {
                         "hasNextPage": False,
@@ -61,7 +61,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         # Check on the first page if we have the repository b
         data_page_one = self.gql_request(query, user=self.user)
         connection = data_page_one["owner"]["repositories"]
-        assert connection["edges"][0]["node"] == {"name": "b"}
+        assert connection["edges"][0]["node"] == {"name": "a"}
         pageInfo = connection["pageInfo"]
         assert pageInfo["hasNextPage"] == True
         next_cursor = pageInfo["endCursor"]
@@ -73,7 +73,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         )
         data_page_two = self.gql_request(query, user=self.user)
         connection = data_page_two["owner"]["repositories"]
-        assert connection["edges"][0]["node"] == {"name": "a"}
+        assert connection["edges"][0]["node"] == {"name": "b"}
         pageInfo = connection["pageInfo"]
         assert pageInfo["hasNextPage"] == False
 
@@ -102,3 +102,13 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query)
         repos = paginate_connection(data["owner"]["repositories"])
         assert repos == [{"name": "b"}]
+
+    def test_fetching_repositories_with_ordering(self):
+        query = query_repositories % (
+            self.user.username,
+            "(ordering: NAME, orderingDirection: DESC)",
+            "",
+        )
+        data = self.gql_request(query, user=self.user)
+        repos = paginate_connection(data["owner"]["repositories"])
+        assert repos == [{"name": "b"}, {"name": "a"}]

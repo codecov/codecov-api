@@ -45,3 +45,19 @@ class CreateApiTokenTestCase(GraphQLTestHelper, TransactionTestCase):
             "type": Session.SessionType.API.value,
             "lastFour": str(created_token.token)[-4:],
         }
+
+    def test_when_authenticated_full_token(self):
+        name = "yo"
+        _query = """
+            mutation($input: CreateApiTokenInput!) {
+            createApiToken(input: $input) {
+                error
+                fullToken
+            }
+            }
+        """
+        data = self.gql_request(
+            _query, user=self.user, variables={"input": {"name": name}}
+        )
+        created_token = self.user.session_set.filter(name=name).first()
+        assert data["createApiToken"]["fullToken"] == str(created_token.token)
