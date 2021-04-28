@@ -374,3 +374,53 @@ class TestOwnerModel(TransactionTestCase):
 
         with self.assertNumQueries(1):
             self.owner.root_organization
+
+    def test_inactive_users_count(self):
+        org = OwnerFactory()
+
+        activated_user = OwnerFactory()
+        activated_user_in_org = OwnerFactory(organizations=[org.ownerid])
+        activated_student = OwnerFactory(student=True)
+        activated_student_in_org = OwnerFactory(
+            organizations=[org.ownerid], student=True
+        )
+
+        inactive_student_in_org = OwnerFactory(
+            organizations=[org.ownerid], student=True
+        )
+        inactive_user_in_org = OwnerFactory(organizations=[org.ownerid])
+
+        org.plan_activated_users = [
+            activated_user.ownerid,
+            activated_user_in_org.ownerid,
+            activated_student.ownerid,
+            activated_student_in_org.ownerid,
+        ]
+        org.save()
+
+        self.assertEqual(org.inactive_user_count, 1)
+
+    def test_student_count(self):
+        org = OwnerFactory()
+
+        activated_user = OwnerFactory()
+        activated_user_in_org = OwnerFactory(organizations=[org.ownerid])
+        activated_student = OwnerFactory(student=True)
+        activated_student_in_org = OwnerFactory(
+            organizations=[org.ownerid], student=True
+        )
+
+        inactive_student_in_org = OwnerFactory(
+            organizations=[org.ownerid], student=True
+        )
+        inactive_user_in_org = OwnerFactory(organizations=[org.ownerid])
+
+        org.plan_activated_users = [
+            activated_user.ownerid,
+            activated_user_in_org.ownerid,
+            activated_student.ownerid,
+            activated_student_in_org.ownerid,
+        ]
+        org.save()
+
+        self.assertEqual(org.student_count, 3)

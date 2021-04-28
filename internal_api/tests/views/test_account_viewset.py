@@ -129,7 +129,7 @@ class AccountViewSetTests(APITestCase):
             "repo_total_credits": 99999999,
             "plan_provider": owner.plan_provider,
             "activated_student_count": 1,
-            "student_count": 2,
+            "student_count": 3,
         }
 
     def test_account_with_free_user_plan(self):
