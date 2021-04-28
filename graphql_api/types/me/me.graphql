@@ -3,6 +3,6 @@ type Me {
   user: User!
   owner: Owner!
   sessions(first: Int, after: String, last: Int, before: String): SessionConnection!
-  viewableRepositories(filters: RepositorySetFilters, first: Int, after: String, last: Int, before: String): ViewableRepositoryConnection!
+  viewableRepositories(filters: RepositorySetFilters, ordering: RepositoryOrdering, orderingDirection: OrderingDirection, first: Int, after: String, last: Int, before: String): ViewableRepositoryConnection!
   myOrganizations(filters: OrganizationSetFilters, first: Int, after: String, last: Int, before: String): MyOrganizationConnection!
 }
