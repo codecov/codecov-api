@@ -885,10 +885,10 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
     ):
         mocked_get_permissions.return_value = True, True
 
-        self.org.plan = "v4-5m"
+        self.org.plan = "v4-10m"
         self.org.save()
 
-        for i in range(4):  # including the one used by other tests, should be 5 total
+        for i in range(9):  # including the one used by other tests, should be 10 total
             RepositoryFactory(
                 name=str(i) + "random", author=self.org, private=True, active=True
             )
@@ -911,7 +911,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         mocked_get_permissions.return_value = True, True
         self.repo.active = False
         self.repo.save()
-        self.org.plan = "v4-5m"
+        self.org.plan = "v4-10m"
         self.org.save()
 
         activation_data, deactivation_data = {"active": True}, {"active": False}
@@ -1074,7 +1074,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
 
     @patch("services.archive.ArchiveService.create_root_storage", lambda _: None)
     @patch("services.archive.ArchiveService.read_chunks", lambda obj, _: "")
-    def test_retrieve_returns_latest_commit_data_asd(self, mocked_get_permissions):
+    def test_retrieve_returns_latest_commit_data(self, mocked_get_permissions):
         self.maxDiff = None
         mocked_get_permissions.return_value = True, True
         commit = CommitFactory(

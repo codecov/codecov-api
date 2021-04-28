@@ -9,9 +9,11 @@ from .owner import owner, owner_bindable
 from .repository import repository, repository_bindable
 from .session import session, session_bindable
 from .mutation import mutation, mutation_bindable
+from .enums import enums, enum_types
 
 inputs = ariadne_load_local_graphql(__file__, "./inputs")
-types = [query, me, user, owner, repository, inputs, session, mutation]
+enums = ariadne_load_local_graphql(__file__, "./enums")
+types = [query, me, user, owner, repository, inputs, enums, session, mutation]
 
 bindables = [
     query_bindable,
@@ -22,4 +24,5 @@ bindables = [
     session_bindable,
     mutation_bindable,
     datetime_scalar,
+    *enum_types.enum_types,
 ]

@@ -15,6 +15,7 @@ AUTH_USER_MODEL = "codecov_auth.Owner"
 # Application definition
 
 INSTALLED_APPS = [
+    "legacy_migrations",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
