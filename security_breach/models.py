@@ -29,7 +29,7 @@ class EnvVarsExposed(models.Model):
             secondary_message = "We have reason to believe the following environment variables were affected."
             key_list = self.exposed_env_vars.split(",")
         elif self.sensitive_exposed_in_git_origin:
-            secondary_message = "We have reason to believe the following environment variables were affected."
+            secondary_message = "We have reason to believe the following sensitive keys were exposed. For security and privacy reasons, we’ve limited the keys to the first seven characters to help you identify the key, without printing it in full."
             key_list = self.sensitive_exposed_in_git_origin.split(",")
 
         return {
