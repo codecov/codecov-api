@@ -6,7 +6,8 @@ import django.db.models.deletion
 
 import sys
 
-is_testing = "pytest" in sys.argv
+is_testing = "pytest" in sys.modules
+# is_testing = True
 
 
 class Migration(migrations.Migration):

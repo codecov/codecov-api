@@ -5,7 +5,7 @@ from core.models import Repository
 
 import sys
 
-is_testing = "pytest" in sys.argv
+is_testing = "pytest" in sys.modules
 
 
 class EnvVarsExposed(models.Model):
