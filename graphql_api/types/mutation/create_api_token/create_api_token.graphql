@@ -1,4 +1,5 @@
 type CreateApiTokenPayload {
     error: String
     session: Session
+    fullToken: String 
 }

@@ -1090,7 +1090,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
 
     @patch("services.archive.ArchiveService.create_root_storage", lambda _: None)
     @patch("services.archive.ArchiveService.read_chunks", lambda obj, _: "")
-    def test_retrieve_returns_latest_commit_data_asd(self, mocked_get_permissions):
+    def test_retrieve_returns_latest_commit_data(self, mocked_get_permissions):
         self.maxDiff = None
         mocked_get_permissions.return_value = True, True
         commit = CommitFactory(
