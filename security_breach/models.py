@@ -3,6 +3,10 @@ from django.db import models
 from codecov_auth.models import Owner
 from core.models import Repository
 
+import sys
+
+is_testing = "pytest" in sys.argv
+
 
 class EnvVarsExposed(models.Model):
     owner = models.ForeignKey(Owner, models.DO_NOTHING, blank=True, null=True)
@@ -15,7 +19,7 @@ class EnvVarsExposed(models.Model):
     sensitive_exposed_in_git_origin = models.TextField(blank=True, null=True)
 
     class Meta:
-        managed = False
+        managed = not is_testing
         db_table = "env_vars_exposed"
         unique_together = (("repo", "owner"),)
 
