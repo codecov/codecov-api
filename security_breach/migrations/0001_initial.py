@@ -4,6 +4,8 @@ from django.conf import settings
 from django.db import migrations, models
 import django.db.models.deletion
 
+import sys
+
 is_testing = "pytest" in sys.argv
 
 
