@@ -48,6 +48,7 @@ class RepoDetailsSerializer(RepoSerializer):
     fork = RepoSerializer()
     latest_commit = serializers.SerializerMethodField(source="get_latest_commit")
     bot = serializers.SerializerMethodField()
+    key_disclosure = serializers.SerializerMethodField()
 
     # Permissions
     can_view = serializers.SerializerMethodField()
@@ -59,6 +60,7 @@ class RepoDetailsSerializer(RepoSerializer):
             "upload_token",
             "yaml",
             "image_token",
+            "key_disclosure",
         ) + RepoSerializer.Meta.read_only_fields
         fields = (
             ("can_edit", "can_view", "latest_commit", "bot")
@@ -113,6 +115,24 @@ class RepoDetailsSerializer(RepoSerializer):
                 )
 
         return super().update(instance, validated_data)
+
+    def get_key_disclosure(self, repo):
+        try:
+            from security_breach.models import EnvVarsExposed
+
+            # as we are filtering private repository; we don't need to
+            # check for permission as we know for sure the user has access to the
+            # repository
+            env_exposed = EnvVarsExposed.objects.filter(
+                repo=repo, is_repo_private=True
+            ).first()
+
+            if not env_exposed:
+                return None
+
+            return env_exposed.generate_message()
+        except:
+            pass
 
 
 class SecretStringPayloadSerializer(serializers.Serializer):
