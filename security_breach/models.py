@@ -30,10 +30,10 @@ class EnvVarsExposed(models.Model):
             secondary_message = "We have reason to believe that this repo was downloaded by the threat actor"
         elif self.exposed_env_vars:
             secondary_message = "We have reason to believe the following environment variables were affected"
-            key_list = exposed_env_vars.split(",")
+            key_list = self.exposed_env_vars.split(",")
         elif self.sensitive_exposed_in_git_origin:
             secondary_message = "We have reason to believe the following environment variables were affected"
-            key_list = sensitive_exposed_in_git_origin.split(",")
+            key_list = self.sensitive_exposed_in_git_origin.split(",")
 
         return {
             "header": "Additional Information: This repo was impacted by Codecov’s Bash Uploader Incident",
