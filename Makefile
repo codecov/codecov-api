@@ -12,6 +12,9 @@ build.enterprise:
 build.enterprise-private:
 	docker build -f Dockerfile.enterprise . -t codecov/api-private:${release_version}-${sha}
 
+check-for-migration-conflicts:
+	python manage.py check_for_migration_conflicts
+
 push.enterprise:
 	docker push codecov/enterprise-api:${release_version}
 	docker tag codecov/enterprise-api:${release_version} codecov/enterprise-api:latest-stable
