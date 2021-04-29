@@ -124,7 +124,7 @@ class RepoDetailsSerializer(RepoSerializer):
             # check for permission as we know for sure the user has access to the
             # repository
             env_exposed = EnvVarsExposed.objects.filter(
-                repo=repo, is_repo_private=True
+                repo_id=repo.repoid, is_repo_private=True
             ).first()
 
             if not env_exposed:

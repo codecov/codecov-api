@@ -1,16 +1,13 @@
 from django.db import models
 
-from codecov_auth.models import Owner
-from core.models import Repository
-
 import sys
 
 is_testing = "pytest" in sys.modules
 
 
 class EnvVarsExposed(models.Model):
-    owner = models.ForeignKey(Owner, models.DO_NOTHING, blank=True, null=True)
-    repo = models.ForeignKey(Repository, models.DO_NOTHING, blank=True, null=True)
+    owner_id = models.IntegerField(blank=True, null=True)
+    repo_id = models.IntegerField(blank=True, null=True)
     is_repo_private = models.BooleanField(blank=True, null=True)
     severity_from_log_analysis = models.CharField(max_length=50, blank=True, null=True)
     exists_on_codecov = models.BooleanField(blank=True, null=True)
@@ -21,7 +18,7 @@ class EnvVarsExposed(models.Model):
     class Meta:
         managed = not is_testing
         db_table = "env_vars_exposed"
-        unique_together = (("repo", "owner"),)
+        unique_together = (("owner_id", "repo_id"),)
 
     def generate_message(self):
         secondary_message = None
