@@ -75,6 +75,150 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             "7",  # personal public repo
         ]
 
+    def test_fetching_viewable_repositories_ordering(self):
+        current_user = OwnerFactory()
+        query = """
+            query MeOrderingRespoitories($orderingDirection: OrderingDirection, $ordering: RepositoryOrdering) {
+                me {
+                    viewableRepositories(orderingDirection: $orderingDirection, ordering: $ordering) {
+                        edges {
+                            node {
+                                name
+                            }
+                        }
+                    }
+                }
+            }
+        """
+
+        repo_1 = RepositoryFactory(author=current_user, name="A")
+        repo_2 = RepositoryFactory(author=current_user, name="B")
+        repo_3 = RepositoryFactory(author=current_user, name="C")
+
+        with self.subTest("No ordering (defaults to order by repoid)"):
+            with self.subTest("no ordering Direction"):
+                data = self.gql_request(query, user=current_user)
+                repos = paginate_connection(data["me"]["viewableRepositories"])
+                repos_name = [repo["name"] for repo in repos]
+                self.assertEqual(repos_name, ["A", "B", "C"])
+
+            with self.subTest("ASC"):
+                data = self.gql_request(
+                    query, user=current_user, variables={"orderingDirection": "ASC"}
+                )
+                repos = paginate_connection(data["me"]["viewableRepositories"])
+                repos_name = [repo["name"] for repo in repos]
+                self.assertEqual(repos_name, ["A", "B", "C"])
+
+            with self.subTest("DESC"):
+                data = self.gql_request(
+                    query, user=current_user, variables={"orderingDirection": "DESC"}
+                )
+                repos = paginate_connection(data["me"]["viewableRepositories"])
+                repos_name = [repo["name"] for repo in repos]
+                self.assertEqual(repos_name, ["C", "B", "A"])
+
+        with self.subTest("NAME"):
+            with self.subTest("no ordering Direction"):
+                data = self.gql_request(
+                    query, user=current_user, variables={"ordering": "NAME"}
+                )
+                repos = paginate_connection(data["me"]["viewableRepositories"])
+                repos_name = [repo["name"] for repo in repos]
+                self.assertEqual(repos_name, ["A", "B", "C"])
+
+            with self.subTest("ASC"):
+                data = self.gql_request(
+                    query,
+                    user=current_user,
+                    variables={"ordering": "NAME", "orderingDirection": "ASC"},
+                )
+                repos = paginate_connection(data["me"]["viewableRepositories"])
+                repos_name = [repo["name"] for repo in repos]
+                self.assertEqual(repos_name, ["A", "B", "C"])
+
+            with self.subTest("DESC"):
+                data = self.gql_request(
+                    query,
+                    user=current_user,
+                    variables={"ordering": "NAME", "orderingDirection": "DESC"},
+                )
+                repos = paginate_connection(data["me"]["viewableRepositories"])
+                repos_name = [repo["name"] for repo in repos]
+                self.assertEqual(repos_name, ["C", "B", "A"])
+
+        with self.subTest("COMMIT_DATE"):
+            # Call save to make sure they have `updatestamp` in chronological order
+            repo_1.save()
+            repo_2.save()
+            repo_3.save()
+
+            with self.subTest("no ordering Direction"):
+                data = self.gql_request(
+                    query, user=current_user, variables={"ordering": "COMMIT_DATE"}
+                )
+                repos = paginate_connection(data["me"]["viewableRepositories"])
+                repos_name = [repo["name"] for repo in repos]
+                self.assertEqual(repos_name, ["A", "B", "C"])
+
+            with self.subTest("ASC"):
+                data = self.gql_request(
+                    query,
+                    user=current_user,
+                    variables={"ordering": "COMMIT_DATE", "orderingDirection": "ASC"},
+                )
+                repos = paginate_connection(data["me"]["viewableRepositories"])
+                repos_name = [repo["name"] for repo in repos]
+                self.assertEqual(repos_name, ["A", "B", "C"])
+
+            with self.subTest("DESC"):
+                data = self.gql_request(
+                    query,
+                    user=current_user,
+                    variables={"ordering": "COMMIT_DATE", "orderingDirection": "DESC"},
+                )
+                repos = paginate_connection(data["me"]["viewableRepositories"])
+                repos_name = [repo["name"] for repo in repos]
+                self.assertEqual(repos_name, ["C", "B", "A"])
+
+        with self.subTest("COVERAGE"):
+            repo_1.cache = {"commit": {"totals": {"c": "42"}}}
+            repo_1.save()
+
+            repo_2.cache = {"commit": {"totals": {"c": "100.2"}}}
+            repo_2.save()
+
+            repo_3.cache = {"commit": {"totals": {"c": "0"}}}
+            repo_3.save()
+
+            with self.subTest("no ordering Direction"):
+                data = self.gql_request(
+                    query, user=current_user, variables={"ordering": "COVERAGE"}
+                )
+                repos = paginate_connection(data["me"]["viewableRepositories"])
+                repos_name = [repo["name"] for repo in repos]
+                self.assertEqual(repos_name, ["C", "A", "B"])
+
+            with self.subTest("ASC"):
+                data = self.gql_request(
+                    query,
+                    user=current_user,
+                    variables={"ordering": "COVERAGE", "orderingDirection": "ASC"},
+                )
+                repos = paginate_connection(data["me"]["viewableRepositories"])
+                repos_name = [repo["name"] for repo in repos]
+                self.assertEqual(repos_name, ["C", "A", "B"])
+
+            with self.subTest("DESC"):
+                data = self.gql_request(
+                    query,
+                    user=current_user,
+                    variables={"ordering": "COVERAGE", "orderingDirection": "DESC"},
+                )
+                repos = paginate_connection(data["me"]["viewableRepositories"])
+                repos_name = [repo["name"] for repo in repos]
+                self.assertEqual(repos_name, ["B", "A", "C"])
+
     def test_fetching_viewable_repositories_text_search(self):
         query = """{
             me {

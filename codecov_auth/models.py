@@ -208,16 +208,12 @@ class Owner(models.Model):
 
     @property
     def student_count(self):
-        return Owner.objects.filter(
-            organizations__contains=[self.ownerid], student=True
-        ).count()
+        return Owner.objects.users_of(self).filter(student=True).count()
 
     @property
     def inactive_user_count(self):
         return (
-            Owner.objects.filter(
-                organizations__contains=[self.ownerid], student=False
-            ).count()
+            Owner.objects.users_of(self).filter(student=False).count()
             - self.activated_user_count
         )
 

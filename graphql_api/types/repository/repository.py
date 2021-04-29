@@ -2,8 +2,8 @@ from ariadne import ObjectType
 
 from graphql_api.dataloader.owner import load_owner_by_id
 
-repository_bindable = ObjectType("Repository")
 
+repository_bindable = ObjectType("Repository")
 
 repository_bindable.set_alias("updatedAt", "updatestamp")
 
