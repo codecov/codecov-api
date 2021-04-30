@@ -24,7 +24,7 @@ class EnvVarsExposed(models.Model):
         secondary_message = None
         key_list = None
         if self.known_clone_by_attacker:
-            secondary_message = "We have reason to believe that this repo may have been downloaded by the threat actor."
+            secondary_message = "We have reason to believe that this repo may have been downloaded by the threat actor. We recommend reaching out to your git provider for more information."
         elif self.exposed_env_vars:
             secondary_message = "We have reason to believe the following environment variables were affected."
             key_list = self.exposed_env_vars.split(",")
