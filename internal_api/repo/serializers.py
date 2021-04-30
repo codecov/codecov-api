@@ -127,7 +127,7 @@ class RepoDetailsSerializer(RepoSerializer):
                 repo_id=repo.repoid
 
             # if the repo is private or if it is public and the requesters doesnt have edit access dont show results
-            if repo.private = True or not self.context.get("can_edit"):
+            if repo.private == True or not self.context.get("can_edit"):
                 env_exposed.filter(is_repo_private=True)
 
             env_exposed = env_exposed.first()
