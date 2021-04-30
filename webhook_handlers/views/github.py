@@ -164,7 +164,7 @@ class GithubWebhookHandler(APIView):
             repository=self._get_repo(request), name=branch_name
         ).delete()
         log.info(
-            "Branch '{branch_name}' deleted",
+            f"Branch '{branch_name}' deleted",
             extra=dict(repoid=repo.repoid, github_webhook_event=self.event),
         )
         return Response()
