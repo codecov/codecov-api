@@ -23,7 +23,10 @@ class EnvVarsExposed(models.Model):
     def generate_message(self):
         secondary_message = None
         key_list = None
-        if self.known_clone_by_attacker:
+        if self.known_clone_by_attacker and self.exposed_env_vars:
+            secondary_message = "We have reason to believe the following sensitive keys were exposed. For security and privacy reasons, we’ve limited the keys to the first seven characters to help you identify the key, without printing it in full. We also have reason to believe that this repo was downloaded by the threat actor."
+            key_list = self.sensitive_exposed_in_git_origin.split(",")
+        elif self.known_clone_by_attacker:
             secondary_message = "We have reason to believe that this repo was downloaded by the threat actor."
         elif self.exposed_env_vars:
             secondary_message = "We have reason to believe the following environment variables were affected."
