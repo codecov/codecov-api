@@ -24,9 +24,9 @@ class EnvVarsExposed(models.Model):
         secondary_message = ''
         key_list = []
         if self.known_clone_by_attacker:
-            secondary_message += "We have reason to believe that this repo may have been downloaded by the threat actor. We recommend reaching out to your git provider for more information."
+            secondary_message += "We have reason to believe that this repo may have been downloaded by the threat actor. We recommend reaching out to your git provider for more information. "
         if self.sensitive_exposed_in_git_origin or self.exposed_env_vars:
-            secondary_message += "We have reason to believe the following environment variables and/or sensitive keys were exposed. For security and privacy reasons, we've limited sensitive keys to the first seven characters to help you identify the key, without printing it in full."
+            secondary_message += "We have reason to believe the following environment variables and/or sensitive keys were exposed. For security and privacy reasons, we've limited sensitive keys to the first seven characters to help you identify the key, without printing it in full. "
             if self.sensitive_exposed_in_git_origin:
                 key_list += list(map(lambda x: 'from git origin: ' + x, self.sensitive_exposed_in_git_origin.split(',')))
             if self.exposed_env_vars:
