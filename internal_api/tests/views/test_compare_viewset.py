@@ -230,7 +230,7 @@ class TestCompareViewSetRetrieve(APITestCase):
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_returns_403_if_user_doesnt_have_permissions(
+    def test_returns_404_if_user_doesnt_have_permissions(
         self, adapter_mock, base_report_mock, head_report_mock
     ):
         other_user = OwnerFactory()
@@ -240,7 +240,7 @@ class TestCompareViewSetRetrieve(APITestCase):
 
         response = self._get_comparison()
 
-        assert response.status_code == 403
+        assert response.status_code == 404
 
     @patch("redis.Redis.get", lambda self, key: None)
     @patch("redis.Redis.set", lambda self, key, val, ex: None)
