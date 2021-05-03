@@ -13,7 +13,7 @@ if THIS_POD_IP:
 WEBHOOK_URL = get_config("setup", "webhook_url", default="https://stage-api.codecov.dev")
 
 
-
+COOKIES_DOMAIN = ".codecov.dev"
 # TODO: there are secrets for these in the staging env -- why?
 STRIPE_API_KEY = "sk_test_testsn3sc2tirvdea6mqp31t"
 STRIPE_ENDPOINT_SECRET = "whsec_testzrff0orrbsv3bdekbbz8cz964dan"

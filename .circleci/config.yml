@@ -77,6 +77,10 @@ jobs:
           make test.unit
           # make test.integration
     - run:
+        name: check for migration conflicts
+        command: |
+          make check-for-migration-conflicts
+    - run:
         name: codecov
         command: |
           apk add git
