@@ -230,7 +230,8 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.owner.stripe_subscription_id == None
         assert self.owner.stripe_customer_id == None
 
-    def test_customer_subscription_created_sets_plan_info(self):
+    @patch("services.billing.StripeService.update_payment_method")
+    def test_customer_subscription_created_sets_plan_info(self, upm_mock):
         self.owner.stripe_subscription_id = None
         self.owner.stripe_customer_id = None
         self.owner.save()
@@ -250,6 +251,7 @@ class StripeWebhookHandlerTests(APITestCase):
                         "plan": {"id": "fieown4", "name": plan_name},
                         "metadata": {"obo_organization": self.owner.ownerid},
                         "quantity": quantity,
+                        "default_payment_method": "pm_abc",
                         "status": "active",
                     }
                 },
@@ -262,10 +264,12 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.owner.plan_user_count == quantity
         assert self.owner.plan_auto_activate is True
         assert self.owner.plan == plan_name
+        upm_mock.assert_called_once_with(self.owner, "pm_abc")
 
+    @patch("services.billing.StripeService.update_payment_method")
     @patch("services.segment.SegmentService.trial_started")
     def test_customer_subscription_created_can_trigger_identify_and_trialing_segment_events(
-        self, trial_started_mock
+        self, trial_started_mock, _
     ):
         trial_start, trial_end = "ts", "te"
         stripe_subscription_id = "FOEKDCDEQ"
@@ -286,6 +290,7 @@ class StripeWebhookHandlerTests(APITestCase):
                         "status": "trialing",
                         "trial_start": trial_start,
                         "trial_end": trial_end,
+                        "default_payment_method": "blabla",
                     }
                 },
             }
