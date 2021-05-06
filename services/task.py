@@ -69,7 +69,7 @@ class TaskService(object):
         with suppress(Exception):
             data_task = redis.hget("refresh", ownerid)
             result = result_from_tuple(loads(data_task))
-            if result.waiting():
+            if not result.ready():
                 return True
         redis.hdel("refresh", ownerid)
         return False
@@ -115,6 +115,7 @@ class TaskService(object):
             chain_to_call.append(task)
 
         resp = chain(*chain_to_call).apply_async()
+        # store in redis the task data to be used for `is_refreshing` logic
         redis = get_redis_connection()
         redis.hset("refresh", ownerid, dumps(resp.as_tuple()))
 
