@@ -2,12 +2,14 @@ from django.test import TransactionTestCase
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
+from services.redis_configuration import get_redis_connection
 
 from .helper import GraphQLTestHelper, paginate_connection
 
 
 class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
+        get_redis_connection().flushdb()
         self.user = OwnerFactory(username="codecov-user")
         random_user = OwnerFactory(username="random-user")
         RepositoryFactory(author=self.user, active=True, private=True, name="a")
@@ -275,3 +277,35 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
         assert orgs == [
             {"username": "spotify"},
         ]
+
+    def test_sync_repo_not_authenticated(self):
+        mutation = """
+            mutation {
+              syncWithGitProvider {
+                error
+              }
+            }
+        """
+        mutation_data = self.gql_request(mutation)
+        assert mutation_data["syncWithGitProvider"]["error"] == "unauthenticated"
+
+    def test_sync_repo(self):
+        query = """{
+            me {
+                isSyncingWithGitProvider
+            }
+        }
+        """
+        data = self.gql_request(query, user=self.user)
+        assert data["me"]["isSyncingWithGitProvider"] == False
+        mutation = """
+            mutation {
+              syncWithGitProvider {
+                error
+              }
+            }
+        """
+        mutation_data = self.gql_request(mutation, user=self.user)
+        assert mutation_data["syncWithGitProvider"]["error"] == None
+        # data = self.gql_request(query, user=self.user)
+        # assert data['me']['isSyncingWithGitProvider'] == False

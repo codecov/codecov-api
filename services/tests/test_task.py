@@ -3,6 +3,10 @@ from services.task import TaskService
 from services.redis_configuration import get_redis_connection
 
 
+def setup():
+    get_redis_connection().flushdb()
+
+
 def test_schedule_refresh_task():
     ownerid = 5
     username = "codecov"
