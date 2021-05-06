@@ -1,0 +1,4 @@
+type SyncWithGitProviderPayload {
+  me: Me
+  error: String
+}
