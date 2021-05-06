@@ -17,6 +17,8 @@ executors:
         password: $GCLOUD_SERVICE_KEY
     - image: circleci/postgres:9.6.2
       name: postgres
+    - image: redis:4.0-alpine
+      name: redis
     working_directory: /api
 
 gcloud_auth: &gcloud_auth
@@ -84,13 +86,13 @@ jobs:
         name: codecov
         command: |
           apk add git
-          chmod +x codecov-alpine 
+          chmod +x codecov-alpine
           ./codecov-alpine -R . -F unit
     - run:
         name: codecov-staging
         command: |
           apk add git
-          chmod +x codecov-alpine 
+          chmod +x codecov-alpine
           ./codecov-alpine -R . --url https://stage-web.codecov.dev -t $CODECOV_STAGING_TOKEN -F unit
 
   portable:
