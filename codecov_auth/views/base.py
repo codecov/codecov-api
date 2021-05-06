@@ -9,7 +9,6 @@ from codecov_auth.models import Session, Owner
 from utils.encryption import encryptor
 from utils.config import get_config
 from services.task import TaskService
-from services.redis_configuration import get_redis_connection
 from services.segment import SegmentService
 
 log = logging.getLogger(__name__)
@@ -140,6 +139,4 @@ class LoginMixin(object):
 
     def _schedule_proper_tasks(self, user):
         task_service = TaskService()
-        redis = get_redis_connection()
-        resp = task_service.refresh(user.ownerid, user.username)
-        redis.hset("refresh", user.ownerid, dumps(resp.as_tuple()))
+        task_service.refresh(user.ownerid, user.username)

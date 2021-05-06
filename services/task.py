@@ -1,9 +1,13 @@
+from contextlib import suppress
+from json import dumps, loads
 import logging
-import celery_config
+
 from celery import Celery
-
 from celery import signature, chain
+from celery.result import result_from_tuple
+from services.redis_configuration import get_redis_connection
 
+import celery_config
 
 celery_app = Celery("tasks")
 celery_app.config_from_object(celery_config)
@@ -44,13 +48,31 @@ class TaskService(object):
     def notify(self, repoid, commitid, current_yaml=None):
         self._create_signature(
             "app.tasks.notify.Notify",
-            kwargs=dict(repoid=repoid, commitid=commitid, current_yaml=current_yaml,),
+            kwargs=dict(
+                repoid=repoid,
+                commitid=commitid,
+                current_yaml=current_yaml,
+            ),
         ).apply_async()
 
     def pulls_sync(self, repoid, pullid):
         self._create_signature(
-            "app.tasks.pulls.Sync", kwargs=dict(repoid=repoid, pullid=pullid,)
+            "app.tasks.pulls.Sync",
+            kwargs=dict(
+                repoid=repoid,
+                pullid=pullid,
+            ),
         ).apply_async()
+
+    def is_refreshing(self, ownerid):
+        redis = get_redis_connection()
+        with suppress(Exception):
+            data_task = redis.hget("refresh", ownerid)
+            result = result_from_tuple(loads(data_task))
+            if result.waiting():
+                return True
+        redis.hdel("refresh", ownerid)
+        return False
 
     def refresh(
         self,
@@ -61,42 +83,40 @@ class TaskService(object):
         using_integration=False,
     ):
         """
-        !!!
-        Copied from https://github.com/codecov/codecov.io/blob/master/app/services/task.py
-        !!!
-
         Send sync_teams and/or sync_repos task message
 
         If running both tasks on new worker, we create a chain with sync_teams to run
         first so that when sync_repos starts it has the most up to date teams/groups
         data for the user. Otherwise, we may miss some repos.
         """
+
+        if self.is_refreshing(ownerid):
+            # If a refresh is already running for that user, we skip
+            return
+
         chain_to_call = []
+        kwargs = dict(
+            ownerid=ownerid,
+            username=username,
+            using_integration=using_integration,
+        )
         if sync_teams:
-            chain_to_call.append(
-                self._create_signature(
-                    "app.tasks.sync_teams.SyncTeams",
-                    kwargs=dict(
-                        ownerid=ownerid,
-                        username=username,
-                        using_integration=using_integration,
-                    ),
-                )
+            task = self._create_signature(
+                "app.tasks.sync_teams.SyncTeams",
+                kwargs=kwargs,
             )
+            chain_to_call.append(task)
 
         if sync_repos:
-            chain_to_call.append(
-                self._create_signature(
-                    "app.tasks.sync_repos.SyncRepos",
-                    kwargs=dict(
-                        ownerid=ownerid,
-                        username=username,
-                        using_integration=using_integration,
-                    ),
-                )
+            task = self._create_signature(
+                "sync_repos.SyncRepos",
+                kwargs=kwargs,
             )
+            chain_to_call.append(task)
 
-        return chain(*chain_to_call).apply_async()
+        resp = chain(*chain_to_call).apply_async()
+        redis = get_redis_connection()
+        redis.hset("refresh", ownerid, dumps(resp.as_tuple()))
 
     def sync_plans(self, sender=None, account=None, action=None):
         self._create_signature(
