@@ -39,6 +39,7 @@ RUN             apk update && \
                 apk upgrade expat && \
                 apk add --no-cache postgresql-libs && \
                 apk add --no-cache --virtual .build-deps gcc \
+                binutils \
                 musl-dev \
                 postgresql-dev \
                 libxslt-dev \
