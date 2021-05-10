@@ -1,5 +1,6 @@
 import logging
 import asyncio
+from django.http import Http404
 
 from rest_framework.permissions import BasePermission
 from rest_framework.permissions import SAFE_METHODS  # ['GET', 'HEAD', 'OPTIONS']
@@ -19,6 +20,7 @@ class RepositoryPermissionsService:
         can_view, can_edit = RepoAccessors().get_repo_permissions(user, repo)
 
         if can_view:
+            user.permission = user.permission or []
             user.permission.append(repo.repoid)
             user.save(update_fields=["permission"])
 
@@ -86,11 +88,17 @@ class RepositoryArtifactPermissions(BasePermission):
             )
         else:
             user_activated_permissions = True
-        return (
+        has_read_permissions = (
             request.method in SAFE_METHODS
             and self.permissions_service.has_read_permissions(request.user, view.repo)
-            and user_activated_permissions
         )
+
+        if has_read_permissions and user_activated_permissions:
+            return True
+        if has_read_permissions and not user_activated_permissions:
+            # user that can access the repo; but are not activated
+            return False
+        raise Http404()
 
 
 class ChartPermissions(BasePermission):
@@ -102,7 +110,7 @@ class ChartPermissions(BasePermission):
             # can we just rely on our stored read permissions? In fact, it seems like
             # permissioning is built into internal_api.charts.filter.add_simple_filters
             if not self.permissions_service.has_read_permissions(request.user, repo):
-                return False
+                raise Http404
         return True
 
 

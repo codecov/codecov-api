@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "reports",
     "internal_api",
     "graphql_api",
+    "security_breach",
 ]
 
 MIDDLEWARE = [

@@ -129,7 +129,7 @@ class AccountViewSetTests(APITestCase):
             "repo_total_credits": 99999999,
             "plan_provider": owner.plan_provider,
             "activated_student_count": 1,
-            "student_count": 2,
+            "student_count": 3,
         }
 
     def test_account_with_free_user_plan(self):
@@ -213,10 +213,13 @@ class AccountViewSetTests(APITestCase):
 
         mock_subscription.return_value = {
             "latest_invoice": json.load(f)["data"][0],
-            "default_payment_method": default_payment_method,
             "cancel_at_period_end": False,
             "current_period_end": 1633512445,
-            "customer": "cus_abc",
+            "customer": {
+                "invoice_settings": {
+                    "default_payment_method": default_payment_method,
+                }
+            },
         }
 
         self.user.stripe_subscription_id = "djfos"
@@ -229,7 +232,6 @@ class AccountViewSetTests(APITestCase):
             "cancel_at_period_end": False,
             "current_period_end": 1633512445,
             "latest_invoice": self.expected_invoice,
-            "customer": "cus_abc",
             "default_payment_method": {
                 "card": {
                     "brand": "visa",
@@ -352,9 +354,12 @@ class AccountViewSetTests(APITestCase):
             "items": {"data": [{"id": "abc"}]},
             "cancel_at_period_end": False,
             "current_period_end": 1633512445,
-            "customer": self.user.stripe_customer_id,
             "latest_invoice": json.load(f)["data"][0],
-            "default_payment_method": default_payment_method,
+            "customer": {
+                "invoice_settings": {
+                    "default_payment_method": default_payment_method,
+                }
+            },
         }
 
         response = self._update(
@@ -412,8 +417,13 @@ class AccountViewSetTests(APITestCase):
     @patch("services.billing.stripe.Subscription.retrieve")
     @patch("services.billing.stripe.Subscription.modify")
     @patch("services.billing.stripe.PaymentMethod.attach")
+    @patch("services.billing.stripe.Customer.modify")
     def test_update_payment_method(
-        self, attach_payment_mock, modify_subscription_mock, retrieve_subscription_mock
+        self,
+        modify_customer_mock,
+        attach_payment_mock,
+        modify_subscription_mock,
+        retrieve_subscription_mock,
     ):
         self.user.stripe_customer_id = "flsoe"
         self.user.stripe_subscription_id = "djfos"
@@ -434,9 +444,12 @@ class AccountViewSetTests(APITestCase):
             "items": {"data": [{"id": "abc"}]},
             "cancel_at_period_end": False,
             "current_period_end": 1633512445,
-            "customer": self.user.stripe_customer_id,
+            "customer": {
+                "invoice_settings": {
+                    "default_payment_method": default_payment_method,
+                }
+            },
             "latest_invoice": json.load(f)["data"][0],
-            "default_payment_method": default_payment_method,
         }
         payment_method_id = "pm_123"
         kwargs = {"service": self.user.service, "owner_username": self.user.username}
@@ -449,6 +462,10 @@ class AccountViewSetTests(APITestCase):
         )
         modify_subscription_mock.assert_called_once_with(
             self.user.stripe_subscription_id, default_payment_method=payment_method_id
+        )
+        modify_customer_mock.assert_called_once_with(
+            self.user.stripe_customer_id,
+            invoice_settings={"default_payment_method": payment_method_id},
         )
 
     @patch("services.billing.StripeService.update_payment_method")
