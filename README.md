@@ -76,3 +76,7 @@ Do not change `requirements.txt` directly.
 ### Formatting
 
 This project uses `black` for formatting.
+
+### Migrations
+
+We leverage Django's migration system to keep the state of our models in sync with the state of our database. You can read more about how we work with migrations at https://codecovio.atlassian.net/wiki/spaces/ENG/pages/1696530442/Migrations

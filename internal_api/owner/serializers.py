@@ -160,10 +160,11 @@ class PlanSerializer(serializers.Serializer):
 
 class SubscriptionDetailSerializer(serializers.Serializer):
     latest_invoice = StripeInvoiceSerializer()
-    default_payment_method = StripePaymentMethodSerializer()
+    default_payment_method = StripePaymentMethodSerializer(
+        source="customer.invoice_settings.default_payment_method"
+    )
     cancel_at_period_end = serializers.BooleanField()
     current_period_end = serializers.IntegerField()
-    customer = serializers.CharField()
 
 
 class RootOrganizationSerializer(serializers.Serializer):
