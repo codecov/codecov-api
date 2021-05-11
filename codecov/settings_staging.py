@@ -18,9 +18,6 @@ WEBHOOK_URL = get_config(
 
 
 COOKIES_DOMAIN = ".codecov.dev"
-# TODO: there are secrets for these in the staging env -- why?
-STRIPE_API_KEY = "sk_test_testsn3sc2tirvdea6mqp31t"
-STRIPE_ENDPOINT_SECRET = "whsec_testzrff0orrbsv3bdekbbz8cz964dan"
 STRIPE_PLAN_IDS = {
     "users-pr-inappm": "plan_H6P3KZXwmAbqPS",
     "users-pr-inappy": "plan_H6P16wij3lUuxg",
