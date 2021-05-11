@@ -56,35 +56,3 @@ class OwnerQuerySet(QuerySet):
                 )
             )
         )
-
-    def annotate_with_latest_private_pr_date_in(self, owner):
-        """
-        Annotates queryset with date of most recent PR made to a pull
-        request owned by "owner".
-        """
-        return self.annotate(
-            latest_private_pr_date=Subquery(
-                Pull.objects.exclude(updatestamp=None)
-                .filter(
-                    author__ownerid=OuterRef("ownerid"),
-                    repository__private=True,
-                    repository__author__ownerid=owner.ownerid,
-                )
-                .order_by("-updatestamp")
-                .values("updatestamp")[:1]
-            )
-        )
-
-    def annotate_with_lastseen(self):
-        """
-        Annotates queryset with related Session.lastseen value.
-        """
-        from codecov_auth.models import Session
-
-        return self.annotate(
-            lastseen=Subquery(
-                Session.objects.filter(owner__ownerid=OuterRef("ownerid"))
-                .order_by("-lastseen")
-                .values("lastseen")[:1]
-            )
-        )
