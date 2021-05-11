@@ -20,6 +20,7 @@ class RepositoryPermissionsService:
         can_view, can_edit = RepoAccessors().get_repo_permissions(user, repo)
 
         if can_view:
+            user.permission = user.permission or []
             user.permission.append(repo.repoid)
             user.save(update_fields=["permission"])
 

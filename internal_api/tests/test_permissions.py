@@ -78,6 +78,18 @@ class TestRepositoryPermissionsService(TestCase):
         owner.refresh_from_db()
         assert repo.repoid in owner.permission
 
+    @patch("services.repo_providers.RepoProviderService.get_adapter")
+    def test_fetch_provider_permissions_caches_read_permissions_when_owner_has_no_permissions(
+        self, mocked_provider
+    ):
+        mocked_provider.return_value = MockedPermissionsAdapter()
+        repo = RepositoryFactory()
+        owner = OwnerFactory(permission=None)
+        self.permissions_service._fetch_provider_permissions(owner, repo)
+
+        owner.refresh_from_db()
+        assert repo.repoid in owner.permission
+
     def test_user_is_activated_returns_false_if_user_not_in_owner_org(self):
         with self.subTest("user orgs is None"):
             user = OwnerFactory()
