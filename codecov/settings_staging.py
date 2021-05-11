@@ -6,17 +6,19 @@ import os
 
 DEBUG = False
 THIS_POD_IP = os.environ.get("THIS_POD_IP")
-ALLOWED_HOSTS = get_config("setup", "api_allowed_hosts", default=["stage-api.codecov.dev"])
+ALLOWED_HOSTS = get_config(
+    "setup", "api_allowed_hosts", default=["stage-api.codecov.dev"]
+)
 if THIS_POD_IP:
     ALLOWED_HOSTS.append(THIS_POD_IP)
 
-WEBHOOK_URL = get_config("setup", "webhook_url", default="https://stage-api.codecov.dev")
+WEBHOOK_URL = get_config(
+    "setup", "webhook_url", default="https://stage-api.codecov.dev"
+)
 
-
+STRIPE_API_KEY = os.environ.get("SERVICES__STRIPE__API_KEY", None)
+STRIPE_ENDPOINT_SECRET = os.environ.get("SERVICES__STRIPE__ENDPOINT_SECRET", None)
 COOKIES_DOMAIN = ".codecov.dev"
-# TODO: there are secrets for these in the staging env -- why?
-STRIPE_API_KEY = "sk_test_testsn3sc2tirvdea6mqp31t"
-STRIPE_ENDPOINT_SECRET = "whsec_testzrff0orrbsv3bdekbbz8cz964dan"
 STRIPE_PLAN_IDS = {
     "users-pr-inappm": "plan_H6P3KZXwmAbqPS",
     "users-pr-inappy": "plan_H6P16wij3lUuxg",
@@ -38,12 +40,17 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
 ]
 CORS_ALLOW_CREDENTIALS = True
 
-CODECOV_URL = get_config("setup", "codecov_url", default="https://stage-web.codecov.dev")
-CODECOV_DASHBOARD_URL = get_config("setup", "codecov_dashboard_url", default="https://stage-app.codecov.dev")
+CODECOV_URL = get_config(
+    "setup", "codecov_url", default="https://stage-web.codecov.dev"
+)
+CODECOV_DASHBOARD_URL = get_config(
+    "setup", "codecov_dashboard_url", default="https://stage-app.codecov.dev"
+)
 CORS_ALLOWED_ORIGINS = [
     CODECOV_URL,
     CODECOV_DASHBOARD_URL,
     "https://gazebo.netlify.app",
+    "https://gazebo-staging.netlify.app",
 ]
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 15000000
