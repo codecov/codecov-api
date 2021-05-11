@@ -6,11 +6,15 @@ import os
 
 DEBUG = False
 THIS_POD_IP = os.environ.get("THIS_POD_IP")
-ALLOWED_HOSTS = get_config("setup", "api_allowed_hosts", default=["stage-api.codecov.dev"])
+ALLOWED_HOSTS = get_config(
+    "setup", "api_allowed_hosts", default=["stage-api.codecov.dev"]
+)
 if THIS_POD_IP:
     ALLOWED_HOSTS.append(THIS_POD_IP)
 
-WEBHOOK_URL = get_config("setup", "webhook_url", default="https://stage-api.codecov.dev")
+WEBHOOK_URL = get_config(
+    "setup", "webhook_url", default="https://stage-api.codecov.dev"
+)
 
 
 COOKIES_DOMAIN = ".codecov.dev"
@@ -35,11 +39,16 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^(https:\/\/)?deploy-preview-\d+--codecov-stage\.netlify\.app$",
     r"^(https:\/\/)?deploy-preview-\d+--gazebo\.netlify\.app$",
     r"^(https:\/\/)?\w+--gazebo\.netlify\.app$",
+    r"^(https:\/\/)?\w+--gazebo-staging\.netlify\.app$",
 ]
 CORS_ALLOW_CREDENTIALS = True
 
-CODECOV_URL = get_config("setup", "codecov_url", default="https://stage-web.codecov.dev")
-CODECOV_DASHBOARD_URL = get_config("setup", "codecov_dashboard_url", default="https://stage-app.codecov.dev")
+CODECOV_URL = get_config(
+    "setup", "codecov_url", default="https://stage-web.codecov.dev"
+)
+CODECOV_DASHBOARD_URL = get_config(
+    "setup", "codecov_dashboard_url", default="https://stage-app.codecov.dev"
+)
 CORS_ALLOWED_ORIGINS = [
     CODECOV_URL,
     CODECOV_DASHBOARD_URL,
