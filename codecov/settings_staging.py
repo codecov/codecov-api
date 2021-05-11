@@ -36,7 +36,6 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^(https:\/\/)?deploy-preview-\d+--codecov-stage\.netlify\.app$",
     r"^(https:\/\/)?deploy-preview-\d+--gazebo\.netlify\.app$",
     r"^(https:\/\/)?\w+--gazebo\.netlify\.app$",
-    r"^(https:\/\/)?gazebo-staging\.netlify\.app$",
 ]
 CORS_ALLOW_CREDENTIALS = True
 
@@ -50,6 +49,7 @@ CORS_ALLOWED_ORIGINS = [
     CODECOV_URL,
     CODECOV_DASHBOARD_URL,
     "https://gazebo.netlify.app",
+    "https://gazebo-staging.netlify.app",
 ]
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 15000000
