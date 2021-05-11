@@ -306,6 +306,6 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             }
         """
         mutation_data = self.gql_request(mutation, user=self.user)
-        assert mutation_data["syncWithGitProvider"]["error"] == None
+        assert mutation_data["syncWithGitProvider"]["error"] is None
         # data = self.gql_request(query, user=self.user)
         # assert data['me']['isSyncingWithGitProvider'] == False
