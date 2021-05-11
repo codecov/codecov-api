@@ -16,7 +16,8 @@ WEBHOOK_URL = get_config(
     "setup", "webhook_url", default="https://stage-api.codecov.dev"
 )
 
-
+STRIPE_API_KEY = os.environ.get("SERVICES__STRIPE__API_KEY", None)
+STRIPE_ENDPOINT_SECRET = os.environ.get("SERVICES__STRIPE__ENDPOINT_SECRET", None)
 COOKIES_DOMAIN = ".codecov.dev"
 STRIPE_PLAN_IDS = {
     "users-pr-inappm": "plan_H6P3KZXwmAbqPS",
