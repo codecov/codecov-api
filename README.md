@@ -13,6 +13,8 @@ This project contains a makefile. To build the docker image:
 
 `requirements.txt` is used in the base image. If you make changes to `requirements.txt` you will need to rebuild.
 
+Note, you'll need to install Rust to build `ribs` which is a dependency of `shared`. Go here for more info on how to do this: https://www.rust-lang.org/tools/install
+
 ### Running Standalone
 
 This project contains a `docker-compose.yml` file that is intended to run the api standalone. In this configuration it **does not** share codecov.io's development database; so don't expect parity there. 
