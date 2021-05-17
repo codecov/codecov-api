@@ -53,8 +53,6 @@ class UserViewSetTests(APITestCase):
                 "email": user.email,
                 "ownerid": user.ownerid,
                 "student": user.student,
-                "latest_private_pr_date": None,
-                "lastseen": None,
             }
             for user in self.users
         ]
@@ -82,8 +80,6 @@ class UserViewSetTests(APITestCase):
             "email": self.users[0].email,
             "ownerid": self.users[0].ownerid,
             "student": self.users[0].student,
-            "latest_private_pr_date": None,
-            "lastseen": None,
         }
 
     def test_list_sets_is_admin(self):
@@ -101,32 +97,7 @@ class UserViewSetTests(APITestCase):
             "email": self.users[1].email,
             "ownerid": self.users[1].ownerid,
             "student": self.users[1].student,
-            "latest_private_pr_date": None,
-            "lastseen": None,
         }
-
-    def test_list_sets_latest_private_pr_date_in(self):
-        pull = G(
-            Pull,
-            repository=G(Repository, author=self.owner, private=True),
-            author=self.users[0],
-        )
-
-        response = self._list()
-        assert (
-            dateutil.parser.parse(
-                response.data["results"][0]["latest_private_pr_date"], ignoretz=True
-            )
-            == pull.updatestamp
-        )
-
-    def test_list_sets_lastseen(self):
-        session = SessionFactory(owner=self.users[0])
-        response = self._list()
-        assert (
-            dateutil.parser.parse(response.data["results"][0]["lastseen"])
-            == session.lastseen
-        )
 
     def test_list_can_filter_by_activated(self):
         self.owner.plan_activated_users = [self.users[0].ownerid]
@@ -144,8 +115,6 @@ class UserViewSetTests(APITestCase):
                 "email": self.users[0].email,
                 "ownerid": self.users[0].ownerid,
                 "student": self.users[0].student,
-                "latest_private_pr_date": None,
-                "lastseen": None,
             }
         ]
 
@@ -165,8 +134,6 @@ class UserViewSetTests(APITestCase):
                 "email": self.users[1].email,
                 "ownerid": self.users[1].ownerid,
                 "student": self.users[1].student,
-                "latest_private_pr_date": None,
-                "lastseen": None,
             }
         ]
 
@@ -190,8 +157,6 @@ class UserViewSetTests(APITestCase):
                 "email": self.users[1].email,
                 "ownerid": self.users[1].ownerid,
                 "student": self.users[1].student,
-                "latest_private_pr_date": None,
-                "lastseen": None,
             },
             {
                 "name": self.users[2].name,
@@ -201,8 +166,6 @@ class UserViewSetTests(APITestCase):
                 "email": self.users[2].email,
                 "ownerid": self.users[2].ownerid,
                 "student": self.users[2].student,
-                "latest_private_pr_date": None,
-                "lastseen": None,
             },
         ]
 
@@ -226,8 +189,6 @@ class UserViewSetTests(APITestCase):
                 "email": self.users[1].email,
                 "ownerid": self.users[1].ownerid,
                 "student": self.users[1].student,
-                "latest_private_pr_date": None,
-                "lastseen": None,
             },
             {
                 "name": "thor",
@@ -237,8 +198,6 @@ class UserViewSetTests(APITestCase):
                 "email": self.users[2].email,
                 "ownerid": self.users[2].ownerid,
                 "student": self.users[2].student,
-                "latest_private_pr_date": None,
-                "lastseen": None,
             },
         ]
         assert response.data["results"][0] == expected_result[0]
@@ -266,8 +225,6 @@ class UserViewSetTests(APITestCase):
                 "email": "thanos@gmail.com",
                 "ownerid": self.users[0].ownerid,
                 "student": self.users[0].student,
-                "latest_private_pr_date": None,
-                "lastseen": None,
             },
             {
                 "name": self.users[2].name,
@@ -277,8 +234,6 @@ class UserViewSetTests(APITestCase):
                 "email": "thor@gmail.com",
                 "ownerid": self.users[2].ownerid,
                 "student": self.users[2].student,
-                "latest_private_pr_date": None,
-                "lastseen": None,
             },
         ]
 
@@ -355,8 +310,6 @@ class UserViewSetTests(APITestCase):
             "email": self.users[0].email,
             "ownerid": self.users[0].ownerid,
             "student": self.users[0].student,
-            "latest_private_pr_date": None,
-            "lastseen": None,
         }
 
         self.owner.refresh_from_db()
@@ -385,8 +338,6 @@ class UserViewSetTests(APITestCase):
             "email": self.users[1].email,
             "ownerid": self.users[1].ownerid,
             "student": self.users[1].student,
-            "latest_private_pr_date": None,
-            "lastseen": None,
         }
 
         self.owner.refresh_from_db()
@@ -459,8 +410,6 @@ class UserViewSetTests(APITestCase):
             "email": self.users[2].email,
             "ownerid": self.users[2].ownerid,
             "student": self.users[2].student,
-            "latest_private_pr_date": None,
-            "lastseen": None,
         }
 
         self.owner.refresh_from_db()
@@ -488,8 +437,6 @@ class UserViewSetTests(APITestCase):
             "email": self.users[2].email,
             "ownerid": self.users[2].ownerid,
             "student": self.users[2].student,
-            "latest_private_pr_date": None,
-            "lastseen": None,
         }
 
         self.owner.refresh_from_db()

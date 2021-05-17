@@ -48,12 +48,20 @@ class TestValidateYamlHandler(APITestCase):
 
     def test_post_valid_yaml(self):
         yaml = {
-            "ignore": ["Pods/.*",],
+            "ignore": [
+                "Pods/.*",
+            ],
             "coverage": {
                 "round": "down",
                 "precision": 2,
                 "range": [70.0, 100.0],
-                "status": {"project": {"default": {"base": "auto",}}},
+                "status": {
+                    "project": {
+                        "default": {
+                            "base": "auto",
+                        }
+                    }
+                },
                 "notify": {
                     "slack": {
                         "default": {
@@ -71,20 +79,27 @@ class TestValidateYamlHandler(APITestCase):
 
     def test_post_invalid_yaml(self):
         yaml = {
-            "ignore": ["Pods/.*",],
+            "ignore": [
+                "Pods/.*",
+            ],
             "coverage": {
                 "round": "down",
                 "precision": 2,
                 "range": [70.0, 100.0],
-                "status": {"project": {"default": {"base": "auto",}}, "patch": "nope"},
+                "status": {
+                    "project": {
+                        "default": {
+                            "base": "auto",
+                        }
+                    },
+                    "patch": "nope",
+                },
             },
         }
 
         response = self._post(data=yaml)
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        expected_result = (
-            "Path: coverage->status->patch\n'nope' should be instance of 'dict'\n"
-        )
+        expected_result = "Error at ['coverage', 'status', 'patch']: \nexpected bool\n"
         assert response.content.decode() == expected_result
 
     def test_request_body_not_parsable_as_dict(self):

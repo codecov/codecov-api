@@ -130,7 +130,11 @@ class StripeService(AbstractPaymentService):
             return None
         return stripe.Subscription.retrieve(
             owner.stripe_subscription_id,
-            expand=["latest_invoice", "default_payment_method"],
+            expand=[
+                "latest_invoice",
+                "customer",
+                "customer.invoice_settings.default_payment_method",
+            ],
         )
 
     @_log_stripe_error
@@ -153,7 +157,7 @@ class StripeService(AbstractPaymentService):
                 }
             ],
             metadata=self._get_checkout_session_and_subscription_metadata(owner),
-            proration_behavior=proration_behavior
+            proration_behavior=proration_behavior,
         )
 
         # Segment analytics
@@ -193,21 +197,23 @@ class StripeService(AbstractPaymentService):
         owner.save()
 
         log.info(f"Stripe subscription modified successfully for owner {owner.ownerid}")
-    
+
     def _get_proration_params(self, owner, desired_plan):
         proration_behavior = "none"
         if owner.plan == desired_plan["value"]:
             # Same product, increased number of seats
-            if owner.plan_user_count and owner.plan_user_count < desired_plan["quantity"]:
-                return 'always_invoice'
+            if (
+                owner.plan_user_count
+                and owner.plan_user_count < desired_plan["quantity"]
+            ):
+                return "always_invoice"
             # Same product, decreased nummber of seats
             return proration_behavior
 
         elif "m" in owner.plan and "y" in desired_plan["value"]:
             # From monthly to yearly
-            return 'always_invoice'
+            return "always_invoice"
         return proration_behavior
-
 
     def _get_success_and_cancel_url(self, owner):
         short_services = {
@@ -256,7 +262,12 @@ class StripeService(AbstractPaymentService):
                 f"stripe_subscription_id is None, no updating card for owner {owner.ownerid}"
             )
             return None
+        # attach the payment method + set ass default on the invoice and subscription
         stripe.PaymentMethod.attach(payment_method, customer=owner.stripe_customer_id)
+        stripe.Customer.modify(
+            owner.stripe_customer_id,
+            invoice_settings={"default_payment_method": payment_method},
+        )
         subscription = stripe.Subscription.modify(
             owner.stripe_subscription_id, default_payment_method=payment_method
         )

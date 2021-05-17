@@ -160,10 +160,11 @@ class PlanSerializer(serializers.Serializer):
 
 class SubscriptionDetailSerializer(serializers.Serializer):
     latest_invoice = StripeInvoiceSerializer()
-    default_payment_method = StripePaymentMethodSerializer()
+    default_payment_method = StripePaymentMethodSerializer(
+        source="customer.invoice_settings.default_payment_method"
+    )
     cancel_at_period_end = serializers.BooleanField()
     current_period_end = serializers.IntegerField()
-    customer = serializers.CharField()
 
 
 class RootOrganizationSerializer(serializers.Serializer):
@@ -233,8 +234,6 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     activated = serializers.BooleanField()
     is_admin = serializers.BooleanField()
-    latest_private_pr_date = serializers.DateTimeField(read_only=True)
-    lastseen = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = Owner
@@ -246,8 +245,6 @@ class UserSerializer(serializers.ModelSerializer):
             "ownerid",
             "student",
             "name",
-            "latest_private_pr_date",
-            "lastseen",
         )
 
     def update(self, instance, validated_data):

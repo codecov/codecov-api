@@ -99,11 +99,6 @@ class FileComparisonTraverseManager:
             is a cell in the array. If we are not traversing a segment, and src is provided,
             the line value passed to the visitors will be the line at src[self.head_ln - 1].
         """
-        if src:
-            assert head_file_eof - 1 <= len(
-                src
-            ), "If source provided, it must be full source"
-
         self.head_file_eof = head_file_eof
         self.base_file_eof = base_file_eof
         self.segments = segments

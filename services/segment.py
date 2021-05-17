@@ -292,7 +292,6 @@ class SegmentService:
             "signup_content": kwargs.get("utm_content") or "",
             "signup_term": kwargs.get("utm_term") or "",
         }
-        print("ABOUT TO CALL TRACK!")
         analytics.track(
             segment_owner.user_id,
             SegmentEvent.USER_SIGNED_IN.value,

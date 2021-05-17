@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "reports",
     "internal_api",
     "graphql_api",
+    "security_breach",
 ]
 
 MIDDLEWARE = [
@@ -188,11 +189,15 @@ GITHUB_ACTIONS_TOKEN = get_config("github", "actions_token")
 BITBUCKET_CLIENT_ID = get_config("bitbucket", "client_id")
 BITBUCKET_CLIENT_SECRET = get_config("bitbucket", "client_secret")
 BITBUCKET_BOT_KEY = get_config("bitbucket", "bot", "key")
-BITBUCKET_REDIRECT_URI = get_config("bitbucket", "redirect_uri", default="https://codecov.io/login/bitbucket")
+BITBUCKET_REDIRECT_URI = get_config(
+    "bitbucket", "redirect_uri", default="https://codecov.io/login/bitbucket"
+)
 
 GITLAB_CLIENT_ID = get_config("gitlab", "client_id")
 GITLAB_CLIENT_SECRET = get_config("gitlab", "client_secret")
-GITLAB_REDIRECT_URI = get_config("gitlab", "redirect_uri", default="https://codecov.io/login/gitlab")
+GITLAB_REDIRECT_URI = get_config(
+    "gitlab", "redirect_uri", default="https://codecov.io/login/gitlab"
+)
 GITLAB_BOT_KEY = get_config("gitlab", "bot", "key")
 
 
@@ -200,5 +205,7 @@ SEGMENT_API_KEY = get_config("setup", "segment", "key", default=None)
 SEGMENT_ENABLED = get_config("setup", "segment", "enabled", default=False) and not bool(
     get_config("setup", "enterprise_license", default=False)
 )
+
+SKIP_RISKY_MIGRATION_STEPS = get_config("migrations", "skip_risky_steps", default=False)
 
 IS_ENTERPRISE = get_settings_module() == SettingsModule.ENTERPRISE.value

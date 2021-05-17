@@ -66,7 +66,7 @@ class ValidateYamlHandler(APIView):
 
         except InvalidYamlException as e:
             return HttpResponse(
-                f"{str(e.error_location)}\n{e.original_exc.autos[-1]}\n",
+                f"Error at {str(e.error_location)}: \n{e.error_message}\n",
                 status=status.HTTP_400_BAD_REQUEST,
                 content_type="text/plain",
             )
