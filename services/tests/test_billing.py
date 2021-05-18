@@ -9,6 +9,7 @@ from services.billing import BillingService, StripeService, AbstractPaymentServi
 from codecov_auth.models import Service
 from codecov_auth.tests.factories import OwnerFactory
 
+
 class StripeServiceTests(TestCase):
     def setUp(self):
         self.user = OwnerFactory()
@@ -59,7 +60,9 @@ class StripeServiceTests(TestCase):
         self.stripe.delete_subscription(owner)
         delete_mock.assert_not_called()
         set_free_plan_mock.assert_not_called()
-        modify_mock.assert_called_once_with(owner.stripe_subscription_id, cancel_at_period_end=True, prorate=False)
+        modify_mock.assert_called_once_with(
+            owner.stripe_subscription_id, cancel_at_period_end=True, prorate=False
+        )
 
     @patch("services.billing.stripe.Subscription.modify")
     @patch("services.billing.stripe.Subscription.retrieve")
@@ -95,7 +98,7 @@ class StripeServiceTests(TestCase):
                 "obo_email": self.user.email,
                 "obo": self.user.ownerid,
             },
-            proration_behavior='none'
+            proration_behavior="none",
         )
 
         owner.refresh_from_db()
@@ -251,7 +254,11 @@ class StripeServiceTests(TestCase):
         assert self.stripe.get_subscription(owner) == stripe_data_subscription
         subscription_retrieve_mock.assert_called_once_with(
             owner.stripe_subscription_id,
-            expand=["latest_invoice", "default_payment_method"],
+            expand=[
+                "latest_invoice",
+                "customer",
+                "customer.invoice_settings.default_payment_method",
+            ],
         )
 
     def test_update_payment_method_when_no_subscription(self):
@@ -260,7 +267,10 @@ class StripeServiceTests(TestCase):
 
     @patch("services.billing.stripe.Subscription.modify")
     @patch("services.billing.stripe.PaymentMethod.attach")
-    def test_update_payment_method(self, attach_payment_mock, modify_subscription_mock):
+    @patch("services.billing.stripe.Customer.modify")
+    def test_update_payment_method(
+        self, modify_customer_mock, attach_payment_mock, modify_subscription_mock
+    ):
         payment_method_id = "pm_1234567"
         subscription_id = "sub_abc"
         customer_id = "cus_abc"
@@ -273,6 +283,9 @@ class StripeServiceTests(TestCase):
         )
         modify_subscription_mock.assert_called_once_with(
             subscription_id, default_payment_method=payment_method_id
+        )
+        modify_customer_mock.assert_called_once_with(
+            customer_id, invoice_settings={"default_payment_method": payment_method_id}
         )
 
     @patch("services.billing.stripe.Invoice.retrieve")

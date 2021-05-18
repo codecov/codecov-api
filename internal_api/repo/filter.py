@@ -35,7 +35,7 @@ class RepositoryFilters(django_filters.FilterSet):
     def filter_active(self, queryset, name, value):
         # The database currently stores 't' instead of 'true' for active repos, and nothing for inactive
         # so if the query param active is set, we return repos with non-null value in active column
-        return queryset.filter(active__isnull=(not value))
+        return queryset.filter(active=value)
 
     class Meta:
         model = Repository
