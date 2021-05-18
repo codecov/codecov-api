@@ -4,7 +4,11 @@ from django.core.management.base import BaseCommand, CommandError
 from django.core.management.commands.migrate import Command as MigrateCommand
 from django.conf import settings
 from django.db import connections
+<<<<<<< HEAD
 from django.db.utils import IntegrityError, ProgrammingError
+=======
+from django.db.utils import IntegrityError
+>>>>>>> Handle running migrations on multiple servers in parallel
 
 
 """
@@ -45,11 +49,30 @@ class Command(MigrateCommand):
             super().handle(*args, **reports_options)
             super().handle(*args, **legacy_options)
 
+    def obtain_lock(self, cursor):
+        """
+        In certain environments we might be running mutliple servers that will try and run the migrations at the same time. This is
+        not safe to do. So we have the command obtain a lock to try and run the migration. If it cannot get a lock, it will wait
+        until it is able to do so before continuing to run. We need to wait for the lock instead of hard exiting on seeing another
+        server running the migrations because we write code in such a way that the server expects for migrations to be applied before
+        new code is deployed (but the opposite of new db with old code is fine).
+        """
+        try:
+            cursor.execute("INSERT INTO migration_lock (lock) VALUES (TRUE);")
+        except IntegrityError:
+            time.sleep(1)
+            self.obtain_lock(cursor)
+
     def handle(self, *args, **options):
         database = options["database"]
         connection = connections[database]
         options["run_syncdb"] = False
-
         with connection.cursor() as cursor:
+            self.obtain_lock(cursor)
             self.fake_initial_migrations(cursor, args, options)
+
+        try:
             super().handle(*args, **options)
+        finally:
+            with connection.cursor() as cursor:
+                cursor.execute("DELETE FROM migration_lock;")
