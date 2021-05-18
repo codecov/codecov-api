@@ -62,7 +62,7 @@ class Repository(models.Model):
     service_id = models.TextField()
     private = models.BooleanField()
     updatestamp = models.DateTimeField(auto_now=True)
-    active = models.BooleanField(null=True)
+    active = models.BooleanField(null=True, default=False)
     language = models.TextField(
         null=True, blank=True, choices=Languages.choices
     )  # Really an ENUM in db
