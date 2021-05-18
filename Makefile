@@ -10,7 +10,7 @@ build:
 build.enterprise:
 	docker build -f Dockerfile.enterprise . -t codecov/enterprise-api:${release_version} \
 		--label "org.label-schema.build-date"="$(build_date)" \
-		--label "org.label-schema.name"="Self-Hosted" \
+		--label "org.label-schema.name"="Self-Hosted API" \
 		--label "org.label-schema.vendor"="Codecov" \
 		--label "org.label-schema.version"="${release_version}" \
 		--squash
@@ -20,7 +20,7 @@ build.enterprise:
 build.enterprise-private:
 	docker build -f Dockerfile.enterprise . -t codecov/enterprise-private-api:${release_version}-${sha} \
 		--label "org.label-schema.build-date"="$(build_date)" \
-		--label "org.label-schema.name"="Self-Hosted API" \
+		--label "org.label-schema.name"="Self-Hosted API Private" \
 		--label "org.label-schema.vendor"="Codecov" \
 		--label "org.label-schema.version"="${release_version}-${sha}" \
 		--label "org.vcs-branch"="$(branch)" \
