@@ -139,7 +139,7 @@ class RepoPullList(InternalAPITest):
         self.user.save()
         self.client.force_login(user=self.user)
         response = self.client.get(reverse("pulls-list", kwargs=self.correct_kwargs))
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 404)
 
     def test_get_pulls_filter_state(self, mock_provider):
         mock_provider.return_value = True, True
@@ -322,7 +322,7 @@ class RepoPullDetail(InternalAPITest):
         mock_provider.return_value = False, False
         self.client.force_login(user=self.user)
         response = self.client.get("/internal/github/codecov/testRepoName/pulls/10/")
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 404)
 
     def test_get_pull_as_inactive_user_returns_403(self, mock_provider):
         mock_provider = True, True
@@ -566,7 +566,7 @@ class RepoCommitList(InternalAPITest):
 
         response = self.client.get("/internal/github/codecov/testRepoName/commits/")
 
-        assert response.status_code == 403
+        assert response.status_code == 404
 
     def test_fetch_commits_inactive_user_returns_403(self, mock_provider):
         mock_provider = True, True
@@ -637,7 +637,7 @@ class BranchViewSetTests(InternalAPITest):
                 "repo_name": repo_no_permissions.name,
             }
         )
-        assert response.status_code == 403
+        assert response.status_code == 404
 
     def test_list_with_nonexistent_repo_returns_404(self, mock_provider):
         nonexistent_repo_name = "existant"

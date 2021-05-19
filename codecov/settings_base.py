@@ -4,7 +4,7 @@ import os
 
 # SECURITY WARNING: keep the secret key used in production secret!
 # TODO: get this out of source control
-SECRET_KEY = "edj+31p-b0#5b4z163d4uyzf9*s7juwgy^lx^!-2=v+y_xadz5"
+SECRET_KEY = "^fe*h^lqve%4)tl)0*rvx^zax$_5zu$7jg6o@2y!!-4*l^tne5"
 
 
 YAML_SECRET_KEY = b"]\xbb\x13\xf9}\xb3\xb7\x03)*0Kv\xb2\xcet"
@@ -205,5 +205,7 @@ SEGMENT_API_KEY = get_config("setup", "segment", "key", default=None)
 SEGMENT_ENABLED = get_config("setup", "segment", "enabled", default=False) and not bool(
     get_config("setup", "enterprise_license", default=False)
 )
+
+SKIP_RISKY_MIGRATION_STEPS = get_config("migrations", "skip_risky_steps", default=False)
 
 IS_ENTERPRISE = get_settings_module() == SettingsModule.ENTERPRISE.value
