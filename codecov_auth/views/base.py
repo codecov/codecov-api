@@ -3,6 +3,7 @@ import logging
 
 from django.utils import timezone
 from django.conf import settings
+from django.contrib.auth import login
 
 from codecov_auth.helpers import create_signed_value
 from codecov_auth.models import Session, Owner
@@ -69,6 +70,10 @@ class LoginMixin(object):
 
         self._set_proper_cookies_and_session(user, request, response)
         RefreshService().trigger_refresh(user.ownerid, user.username)
+
+        # Login the user via Django authentication. Allows staff users to access Django admin.
+        login(request, user)
+
         log.info("User is logging in", extra=dict(ownerid=user.ownerid))
         return user
 

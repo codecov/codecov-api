@@ -237,10 +237,25 @@ class Owner(models.Model):
         # Required to implement django's user-model interface
         return True
 
+    @property
+    def is_staff(self):
+        # Required to implement django's user-model interface
+        return self.staff
+
+    def has_perm(self, perm, obj=None):
+        # TODO : Implement real permissioning system
+        # Required to implement django's user-model interface
+        return self.is_staff
+
     def has_perms(self, *args, **kwargs):
         # TODO : Implement real permissioning system
         # Required to implement django's user-model interface
         return True
+
+    def has_module_perms(self, package_name):
+        # TODO : Implement real permissioning system
+        # Required to implement django's user-model interface
+        return self.is_staff
 
     @property
     def avatar_url(self, size=DEFAULT_AVATAR_SIZE):

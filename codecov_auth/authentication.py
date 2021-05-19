@@ -1,4 +1,5 @@
 from django.utils import timezone
+from django.contrib.auth.backends import BaseBackend
 import logging
 from base64 import b64decode
 import hmac
@@ -83,14 +84,12 @@ class CodecovAuthMixin:
         return decode_token_from_cookie(secret, encoded_cookie)
 
 
-class CodecovTokenAuthentication(authentication.BaseAuthentication, CodecovAuthMixin):
-    def authenticate_header(self, request):
-        return 'Bearer realm="api"'
-
+class CodecovTokenAuthenticationBase(CodecovAuthMixin):
     def authenticate(self, request):
         authorization = request.META.get("HTTP_AUTHORIZATION", "")
         if not authorization or " " not in authorization:
             return None
+
         val, encoded_cookie = authorization.split(" ")
         if val not in ["Bearer", "frontend"]:
             # We continue to allow 'frontend' above for compatibility
@@ -99,7 +98,19 @@ class CodecovTokenAuthentication(authentication.BaseAuthentication, CodecovAuthM
 
         token = self.decode_token_from_cookie(encoded_cookie)
 
-        return self.get_user_and_session(token, request)
+        return self.get_user_and_session(token, request)[0]
+
+
+class CodecovTokenAuthenticationBackend(BaseBackend, CodecovTokenAuthenticationBase):
+    def get_user(self, ownerid):
+        return Owner.objects.filter(ownerid=ownerid).first()
+
+
+class CodecovTokenAuthentication(
+    authentication.BaseAuthentication, CodecovTokenAuthenticationBase
+):
+    def authenticate_header(self, request):
+        return 'Bearer realm="api"'
 
 
 class CodecovSessionAuthentication(
