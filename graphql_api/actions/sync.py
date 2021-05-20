@@ -1,18 +1,18 @@
 from asgiref.sync import sync_to_async
 
-from services.task import TaskService
+from services.refresh import RefreshService
 
 
 @sync_to_async
 def is_syncing(current_user):
-    return TaskService().is_refreshing(current_user.ownerid)
+    return RefreshService().is_refreshing(current_user.ownerid)
 
 
 @sync_to_async
 def trigger_sync(current_user):
     if not current_user.is_authenticated:
         return {"error": "unauthenticated"}
-    TaskService().refresh(
+    RefreshService().trigger_refresh(
         current_user.ownerid,
         current_user.username,
         using_integration=bool(current_user.integration_id),
