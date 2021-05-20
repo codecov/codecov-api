@@ -7,6 +7,11 @@ from django.db import connections
 from django.db.utils import IntegrityError, ProgrammingError
 
 
+class MockLock:
+    def release(self):
+        pass
+
+
 """
 We need to override the base Django migrate command to handle the legacy migrations we have in the "legacy_migrations" app.
 Those migrations are the source of truth for the initial db state, which is captured in Django migrations 0001 for the
@@ -45,7 +50,7 @@ class Command(MigrateCommand):
             super().handle(*args, **reports_options)
             super().handle(*args, **legacy_options)
 
-    def obtain_lock(self, cursor):
+    def _obtain_lock(self):
         """
         In certain environments we might be running mutliple servers that will try and run the migrations at the same time. This is
         not safe to do. So we have the command obtain a lock to try and run the migration. If it cannot get a lock, it will wait
@@ -53,24 +58,33 @@ class Command(MigrateCommand):
         server running the migrations because we write code in such a way that the server expects for migrations to be applied before
         new code is deployed (but the opposite of new db with old code is fine).
         """
-        # If we're running in a non-server environment, we don't need to worry about acquiring a lock
-        if settings.IS_DEV:
+        # If we're an environment with DEBUG on, we don' need to worry about locking
+        if settings.DEBUG:
             return MockLock()
 
         connection = get_redis_connection()
         lock = redis_lock.Lock(connection, MIGRATION_LOCK_NAME)
         acquired = lock.acquire(timeout=180)
 
+        if not acquired:
+            return None
+
+        return lock
+
     def handle(self, *args, **options):
-        database = options["database"]
-        connection = connections[database]
         options["run_syncdb"] = False
-        with connection.cursor() as cursor:
-            self.obtain_lock(cursor)
-            self.fake_initial_migrations(cursor, args, options)
+
+        lock = self._obtain_lock()
+
+        # Failed to acquire lock due to timeout
+        if not lock:
+            log.error("Potential deadlock detected in api migrations.")
+            raise Exception("Failed to obtain lock for api migration.")
 
         try:
+            with connection.cursor() as cursor:
+                self.fake_initial_migrations(cursor, args, options)
+
             super().handle(*args, **options)
         finally:
-            with connection.cursor() as cursor:
-                cursor.execute("DELETE FROM migration_lock;")
+            lock.release()
