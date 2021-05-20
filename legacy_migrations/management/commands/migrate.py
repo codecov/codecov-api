@@ -4,11 +4,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.core.management.commands.migrate import Command as MigrateCommand
 from django.conf import settings
 from django.db import connections
-<<<<<<< HEAD
 from django.db.utils import IntegrityError, ProgrammingError
-=======
-from django.db.utils import IntegrityError
->>>>>>> Handle running migrations on multiple servers in parallel
 
 
 """
@@ -57,11 +53,13 @@ class Command(MigrateCommand):
         server running the migrations because we write code in such a way that the server expects for migrations to be applied before
         new code is deployed (but the opposite of new db with old code is fine).
         """
-        try:
-            cursor.execute("INSERT INTO migration_lock (lock) VALUES (TRUE);")
-        except IntegrityError:
-            time.sleep(1)
-            self.obtain_lock(cursor)
+        # If we're running in a non-server environment, we don't need to worry about acquiring a lock
+        if settings.IS_DEV:
+            return MockLock()
+
+        connection = get_redis_connection()
+        lock = redis_lock.Lock(connection, MIGRATION_LOCK_NAME)
+        acquired = lock.acquire(timeout=180)
 
     def handle(self, *args, **options):
         database = options["database"]
