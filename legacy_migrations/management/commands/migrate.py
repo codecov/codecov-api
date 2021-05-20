@@ -65,12 +65,9 @@ class Command(MigrateCommand):
         server running the migrations because we write code in such a way that the server expects for migrations to be applied before
         new code is deployed (but the opposite of new db with old code is fine).
         """
-        from utils.config import get_settings_module
-
         # If we're running in a non-server environment, we don't need to worry about acquiring a lock
-        log.info(f"SETTINGS MODULE: {get_settings_module()}")
-        # if settings.IS_DEV:
-        return MockLock()
+        if settings.IS_DEV:
+            return MockLock()
 
         connection = get_redis_connection()
         lock = redis_lock.Lock(connection, MIGRATION_LOCK_NAME)
