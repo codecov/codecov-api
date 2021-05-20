@@ -5,6 +5,11 @@ from django.core.management.commands.migrate import Command as MigrateCommand
 from django.conf import settings
 from django.db import connections
 from django.db.utils import IntegrityError, ProgrammingError
+import redis_lock
+
+log = logging.getLogger(__name__)
+
+MIGRATION_LOCK_NAME = "djang-migrations-lock"
 
 
 class MockLock:
@@ -61,6 +66,8 @@ class Command(MigrateCommand):
         # If we're running in a non-server environment, we don't need to worry about acquiring a lock
         if settings.IS_DEV:
             return MockLock()
+
+        from services.redis_configuration import get_redis_connection
 
         connection = get_redis_connection()
         lock = redis_lock.Lock(connection, MIGRATION_LOCK_NAME)
