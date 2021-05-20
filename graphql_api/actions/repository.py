@@ -12,7 +12,7 @@ def apply_filters_to_queryset(queryset, filters):
     active = filters.get("active")
     if term:
         queryset = queryset.filter(name__contains=term)
-    if active:
+    if active is not None:
         queryset = queryset.filter(active=active)
     return queryset
 

@@ -112,3 +112,23 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, user=self.user)
         repos = paginate_connection(data["owner"]["repositories"])
         assert repos == [{"name": "b"}, {"name": "a"}]
+
+    def test_fetching_repositories_unactive_repositories(self):
+        query = query_repositories % (
+            self.user.username,
+            "(filters: { active: false })",
+            "",
+        )
+        data = self.gql_request(query, user=self.user)
+        repos = paginate_connection(data["owner"]["repositories"])
+        assert repos == [{"name": "b"}]
+
+    def test_fetching_repositories_active_repositories(self):
+        query = query_repositories % (
+            self.user.username,
+            "(filters: { active: true })",
+            "",
+        )
+        data = self.gql_request(query, user=self.user)
+        repos = paginate_connection(data["owner"]["repositories"])
+        assert repos == [{"name": "a"}]
