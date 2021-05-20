@@ -209,3 +209,4 @@ SEGMENT_ENABLED = get_config("setup", "segment", "enabled", default=False) and n
 SKIP_RISKY_MIGRATION_STEPS = get_config("migrations", "skip_risky_steps", default=False)
 
 IS_ENTERPRISE = get_settings_module() == SettingsModule.ENTERPRISE.value
+IS_TESTING = get_settings_module() == SettingsModule.TESTING.value

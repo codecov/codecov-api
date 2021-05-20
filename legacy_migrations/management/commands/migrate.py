@@ -58,8 +58,8 @@ class Command(MigrateCommand):
         server running the migrations because we write code in such a way that the server expects for migrations to be applied before
         new code is deployed (but the opposite of new db with old code is fine).
         """
-        # If we're an environment with DEBUG on, we don' need to worry about locking
-        if settings.DEBUG:
+        # If we're running tests we might not have access to redis, so need to skip obtaining a real lock
+        if settings.IS_TESTING:
             return MockLock()
 
         connection = get_redis_connection()
