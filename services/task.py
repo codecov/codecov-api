@@ -66,7 +66,7 @@ class TaskService(object):
 
     def is_refreshing(self, ownerid):
         redis = get_redis_connection()
-        with suppress(Exception):
+        with suppress(ValueError):
             data_task = redis.hget("refresh", ownerid)
             result = result_from_tuple(loads(data_task))
             if not result.ready():
