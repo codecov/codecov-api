@@ -1,15 +1,14 @@
 from django.test import TransactionTestCase
+from unittest.mock import patch
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
-from services.redis_configuration import get_redis_connection
 
 from .helper import GraphQLTestHelper, paginate_connection
 
 
 class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
-        get_redis_connection().flushdb()
         self.user = OwnerFactory(username="codecov-user")
         random_user = OwnerFactory(username="random-user")
         RepositoryFactory(author=self.user, active=True, private=True, name="a")
@@ -289,7 +288,10 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
         mutation_data = self.gql_request(mutation)
         assert mutation_data["syncWithGitProvider"]["error"] == "unauthenticated"
 
-    def test_sync_repo(self):
+    @patch("graphql_api.actions.sync.RefreshService.is_refreshing")
+    @patch("graphql_api.actions.sync.RefreshService.trigger_refresh")
+    def test_sync_repo(self, mocked_trigger_refresh, mock_is_refreshing):
+        mock_is_refreshing.return_value = False
         query = """{
             me {
                 isSyncingWithGitProvider
@@ -307,5 +309,4 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
         """
         mutation_data = self.gql_request(mutation, user=self.user)
         assert mutation_data["syncWithGitProvider"]["error"] is None
-        # data = self.gql_request(query, user=self.user)
-        # assert data['me']['isSyncingWithGitProvider'] == False
+        mocked_trigger_refresh.assert_called()
