@@ -32,7 +32,7 @@ services:
     name: circle_test
     password: ""
     host: postgres
-  redis_url: redis://redis:@redis:6379/
+  redis_url: redis://redis:@localhost:6379/
   minio:
     hash_key: testixik8qdauiab1yiffydimvi72ekq  # never change this
     periodic_callback_ms: false
