@@ -45,6 +45,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "active": True,
             "private": True,
             "coverage": None,
+            "latestCommitAt": None,
             "updatedAt": "2021-01-01T00:00:00+00:00",
         }
 
@@ -60,6 +61,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         assert self.fetch_repository() == {
             "name": "a",
             "active": True,
+            "latestCommitAt": None,
             "private": True,
             "coverage": 75,
             "updatedAt": "2021-01-01T00:00:00+00:00",
