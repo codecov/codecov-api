@@ -19,6 +19,7 @@ query_repository = """{
                         active
                         private
                         updatedAt
+                        latestCommitAt
                     }
                 }
             }
