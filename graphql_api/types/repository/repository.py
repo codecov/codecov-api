@@ -6,12 +6,7 @@ from graphql_api.dataloader.owner import load_owner_by_id
 repository_bindable = ObjectType("Repository")
 
 repository_bindable.set_alias("updatedAt", "updatestamp")
-
-
-@repository_bindable.field("coverage")
-def resolve_coverage(repo, info):
-    if repo.cache:
-        return repo.cache.get("commit", {}).get("totals", {}).get("c")
+repository_bindable.set_alias("latestCommitAt", "latest_commit_at")
 
 
 @repository_bindable.field("author")
