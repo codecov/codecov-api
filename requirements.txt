@@ -133,13 +133,6 @@ idna==2.8
     #   requests
     #   rfc3986
     #   yarl
-importlib-metadata==4.0.1
-    # via
-    #   kombu
-    #   pluggy
-    #   pre-commit
-    #   pytest
-    #   virtualenv
 iniconfig==1.1.1
     # via pytest
 intervaltree==3.1.0
@@ -179,7 +172,7 @@ protobuf==3.13.0
     #   ddtrace
     #   google-api-core
     #   googleapis-common-protos
-psycopg2==2.7.6.1
+psycopg2==2.8.6
     # via -r requirements.in
 py==1.9.0
     # via pytest
@@ -239,7 +232,7 @@ requests==2.25.1
     #   stripe
 rfc3986[idna2008]==1.4.0
     # via httpx
-git+ssh://git@github.com/codecov/ribs@v0.1.13#egg=ribs
+git+ssh://git@github.com/codecov/ribs@v0.1.14#egg=ribs
     # via shared
 rsa==4.6
     # via google-auth
@@ -251,7 +244,7 @@ sentry-sdk==0.14.3
     # via -r requirements.in
 setproctitle==1.1.10
     # via -r requirements.in
-git+ssh://git@github.com/codecov/shared.git@v0.5.13#egg=shared
+git+ssh://git@github.com/codecov/shared.git@v0.5.17#egg=shared
     # via -r requirements.in
 six==1.15.0
     # via
@@ -297,11 +290,7 @@ toml==0.10.2
 tornado==6.0.4
     # via shared
 typing-extensions==3.7.4.3
-    # via
-    #   ariadne
-    #   asgiref
-    #   importlib-metadata
-    #   yarl
+    # via ariadne
 urllib3==1.25.10
     # via
     #   botocore
@@ -324,8 +313,6 @@ wrapt==1.12.1
     # via vcrpy
 yarl==1.5.1
     # via vcrpy
-zipp==3.4.1
-    # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
