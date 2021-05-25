@@ -1,4 +1,5 @@
 from django.test import TransactionTestCase
+from unittest.mock import patch
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
@@ -148,9 +149,11 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
                 self.assertEqual(repos_name, ["C", "B", "A"])
 
         with self.subTest("COMMIT_DATE"):
-            # Call save to make sure they have `updatestamp` in chronological order
+            repo_1.cache = {"commit": {"timestamp": "2021-03-03T15:24:41"}}
             repo_1.save()
+            repo_2.cache = {"commit": {"timestamp": "2021-03-04T15:24:41"}}
             repo_2.save()
+            repo_3.cache = {"commit": {"timestamp": "2021-03-05T15:24:41"}}
             repo_3.save()
 
             with self.subTest("no ordering Direction"):
@@ -275,3 +278,37 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
         assert orgs == [
             {"username": "spotify"},
         ]
+
+    def test_sync_repo_not_authenticated(self):
+        mutation = """
+            mutation {
+              syncWithGitProvider {
+                error
+              }
+            }
+        """
+        mutation_data = self.gql_request(mutation)
+        assert mutation_data["syncWithGitProvider"]["error"] == "unauthenticated"
+
+    @patch("graphql_api.actions.sync.RefreshService.is_refreshing")
+    @patch("graphql_api.actions.sync.RefreshService.trigger_refresh")
+    def test_sync_repo(self, mocked_trigger_refresh, mock_is_refreshing):
+        mock_is_refreshing.return_value = False
+        query = """{
+            me {
+                isSyncingWithGitProvider
+            }
+        }
+        """
+        data = self.gql_request(query, user=self.user)
+        assert data["me"]["isSyncingWithGitProvider"] == False
+        mutation = """
+            mutation {
+              syncWithGitProvider {
+                error
+              }
+            }
+        """
+        mutation_data = self.gql_request(mutation, user=self.user)
+        assert mutation_data["syncWithGitProvider"]["error"] is None
+        mocked_trigger_refresh.assert_called()

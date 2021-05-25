@@ -5,7 +5,7 @@ import time
 from django.utils import timezone
 from datetime import datetime, timedelta
 from rest_framework.test import APITestCase, APIRequestFactory
-from shared.torngit.exceptions import TorngitClientError, TorngitObjectNotFoundError
+from shared.torngit.exceptions import TorngitClientGeneralError, TorngitObjectNotFoundError
 from rest_framework.reverse import reverse
 from rest_framework import status
 from rest_framework.exceptions import ValidationError, NotFound
@@ -542,7 +542,7 @@ class UploadHandlerHelpersTest(TestCase):
                 == determine_upload_commit_to_use(upload_params, repo)
             )
 
-        mock_async.side_effect = [TorngitClientError(500, None, None)]
+        mock_async.side_effect = [TorngitClientGeneralError(500, None, None)]
 
         with self.subTest("HTTP error"):
             org = G(Owner, service="github")
@@ -2357,7 +2357,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
 
     @patch("asyncio.run", new_callable=PropertyMock)
     def test_github_actions_client_error(self, mock_get):
-        mock_get.side_effect = [TorngitClientError(500, None, None)]
+        mock_get.side_effect = [TorngitClientGeneralError(500, None, None)]
 
         params = {"build": "12.34", "owner": "owner", "repo": "repo"}
 

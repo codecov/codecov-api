@@ -1,8 +1,9 @@
 type Repository {
   name: String!
-  active: Boolean
-  private: Boolean
+  active: Boolean!
+  private: Boolean!
   coverage: Float
+  latestCommitAt: DateTime
   updatedAt: DateTime
   author: Owner!
 }

@@ -1,6 +1,7 @@
 from asgiref.sync import async_to_sync
 from ariadne import convert_kwargs_to_snake_case, ObjectType
 
+from graphql_api.actions.sync import is_syncing
 from graphql_api.actions.repository import search_repos
 from graphql_api.actions.owner import search_my_owners, get_owner_sessions
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
@@ -40,7 +41,7 @@ def resolve_viewable_repositories(
     ordering_direction=OrderingDirection.ASC,
     **kwargs,
 ):
-    queryset = search_repos(current_user, filters, ordering)
+    queryset = search_repos(current_user, filters)
     return queryset_to_connection(
         queryset,
         ordering=ordering,
@@ -69,3 +70,8 @@ def resolve_sessions(current_user, _, **kwargs):
         ordering_direction=OrderingDirection.DESC,
         **kwargs,
     )
+
+
+@me_bindable.field("isSyncingWithGitProvider")
+def resolve_is_syncing_with_git_provider(current_user, _, **kwargs):
+    return is_syncing(current_user)
