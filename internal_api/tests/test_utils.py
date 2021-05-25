@@ -1,4 +1,4 @@
-from shared.torngit.exceptions import TorngitClientError
+from shared.torngit.exceptions import TorngitClientGeneralError
 
 
 def to_drf_datetime_str(datetime):
@@ -40,4 +40,4 @@ class GetAdminErrorProviderAdapter:
         self.message = message
 
     async def get_is_admin(self, user):
-        raise TorngitClientError(code=self.code, response=None, message=self.message)
+        raise TorngitClientGeneralError(self.code, response=None, message=self.message)

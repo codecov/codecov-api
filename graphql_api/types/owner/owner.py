@@ -25,7 +25,7 @@ def resolve_repositories(
     **kwargs
 ):
     current_user = info.context["request"].user
-    queryset = list_repository_for_owner(current_user, owner, filters, ordering)
+    queryset = list_repository_for_owner(current_user, owner, filters)
     return queryset_to_connection(
         queryset, ordering=ordering, ordering_direction=ordering_direction, **kwargs
     )

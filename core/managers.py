@@ -11,6 +11,7 @@ from django.db.models import (
     Avg,
     Sum,
     IntegerField,
+    DateTimeField,
     JSONField,
 )
 from django.db.models.functions import Cast
@@ -190,6 +191,17 @@ class RepositoryQuerySet(QuerySet):
                     "c", KeyTextTransform("totals", KeyTextTransform("commit", "cache"))
                 ),
                 output_field=FloatField(),
+            )
+        )
+
+    def with_cache_latest_commit_at(self):
+        """
+        Annotates queryset with coverage based on a Repository's cache
+        """
+        return self.annotate(
+            latest_commit_at=Cast(
+                KeyTextTransform("timestamp", KeyTextTransform("commit", "cache")),
+                output_field=DateTimeField(),
             )
         )
 
