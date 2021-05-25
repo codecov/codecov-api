@@ -13,6 +13,7 @@ from django.core.exceptions import MultipleObjectsReturned
 from codecov_auth.models import Owner
 from codecov_auth.constants import PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS
 from services.segment import SegmentService
+from services.billing import BillingService
 
 from ..constants import StripeHTTPHeaders, StripeWebhookEvents
 
@@ -134,6 +135,10 @@ class StripeWebhookHandler(APIView):
         owner.stripe_customer_id = subscription.customer
 
         owner.save()
+
+        # Properly attach the payment method on the customer
+        billing = BillingService(requesting_user=owner)
+        billing.update_payment_method(owner, subscription.default_payment_method)
 
         if subscription.status == "trialing":
             self.segment_service.trial_started(

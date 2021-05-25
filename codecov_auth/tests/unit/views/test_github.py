@@ -2,7 +2,7 @@ from datetime import datetime
 from django.urls import reverse
 from django.utils import timezone
 from shared.torngit import Github
-from shared.torngit.exceptions import TorngitClientError
+from shared.torngit.exceptions import TorngitClientGeneralError
 from codecov_auth.helpers import decode_token_from_cookie
 from codecov_auth.tests.factories import OwnerFactory
 from codecov_auth.models import Session
@@ -179,7 +179,7 @@ def test_get_github_already_with_code_github_error(
     settings.COOKIES_DOMAIN = ".simple.site"
 
     async def helper_func(*args, **kwargs):
-        raise TorngitClientError(403, "response", "message")
+        raise TorngitClientGeneralError(403, "response", "message")
 
     mocker.patch.object(Github, "get_authenticated_user", side_effect=helper_func)
     url = reverse("github-login")

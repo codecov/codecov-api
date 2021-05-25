@@ -17,6 +17,7 @@ class OwnerFactory(DjangoModelFactory):
     username = factory.Faker("user_name")
     service = factory.Iterator([service.value for service in Service])
     service_id = factory.Sequence(lambda n: f"{n}")
+    updatestamp = factory.LazyFunction(timezone.now)
     plan_activated_users = []
     admins = []
     permission = []
