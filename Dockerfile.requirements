@@ -14,6 +14,7 @@ RUN             apk update \
                 libcurl \
                 bash \
                 rust \
+                build-base \
                 cargo \
                 curl-dev \
                 && pip install --upgrade pip
@@ -35,14 +36,14 @@ RUN             pip wheel -r /requirements.txt
 # RUNTIME STAGE - Copy packages from build stage and install runtime dependencies
 FROM            python:3.7.9-alpine3.13
 
-RUN             apk update && \
-                apk upgrade expat && \
+RUN             apk upgrade expat binutils busybox && \
                 apk add --no-cache postgresql-libs && \
                 apk add --no-cache --virtual .build-deps gcc \
                 musl-dev \
                 postgresql-dev \
                 libxslt-dev \
                 python3-dev \
+                build-base \
                 libffi-dev \
                 openssl-dev \
                 make \

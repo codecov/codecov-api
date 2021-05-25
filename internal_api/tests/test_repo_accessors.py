@@ -1,7 +1,7 @@
 from django.test import TestCase
 from unittest.mock import patch
 
-from shared.torngit.exceptions import TorngitClientError
+from shared.torngit.exceptions import TorngitClientError, TorngitClientGeneralError
 
 from internal_api.repo.repository_accessors import RepoAccessors
 from core.tests.factories import RepositoryFactory
@@ -80,7 +80,7 @@ class RepositoryAccessorsTestCase(TestCase):
     def test_fetch_and_create_repo_if_torngit_error(self, mocked_repo_provider_service):
         class MockedRepoService:
             async def get_repository(self):
-                raise TorngitClientError(code=404, response=None, message="Not Found")
+                raise TorngitClientGeneralError(404, response=None, message="Not Found")
 
         mocked_repo_provider_service.return_value = MockedRepoService()
 

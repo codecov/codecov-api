@@ -106,11 +106,11 @@ google-auth==1.21.2
     #   google-cloud-storage
 google-cloud-core==1.4.1
     # via google-cloud-storage
-google-cloud-storage==1.18.0
+google-cloud-storage==1.38.0
     # via shared
 google-crc32c==1.0.0
     # via google-resumable-media
-google-resumable-media==1.0.0
+google-resumable-media==1.2.0
     # via google-cloud-storage
 googleapis-common-protos==1.52.0
     # via google-api-core
@@ -181,7 +181,7 @@ protobuf==3.13.0
     #   ddtrace
     #   google-api-core
     #   googleapis-common-protos
-psycopg2==2.7.6.1
+psycopg2==2.8.6
     # via -r requirements.in
 py==1.9.0
     # via pytest
@@ -193,8 +193,6 @@ pyasn1==0.4.8
     #   rsa
 pycparser==2.20
     # via cffi
-pycurl==7.43.0.5
-    # via shared
 pyparsing==2.4.7
     # via packaging
 pytest-cov==2.11.1
@@ -241,10 +239,11 @@ requests==2.25.1
     #   -r requirements.in
     #   analytics-python
     #   google-api-core
+    #   google-cloud-storage
     #   stripe
 rfc3986[idna2008]==1.4.0
     # via httpx
-git+ssh://git@github.com/codecov/ribs@v0.1.6#egg=ribs
+git+ssh://git@github.com/codecov/ribs@v0.1.14#egg=ribs
     # via shared
 rsa==4.6
     # via google-auth
@@ -256,7 +255,7 @@ sentry-sdk==0.14.3
     # via -r requirements.in
 setproctitle==1.1.10
     # via -r requirements.in
-git+ssh://git@github.com/codecov/shared.git@v0.4.12.2#egg=shared
+git+ssh://git@github.com/codecov/shared.git@v0.5.17#egg=shared
     # via -r requirements.in
 six==1.15.0
     # via

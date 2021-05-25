@@ -41,7 +41,7 @@ def resolve_viewable_repositories(
     ordering_direction=OrderingDirection.ASC,
     **kwargs,
 ):
-    queryset = search_repos(current_user, filters, ordering)
+    queryset = search_repos(current_user, filters)
     return queryset_to_connection(
         queryset,
         ordering=ordering,

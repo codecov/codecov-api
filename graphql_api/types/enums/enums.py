@@ -2,7 +2,7 @@ import enum
 
 
 class RepositoryOrdering(enum.Enum):
-    COMMIT_DATE = "updatestamp"
+    COMMIT_DATE = "latest_commit_at"
     COVERAGE = "coverage"
     ID = "repoid"
     NAME = "name"

@@ -168,22 +168,12 @@ class UserViewSet(
         )
 
     def get_object(self):
-        # Force latest_private_pr_date and lastseen to set on the model
-        # but with a null value so the serializer fields don't crash
-        null_annotation = Value(None, output_field=BooleanField(null=True))
-        queryset = (
-            self._base_queryset()
-            .annotate(latest_private_pr_date=null_annotation)
-            .annotate(lastseen=null_annotation)
+        return get_object_or_404(
+            self._base_queryset(), username=self.kwargs.get("user_username")
         )
-        return get_object_or_404(queryset, username=self.kwargs.get("user_username"))
 
     def get_queryset(self):
-        return (
-            self._base_queryset()
-            .annotate_with_latest_private_pr_date_in(owner=self.owner)
-            .annotate_with_lastseen()
-        )
+        return self._base_queryset()
 
 
 class PlanViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
