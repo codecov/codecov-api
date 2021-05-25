@@ -1,4 +1,5 @@
 type Mutation {
     createApiToken(input: CreateApiTokenInput!): CreateApiTokenPayload
+    syncWithGitProvider: SyncWithGitProviderPayload
     deleteSession(input: DeleteSessionInput!): DeleteSessionPayload
 }
