@@ -3,6 +3,7 @@ from django.test import TestCase
 from codecov_auth.tests.factories import OwnerFactory
 from codecov_auth.models import PlanProviders
 from core.tests.factories import RepositoryFactory
+import pytest
 
 from services.segment import (
     SegmentOwner,
@@ -58,6 +59,7 @@ class SegmentOwnerTests(TestCase):
 
         assert self.segment_owner.traits == expected_traits
 
+    @pytest.mark.skip
     def test_traits_defaults(self):
         segment_owner_missing_traits = SegmentOwner(
             OwnerFactory(
