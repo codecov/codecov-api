@@ -84,13 +84,13 @@ jobs:
         name: codecov
         command: |
           apk add git
-          chmod +x codecov-alpine 
+          chmod +x codecov-alpine
           ./codecov-alpine -R . -F unit
     - run:
         name: codecov-staging
         command: |
           apk add git
-          chmod +x codecov-alpine 
+          chmod +x codecov-alpine
           ./codecov-alpine -R . --url https://stage-web.codecov.dev -t $CODECOV_STAGING_TOKEN -F unit
 
   portable:
