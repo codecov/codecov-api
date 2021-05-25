@@ -1,3 +1,4 @@
+import logging
 import time
 
 from django.core.management.base import BaseCommand, CommandError
@@ -69,8 +70,8 @@ class Command(MigrateCommand):
         if settings.IS_DEV:
             return MockLock()
 
-        connection = get_redis_connection()
-        lock = redis_lock.Lock(connection, MIGRATION_LOCK_NAME)
+        redis_connection = get_redis_connection()
+        lock = redis_lock.Lock(redis_connection, MIGRATION_LOCK_NAME)
         acquired = lock.acquire(timeout=180)
 
         if not acquired:
@@ -79,6 +80,8 @@ class Command(MigrateCommand):
         return lock
 
     def handle(self, *args, **options):
+        database = options["database"]
+        db_connection = connections[database]
         options["run_syncdb"] = False
 
         lock = self._obtain_lock()
@@ -89,7 +92,7 @@ class Command(MigrateCommand):
             raise Exception("Failed to obtain lock for api migration.")
 
         try:
-            with connection.cursor() as cursor:
+            with db_connection.cursor() as cursor:
                 self._fake_initial_migrations(cursor, args, options)
 
             super().handle(*args, **options)
