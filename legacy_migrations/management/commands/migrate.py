@@ -29,7 +29,7 @@ and can be safely applied after runnin the legacy migrations.
 
 
 class Command(MigrateCommand):
-    def fake_initial_migrations(self, cursor, args, options):
+    def _fake_initial_migrations(self, cursor, args, options):
         try:
             cursor.execute("SELECT * FROM django_migrations;")
         except ProgrammingError:
@@ -90,7 +90,7 @@ class Command(MigrateCommand):
 
         try:
             with connection.cursor() as cursor:
-                self.fake_initial_migrations(cursor, args, options)
+                self._fake_initial_migrations(cursor, args, options)
 
             super().handle(*args, **options)
         finally:
