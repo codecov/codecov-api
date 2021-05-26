@@ -98,16 +98,20 @@ class CodecovTokenAuthenticationBase(CodecovAuthMixin):
 
         token = self.decode_token_from_cookie(encoded_cookie)
 
-        return self.get_user_and_session(token, request)[0]
+        return self.get_user_and_session(token, request)
 
 
-class CodecovTokenAuthenticationBackend(BaseBackend, CodecovTokenAuthenticationBase):
+class CodecovTokenAuthenticationBackend(CodecovTokenAuthenticationBase, BaseBackend):
     def get_user(self, ownerid):
         return Owner.objects.filter(ownerid=ownerid).first()
 
+    def authenticate(self, request):
+        user, _ = super().authenticate(request)
+        return user
+
 
 class CodecovTokenAuthentication(
-    authentication.BaseAuthentication, CodecovTokenAuthenticationBase
+    CodecovTokenAuthenticationBase, authentication.BaseAuthentication
 ):
     def authenticate_header(self, request):
         return 'Bearer realm="api"'
