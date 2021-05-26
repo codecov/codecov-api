@@ -3,7 +3,7 @@ from contextlib import suppress
 from json import dumps, loads
 
 from services.redis_configuration import get_redis_connection
-from services.task import TaskService
+from services.task import TaskService, celery_app
 
 
 class RefreshService(object):
@@ -16,7 +16,7 @@ class RefreshService(object):
         if not data_task:
             return False
         with suppress(ValueError, TypeError):
-            result = result_from_tuple(loads(data_task))
+            result = result_from_tuple(loads(data_task), app=celery_app)
             if not result.ready():
                 return True
         self.redis.hdel("refresh", ownerid)
