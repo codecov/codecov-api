@@ -106,8 +106,8 @@ class CodecovTokenAuthenticationBackend(CodecovTokenAuthenticationBase, BaseBack
         return Owner.objects.filter(ownerid=ownerid).first()
 
     def authenticate(self, request):
-        user, _ = super().authenticate(request)
-        return user
+        auth_info = super().authenticate(request)
+        return auth_info[0] if auth_info else None
 
 
 class CodecovTokenAuthentication(
