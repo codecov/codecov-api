@@ -37,6 +37,8 @@ def delete_session(current_user, sessionid):
 def current_user_part_of_org(current_user, owner):
     if not current_user.is_authenticated:
         return False
+    if current_user == owner:
+        return True
     # user is a direct member of the org
     orgs_of_user = current_user.organizations or []
     return owner.ownerid in orgs_of_user

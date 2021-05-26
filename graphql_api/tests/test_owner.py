@@ -147,6 +147,11 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, user=user)
         assert data["owner"]["isCurrentUserPartOfOrg"] is False
 
+    def test_is_part_of_org_when_user_asking_for_themself(self):
+        query = query_repositories % (self.user.username, "", "")
+        data = self.gql_request(query, user=self.user)
+        assert data["owner"]["isCurrentUserPartOfOrg"] is True
+
     def test_is_part_of_org_when_user_path_of_it(self):
         org = OwnerFactory(username="random_org_test", service="github")
         user = OwnerFactory(
