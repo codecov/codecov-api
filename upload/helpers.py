@@ -1,20 +1,23 @@
 import re
 import asyncio
 import logging
-from utils.encryption import encryptor
-from cerberus import Validator
 from json import dumps
-from rest_framework.exceptions import ValidationError, NotFound
+
+from cerberus import Validator
 from django.core.exceptions import ObjectDoesNotExist
-from core.models import Repository, Commit
-from codecov_auth.models import Owner
-from utils.config import get_config
-from .constants import ci, global_upload_token_providers
-from services.repo_providers import RepoProviderService
-from services.task import TaskService
-from services.segment import SegmentService
-from codecov_auth.constants import USER_PLAN_REPRESENTATIONS
+from django.utils import timezone
+from rest_framework.exceptions import ValidationError, NotFound
 from shared.torngit.exceptions import TorngitObjectNotFoundError, TorngitClientError
+
+from .constants import ci, global_upload_token_providers
+from codecov_auth.constants import USER_PLAN_REPRESENTATIONS
+from codecov_auth.models import Owner
+from core.models import Repository, Commit
+from services.repo_providers import RepoProviderService
+from services.segment import SegmentService
+from services.task import TaskService
+from utils.config import get_config
+from utils.encryption import encryptor
 
 from upload.tokenless.tokenless import TokenlessUploadHandler
 
@@ -524,13 +527,19 @@ def dispatch_upload_task(task_arguments, repository, redis):
 
     redis.rpush(repo_queue_key, dumps(task_arguments))
     redis.expire(
-        repo_queue_key,
-        cache_uploads_eta if cache_uploads_eta is not True else 86400,
+        repo_queue_key, cache_uploads_eta if cache_uploads_eta is not True else 86400,
+    )
+    redis.setex(
+        f"latest_upload/{repository.repoid}/{task_arguments.get('commit')}",
+        3600,
+        timezone.now().timestamp(),
     )
 
     # Send task to worker
     TaskService().upload(
         repoid=repository.repoid,
         commitid=task_arguments.get("commit"),
-        countdown=countdown,
+        countdown=max(
+            countdown, int(get_config("setup", "upload_processing_delay") or 0)
+        ),
     )
