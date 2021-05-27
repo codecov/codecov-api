@@ -1,8 +1,8 @@
-from .base import BaseCommand
+from ..base import BaseCommand
 
 from codecov_auth.models import Owner, Session
-from .owner_interactors.create_api_token import CreateApiTokenInteractor
-from .owner_interactors.delete_session import DeleteSessionInteractor
+from .interactors.create_api_token import CreateApiTokenInteractor
+from .interactors.delete_session import DeleteSessionInteractor
 
 
 class OwnerCommands(BaseCommand):
