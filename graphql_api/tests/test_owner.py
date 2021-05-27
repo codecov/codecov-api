@@ -44,7 +44,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, user=self.user)
         assert data == {
             "owner": {
-                "isCurrentUserPartOfOrg": False,
+                "isCurrentUserPartOfOrg": True,
                 "repositories": {
                     "totalCount": 2,
                     "edges": [
