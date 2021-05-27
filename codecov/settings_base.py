@@ -212,6 +212,6 @@ SEGMENT_ENABLED = get_config("setup", "segment", "enabled", default=False) and n
 
 SKIP_RISKY_MIGRATION_STEPS = get_config("migrations", "skip_risky_steps", default=False)
 
-DJANGO_ADMIN_URL = get_config("django_admin_url", default="admin")
+DJANGO_ADMIN_URL = get_config("django", "admin_url", default="admin")
 
 IS_ENTERPRISE = get_settings_module() == SettingsModule.ENTERPRISE.value
