@@ -9,6 +9,8 @@ from .ariadne.views import GraphQLView
 from .schema import schema
 from .tracing import get_tracer_extension
 
+from .executor import Executor
+
 
 @sync_to_async
 def get_user(request):
@@ -30,7 +32,11 @@ class AsyncGraphqlView(GraphQLView):
         return await super().post(request, *args, **kwargs)
 
     def context_value(self, request):
-        return {"request": request, "service": request.resolver_match.kwargs["service"]}
+        return {
+            "request": request,
+            "service": request.resolver_match.kwargs["service"],
+            "executor": Executor(request),
+        }
 
 
 BaseAriadneView = AsyncGraphqlView.as_view()
