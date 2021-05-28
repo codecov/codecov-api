@@ -42,4 +42,9 @@ def resolve_is_current_user_part_of_org(owner, info):
 
 @owner_bindable.field("yaml")
 def resolve_yaml(owner, info):
+    current_user = info.context["request"].user
+    if owner.yaml is None:
+        return
+    if not current_user_part_of_org(current_user, owner):
+        return
     return yaml.dump(owner.yaml)
