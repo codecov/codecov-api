@@ -11,6 +11,7 @@ from .helper import GraphQLTestHelper, paginate_connection
 query_repositories = """{
     owner(username: "%s") {
         isCurrentUserPartOfOrg
+        yaml
         repositories%s {
             totalCount
             edges {
@@ -45,6 +46,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         assert data == {
             "owner": {
                 "isCurrentUserPartOfOrg": True,
+                "yaml": None,
                 "repositories": {
                     "totalCount": 2,
                     "edges": [
@@ -160,3 +162,29 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         query = query_repositories % (org.username, "", "")
         data = self.gql_request(query, user=user)
         assert data["owner"]["isCurrentUserPartOfOrg"] is True
+
+    def test_yaml_when_owner_not_have_yaml(self):
+        org = OwnerFactory(username="no_yaml", yaml=None, service="github")
+        self.user.organizations = [org.ownerid]
+        self.user.save()
+        query = query_repositories % (org.username, "", "")
+        data = self.gql_request(query, user=self.user)
+        assert data["owner"]["yaml"] is None
+
+    def test_yaml_when_current_user_not_part_of_org(self):
+        yaml = {"test": "test"}
+        org = OwnerFactory(username="no_yaml", yaml=yaml, service="github")
+        self.user.organizations = []
+        self.user.save()
+        query = query_repositories % (org.username, "", "")
+        data = self.gql_request(query, user=self.user)
+        assert data["owner"]["yaml"] is None
+
+    def test_yaml_return_data(self):
+        yaml = {"test": "test"}
+        org = OwnerFactory(username="no_yaml", yaml=yaml, service="github")
+        self.user.organizations = [org.ownerid]
+        self.user.save()
+        query = query_repositories % (org.username, "", "")
+        data = self.gql_request(query, user=self.user)
+        assert data["owner"]["yaml"] == "test: test\n"
