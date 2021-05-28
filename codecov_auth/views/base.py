@@ -71,8 +71,9 @@ class LoginMixin(object):
         self._set_proper_cookies_and_session(user, request, response)
         RefreshService().trigger_refresh(user.ownerid, user.username)
 
-        # Login the user via Django authentication. Allows staff users to access Django admin.
-        login(request, user)
+        # Login the user if staff via Django authentication. Allows staff users to access Django admin.
+        if user.is_staff:
+            login(request, user)
 
         log.info("User is logging in", extra=dict(ownerid=user.ownerid))
         return user
