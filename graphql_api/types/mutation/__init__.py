@@ -11,5 +11,3 @@ mutation = mutation + gql_create_api_token
 mutation = mutation + gql_sync_with_git_provider
 mutation = mutation + gql_delete_session
 mutation = mutation + gql_set_yaml_on_owner
-
-print(mutation)
