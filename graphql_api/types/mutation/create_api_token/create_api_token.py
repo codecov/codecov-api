@@ -1,12 +1,8 @@
-from graphql_api.actions.owner import create_api_token
+from graphql_api.helpers.mutation import wrap_error_handling_mutation
 
 
+@wrap_error_handling_mutation
 async def resolve_create_api_token(_, info, input):
-    current_user = info.context["request"].user
-    if not current_user.is_authenticated:
-        return {"error": "unauthenticated"}
-    session = await create_api_token(current_user, input.get("name"))
-    return {
-        "session": session,
-        "full_token": session.token    
-    }
+    command = info.context["executor"].get_command("owner")
+    session = await command.create_api_token(input.get("name"))
+    return {"session": session, "full_token": session.token}
