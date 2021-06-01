@@ -5,7 +5,9 @@ import yaml
 from codecov_auth.models import Owner
 from graphql_api.actions.owner import current_user_part_of_org
 from graphql_api.commands.base import BaseInteractor
-from graphql_api.commands.exceptions import Unauthenticated
+from graphql_api.commands.exceptions import Unauthenticated, ValidationError
+from shared.validation.yaml import validate_yaml
+from shared.validation.exceptions import InvalidYamlException
 
 
 class SetYamlOnOwnerInteractor(BaseInteractor):
@@ -23,8 +25,14 @@ class SetYamlOnOwnerInteractor(BaseInteractor):
 
     def convert_yaml_to_dict(self, yaml_input):
         yaml_safe = html.escape(yaml_input)
-        yaml_as_dict = yaml.safe_load(yaml_safe)
-        return yaml_as_dict
+        yaml_dict = yaml.safe_load(yaml_safe)
+        if not isinstance(yaml_dict, dict):
+            raise ValidationError(f"Bad Yaml format")
+        try:
+            return validate_yaml(yaml_dict)
+        except InvalidYamlException as e:
+            message = f"Error at {str(e.error_location)}: \n{e.error_message}"
+            raise ValidationError(message)
 
     @sync_to_async
     def execute(self, username, yaml_input):
