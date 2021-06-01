@@ -215,3 +215,4 @@ SKIP_RISKY_MIGRATION_STEPS = get_config("migrations", "skip_risky_steps", defaul
 DJANGO_ADMIN_URL = get_config("django", "admin_url", default="admin")
 
 IS_ENTERPRISE = get_settings_module() == SettingsModule.ENTERPRISE.value
+IS_DEV = get_settings_module() == SettingsModule.DEV.value
