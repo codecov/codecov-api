@@ -14,9 +14,9 @@ class CreateApiTokenInteractorTest(TransactionTestCase):
 
     async def test_when_unauthenticated_raise(self):
         with pytest.raises(Unauthenticated):
-            await CreateApiTokenInteractor(AnonymousUser()).execute("name")
+            await CreateApiTokenInteractor(AnonymousUser(), "github").execute("name")
 
     async def test_create_token(self):
-        session = await CreateApiTokenInteractor(self.user).execute("name")
+        session = await CreateApiTokenInteractor(self.user, "github").execute("name")
         assert session is not None
         assert session.owner is self.user

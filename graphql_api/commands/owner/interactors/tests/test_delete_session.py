@@ -22,9 +22,11 @@ class DeleteSessionInteractorTest(TransactionTestCase):
 
     async def test_when_unauthenticated_raise(self):
         with pytest.raises(Unauthenticated):
-            await DeleteSessionInteractor(AnonymousUser()).execute(12)
+            await DeleteSessionInteractor(AnonymousUser(), "github").execute(12)
 
     async def test_delete_session(self):
-        await DeleteSessionInteractor(self.user).execute(self.session.sessionid)
+        await DeleteSessionInteractor(self.user, "github").execute(
+            self.session.sessionid
+        )
         with pytest.raises(Session.DoesNotExist):
             await get_session(self.session.sessionid)
