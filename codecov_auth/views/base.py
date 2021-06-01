@@ -8,8 +8,7 @@ from codecov_auth.helpers import create_signed_value
 from codecov_auth.models import Session, Owner
 from utils.encryption import encryptor
 from utils.config import get_config
-from services.task import TaskService
-from services.redis_configuration import get_redis_connection
+from services.refresh import RefreshService
 from services.segment import SegmentService
 
 log = logging.getLogger(__name__)
@@ -69,7 +68,7 @@ class LoginMixin(object):
             user.save(update_fields=fields_to_update + ["updatestamp"])
 
         self._set_proper_cookies_and_session(user, request, response)
-        self._schedule_proper_tasks(user)
+        RefreshService().trigger_refresh(user.ownerid, user.username)
         log.info("User is logging in", extra=dict(ownerid=user.ownerid))
         return user
 
@@ -137,9 +136,3 @@ class LoginMixin(object):
             self.segment_service.user_signed_in(owner, **request.GET.dict())
 
         return (owner, was_created)
-
-    def _schedule_proper_tasks(self, user):
-        task_service = TaskService()
-        redis = get_redis_connection()
-        resp = task_service.refresh(user.ownerid, user.username)
-        redis.hset("refresh", user.ownerid, dumps(resp.as_tuple()))

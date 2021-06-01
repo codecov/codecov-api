@@ -5,6 +5,7 @@ from graphql_api.helpers.connection import (
     build_connection_graphql,
     queryset_to_connection,
 )
+from graphql_api.actions.owner import current_user_part_of_org
 from graphql_api.actions.repository import list_repository_for_owner
 from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
 
@@ -29,3 +30,9 @@ def resolve_repositories(
     return queryset_to_connection(
         queryset, ordering=ordering, ordering_direction=ordering_direction, **kwargs
     )
+
+
+@owner_bindable.field("isCurrentUserPartOfOrg")
+def resolve_is_current_user_part_of_org(owner, info):
+    current_user = info.context["request"].user
+    return current_user_part_of_org(current_user, owner)

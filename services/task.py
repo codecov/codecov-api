@@ -1,8 +1,7 @@
 import logging
 import celery_config
-from celery import Celery
 
-from celery import signature, chain
+from celery import Celery, signature, chain
 
 
 celery_app = Celery("tasks")
@@ -44,12 +43,20 @@ class TaskService(object):
     def notify(self, repoid, commitid, current_yaml=None):
         self._create_signature(
             "app.tasks.notify.Notify",
-            kwargs=dict(repoid=repoid, commitid=commitid, current_yaml=current_yaml,),
+            kwargs=dict(
+                repoid=repoid,
+                commitid=commitid,
+                current_yaml=current_yaml,
+            ),
         ).apply_async()
 
     def pulls_sync(self, repoid, pullid):
         self._create_signature(
-            "app.tasks.pulls.Sync", kwargs=dict(repoid=repoid, pullid=pullid,)
+            "app.tasks.pulls.Sync",
+            kwargs=dict(
+                repoid=repoid,
+                pullid=pullid,
+            ),
         ).apply_async()
 
     def refresh(
@@ -61,12 +68,7 @@ class TaskService(object):
         using_integration=False,
     ):
         """
-        !!!
-        Copied from https://github.com/codecov/codecov.io/blob/master/app/services/task.py
-        !!!
-
         Send sync_teams and/or sync_repos task message
-
         If running both tasks on new worker, we create a chain with sync_teams to run
         first so that when sync_repos starts it has the most up to date teams/groups
         data for the user. Otherwise, we may miss some repos.
