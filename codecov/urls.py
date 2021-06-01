@@ -28,7 +28,7 @@ urlpatterns = [
 
 if not settings.IS_ENTERPRISE:
     urlpatterns += [
-        path("admin/", admin.site.urls),
+        path(f"{settings.DJANGO_ADMIN_URL}/", admin.site.urls),
         path(
             "<str:service>/<str:owner_username>/<str:repo_name>/",
             include("graphs.urls"),
