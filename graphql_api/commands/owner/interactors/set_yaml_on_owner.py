@@ -12,8 +12,7 @@ from shared.validation.exceptions import InvalidYamlException
 
 class SetYamlOnOwnerInteractor(BaseInteractor):
     def fetch_owner(self, username):
-        service = self.current_user.service
-        return Owner.objects.get(username=username, service=service)
+        return Owner.objects.get(username=username, service=self.service)
 
     def validate(self):
         if not self.current_user.is_authenticated:
