@@ -1,9 +1,8 @@
-from graphql_api.actions.owner import delete_session
+from graphql_api.helpers.mutation import wrap_error_handling_mutation
 
 
+@wrap_error_handling_mutation
 async def resolve_delete_session(_, info, input):
-    current_user = info.context["request"].user
-    if not current_user.is_authenticated:
-        return {"error": "unauthenticated"}
-    await delete_session(current_user, input.get("sessionid"))
+    command = info.context["executor"].get_command("owner")
+    await command.delete_session(input.get("sessionid"))
     return None

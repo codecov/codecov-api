@@ -32,3 +32,13 @@ def create_api_token(current_user, name):
 @sync_to_async
 def delete_session(current_user, sessionid):
     return Session.objects.filter(sessionid=sessionid, owner=current_user).delete()
+
+
+def current_user_part_of_org(current_user, org):
+    if not current_user.is_authenticated:
+        return False
+    if current_user == org:
+        return True
+    # user is a direct member of the org
+    orgs_of_user = current_user.organizations or []
+    return org.ownerid in orgs_of_user

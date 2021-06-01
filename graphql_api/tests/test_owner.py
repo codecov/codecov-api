@@ -10,6 +10,7 @@ from .helper import GraphQLTestHelper, paginate_connection
 
 query_repositories = """{
     owner(username: "%s") {
+        isCurrentUserPartOfOrg
         repositories%s {
             totalCount
             edges {
@@ -43,6 +44,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, user=self.user)
         assert data == {
             "owner": {
+                "isCurrentUserPartOfOrg": True,
                 "repositories": {
                     "totalCount": 2,
                     "edges": [
@@ -52,7 +54,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                     "pageInfo": {
                         "hasNextPage": False,
                     },
-                }
+                },
             }
         }
 
@@ -132,3 +134,29 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, user=self.user)
         repos = paginate_connection(data["owner"]["repositories"])
         assert repos == [{"name": "a"}]
+
+    def test_is_part_of_org_when_unauthenticated(self):
+        query = query_repositories % (self.user.username, "", "")
+        data = self.gql_request(query)
+        assert data["owner"]["isCurrentUserPartOfOrg"] is False
+
+    def test_is_part_of_org_when_authenticated_but_not_part(self):
+        org = OwnerFactory(username="random_org_test", service="github")
+        user = OwnerFactory(username="random_org_user", service="github")
+        query = query_repositories % (org.username, "", "")
+        data = self.gql_request(query, user=user)
+        assert data["owner"]["isCurrentUserPartOfOrg"] is False
+
+    def test_is_part_of_org_when_user_asking_for_themself(self):
+        query = query_repositories % (self.user.username, "", "")
+        data = self.gql_request(query, user=self.user)
+        assert data["owner"]["isCurrentUserPartOfOrg"] is True
+
+    def test_is_part_of_org_when_user_path_of_it(self):
+        org = OwnerFactory(username="random_org_test", service="github")
+        user = OwnerFactory(
+            username="random_org_user", service="github", organizations=[org.ownerid]
+        )
+        query = query_repositories % (org.username, "", "")
+        data = self.gql_request(query, user=user)
+        assert data["owner"]["isCurrentUserPartOfOrg"] is True
