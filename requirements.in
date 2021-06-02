@@ -27,6 +27,7 @@ cerberus==1.3.2
 ddtrace==0.46
 pytest-cov==2.11.1
 pre-commit==2.11.1
+python-redis-lock==3.7.0
 whitenoise
 ariadne
 git+git://github.com/photocrowd/django-cursor-pagination.git@f8aa41ff7c515511fccb79e33fb2ac22cb7af765

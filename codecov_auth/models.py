@@ -222,6 +222,9 @@ class Owner(models.Model):
             bool(self.admins) and owner.ownerid in self.admins
         )
 
+    def get_username(self):
+        return self.username
+
     @property
     def is_active(self):
         # Required to implement django's user-model interface
@@ -234,13 +237,28 @@ class Owner(models.Model):
 
     @property
     def is_authenticated(self):
-        # Required to implement django's user-model interface
+        # Required to implement django's user-model interface for Django Admin
         return True
+
+    @property
+    def is_staff(self):
+        # Required to implement django's user-model interface
+        return self.staff
+
+    def has_perm(self, perm, obj=None):
+        # TODO : Implement real permissioning system
+        # Required to implement django's user-model interface for Django Admin
+        return self.is_staff
 
     def has_perms(self, *args, **kwargs):
         # TODO : Implement real permissioning system
         # Required to implement django's user-model interface
         return True
+
+    def has_module_perms(self, package_name):
+        # TODO : Implement real permissioning system
+        # Required to implement django's user-model interface for Django Admin
+        return self.is_staff
 
     @property
     def avatar_url(self, size=DEFAULT_AVATAR_SIZE):
