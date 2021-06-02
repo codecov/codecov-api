@@ -31,7 +31,7 @@ class SetYamlOnOwnerInteractor(BaseInteractor):
         try:
             return validate_yaml(yaml_dict)
         except InvalidYamlException as e:
-            message = f"Error at {str(e.error_location)}: \n{e.error_message}"
+            message = f"Error at {str(e.error_location)}: {e.error_message}"
             raise ValidationError(message)
 
     @sync_to_async
