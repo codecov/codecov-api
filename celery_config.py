@@ -6,4 +6,4 @@ broker_url = get_config("services", "celery_broker") or get_config(
 )
 result_backend = get_config("services", "redis_url")
 
-task_default_queue = "new_tasks"
+task_default_queue = "celery"

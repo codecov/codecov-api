@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 
 
 class TaskService(object):
-    def __init__(self, queue="new_tasks"):
+    def __init__(self, queue=celery_config.task_default_queue):
         self.queue = queue
 
     def _create_signature(self, name, args=None, kwargs=None):
