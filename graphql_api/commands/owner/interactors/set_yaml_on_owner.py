@@ -5,7 +5,11 @@ import yaml
 from codecov_auth.models import Owner
 from graphql_api.actions.owner import current_user_part_of_org
 from graphql_api.commands.base import BaseInteractor
-from graphql_api.commands.exceptions import Unauthenticated, ValidationError
+from graphql_api.commands.exceptions import (
+    Unauthenticated,
+    ValidationError,
+    Unauthorized,
+)
 from shared.validation.yaml import validate_yaml
 from shared.validation.exceptions import InvalidYamlException
 
@@ -17,7 +21,7 @@ class SetYamlOnOwnerInteractor(BaseInteractor):
 
     def authorization(self):
         if not current_user_part_of_org(self.current_user, self.owner):
-            raise Unauthenticated()
+            raise Unauthorized()
 
     def convert_yaml_to_dict(self, yaml_input):
         yaml_safe = html.escape(yaml_input)

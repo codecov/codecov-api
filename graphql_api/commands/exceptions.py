@@ -4,3 +4,7 @@ class Unauthenticated(Exception):
 
 class ValidationError(Exception):
     pass
+
+
+class Unauthorized(Exception):
+    pass
