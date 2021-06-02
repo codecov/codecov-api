@@ -1,9 +1,8 @@
-from asgiref.sync import sync_to_async
 import pytest
 from django.test import TransactionTestCase
 from django.contrib.auth.models import AnonymousUser
 
-from codecov_auth.tests.factories import OwnerFactory, SessionFactory
+from codecov_auth.tests.factories import OwnerFactory
 
 from ..set_yaml_on_owner import SetYamlOnOwnerInteractor
 from graphql_api.commands.exceptions import (
@@ -11,12 +10,6 @@ from graphql_api.commands.exceptions import (
     Unauthorized,
     ValidationError,
 )
-
-
-@sync_to_async
-def get_session(id):
-    return Session.objects.get(sessionid=id)
-
 
 good_yaml = """
 codecov:
