@@ -11,9 +11,6 @@ from shared.validation.exceptions import InvalidYamlException
 
 
 class SetYamlOnOwnerInteractor(BaseInteractor):
-    def fetch_owner(self, username):
-        return Owner.objects.get(username=username, service=self.service)
-
     def validate(self):
         if not self.current_user.is_authenticated:
             raise Unauthenticated()
@@ -36,7 +33,7 @@ class SetYamlOnOwnerInteractor(BaseInteractor):
     @sync_to_async
     def execute(self, username, yaml_input):
         self.validate()
-        self.owner = self.fetch_owner(username)
+        self.owner = Owner.objects.get(username=username, service=self.service)
         self.authorization()
         self.owner.yaml = self.convert_yaml_to_dict(yaml_input)
         self.owner.save()
