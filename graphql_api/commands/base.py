@@ -3,9 +3,8 @@ class BaseCommand:
         self.current_user = current_user
         self.service = service
 
-    def get_interactor_exec(self, InteractorKlass):
-        interactor = InteractorKlass(self.current_user, self.service)
-        return interactor.execute
+    def get_interactor(self, InteractorKlass):
+        return InteractorKlass(self.current_user, self.service)
 
 
 class BaseInteractor:

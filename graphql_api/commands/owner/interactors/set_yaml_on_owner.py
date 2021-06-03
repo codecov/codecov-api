@@ -19,7 +19,7 @@ class SetYamlOnOwnerInteractor(BaseInteractor):
         if not self.current_user.is_authenticated:
             raise Unauthenticated()
 
-    def authorization(self):
+    def authorize(self):
         if not current_user_part_of_org(self.current_user, self.owner):
             raise Unauthorized()
 
@@ -38,7 +38,7 @@ class SetYamlOnOwnerInteractor(BaseInteractor):
     def execute(self, username, yaml_input):
         self.validate()
         self.owner = Owner.objects.get(username=username, service=self.service)
-        self.authorization()
+        self.authorize()
         self.owner.yaml = self.convert_yaml_to_dict(yaml_input)
         self.owner.save()
         return self.owner

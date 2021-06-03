@@ -8,10 +8,10 @@ from .interactors.delete_session import DeleteSessionInteractor
 
 class OwnerCommands(BaseCommand):
     def create_api_token(self, name):
-        return self.get_interactor_exec(CreateApiTokenInteractor)(name)
+        return self.get_interactor(CreateApiTokenInteractor).execute(name)
 
     def delete_session(self, sessionid):
-        return self.get_interactor_exec(DeleteSessionInteractor)(sessionid)
+        return self.get_interactor(DeleteSessionInteractor).execute(sessionid)
 
     def set_yaml_on_owner(self, username, yaml):
-        return self.get_interactor_exec(SetYamlOnOwnerInteractor)(username, yaml)
+        return self.get_interactor(SetYamlOnOwnerInteractor).execute(username, yaml)
