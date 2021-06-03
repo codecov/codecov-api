@@ -9,6 +9,7 @@ from graphql_api.commands.exceptions import (
     Unauthenticated,
     ValidationError,
     Unauthorized,
+    NotFound,
 )
 from shared.validation.yaml import validate_yaml
 from shared.validation.exceptions import InvalidYamlException
@@ -22,6 +23,12 @@ class SetYamlOnOwnerInteractor(BaseInteractor):
     def authorize(self):
         if not current_user_part_of_org(self.current_user, self.owner):
             raise Unauthorized()
+
+    def get_owner(self, username):
+        try:
+            return Owner.objects.get(username=username, service=self.service)
+        except Owner.DoesNotExist:
+            raise NotFound()
 
     def convert_yaml_to_dict(self, yaml_input):
         yaml_safe = html.escape(yaml_input)
@@ -37,7 +44,7 @@ class SetYamlOnOwnerInteractor(BaseInteractor):
     @sync_to_async
     def execute(self, username, yaml_input):
         self.validate()
-        self.owner = Owner.objects.get(username=username, service=self.service)
+        self.owner = self.get_owner(username)
         self.authorize()
         self.owner.yaml = self.convert_yaml_to_dict(yaml_input)
         self.owner.save()

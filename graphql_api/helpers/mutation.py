@@ -2,6 +2,7 @@ from graphql_api.commands.exceptions import (
     Unauthenticated,
     ValidationError,
     Unauthorized,
+    NotFound,
 )
 
 
@@ -15,5 +16,7 @@ def wrap_error_handling_mutation(resolver):
             return {"error": "unauthorized"}
         except ValidationError as e:
             return {"error": str(e)}
+        except NotFound as e:
+            return {"error": "not found"}
 
     return resolver_with_error_handling

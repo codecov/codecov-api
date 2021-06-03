@@ -7,6 +7,7 @@ from graphql_api.commands.exceptions import (
     Unauthenticated,
     ValidationError,
     Unauthorized,
+    NotFound,
 )
 
 
@@ -42,3 +43,11 @@ class HelperMutationTest(SimpleTestCase):
             raise ValidationError("bad data you gave me")
 
         assert await resolver() == {"error": "bad data you gave me"}
+
+    async def test_mutation_when_not_found_is_raised(self):
+        @wrap_error_handling_mutation
+        @sync_to_async
+        def resolver():
+            raise NotFound()
+
+        assert await resolver() == {"error": "not found"}

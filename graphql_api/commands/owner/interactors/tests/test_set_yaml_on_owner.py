@@ -9,6 +9,7 @@ from graphql_api.commands.exceptions import (
     Unauthenticated,
     Unauthorized,
     ValidationError,
+    NotFound,
 )
 
 good_yaml = """
@@ -47,6 +48,12 @@ class SetYamlOnOwnerInteractorTest(TransactionTestCase):
     async def test_when_not_path_of_org_raise(self):
         with pytest.raises(Unauthorized):
             await self.execute(self.random_user, self.org.username, good_yaml)
+
+    async def test_when_owner_not_found_raise(self):
+        with pytest.raises(NotFound):
+            await self.execute(
+                self.current_user, "thing that should not exist", good_yaml
+            )
 
     async def test_user_is_part_of_org_and_yaml_is_good(self):
         owner_updated = await self.execute(
