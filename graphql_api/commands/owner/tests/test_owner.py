@@ -8,7 +8,7 @@ from ..owner import OwnerCommands
 class OwnerCommandsTest(TransactionTestCase):
     def setUp(self):
         self.user = OwnerFactory(username="codecov-user")
-        self.command = OwnerCommands(self.user)
+        self.command = OwnerCommands(self.user, "github")
 
     @patch("graphql_api.commands.owner.owner.CreateApiTokenInteractor.execute")
     def test_create_api_token_delegate_to_interactor(self, interactor_mock):
@@ -21,3 +21,10 @@ class OwnerCommandsTest(TransactionTestCase):
         sessionid = 12
         self.command.delete_session(sessionid)
         interactor_mock.assert_called_once_with(sessionid)
+
+    @patch("graphql_api.commands.owner.owner.SetYamlOnOwnerInteractor.execute")
+    def test_set_yaml_on_owner_delegate_to_interactor(self, interactor_mock):
+        username = "codecov"
+        yaml = "codecov: something"
+        self.command.set_yaml_on_owner(username, yaml)
+        interactor_mock.assert_called_once_with(username, yaml)
