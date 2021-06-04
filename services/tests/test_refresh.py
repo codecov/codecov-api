@@ -88,3 +88,11 @@ def test_is_refreshing_false_when_parent_task_is_failed(
     RefreshService().trigger_refresh(5, "codecov")
     mock_result_from_tuple.return_value = AsyncReturnMockParentFailed()
     assert RefreshService().is_refreshing(5) is False
+
+
+def test_is_refreshing_false_when_result_from_tuple_raise(
+    mock_result_from_tuple, mock_refresh, mock_redis
+):
+    RefreshService().trigger_refresh(5, "codecov")
+    mock_result_from_tuple.side_effect = ValueError
+    assert RefreshService().is_refreshing(5) is False
