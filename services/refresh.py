@@ -11,16 +11,22 @@ class RefreshService(object):
         self.task_service = TaskService()
         self.redis = get_redis_connection()
 
+    def clean_refreshing_redis(self, ownerid):
+        self.redis.hdel("refresh", ownerid)
+        return False
+
     def is_refreshing(self, ownerid):
         data_task = self.redis.hget("refresh", ownerid)
         if not data_task:
             return False
-        with suppress(ValueError, TypeError):
-            result = result_from_tuple(loads(data_task), app=celery_app)
-            if not result.ready():
-                return True
-        self.redis.hdel("refresh", ownerid)
-        return False
+        try:
+            res = result_from_tuple(loads(data_task))
+        except ValueError:
+            return self.clean_refreshing_redis(ownerid)
+        has_failed = res.failed() or (res.parent and res.parent.failed())
+        if res.successful() or has_failed:
+            return self.clean_refreshing_redis(ownerid)
+        return True
 
     def trigger_refresh(
         self,
