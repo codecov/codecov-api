@@ -1,18 +1,18 @@
 import logging
-import celery_config
+from celery_config import CeleryApiConfig
 
 from celery import Celery, signature, chain
 
 
+api_celery_config = CeleryApiConfig()
 celery_app = Celery("tasks")
-celery_app.config_from_object(celery_config)
-
+celery_app.config_from_object(api_celery_config)
 
 log = logging.getLogger(__name__)
 
 
 class TaskService(object):
-    def __init__(self, queue=celery_config.task_default_queue):
+    def __init__(self, queue=api_celery_config.task_default_queue):
         self.queue = queue
 
     def _create_signature(self, name, args=None, kwargs=None):
