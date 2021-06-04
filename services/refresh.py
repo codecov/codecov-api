@@ -11,10 +11,6 @@ class RefreshService(object):
         self.task_service = TaskService()
         self.redis = get_redis_connection()
 
-    def clean_refreshing_redis(self, ownerid):
-        self.redis.hdel("refresh", ownerid)
-        return False
-
     def is_refreshing(self, ownerid):
         data_task = self.redis.hget("refresh", ownerid)
         if not data_task:
@@ -22,10 +18,13 @@ class RefreshService(object):
         try:
             res = result_from_tuple(loads(data_task))
         except ValueError:
-            return self.clean_refreshing_redis(ownerid)
+            self.redis.hdel("refresh", ownerid)
+            return False
         has_failed = res.failed() or (res.parent and res.parent.failed())
         if res.successful() or has_failed:
-            return self.clean_refreshing_redis(ownerid)
+            self.redis.hdel("refresh", ownerid)
+            return False
+        # task is not success, nor failed, so probably pending or in progress
         return True
 
     def trigger_refresh(
