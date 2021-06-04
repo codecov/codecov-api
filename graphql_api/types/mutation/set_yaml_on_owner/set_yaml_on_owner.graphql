@@ -1,0 +1,4 @@
+type SetYamlOnOwnerPayload {
+    error: String
+    owner: Owner
+}
