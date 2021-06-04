@@ -48,3 +48,9 @@ def resolve_yaml(owner, info):
     if not current_user_part_of_org(current_user, owner):
         return
     return yaml.dump(owner.yaml)
+
+
+@owner_bindable.field("repository")
+async def resolve_repository(owner, info, name):
+    command = info.context["executor"].get_command("repository")
+    return await command.fetch_repository(name)
