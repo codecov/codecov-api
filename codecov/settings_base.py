@@ -1,5 +1,4 @@
 from corsheaders.defaults import default_headers
-from corsheaders.defaults import default_headers
 
 from utils.config import get_config, get_settings_module, SettingsModule
 import os
