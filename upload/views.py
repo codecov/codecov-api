@@ -54,7 +54,7 @@ class UploadHandler(APIView):
         response["Access-Control-Allow-Method"] = "POST"
         response[
             "Access-Control-Allow-Headers"
-        ] = "Origin, Content-Type, Accept, X-User-Agent"
+        ] = "Origin, Content-Type, Accept, X-User-Agent, X-Upload-Token"
 
         return response
 
@@ -76,13 +76,17 @@ class UploadHandler(APIView):
         response["Access-Control-Allow-Origin"] = "*"
         response[
             "Access-Control-Allow-Headers"
-        ] = "Origin, Content-Type, Accept, X-User-Agent"
+        ] = "Origin, Content-Type, Accept, X-User-Agent, X-Upload-Token"
 
         # Parse request parameters
         request_params = {
             **self.request.query_params.dict(),  # query_params is a QueryDict, need to convert to dict to process it properly
             **self.kwargs,
         }
+        request_params["token"] = request_params.get("token") or request.META.get(
+            "HTTP_X_UPLOAD_TOKEN"
+        )
+
         try:
             # note: try to avoid mutating upload_params past this point, to make it easier to reason about the state of this variable
             upload_params = parse_params(request_params)
