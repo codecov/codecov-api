@@ -1,3 +1,6 @@
+from corsheaders.defaults import default_headers
+from corsheaders.defaults import default_headers
+
 from utils.config import get_config, get_settings_module, SettingsModule
 import os
 
@@ -209,6 +212,10 @@ SEGMENT_API_KEY = get_config("setup", "segment", "key", default=None)
 SEGMENT_ENABLED = get_config("setup", "segment", "enabled", default=False) and not bool(
     get_config("setup", "enterprise_license", default=False)
 )
+
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "token-type",
+]
 
 SKIP_RISKY_MIGRATION_STEPS = get_config("migrations", "skip_risky_steps", default=False)
 
