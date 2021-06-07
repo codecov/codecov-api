@@ -1,5 +1,6 @@
 type Mutation {
     createApiToken(input: CreateApiTokenInput!): CreateApiTokenPayload
+    setYamlOnOwner(input: SetYamlOnOwnerInput!): SetYamlOnOwnerPayload
     syncWithGitProvider: SyncWithGitProviderPayload
     deleteSession(input: DeleteSessionInput!): DeleteSessionPayload
 }

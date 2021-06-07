@@ -1,3 +1,5 @@
+import json
+import yaml
 from ariadne import convert_kwargs_to_snake_case, ObjectType
 
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
@@ -36,3 +38,13 @@ def resolve_repositories(
 def resolve_is_current_user_part_of_org(owner, info):
     current_user = info.context["request"].user
     return current_user_part_of_org(current_user, owner)
+
+
+@owner_bindable.field("yaml")
+def resolve_yaml(owner, info):
+    current_user = info.context["request"].user
+    if owner.yaml is None:
+        return
+    if not current_user_part_of_org(current_user, owner):
+        return
+    return yaml.dump(owner.yaml)
