@@ -31,7 +31,7 @@ class RepositoryQuerySet(QuerySet):
             if owner.permission:
                 filters = filters | Q(repoid__in=owner.permission)
 
-        return self.filter(filters)
+        return self.filter(filters).exclude(name=None)
 
     def exclude_uncovered(self):
         """

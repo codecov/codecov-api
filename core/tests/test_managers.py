@@ -140,6 +140,18 @@ class RepositoryQuerySetTests(TestCase):
             assert public_repo.repoid in repoids
             assert owned_repo.repoid in repoids
 
+        with self.subTest("when repository do not have a name doesnt return it"):
+            owner = OwnerFactory(permission=None)
+            RepositoryFactory(author=owner, name=None)
+            RepositoryFactory(author=owner, name=None)
+            RepositoryFactory(author=owner, name=None)
+
+            repos = Repository.objects.viewable_repos(owner)
+            assert repos.count() == 1
+            # only public repo created above
+            repoids = repos.values_list("repoid", flat=True)
+            assert public_repo.repoid in repoids
+
         with self.subTest("when owner permission is not none, returns repos"):
             owner = OwnerFactory(permission=[private_repo.repoid])
             owned_repo = RepositoryFactory(author=owner)
