@@ -16,7 +16,7 @@ class RefreshService(object):
         if not data_task:
             return False
         try:
-            res = result_from_tuple(loads(data_task))
+            res = result_from_tuple(loads(data_task), app=celery_app)
         except ValueError:
             self.redis.hdel("refresh", ownerid)
             return False
