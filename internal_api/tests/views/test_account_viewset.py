@@ -68,8 +68,16 @@ class AccountViewSetTests(APITestCase):
 
         self.client.force_login(user=self.user)
 
+    def test_retrieve_own_account_give_200(self):
+        response = self._retrieve(
+            kwargs={"service": self.user.service, "owner_username": self.user.username}
+        )
+        assert response.status_code == status.HTTP_200_OK
+
     def test_retrieve_account_gets_account_fields(self):
         owner = OwnerFactory(admins=[self.user.ownerid])
+        self.user.organizations = [owner.ownerid]
+        self.user.save()
         response = self._retrieve(
             kwargs={"service": owner.service, "owner_username": owner.username}
         )
@@ -79,7 +87,7 @@ class AccountViewSetTests(APITestCase):
             "root_organization": None,
             "integration_id": owner.integration_id,
             "plan_auto_activate": owner.plan_auto_activate,
-            "inactive_user_count": 0,
+            "inactive_user_count": 1,
             "plan": {
                 "marketing_name": "Basic",
                 "value": "users-free",
@@ -108,6 +116,8 @@ class AccountViewSetTests(APITestCase):
             admins=[self.user.ownerid],
             plan_activated_users=[OwnerFactory(student=True).ownerid],
         )
+        self.user.organizations = [owner.ownerid]
+        self.user.save()
         student_1 = OwnerFactory(organizations=[owner.ownerid], student=True)
         student_2 = OwnerFactory(organizations=[owner.ownerid], student=True)
         response = self._retrieve(
@@ -119,7 +129,7 @@ class AccountViewSetTests(APITestCase):
             "root_organization": None,
             "integration_id": owner.integration_id,
             "plan_auto_activate": owner.plan_auto_activate,
-            "inactive_user_count": 0,
+            "inactive_user_count": 1,
             "plan": response.data["plan"],
             "subscription_detail": None,
             "checkout_session_id": None,
@@ -188,9 +198,15 @@ class AccountViewSetTests(APITestCase):
             "quantity": self.user.plan_user_count,
         }
 
-    @patch("internal_api.permissions.get_provider")
-    def test_retrieve_account_returns_403_if_user_not_admin(self, get_provider_mock):
-        get_provider_mock.return_value = GetAdminProviderAdapter()
+    def test_retrieve_account_returns_401_if_not_authenticated(self):
+        owner = OwnerFactory()
+        self.client.logout()
+        response = self._retrieve(
+            kwargs={"service": owner.service, "owner_username": owner.username}
+        )
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_retrieve_account_returns_403_if_user_not_member(self):
         owner = OwnerFactory()
         response = self._retrieve(
             kwargs={"service": owner.service, "owner_username": owner.username}
