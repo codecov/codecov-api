@@ -147,3 +147,19 @@ class UserIsAdminPermissions(BasePermission):
                 user={"username": user.username, "service_id": user.service_id}
             )
         )
+
+
+class MemberOfOrgPermissions(BasePermission):
+    """
+    Permissions class for asserting the user is member of the owner.
+    Requires that the view has a '.owner' property that returns this owner.
+    """
+
+    def has_permission(self, request, view):
+        current_user = request.user
+        owner = view.owner
+        if not current_user.is_authenticated:
+            return False
+        if current_user == owner:
+            return True
+        return owner.ownerid in (current_user.organizations or [])
