@@ -1,3 +1,5 @@
+import asyncio
+from unittest.mock import patch
 from freezegun import freeze_time
 import datetime
 
@@ -188,3 +190,22 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         query = query_repositories % (org.username, "", "")
         data = self.gql_request(query, user=self.user)
         assert data["owner"]["yaml"] == "test: test\n"
+
+    @patch("graphql_api.commands.owner.owner.OwnerCommands.set_yaml_on_owner")
+    def test_repository_dispatch_to_command(self, command_mock):
+        asyncio.set_event_loop(asyncio.new_event_loop())
+        repo = RepositoryFactory(author=self.user, private=False)
+        query_repositories = """{
+            owner(username: "%s") {
+                repository(name: "%s") {
+                    name
+                }
+            }
+        }
+        """
+        f = asyncio.Future()
+        f.set_result(repo)
+        command_mock.return_value = f
+        query = query_repositories % (repo.author.username, repo.name)
+        data = self.gql_request(query, user=self.user)
+        assert data["owner"]["repository"]["name"] == repo.name
