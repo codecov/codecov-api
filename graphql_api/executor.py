@@ -1,8 +1,13 @@
 from utils.services import get_long_service_name
+
 from .commands.owner import OwnerCommands
+from .commands.repository import RepositoryCommands
 
 
-mapping = {"owner": OwnerCommands}
+mapping = {
+    "owner": OwnerCommands,
+    "repository": RepositoryCommands,
+}
 
 
 class Executor:
