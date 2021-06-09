@@ -1,3 +1,6 @@
 type Commit {
+  message: String
+  createdAt: DateTime
   commitid: String
+  author: Owner
 }
