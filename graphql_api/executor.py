@@ -2,9 +2,10 @@ from utils.services import get_long_service_name
 
 from .commands.owner import OwnerCommands
 from .commands.repository import RepositoryCommands
-
+from .commands.commit import CommitCommands
 
 mapping = {
+    "commit": CommitCommands,
     "owner": OwnerCommands,
     "repository": RepositoryCommands,
 }
