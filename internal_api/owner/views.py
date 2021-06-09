@@ -26,7 +26,7 @@ from services.segment import SegmentService
 from services.decorators import stripe_safe
 
 from internal_api.mixins import OwnerPropertyMixin
-from internal_api.permissions import UserIsAdminPermissions
+from internal_api.permissions import MemberOfOrgPermissions
 
 from .serializers import (
     ProfileSerializer,
@@ -82,7 +82,7 @@ class InvoiceViewSet(
     OwnerPropertyMixin,
 ):
     serializer_class = StripeInvoiceSerializer
-    permission_classes = [UserIsAdminPermissions]
+    permission_classes = [MemberOfOrgPermissions]
     pagination_class = None
 
     def get_queryset(self):
@@ -108,7 +108,7 @@ class AccountDetailsViewSet(
     OwnerPropertyMixin,
 ):
     serializer_class = AccountDetailsSerializer
-    permission_classes = [UserIsAdminPermissions]
+    permission_classes = [MemberOfOrgPermissions]
 
     @stripe_safe
     def retrieve(self, *args, **kwargs):
@@ -155,7 +155,7 @@ class UserViewSet(
         filters.SearchFilter,
     )
     filterset_class = UserFilters
-    permission_classes = [UserIsAdminPermissions]
+    permission_classes = [MemberOfOrgPermissions]
     ordering_fields = ("name", "username", "email")
     lookup_field = "user_username"
     search_fields = ["name", "username", "email"]

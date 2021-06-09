@@ -114,12 +114,14 @@ class StripeService(AbstractPaymentService):
     def delete_subscription(self, owner):
         if owner.plan not in USER_PLAN_REPRESENTATIONS:
             log.info(
-                f"Downgrade to free plan from legacy plan for owner {owner.ownerid}"
+                f"Downgrade to free plan from legacy plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
             )
             stripe.Subscription.delete(owner.stripe_subscription_id, prorate=False)
             owner.set_free_plan()
         else:
-            log.info(f"Downgrade to free plan from user plan for owner {owner.ownerid}")
+            log.info(
+                f"Downgrade to free plan from user plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
+            )
             stripe.Subscription.modify(
                 owner.stripe_subscription_id, cancel_at_period_end=True, prorate=False
             )
@@ -140,7 +142,7 @@ class StripeService(AbstractPaymentService):
     @_log_stripe_error
     def modify_subscription(self, owner, desired_plan):
         log.info(
-            f"Updating Stripe subscription for owner {owner.ownerid} to {desired_plan['value']}"
+            f"Updating Stripe subscription for owner {owner.ownerid} to {desired_plan['value']} by user #{self.requesting_user.ownerid}"
         )
         subscription = stripe.Subscription.retrieve(owner.stripe_subscription_id)
 
@@ -196,7 +198,9 @@ class StripeService(AbstractPaymentService):
         owner.plan_user_count = desired_plan["quantity"]
         owner.save()
 
-        log.info(f"Stripe subscription modified successfully for owner {owner.ownerid}")
+        log.info(
+            f"Stripe subscription modified successfully for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
+        )
 
     def _get_proration_params(self, owner, desired_plan):
         proration_behavior = "none"
@@ -250,7 +254,7 @@ class StripeService(AbstractPaymentService):
             },
         )
         log.info(
-            f"Stripe Checkout Session created successfully for owner {owner.ownerid}"
+            f"Stripe Checkout Session created successfully for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
         )
         return session["id"]
 
@@ -271,7 +275,9 @@ class StripeService(AbstractPaymentService):
         subscription = stripe.Subscription.modify(
             owner.stripe_subscription_id, default_payment_method=payment_method
         )
-        log.info(f"Stripe success update payment method for owner {owner.ownerid}")
+        log.info(
+            f"Stripe success update payment method for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
+        )
         return subscription
 
 
