@@ -975,7 +975,7 @@ class UploadHandlerRouteTest(APITestCase):
         )
         assert headers["access-control-allow-headers"] == (
             "Access-Control-Allow-Headers",
-            "Origin, Content-Type, Accept, X-User-Agent, X-Upload-Token",
+            "Origin, Content-Type, Accept, X-User-Agent",
         )
 
     def test_invalid_request_params(self):
@@ -1032,7 +1032,7 @@ class UploadHandlerRouteTest(APITestCase):
         )
         assert headers["access-control-allow-headers"] == (
             "Access-Control-Allow-Headers",
-            "Origin, Content-Type, Accept, X-User-Agent, X-Upload-Token",
+            "Origin, Content-Type, Accept, X-User-Agent",
         )
         assert headers["content-type"] != (
             "Content-Type",

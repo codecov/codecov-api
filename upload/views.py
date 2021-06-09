@@ -54,7 +54,7 @@ class UploadHandler(APIView):
         response["Access-Control-Allow-Method"] = "POST"
         response[
             "Access-Control-Allow-Headers"
-        ] = "Origin, Content-Type, Accept, X-User-Agent, X-Upload-Token"
+        ] = "Origin, Content-Type, Accept, X-User-Agent"
 
         return response
 
@@ -76,7 +76,7 @@ class UploadHandler(APIView):
         response["Access-Control-Allow-Origin"] = "*"
         response[
             "Access-Control-Allow-Headers"
-        ] = "Origin, Content-Type, Accept, X-User-Agent, X-Upload-Token"
+        ] = "Origin, Content-Type, Accept, X-User-Agent"
 
         # Parse request parameters
         request_params = {
