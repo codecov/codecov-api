@@ -4,6 +4,7 @@ from ariadne.contrib.django.scalars import datetime_scalar
 from ..helpers.ariadne import ariadne_load_local_graphql
 from .query import query, query_bindable
 from .me import me, me_bindable
+from .commit import commit, commit_bindable
 from .user import user, user_bindable
 from .owner import owner, owner_bindable
 from .repository import repository, repository_bindable
@@ -13,11 +14,12 @@ from .enums import enums, enum_types
 
 inputs = ariadne_load_local_graphql(__file__, "./inputs")
 enums = ariadne_load_local_graphql(__file__, "./enums")
-types = [query, me, user, owner, repository, inputs, enums, session, mutation]
+types = [query, me, commit, user, owner, repository, inputs, enums, session, mutation]
 
 bindables = [
     query_bindable,
     me_bindable,
+    commit_bindable,
     user_bindable,
     owner_bindable,
     repository_bindable,
