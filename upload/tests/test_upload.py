@@ -5,7 +5,10 @@ import time
 from django.utils import timezone
 from datetime import datetime, timedelta
 from rest_framework.test import APITestCase, APIRequestFactory
-from shared.torngit.exceptions import TorngitClientGeneralError, TorngitObjectNotFoundError
+from shared.torngit.exceptions import (
+    TorngitClientGeneralError,
+    TorngitObjectNotFoundError,
+)
 from rest_framework.reverse import reverse
 from rest_framework import status
 from rest_framework.exceptions import ValidationError, NotFound
@@ -474,7 +477,11 @@ class UploadHandlerHelpersTest(TestCase):
         }
 
         with self.subTest("not a github commit"):
-            org = G(Owner, service="bitbucket", oauth_token=encryptor.encode("hahahahaha").decode())
+            org = G(
+                Owner,
+                service="bitbucket",
+                oauth_token=encryptor.encode("hahahahaha").decode(),
+            )
             repo = G(Repository, author=org)
             upload_params = {
                 "service": "bitbucket",
@@ -486,7 +493,11 @@ class UploadHandlerHelpersTest(TestCase):
             )
 
         with self.subTest("merge commit"):
-            org = G(Owner, service="github", oauth_token=encryptor.encode("hahahahaha").decode())
+            org = G(
+                Owner,
+                service="github",
+                oauth_token=encryptor.encode("hahahahaha").decode(),
+            )
             repo = G(Repository, author=org)
             upload_params = {
                 "service": "github",
@@ -512,7 +523,11 @@ class UploadHandlerHelpersTest(TestCase):
             )
 
         with self.subTest("merge commit with did_change_merge_commit argument"):
-            org = G(Owner, service="github", oauth_token=encryptor.encode("hahahahaha").decode())
+            org = G(
+                Owner,
+                service="github",
+                oauth_token=encryptor.encode("hahahahaha").decode(),
+            )
             repo = G(Repository, author=org)
             upload_params = {
                 "service": "github",
@@ -917,11 +932,17 @@ class UploadHandlerRouteTest(APITestCase):
         return self.client.options(reverse("upload-handler", kwargs=kwargs))
 
     def _post(
-        self, kwargs=None, data=None, query=None, content_type="application/json"
+        self,
+        kwargs=None,
+        data=None,
+        query=None,
+        content_type="application/json",
+        headers=None,
     ):
+        headers = headers or {}
         query_string = f"?{urlencode(query)}" if query else ""
         url = reverse("upload-handler", kwargs=kwargs) + query_string
-        return self.client.post(url, data=data, content_type=content_type)
+        return self.client.post(url, data=data, content_type=content_type, **headers)
 
     def setUp(self):
         self.org = G(Owner, username="codecovtest", service="github")
@@ -1099,32 +1120,62 @@ class UploadHandlerRouteTest(APITestCase):
 
         assert response.status_code == 200
 
-        headers = response._headers
+    @patch("services.archive.ArchiveService.create_root_storage")
+    @patch("services.storage.MINIO_CLIENT.presigned_put_object")
+    @patch("services.archive.ArchiveService.get_archive_hash")
+    @patch("upload.views.get_redis_connection")
+    @patch("upload.views.uuid4")
+    @patch("upload.views.dispatch_upload_task")
+    @patch("services.repo_providers.RepoProviderService.get_adapter")
+    def test_upload_v4_with_upload_token_header(
+        self,
+        mock_repo_provider_service,
+        mock_dispatch_upload,
+        mock_uuid4,
+        mock_get_redis,
+        mock_hash,
+        mock_storage_put,
+        mock_create_root,
+    ):
+        class MockRepoProviderAdapter:
+            async def get_commit(self, commit, token):
+                return {"message": "This is not a merge commit"}
 
-        assert headers["access-control-allow-origin"] == (
-            "Access-Control-Allow-Origin",
-            "*",
-        )
-        assert headers["access-control-allow-headers"] == (
-            "Access-Control-Allow-Headers",
-            "Origin, Content-Type, Accept, X-User-Agent",
-        )
-        assert headers["content-type"] == (
-            "Content-Type",
-            "text/plain",
+        path = "/".join(
+            (
+                "v4/raw",
+                timezone.now().strftime("%Y-%m-%d"),
+                "awawaw",
+                "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
+            )
         )
 
-        self.assertIn(
-            path + "?AWS=PARAMS", response.content.decode("utf-8").split("\n")[1]
+        mock_create_root.return_value = True
+        mock_storage_put.return_value = path + "?AWS=PARAMS"
+        mock_get_redis.return_value = MockRedis()
+        mock_repo_provider_service.return_value = MockRepoProviderAdapter()
+        mock_uuid4.return_value = (
+            "dec1f00b-1883-40d0-afd6-6dcb876510be"  # this will be the reportid
         )
-
-        mock_storage_put.side_effect = [Exception()]
+        mock_hash.return_value = "awawaw"
+        query_params = {
+            "commit": "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
+            "pr": "456",
+            "branch": "",
+            "flags": "",
+            "build_url": "",
+        }
 
         response = self._post(
-            kwargs={"version": "v4"}, query=query_params, data="coverage report"
+            kwargs={"version": "v4"},
+            query=query_params,
+            data="coverage report",
+            headers={
+                "HTTP_X_UPLOAD_TOKEN": "test27s4f3uz3ha9pi0foipg5bqojtrmbt67",
+            },
         )
 
-        assert response.status_code == 500
+        assert response.status_code == 200
 
 
 class UploadHandlerTravisTokenlessTest(TestCase):

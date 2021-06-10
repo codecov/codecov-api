@@ -83,6 +83,10 @@ class UploadHandler(APIView):
             **self.request.query_params.dict(),  # query_params is a QueryDict, need to convert to dict to process it properly
             **self.kwargs,
         }
+        request_params["token"] = request_params.get("token") or request.META.get(
+            "HTTP_X_UPLOAD_TOKEN"
+        )
+
         try:
             # note: try to avoid mutating upload_params past this point, to make it easier to reason about the state of this variable
             upload_params = parse_params(request_params)
