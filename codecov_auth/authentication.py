@@ -86,14 +86,10 @@ class CodecovAuthMixin:
 
 class CodecovTokenAuthenticationBase(CodecovAuthMixin):
     def authenticate(self, request):
-        authorization = request.META.get("HTTP_AUTHORIZATION", "")
-        if not authorization or " " not in authorization:
-            return None
+        token_type = request.META.get("HTTP_TOKEN_TYPE")
+        encoded_cookie = request.COOKIES.get(token_type)
 
-        val, encoded_cookie = authorization.split(" ")
-        if val not in ["Bearer", "frontend"]:
-            # We continue to allow 'frontend' above for compatibility
-            # with old client version until an update is deployed there.
+        if not encoded_cookie:
             return None
 
         token = self.decode_token_from_cookie(encoded_cookie)
