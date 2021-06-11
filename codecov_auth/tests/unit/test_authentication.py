@@ -1,6 +1,7 @@
 from uuid import uuid4
 
 from django.test import TestCase
+from django.urls import ResolverMatch
 
 from rest_framework.test import APIRequestFactory
 from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
@@ -21,6 +22,11 @@ from codecov_auth.authentication import (
 # Using the standard RequestFactory API to create a form POST request
 
 
+def set_resolver_match(request, kwargs={}):
+    match = ResolverMatch(func=lambda: None, args=(), kwargs=kwargs)
+    request.resolver_match = match
+
+
 class TestAuthentication(BaseTestCase):
     def test_auth(self, db):
         a = "2|1:0|10:1557329312|15:bitbucket-token|48:OGY5YmM2Y2ItZmQxNC00M2JjLWJiYjUtYmUxZTdjOTQ4ZjM0|459669157b19d2e220f461e02c07c377a455bc532ad0c2b8b69b2648cfbe3914"
@@ -29,6 +35,7 @@ class TestAuthentication(BaseTestCase):
         request = request_factory.post(
             "/notes/", {"title": "new idea"}, HTTP_AUTHORIZATION=f"frontend {a}"
         )
+        set_resolver_match(request)
         authenticator = CodecovTokenAuthentication()
         result = authenticator.authenticate(request)
         assert result is not None
@@ -62,6 +69,7 @@ class TestAuthentication(BaseTestCase):
         request = request_factory.post(
             "/notes/", {"title": "new idea"}, HTTP_AUTHORIZATION=f"frontend {token}"
         )
+        set_resolver_match(request)
         authenticator = CodecovTokenAuthentication()
         with pytest.raises(rest_framework.exceptions.AuthenticationFailed):
             authenticator.authenticate(request)
@@ -71,6 +79,7 @@ class TestAuthentication(BaseTestCase):
         new_ip, new_user_agent = "0.0.5.6", "Chrome3.99"
         headers = {"HTTP_X_FORWARDED_FOR": new_ip, "User-Agent": new_user_agent}
         request = APIRequestFactory().get("", **headers)
+        set_resolver_match(request)
         authenticator = CodecovTokenAuthentication()
         authenticator.update_session(request, session)
 
@@ -86,6 +95,7 @@ class TestAuthentication(BaseTestCase):
         new_ip, new_user_agent = "0.0.5.6", "Chrome3.99"
         headers = {"REMOTE_ADDR": new_ip, "User-Agent": new_user_agent}
         request = APIRequestFactory().get("", **headers)
+        set_resolver_match(request)
         authenticator = CodecovTokenAuthentication()
         authenticator.update_session(request, session)
 
@@ -100,6 +110,7 @@ class TestAuthentication(BaseTestCase):
         request = request_factory.post(
             "/notes/", {"title": "new idea"}, HTTP_AUTHORIZATION=f"frontend {a}"
         )
+        set_resolver_match(request)
         mocked_verify_session = mocker.patch(
             "codecov_auth.authentication.CodecovTokenAuthentication.update_session"
         )
@@ -127,9 +138,9 @@ class CodecovAuthMixinImpersonationTests(TestCase):
         request = Request(
             self.request_factory.get("", HTTP_AUTHORIZATION=self.authorization_header)
         )
-        request.parser_context = {
-            "kwargs": {"service": service or self.impersonated_user.service}
-        }
+        set_resolver_match(
+            request, kwargs={"service": service or self.impersonated_user.service}
+        )
         return request
 
     def test_authenticate_returns_owner_according_to_cookie_if_staff(self):
@@ -183,7 +194,7 @@ class CodecovSessionAuthenticationTests(TestCase):
         request_factory = APIRequestFactory()
         request_factory.cookies[f"{service}-token"] = token
         request = request_factory.get("")
-        request.parser_context = {"kwargs": {"service": service}}
+        set_resolver_match(request, kwargs={"service": service})
         return request
 
     def test_cookie_auth_github(self):

@@ -34,12 +34,12 @@ class CodecovAuthMixin:
             raise exceptions.AuthenticationFailed("No such user")
         if (
             "staff_user" in request.COOKIES
-            and "service" in request.parser_context["kwargs"]
+            and "service" in request.resolver_match.kwargs
         ):
             return self.attempt_impersonation(
                 user=session.owner,
                 username_to_impersonate=request.COOKIES["staff_user"],
-                service=request.parser_context["kwargs"]["service"],
+                service=request.resolver_match.kwargs["service"],
             )
         else:
             self.update_session(request, session)
@@ -152,7 +152,7 @@ class CodecovSessionAuthentication(
     # TODO: When this handles the /profile route, we will have to
     # add a 'service' url-param there
     def authenticate(self, request):
-        service = request.parser_context["kwargs"].get("service")
+        service = request.resolver_match.kwargs.get("service")
         encoded_cookie = request.COOKIES.get(f"{service}-token")
 
         if not encoded_cookie:
