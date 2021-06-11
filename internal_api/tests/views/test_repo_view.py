@@ -991,7 +991,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
             )
         )
 
-        from shared.encryption import StandardEncryptor
+        from shared.encryption.standard import StandardEncryptor
 
         check_encryptor = StandardEncryptor()
         check_encryptor.key = b"]\xbb\x13\xf9}\xb3\xb7\x03)*0Kv\xb2\xcet"
