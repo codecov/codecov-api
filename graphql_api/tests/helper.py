@@ -19,8 +19,9 @@ class GraphQLTestHelper:
 
         if user:
             session = SessionFactory(owner=user)
-            headers["HTTP_AUTHORIZATION"] = f"Bearer {session.token}"
+            headers["HTTP_TOKEN_TYPE"] = "github-token"
             mock_decode_token_from_cookie.return_value = session.token
+            self.client.cookies["github-token"] = session.token
             self.client.force_login(user)
 
         response = self.client.post(
