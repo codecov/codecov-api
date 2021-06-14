@@ -1,0 +1,9 @@
+
+type CoverageTotals {
+  coverage: Float
+  fileCount: Int
+  lineCount: Int
+  hitsCount: Int
+  missesCount: Int
+  partialsCount: Int
+}
