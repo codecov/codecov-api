@@ -16,6 +16,6 @@ def resolve_author(commit, info):
 
 
 @commit_bindable.field("parent")
-@sync_to_async
 def resolve_parent(commit, info):
-    return commit.parent_commit
+    command = info.context["executor"].get_command("commit")
+    return command.fetch_commit(commit.repository, commit.parent_commit_id)
