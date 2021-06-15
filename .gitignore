@@ -96,6 +96,9 @@ ENV/
 env.bak/
 venv.bak/
 
+codecov/static/*
+!codecov/static/__init__.py
+
 # Spyder project settings
 .spyderproject
 .spyproject
