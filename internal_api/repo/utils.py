@@ -1,4 +1,4 @@
-from shared.encryption import StandardEncryptor
+from shared.encryption.standard import StandardEncryptor
 from django.conf import settings
 
 

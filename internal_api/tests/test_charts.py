@@ -535,6 +535,7 @@ class TestChartQueryRunnerQuery(TestCase):
         assert results[0]["total_misses"] == 15
         assert results[0]["total_partials"] == 16
 
+    @pytest.mark.skip(reason="flaky")
     def test_query_aggregates_with_latest_commit_if_no_recent_upload(self):
         # set timestamp to past, before 'start_date'
         self.commit1.timestamp = timezone.now() - timedelta(days=7)
