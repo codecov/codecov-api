@@ -7,5 +7,6 @@ type Commit {
   parent: Commit
   pullId: Int
   branchName: String
+  yaml: String
   ciPassed: Boolean!
 }
