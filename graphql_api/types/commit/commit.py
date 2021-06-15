@@ -7,6 +7,8 @@ from graphql_api.dataloader.owner import load_owner_by_id
 commit_bindable = ObjectType("Commit")
 
 commit_bindable.set_alias("createdAt", "timestamp")
+commit_bindable.set_alias("pullId", "pullid")
+commit_bindable.set_alias("branchName", "branch")
 
 
 @commit_bindable.field("author")

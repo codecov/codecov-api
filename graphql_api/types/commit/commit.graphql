@@ -5,4 +5,7 @@ type Commit {
   author: Owner
   totals: CoverageTotals
   parent: Commit
+  pullId: Int
+  branchName: String
+  ciPassed: Boolean!
 }
