@@ -9,4 +9,5 @@ type Commit {
   branchName: String
   yaml: String
   ciPassed: Boolean!
+  listUploads: [Upload]
 }

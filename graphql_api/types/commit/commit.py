@@ -27,3 +27,7 @@ async def resolve_yaml(commit, info):
     command = info.context["executor"].get_command("commit")
     final_yaml = await command.get_final_yaml(commit)
     return yaml.dump(final_yaml)
+
+@commit_bindable.field("listUploads")
+def resolve_list_uploads(commit, info):
+    return [1, 2, 3]
