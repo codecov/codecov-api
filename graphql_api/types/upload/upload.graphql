@@ -1,0 +1,6 @@
+
+type Upload {
+  state: String
+  provider: String
+  createdAt: DateTime
+}
