@@ -1,5 +1,5 @@
 from asgiref.sync import sync_to_async
-from shared.yaml import UserYaml
+from shared.yaml import UserYaml, fetch_current_yaml_from_provider_via_reference
 from shared.validation.yaml import validate_yaml
 from yaml import safe_load
 
@@ -13,10 +13,10 @@ class GetFinalYamlInteractor(BaseInteractor):
             repository_service = RepoProviderService().get_adapter(
                 user=self.current_user, repo=commit.repository
             )
-            yaml_on_repo = await repository_service.get_source(
-                "codecov.yml", commit.commitid
+            yaml_on_repo = await fetch_current_yaml_from_provider_via_reference(
+                commit.commitid, repository_service
             )
-            yaml_dict = safe_load(yaml_on_repo["content"])
+            yaml_dict = safe_load(yaml_on_repo)
             return validate_yaml(yaml_dict, show_secrets=False)
         except:
             # fetching, parsing, validating the yaml inside the commit can
