@@ -31,4 +31,6 @@ async def resolve_yaml(commit, info):
 @commit_bindable.field("listUploads")
 def resolve_list_uploads(commit, info):
     command = info.context["executor"].get_command("commit")
-    return command.get_uploads_of_commit(commit)
+    uploads = command.get_uploads_of_commit(commit)
+    upload_with_commits = [{"upload": upload, "commit": commit} for upload in uploads]
+    return upload_with_commits

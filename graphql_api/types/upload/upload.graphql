@@ -3,4 +3,8 @@ type Upload {
   state: String
   provider: String
   createdAt: DateTime
+  flags: [String]
+  downloadUrl: String
+  ciUrl: String
+  sessionType: String
 }

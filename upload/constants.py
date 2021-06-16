@@ -60,7 +60,7 @@ ci = {
         "icon": "circleci",
         "require_token_when_public": False,
         "instructions": "circleci",
-        "build_url": "https://circleci.com/{service_short}/{owner[username]}/{repo[name]}/{session.build}#tests/containers/{session.job}",
+        "build_url": "https://circleci.com/{service_short}/{owner[username]}/{repo[name]}/{session[build]}#tests/containers/{session[job]}",
     },
     "buddybuild": {
         "title": "buddybuild",
