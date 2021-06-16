@@ -54,7 +54,7 @@ class ProfileViewSet(
 
 
 class OwnerViewSet(
-    viewsets.GenericViewSet, mixins.ListModelMixin, mixins.RetrieveModelMixin
+    viewsets.GenericViewSet, mixins.RetrieveModelMixin
 ):
     lookup_field = "username"
     serializer_class = OwnerSerializer
