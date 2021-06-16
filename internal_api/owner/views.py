@@ -1,12 +1,9 @@
 import logging
 
-from django.utils.functional import cached_property
 from django.shortcuts import get_object_or_404
-from django.db.models import OuterRef, Exists, Func, Value, BooleanField
+from django.db.models import Q
 
-from django.contrib.postgres.fields import ArrayField
-
-from rest_framework import generics, viewsets, mixins, filters, status
+from rest_framework import viewsets, mixins, filters, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import (
     PermissionDenied,
@@ -53,9 +50,7 @@ class ProfileViewSet(
         raise NotAuthenticated()
 
 
-class OwnerViewSet(
-    viewsets.GenericViewSet, mixins.RetrieveModelMixin
-):
+class OwnerViewSet(viewsets.GenericViewSet, mixins.RetrieveModelMixin):
     lookup_field = "username"
     serializer_class = OwnerSerializer
 
@@ -157,7 +152,7 @@ class UserViewSet(
     filterset_class = UserFilters
     permission_classes = [MemberOfOrgPermissions]
     ordering_fields = ("name", "username", "email")
-    lookup_field = "user_username"
+    lookup_field = "user_username_or_ownerid"
     search_fields = ["name", "username", "email"]
 
     def _base_queryset(self):
@@ -168,8 +163,15 @@ class UserViewSet(
         )
 
     def get_object(self):
+        username_or_ownerid = self.kwargs.get("user_username_or_ownerid")
+        try:
+            ownerid = int(username_or_ownerid)
+        except ValueError:
+            ownerid = None
+
         return get_object_or_404(
-            self._base_queryset(), username=self.kwargs.get("user_username")
+            self._base_queryset(),
+            (Q(username=username_or_ownerid) | Q(ownerid=ownerid)),
         )
 
     def get_queryset(self):

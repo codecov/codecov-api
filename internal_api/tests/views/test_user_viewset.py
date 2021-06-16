@@ -285,12 +285,33 @@ class UserViewSetTests(APITestCase):
 
         assert [r["email"] for r in response.data["results"]] == ["d", "c", "b", "a"]
 
+    def test_patch_with_ownerid(self):
+        response = self._patch(
+            kwargs={
+                "service": self.owner.service,
+                "owner_username": self.owner.username,
+                "user_username_or_ownerid": self.users[0].ownerid,
+            },
+            data={"activated": True},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "name": self.users[0].name,
+            "activated": True,
+            "is_admin": False,
+            "username": self.users[0].username,
+            "email": self.users[0].email,
+            "ownerid": self.users[0].ownerid,
+            "student": self.users[0].student,
+        }
+
     def test_patch_can_set_activated_to_true(self):
         response = self._patch(
             kwargs={
                 "service": self.owner.service,
                 "owner_username": self.owner.username,
-                "user_username": self.users[0].username,
+                "user_username_or_ownerid": self.users[0].username,
             },
             data={"activated": True},
         )
@@ -318,7 +339,7 @@ class UserViewSetTests(APITestCase):
             kwargs={
                 "service": self.owner.service,
                 "owner_username": self.owner.username,
-                "user_username": self.users[1].username,
+                "user_username_or_ownerid": self.users[1].username,
             },
             data={"activated": False},
         )
@@ -346,7 +367,7 @@ class UserViewSetTests(APITestCase):
             kwargs={
                 "service": self.owner.service,
                 "owner_username": self.owner.username,
-                "user_username": self.users[0].username,
+                "user_username_or_ownerid": self.users[0].username,
             },
             data={"activated": True},
         )
@@ -361,7 +382,7 @@ class UserViewSetTests(APITestCase):
             kwargs={
                 "service": self.owner.service,
                 "owner_username": self.owner.username,
-                "user_username": self.users[0].username,
+                "user_username_or_ownerid": self.users[0].username,
             },
             data={"activated": False},
         )
@@ -378,7 +399,7 @@ class UserViewSetTests(APITestCase):
             kwargs={
                 "service": self.owner.service,
                 "owner_username": self.owner.username,
-                "user_username": self.users[0].username,
+                "user_username_or_ownerid": self.users[0].username,
             },
             data={"activated": True},
         )
@@ -390,7 +411,7 @@ class UserViewSetTests(APITestCase):
             kwargs={
                 "service": self.owner.service,
                 "owner_username": self.owner.username,
-                "user_username": self.users[2].username,
+                "user_username_or_ownerid": self.users[2].username,
             },
             data={"is_admin": True},
         )
@@ -417,7 +438,7 @@ class UserViewSetTests(APITestCase):
             kwargs={
                 "service": self.owner.service,
                 "owner_username": self.owner.username,
-                "user_username": self.users[2].username,
+                "user_username_or_ownerid": self.users[2].username,
             },
             data={"is_admin": False},
         )
