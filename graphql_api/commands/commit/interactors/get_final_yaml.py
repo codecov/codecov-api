@@ -25,14 +25,8 @@ class GetFinalYamlInteractor(BaseInteractor):
             # be used, so we return None here
             return None
 
-    @sync_to_async
-    def get_yaml_of_owner(self, commit):
-        # need to wrap in @sync_to_async as accessing the repository author
-        # will call the database
-        return commit.repository.author.yaml
-
     async def execute(self, commit):
-        owner_yaml = await self.get_yaml_of_owner(commit)
+        owner_yaml = commit.repository.author.yaml
         commit_yaml = await self.get_yaml_from_service(commit)
         repo_yaml = commit.repository.yaml
         return UserYaml.get_final_yaml(
