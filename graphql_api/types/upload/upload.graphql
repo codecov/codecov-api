@@ -1,10 +1,11 @@
 
 type Upload {
-  state: String
+  state: String!
   provider: String
-  createdAt: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
   flags: [String]
   downloadUrl: String
   ciUrl: String
-  sessionType: String
+  uploadType: String
 }
