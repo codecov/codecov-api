@@ -98,7 +98,8 @@ class ReportSession(BaseCodecovModel):
     state = models.CharField(max_length=100)
     storage_path = models.TextField()
     order_number = models.IntegerField(null=True)
-    upload_type = models.CharField(max_length=100, null=True)
+    upload_type = models.CharField(max_length=100, default="uploaded")
+    upload_extras = models.JSONField(default={})
 
     class Meta:
         db_table = "reports_upload"
