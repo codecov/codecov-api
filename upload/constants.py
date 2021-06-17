@@ -4,7 +4,7 @@ ci = {
         "icon": "travis",
         "require_token_when_public": False,
         "instructions": "travis",
-        "build_url": "https://travis-ci.{tld}/{owner[username]}/{repo[name]}/jobs/{session.job}",
+        "build_url": "https://travis-ci.com/{owner.username}/{repo.name}/jobs/{upload.job_code}",
     },
     "azure_pipelines": {
         "title": "Azure",
@@ -32,7 +32,7 @@ ci = {
         "icon": "cirrus-ci",
         "require_token_when_public": False,
         "instructions": "generic",
-        "build_url": "https://cirrus-ci.com/build/{session.build}",
+        "build_url": "https://cirrus-ci.com/build/{upload.build_code}",
     },
     "codebuild": {
         "title": "AWS Codebuild",
@@ -46,21 +46,21 @@ ci = {
         "icon": "custom",
         "require_token_when_public": True,
         "instructions": "generic",
-        "build_url": "https://g.codefresh.io/repositories/{owner[username]}/{repo[name]}/builds/{session.build}",
+        "build_url": "https://g.codefresh.io/repositories/{owner.username}/{repo.name}/builds/{upload.build_code_code}",
     },
     "bitbucket": {
         "title": "Bitbucket Pipelines",
         "icon": "bitbucket",
         "require_token_when_public": False,
         "instructions": "generic",
-        "build_url": "https://bitbucket.org/{owner[username]}/{repo[name]}/addon/pipelines/home#!/results/{session.job}",
+        "build_url": "https://bitbucket.org/{owner.username}/{repo.name}/addon/pipelines/home#!/results/{upload.job_code}",
     },
     "circleci": {
         "title": "CircleCI",
         "icon": "circleci",
         "require_token_when_public": False,
         "instructions": "circleci",
-        "build_url": "https://circleci.com/{service_short}/{owner[username]}/{repo[name]}/{session[build]}#tests/containers/{session[job]}",
+        "build_url": "https://circleci.com/{service_short}/{owner.username}/{repo.name}/{upload.build_code}#tests/containers/{upload.job_code}",
     },
     "buddybuild": {
         "title": "buddybuild",
@@ -109,7 +109,7 @@ ci = {
         "icon": "wercker",
         "require_token_when_public": True,
         "instructions": "generic",
-        "build_url": "https://app.wercker.com/#build/{session.build}",
+        "build_url": "https://app.wercker.com/#build/{upload.build_code}",
     },
     "shippable": {
         "title": "Shippable",
@@ -144,14 +144,14 @@ ci = {
         "icon": "semaphore",
         "require_token_when_public": True,
         "instructions": "generic",
-        "build_url": "https://semaphoreapp.com/{owner[username]}/{repo[name]}/branches/{commit[branch]}/builds/{session.build}",
+        "build_url": "https://semaphoreapp.com/{owner.username}/{repo.name}/branches/{commit.branch}/builds/{upload.build_code}",
     },
     "gitlab": {
         "title": "GitLab CI",
         "icon": "gitlab",
         "require_token_when_public": True,
         "instructions": "generic",
-        "build_url": "https://gitlab.com/{owner[username]}/{repo[name]}/builds/{session.build}",
+        "build_url": "https://gitlab.com/{owner.username}/{repo.name}/builds/{upload.build_code}",
     },
     "bamboo": {
         "title": "Bamboo",
@@ -179,8 +179,7 @@ ci = {
         "icon": "greenhouse",
         "require_token_when_public": True,
         "instructions": "generic",
-        "build_url": None
-        # "https://app.greenhouseci.com/#/project/ID/build/{session.build}",
+        "build_url": None,
     },
     "heroku": {
         "title": "Heroku",
