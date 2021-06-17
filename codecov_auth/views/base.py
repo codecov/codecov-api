@@ -96,18 +96,13 @@ class LoginMixin(object):
             f"{self.cookie_prefix}-token", token, version=None
         )
         response.set_cookie(
-            f"{self.cookie_prefix}-token",
-            signed_cookie_value,
-            domain=domain_to_use,
-            httponly=True,
-            samesite="Strict",
+            f"{self.cookie_prefix}-token", signed_cookie_value, domain=domain_to_use
         )
         response.set_cookie(
             f"{self.cookie_prefix}-username",
             user.username,
             domain=domain_to_use,
             httponly=True,
-            samesite="Strict",
         )
 
     def _check_user_count_limitations(self):
