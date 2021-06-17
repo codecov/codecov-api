@@ -3,4 +3,6 @@ type Commit {
   createdAt: DateTime
   commitid: String
   author: Owner
+  totals: CoverageTotals
+  parent: Commit
 }
