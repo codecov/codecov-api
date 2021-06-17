@@ -1,9 +1,13 @@
+from asgiref.sync import sync_to_async
 from graphql_api.commands.base import BaseInteractor
 
-from shared.utils.sessions import Session
+from reports.models import ReportSession
 
 
 class GetUploadsOfCommitInteractor(BaseInteractor):
+    @sync_to_async
     def execute(self, commit):
-        uploads_raw = commit.report.get("sessions", {}).values()
-        return [Session.parse_session(**upload) for upload in uploads_raw]
+        report = commit.reports.first()
+        if not report:
+            return ReportSession.objects.none()
+        return report.sessions.prefetch_related("flags").all()
