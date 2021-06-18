@@ -1,14 +1,18 @@
-class Unauthenticated(Exception):
+class BaseException:
     pass
 
 
-class ValidationError(Exception):
+class Unauthenticated(BaseException):
+    message = "You are not authenticated"
+
+
+class ValidationError(BaseException):
     pass
 
 
-class Unauthorized(Exception):
-    pass
+class Unauthorized(BaseException):
+    message = "You are not authorized"
 
 
-class NotFound(Exception):
-    pass
+class NotFound(BaseException):
+    message = "Cant find the requested resource"

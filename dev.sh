@@ -5,7 +5,7 @@
 echo "Starting gunicorn in dev mode"
 export PYTHONWARNINGS=always
 if [[ "$STATSD_HOST" ]]; then
-ddtrace-run gunicorn codecov.wsgi:application --reload --bind 0.0.0.0:8000 --access-logfile '-' --statsd-host ${STATSD_HOST}:${STATSD_PORT}
+gunicorn codecov.wsgi:application --reload --bind 0.0.0.0:8000 --access-logfile '-'
 else
-ddtrace-run gunicorn codecov.wsgi:application --reload --bind 0.0.0.0:8000 --access-logfile '-'
+gunicorn codecov.wsgi:application --reload --bind 0.0.0.0:8000 --access-logfile '-'
 fi
