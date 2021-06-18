@@ -121,10 +121,10 @@ class ReportSession(BaseCodecovModel):
             return
         repository = self.report.commit.repository
         data = {
-            "service_short": get_short_service_name(owner.service),
-            "owner": owner,
+            "service_short": get_short_service_name(repository.author.service),
+            "owner": repository.author,
             "upload": self,
-            "repo": repository.author,
+            "repo": repository,
             "commit": self.report.commit,
         }
         return build_url.format(**data)
