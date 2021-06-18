@@ -1,6 +1,10 @@
 from django.test import TestCase
 
-from .factories import ReportSessionFactory
+from .factories import (
+    ReportSessionFactory,
+    RepositoryFlagFactory,
+    ReportSessionFlagMembershipFactory,
+)
 
 
 class ReportSessionTests(TestCase):
@@ -27,4 +31,16 @@ class ReportSessionTests(TestCase):
         assert (
             session.ci_url
             == f"https://travis-ci.com/{repo.author.username}/{repo.name}/jobs/{session.job_code}"
+        )
+
+    def test_flags(self):
+        session = ReportSessionFactory()
+        flag_one = RepositoryFlagFactory()
+        flag_two = RepositoryFlagFactory()
+        # connect the flag and membership
+        ReportSessionFlagMembershipFactory(flag=flag_one, report_session=session)
+        ReportSessionFlagMembershipFactory(flag=flag_two, report_session=session)
+
+        assert (
+            session.flag_names.sort() == [flag_one.flag_name, flag_two.flag_name].sort()
         )
