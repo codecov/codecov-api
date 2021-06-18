@@ -256,7 +256,7 @@ sentry-sdk==0.14.3
     # via -r requirements.in
 setproctitle==1.1.10
     # via -r requirements.in
-git+ssh://git@github.com/codecov/shared.git@087ccf8ae684b75aa53ca58bf43cf6a7e7cd55e3#egg=shared
+git+ssh://git@github.com/codecov/shared.git@v0.5.25#egg=shared
     # via -r requirements.in
 six==1.15.0
     # via
