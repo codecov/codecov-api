@@ -1,5 +1,7 @@
+import yaml
+import asyncio
 import datetime
-
+from unittest.mock import patch
 from django.test import TransactionTestCase
 from ariadne import graphql_sync
 
@@ -23,6 +25,7 @@ query FetchCommit($org: String!, $repo: String!, $commit: String!) {
 
 class TestCommit(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
+        asyncio.set_event_loop(asyncio.new_event_loop())
         self.org = OwnerFactory(username="codecov")
         self.repo = RepositoryFactory(author=self.org, name="gazebo", private=False)
         self.author = OwnerFactory()
@@ -86,3 +89,21 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             {"provider": session_one.provider},
             {"provider": session_two.provider},
         ]
+
+    @patch("graphql_api.commands.commit.commit.CommitCommands.get_final_yaml")
+    def test_fetch_commit_yaml_call_the_command(self, command_mock):
+        query = query_commit % "yaml"
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        fake_config = {"codecov": "yes"}
+        f = asyncio.Future()
+        f.set_result(fake_config)
+        command_mock.return_value = f
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        assert commit["yaml"] == yaml.dump(fake_config)
