@@ -7,6 +7,7 @@ from ariadne import graphql_sync
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory, CommitFactory
+from reports.tests.factories import CommitReportFactory, ReportSessionFactory
 from .helper import GraphQLTestHelper, paginate_connection
 
 query_commit = """
@@ -71,6 +72,24 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         assert commit["totals"]["coverage"] == 12
         assert commit["totals"]["diff"]["coverage"] == 14
 
+    def test_fetch_commit_build(self):
+        report = CommitReportFactory(commit=self.commit)
+        session_one = ReportSessionFactory(report=report, provider="circleci")
+        session_two = ReportSessionFactory(report=report, provider="travisci")
+        query = query_commit % "uploads { edges { node { provider } } }"
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        builds = paginate_connection(commit["uploads"])
+        assert builds == [
+            {"provider": session_one.provider},
+            {"provider": session_two.provider},
+        ]
+
     @patch("graphql_api.commands.commit.commit.CommitCommands.get_final_yaml")
     def test_fetch_commit_yaml_call_the_command(self, command_mock):
         query = query_commit % "yaml"
@@ -79,6 +98,8 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             "repo": self.repo.name,
             "commit": self.commit.commitid,
         }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
         fake_config = {"codecov": "yes"}
         f = asyncio.Future()
         f.set_result(fake_config)
