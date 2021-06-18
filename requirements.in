@@ -1,4 +1,4 @@
-git+ssh://git@github.com/codecov/shared.git@v0.5.23#egg=shared
+git+ssh://git@github.com/codecov/shared.git@087ccf8ae684b75aa53ca58bf43cf6a7e7cd55e3#egg=shared
 Django==3.1.6
 djangorestframework==3.12.2
 gunicorn==20.0.4
