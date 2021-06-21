@@ -26,7 +26,8 @@ class HelperMutationTest(SimpleTestCase):
         def resolver():
             raise Unauthenticated()
 
-        assert await resolver() == {"error": "unauthenticated"}
+        resolved_value = await resolver()
+        assert resolved_value["error"] == "unauthenticated"
 
     async def test_mutation_when_unauthorized_is_raised(self):
         @wrap_error_handling_mutation
@@ -34,7 +35,8 @@ class HelperMutationTest(SimpleTestCase):
         def resolver():
             raise Unauthorized()
 
-        assert await resolver() == {"error": "unauthorized"}
+        resolved_value = await resolver()
+        assert resolved_value["error"] == "unauthorized"
 
     async def test_mutation_when_validation_is_raised(self):
         @wrap_error_handling_mutation
@@ -42,7 +44,8 @@ class HelperMutationTest(SimpleTestCase):
         def resolver():
             raise ValidationError("bad data you gave me")
 
-        assert await resolver() == {"error": "bad data you gave me"}
+        resolved_value = await resolver()
+        assert resolved_value["error"] == "bad data you gave me"
 
     async def test_mutation_when_not_found_is_raised(self):
         @wrap_error_handling_mutation
@@ -50,4 +53,5 @@ class HelperMutationTest(SimpleTestCase):
         def resolver():
             raise NotFound()
 
-        assert await resolver() == {"error": "not found"}
+        resolved_value = await resolver()
+        assert resolved_value["error"] == "not found"

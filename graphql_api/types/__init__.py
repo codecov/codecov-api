@@ -14,7 +14,6 @@ from .repository import repository, repository_bindable
 from .session import session, session_bindable
 from .mutation import mutation, mutation_resolvers
 from .enums import enums, enum_types
-from .errors.errors import unauthenticated_bindable
 
 inputs = ariadne_load_local_graphql(__file__, "./inputs")
 enums = ariadne_load_local_graphql(__file__, "./enums")
@@ -36,11 +35,7 @@ types = [
     upload,
 ]
 
-print(mutation_resolvers)
-print(*mutation_resolvers)
-
 bindables = [
-    unauthenticated_bindable,
     query_bindable,
     me_bindable,
     commit_bindable,

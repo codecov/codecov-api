@@ -1,7 +1,7 @@
 from ariadne import UnionType
 from graphql_api.helpers.mutation import (
     wrap_error_handling_mutation,
-    new_wrap_error_handling_mutation,
+    resolve_union_error_type,
 )
 
 
@@ -13,18 +13,4 @@ async def resolve_create_api_token(_, info, input):
 
 
 error_create_api_token = UnionType("CreateApiTokenError")
-
-from graphql_api.commands import exceptions
-
-error_to_type = {
-    exceptions.Unauthenticated: "UnauthenticatedError",
-    exceptions.Unauthorized: "UnauthorizedError",
-    exceptions.NotFound: "NotFoundError",
-    exceptions.ValidationError: "ValidationError",
-}
-
-
-@error_create_api_token.type_resolver
-def resolve_error_type(error, *_):
-    type_error = type(error)
-    return error_to_type.get(type_error, None)
+error_create_api_token.type_resolver(resolve_union_error_type)
