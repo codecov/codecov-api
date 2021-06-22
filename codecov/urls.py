@@ -24,15 +24,15 @@ urlpatterns = [
     re_path("^validate/?", include("validate.urls")),
     path("health/", views.health),
     path("", views.health),
+    path(
+            "<str:service>/<str:owner_username>/<str:repo_name>/",
+            include("graphs.urls"),
+        ),
 ]
 
 if not settings.IS_ENTERPRISE:
     urlpatterns += [
         path(f"{settings.DJANGO_ADMIN_URL}/", admin.site.urls),
-        path(
-            "<str:service>/<str:owner_username>/<str:repo_name>/",
-            include("graphs.urls"),
-        ),
         re_path(r"^redirect_app", views.redirect_app),
         path("login/", include("codecov_auth.urls")),
         path("webhooks/", include("webhook_handlers.urls")),
