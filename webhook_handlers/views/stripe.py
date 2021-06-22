@@ -18,6 +18,9 @@ from services.billing import BillingService
 from ..constants import StripeHTTPHeaders, StripeWebhookEvents
 
 
+if settings.STRIPE_API_KEY:
+    stripe.api_key = settings.STRIPE_API_KEY
+
 log = logging.getLogger(__name__)
 
 
@@ -201,6 +204,17 @@ class StripeWebhookHandler(APIView):
         SegmentService().identify_user(owner)
 
         log.info("Successfully updated info for 1 customer")
+
+    def customer_updated(self, customer):
+        new_default_payment_method = customer["invoice_settings"][
+            "default_payment_method"
+        ]
+        for subscription in customer.get("subscriptions", {}).get("data", []):
+            if new_default_payment_method == subscription["default_payment_method"]:
+                continue
+            stripe.Subscription.modify(
+                subscription["id"], default_payment_method=new_default_payment_method
+            )
 
     def checkout_session_completed(self, checkout_session):
         log.info(
