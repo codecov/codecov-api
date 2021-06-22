@@ -9,8 +9,8 @@ ALLOWED_HOSTS = ["localhost"]
 WEBHOOK_URL = ""  # NGROK TUNNEL HERE
 
 
-STRIPE_API_KEY = "sk_test_test5yu7aahw6kpo835ig37d8hh72m45cwAJDQLlXCGPMcdGM54WA7X3iDzwyOw2Vlnce3Q8cAQ3kyrHg25ubgJYW00B2fPnTea"
-STRIPE_ENDPOINT_SECRET = "whsec_testzrff0orrbsv3bdekbbz8cz964dan"
+STRIPE_API_KEY = "sk_test_testurtke3v89d4udnesfxh413qnioseSuuwkdBMDvk4ZLesyoD4sSUoG4XDkPXsjN9MzRPaeylnqbgIOhnFI9Urg00BTUxkOh1"
+STRIPE_ENDPOINT_SECRET = "whsec_testaln4a44tnbpj25h10d8fobw37m6f"
 STRIPE_PLAN_IDS = {
     "users-pr-inappm": "plan_H6P3KZXwmAbqPS",
     "users-pr-inappy": "plan_H6P16wij3lUuxg",
