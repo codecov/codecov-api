@@ -5,7 +5,7 @@ from django.contrib.auth.models import AnonymousUser
 from codecov_auth.models import Session
 from codecov_auth.tests.factories import OwnerFactory
 from ..create_api_token import CreateApiTokenInteractor
-from graphql_api.commands.exceptions import Unauthenticated
+from graphql_api.commands.exceptions import Unauthenticated, ValidationError
 
 
 class CreateApiTokenInteractorTest(TransactionTestCase):
@@ -15,6 +15,10 @@ class CreateApiTokenInteractorTest(TransactionTestCase):
     async def test_when_unauthenticated_raise(self):
         with pytest.raises(Unauthenticated):
             await CreateApiTokenInteractor(AnonymousUser(), "github").execute("name")
+
+    async def test_when_no_name_raise(self):
+        with pytest.raises(ValidationError):
+            await CreateApiTokenInteractor(self.user, "github").execute("")
 
     async def test_create_token(self):
         session = await CreateApiTokenInteractor(self.user, "github").execute("name")

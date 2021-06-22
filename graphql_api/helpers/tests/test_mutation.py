@@ -1,7 +1,7 @@
 from django.test import SimpleTestCase
 from asgiref.sync import sync_to_async
 
-from ..mutation import wrap_error_handling_mutation
+from ..mutation import wrap_error_handling_mutation, resolve_union_error_type
 
 from graphql_api.commands.exceptions import (
     Unauthenticated,
@@ -28,6 +28,9 @@ class HelperMutationTest(SimpleTestCase):
 
         resolved_value = await resolver()
         assert resolved_value["error"] == "unauthenticated"
+        assert resolved_value["new_error"].message == "You are not authenticated"
+        graphql_type_error = resolve_union_error_type(resolved_value["new_error"])
+        assert graphql_type_error == "UnauthenticatedError"
 
     async def test_mutation_when_unauthorized_is_raised(self):
         @wrap_error_handling_mutation
@@ -37,15 +40,21 @@ class HelperMutationTest(SimpleTestCase):
 
         resolved_value = await resolver()
         assert resolved_value["error"] == "unauthorized"
+        assert resolved_value["new_error"].message == "You are not authorized"
+        graphql_type_error = resolve_union_error_type(resolved_value["new_error"])
+        assert graphql_type_error == "UnauthorizedError"
 
     async def test_mutation_when_validation_is_raised(self):
         @wrap_error_handling_mutation
         @sync_to_async
         def resolver():
-            raise ValidationError("bad data you gave me")
+            raise ValidationError()
 
         resolved_value = await resolver()
         assert resolved_value["error"] == "bad data you gave me"
+        assert resolved_value["new_error"].message == "Bad input"
+        graphql_type_error = resolve_union_error_type(resolved_value["new_error"])
+        assert graphql_type_error == "ValidationError"
 
     async def test_mutation_when_not_found_is_raised(self):
         @wrap_error_handling_mutation
@@ -55,3 +64,15 @@ class HelperMutationTest(SimpleTestCase):
 
         resolved_value = await resolver()
         assert resolved_value["error"] == "not found"
+        assert resolved_value["new_error"].message == "Cant find the requested resource"
+        graphql_type_error = resolve_union_error_type(resolved_value["new_error"])
+        assert graphql_type_error == "NotFoundError"
+
+    async def test_mutation_when_random_exception_is_raised_it_reraise(self):
+        @wrap_error_handling_mutation
+        @sync_to_async
+        def resolver():
+            raise AttributeError()
+
+        with self.assertRaises(AttributeError):
+            resolved_value = await resolver()
