@@ -115,6 +115,7 @@ def main():
             for x in sorted(hidden_imports, key=lambda x: (len(x.split(".")), x))
         ]
     )
+    args.extend([f"--runtime-hook=pyi_rth_django.py"])
     args.extend([f"--additional-hooks-dir /hooks"])
 
     print(" ".join(args))
