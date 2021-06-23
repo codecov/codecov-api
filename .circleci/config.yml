@@ -180,6 +180,7 @@ workflows:
             tags:
               only:
                 - /enterprise-.*/
+                - /qa-.*/
       - test:
           requires:
             - build
