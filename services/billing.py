@@ -275,7 +275,6 @@ class StripeService(AbstractPaymentService):
         log.info(
             f"Stripe success update payment method for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
         )
-        return subscription
 
 
 class BillingService:
