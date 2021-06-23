@@ -7,3 +7,5 @@ RUN             wget -q -O /usr/local/bin/berglas https://storage.googleapis.com
 
 COPY            . /api
 WORKDIR         /api
+
+RUN             python manage.py collectstatic --no-input

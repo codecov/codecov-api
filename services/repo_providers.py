@@ -11,7 +11,7 @@ from os import getenv
 
 class TorngitInitializationFailed(Exception):
     """
-        Exception when initializing the torngit provider object.
+    Exception when initializing the torngit provider object.
     """
 
     pass
@@ -71,6 +71,7 @@ class RepoProviderService(object):
                 "using_integration": repo.using_integration or False,
                 "service_id": repo.service_id,
                 "private": repo.private,
+                "repoid": repo.repoid,
             },
             "owner": {
                 "username": repo.author.username,
