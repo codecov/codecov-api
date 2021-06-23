@@ -51,6 +51,7 @@ COPY enterprise/setup.py setup.py
 COPY enterprise/cythonize.sh /pyinstaller/cythonize_everything.sh
 
 COPY enterprise/package.sh /pyinstaller/package.sh
+COPY enterprise/package.sh /pyinstaller/pyi_rth_django.py
 COPY enterprise/generate_pyinstaller_args.py /pyinstaller/generate_pyinstaller_args.py
 
 #Copy Hooks
