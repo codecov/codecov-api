@@ -216,6 +216,8 @@ workflows:
             - build-enterprise
             - test
           filters:
+            tags:
+              only: /^qa-.*/
             branches:
               only: master
       - enterprise-release:
