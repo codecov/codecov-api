@@ -79,6 +79,7 @@ def main():
             "whitenoise",
             "whitenoise.middleware",
             "graphql_api",
+            "legacy_migrations"
         ]
     )
 
