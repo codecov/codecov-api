@@ -212,6 +212,12 @@ class StripeWebhookHandler(APIView):
         for subscription in customer.get("subscriptions", {}).get("data", []):
             if new_default_payment_method == subscription["default_payment_method"]:
                 continue
+            log.info(
+                "Customer updated their payment method, updating the subscription payment as well",
+                extra=dict(
+                    customer_id=customer["id"], subscription_id=subscription["id"]
+                ),
+            )
             stripe.Subscription.modify(
                 subscription["id"], default_payment_method=new_default_payment_method
             )
