@@ -265,24 +265,18 @@ class StripeServiceTests(TestCase):
         owner = OwnerFactory(stripe_subscription_id=None)
         assert self.stripe.update_payment_method(owner, "abc") == None
 
-    @patch("services.billing.stripe.Subscription.modify")
     @patch("services.billing.stripe.PaymentMethod.attach")
     @patch("services.billing.stripe.Customer.modify")
-    def test_update_payment_method(
-        self, modify_customer_mock, attach_payment_mock, modify_subscription_mock
-    ):
+    def test_update_payment_method(self, modify_customer_mock, attach_payment_mock):
         payment_method_id = "pm_1234567"
         subscription_id = "sub_abc"
         customer_id = "cus_abc"
         owner = OwnerFactory(
             stripe_subscription_id=subscription_id, stripe_customer_id=customer_id
         )
-        assert self.stripe.update_payment_method(owner, payment_method_id) != None
+        self.stripe.update_payment_method(owner, payment_method_id)
         attach_payment_mock.assert_called_once_with(
             payment_method_id, customer=customer_id
-        )
-        modify_subscription_mock.assert_called_once_with(
-            subscription_id, default_payment_method=payment_method_id
         )
         modify_customer_mock.assert_called_once_with(
             customer_id, invoice_settings={"default_payment_method": payment_method_id}
