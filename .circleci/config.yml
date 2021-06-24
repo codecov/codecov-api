@@ -180,6 +180,7 @@ workflows:
             tags:
               only:
                 - /enterprise-.*/
+                - /qa-.*/
       - test:
           requires:
             - build
@@ -216,6 +217,8 @@ workflows:
             - build-enterprise
             - test
           filters:
+            tags:
+              only: /^qa-.*/
             branches:
               only: master
       - enterprise-release:
