@@ -185,6 +185,9 @@ ENCRYPTION_SECRET = get_config("setup", "encryption_secret")
 
 COOKIE_SECRET = get_config("setup", "http", "cookie_secret")
 COOKIES_DOMAIN = get_config("setup", "http", "cookies_domain", default=".codecov.io")
+SESSION_COOKIE_DOMAIN = get_config(
+    "setup", "http", "cookies_domain", default=".codecov.io"
+)
 
 CIRCLECI_TOKEN = get_config("circleci", "token")
 
