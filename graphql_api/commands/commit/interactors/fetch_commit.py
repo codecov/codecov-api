@@ -7,4 +7,4 @@ from graphql_api.commands.base import BaseInteractor
 class FetchCommitInteractor(BaseInteractor):
     @sync_to_async
     def execute(self, repository, commit_id):
-        return Commit.objects.filter(repository=repository, commitid=commit_id).first()
+        return repository.commits.filter(commitid=commit_id).first()

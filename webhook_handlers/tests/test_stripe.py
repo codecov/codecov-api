@@ -474,3 +474,50 @@ class StripeWebhookHandlerTests(APITestCase):
         account_co_completed_mock.assert_called_once_with(
             self.owner.ownerid, {"plan": plan, "userid_type": "org"}
         )
+
+    @patch("webhook_handlers.views.stripe.stripe.Subscription.modify")
+    def test_customer_update_but_not_payment_method(self, subscription_modify_mock):
+        payment_method = "pm_123"
+        response = self._send_event(
+            payload={
+                "type": "customer.updated",
+                "data": {
+                    "object": {
+                        "invoice_settings": {"default_payment_method": payment_method},
+                        "subscriptions": {
+                            "data": [{"default_payment_method": payment_method}]
+                        },
+                    }
+                },
+            }
+        )
+
+        subscription_modify_mock.assert_not_called()
+
+    @patch("webhook_handlers.views.stripe.stripe.Subscription.modify")
+    def test_customer_update_payment_method(self, subscription_modify_mock):
+        payment_method = "pm_123"
+        old_payment_method = "pm_321"
+        response = self._send_event(
+            payload={
+                "type": "customer.updated",
+                "data": {
+                    "object": {
+                        "id": "cus_123",
+                        "invoice_settings": {"default_payment_method": payment_method},
+                        "subscriptions": {
+                            "data": [
+                                {
+                                    "id": "sub_123",
+                                    "default_payment_method": old_payment_method,
+                                }
+                            ]
+                        },
+                    }
+                },
+            }
+        )
+
+        subscription_modify_mock.assert_called_once_with(
+            "sub_123", default_payment_method=payment_method
+        )

@@ -991,10 +991,9 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
             )
         )
 
-        from shared.encryption.standard import StandardEncryptor
+        from shared.encryption.yaml_secret import yaml_secret_encryptor
 
-        check_encryptor = StandardEncryptor()
-        check_encryptor.key = b"]\xbb\x13\xf9}\xb3\xb7\x03)*0Kv\xb2\xcet"
+        check_encryptor = yaml_secret_encryptor
 
         encoded = encode_secret_string(to_encode)
 

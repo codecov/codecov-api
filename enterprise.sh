@@ -20,11 +20,11 @@ POST=""
 fi
 if [ "$1" = "api" ];
 then
-  cd /home/api && python manage.py migrate
+  /home/api migrate
   ${SUB}${DDTRACE}/home/api runserver 0.0.0.0:8000 --noreload${POST}
 elif [ -z "$1" ];
 then
-  cd /home/api && python manage.py migrate
+  /home/api migrate
   ${SUB}${DDTRACE}/home/api runserver 0.0.0.0:8000 --noreload${POST}
 else
   exec "$@"

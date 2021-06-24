@@ -3,8 +3,8 @@ import uuid
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
 
-
-# Create your models here.
+from utils.services import get_short_service_name
+from upload.constants import ci
 
 
 class BaseCodecovModel(models.Model):
@@ -98,9 +98,40 @@ class ReportSession(BaseCodecovModel):
     state = models.CharField(max_length=100)
     storage_path = models.TextField()
     order_number = models.IntegerField(null=True)
+    upload_type = models.CharField(max_length=100, default="uploaded")
+    upload_extras = models.JSONField(default={})
 
     class Meta:
         db_table = "reports_upload"
+
+    @property
+    def download_url(self):
+        repository = self.report.commit.repository
+        owner = repository.author
+        short_service = get_short_service_name(owner.service)
+        path_download = (
+            f"/api/{short_service}/{owner.username}/{repository.name}/download/build"
+        )
+        return f"{path_download}?path={self.storage_path}"
+
+    @property
+    def ci_url(self):
+        build_url = ci.get(self.provider, {}).get("build_url")
+        if not build_url:
+            return
+        repository = self.report.commit.repository
+        data = {
+            "service_short": get_short_service_name(repository.author.service),
+            "owner": repository.author,
+            "upload": self,
+            "repo": repository,
+            "commit": self.report.commit,
+        }
+        return build_url.format(**data)
+
+    @property
+    def flag_names(self):
+        return [flag.flag_name for flag in self.flags.all()]
 
 
 class SessionLevelTotals(AbstractTotals):

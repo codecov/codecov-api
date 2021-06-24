@@ -50,6 +50,7 @@ build:
 # pulls intermediate dependencies image and adds app code. Cythonize and pyinstall.
 build-enterprise:
 	docker pull ${GCR_REPO}:${REQUIREMENTS_TAG}
+	docker pull ${ENTERPRISE_GCR_REPO}:latest
 	docker build \
 		-f Dockerfile.circle-enterprise . \
 		-t ${ENTERPRISE_GCR_REPO}:latest \

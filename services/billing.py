@@ -272,13 +272,9 @@ class StripeService(AbstractPaymentService):
             owner.stripe_customer_id,
             invoice_settings={"default_payment_method": payment_method},
         )
-        subscription = stripe.Subscription.modify(
-            owner.stripe_subscription_id, default_payment_method=payment_method
-        )
         log.info(
             f"Stripe success update payment method for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
         )
-        return subscription
 
 
 class BillingService:

@@ -147,9 +147,8 @@ jobs:
           <<: *gcloud_auth_enterprise
       - run: echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKER_USERNAME" --password-stdin
       - run:
-          name: docker build, tag, and upload to enterprise qa
+          name: Release Enterprise to Dockerhub
           command: |
-            make -B -f Makefile.circle enterprise
             make -B -f Makefile.circle release-enterprise
   deploy:
     executor: codecov-deploy
@@ -180,6 +179,7 @@ workflows:
             tags:
               only:
                 - /enterprise-.*/
+                - /qa-.*/
       - test:
           requires:
             - build
@@ -216,14 +216,27 @@ workflows:
             - build-enterprise
             - test
           filters:
+            tags:
+              only:
+                - /^qa-.*/
+                - /^enterprise-.*/
             branches:
               only: master
+      - hold:
+          type: approval
+          requires:
+            - enterprise
+          filters:
+            tags:
+              only:
+                - /^enterprise-.*/
+            branches:
+              ignore: /.*/
       - enterprise-release:
           context: "DockerHub Push Context"
           requires:
-            - build-enterprise
-            - test
             - enterprise
+            - hold
           filters:
             tags:
               only: /^enterprise-.*/

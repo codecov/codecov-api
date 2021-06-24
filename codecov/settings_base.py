@@ -32,7 +32,6 @@ INSTALLED_APPS = [
     "reports",
     "internal_api",
     "graphql_api",
-    "security_breach",
 ]
 
 MIDDLEWARE = [
@@ -146,7 +145,9 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
 
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(PROJECT_ROOT, "static")
 
 LOGGING = {
     "version": 1,
@@ -184,6 +185,9 @@ ENCRYPTION_SECRET = get_config("setup", "encryption_secret")
 
 COOKIE_SECRET = get_config("setup", "http", "cookie_secret")
 COOKIES_DOMAIN = get_config("setup", "http", "cookies_domain", default=".codecov.io")
+SESSION_COOKIE_DOMAIN = get_config(
+    "setup", "http", "cookies_domain", default=".codecov.io"
+)
 
 CIRCLECI_TOKEN = get_config("circleci", "token")
 

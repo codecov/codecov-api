@@ -5,6 +5,9 @@ from ..helpers.ariadne import ariadne_load_local_graphql
 from .query import query, query_bindable
 from .me import me, me_bindable
 from .commit import commit, commit_bindable
+from .upload import upload, upload_bindable
+from .coverage_diff import coverage_diff, coverage_diff_bindable
+from .coverage_totals import coverage_totals, coverage_totals_bindable
 from .user import user, user_bindable
 from .owner import owner, owner_bindable
 from .repository import repository, repository_bindable
@@ -14,7 +17,21 @@ from .enums import enums, enum_types
 
 inputs = ariadne_load_local_graphql(__file__, "./inputs")
 enums = ariadne_load_local_graphql(__file__, "./enums")
-types = [query, me, commit, user, owner, repository, inputs, enums, session, mutation]
+types = [
+    query,
+    me,
+    commit,
+    user,
+    owner,
+    repository,
+    inputs,
+    enums,
+    session,
+    mutation,
+    coverage_totals,
+    coverage_diff,
+    upload,
+]
 
 bindables = [
     query_bindable,
@@ -25,6 +42,9 @@ bindables = [
     repository_bindable,
     session_bindable,
     mutation_bindable,
+    coverage_diff_bindable,
+    coverage_totals_bindable,
+    upload_bindable,
     datetime_scalar,
     *enum_types.enum_types,
 ]
