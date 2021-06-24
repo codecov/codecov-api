@@ -431,14 +431,12 @@ class AccountViewSetTests(APITestCase):
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     @patch("services.billing.stripe.Subscription.retrieve")
-    @patch("services.billing.stripe.Subscription.modify")
     @patch("services.billing.stripe.PaymentMethod.attach")
     @patch("services.billing.stripe.Customer.modify")
     def test_update_payment_method(
         self,
         modify_customer_mock,
         attach_payment_mock,
-        modify_subscription_mock,
         retrieve_subscription_mock,
     ):
         self.user.stripe_customer_id = "flsoe"
@@ -475,9 +473,6 @@ class AccountViewSetTests(APITestCase):
         assert response.status_code == status.HTTP_200_OK
         attach_payment_mock.assert_called_once_with(
             payment_method_id, customer=self.user.stripe_customer_id
-        )
-        modify_subscription_mock.assert_called_once_with(
-            self.user.stripe_subscription_id, default_payment_method=payment_method_id
         )
         modify_customer_mock.assert_called_once_with(
             self.user.stripe_customer_id,
