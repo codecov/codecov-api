@@ -48,11 +48,11 @@ class HelperMutationTest(SimpleTestCase):
         @wrap_error_handling_mutation
         @sync_to_async
         def resolver():
-            raise ValidationError()
+            raise ValidationError("wrong data")
 
         resolved_value = await resolver()
         assert resolved_value["error"] == "bad data you gave me"
-        assert resolved_value["new_error"].message == "Bad input"
+        assert resolved_value["new_error"].message == "wrong data"
         graphql_type_error = resolve_union_error_type(resolved_value["new_error"])
         assert graphql_type_error == "ValidationError"
 

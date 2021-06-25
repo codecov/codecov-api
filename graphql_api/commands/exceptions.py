@@ -8,8 +8,11 @@ class Unauthenticated(BaseException):
 
 
 class ValidationError(BaseException):
-    message = "Bad input"
     old_message = "bad data you gave me"
+
+    @property
+    def message(self):
+        return str(self)
 
 
 class Unauthorized(BaseException):
