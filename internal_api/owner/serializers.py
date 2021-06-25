@@ -75,7 +75,9 @@ class StripeLineItemSerializer(serializers.Serializer):
     quantity = serializers.IntegerField()
 
     def get_plan_name(self, line_item):
-        return line_item.get("plan", {}).get("name")
+        plan = line_item.get("plan")
+        if plan:
+            return plan.get("name")
 
 
 class StripeInvoiceSerializer(serializers.Serializer):
