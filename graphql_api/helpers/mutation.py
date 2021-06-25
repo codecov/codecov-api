@@ -38,11 +38,9 @@ def wrap_error_handling_mutation(resolver):
     async def resolver_with_error_handling(*args, **kwargs):
         try:
             return await resolver(*args, **kwargs)
-        except Exception as e:
-            if issubclass(type(e), exceptions.BaseException):
-                # Wrap a pure Python exception with our Wrapper to pass as a value
-                return {"error": e.old_message, "new_error": WrappedException(e)}
-            raise e
+        except exceptions.BaseException as e:
+            # Wrap a pure Python exception with our Wrapper to pass as a value
+            return {"error": e.old_message, "new_error": WrappedException(e)}
 
     return resolver_with_error_handling
 
