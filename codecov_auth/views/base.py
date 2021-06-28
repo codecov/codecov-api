@@ -69,7 +69,7 @@ class LoginMixin(object):
             user.save(update_fields=fields_to_update + ["updatestamp"])
 
         self._set_proper_cookies_and_session(user, request, response)
-        RefreshService().trigger_refresh(user.ownerid, user.username)
+        # RefreshService().trigger_refresh(user.ownerid, user.username)
 
         # Login the user if staff via Django authentication. Allows staff users to access Django admin.
         if user.is_staff:
