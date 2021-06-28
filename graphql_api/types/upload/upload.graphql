@@ -8,4 +8,5 @@ type Upload {
   downloadUrl: String
   ciUrl: String
   uploadType: String
+  jobCode: String
 }
