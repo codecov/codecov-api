@@ -1,4 +1,7 @@
+union SyncWithGitProviderError = UnauthenticatedError
+
 type SyncWithGitProviderPayload {
   me: Me
   error: String
+  newError: SyncWithGitProviderError
 }

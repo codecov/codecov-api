@@ -1,3 +1,6 @@
+union DeleteSessionError = UnauthenticatedError
+
 type DeleteSessionPayload {
   error: String
+  newError: DeleteSessionError
 }
