@@ -7,7 +7,9 @@ def _get_commands():
     # This returns static dict() as it is for django 1.8 and the default project.
     commands = {
         'runserver': 'django.core',
-        'migrate': 'legacy_migrations'
+        'migrate': 'legacy_migrations',
+        'shell': 'django.core',
+        'collectstatic': 'django.contrib.staticfiles',
     }
     return commands
 

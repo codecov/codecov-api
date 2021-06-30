@@ -58,6 +58,8 @@ def main():
             "celery_config",
             "codecov.graphs",
             "core.migrations",
+            "reports.migrations",
+            "codecov_auth.migrations",
             "corsheaders",
             "corsheaders.apps",
             "corsheaders.middleware",
@@ -79,7 +81,8 @@ def main():
             "whitenoise",
             "whitenoise.middleware",
             "graphql_api",
-            "legacy_migrations"
+            "legacy_migrations",
+            "shared.celery_config"
         ]
     )
 

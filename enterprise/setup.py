@@ -19,6 +19,7 @@ def get_relevant_paths(path):
 def generate_files_to_be_cythonized():
     files_to_exclude = [
         "codecov_auth/migrations/*.py",
+        "reports/migrations/*.py",
         "core/migrations/*.py",
     ]
     locations = get_relevant_paths(".")
