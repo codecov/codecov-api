@@ -1,0 +1,16 @@
+
+type UnauthenticatedError {
+  message: String!
+}
+
+type UnauthorizedError {
+  message: String!
+}
+
+type NotFoundError {
+  message: String!
+}
+
+type ValidationError {
+  message: String!
+}
