@@ -1,6 +1,7 @@
 from asgiref.sync import sync_to_async
 
 from services.refresh import RefreshService
+from graphql_api.commands.exceptions import Unauthenticated
 
 
 @sync_to_async
@@ -11,7 +12,7 @@ def is_syncing(current_user):
 @sync_to_async
 def trigger_sync(current_user):
     if not current_user.is_authenticated:
-        return {"error": "unauthenticated"}
+        raise Unauthenticated()
     RefreshService().trigger_refresh(
         current_user.ownerid,
         current_user.username,
