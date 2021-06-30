@@ -8,7 +8,8 @@ def _get_commands():
     commands = {
         'runserver': 'django.core',
         'migrate': 'legacy_migrations',
-        'shell': 'django.core'
+        'shell': 'django.core',
+        'collectstatic': 'django.contrib.staticfiles',
     }
     return commands
 
