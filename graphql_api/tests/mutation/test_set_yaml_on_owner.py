@@ -10,7 +10,9 @@ from graphql_api.tests.helper import GraphQLTestHelper
 query = """
 mutation($input: SetYamlOnOwnerInput!) {
   setYamlOnOwner(input: $input) {
-    error
+    error {
+      __typename
+    }
     owner {
         username
     }

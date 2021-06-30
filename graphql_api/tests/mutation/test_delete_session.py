@@ -7,10 +7,13 @@ from graphql_api.tests.helper import GraphQLTestHelper
 query = """
 mutation($input: DeleteSessionInput!) {
   deleteSession(input: $input) {
-    error
+    error {
+      __typename
+    }
   }
 }
 """
+
 
 class DeleteSessionTestCase(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
@@ -18,7 +21,7 @@ class DeleteSessionTestCase(GraphQLTestHelper, TransactionTestCase):
 
     def test_when_unauthenticated(self):
         data = self.gql_request(query, variables={"input": {"sessionid": 1}})
-        assert data["deleteSession"]["error"] == "unauthenticated"
+        assert data["deleteSession"]["error"]["__typename"] == "UnauthenticatedError"
 
     def test_when_authenticated(self):
         G(Session, owner=self.user)

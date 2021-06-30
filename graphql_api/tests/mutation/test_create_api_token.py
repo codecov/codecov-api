@@ -9,7 +9,10 @@ from graphql_api.tests.helper import GraphQLTestHelper
 query = """
 mutation($input: CreateApiTokenInput!) {
   createApiToken(input: $input) {
-    error
+    error {
+      __typename
+    }
+    fullToken
     session {
       ip
       lastseen
@@ -29,7 +32,7 @@ class CreateApiTokenTestCase(GraphQLTestHelper, TransactionTestCase):
 
     def test_when_unauthenticated(self):
         data = self.gql_request(query, variables={"input": {"name": "yo"}})
-        assert data["createApiToken"]["error"] == "unauthenticated"
+        assert data["createApiToken"]["error"]["__typename"] == "UnauthenticatedError"
 
     def test_when_authenticated(self):
         name = "yo"
@@ -48,16 +51,8 @@ class CreateApiTokenTestCase(GraphQLTestHelper, TransactionTestCase):
 
     def test_when_authenticated_full_token(self):
         name = "yo"
-        _query = """
-            mutation($input: CreateApiTokenInput!) {
-            createApiToken(input: $input) {
-                error
-                fullToken
-            }
-            }
-        """
         data = self.gql_request(
-            _query, user=self.user, variables={"input": {"name": name}}
+            query, user=self.user, variables={"input": {"name": name}}
         )
         created_token = self.user.session_set.filter(name=name).first()
         assert data["createApiToken"]["fullToken"] == str(created_token.token)
