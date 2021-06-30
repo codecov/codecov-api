@@ -1,4 +1,7 @@
+union SetYamlOnOwnerError = UnauthenticatedError | ValidationError | UnauthorizedError | NotFoundError
+
 type SetYamlOnOwnerPayload {
     error: String
     owner: Owner
+    newError: SetYamlOnOwnerError
 }

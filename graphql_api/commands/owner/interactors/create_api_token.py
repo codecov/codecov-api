@@ -2,13 +2,15 @@ from asgiref.sync import sync_to_async
 
 from codecov_auth.models import Session
 from graphql_api.commands.base import BaseInteractor
-from graphql_api.commands.exceptions import Unauthenticated
+from graphql_api.commands.exceptions import Unauthenticated, ValidationError
 
 
 class CreateApiTokenInteractor(BaseInteractor):
-    def validate(self):
+    def validate(self, name):
         if not self.current_user.is_authenticated:
             raise Unauthenticated()
+        if len(name) is 0:
+            raise ValidationError("name cant be empty")
 
     def create_token(self, name):
         type = Session.SessionType.API
@@ -16,5 +18,5 @@ class CreateApiTokenInteractor(BaseInteractor):
 
     @sync_to_async
     def execute(self, name):
-        self.validate()
+        self.validate(name)
         return self.create_token(name)
