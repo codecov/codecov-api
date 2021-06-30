@@ -1,5 +1,8 @@
+union CreateApiTokenError = UnauthenticatedError | ValidationError
+
 type CreateApiTokenPayload {
+    newError: CreateApiTokenError
     error: String
     session: Session
-    fullToken: String 
+    fullToken: String
 }
