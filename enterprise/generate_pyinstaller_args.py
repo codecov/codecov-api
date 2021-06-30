@@ -79,7 +79,8 @@ def main():
             "whitenoise",
             "whitenoise.middleware",
             "graphql_api",
-            "legacy_migrations"
+            "legacy_migrations",
+            "shared.celery_config"
         ]
     )
 
