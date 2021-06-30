@@ -1,6 +1,6 @@
 union DeleteSessionError = UnauthenticatedError
 
 type DeleteSessionPayload {
-  error: String
-  newError: DeleteSessionError
+  error: DeleteSessionError
+  newError: DeleteSessionError @deprecated(reason: "Use error field.")
 }

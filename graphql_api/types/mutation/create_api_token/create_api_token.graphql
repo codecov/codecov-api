@@ -1,8 +1,8 @@
 union CreateApiTokenError = UnauthenticatedError | ValidationError
 
 type CreateApiTokenPayload {
-    newError: CreateApiTokenError
-    error: String
+    newError: CreateApiTokenError @deprecated(reason: "Use error field.")
+    error: CreateApiTokenError
     session: Session
     fullToken: String
 }
