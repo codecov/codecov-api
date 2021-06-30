@@ -75,4 +75,4 @@ class SetYamlOnOwnerInteractorTest(TransactionTestCase):
             owner_updated = await self.execute(
                 self.current_user, self.org.username, bad_yaml_wrong_keys
             )
-        assert str(e.value) == "Error at ['toto']: extra keys not allowed"
+        assert str(e.value) == "Error at ['toto']: unknown field"
