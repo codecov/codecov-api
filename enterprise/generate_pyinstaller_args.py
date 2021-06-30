@@ -58,6 +58,8 @@ def main():
             "celery_config",
             "codecov.graphs",
             "core.migrations",
+            "reports.migrations",
+            "codecov_auth.migrations",
             "corsheaders",
             "corsheaders.apps",
             "corsheaders.middleware",
