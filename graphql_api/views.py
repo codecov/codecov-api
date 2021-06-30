@@ -1,3 +1,4 @@
+from ariadne import format_error
 from asyncio import iscoroutine
 from contextlib import suppress
 
@@ -8,6 +9,7 @@ from codecov_auth.authentication import CodecovTokenAuthentication
 from .ariadne.views import GraphQLView
 from .schema import schema
 from .tracing import get_tracer_extension
+from .commands.exceptions import BaseException
 
 from .executor import Executor
 
@@ -37,6 +39,18 @@ class AsyncGraphqlView(GraphQLView):
             "service": request.resolver_match.kwargs["service"],
             "executor": Executor(request),
         }
+
+    def error_formatter(self, error, debug=False):
+        if debug:
+            # If debug is enabled, reuse Ariadne's formatting logi
+            return format_error(error, debug)
+        formatted = error.formatted
+        formatted["message"] = "INTERNAL SERVER ERROR"
+        # if this is one of our own command exception, we can tell a bit more
+        if isinstance(error.original_error, BaseException):
+            formatted["message"] = error.original_error.message
+            formatted["type"] = type(error.original_error).__name__
+        return formatted
 
 
 BaseAriadneView = AsyncGraphqlView.as_view()
