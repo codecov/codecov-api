@@ -103,7 +103,9 @@ class ArchiveService(object):
         log.info("----- created root storage ---- ")
 
     def create_root_storage(self):
+        log.info("----- before root storage ---- ")
         self.storage.create_root_storage(self.root, self.region)
+        log.info("----- after root storage ---- ")
 
     """
     Accessor for underlying StorageService. You typically shouldn't need

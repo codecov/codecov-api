@@ -55,10 +55,18 @@ class StorageService(object):
 
     # writes the initial storage bucket to storage via minio.
     def create_root_storage(self, bucket="archive", region="us-east-1"):
-        if not MINIO_CLIENT.bucket_exists(bucket):
-            log.info("----- creating bucket as it does not exist in storage service ---- ")
-            MINIO_CLIENT.make_bucket(bucket, location=region)
-            MINIO_CLIENT.set_bucket_policy(bucket, "*", "readonly")
+        try:
+            if not MINIO_CLIENT.bucket_exists(bucket):
+                log.info("----- creating bucket as it does not exist in storage service ---- ")
+                MINIO_CLIENT.make_bucket(bucket, location=region)
+                MINIO_CLIENT.set_bucket_policy(bucket, "*", "readonly")
+            else:
+                log.info("----- bucket exists in storage service ---- ")
+        except Exception as e:
+            log.warning(
+                f"Error during create root storage {e}",
+            )
+
 
     # Writes a file to storage will gzip if not compressed already
     def write_file(self, bucket, path, data, reduced_redundancy=False, gzipped=False):
