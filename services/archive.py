@@ -96,13 +96,14 @@ class ArchiveService(object):
 
         self.storage = StorageService()
         self.storage_hash = self.get_archive_hash(repository)
-
+        log.info("----- created storage service and got storage hash ---- ")
         # create storage based on the root, this will throw acceptable
         # exceptions if the bucket exists. ResponseError if it doesn't.
         self.create_root_storage()
+        log.info("----- created root storage ---- ")
 
     def create_root_storage(self):
-        self.storage.create_root_storage(self.root)
+        self.storage.create_root_storage(self.root, self.region)
 
     """
     Accessor for underlying StorageService. You typically shouldn't need
@@ -247,6 +248,7 @@ class ArchiveService(object):
     def create_raw_upload_presigned_put(
         self, commit_sha, repo_hash=None, filename=None, expires=None
     ):
+        log.info("----- creating presigned put ---- ")
         if repo_hash is None:
             repo_hash = self.storage_hash
 

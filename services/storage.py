@@ -56,6 +56,7 @@ class StorageService(object):
     # writes the initial storage bucket to storage via minio.
     def create_root_storage(self, bucket="archive", region="us-east-1"):
         if not MINIO_CLIENT.bucket_exists(bucket):
+            log.info("----- creating bucket as it does not exist in storage service ---- ")
             MINIO_CLIENT.make_bucket(bucket, location=region)
             MINIO_CLIENT.set_bucket_policy(bucket, "*", "readonly")
 
@@ -145,4 +146,5 @@ class StorageService(object):
 
     def create_presigned_put(self, bucket, path, expires):
         expires = timedelta(seconds=expires)
+        log.info("----- creating presigned put in minio ---- ")
         return MINIO_CLIENT.presigned_put_object(bucket, path, expires)
