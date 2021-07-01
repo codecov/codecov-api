@@ -99,7 +99,7 @@ class TestValidateYamlHandler(APITestCase):
 
         response = self._post(data=yaml)
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        expected_result = "Error at ['coverage', 'status', 'patch']: \nexpected bool\n"
+        expected_result = "Error at ['coverage', 'status', 'patch']: \nmust be of ['dict', 'boolean'] type\n"
         assert response.content.decode() == expected_result
 
     def test_request_body_not_parsable_as_dict(self):

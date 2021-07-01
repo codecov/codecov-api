@@ -240,6 +240,7 @@ class Pull(models.Model):
     title = models.TextField(null=True)
     base = models.TextField(null=True)
     head = models.TextField(null=True)
+    user_provided_base_sha = models.TextField(null=True)
     compared_to = models.TextField(null=True)
     commentid = models.TextField(null=True)
     author = models.ForeignKey(
