@@ -75,7 +75,15 @@ if not settings.IS_ENTERPRISE:
             include(repository_artifacts_router.urls),
         ),
         path(
+            "<str:service>/<str:owner_username>/repos/<str:repo_name>/",
+            include(repository_artifacts_router.urls),
+        ),
+        path(
             "<str:service>/<str:owner_username>/<str:repo_name>/",
+            include(compare_router.urls),
+        ),
+        path(
+            "<str:service>/<str:owner_username>/repos/<str:repo_name>/",
             include(compare_router.urls),
         ),
     ]
