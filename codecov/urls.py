@@ -28,6 +28,7 @@ urlpatterns = [
             "<str:service>/<str:owner_username>/<str:repo_name>/",
             include("graphs.urls"),
         ),
+    path("upload/<str:version>", include("upload.urls")),
 ]
 
 if not settings.IS_ENTERPRISE:
@@ -36,6 +37,5 @@ if not settings.IS_ENTERPRISE:
         re_path(r"^redirect_app", views.redirect_app),
         path("login/", include("codecov_auth.urls")),
         path("webhooks/", include("webhook_handlers.urls")),
-        path("upload/<str:version>", include("upload.urls")),
         path("graphql/", include("graphql_api.urls")),
     ]
