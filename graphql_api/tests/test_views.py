@@ -52,6 +52,7 @@ class ArianeViewTestCase(GraphQLTestHelper, TestCase):
         print(data)
         assert data["errors"] is not None
         assert data["errors"][0]["message"] == "INTERNAL SERVER ERROR"
+        assert data["errors"][0]["type"] == "ServerError"
         assert data["errors"][0].get("extensions") is None
 
     @override_settings(DEBUG=False)

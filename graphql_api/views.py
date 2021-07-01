@@ -46,6 +46,7 @@ class AsyncGraphqlView(GraphQLView):
             return format_error(error, debug)
         formatted = error.formatted
         formatted["message"] = "INTERNAL SERVER ERROR"
+        formatted["type"] = "ServerError"
         # if this is one of our own command exception, we can tell a bit more
         if isinstance(error.original_error, BaseException):
             formatted["message"] = error.original_error.message
