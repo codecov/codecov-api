@@ -283,12 +283,17 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
         mutation = """
             mutation {
               syncWithGitProvider {
-                error
+                error {
+                  __typename
+                }
               }
             }
         """
         mutation_data = self.gql_request(mutation)
-        assert mutation_data["syncWithGitProvider"]["error"] == "unauthenticated"
+        assert (
+            mutation_data["syncWithGitProvider"]["error"]["__typename"]
+            == "UnauthenticatedError"
+        )
 
     @patch("graphql_api.actions.sync.RefreshService.is_refreshing")
     @patch("graphql_api.actions.sync.RefreshService.trigger_refresh")
@@ -305,7 +310,9 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
         mutation = """
             mutation {
               syncWithGitProvider {
-                error
+                error {
+                  __typename
+                }
               }
             }
         """
