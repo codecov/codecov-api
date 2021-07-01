@@ -9,7 +9,7 @@ import opentracing
 
 
 class MyTracer(Tracer):
-    def __init__(self, service_name):
+    def __init__(self):
         # Pull out commonly used properties for performance
         self._service_name = "codecov-api"
         self._scope_manager = ThreadLocalScopeManager()
@@ -21,7 +21,7 @@ def get_tracer_extension():
         return ApolloTracingExtension
     # patch the datadog opentracing adapter so it uses the right _dd_tracer
     # under the hood (ddtrace.tracer) instead of creating a new one
-    tracer = MyTracer("GraphQL")
+    tracer = MyTracer()
     # setting it be as a singleton so the OpenTracingExtension can use it
     opentracing.tracer = tracer
     return OpenTracingExtension
