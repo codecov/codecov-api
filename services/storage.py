@@ -59,6 +59,7 @@ class StorageService(object):
             MINIO_CLIENT.make_bucket(bucket, location=region)
             MINIO_CLIENT.set_bucket_policy(bucket, "*", "readonly")
 
+
     # Writes a file to storage will gzip if not compressed already
     def write_file(self, bucket, path, data, reduced_redundancy=False, gzipped=False):
         if not gzipped:

@@ -1,7 +1,7 @@
 union SetYamlOnOwnerError = UnauthenticatedError | ValidationError | UnauthorizedError | NotFoundError
 
 type SetYamlOnOwnerPayload {
-    error: String
+    error: SetYamlOnOwnerError
     owner: Owner
-    newError: SetYamlOnOwnerError
+    newError: SetYamlOnOwnerError @deprecated(reason: "Use error field.")
 }

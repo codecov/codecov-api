@@ -40,7 +40,8 @@ def wrap_error_handling_mutation(resolver):
             return await resolver(*args, **kwargs)
         except exceptions.BaseException as e:
             # Wrap a pure Python exception with our Wrapper to pass as a value
-            return {"error": e.old_message, "new_error": WrappedException(e)}
+            error = WrappedException(e)
+            return {"error": error, "new_error": error}
 
     return resolver_with_error_handling
 

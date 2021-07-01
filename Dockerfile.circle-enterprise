@@ -80,5 +80,6 @@ COPY ./enterprise.sh /home/enterprise.sh
 RUN chown codecov:application /home/enterprise.sh && \
     chmod +x /home/enterprise.sh && \
     chown codecov:application /home/api
+RUN ./api collectstatic --no-input
 USER codecov
 ENTRYPOINT ["./enterprise.sh"]
