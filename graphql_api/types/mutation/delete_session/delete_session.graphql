@@ -2,5 +2,4 @@ union DeleteSessionError = UnauthenticatedError
 
 type DeleteSessionPayload {
   error: DeleteSessionError
-  newError: DeleteSessionError @deprecated(reason: "Use error field.")
 }
