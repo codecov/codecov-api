@@ -28,7 +28,7 @@ class HelperMutationTest(SimpleTestCase):
 
         resolved_value = await resolver()
         assert resolved_value["error"].message == "You are not authenticated"
-        graphql_type_error = resolve_union_error_type(resolved_value["new_error"])
+        graphql_type_error = resolve_union_error_type(resolved_value["error"])
         assert graphql_type_error == "UnauthenticatedError"
 
     async def test_mutation_when_unauthorized_is_raised(self):
@@ -39,7 +39,7 @@ class HelperMutationTest(SimpleTestCase):
 
         resolved_value = await resolver()
         assert resolved_value["error"].message == "You are not authorized"
-        graphql_type_error = resolve_union_error_type(resolved_value["new_error"])
+        graphql_type_error = resolve_union_error_type(resolved_value["error"])
         assert graphql_type_error == "UnauthorizedError"
 
     async def test_mutation_when_validation_is_raised(self):
@@ -50,7 +50,7 @@ class HelperMutationTest(SimpleTestCase):
 
         resolved_value = await resolver()
         assert resolved_value["error"].message == "wrong data"
-        graphql_type_error = resolve_union_error_type(resolved_value["new_error"])
+        graphql_type_error = resolve_union_error_type(resolved_value["error"])
         assert graphql_type_error == "ValidationError"
 
     async def test_mutation_when_not_found_is_raised(self):
@@ -61,7 +61,7 @@ class HelperMutationTest(SimpleTestCase):
 
         resolved_value = await resolver()
         assert resolved_value["error"].message == "Cant find the requested resource"
-        graphql_type_error = resolve_union_error_type(resolved_value["new_error"])
+        graphql_type_error = resolve_union_error_type(resolved_value["error"])
         assert graphql_type_error == "NotFoundError"
 
     async def test_mutation_when_random_exception_is_raised_it_reraise(self):

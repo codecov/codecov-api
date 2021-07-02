@@ -3,5 +3,4 @@ union SyncWithGitProviderError = UnauthenticatedError
 type SyncWithGitProviderPayload {
   me: Me
   error: SyncWithGitProviderError
-  newError: SyncWithGitProviderError @deprecated(reason: "Use error field.")
 }
