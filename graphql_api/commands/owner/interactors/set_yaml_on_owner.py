@@ -31,7 +31,7 @@ class SetYamlOnOwnerInteractor(BaseInteractor):
             raise NotFound()
 
     def convert_yaml_to_dict(self, yaml_input):
-        yaml_safe = html.escape(yaml_input)
+        yaml_safe = html.escape(yaml_input, quote=False)
         yaml_dict = yaml.safe_load(yaml_safe)
         if not yaml_dict:
             return None
