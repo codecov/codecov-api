@@ -3,5 +3,4 @@ union SetYamlOnOwnerError = UnauthenticatedError | ValidationError | Unauthorize
 type SetYamlOnOwnerPayload {
     error: SetYamlOnOwnerError
     owner: Owner
-    newError: SetYamlOnOwnerError @deprecated(reason: "Use error field.")
 }
