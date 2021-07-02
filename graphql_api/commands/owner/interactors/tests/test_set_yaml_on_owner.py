@@ -63,12 +63,16 @@ class SetYamlOnOwnerInteractorTest(TransactionTestCase):
         assert owner_updated.ownerid == self.org.ownerid
         assert owner_updated.yaml == {"codecov": {"require_ci_to_pass": True}}
 
+    async def test_user_is_part_of_org_and_yaml_is_empty(self):
+        owner_updated = await self.execute(self.current_user, self.org.username, "")
+        assert owner_updated.yaml is None
+
     async def test_user_is_part_of_org_and_yaml_is_not_dict(self):
         with pytest.raises(ValidationError) as e:
             owner_updated = await self.execute(
                 self.current_user, self.org.username, bad_yaml_not_dict
             )
-        assert str(e.value) == "Bad Yaml format"
+        assert str(e.value) == "Error at []: Yaml needs to be a dict"
 
     async def test_user_is_part_of_org_and_yaml_is_not_codecov_valid(self):
         with pytest.raises(ValidationError) as e:

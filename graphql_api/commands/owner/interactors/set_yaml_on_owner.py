@@ -33,8 +33,8 @@ class SetYamlOnOwnerInteractor(BaseInteractor):
     def convert_yaml_to_dict(self, yaml_input):
         yaml_safe = html.escape(yaml_input)
         yaml_dict = yaml.safe_load(yaml_safe)
-        if not isinstance(yaml_dict, dict):
-            raise ValidationError(f"Bad Yaml format")
+        if not yaml_dict:
+            return None
         try:
             return validate_yaml(yaml_dict)
         except InvalidYamlException as e:
