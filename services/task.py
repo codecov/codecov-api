@@ -96,7 +96,7 @@ class TaskService(object):
         self._create_signature(
             "app.tasks.ghm_sync_plans.SyncPlans",
             kwargs=dict(sender=sender, account=account, action=action),
-        )
+        ).apply_async()
 
     def delete_owner(self, ownerid):
         log.info(f"Triggering delete_owner task for owner: {ownerid}")
