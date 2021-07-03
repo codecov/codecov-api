@@ -1,6 +1,6 @@
 ARG REQUIREMENTS_IMAGE
 
-FROM $REQUIREMENTS_IMAGE
+FROM $REQUIREMENTS_IMAGE as build
 
 # Pyinstaller necessities
 # PyInstaller needs zlib-dev, gcc, libc-dev, and musl-dev
@@ -80,6 +80,19 @@ COPY ./enterprise.sh /home/enterprise.sh
 RUN chown codecov:application /home/enterprise.sh && \
     chmod +x /home/enterprise.sh && \
     chown codecov:application /home/api
-RUN ./api collectstatic --no-input
-USER codecov
+
+
+FROM alpine:3.13
+
+RUN         addgroup -S application && adduser -S codecov -G application
+RUN         rm -rf /home/codecov
+USER        codecov
+COPY        --from=build /home/enterprise.sh /home/enterprise.sh
+COPY        --from=build /home/api /home/api
+
+ARG         RELEASE_VERSION
+ENV         RELEASE_VERSION $RELEASE_VERSION
+ENV         DJANGO_SETTINGS_MODULE "codecov.settings_enterprise"
+RUN         ./api collectstatic --no-input
+WORKDIR     /home
 ENTRYPOINT ["./enterprise.sh"]
