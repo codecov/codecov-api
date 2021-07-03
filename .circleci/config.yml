@@ -173,10 +173,12 @@ workflows:
   build-test-deploy:
     jobs:
       - build:
+          context: "circleci google deploy context"
           filters:
             tags:
               only: /.*/
       - build-enterprise:
+          context: "circleci google deploy context"
           requires:
             - build
           filters:
@@ -193,7 +195,9 @@ workflows:
             tags:
               only: /.*/
       - portable:
-          context: "DockerHub Push Context"
+          context:
+            - "DockerHub Push Context"
+            - "circleci google deploy context"
           requires:
             - build
             - test
@@ -203,6 +207,7 @@ workflows:
                 - master
                 - /portable-.*/
       - staging:
+          context: "circleci google deploy context"
           requires:
             - build
             - test
@@ -210,6 +215,7 @@ workflows:
             branches:
               only: staging
       - production:
+          context: "circleci google deploy context"
           requires:
             - build
             - test
@@ -217,7 +223,9 @@ workflows:
             branches:
               only: master
       - enterprise:
-          context: "DockerHub Push Context"
+          context:
+            - "DockerHub Push Context"
+            - "circleci google deploy context"
           requires:
             - build-enterprise
             - test
@@ -239,7 +247,9 @@ workflows:
             branches:
               ignore: /.*/
       - enterprise-release:
-          context: "DockerHub Push Context"
+          context:
+            - "DockerHub Push Context"
+            - "circleci google deploy context"
           requires:
             - enterprise
             - hold
@@ -249,6 +259,7 @@ workflows:
             branches:
               ignore: /.*/
       - deploy:
+          context: "circleci google deploy context"
           requires:
             - build
             - test
