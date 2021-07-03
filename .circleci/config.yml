@@ -189,6 +189,7 @@ workflows:
                 - /enterprise-.*/
                 - /qa-.*/
       - test:
+          context: "circleci google deploy context"
           requires:
             - build
           filters:
