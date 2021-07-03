@@ -93,6 +93,6 @@ COPY        --from=build /home/api /home/api
 ARG         RELEASE_VERSION
 ENV         RELEASE_VERSION $RELEASE_VERSION
 ENV         DJANGO_SETTINGS_MODULE "codecov.settings_enterprise"
-RUN         ./api collectstatic --no-input
+
 WORKDIR     /home
 ENTRYPOINT ["./enterprise.sh"]
