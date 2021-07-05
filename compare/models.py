@@ -19,4 +19,12 @@ class CommitComparison(BaseCodecovModel):
     state = models.TextField(
         choices=CommitComparisonStates.choices, default=CommitComparisonStates.PENDING
     )
-    report_storage_path = models.CharField(max_length=150, null=True)
+    report_storage_path = models.CharField(max_length=150, null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                name="unique_comparison_between_commit",
+                fields=["base_commit", "compare_commit"],
+            ),
+        ]
