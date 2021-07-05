@@ -1,7 +1,7 @@
 from asgiref.sync import sync_to_async
 
 from core.models import Commit
-from graphql_api.commands.base import BaseInteractor
+from codecov.commands.base import BaseInteractor
 
 
 class FetchCommitInteractor(BaseInteractor):

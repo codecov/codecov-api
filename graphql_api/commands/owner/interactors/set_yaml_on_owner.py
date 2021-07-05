@@ -4,8 +4,8 @@ import yaml
 
 from codecov_auth.models import Owner
 from graphql_api.actions.owner import current_user_part_of_org
-from graphql_api.commands.base import BaseInteractor
-from graphql_api.commands.exceptions import (
+from codecov.commands.base import BaseInteractor
+from codecov.commands.exceptions import (
     Unauthenticated,
     ValidationError,
     Unauthorized,

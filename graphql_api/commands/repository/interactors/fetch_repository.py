@@ -1,7 +1,7 @@
 from asgiref.sync import sync_to_async
 
 from core.models import Repository
-from graphql_api.commands.base import BaseInteractor
+from codecov.commands.base import BaseInteractor
 
 
 class FetchRepositoryInteractor(BaseInteractor):

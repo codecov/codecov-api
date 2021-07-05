@@ -1,4 +1,4 @@
-from ..base import BaseCommand
+from codecov.commands.base import BaseCommand
 
 from codecov_auth.models import Owner, Session
 from .interactors.create_api_token import CreateApiTokenInteractor

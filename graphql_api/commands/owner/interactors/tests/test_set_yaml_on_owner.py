@@ -5,7 +5,7 @@ from django.contrib.auth.models import AnonymousUser
 from codecov_auth.tests.factories import OwnerFactory
 
 from ..set_yaml_on_owner import SetYamlOnOwnerInteractor
-from graphql_api.commands.exceptions import (
+from codecov.commands.exceptions import (
     Unauthenticated,
     Unauthorized,
     ValidationError,

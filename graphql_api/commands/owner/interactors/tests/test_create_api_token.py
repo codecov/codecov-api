@@ -5,7 +5,7 @@ from django.contrib.auth.models import AnonymousUser
 from codecov_auth.models import Session
 from codecov_auth.tests.factories import OwnerFactory
 from ..create_api_token import CreateApiTokenInteractor
-from graphql_api.commands.exceptions import Unauthenticated, ValidationError
+from codecov.commands.exceptions import Unauthenticated, ValidationError
 
 
 class CreateApiTokenInteractorTest(TransactionTestCase):

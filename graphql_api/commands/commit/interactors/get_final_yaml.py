@@ -4,7 +4,7 @@ from shared.validation.yaml import validate_yaml
 from yaml import safe_load
 
 from services.repo_providers import RepoProviderService
-from graphql_api.commands.base import BaseInteractor
+from codecov.commands.base import BaseInteractor
 
 
 class GetFinalYamlInteractor(BaseInteractor):

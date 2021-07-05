@@ -7,7 +7,7 @@ from codecov_auth.models import Session
 from codecov_auth.tests.factories import OwnerFactory, SessionFactory
 
 from ..delete_session import DeleteSessionInteractor
-from graphql_api.commands.exceptions import Unauthenticated
+from codecov.commands.exceptions import Unauthenticated
 
 
 @sync_to_async

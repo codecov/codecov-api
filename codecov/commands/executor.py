@@ -1,8 +1,9 @@
 from utils.services import get_long_service_name
 
-from .commands.owner import OwnerCommands
-from .commands.repository import RepositoryCommands
-from .commands.commit import CommitCommands
+from graphql_api.commands.owner import OwnerCommands
+from graphql_api.commands.repository import RepositoryCommands
+from graphql_api.commands.commit import CommitCommands
+
 
 mapping = {
     "commit": CommitCommands,

@@ -1,4 +1,4 @@
-from ..base import BaseCommand
+from codecov.commands.base import BaseCommand
 
 from .interactors.fetch_commit import FetchCommitInteractor
 from .interactors.get_final_yaml import GetFinalYamlInteractor

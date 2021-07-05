@@ -6,7 +6,7 @@ from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
 
 from ..fetch_repository import FetchRepositoryInteractor
-from graphql_api.commands.exceptions import (
+from codecov.commands.exceptions import (
     Unauthenticated,
     Unauthorized,
     ValidationError,

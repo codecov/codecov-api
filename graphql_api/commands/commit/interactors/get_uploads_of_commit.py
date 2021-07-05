@@ -1,5 +1,5 @@
 from asgiref.sync import sync_to_async
-from graphql_api.commands.base import BaseInteractor
+from codecov.commands.base import BaseInteractor
 
 from reports.models import ReportSession
 

@@ -1,4 +1,4 @@
-from ..base import BaseCommand
+from codecov.commands.base import BaseCommand
 
 from .interactors.fetch_repository import FetchRepositoryInteractor
 

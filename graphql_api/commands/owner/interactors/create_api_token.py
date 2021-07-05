@@ -1,8 +1,8 @@
 from asgiref.sync import sync_to_async
 
 from codecov_auth.models import Session
-from graphql_api.commands.base import BaseInteractor
-from graphql_api.commands.exceptions import Unauthenticated, ValidationError
+from codecov.commands.base import BaseInteractor
+from codecov.commands.exceptions import Unauthenticated, ValidationError
 
 
 class CreateApiTokenInteractor(BaseInteractor):
