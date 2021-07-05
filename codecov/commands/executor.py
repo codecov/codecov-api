@@ -1,6 +1,6 @@
 from utils.services import get_long_service_name
 
-from graphql_api.commands.owner import OwnerCommands
+from codecov_auth.commands.owner import OwnerCommands
 from graphql_api.commands.repository import RepositoryCommands
 from graphql_api.commands.commit import CommitCommands
 
