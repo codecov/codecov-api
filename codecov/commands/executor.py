@@ -1,8 +1,8 @@
 from utils.services import get_long_service_name
 
 from codecov_auth.commands.owner import OwnerCommands
-from graphql_api.commands.repository import RepositoryCommands
-from graphql_api.commands.commit import CommitCommands
+from core.commands.repository import RepositoryCommands
+from core.commands.commit import CommitCommands
 
 
 mapping = {

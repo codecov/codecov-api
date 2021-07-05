@@ -13,20 +13,19 @@ class CommitCommandsTest(TransactionTestCase):
         self.commit = CommitFactory()
         self.command = CommitCommands(self.user, "github")
 
-    @patch("graphql_api.commands.commit.commit.FetchCommitInteractor.execute")
+    @patch("core.commands.commit.commit.FetchCommitInteractor.execute")
     def test_fetch_commit_delegate_to_interactor(self, interactor_mock):
         commit_id = "123"
         self.command.fetch_commit(self.repository, commit_id)
         interactor_mock.assert_called_once_with(self.repository, commit_id)
 
-    @patch("graphql_api.commands.commit.commit.GetUploadsOfCommitInteractor.execute")
+    @patch("core.commands.commit.commit.GetUploadsOfCommitInteractor.execute")
     def test_get_uploads_of_commit_delegate_to_interactor(self, interactor_mock):
         commit = CommitFactory()
         self.command.get_uploads_of_commit(commit)
         interactor_mock.assert_called_once_with(commit)
 
-    @patch("graphql_api.commands.commit.commit.GetFinalYamlInteractor.execute")
+    @patch("core.commands.commit.commit.GetFinalYamlInteractor.execute")
     def test_get_final_yaml_delegate_to_interactor(self, interactor_mock):
         self.command.get_final_yaml(self.commit)
         interactor_mock.assert_called_once_with(self.commit)
-

@@ -90,7 +90,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             {"provider": session_two.provider},
         ]
 
-    @patch("graphql_api.commands.commit.commit.CommitCommands.get_final_yaml")
+    @patch("core.commands.commit.commit.CommitCommands.get_final_yaml")
     def test_fetch_commit_yaml_call_the_command(self, command_mock):
         query = query_commit % "yaml"
         variables = {

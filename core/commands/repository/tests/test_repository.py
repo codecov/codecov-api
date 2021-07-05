@@ -14,9 +14,7 @@ class RepositoryCommandsTest(TransactionTestCase):
         self.repo = RepositoryFactory(author=self.owner)
         self.command = RepositoryCommands(self.user, "github")
 
-    @patch(
-        "graphql_api.commands.repository.repository.FetchRepositoryInteractor.execute"
-    )
+    @patch("core.commands.repository.repository.FetchRepositoryInteractor.execute")
     def test_fetch_repository_to_interactor(self, interactor_mock):
         self.command.fetch_repository(self.owner, self.repo.name)
         interactor_mock.assert_called_once_with(self.owner, self.repo.name)

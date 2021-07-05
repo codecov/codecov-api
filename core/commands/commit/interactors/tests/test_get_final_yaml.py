@@ -26,7 +26,7 @@ class GetFinalYamlInteractorTest(TransactionTestCase):
         return GetFinalYamlInteractor(current_user, service).execute(*args)
 
     @patch(
-        "graphql_api.commands.commit.interactors.get_final_yaml.fetch_current_yaml_from_provider_via_reference"
+        "core.commands.commit.interactors.get_final_yaml.fetch_current_yaml_from_provider_via_reference"
     )
     @async_to_sync
     async def test_when_commit_has_yaml(self, mock_fetch_yaml):
@@ -43,7 +43,7 @@ class GetFinalYamlInteractorTest(TransactionTestCase):
         assert config["codecov"]["require_ci_to_pass"] is False
 
     @patch(
-        "graphql_api.commands.commit.interactors.get_final_yaml.fetch_current_yaml_from_provider_via_reference"
+        "core.commands.commit.interactors.get_final_yaml.fetch_current_yaml_from_provider_via_reference"
     )
     @async_to_sync
     async def test_when_commit_has_no_yaml(self, mock_fetch_yaml):
