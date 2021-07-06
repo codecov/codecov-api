@@ -3,7 +3,7 @@ from ariadne import ObjectType, make_executable_schema
 from django.test import TestCase, override_settings, RequestFactory
 from django.urls import ResolverMatch
 
-from graphql_api.commands.exceptions import Unauthorized
+from codecov.commands.exceptions import Unauthorized
 from .helper import GraphQLTestHelper
 from ..views import AsyncGraphqlView
 

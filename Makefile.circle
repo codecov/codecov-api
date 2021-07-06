@@ -55,6 +55,7 @@ build-enterprise:
 		-f Dockerfile.circle-enterprise . \
 		-t ${ENTERPRISE_GCR_REPO}:latest \
 		--build-arg REQUIREMENTS_IMAGE=${GCR_REPO}:${REQUIREMENTS_TAG}
+		--squash
 
 # CIRCLECI
 # job: portable

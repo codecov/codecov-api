@@ -1,4 +1,4 @@
-from graphql_api.commands import exceptions
+from codecov.commands import exceptions
 
 
 class WrappedException:
@@ -16,7 +16,7 @@ class WrappedException:
 
     def get_graphql_type(self):
         """
-        Map an exception from "graphql_api.commands.exceptions" to a GraphQL type
+        Map an exception from "codecov.commands.exceptions" to a GraphQL type
         """
         error_to_graphql_type = {
             exceptions.Unauthenticated: "UnauthenticatedError",

@@ -26,7 +26,7 @@ class SetYamlOnOwnerMutationTest(GraphQLTestHelper, TransactionTestCase):
         self.user = OwnerFactory(username="codecov-user")
         asyncio.set_event_loop(asyncio.new_event_loop())
 
-    @patch("graphql_api.commands.owner.owner.OwnerCommands.set_yaml_on_owner")
+    @patch("codecov_auth.commands.owner.owner.OwnerCommands.set_yaml_on_owner")
     def test_mutation_dispatch_to_command(self, command_mock):
         # mock the command to return a Future which resolved to the owner
         f = asyncio.Future()

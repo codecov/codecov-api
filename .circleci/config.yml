@@ -55,7 +55,13 @@ jobs:
     executor: codecov-deploy
     steps:
     - checkout
-    - setup_remote_docker
+    - setup_remote_docker:
+        version: 20.10.6
+    - run: |
+        ssh remote-docker \<<EOF
+          sudo bash -c 'echo "{\"experimental\": true}" > /etc/docker/daemon.json'
+          sudo systemctl restart docker
+        EOF
     - run:
         <<: *gcloud_auth_enterprise
     - run:
@@ -167,10 +173,12 @@ workflows:
   build-test-deploy:
     jobs:
       - build:
+          context: "circleci google deploy context"
           filters:
             tags:
               only: /.*/
       - build-enterprise:
+          context: "circleci google deploy context"
           requires:
             - build
           filters:
@@ -181,13 +189,16 @@ workflows:
                 - /enterprise-.*/
                 - /qa-.*/
       - test:
+          context: "circleci google deploy context"
           requires:
             - build
           filters:
             tags:
               only: /.*/
       - portable:
-          context: "DockerHub Push Context"
+          context:
+            - "DockerHub Push Context"
+            - "circleci google deploy context"
           requires:
             - build
             - test
@@ -197,6 +208,7 @@ workflows:
                 - master
                 - /portable-.*/
       - staging:
+          context: "circleci google deploy context"
           requires:
             - build
             - test
@@ -204,6 +216,7 @@ workflows:
             branches:
               only: staging
       - production:
+          context: "circleci google deploy context"
           requires:
             - build
             - test
@@ -211,7 +224,9 @@ workflows:
             branches:
               only: master
       - enterprise:
-          context: "DockerHub Push Context"
+          context:
+            - "DockerHub Push Context"
+            - "circleci google deploy context"
           requires:
             - build-enterprise
             - test
@@ -233,7 +248,9 @@ workflows:
             branches:
               ignore: /.*/
       - enterprise-release:
-          context: "DockerHub Push Context"
+          context:
+            - "DockerHub Push Context"
+            - "circleci google deploy context"
           requires:
             - enterprise
             - hold
@@ -243,6 +260,7 @@ workflows:
             branches:
               ignore: /.*/
       - deploy:
+          context: "circleci google deploy context"
           requires:
             - build
             - test
