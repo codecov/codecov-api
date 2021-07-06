@@ -5,13 +5,12 @@ from contextlib import suppress
 from asgiref.sync import sync_to_async
 
 from codecov_auth.authentication import CodecovTokenAuthentication
+from codecov.commands.exceptions import BaseException
+from codecov.commands.executor import Executor
 
 from .ariadne.views import GraphQLView
 from .schema import schema
 from .tracing import get_tracer_extension
-from .commands.exceptions import BaseException
-
-from .executor import Executor
 
 
 @sync_to_async

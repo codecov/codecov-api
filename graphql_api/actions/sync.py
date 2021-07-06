@@ -1,7 +1,7 @@
 from asgiref.sync import sync_to_async
 
 from services.refresh import RefreshService
-from graphql_api.commands.exceptions import Unauthenticated
+from codecov.commands.exceptions import Unauthenticated
 
 
 @sync_to_async
