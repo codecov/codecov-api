@@ -191,7 +191,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, user=self.user)
         assert data["owner"]["yaml"] == "test: test\n"
 
-    @patch("graphql_api.commands.owner.owner.OwnerCommands.set_yaml_on_owner")
+    @patch("codecov_auth.commands.owner.owner.OwnerCommands.set_yaml_on_owner")
     def test_repository_dispatch_to_command(self, command_mock):
         asyncio.set_event_loop(asyncio.new_event_loop())
         repo = RepositoryFactory(author=self.user, private=False)
