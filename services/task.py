@@ -1,6 +1,6 @@
 import logging
 from celery import Celery, signature, chain
-
+from shared import celery_config
 
 celery_app = Celery("tasks")
 celery_app.config_from_object("shared.celery_config:BaseCeleryConfig")
@@ -14,6 +14,12 @@ class TaskService(object):
         Create Celery signature
         """
         return signature(name, args=args, kwargs=kwargs, app=celery_app)
+
+    def compute_comparison(self, comparison_id):
+        self._create_signature(
+            celery_app.compute_comparison_task_name,
+            kwargs=dict(comparison_id=comparison_id),
+        ).apply_async()
 
     def status_set_pending(self, repoid, commitid, branch, on_a_pull_request):
         self._create_signature(
