@@ -139,7 +139,11 @@ idna==2.8
     #   requests
     #   rfc3986
     #   yarl
+<<<<<<< HEAD
 importlib-metadata==4.6.0
+=======
+importlib-metadata==4.6.1
+>>>>>>> bef3f956 (bump shared to 0.6.2)
     # via
     #   kombu
     #   pluggy
@@ -285,7 +289,7 @@ sentry-sdk==0.14.3
     # via -r requirements.in
 setproctitle==1.1.10
     # via -r requirements.in
-git+ssh://git@github.com/codecov/shared.git@v0.6.1#egg=shared
+git+ssh://git@github.com/codecov/shared.git@v0.6.2#egg=shared
     # via -r requirements.in
 six==1.15.0
     # via
@@ -362,7 +366,11 @@ wrapt==1.12.1
     #   vcrpy
 yarl==1.5.1
     # via vcrpy
+<<<<<<< HEAD
 zipp==3.4.1
+=======
+zipp==3.5.0
+>>>>>>> bef3f956 (bump shared to 0.6.2)
     # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
