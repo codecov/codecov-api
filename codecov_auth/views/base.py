@@ -100,6 +100,7 @@ class LoginMixin(object):
             signed_cookie_value,
             domain=domain_to_use,
             httponly=True,
+            secure=True,
             samesite="Strict",
         )
         response.set_cookie(
@@ -107,6 +108,7 @@ class LoginMixin(object):
             user.username,
             domain=domain_to_use,
             httponly=True,
+            secure=True,
             samesite="Strict",
         )
 
