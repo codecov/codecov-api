@@ -35,3 +35,5 @@ freezegun
 opentracing
 aiodataloader
 fakeredis
+opentelemetry-sdk
+opentelemetry-instrumentation-django
