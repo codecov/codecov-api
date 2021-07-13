@@ -4,6 +4,7 @@ from codecov_auth.commands.owner import OwnerCommands
 from core.commands.repository import RepositoryCommands
 from core.commands.commit import CommitCommands
 from core.commands.branch import BranchCommands
+from compare.commands.compare import CompareCommands
 
 
 mapping = {
@@ -11,6 +12,7 @@ mapping = {
     "owner": OwnerCommands,
     "repository": RepositoryCommands,
     "branch": BranchCommands,
+    "compare": CompareCommands,
 }
 
 
@@ -30,4 +32,4 @@ def get_executor_from_request(request):
 
 
 def get_executor_from_command(command):
-    return Executor(user=command.user, service=command.service)
+    return Executor(user=command.current_user, service=command.service)
