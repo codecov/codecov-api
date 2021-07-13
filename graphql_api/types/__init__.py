@@ -6,6 +6,7 @@ from .query import query, query_bindable
 from .me import me, me_bindable
 from .branch import branch, branch_bindable
 from .commit import commit, commit_bindable
+from .comparison import comparison, comparison_bindable
 from .upload import upload, upload_bindable
 from .coverage_totals import coverage_totals, coverage_totals_bindable
 from .user import user, user_bindable
@@ -24,6 +25,7 @@ types = [
     me,
     branch,
     commit,
+    comparison,
     user,
     owner,
     repository,
@@ -42,6 +44,7 @@ bindables = [
     me_bindable,
     branch_bindable,
     commit_bindable,
+    comparison_bindable,
     user_bindable,
     owner_bindable,
     repository_bindable,
