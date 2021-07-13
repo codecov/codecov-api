@@ -3,6 +3,7 @@ from django.test import TransactionTestCase
 from core.tests.factories import CommitFactory
 
 from codecov_auth.tests.factories import OwnerFactory
+from compare.tests.factories import CommitComparisonFactory
 from ..compare import CompareCommands
 
 
@@ -16,6 +17,10 @@ class CompareCommandsTest(TransactionTestCase):
         self.commit = CommitFactory(
             parent_commit_id=self.parent_commit.commitid,
             repository=self.parent_commit.repository,
+        )
+        self.comparison = CommitComparisonFactory(
+            base_commit=self.parent_commit,
+            compare_commit=self.commit,
         )
 
     async def test_compare_commit_when_no_parents(self):
