@@ -139,11 +139,7 @@ idna==2.8
     #   requests
     #   rfc3986
     #   yarl
-<<<<<<< HEAD
-importlib-metadata==4.6.0
-=======
 importlib-metadata==4.6.1
->>>>>>> bef3f956 (bump shared to 0.6.2)
     # via
     #   kombu
     #   pluggy
@@ -366,11 +362,7 @@ wrapt==1.12.1
     #   vcrpy
 yarl==1.5.1
     # via vcrpy
-<<<<<<< HEAD
-zipp==3.4.1
-=======
 zipp==3.5.0
->>>>>>> bef3f956 (bump shared to 0.6.2)
     # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
