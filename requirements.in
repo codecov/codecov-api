@@ -30,7 +30,7 @@ pre-commit==2.11.1
 python-redis-lock==3.7.0
 whitenoise
 ariadne
-git+git://github.com/photocrowd/django-cursor-pagination.git@f8aa41ff7c515511fccb79e33fb2ac22cb7af765
+https://github.com/photocrowd/django-cursor-pagination/archive/f560902696b0c8509e4d95c10ba0d62700181d84.tar.gz
 freezegun
 opentracing
 aiodataloader
