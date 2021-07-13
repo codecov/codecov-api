@@ -1,3 +1,4 @@
+from asgiref.sync import async_to_sync
 from unittest.mock import patch
 import pytest
 
@@ -23,6 +24,7 @@ class CompareCommitsInteractorTest(TransactionTestCase):
     @patch(
         "compare.commands.compare.interactors.compare_commits.TaskService.compute_comparison"
     )
+    @async_to_sync
     async def test_when_comparison_doesnt_exist(self, task_compute_comparison):
         compare = await CompareCommitsInteractor(AnonymousUser(), "github").execute(
             self.commit, self.parent_commit
@@ -34,6 +36,7 @@ class CompareCommitsInteractorTest(TransactionTestCase):
     @patch(
         "compare.commands.compare.interactors.compare_commits.TaskService.compute_comparison"
     )
+    @async_to_sync
     async def test_when_comparison_exists(self, task_compute_comparison):
         compare = await CompareCommitsInteractor(AnonymousUser(), "github").execute(
             self.comparison.compare_commit, self.comparison.base_commit
