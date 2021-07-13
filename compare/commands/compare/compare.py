@@ -1,6 +1,6 @@
 from codecov.commands.base import BaseCommand
 
-from .interactors.compare_commits import CompareCommitInteractor
+from .interactors.compare_commits import CompareCommitsInteractor
 
 
 class CompareCommands(BaseCommand):
@@ -8,6 +8,8 @@ class CompareCommands(BaseCommand):
         parent_commit = await self.get_command("commit").fetch_commit(
             commit.repository, commit.parent_commit_id
         )
-        return self.get_interactor(CompareCommitInteractor).execute(
+        if not parent_commit:
+            return None
+        return await self.get_interactor(CompareCommitsInteractor).execute(
             commit, parent_commit
         )

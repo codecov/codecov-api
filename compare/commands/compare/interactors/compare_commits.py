@@ -6,17 +6,17 @@ from compare.models import CommitComparison
 from services.task import TaskService
 
 
-class CompareCommits(BaseInteractor):
-    def get_or_create_comparison(head_commit, compare_to_commit):
+class CompareCommitsInteractor(BaseInteractor):
+    def get_or_create_comparison(self, head_commit, compare_to_commit):
         return CommitComparison.objects.get_or_create(
-            base_commit=head_commit, compare_commit=compare_to_commit
+            base_commit=compare_to_commit, compare_commit=head_commit
         )
 
     def trigger_task(self, comparison):
         TaskService().compute_comparison(comparison.id)
 
     @sync_to_async
-    async def execute(self, head_commit, compare_to_commit):
+    def execute(self, head_commit, compare_to_commit):
         comparison, created = self.get_or_create_comparison(
             head_commit, compare_to_commit
         )
