@@ -17,7 +17,7 @@ class TaskService(object):
 
     def compute_comparison(self, comparison_id):
         self._create_signature(
-            celery_app.compute_comparison_task_name,
+            celery_config.compute_comparison_task_name,
             kwargs=dict(comparison_id=comparison_id),
         ).apply_async()
 
