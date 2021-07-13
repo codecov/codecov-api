@@ -1,7 +1,18 @@
 import pytest
 import vcr
+import os
 from pathlib import Path
 import fakeredis
+from open_telemetry import instrument
+
+
+def pytest_configure(config):
+    """
+    pytest_configure is the canonical way to configure test server for entire testing suite
+    """
+    print("called pytest_configure hook")
+    if os.environ.get('TRANSMIT_SPANS') is not None:
+        instrument()
 
 
 @pytest.fixture
