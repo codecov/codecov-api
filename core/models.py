@@ -199,6 +199,10 @@ class Commit(models.Model):
             [commit_id],
         )
 
+    @cached_property
+    def commitreport(self):
+        return self.reports.first()
+
     class Meta:
         db_table = "commits"
         constraints = [
