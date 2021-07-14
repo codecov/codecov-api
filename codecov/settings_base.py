@@ -226,3 +226,4 @@ DJANGO_ADMIN_URL = get_config("django", "admin_url", default="admin")
 
 IS_ENTERPRISE = get_settings_module() == SettingsModule.ENTERPRISE.value
 IS_DEV = get_settings_module() == SettingsModule.DEV.value
+DATA_UPLOAD_MAX_MEMORY_SIZE = get_config("setup", "http", "upload_max_memory_size", default=2621440)
