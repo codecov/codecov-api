@@ -83,7 +83,7 @@ def main():
             "graphql_api",
             "legacy_migrations",
             "shared.celery_config",
-            "kombu.transport.pymapq"
+            "kombu.transport.pyamqp"
         ]
     )
 
