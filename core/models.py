@@ -201,7 +201,8 @@ class Commit(models.Model):
 
     @cached_property
     def commitreport(self):
-        return self.reports.first()
+        reports = list(self.reports.all())
+        return reports[0] if reports else None
 
     class Meta:
         db_table = "commits"
