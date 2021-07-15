@@ -7,7 +7,7 @@ from codecov_auth.tests.factories import OwnerFactory
 class LoginMixinTests(TestCase):
     def setUp(self):
         self.mixin_instance = LoginMixin()
-        self.mixin_instance.cookie_prefix = "github"
+        self.mixin_instance.service = "github"
         self.request = RequestFactory().get("", {})
 
     @patch("services.segment.SegmentService.identify_user")

@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 
 
 class BitbucketLoginView(View, LoginMixin):
-    cookie_prefix = "bitbucket"
+    service = "bitbucket"
 
     async def fetch_user_data(self, token):
         repo_service = Bitbucket(
@@ -89,7 +89,7 @@ class BitbucketLoginView(View, LoginMixin):
             cookie_key, cookie_secret, oauth_verifier
         )
         user_dict = asyncio.run(self.fetch_user_data(token))
-        response = redirect("/bb")
+        response = redirect(settings.CODECOV_DASHBOARD_URL + "/bb")
         response.delete_cookie("_oauth_request_token", domain=settings.COOKIES_DOMAIN)
         user = self.login_from_user_dict(user_dict, request, response)
         log.info("User successfully logged in", extra=dict(ownerid=user.ownerid))
