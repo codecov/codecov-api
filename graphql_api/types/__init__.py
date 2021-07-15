@@ -6,7 +6,6 @@ from .query import query, query_bindable
 from .me import me, me_bindable
 from .commit import commit, commit_bindable
 from .upload import upload, upload_bindable
-from .coverage_diff import coverage_diff, coverage_diff_bindable
 from .coverage_totals import coverage_totals, coverage_totals_bindable
 from .user import user, user_bindable
 from .owner import owner, owner_bindable
@@ -31,7 +30,6 @@ types = [
     mutation,
     errors,
     coverage_totals,
-    coverage_diff,
     upload,
 ]
 
@@ -43,7 +41,6 @@ bindables = [
     owner_bindable,
     repository_bindable,
     session_bindable,
-    coverage_diff_bindable,
     coverage_totals_bindable,
     upload_bindable,
     datetime_scalar,
