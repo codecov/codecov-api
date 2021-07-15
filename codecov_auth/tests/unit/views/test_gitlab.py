@@ -20,12 +20,13 @@ def test_get_gitlab_redirect(client, settings, mocker):
     settings.GITLAB_CLIENT_SECRET = (
         "testi1iinnfrhnf2q6htycgexmp04f1z2mrd7w7u8bigskhwq2km6yls8e2mddzh"
     )
+    settings.GITLAB_REDIRECT_URI = "http://localhost/login/gitlab"
     url = reverse("gitlab-login")
     res = client.get(url, SERVER_NAME="localhost:8000")
     assert res.status_code == 302
     assert (
         res.url
-        == "https://gitlab.com/oauth/authorize?response_type=code&client_id=testfiuozujcfo5kxgigugr5x3xxx2ukgyandp16x6w566uits7f32crzl4yvmth&redirect_uri=https%3A%2F%2Fcodecov.io%2Flogin%2Fgitlab&state=fbdf86c6c8d64ed1b814e80b33df85c9"
+        == "https://gitlab.com/oauth/authorize?response_type=code&client_id=testfiuozujcfo5kxgigugr5x3xxx2ukgyandp16x6w566uits7f32crzl4yvmth&redirect_uri=http%3A%2F%2Flocalhost%2Flogin%2Fgitlab&state=fbdf86c6c8d64ed1b814e80b33df85c9"
     )
 
 
@@ -83,7 +84,7 @@ def test_get_gitlab_already_with_code(client, mocker, db, settings, mock_redis):
     owner = session.owner
     assert owner.username == "ThiagoCodecov"
     assert owner.service_id == "3124507"
-    assert res.url == "/gl"
+    assert res.url == "http://localhost:3000/gl"
 
 
 def test_get_github_already_with_code_github_error(
