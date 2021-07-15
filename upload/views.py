@@ -1,13 +1,7 @@
 import logging
-import asyncio
-
-import minio
-from django.http import Http404
-from utils.services import get_long_service_name
 from datetime import datetime
 from rest_framework import status, renderers
 from rest_framework.views import APIView
-from django.views import View
 from rest_framework.permissions import AllowAny
 from rest_framework.exceptions import ValidationError
 from django.http import HttpResponse, HttpResponseServerError
@@ -16,11 +10,6 @@ from urllib.parse import parse_qs
 from json import dumps
 from uuid import uuid4
 from django.utils import timezone
-from django.utils.decorators import classonlymethod
-from asgiref.sync import sync_to_async
-
-from core.commands.repository import RepositoryCommands
-from codecov_auth.commands.owner import OwnerCommands
 
 from .helpers import (
     parse_params,
@@ -307,59 +296,4 @@ class UploadHandler(APIView):
             response["Content-Type"] = "application/json"
 
         response.status_code = status.HTTP_200_OK
-        return response
-
-
-class UploadDownloadHandler(View):
-    @classonlymethod
-    def as_view(_, **initkwargs):
-        view = super().as_view(**initkwargs)
-        view._is_coroutine = asyncio.coroutines._is_coroutine
-        return view
-
-    async def get_repo(self):
-        owner = await OwnerCommands(self.request.user, self.service).fetch_owner(
-            self.owner_username
-        )
-        if owner is None:
-            raise Http404("Requested report could not be found")
-        repo = await RepositoryCommands(
-            self.request.user, self.service
-        ).fetch_repository(owner, self.repo_name)
-        if repo is None:
-            raise Http404("Requested report could not be found")
-        return repo
-
-    def validate_path(self):
-        if not self.path or "v4/raw" not in self.path:
-            raise Http404("Requested report could not be found")
-
-    def read_params(self):
-        self.path = self.request.GET.get("path")
-        self.service = get_long_service_name(self.kwargs.get("service"))
-        self.repo_name = self.kwargs.get("repo_name")
-        self.owner_username = self.kwargs.get("owner_username")
-
-    @sync_to_async
-    def get_from_storage(self, repo):
-        archive_service = ArchiveService(repo)
-
-        # Verify that the repo hash in the path matches the repo in the URL by generating the repo hash
-        if archive_service.storage_hash not in self.path:
-            raise Http404("Requested report could not be found")
-        try:
-            return archive_service.read_file(self.path)
-
-        except minio.error.NoSuchKey as e:
-            raise Http404("Requested report could not be found")
-
-    async def get(self, request, *args, **kwargs):
-        self.read_params()
-        self.validate_path()
-
-        repo = await self.get_repo()
-        raw_uploaded_report = await self.get_from_storage(repo)
-
-        response = HttpResponse(raw_uploaded_report)
-        response["Content-Type"] = "text/plain"
         return response

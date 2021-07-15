@@ -25,10 +25,10 @@ urlpatterns = [
     path("health/", views.health),
     path("", views.health),
     path(
-        "<str:service>/<str:owner_username>/<str:repo_name>/",
-        include("graphs.urls"),
-    ),
-    path("", include("upload.urls")),
+            "<str:service>/<str:owner_username>/<str:repo_name>/",
+            include("graphs.urls"),
+        ),
+    path("upload/<str:version>", include("upload.urls")),
 ]
 
 if not settings.IS_ENTERPRISE:
