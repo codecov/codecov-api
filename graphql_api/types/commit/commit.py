@@ -13,6 +13,12 @@ commit_bindable.set_alias("pullId", "pullid")
 commit_bindable.set_alias("branchName", "branch")
 
 
+@commit_bindable.field("totals")
+def resolve_totals(commit, info):
+    if commit.commitreport:
+        return commit.commitreport.reportleveltotals
+
+
 @commit_bindable.field("author")
 def resolve_author(commit, info):
     if commit.author_id:

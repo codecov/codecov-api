@@ -6,5 +6,4 @@ type CoverageTotals {
   hitsCount: Int
   missesCount: Int
   partialsCount: Int
-  diff: CoverageDiff
 }
