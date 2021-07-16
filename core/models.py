@@ -199,6 +199,11 @@ class Commit(models.Model):
             [commit_id],
         )
 
+    @cached_property
+    def commitreport(self):
+        reports = list(self.reports.all())
+        return reports[0] if reports else None
+
     class Meta:
         db_table = "commits"
         constraints = [
