@@ -9,6 +9,7 @@ type Commit {
   branchName: String
   yaml: String
   ciPassed: Boolean!
+  coverageFile(path: String!): File
   uploads(first: Int, after: String, last: Int, before: String): UploadConnection
 }
 

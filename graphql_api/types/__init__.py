@@ -11,6 +11,7 @@ from .user import user, user_bindable
 from .owner import owner, owner_bindable
 from .repository import repository, repository_bindable
 from .session import session, session_bindable
+from .file import commit_file
 from .mutation import mutation, mutation_resolvers
 from .enums import enums, enum_types
 
@@ -31,6 +32,7 @@ types = [
     errors,
     coverage_totals,
     upload,
+    commit_file,
 ]
 
 bindables = [

@@ -111,3 +111,32 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
         assert commit["yaml"] == yaml.dump(fake_config)
+
+    @patch("core.commands.commit.commit.CommitCommands.get_file_content")
+    @patch("core.commands.commit.commit.CommitCommands.get_file_coverage")
+    def test_fetch_commit_coverage_file_call_the_command(
+        self, coverage_mock, content_mock
+    ):
+        query = (
+            query_commit
+            % 'coverageFile(path: "path") { content,coverage { line,coverage } }'
+        )
+
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+            "path": "path",
+        }
+        fake_coverage = {
+            "content": "file content",
+            "coverage": [{"line": 0, "coverage": 0}],
+        }
+        f = asyncio.Future()
+        f.set_result("file content")
+        content_mock.return_value = f
+        coverage_mock.return_value = [{"coverage": 0, "line": 0}]
+        data = self.gql_request(query, variables=variables)
+        coverageFile = data["owner"]["repository"]["commit"]["coverageFile"]
+        assert coverageFile["content"] == fake_coverage["content"]
+        assert coverageFile["coverage"] == fake_coverage["coverage"]
