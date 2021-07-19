@@ -13,6 +13,15 @@ commit_bindable.set_alias("pullId", "pullid")
 commit_bindable.set_alias("branchName", "branch")
 
 
+@commit_bindable.field("coverageFile")
+def resolve_file(commit, info, path):
+    command = info.context["executor"].get_command("commit")
+    return {
+        "content": command.get_file_content(commit, path),
+        "coverage": command.get_file_coverage(commit, path),
+    }
+
+
 @commit_bindable.field("totals")
 def resolve_totals(commit, info):
     if commit.commitreport:
