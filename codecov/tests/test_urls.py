@@ -15,7 +15,7 @@ class ViewTest(TestCase):
         )
         self.assertRedirects(
             response,
-            "http://localhost:9000/gh/codecov/codecov.io/settings",
+            "http://localhost:3000/gh/codecov/codecov.io/settings",
             302,
             fetch_redirect_response=False,
         )

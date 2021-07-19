@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 
 
 class GithubLoginView(View, LoginMixin):
-    cookie_prefix = "github"
+    service = "github"
     error_redirection_page = "/"
 
     def get_is_enterprise(self):
@@ -56,7 +56,7 @@ class GithubLoginView(View, LoginMixin):
         except TorngitError:
             log.warning("Unable to log in due to problem on Github", exc_info=True)
             return redirect(self.error_redirection_page)
-        response = redirect("/gh")
+        response = redirect(settings.CODECOV_DASHBOARD_URL + "/gh")
         self.login_from_user_dict(user_dict, request, response)
         return response
 

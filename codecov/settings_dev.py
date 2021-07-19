@@ -34,7 +34,7 @@ GITLAB_CLIENT_SECRET = (
 )
 
 
-CODECOV_DASHBOARD_URL = "http://localhost:9000"
+CODECOV_DASHBOARD_URL = "http://localhost:3000"
 
 COOKIES_DOMAIN = "localhost"
 SESSION_COOKIE_DOMAIN = "localhost"
