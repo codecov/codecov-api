@@ -3,34 +3,35 @@ from .views import GithubLoginView
 from .views.gitlab import GitlabLoginView
 from .views.bitbucket import BitbucketLoginView
 
+
 urlpatterns = [
     path(
-        "github",
+        "login/github",
         GithubLoginView.as_view(),
         name="github-login",
     ),
     path(
-        "gh",
+        "login/gh",
         GithubLoginView.as_view(),
         name="gh-login",
     ),
     path(
-        "gitlab",
+        "login/gitlab",
         GitlabLoginView.as_view(),
         name="gitlab-login",
     ),
     path(
-        "gl",
+        "login/gl",
         GitlabLoginView.as_view(),
         name="gl-login",
     ),
     path(
-        "bitbucket",
+        "login/bitbucket",
         BitbucketLoginView.as_view(),
         name="bitbucket-login",
     ),
     path(
-        "bb",
+        "login/bb",
         BitbucketLoginView.as_view(),
         name="bb-login",
     ),
