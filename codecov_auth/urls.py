@@ -2,9 +2,10 @@ from django.urls import path
 from .views import GithubLoginView
 from .views.gitlab import GitlabLoginView
 from .views.bitbucket import BitbucketLoginView
-
+from .views.logout import logout_view
 
 urlpatterns = [
+    path("logout/<str:service>", logout_view, name="logout"),
     path(
         "login/github",
         GithubLoginView.as_view(),
