@@ -20,11 +20,10 @@ def delete_session(request, service):
 def logout_view(request, service):
     service_name = get_long_service_name(service)
     response = redirect("/")
-    if request.user.is_authenticated:
-        delete_session(request, service_name)
-        logout(request)
-        kwargs_cookie = dict(domain=settings.COOKIES_DOMAIN, samesite="Strict")
-        response.delete_cookie("staff_user", **kwargs_cookie)
-        response.delete_cookie(f"{service_name}-username", **kwargs_cookie)
-        response.delete_cookie(f"{service_name}-token", **kwargs_cookie)
+    delete_session(request, service_name)
+    logout(request)
+    kwargs_cookie = dict(domain=settings.COOKIES_DOMAIN, samesite="Strict")
+    response.delete_cookie("staff_user", **kwargs_cookie)
+    response.delete_cookie(f"{service_name}-username", **kwargs_cookie)
+    response.delete_cookie(f"{service_name}-token", **kwargs_cookie)
     return response
