@@ -51,6 +51,10 @@ jobs:
           make -f Makefile.circle build-requirements
           make -f Makefile.circle build VERSION=$CIRCLE_TAG
           make -f Makefile.circle push
+    - persist_to_workspace:
+        root: .
+        paths:
+          - .
   build-enterprise:
     executor: codecov-deploy
     steps:
@@ -98,7 +102,6 @@ jobs:
           apk add git
           chmod +x codecov-alpine
           ./codecov-alpine -R . --url https://stage-web.codecov.dev -t $CODECOV_STAGING_TOKEN -F unit
-
   portable:
     executor: codecov-deploy
     steps:
@@ -108,11 +111,34 @@ jobs:
           <<: *gcloud_auth
       - run: echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKER_USERNAME" --password-stdin
       - run: make -f Makefile.circle docker-deploy
-
+  dive:
+      executor: codecov-deploy
+      steps:
+      - attach_workspace:
+          at: .
+      - setup_remote_docker
+      - run:
+          <<: *gcloud_auth
+      - run:
+          name: Dive image
+          command: |
+            make -f Makefile.circle dive
+  dive-enterprise:
+      executor: codecov-deploy
+      steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          <<: *gcloud_auth_enterprise
+      - run:
+          name: Dive enterprise image
+          command: |
+            make -f Makefile.circle dive-enterprise
   staging:
     executor: codecov-deploy
     steps:
-    - checkout
+    - attach_workspace:
+        at: .
     - setup_remote_docker
     - run:
         <<: *gcloud_auth
@@ -120,11 +146,11 @@ jobs:
         name: docker build, tag, and upload to staging
         command: |
           make -f Makefile.circle staging
-
   production:
     executor: codecov-deploy
     steps:
-    - checkout
+    - attach_workspace:
+        at: .
     - setup_remote_docker
     - run:
         <<: *gcloud_auth
@@ -156,17 +182,6 @@ jobs:
           name: Release Enterprise to Dockerhub
           command: |
             make -B -f Makefile.circle release-enterprise
-  deploy:
-    executor: codecov-deploy
-    steps:
-    - checkout
-    - setup_remote_docker
-    - run:
-        <<: *gcloud_auth
-    - run:
-        name: deploy to k8s
-        command: |-
-          make -f Makefile.circle tag
 
 workflows:
   version: 2
@@ -189,6 +204,13 @@ workflows:
                 - /enterprise-.*/
                 - /qa-.*/
       - test:
+          context: "circleci google deploy context"
+          requires:
+            - build
+          filters:
+            tags:
+              only: /.*/
+      - dive:
           context: "circleci google deploy context"
           requires:
             - build
@@ -220,7 +242,20 @@ workflows:
           requires:
             - build
             - test
+            - dive
           filters:
+            branches:
+              only: master
+      - dive-enterprise:
+          context:
+            - "circleci google deploy context"
+          requires:
+            - build-enterprise
+          filters:
+            tags:
+              only:
+                - /^qa-.*/
+                - /^enterprise-.*/
             branches:
               only: master
       - enterprise:
@@ -230,6 +265,7 @@ workflows:
           requires:
             - build-enterprise
             - test
+            - dive-enterprise
           filters:
             tags:
               only:
@@ -259,11 +295,3 @@ workflows:
               only: /^enterprise-.*/
             branches:
               ignore: /.*/
-      - deploy:
-          context: "circleci google deploy context"
-          requires:
-            - build
-            - test
-          filters:
-            branches:
-              only: master
