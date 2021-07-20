@@ -56,6 +56,7 @@ build-enterprise:
 		-t ${ENTERPRISE_GCR_REPO}:latest \
 		--build-arg REQUIREMENTS_IMAGE=${GCR_REPO}:${REQUIREMENTS_TAG}
 
+
 # CIRCLECI
 # job: portable
 # builds an image for deploying a portable version of the containers
