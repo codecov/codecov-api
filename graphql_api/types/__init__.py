@@ -4,6 +4,7 @@ from ariadne.contrib.django.scalars import datetime_scalar
 from ..helpers.ariadne import ariadne_load_local_graphql
 from .query import query, query_bindable
 from .me import me, me_bindable
+from .branch import branch, branch_bindable
 from .commit import commit, commit_bindable
 from .upload import upload, upload_bindable
 from .coverage_totals import coverage_totals, coverage_totals_bindable
@@ -21,6 +22,7 @@ errors = ariadne_load_local_graphql(__file__, "./errors")
 types = [
     query,
     me,
+    branch,
     commit,
     user,
     owner,
@@ -38,6 +40,7 @@ types = [
 bindables = [
     query_bindable,
     me_bindable,
+    branch_bindable,
     commit_bindable,
     user_bindable,
     owner_bindable,

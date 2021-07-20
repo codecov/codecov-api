@@ -12,6 +12,7 @@ repository_bindable.set_alias("latestCommitAt", "latest_commit_at")
 @repository_bindable.field("branch")
 def resolve_branch(repository, info, name):
     command = info.context["executor"].get_command("branch")
+    return command.fetch_branch(repository, name)
 
 
 @repository_bindable.field("author")
