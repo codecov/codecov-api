@@ -133,7 +133,7 @@ dive:
 	CI=true dive ${GCR_REPO}:latest
 
 dive-enterprise:
-	CI=true dive ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION}
+	CI=true dive ${ENTERPRISE_GCR_REPO}:latest
 
 # LOCAL
 # used to test circleci jobs
