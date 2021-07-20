@@ -36,11 +36,6 @@ class RepositoryViewSetTestSuite(InternalAPITest):
             }
         return self.client.get(reverse("repos-detail", kwargs=kwargs), data=data)
 
-    def _get_stats(self, kwargs={}, data={}):
-        if kwargs == {}:
-            kwargs = {"service": self.org.service, "owner_username": self.org.username}
-        return self.client.get(reverse("repos-statistics", kwargs=kwargs), data=data)
-
     def _update(self, kwargs={}, data={}):
         if kwargs == {}:
             kwargs = {
@@ -564,57 +559,6 @@ class TestRepositoryViewSetExtraActions(RepositoryViewSetTestSuite):
         )
 
         self.client.force_login(user=self.user)
-
-    def test_stats_for_all_repos(self):
-        response = self._get_stats()
-        stats = {
-            "repos_count": 2,
-            "sum_lines": self.repo1Commit2.totals["n"] + self.repo2Commit2.totals["n"],
-            "sum_hits": self.repo1Commit2.totals["h"] + self.repo2Commit2.totals["h"],
-            "sum_partials": self.repo1Commit2.totals["p"]
-            + self.repo2Commit2.totals["p"],
-            "sum_misses": self.repo1Commit2.totals["m"] + self.repo2Commit2.totals["m"],
-            "weighted_coverage": 25.0,
-            "average_complexity": 0,
-            "weighted_coverage_change": -41.6666666666667,
-        }
-
-        assert response.data == stats
-
-    def test_stats_for_single_repos(self):
-        response = self._get_stats(data={"names": ["A"]})
-        stats = {
-            "repos_count": 1,
-            "sum_lines": self.repo1Commit2.totals["n"],
-            "sum_hits": self.repo1Commit2.totals["h"],
-            "sum_partials": self.repo1Commit2.totals["p"],
-            "sum_misses": self.repo1Commit2.totals["m"],
-            "weighted_coverage": 0.0,
-            "average_complexity": 0,
-            "weighted_coverage_change": -100.0,
-        }
-
-        assert response.data == stats
-
-    def test_stats_with_invalid_datetime_crashes(self):
-        with pytest.raises(ValueError):
-            self._get_stats(data={"before_date": "A"})
-
-    def test_stats_with_datetime_doesnt_crash(self):
-        response = self._get_stats(data={"before_date": self.repo1Commit2.timestamp})
-        stats = {
-            "repos_count": 2,
-            "sum_lines": self.repo1Commit2.totals["n"] + self.repo2Commit2.totals["n"],
-            "sum_hits": self.repo1Commit2.totals["h"] + self.repo2Commit2.totals["h"],
-            "sum_partials": self.repo1Commit2.totals["p"]
-            + self.repo2Commit2.totals["p"],
-            "sum_misses": self.repo1Commit2.totals["m"] + self.repo2Commit2.totals["m"],
-            "weighted_coverage": 25.0,
-            "average_complexity": 0,
-            "weighted_coverage_change": -41.6666666666667,
-        }
-
-        assert response.data == stats
 
 
 @patch("internal_api.repo.repository_accessors.RepoAccessors.get_repo_permissions")
