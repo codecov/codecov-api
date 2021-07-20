@@ -89,7 +89,7 @@ RUN         rm -rf /home/codecov
 USER        codecov
 COPY        --from=build /home/enterprise.sh /home/enterprise.sh
 COPY        --from=build /home/api /home/api
-
+COPY        . /app
 ARG         RELEASE_VERSION
 ENV         RELEASE_VERSION $RELEASE_VERSION
 ENV         DJANGO_SETTINGS_MODULE "codecov.settings_enterprise"
