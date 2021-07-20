@@ -1,8 +1,9 @@
-from ariadne import format_error
-from asyncio import iscoroutine
 from contextlib import suppress
+from asyncio import iscoroutine
 
+from ariadne import format_error
 from asgiref.sync import sync_to_async
+from django.contrib.auth.models import AnonymousUser
 
 from codecov_auth.authentication import CodecovTokenAuthentication
 from codecov.commands.exceptions import BaseException
@@ -25,8 +26,7 @@ class AsyncGraphqlView(GraphQLView):
 
     async def authenticate(self, request):
         user = await get_user(request)
-        if user:
-            request.user = user
+        request.user = user or AnonymousUser()
 
     async def post(self, request, *args, **kwargs):
         await self.authenticate(request)

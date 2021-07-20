@@ -182,43 +182,6 @@ class RepositoryViewSet(
         )
         return super().destroy(request, *args, **kwargs)
 
-    @action(detail=False, url_path="statistics")
-    def statistics(self, request, *args, **kwargs):
-        # Only get viewable repositories
-        queryset = self.owner.repository_set.viewable_repos(self.request.user)
-
-        # Filter the repositories by the list of repositories if it is set
-        if self.request.query_params.get("names"):
-            queryset = queryset.filter(
-                name__in=self.request.query_params.get("names", [])
-            )
-
-        # Then only get the repositories with totals and then annotate the latest commit
-        results = (
-            queryset.with_latest_commit_totals_before(
-                self.request.query_params.get(
-                    "before_date", timezone.now().isoformat()
-                ),
-                self.request.query_params.get("branch", None),
-                include_previous_totals=True,
-            )
-            .exclude_uncovered()
-            .get_aggregated_coverage()
-        )
-
-        return Response(
-            data={
-                "repos_count": results["repo_count"],
-                "sum_lines": results["sum_lines"],
-                "sum_hits": results["sum_hits"],
-                "sum_partials": results["sum_partials"],
-                "sum_misses": results["sum_misses"],
-                "weighted_coverage": results["weighted_coverage"],
-                "weighted_coverage_change": results["weighted_coverage_change"],
-                "average_complexity": results["average_complexity"],
-            }
-        )
-
     @action(detail=True, methods=["patch"], url_path="regenerate-upload-token")
     def regenerate_upload_token(self, request, *args, **kwargs):
         repo = self.get_object()
