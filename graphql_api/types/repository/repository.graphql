@@ -6,6 +6,6 @@ type Repository {
   latestCommitAt: DateTime
   updatedAt: DateTime
   author: Owner!
-
+  branch:(name: String!)
   commit(id: String!): Commit
 }
