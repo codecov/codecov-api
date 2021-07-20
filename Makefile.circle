@@ -130,10 +130,10 @@ release-enterprise:
 
 dive:
 	docker load -i app.tar
-	CI=true dive ${GCR_REPO}:latest
+	CI=true dive ${GCR_REPO}:latest --lowestEfficiency=0.97 --highestUserWastedPercent=0.06
 
 dive-enterprise:
-	CI=true dive ${ENTERPRISE_GCR_REPO}:latest
+	CI=true dive ${ENTERPRISE_GCR_REPO}:latest --lowestEfficiency=0.9999 --highestUserWastedPercent=0.02
 
 # LOCAL
 # used to test circleci jobs
