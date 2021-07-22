@@ -27,6 +27,4 @@ type trackingMetadata {
   planUserCount: Int,
   createstamp: DateTime,
   updatestamp: DateTime,
-  studentCreatedAt: DateTime,
-  studentUpdatedAt: DateTime,
 }
