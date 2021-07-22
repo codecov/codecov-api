@@ -1,0 +1,11 @@
+union UpdateProfileError = UnauthenticatedError | ValidationError
+
+type UpdateProfilePayload {
+    error: CreateApiTokenError
+    me: Me
+}
+
+input UpdateProfileInput {
+  email: String
+  name: String
+}

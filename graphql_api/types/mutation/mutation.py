@@ -7,6 +7,7 @@ from .sync_with_git_provider import (
 )
 from .set_yaml_on_owner import resolve_set_yaml_on_owner, error_set_yaml_error
 from .delete_session import resolve_delete_session, error_delete_session
+from .update_profile import resolve_update_profile, error_update_profile
 
 mutation_bindable = MutationType()
 
@@ -15,6 +16,7 @@ mutation_bindable.field("createApiToken")(resolve_create_api_token)
 mutation_bindable.field("setYamlOnOwner")(resolve_set_yaml_on_owner)
 mutation_bindable.field("syncWithGitProvider")(resolve_sync_with_git_provider)
 mutation_bindable.field("deleteSession")(resolve_delete_session)
+mutation_bindable.field("updateProfile")(resolve_update_profile)
 
 mutation_resolvers = [
     mutation_bindable,
@@ -22,4 +24,5 @@ mutation_resolvers = [
     error_set_yaml_error,
     error_sync_with_git_provider,
     error_delete_session,
+    error_update_profile,
 ]
