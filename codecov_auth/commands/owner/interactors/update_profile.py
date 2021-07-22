@@ -6,8 +6,8 @@ from codecov.commands.exceptions import Unauthenticated, ValidationError
 
 
 class UpdateProfileForm(forms.Form):
-    name = forms.CharField()
-    email = forms.EmailField()
+    name = forms.CharField(required=False)
+    email = forms.EmailField(required=False)
 
 
 class UpdateProfileInteractor(BaseInteractor):
