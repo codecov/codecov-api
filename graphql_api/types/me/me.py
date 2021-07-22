@@ -75,3 +75,8 @@ def resolve_sessions(current_user, _, **kwargs):
 @me_bindable.field("isSyncingWithGitProvider")
 def resolve_is_syncing_with_git_provider(current_user, _, **kwargs):
     return is_syncing(current_user)
+
+
+@me_bindable.field("trackingMetadata")
+def resolve_tracking_data(current_user, _, **kwargs):
+    return current_user
