@@ -14,17 +14,17 @@ type Me {
 # Temporary type to gather the different attributes for tracking until we have
 # a valid place in the graph for those attributes
 type trackingMetadata {
-  ownerid: Int!,
-  serviceId: String!,
-  plan: String,
-  staff: Boolean,
-  hasYaml: String,
-  service: String!,
-  bot: String,
-  delinquent: Boolean,
-  didTrial: Boolean,
-  planProvider: String,
-  planUserCount: Int,
-  createstamp: DateTime,
-  updatestamp: DateTime,
+  ownerid: Int!
+  serviceId: String!
+  plan: String
+  staff: Boolean
+  hasYaml: String
+  service: String!
+  bot: String
+  delinquent: Boolean
+  didTrial: Boolean
+  planProvider: String
+  planUserCount: Int
+  createstamp: DateTime
+  updatestamp: DateTime
 }
