@@ -3,4 +3,6 @@ type User {
   name: String
   avatarUrl: String
   student: Boolean!
+  studentCreatedAt: DateTime,
+  studentUpdatedAt: DateTime,
 }

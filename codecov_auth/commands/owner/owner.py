@@ -4,6 +4,7 @@ from codecov_auth.models import Owner, Session
 from .interactors.create_api_token import CreateApiTokenInteractor
 from .interactors.set_yaml_on_owner import SetYamlOnOwnerInteractor
 from .interactors.delete_session import DeleteSessionInteractor
+from .interactors.update_profile import UpdateProfileInteractor
 
 
 class OwnerCommands(BaseCommand):
@@ -15,3 +16,6 @@ class OwnerCommands(BaseCommand):
 
     def set_yaml_on_owner(self, username, yaml):
         return self.get_interactor(SetYamlOnOwnerInteractor).execute(username, yaml)
+
+    def update_profile(self, **kwargs):
+        return self.get_interactor(UpdateProfileInteractor).execute(**kwargs)

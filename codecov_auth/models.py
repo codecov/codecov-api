@@ -127,6 +127,10 @@ class Owner(models.Model):
         super().save(*args, **kwargs)
 
     @property
+    def has_yaml(self):
+        return self.yaml is not None
+
+    @property
     def has_legacy_plan(self):
         return self.plan is None or not self.plan.startswith("users")
 

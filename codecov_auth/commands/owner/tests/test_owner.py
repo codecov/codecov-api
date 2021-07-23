@@ -28,3 +28,9 @@ class OwnerCommandsTest(TransactionTestCase):
         yaml = "codecov: something"
         self.command.set_yaml_on_owner(username, yaml)
         interactor_mock.assert_called_once_with(username, yaml)
+
+    @patch("codecov_auth.commands.owner.owner.UpdateProfileInteractor.execute")
+    def test_update_profile_delegate_to_interactor(self, interactor_mock):
+        name = "codecov name"
+        self.command.update_profile(name=name)
+        interactor_mock.assert_called_once_with(name=name)

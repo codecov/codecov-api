@@ -424,3 +424,10 @@ class TestOwnerModel(TransactionTestCase):
         org.save()
 
         self.assertEqual(org.student_count, 3)
+
+    def test_has_yaml(self):
+        org = OwnerFactory(yaml=None)
+        assert org.has_yaml is False
+        org.yaml = {"require_ci_to_pass": True}
+        org.save()
+        assert org.has_yaml is True
