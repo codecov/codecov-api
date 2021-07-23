@@ -15,19 +15,18 @@ class RefreshService(object):
         return f"refresh_{ownerid}"
 
     def is_refreshing(self, ownerid):
-        data_task = self.redis.hget("refresh", ownerid)
+        key_name = self._get_key_name(ownerid)
+        data_task = self.redis.get(key_name)
         if not data_task:
             return False
         try:
             res = result_from_tuple(loads(data_task), app=celery_app)
         except ValueError:
-            self.redis.hdel("refresh", ownerid)
-            self.redis.delete(self._get_key_name(ownerid))
+            self.redis.delete(key_name)
             return False
         has_failed = res.failed() or (res.parent and res.parent.failed())
         if res.successful() or has_failed:
-            self.redis.hdel("refresh", ownerid)
-            self.redis.delete(self._get_key_name(ownerid))
+            self.redis.delete(key_name)
             return False
         # task is not success, nor failed, so probably pending or in progress
         return True
