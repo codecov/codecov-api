@@ -34,7 +34,18 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
                 "user": {
                     "username": self.user.username,
                     "avatarUrl": self.user.avatar_url,
-                }
+                },
+            }
+        }
+
+    def test_when_tracking_metadata(self):
+        query = "{ me { trackingMetadata { ownerid } } }"
+        data = self.gql_request(query, user=self.user)
+        assert data == {
+            "me": {
+                "trackingMetadata": {
+                    "ownerid": self.user.ownerid,
+                },
             }
         }
 
