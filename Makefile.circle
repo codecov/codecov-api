@@ -135,6 +135,9 @@ dive:
 dive-enterprise:
 	CI=true dive ${ENTERPRISE_GCR_REPO}:latest --lowestEfficiency=0.9999 --highestUserWastedPercent=0.02
 
+deep-dive:
+	deep-dive ${ENTERPRISE_GCR_REPO}:latest
+
 # LOCAL
 # used to test circleci jobs
 # example$ make circleci-local JOB=build
