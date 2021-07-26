@@ -387,7 +387,6 @@ class Owner(models.Model):
     def set_free_plan(self):
         log.info(f"Setting plan to users-free for owner {self.ownerid}")
         self.plan = "users-free"
-        self.plan_auto_activate = True
         self.plan_activated_users = None
         self.plan_user_count = 5
         self.stripe_subscription_id = None

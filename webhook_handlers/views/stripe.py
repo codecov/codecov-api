@@ -133,7 +133,6 @@ class StripeWebhookHandler(APIView):
 
         owner.plan = subscription.plan.name
         owner.plan_user_count = subscription.quantity
-        owner.plan_auto_activate = True
         owner.stripe_subscription_id = subscription.id
         owner.stripe_customer_id = subscription.customer
 
@@ -198,7 +197,6 @@ class StripeWebhookHandler(APIView):
 
         owner.plan = subscription.plan.name
         owner.plan_user_count = subscription.quantity
-        owner.plan_auto_activate = True
         owner.save()
 
         SegmentService().identify_user(owner)
