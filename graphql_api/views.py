@@ -2,6 +2,7 @@ import logging
 from contextlib import suppress
 from asyncio import iscoroutine
 
+from sentry_sdk import capture_exception
 from ariadne import format_error
 from asgiref.sync import sync_to_async
 from django.contrib.auth.models import AnonymousUser
@@ -57,6 +58,7 @@ class AsyncGraphqlView(GraphQLView):
         else:
             # otherwise it's not supposed to happen, so we log it
             log.error("GraphQL internal server error", exc_info=error.original_error)
+            capture_exception(error.original_error)
         return formatted
 
 
