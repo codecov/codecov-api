@@ -30,13 +30,13 @@ class SetYamlOnOwnerInteractor(BaseInteractor):
         except Owner.DoesNotExist:
             raise NotFound()
 
-    def convert_yaml_to_dict(self, yaml_input, show_secrets_for):
+    def convert_yaml_to_dict(self, yaml_input):
         yaml_safe = html.escape(yaml_input, quote=False)
         yaml_dict = yaml.safe_load(yaml_safe)
         if not yaml_dict:
             return None
         try:
-            return validate_yaml(yaml_dict, show_secrets_for=show_secrets_for)
+            return validate_yaml(yaml_dict, show_secrets_for=None)
         except InvalidYamlException as e:
             message = f"Error at {str(e.error_location)}: {e.error_message}"
             raise ValidationError(message)
@@ -46,6 +46,6 @@ class SetYamlOnOwnerInteractor(BaseInteractor):
         self.validate()
         self.owner = self.get_owner(username)
         self.authorize()
-        self.owner.yaml = self.convert_yaml_to_dict(yaml_input, show_secrets_for=(self.owner.service_id))
+        self.owner.yaml = self.convert_yaml_to_dict(yaml_input)
         self.owner.save()
         return self.owner
