@@ -24,10 +24,10 @@ def generate_schema_that_raise_with(exception):
 
 
 class ArianeViewTestCase(GraphQLTestHelper, TestCase):
-    async def do_query(self, schema):
+    async def do_query(self, schema, query="{ failing }"):
         view = AsyncGraphqlView.as_view(schema=schema)
         request = RequestFactory().post(
-            "/graphql/gh", {"query": "{ failing }"}, content_type="application/json"
+            "/graphql/gh", {"query": query}, content_type="application/json"
         )
         match = ResolverMatch(func=lambda: None, args=(), kwargs={"service": "github"})
 
@@ -40,7 +40,6 @@ class ArianeViewTestCase(GraphQLTestHelper, TestCase):
     async def test_when_debug_is_true(self):
         schema = generate_schema_that_raise_with(Exception("hello"))
         data = await self.do_query(schema)
-        print(data)
         assert data["errors"] is not None
         assert data["errors"][0]["message"] == "hello"
         assert data["errors"][0]["extensions"] is not None
@@ -49,7 +48,6 @@ class ArianeViewTestCase(GraphQLTestHelper, TestCase):
     async def test_when_debug_is_false_and_random_exception(self):
         schema = generate_schema_that_raise_with(Exception("hello"))
         data = await self.do_query(schema)
-        print(data)
         assert data["errors"] is not None
         assert data["errors"][0]["message"] == "INTERNAL SERVER ERROR"
         assert data["errors"][0]["type"] == "ServerError"
@@ -59,8 +57,17 @@ class ArianeViewTestCase(GraphQLTestHelper, TestCase):
     async def test_when_debug_is_false_and_exception_we_know(self):
         schema = generate_schema_that_raise_with(Unauthorized())
         data = await self.do_query(schema)
-        print(data)
         assert data["errors"] is not None
         assert data["errors"][0]["message"] == "You are not authorized"
         assert data["errors"][0]["type"] == "Unauthorized"
         assert data["errors"][0].get("extensions") is None
+
+    @override_settings(DEBUG=False)
+    async def test_when_bad_query(self):
+        schema = generate_schema_that_raise_with(Unauthorized())
+        data = await self.do_query(schema, " { fieldThatDoesntExist }")
+        assert data["errors"] is not None
+        assert (
+            data["errors"][0]["message"]
+            == "Cannot query field 'fieldThatDoesntExist' on type 'Query'."
+        )
