@@ -18,7 +18,7 @@ type trackingMetadata {
   serviceId: String!
   plan: String
   staff: Boolean
-  hasYaml: String
+  hasYaml: Boolean!
   service: String!
   bot: String
   delinquent: Boolean
