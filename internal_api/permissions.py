@@ -100,6 +100,33 @@ class RepositoryArtifactPermissions(BasePermission):
             return False
         raise Http404()
 
+class BasePickingPermissions(BasePermission):
+
+    permissions_service = RepositoryPermissionsService()
+    message = (
+        f"Permission denied: some possbile reasons for this are (1) the "
+        f"user doesn't have permission to view the specific resource; "
+        f"or (2) the organization has a per-user plan, and the user is "
+        f"trying to view a private repo but is not activated."
+    )
+
+    def has_permission(self, request, view):
+        if view.repo.private:
+            user_activated_permissions = (
+                request.user.is_authenticated
+                and self.permissions_service.user_is_activated(request.user, view.owner)
+            )
+        else:
+            user_activated_permissions = True
+        has_permissions = self.permissions_service.has_read_permissions(request.user, view.repo)
+
+        if has_permissions and user_activated_permissions:
+            return True
+        if has_permissions and not user_activated_permissions:
+            # user that can access the repo; but are not activated
+            return False
+        raise Http404()
+
 
 class ChartPermissions(BasePermission):
     permissions_service = RepositoryPermissionsService()

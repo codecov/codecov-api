@@ -9,7 +9,7 @@ from rest_framework import viewsets, mixins
 from internal_api.mixins import RepoPropertyMixin
 from core.models import Pull, Commit
 from .serializers import PullSerializer
-from internal_api.permissions import RepositoryArtifactPermissions
+from internal_api.permissions import BasePickingPermissions
 
 
 log = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ class PullViewSet(
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ["state"]
     ordering_fields = ("pullid",)
-    permission_classes = [RepositoryArtifactPermissions]
+    permission_classes = [BasePickingPermissions]
 
     def get_object(self):
         pullid = self.kwargs.get("pk")
