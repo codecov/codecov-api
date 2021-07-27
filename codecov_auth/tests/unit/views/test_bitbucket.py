@@ -1,9 +1,14 @@
-from uuid import UUID
+from unittest.mock import patch
+
+from django.test import TestCase
 from django.http.cookie import SimpleCookie
-import pytest
 from django.urls import reverse
+from codecov_auth.views.bitbucket import BitbucketLoginView
+from codecov_auth.models import Owner
 from shared.torngit.bitbucket import Bitbucket
 from shared.torngit.exceptions import TorngitServer5xxCodeError
+from utils.encryption import encryptor
+
 
 def test_get_bitbucket_redirect(client, settings, mocker):
     mocked_get = mocker.patch.object(
@@ -48,9 +53,51 @@ def test_get_bitbucket_redirect_bitbucket_unavailable(client, settings, mocker):
     assert res.url == url
     mocked_get.assert_called_with(settings.BITBUCKET_REDIRECT_URI)
 
-@pytest.mark.skip(reason="no way of currently testing this")
+
+async def fake_get_authenticated_user():
+    return {
+        "username": "ThiagoCodecov",
+        "has_2fa_enabled": None,
+        "display_name": "Thiago Ramos",
+        "account_id": "5bce04c759d0e84f8c7555e9",
+        "links": {
+            "hooks": {
+                "href": "https://bitbucket.org/!api/2.0/users/%7B9a01f37b-b1b2-40c5-8c5e-1a39f4b5e645%7D/hooks"
+            },
+            "self": {
+                "href": "https://bitbucket.org/!api/2.0/users/%7B9a01f37b-b1b2-40c5-8c5e-1a39f4b5e645%7D"
+            },
+            "repositories": {
+                "href": "https://bitbucket.org/!api/2.0/repositories/%7B9a01f37b-b1b2-40c5-8c5e-1a39f4b5e645%7D"
+            },
+            "html": {
+                "href": "https://bitbucket.org/%7B9a01f37b-b1b2-40c5-8c5e-1a39f4b5e645%7D/"
+            },
+            "avatar": {
+                "href": "https://avatar-management--avatars.us-west-2.prod.public.atl-paas.net/initials/TR-6.png"
+            },
+            "snippets": {
+                "href": "https://bitbucket.org/!api/2.0/snippets/%7B9a01f37b-b1b2-40c5-8c5e-1a39f4b5e645%7D"
+            },
+        },
+        "nickname": "thiago",
+        "created_on": "2018-11-06T12:12:59.588751+00:00",
+        "is_staff": False,
+        "location": None,
+        "account_status": "active",
+        "type": "user",
+        "uuid": "{9a01f37b-b1b2-40c5-8c5e-1a39f4b5e645}",
+    }
+
+
 def test_get_bitbucket_already_token(client, settings, mocker, db, mock_redis):
-    #todo Thiago
+    mocker.patch.object(
+        Bitbucket, "get_authenticated_user", side_effect=fake_get_authenticated_user
+    )
+    async def fake_list_teams():
+        return []
+    mocker.patch.object(Bitbucket, "list_teams", side_effect=fake_list_teams)
+    # todo Thiago
     mocker.patch(
         "services.task.TaskService.refresh",
         return_value=mocker.MagicMock(
@@ -68,6 +115,8 @@ def test_get_bitbucket_already_token(client, settings, mocker, db, mock_redis):
     settings.BITBUCKET_REDIRECT_URI = "http://localhost"
     settings.BITBUCKET_CLIENT_ID = "testqmo19ebdkseoby"
     settings.BITBUCKET_CLIENT_SECRET = "testfi8hzehvz453qj8mhv21ca4rf83f"
+    settings.CODECOV_DASHBOARD_URL = "dashboard.value"
+    settings.COOKIE_SECRET = "aaaaa"
     url = reverse("bitbucket-login")
     client.cookies = SimpleCookie(
         {
@@ -80,13 +129,18 @@ def test_get_bitbucket_already_token(client, settings, mocker, db, mock_redis):
         SERVER_NAME="localhost:8000",
     )
     assert res.status_code == 302
-    assert res.url == "/bb"
+    assert res.url == "dashboard.value/bb"
     assert "_oauth_request_token" in res.cookies
     cookie = res.cookies["_oauth_request_token"]
     assert cookie.value == ""
     assert cookie.get("domain") == settings.COOKIES_DOMAIN
     mocked_get.assert_called_with(
         "test1daxl4jnhegoh4", "adjLUTTvUqGneVxpcuhJKG8RVrFvL7sn", "8519288973"
+    )
+    owner = Owner.objects.get(username="ThiagoCodecov", service="bitbucket")
+    assert (
+        encryptor.decode(owner.oauth_token)
+        == "test6tl3evq7c8vuyn:testdm61tppb5x0tam7nae3qajhcepzz"
     )
 
 
@@ -119,3 +173,26 @@ def test_get_bitbucket_already_token_no_cookie(
     assert res.status_code == 302
     assert res.url == "/login/bitbucket"
     assert not mocked_get.called
+
+
+class TestBitbucketLoginView(TestCase):
+    async def test_fetch_user_data(self):
+        async def fake_list_teams():
+            return []
+        with patch.object(
+            Bitbucket, "get_authenticated_user", side_effect=fake_get_authenticated_user
+        ):
+            with patch.object(Bitbucket, "list_teams", side_effect=fake_list_teams):
+                view = BitbucketLoginView()
+                token = {"key": "aaaa", "secret": "bbbb"}
+                res = await view.fetch_user_data(token)
+                assert res == {
+                    "has_private_access": False,
+                    "is_student": False,
+                    "orgs": [],
+                    "user": {
+                        "access_token": "aaaa:bbbb",
+                        "id": "9a01f37b-b1b2-40c5-8c5e-1a39f4b5e645",
+                        "login": "ThiagoCodecov",
+                    },
+                }
