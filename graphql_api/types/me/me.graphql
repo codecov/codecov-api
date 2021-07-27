@@ -1,6 +1,6 @@
 
 type Me {
-  email: String!
+  email: String
   user: User!
   owner: Owner!
   sessions(first: Int, after: String, last: Int, before: String): SessionConnection!
