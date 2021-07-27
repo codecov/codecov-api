@@ -20,6 +20,7 @@ import codecov.views as views
 from django.conf import settings
 
 urlpatterns = [
+    path("api/", include("api.urls")),
     path(INTERNAL_API_PREFIX, include("internal_api.urls")),
     re_path("^validate/?", include("validate.urls")),
     path("health/", views.health),
