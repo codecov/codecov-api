@@ -78,11 +78,9 @@ def test_is_refreshing_false_when_task_is_successful(
     mock_result_from_tuple, mock_refresh, mock_redis
 ):
     RefreshService().trigger_refresh(5, "codecov")
-    assert mock_redis.hget("refresh", 5) == b'{"random": "data"}'
     assert mock_redis.get("refresh_5") == b'{"random": "data"}'
     mock_result_from_tuple.return_value = AsyncReturnMockSuccessful()
     assert RefreshService().is_refreshing(5) is False
-    assert mock_redis.hget("refresh", 5) is None
     assert mock_redis.get("refresh_5") is None
 
 
