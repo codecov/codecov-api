@@ -17,7 +17,7 @@ class GetFinalYamlInteractor(BaseInteractor):
                 commit.commitid, repository_service
             )
             yaml_dict = safe_load(yaml_on_repo)
-            return validate_yaml(yaml_dict, show_secrets=False)
+            return validate_yaml(yaml_dict, show_secrets_for=None)
         except:
             # fetching, parsing, validating the yaml inside the commit can
             # have various exception, which we do not care about to get the final

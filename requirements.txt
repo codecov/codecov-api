@@ -139,13 +139,6 @@ idna==2.8
     #   requests
     #   rfc3986
     #   yarl
-importlib-metadata==4.6.1
-    # via
-    #   kombu
-    #   pluggy
-    #   pre-commit
-    #   pytest
-    #   virtualenv
 iniconfig==1.1.1
     # via pytest
 intervaltree==3.1.0
@@ -285,7 +278,7 @@ sentry-sdk==0.14.3
     # via -r requirements.in
 setproctitle==1.1.10
     # via -r requirements.in
-git+ssh://git@github.com/codecov/shared.git@v0.6.2#egg=shared
+git+ssh://git@github.com/codecov/shared.git@v0.6.3#egg=shared
     # via -r requirements.in
 six==1.15.0
     # via
@@ -334,11 +327,7 @@ toml==0.10.2
 tornado==6.0.4
     # via shared
 typing-extensions==3.7.4.3
-    # via
-    #   ariadne
-    #   asgiref
-    #   importlib-metadata
-    #   yarl
+    # via ariadne
 urllib3==1.25.10
     # via
     #   botocore
@@ -362,8 +351,6 @@ wrapt==1.12.1
     #   vcrpy
 yarl==1.5.1
     # via vcrpy
-zipp==3.5.0
-    # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools

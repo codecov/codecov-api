@@ -36,7 +36,7 @@ class SetYamlOnOwnerInteractor(BaseInteractor):
         if not yaml_dict:
             return None
         try:
-            return validate_yaml(yaml_dict)
+            return validate_yaml(yaml_dict, show_secrets_for=None)
         except InvalidYamlException as e:
             message = f"Error at {str(e.error_location)}: {e.error_message}"
             raise ValidationError(message)
