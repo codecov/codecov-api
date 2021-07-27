@@ -51,6 +51,8 @@ jobs:
           make -f Makefile.circle build-requirements
           make -f Makefile.circle build VERSION=$CIRCLE_TAG
           make -f Makefile.circle push
+          make -f Makefile.circle tag
+          make -f Makefile.circle save
     - persist_to_workspace:
         root: .
         paths:
@@ -74,6 +76,7 @@ jobs:
           make -f Makefile.circle build-requirements
           make -f Makefile.circle build-enterprise VERSION=$CIRCLE_TAG
           make -f Makefile.circle push-enterprise
+          make -f Makefile.circle tag-enterprise
   test:
     executor: codecov-api
     steps:
