@@ -4,7 +4,6 @@ from unittest.mock import patch
 
 from rest_framework.test import APITestCase
 from rest_framework.reverse import reverse
-from rest_framework import status
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import (
@@ -90,3 +89,63 @@ class PullViewSetTests(APITestCase):
         self.assertEqual(
             response.status_code, 404, "got unexpected response: {}".format(content)
         )
+
+    def test_can_get_public_repo_pull_detail_when_not_authenticated(
+        self, mock_provider
+    ):
+        self.client.logout()
+        mock_provider.return_value = True, True
+        author = OwnerFactory()
+        repo = RepositoryFactory(private=False, author=author)
+        pull = PullFactory(repository=repo)
+        response = self.client.get(
+            reverse(
+                "pulls-detail",
+                kwargs={
+                    "service": author.service,
+                    "owner_username": author.username,
+                    "repo_name": repo.name,
+                    "pk": pull.pullid,
+                },
+            )
+        )
+        assert response.status_code == 200
+        assert response.data["pullid"] == pull.pullid
+
+    def test_get_pull(self, mock_provider):
+        mock_provider.return_value = True, True
+        self.client.force_login(user=self.user)
+        response = self.client.get("/internal/github/codecov/testRepoName/pulls/10/")
+        self.assertEqual(response.status_code, 200)
+        content = json.loads(response.content.decode())
+        self.assertEqual(content["pullid"], 10)
+
+    def test_get_pull_no_permissions(self, mock_provider):
+        self.user.permission = []
+        self.user.save()
+        mock_provider.return_value = False, False
+        self.client.force_login(user=self.user)
+        response = self.client.get("/api/github/codecov/testRepoName/pulls/10/")
+        self.assertEqual(response.status_code, 404)
+
+    def test_update_pull_user_provided_base(self, mock_provider):
+        mock_provider.return_value = True, True
+        self.client.force_login(user=self.user)
+        response = self.client.put(
+            "/api/github/codecov/testRepoName/pulls/10/",
+            {"user_provided_base_sha": "new-sha"},
+        )
+        self.assertEqual(response.status_code, 200)
+        content = json.loads(response.content.decode())
+        self.assertEqual(content["user_provided_base_sha"], "new-sha")
+
+    def test_update_pull_user_provided_base_no_permissions(self, mock_provider):
+        mock_provider.return_value = False, False
+        self.user.permission = []
+        self.user.save()
+        self.client.force_login(user=self.user)
+        response = self.client.put(
+            "/api/github/codecov/testRepoName/pulls/10/",
+            {"user_provided_base_sha": "new-sha"},
+        )
+        self.assertEqual(response.status_code, 404)
