@@ -15,7 +15,6 @@ class ProfilingCommit(BaseCodecovModel):
         on_delete=models.CASCADE,
         related_name="profilings",
     )
-    commit_sha = models.TextField(null=True)
 
 
 class ProfilingUpload(BaseCodecovModel):
