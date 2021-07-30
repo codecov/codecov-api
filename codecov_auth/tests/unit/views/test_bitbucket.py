@@ -97,7 +97,6 @@ def test_get_bitbucket_already_token(client, settings, mocker, db, mock_redis):
     async def fake_list_teams():
         return []
     mocker.patch.object(Bitbucket, "list_teams", side_effect=fake_list_teams)
-    # todo Thiago
     mocker.patch(
         "services.task.TaskService.refresh",
         return_value=mocker.MagicMock(
