@@ -54,3 +54,9 @@ async def resolve_list_uploads(commit, info, **kwargs):
     return await queryset_to_connection(
         queryset, ordering="id", ordering_direction=OrderingDirection.ASC, **kwargs
     )
+
+
+@commit_bindable.field("compareWithParent")
+def resolve_compare_with_parent(commit, info, **kwargs):
+    command = info.context["executor"].get_command("compare")
+    return command.compare_commit_with_parent(commit)
