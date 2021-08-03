@@ -84,12 +84,10 @@ RUN chown codecov:application /home/enterprise.sh && \
 
 FROM alpine:3.13
 
-RUN         addgroup -S application && adduser -S codecov -G application
-RUN         rm -rf /home/codecov
+RUN         addgroup -S application && adduser -S codecov -G application && rm -rf /home/codecov
 USER        codecov
 COPY        --from=build /home/enterprise.sh /home/enterprise.sh
 COPY        --from=build /home/api /home/api
-
 ARG         RELEASE_VERSION
 ENV         RELEASE_VERSION $RELEASE_VERSION
 ENV         DJANGO_SETTINGS_MODULE "codecov.settings_enterprise"
