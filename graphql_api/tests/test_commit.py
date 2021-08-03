@@ -3,7 +3,6 @@ import asyncio
 import datetime
 from unittest.mock import patch
 from django.test import TransactionTestCase
-from ariadne import graphql_sync
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory, CommitFactory
@@ -121,7 +120,6 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             query_commit
             % 'coverageFile(path: "path") { content,coverage { line,coverage } }'
         )
-
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
@@ -140,3 +138,47 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         coverageFile = data["owner"]["repository"]["commit"]["coverageFile"]
         assert coverageFile["content"] == fake_coverage["content"]
         assert coverageFile["coverage"] == fake_coverage["coverage"]
+
+    @patch(
+        "compare.commands.compare.compare.CompareCommands.compare_commit_with_parent"
+    )
+    def test_fetch_commit_compare_call_the_command(self, command_mock):
+        query = query_commit % "compareWithParent { state }"
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        fake_compare = {"state": "PENDING"}
+        f = asyncio.Future()
+        f.set_result(fake_compare)
+        command_mock.return_value = f
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        assert commit["compareWithParent"] == fake_compare
+
+    @patch("compare.commands.compare.compare.CompareCommands.get_impacted_files")
+    def test_impacted_files_comparison_call_the_command(self, command_mock):
+        query = query_commit % "compareWithParent { impactedFiles { path } }"
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        fake_compare = [
+            {
+                "path": "src/config.js",
+            },
+        ]
+        f = asyncio.Future()
+        f.set_result(fake_compare)
+        command_mock.return_value = f
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        assert commit["compareWithParent"]["impactedFiles"][0] == {
+            "path": "src/config.js"
+        }

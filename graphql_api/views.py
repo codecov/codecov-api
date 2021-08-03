@@ -9,7 +9,7 @@ from django.contrib.auth.models import AnonymousUser
 
 from codecov_auth.authentication import CodecovTokenAuthentication
 from codecov.commands.exceptions import BaseException
-from codecov.commands.executor import Executor
+from codecov.commands.executor import get_executor_from_request
 
 from .ariadne.views import GraphQLView
 from .schema import schema
@@ -40,7 +40,7 @@ class AsyncGraphqlView(GraphQLView):
         return {
             "request": request,
             "service": request.resolver_match.kwargs["service"],
-            "executor": Executor(request),
+            "executor": get_executor_from_request(request),
         }
 
     def error_formatter(self, error, debug=False):
