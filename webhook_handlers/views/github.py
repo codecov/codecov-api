@@ -2,6 +2,7 @@ import logging
 import re
 import hmac
 from hashlib import sha1
+from contextlib import suppress
 
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
@@ -12,6 +13,7 @@ from rest_framework.exceptions import PermissionDenied, NotFound
 from core.models import Repository, Branch, Commit, Pull
 from codecov_auth.models import Owner
 from services.archive import ArchiveService
+from services.billing import BillingService
 from services.redis_configuration import get_redis_connection
 from services.task import TaskService
 from utils.config import get_config
@@ -457,6 +459,16 @@ class GithubWebhookHandler(APIView):
         log.info(
             "Triggering sync_plans task", extra=dict(github_webhook_event=self.event)
         )
+        with suppress(Exception):
+            # log if users purchase GHM plans while having a stripe plan
+            username = request.data["marketplace_purchase"]["account"]["login"]
+            owner = Owner.objects.get(service="github", username=username)
+            subscription = BillingService(requesting_user=owner).get_subscription(owner)
+            if subscription.status == "active":
+                log.warning(
+                    "GHM webhook - user purchasing but has a Stripe Subscription",
+                    extra=dict(username=username),
+                )
         TaskService().sync_plans(
             sender=request.data["sender"],
             account=request.data["marketplace_purchase"]["account"],
