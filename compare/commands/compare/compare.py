@@ -1,6 +1,7 @@
 from codecov.commands.base import BaseCommand
 
 from .interactors.compare_commits import CompareCommitsInteractor
+from .interactors.get_impacted_files import GetImpactedFilesInteractor
 
 
 class CompareCommands(BaseCommand):
@@ -13,3 +14,6 @@ class CompareCommands(BaseCommand):
         return await self.get_interactor(CompareCommitsInteractor).execute(
             commit, parent_commit
         )
+
+    def get_impacted_files(self, comparison):
+        return self.get_interactor(GetImpactedFilesInteractor).execute(comparison)

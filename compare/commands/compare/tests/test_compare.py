@@ -1,6 +1,7 @@
 import asyncio
 from django.test import TransactionTestCase
 from core.tests.factories import CommitFactory
+from unittest.mock import patch
 
 from codecov_auth.tests.factories import OwnerFactory
 from compare.tests.factories import CommitComparisonFactory
@@ -30,3 +31,8 @@ class CompareCommandsTest(TransactionTestCase):
     async def test_compare_commit_when_parents(self):
         compare = await self.command.compare_commit_with_parent(self.commit)
         assert compare is not None
+
+    @patch("compare.commands.compare.compare.GetImpactedFilesInteractor.execute")
+    def test_get_impacted_files_delegrate_to_interactor(self, interactor_mock):
+        self.command.get_impacted_files(self.comparison)
+        interactor_mock.assert_called_once_with(self.comparison)
