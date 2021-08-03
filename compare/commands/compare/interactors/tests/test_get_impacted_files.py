@@ -33,20 +33,18 @@ class GetImpactedFilesInteractorTest(TransactionTestCase):
         )
         assert files == []
 
-    @patch("services.archive.ArchiveService.create_root_storage")
     @patch("services.archive.ArchiveService.read_file")
     @async_to_sync
-    async def test_when_failing_getting_file_from_storge(self, mock_read_file, _):
+    async def test_when_failing_getting_file_from_storge(self, mock_read_file):
         mock_read_file.side_effect = Exception()
         files = await GetImpactedFilesInteractor(AnonymousUser(), "github").execute(
             self.comparison_with_storage
         )
         assert files == []
 
-    @patch("services.archive.ArchiveService.create_root_storage")
     @patch("services.archive.ArchiveService.read_file")
     @async_to_sync
-    async def test_when_fetching_file(self, mock_read_file, _):
+    async def test_when_fetching_file(self, mock_read_file):
         mock_read_file.return_value = json.dumps(
             [
                 {

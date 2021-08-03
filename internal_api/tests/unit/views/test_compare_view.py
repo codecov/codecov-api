@@ -54,7 +54,6 @@ def build_commits(client):
 
 
 @patch("services.comparison.Comparison.has_unmerged_base_commits", lambda self: False)
-@patch("services.archive.ArchiveService.create_root_storage", lambda obj: None)
 @patch("services.archive.ArchiveService.read_chunks", lambda obj, sha: "")
 @patch(
     "internal_api.repo.repository_accessors.RepoAccessors.get_repo_permissions",
