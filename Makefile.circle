@@ -91,34 +91,40 @@ tag:
 	docker tag ${GCR_REPO}:latest ${GCR_REPO}:${VERSION}
 	docker push ${GCR_REPO}:${VERSION}
 
+# CIRCLECI
+# job: enterprise
+# tags latest image with git tag
+tag-enterprise:
+	docker pull ${ENTERPRISE_GCR_REPO}:latest
+	docker tag ${ENTERPRISE_GCR_REPO}:latest ${ENTERPRISE_GCR_REPO}:${VERSION}
+	docker push ${ENTERPRISE_GCR_REPO}:${VERSION}
+
+save:
+	docker save -o app.tar ${GCR_REPO}:${VERSION}
+
 # build and tag with staging tag
 # - when the docker image is uploaded to GCR with the "staging" tag, spinnaker will automatically detect the new image and deploy to the staging k8s cluster
 # - spinnaker pipeline: https://spinnaker.codecov.dev/?to=https%3A%2F%2Fspinnaker.codecov.dev%2F%23%2Fsearch#/applications/codecov-staging/executions?pipeline=api
 # - staging url: https://stage-api.codecov.dev
 staging:
-	docker build \
-		-f  Dockerfile.circle . \
-		-t ${GCR_REPO}:staging-${VERSION} \
-		--build-arg REQUIREMENTS_IMAGE=${GCR_REPO}:${REQUIREMENTS_TAG} && \
+	docker tag ${GCR_REPO}:latest ${GCR_REPO}:staging-${VERSION}
 	docker push ${GCR_REPO}:staging-${VERSION}
 
 # build and tag with production tag
 # - when the docker image is uploaded to GCR with the "production" tag, spinnaker will automatically detect the new image and deploy to the production k8s cluster
 # - spinnaker pipeline: https://spinnaker.codecov.dev/?to=https%3A%2F%2Fspinnaker.codecov.dev%2F%23%2Fsearch#/applications/codecov-production/executions?pipeline=api
 production:
-	docker build \
-		-f  Dockerfile.circle . \
-		-t ${GCR_REPO}:production-${VERSION} \
-		--build-arg REQUIREMENTS_IMAGE=${GCR_REPO}:${REQUIREMENTS_TAG} && \
+	docker load -i app.tar
+	docker tag ${GCR_REPO}:latest ${GCR_REPO}:production-${VERSION}
 	docker push ${GCR_REPO}:production-${VERSION}
 
 # CIRCLECI
 # job: enterprise
 # deploys tagged version of the private enterprise-api
 enterprise:
-	docker pull ${ENTERPRISE_GCR_REPO}:latest
-	docker tag ${ENTERPRISE_GCR_REPO}:latest ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION}
-	docker tag ${ENTERPRISE_GCR_REPO}:latest codecov/api-private:${SEMANTIC_VERSION}-${VERSION}
+	docker pull ${ENTERPRISE_GCR_REPO}:${VERSION}
+	docker tag ${ENTERPRISE_GCR_REPO}:${VERSION} ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION}
+	docker tag ${ENTERPRISE_GCR_REPO}:${VERSION} codecov/api-private:${SEMANTIC_VERSION}-${VERSION}
 	docker push ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION}
 	docker push codecov/api-private:${SEMANTIC_VERSION}-${VERSION}
 
@@ -131,6 +137,16 @@ release-enterprise:
 	docker tag ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION} codecov/enterprise-api:latest-stable
 	docker push codecov/enterprise-api:${SEMANTIC_VERSION}
 	docker push codecov/enterprise-api:latest-stable
+
+dive:
+	docker load -i app.tar
+	CI=true dive ${GCR_REPO}:${VERSION} --lowestEfficiency=0.97 --highestUserWastedPercent=0.06
+
+dive-enterprise:
+	CI=true dive ${ENTERPRISE_GCR_REPO}:${VERSION}  --lowestEfficiency=0.9999 --highestUserWastedPercent=0.02
+
+deep-dive:
+	deep-dive --config .deep-dive.yaml ${ENTERPRISE_GCR_REPO}:latest
 
 # LOCAL
 # used to test circleci jobs

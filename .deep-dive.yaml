@@ -1,0 +1,6 @@
+search:
+  exclude_files:
+    python3libs: '/usr/lib/python3\.8.*'
+  files:
+    python: '.*\.pyc?'
+    json:  '.*\.json'
