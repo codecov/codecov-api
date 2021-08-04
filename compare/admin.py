@@ -35,8 +35,8 @@ class CommitComparisonAdmin(admin.ModelAdmin):
             "base_commit", "compare_commit", "base_commit__repository"
         ).defer("base_commit__report", "compare_commit__report")
 
-    def has_add_permission(self, _, obj=None):
+    def has_add_permission(self, *args, **kwargs):
         return False
 
-    def has_delete_permission(self, _, obj=None):
-        return False
+    def has_delete_permission(self, *args, **kwargs):
+        return True

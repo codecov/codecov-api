@@ -14,7 +14,5 @@ class CompareAdminTest(TestCase):
         self.client.force_login(user=self.staff_user)
 
     def test_compare_admin_detail_page(self):
-        response = self.client.get(
-            reverse(f"admin:compare_commitcomparison_changelist")
-        )
+        response = self.client.get(reverse("admin:compare_commitcomparison_changelist"))
         self.assertEqual(response.status_code, 200)

@@ -1,7 +1,8 @@
 import asyncio
+from unittest.mock import patch
+
 from django.test import TransactionTestCase
 from core.tests.factories import CommitFactory
-from unittest.mock import patch
 
 from codecov_auth.tests.factories import OwnerFactory
 from compare.tests.factories import CommitComparisonFactory
