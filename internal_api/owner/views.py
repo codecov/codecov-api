@@ -26,7 +26,6 @@ from internal_api.mixins import OwnerPropertyMixin
 from internal_api.permissions import MemberOfOrgPermissions
 
 from .serializers import (
-    ProfileSerializer,
     OwnerSerializer,
     AccountDetailsSerializer,
     UserSerializer,

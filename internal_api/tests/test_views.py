@@ -18,53 +18,6 @@ get_permissions_method = (
 )
 
 
-class ProfileTest(InternalAPITest):
-    def setUp(self):
-        org = OwnerFactory(username="Codecov")
-        RepositoryFactory(author=org)
-        self.user = OwnerFactory(
-            username="codecov-user",
-            organizations=[org.ownerid],
-            private_access=False,
-            staff=False,
-        )
-        RepositoryFactory(author=self.user)
-        pass
-
-    def test_get_profile_valid_user(self):
-        self.client.force_login(user=self.user)
-        response = self.client.get("/internal/profile/")
-        self.assertEqual(response.status_code, 200)
-
-    def test_get_profile_unauthed_user_returns_401(self):
-        response = self.client.get("/internal/profile/")
-        self.assertEqual(response.status_code, 401)
-
-    def test_update_profile_private_access(self):
-        self.client.force_login(user=self.user)
-        response = self.client.patch(
-            "/internal/profile/",
-            data={"private_access": True},
-            content_type="application/json",
-        )
-
-        self.user.refresh_from_db()
-        assert self.user.private_access is True
-        assert response.data["private_access"] is True
-
-    def test_update_profile_read_only(self):
-        self.client.force_login(user=self.user)
-        response = self.client.patch(
-            "/internal/profile/",
-            data={"staff": True},
-            content_type="application/json",
-        )
-
-        self.user.refresh_from_db()
-        assert self.user.staff is False
-        assert response.data["staff"] is False
-
-
 @patch(get_permissions_method)
 class RepoPullList(InternalAPITest):
     def setUp(self):
