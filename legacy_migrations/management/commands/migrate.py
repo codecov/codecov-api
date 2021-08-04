@@ -51,7 +51,7 @@ class Command(MigrateCommand):
 
             legacy_options = {**options}
             legacy_options["app_label"] = "legacy_migrations"
-            legacy_options["migration_name"] = None
+            legacy_options["migration_name"] = "0001"
 
             super().handle(*args, **codecov_auth_options)
             super().handle(*args, **core_options)
