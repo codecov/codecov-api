@@ -39,17 +39,6 @@ from .filters import UserFilters
 log = logging.getLogger(__name__)
 
 
-class ProfileViewSet(
-    viewsets.GenericViewSet, mixins.RetrieveModelMixin, mixins.UpdateModelMixin
-):
-    serializer_class = ProfileSerializer
-
-    def get_object(self):
-        if self.request.user.is_authenticated:
-            return self.request.user
-        raise NotAuthenticated()
-
-
 class OwnerViewSet(viewsets.GenericViewSet, mixins.RetrieveModelMixin):
     lookup_field = "username"
     serializer_class = OwnerSerializer

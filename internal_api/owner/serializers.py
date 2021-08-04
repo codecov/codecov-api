@@ -37,35 +37,6 @@ class OwnerSerializer(serializers.ModelSerializer):
             return obj.cache["stats"]
 
 
-class ProfileSerializer(OwnerSerializer):
-    class Meta:
-        model = Owner
-        read_only_fields = (
-            "avatar_url",
-            "service",
-            "username",
-            "stats",
-            "ownerid",
-            "integration_id",
-            "staff",
-            "service_id",
-            "plan",
-            "plan_provider",
-            "plan_user_count",
-            "did_trial",
-            "delinquent",
-            "yaml",
-            "updatestamp",
-            "bot",
-            "student",
-            "createstamp",
-            "updatestamp",
-            "student_created_at",
-            "student_updated_at",
-        )
-        fields = read_only_fields + ("email", "name", "private_access")
-
-
 class StripeLineItemSerializer(serializers.Serializer):
     description = serializers.CharField()
     amount = serializers.FloatField()
