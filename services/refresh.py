@@ -11,18 +11,22 @@ class RefreshService(object):
         self.task_service = TaskService()
         self.redis = get_redis_connection()
 
+    def _get_key_name(self, ownerid):
+        return f"refresh_{ownerid}"
+
     def is_refreshing(self, ownerid):
-        data_task = self.redis.hget("refresh", ownerid)
+        key_name = self._get_key_name(ownerid)
+        data_task = self.redis.get(key_name)
         if not data_task:
             return False
         try:
             res = result_from_tuple(loads(data_task), app=celery_app)
         except ValueError:
-            self.redis.hdel("refresh", ownerid)
+            self.redis.delete(key_name)
             return False
         has_failed = res.failed() or (res.parent and res.parent.failed())
         if res.successful() or has_failed:
-            self.redis.hdel("refresh", ownerid)
+            self.redis.delete(key_name)
             return False
         # task is not success, nor failed, so probably pending or in progress
         return True
@@ -42,3 +46,4 @@ class RefreshService(object):
         )
         # store in redis the task data to be used for `is_refreshing` logic
         self.redis.hset("refresh", ownerid, dumps(resp.as_tuple()))
+        self.redis.setex(self._get_key_name(ownerid), 900, dumps(resp.as_tuple()))

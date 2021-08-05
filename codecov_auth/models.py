@@ -127,6 +127,10 @@ class Owner(models.Model):
         super().save(*args, **kwargs)
 
     @property
+    def has_yaml(self):
+        return self.yaml is not None
+
+    @property
     def has_legacy_plan(self):
         return self.plan is None or not self.plan.startswith("users")
 
@@ -383,7 +387,6 @@ class Owner(models.Model):
     def set_free_plan(self):
         log.info(f"Setting plan to users-free for owner {self.ownerid}")
         self.plan = "users-free"
-        self.plan_auto_activate = True
         self.plan_activated_users = None
         self.plan_user_count = 5
         self.stripe_subscription_id = None

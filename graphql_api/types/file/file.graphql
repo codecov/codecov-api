@@ -1,0 +1,9 @@
+type File {
+    content: String
+    coverage: [CoverageAnnotation]
+}
+
+type CoverageAnnotation {
+    line: Int
+    coverage: Int
+}

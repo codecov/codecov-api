@@ -5,6 +5,7 @@ GRAVATAR_BASE_URL = "https://www.gravatar.com"
 AVATARIO_BASE_URL = "https://avatars.io"
 
 FREE_PLAN_NAME = "users-free"
+GHM_PLAN_NAME = "users"
 
 NON_PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
     "users-inappm": {
@@ -61,6 +62,19 @@ PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
     },
 }
 
+GHM_PLAN_REPRESENTATION = {
+    GHM_PLAN_NAME: {
+        "marketing_name": "Github Marketplace",
+        "value": GHM_PLAN_NAME,
+        "billing_rate": None,
+        "base_unit_price": 12,
+        "benefits": [
+            "Configureable # of users",
+            "Unlimited public repositories",
+            "Unlimited private repositories",
+        ],
+    }
+}
 
 USER_PLAN_REPRESENTATIONS = {
     FREE_PLAN_NAME: {
@@ -76,6 +90,7 @@ USER_PLAN_REPRESENTATIONS = {
     },
     **NON_PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
     **PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
+    **GHM_PLAN_REPRESENTATION,
 }
 
 

@@ -1,8 +1,0 @@
-FROM bitnami/kubectl:1.12.9 as kubectl
-FROM google/cloud-sdk:252.0.0-slim as gcloud
-
-FROM circleci/python:3.7
-
-ENV PATH="/usr/lib/google-cloud-sdk/bin:$PATH"
-COPY --from=kubectl /opt/bitnami/kubectl/bin/kubectl /usr/bin/kubectl
-COPY --from=gcloud /usr/lib/google-cloud-sdk /usr/lib/google-cloud-sdk

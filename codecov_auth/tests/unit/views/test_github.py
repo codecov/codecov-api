@@ -170,7 +170,7 @@ def test_get_github_already_with_code(client, mocker, db, mock_redis, settings):
     org = Owner.objects.get(ownerid=owner.organizations[0])
     assert org.service_id == "8226205"
     assert org.service == "github"
-    assert res.url == "/gh"
+    assert res.url == "http://localhost:3000/gh"
 
 
 def test_get_github_already_with_code_github_error(
@@ -243,7 +243,7 @@ def test_get_github_already_with_code_with_email(
     assert owner.service_id == "44376991"
     assert owner.email == "thiago@codecov.io"
     assert owner.private_access is True
-    assert res.url == "/gh"
+    assert res.url == "http://localhost:3000/gh"
 
 
 def test_get_github_already_with_code_is_student(
@@ -299,7 +299,7 @@ def test_get_github_already_with_code_is_student(
     assert owner.email is None
     assert owner.service_id == "44376991"
     assert owner.private_access is True
-    assert res.url == "/gh"
+    assert res.url == "http://localhost:3000/gh"
     assert owner.student is True
 
 
@@ -362,4 +362,4 @@ def test_get_github_already_owner_already_exist(
     assert owner.bot is None
     assert owner.service_id == "44376991"
     assert owner.private_access is True
-    assert res.url == "/gh"
+    assert res.url == "http://localhost:3000/gh"

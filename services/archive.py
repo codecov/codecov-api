@@ -96,12 +96,6 @@ class ArchiveService(object):
 
         self.storage = StorageService()
         self.storage_hash = self.get_archive_hash(repository)
-        # create storage based on the root, this will throw acceptable
-        # exceptions if the bucket exists. ResponseError if it doesn't.
-        self.create_root_storage()
-
-    def create_root_storage(self):
-        self.storage.create_root_storage(self.root, self.region)
 
     """
     Accessor for underlying StorageService. You typically shouldn't need

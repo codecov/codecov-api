@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 
 
 class GitlabLoginView(View, LoginMixin):
-    cookie_prefix = "gitlab"
+    service = "gitlab"
     error_redirection_page = "/"
 
     def get_url_to_redirect_to(self):
@@ -33,7 +33,7 @@ class GitlabLoginView(View, LoginMixin):
         return f"{base_url}?{query_str}"
 
     async def fetch_user_data(self, request, code):
-        redirect_uri = request.build_absolute_uri(reverse("gitlab-login"))
+        redirect_uri = settings.GITLAB_REDIRECT_URI
         repo_service = Gitlab(
             oauth_consumer_token=dict(
                 key=settings.GITLAB_CLIENT_ID, secret=settings.GITLAB_CLIENT_SECRET
@@ -51,9 +51,9 @@ class GitlabLoginView(View, LoginMixin):
         try:
             user_dict = asyncio.run(self.fetch_user_data(request, code))
         except TorngitError:
-            log.warning("Unable to log in due to problem on Github", exc_info=True)
+            log.warning("Unable to log in due to problem on Gitlab", exc_info=True)
             return redirect(self.error_redirection_page)
-        response = redirect("/gl")
+        response = redirect(settings.CODECOV_DASHBOARD_URL + "/gl")
         self.login_from_user_dict(user_dict, request, response)
         return response
 
