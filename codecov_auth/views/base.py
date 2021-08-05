@@ -24,7 +24,7 @@ class LoginMixin(object):
 
     def get_or_create_org(self, single_organization):
         owner, was_created = Owner.objects.get_or_create(
-            service="github", service_id=single_organization["id"]
+            service=self.service, service_id=single_organization["id"]
         )
         return owner
 
@@ -93,23 +93,23 @@ class LoginMixin(object):
         session.save()
         token = str(session.token)
         signed_cookie_value = create_signed_value(
-            f"{self.cookie_prefix}-token", token, version=None
+            f"{self.service}-token", token, version=None
         )
         response.set_cookie(
-            f"{self.cookie_prefix}-token",
+            f"{self.service}-token",
             signed_cookie_value,
             domain=domain_to_use,
             httponly=True,
             secure=True,
-            samesite="Strict",
+            samesite="Lax",
         )
         response.set_cookie(
-            f"{self.cookie_prefix}-username",
+            f"{self.service}-username",
             user.username,
             domain=domain_to_use,
             httponly=True,
             secure=True,
-            samesite="Strict",
+            samesite="Lax",
         )
 
     def _check_user_count_limitations(self):
@@ -120,7 +120,7 @@ class LoginMixin(object):
         fields_to_update = ["oauth_token", "private_access", "updatestamp"]
         login_data = user_dict["user"]
         owner, was_created = Owner.objects.get_or_create(
-            service=f"{self.cookie_prefix}",
+            service=f"{self.service}",
             service_id=login_data["id"],
             defaults={"createstamp": timezone.now()},
         )

@@ -1,16 +1,21 @@
-from ariadne import format_error
-from asyncio import iscoroutine
+import logging
 from contextlib import suppress
+from asyncio import iscoroutine
 
+from sentry_sdk import capture_exception
+from ariadne import format_error
 from asgiref.sync import sync_to_async
+from django.contrib.auth.models import AnonymousUser
 
 from codecov_auth.authentication import CodecovTokenAuthentication
 from codecov.commands.exceptions import BaseException
-from codecov.commands.executor import Executor
+from codecov.commands.executor import get_executor_from_request
 
 from .ariadne.views import GraphQLView
 from .schema import schema
 from .tracing import get_tracer_extension
+
+log = logging.getLogger(__name__)
 
 
 @sync_to_async
@@ -25,8 +30,7 @@ class AsyncGraphqlView(GraphQLView):
 
     async def authenticate(self, request):
         user = await get_user(request)
-        if user:
-            request.user = user
+        request.user = user or AnonymousUser()
 
     async def post(self, request, *args, **kwargs):
         await self.authenticate(request)
@@ -36,12 +40,13 @@ class AsyncGraphqlView(GraphQLView):
         return {
             "request": request,
             "service": request.resolver_match.kwargs["service"],
-            "executor": Executor(request),
+            "executor": get_executor_from_request(request),
         }
 
     def error_formatter(self, error, debug=False):
-        if debug:
-            # If debug is enabled, reuse Ariadne's formatting logi
+        # the only wat to check for a malformatted query
+        is_bad_query = "Cannot query field" in error.formatted["message"]
+        if debug or is_bad_query:
             return format_error(error, debug)
         formatted = error.formatted
         formatted["message"] = "INTERNAL SERVER ERROR"
@@ -50,6 +55,10 @@ class AsyncGraphqlView(GraphQLView):
         if isinstance(error.original_error, BaseException):
             formatted["message"] = error.original_error.message
             formatted["type"] = type(error.original_error).__name__
+        else:
+            # otherwise it's not supposed to happen, so we log it
+            log.error("GraphQL internal server error", exc_info=error.original_error)
+            capture_exception(error.original_error)
         return formatted
 
 

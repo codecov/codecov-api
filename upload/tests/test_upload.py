@@ -1067,7 +1067,6 @@ class UploadHandlerRouteTest(APITestCase):
             == "https://codecov.io/github/codecovtest/upload-test-repo/commit/b521e55aef79b101f48e2544837ca99a7fa3bf6b"
         )
 
-    @patch("services.archive.ArchiveService.create_root_storage")
     @patch("services.storage.MINIO_CLIENT.presigned_put_object")
     @patch("services.archive.ArchiveService.get_archive_hash")
     @patch("upload.views.get_redis_connection")
@@ -1082,7 +1081,6 @@ class UploadHandlerRouteTest(APITestCase):
         mock_get_redis,
         mock_hash,
         mock_storage_put,
-        mock_create_root,
     ):
         class MockRepoProviderAdapter:
             async def get_commit(self, commit, token):
@@ -1097,7 +1095,6 @@ class UploadHandlerRouteTest(APITestCase):
             )
         )
 
-        mock_create_root.return_value = True
         mock_storage_put.return_value = path + "?AWS=PARAMS"
         mock_get_redis.return_value = MockRedis()
         mock_repo_provider_service.return_value = MockRepoProviderAdapter()
@@ -1120,7 +1117,6 @@ class UploadHandlerRouteTest(APITestCase):
 
         assert response.status_code == 200
 
-    @patch("services.archive.ArchiveService.create_root_storage")
     @patch("services.storage.MINIO_CLIENT.presigned_put_object")
     @patch("services.archive.ArchiveService.get_archive_hash")
     @patch("upload.views.get_redis_connection")
@@ -1135,7 +1131,6 @@ class UploadHandlerRouteTest(APITestCase):
         mock_get_redis,
         mock_hash,
         mock_storage_put,
-        mock_create_root,
     ):
         class MockRepoProviderAdapter:
             async def get_commit(self, commit, token):
@@ -1150,7 +1145,6 @@ class UploadHandlerRouteTest(APITestCase):
             )
         )
 
-        mock_create_root.return_value = True
         mock_storage_put.return_value = path + "?AWS=PARAMS"
         mock_get_redis.return_value = MockRedis()
         mock_repo_provider_service.return_value = MockRepoProviderAdapter()

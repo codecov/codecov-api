@@ -36,11 +36,6 @@ class RepositoryViewSetTestSuite(InternalAPITest):
             }
         return self.client.get(reverse("repos-detail", kwargs=kwargs), data=data)
 
-    def _get_stats(self, kwargs={}, data={}):
-        if kwargs == {}:
-            kwargs = {"service": self.org.service, "owner_username": self.org.username}
-        return self.client.get(reverse("repos-statistics", kwargs=kwargs), data=data)
-
     def _update(self, kwargs={}, data={}):
         if kwargs == {}:
             kwargs = {
@@ -565,57 +560,6 @@ class TestRepositoryViewSetExtraActions(RepositoryViewSetTestSuite):
 
         self.client.force_login(user=self.user)
 
-    def test_stats_for_all_repos(self):
-        response = self._get_stats()
-        stats = {
-            "repos_count": 2,
-            "sum_lines": self.repo1Commit2.totals["n"] + self.repo2Commit2.totals["n"],
-            "sum_hits": self.repo1Commit2.totals["h"] + self.repo2Commit2.totals["h"],
-            "sum_partials": self.repo1Commit2.totals["p"]
-            + self.repo2Commit2.totals["p"],
-            "sum_misses": self.repo1Commit2.totals["m"] + self.repo2Commit2.totals["m"],
-            "weighted_coverage": 25.0,
-            "average_complexity": 0,
-            "weighted_coverage_change": -41.6666666666667,
-        }
-
-        assert response.data == stats
-
-    def test_stats_for_single_repos(self):
-        response = self._get_stats(data={"names": ["A"]})
-        stats = {
-            "repos_count": 1,
-            "sum_lines": self.repo1Commit2.totals["n"],
-            "sum_hits": self.repo1Commit2.totals["h"],
-            "sum_partials": self.repo1Commit2.totals["p"],
-            "sum_misses": self.repo1Commit2.totals["m"],
-            "weighted_coverage": 0.0,
-            "average_complexity": 0,
-            "weighted_coverage_change": -100.0,
-        }
-
-        assert response.data == stats
-
-    def test_stats_with_invalid_datetime_crashes(self):
-        with pytest.raises(ValueError):
-            self._get_stats(data={"before_date": "A"})
-
-    def test_stats_with_datetime_doesnt_crash(self):
-        response = self._get_stats(data={"before_date": self.repo1Commit2.timestamp})
-        stats = {
-            "repos_count": 2,
-            "sum_lines": self.repo1Commit2.totals["n"] + self.repo2Commit2.totals["n"],
-            "sum_hits": self.repo1Commit2.totals["h"] + self.repo2Commit2.totals["h"],
-            "sum_partials": self.repo1Commit2.totals["p"]
-            + self.repo2Commit2.totals["p"],
-            "sum_misses": self.repo1Commit2.totals["m"] + self.repo2Commit2.totals["m"],
-            "weighted_coverage": 25.0,
-            "average_complexity": 0,
-            "weighted_coverage_change": -41.6666666666667,
-        }
-
-        assert response.data == stats
-
 
 @patch("internal_api.repo.repository_accessors.RepoAccessors.get_repo_permissions")
 class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
@@ -1087,7 +1031,6 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         assert response.status_code == code
         assert response.data == {"detail": message}
 
-    @patch("services.archive.ArchiveService.create_root_storage", lambda _: None)
     @patch("services.archive.ArchiveService.read_chunks", lambda obj, _: "")
     def test_retrieve_returns_latest_commit_data(self, mocked_get_permissions):
         self.maxDiff = None
@@ -1164,7 +1107,6 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
             ],
         )
 
-    @patch("services.archive.ArchiveService.create_root_storage", lambda _: None)
     @patch("services.archive.ArchiveService.read_chunks", lambda obj, _: "")
     def test_retrieve_returns_latest_commit_of_default_branch_if_branch_not_specified(
         self, mocked_get_permissions
@@ -1179,7 +1121,6 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         assert response.data["latest_commit"]["commitid"] == commit.commitid
         assert response.data["latest_commit"]["commitid"] != more_recent_commit.commitid
 
-    @patch("services.archive.ArchiveService.create_root_storage", lambda _: None)
     @patch("services.archive.ArchiveService.read_chunks", lambda obj, _: "")
     def test_retrieve_accepts_branch_query_param_to_specify_latest_commit(
         self, mocked_get_permissions
@@ -1194,7 +1135,6 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         assert response.data["latest_commit"]["commitid"] == commit.commitid
         assert response.data["latest_commit"]["commitid"] != more_recent_commit.commitid
 
-    @patch("services.archive.ArchiveService.create_root_storage", lambda _: None)
     @patch("services.archive.ArchiveService.read_chunks", lambda obj, _: "")
     def test_latest_commit_is_none_if_dne(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, True

@@ -13,6 +13,21 @@ commit_bindable.set_alias("pullId", "pullid")
 commit_bindable.set_alias("branchName", "branch")
 
 
+@commit_bindable.field("coverageFile")
+def resolve_file(commit, info, path):
+    command = info.context["executor"].get_command("commit")
+    return {
+        "content": command.get_file_content(commit, path),
+        "coverage": command.get_file_coverage(commit, path),
+    }
+
+
+@commit_bindable.field("totals")
+def resolve_totals(commit, info):
+    if commit.commitreport:
+        return commit.commitreport.reportleveltotals
+
+
 @commit_bindable.field("author")
 def resolve_author(commit, info):
     if commit.author_id:
@@ -39,3 +54,9 @@ async def resolve_list_uploads(commit, info, **kwargs):
     return await queryset_to_connection(
         queryset, ordering="id", ordering_direction=OrderingDirection.ASC, **kwargs
     )
+
+
+@commit_bindable.field("compareWithParent")
+def resolve_compare_with_parent(commit, info, **kwargs):
+    command = info.context["executor"].get_command("compare")
+    return command.compare_commit_with_parent(commit)

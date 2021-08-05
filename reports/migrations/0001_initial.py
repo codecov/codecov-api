@@ -52,7 +52,7 @@ class Migration(migrations.Migration):
                 ("storage_path", models.TextField()),
                 ("order_number", models.IntegerField(null=True)),
                 ("upload_type", models.CharField(max_length=100, default="uploaded")),
-                ("upload_extras", models.JSONField(default={})),
+                ("upload_extras", models.JSONField(default=dict)),
             ],
             options={
                 "db_table": "reports_upload",

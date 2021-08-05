@@ -351,7 +351,7 @@ class TestOwnerModel(TransactionTestCase):
         assert self.owner.plan == "users-free"
         assert self.owner.plan_user_count == 5
         assert self.owner.plan_activated_users == None
-        assert self.owner.plan_auto_activate == True
+        assert self.owner.plan_auto_activate == False
         assert self.owner.stripe_subscription_id == None
 
     def test_access_no_root_organization(self):
@@ -424,3 +424,10 @@ class TestOwnerModel(TransactionTestCase):
         org.save()
 
         self.assertEqual(org.student_count, 3)
+
+    def test_has_yaml(self):
+        org = OwnerFactory(yaml=None)
+        assert org.has_yaml is False
+        org.yaml = {"require_ci_to_pass": True}
+        org.save()
+        assert org.has_yaml is True

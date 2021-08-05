@@ -32,6 +32,8 @@ INSTALLED_APPS = [
     "reports",
     "internal_api",
     "graphql_api",
+    "compare",
+    "profiling",
 ]
 
 MIDDLEWARE = [

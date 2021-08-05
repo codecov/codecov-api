@@ -7,7 +7,6 @@ from reports.models import ReportSession
 class GetUploadsOfCommitInteractor(BaseInteractor):
     @sync_to_async
     def execute(self, commit):
-        report = commit.reports.first()
-        if not report:
+        if not commit.commitreport:
             return ReportSession.objects.none()
-        return report.sessions.prefetch_related("flags").all()
+        return commit.commitreport.sessions.prefetch_related("flags").all()
