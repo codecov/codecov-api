@@ -101,7 +101,7 @@ class LoginMixin(object):
             domain=domain_to_use,
             httponly=True,
             secure=True,
-            samesite="Strict",
+            samesite="Lax",
         )
         response.set_cookie(
             f"{self.service}-username",
@@ -109,7 +109,7 @@ class LoginMixin(object):
             domain=domain_to_use,
             httponly=True,
             secure=True,
-            samesite="Strict",
+            samesite="Lax",
         )
 
     def _check_user_count_limitations(self):
