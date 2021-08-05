@@ -82,6 +82,7 @@ def main():
             "whitenoise.middleware",
             "graphql_api",
             "legacy_migrations",
+            "legacy_migrations.migrations",
             "shared.celery_config",
             "kombu.transport.pyamqp"
         ]

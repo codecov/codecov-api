@@ -29,10 +29,6 @@ class Migration(migrations.Migration):
         ('core', '0001_initial'),
     ]
 
-    run_before = [
-        ('admin', '0001_initial'),
-    ]
-
     operations = [
         migrations.RunPython(forwards_func),
     ]
