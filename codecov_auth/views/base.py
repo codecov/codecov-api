@@ -55,7 +55,7 @@ class StateMixin(object):
 
     def generate_redirection_url(self) -> str:
         redirection_url = self.request.GET.get("to")
-        if self._assert_valid_redirection(redirection_url):
+        if redirection_url and self._assert_valid_redirection(redirection_url):
             return redirection_url
         return (
             f"{settings.CODECOV_DASHBOARD_URL}/{get_short_service_name(self.service)}"
