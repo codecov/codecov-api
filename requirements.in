@@ -37,3 +37,5 @@ aiodataloader
 fakeredis
 opentelemetry-sdk
 opentelemetry-instrumentation-django
+pylint
+pylint-django

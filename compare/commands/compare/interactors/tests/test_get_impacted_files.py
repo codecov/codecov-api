@@ -1,15 +1,12 @@
 import json
+from unittest.mock import patch
 
 from asgiref.sync import async_to_sync
-from unittest.mock import patch
-import pytest
-
 from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
 from shared.reports.types import ReportTotals
 
 from core.tests.factories import CommitFactory
-from compare.models import CommitComparison
 from compare.tests.factories import CommitComparisonFactory
 from ..get_impacted_files import GetImpactedFilesInteractor
 

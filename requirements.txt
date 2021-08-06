@@ -20,6 +20,8 @@ asgiref==3.3.4
     #   opentelemetry-util-http
 asn1crypto==1.4.0
     # via cryptography
+astroid==2.6.6
+    # via pylint
 attrs==20.3.0
     # via
     #   pytest
@@ -143,14 +145,20 @@ iniconfig==1.1.1
     # via pytest
 intervaltree==3.1.0
     # via ddtrace
+isort==5.9.3
+    # via pylint
 jmespath==0.10.0
     # via
     #   boto3
     #   botocore
 kombu==4.6.11
     # via celery
+lazy-object-proxy==1.6.0
+    # via astroid
 marshmallow==3.8.0
     # via environs
+mccabe==0.6.1
+    # via pylint
 minio==6.0.0
     # via
     #   -r requirements.in
@@ -215,6 +223,15 @@ pyasn1==0.4.8
     #   rsa
 pycparser==2.20
     # via cffi
+pylint-django==2.4.4
+    # via -r requirements.in
+pylint-plugin-utils==0.6
+    # via pylint-django
+pylint==2.9.6
+    # via
+    #   -r requirements.in
+    #   pylint-django
+    #   pylint-plugin-utils
 pyparsing==2.4.7
     # via packaging
 pytest-cov==2.11.1
@@ -323,6 +340,7 @@ tlslite-ng==0.7.5
 toml==0.10.2
     # via
     #   pre-commit
+    #   pylint
     #   pytest
 tornado==6.0.4
     # via shared
@@ -346,6 +364,7 @@ whitenoise==5.2.0
     # via -r requirements.in
 wrapt==1.12.1
     # via
+    #   astroid
     #   deprecated
     #   opentelemetry-instrumentation
     #   vcrpy

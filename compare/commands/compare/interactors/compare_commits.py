@@ -1,6 +1,5 @@
 from asgiref.sync import sync_to_async
 
-from codecov_auth.models import Session
 from codecov.commands.base import BaseInteractor
 from compare.models import CommitComparison
 from services.task import TaskService
