@@ -2,6 +2,8 @@ import string
 import random
 from json import dumps
 import logging
+from urllib.parse import urlparse
+from contextlib import suppress
 
 from django.utils import timezone
 from django.conf import settings
@@ -29,15 +31,31 @@ class StateMixin(object):
     def _get_key_redis(self, state: str) -> str:
         return f"oauth-state-{state}"
 
-    def _assert_valid_redirection(self, url):
+    def _assert_valid_redirection(self, to):
         # make sure the redirect url is from a domain we own
-        return True
+        with suppress(ValueError):
+            url = urlparse(to)
+        # the url coudn't be parsed, not valid
+        if not url:
+            return False
+        # the url is only a path without domain, it's valid
+        only_path = not url.scheme and not url.netloc and url.path
+        if only_path:
+            return True
+        # make sure the domain is part of the CORS so that's a safe domain to
+        # redirect to.
+        url_domain = f"{url.scheme}://{url.netloc}"
+        if url_domain in settings.CORS_ALLOWED_ORIGINS:
+            return True
+        for domain_pattern in settings.CORS_ALLOWED_ORIGIN_REGEXES:
+            if re.match(domain_pattern, url_domain):
+                return True
+        return False
 
     def generate_redirection_url(self) -> str:
         redirection_url = self.request.GET.get("to")
-        if redirection_url and self._assert_valid_redirection(redirection_url):
+        if self._assert_valid_redirection(redirection_url):
             return redirection_url
-        # fallback to main page if no redirect url or if it doesnt match our domains
         return (
             f"{settings.CODECOV_DASHBOARD_URL}/{get_short_service_name(self.service)}"
         )

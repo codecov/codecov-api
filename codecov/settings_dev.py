@@ -36,5 +36,7 @@ GITLAB_CLIENT_SECRET = (
 
 CODECOV_DASHBOARD_URL = "http://localhost:3000"
 
+CORS_ALLOWED_ORIGINS = [CODECOV_DASHBOARD_URL, "http://localhost"]
+
 COOKIES_DOMAIN = "localhost"
 SESSION_COOKIE_DOMAIN = "localhost"
