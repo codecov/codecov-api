@@ -202,6 +202,14 @@ def test_get_github_already_with_code_github_error(
     assert res.url == "/"
 
 
+def test_state_not_known(client, mocker, db, mock_redis, settings):
+    url = reverse("github-login")
+    res = client.get(url, {"code": "aaaaaaa", "state": "doesnt exist"})
+    assert res.status_code == 400
+    assert "github-token" not in res.cookies
+    assert "github-username" not in res.cookies
+
+
 def test_get_github_already_with_code_with_email(
     client, mocker, db, mock_redis, settings
 ):

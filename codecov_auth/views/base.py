@@ -25,6 +25,23 @@ log = logging.getLogger(__name__)
 
 
 class StateMixin(object):
+    """
+    How to use:
+
+    Mixin for a Django ClassBaseView (must have self.request set)
+
+    To generate the state:
+    - self.generate_state()
+      -> Will return a state to give to the oauth2 provider.
+      -> Will also store the redirect url from request.GET['to'] query param.
+
+    To get the redirect url from state:
+    - self.get_redirection_url_from_state(state)
+      -> Will return a safe URL to redirect after authentication
+      -> raise django.core.exceptions.SuspiciousOperation if no state was found
+
+    """
+
     def __init__(self, *args, **kwargs):
         self.redis = get_redis_connection()
         return super().__init__(*args, **kwargs)
@@ -32,7 +49,17 @@ class StateMixin(object):
     def _get_key_redis(self, state: str) -> str:
         return f"oauth-state-{state}"
 
-    def _assert_valid_redirection(self, to):
+    def _is_matching_cors_domains(self, url_domain) -> bool:
+        # make sure the domain is part of the CORS so that's a safe domain to
+        # redirect to.
+        if url_domain in settings.CORS_ALLOWED_ORIGINS:
+            return True
+        for domain_pattern in settings.CORS_ALLOWED_ORIGIN_REGEXES:
+            if re.match(domain_pattern, url_domain):
+                return True
+        return False
+
+    def _is_valid_redirection(self, to) -> bool:
         # make sure the redirect url is from a domain we own
         with suppress(ValueError):
             url = urlparse(to)
@@ -43,19 +70,12 @@ class StateMixin(object):
         only_path = not url.scheme and not url.netloc and url.path
         if only_path:
             return True
-        # make sure the domain is part of the CORS so that's a safe domain to
-        # redirect to.
         url_domain = f"{url.scheme}://{url.netloc}"
-        if url_domain in settings.CORS_ALLOWED_ORIGINS:
-            return True
-        for domain_pattern in settings.CORS_ALLOWED_ORIGIN_REGEXES:
-            if re.match(domain_pattern, url_domain):
-                return True
-        return False
+        return self._is_matching_cors_domains(url_domain)
 
-    def generate_redirection_url(self) -> str:
+    def _generate_redirection_url(self) -> str:
         redirection_url = self.request.GET.get("to")
-        if redirection_url and self._assert_valid_redirection(redirection_url):
+        if redirection_url and self._is_valid_redirection(redirection_url):
             return redirection_url
         return (
             f"{settings.CODECOV_DASHBOARD_URL}/{get_short_service_name(self.service)}"
@@ -64,11 +84,11 @@ class StateMixin(object):
     def generate_state(self) -> str:
         possible_keys = string.ascii_uppercase + string.digits
         state = "".join(random.choices(possible_keys, k=16))
-        redirection_url = self.generate_redirection_url()
+        redirection_url = self._generate_redirection_url()
         self.redis.setex(self._get_key_redis(state), 500, redirection_url)
         return state
 
-    def get_redirection_url_from_state(self, state):
+    def get_redirection_url_from_state(self, state) -> str:
         data = self.redis.get(self._get_key_redis(state))
         if not data:
             raise SuspiciousOperation("Error with authentication please try again")
