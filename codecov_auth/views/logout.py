@@ -22,6 +22,12 @@ def logout_view(request, service):
     response = redirect("/")
     delete_session(request, service_name)
     logout(request)
+    kwargs_cookie = dict(domain=settings.COOKIES_DOMAIN, samesite="Lax")
+    response.delete_cookie("staff_user", **kwargs_cookie)
+    response.delete_cookie(f"{service_name}-username", **kwargs_cookie)
+    response.delete_cookie(f"{service_name}-token", **kwargs_cookie)
+    # temporary as we use to set cookie to Strict SameSite; but we need Lax
+    # So we need delete in both samesite Strict / Lax for a little while
     kwargs_cookie = dict(domain=settings.COOKIES_DOMAIN, samesite="Strict")
     response.delete_cookie("staff_user", **kwargs_cookie)
     response.delete_cookie(f"{service_name}-username", **kwargs_cookie)

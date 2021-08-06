@@ -107,6 +107,7 @@ save:
 # - spinnaker pipeline: https://spinnaker.codecov.dev/?to=https%3A%2F%2Fspinnaker.codecov.dev%2F%23%2Fsearch#/applications/codecov-staging/executions?pipeline=api
 # - staging url: https://stage-api.codecov.dev
 staging:
+	docker load -i app.tar
 	docker tag "${GCR_REPO}:${VERSION}" "${GCR_REPO}:staging-${VERSION}"
 	docker push ${GCR_REPO}:staging-${VERSION}
 
