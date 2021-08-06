@@ -1,18 +1,59 @@
+import string
+import random
 from json import dumps
 import logging
 
 from django.utils import timezone
 from django.conf import settings
 from django.contrib.auth import login
+from django.core.exceptions import SuspiciousOperation
 
 from codecov_auth.helpers import create_signed_value
 from codecov_auth.models import Session, Owner
 from utils.encryption import encryptor
 from utils.config import get_config
+from utils.services import get_short_service_name
 from services.refresh import RefreshService
 from services.segment import SegmentService
+from services.redis_configuration import get_redis_connection
+
 
 log = logging.getLogger(__name__)
+
+
+class StateMixin(object):
+    def __init__(self, *args, **kwargs):
+        self.redis = get_redis_connection()
+        return super().__init__(*args, **kwargs)
+
+    def _get_key_redis(self, state: str) -> str:
+        return f"oauth-state-{state}"
+
+    def _assert_valid_redirection(self, url):
+        # make sure the redirect url is from a domain we own
+        return True
+
+    def generate_redirection_url(self) -> str:
+        redirection_url = self.request.GET.get("to")
+        if redirection_url and self._assert_valid_redirection(redirection_url):
+            return redirection_url
+        # fallback to main page if no redirect url or if it doesnt match our domains
+        return (
+            f"{settings.CODECOV_DASHBOARD_URL}/{get_short_service_name(self.service)}"
+        )
+
+    def generate_state(self) -> str:
+        possible_keys = string.ascii_uppercase + string.digits
+        state = "".join(random.choices(possible_keys, k=16))
+        redirection_url = self.generate_redirection_url()
+        self.redis.setex(self._get_key_redis(state), 500, redirection_url)
+        return state
+
+    def get_redirection_url_from_state(self, state):
+        data = self.redis.get(self._get_key_redis(state))
+        if not data:
+            raise SuspiciousOperation("Error with authentication please try again")
+        return data.decode("utf-8")
 
 
 class LoginMixin(object):

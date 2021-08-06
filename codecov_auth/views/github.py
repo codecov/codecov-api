@@ -8,12 +8,12 @@ from django.views import View
 from shared.torngit import Github
 from shared.torngit.exceptions import TorngitError
 
-from codecov_auth.views.base import LoginMixin
+from codecov_auth.views.base import LoginMixin, StateMixin
 
 log = logging.getLogger(__name__)
 
 
-class GithubLoginView(View, LoginMixin):
+class GithubLoginView(LoginMixin, StateMixin, View):
     service = "github"
     error_redirection_page = "/"
 
@@ -24,10 +24,12 @@ class GithubLoginView(View, LoginMixin):
     def get_url_to_redirect_to(self, scope):
         repo_service = Github
         base_url = urljoin(repo_service.service_url, "login/oauth/authorize")
+        state = self.generate_state()
         query = dict(
             response_type="code",
             scope=",".join(scope),
             client_id=settings.GITHUB_CLIENT_ID,
+            state=state,
         )
         query_str = urlencode(query)
         return f"{base_url}?{query_str}"
@@ -50,13 +52,15 @@ class GithubLoginView(View, LoginMixin):
         )
 
     def actual_login_step(self, request):
+        state = request.GET.get("state")
+        redirection_url = self.get_redirection_url_from_state(state)
         code = request.GET.get("code")
         try:
             user_dict = asyncio.run(self.fetch_user_data(code))
         except TorngitError:
             log.warning("Unable to log in due to problem on Github", exc_info=True)
             return redirect(self.error_redirection_page)
-        response = redirect(settings.CODECOV_DASHBOARD_URL + "/gh")
+        response = redirect(redirection_url)
         self.login_from_user_dict(user_dict, request, response)
         return response
 
