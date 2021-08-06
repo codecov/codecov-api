@@ -63,6 +63,18 @@ def test_generate_state_with_unsafe_domain(mock_redis):
     )
 
 
+@override_settings(CORS_ALLOWED_ORIGINS=[])
+@override_settings(CORS_ALLOWED_ORIGIN_REGEXES=[])
+def test_generate_state_when_wrong_url(mock_redis):
+    mixin = set_up_mixin("http://localhost:]/")
+    state = mixin.generate_state()
+    assert mock_redis.keys("*") != []
+    assert (
+        mock_redis.get(f"oauth-state-{state}").decode("utf-8")
+        == "http://localhost:3000/gh"
+    )
+
+
 def test_get_redirection_url_from_state_no_state(mock_redis):
     mixin = set_up_mixin()
     with pytest.raises(SuspiciousOperation):
