@@ -4,7 +4,6 @@ import logging
 import re
 from json import dumps
 from urllib.parse import urlparse
-from contextlib import suppress
 
 from django.utils import timezone
 from django.conf import settings
@@ -61,10 +60,9 @@ class StateMixin(object):
 
     def _is_valid_redirection(self, to) -> bool:
         # make sure the redirect url is from a domain we own
-        with suppress(ValueError):
+        try:
             url = urlparse(to)
-        # the url coudn't be parsed, not valid
-        if not url:
+        except ValueError:
             return False
         # the url is only a path without domain, it's valid
         only_path = not url.scheme and not url.netloc and url.path
