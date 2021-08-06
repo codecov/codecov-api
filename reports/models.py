@@ -1,5 +1,7 @@
 import uuid
 
+from django.urls import reverse
+
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
 
@@ -98,12 +100,17 @@ class ReportSession(BaseCodecovModel):
     @property
     def download_url(self):
         repository = self.report.commit.repository
-        owner = repository.author
-        short_service = get_short_service_name(owner.service)
-        path_download = (
-            f"/api/{short_service}/{owner.username}/{repository.name}/download/build"
+        return (
+            reverse(
+                "upload-download",
+                kwargs={
+                    "service": get_short_service_name(repository.author.service),
+                    "owner_username": repository.author.username,
+                    "repo_name": repository.name,
+                },
+            )
+            + f"?path={self.storage_path}"
         )
-        return f"{path_download}?path={self.storage_path}"
 
     @property
     def ci_url(self):

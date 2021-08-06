@@ -5,6 +5,7 @@ from .interactors.create_api_token import CreateApiTokenInteractor
 from .interactors.set_yaml_on_owner import SetYamlOnOwnerInteractor
 from .interactors.delete_session import DeleteSessionInteractor
 from .interactors.update_profile import UpdateProfileInteractor
+from .interactors.fetch_owner import FetchOwnerInteractor
 
 
 class OwnerCommands(BaseCommand):
@@ -19,3 +20,6 @@ class OwnerCommands(BaseCommand):
 
     def update_profile(self, **kwargs):
         return self.get_interactor(UpdateProfileInteractor).execute(**kwargs)
+
+    def fetch_owner(self, username):
+        return self.get_interactor(FetchOwnerInteractor).execute(username)

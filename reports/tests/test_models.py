@@ -14,7 +14,7 @@ class ReportSessionTests(TestCase):
         repository = session.report.commit.repository
         assert (
             session.download_url
-            == f"/api/gh/{repository.author.username}/{repository.name}/download/build?path={storage_path}"
+            == f"/upload/gh/{repository.author.username}/{repository.name}/download?path={storage_path}"
         )
 
     def test_ci_url_when_no_provider(self):

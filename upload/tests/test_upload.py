@@ -944,6 +944,19 @@ class UploadHandlerRouteTest(APITestCase):
         url = reverse("upload-handler", kwargs=kwargs) + query_string
         return self.client.post(url, data=data, content_type=content_type, **headers)
 
+    def _post_slash(
+        self,
+        kwargs=None,
+        data=None,
+        query=None,
+        content_type="application/json",
+        headers=None,
+    ):
+        headers = headers or {}
+        query_string = f"?{urlencode(query)}" if query else ""
+        url = "/upload/v2/" + query_string
+        return self.client.post(url, data=data, content_type=content_type, **headers)
+
     def setUp(self):
         self.org = G(Owner, username="codecovtest", service="github")
         self.repo = G(
@@ -1019,6 +1032,85 @@ class UploadHandlerRouteTest(APITestCase):
         }
 
         response = self._post(
+            kwargs={"version": "v2"}, query=query_params, data="coverage report"
+        )
+
+        assert response.status_code == 200
+
+        headers = response._headers
+
+        assert headers["access-control-allow-origin"] == (
+            "Access-Control-Allow-Origin",
+            "*",
+        )
+        assert headers["access-control-allow-headers"] == (
+            "Access-Control-Allow-Headers",
+            "Origin, Content-Type, Accept, X-User-Agent",
+        )
+        assert headers["content-type"] != (
+            "Content-Type",
+            "text/plain",
+        )
+
+        assert mock_dispatch_upload.call_args[0][0] == {
+            "commit": "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
+            "token": "test27s4f3uz3ha9pi0foipg5bqojtrmbt67",
+            "pr": "456",
+            "version": "v2",
+            "service": None,
+            "owner": None,
+            "repo": None,
+            "using_global_token": False,
+            "build_url": None,
+            "branch": None,
+            "reportid": "dec1f00b-1883-40d0-afd6-6dcb876510be",
+            "redis_key": "upload/b521e55/dec1f00b-1883-40d0-afd6-6dcb876510be/plain",
+            "url": None,
+            "branch": None,
+            "job": None,
+        }
+
+        result = loads(response.content)
+        assert result["message"] == "Coverage reports upload successfully"
+        assert result["uploaded"] == True
+        assert result["queued"] == True
+        assert result["id"] == "dec1f00b-1883-40d0-afd6-6dcb876510be"
+        assert (
+            result["url"]
+            == "https://codecov.io/github/codecovtest/upload-test-repo/commit/b521e55aef79b101f48e2544837ca99a7fa3bf6b"
+        )
+
+    @patch("upload.views.get_redis_connection")
+    @patch("upload.views.uuid4")
+    @patch("upload.views.dispatch_upload_task")
+    @patch("services.repo_providers.RepoProviderService.get_adapter")
+    def test_successful_upload_v2_slash(
+        self,
+        mock_repo_provider_service,
+        mock_dispatch_upload,
+        mock_uuid4,
+        mock_get_redis,
+    ):
+        class MockRepoProviderAdapter:
+            async def get_commit(self, commit, token):
+                return {"message": "This is not a merge commit"}
+
+        mock_get_redis.return_value = MockRedis()
+        mock_repo_provider_service.return_value = MockRepoProviderAdapter()
+        mock_uuid4.return_value = (
+            "dec1f00b-1883-40d0-afd6-6dcb876510be"  # this will be the reportid
+        )
+
+        query_params = {
+            "commit": "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
+            "token": "test27s4f3uz3ha9pi0foipg5bqojtrmbt67",
+            "pr": "456",
+            "branch": "",
+            "flags": "",
+            "build_url": "",
+        }
+
+        response = self._post_slash(
             kwargs={"version": "v2"}, query=query_params, data="coverage report"
         )
 
