@@ -185,6 +185,7 @@ MINIO_HASH_KEY = get_config("services", "minio", "hash_key")
 ARCHIVE_BUCKET_NAME = "codecov"
 ENCRYPTION_SECRET = get_config("setup", "encryption_secret")
 
+COOKIE_SAME_SITE = "Lax"
 COOKIE_SECRET = get_config("setup", "http", "cookie_secret")
 COOKIES_DOMAIN = get_config("setup", "http", "cookies_domain", default=".codecov.io")
 SESSION_COOKIE_DOMAIN = get_config(

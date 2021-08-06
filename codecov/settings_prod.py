@@ -43,4 +43,7 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 15000000
-SILENCED_SYSTEM_CHECKS = ['urls.W002']
+SILENCED_SYSTEM_CHECKS = ["urls.W002"]
+
+# Reinforcing the Cookie SameSite configuration to be sure it's Lax in prod
+COOKIE_SAME_SITE = "Lax"

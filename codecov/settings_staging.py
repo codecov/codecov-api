@@ -56,3 +56,7 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 15000000
+
+# Same site is set to none on Staging as we want to be able to call the API
+# From Netlify preview deploy
+COOKIE_SAME_SITE = "None"
