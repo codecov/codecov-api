@@ -185,6 +185,7 @@ MINIO_HASH_KEY = get_config("services", "minio", "hash_key")
 ARCHIVE_BUCKET_NAME = "codecov"
 ENCRYPTION_SECRET = get_config("setup", "encryption_secret")
 
+COOKIE_SAME_SITE = "Lax"
 COOKIE_SECRET = get_config("setup", "http", "cookie_secret")
 COOKIES_DOMAIN = get_config("setup", "http", "cookies_domain", default=".codecov.io")
 SESSION_COOKIE_DOMAIN = get_config(
@@ -228,5 +229,10 @@ DJANGO_ADMIN_URL = get_config("django", "admin_url", default="admin")
 
 IS_ENTERPRISE = get_settings_module() == SettingsModule.ENTERPRISE.value
 IS_DEV = get_settings_module() == SettingsModule.DEV.value
+
 DATA_UPLOAD_MAX_MEMORY_SIZE = get_config("setup", "http", "upload_max_memory_size", default=2621440)
 FILE_UPLOAD_MAX_MEMORY_SIZE = get_config("setup", "http", "file_upload_max_memory_size", default=2621440)
+
+
+CORS_ALLOWED_ORIGIN_REGEXES = []
+CORS_ALLOWED_ORIGINS = []

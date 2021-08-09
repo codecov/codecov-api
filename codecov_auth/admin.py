@@ -21,7 +21,7 @@ def impersonate_owner(self, request, queryset):
         "staff_user",
         owner.username,
         domain=settings.COOKIES_DOMAIN,
-        samesite="Lax",
+        samesite=settings.COOKIE_SAME_SITE,
     )
     return response
 

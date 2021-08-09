@@ -41,6 +41,12 @@ CORS_ALLOWED_ORIGINS = [
     CODECOV_DASHBOARD_URL,
     "https://gazebo.netlify.app",  # to access unreleased URL of gazebo
 ]
+# We are also using the CORS settings to verify if the domain is safe to
+# Redirect after authentication, update this setting with care
+CORS_ALLOWED_ORIGIN_REGEXES = []
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 15000000
-SILENCED_SYSTEM_CHECKS = ['urls.W002']
+SILENCED_SYSTEM_CHECKS = ["urls.W002"]
+
+# Reinforcing the Cookie SameSite configuration to be sure it's Lax in prod
+COOKIE_SAME_SITE = "Lax"

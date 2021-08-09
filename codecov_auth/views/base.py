@@ -1,18 +1,106 @@
-from json import dumps
 import logging
+import re
+import uuid
+from json import dumps
+from urllib.parse import urlparse
 
 from django.utils import timezone
 from django.conf import settings
 from django.contrib.auth import login
+from django.core.exceptions import SuspiciousOperation
 
 from codecov_auth.helpers import create_signed_value
 from codecov_auth.models import Session, Owner
 from utils.encryption import encryptor
 from utils.config import get_config
+from utils.services import get_short_service_name
 from services.refresh import RefreshService
 from services.segment import SegmentService
+from services.redis_configuration import get_redis_connection
+
 
 log = logging.getLogger(__name__)
+
+
+class StateMixin(object):
+    """
+    Implement the bevavior described here: https://auth0.com/docs/protocols/state-parameters
+
+    - Generating a random string (called state) and storing it in Redis
+    - Passing that state as argument to the oauth2 provider (eg github)
+    - The oauth2 provider redirects to Codecov with the same state
+    - We can verify if this state is in Redis, meaning Codecov generated when starting the redirection
+    - Additionnally; we store in redis the redirection url after auth passed by the front-end
+    - Once we access the redirection url from state, the state is cleaned from Redis
+
+
+    How to use:
+
+    Mixin for a Django ClassBaseView (must have self.request set)
+
+    To generate the state:
+    - self.generate_state()
+      -> Will return a state to give to the oauth2 provider.
+      -> Will also store the redirect url from request.GET['to'] query param.
+
+    To get the redirect url from state:
+    - self.get_redirection_url_from_state(state)
+      -> Will return a safe URL to redirect after authentication
+      -> raise django.core.exceptions.SuspiciousOperation if no state was found
+      -> /!\ Once called; it will remove the state from Storage
+
+    """
+
+    def __init__(self, *args, **kwargs):
+        self.redis = get_redis_connection()
+        return super().__init__(*args, **kwargs)
+
+    def _get_key_redis(self, state: str) -> str:
+        return f"oauth-state-{state}"
+
+    def _is_matching_cors_domains(self, url_domain) -> bool:
+        # make sure the domain is part of the CORS so that's a safe domain to
+        # redirect to.
+        if url_domain in settings.CORS_ALLOWED_ORIGINS:
+            return True
+        for domain_pattern in settings.CORS_ALLOWED_ORIGIN_REGEXES:
+            if re.match(domain_pattern, url_domain):
+                return True
+        return False
+
+    def _is_valid_redirection(self, to) -> bool:
+        # make sure the redirect url is from a domain we own
+        try:
+            url = urlparse(to)
+        except ValueError:
+            return False
+        # the url is only a path without domain, it's valid
+        only_path = not url.scheme and not url.netloc and url.path
+        if only_path:
+            return True
+        url_domain = f"{url.scheme}://{url.netloc}"
+        return self._is_matching_cors_domains(url_domain)
+
+    def _generate_redirection_url(self) -> str:
+        redirection_url = self.request.GET.get("to")
+        if redirection_url and self._is_valid_redirection(redirection_url):
+            return redirection_url
+        return (
+            f"{settings.CODECOV_DASHBOARD_URL}/{get_short_service_name(self.service)}"
+        )
+
+    def generate_state(self) -> str:
+        state = uuid.uuid4().hex
+        redirection_url = self._generate_redirection_url()
+        self.redis.setex(self._get_key_redis(state), 500, redirection_url)
+        return state
+
+    def get_redirection_url_from_state(self, state) -> str:
+        data = self.redis.get(self._get_key_redis(state))
+        if not data:
+            raise SuspiciousOperation("Error with authentication please try again")
+        self.redis.delete(self._get_key_redis(state))
+        return data.decode("utf-8")
 
 
 class LoginMixin(object):
@@ -101,7 +189,7 @@ class LoginMixin(object):
             domain=domain_to_use,
             httponly=True,
             secure=True,
-            samesite="Lax",
+            samesite=settings.COOKIE_SAME_SITE,
         )
         response.set_cookie(
             f"{self.service}-username",
@@ -109,7 +197,7 @@ class LoginMixin(object):
             domain=domain_to_use,
             httponly=True,
             secure=True,
-            samesite="Lax",
+            samesite=settings.COOKIE_SAME_SITE,
         )
 
     def _check_user_count_limitations(self):

@@ -10,24 +10,25 @@ from django.views import View
 from shared.torngit import Gitlab
 from shared.torngit.exceptions import TorngitError
 
-from codecov_auth.views.base import LoginMixin
+from codecov_auth.views.base import LoginMixin, StateMixin
 
 log = logging.getLogger(__name__)
 
 
-class GitlabLoginView(View, LoginMixin):
+class GitlabLoginView(LoginMixin, StateMixin, View):
     service = "gitlab"
     error_redirection_page = "/"
 
     def get_url_to_redirect_to(self):
         repo_service = Gitlab
         base_url = urljoin(repo_service.service_url, "oauth/authorize")
+        state = self.generate_state()
         redirect_uri = settings.GITLAB_REDIRECT_URI
         query = dict(
             response_type="code",
             client_id=settings.GITLAB_CLIENT_ID,
             redirect_uri=redirect_uri,
-            state=uuid4().hex,
+            state=state,
         )
         query_str = urlencode(query)
         return f"{base_url}?{query_str}"
@@ -47,13 +48,15 @@ class GitlabLoginView(View, LoginMixin):
         )
 
     def actual_login_step(self, request):
+        state = request.GET.get("state")
+        redirection_url = self.get_redirection_url_from_state(state)
         code = request.GET.get("code")
         try:
             user_dict = asyncio.run(self.fetch_user_data(request, code))
         except TorngitError:
             log.warning("Unable to log in due to problem on Gitlab", exc_info=True)
             return redirect(self.error_redirection_page)
-        response = redirect(settings.CODECOV_DASHBOARD_URL + "/gl")
+        response = redirect(redirection_url)
         self.login_from_user_dict(user_dict, request, response)
         return response
 

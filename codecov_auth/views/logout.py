@@ -22,7 +22,9 @@ def logout_view(request, service):
     response = redirect("/")
     delete_session(request, service_name)
     logout(request)
-    kwargs_cookie = dict(domain=settings.COOKIES_DOMAIN, samesite="Lax")
+    kwargs_cookie = dict(
+        domain=settings.COOKIES_DOMAIN, samesite=settings.COOKIE_SAME_SITE
+    )
     response.delete_cookie("staff_user", **kwargs_cookie)
     response.delete_cookie(f"{service_name}-username", **kwargs_cookie)
     response.delete_cookie(f"{service_name}-token", **kwargs_cookie)
