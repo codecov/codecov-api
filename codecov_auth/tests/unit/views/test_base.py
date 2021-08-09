@@ -85,6 +85,7 @@ def test_get_redirection_url_from_state_give_url(mock_redis):
     mixin = set_up_mixin()
     mock_redis.set(f"oauth-state-abc", "http://localhost/gh/codecov")
     assert mixin.get_redirection_url_from_state("abc") == "http://localhost/gh/codecov"
+    assert mock_redis.get(f"oauth-state-abc") is None
 
 
 class LoginMixinTests(TestCase):

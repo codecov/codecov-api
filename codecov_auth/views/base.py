@@ -31,6 +31,7 @@ class StateMixin(object):
     - The oauth2 provider redirects to Codecov with the same state
     - We can verify if this state is in Redis, meaning Codecov generated when starting the redirection
     - Additionnally; we store in redis the redirection url after auth passed by the front-end
+    - Once we access the redirection url from state, the state is cleaned from Redis
 
 
     How to use:
@@ -46,6 +47,7 @@ class StateMixin(object):
     - self.get_redirection_url_from_state(state)
       -> Will return a safe URL to redirect after authentication
       -> raise django.core.exceptions.SuspiciousOperation if no state was found
+      -> /!\ Once called; it will remove the state from Storage
 
     """
 
@@ -97,6 +99,7 @@ class StateMixin(object):
         data = self.redis.get(self._get_key_redis(state))
         if not data:
             raise SuspiciousOperation("Error with authentication please try again")
+        self.redis.delete(self._get_key_redis(state))
         return data.decode("utf-8")
 
 
