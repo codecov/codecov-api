@@ -25,6 +25,15 @@ log = logging.getLogger(__name__)
 
 class StateMixin(object):
     """
+    Implement the bevavior described here: https://auth0.com/docs/protocols/state-parameters
+
+    - Generating a random string (called state) and storing it in Redis
+    - Passing that state as argument to the oauth2 provider (eg github)
+    - The oauth2 provider redirects to Codecov with the same state
+    - We can verify if this state is in Redis, meaning Codecov generated when starting the redirection
+    - Additionnally; we store in redis the redirection url after auth passed by the front-end
+
+
     How to use:
 
     Mixin for a Django ClassBaseView (must have self.request set)
