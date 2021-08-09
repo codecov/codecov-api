@@ -1,7 +1,6 @@
-import string
-import random
 import logging
 import re
+import uuid
 from json import dumps
 from urllib.parse import urlparse
 
@@ -89,8 +88,7 @@ class StateMixin(object):
         )
 
     def generate_state(self) -> str:
-        possible_keys = string.ascii_uppercase + string.digits
-        state = "".join(random.choices(possible_keys, k=16))
+        state = uuid.uuid4().hex
         redirection_url = self._generate_redirection_url()
         self.redis.setex(self._get_key_redis(state), 500, redirection_url)
         return state
