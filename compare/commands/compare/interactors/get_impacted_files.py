@@ -32,11 +32,12 @@ class GetImpactedFilesInteractor(BaseInteractor):
             return []
 
     def deserialize_comparison(self, impacted_files):
-        for file in impacted_files:
+        flat_impacted_files = impacted_files["changes"] + impacted_files["diff"]
+        for file in flat_impacted_files:
             deserialize_totals(file, "base_totals")
             deserialize_totals(file, "compare_totals")
             deserialize_totals(file, "patch")
-        return impacted_files
+        return flat_impacted_files
 
     async def execute(self, comparison):
         if not comparison.report_storage_path:
