@@ -35,7 +35,7 @@ class CommitCommandsTest(TransactionTestCase):
         self.command.get_file_content(self.commit, "path/to/file")
         interactor_mock.assert_called_once_with(self.commit, "path/to/file")
 
-    @patch("core.commands.commit.commit.GetFileCoverageInteractor.execute")
-    def test_get_file_coverage_delegate_to_interactor(self, interactor_mock):
-        self.command.get_file_coverage(self.commit, "path/to/file")
+    @patch("core.commands.commit.commit.GetFileReportInteractor.execute")
+    def test_get_line_coverage_delegate_to_interactor(self, interactor_mock):
+        self.command.get_file_report(self.commit, "path/to/file")
         interactor_mock.assert_called_once_with(self.commit, "path/to/file")
