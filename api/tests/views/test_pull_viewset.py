@@ -1,6 +1,6 @@
 import json
 
-from unittest.mock import patch
+from unittest.mock import patch, call
 
 from rest_framework.test import APITestCase
 from rest_framework.reverse import reverse
@@ -128,7 +128,8 @@ class PullViewSetTests(APITestCase):
         response = self.client.get("/api/github/codecov/testRepoName/pulls/10/")
         self.assertEqual(response.status_code, 404)
 
-    def test_update_pull_user_provided_base(self, mock_provider):
+    @patch("services.task.TaskService.pulls_sync")
+    def test_update_pull_user_provided_base(self, pulls_sync_mock, mock_provider):
         mock_provider.return_value = True, True
         self.client.force_login(user=self.user)
         response = self.client.put(
@@ -138,6 +139,7 @@ class PullViewSetTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         content = json.loads(response.content.decode())
         self.assertEqual(content["user_provided_base_sha"], "new-sha")
+        pulls_sync_mock.assert_called_once_with(repoid=self.repo.repoid, pullid="10")
 
     def test_update_pull_user_provided_base_no_permissions(self, mock_provider):
         mock_provider.return_value = False, False
@@ -149,3 +151,4 @@ class PullViewSetTests(APITestCase):
             {"user_provided_base_sha": "new-sha"},
         )
         self.assertEqual(response.status_code, 404)
+        

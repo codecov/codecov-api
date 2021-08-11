@@ -10,7 +10,7 @@ from internal_api.mixins import RepoPropertyMixin
 from core.models import Pull, Commit
 from .serializers import PullSerializer
 from internal_api.permissions import BasePickingPermissions
-
+from services.task import TaskService
 
 log = logging.getLogger(__name__)
 
@@ -40,3 +40,8 @@ class PullViewSet(
                 ).values("ci_passed")[:1]
             ),
         )
+    
+    def perform_update(self, serializer):
+        result = super().perform_update(serializer)
+        TaskService().pulls_sync(repoid=self.repo.repoid, pullid=self.kwargs.get("pk"))
+        return result
