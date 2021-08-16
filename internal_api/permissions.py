@@ -37,6 +37,14 @@ class RepositoryPermissionsService:
             )
         )
 
+    def has_write_permissions(self, user, repo):
+        return user.is_authenticated and (
+                repo.author.ownerid == user.ownerid
+                or user.permission
+                and repo.repoid in user.permission
+                or self._fetch_provider_permissions(user, repo)[1]
+            )
+
     def user_is_activated(self, user, owner):
         if user.ownerid == owner.ownerid:
             return True
@@ -101,7 +109,7 @@ class RepositoryArtifactPermissions(BasePermission):
         raise Http404()
 
 class BasePickingPermissions(BasePermission):
-
+    #TODO: Replace with token based system once ready and remove
     permissions_service = RepositoryPermissionsService()
     message = (
         f"Permission denied: some possbile reasons for this are (1) the "
@@ -118,7 +126,7 @@ class BasePickingPermissions(BasePermission):
             )
         else:
             user_activated_permissions = True
-        has_permissions = self.permissions_service.has_read_permissions(request.user, view.repo)
+        has_permissions = self.permissions_service.has_write_permissions(request.user, view.repo)
 
         if has_permissions and user_activated_permissions:
             return True

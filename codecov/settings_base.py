@@ -34,7 +34,7 @@ INSTALLED_APPS = [
     "graphql_api",
     "compare",
     "profiling",
-    "api",
+    "public_api",
 ]
 
 MIDDLEWARE = [

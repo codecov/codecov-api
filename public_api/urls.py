@@ -2,7 +2,7 @@ from django.urls import path, include
 from utils.routers import OptionalTrailingSlashRouter
 
 
-from api.views import PullViewSet
+from public_api.views import PullViewSet
 
 repository_router = OptionalTrailingSlashRouter()
 repository_router.register(r"pulls", PullViewSet, basename="pulls")
