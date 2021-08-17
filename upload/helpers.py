@@ -20,7 +20,7 @@ from services.task import TaskService
 from utils.config import get_config
 from utils.encryption import encryptor
 
-from upload.authentication.tokenless.tokenless import TokenlessUploadHandler
+from upload.authentication.tokenless import TokenlessUploadHandler
 
 is_pull_noted_in_branch = re.compile(r".*(pull|pr)\/(\d+).*")
 

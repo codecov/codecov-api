@@ -43,7 +43,7 @@ from upload.helpers import (
     dispatch_upload_task,
 )
 
-from upload.authentication.tokenless.tokenless import TokenlessUploadHandler
+from upload.authentication.tokenless import TokenlessUploadHandler
 
 
 def mock_get_config_global_upload_tokens(*args):
