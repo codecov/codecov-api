@@ -151,4 +151,26 @@ class PullViewSetTests(APITestCase):
             {"user_provided_base_sha": "new-sha"},
         )
         self.assertEqual(response.status_code, 404)
-        
+    
+    @patch("services.task.TaskService.pulls_sync")
+    def test_put_not_found_pull_user_provided_base(self, pulls_sync_mock, mock_provider):
+        mock_provider.return_value = True, True
+        self.client.force_login(user=self.user)
+        response = self.client.put(
+            "/api/github/codecov/testRepoName/pulls/15/",
+            {"user_provided_base_sha": "new-sha"},
+        )
+        self.assertEqual(response.status_code, 404)
+        assert not pulls_sync_mock.called
+
+
+    @patch("services.task.TaskService.pulls_sync")
+    def test_post_pull_user_provided_base(self, pulls_sync_mock, mock_provider):
+        mock_provider.return_value = True, True
+        self.client.force_login(user=self.user)
+        response = self.client.post(
+            "/api/github/codecov/testRepoName/pulls/15/",
+            {"user_provided_base_sha": "new-sha"},
+        )
+        self.assertEqual(response.status_code, 405)
+        assert not pulls_sync_mock.called
