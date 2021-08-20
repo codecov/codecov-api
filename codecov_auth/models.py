@@ -2,7 +2,7 @@ from datetime import datetime
 import os
 import uuid
 import logging
-from time import time
+import binascii
 from hashlib import md5
 from enum import Enum
 
@@ -23,7 +23,7 @@ from codecov_auth.constants import (
     USER_PLAN_REPRESENTATIONS,
     FREE_PLAN_NAME,
 )
-
+from codecov.models import BaseCodecovModel
 from codecov_auth.helpers import get_gitlab_url
 
 # Large number to represent Infinity as float('int') isnt JSON serializable
@@ -410,3 +410,19 @@ class Session(models.Model):
     owner = models.ForeignKey(Owner, db_column="ownerid", on_delete=models.CASCADE)
     lastseen = models.DateTimeField(null=True)
     type = models.TextField(choices=SessionType.choices)  # Really an ENUM in db
+
+
+class RepositoryToken(BaseCodecovModel):
+    repository = models.ForeignKey(
+        "core.Repository",
+        db_column="repoid",
+        on_delete=models.CASCADE,
+        related_name="tokens",
+    )
+    token_type = models.CharField(max_length=50)
+    valid_until = models.DateTimeField(null=True)
+    key = models.CharField(max_length=40, unique=True)
+
+    @classmethod
+    def generate_key(cls):
+        return binascii.hexlify(os.urandom(20)).decode()
