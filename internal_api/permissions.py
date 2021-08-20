@@ -37,6 +37,12 @@ class RepositoryPermissionsService:
             )
         )
 
+    def has_write_permissions(self, user, repo):
+        return user.is_authenticated and (
+                repo.author.ownerid == user.ownerid
+                or self._fetch_provider_permissions(user, repo)[1]
+            )
+
     def user_is_activated(self, user, owner):
         if user.ownerid == owner.ownerid:
             return True
@@ -96,6 +102,33 @@ class RepositoryArtifactPermissions(BasePermission):
         if has_read_permissions and user_activated_permissions:
             return True
         if has_read_permissions and not user_activated_permissions:
+            # user that can access the repo; but are not activated
+            return False
+        raise Http404()
+
+class BasePickingPermissions(BasePermission):
+    #TODO: Replace with token based system once ready and remove
+    permissions_service = RepositoryPermissionsService()
+    message = (
+        f"Permission denied: some possbile reasons for this are (1) the "
+        f"user doesn't have permission to view the specific resource; "
+        f"or (2) the organization has a per-user plan, and the user is "
+        f"trying to view a private repo but is not activated."
+    )
+
+    def has_permission(self, request, view):
+        if view.repo.private:
+            user_activated_permissions = (
+                request.user.is_authenticated
+                and self.permissions_service.user_is_activated(request.user, view.owner)
+            )
+        else:
+            user_activated_permissions = True
+        has_permissions = self.permissions_service.has_write_permissions(request.user, view.repo)
+
+        if has_permissions and user_activated_permissions:
+            return True
+        if has_permissions and not user_activated_permissions:
             # user that can access the repo; but are not activated
             return False
         raise Http404()
