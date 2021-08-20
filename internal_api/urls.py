@@ -18,7 +18,7 @@ from internal_api.compare.views import CompareViewSet
 from rest_framework.routers import DefaultRouter
 from rest_framework.exceptions import server_error
 
-from .routers import OptionalTrailingSlashRouter, RetrieveUpdateDestroyRouter
+from utils.routers import OptionalTrailingSlashRouter, RetrieveUpdateDestroyRouter
 from .error_views import not_found
 
 
