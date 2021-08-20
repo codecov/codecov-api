@@ -40,8 +40,6 @@ class RepositoryPermissionsService:
     def has_write_permissions(self, user, repo):
         return user.is_authenticated and (
                 repo.author.ownerid == user.ownerid
-                or user.permission
-                and repo.repoid in user.permission
                 or self._fetch_provider_permissions(user, repo)[1]
             )
 

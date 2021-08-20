@@ -6,6 +6,8 @@ from rest_framework.test import APITestCase
 from rest_framework.reverse import reverse
 
 from codecov_auth.tests.factories import OwnerFactory
+from core.models import Pull
+
 from core.tests.factories import (
     RepositoryFactory,
     PullFactory,
@@ -34,7 +36,7 @@ class PullViewSetTests(APITestCase):
             organizations=[self.org.ownerid],
             permission=repo_with_permission,
         )
-        PullFactory(
+        self.open_pull = PullFactory(
             pullid=10,
             author=self.org,
             repository=self.repo,
@@ -139,6 +141,7 @@ class PullViewSetTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         content = json.loads(response.content.decode())
         self.assertEqual(content["user_provided_base_sha"], "new-sha")
+        self.assertEqual(Pull.objects.get(pk=10, repository=self.repo).user_provided_base_sha, "new-sha")
         pulls_sync_mock.assert_called_once_with(repoid=self.repo.repoid, pullid="10")
 
     def test_update_pull_user_provided_base_no_permissions(self, mock_provider):
