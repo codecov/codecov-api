@@ -473,7 +473,9 @@ def validate_upload(upload_params, repository, redis):
     repository.activated = True
     repository.active = True
     repository.deleted = False
-    repository.save()
+    repository.save(
+        update_fields=["activated", "active", "deleted", "updatestamp"]
+    )
 
 
 def parse_headers(headers, upload_params):
