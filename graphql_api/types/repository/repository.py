@@ -6,6 +6,11 @@ from graphql_api.dataloader.owner import load_owner_by_id
 repository_bindable = ObjectType("Repository")
 
 repository_bindable.set_alias("updatedAt", "updatestamp")
+
+# latest_commit_at and coverage have their NULL value defaulted to -1/an old date
+# so the NULL would end up last in the queryset as we do not have control over
+# the order_by call. The true value of is under true_*; which would actually contain NULL
+# see with_cache_latest_commit_at()/with_cache_coverage() from core/managers.py
 repository_bindable.set_alias("latestCommitAt", "true_latest_commit_at")
 repository_bindable.set_alias("coverage", "true_coverage")
 
