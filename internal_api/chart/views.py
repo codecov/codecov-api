@@ -105,9 +105,7 @@ class RepositoryChartHandler(APIView, RepositoriesMixin):
                     "complexity_ratio": round(commit.complexity_ratio * 100, 2),
                     "commitid": commit.commitid,
                 }
-                for commit in annotated_queryset.order_by(
-                    f"{coverage_ordering}timestamp"
-                )[:max_num_commits]
+                for commit in commits
                 if commit.complexity_ratio is not None
             ]
 
