@@ -1,3 +1,4 @@
+import datetime
 from dateutil import parser
 
 from django.db.models import (
@@ -13,8 +14,9 @@ from django.db.models import (
     IntegerField,
     DateTimeField,
     JSONField,
+    Value,
 )
-from django.db.models.functions import Cast
+from django.db.models.functions import Cast, Coalesce
 from django.db.models.fields.json import KeyTextTransform
 
 
@@ -186,12 +188,22 @@ class RepositoryQuerySet(QuerySet):
         Annotates queryset with coverage based on a Repository's cache
         """
         return self.annotate(
-            coverage=Cast(
+            true_coverage=Cast(
                 KeyTextTransform(
                     "c", KeyTextTransform("totals", KeyTextTransform("commit", "cache"))
                 ),
                 output_field=FloatField(),
-            )
+            ),
+            coverage=Coalesce(
+                Cast(
+                    KeyTextTransform(
+                        "c",
+                        KeyTextTransform("totals", KeyTextTransform("commit", "cache")),
+                    ),
+                    output_field=FloatField(),
+                ),
+                Value(-1),
+            ),
         )
 
     def with_cache_latest_commit_at(self):
@@ -199,10 +211,17 @@ class RepositoryQuerySet(QuerySet):
         Annotates queryset with coverage based on a Repository's cache
         """
         return self.annotate(
-            latest_commit_at=Cast(
+            true_latest_commit_at=Cast(
                 KeyTextTransform("timestamp", KeyTextTransform("commit", "cache")),
                 output_field=DateTimeField(),
-            )
+            ),
+            latest_commit_at=Coalesce(
+                Cast(
+                    KeyTextTransform("timestamp", KeyTextTransform("commit", "cache")),
+                    output_field=DateTimeField(),
+                ),
+                Value(datetime.datetime(1900, 1, 1)),
+            ),
         )
 
     def get_or_create_from_git_repo(self, git_repo, owner):
