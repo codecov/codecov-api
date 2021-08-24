@@ -89,10 +89,10 @@ def test_get_redirection_url_from_state_give_url(mock_redis):
     assert mixin.get_redirection_url_from_state("abc") == "http://localhost/gh/codecov"
 
 
-def test_remove_state(mock_redis):
+def test_remove_state_with_with_delay(mock_redis):
     mixin = set_up_mixin()
     mock_redis.set(f"oauth-state-abc", "http://localhost/gh/codecov")
-    mixin.remove_state("abc")
+    mixin.delay_remove_state("abc", delay=5)
     initial_datetime = datetime.now()
     with freeze_time(initial_datetime) as frozen_time:
         assert mock_redis.get(f"oauth-state-abc") is not None
@@ -100,6 +100,13 @@ def test_remove_state(mock_redis):
         assert mock_redis.get(f"oauth-state-abc") is not None
         frozen_time.move_to(initial_datetime + timedelta(seconds=6))
         assert mock_redis.get(f"oauth-state-abc") is None
+
+
+def test_remove_state_with_with_no_delay(mock_redis):
+    mixin = set_up_mixin()
+    mock_redis.set(f"oauth-state-abc", "http://localhost/gh/codecov")
+    mixin.delay_remove_state("abc")
+    assert mock_redis.get(f"oauth-state-abc") is None
 
 
 class LoginMixinTests(TestCase):

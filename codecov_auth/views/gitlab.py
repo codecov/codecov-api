@@ -58,7 +58,7 @@ class GitlabLoginView(LoginMixin, StateMixin, View):
         redirection_url = self.get_redirection_url_from_state(state)
         response = redirect(redirection_url)
         self.login_from_user_dict(user_dict, request, response)
-        self.remove_state(state)
+        self.delay_remove_state(state, delay=5)
         return response
 
     def get(self, request):

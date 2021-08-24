@@ -62,7 +62,7 @@ class GithubLoginView(LoginMixin, StateMixin, View):
             return redirect(self.error_redirection_page)
         response = redirect(redirection_url)
         self.login_from_user_dict(user_dict, request, response)
-        self.remove_state(state)
+        self.delay_remove_state(state)
         return response
 
     def get(self, request):
