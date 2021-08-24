@@ -133,7 +133,10 @@ class UploadHandler(APIView):
         # Validate the upload to make sure the org has enough repo credits and is allowed to upload for this commit
         redis = get_redis_connection()
         validate_upload(upload_params, repository, redis)
-
+        log.info(
+            "Upload was determined to be valid",
+            extra=dict(repoid=repository.repoid)
+        )
         # Do some processing to handle special cases for branch, pr, and commit values, and determine which values to use
         # note that these values may be different from the values provided in the upload_params
         branch = determine_upload_branch_to_use(upload_params, repository.branch)
