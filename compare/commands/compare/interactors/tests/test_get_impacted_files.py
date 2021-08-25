@@ -43,28 +43,46 @@ class GetImpactedFilesInteractorTest(TransactionTestCase):
     @async_to_sync
     async def test_when_fetching_file(self, mock_read_file):
         mock_read_file.return_value = json.dumps(
-            [
-                {
-                    "path": "src/config.js",
-                    "base_totals": [0, 4, 4, 0, 0, "100", 0, 2, 0, 0, 0, 0, 0],
-                    "compare_totals": [0, 6, 4, 2, 0, "66.66667", 0, 3, 0, 0, 0, 0, 0],
-                    "patch": [0, 2, 0, 2, 0, "0", 0, 1, 0, 0, 0, 0, 0],
-                    "new": False,
-                    "deleted": False,
-                    "in_diff": True,
-                    "old_path": None,
-                },
-                {
-                    "path": "src/App.js",
-                    "base_totals": None,
-                    "compare_totals": None,
-                    "patch": None,
-                    "new": False,
-                    "deleted": False,
-                    "in_diff": True,
-                    "old_path": None,
-                },
-            ]
+            {
+                "changes": [
+                    {
+                        "path": "src/config.js",
+                        "base_totals": [0, 4, 4, 0, 0, "100", 0, 2, 0, 0, 0, 0, 0],
+                        "compare_totals": [
+                            0,
+                            6,
+                            4,
+                            2,
+                            0,
+                            "66.66667",
+                            0,
+                            3,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                        ],
+                        "patch": [0, 2, 0, 2, 0, "0", 0, 1, 0, 0, 0, 0, 0],
+                        "new": False,
+                        "deleted": False,
+                        "in_diff": True,
+                        "old_path": None,
+                    },
+                ],
+                "diff": [
+                    {
+                        "path": "src/App.js",
+                        "base_totals": None,
+                        "compare_totals": None,
+                        "patch": None,
+                        "new": False,
+                        "deleted": False,
+                        "in_diff": True,
+                        "old_path": None,
+                    },
+                ],
+            }
         )
         files = await GetImpactedFilesInteractor(AnonymousUser(), "github").execute(
             self.comparison_with_storage
