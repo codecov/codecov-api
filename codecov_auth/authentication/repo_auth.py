@@ -35,7 +35,7 @@ class TableTokenRepositoryAuth(RepositoryAuthInterface):
         return [self._repository]
 
 
-class RepositoryLegacyTokenAuthentication(authentication.BaseAuthentication):
+class RepositoryLegacyQueryTokenAuthentication(authentication.BaseAuthentication):
     def authenticate(self, request):
         token = request.GET.get("token")
         if not token:
@@ -48,6 +48,17 @@ class RepositoryLegacyTokenAuthentication(authentication.BaseAuthentication):
             repository = Repository.objects.get(upload_token=token)
         except Repository.DoesNotExist:
             return None
+        return (
+            RepositoryAsUser(repository),
+            LegacyTokenRepositoryAuth(repository, {"token": token}),
+        )
+
+class RepositoryLegacyTokenAuthentication(authentication.TokenAuthentication):
+    def authenticate_credentials(self, token):
+        try:
+            repository = Repository.objects.get(upload_token=token)
+        except Repository.DoesNotExist:
+            raise exceptions.AuthenticationFailed("Invalid token.")
         return (
             RepositoryAsUser(repository),
             LegacyTokenRepositoryAuth(repository, {"token": token}),

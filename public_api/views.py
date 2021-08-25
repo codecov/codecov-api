@@ -7,9 +7,10 @@ from rest_framework import filters
 from rest_framework import viewsets, mixins
 
 from internal_api.mixins import RepoPropertyMixin
+from codecov_auth.authentication.repo_auth import RepositoryLegacyTokenAuthentication
 from core.models import Pull, Commit
+from .permissions import PullUpdatePermission
 from .serializers import PullSerializer
-from internal_api.permissions import BasePickingPermissions
 from services.task import TaskService
 
 log = logging.getLogger(__name__)
@@ -26,7 +27,8 @@ class PullViewSet(
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ["state"]
     ordering_fields = ("pullid",)
-    permission_classes = [BasePickingPermissions]
+    authentication_classes = [RepositoryLegacyTokenAuthentication]
+    permission_classes = [PullUpdatePermission]
 
     def get_object(self):
         pullid = self.kwargs.get("pk")

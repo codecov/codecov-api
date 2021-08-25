@@ -1,25 +1,28 @@
+from datetime import timedelta
+import uuid
+
 import pytest
+from django.utils import timezone
 from rest_framework import exceptions
 from rest_framework.test import APIRequestFactory
-from datetime import timedelta
-from django.utils import timezone
 
-from codecov_auth.authentication.repo_auth import RepositoryLegacyTokenAuthentication
+from codecov_auth.authentication.repo_auth import (
+    RepositoryLegacyQueryTokenAuthentication,
+    RepositoryLegacyTokenAuthentication, RepositoryTokenAuthentication)
 from codecov_auth.models import RepositoryToken
 from core.tests.factories import RepositoryFactory, RepositoryTokenFactory
-from codecov_auth.authentication.repo_auth import RepositoryTokenAuthentication
 
 
-class TestRepositoryLegacyTokenAuthentication(object):
+class TestRepositoryLegacyQueryTokenAuthentication(object):
     def test_authenticate_unauthenticated(self):
         request = APIRequestFactory().get("/endpoint")
-        authentication = RepositoryLegacyTokenAuthentication()
+        authentication = RepositoryLegacyQueryTokenAuthentication()
         res = authentication.authenticate(request)
         assert res is None
 
     def test_authenticate_non_uuid_token(self):
         request = APIRequestFactory().get("/endpoint?token=banana")
-        authentication = RepositoryLegacyTokenAuthentication()
+        authentication = RepositoryLegacyQueryTokenAuthentication()
         res = authentication.authenticate(request)
         assert res is None
 
@@ -27,14 +30,14 @@ class TestRepositoryLegacyTokenAuthentication(object):
         request = APIRequestFactory().get(
             "/endpoint?token=testwabzdowkt4kyti9w0hxa33zetsta"
         )
-        authentication = RepositoryLegacyTokenAuthentication()
+        authentication = RepositoryLegacyQueryTokenAuthentication()
         res = authentication.authenticate(request)
         assert res is None
 
     def test_authenticate_uuid_token_with_repo(self, db):
         repo = RepositoryFactory.create()
         request = APIRequestFactory().get(f"/endpoint?token={repo.upload_token}")
-        authentication = RepositoryLegacyTokenAuthentication()
+        authentication = RepositoryLegacyQueryTokenAuthentication()
         res = authentication.authenticate(request)
         assert res is not None
         user, auth = res
@@ -42,6 +45,29 @@ class TestRepositoryLegacyTokenAuthentication(object):
         assert auth.get_repositories() == [repo]
         assert auth.get_scopes() == ["upload"]
         assert user.is_authenticated()
+
+class TestRepositoryLegacyTokenAuthentication(object):
+    def test_authenticate_credentials_empty(self, db):
+        token = None
+        authentication = RepositoryLegacyTokenAuthentication()
+        with pytest.raises(exceptions.AuthenticationFailed):
+            authentication.authenticate_credentials(token)
+
+    def test_authenticate_credentials_uuid_no_repo(self, db):
+        token = uuid.uuid4()
+        authentication = RepositoryLegacyTokenAuthentication()
+        with pytest.raises(exceptions.AuthenticationFailed):
+            authentication.authenticate_credentials(token)
+
+    def test_authenticate_credentials_uuid_token_with_repo(self, db):
+        repo = RepositoryFactory.create()
+        authentication = RepositoryLegacyTokenAuthentication()
+        res = authentication.authenticate_credentials(repo.upload_token)
+        assert res is not None
+        user, auth = res
+        assert user._repository == repo
+        assert auth.get_repositories() == [repo]
+        assert auth.get_scopes() == ["upload"]
 
 
 class TestRepositoryTableTokenAuthentication(object):
