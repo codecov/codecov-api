@@ -49,15 +49,16 @@ class GitlabLoginView(LoginMixin, StateMixin, View):
 
     def actual_login_step(self, request):
         state = request.GET.get("state")
-        redirection_url = self.get_redirection_url_from_state(state)
         code = request.GET.get("code")
         try:
             user_dict = asyncio.run(self.fetch_user_data(request, code))
         except TorngitError:
             log.warning("Unable to log in due to problem on Gitlab", exc_info=True)
             return redirect(self.error_redirection_page)
+        redirection_url = self.get_redirection_url_from_state(state)
         response = redirect(redirection_url)
         self.login_from_user_dict(user_dict, request, response)
+        self.remove_state(state, delay=5)
         return response
 
     def get(self, request):
