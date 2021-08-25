@@ -1,6 +1,8 @@
 type File {
     content: String
     coverage: [CoverageAnnotation]
+    totals: CoverageTotals
+
 }
 
 type CoverageAnnotation {

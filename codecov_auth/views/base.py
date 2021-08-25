@@ -31,8 +31,9 @@ class StateMixin(object):
     - The oauth2 provider redirects to Codecov with the same state
     - We can verify if this state is in Redis, meaning Codecov generated when starting the redirection
     - Additionnally; we store in redis the redirection url after auth passed by the front-end
-    - Once we access the redirection url from state, the state is cleaned from Redis
-
+    - On the request callback; we can fetch the redirection url via the state
+    - If the state is not in Redis; we raise an exception which will return a 400 error
+    - Right before returning the response; we need to remove the state from Redis so it cannot be used again
 
     How to use:
 
@@ -47,7 +48,11 @@ class StateMixin(object):
     - self.get_redirection_url_from_state(state)
       -> Will return a safe URL to redirect after authentication
       -> raise django.core.exceptions.SuspiciousOperation if no state was found
-      -> /!\ Once called; it will remove the state from Storage
+
+    To remove the state:
+    - self.remove_state(state, delay=0)
+      -> Will remove the state from Redis; must be called at the end of the request
+      -> The delay parameter is the number of second in which the state will be removed
 
     """
 
@@ -99,8 +104,14 @@ class StateMixin(object):
         data = self.redis.get(self._get_key_redis(state))
         if not data:
             raise SuspiciousOperation("Error with authentication please try again")
-        self.redis.delete(self._get_key_redis(state))
         return data.decode("utf-8")
+
+    def remove_state(self, state, delay=0) -> None:
+        redirection_url = self.get_redirection_url_from_state(state)
+        if delay == 0:
+            self.redis.delete(self._get_key_redis(state))
+        else:
+            self.redis.setex(self._get_key_redis(state), delay, redirection_url)
 
 
 class LoginMixin(object):

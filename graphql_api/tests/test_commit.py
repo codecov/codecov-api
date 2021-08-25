@@ -26,6 +26,21 @@ query FetchCommit($org: String!, $repo: String!, $commit: String!) {
 """
 
 
+class MockCoverage(object):
+    def __init__(self, cov):
+        self.coverage = cov
+
+
+class MockLines(object):
+    def __init__(self):
+        self.lines = [
+            [0, MockCoverage("1/2")],
+            [1, MockCoverage(1)],
+            [2, MockCoverage(0)],
+        ]
+        self.totals = MockCoverage(83)
+
+
 class TestCommit(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
         asyncio.set_event_loop(asyncio.new_event_loop())
@@ -112,13 +127,13 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         assert commit["yaml"] == yaml.dump(fake_config)
 
     @patch("core.commands.commit.commit.CommitCommands.get_file_content")
-    @patch("core.commands.commit.commit.CommitCommands.get_file_coverage")
+    @patch("core.commands.commit.commit.CommitCommands.get_file_report")
     def test_fetch_commit_coverage_file_call_the_command(
         self, coverage_mock, content_mock
     ):
         query = (
             query_commit
-            % 'coverageFile(path: "path") { content,coverage { line,coverage } }'
+            % 'coverageFile(path: "path") { content,coverage { line,coverage }, totals {coverage} }'
         )
         variables = {
             "org": self.org.username,
@@ -128,16 +143,26 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
         fake_coverage = {
             "content": "file content",
-            "coverage": [{"line": 0, "coverage": 0}],
+            "coverage": [
+                {"line": 0, "coverage": 2},
+                {"line": 1, "coverage": 1},
+                {"line": 2, "coverage": 0},
+            ],
+            "totals": {"coverage": 83.0},
         }
         f = asyncio.Future()
         f.set_result("file content")
         content_mock.return_value = f
-        coverage_mock.return_value = [{"coverage": 0, "line": 0}]
+
+        g = asyncio.Future()
+        g.set_result(MockLines())
+
+        coverage_mock.return_value = g
         data = self.gql_request(query, variables=variables)
         coverageFile = data["owner"]["repository"]["commit"]["coverageFile"]
         assert coverageFile["content"] == fake_coverage["content"]
         assert coverageFile["coverage"] == fake_coverage["coverage"]
+        assert coverageFile["totals"] == fake_coverage["totals"]
 
     @patch(
         "compare.commands.compare.compare.CompareCommands.compare_commit_with_parent"

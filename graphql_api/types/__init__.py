@@ -13,7 +13,7 @@ from .user import user, user_bindable
 from .owner import owner, owner_bindable
 from .repository import repository, repository_bindable
 from .session import session, session_bindable
-from .file import commit_file
+from .file import commit_file, file_bindable
 from .mutation import mutation, mutation_resolvers
 from .enums import enums, enum_types
 
@@ -50,6 +50,7 @@ bindables = [
     repository_bindable,
     session_bindable,
     coverage_totals_bindable,
+    file_bindable,
     upload_bindable,
     datetime_scalar,
     *mutation_resolvers,
