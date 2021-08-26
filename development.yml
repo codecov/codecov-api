@@ -1,0 +1,60 @@
+github:
+  bot:
+    username: codecov-io
+  integration:
+    id: 254
+    pem: src/certs/github.pem
+
+bitbucket:
+  bot:
+    username: codecov-io
+
+gitlab:
+  bot:
+    username: codecov-io
+
+site:
+  codecov:
+    require_ci_to_pass: yes
+
+  coverage:
+    precision: 2
+    round: down
+    range: "70...100"
+
+    status:
+      project: yes
+      patch: yes
+      changes: no
+
+  parsers:
+    gcov:
+      branch_detection:
+        conditional: yes
+        loop: yes
+        method: no
+        macro: no
+
+    javascript:
+      enable_partials: no
+
+  comment:
+    layout: "reach, diff, flags, files, footer"
+    behavior: default
+    require_changes: no
+    require_base: no
+    require_head: yes
+
+
+services:
+  minio: 
+    hash_key: testixik8qdauiab1yiffydimvi72ekq
+    verify_ssl: false
+    host: 'minio'
+    port: 9000
+    # bucket: <bucket-name>
+    # region: <bucket-region>
+    access_key_id: codecov-default-key
+    secret_access_key: codecov-default-secret
+    client_uploads: true
+    dsn: https://stage-web.codecov.dev
