@@ -56,6 +56,10 @@ class RepositoryLegacyQueryTokenAuthentication(authentication.BaseAuthentication
 class RepositoryLegacyTokenAuthentication(authentication.TokenAuthentication):
     def authenticate_credentials(self, token):
         try:
+            token = UUID(token)
+        except (ValueError, TypeError) :
+            raise exceptions.AuthenticationFailed("Invalid token.")
+        try:
             repository = Repository.objects.get(upload_token=token)
         except Repository.DoesNotExist:
             raise exceptions.AuthenticationFailed("Invalid token.")

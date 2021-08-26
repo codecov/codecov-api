@@ -52,9 +52,15 @@ class TestRepositoryLegacyTokenAuthentication(object):
         authentication = RepositoryLegacyTokenAuthentication()
         with pytest.raises(exceptions.AuthenticationFailed):
             authentication.authenticate_credentials(token)
+    
+    def test_authenticate_credentials_not_uuid(self, db):
+        token = "not-a-uuid"
+        authentication = RepositoryLegacyTokenAuthentication()
+        with pytest.raises(exceptions.AuthenticationFailed):
+            authentication.authenticate_credentials(token)
 
     def test_authenticate_credentials_uuid_no_repo(self, db):
-        token = uuid.uuid4()
+        token = str(uuid.uuid4())
         authentication = RepositoryLegacyTokenAuthentication()
         with pytest.raises(exceptions.AuthenticationFailed):
             authentication.authenticate_credentials(token)
