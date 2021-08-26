@@ -467,7 +467,7 @@ class UploadHandlerHelpersTest(TestCase):
             assert expected_value == determine_upload_pr_to_use(upload_params)
 
     @patch("upload.helpers.RepoProviderService")
-    @patch("asyncio.run")
+    @patch("upload.helpers._get_git_commit_data")
     def test_determine_upload_commit_to_use(
         self, mock_repo_provider_service, mock_async
     ):

@@ -8,6 +8,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError, NotFound
 from shared.torngit.exceptions import TorngitObjectNotFoundError, TorngitClientError
+from asgiref.sync import async_to_sync
 
 from .constants import ci, global_upload_token_providers
 from codecov_auth.constants import USER_PLAN_REPRESENTATIONS
@@ -132,14 +133,8 @@ def parse_params(data):
                 else value
             ),
         },
-        "build_url": {
-            "type": "string",
-            "regex": r"^https?\:\/\/(.{,200})",
-        },
-        "flags": {
-            "type": "string",
-            "regex": r"^[\w\.\-\,]+$",
-        },
+        "build_url": {"type": "string", "regex": r"^https?\:\/\/(.{,200})"},
+        "flags": {"type": "string", "regex": r"^[\w\.\-\,]+$"},
         "branch": {
             "type": "string",
             "nullable": True,
@@ -183,9 +178,7 @@ def parse_params(data):
         "package": {"type": "string"},
         "project": {"type": "string"},
         "server_uri": {"type": "string"},
-        "root": {
-            "type": "string",
-        },  # deprecated
+        "root": {"type": "string"},  # deprecated
     }
 
     v = Validator(params_schema, allow_unknown=True)
@@ -280,7 +273,10 @@ def try_to_get_best_possible_bot_token(repository):
             extra=dict(repoid=repository.repoid, botid=repository.bot.ownerid),
         )
         return encryptor.decrypt_token(repository.bot.oauth_token)
-    if repository.author.bot is not None and repository.author.bot.oauth_token is not None:
+    if (
+        repository.author.bot is not None
+        and repository.author.bot.oauth_token is not None
+    ):
         log.info(
             "Repo Owner has specific bot",
             extra=dict(
@@ -301,6 +297,11 @@ def try_to_get_best_possible_bot_token(repository):
     return None
 
 
+@async_to_sync
+async def _get_git_commit_data(adapter, commit, token):
+    return await adapter.get_commit(commit, token)
+
+
 def determine_upload_commit_to_use(upload_params, repository):
     """
     Do processing on the upload request parameters to determine which commit to use for the upload:
@@ -318,25 +319,22 @@ def determine_upload_commit_to_use(upload_params, repository):
             return upload_params.get("commit")
         # Get the commit message from the git provider and check if it's structured like a merge commit message
         try:
-            git_commit_data = asyncio.run(
-                RepoProviderService()
-                .get_adapter(repository.author, repository, use_ssl=True, token=token)
-                .get_commit(upload_params.get("commit"), token)
+            adapter = RepoProviderService().get_adapter(
+                repository.author, repository, use_ssl=True, token=token
+            )
+            git_commit_data = _get_git_commit_data(
+                adapter, upload_params.get("commit"), token
             )
         except TorngitObjectNotFoundError as e:
             log.warning(
                 "Unable to fetch commit. Not found",
-                extra=dict(
-                    commit=upload_params.get("commit"),
-                ),
+                extra=dict(commit=upload_params.get("commit"),),
             )
             return upload_params.get("commit")
         except TorngitClientError as e:
             log.warning(
                 "Unable to fetch commit",
-                extra=dict(
-                    commit=upload_params.get("commit"),
-                ),
+                extra=dict(commit=upload_params.get("commit"),),
             )
             return upload_params.get("commit")
 
@@ -473,9 +471,7 @@ def validate_upload(upload_params, repository, redis):
     repository.activated = True
     repository.active = True
     repository.deleted = False
-    repository.save(
-        update_fields=["activated", "active", "deleted", "updatestamp"]
-    )
+    repository.save(update_fields=["activated", "active", "deleted", "updatestamp"])
 
 
 def parse_headers(headers, upload_params):
