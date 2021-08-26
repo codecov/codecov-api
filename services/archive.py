@@ -8,7 +8,6 @@ from shared.reports.resources import Report
 from shared.helpers.flag import Flag
 
 from django.utils import timezone
-from datetime import datetime
 from hashlib import md5
 from base64 import b16encode
 
@@ -21,6 +20,7 @@ log = logging.getLogger(__name__)
 class MinioEndpoints(Enum):
     chunks = "{version}/repos/{repo_hash}/commits/{commitid}/chunks.txt"
     raw = "v4/raw/{date}/{repo_hash}/{commit_sha}/{reportid}.txt"
+    profiling_upload = "{version}/repos/{repo_hash}/profilinguploads/{profiling_version}/{location}"
 
     def get_path(self, **kwaargs):
         return self.value.format(**kwaargs)
@@ -236,6 +236,11 @@ class ArchiveService(object):
         path = "v4/repos/{}/commits/{}/chunks.txt".format(self.storage_hash, commit_sha)
 
         self.delete_file(path)
+
+    def create_presigned_put(
+        self, path
+    ):
+        return self.storage.create_presigned_put(self.root, path, self.ttl)
 
     def create_raw_upload_presigned_put(
         self, commit_sha, repo_hash=None, filename=None, expires=None

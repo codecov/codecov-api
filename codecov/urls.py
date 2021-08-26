@@ -39,4 +39,5 @@ if not settings.IS_ENTERPRISE:
         path("", include("codecov_auth.urls")),
         path("webhooks/", include("webhook_handlers.urls")),
         path("graphql/", include("graphql_api.urls")),
+        path("profiling/", include("profiling.urls")),
     ]
