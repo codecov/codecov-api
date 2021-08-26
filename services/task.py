@@ -21,6 +21,12 @@ class TaskService(object):
             kwargs=dict(comparison_id=comparison_id),
         ).apply_async()
 
+    def normalize_profiling_upload(self, profiling_upload_id):
+        return self._create_signature(
+            "app.tasks.profilingnormalizertask",
+            kwargs=dict(profiling_upload_id=profiling_upload_id),
+        ).apply_async(countdown=10)
+
     def status_set_pending(self, repoid, commitid, branch, on_a_pull_request):
         self._create_signature(
             "app.tasks.status.SetPending",

@@ -22,3 +22,5 @@ class ProfilingUpload(BaseCodecovModel):
     profiling_commit = models.ForeignKey(
         ProfilingCommit, on_delete=models.CASCADE, related_name="uploads",
     )
+    normalized_at = models.DateTimeField(null=True)
+    normalized_location = models.TextField(null=True)
