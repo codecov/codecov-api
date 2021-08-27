@@ -8,7 +8,7 @@ type Commit {
   pullId: Int
   branchName: String
   yaml: String
-  ciPassed: Boolean!
+  ciPassed: Boolean
   coverageFile(path: String!): File
   compareWithParent: Comparison
   uploads(first: Int, after: String, last: Int, before: String): UploadConnection

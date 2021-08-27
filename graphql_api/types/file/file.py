@@ -29,8 +29,18 @@ def resolve_content(data, info):
         {
             "line": line_report[0],
             "coverage": get_coverage(line_report[1].coverage),
+            "sessions": [session.id for session in line_report[1].sessions],
         }
         for line_report in file_report.lines
+    ]
+
+
+@file_bindable.field("sessions")
+def resolve_sessions(data, info):
+    file_report = data.get("commit_report")
+    return [
+        {"id": id, "flags": session.flags}
+        for id, session in file_report.sessions.items()
     ]
 
 

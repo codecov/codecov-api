@@ -16,8 +16,14 @@ commit_bindable.set_alias("branchName", "branch")
 @commit_bindable.field("coverageFile")
 async def resolve_file(commit, info, path):
     command = info.context["executor"].get_command("commit")
-    file_report = await command.get_file_report(commit, path)
-    return {"file_report": file_report, "commit": commit, "path": path}
+    commit_report = await command.get_commit_report(commit)
+    file_report = commit_report.get(path)
+    return {
+        "commit_report": commit_report,
+        "file_report": file_report,
+        "commit": commit,
+        "path": path,
+    }
 
 
 @commit_bindable.field("totals")
