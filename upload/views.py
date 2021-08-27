@@ -165,7 +165,7 @@ class UploadHandler(APIView):
         redis_key = None  # populated later for v2 uploads when storing report in Redis
 
         # Get the url where the commit details can be found on the Codecov site, we'll return this in the response
-        destination_url = f"{get_config(('setup', 'codecov_url'), default='https://codecov.io')}/{owner.service}/{owner.username}/{repository.name}/commit/{commitid}"
+        destination_url = f"{get_config('setup', 'codecov_url', default='https://codecov.io')}/{owner.service}/{owner.username}/{repository.name}/commit/{commitid}"
 
         # v2 - store request body in redis
         if version == "v2":
