@@ -66,6 +66,7 @@ def main():
             "corsheaders.middleware",
             "dataclasses",
             "hooks",
+            "profiling.migrations",
             "pythonjsonlogger",
             "pythonjsonlogger.jsonlogger",
             "rest_framework",
