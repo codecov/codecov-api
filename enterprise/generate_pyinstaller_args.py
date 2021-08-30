@@ -60,6 +60,7 @@ def main():
             "core.migrations",
             "reports.migrations",
             "codecov_auth.migrations",
+            "compare.migrations",
             "corsheaders",
             "corsheaders.apps",
             "corsheaders.middleware",
