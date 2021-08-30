@@ -4,6 +4,7 @@ import datetime
 from unittest.mock import patch
 from django.test import TransactionTestCase
 
+from shared.reports.types import LineSession
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory, CommitFactory
 from reports.tests.factories import (
@@ -29,7 +30,11 @@ query FetchCommit($org: String!, $repo: String!, $commit: String!) {
 class MockCoverage(object):
     def __init__(self, cov):
         self.coverage = cov
-        self.sessions = []
+        self.sessions = [
+            LineSession(0, None),
+            LineSession(1, None),
+            LineSession(2, None),
+        ]
 
 
 class MockLines(object):
@@ -140,7 +145,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
     ):
         query = (
             query_commit
-            % 'coverageFile(path: "path") { content,coverage { line,coverage }, totals {coverage} }'
+            % 'coverageFile(path: "path") { content,coverage { line,coverage,sessions }, totals {coverage} }'
         )
         variables = {
             "org": self.org.username,
@@ -151,9 +156,9 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         fake_coverage = {
             "content": "file content",
             "coverage": [
-                {"line": 0, "coverage": 2},
-                {"line": 1, "coverage": 1},
-                {"line": 2, "coverage": 0},
+                {"line": 0, "coverage": 2, "sessions": ["0", "1", "2"]},
+                {"line": 1, "coverage": 1, "sessions": ["0", "1", "2"]},
+                {"line": 2, "coverage": 0, "sessions": ["0", "1", "2"]},
             ],
             "totals": {"coverage": 83.0},
         }
