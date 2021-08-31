@@ -55,6 +55,10 @@ class MockReport(object):
     def filter(self, **kwargs):
         return self
 
+    @property
+    def flags(self):
+        return {"flag_a": True, "flag_b": True}
+
 
 class TestCommit(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
@@ -175,6 +179,20 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         assert coverageFile["content"] == fake_coverage["content"]
         assert coverageFile["coverage"] == fake_coverage["coverage"]
         assert coverageFile["totals"] == fake_coverage["totals"]
+
+    @patch("core.models.ReportService.build_report_from_commit")
+    def test_flag_names(self, report_mock):
+        query = query_commit % "flagNames"
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+            "path": "path",
+        }
+        report_mock.return_value = MockReport()
+        data = self.gql_request(query, variables=variables)
+        flags = data["owner"]["repository"]["commit"]["flagNames"]
+        assert flags == ["flag_a", "flag_b"]
 
     @patch(
         "compare.commands.compare.compare.CompareCommands.compare_commit_with_parent"
