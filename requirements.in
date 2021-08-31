@@ -39,3 +39,4 @@ opentelemetry-sdk
 opentelemetry-instrumentation-django
 pylint
 pylint-django
+elastic-apm

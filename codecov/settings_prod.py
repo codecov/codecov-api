@@ -12,7 +12,12 @@ ALLOWED_HOSTS = get_config(
 if THIS_POD_IP:
     ALLOWED_HOSTS.append(THIS_POD_IP)
 
-INSTALLED_APPS += ["ddtrace.contrib.django"]
+elastic_apm_enabled = os.environ.get("ELASTIC_APM_ENABLED")
+if elastic_apm_enabled:
+    INSTALLED_APPS += ["elasticapm.contrib.django"]
+    MIDDLEWARE += ["elasticapm.contrib.django.middleware.TracingMiddleware"]
+else:
+    INSTALLED_APPS += ["ddtrace.contrib.django"]
 
 WEBHOOK_URL = get_config("setup", "webhook_url", default="https://codecov.io")
 

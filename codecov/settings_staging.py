@@ -24,7 +24,12 @@ STRIPE_PLAN_IDS = {
     "users-pr-inappm": "plan_H6P3KZXwmAbqPS",
     "users-pr-inappy": "plan_H6P16wij3lUuxg",
 }
-INSTALLED_APPS += ["ddtrace.contrib.django"]
+elastic_apm_enabled = os.environ.get("ELASTIC_APM_ENABLED")
+if elastic_apm_enabled:
+    INSTALLED_APPS += ["elasticapm.contrib.django"]
+    MIDDLEWARE += ["elasticapm.contrib.django.middleware.TracingMiddleware"]
+else:
+    INSTALLED_APPS += ["ddtrace.contrib.django"]
 
 sentry_sdk.init(
     dsn=os.environ.get("SERVICES__SENTRY__SERVER_DSN", None),
