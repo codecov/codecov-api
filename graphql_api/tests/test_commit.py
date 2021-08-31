@@ -52,6 +52,9 @@ class MockReport(object):
         lines = MockLines()
         return MockLines()
 
+    def filter(self, **kwargs):
+        return self
+
 
 class TestCommit(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
@@ -139,13 +142,13 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         assert commit["yaml"] == yaml.dump(fake_config)
 
     @patch("core.commands.commit.commit.CommitCommands.get_file_content")
-    @patch("core.commands.commit.commit.CommitCommands.get_commit_report")
+    @patch("core.models.ReportService.build_report_from_commit")
     def test_fetch_commit_coverage_file_call_the_command(
         self, report_mock, content_mock
     ):
         query = (
             query_commit
-            % 'coverageFile(path: "path") { content,coverage { line,coverage,sessions }, totals {coverage} }'
+            % 'coverageFile(path: "path") { content,coverage { line,coverage }, totals {coverage} }'
         )
         variables = {
             "org": self.org.username,
@@ -156,9 +159,9 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         fake_coverage = {
             "content": "file content",
             "coverage": [
-                {"line": 0, "coverage": 2, "sessions": ["0", "1", "2"]},
-                {"line": 1, "coverage": 1, "sessions": ["0", "1", "2"]},
-                {"line": 2, "coverage": 0, "sessions": ["0", "1", "2"]},
+                {"line": 0, "coverage": 2},
+                {"line": 1, "coverage": 1},
+                {"line": 2, "coverage": 0},
             ],
             "totals": {"coverage": 83.0},
         }
@@ -166,10 +169,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         f.set_result("file content")
         content_mock.return_value = f
 
-        g = asyncio.Future()
-        g.set_result(MockReport())
-
-        report_mock.return_value = g
+        report_mock.return_value = MockReport()
         data = self.gql_request(query, variables=variables)
         coverageFile = data["owner"]["repository"]["commit"]["coverageFile"]
         assert coverageFile["content"] == fake_coverage["content"]

@@ -2,16 +2,9 @@ type File {
     content: String
     coverage: [CoverageAnnotation]
     totals: CoverageTotals
-    sessions: [FileSession]!
 }
 
 type CoverageAnnotation {
     line: Int
     coverage: Int
-    sessions: [String]
-}
-
-type FileSession {
-  id: Int!
-  flags: [String]
 }
