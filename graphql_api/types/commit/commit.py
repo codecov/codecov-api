@@ -14,10 +14,16 @@ commit_bindable.set_alias("branchName", "branch")
 
 
 @commit_bindable.field("coverageFile")
-async def resolve_file(commit, info, path):
-    command = info.context["executor"].get_command("commit")
-    file_report = await command.get_file_report(commit, path)
-    return {"file_report": file_report, "commit": commit, "path": path}
+def resolve_file(commit, info, path, flags=None):
+    commit_report = commit.full_report.filter(flags=flags)
+    file_report = commit_report.get(path)
+    return {
+        "commit_report": commit_report,
+        "file_report": file_report,
+        "commit": commit,
+        "path": path,
+        "flags": flags,
+    }
 
 
 @commit_bindable.field("totals")
@@ -58,3 +64,8 @@ async def resolve_list_uploads(commit, info, **kwargs):
 def resolve_compare_with_parent(commit, info, **kwargs):
     command = info.context["executor"].get_command("compare")
     return command.compare_commit_with_parent(commit)
+
+
+@commit_bindable.field("flagNames")
+def resolve_flags(commit, info, **kwargs):
+    return commit.full_report.flags.keys()

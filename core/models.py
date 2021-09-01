@@ -7,6 +7,8 @@ from django.db import models
 from django.contrib.postgres.fields import CITextField, ArrayField
 from django.utils.functional import cached_property
 
+from services.archive import ReportService
+
 from .encoders import ReportJSONEncoder
 from .managers import RepositoryQuerySet
 
@@ -203,6 +205,11 @@ class Commit(models.Model):
     def commitreport(self):
         reports = list(self.reports.all())
         return reports[0] if reports else None
+
+    @cached_property
+    def full_report(self):
+        report_service = ReportService()
+        return report_service.build_report_from_commit(self)
 
     class Meta:
         db_table = "commits"

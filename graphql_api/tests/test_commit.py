@@ -4,6 +4,7 @@ import datetime
 from unittest.mock import patch
 from django.test import TransactionTestCase
 
+from shared.reports.types import LineSession
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory, CommitFactory
 from reports.tests.factories import (
@@ -29,6 +30,11 @@ query FetchCommit($org: String!, $repo: String!, $commit: String!) {
 class MockCoverage(object):
     def __init__(self, cov):
         self.coverage = cov
+        self.sessions = [
+            LineSession(0, None),
+            LineSession(1, None),
+            LineSession(2, None),
+        ]
 
 
 class MockLines(object):
@@ -39,6 +45,19 @@ class MockLines(object):
             [2, MockCoverage(0)],
         ]
         self.totals = MockCoverage(83)
+
+
+class MockReport(object):
+    def get(self, file):
+        lines = MockLines()
+        return MockLines()
+
+    def filter(self, **kwargs):
+        return self
+
+    @property
+    def flags(self):
+        return {"flag_a": True, "flag_b": True}
 
 
 class TestCommit(GraphQLTestHelper, TransactionTestCase):
@@ -127,9 +146,9 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         assert commit["yaml"] == yaml.dump(fake_config)
 
     @patch("core.commands.commit.commit.CommitCommands.get_file_content")
-    @patch("core.commands.commit.commit.CommitCommands.get_file_report")
+    @patch("core.models.ReportService.build_report_from_commit")
     def test_fetch_commit_coverage_file_call_the_command(
-        self, coverage_mock, content_mock
+        self, report_mock, content_mock
     ):
         query = (
             query_commit
@@ -154,15 +173,26 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         f.set_result("file content")
         content_mock.return_value = f
 
-        g = asyncio.Future()
-        g.set_result(MockLines())
-
-        coverage_mock.return_value = g
+        report_mock.return_value = MockReport()
         data = self.gql_request(query, variables=variables)
         coverageFile = data["owner"]["repository"]["commit"]["coverageFile"]
         assert coverageFile["content"] == fake_coverage["content"]
         assert coverageFile["coverage"] == fake_coverage["coverage"]
         assert coverageFile["totals"] == fake_coverage["totals"]
+
+    @patch("core.models.ReportService.build_report_from_commit")
+    def test_flag_names(self, report_mock):
+        query = query_commit % "flagNames"
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+            "path": "path",
+        }
+        report_mock.return_value = MockReport()
+        data = self.gql_request(query, variables=variables)
+        flags = data["owner"]["repository"]["commit"]["flagNames"]
+        assert flags == ["flag_a", "flag_b"]
 
     @patch(
         "compare.commands.compare.compare.CompareCommands.compare_commit_with_parent"
