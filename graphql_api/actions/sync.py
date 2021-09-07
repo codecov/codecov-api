@@ -16,6 +16,6 @@ def trigger_sync(current_user):
     RefreshService().trigger_refresh(
         current_user.ownerid,
         current_user.username,
-        using_integration=bool(current_user.integration_id),
+        using_integration=False,
     )
     return {}
