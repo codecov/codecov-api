@@ -45,7 +45,7 @@ class PullViewSet(
         return self.repo.pull_requests.annotate(
             base_totals=Subquery(
                 Commit.objects.filter(
-                    commitid=OuterRef("base"), repository=OuterRef("repository")
+                    commitid=OuterRef("compared_to"), repository=OuterRef("repository")
                 ).values("totals")[:1]
             ),
             head_totals=Subquery(
