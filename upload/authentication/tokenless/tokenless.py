@@ -7,12 +7,12 @@ from django.http import HttpResponse
 from requests.exceptions import ConnectionError, HTTPError
 from datetime import datetime, timedelta
 from rest_framework.exceptions import NotFound
-from upload.tokenless.appveyor import TokenlessAppveyorHandler
-from upload.tokenless.azure import TokenlessAzureHandler
-from upload.tokenless.circleci import TokenlessCircleciHandler
-from upload.tokenless.cirrus import TokenlessCirrusHandler
-from upload.tokenless.github_actions import TokenlessGithubActionsHandler
-from upload.tokenless.travis import TokenlessTravisHandler
+from upload.authentication.tokenless.appveyor import TokenlessAppveyorHandler
+from upload.authentication.tokenless.azure import TokenlessAzureHandler
+from upload.authentication.tokenless.circleci import TokenlessCircleciHandler
+from upload.authentication.tokenless.cirrus import TokenlessCirrusHandler
+from upload.authentication.tokenless.github_actions import TokenlessGithubActionsHandler
+from upload.authentication.tokenless.travis import TokenlessTravisHandler
 
 log = logging.getLogger(__name__)
 

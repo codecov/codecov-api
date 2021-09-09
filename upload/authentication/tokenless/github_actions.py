@@ -5,7 +5,7 @@ from django.conf import settings
 from datetime import datetime, timedelta
 from rest_framework.exceptions import NotFound
 from shared.torngit.exceptions import TorngitClientError
-from upload.tokenless.base import BaseTokenlessUploadHandler
+from upload.authentication.tokenless.base import BaseTokenlessUploadHandler
 
 log = logging.getLogger(__name__)
 

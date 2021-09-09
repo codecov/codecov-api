@@ -8,7 +8,7 @@ from requests.exceptions import (
 )
 from rest_framework.exceptions import NotFound
 
-from upload.tokenless.base import BaseTokenlessUploadHandler
+from upload.authentication.tokenless.base import BaseTokenlessUploadHandler
 
 log = logging.getLogger(__name__)
 

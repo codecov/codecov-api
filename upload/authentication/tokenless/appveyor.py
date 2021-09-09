@@ -3,7 +3,7 @@ import requests
 from datetime import datetime, timedelta
 from rest_framework.exceptions import NotFound
 from requests.exceptions import ConnectionError, HTTPError
-from upload.tokenless.base import BaseTokenlessUploadHandler
+from upload.authentication.tokenless.base import BaseTokenlessUploadHandler
 
 log = logging.getLogger(__name__)
 

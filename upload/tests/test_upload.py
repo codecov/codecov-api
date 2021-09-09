@@ -43,7 +43,7 @@ from upload.helpers import (
     dispatch_upload_task,
 )
 
-from upload.tokenless.tokenless import TokenlessUploadHandler
+from upload.authentication.tokenless.tokenless import TokenlessUploadHandler
 
 
 def mock_get_config_global_upload_tokens(*args):
@@ -2452,7 +2452,7 @@ class UploadHandlerCircleciTokenlessTest(TestCase):
 
 class UploadHandlerGithubActionsTokenlessTest(TestCase):
     @patch(
-        "upload.tokenless.github_actions.TokenlessGithubActionsHandler.get_build",
+        "upload.authentication.tokenless.github_actions.TokenlessGithubActionsHandler.get_build",
         new_callable=PropertyMock,
     )
     def test_underscore_replace(self, mock_get):
@@ -2521,7 +2521,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         )
 
     @patch(
-        "upload.tokenless.github_actions.TokenlessGithubActionsHandler.get_build",
+        "upload.authentication.tokenless.github_actions.TokenlessGithubActionsHandler.get_build",
         new_callable=PropertyMock,
     )
     def test_github_actions_non_public(self, mock_get):
@@ -2549,7 +2549,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         ]
 
     @patch(
-        "upload.tokenless.github_actions.TokenlessGithubActionsHandler.get_build",
+        "upload.authentication.tokenless.github_actions.TokenlessGithubActionsHandler.get_build",
         new_callable=PropertyMock,
     )
     def test_github_actions_wrong_slug(self, mock_get):
@@ -2577,7 +2577,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         ]
 
     @patch(
-        "upload.tokenless.github_actions.TokenlessGithubActionsHandler.get_build",
+        "upload.authentication.tokenless.github_actions.TokenlessGithubActionsHandler.get_build",
         new_callable=PropertyMock,
     )
     def test_github_actions_wrong_commit(self, mock_get):
@@ -2601,7 +2601,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         ]
 
     @patch(
-        "upload.tokenless.github_actions.TokenlessGithubActionsHandler.get_build",
+        "upload.authentication.tokenless.github_actions.TokenlessGithubActionsHandler.get_build",
         new_callable=PropertyMock,
     )
     def test_github_actions_no_build_status(self, mock_get):
@@ -2630,7 +2630,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         ]
 
     @patch(
-        "upload.tokenless.github_actions.TokenlessGithubActionsHandler.get_build",
+        "upload.authentication.tokenless.github_actions.TokenlessGithubActionsHandler.get_build",
         new_callable=PropertyMock,
     )
     def test_github_actions(self, mock_get):
@@ -2655,7 +2655,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         )
 
     @patch(
-        "upload.tokenless.github_actions.TokenlessGithubActionsHandler.get_build",
+        "upload.authentication.tokenless.github_actions.TokenlessGithubActionsHandler.get_build",
         new_callable=PropertyMock,
     )
     def test_github_actions_in_progress(self, mock_get):
@@ -2679,7 +2679,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         )
 
     @patch(
-        "upload.tokenless.github_actions.TokenlessGithubActionsHandler.get_build",
+        "upload.authentication.tokenless.github_actions.TokenlessGithubActionsHandler.get_build",
         new_callable=PropertyMock,
     )
     def test_github_actions_queued(self, mock_get):
@@ -2703,7 +2703,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         )
 
     @patch(
-        "upload.tokenless.cirrus.TokenlessCirrusHandler.get_build",
+        "upload.authentication.tokenless.cirrus.TokenlessCirrusHandler.get_build",
         new_callable=PropertyMock,
     )
     def test_cirrus_ci(self, mock_get):
@@ -2731,7 +2731,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         assert TokenlessUploadHandler("cirrus_ci", params).verify_upload() == "github"
 
     @patch(
-        "upload.tokenless.cirrus.TokenlessCirrusHandler.get_build",
+        "upload.authentication.tokenless.cirrus.TokenlessCirrusHandler.get_build",
         new_callable=PropertyMock,
     )
     def test_cirrus_ci_executing(self, mock_get):
@@ -2757,7 +2757,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         assert TokenlessUploadHandler("cirrus_ci", params).verify_upload() == "github"
 
     @patch(
-        "upload.tokenless.cirrus.TokenlessCirrusHandler.get_build",
+        "upload.authentication.tokenless.cirrus.TokenlessCirrusHandler.get_build",
         new_callable=PropertyMock,
     )
     def test_cirrus_ci_no_owner(self, mock_get):
@@ -2791,7 +2791,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         ]
 
     @patch(
-        "upload.tokenless.cirrus.TokenlessCirrusHandler.get_build",
+        "upload.authentication.tokenless.cirrus.TokenlessCirrusHandler.get_build",
         new_callable=PropertyMock,
     )
     def test_cirrus_ci_no_repo(self, mock_get):
@@ -2825,7 +2825,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         ]
 
     @patch(
-        "upload.tokenless.cirrus.TokenlessCirrusHandler.get_build",
+        "upload.authentication.tokenless.cirrus.TokenlessCirrusHandler.get_build",
         new_callable=PropertyMock,
     )
     def test_cirrus_ci_no_commit(self, mock_get):
@@ -2859,7 +2859,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         ]
 
     @patch(
-        "upload.tokenless.cirrus.TokenlessCirrusHandler.get_build",
+        "upload.authentication.tokenless.cirrus.TokenlessCirrusHandler.get_build",
         new_callable=PropertyMock,
     )
     def test_cirrus_ci_wrong_repository(self, mock_get):
@@ -2894,7 +2894,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         ]
 
     @patch(
-        "upload.tokenless.cirrus.TokenlessCirrusHandler.get_build",
+        "upload.authentication.tokenless.cirrus.TokenlessCirrusHandler.get_build",
         new_callable=PropertyMock,
     )
     def test_cirrus_ci_wrong_commit(self, mock_get):
@@ -2929,7 +2929,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         ]
 
     @patch(
-        "upload.tokenless.cirrus.TokenlessCirrusHandler.get_build",
+        "upload.authentication.tokenless.cirrus.TokenlessCirrusHandler.get_build",
         new_callable=PropertyMock,
     )
     def test_cirrus_ci_stale(self, mock_get):
