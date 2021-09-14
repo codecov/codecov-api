@@ -8,7 +8,7 @@ import minio
 from collections import Counter
 
 from django.utils.functional import cached_property
-
+from asgiref.sync import async_to_sync
 from shared.utils.merge import line_type, LineType
 from shared.helpers.yaml import walk
 
@@ -501,10 +501,11 @@ class Comparison(object):
             base_file = None
 
         if with_src:
-            file_content = asyncio.run(
-                RepoProviderService()
-                .get_adapter(user=self.user, repo=self.base_commit.repository)
-                .get_source(file_name, self.head_commit.commitid)
+            adapter = RepoProviderService().get_adapter(
+                user=self.user, repo=self.base_commit.repository
+            )
+            file_content = async_to_sync(adapter.get_source)(
+                file_name, self.head_commit.commitid
             )["content"]
             # make sure the file is str utf-8
             if type(file_content) is not str:
@@ -572,27 +573,21 @@ class Comparison(object):
         Fetches comparison and reverse comparison concurrently, then
         caches the result. Returns (comparison, reverse_comparison).
         """
-        loop = asyncio.get_event_loop()
-
-        comparison_coro = (
-            RepoProviderService()
-            .get_adapter(self.user, self.base_commit.repository)
-            .get_compare(self.base_commit.commitid, self.head_commit.commitid)
+        adapter = RepoProviderService().get_adapter(
+            self.user, self.base_commit.repository
+        )
+        comparison_coro = adapter.get_compare(
+            self.base_commit.commitid, self.head_commit.commitid
         )
 
-        reverse_comparison_coro = (
-            RepoProviderService()
-            .get_adapter(self.user, self.base_commit.repository)
-            .get_compare(self.head_commit.commitid, self.base_commit.commitid)
+        reverse_comparison_coro = adapter.get_compare(
+            self.head_commit.commitid, self.base_commit.commitid
         )
 
         async def runnable():
-            return await asyncio.gather(
-                loop.create_task(comparison_coro),
-                loop.create_task(reverse_comparison_coro),
-            )
+            return await asyncio.gather(comparison_coro, reverse_comparison_coro)
 
-        return loop.run_until_complete(runnable())
+        return async_to_sync(runnable)()
 
     def flag_comparison(self, flag_name):
         return FlagComparison(self, flag_name)
@@ -764,10 +759,9 @@ class PullRequestComparison(Comparison):
         Returns the diff between the 'self.pull.compared_to' field and the
         'self.pull.base' field.
         """
-        return asyncio.run(
-            RepoProviderService()
-            .get_adapter(self.user, self.pull.repository)
-            .get_compare(self.pull.compared_to, self.pull.base)
+        adapter = RepoProviderService().get_adapter(self.user, self.pull.repository)
+        return async_to_sync(adapter.get_compare)(
+            self.pull.compared_to, self.pull.base
         )["diff"]
 
     @cached_property
