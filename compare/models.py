@@ -20,6 +20,7 @@ class CommitComparison(BaseCodecovModel):
         choices=CommitComparisonStates.choices, default=CommitComparisonStates.PENDING
     )
     report_storage_path = models.CharField(max_length=150, null=True, blank=True)
+    patch_totals = models.JSONField(null=True)
 
     class Meta:
         constraints = [
