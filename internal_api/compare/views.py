@@ -1,5 +1,3 @@
-import asyncio
-
 from rest_framework import mixins, viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -35,7 +33,6 @@ class CompareViewSet(
 
     def get_object(self):
         compare_data = self.get_compare_data()
-        asyncio.set_event_loop(asyncio.new_event_loop())
 
         if "pull" in compare_data:
             try:
