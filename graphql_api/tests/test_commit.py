@@ -60,6 +60,11 @@ class MockReport(object):
         return {"flag_a": True, "flag_b": True}
 
 
+class EmptyReport(MockReport):
+    def get(self, file):
+        return None
+
+
 class TestCommit(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
         asyncio.set_event_loop(asyncio.new_event_loop())
@@ -174,6 +179,35 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         content_mock.return_value = f
 
         report_mock.return_value = MockReport()
+        data = self.gql_request(query, variables=variables)
+        coverageFile = data["owner"]["repository"]["commit"]["coverageFile"]
+        assert coverageFile["content"] == fake_coverage["content"]
+        assert coverageFile["coverage"] == fake_coverage["coverage"]
+        assert coverageFile["totals"] == fake_coverage["totals"]
+
+    @patch("core.commands.commit.commit.CommitCommands.get_file_content")
+    @patch("core.models.ReportService.build_report_from_commit")
+    def test_fetch_commit_with_no_coverage_data(self, report_mock, content_mock):
+        query = (
+            query_commit
+            % 'coverageFile(path: "path") { content,coverage { line,coverage }, totals {coverage} }'
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+            "path": "path",
+        }
+        fake_coverage = {
+            "content": "file content",
+            "coverage": [],
+            "totals": None,
+        }
+        f = asyncio.Future()
+        f.set_result("file content")
+        content_mock.return_value = f
+
+        report_mock.return_value = EmptyReport()
         data = self.gql_request(query, variables=variables)
         coverageFile = data["owner"]["repository"]["commit"]["coverageFile"]
         assert coverageFile["content"] == fake_coverage["content"]
