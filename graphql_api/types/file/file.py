@@ -2,6 +2,7 @@ import math
 from fractions import Fraction
 from ariadne import ObjectType
 from asgiref.sync import sync_to_async
+from shared.utils.merge import LineType, line_type
 
 file_bindable = ObjectType("File")
 
@@ -14,15 +15,6 @@ def resolve_content(data, info):
 
 @file_bindable.field("coverage")
 def resolve_content(data, info):
-    def get_coverage(_coverage):
-        if _coverage == 1:
-            return 1
-        elif _coverage == 0:
-            return 0
-        elif type(_coverage) is str:
-            partial = math.ceil(float(Fraction(_coverage)))
-            return 0 if partial == 0 else 2
-
     file_report = data.get("file_report")
 
     if not file_report:
@@ -31,7 +23,7 @@ def resolve_content(data, info):
     return [
         {
             "line": line_report[0],
-            "coverage": get_coverage(line_report[1].coverage),
+            "coverage": line_type(line_report[1].coverage),
         }
         for line_report in file_report.lines
     ]

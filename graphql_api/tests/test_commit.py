@@ -169,8 +169,8 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             "content": "file content",
             "coverage": [
                 {"line": 0, "coverage": 2},
-                {"line": 1, "coverage": 1},
-                {"line": 2, "coverage": 0},
+                {"line": 1, "coverage": 0},
+                {"line": 2, "coverage": 1},
             ],
             "totals": {"coverage": 83.0},
         }
