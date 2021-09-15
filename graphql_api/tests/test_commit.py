@@ -168,9 +168,9 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         fake_coverage = {
             "content": "file content",
             "coverage": [
-                {"line": 0, "coverage": 2},
-                {"line": 1, "coverage": 0},
-                {"line": 2, "coverage": 1},
+                {"line": 0, "coverage": "P"},
+                {"line": 1, "coverage": "H"},
+                {"line": 2, "coverage": "M"},
             ],
             "totals": {"coverage": 83.0},
         }
