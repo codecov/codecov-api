@@ -25,6 +25,9 @@ def resolve_content(data, info):
 
     file_report = data.get("file_report")
 
+    if not file_report:
+        return []
+
     return [
         {
             "line": line_report[0],
@@ -37,4 +40,4 @@ def resolve_content(data, info):
 @file_bindable.field("totals")
 def resolve_content(data, info):
     file_report = data.get("file_report")
-    return file_report.totals
+    return file_report.totals if file_report else None

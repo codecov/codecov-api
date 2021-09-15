@@ -9,7 +9,7 @@ from core.tests.factories import (
     CommitFactory,
     BranchFactory,
 )
-
+from rest_framework.settings import api_settings
 from rest_framework.reverse import reverse
 from rest_framework import status
 
@@ -217,6 +217,115 @@ class RepoPullList(InternalAPITest):
         self.client.force_login(user=self.user)
         response = self.client.get(reverse("pulls-list", kwargs=self.correct_kwargs))
         assert response.status_code == 403
+
+    def test_list_pulls_comparedto_not_base(self, mock_provider):
+        repo = RepositoryFactory.create(
+            author=self.org, name="test_list_pulls_comparedto_not_base", active=True
+        )
+        repo.save()
+        user = OwnerFactory.create(
+            username="test_list_pulls_comparedto_not_base",
+            service="github",
+            organizations=[self.org.ownerid],
+            permission=[repo.repoid],
+        )
+        user.save()
+        mock_provider.return_value = True, True
+        self.client.force_login(user=user)
+        pull = PullFactory.create(
+            pullid=101,
+            author=self.org,
+            repository=repo,
+            state="open",
+            head=CommitFactory(repository=repo, author=user, pullid=None).commitid,
+            base=CommitFactory(
+                repository=repo,
+                pullid=None,
+                author=user,
+                totals=None,
+            ).commitid,
+            compared_to=CommitFactory(
+                pullid=None,
+                repository=repo,
+                author=user,
+                totals={
+                    "C": 0,
+                    "M": 0,
+                    "N": 0,
+                    "b": 0,
+                    "c": "30.00000",
+                    "d": 0,
+                    "diff": [1, 2, 1, 1, 0, "50.00000", 0, 0, 0, 0, 0, 0, 0],
+                    "f": 3,
+                    "h": 6,
+                    "m": 10,
+                    "n": 20,
+                    "p": 4,
+                    "s": 1,
+                },
+            ).commitid,
+        )
+        response = self.client.get(
+            reverse(
+                "pulls-list",
+                kwargs={
+                    "service": "github",
+                    "owner_username": "codecov",
+                    "repo_name": "test_list_pulls_comparedto_not_base",
+                },
+            )
+        )
+        self.assertEqual(response.status_code, 200)
+        content = self.json_content(response)
+        expected_content = {
+            "count": 1,
+            "next": None,
+            "previous": None,
+            "results": [
+                {
+                    "pullid": 101,
+                    "title": pull.title,
+                    "most_recent_commiter": "test_list_pulls_comparedto_not_base",
+                    "base_totals": {
+                        "files": 3,
+                        "lines": 20,
+                        "hits": 6,
+                        "misses": 10,
+                        "partials": 4,
+                        "coverage": 30.0,
+                        "branches": 0,
+                        "methods": 0,
+                        "sessions": 1,
+                        "complexity": 0.0,
+                        "complexity_total": 0.0,
+                        "complexity_ratio": 0,
+                        "diff": [1, 2, 1, 1, 0, "50.00000", 0, 0, 0, 0, 0, 0, 0],
+                    },
+                    "head_totals": {
+                        "files": 3,
+                        "lines": 20,
+                        "hits": 17,
+                        "misses": 3,
+                        "partials": 0,
+                        "coverage": 85.0,
+                        "branches": 0,
+                        "methods": 0,
+                        "sessions": 1,
+                        "complexity": 0.0,
+                        "complexity_total": 0.0,
+                        "complexity_ratio": 0,
+                        "diff": [1, 2, 1, 1, 0, "50.00000", 0, 0, 0, 0, 0, 0, 0],
+                    },
+                    # This whole TZ settings is messing things up a bit
+                    "updatestamp": pull.updatestamp.isoformat() + "Z",
+                    "state": "open",
+                    "ci_passed": True,
+                }
+            ],
+            "total_pages": 1,
+        }
+        assert content["results"][0] == expected_content["results"][0]
+        assert content == expected_content
 
 
 @patch(get_permissions_method)
