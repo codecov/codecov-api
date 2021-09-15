@@ -122,6 +122,9 @@ class Owner(models.Model):
 
     repository_set = RepositoryQuerySet.as_manager()
 
+    def __str__(self):
+        return f"Owner<{self.service}/{self.username}>"
+
     def save(self, *args, **kwargs):
         self.updatestamp = datetime.now()
         super().save(*args, **kwargs)
@@ -420,8 +423,13 @@ class RepositoryToken(BaseCodecovModel):
         related_name="tokens",
     )
     token_type = models.CharField(max_length=50)
-    valid_until = models.DateTimeField(null=True)
-    key = models.CharField(max_length=40, unique=True)
+    valid_until = models.DateTimeField(blank=True, null=True)
+    key = models.CharField(
+        max_length=40,
+        unique=True,
+        editable=False,
+        default=lambda: binascii.hexlify(os.urandom(20)).decode()
+    )
 
     @classmethod
     def generate_key(cls):
