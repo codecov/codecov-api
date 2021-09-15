@@ -5,10 +5,9 @@
 echo "Starting gunicorn in dev mode"
 export PYTHONWARNINGS=always
 prefix=""
-#comment this for now to avoid changing k8s while in staging
-#if [ -f "/usr/local/bin/berglas" ]; then
-#prefix="berglas exec --"
-#fi
+if [ -f "/usr/local/bin/berglas" ]; then
+  prefix="berglas exec --"
+fi
 suffix=""
 if [[ "$STATSD_HOST" ]]; then
   suffix="--statsd-host ${STATSD_HOST}:${STATSD_PORT}"

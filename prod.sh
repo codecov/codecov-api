@@ -4,7 +4,7 @@
 echo "Starting gunicorn in production mode"
 prefix=""
 if [ -f "/usr/local/bin/berglas" ]; then
-prefix="berglas exec --"
+  prefix="berglas exec --"
 fi
 
 if [ $ELASTIC_APM_ENABLED ]; then
