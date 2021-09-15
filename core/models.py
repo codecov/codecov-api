@@ -101,8 +101,12 @@ class Repository(models.Model):
                 fields=["author", "service_id"], name="repos_service_ids"
             ),
         ]
+        verbose_name_plural = "Repositories"
 
     objects = RepositoryQuerySet.as_manager()
+
+    def __str__(self):
+        return f"Repo<{self.author}/{self.name}>"
 
     @property
     def service(self):
