@@ -21,7 +21,7 @@ class RepositoryTokenInline(admin.TabularInline):
 @admin.register(Repository)
 class RepositoryAdmin(admin.ModelAdmin):
     inlines = [RepositoryTokenInline]
-    list_display = ("name", "service_id", "author_id")
+    list_display = ("name", "service_id", "author")
     search_fields = ("name__iexact",)
     fields = (
         "name",

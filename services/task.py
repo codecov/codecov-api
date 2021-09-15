@@ -23,7 +23,7 @@ class TaskService(object):
 
     def normalize_profiling_upload(self, profiling_upload_id):
         return self._create_signature(
-            celery_config.profiling_normalization_task_name,
+            "app.tasks.profilingnormalizertask",
             kwargs=dict(profiling_upload_id=profiling_upload_id),
         ).apply_async(countdown=10)
 
