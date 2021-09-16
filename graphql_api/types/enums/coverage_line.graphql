@@ -1,0 +1,8 @@
+"""
+Possible value for the coverage of a line, using single letter for a more compact response
+"""
+enum CoverageLine {
+  H # hit
+  M # miss
+  P # partial
+}

@@ -1,1 +1,1 @@
-from .enums import OrderingDirection, RepositoryOrdering
+from .enums import OrderingDirection, RepositoryOrdering, CoverageLine
