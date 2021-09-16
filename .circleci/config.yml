@@ -108,6 +108,8 @@ jobs:
   lint:
     executor: codecov-api
     steps:
+    - attach_workspace:
+        at: .
     - run:
         name: Pylint
         command: make lint
