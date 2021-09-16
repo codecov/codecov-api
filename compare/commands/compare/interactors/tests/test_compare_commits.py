@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from unittest.mock import patch
 
 from asgiref.sync import async_to_sync
@@ -42,3 +44,15 @@ class CompareCommitsInteractorTest(TransactionTestCase):
         )
         assert compare.id == self.comparison.id
         task_compute_comparison.assert_not_called()
+
+    @patch(
+        "compare.commands.compare.interactors.compare_commits.TaskService.compute_comparison"
+    )
+    @async_to_sync
+    async def test_when_stale_comparison_exists(self, task_compute_comparison):
+        self.comparison.compare_commit.updatestamp = datetime.now()
+        compare = await CompareCommitsInteractor(AnonymousUser(), "github").execute(
+            self.comparison.compare_commit, self.comparison.base_commit
+        )
+        assert compare.id == self.comparison.id
+        task_compute_comparison.assert_called_with(compare.id)
