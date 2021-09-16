@@ -1,8 +1,11 @@
 import logging
-import requests
 from datetime import datetime, timedelta
-from rest_framework.exceptions import NotFound
+from json.decoder import JSONDecodeError
+
+import requests
 from requests.exceptions import ConnectionError, HTTPError
+from rest_framework.exceptions import NotFound
+
 from upload.tokenless.base import BaseTokenlessUploadHandler
 
 log = logging.getLogger(__name__)
@@ -15,7 +18,7 @@ class TokenlessAzureHandler(BaseTokenlessUploadHandler):
                 f"{self.server_uri}{self.project}/_apis/build/builds/{self.job}?api-version=5.0",
                 headers={"Accept": "application/json", "User-Agent": "Codecov"},
             ).json()
-        except (ConnectionError, HTTPError, AttributeError) as e:
+        except (ConnectionError, HTTPError, AttributeError, JSONDecodeError) as e:
             log.warning(
                 f"Request error {e}",
                 extra=dict(
