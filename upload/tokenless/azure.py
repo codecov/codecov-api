@@ -14,8 +14,8 @@ class TokenlessAzureHandler(BaseTokenlessUploadHandler):
             build = requests.get(
                 f"{self.server_uri}{self.project}/_apis/build/builds/{self.job}?api-version=5.0",
                 headers={"Accept": "application/json", "User-Agent": "Codecov"},
-            )
-        except (ConnectionError, HTTPError) as e:
+            ).json()
+        except (ConnectionError, HTTPError, AttributeError) as e:
             log.warning(
                 f"Request error {e}",
                 extra=dict(
@@ -34,7 +34,7 @@ class TokenlessAzureHandler(BaseTokenlessUploadHandler):
                 "Unable to locate build via Azure API. Please upload with the Codecov repository upload token to resolve issue."
             )
 
-        return build.json()
+        return build
 
     def verify(self):
 
@@ -109,12 +109,6 @@ class TokenlessAzureHandler(BaseTokenlessUploadHandler):
             )
             raise NotFound(
                 "Commit sha does not match Azure build. Please upload with the Codecov repository upload token to resolve issue."
-            )
-
-        # No tokenless uploads allowed for private projects
-        if build["project"]["visibility"] != "public":
-            raise NotFound(
-                "Project is not public. Please upload with the Codecov repository upload token to resolve issue."
             )
 
         # Azure supports various repo types, ensure current repo type is supported on Codecov
