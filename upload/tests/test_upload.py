@@ -2109,17 +2109,15 @@ class UploadHandlerAzureTokenlessTest(TestCase):
 
     @patch.object(requests, "get")
     def test_azure_not_public(self, mock_get):
-        expected_response = {
-            "finishTime": "NOW",
-            "buildNumber": "20190725.8",
-            "status": "inProgress",
-            "sourceVersion": "c739768fcac68144a3a6d82305b9c4106934d31a",
-            "project": {"visibility": "private"},
-            "repository": {"type": "GitHub"},
-        }
+        expected_response = """<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+                            <html lang="en-US">
+                            <head><title>
+                            Azure DevOps Services | Sign In
+                            </title>
+                            </html>"""
 
-        mock_get.return_value.status_code.return_value = 200
-        mock_get.return_value.json.return_value = expected_response
+        mock_get.return_value.status_code.return_value = 203
+        mock_get.return_value = expected_response
 
         params = {
             "project": "project123",
@@ -2129,7 +2127,7 @@ class UploadHandlerAzureTokenlessTest(TestCase):
             "build": "20190725.8",
         }
 
-        expected_error = """Project is not public. Please upload with the Codecov repository upload token to resolve issue."""
+        expected_error = """Unable to locate build via Azure API. Please upload with the Codecov repository upload token to resolve issue."""
 
         with pytest.raises(NotFound) as e:
             TokenlessUploadHandler("azure_pipelines", params).verify_upload()
