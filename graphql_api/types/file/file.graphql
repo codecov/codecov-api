@@ -6,5 +6,5 @@ type File {
 
 type CoverageAnnotation {
     line: Int
-    coverage: Int
+    coverage: CoverageLine
 }

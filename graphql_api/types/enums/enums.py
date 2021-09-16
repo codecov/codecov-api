@@ -11,3 +11,9 @@ class RepositoryOrdering(enum.Enum):
 class OrderingDirection(enum.Enum):
     ASC = "ascending"
     DESC = "descending"
+
+
+class CoverageLine(enum.Enum):
+    H = "hit"
+    M = "miss"
+    P = "partial"
