@@ -12,7 +12,7 @@ ALLOWED_HOSTS = get_config(
 if THIS_POD_IP:
     ALLOWED_HOSTS.append(THIS_POD_IP)
 
-elastic_apm_enabled = os.environ.get("ELASTIC_APM_ENABLED")
+elastic_apm_enabled = bool(os.environ.get("ELASTIC_APM_ENABLED"))
 if elastic_apm_enabled:
     INSTALLED_APPS += ["elasticapm.contrib.django"]
     MIDDLEWARE += ["elasticapm.contrib.django.middleware.TracingMiddleware"]
