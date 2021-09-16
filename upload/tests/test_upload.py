@@ -363,6 +363,7 @@ class UploadHandlerHelpersTest(TestCase):
         }
 
         mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.headers.get.return_value = 'application/json'
         mock_get.return_value.json.return_value = expected_response
 
         params = {
@@ -1974,6 +1975,7 @@ class UploadHandlerAzureTokenlessTest(TestCase):
             "triggerInfo": {"pr.sourceSha": "c739768fcac68144a3a6d82305b9c4106934d31a"},
         }
         mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.headers.get.return_value = 'application/json'
         mock_get.return_value.json.return_value = expected_response
 
         params = {
@@ -1999,6 +2001,7 @@ class UploadHandlerAzureTokenlessTest(TestCase):
             "repository": {"type": "GitHub"},
         }
         mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.headers.get.return_value = 'application/json'
         mock_get.return_value.json.return_value = expected_response
 
         params = {
@@ -2029,6 +2032,7 @@ class UploadHandlerAzureTokenlessTest(TestCase):
         }
 
         mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.headers.get.return_value = 'application/json'
         mock_get.return_value.json.return_value = expected_response
 
         params = {
@@ -2059,6 +2063,7 @@ class UploadHandlerAzureTokenlessTest(TestCase):
         }
 
         mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.headers.get.return_value = 'application/json'
         mock_get.return_value.json.return_value = expected_response
 
         params = {
@@ -2089,6 +2094,7 @@ class UploadHandlerAzureTokenlessTest(TestCase):
         }
 
         mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.headers.get.return_value = 'application/json'
         mock_get.return_value.json.return_value = expected_response
 
         params = {
@@ -2117,7 +2123,8 @@ class UploadHandlerAzureTokenlessTest(TestCase):
                             </html>"""
 
         mock_get.return_value.status_code.return_value = 203
-        mock_get.return_value = expected_response
+        mock_get.return_value.headers.get.return_value = 'text/html'
+        mock_get.return_value.json.return_value = expected_response
 
         params = {
             "project": "project123",
@@ -2127,7 +2134,7 @@ class UploadHandlerAzureTokenlessTest(TestCase):
             "build": "20190725.8",
         }
 
-        expected_error = """Unable to locate build via Azure API. Please upload with the Codecov repository upload token to resolve issue."""
+        expected_error = """Unable to locate build via Azure API. Project is likely private, please upload with the Codecov repository upload token to resolve issue."""
 
         with pytest.raises(NotFound) as e:
             TokenlessUploadHandler("azure_pipelines", params).verify_upload()
@@ -2147,6 +2154,7 @@ class UploadHandlerAzureTokenlessTest(TestCase):
         }
 
         mock_get.return_value.status_code.return_value = 200
+        mock_get.return_value.headers.get.return_value = 'application/json'
         mock_get.return_value.json.return_value = expected_response
 
         params = {

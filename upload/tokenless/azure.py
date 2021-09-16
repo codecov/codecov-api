@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime, timedelta
-from json.decoder import JSONDecodeError
 
 import requests
 from requests.exceptions import ConnectionError, HTTPError
@@ -17,8 +16,8 @@ class TokenlessAzureHandler(BaseTokenlessUploadHandler):
             build = requests.get(
                 f"{self.server_uri}{self.project}/_apis/build/builds/{self.job}?api-version=5.0",
                 headers={"Accept": "application/json", "User-Agent": "Codecov"},
-            ).json()
-        except (ConnectionError, HTTPError, AttributeError, JSONDecodeError) as e:
+            )
+        except (ConnectionError, HTTPError) as e:
             log.warning(
                 f"Request error {e}",
                 extra=dict(
@@ -36,8 +35,11 @@ class TokenlessAzureHandler(BaseTokenlessUploadHandler):
             raise NotFound(
                 "Unable to locate build via Azure API. Please upload with the Codecov repository upload token to resolve issue."
             )
-
-        return build
+        if build.headers.get('content-type') != 'application/json':
+            raise NotFound(
+               "Unable to locate build via Azure API. Project is likely private, please upload with the Codecov repository upload token to resolve issue."
+            )
+        return build.json()
 
     def verify(self):
 
