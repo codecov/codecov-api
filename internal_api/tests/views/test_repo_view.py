@@ -1023,7 +1023,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         message = "No can do, buddy"
         mocked_get_permissions.return_value = True, True
         create_webhook_mock.side_effect = TorngitClientGeneralError(
-            code, response=None, message=message
+            code, response_data=None, message=message
         )
 
         response = self._reset_webhook()
@@ -1167,7 +1167,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
     def test_permissions_check_handles_torngit_error(self, mocked_get_permissions):
         err_code, err_message = 403, "yo, no."
         mocked_get_permissions.side_effect = TorngitClientGeneralError(
-            err_code, message=err_message, response=None
+            err_code, message=err_message, response_data=None
         )
         response = self._retrieve()
         assert response.status_code == err_code
@@ -1180,7 +1180,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         mocked_get_perms.return_value = True, True
         err_code, err_message = 403, "yo, no."
         mocked_get_details.side_effect = TorngitClientGeneralError(
-            status_code=err_code, message=err_message, response=None
+            status_code=err_code, message=err_message, response_data=None
         )
         response = self._retrieve()
         assert response.status_code == err_code
@@ -1218,7 +1218,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         mocked_get_permissions.return_value = True, True
         mocked_get_repo_details.return_value = None
         mocked_fetch_and_create.side_effect = TorngitClientGeneralError(
-            403, response=None, message="Forbidden"
+            403, response_data=None, message="Forbidden"
         )
 
         response = self._retrieve(

@@ -11,7 +11,7 @@ from codecov.commands.exceptions import (
     Unauthorized,
     NotFound,
 )
-from shared.validation.yaml import validate_yaml
+from shared.yaml.validation import validate_yaml
 from shared.validation.exceptions import InvalidYamlException
 
 

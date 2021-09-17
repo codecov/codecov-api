@@ -51,7 +51,7 @@ class GetFileContentInteractorTest(TransactionTestCase):
     @async_to_sync
     async def test_when_path_has_no_file(self, mock_provider_adapter):
         mock_provider_adapter.side_effect = TorngitObjectNotFoundError(
-            response=404, message="not found"
+            response_data=404, message="not found"
         )
         file_content = await self.execute(None, self.commit, "path")
         assert file_content == None

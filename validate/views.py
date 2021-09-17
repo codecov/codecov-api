@@ -7,7 +7,7 @@ from django.http import HttpResponse
 from json import dumps
 from django.conf import settings
 
-from shared.validation.yaml import validate_yaml
+from shared.yaml.validation import validate_yaml
 from shared.validation.exceptions import InvalidYamlException
 
 log = logging.getLogger(__name__)

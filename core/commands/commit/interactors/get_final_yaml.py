@@ -1,6 +1,6 @@
 from asgiref.sync import sync_to_async
 from shared.yaml import UserYaml, fetch_current_yaml_from_provider_via_reference
-from shared.validation.yaml import validate_yaml
+from shared.yaml.validation import validate_yaml
 from yaml import safe_load
 
 from services.repo_providers import RepoProviderService
