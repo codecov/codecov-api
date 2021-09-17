@@ -23,9 +23,7 @@ asn1crypto==1.4.0
 astroid==2.6.6
     # via pylint
 attrs==20.3.0
-    # via
-    #   pytest
-    #   shared
+    # via pytest
 backoff==1.6.0
     # via analytics-python
 billiard==3.6.3.0
@@ -129,8 +127,6 @@ gunicorn==20.0.4
     # via -r requirements.in
 h11==0.12.0
     # via httpcore
-htmldom==2.0
-    # via shared
 httpcore==0.12.3
     # via httpx
 httplib2==0.18.1
@@ -288,8 +284,6 @@ requests==2.25.1
     #   stripe
 rfc3986[idna2008]==1.4.0
     # via httpx
-git+ssh://git@github.com/codecov/ribs@v0.1.14#egg=ribs
-    # via shared
 rsa==4.6
     # via google-auth
 s3transfer==0.2.1
@@ -298,7 +292,7 @@ sentry-sdk==0.14.3
     # via -r requirements.in
 setproctitle==1.1.10
     # via -r requirements.in
-git+ssh://git@github.com/codecov/shared.git@v0.6.3#egg=shared
+git+ssh://git@github.com/codecov/shared.git@v0.7.3#egg=shared
     # via -r requirements.in
 six==1.15.0
     # via
@@ -312,7 +306,6 @@ six==1.15.0
     #   google-resumable-media
     #   protobuf
     #   python-dateutil
-    #   shared
     #   tenacity
     #   vcrpy
     #   virtualenv
@@ -345,8 +338,6 @@ toml==0.10.2
     #   pre-commit
     #   pylint
     #   pytest
-tornado==6.0.4
-    # via shared
 typing-extensions==3.7.4.3
     # via ariadne
 urllib3==1.25.10

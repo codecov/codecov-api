@@ -48,7 +48,7 @@ class GetFinalYamlInteractorTest(TransactionTestCase):
     @async_to_sync
     async def test_when_commit_has_no_yaml(self, mock_fetch_yaml):
         mock_fetch_yaml.side_effect = TorngitObjectNotFoundError(
-            response=404, message="not found"
+            response_data=404, message="not found"
         )
         config = await self.execute(None, self.commit)
         print(config)
