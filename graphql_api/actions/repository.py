@@ -10,6 +10,9 @@ def apply_filters_to_queryset(queryset, filters):
     filters = filters or {}
     term = filters.get("term")
     active = filters.get("active")
+    terms = filters.get("terms")
+    if terms:
+        queryset = queryset.filter(name__in=terms)
     if term:
         queryset = queryset.filter(name__contains=term)
     if active is not None:
