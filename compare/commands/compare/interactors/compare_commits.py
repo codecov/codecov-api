@@ -21,11 +21,11 @@ class CompareCommitsInteractor(BaseInteractor):
         comparison, created = self.get_or_create_comparison(
             head_commit, compare_to_commit
         )
-        if created or self.needs_recalculation(comparison, compare_to_commit) :
+        if created or self.needs_recalculation(comparison) :
             self.trigger_task(comparison)
         return comparison
 
 
-    def needs_recalculation(self, comparison, compare_to_commit):
+    def needs_recalculation(self, comparison):
         timezone = pytz.utc
-        return timezone.normalize(comparison.updated_at) < timezone.localize(compare_to_commit.updatestamp)
+        return timezone.normalize(comparison.updated_at) < timezone.localize(comparison.compare_commit.updatestamp)
