@@ -10,6 +10,9 @@ def apply_filters_to_queryset(queryset, filters):
     filters = filters or {}
     term = filters.get("term")
     active = filters.get("active")
+    repo_names = filters.get("repo_names")
+    if repo_names:
+        queryset = queryset.filter(name__in=repo_names)
     if term:
         queryset = queryset.filter(name__contains=term)
     if active is not None:
