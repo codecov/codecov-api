@@ -18,7 +18,6 @@ class GetImpactedFilesInteractor(BaseInteractor):
         archive_service = ArchiveService(repository)
         try:
             data = archive_service.read_file(comparison.report_storage_path)
-            print(json.loads(data))
             return json.loads(data)
         # pylint: disable=W0702
         except:
