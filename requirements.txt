@@ -233,13 +233,13 @@ pylint==2.9.6
     #   pylint-plugin-utils
 pyparsing==2.4.7
     # via packaging
-pytest-cov==2.11.1
+pytest-cov==2.12.1
     # via -r requirements.in
-pytest-django==4.1.0
+pytest-django==4.4.0
     # via -r requirements.in
-pytest-mock==1.10.1
+pytest-mock==1.12.1
     # via -r requirements.in
-pytest==6.2.2
+pytest==6.2.5
     # via
     #   -r requirements.in
     #   pytest-cov
@@ -338,6 +338,7 @@ toml==0.10.2
     #   pre-commit
     #   pylint
     #   pytest
+    #   pytest-cov
 typing-extensions==3.7.4.3
     # via ariadne
 urllib3==1.25.10

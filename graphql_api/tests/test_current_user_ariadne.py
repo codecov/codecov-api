@@ -250,6 +250,23 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
         repos = paginate_connection(data["me"]["viewableRepositories"])
         assert repos == [{"name": "a"}]
 
+    def test_fetching_viewable_repositories_with_repo_names_search(self):
+        query = """{
+            me {
+                viewableRepositories (filters: { repoNames: ["a", "b"] }) {
+                    edges {
+                        node {
+                            name
+                        }
+                    }
+                }
+            }
+        }
+        """
+        data = self.gql_request(query, user=self.user)
+        repos = paginate_connection(data["me"]["viewableRepositories"])
+        assert repos == [{'name': 'a'}, {'name': 'b'}]
+
     def test_fetching_my_orgs(self):
         query = """{
             me {
@@ -286,6 +303,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
         """
         data = self.gql_request(query, user=self.user)
         orgs = paginate_connection(data["me"]["myOrganizations"])
+
         assert orgs == [
             {"username": "spotify"},
         ]

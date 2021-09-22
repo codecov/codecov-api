@@ -1,3 +1,5 @@
+import pytz
+
 from asgiref.sync import sync_to_async
 
 from codecov.commands.base import BaseInteractor
@@ -19,6 +21,13 @@ class CompareCommitsInteractor(BaseInteractor):
         comparison, created = self.get_or_create_comparison(
             head_commit, compare_to_commit
         )
-        if created:
+        if created or self.needs_recalculation(comparison):
+            comparison.state = CommitComparison.CommitComparisonStates.PENDING
+            comparison.save()
             self.trigger_task(comparison)
         return comparison
+
+    def needs_recalculation(self, comparison):
+        timezone = pytz.utc
+        return (timezone.normalize(comparison.updated_at) < timezone.localize(comparison.compare_commit.updatestamp)
+                or timezone.normalize(comparison.updated_at) < timezone.localize(comparison.base_commit.updatestamp))
