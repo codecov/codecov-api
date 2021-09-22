@@ -51,7 +51,7 @@ class GetImpactedFilesInteractor(BaseInteractor):
         # convert dict to ReportTotals and compute the coverage
         totals = ReportTotals(**file[key])
         nb_branches = totals.hits + totals.misses + totals.partials
-        totals.coverage = 100 * (totals.hits / nb_branches if nb_branches > 0 else 0)
+        totals.coverage = (100 * totals.hits / nb_branches) if nb_branches > 0 else None
         file[key] = totals
 
     def deserialize_comparison(self, impacted_files):
