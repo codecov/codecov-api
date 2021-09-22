@@ -250,7 +250,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
 
     @patch("compare.commands.compare.compare.CompareCommands.get_impacted_files")
     def test_impacted_files_comparison_call_the_command(self, command_mock):
-        query = query_commit % "compareWithParent { impactedFiles { path } }"
+        query = query_commit % "compareWithParent { impactedFiles { headName } }"
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
@@ -260,7 +260,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         commit = data["owner"]["repository"]["commit"]
         fake_compare = [
             {
-                "path": "src/config.js",
+                "head_name": "src/config.js",
             },
         ]
         f = asyncio.Future()
@@ -269,5 +269,5 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
         assert commit["compareWithParent"]["impactedFiles"][0] == {
-            "path": "src/config.js"
+            "headName": "src/config.js"
         }

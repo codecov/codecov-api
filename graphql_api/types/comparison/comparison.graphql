@@ -5,12 +5,9 @@ type Comparison {
 }
 
 type ImpactedFile {
-    path: String!
-    baseTotals: CoverageTotals
-    compareTotals: CoverageTotals
-    patch: CoverageTotals
-    new: Boolean!
-    deleted: Boolean!
-    inDiff: Boolean!
-    oldPath: String
+  baseName: String
+  headName: String
+  baseCoverage: CoverageTotals
+  headCoverage: CoverageTotals
+  patchCoverage: CoverageTotals
 }

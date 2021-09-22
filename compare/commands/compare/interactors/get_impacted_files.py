@@ -11,11 +11,6 @@ from services.archive import ArchiveService
 log = logging.getLogger(__name__)
 
 
-def deserialize_totals(file, key):
-    if file[key]:
-        file[key] = ReportTotals(*file[key])
-
-
 class GetImpactedFilesInteractor(BaseInteractor):
     @sync_to_async
     def get_comparison_data_from_archive(self, comparison):
@@ -23,6 +18,7 @@ class GetImpactedFilesInteractor(BaseInteractor):
         archive_service = ArchiveService(repository)
         try:
             data = archive_service.read_file(comparison.report_storage_path)
+            print(json.loads(data))
             return json.loads(data)
         # pylint: disable=W0702
         except:
@@ -31,14 +27,41 @@ class GetImpactedFilesInteractor(BaseInteractor):
             )
             return {}
 
+    def compute_patch_per_file(self, file):
+        added_diff_coverage = file.get("added_diff_coverage", [])
+        if not added_diff_coverage:
+            return None
+        patch_coverage = {
+            "hits": 0,
+            "misses": 0,
+            "partials": 0,
+        }
+        for added_coverage in added_diff_coverage:
+            [_, type_coverage] = added_coverage
+            if type_coverage == "h":
+                patch_coverage["hits"] += 1
+            if type_coverage == "m":
+                patch_coverage["misses"] += 1
+            if type_coverage == "p":
+                patch_coverage["partials"] += 1
+        return patch_coverage
+
+    def deserialize_totals(self, file, key):
+        if not file.get(key):
+            return
+        # convert dict to ReportTotals and compute the coverage
+        totals = ReportTotals(**file[key])
+        nb_branches = totals.hits + totals.misses + totals.partials
+        totals.coverage = 100 * (totals.hits / nb_branches if nb_branches > 0 else 0)
+        file[key] = totals
+
     def deserialize_comparison(self, impacted_files):
-        flat_impacted_files = impacted_files.get("changes", []) + impacted_files.get(
-            "diff", []
-        )
+        flat_impacted_files = impacted_files.get("files", [])
         for file in flat_impacted_files:
-            deserialize_totals(file, "base_totals")
-            deserialize_totals(file, "compare_totals")
-            deserialize_totals(file, "patch")
+            file["patch_coverage"] = self.compute_patch_per_file(file)
+            self.deserialize_totals(file, "base_coverage")
+            self.deserialize_totals(file, "head_coverage")
+            self.deserialize_totals(file, "patch_coverage")
         return flat_impacted_files
 
     async def execute(self, comparison):
