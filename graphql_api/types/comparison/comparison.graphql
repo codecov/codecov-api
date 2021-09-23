@@ -1,5 +1,6 @@
 type Comparison {
   state: String!
+  error: String
   impactedFiles: [ImpactedFile]!
   patchTotals: CoverageTotals
 }
