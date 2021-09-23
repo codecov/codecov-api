@@ -6,6 +6,8 @@ from .interactors.set_yaml_on_owner import SetYamlOnOwnerInteractor
 from .interactors.delete_session import DeleteSessionInteractor
 from .interactors.update_profile import UpdateProfileInteractor
 from .interactors.fetch_owner import FetchOwnerInteractor
+from .interactors.trigger_sync import TriggerSyncInteractor
+from .interactors.is_syncing import IsSyncingInteractor
 
 
 class OwnerCommands(BaseCommand):
@@ -23,3 +25,9 @@ class OwnerCommands(BaseCommand):
 
     def fetch_owner(self, username):
         return self.get_interactor(FetchOwnerInteractor).execute(username)
+
+    def trigger_sync(self):
+        return self.get_interactor(TriggerSyncInteractor).execute()
+
+    def is_syncing(self):
+        return self.get_interactor(IsSyncingInteractor).execute()
