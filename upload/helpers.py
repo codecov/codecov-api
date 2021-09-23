@@ -38,7 +38,10 @@ def parse_params(data):
     }
 
     global_tokens = get_global_tokens()
-
+    log.info(
+        "Found global tokens",
+        extra=dict(tokens=global_tokens),
+    )
     params_schema = {
         # --- The following parameters are populated in the code based on request data, settings, etc.
         "owner": {  # owner username, we set this by splitting the value of "slug" on "/" if provided
@@ -184,7 +187,10 @@ def parse_params(data):
     v = Validator(params_schema, allow_unknown=True)
     if not v.validate(non_empty_data):
         raise ValidationError(v.errors)
-
+    log.info(
+        "Final config",
+        extra=dict(config=v.document),
+    )
     # return validated data, including coerced values
     return v.document
 
