@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     "ariadne.contrib.django",
     "corsheaders",
     "rest_framework",
+    "billing",
     "core",
     "codecov_auth",
     "reports",
@@ -231,8 +232,12 @@ DJANGO_ADMIN_URL = get_config("django", "admin_url", default="admin")
 IS_ENTERPRISE = get_settings_module() == SettingsModule.ENTERPRISE.value
 IS_DEV = get_settings_module() == SettingsModule.DEV.value
 
-DATA_UPLOAD_MAX_MEMORY_SIZE = get_config("setup", "http", "upload_max_memory_size", default=2621440)
-FILE_UPLOAD_MAX_MEMORY_SIZE = get_config("setup", "http", "file_upload_max_memory_size", default=2621440)
+DATA_UPLOAD_MAX_MEMORY_SIZE = get_config(
+    "setup", "http", "upload_max_memory_size", default=2621440
+)
+FILE_UPLOAD_MAX_MEMORY_SIZE = get_config(
+    "setup", "http", "file_upload_max_memory_size", default=2621440
+)
 
 
 CORS_ALLOWED_ORIGIN_REGEXES = []

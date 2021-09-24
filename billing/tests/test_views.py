@@ -475,7 +475,7 @@ class StripeWebhookHandlerTests(APITestCase):
             self.owner.ownerid, {"plan": plan, "userid_type": "org"}
         )
 
-    @patch("webhook_handlers.views.stripe.stripe.Subscription.modify")
+    @patch("billing.views.stripe.Subscription.modify")
     def test_customer_update_but_not_payment_method(self, subscription_modify_mock):
         payment_method = "pm_123"
         response = self._send_event(
@@ -494,7 +494,7 @@ class StripeWebhookHandlerTests(APITestCase):
 
         subscription_modify_mock.assert_not_called()
 
-    @patch("webhook_handlers.views.stripe.stripe.Subscription.modify")
+    @patch("billing.views.stripe.Subscription.modify")
     def test_customer_update_payment_method(self, subscription_modify_mock):
         payment_method = "pm_123"
         old_payment_method = "pm_321"
