@@ -79,6 +79,7 @@ class Owner(models.Model):
         unique=True, null=True
     )  # No actual unique constraint on this in the DB
     email = models.TextField(null=True)
+    business_email = models.TextField(null=True)
     name = models.TextField(null=True)
     oauth_token = models.TextField(null=True)
     stripe_customer_id = models.TextField(null=True)
@@ -117,6 +118,7 @@ class Owner(models.Model):
     student = models.BooleanField(default=False)
     student_created_at = DateTimeWithoutTZField(null=True)
     student_updated_at = DateTimeWithoutTZField(null=True)
+    onboarding_completed = models.BooleanField(default=False)
 
     objects = OwnerQuerySet.as_manager()
 
@@ -396,6 +398,26 @@ class Owner(models.Model):
         self.save()
 
 
+class OwnerProfile(BaseCodecovModel):
+    class ProjectType(models.TextChoices):
+        PERSONAL = "PERSONAL"
+        YOUR_ORG = "YOUR_ORG"
+        OPEN_SOURCE = "OPEN_SOURCE"
+        EDUCATIONAL = "EDUCATIONAL"
+
+    class GOAL(models.TextChoices):
+        STARTING_WITH_TESTS = "STARTING_WITH_TESTS"
+        IMPROVE_COVERAGE = "IMPROVE_COVERAGE"
+        MAINTAIN_COVERAGE = "MAINTAIN_COVERAGE"
+        OTHER = "OTHER"
+
+    type_projects = ArrayField(
+        models.TextField(choices=ProjectType.choices), default=list
+    )
+    goals = ArrayField(models.TextField(choices=GOAL.choices), default=list)
+    other_goal = models.TextField(null=True)
+
+
 class Session(models.Model):
     class Meta:
         db_table = "sessions"
@@ -428,7 +450,7 @@ class RepositoryToken(BaseCodecovModel):
         max_length=40,
         unique=True,
         editable=False,
-        default=lambda: binascii.hexlify(os.urandom(20)).decode()
+        default=lambda: binascii.hexlify(os.urandom(20)).decode(),
     )
 
     @classmethod
