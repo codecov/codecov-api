@@ -7,7 +7,7 @@ from codecov_auth.models import Owner, Session
 def search_my_owners(current_user, filters):
     filters = filters if filters else {}
     term = filters.get("term")
-    queryset = current_user.orgs
+    queryset = current_user.orgs.exclude(username=None)
     if term:
         queryset = queryset.filter(username__contains=term)
     return queryset
