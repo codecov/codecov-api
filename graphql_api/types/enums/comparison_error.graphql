@@ -1,0 +1,4 @@
+enum ComparisonError {
+  MISSING_BASE_REPORT
+  MISSING_HEAD_REPORT
+}
