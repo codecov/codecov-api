@@ -411,6 +411,7 @@ class OwnerProfile(BaseCodecovModel):
         MAINTAIN_COVERAGE = "MAINTAIN_COVERAGE"
         OTHER = "OTHER"
 
+    owner = models.OneToOneField(Owner, on_delete=models.CASCADE, unique=True)
     type_projects = ArrayField(
         models.TextField(choices=ProjectType.choices), default=list
     )
