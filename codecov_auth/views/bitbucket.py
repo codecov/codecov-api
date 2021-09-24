@@ -3,6 +3,7 @@ import base64
 import logging
 from urllib.parse import urlencode
 
+from asgiref.sync import async_to_sync
 from django.conf import settings
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -18,6 +19,7 @@ log = logging.getLogger(__name__)
 class BitbucketLoginView(View, LoginMixin):
     service = "bitbucket"
 
+    @async_to_sync
     async def fetch_user_data(self, token):
         repo_service = Bitbucket(
             oauth_consumer_token=dict(
@@ -88,7 +90,7 @@ class BitbucketLoginView(View, LoginMixin):
         token = repo_service.generate_access_token(
             cookie_key, cookie_secret, oauth_verifier
         )
-        user_dict = asyncio.run(self.fetch_user_data(token))
+        user_dict = self.fetch_user_data(token)
         response = redirect(settings.CODECOV_DASHBOARD_URL + "/bb")
         response.delete_cookie("_oauth_request_token", domain=settings.COOKIES_DOMAIN)
         user = self.login_from_user_dict(user_dict, request, response)

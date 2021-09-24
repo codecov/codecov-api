@@ -1,7 +1,8 @@
 import asyncio
 import logging
-from urllib.parse import urljoin, urlencode
+from urllib.parse import urlencode, urljoin
 
+from asgiref.sync import async_to_sync
 from django.conf import settings
 from django.shortcuts import redirect
 from django.views import View
@@ -34,6 +35,7 @@ class GithubLoginView(LoginMixin, StateMixin, View):
         query_str = urlencode(query)
         return f"{base_url}?{query_str}"
 
+    @async_to_sync
     async def fetch_user_data(self, code):
         repo_service = Github(
             oauth_consumer_token=dict(
@@ -56,7 +58,7 @@ class GithubLoginView(LoginMixin, StateMixin, View):
         redirection_url = self.get_redirection_url_from_state(state)
         code = request.GET.get("code")
         try:
-            user_dict = asyncio.run(self.fetch_user_data(code))
+            user_dict = self.fetch_user_data(code)
         except TorngitError:
             log.warning("Unable to log in due to problem on Github", exc_info=True)
             return redirect(self.error_redirection_page)
