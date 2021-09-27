@@ -34,3 +34,13 @@ class OwnerCommandsTest(TransactionTestCase):
         name = "codecov name"
         self.command.update_profile(name=name)
         interactor_mock.assert_called_once_with(name=name)
+
+    @patch("codecov_auth.commands.owner.owner.TriggerSyncInteractor.execute")
+    def test_trigger_sync_delegate_to_interactor(self, interactor_mock):
+        self.command.trigger_sync()
+        interactor_mock.assert_called_once()
+
+    @patch("codecov_auth.commands.owner.owner.IsSyncingInteractor.execute")
+    def test_is_syncing_delegate_to_interactor(self, interactor_mock):
+        self.command.is_syncing()
+        interactor_mock.assert_called_once()
