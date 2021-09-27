@@ -38,7 +38,6 @@ def parse_params(data):
     }
 
     global_tokens = get_global_tokens()
-
     params_schema = {
         # --- The following parameters are populated in the code based on request data, settings, etc.
         "owner": {  # owner username, we set this by splitting the value of "slug" on "/" if provided
@@ -184,7 +183,6 @@ def parse_params(data):
     v = Validator(params_schema, allow_unknown=True)
     if not v.validate(non_empty_data):
         raise ValidationError(v.errors)
-
     # return validated data, including coerced values
     return v.document
 
@@ -202,7 +200,10 @@ def determine_repo_for_upload(upload_params):
                 f"Could not find a repository associated with upload token {token}"
             )
     elif service:
-        git_service = TokenlessUploadHandler(service, upload_params).verify_upload()
+        if using_global_token:
+            git_service = service
+        else:
+            git_service = TokenlessUploadHandler(service, upload_params).verify_upload()
         try:
             repository = Repository.objects.get(
                 author__service=git_service,
@@ -210,7 +211,7 @@ def determine_repo_for_upload(upload_params):
                 author__username=upload_params.get("owner"),
             )
         except ObjectDoesNotExist:
-            raise NotFound(f"Could not find a repository, try using upload token")
+            raise NotFound(f"Could not find a repository, try using repo upload token")
     else:
         raise ValidationError(
             "Need either a token or service to determine target repository"
