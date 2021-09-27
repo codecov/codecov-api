@@ -184,10 +184,9 @@ def parse_params(data):
     if not v.validate(non_empty_data):
         raise ValidationError(v.errors)
     # return validated data, including coerced values
-    result = v.document
-    if result.using_global_token:
-        result.service = global_tokens[result.token]
-    return result
+    if v.document.get("using_global_token"):
+        v.document["service"] = global_tokens[v.document.get("token")]
+    return v.document
 
 
 def determine_repo_for_upload(upload_params):
