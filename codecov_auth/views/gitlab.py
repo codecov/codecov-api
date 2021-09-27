@@ -1,8 +1,9 @@
-from urllib.parse import urljoin, urlencode
-from uuid import uuid4
 import asyncio
 import logging
+from urllib.parse import urlencode, urljoin
+from uuid import uuid4
 
+from asgiref.sync import async_to_sync
 from django.conf import settings
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -33,6 +34,7 @@ class GitlabLoginView(LoginMixin, StateMixin, View):
         query_str = urlencode(query)
         return f"{base_url}?{query_str}"
 
+    @async_to_sync
     async def fetch_user_data(self, request, code):
         redirect_uri = settings.GITLAB_REDIRECT_URI
         repo_service = Gitlab(
@@ -51,7 +53,7 @@ class GitlabLoginView(LoginMixin, StateMixin, View):
         state = request.GET.get("state")
         code = request.GET.get("code")
         try:
-            user_dict = asyncio.run(self.fetch_user_data(request, code))
+            user_dict = self.fetch_user_data(request, code)
         except TorngitError:
             log.warning("Unable to log in due to problem on Gitlab", exc_info=True)
             return redirect(self.error_redirection_page)

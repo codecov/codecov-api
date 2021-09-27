@@ -175,7 +175,7 @@ def test_get_bitbucket_already_token_no_cookie(
 
 
 class TestBitbucketLoginView(TestCase):
-    async def test_fetch_user_data(self):
+    def test_fetch_user_data(self):
         async def fake_list_teams():
             return []
         with patch.object(
@@ -184,7 +184,7 @@ class TestBitbucketLoginView(TestCase):
             with patch.object(Bitbucket, "list_teams", side_effect=fake_list_teams):
                 view = BitbucketLoginView()
                 token = {"key": "aaaa", "secret": "bbbb"}
-                res = await view.fetch_user_data(token)
+                res = view.fetch_user_data(token)
                 assert res == {
                     "has_private_access": False,
                     "is_student": False,
