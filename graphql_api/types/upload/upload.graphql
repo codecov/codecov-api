@@ -9,4 +9,5 @@ type Upload {
   ciUrl: String
   uploadType: String
   jobCode: String
+  buildCode: String
 }
