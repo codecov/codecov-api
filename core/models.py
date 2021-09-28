@@ -248,7 +248,8 @@ class Pull(models.Model):
         on_delete=models.CASCADE,
         related_name="pull_requests",
     )
-    pullid = models.IntegerField(primary_key=True)
+    id = models.BigAutoField(primary_key=True)
+    pullid = models.IntegerField()
     issueid = models.IntegerField(null=True)
     state = models.TextField(
         choices=PullStates.choices, default=PullStates.OPEN.value
