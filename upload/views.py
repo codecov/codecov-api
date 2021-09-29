@@ -268,9 +268,12 @@ class UploadHandler(APIView):
         else:
             build_url = upload_params.get("build_url")
 
+        queue_params = upload_params.copy()
+        if upload_params.get('using_global_token'):
+            queue_params["service"] = request_params.get("service")
         # Define the task arguments to send when dispatching upload task to worker
         task_arguments = {
-            **upload_params,
+            **queue_params,
             "build_url": build_url,
             "reportid": reportid,
             "redis_key": redis_key,  # location of report for v2 uploads; this will be "None" for v4 uploads

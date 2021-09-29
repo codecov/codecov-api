@@ -186,6 +186,7 @@ def parse_params(data):
 
     # override service to the one from the global token if global token is in use
     if v.document.get("using_global_token"):
+        v.document["original_service"] = v.document.get("service")
         v.document["service"] = global_tokens[v.document.get("token")]
     # return validated data, including coerced values
     return v.document
