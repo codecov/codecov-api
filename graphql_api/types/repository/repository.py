@@ -1,4 +1,6 @@
 from ariadne import ObjectType
+from graphql_api.types.enums import OrderingDirection
+from graphql_api.helpers.connection import queryset_to_connection
 
 from graphql_api.dataloader.owner import load_owner_by_id
 
@@ -30,3 +32,13 @@ def resolve_author(repository, info):
 def resolve_commit(repository, info, id):
     command = info.context["executor"].get_command("commit")
     return command.fetch_commit(repository, id)
+
+@repository_bindable.field("pulls")
+def resolve_pulls(repository, info, **kwargs):
+    queryset = repository.pull_requests.all()
+    # command interactor + test - 1PR
+    # more fields to pull - another PR
+    ## author + other fields (dataloader)
+    return queryset_to_connection(
+        queryset, ordering="id", ordering_direction=OrderingDirection.ASC, **kwargs
+    )
