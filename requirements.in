@@ -40,3 +40,5 @@ opentelemetry-instrumentation-django
 pylint
 pylint-django
 elastic-apm
+ariadne_django
+simplejson==3.17.2
