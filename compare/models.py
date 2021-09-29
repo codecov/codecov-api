@@ -10,6 +10,10 @@ class CommitComparison(BaseCodecovModel):
         ERROR = "error"
         PROCESSED = "processed"
 
+    class CommitComparisonErrors(models.TextChoices):
+        MISSING_BASE_REPORT = "missing_base_report"
+        MISSING_HEAD_REPORT = "missing_head_report"
+
     base_commit = models.ForeignKey(
         Commit, on_delete=models.CASCADE, related_name="base_commit_comparisons"
     )
@@ -19,6 +23,7 @@ class CommitComparison(BaseCodecovModel):
     state = models.TextField(
         choices=CommitComparisonStates.choices, default=CommitComparisonStates.PENDING
     )
+    error = models.TextField(choices=CommitComparisonErrors.choices, null=True)
     report_storage_path = models.CharField(max_length=150, null=True, blank=True)
     patch_totals = models.JSONField(null=True)
 
