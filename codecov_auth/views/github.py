@@ -89,7 +89,9 @@ class GithubLoginView(LoginMixin, StateMixin, View):
                     httponly=True,
                     domain=domain_to_use,
                 )
+                self.store_to_cookie_utm_tags(response)
                 return response
             url_to_redirect_to = self.get_url_to_redirect_to(scope)
             response = redirect(url_to_redirect_to)
+            self.store_to_cookie_utm_tags(response)
             return response

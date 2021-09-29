@@ -114,6 +114,7 @@ class LoginMixinTests(TestCase):
         self.mixin_instance = LoginMixin()
         self.mixin_instance.service = "github"
         self.request = RequestFactory().get("", {})
+        self.mixin_instance.request = self.request
 
     @patch("services.segment.SegmentService.identify_user")
     def test_get_or_create_user_calls_segment_identify_user(self, identify_user_mock):
