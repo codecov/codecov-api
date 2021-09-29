@@ -253,6 +253,32 @@ class UploadHandlerHelpersTest(TestCase):
         assert expected_result == parsed_params
 
     @patch("upload.helpers.get_config")
+    def test_parse_params_recognizes_global_token_overrides_service(self, mock_get_config):
+        mock_get_config.side_effect = mock_get_config_global_upload_tokens
+
+        request_params = {
+            "version": "v4",
+            "commit": "3be5c52bd748c508a7e96993c02cf3518c816e84",
+            "token": "bitbucketserveruploadtoken",
+            "service": "jenkins"
+        }
+
+        expected_result = {
+            "version": "v4",
+            "commit": "3be5c52bd748c508a7e96993c02cf3518c816e84",
+            "token": "bitbucketserveruploadtoken",
+            "using_global_token": True,
+            "service": "bitbucket_server",
+            "job": None,
+            "owner": None,
+            "pr": None,
+            "repo": None,
+        }
+
+        parsed_params = parse_params(request_params)
+        assert expected_result == parsed_params
+
+    @patch("upload.helpers.get_config")
     def test_get_global_tokens(self, mock_get_config):
         mock_get_config.side_effect = mock_get_config_global_upload_tokens
 

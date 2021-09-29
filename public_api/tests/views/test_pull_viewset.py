@@ -89,7 +89,7 @@ class PullViewSetTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         content = json.loads(response.content.decode())
         self.assertEqual(content["user_provided_base_sha"], "new-sha")
-        self.assertEqual(Pull.objects.get(pk=10, repository=self.repo).user_provided_base_sha, "new-sha")
+        self.assertEqual(Pull.objects.get(pullid=10, repository=self.repo).user_provided_base_sha, "new-sha")
         pulls_sync_mock.assert_called_once_with(repoid=self.repo.repoid, pullid="10")
 
     def test_update_pull_user_provided_base_no_permissions(self):

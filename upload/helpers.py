@@ -183,6 +183,9 @@ def parse_params(data):
     v = Validator(params_schema, allow_unknown=True)
     if not v.validate(non_empty_data):
         raise ValidationError(v.errors)
+    # override service to the one from the global token if global token is in use
+    if v.document.get("using_global_token"):
+        v.document["service"] = global_tokens[v.document.get("token")]
     # return validated data, including coerced values
     return v.document
 
