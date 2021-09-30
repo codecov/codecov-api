@@ -369,7 +369,6 @@ class UploadDownloadHandler(View):
         self.read_params()
         self.validate_path()
         request.user = await self.get_user(request)
-        print(request.user)
         repo = await self.get_repo()
         raw_uploaded_report = await self.get_from_storage(repo)
 
