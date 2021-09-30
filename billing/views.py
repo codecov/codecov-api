@@ -15,7 +15,7 @@ from codecov_auth.constants import PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS
 from services.segment import SegmentService
 from services.billing import BillingService
 
-from ..constants import StripeHTTPHeaders, StripeWebhookEvents
+from .constants import StripeHTTPHeaders, StripeWebhookEvents
 
 
 if settings.STRIPE_API_KEY:
@@ -252,7 +252,6 @@ class StripeWebhookHandler(APIView):
             log.critical(
                 "Stripe endpoint secret improperly configured -- webhooks will not be processed."
             )
-
         try:
             self.event = stripe.Webhook.construct_event(
                 self.request.body,
@@ -262,7 +261,6 @@ class StripeWebhookHandler(APIView):
         except stripe.error.SignatureVerificationError as e:
             log.warning(f"Stripe webhook event received with invalid signature -- {e}")
             return Response("Invalid signature", status=status.HTTP_400_BAD_REQUEST)
-
         if self.event.type not in StripeWebhookEvents.subscribed_events:
             log.warning(
                 f"Unsupported Stripe webhook event received, exiting",
