@@ -34,11 +34,9 @@ def resolve_commit(repository, info, id):
     return command.fetch_commit(repository, id)
 
 @repository_bindable.field("pulls")
-def resolve_pulls(repository, info, **kwargs):
-    queryset = repository.pull_requests.all()
-    # command interactor + test - 1PR
-    # more fields to pull - another PR
-    ## author + other fields (dataloader)
-    return queryset_to_connection(
+async def resolve_pulls(repository, info, **kwargs):
+    command = info.context["executor"].get_command("pull")
+    queryset = await command.fetch_pull_requests(repository)
+    return await queryset_to_connection(
         queryset, ordering="id", ordering_direction=OrderingDirection.ASC, **kwargs
     )
