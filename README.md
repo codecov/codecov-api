@@ -71,6 +71,9 @@ This repository uses `pip-tools` to manage dependencies, so make sure you've ins
 pip-compile requirements.in
 ```
 
+### Database Migrations
+When adding a datbase migration (whether it is a schema or data), please make sure to send the PR in the #eng-team-database channel and follow the process outlined in the channel's description.
+
 Do not change `requirements.txt` directly.
 
 ### Formatting
