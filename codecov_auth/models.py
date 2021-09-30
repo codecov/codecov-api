@@ -409,6 +409,7 @@ class OwnerProfile(BaseCodecovModel):
         STARTING_WITH_TESTS = "STARTING_WITH_TESTS"
         IMPROVE_COVERAGE = "IMPROVE_COVERAGE"
         MAINTAIN_COVERAGE = "MAINTAIN_COVERAGE"
+        TEAM_REQUIREMENTS = "TEAM_REQUIREMENTS"
         OTHER = "OTHER"
 
     owner = models.OneToOneField(Owner, on_delete=models.CASCADE, unique=True)
