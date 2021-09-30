@@ -91,7 +91,7 @@ class CodecovAuthMixin:
             return encoded_cookie
         # try with the "service" arg from the route to get the cookie
         service = request.resolver_match.kwargs.get("service")
-        return request.COOKIES.get(f"{service}-token")
+        return request.COOKIES.get(f"{get_long_service_name(service)}-token")
 
 
 class CodecovTokenAuthenticationBase(CodecovAuthMixin):
