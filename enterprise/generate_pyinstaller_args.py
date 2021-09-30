@@ -79,14 +79,14 @@ def main():
             "utils.config",
             "utils.encryption",
             "utils.logging_configuration",
-            "ariadne.contrib.django.apps",
+            "ariadne_django.apps",
             "whitenoise",
             "whitenoise.middleware",
             "graphql_api",
             "legacy_migrations",
             "legacy_migrations.migrations",
             "shared.celery_config",
-            "kombu.transport.pyamqp"
+            "kombu.transport.pyamqp",
         ]
     )
 

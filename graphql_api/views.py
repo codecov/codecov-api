@@ -11,7 +11,8 @@ from codecov_auth.authentication import CodecovTokenAuthentication
 from codecov.commands.exceptions import BaseException
 from codecov.commands.executor import get_executor_from_request
 
-from .ariadne.views import GraphQLView
+# from .ariadne.views import GraphQLView
+from ariadne_django.views import GraphQLAsyncView
 from .schema import schema
 from .tracing import get_tracer_extension
 
@@ -24,16 +25,12 @@ def get_user(request):
         return CodecovTokenAuthentication().authenticate(request)[0]
 
 
-class AsyncGraphqlView(GraphQLView):
+class AsyncGraphqlView(GraphQLAsyncView):
     schema = schema
     extensions = [get_tracer_extension()]
 
-    async def authenticate(self, request):
-        user = await get_user(request)
-        request.user = user or AnonymousUser()
-
     async def post(self, request, *args, **kwargs):
-        await self.authenticate(request)
+        request.user = await get_user(request) or AnonymousUser()
         return await super().post(request, *args, **kwargs)
 
     def context_value(self, request):
