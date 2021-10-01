@@ -17,6 +17,9 @@ class ProfilingCommit(BaseCodecovModel):
     )
     commit_sha = models.TextField(null=True)
 
+    def __str__(self):
+        return f"ProfilingCommit<{self.version_identifier} at {self.repository}>"
+
 
 class ProfilingUpload(BaseCodecovModel):
     raw_upload_location = models.TextField()
