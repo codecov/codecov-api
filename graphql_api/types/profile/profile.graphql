@@ -2,4 +2,5 @@ type Profile {
   otherGoal: String
   goals: [GoalOnboarding]!
   typeProjects: [TypeProjectOnboarding]!
+  createdAt: DateTime!
 }
