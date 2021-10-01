@@ -44,7 +44,7 @@ class EstimatedCountPaginator(Paginator):
 class RepositoryAdmin(admin.ModelAdmin):
     inlines = [RepositoryTokenInline]
     list_display = ("name", "service_id", "author")
-    search_fields = ("author__username__iexact",)
+    search_fields = ("author__username__exact",)
     show_full_result_count = False
     paginator = EstimatedCountPaginator
     fields = (
