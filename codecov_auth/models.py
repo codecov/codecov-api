@@ -412,7 +412,9 @@ class OwnerProfile(BaseCodecovModel):
         TEAM_REQUIREMENTS = "TEAM_REQUIREMENTS"
         OTHER = "OTHER"
 
-    owner = models.OneToOneField(Owner, on_delete=models.CASCADE, unique=True)
+    owner = models.OneToOneField(
+        Owner, on_delete=models.CASCADE, unique=True, related_name="profile"
+    )
     type_projects = ArrayField(
         models.TextField(choices=ProjectType.choices), default=list
     )
