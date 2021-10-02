@@ -16,6 +16,7 @@ class FetchPullRequestsInteractorTest(TransactionTestCase):
         self.pull_id=10
         self.pull_title="test-pull-request"
         self.org = OwnerFactory()
+        self.repository_no_pull_requests = RepositoryFactory(author=self.org, private=False)
         self.repository_with_pull_requests = RepositoryFactory(author=self.org, private=False)
         PullFactory(pullid=self.pull_id, repository_id=self.repository_with_pull_requests.repoid, title=self.pull_title)
 
@@ -24,6 +25,10 @@ class FetchPullRequestsInteractorTest(TransactionTestCase):
         service = user.service if user else "github"
         current_user = user or AnonymousUser()
         return FetchPullRequestsInteractor(current_user, service).execute(*args)
+
+    def test_fetch_when_repository_has_no_pulls(self):
+        no_pull = async_to_sync(self.execute)(None, self.repository_no_pull_requests)
+        assert len(no_pull) is 0
 
     def test_fetch_when_repository_has_pulls(self):
         pull_request = async_to_sync(self.execute)(None, self.repository_with_pull_requests)
