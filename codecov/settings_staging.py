@@ -58,6 +58,7 @@ CORS_ALLOWED_ORIGINS = [
     CODECOV_DASHBOARD_URL,
     "https://gazebo.netlify.app",
     "https://gazebo-staging.netlify.app",
+    "http://localhost:3000",
 ]
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 15000000
