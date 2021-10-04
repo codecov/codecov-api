@@ -35,6 +35,9 @@ query_repository_with_pull = """{
                     edges {
                         node {
                             title
+                            state
+                            pullId
+                            updatestamp
                         }
                     }
                 }
@@ -87,9 +90,13 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "updatedAt": "2021-01-01T00:00:00+00:00",
         }
 
+    @freeze_time("2021-01-01")
     def test_when_repository_has_pull_request(self):
         repo = RepositoryFactory(author=self.user, active=True, private=True, name="test-repo")
         PullFactory(pullid=10, repository_id=repo.repoid, title="test-pull-request")
         assert self.fetch_repository_with_pulls() == {
-            "title": "test-pull-request"
+            'title': 'test-pull-request',
+            'state': 'open',
+            'pullId': 10,
+            'updatestamp': '2021-01-01T00:00:00'
         }

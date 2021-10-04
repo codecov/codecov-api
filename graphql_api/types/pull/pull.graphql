@@ -1,0 +1,6 @@
+type Pull {
+  title: String
+  state: String!
+  pullId: Int
+  updatestamp: DateTime
+}
