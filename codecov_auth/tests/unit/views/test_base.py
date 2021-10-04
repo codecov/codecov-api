@@ -4,6 +4,7 @@ from django.core.exceptions import SuspiciousOperation
 import pytest
 from unittest.mock import patch
 from freezegun import freeze_time
+from django.http import HttpResponse
 
 from codecov_auth.views.base import LoginMixin, StateMixin
 from codecov_auth.tests.factories import OwnerFactory
@@ -114,6 +115,7 @@ class LoginMixinTests(TestCase):
         self.mixin_instance = LoginMixin()
         self.mixin_instance.service = "github"
         self.request = RequestFactory().get("", {})
+        self.mixin_instance.request = self.request
 
     @patch("services.segment.SegmentService.identify_user")
     def test_get_or_create_user_calls_segment_identify_user(self, identify_user_mock):
@@ -164,3 +166,54 @@ class LoginMixinTests(TestCase):
             self.request,
         )
         user_signed_in_mock.assert_called_once()
+
+    @patch("services.segment.SegmentService.user_signed_in")
+    def test_set_marketing_tags_on_cookies(self, user_signed_in_mock):
+        owner = OwnerFactory(service="github")
+        self.request = RequestFactory().get(
+            "",
+            {
+                "utm_department": "a",
+                "utm_campaign": "b",
+                "utm_medium": "c",
+                "utm_source": "d",
+                "utm_content": "e",
+                "utm_term": "f",
+            },
+        )
+        self.mixin_instance.request = self.request
+        response = HttpResponse()
+        self.mixin_instance.store_to_cookie_utm_tags(response)
+        assert (
+            response.cookies["_marketing_tags"].value
+            == "utm_department=a&utm_campaign=b&utm_medium=c&utm_source=d&utm_content=e&utm_term=f"
+        )
+
+    @patch("services.segment.SegmentService.user_signed_in")
+    def test_use_marketing_tags_from_cookies(self, user_signed_in_mock):
+        owner = OwnerFactory(service_id=89, service="github")
+        self.request.COOKIES[
+            "_marketing_tags"
+        ] = "utm_department=a&utm_campaign=b&utm_medium=c&utm_source=d&utm_content=e&utm_term=f"
+        self.mixin_instance._get_or_create_user(
+            {
+                "user": {
+                    "id": owner.service_id,
+                    "access_token": "02or0sa",
+                    "login": owner.username,
+                },
+                "has_private_access": owner.private_access,
+            },
+            self.request,
+        )
+        user_signed_in_mock.assert_called_once_with(
+            owner,
+            **{
+                "utm_department": "a",
+                "utm_campaign": "b",
+                "utm_medium": "c",
+                "utm_source": "d",
+                "utm_content": "e",
+                "utm_term": "f",
+            },
+        )

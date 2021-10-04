@@ -69,4 +69,5 @@ class GitlabLoginView(LoginMixin, StateMixin, View):
         else:
             url_to_redirect_to = self.get_url_to_redirect_to()
             response = redirect(url_to_redirect_to)
+            self.store_to_cookie_utm_tags(response)
             return response
