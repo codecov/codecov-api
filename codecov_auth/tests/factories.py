@@ -23,6 +23,7 @@ class OwnerFactory(DjangoModelFactory):
     admins = []
     permission = []
     free = 0
+    onboarding_completed = False
     unencrypted_oauth_token = factory.LazyFunction(lambda: uuid4().hex)
     cache = {"stats": {"repos": 1, "members": 2, "users": 1}}
     oauth_token = factory.LazyAttribute(
