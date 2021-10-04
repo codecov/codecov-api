@@ -15,7 +15,7 @@ from django.utils.decorators import classonlymethod
 from django.views import View
 import minio
 from rest_framework import status, renderers
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, APIException
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 
@@ -319,7 +319,7 @@ class UploadHandler(APIView):
 class UploadDownloadHandler(View):
     @sync_to_async
     def get_user(self, request):
-        with suppress(Exception):
+        with suppress(APIException, TypeError):
             return CodecovTokenAuthentication().authenticate(request)[0]
         return AnonymousUser()
 
