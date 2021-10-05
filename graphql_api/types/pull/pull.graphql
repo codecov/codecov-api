@@ -1,6 +1,9 @@
 type Pull {
   title: String
   state: String!
-  pullId: Int
+  pullId: Int!
+  author: Owner!
   updatestamp: DateTime
+  head: Commit
+  # base:
 }
