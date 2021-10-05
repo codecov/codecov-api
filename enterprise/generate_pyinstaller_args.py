@@ -55,6 +55,7 @@ def generate_files_to_be_cythonized():
 def main():
     hidden_imports = set(
         [
+            "billing.migrations",
             "celery_config",
             "codecov.graphs",
             "core.migrations",
