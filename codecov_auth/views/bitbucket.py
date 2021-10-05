@@ -66,6 +66,7 @@ class BitbucketLoginView(View, LoginMixin):
         response.set_cookie(
             "_oauth_request_token", data, domain=settings.COOKIES_DOMAIN
         )
+        self.store_to_cookie_utm_tags(response)
         return response
 
     def actual_login_step(self, request):
