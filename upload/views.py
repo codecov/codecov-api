@@ -1,26 +1,33 @@
 import logging
 import asyncio
-
-import minio
-from django.http import Http404
-from utils.services import get_long_service_name
+from contextlib import suppress
 from datetime import datetime
-from rest_framework import status, renderers
-from rest_framework.views import APIView
-from django.views import View
-from rest_framework.permissions import AllowAny
-from rest_framework.exceptions import ValidationError
-from django.http import HttpResponse, HttpResponseServerError
-from django.utils.encoding import smart_text
 from urllib.parse import parse_qs
 from json import dumps
 from uuid import uuid4
-from django.utils import timezone
-from django.utils.decorators import classonlymethod
-from asgiref.sync import sync_to_async
 
-from core.commands.repository import RepositoryCommands
+from asgiref.sync import sync_to_async
+from django.http import Http404
+from django.http import HttpResponse, HttpResponseServerError
+from django.utils import timezone
+from django.utils.encoding import smart_text
+from django.utils.decorators import classonlymethod
+from django.views import View
+import minio
+from rest_framework import status, renderers
+from rest_framework.exceptions import ValidationError, APIException
+from rest_framework.permissions import AllowAny
+from rest_framework.views import APIView
+
+from django.contrib.auth.models import AnonymousUser
+from codecov_auth.authentication import CodecovTokenAuthentication
 from codecov_auth.commands.owner import OwnerCommands
+from core.commands.repository import RepositoryCommands
+from services.redis_configuration import get_redis_connection
+from services.archive import ArchiveService
+from services.segment import SegmentService
+from utils.config import get_config
+from utils.services import get_long_service_name
 
 from .helpers import (
     parse_params,
@@ -35,10 +42,7 @@ from .helpers import (
     store_report_in_redis,
     dispatch_upload_task,
 )
-from services.redis_configuration import get_redis_connection
-from services.archive import ArchiveService
-from services.segment import SegmentService
-from utils.config import get_config
+
 
 log = logging.getLogger(__name__)
 
@@ -134,8 +138,7 @@ class UploadHandler(APIView):
         redis = get_redis_connection()
         validate_upload(upload_params, repository, redis)
         log.info(
-            "Upload was determined to be valid",
-            extra=dict(repoid=repository.repoid)
+            "Upload was determined to be valid", extra=dict(repoid=repository.repoid)
         )
         # Do some processing to handle special cases for branch, pr, and commit values, and determine which values to use
         # note that these values may be different from the values provided in the upload_params
@@ -316,6 +319,12 @@ class UploadHandler(APIView):
 
 
 class UploadDownloadHandler(View):
+    @sync_to_async
+    def get_user(self, request):
+        with suppress(APIException, TypeError):
+            return CodecovTokenAuthentication().authenticate(request)[0]
+        return AnonymousUser()
+
     @classonlymethod
     def as_view(_, **initkwargs):
         view = super().as_view(**initkwargs)
@@ -361,7 +370,7 @@ class UploadDownloadHandler(View):
     async def get(self, request, *args, **kwargs):
         self.read_params()
         self.validate_path()
-
+        request.user = await self.get_user(request)
         repo = await self.get_repo()
         raw_uploaded_report = await self.get_from_storage(repo)
 

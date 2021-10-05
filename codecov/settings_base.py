@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     "ariadne_django",
     "corsheaders",
     "rest_framework",
+    "billing",
     "core",
     "codecov_auth",
     "reports",

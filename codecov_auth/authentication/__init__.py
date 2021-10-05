@@ -83,11 +83,20 @@ class CodecovAuthMixin:
         secret = get_config("setup", "http", "cookie_secret")
         return decode_token_from_cookie(secret, encoded_cookie)
 
+    def get_encoded_token_from_request(self, request):
+        # try with a token type header
+        token_type = request.META.get("HTTP_TOKEN_TYPE")
+        encoded_cookie = request.COOKIES.get(token_type)
+        if encoded_cookie:
+            return encoded_cookie
+        # try with the "service" arg from the route to get the cookie
+        service = request.resolver_match.kwargs.get("service")
+        return request.COOKIES.get(f"{get_long_service_name(service)}-token")
+
 
 class CodecovTokenAuthenticationBase(CodecovAuthMixin):
     def authenticate(self, request):
-        token_type = request.META.get("HTTP_TOKEN_TYPE")
-        encoded_cookie = request.COOKIES.get(token_type)
+        encoded_cookie = self.get_encoded_token_from_request(request)
 
         if not encoded_cookie:
             return None
@@ -148,8 +157,7 @@ class CodecovSessionAuthentication(
     # TODO: When this handles the /profile route, we will have to
     # add a 'service' url-param there
     def authenticate(self, request):
-        service = request.resolver_match.kwargs.get("service")
-        encoded_cookie = request.COOKIES.get(f"{service}-token")
+        encoded_cookie = self.get_encoded_token_from_request(request)
 
         if not encoded_cookie:
             return None
