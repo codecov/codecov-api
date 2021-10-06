@@ -16,3 +16,9 @@ def resolve_author(pull, info):
 def resolve_head(pull, info):
   from core.models import Commit
   return Commit.objects.get(commitid=pull.head, repository_id=pull.repository_id)
+
+@pull_bindable.field("base")
+@sync_to_async
+def resolve_base(pull, info):
+  from core.models import Commit
+  return Commit.objects.get(commitid=pull.base, repository_id=pull.repository_id)

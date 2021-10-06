@@ -4,6 +4,6 @@ type Pull {
   pullId: Int!
   author: Owner!
   updatestamp: DateTime
-  head: Commit
-  # base:
+  head: Commit!
+  base: Commit!
 }
