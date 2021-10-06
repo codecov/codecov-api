@@ -4,6 +4,7 @@ from ariadne_django.scalars import datetime_scalar
 from ..helpers.ariadne import ariadne_load_local_graphql
 from .query import query, query_bindable
 from .me import me, me_bindable
+from .profile import profile, profile_bindable
 from .branch import branch, branch_bindable
 from .commit import commit, commit_bindable
 from .comparison import comparison, comparison_bindable
@@ -37,6 +38,7 @@ types = [
     coverage_totals,
     upload,
     commit_file,
+    profile,
 ]
 
 bindables = [
@@ -53,6 +55,7 @@ bindables = [
     file_bindable,
     upload_bindable,
     datetime_scalar,
+    profile_bindable,
     *mutation_resolvers,
     *enum_types.enum_types,
 ]
