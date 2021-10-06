@@ -8,6 +8,7 @@ from .interactors.update_profile import UpdateProfileInteractor
 from .interactors.fetch_owner import FetchOwnerInteractor
 from .interactors.trigger_sync import TriggerSyncInteractor
 from .interactors.is_syncing import IsSyncingInteractor
+from .interactors.onboard_user import OnboardUserInteractor
 
 
 class OwnerCommands(BaseCommand):
@@ -31,3 +32,6 @@ class OwnerCommands(BaseCommand):
 
     def is_syncing(self):
         return self.get_interactor(IsSyncingInteractor).execute()
+
+    def onboard_user(self, params):
+        return self.get_interactor(OnboardUserInteractor).execute(params)

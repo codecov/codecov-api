@@ -29,7 +29,9 @@ class CodecovAuthMixin:
 
     def get_user_and_session(self, token, request):
         try:
-            session = Session.objects.get(token=token)
+            session = Session.objects.select_related("owner", "owner__profile").get(
+                token=token
+            )
         except Session.DoesNotExist:
             raise exceptions.AuthenticationFailed("No such user")
         if (

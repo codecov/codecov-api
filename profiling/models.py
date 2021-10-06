@@ -15,6 +15,7 @@ class ProfilingCommit(BaseCodecovModel):
         on_delete=models.CASCADE,
         related_name="profilings",
     )
+    commit_sha = models.TextField(null=True)
 
     def __str__(self):
         return f"ProfilingCommit<{self.version_identifier} at {self.repository}>"
