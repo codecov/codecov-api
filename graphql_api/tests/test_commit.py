@@ -9,7 +9,7 @@ from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory, CommitFactory
 from reports.tests.factories import (
     CommitReportFactory,
-    ReportSessionFactory,
+    UploadFactory,
     ReportLevelTotalsFactory,
 )
 from .helper import GraphQLTestHelper, paginate_connection
@@ -116,8 +116,8 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         assert commit["totals"]["coverage"] == 12
 
     def test_fetch_commit_build(self):
-        session_one = ReportSessionFactory(report=self.report, provider="circleci")
-        session_two = ReportSessionFactory(report=self.report, provider="travisci")
+        session_one = UploadFactory(report=self.report, provider="circleci")
+        session_two = UploadFactory(report=self.report, provider="travisci")
         query = query_commit % "uploads { edges { node { provider } } }"
         variables = {
             "org": self.org.username,
