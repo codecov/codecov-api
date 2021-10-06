@@ -1,15 +1,15 @@
+import asyncio
+import logging
+
+from asgiref.sync import async_to_sync
 from django.conf import settings
 
 from utils.config import get_config
 from webhook_handlers.constants import (
+    BitbucketWebhookEvents,
     GitHubWebhookEvents,
     GitLabWebhookEvents,
-    BitbucketWebhookEvents,
 )
-
-import asyncio
-
-import logging
 
 log = logging.getLogger(__name__)
 
@@ -32,11 +32,12 @@ WEBHOOK_EVENTS = {
 }
 
 
-def delete_webhook_on_provider(repository_service, repo):
+@async_to_sync
+async def delete_webhook_on_provider(repository_service, repo):
     """
         Deletes webhook on provider
     """
-    return asyncio.run(repository_service.delete_webhook(hookid=repo.hookid))
+    return await repository_service.delete_webhook(hookid=repo.hookid)
 
 
 def create_webhook_on_provider(repository_service, repo):
@@ -51,15 +52,13 @@ def create_webhook_on_provider(repository_service, repo):
         % f"{webhook_url}/webhooks/{repository_service.service}"
     )
 
-    return asyncio.run(
-        repository_service.post_webhook(
-            f"Codecov Webhook. {webhook_url}",
-            f"{webhook_url}/webhooks/{repository_service.service}",
-            WEBHOOK_EVENTS[repository_service.service],
-            get_config(
-                repository_service.service,
-                "webhook_secret",
-                default="testixik8qdauiab1yiffydimvi72ekq",
-            ),
-        )
+    return async_to_sync(repository_service.post_webhook)(
+        f"Codecov Webhook. {webhook_url}",
+        f"{webhook_url}/webhooks/{repository_service.service}",
+        WEBHOOK_EVENTS[repository_service.service],
+        get_config(
+            repository_service.service,
+            "webhook_secret",
+            default="testixik8qdauiab1yiffydimvi72ekq",
+        ),
     ).get("id")

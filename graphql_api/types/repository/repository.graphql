@@ -8,4 +8,20 @@ type Repository {
   author: Owner!
   branch(name: String): Branch
   commit(id: String!): Commit
+  pulls(first: Int, after: String, last: Int, before: String): PullConnection
+}
+
+type PullConnection {
+  edges: [PullEdge]!
+  totalCount: Int!
+  pageInfo: PageInfo!
+}
+
+type PullEdge {
+  cursor: String!
+  node: Pull!
+}
+
+type Pull {
+  title: String
 }

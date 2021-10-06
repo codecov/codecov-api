@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.urls import path, include, re_path
 
 from internal_api.constants import INTERNAL_API_PREFIX
-from . import views
+from codecov import views
 
 urlpatterns = [
     path("billing/", include("billing.urls")),

@@ -5,6 +5,7 @@ from core.commands.repository import RepositoryCommands
 from core.commands.commit import CommitCommands
 from core.commands.branch import BranchCommands
 from compare.commands.compare import CompareCommands
+from core.commands.pull import PullCommands
 
 
 mapping = {
@@ -13,6 +14,7 @@ mapping = {
     "repository": RepositoryCommands,
     "branch": BranchCommands,
     "compare": CompareCommands,
+    "pull": PullCommands
 }
 
 

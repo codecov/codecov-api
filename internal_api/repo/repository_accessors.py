@@ -1,17 +1,15 @@
 import asyncio
-
-from django.core.exceptions import ObjectDoesNotExist
-
-from rest_framework.exceptions import PermissionDenied, APIException
-
-from shared.torngit.exceptions import TorngitClientError
-from core.models import Repository
-from codecov_auth.models import Owner
-from services.repo_providers import RepoProviderService
-from services.decorators import torngit_safe
-
 import logging
 
+from asgiref.sync import async_to_sync
+from django.core.exceptions import ObjectDoesNotExist
+from rest_framework.exceptions import APIException, PermissionDenied
+from shared.torngit.exceptions import TorngitClientError
+
+from codecov_auth.models import Owner
+from core.models import Repository
+from services.decorators import torngit_safe
+from services.repo_providers import RepoProviderService
 
 log = logging.getLogger(__name__)
 
@@ -31,9 +29,9 @@ class RepoAccessors:
         """
         if user == repo.author:
             return True, True
-        return asyncio.run(
-            RepoProviderService().get_adapter(user=user, repo=repo).get_authenticated()
-        )
+        return async_to_sync(
+            RepoProviderService().get_adapter(user=user, repo=repo).get_authenticated
+        )()
 
     def get_repo_details(
         self, user, repo_name, repo_owner_username, repo_owner_service
@@ -58,16 +56,13 @@ class RepoAccessors:
         Fetch repository details for the provider and update the DB with new information.
         """
         # Try to fetch the repo from the git provider using shared.torngit
-        result = asyncio.run(
-            RepoProviderService()
-            .get_by_name(
-                user=user,
-                repo_name=repo_name,
-                repo_owner_username=repo_owner_username,
-                repo_owner_service=repo_owner_service,
-            )
-            .get_repository()
+        adapter = RepoProviderService().get_by_name(
+            user=user,
+            repo_name=repo_name,
+            repo_owner_username=repo_owner_username,
+            repo_owner_service=repo_owner_service,
         )
+        result = async_to_sync(adapter.get_repository)()
 
         owner, _ = Owner.objects.get_or_create(
             service=repo_owner_service,
