@@ -405,18 +405,20 @@ class OwnerProfile(BaseCodecovModel):
         OPEN_SOURCE = "OPEN_SOURCE"
         EDUCATIONAL = "EDUCATIONAL"
 
-    class GOAL(models.TextChoices):
+    class Goal(models.TextChoices):
         STARTING_WITH_TESTS = "STARTING_WITH_TESTS"
         IMPROVE_COVERAGE = "IMPROVE_COVERAGE"
         MAINTAIN_COVERAGE = "MAINTAIN_COVERAGE"
         TEAM_REQUIREMENTS = "TEAM_REQUIREMENTS"
         OTHER = "OTHER"
 
-    owner = models.OneToOneField(Owner, on_delete=models.CASCADE, unique=True)
+    owner = models.OneToOneField(
+        Owner, on_delete=models.CASCADE, unique=True, related_name="profile"
+    )
     type_projects = ArrayField(
         models.TextField(choices=ProjectType.choices), default=list
     )
-    goals = ArrayField(models.TextField(choices=GOAL.choices), default=list)
+    goals = ArrayField(models.TextField(choices=Goal.choices), default=list)
     other_goal = models.TextField(null=True)
 
 

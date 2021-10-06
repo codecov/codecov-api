@@ -1,0 +1,6 @@
+union OnboardUserError = UnauthenticatedError | UnauthorizedError | ValidationError
+
+type OnboardUserPayload {
+  error: OnboardUserError
+  me: Me
+}

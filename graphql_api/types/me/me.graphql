@@ -1,6 +1,8 @@
 
 type Me {
   email: String
+  businessEmail: String
+  onboardingCompleted: Boolean!
   user: User!
   owner: Owner!
   sessions(first: Int, after: String, last: Int, before: String): SessionConnection!
@@ -27,4 +29,5 @@ type trackingMetadata {
   planUserCount: Int
   createstamp: DateTime
   updatestamp: DateTime
+  profile: Profile
 }
