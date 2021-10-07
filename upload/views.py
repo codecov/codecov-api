@@ -29,12 +29,12 @@ from utils.config import get_config
 from utils.services import get_long_service_name
 
 from .helpers import (
+    check_commit_upload_constraints,
     determine_repo_for_upload,
     determine_upload_branch_to_use,
     determine_upload_commit_to_use,
     determine_upload_pr_to_use,
     dispatch_upload_task,
-    get_global_tokens,
     insert_commit,
     parse_headers,
     parse_params,
@@ -155,9 +155,10 @@ class UploadHandler(APIView):
                 upload_params=upload_params,
             ),
         )
-        insert_commit(
+        commit = insert_commit(
             commitid, branch, pr, repository, owner, upload_params.get("parent")
         )
+        check_commit_upload_constraints(commit)
 
         # --------- Handle the actual upload
 
