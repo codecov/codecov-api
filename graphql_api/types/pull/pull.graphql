@@ -5,5 +5,5 @@ type Pull {
   author: Owner!
   updatestamp: DateTime
   head: Commit!
-  base: Commit!
+  base: Commit
 }

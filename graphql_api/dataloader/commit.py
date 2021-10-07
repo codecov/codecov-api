@@ -1,7 +1,7 @@
 from aiodataloader import DataLoader
 from asgiref.sync import sync_to_async
 
-from core.models import Commit, Repository
+from core.models import Commit
 
 class CommitLoader(DataLoader):
 
