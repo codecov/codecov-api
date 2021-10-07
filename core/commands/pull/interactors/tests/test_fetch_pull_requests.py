@@ -6,7 +6,7 @@ from django.contrib.auth.models import AnonymousUser
 from asgiref.sync import async_to_sync
 
 from core.tests.factories import RepositoryFactory, PullFactory, OwnerFactory
-from reports.tests.factories import ReportSessionFactory
+from reports.tests.factories import UploadFactory
 
 from ..fetch_pull_requests import FetchPullRequestsInteractor
 

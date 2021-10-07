@@ -5,7 +5,7 @@ from django.contrib.auth.models import AnonymousUser
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory, CommitFactory
-from reports.tests.factories import ReportSessionFactory
+from reports.tests.factories import UploadFactory
 
 from ..get_uploads_of_commit import GetUploadsOfCommitInteractor
 
@@ -13,8 +13,8 @@ from ..get_uploads_of_commit import GetUploadsOfCommitInteractor
 class GetUploadsOfCommitInteractorTest(TransactionTestCase):
     def setUp(self):
         self.commit_with_no_upload = CommitFactory()
-        self.upload_one = ReportSessionFactory()
-        self.upload_two = ReportSessionFactory(report=self.upload_one.report)
+        self.upload_one = UploadFactory()
+        self.upload_two = UploadFactory(report=self.upload_one.report)
         self.commit_with_upload = self.upload_two.report.commit
 
         # making sure everything is public
