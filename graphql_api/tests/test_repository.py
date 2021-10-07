@@ -2,6 +2,7 @@ from freezegun import freeze_time
 
 from django.test import TransactionTestCase
 
+from core.models import Pull
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory, PullFactory, CommitFactory
 from .helper import GraphQLTestHelper
@@ -101,13 +102,61 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
 
     @freeze_time("2021-01-01")
     def test_when_repository_has_pull_request(self):
-        repo = RepositoryFactory(author=self.user, active=True, private=True, name="test-repo")
-        pull = PullFactory(
-            pullid=10,
-            repository=repo,
+        self.repository = RepositoryFactory(author=self.user, active=True, private=True, name="test-repo")
+        self.pull = PullFactory(
+            pullid=70,
+            repository=self.repository,
             title="test-pull-request",
             author=self.user,
-            head=CommitFactory(repository=repo, author=self.user, commitid="9193232a8fe3429496956ba82b5fed2583d1b5eb").commitid,
-            base=CommitFactory(repository=repo, author=self.user, commitid="abf6d4df662c47e32460020ab14abf9303581429").commitid,
+            head=CommitFactory(repository=self.repository, author=self.user, commitid="5672734ij1n234918231290j12nasdfioasud0f9").commitid,
+            base=CommitFactory(repository=self.repository, author=self.user, commitid="87asd76gas98d98as7d967f67a6sdf6asdfa98d7").commitid,
         )
-        print(self.fetch_repository_with_pulls())
+        print("alohaa")
+        print(Pull.objects.all())
+        Pull.objects.filter(id=1).delete()
+        assert self.fetch_repository_with_pulls() == {
+            'title': 'test-pull-request',
+            'state': 'open',
+            'pullId': 70,
+            'updatestamp': '2021-01-01T00:00:00',
+            'author': {
+                'username': 'codecov-user'
+            },
+            'head':
+                {'commitid': '5672734ij1n234918231290j12nasdfioasud0f9'
+            },
+            'base': {
+                'commitid': '87asd76gas98d98as7d967f67a6sdf6asdfa98d7'
+            }
+        }
+
+    # @freeze_time("2021-01-01")
+    # def test_when_repository_has_null_base(self):
+    #     self.repository = RepositoryFactory(author=self.user, active=True, private=True, name="test-repo")
+    #     self.pull = PullFactory(
+    #         pullid=70,
+    #         repository=self.repository,
+    #         title="test-pull-request",
+    #         author=self.user,
+    #         head=CommitFactory(repository=self.repository, author=self.user, commitid="5672734ij1n234918231290j12nasdfioasud0f9").commitid,
+    #         base=CommitFactory(repository=self.repository, author=self.user, commitid="87asd76gas98d98as7d967f67a6sdf6asdfa98d7").commitid,
+    #     )
+    #     print("alohaa")
+    #     print(Pull.objects.all())
+    #     print(self.fetch_repository_with_pulls())
+    #     Pull.objects.filter(id=1).delete()
+        # assert self.fetch_repository_with_pulls() == {
+        #     'title': 'test-pull-request',
+        #     'state': 'open',
+        #     'pullId': 70,
+        #     'updatestamp': '2021-01-01T00:00:00',
+        #     'author': {
+        #         'username': 'codecov-user'
+        #     },
+        #     'head':
+        #         {'commitid': '5672734ij1n234918231290j12nasdfioasud0f9'
+        #     },
+        #     'base': {
+        #         'commitid': '87asd76gas98d98as7d967f67a6sdf6asdfa98d7'
+        #     }
+        # }
