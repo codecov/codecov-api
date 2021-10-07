@@ -41,7 +41,7 @@ class ReportLevelTotals(AbstractTotals):
     report = models.OneToOneField(CommitReport, on_delete=models.CASCADE)
 
 
-class ReportSessionError(BaseCodecovModel):
+class UploadError(BaseCodecovModel):
     report_session = models.ForeignKey(
         "ReportSession",
         db_column="upload_id",
@@ -55,7 +55,7 @@ class ReportSessionError(BaseCodecovModel):
         db_table = "reports_uploaderror"
 
 
-class ReportSessionFlagMembership(models.Model):
+class UploadFlagMembership(models.Model):
     report_session = models.ForeignKey(
         "ReportSession", db_column="upload_id", on_delete=models.CASCADE
     )
@@ -76,10 +76,12 @@ class RepositoryFlag(BaseCodecovModel):
 
 
 class ReportSession(BaseCodecovModel):
+    # should be called Upload, but to do it we have to make the
+    # constraints be manually named, which take a bit
     build_code = models.TextField(null=True)
     build_url = models.TextField(null=True)
     env = models.JSONField(null=True)
-    flags = models.ManyToManyField(RepositoryFlag, through=ReportSessionFlagMembership)
+    flags = models.ManyToManyField(RepositoryFlag, through=UploadFlagMembership)
     job_code = models.TextField(null=True)
     name = models.CharField(null=True, max_length=100)
     provider = models.CharField(max_length=50, null=True)
@@ -132,7 +134,7 @@ class ReportSession(BaseCodecovModel):
         return [flag.flag_name for flag in self.flags.all()]
 
 
-class SessionLevelTotals(AbstractTotals):
+class UploadLevelTotals(AbstractTotals):
     report_session = models.OneToOneField(
         ReportSession, db_column="upload_id", on_delete=models.CASCADE
     )

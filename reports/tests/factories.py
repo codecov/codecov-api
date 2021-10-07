@@ -17,7 +17,7 @@ class CommitReportFactory(DjangoModelFactory):
     commit = factory.SubFactory(CommitFactory)
 
 
-class ReportSessionFactory(DjangoModelFactory):
+class UploadFactory(DjangoModelFactory):
     class Meta:
         model = models.ReportSession
 
@@ -33,12 +33,12 @@ class RepositoryFlagFactory(DjangoModelFactory):
     flag_name = factory.Faker("word")
 
 
-class ReportSessionFlagMembershipFactory(DjangoModelFactory):
+class UploadFlagMembershipFactory(DjangoModelFactory):
     class Meta:
-        model = models.ReportSessionFlagMembership
+        model = models.UploadFlagMembership
 
     flag = factory.SubFactory(RepositoryFlagFactory)
-    report_session = factory.SubFactory(ReportSessionFactory)
+    report_session = factory.SubFactory(UploadFactory)
 
 
 class ReportLevelTotalsFactory(DjangoModelFactory):
