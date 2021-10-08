@@ -59,7 +59,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
     def test_when_repository_has_null_base(self):
         assert self.fetch_repository() == {
             'title': None,
-            'state': 'open',
+            'state': 'OPEN',
             'pullId': 1,
             'updatestamp': None,
             'author': {
