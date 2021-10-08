@@ -1,11 +1,12 @@
 import time
 from datetime import datetime, timedelta
-from json import JSONDecodeError, dumps, loads
+from json import dumps, loads
 from unittest.mock import PropertyMock, patch
 from urllib.parse import urlencode
 
 import pytest
 import requests
+from simplejson import JSONDecodeError
 from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
 from core.models import Commit, Repository
