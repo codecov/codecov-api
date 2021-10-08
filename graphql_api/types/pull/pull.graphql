@@ -1,6 +1,6 @@
 type Pull {
   title: String
-  state: String!
+  state: PullRequestState!
   pullId: Int!
   author: Owner!
   updatestamp: DateTime

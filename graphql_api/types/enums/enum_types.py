@@ -9,4 +9,5 @@ enum_types = [
     EnumType("ComparisonError", enums.ComparisonError),
     EnumType("TypeProjectOnboarding", enums.TypeProjectOnboarding),
     EnumType("GoalOnboarding", enums.GoalOnboarding),
+    EnumType("PullRequestState", enums.PullRequestState),
 ]

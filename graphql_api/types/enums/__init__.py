@@ -1,1 +1,1 @@
-from .enums import OrderingDirection, RepositoryOrdering, CoverageLine, ComparisonError
+from .enums import OrderingDirection, RepositoryOrdering, CoverageLine, ComparisonError, PullRequestState
