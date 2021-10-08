@@ -1,49 +1,32 @@
-import requests
-import shared.torngit
-import pytest
 import time
-from django.utils import timezone
 from datetime import datetime, timedelta
-from rest_framework.test import APITestCase, APIRequestFactory
-from shared.torngit.exceptions import (
-    TorngitClientGeneralError,
-    TorngitObjectNotFoundError,
-)
-from rest_framework.reverse import reverse
-from rest_framework import status
-from rest_framework.exceptions import ValidationError, NotFound
-from unittest.mock import patch, PropertyMock
-from unittest import mock
-from json import dumps, loads
-from yaml import YAMLError
-from django.test import TestCase
-from django.conf import settings
-from django.test import RequestFactory
+from json import JSONDecodeError, dumps, loads
+from unittest.mock import PropertyMock, patch
 from urllib.parse import urlencode
-from ddf import G
-from core.tests.factories import CommitFactory
-from rest_framework.exceptions import NotFound
-from core.models import Repository, Commit
+
+import pytest
+import requests
 from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
-
-from utils.encryption import encryptor
-
-from upload.helpers import (
-    parse_params,
-    get_global_tokens,
-    determine_repo_for_upload,
-    determine_upload_branch_to_use,
-    determine_upload_pr_to_use,
-    determine_upload_commit_to_use,
-    parse_headers,
-    insert_commit,
-    store_report_in_redis,
-    validate_upload,
-    dispatch_upload_task,
-)
-
+from core.models import Commit, Repository
+from ddf import G
+from django.test import TestCase
+from django.utils import timezone
+from rest_framework import status
+from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.reverse import reverse
+from rest_framework.test import APIRequestFactory, APITestCase
+from shared.torngit.exceptions import (TorngitClientGeneralError,
+                                       TorngitObjectNotFoundError)
+from upload.helpers import (determine_repo_for_upload,
+                            determine_upload_branch_to_use,
+                            determine_upload_commit_to_use,
+                            determine_upload_pr_to_use, dispatch_upload_task,
+                            get_global_tokens, insert_commit, parse_headers,
+                            parse_params, store_report_in_redis,
+                            validate_upload)
 from upload.tokenless.tokenless import TokenlessUploadHandler
+from utils.encryption import encryptor
 
 
 def mock_get_config_global_upload_tokens(*args):
@@ -389,7 +372,6 @@ class UploadHandlerHelpersTest(TestCase):
         }
 
         mock_get.return_value.status_code.return_value = 200
-        mock_get.return_value.headers.get.return_value = 'application/json'
         mock_get.return_value.json.return_value = expected_response
 
         params = {
@@ -2001,7 +1983,6 @@ class UploadHandlerAzureTokenlessTest(TestCase):
             "triggerInfo": {"pr.sourceSha": "c739768fcac68144a3a6d82305b9c4106934d31a"},
         }
         mock_get.return_value.status_code.return_value = 200
-        mock_get.return_value.headers.get.return_value = 'application/json'
         mock_get.return_value.json.return_value = expected_response
 
         params = {
@@ -2027,7 +2008,6 @@ class UploadHandlerAzureTokenlessTest(TestCase):
             "repository": {"type": "GitHub"},
         }
         mock_get.return_value.status_code.return_value = 200
-        mock_get.return_value.headers.get.return_value = 'application/json'
         mock_get.return_value.json.return_value = expected_response
 
         params = {
@@ -2058,7 +2038,6 @@ class UploadHandlerAzureTokenlessTest(TestCase):
         }
 
         mock_get.return_value.status_code.return_value = 200
-        mock_get.return_value.headers.get.return_value = 'application/json'
         mock_get.return_value.json.return_value = expected_response
 
         params = {
@@ -2089,7 +2068,6 @@ class UploadHandlerAzureTokenlessTest(TestCase):
         }
 
         mock_get.return_value.status_code.return_value = 200
-        mock_get.return_value.headers.get.return_value = 'application/json'
         mock_get.return_value.json.return_value = expected_response
 
         params = {
@@ -2120,7 +2098,6 @@ class UploadHandlerAzureTokenlessTest(TestCase):
         }
 
         mock_get.return_value.status_code.return_value = 200
-        mock_get.return_value.headers.get.return_value = 'application/json'
         mock_get.return_value.json.return_value = expected_response
 
         params = {
@@ -2149,8 +2126,7 @@ class UploadHandlerAzureTokenlessTest(TestCase):
                             </html>"""
 
         mock_get.return_value.status_code.return_value = 203
-        mock_get.return_value.headers.get.return_value = 'text/html'
-        mock_get.return_value.json.return_value = expected_response
+        mock_get.return_value.json.side_effect = (JSONDecodeError("Expecting value: line 1 column 1", expected_response, 0))
 
         params = {
             "project": "project123",
@@ -2180,7 +2156,6 @@ class UploadHandlerAzureTokenlessTest(TestCase):
         }
 
         mock_get.return_value.status_code.return_value = 200
-        mock_get.return_value.headers.get.return_value = 'application/json'
         mock_get.return_value.json.return_value = expected_response
 
         params = {
