@@ -17,4 +17,6 @@ def resolve_head(pull, info):
 
 @pull_bindable.field("base")
 def resolve_base(pull, info):
+  if pull.base == None:
+    return None
   return load_commit_by_id(info, pull.base, pull.repository_id)
