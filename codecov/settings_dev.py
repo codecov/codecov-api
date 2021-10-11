@@ -3,7 +3,7 @@ import logging
 
 
 DEBUG = True
-ALLOWED_HOSTS = ["localhost"]
+ALLOWED_HOSTS = get_config("setup", "api_allowed_hosts", default=["localhost"])
 
 
 WEBHOOK_URL = ""  # NGROK TUNNEL HERE
