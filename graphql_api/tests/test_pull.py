@@ -39,7 +39,7 @@ query_repository = """{
 """
 
 
-class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
+class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
     def fetch_repository(self):
         data = self.gql_request(query_repository, user=self.user)
         return data["me"]["owner"]["repository"]["pulls"]["edges"]
@@ -48,9 +48,12 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         self.user = OwnerFactory(username="test-pull-user")
         self.repository = RepositoryFactory(author=self.user, active=True, private=True, name="test-repo-for-pull")
 
+    def next_iter(self, pull_request):
+        return next((pull['node'] for pull in self.fetch_repository() if pull['node']['pullId'] is pull_request.pullid))
+
     @freeze_time("2021-02-02")
     def test_when_repository_has_null_base(self):
-        PullFactory(
+        my_pull = PullFactory(
             repository=self.repository,
             pullid=18,
             title="test-null-base",
@@ -58,7 +61,8 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             head=CommitFactory(repository=self.repository, author=self.user, commitid="5672734ij1n234918231290j12nasdfioasud0f9").commitid,
             base=None,
         )
-        assert self.fetch_repository()[1]["node"] == {
+        pull = self.next_iter(my_pull)
+        assert pull == {
             'title': "test-null-base",
             'state': 'OPEN',
             'pullId': 18,
@@ -74,7 +78,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
 
     @freeze_time("2021-02-02")
     def test_with_complete_pull_request(self):
-        PullFactory(
+        my_pull = PullFactory(
             repository=self.repository,
             title="test-pull-request",
             pullid=13,
@@ -82,7 +86,8 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             head=CommitFactory(repository=self.repository, author=self.user, commitid="5672734ij1n234918231290j12nasdfioasud0f9").commitid,
             base=CommitFactory(repository=self.repository, author=self.user, commitid="9asd78fa7as8d8fa97s8d7fgagsd8fa9asd8f77s").commitid,
         )
-        assert self.fetch_repository()[1]["node"] == {
+        pull = self.next_iter(my_pull)
+        assert pull == {
             'title': 'test-pull-request',
             'state': 'OPEN',
             'pullId': 13,
