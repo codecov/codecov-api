@@ -21,7 +21,3 @@ type PullEdge {
   cursor: String!
   node: Pull!
 }
-
-type Pull {
-  title: String
-}

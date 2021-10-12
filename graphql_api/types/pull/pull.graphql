@@ -1,0 +1,9 @@
+type Pull {
+  title: String
+  state: PullRequestState!
+  pullId: Int!
+  author: Owner!
+  updatestamp: DateTime
+  head: Commit!
+  base: Commit
+}
