@@ -206,12 +206,12 @@ class AccountViewSetTests(APITestCase):
         )
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    def test_retrieve_account_returns_403_if_user_not_member(self):
+    def test_retrieve_account_returns_404_if_user_not_member(self):
         owner = OwnerFactory()
         response = self._retrieve(
             kwargs={"service": owner.service, "owner_username": owner.username}
         )
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     @patch("services.billing.stripe.Subscription.retrieve")
     def test_retrieve_subscription_with_stripe_invoice_data(self, mock_subscription):
@@ -497,14 +497,14 @@ class AccountViewSetTests(APITestCase):
         assert response.data["detail"] == message
 
     @patch("internal_api.permissions.get_provider")
-    def test_update_without_admin_permissions_returns_403(self, get_provider_mock):
+    def test_update_without_admin_permissions_returns_404(self, get_provider_mock):
         get_provider_mock.return_value = GetAdminProviderAdapter()
         owner = OwnerFactory()
         response = self._update(
             kwargs={"service": owner.service, "owner_username": owner.username}, data={}
         )
 
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_update_can_change_name_and_email(self):
         expected_name, expected_email = "Scooby Doo", "scoob@snack.com"
@@ -545,12 +545,12 @@ class AccountViewSetTests(APITestCase):
         assert response.status_code == status.HTTP_204_NO_CONTENT
         delete_owner_mock.assert_called_once_with(self.user.ownerid)
 
-    def test_destroy_not_own_account_returns_403(self):
+    def test_destroy_not_own_account_returns_404(self):
         owner = OwnerFactory(admins=[self.user.ownerid])
         response = self._destroy(
             kwargs={"service": owner.service, "owner_username": owner.username}
         )
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     @patch("services.segment.SegmentService.account_deleted")
     @patch("services.task.TaskService.delete_owner")
