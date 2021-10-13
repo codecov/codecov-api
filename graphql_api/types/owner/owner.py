@@ -7,7 +7,7 @@ from graphql_api.helpers.connection import (
     build_connection_graphql,
     queryset_to_connection,
 )
-from graphql_api.actions.owner import current_user_part_of_org
+from codecov_auth.helpers import current_user_part_of_org
 from graphql_api.actions.repository import list_repository_for_owner
 from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
 
