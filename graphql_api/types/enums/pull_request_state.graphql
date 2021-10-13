@@ -1,0 +1,8 @@
+"""
+Possible value for the state of a pull request
+"""
+enum PullRequestState{
+    OPEN
+    CLOSED
+    MERGED
+}

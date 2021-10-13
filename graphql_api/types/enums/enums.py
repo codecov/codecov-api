@@ -37,3 +37,8 @@ class GoalOnboarding(enum.Enum):
     MAINTAIN_COVERAGE = "MAINTAIN_COVERAGE"
     TEAM_REQUIREMENTS = "TEAM_REQUIREMENTS"
     OTHER = "OTHER"
+
+class PullRequestState(enum.Enum):
+    OPEN = "open"
+    CLOSED = "closed"
+    MERGED = "merged"

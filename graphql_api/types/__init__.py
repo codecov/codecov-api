@@ -13,6 +13,7 @@ from .coverage_totals import coverage_totals, coverage_totals_bindable
 from .user import user, user_bindable
 from .owner import owner, owner_bindable
 from .repository import repository, repository_bindable
+from .pull import pull, pull_bindable
 from .session import session, session_bindable
 from .file import commit_file, file_bindable
 from .mutation import mutation, mutation_resolvers
@@ -27,6 +28,7 @@ types = [
     branch,
     commit,
     comparison,
+    pull,
     user,
     owner,
     repository,
@@ -47,6 +49,7 @@ bindables = [
     branch_bindable,
     commit_bindable,
     comparison_bindable,
+    pull_bindable,
     user_bindable,
     owner_bindable,
     repository_bindable,
