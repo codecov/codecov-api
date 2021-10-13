@@ -31,6 +31,8 @@ class GraphQLTestHelper:
             **headers,
         )
 
+        print(response.json())
+
         return response.json()["data"]
 
 

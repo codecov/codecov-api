@@ -21,14 +21,3 @@ def get_owner(service, username):
 
 def get_owner_sessions(current_user):
     return current_user.session_set.all()
-
-
-@sync_to_async
-def create_api_token(current_user, name):
-    type = Session.SessionType.API
-    return Session.objects.create(name=name, owner=current_user, type=type)
-
-
-@sync_to_async
-def delete_session(current_user, sessionid):
-    return Session.objects.filter(sessionid=sessionid, owner=current_user).delete()

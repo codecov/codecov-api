@@ -18,3 +18,8 @@ class RepositoryCommandsTest(TransactionTestCase):
     def test_fetch_repository_to_interactor(self, interactor_mock):
         self.command.fetch_repository(self.owner, self.repo.name)
         interactor_mock.assert_called_once_with(self.owner, self.repo.name)
+
+    @patch("core.commands.repository.repository.GetUploadTokenInteractor.execute")
+    def test_get_upload_token_to_interactor(self, interactor_mock):
+        self.command.get_upload_token(self.repo)
+        interactor_mock.assert_called_once_with(self.repo)
