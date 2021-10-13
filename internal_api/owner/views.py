@@ -9,7 +9,6 @@ from rest_framework.exceptions import (
     PermissionDenied,
     NotFound,
     ValidationError,
-    NotAuthenticated,
 )
 from rest_framework.response import Response
 

@@ -165,4 +165,7 @@ class MemberOfOrgPermissions(BasePermission):
             return False
         if current_user == owner:
             return True
-        return owner.ownerid in (current_user.organizations or [])
+        if owner.ownerid in (current_user.organizations or []):
+            return True
+        else:
+            raise Http404("No Owner matches the given query.")
