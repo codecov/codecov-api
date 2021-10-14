@@ -40,6 +40,12 @@ def resolve_upload_token(repository, info):
     return command.get_upload_token(repository)
 
 
+@repository_bindable.field("pull")
+def resolve_pull(repository, info, id):
+    command = info.context["executor"].get_command("pull")
+    return command.fetch_pull_request(repository, id)
+
+
 @repository_bindable.field("pulls")
 async def resolve_pulls(repository, info, **kwargs):
     command = info.context["executor"].get_command("pull")
