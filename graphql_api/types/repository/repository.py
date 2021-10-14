@@ -47,3 +47,11 @@ async def resolve_pulls(repository, info, **kwargs):
     return await queryset_to_connection(
         queryset, ordering="id", ordering_direction=OrderingDirection.ASC, **kwargs
     )
+
+@repository_bindable.field("commits")
+async def resolve_commits(repository, info, **kwargs):
+    command = info.context["executor"].get_command("commit")
+    queryset = await command.fetch_commits(repository)
+    return await queryset_to_connection(
+        queryset, ordering="id", ordering_direction=OrderingDirection.ASC, **kwargs
+    )
