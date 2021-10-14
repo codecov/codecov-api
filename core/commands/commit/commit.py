@@ -15,8 +15,8 @@ class CommitCommands(BaseCommand):
     def fetch_commit(self, repository, commit_id):
         return self.get_interactor(FetchCommitInteractor).execute(repository, commit_id)
 
-    def fetch_commits(self, repository):
-        return self.get_interactor(FetchCommitsInteractor).execute(repository)
+    def fetch_commits(self, repository, filters):
+        return self.get_interactor(FetchCommitsInteractor).execute(repository, filters)
 
     def get_final_yaml(self, commit):
         return self.get_interactor(GetFinalYamlInteractor).execute(commit)
