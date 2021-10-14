@@ -18,3 +18,9 @@ class PullCommandsTest(TransactionTestCase):
         repo = RepositoryFactory()
         self.command.fetch_pull_requests(repo)
         interactor_mock.assert_called_once_with(repo)
+
+    @patch("core.commands.pull.pull.FetchPullRequestInteractor.execute")
+    def test_fetch_pull_request_delegate_to_interactor(self, interactor_mock):
+        repo = RepositoryFactory()
+        self.command.fetch_pull_request(repo, 12)
+        interactor_mock.assert_called_once_with(repo, 12)
