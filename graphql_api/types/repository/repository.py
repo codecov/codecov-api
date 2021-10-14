@@ -33,6 +33,13 @@ def resolve_commit(repository, info, id):
     command = info.context["executor"].get_command("commit")
     return command.fetch_commit(repository, id)
 
+
+@repository_bindable.field("uploadToken")
+def resolve_upload_token(repository, info):
+    command = info.context["executor"].get_command("repository")
+    return command.get_upload_token(repository)
+
+
 @repository_bindable.field("pulls")
 async def resolve_pulls(repository, info, **kwargs):
     command = info.context["executor"].get_command("pull")
