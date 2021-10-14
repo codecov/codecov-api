@@ -6,6 +6,7 @@ type Repository {
   latestCommitAt: DateTime
   updatedAt: DateTime
   author: Owner!
+  uploadToken: String
   branch(name: String): Branch
   commit(id: String!): Commit
   pulls(first: Int, after: String, last: Int, before: String): PullConnection

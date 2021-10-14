@@ -3,7 +3,7 @@ import html
 import yaml
 
 from codecov_auth.models import Owner
-from graphql_api.actions.owner import current_user_part_of_org
+from codecov_auth.helpers import current_user_part_of_org
 from codecov.commands.base import BaseInteractor
 from codecov.commands.exceptions import (
     Unauthenticated,
