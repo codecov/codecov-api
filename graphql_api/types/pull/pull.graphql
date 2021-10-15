@@ -6,4 +6,5 @@ type Pull {
   updatestamp: DateTime
   head: Commit!
   base: Commit
+  compareWithBase: Comparison
 }
