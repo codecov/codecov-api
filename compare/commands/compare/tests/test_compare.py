@@ -2,11 +2,10 @@ import asyncio
 from unittest.mock import patch
 
 from django.test import TransactionTestCase
-from core.tests.factories import CommitFactory
 
 from codecov_auth.tests.factories import OwnerFactory
 from compare.tests.factories import CommitComparisonFactory
-from core.tests.factories import PullFactory
+from core.tests.factories import CommitFactory, PullFactory
 
 from ..compare import CompareCommands
 
