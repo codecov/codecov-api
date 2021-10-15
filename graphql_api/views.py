@@ -1,6 +1,7 @@
 import logging
 from contextlib import suppress
 from asyncio import iscoroutine
+from django.conf import settings
 
 from sentry_sdk import capture_exception
 from ariadne import format_error
