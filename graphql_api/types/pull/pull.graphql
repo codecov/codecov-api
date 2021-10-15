@@ -5,6 +5,6 @@ type Pull {
   author: Owner!
   updatestamp: DateTime
   head: Commit!
-  base: Commit
+  comparedTo: Commit
   compareWithBase: Comparison
 }
