@@ -47,6 +47,9 @@ query_pull_request_detail = """{
                     base {
                         commitid
                     }
+                    compareWithBase {
+                        state
+                    }
                 }
             }
         }
@@ -100,6 +103,7 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "author": {"username": "test-pull-user"},
             "head": {"commitid": "5672734ij1n234918231290j12nasdfioasud0f9"},
             "base": None,
+            "compareWithBase": None,
         }
 
     @freeze_time("2021-02-02")
@@ -128,4 +132,5 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "author": {"username": "test-pull-user"},
             "head": {"commitid": "5672734ij1n234918231290j12nasdfioasud0f9"},
             "base": {"commitid": "9asd78fa7as8d8fa97s8d7fgagsd8fa9asd8f77s"},
+            "compareWithBase": None,
         }
