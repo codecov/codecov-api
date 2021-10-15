@@ -6,6 +6,8 @@ from core.tests.factories import CommitFactory
 
 from codecov_auth.tests.factories import OwnerFactory
 from compare.tests.factories import CommitComparisonFactory
+from core.tests.factories import PullFactory
+
 from ..compare import CompareCommands
 
 
@@ -24,6 +26,12 @@ class CompareCommandsTest(TransactionTestCase):
             base_commit=self.parent_commit,
             compare_commit=self.commit,
         )
+        self.pull = PullFactory(
+            repository=self.commit.repository,
+            head=self.commit.commitid,
+            compared_to=self.parent_commit.commitid,
+            pullid=999,
+        )
 
     async def test_compare_commit_when_no_parents(self):
         compare = await self.command.compare_commit_with_parent(self.parent_commit)
@@ -31,6 +39,10 @@ class CompareCommandsTest(TransactionTestCase):
 
     async def test_compare_commit_when_parents(self):
         compare = await self.command.compare_commit_with_parent(self.commit)
+        assert compare is not None
+
+    async def test_compare_pull_request(self):
+        compare = await self.command.compare_pull_request(self.pull)
         assert compare is not None
 
     @patch("compare.commands.compare.compare.GetImpactedFilesInteractor.execute")

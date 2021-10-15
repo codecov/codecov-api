@@ -25,6 +25,18 @@ class CompareCommitsInteractorTest(TransactionTestCase):
         self.stale_comparison.compare_commit.updatestamp = datetime.now()
         self.stale_comparison.compare_commit.save()
 
+    async def test_when_no_head_commit(self):
+        compare = await CompareCommitsInteractor(AnonymousUser(), "github").execute(
+            None, self.parent_commit
+        )
+        assert compare is None
+
+    async def test_when_no_base_commit(self):
+        compare = await CompareCommitsInteractor(AnonymousUser(), "github").execute(
+            None, self.parent_commit
+        )
+        assert compare is None
+
     @patch(
         "compare.commands.compare.interactors.compare_commits.TaskService.compute_comparison"
     )
