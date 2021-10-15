@@ -1,10 +1,13 @@
 from django.db import models
+
 from codecov.models import BaseCodecovModel
+
 # Create your models here.
 
 
 class ProfilingCommit(BaseCodecovModel):
     last_joined_uploads_at = models.DateTimeField(null=True)
+    environment = models.CharField(max_length=100, null=True)
     last_summarized_at = models.DateTimeField(null=True)
     joined_location = models.TextField(null=True)
     summarized_location = models.TextField(null=True)
