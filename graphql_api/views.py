@@ -29,6 +29,12 @@ class AsyncGraphqlView(GraphQLAsyncView):
     schema = schema
     extensions = [get_tracer_extension()]
 
+    def get(self, *args, **kwargs):
+        if settings.GRAPHQL_PLAYGROUND:
+            return super().get(*args, **kwargs)
+        # No GraphqlPlayground if no settings.DEBUG
+        return HttpResponseNotAllowed(["POST"])
+
     async def post(self, request, *args, **kwargs):
         request.user = await get_user(request) or AnonymousUser()
         return await super().post(request, *args, **kwargs)
