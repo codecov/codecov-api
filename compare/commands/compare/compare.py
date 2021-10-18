@@ -17,11 +17,11 @@ class CompareCommands(BaseCommand):
         head_commit = await self.get_command("commit").fetch_commit(
             pull.repository, pull.head
         )
-        base_commit = await self.get_command("commit").fetch_commit(
+        compared_commit = await self.get_command("commit").fetch_commit(
             pull.repository, pull.compared_to
         )
         return await self.get_interactor(CompareCommitsInteractor).execute(
-            head_commit, base_commit
+            head_commit, compared_commit
         )
 
     def get_impacted_files(self, comparison):
