@@ -30,7 +30,6 @@ def resolve_file(commit, info, path, flags=None):
 def resolve_totals(commit, info):
     if commit.commitreport and hasattr(commit.commitreport, "reportleveltotals"):
         return commit.commitreport.reportleveltotals
-    return None
 
 
 @commit_bindable.field("author")
