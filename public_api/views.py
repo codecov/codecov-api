@@ -32,6 +32,11 @@ class PullViewSet(
 
     def get_object(self):
         pullid = self.kwargs.get("pk")
+        if self.request.method == 'PUT':
+            # Note: We create a new pull if needed to make sure that they can be updated
+            # with a base before the upload has finished processing.
+            obj, _created = self.get_queryset().get_or_create(repository=self.repo, pullid=pullid)
+            return obj
         return get_object_or_404(self.get_queryset(), pullid=pullid)
 
     def get_queryset(self):
@@ -42,7 +47,7 @@ class PullViewSet(
                 ).values("ci_passed")[:1]
             ),
         )
-    
+
     def perform_update(self, serializer):
         result = super().perform_update(serializer)
         TaskService().pulls_sync(repoid=self.repo.repoid, pullid=self.kwargs.get("pk"))
