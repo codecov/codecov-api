@@ -136,6 +136,18 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         commit = data["owner"]["repository"]["commit"]
         assert commit["parent"]["commitid"] == self.parent_commit.commitid
 
+    def test_resolve_commit_without_parent(self):
+        self.commit_without_parent = CommitFactory(repository=self.repo, parent_commit_id=None)
+        query = query_commit % "parent { commitid } "
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit_without_parent.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        assert commit["parent"] == None
+
     def test_fetch_commit_coverage(self):
         ReportLevelTotalsFactory(report=self.report, coverage=12)
         query = query_commit % "totals { coverage } "
