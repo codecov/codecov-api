@@ -1,6 +1,7 @@
 import logging
 from contextlib import suppress
 from asyncio import iscoroutine
+from django.conf import settings
 
 from sentry_sdk import capture_exception
 from ariadne import format_error
@@ -28,6 +29,12 @@ def get_user(request):
 class AsyncGraphqlView(GraphQLAsyncView):
     schema = schema
     extensions = [get_tracer_extension()]
+
+    def get(self, *args, **kwargs):
+        if settings.GRAPHQL_PLAYGROUND:
+            return super().get(*args, **kwargs)
+        # No GraphqlPlayground if no settings.DEBUG
+        return HttpResponseNotAllowed(["POST"])
 
     async def post(self, request, *args, **kwargs):
         request.user = await get_user(request) or AnonymousUser()

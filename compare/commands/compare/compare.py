@@ -9,10 +9,19 @@ class CompareCommands(BaseCommand):
         parent_commit = await self.get_command("commit").fetch_commit(
             commit.repository, commit.parent_commit_id
         )
-        if not parent_commit:
-            return None
         return await self.get_interactor(CompareCommitsInteractor).execute(
             commit, parent_commit
+        )
+
+    async def compare_pull_request(self, pull):
+        head_commit = await self.get_command("commit").fetch_commit(
+            pull.repository, pull.head
+        )
+        compared_commit = await self.get_command("commit").fetch_commit(
+            pull.repository, pull.compared_to
+        )
+        return await self.get_interactor(CompareCommitsInteractor).execute(
+            head_commit, compared_commit
         )
 
     def get_impacted_files(self, comparison):
