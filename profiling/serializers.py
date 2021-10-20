@@ -6,6 +6,9 @@ from services.archive import ArchiveService
 
 class CreatableProfilingCommitRelatedField(serializers.SlugRelatedField):
     def get_queryset(self):
+        # this will be a problem once we start having a tokens capable
+        # of sending data to multiple repos, because of
+        # the uniqueness of (repoid, code) pair
         return ProfilingCommit.objects.filter(
             repository__in=self.context["request"].auth.get_repositories()
         )
@@ -14,7 +17,7 @@ class CreatableProfilingCommitRelatedField(serializers.SlugRelatedField):
 class ProfilingUploadSerializer(serializers.ModelSerializer):
     raw_upload_location = serializers.SerializerMethodField()
     profiling = CreatableProfilingCommitRelatedField(
-        slug_field="external_id", source="profiling_commit"
+        slug_field="code", source="profiling_commit"
     )
 
     class Meta:
@@ -29,11 +32,14 @@ class ProfilingUploadSerializer(serializers.ModelSerializer):
 
 
 class ProfilingCommitSerializer(serializers.ModelSerializer):
+    code = serializers.CharField(required=True)
+
     class Meta:
         model = ProfilingCommit
         fields = (
             "created_at",
             "external_id",
+            "code",
             "environment",
             "version_identifier",
         )
