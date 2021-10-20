@@ -40,9 +40,8 @@ def resolve_author(commit, info):
 
 @commit_bindable.field("parent")
 def resolve_parent(commit, info):
-    if commit.parent_commit_id is None:
-        return None
-    return load_commit_by_id(info, commit.parent_commit_id, commit.repository_id)
+    command = info.context["executor"].get_command("commit")
+    return command.fetch_commit(commit.repository, commit.parent_commit_id)
 
 
 @commit_bindable.field("yaml")

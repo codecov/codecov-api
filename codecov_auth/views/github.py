@@ -23,6 +23,7 @@ class GithubLoginView(LoginMixin, StateMixin, View):
         return False
 
     def get_url_to_redirect_to(self, scope):
+        print("In get_url_to_redirect_to")
         repo_service = Github
         base_url = urljoin(repo_service.service_url, "login/oauth/authorize")
         state = self.generate_state()
@@ -37,6 +38,7 @@ class GithubLoginView(LoginMixin, StateMixin, View):
 
     @async_to_sync
     async def fetch_user_data(self, code):
+        print("In fetch_user_data")
         repo_service = Github(
             oauth_consumer_token=dict(
                 key=settings.GITHUB_CLIENT_ID, secret=settings.GITHUB_CLIENT_SECRET
@@ -54,6 +56,7 @@ class GithubLoginView(LoginMixin, StateMixin, View):
         )
 
     def actual_login_step(self, request):
+        print("In actual_login_step")
         state = request.GET.get("state")
         redirection_url = self.get_redirection_url_from_state(state)
         code = request.GET.get("code")
@@ -68,6 +71,7 @@ class GithubLoginView(LoginMixin, StateMixin, View):
         return response
 
     def get(self, request):
+        print("In get")
         if request.GET.get("code"):
             return self.actual_login_step(request)
         else:
