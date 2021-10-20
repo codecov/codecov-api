@@ -1,14 +1,22 @@
+import re
+import logging
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SpanExporter, SpanExportResult
-from opentelemetry.sdk.trace.export import SimpleSpanProcessor
-from opentelemetry.sdk.trace import ReadableSpan
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from codecovopentelem import (
+    get_codecov_opentelemetry_instances,
+    CoverageSpanFilter,
+    UnableToStartProcessorException
+)
 from opentelemetry.instrumentation.django import DjangoInstrumentor
 from datetime import datetime
+from utils.version import get_current_version
 import os
 import json
 import requests
-import logging
+
+log = logging.getLogger(__name__)
 
 
 class CodecovExporter(SpanExporter):
@@ -150,37 +158,25 @@ class CodecovExporter(SpanExporter):
 
 
 def instrument():
-    """
-    instrument is called in both development and production environments
-
-    NOTE TO DEVELOPERS:
-
-    * instrument() is currently being used with contract coverage work. This
-      is experimental, but because we want to collect production data must be
-      merged into master. The values hard-coded here are for demonstration
-      purposes only, and are to be removed before using contract coverage in
-      any serious capacity.
-    * also note that, unless TRANSMIT_SPANS is set in your environment, this
-      function will not be called
-    """
-    # api = os.environ['CODECOV_API']
-    # token = os.environ['CODECOV_TOKEN']
-    
-    # THESE ARE NOT PRODUCTION VALUES
-    env = os.environ.get('CODECOV_ENV')
-    api = "https://contract.codecov.dev"
-    token = "teststhnbb89l6t1om6zrst36d8ld5i3izrk"
-
-    trace.set_tracer_provider(TracerProvider())
-    tracer = trace.get_tracer_provider().get_tracer(__name__)
-
-    trace.get_tracer_provider().add_span_processor(
-        SimpleSpanProcessor(CodecovExporter({
-            'api': api,
-            'env': env,
-            'token': token,
-            'release': '0.0.9'
-        }))
-    )
-    print("instrumenting with OpenTelemetry")
+    provider = TracerProvider()
+    trace.set_tracer_provider(provider)
+    log.info("Configuring opentelemetry exporter")
+    try:
+        generator, exporter = get_codecov_opentelemetry_instances(
+            repository_token=os.getenv("OPENTELEMETRY_TOKEN"),
+            profiling_identifier=get_current_version(),
+            sample_rate=float(os.getenv("OPENTELEMETRY_CODECOV_RATE")),
+            untracked_export_rate=float(os.getenv("OPENTELEMETRY_CODECOV_RATE")),
+            filters={
+                CoverageSpanFilter.regex_name_filter: None,
+                CoverageSpanFilter.span_kind_filter: [trace.SpanKind.SERVER, trace.SpanKind.CONSUMER],
+            },
+            codecov_endpoint=os.getenv("OPENTELEMETRY_ENDPOINT"),
+            writeable_folder="/home/codecov",
+            environment="production",
+        )
+        provider.add_span_processor(generator)
+        provider.add_span_processor(BatchSpanProcessor(exporter))
+    except UnableToStartProcessorException:
+        log.warning("Unable to start codecov open telemetry")
     DjangoInstrumentor().instrument()
