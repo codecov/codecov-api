@@ -235,6 +235,19 @@ class Commit(models.Model):
         ]
 
 
+class ReportErrors(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    external_id = models.UUIDField()
+    upload_id = models.IntegerField()
+    created_at = models.DateTimeField()
+    updated_at = models.DateTimeField()
+    error_code = models.TextField()
+    error_params = models.JSONField()
+
+    class Meta:
+        db_table = "reports_uploaderror"
+
+
 class PullStates(models.TextChoices):
     OPEN = "open"
     MERGED = "merged"
