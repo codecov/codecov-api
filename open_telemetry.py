@@ -161,19 +161,22 @@ def instrument():
     provider = TracerProvider()
     trace.set_tracer_provider(provider)
     log.info("Configuring opentelemetry exporter")
+    current_version = get_current_version()
+    current_env = "production"
     try:
         generator, exporter = get_codecov_opentelemetry_instances(
             repository_token=os.getenv("OPENTELEMETRY_TOKEN"),
-            profiling_identifier=get_current_version(),
+            version_identifier=current_version,
             sample_rate=float(os.getenv("OPENTELEMETRY_CODECOV_RATE")),
             untracked_export_rate=float(os.getenv("OPENTELEMETRY_CODECOV_RATE")),
             filters={
                 CoverageSpanFilter.regex_name_filter: None,
                 CoverageSpanFilter.span_kind_filter: [trace.SpanKind.SERVER, trace.SpanKind.CONSUMER],
             },
+            code=f"{current_version}:{current_env}",
             codecov_endpoint=os.getenv("OPENTELEMETRY_ENDPOINT"),
             writeable_folder="/home/codecov",
-            environment="production",
+            environment=current_env,
         )
         provider.add_span_processor(generator)
         provider.add_span_processor(BatchSpanProcessor(exporter))
