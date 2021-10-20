@@ -46,13 +46,11 @@ class ProfilingCommitCreateView(CreateAPIView):
     permission_classes = [CanDoProfilingUploadsPermission]
 
     def perform_create(self, serializer):
-        environment = serializer.validated_data["environment"]
-        profiling_version = serializer.validated_data["version_identifier"]
+        code = serializer.validated_data["code"]
         repository = self.request.auth.get_repositories()[0]
         try:
             serializer.instance = ProfilingCommit.objects.get(
-                environment=environment,
-                version_identifier=profiling_version,
+                code=code,
                 repository=repository,
             )
         except ProfilingCommit.DoesNotExist:

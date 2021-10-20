@@ -19,6 +19,12 @@ class ProfilingCommit(BaseCodecovModel):
         related_name="profilings",
     )
     commit_sha = models.TextField(null=True)
+    code = models.TextField(null=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['repository', 'code'], name='uniquerepocode')
+        ]
 
     def __str__(self):
         return f"ProfilingCommit<{self.version_identifier} at {self.repository}>"

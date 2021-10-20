@@ -18,10 +18,14 @@ def test_simple_profiling_apicall(db, mocker):
     repo = RepositoryFactory.create(active=True)
     token = RepositoryTokenFactory.create(repository=repo, token_type="profiling")
     client = APIClient()
-    pc = ProfilingCommit.objects.create(repository=repo, version_identifier="newidea")
+    pc = ProfilingCommit.objects.create(
+        code="test_simple_profiling_apicall",
+        repository=repo,
+        version_identifier="newidea",
+    )
     url = reverse("create_profiling_upload")
     client.credentials(HTTP_AUTHORIZATION="repotoken " + token.key)
-    response = client.post(url, {"profiling": pc.external_id}, format="json")
+    response = client.post(url, {"profiling": pc.code}, format="json")
     assert response.status_code == 201
     response_json = response.json()
     assert sorted(response_json.keys()) == [
@@ -33,7 +37,7 @@ def test_simple_profiling_apicall(db, mocker):
     response_json.pop("external_id")
     response_json.pop("created_at")
     assert response.json() == {
-        "profiling": str(pc.external_id),
+        "profiling": "test_simple_profiling_apicall",
         "raw_upload_location": "banana.txt",
     }
     archive_service = ArchiveService(repo)
@@ -52,23 +56,49 @@ def test_simple_profiling_apicall(db, mocker):
     mocked_call.assert_called_with(pu.id)
 
 
-def test_creating_profiling_commit_does_not_exist(db, mocker):
+def test_creating_profiling_commit_no_code(db):
     repo = RepositoryFactory.create(active=True)
     token = RepositoryTokenFactory.create(repository=repo, token_type="profiling")
     client = APIClient()
     assert not ProfilingCommit.objects.filter(
-        repository=repo, environment="production", version_identifier="v1.0.9"
+        repository=repo
     ).exists()
     url = reverse("create_profiling_version")
     client.credentials(HTTP_AUTHORIZATION="repotoken " + token.key)
     response = client.post(
         url,
-        {"environment": "production", "version_identifier": "v1.0.9"},
+        {"environment": "production", "version_identifier": "v1.0.9",},
+        format="json",
+    )
+    assert response.status_code == 400
+    assert response.json() == {'code': ['This field is required.']}
+    assert not ProfilingCommit.objects.filter(
+        repository=repo
+    ).exists()
+
+
+def test_creating_profiling_commit_does_not_exist(db, mocker):
+    repo = RepositoryFactory.create(active=True)
+    token = RepositoryTokenFactory.create(repository=repo, token_type="profiling")
+    client = APIClient()
+    assert not ProfilingCommit.objects.filter(
+        repository=repo, code="productionv1.0.9"
+    ).exists()
+    url = reverse("create_profiling_version")
+    client.credentials(HTTP_AUTHORIZATION="repotoken " + token.key)
+    response = client.post(
+        url,
+        {
+            "environment": "production",
+            "version_identifier": "v1.0.9",
+            "code": "productionv1.0.9",
+        },
         format="json",
     )
     assert response.status_code == 201
     response_json = response.json()
     assert sorted(response_json.keys()) == [
+        "code",
         "created_at",
         "environment",
         "external_id",
@@ -79,18 +109,23 @@ def test_creating_profiling_commit_does_not_exist(db, mocker):
     assert response.json() == {
         "environment": "production",
         "version_identifier": "v1.0.9",
+        "code": "productionv1.0.9",
     }
     pc = ProfilingCommit.objects.get(
         repository=repo, environment="production", version_identifier="v1.0.9"
     )
     assert pc.uploads.count() == 0
 
+
 def test_creating_profiling_commit_already_exist(db, mocker):
     repo = RepositoryFactory.create(active=True)
     token = RepositoryTokenFactory.create(repository=repo, token_type="profiling")
     client = APIClient()
     pc = ProfilingCommit.objects.create(
-        repository=repo, environment="production", version_identifier="v1.0.9"
+        repository=repo,
+        environment="production",
+        version_identifier="v1.0.9",
+        code="productionv1.0.9",
     )
     assert ProfilingCommit.objects.filter(
         repository=repo, environment="production", version_identifier="v1.0.9"
@@ -99,12 +134,17 @@ def test_creating_profiling_commit_already_exist(db, mocker):
     client.credentials(HTTP_AUTHORIZATION="repotoken " + token.key)
     response = client.post(
         url,
-        {"environment": "production", "version_identifier": "v1.0.9"},
+        {
+            "environment": "production",
+            "version_identifier": "v1.0.9",
+            "code": "productionv1.0.9",
+        },
         format="json",
     )
     assert response.status_code == 201
     response_json = response.json()
     assert sorted(response_json.keys()) == [
+        "code",
         "created_at",
         "environment",
         "external_id",
@@ -115,6 +155,7 @@ def test_creating_profiling_commit_already_exist(db, mocker):
     assert response.json() == {
         "environment": "production",
         "version_identifier": "v1.0.9",
+        "code": "productionv1.0.9",
     }
     pc = ProfilingCommit.objects.get(
         repository=repo, environment="production", version_identifier="v1.0.9"
