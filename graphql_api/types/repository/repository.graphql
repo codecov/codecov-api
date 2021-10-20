@@ -11,6 +11,7 @@ type Repository {
   commit(id: String!): Commit
   pull(id: Int!): Pull
   pulls(first: Int, after: String, last: Int, before: String): PullConnection
+  commits(filters: CommitsSetFilters, first: Int, after: String, last: Int, before: String): CommitConnection
 }
 
 type PullConnection {
@@ -22,4 +23,15 @@ type PullConnection {
 type PullEdge {
   cursor: String!
   node: Pull!
+}
+
+type CommitConnection {
+  edges: [CommitEdge]!
+  totalCount: Int!
+  pageInfo: PageInfo!
+}
+
+type CommitEdge {
+  cursor: String!
+  node: Commit!
 }
