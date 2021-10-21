@@ -1,6 +1,6 @@
 from ariadne import EnumType
 
-from . import enums
+from graphql_api.types import enums
 
 enum_types = [
     EnumType("RepositoryOrdering", enums.RepositoryOrdering),
