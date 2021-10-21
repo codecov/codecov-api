@@ -16,6 +16,7 @@ from codecov.commands.executor import get_executor_from_request
 from ariadne_django.views import GraphQLAsyncView
 from .schema import schema
 from .tracing import get_tracer_extension
+from django.http import HttpResponseNotAllowed
 
 log = logging.getLogger(__name__)
 
