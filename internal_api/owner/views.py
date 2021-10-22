@@ -8,7 +8,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.response import Response
 
-from codecov_auth.constants import CURRENTLY_OFFERED_PLANS
+from billing.constants import CURRENTLY_OFFERED_PLANS
 from codecov_auth.models import Owner, Service
 from internal_api.mixins import OwnerPropertyMixin
 from internal_api.permissions import MemberOfOrgPermissions

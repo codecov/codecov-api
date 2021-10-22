@@ -3,7 +3,7 @@ import logging
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 
-from codecov_auth.constants import (
+from billing.constants import (
     CURRENTLY_OFFERED_PLANS,
     PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
 )

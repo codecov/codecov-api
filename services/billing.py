@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 import stripe
 from django.conf import settings
 
-from codecov_auth.constants import (
+from billing.constants import (
     PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
     USER_PLAN_REPRESENTATIONS,
 )
