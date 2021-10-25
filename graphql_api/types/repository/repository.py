@@ -1,4 +1,4 @@
-from ariadne import ObjectType
+from ariadne import convert_kwargs_to_snake_case, ObjectType
 from graphql_api.types.enums import OrderingDirection
 from graphql_api.helpers.connection import queryset_to_connection
 
@@ -50,6 +50,15 @@ def resolve_pull(repository, info, id):
 async def resolve_pulls(repository, info, **kwargs):
     command = info.context["executor"].get_command("pull")
     queryset = await command.fetch_pull_requests(repository)
+    return await queryset_to_connection(
+        queryset, ordering="id", ordering_direction=OrderingDirection.ASC, **kwargs
+    )
+
+@repository_bindable.field("commits")
+@convert_kwargs_to_snake_case
+async def resolve_commits(repository, info, filters=None, **kwargs):
+    command = info.context["executor"].get_command("commit")
+    queryset = await command.fetch_commits(repository, filters)
     return await queryset_to_connection(
         queryset, ordering="id", ordering_direction=OrderingDirection.ASC, **kwargs
     )

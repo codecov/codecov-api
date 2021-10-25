@@ -42,5 +42,5 @@ pylint-django
 elastic-apm
 ariadne_django
 simplejson==3.17.2
-git+ssh://git@github.com/codecov/opentelem-python.git@v0.0.2a1#egg=codecovopentelem
+git+ssh://git@github.com/codecov/opentelem-python.git@v0.0.3a1#egg=codecovopentelem
 

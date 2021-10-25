@@ -61,7 +61,7 @@ cfgv==3.2.0
     # via pre-commit
 chardet==3.0.4
     # via requests
-git+ssh://git@github.com/codecov/opentelem-python.git@v0.0.2a1#egg=codecovopentelem
+git+ssh://git@github.com/codecov/opentelem-python.git@v0.0.3a1#egg=codecovopentelem
     # via -r requirements.in
 colour==0.1.5
     # via shared
