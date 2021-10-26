@@ -44,3 +44,19 @@ class ProfilingCommitSerializer(serializers.ModelSerializer):
             "version_identifier",
         )
         read_only_fields = ("created_at", "external_id")
+
+    def update(self, instance, validated_data):
+        # Overwriting
+        # https://github.com/encode/django-rest-framework/blob/3.12.2/rest_framework/serializers.py#L968
+        # Using a subset of the original update features because
+        # 1. we don't need any of the Many-to-many functionality
+        # 2. we need to avoid full update of the object in the database
+        # to avoid race conditions where this saves
+        # DRF won't use `update_fields` because it breaks compatibility
+        update_fields = []
+        for attr, value in validated_data.items():
+            if attr != "code":
+                update_fields.append(attr)
+                setattr(instance, attr, value)
+        instance.save(update_fields=update_fields)
+        return instance
