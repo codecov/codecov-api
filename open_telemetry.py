@@ -168,14 +168,13 @@ def instrument():
             repository_token=os.getenv("OPENTELEMETRY_TOKEN"),
             version_identifier=current_version,
             sample_rate=float(os.getenv("OPENTELEMETRY_CODECOV_RATE")),
-            untracked_export_rate=float(os.getenv("OPENTELEMETRY_CODECOV_RATE")),
+            untracked_export_rate=0,
             filters={
                 CoverageSpanFilter.regex_name_filter: None,
                 CoverageSpanFilter.span_kind_filter: [trace.SpanKind.SERVER, trace.SpanKind.CONSUMER],
             },
             code=f"{current_version}:{current_env}",
             codecov_endpoint=os.getenv("OPENTELEMETRY_ENDPOINT"),
-            writeable_folder="/home/codecov",
             environment=current_env,
         )
         provider.add_span_processor(generator)
