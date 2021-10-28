@@ -1,10 +1,10 @@
 from uuid import uuid4
 
 import factory
-from factory.django import DjangoModelFactory
-from codecov_auth.models import Owner, Session, Service, RepositoryToken
 from django.utils import timezone
+from factory.django import DjangoModelFactory
 
+from codecov_auth.models import Owner, RepositoryToken, Service, Session
 from utils.encryption import encryptor
 
 

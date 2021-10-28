@@ -22,8 +22,7 @@ class CompareCommandsTest(TransactionTestCase):
             repository=self.parent_commit.repository,
         )
         self.comparison = CommitComparisonFactory(
-            base_commit=self.parent_commit,
-            compare_commit=self.commit,
+            base_commit=self.parent_commit, compare_commit=self.commit,
         )
         self.pull = PullFactory(
             repository=self.commit.repository,

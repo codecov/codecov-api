@@ -1,9 +1,8 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound
 
-from django.shortcuts import get_object_or_404
-
-from core.models import Commit, Branch, Pull
+from core.models import Branch, Commit, Pull
 from utils.config import get_config
 
 

@@ -5,14 +5,14 @@ from .v446 import run_sql as v446_run_sql
 from .v447 import run_sql as v447_run_sql
 from .v448 import run_sql as v448_run_sql
 from .v449 import run_sql as v449_run_sql
-from .v4410 import run_sql as v4410_run_sql
 from .v451 import run_sql as v451_run_sql
 from .v452 import run_sql as v452_run_sql
 from .v453 import run_sql as v453_run_sql
 from .v454 import run_sql as v454_run_sql
 from .v455 import run_sql as v455_run_sql
-from .v4510 import run_sql as v4510_run_sql
 from .v461 import run_sql as v461_run_sql
+from .v4410 import run_sql as v4410_run_sql
+from .v4510 import run_sql as v4510_run_sql
 
 UPGRADE_MIGRATIONS_BY_VERSION = (
     ((4, 4, 0), v440_run_sql),
@@ -32,8 +32,10 @@ UPGRADE_MIGRATIONS_BY_VERSION = (
     ((4, 6, 1), v461_run_sql),
 )
 
+
 def _version_normalize(version):
-    return tuple(int(x or 0) for x in version.replace('v', '').split('.'))
+    return tuple(int(x or 0) for x in version.replace("v", "").split("."))
+
 
 def run_sql(schema_editor, current_version):
     normalized_current_version = _version_normalize(current_version)
@@ -43,9 +45,11 @@ def run_sql(schema_editor, current_version):
         if upgrade_version > normalized_current_version:
             upgrade_migration_index_to_start_from = idx
             break
-    
+
     if not upgrade_migration_index_to_start_from:
         return
 
-    for (_, upgrade_migration) in UPGRADE_MIGRATIONS_BY_VERSION[upgrade_migration_index_to_start_from:]:
+    for (_, upgrade_migration) in UPGRADE_MIGRATIONS_BY_VERSION[
+        upgrade_migration_index_to_start_from:
+    ]:
         upgrade_migration(schema_editor)

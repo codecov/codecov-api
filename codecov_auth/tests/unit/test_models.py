@@ -1,17 +1,16 @@
-from django.test import TransactionTestCase
-
 from unittest.mock import patch
 
+from django.test import TransactionTestCase
+
 from codecov_auth.models import (
-    SERVICE_GITHUB,
-    SERVICE_GITHUB_ENTERPRISE,
+    DEFAULT_AVATAR_SIZE,
+    INFINITY,
     SERVICE_BITBUCKET,
     SERVICE_BITBUCKET_SERVER,
     SERVICE_CODECOV_ENTERPRISE,
-    DEFAULT_AVATAR_SIZE,
-    INFINITY,
+    SERVICE_GITHUB,
+    SERVICE_GITHUB_ENTERPRISE,
 )
-
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
 

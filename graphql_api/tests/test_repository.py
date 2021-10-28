@@ -1,9 +1,9 @@
-from freezegun import freeze_time
-
 from django.test import TransactionTestCase
+from freezegun import freeze_time
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
+
 from .helper import GraphQLTestHelper
 
 query_repository = """

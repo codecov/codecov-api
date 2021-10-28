@@ -1,8 +1,9 @@
-from setuptools import setup, Extension
-from Cython.Build import cythonize
+import os
 from glob import glob
 from pathlib import Path
-import os
+
+from Cython.Build import cythonize
+from setuptools import Extension, setup
 
 
 def get_relevant_paths(path):

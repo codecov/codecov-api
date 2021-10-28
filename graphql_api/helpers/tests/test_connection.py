@@ -3,8 +3,7 @@ from django.test import TestCase
 
 from core.models import Repository
 from core.tests.factories import RepositoryFactory
-
-from graphql_api.types.enums import RepositoryOrdering, OrderingDirection
+from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
 
 
 class RepositoryQuerySetTests(TestCase):

@@ -1,22 +1,20 @@
-import logging
-import stripe
 import json
+import logging
 
-from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
-from rest_framework.response import Response
-from rest_framework import status
-
+import stripe
 from django.conf import settings
 from django.core.exceptions import MultipleObjectsReturned
+from rest_framework import status
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from codecov_auth.models import Owner
 from codecov_auth.constants import PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS
-from services.segment import SegmentService
+from codecov_auth.models import Owner
 from services.billing import BillingService
+from services.segment import SegmentService
 
 from .constants import StripeHTTPHeaders, StripeWebhookEvents
-
 
 if settings.STRIPE_API_KEY:
     stripe.api_key = settings.STRIPE_API_KEY

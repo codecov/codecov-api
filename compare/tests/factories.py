@@ -1,4 +1,5 @@
 import factory
+
 from core.tests.factories import CommitFactory
 
 from ..models import CommitComparison

@@ -1,6 +1,7 @@
 import logging
-from services.repo_providers import RepoProviderService
+
 from codecov.commands.base import BaseInteractor
+from services.repo_providers import RepoProviderService
 
 log = logging.getLogger(__name__)
 

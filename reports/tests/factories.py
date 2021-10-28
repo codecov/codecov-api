@@ -1,13 +1,13 @@
 import random
 import uuid
+from hashlib import sha1
 
 import factory
-
-from reports import models
-from hashlib import sha1
 from factory.django import DjangoModelFactory
+
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
+from reports import models
 
 
 class CommitReportFactory(DjangoModelFactory):

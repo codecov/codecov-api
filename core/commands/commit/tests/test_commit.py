@@ -1,8 +1,10 @@
-from django.test import TransactionTestCase
 from unittest.mock import patch
 
+from django.test import TransactionTestCase
+
 from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import RepositoryFactory, CommitFactory
+from core.tests.factories import CommitFactory, RepositoryFactory
+
 from ..commit import CommitCommands
 
 

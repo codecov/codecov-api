@@ -1,13 +1,13 @@
-import time
-import hmac
-import hashlib
 import base64
+import hashlib
+import hmac
+import time
 
 import requests
+from django.conf import settings
 from rest_framework import exceptions
 
 from codecov_auth.constants import GITLAB_BASE_URL
-from django.conf import settings
 
 GITLAB_PAYLOAD_AVATAR_URL_KEY = "avatar_url"
 

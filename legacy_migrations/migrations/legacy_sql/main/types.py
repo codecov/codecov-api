@@ -1,5 +1,6 @@
 def run_sql(schema_editor):
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         create type service as enum ('github', 'bitbucket', 'gitlab', 'github_enterprise', 'gitlab_enterprise', 'bitbucket_server');
 
         create type plans as enum('5m', '5y', '25m', '25y', '50m', '50y', '100m', '100y', '250m', '250y', '500m', '500y', '1000m', '1000y', '1m', '1y',
@@ -21,4 +22,5 @@ def run_sql(schema_editor):
         create type decorations as enum('standard', 'upgrade');
 
         create type commit_notification_state as enum('pending', 'success', 'error');
-    """)
+    """
+    )

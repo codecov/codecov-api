@@ -1,5 +1,5 @@
+from core.tests.factories import OwnerFactory, RepositoryFactory
 from upload.helpers import try_to_get_best_possible_bot_token
-from core.tests.factories import RepositoryFactory, OwnerFactory
 
 
 def test_try_to_get_best_possible_bot_token_no_repobot_no_ownerbot(db):

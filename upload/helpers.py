@@ -1,26 +1,26 @@
-import re
 import asyncio
 import logging
+import re
 from json import dumps
 
+from asgiref.sync import async_to_sync
 from cerberus import Validator
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
-from rest_framework.exceptions import ValidationError, NotFound
-from shared.torngit.exceptions import TorngitObjectNotFoundError, TorngitClientError
-from asgiref.sync import async_to_sync
+from rest_framework.exceptions import NotFound, ValidationError
+from shared.torngit.exceptions import TorngitClientError, TorngitObjectNotFoundError
 
-from .constants import ci, global_upload_token_providers
 from codecov_auth.constants import USER_PLAN_REPRESENTATIONS
 from codecov_auth.models import Owner
-from core.models import Repository, Commit
+from core.models import Commit, Repository
 from services.repo_providers import RepoProviderService
 from services.segment import SegmentService
 from services.task import TaskService
+from upload.tokenless.tokenless import TokenlessUploadHandler
 from utils.config import get_config
 from utils.encryption import encryptor
 
-from upload.tokenless.tokenless import TokenlessUploadHandler
+from .constants import ci, global_upload_token_providers
 
 is_pull_noted_in_branch = re.compile(r".*(pull|pr)\/(\d+).*")
 

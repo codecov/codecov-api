@@ -1,8 +1,9 @@
-from .settings_base import *
 import os
+
 import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
 
+from .settings_base import *
 
 DEBUG = False
 THIS_POD_IP = os.environ.get("THIS_POD_IP")

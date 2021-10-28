@@ -1,6 +1,7 @@
 # v4.4.9
 def run_sql(schema_editor):
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         alter table owners add column student boolean null;
         alter table owners add column student_updated_at timestamp;
         alter table owners add column student_created_at timestamp;
@@ -36,4 +37,5 @@ def run_sql(schema_editor):
             limit 1
         ) select to_jsonb(data) from data limit 1;
         $$ language sql stable strict;
-    """)
+    """
+    )

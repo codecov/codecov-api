@@ -1,14 +1,14 @@
 import logging
-from rest_framework import status
-from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
-from yaml import safe_load, YAMLError
-from django.http import HttpResponse
 from json import dumps
-from django.conf import settings
 
-from shared.yaml.validation import validate_yaml
+from django.conf import settings
+from django.http import HttpResponse
+from rest_framework import status
+from rest_framework.permissions import AllowAny
+from rest_framework.views import APIView
 from shared.validation.exceptions import InvalidYamlException
+from shared.yaml.validation import validate_yaml
+from yaml import YAMLError, safe_load
 
 log = logging.getLogger(__name__)
 

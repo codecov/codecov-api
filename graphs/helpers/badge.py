@@ -1,6 +1,8 @@
-from shared.helpers.color import coverage_to_color
 from math import floor
-from graphs.badges.badges import unknown_badge, small_badge, medium_badge, large_badge
+
+from shared.helpers.color import coverage_to_color
+
+from graphs.badges.badges import large_badge, medium_badge, small_badge, unknown_badge
 
 
 def get_badge(coverage, coverage_range, precision):
@@ -32,9 +34,7 @@ def get_badge(coverage, coverage_range, precision):
         badge = unknown_badge
 
     return (
-        badge.format(color.hex, coverage).strip()
-        if badge != unknown_badge
-        else badge
+        badge.format(color.hex, coverage).strip() if badge != unknown_badge else badge
     )
 
 

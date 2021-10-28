@@ -1,5 +1,6 @@
 def run_sql(schema_editor):
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         create or replace function repo_yaml_update() returns trigger as $$
         declare _service service;
         declare _branch text;
@@ -68,4 +69,5 @@ def run_sql(schema_editor):
         for each row
         when (new.name is not null and new.name is distinct from old.name)
         execute procedure repos_before_insert_or_update();
-    """)
+    """
+    )

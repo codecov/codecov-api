@@ -1,9 +1,11 @@
-from django.test import TransactionTestCase
 from unittest.mock import patch
+
 from django.contrib.auth.models import AnonymousUser
+from django.test import TransactionTestCase
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
+
 from ..repository import RepositoryCommands
 
 

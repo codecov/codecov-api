@@ -38,9 +38,9 @@ class RepositoryPermissionsService:
 
     def has_write_permissions(self, user, repo):
         return user.is_authenticated and (
-                repo.author.ownerid == user.ownerid
-                or self._fetch_provider_permissions(user, repo)[1]
-            )
+            repo.author.ownerid == user.ownerid
+            or self._fetch_provider_permissions(user, repo)[1]
+        )
 
     def user_is_activated(self, user, owner):
         if user.ownerid == owner.ownerid:

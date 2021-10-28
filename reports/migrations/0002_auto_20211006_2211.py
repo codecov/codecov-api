@@ -6,20 +6,15 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('reports', '0001_initial'),
+        ("reports", "0001_initial"),
     ]
 
     operations = [
+        migrations.RenameModel(old_name="ReportSessionError", new_name="UploadError",),
         migrations.RenameModel(
-            old_name='ReportSessionError',
-            new_name='UploadError',
+            old_name="ReportSessionFlagMembership", new_name="UploadFlagMembership",
         ),
         migrations.RenameModel(
-            old_name='ReportSessionFlagMembership',
-            new_name='UploadFlagMembership',
-        ),
-        migrations.RenameModel(
-            old_name='SessionLevelTotals',
-            new_name='UploadLevelTotals',
+            old_name="SessionLevelTotals", new_name="UploadLevelTotals",
         ),
     ]

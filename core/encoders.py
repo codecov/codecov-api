@@ -1,5 +1,6 @@
+from dataclasses import astuple, is_dataclass
+
 from django.core.serializers.json import DjangoJSONEncoder
-from dataclasses import is_dataclass, astuple
 
 
 class ReportJSONEncoder(DjangoJSONEncoder):

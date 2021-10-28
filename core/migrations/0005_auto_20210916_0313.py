@@ -6,19 +6,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0004_pull_user_provided_base_sha'),
+        ("core", "0004_pull_user_provided_base_sha"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='pull',
-            name='id',
+            model_name="pull",
+            name="id",
             field=models.BigAutoField(primary_key=True, serialize=False),
             preserve_default=False,
         ),
         migrations.AlterField(
-            model_name='pull',
-            name='pullid',
-            field=models.IntegerField(),
+            model_name="pull", name="pullid", field=models.IntegerField(),
         ),
     ]

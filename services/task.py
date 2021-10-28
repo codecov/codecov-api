@@ -1,5 +1,6 @@
 import logging
-from celery import Celery, signature, chain
+
+from celery import Celery, chain, signature
 from shared import celery_config
 
 celery_app = Celery("tasks")
@@ -53,20 +54,12 @@ class TaskService(object):
     def notify(self, repoid, commitid, current_yaml=None):
         self._create_signature(
             "app.tasks.notify.Notify",
-            kwargs=dict(
-                repoid=repoid,
-                commitid=commitid,
-                current_yaml=current_yaml,
-            ),
+            kwargs=dict(repoid=repoid, commitid=commitid, current_yaml=current_yaml,),
         ).apply_async()
 
     def pulls_sync(self, repoid, pullid):
         self._create_signature(
-            "app.tasks.pulls.Sync",
-            kwargs=dict(
-                repoid=repoid,
-                pullid=pullid,
-            ),
+            "app.tasks.pulls.Sync", kwargs=dict(repoid=repoid, pullid=pullid,),
         ).apply_async()
 
     def refresh(

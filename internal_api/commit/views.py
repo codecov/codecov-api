@@ -1,11 +1,11 @@
-from rest_framework import viewsets, mixins
+from rest_framework import mixins, viewsets
 
+from core.models import Commit
 from internal_api.mixins import RepoPropertyMixin
 from internal_api.permissions import RepositoryArtifactPermissions
-from core.models import Commit
 
-from .serializers import CommitSerializer
 from .filters import CommitFilters
+from .serializers import CommitSerializer
 
 
 class CommitsViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, RepoPropertyMixin):

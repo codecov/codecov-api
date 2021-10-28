@@ -1,5 +1,6 @@
-from utils.config import get_config
 from redis import Redis
+
+from utils.config import get_config
 
 
 def get_redis_url():
