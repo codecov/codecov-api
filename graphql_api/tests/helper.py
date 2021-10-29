@@ -1,5 +1,6 @@
-from asgiref.sync import sync_to_async
 from unittest.mock import patch
+
+from asgiref.sync import sync_to_async
 
 from codecov_auth.tests.factories import SessionFactory
 

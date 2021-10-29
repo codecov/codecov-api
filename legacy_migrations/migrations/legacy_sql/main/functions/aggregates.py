@@ -1,5 +1,6 @@
 def run_sql(schema_editor):
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         drop function if exists _pop_first_as_json(jsonb[]) cascade;
         drop function if exists _max_coverage(jsonb[]) cascade;
         drop function if exists _min_coverage(jsonb[]) cascade;
@@ -66,4 +67,5 @@ def run_sql(schema_editor):
         STYPE = text[]
         );
     
-    """)
+    """
+    )

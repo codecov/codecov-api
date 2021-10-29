@@ -1,5 +1,6 @@
 def run_sql(schema_editor):
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         -- used for app/tasks
         create or replace function get_repo(int) returns jsonb as $$
         with d as (select o.service, o.username, o.service_id as owner_service_id, r.ownerid::text,
@@ -74,4 +75,5 @@ def run_sql(schema_editor):
             and r.name = $3::citext
         limit 1
         $$ language sql stable;
-    """)
+    """
+    )

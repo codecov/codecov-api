@@ -1,30 +1,29 @@
-from datetime import datetime
+import binascii
+import logging
 import os
 import uuid
-import logging
-import binascii
-from hashlib import md5
+from datetime import datetime
 from enum import Enum
+from hashlib import md5
 
+from django.contrib.postgres.fields import ArrayField, CITextField
 from django.db import models
-from core.models import Repository, DateTimeWithoutTZField
-from utils.config import get_config
-from django.contrib.postgres.fields import CITextField, ArrayField
 
-from .managers import OwnerQuerySet
-from core.managers import RepositoryQuerySet
-from core.models import DateTimeWithoutTZField
-
+from codecov.models import BaseCodecovModel
 from codecov_auth.constants import (
     AVATAR_GITHUB_BASE_URL,
-    BITBUCKET_BASE_URL,
-    GRAVATAR_BASE_URL,
     AVATARIO_BASE_URL,
-    USER_PLAN_REPRESENTATIONS,
+    BITBUCKET_BASE_URL,
     FREE_PLAN_NAME,
+    GRAVATAR_BASE_URL,
+    USER_PLAN_REPRESENTATIONS,
 )
-from codecov.models import BaseCodecovModel
 from codecov_auth.helpers import get_gitlab_url
+from core.managers import RepositoryQuerySet
+from core.models import DateTimeWithoutTZField, Repository
+from utils.config import get_config
+
+from .managers import OwnerQuerySet
 
 # Large number to represent Infinity as float('int') isnt JSON serializable
 INFINITY = 99999999

@@ -1,6 +1,8 @@
-import pytest
-from services.refresh import RefreshService
 from json import loads
+
+import pytest
+
+from services.refresh import RefreshService
 
 celery_task_data = {"random": "data"}
 

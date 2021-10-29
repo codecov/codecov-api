@@ -1,10 +1,10 @@
 import logging
 from datetime import datetime, timedelta
-from simplejson import JSONDecodeError
 
 import requests
 from requests.exceptions import ConnectionError, HTTPError
 from rest_framework.exceptions import NotFound
+from simplejson import JSONDecodeError
 
 from upload.tokenless.base import BaseTokenlessUploadHandler
 
@@ -78,8 +78,7 @@ class TokenlessAzureHandler(BaseTokenlessUploadHandler):
 
         # Build should have finished within the last 4 mins OR should have an 'inProgress' flag
         if build["status"] == "completed":
-            finishTimestamp = build["finishTime"].replace(
-                "T", " ").replace("Z", "")
+            finishTimestamp = build["finishTime"].replace("T", " ").replace("Z", "")
             buildFinishDateObj = datetime.strptime(
                 finishTimestamp, "%Y-%m-%d %H:%M:%S.%f"
             )
@@ -97,8 +96,7 @@ class TokenlessAzureHandler(BaseTokenlessUploadHandler):
 
         # Check build ID
         build["buildNumber"] = build["buildNumber"].replace("+", " ")
-        self.upload_params["build"] = self.upload_params.get(
-            "build").replace("+", " ")
+        self.upload_params["build"] = self.upload_params.get("build").replace("+", " ")
         if build["buildNumber"] != self.upload_params.get("build"):
             log.warning(
                 f"Azure build numbers do not match. Upload build number: {self.upload_params.get('build')}, Azure build number: {self.upload_params.get('buildNumber')}",

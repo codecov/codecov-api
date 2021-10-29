@@ -2,6 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from codecov_auth.tests.factories import OwnerFactory
+
 from .factories import CommitComparisonFactory
 
 

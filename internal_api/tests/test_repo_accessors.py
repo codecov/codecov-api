@@ -1,11 +1,11 @@
-from django.test import TestCase
 from unittest.mock import patch
 
+from django.test import TestCase
 from shared.torngit.exceptions import TorngitClientError, TorngitClientGeneralError
 
-from internal_api.repo.repository_accessors import RepoAccessors
-from core.tests.factories import RepositoryFactory
 from codecov_auth.tests.factories import OwnerFactory
+from core.tests.factories import RepositoryFactory
+from internal_api.repo.repository_accessors import RepoAccessors
 
 
 class RepositoryAccessorsTestCase(TestCase):

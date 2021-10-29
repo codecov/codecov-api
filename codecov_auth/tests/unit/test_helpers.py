@@ -3,11 +3,12 @@ from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 
 from codecov_auth.helpers import (
-    do_create_signed_value_v2,
-    decode_token_from_cookie,
     create_signed_value,
     current_user_part_of_org,
+    decode_token_from_cookie,
+    do_create_signed_value_v2,
 )
+
 from ..factories import OwnerFactory
 
 

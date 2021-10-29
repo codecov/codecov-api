@@ -38,6 +38,7 @@ class GoalOnboarding(enum.Enum):
     TEAM_REQUIREMENTS = "TEAM_REQUIREMENTS"
     OTHER = "OTHER"
 
+
 class PullRequestState(enum.Enum):
     OPEN = "open"
     CLOSED = "closed"

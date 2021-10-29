@@ -1,30 +1,28 @@
+import hmac
 import logging
 import re
-import hmac
-from hashlib import sha1
 from contextlib import suppress
+from hashlib import sha1
 
-from rest_framework.views import APIView
+from rest_framework import status
+from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.exceptions import PermissionDenied, NotFound
+from rest_framework.views import APIView
 
-from core.models import Repository, Branch, Commit, Pull
 from codecov_auth.models import Owner
+from core.models import Branch, Commit, Pull, Repository
 from services.archive import ArchiveService
 from services.billing import BillingService
 from services.redis_configuration import get_redis_connection
+from services.segment import BLANK_SEGMENT_USER_ID, SegmentService
 from services.task import TaskService
 from utils.config import get_config
-from services.segment import SegmentService, BLANK_SEGMENT_USER_ID
-
 from webhook_handlers.constants import (
     GitHubHTTPHeaders,
     GitHubWebhookEvents,
     WebhookHandlerErrorMessages,
 )
-
 
 log = logging.getLogger(__name__)
 

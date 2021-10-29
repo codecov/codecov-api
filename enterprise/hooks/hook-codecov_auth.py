@@ -1,9 +1,10 @@
+import os
+
 from PyInstaller.utils.hooks import (
-    collect_submodules,
     collect_data_files,
+    collect_submodules,
     get_package_paths,
 )
-import os
 
 package_path = get_package_paths("text_unidecode")
 data_bin_path = os.path.join(package_path[1], "data.bin")

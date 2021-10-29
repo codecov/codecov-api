@@ -1,11 +1,12 @@
 from codecov.commands.base import BaseCommand
+from services.archive import ReportService
 from services.repo_providers import RepoProviderService
+
 from .interactors.fetch_commit import FetchCommitInteractor
 from .interactors.fetch_commits import FetchCommitsInteractor
+from .interactors.get_file_content import GetFileContentInteractor
 from .interactors.get_final_yaml import GetFinalYamlInteractor
 from .interactors.get_uploads_of_commit import GetUploadsOfCommitInteractor
-from .interactors.get_file_content import GetFileContentInteractor
-from services.archive import ReportService
 
 
 class CommitCommands(BaseCommand):

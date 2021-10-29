@@ -1,21 +1,20 @@
-import pytest
 from datetime import datetime
-from django.utils import timezone
-
 from unittest.mock import patch
 
+import pytest
+from django.utils import timezone
 from rest_framework.reverse import reverse
 from shared.torngit.exceptions import TorngitClientGeneralError
 
 from codecov.tests.base_test import InternalAPITest
 from codecov_auth.tests.factories import OwnerFactory
+from core.models import Repository
 from core.tests.factories import (
-    RepositoryFactory,
+    BranchFactory,
     CommitFactory,
     PullFactory,
-    BranchFactory,
+    RepositoryFactory,
 )
-from core.models import Repository
 from internal_api.commit.serializers import CommitTotalsSerializer
 from internal_api.tests.test_utils import GetAdminProviderAdapter
 
@@ -770,9 +769,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         )
 
         PullFactory(
-            pullid=2,
-            repository=self.repo,
-            author=self.repo.author,
+            pullid=2, repository=self.repo, author=self.repo.author,
         )
 
         BranchFactory(authors=[self.org.ownerid], repository=self.repo)

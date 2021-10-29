@@ -1,5 +1,6 @@
 def run_sql(schema_editor):
-    schema_editor.execute("""        
+    schema_editor.execute(
+        """        
         create table repos(
             repoid                  serial primary key,
             ownerid                 int references owners on delete cascade not null,
@@ -26,4 +27,5 @@ def run_sql(schema_editor):
         create unique index repos_service_ids on repos (ownerid, service_id);
 
         alter table repos add column forkid int references repos;
-    """)
+    """
+    )

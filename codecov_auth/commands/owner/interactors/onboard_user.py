@@ -1,12 +1,12 @@
-from asgiref.sync import sync_to_async
 import html
-import yaml
 
+import yaml
+from asgiref.sync import sync_to_async
 from django import forms
 
-from codecov_auth.models import OwnerProfile
 from codecov.commands.base import BaseInteractor
 from codecov.commands.exceptions import Unauthenticated, Unauthorized, ValidationError
+from codecov_auth.models import OwnerProfile
 
 
 class OnboardForm(forms.Form):

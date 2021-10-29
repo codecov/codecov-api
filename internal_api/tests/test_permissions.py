@@ -1,19 +1,18 @@
-from django.test import TestCase
-from rest_framework.test import APIRequestFactory
-from rest_framework.exceptions import APIException
-
 from unittest.mock import patch
 
-from core.tests.factories import RepositoryFactory
-from codecov_auth.tests.factories import OwnerFactory
+from django.test import TestCase
+from rest_framework.exceptions import APIException
+from rest_framework.test import APIRequestFactory
 
+from codecov_auth.tests.factories import OwnerFactory
+from core.tests.factories import RepositoryFactory
 from internal_api.permissions import (
     RepositoryPermissionsService,
     UserIsAdminPermissions,
 )
 from internal_api.tests.test_utils import (
-    GetAdminProviderAdapter,
     GetAdminErrorProviderAdapter,
+    GetAdminProviderAdapter,
 )
 
 

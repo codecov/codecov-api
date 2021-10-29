@@ -6,8 +6,9 @@ from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
 from shared.reports.types import ReportTotals
 
-from core.tests.factories import CommitFactory
 from compare.tests.factories import CommitComparisonFactory
+from core.tests.factories import CommitFactory
+
 from ..get_impacted_files import GetImpactedFilesInteractor
 
 

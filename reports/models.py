@@ -1,13 +1,12 @@
 import uuid
 
+from django.contrib.postgres.fields import ArrayField
+from django.db import models
 from django.urls import reverse
 
-from django.db import models
-from django.contrib.postgres.fields import ArrayField
-
 from codecov.models import BaseCodecovModel
-from utils.services import get_short_service_name
 from upload.constants import ci
+from utils.services import get_short_service_name
 
 
 class AbstractTotals(BaseCodecovModel):
@@ -26,9 +25,7 @@ class AbstractTotals(BaseCodecovModel):
 
 class CommitReport(BaseCodecovModel):
     commit = models.ForeignKey(
-        "core.Commit",
-        related_name="reports",
-        on_delete=models.CASCADE,
+        "core.Commit", related_name="reports", on_delete=models.CASCADE,
     )
 
 
@@ -68,9 +65,7 @@ class UploadFlagMembership(models.Model):
 
 class RepositoryFlag(BaseCodecovModel):
     repository = models.ForeignKey(
-        "core.Repository",
-        related_name="flags",
-        on_delete=models.CASCADE,
+        "core.Repository", related_name="flags", on_delete=models.CASCADE,
     )
     flag_name = models.CharField(max_length=255)
 
@@ -86,9 +81,7 @@ class ReportSession(BaseCodecovModel):
     name = models.CharField(null=True, max_length=100)
     provider = models.CharField(max_length=50, null=True)
     report = models.ForeignKey(
-        "CommitReport",
-        related_name="sessions",
-        on_delete=models.CASCADE,
+        "CommitReport", related_name="sessions", on_delete=models.CASCADE,
     )
     state = models.CharField(max_length=100)
     storage_path = models.TextField()

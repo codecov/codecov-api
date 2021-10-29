@@ -1,7 +1,7 @@
 from asgiref.sync import sync_to_async
 
-from utils.services import get_long_service_name
 from codecov_auth.models import Owner, Session
+from utils.services import get_long_service_name
 
 
 def search_my_owners(current_user, filters):

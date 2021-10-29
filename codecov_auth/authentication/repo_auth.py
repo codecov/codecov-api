@@ -3,10 +3,7 @@ from uuid import UUID
 from django.utils import timezone
 from rest_framework import authentication, exceptions
 
-from codecov_auth.authentication.types import (
-    RepositoryAsUser,
-    RepositoryAuthInterface,
-)
+from codecov_auth.authentication.types import RepositoryAsUser, RepositoryAuthInterface
 from codecov_auth.models import RepositoryToken
 from core.models import Repository
 
@@ -53,11 +50,12 @@ class RepositoryLegacyQueryTokenAuthentication(authentication.BaseAuthentication
             LegacyTokenRepositoryAuth(repository, {"token": token}),
         )
 
+
 class RepositoryLegacyTokenAuthentication(authentication.TokenAuthentication):
     def authenticate_credentials(self, token):
         try:
             token = UUID(token)
-        except (ValueError, TypeError) :
+        except (ValueError, TypeError):
             raise exceptions.AuthenticationFailed("Invalid token.")
         try:
             repository = Repository.objects.get(upload_token=token)

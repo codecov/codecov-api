@@ -1,14 +1,12 @@
-import stripe
 import json
 import time
-
 from unittest.mock import patch
 
+import stripe
 from django.conf import settings
-
-from rest_framework.test import APITestCase, APIRequestFactory
-from rest_framework.reverse import reverse
 from rest_framework import status
+from rest_framework.reverse import reverse
+from rest_framework.test import APIRequestFactory, APITestCase
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory

@@ -1,11 +1,12 @@
 import asyncio
+
 from django.test import TestCase, TransactionTestCase
 
 from codecov_auth.tests.factories import OwnerFactory
 from graphql_api.dataloader.owner import load_owner_by_id
 
 
-class GraphQLResolveInfo():
+class GraphQLResolveInfo:
     def __init__(self):
         self.context = {}
 
@@ -31,7 +32,7 @@ class OnwerLoaderTestCase(TransactionTestCase):
             load_owner_by_id(self.info, self.users[2].ownerid),
             load_owner_by_id(self.info, self.users[4].ownerid),
             load_owner_by_id(self.info, self.users[0].ownerid),
-            load_owner_by_id(self.info, self.users[1].ownerid)
+            load_owner_by_id(self.info, self.users[1].ownerid),
         ]
         users_loaded = await asyncio.gather(*users)
         assert users_loaded == [

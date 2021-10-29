@@ -1,5 +1,6 @@
 def run_sql(schema_editor):
-    schema_editor.execute("""          
+    schema_editor.execute(
+        """          
         create or replace function pulls_drop_flare() returns trigger as $$
         begin
             new.flare = null;
@@ -12,4 +13,5 @@ def run_sql(schema_editor):
         for each row
         when (new.state != 'open'::pull_state)
         execute procedure pulls_drop_flare();
-    """)
+    """
+    )

@@ -1,13 +1,12 @@
-from django.test import TestCase
-from django.conf import settings
-
 from unittest.mock import patch
-from stripe.error import StripeError, InvalidRequestError
 
-from services.billing import BillingService, StripeService, AbstractPaymentService
+from django.conf import settings
+from django.test import TestCase
+from stripe.error import InvalidRequestError, StripeError
 
 from codecov_auth.models import Service
 from codecov_auth.tests.factories import OwnerFactory
+from services.billing import AbstractPaymentService, BillingService, StripeService
 
 
 class StripeServiceTests(TestCase):

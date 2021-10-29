@@ -2,10 +2,7 @@ import logging
 import time
 
 import requests
-from requests.exceptions import (
-    ConnectionError,
-    HTTPError,
-)
+from requests.exceptions import ConnectionError, HTTPError
 from rest_framework.exceptions import NotFound
 
 from upload.tokenless.base import BaseTokenlessUploadHandler
@@ -56,11 +53,8 @@ class TokenlessCirrusHandler(BaseTokenlessUploadHandler):
 
         build = response.json()
         log.info(
-            'Cirrus CI build response found.',
-            extra=dict(
-                build=build,
-                upload_params=self.upload_params,
-            )
+            "Cirrus CI build response found.",
+            extra=dict(build=build, upload_params=self.upload_params,),
         )
         if "errors" in build or build.get("data") is None:
             log.warning(

@@ -1,11 +1,12 @@
-import analytics
+import logging
 import re
 from datetime import datetime
 from enum import Enum
-from django.conf import settings
-import logging
-from codecov_auth.models import Owner
 
+import analytics
+from django.conf import settings
+
+from codecov_auth.models import Owner
 
 log = logging.getLogger(__name__)
 
@@ -276,9 +277,7 @@ class SegmentService:
             "signup_term": kwargs.get("utm_term") or "",
         }
         analytics.track(
-            segment_owner.user_id,
-            SegmentEvent.USER_SIGNED_UP.value,
-            event_properties,
+            segment_owner.user_id, SegmentEvent.USER_SIGNED_UP.value, event_properties,
         )
 
     @inject_segment_owner
@@ -293,9 +292,7 @@ class SegmentService:
             "signup_term": kwargs.get("utm_term") or "",
         }
         analytics.track(
-            segment_owner.user_id,
-            SegmentEvent.USER_SIGNED_IN.value,
-            event_properties,
+            segment_owner.user_id, SegmentEvent.USER_SIGNED_IN.value, event_properties,
         )
 
     @inject_segment_owner
@@ -385,10 +382,7 @@ class SegmentService:
         analytics.track(
             user_id=current_user_ownerid,
             event=SegmentEvent.ACCOUNT_DEACTIVATED_USER.value,
-            properties={
-                "role": "admin",
-                "user": ownerid_to_deactivate,
-            },
+            properties={"role": "admin", "user": ownerid_to_deactivate,},
             context={"groupId": org_ownerid},
         )
 

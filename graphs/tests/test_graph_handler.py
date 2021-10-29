@@ -1,11 +1,12 @@
-from rest_framework.test import APITestCase
 from rest_framework import status
+from rest_framework.test import APITestCase
+
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import (
-    RepositoryFactory,
     BranchFactory,
     CommitFactory,
     PullFactory,
+    RepositoryFactory,
 )
 
 

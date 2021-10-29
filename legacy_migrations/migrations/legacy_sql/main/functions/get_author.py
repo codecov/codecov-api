@@ -1,5 +1,6 @@
 def run_sql(schema_editor):
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         create or replace function get_author(int) returns jsonb as $$
         with data as (
             select service, service_id, username, email, name
@@ -8,4 +9,5 @@ def run_sql(schema_editor):
             limit 1
         ) select to_jsonb(data) from data;
         $$ language sql stable strict;
-    """)
+    """
+    )

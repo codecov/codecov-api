@@ -1,21 +1,19 @@
 import uuid
-import pytest
-
 from unittest.mock import patch
 
-from rest_framework.test import APITestCase
-from rest_framework.reverse import reverse
+import pytest
 from rest_framework import status
+from rest_framework.reverse import reverse
+from rest_framework.test import APITestCase
 
+from codecov_auth.tests.factories import OwnerFactory
+from core.models import Branch, Commit, Pull, PullStates, Repository
 from core.tests.factories import (
-    RepositoryFactory,
     BranchFactory,
     CommitFactory,
     PullFactory,
+    RepositoryFactory,
 )
-from core.models import Repository, Pull, Branch, Commit, PullStates
-from codecov_auth.tests.factories import OwnerFactory
-
 from webhook_handlers.constants import (
     BitbucketHTTPHeaders,
     BitbucketWebhookEvents,
@@ -51,9 +49,7 @@ class TestBitbucketWebhookHandler(APITestCase):
     def test_unknown_repo(self):
         response = self._post_event_data(
             event=BitbucketWebhookEvents.REPO_PUSH,
-            data={
-                "repository": {"uuid": "{94f4c9b4-254f-46cf-a39e-97ce03fe58af}"},
-            },
+            data={"repository": {"uuid": "{94f4c9b4-254f-46cf-a39e-97ce03fe58af}"},},
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -62,9 +58,7 @@ class TestBitbucketWebhookHandler(APITestCase):
         self.repo.save()
         response = self._post_event_data(
             event=BitbucketWebhookEvents.REPO_PUSH,
-            data={
-                "repository": {"uuid": "{673a6070-3421-46c9-9d48-90745f7bfe8e}"},
-            },
+            data={"repository": {"uuid": "{673a6070-3421-46c9-9d48-90745f7bfe8e}"},},
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == WebhookHandlerErrorMessages.SKIP_NOT_ACTIVE
@@ -83,8 +77,7 @@ class TestBitbucketWebhookHandler(APITestCase):
         assert response.data == "Opening pull request in Codecov"
 
         pulls_sync_mock.assert_called_once_with(
-            repoid=self.repo.repoid,
-            pullid=pullid,
+            repoid=self.repo.repoid, pullid=pullid,
         )
 
     def test_pull_request_fulfilled(self):
