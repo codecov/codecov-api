@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('profiling', '0002_auto_20210817_2007'),
+        ("profiling", "0002_auto_20210817_2007"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='profilingcommit',
-            name='commit_sha',
+            model_name="profilingcommit",
+            name="commit_sha",
             field=models.TextField(null=True),
         ),
     ]

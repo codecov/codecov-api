@@ -23,7 +23,9 @@ class ProfilingCommit(BaseCodecovModel):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['repository', 'code'], name='uniquerepocode')
+            models.UniqueConstraint(
+                fields=["repository", "code"], name="uniquerepocode"
+            )
         ]
 
     def __str__(self):

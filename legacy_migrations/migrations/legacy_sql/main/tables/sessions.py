@@ -1,5 +1,6 @@
 def run_sql(schema_editor):
-    schema_editor.execute("""        
+    schema_editor.execute(
+        """        
         create table sessions(
             sessionid               serial primary key,
             token                   uuid unique default uuid_generate_v4() not null,
@@ -10,4 +11,5 @@ def run_sql(schema_editor):
             useragent               text,
             ip                      text
         );
-    """)
+    """
+    )

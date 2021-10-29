@@ -1,16 +1,16 @@
-import pytest
-from unittest.mock import patch
-from ddf import G
-import dateutil
 from datetime import datetime
+from unittest.mock import patch
 
-from rest_framework.test import APITestCase
-from rest_framework.reverse import reverse
+import dateutil
+import pytest
+from ddf import G
 from rest_framework import status
-from internal_api.tests.test_utils import GetAdminProviderAdapter
+from rest_framework.reverse import reverse
+from rest_framework.test import APITestCase
 
 from codecov_auth.tests.factories import OwnerFactory, SessionFactory
 from core.models import Pull, Repository
+from internal_api.tests.test_utils import GetAdminProviderAdapter
 
 
 class UserViewSetTests(APITestCase):

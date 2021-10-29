@@ -1,6 +1,7 @@
 # v4.5.3
 def run_sql(schema_editor):
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         CREATE UNIQUE INDEX IF NOT EXISTS commits_pkey on commits (id);
 
         create table commit_notifications(
@@ -15,4 +16,5 @@ def run_sql(schema_editor):
         );
 
         create index commit_notifications_commit_id on commit_notifications (commit_id);
-    """)
+    """
+    )

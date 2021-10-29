@@ -1,10 +1,12 @@
+from unittest.mock import patch
+
 import minio
 from ddf import G
-from unittest.mock import patch
-from core.models import Repository
-from codecov_auth.models import Owner
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
+
+from codecov_auth.models import Owner
+from core.models import Repository
 
 
 class UploadDownloadHelperTest(APITestCase):

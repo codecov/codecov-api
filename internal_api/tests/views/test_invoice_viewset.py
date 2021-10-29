@@ -1,17 +1,14 @@
 import json
 import os
-from stripe.error import StripeError, InvalidRequestError
-
 from unittest.mock import patch
 
-from rest_framework.test import APITestCase
-from rest_framework.reverse import reverse
 from rest_framework import status
+from rest_framework.reverse import reverse
+from rest_framework.test import APITestCase
+from stripe.error import InvalidRequestError, StripeError
 
 from codecov_auth.tests.factories import OwnerFactory
-
 from internal_api.tests.test_utils import GetAdminProviderAdapter
-
 
 curr_path = os.path.dirname(__file__)
 

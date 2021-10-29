@@ -1,6 +1,7 @@
 # v4.4.7
 def run_sql(schema_editor):
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         drop trigger repo_yaml_update on repos;
         drop trigger owner_yaml_updated on owners;
 
@@ -20,4 +21,5 @@ def run_sql(schema_editor):
             or ((new.yaml->'codecov'->>'branch')::text is distinct from (old.yaml->'codecov'->>'branch')::text)
         )
         execute procedure owner_yaml_updated();
-    """)
+    """
+    )

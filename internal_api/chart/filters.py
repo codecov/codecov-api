@@ -1,7 +1,7 @@
 from dateutil import parser
-
-from django.db.models import Q, F
+from django.db.models import F, Q
 from django.db.models.functions import Trunc
+
 from core.models import Repository
 
 

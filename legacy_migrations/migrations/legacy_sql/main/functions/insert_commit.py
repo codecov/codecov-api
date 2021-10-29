@@ -1,5 +1,6 @@
 def run_sql(schema_editor):
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         create or replace function insert_commit(int, text, text, int) returns void as $$
             begin
 
@@ -24,4 +25,5 @@ def run_sql(schema_editor):
 
             end;
         $$ language plpgsql volatile;
-    """)
+    """
+    )

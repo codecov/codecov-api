@@ -1,6 +1,7 @@
 # v4.5.2
 def run_sql(schema_editor):
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         ALTER TABLE commits ADD COLUMN id bigint;
         COMMIT;
         -- EOF
@@ -9,4 +10,5 @@ def run_sql(schema_editor):
         -- EOF
         ALTER TABLE commits ALTER COLUMN id SET DEFAULT nextval('commits_id_seq');
         COMMIT;
-    """)
+    """
+    )

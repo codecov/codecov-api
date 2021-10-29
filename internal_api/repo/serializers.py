@@ -1,12 +1,11 @@
 from rest_framework import serializers
 
-from core.models import Repository, Commit
-
-from internal_api.owner.serializers import OwnerSerializer
+from core.models import Commit, Repository
 from internal_api.commit.serializers import (
-    CommitWithFileLevelReportSerializer,
     CommitTotalsSerializer,
+    CommitWithFileLevelReportSerializer,
 )
+from internal_api.owner.serializers import OwnerSerializer
 from services.segment import SegmentService
 
 
@@ -26,11 +25,7 @@ class RepoSerializer(serializers.ModelSerializer):
             "hookid",
             "using_integration",
         )
-        fields = read_only_fields + (
-            "branch",
-            "active",
-            "activated",
-        )
+        fields = read_only_fields + ("branch", "active", "activated",)
 
 
 class RepoWithMetricsSerializer(RepoSerializer):
@@ -72,9 +67,7 @@ class RepoDetailsSerializer(RepoSerializer):
 
     def get_latest_commit(self, repo):
         commits_queryset = (
-            repo.commits.filter(
-                state=Commit.CommitStates.COMPLETE,
-            )
+            repo.commits.filter(state=Commit.CommitStates.COMPLETE,)
             .defer("report")
             .order_by("-timestamp")
         )

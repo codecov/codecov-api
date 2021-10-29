@@ -1,20 +1,18 @@
-from rest_framework.test import APITestCase
-from rest_framework.reverse import reverse
-from rest_framework import status
+from unittest.mock import PropertyMock, patch
+
 import minio
-
-from unittest.mock import patch, PropertyMock
-
+from rest_framework import status
+from rest_framework.reverse import reverse
+from rest_framework.test import APITestCase
 from shared.reports.resources import ReportFile
 from shared.reports.types import ReportTotals
 from shared.utils.merge import LineType
-from services.archive import SerializableReport
-
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import RepositoryFactory, CommitFactory, PullFactory
-from internal_api.commit.serializers import ReportTotalsSerializer
 
 import services.comparison as comparison
+from codecov_auth.tests.factories import OwnerFactory
+from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
+from internal_api.commit.serializers import ReportTotalsSerializer
+from services.archive import SerializableReport
 
 
 class MockSerializableReport(SerializableReport):

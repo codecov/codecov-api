@@ -1,7 +1,9 @@
-from django.test import TransactionTestCase
 from unittest.mock import patch
 
+from django.test import TransactionTestCase
+
 from codecov_auth.tests.factories import OwnerFactory
+
 from ..owner import OwnerCommands
 
 

@@ -2,7 +2,6 @@ from ariadne import ObjectType
 
 from graphql_api.types.enums.enums import GoalOnboarding, TypeProjectOnboarding
 
-
 profile_bindable = ObjectType("Profile")
 
 

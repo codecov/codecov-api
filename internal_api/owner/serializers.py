@@ -1,16 +1,15 @@
 import logging
+
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 
-from codecov_auth.models import Owner
 from codecov_auth.constants import (
-    PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
     CURRENTLY_OFFERED_PLANS,
+    PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
 )
-
+from codecov_auth.models import Owner
 from services.billing import BillingService
 from services.segment import SegmentService
-
 
 log = logging.getLogger(__name__)
 

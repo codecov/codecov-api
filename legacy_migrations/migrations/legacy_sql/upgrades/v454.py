@@ -1,6 +1,7 @@
 # v4.5.4
 def run_sql(schema_editor):
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         ALTER TABLE commit_notifications drop CONSTRAINT IF EXISTS commit_notifications_commit_id_fkey;
         ALTER TABLE commits drop CONSTRAINT IF EXISTS commits_pkey;
         CREATE UNIQUE INDEX IF NOT EXISTS commits_pkey on commits (id);
@@ -143,4 +144,5 @@ def run_sql(schema_editor):
         CREATE INDEX "reports_upload_report_id_f6b4ffae" ON "reports_upload" ("report_id");
         ALTER TABLE "reports_upload" ADD CONSTRAINT "reports_reportsessio_report_id_f6b4ffae_fk_reports_c" FOREIGN KEY ("report_id") REFERENCES "reports_commitreport" ("id") DEFERRABLE INITIALLY DEFERRED;
         COMMIT;
-    """)
+    """
+    )

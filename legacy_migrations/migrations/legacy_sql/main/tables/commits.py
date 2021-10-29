@@ -1,5 +1,6 @@
 def run_sql(schema_editor):
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         create table commits(
             commitid                text not null,
             id                      bigserial primary key,
@@ -26,4 +27,5 @@ def run_sql(schema_editor):
         create index commits_repoid_timestamp_desc on commits (repoid, timestamp desc);
 
         create index commits_on_pull on commits (repoid, pullid) where deleted is not true;
-    """)
+    """
+    )

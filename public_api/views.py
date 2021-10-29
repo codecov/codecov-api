@@ -1,17 +1,17 @@
 import logging
 
-from django_filters.rest_framework import DjangoFilterBackend
+from django.db.models import OuterRef, Subquery
 from django.shortcuts import get_object_or_404
-from django.db.models import Subquery, OuterRef
-from rest_framework import filters
-from rest_framework import viewsets, mixins
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, mixins, viewsets
 
-from internal_api.mixins import RepoPropertyMixin
 from codecov_auth.authentication.repo_auth import RepositoryLegacyTokenAuthentication
-from core.models import Pull, Commit
+from core.models import Commit, Pull
+from internal_api.mixins import RepoPropertyMixin
+from services.task import TaskService
+
 from .permissions import PullUpdatePermission
 from .serializers import PullSerializer
-from services.task import TaskService
 
 log = logging.getLogger(__name__)
 
@@ -32,10 +32,12 @@ class PullViewSet(
 
     def get_object(self):
         pullid = self.kwargs.get("pk")
-        if self.request.method == 'PUT':
+        if self.request.method == "PUT":
             # Note: We create a new pull if needed to make sure that they can be updated
             # with a base before the upload has finished processing.
-            obj, _created = self.get_queryset().get_or_create(repository=self.repo, pullid=pullid)
+            obj, _created = self.get_queryset().get_or_create(
+                repository=self.repo, pullid=pullid
+            )
             return obj
         return get_object_or_404(self.get_queryset(), pullid=pullid)
 

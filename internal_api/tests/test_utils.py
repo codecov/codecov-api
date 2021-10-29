@@ -40,4 +40,6 @@ class GetAdminErrorProviderAdapter:
         self.message = message
 
     async def get_is_admin(self, user):
-        raise TorngitClientGeneralError(self.code, response_data=None, message=self.message)
+        raise TorngitClientGeneralError(
+            self.code, response_data=None, message=self.message
+        )

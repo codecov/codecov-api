@@ -1,10 +1,10 @@
-from datetime import datetime
-import uuid
-import string
 import random
+import string
+import uuid
+from datetime import datetime
 
+from django.contrib.postgres.fields import ArrayField, CITextField
 from django.db import models
-from django.contrib.postgres.fields import CITextField, ArrayField
 from django.utils.functional import cached_property
 
 from services.archive import ReportService
@@ -57,9 +57,7 @@ class Repository(models.Model):
     repoid = models.AutoField(primary_key=True)
     name = CITextField()
     author = models.ForeignKey(
-        "codecov_auth.Owner",
-        db_column="ownerid",
-        on_delete=models.CASCADE,
+        "codecov_auth.Owner", db_column="ownerid", on_delete=models.CASCADE,
     )
     service_id = models.TextField()
     private = models.BooleanField()

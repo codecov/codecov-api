@@ -1,9 +1,11 @@
-from core.models import Pull
-from django.test import TransactionTestCase
 from unittest.mock import patch
 
+from django.test import TransactionTestCase
+
 from codecov_auth.tests.factories import OwnerFactory
+from core.models import Pull
 from core.tests.factories import PullFactory, RepositoryFactory
+
 from ..pull import PullCommands
 
 

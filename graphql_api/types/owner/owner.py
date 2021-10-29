@@ -1,16 +1,16 @@
 import json
-import yaml
-from ariadne import convert_kwargs_to_snake_case, ObjectType
 
+import yaml
+from ariadne import ObjectType, convert_kwargs_to_snake_case
+
+from codecov_auth.helpers import current_user_part_of_org
+from graphql_api.actions.repository import list_repository_for_owner
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
 from graphql_api.helpers.connection import (
     build_connection_graphql,
     queryset_to_connection,
 )
-from codecov_auth.helpers import current_user_part_of_org
-from graphql_api.actions.repository import list_repository_for_owner
 from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
-
 
 owner = ariadne_load_local_graphql(__file__, "owner.graphql")
 owner = owner + build_connection_graphql("RepositoryConnection", "Repository")

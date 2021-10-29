@@ -1,23 +1,20 @@
 from uuid import uuid4
 
+import pytest
+import rest_framework
 from django.test import TestCase
 from django.urls import ResolverMatch
-
-from rest_framework.test import APIRequestFactory
 from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
 from rest_framework.request import Request
 from rest_framework.reverse import reverse
+from rest_framework.test import APIRequestFactory
 
-import pytest
-import rest_framework
-
-from utils.test_utils import BaseTestCase
-from codecov_auth.tests.factories import SessionFactory, OwnerFactory
 from codecov_auth.authentication import (
-    CodecovTokenAuthentication,
     CodecovSessionAuthentication,
+    CodecovTokenAuthentication,
 )
-
+from codecov_auth.tests.factories import OwnerFactory, SessionFactory
+from utils.test_utils import BaseTestCase
 
 # Using the standard RequestFactory API to create a form POST request
 

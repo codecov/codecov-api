@@ -1,11 +1,13 @@
-import yaml
 import datetime
 from unittest.mock import patch
-from django.test import TransactionTestCase
+
+import yaml
 from ariadne import graphql_sync
+from django.test import TransactionTestCase
 
 from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import RepositoryFactory, CommitFactory, BranchFactory
+from core.tests.factories import BranchFactory, CommitFactory, RepositoryFactory
+
 from .helper import GraphQLTestHelper
 
 query_branch = """
