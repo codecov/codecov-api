@@ -3,8 +3,8 @@ from shared.yaml import UserYaml, fetch_current_yaml_from_provider_via_reference
 from shared.yaml.validation import validate_yaml
 from yaml import safe_load
 
-from services.repo_providers import RepoProviderService
 from codecov.commands.base import BaseInteractor
+from services.repo_providers import RepoProviderService
 
 
 class GetFinalYamlInteractor(BaseInteractor):

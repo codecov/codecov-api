@@ -2,22 +2,21 @@ import logging
 import re
 import uuid
 from json import dumps
-from urllib.parse import urlparse, urlencode, parse_qs
+from urllib.parse import parse_qs, urlencode, urlparse
 
-from django.utils import timezone
 from django.conf import settings
 from django.contrib.auth import login
 from django.core.exceptions import SuspiciousOperation
+from django.utils import timezone
 
 from codecov_auth.helpers import create_signed_value
-from codecov_auth.models import Session, Owner
-from utils.encryption import encryptor
-from utils.config import get_config
-from utils.services import get_short_service_name
+from codecov_auth.models import Owner, Session
+from services.redis_configuration import get_redis_connection
 from services.refresh import RefreshService
 from services.segment import SegmentService
-from services.redis_configuration import get_redis_connection
-
+from utils.config import get_config
+from utils.encryption import encryptor
+from utils.services import get_short_service_name
 
 log = logging.getLogger(__name__)
 

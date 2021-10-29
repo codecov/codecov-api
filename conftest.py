@@ -1,8 +1,10 @@
-import pytest
-import vcr
 import os
 from pathlib import Path
+
 import fakeredis
+import pytest
+import vcr
+
 
 def pytest_configure(config):
     """

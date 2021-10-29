@@ -1,12 +1,12 @@
 import random
+from hashlib import sha1
 
 import factory
-
-from core import models
-from hashlib import sha1
 from factory.django import DjangoModelFactory
-from codecov_auth.tests.factories import OwnerFactory
+
 from codecov_auth.models import RepositoryToken
+from codecov_auth.tests.factories import OwnerFactory
+from core import models
 
 
 class RepositoryFactory(DjangoModelFactory):

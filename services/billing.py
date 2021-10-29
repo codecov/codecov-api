@@ -1,16 +1,15 @@
-import stripe
 import logging
 from abc import ABC, abstractmethod
 
+import stripe
 from django.conf import settings
 
 from codecov_auth.constants import (
-    USER_PLAN_REPRESENTATIONS,
     PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
+    USER_PLAN_REPRESENTATIONS,
 )
 from codecov_auth.models import Owner
 from services.segment import SegmentService
-
 
 log = logging.getLogger(__name__)
 

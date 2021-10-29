@@ -1,8 +1,9 @@
-from glob import glob
-import celery
-from modulefinder import ModuleFinder
 import os
+from glob import glob
+from modulefinder import ModuleFinder
 from pathlib import Path
+
+import celery
 
 finder = ModuleFinder()
 

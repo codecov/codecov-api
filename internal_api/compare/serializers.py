@@ -1,9 +1,6 @@
 from rest_framework import serializers
 
-from internal_api.commit.serializers import (
-    CommitSerializer,
-    ReportTotalsSerializer,
-)
+from internal_api.commit.serializers import CommitSerializer, ReportTotalsSerializer
 
 
 class TotalsComparisonSerializer(serializers.Serializer):

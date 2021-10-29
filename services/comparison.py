@@ -1,23 +1,21 @@
 import asyncio
-import logging
 import functools
 import json
+import logging
 import os
-import minio
-
 from collections import Counter
 
-from django.utils.functional import cached_property
+import minio
 from asgiref.sync import async_to_sync
-from shared.utils.merge import line_type, LineType
+from django.utils.functional import cached_property
 from shared.helpers.yaml import walk
+from shared.utils.merge import LineType, line_type
 
-from services.archive import ReportService
 from core.models import Commit
-from services.repo_providers import RepoProviderService
+from services.archive import ReportService
 from services.redis_configuration import get_redis_connection
+from services.repo_providers import RepoProviderService
 from utils.config import get_config
-
 
 log = logging.getLogger(__name__)
 

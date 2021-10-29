@@ -1,8 +1,9 @@
-from rest_framework.test import APITestCase
-from rest_framework.reverse import reverse
 from rest_framework import status
+from rest_framework.reverse import reverse
+from rest_framework.test import APITestCase
+
 from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import RepositoryFactory, BranchFactory, CommitFactory
+from core.tests.factories import BranchFactory, CommitFactory, RepositoryFactory
 
 
 class TestBadgeHandler(APITestCase):
@@ -642,7 +643,7 @@ class TestBadgeHandler(APITestCase):
         expected_badge = [line.strip() for line in expected_badge.split("\n")]
         assert expected_badge == badge
         assert response.status_code == status.HTTP_200_OK
-    
+
     def test_badge_with_100_coverage(self):
         gh_owner = OwnerFactory(service="github")
         repo = RepositoryFactory(

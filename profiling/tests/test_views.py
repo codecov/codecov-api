@@ -60,9 +60,7 @@ def test_creating_profiling_commit_no_code(db):
     repo = RepositoryFactory.create(active=True)
     token = RepositoryTokenFactory.create(repository=repo, token_type="profiling")
     client = APIClient()
-    assert not ProfilingCommit.objects.filter(
-        repository=repo
-    ).exists()
+    assert not ProfilingCommit.objects.filter(repository=repo).exists()
     url = reverse("create_profiling_version")
     client.credentials(HTTP_AUTHORIZATION="repotoken " + token.key)
     response = client.post(
@@ -71,10 +69,8 @@ def test_creating_profiling_commit_no_code(db):
         format="json",
     )
     assert response.status_code == 400
-    assert response.json() == {'code': ['This field is required.']}
-    assert not ProfilingCommit.objects.filter(
-        repository=repo
-    ).exists()
+    assert response.json() == {"code": ["This field is required."]}
+    assert not ProfilingCommit.objects.filter(repository=repo).exists()
 
 
 def test_creating_profiling_commit_does_not_exist(db, mocker):

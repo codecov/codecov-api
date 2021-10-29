@@ -1,23 +1,21 @@
 import logging
 
 from django.shortcuts import get_object_or_404
-from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
-from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from codecov_auth.models import Owner
-from core.models import Repository, Branch, Commit, Pull, PullStates
+from core.models import Branch, Commit, Pull, PullStates, Repository
 from services.task import TaskService
 from utils.config import get_config
-
 from webhook_handlers.constants import (
     GitLabHTTPHeaders,
     GitLabWebhookEvents,
     WebhookHandlerErrorMessages,
 )
-
 
 log = logging.getLogger(__name__)
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os
 import sys
+
 from utils.config import get_settings_module
 
 if __name__ == "__main__":

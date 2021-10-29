@@ -1,11 +1,11 @@
-from rest_framework.test import APITestCase
-from rest_framework.reverse import reverse
-from rest_framework import status
-from unittest.mock import patch
 from json import dumps
-from yaml import YAMLError
+from unittest.mock import patch
 
 from django.conf import settings
+from rest_framework import status
+from rest_framework.reverse import reverse
+from rest_framework.test import APITestCase
+from yaml import YAMLError
 
 
 class TestValidateYamlHandler(APITestCase):
@@ -48,20 +48,12 @@ class TestValidateYamlHandler(APITestCase):
 
     def test_post_valid_yaml(self):
         yaml = {
-            "ignore": [
-                "Pods/.*",
-            ],
+            "ignore": ["Pods/.*",],
             "coverage": {
                 "round": "down",
                 "precision": 2,
                 "range": [70.0, 100.0],
-                "status": {
-                    "project": {
-                        "default": {
-                            "base": "auto",
-                        }
-                    }
-                },
+                "status": {"project": {"default": {"base": "auto",}}},
                 "notify": {
                     "slack": {
                         "default": {
@@ -79,21 +71,12 @@ class TestValidateYamlHandler(APITestCase):
 
     def test_post_invalid_yaml(self):
         yaml = {
-            "ignore": [
-                "Pods/.*",
-            ],
+            "ignore": ["Pods/.*",],
             "coverage": {
                 "round": "down",
                 "precision": 2,
                 "range": [70.0, 100.0],
-                "status": {
-                    "project": {
-                        "default": {
-                            "base": "auto",
-                        }
-                    },
-                    "patch": "nope",
-                },
+                "status": {"project": {"default": {"base": "auto",}}, "patch": "nope",},
             },
         }
 

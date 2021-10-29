@@ -1,11 +1,10 @@
-from internal_api import pull
-from asgiref.sync import async_to_sync
 import pytest
-from django.test import TransactionTestCase
-from django.contrib.auth.models import AnonymousUser
 from asgiref.sync import async_to_sync
+from django.contrib.auth.models import AnonymousUser
+from django.test import TransactionTestCase
 
-from core.tests.factories import RepositoryFactory, PullFactory, OwnerFactory
+from core.tests.factories import OwnerFactory, PullFactory, RepositoryFactory
+from internal_api import pull
 from reports.tests.factories import UploadFactory
 
 from ..fetch_pull_request import FetchPullRequestInteractor

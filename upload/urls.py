@@ -1,6 +1,6 @@
 from django.urls import path, re_path
-from .views import UploadHandler, UploadDownloadHandler
 
+from .views import UploadDownloadHandler, UploadHandler
 
 urlpatterns = [
     # use regex to make trailing slash optional

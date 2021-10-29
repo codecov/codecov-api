@@ -1,6 +1,6 @@
-from shared.torngit.exceptions import TorngitClientError
-from rest_framework.exceptions import APIException
 import stripe
+from rest_framework.exceptions import APIException
+from shared.torngit.exceptions import TorngitClientError
 
 
 def torngit_safe(method):

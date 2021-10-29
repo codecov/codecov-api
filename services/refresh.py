@@ -1,6 +1,7 @@
-from celery.result import result_from_tuple
 from contextlib import suppress
 from json import dumps, loads
+
+from celery.result import result_from_tuple
 
 from services.redis_configuration import get_redis_connection
 from services.task import TaskService, celery_app

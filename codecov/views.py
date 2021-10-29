@@ -1,5 +1,5 @@
-from django.http import HttpResponse, HttpResponseRedirect
 from django.conf import settings
+from django.http import HttpResponse, HttpResponseRedirect
 
 from core.models import Version
 

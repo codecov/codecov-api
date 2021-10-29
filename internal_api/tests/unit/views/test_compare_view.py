@@ -1,26 +1,23 @@
 import json
+from unittest.mock import PropertyMock, patch
+
 import pytest
-from unittest.mock import patch, PropertyMock
-
 from django.test import override_settings
-
 from rest_framework import status
 from rest_framework.reverse import reverse
-
-from services.archive import SerializableReport
 from shared.reports.resources import ReportFile
-from services.archive import ArchiveService
+
 from codecov.tests.base_test import InternalAPITest
 from codecov_auth.tests.factories import OwnerFactory
-from services.comparison import Comparison
 from core.tests.factories import (
-    RepositoryFactory,
-    CommitFactory,
     BranchFactory,
+    CommitFactory,
     PullFactory,
+    RepositoryFactory,
 )
-
 from internal_api.commit.serializers import CommitTotalsSerializer
+from services.archive import ArchiveService, SerializableReport
+from services.comparison import Comparison
 
 
 def build_commits(client):

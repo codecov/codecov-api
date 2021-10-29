@@ -1,23 +1,23 @@
 import datetime
-from dateutil import parser
 
+from dateutil import parser
 from django.db.models import (
-    QuerySet,
-    Subquery,
-    OuterRef,
-    Q,
+    Avg,
     Count,
+    DateTimeField,
     F,
     FloatField,
-    Avg,
-    Sum,
     IntegerField,
-    DateTimeField,
     JSONField,
+    OuterRef,
+    Q,
+    QuerySet,
+    Subquery,
+    Sum,
     Value,
 )
-from django.db.models.functions import Cast, Coalesce
 from django.db.models.fields.json import KeyTextTransform
+from django.db.models.functions import Cast, Coalesce
 
 
 class RepositoryQuerySet(QuerySet):
@@ -215,8 +215,7 @@ class RepositoryQuerySet(QuerySet):
         return self.annotate(
             true_latest_commit_at=latest_commit_at_from_cache,
             latest_commit_at=Coalesce(
-                latest_commit_at_from_cache,
-                Value(datetime.datetime(1900, 1, 1)),
+                latest_commit_at_from_cache, Value(datetime.datetime(1900, 1, 1)),
             ),
         )
 

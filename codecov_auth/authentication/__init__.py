@@ -1,15 +1,14 @@
-from django.utils import timezone
-from django.contrib.auth.backends import BaseBackend
+import hashlib
+import hmac
 import logging
 from base64 import b64decode
-import hmac
-import hashlib
 
-from rest_framework import authentication
-from rest_framework import exceptions
+from django.contrib.auth.backends import BaseBackend
+from django.utils import timezone
+from rest_framework import authentication, exceptions
 
-from codecov_auth.models import Session, Owner
 from codecov_auth.helpers import decode_token_from_cookie
+from codecov_auth.models import Owner, Session
 from utils.config import get_config
 from utils.services import get_long_service_name
 

@@ -1,10 +1,11 @@
 import pytest
-from django.test import TransactionTestCase
 from django.contrib.auth.models import AnonymousUser
+from django.test import TransactionTestCase
 
-from codecov_auth.tests.factories import OwnerFactory
-from ..update_profile import UpdateProfileInteractor
 from codecov.commands.exceptions import Unauthenticated, ValidationError
+from codecov_auth.tests.factories import OwnerFactory
+
+from ..update_profile import UpdateProfileInteractor
 
 
 class UpdateProfileInteractorTest(TransactionTestCase):

@@ -1,7 +1,7 @@
 import pytest
-
-from rest_framework.test import APITestCase
 from rest_framework.reverse import reverse
+from rest_framework.test import APITestCase
+
 from codecov_auth.tests.factories import OwnerFactory
 
 

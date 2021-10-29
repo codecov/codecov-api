@@ -1,12 +1,11 @@
-import logging
 import json
-from asgiref.sync import sync_to_async
+import logging
 
+from asgiref.sync import sync_to_async
 from shared.reports.types import ReportTotals
 
 from codecov.commands.base import BaseInteractor
 from services.archive import ArchiveService
-
 
 log = logging.getLogger(__name__)
 

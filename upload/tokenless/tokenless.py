@@ -1,12 +1,14 @@
-import os
 import logging
-import requests
+import os
+from datetime import datetime, timedelta
 from json import load
-from rest_framework import status
+
+import requests
 from django.http import HttpResponse
 from requests.exceptions import ConnectionError, HTTPError
-from datetime import datetime, timedelta
+from rest_framework import status
 from rest_framework.exceptions import NotFound
+
 from upload.tokenless.appveyor import TokenlessAppveyorHandler
 from upload.tokenless.azure import TokenlessAzureHandler
 from upload.tokenless.circleci import TokenlessCircleciHandler
