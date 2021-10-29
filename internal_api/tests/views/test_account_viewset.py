@@ -415,6 +415,37 @@ class AccountViewSetTests(APITestCase):
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
+    @patch("services.billing.stripe.checkout.Session.create")
+    def test_update_must_validate_active_users_without_counting_active_students(
+        self,
+        create_checkout_session_mock,
+    ):
+        expected_id = "sample id"
+        create_checkout_session_mock.return_value = {"id": expected_id}
+        self.user.stripe_subscription_id = None
+        self.user.plan_activated_users=[
+            OwnerFactory(student=False).ownerid,
+            OwnerFactory(student=False).ownerid,
+            OwnerFactory(student=False).ownerid,
+            OwnerFactory(student=False).ownerid,
+            OwnerFactory(student=False).ownerid,
+            OwnerFactory(student=False).ownerid,
+            OwnerFactory(student=False).ownerid,
+            OwnerFactory(student=True).ownerid,
+            OwnerFactory(student=True).ownerid,
+            OwnerFactory(student=True).ownerid,
+        ]
+        self.user.save()
+        desired_plan = {"value": "users-pr-inappy", "quantity": 8}
+
+        response = self._update(
+            kwargs={"service": self.user.service, "owner_username": self.user.username},
+            data={"plan": desired_plan},
+        )
+
+        create_checkout_session_mock.assert_called_once()
+        assert response.status_code == status.HTTP_200_OK
+
     def test_update_quantity_must_be_at_least_5_if_paid_plan(self):
         desired_plan = {"value": "users-pr-inappy", "quantity": 4}
         response = self._update(
