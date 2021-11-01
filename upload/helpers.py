@@ -371,6 +371,7 @@ def insert_commit(commitid, branch, pr, repository, owner, parent_commit_id=None
             "pullid": pr,
             "merged": False if pr is not None else None,
             "parent_commit_id": parent_commit_id,
+            "state": "pending",
         },
     )
 
