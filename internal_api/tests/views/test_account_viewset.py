@@ -7,7 +7,6 @@ from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 from stripe.error import StripeError
 
-from codecov_auth.constants import USER_PLAN_REPRESENTATIONS
 from codecov_auth.models import Owner, Service
 from codecov_auth.tests.factories import OwnerFactory
 from internal_api.tests.test_utils import GetAdminProviderAdapter

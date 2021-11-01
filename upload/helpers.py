@@ -10,7 +10,7 @@ from django.utils import timezone
 from rest_framework.exceptions import NotFound, ValidationError
 from shared.torngit.exceptions import TorngitClientError, TorngitObjectNotFoundError
 
-from codecov_auth.constants import USER_PLAN_REPRESENTATIONS
+from billing.constants import USER_PLAN_REPRESENTATIONS
 from codecov_auth.models import Owner
 from core.models import Commit, Repository
 from services.repo_providers import RepoProviderService

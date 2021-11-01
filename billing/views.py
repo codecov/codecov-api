@@ -9,7 +9,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from codecov_auth.constants import PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS
+from billing.constants import PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS
 from codecov_auth.models import Owner
 from services.billing import BillingService
 from services.segment import SegmentService
