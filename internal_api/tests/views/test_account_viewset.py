@@ -34,7 +34,9 @@ class AccountViewSetTests(APITestCase):
 
     def setUp(self):
         self.service = "gitlab"
-        self.user = OwnerFactory(stripe_customer_id=1000, service=Service.GITHUB.value, service_id="1")
+        self.user = OwnerFactory(
+            stripe_customer_id=1000, service=Service.GITHUB.value, service_id="1"
+        )
         self.expected_invoice = {
             "number": "EF0A41E-0001",
             "status": "paid",
@@ -230,7 +232,9 @@ class AccountViewSetTests(APITestCase):
             "cancel_at_period_end": False,
             "current_period_end": 1633512445,
             "customer": {
-                "invoice_settings": {"default_payment_method": default_payment_method,}
+                "invoice_settings": {
+                    "default_payment_method": default_payment_method,
+                }
             },
         }
 
@@ -320,7 +324,8 @@ class AccountViewSetTests(APITestCase):
 
     @patch("services.billing.stripe.checkout.Session.create")
     def test_update_can_upgrade_to_paid_plan_for_new_customer_and_return_checkout_session_id(
-        self, create_checkout_session_mock,
+        self,
+        create_checkout_session_mock,
     ):
         expected_id = "this is the id"
         create_checkout_session_mock.return_value = {"id": expected_id}
@@ -340,7 +345,9 @@ class AccountViewSetTests(APITestCase):
     @patch("services.billing.stripe.Subscription.retrieve")
     @patch("services.billing.stripe.Subscription.modify")
     def test_update_can_upgrade_to_paid_plan_for_existing_customer_and_set_plan_info(
-        self, modify_subscription_mock, retrieve_subscription_mock,
+        self,
+        modify_subscription_mock,
+        retrieve_subscription_mock,
     ):
         desired_plan = {"value": "users-pr-inappm", "quantity": 12}
         self.user.stripe_customer_id = "flsoe"
@@ -365,7 +372,9 @@ class AccountViewSetTests(APITestCase):
             "current_period_end": 1633512445,
             "latest_invoice": json.load(f)["data"][0],
             "customer": {
-                "invoice_settings": {"default_payment_method": default_payment_method,}
+                "invoice_settings": {
+                    "default_payment_method": default_payment_method,
+                }
             },
         }
 
@@ -414,7 +423,7 @@ class AccountViewSetTests(APITestCase):
         expected_id = "sample id"
         create_checkout_session_mock.return_value = {"id": expected_id}
         self.user.stripe_subscription_id = None
-        self.user.plan_activated_users=[
+        self.user.plan_activated_users = [
             OwnerFactory(student=False).ownerid,
             OwnerFactory(student=False).ownerid,
             OwnerFactory(student=False).ownerid,
@@ -456,7 +465,10 @@ class AccountViewSetTests(APITestCase):
     @patch("services.billing.stripe.PaymentMethod.attach")
     @patch("services.billing.stripe.Customer.modify")
     def test_update_payment_method(
-        self, modify_customer_mock, attach_payment_mock, retrieve_subscription_mock,
+        self,
+        modify_customer_mock,
+        attach_payment_mock,
+        retrieve_subscription_mock,
     ):
         self.user.stripe_customer_id = "flsoe"
         self.user.stripe_subscription_id = "djfos"
@@ -478,7 +490,9 @@ class AccountViewSetTests(APITestCase):
             "cancel_at_period_end": False,
             "current_period_end": 1633512445,
             "customer": {
-                "invoice_settings": {"default_payment_method": default_payment_method,}
+                "invoice_settings": {
+                    "default_payment_method": default_payment_method,
+                }
             },
             "latest_invoice": json.load(f)["data"][0],
         }
