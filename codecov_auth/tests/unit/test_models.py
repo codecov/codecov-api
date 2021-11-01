@@ -10,6 +10,7 @@ from codecov_auth.models import (
     SERVICE_CODECOV_ENTERPRISE,
     SERVICE_GITHUB,
     SERVICE_GITHUB_ENTERPRISE,
+    Service,
 )
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
@@ -400,7 +401,7 @@ class TestOwnerModel(TransactionTestCase):
         self.assertEqual(org.inactive_user_count, 1)
 
     def test_student_count(self):
-        org = OwnerFactory()
+        org = OwnerFactory(service=Service.GITHUB.value, service_id="1")
 
         activated_user = OwnerFactory()
         activated_user_in_org = OwnerFactory(organizations=[org.ownerid])

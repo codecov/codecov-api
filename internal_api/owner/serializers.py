@@ -111,7 +111,7 @@ class PlanSerializer(serializers.Serializer):
                 raise serializers.ValidationError(
                     f"Quantity for paid plan must be greater than 5"
                 )
-            if plan["quantity"] < len(owner.plan_activated_users or []):
+            if plan["quantity"] < owner.activated_user_count:
                 raise serializers.ValidationError(
                     f"Quantity cannot be lower than currently activated user count"
                 )

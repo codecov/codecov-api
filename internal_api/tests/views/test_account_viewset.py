@@ -33,7 +33,9 @@ class AccountViewSetTests(APITestCase):
 
     def setUp(self):
         self.service = "gitlab"
-        self.user = OwnerFactory(stripe_customer_id=1000, service=Service.GITHUB.value)
+        self.user = OwnerFactory(
+            stripe_customer_id=1000, service=Service.GITHUB.value, service_id="1"
+        )
         self.expected_invoice = {
             "number": "EF0A41E-0001",
             "status": "paid",
@@ -404,6 +406,63 @@ class AccountViewSetTests(APITestCase):
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    @patch("services.billing.stripe.checkout.Session.create")
+    def test_update_must_validate_active_users_without_counting_active_students(
+        self, create_checkout_session_mock,
+    ):
+        expected_id = "sample id"
+        create_checkout_session_mock.return_value = {"id": expected_id}
+        self.user.stripe_subscription_id = None
+        self.user.plan_activated_users = [
+            OwnerFactory(student=False).ownerid,
+            OwnerFactory(student=False).ownerid,
+            OwnerFactory(student=False).ownerid,
+            OwnerFactory(student=False).ownerid,
+            OwnerFactory(student=False).ownerid,
+            OwnerFactory(student=False).ownerid,
+            OwnerFactory(student=False).ownerid,
+            OwnerFactory(student=True).ownerid,
+            OwnerFactory(student=True).ownerid,
+            OwnerFactory(student=True).ownerid,
+        ]
+        self.user.save()
+        desired_plan = {"value": "users-pr-inappy", "quantity": 8}
+
+        response = self._update(
+            kwargs={"service": self.user.service, "owner_username": self.user.username},
+            data={"plan": desired_plan},
+        )
+
+        create_checkout_session_mock.assert_called_once()
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_update_must_fail_if_quantity_is_lower_than_activated_user_count(self):
+        self.user.plan_activated_users = [
+            OwnerFactory(student=False).ownerid,
+            OwnerFactory(student=False).ownerid,
+            OwnerFactory(student=False).ownerid,
+            OwnerFactory(student=False).ownerid,
+            OwnerFactory(student=False).ownerid,
+            OwnerFactory(student=False).ownerid,
+            OwnerFactory(student=False).ownerid,
+            OwnerFactory(student=False).ownerid,
+            OwnerFactory(student=False).ownerid,
+            OwnerFactory(student=False).ownerid,
+        ]
+        self.user.save()
+        desired_plan = {"value": "users-pr-inappy", "quantity": 8}
+
+        response = self._update(
+            kwargs={"service": self.user.service, "owner_username": self.user.username},
+            data={"plan": desired_plan},
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert (
+            response.data["plan"]["non_field_errors"][0]
+            == "Quantity cannot be lower than currently activated user count"
+        )
 
     def test_update_quantity_must_be_at_least_5_if_paid_plan(self):
         desired_plan = {"value": "users-pr-inappy", "quantity": 4}
