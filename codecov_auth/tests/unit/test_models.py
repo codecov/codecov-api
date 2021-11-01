@@ -10,10 +10,10 @@ from codecov_auth.models import (
     SERVICE_CODECOV_ENTERPRISE,
     SERVICE_GITHUB,
     SERVICE_GITHUB_ENTERPRISE,
+    Service,
 )
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
-from codecov_auth.models import Service
 
 
 class TestOwnerModel(TransactionTestCase):
