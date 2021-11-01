@@ -34,7 +34,7 @@ class AccountViewSetTests(APITestCase):
 
     def setUp(self):
         self.service = "gitlab"
-        self.user = OwnerFactory(stripe_customer_id=1000, service=Service.GITHUB.value)
+        self.user = OwnerFactory(stripe_customer_id=1000, service=Service.GITHUB.value, service_id="1")
         self.expected_invoice = {
             "number": "EF0A41E-0001",
             "status": "paid",
