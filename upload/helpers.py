@@ -363,35 +363,28 @@ def determine_upload_commit_to_use(upload_params, repository):
 
 
 def insert_commit(commitid, branch, pr, repository, owner, parent_commit_id=None):
+    commit, was_created = Commit.objects.get_or_create(
+        commitid=commitid,
+        repository=repository,
+        defaults={
+            "branch": branch,
+            "pullid": pr,
+            "merged": False if pr is not None else None,
+            "parent_commit_id": parent_commit_id,
+            "state": "pending",
+        },
+    )
 
-    try:
-        commit = Commit.objects.get(commitid=commitid, repository=repository)
-        edited = False
-
-        if commit.state != "pending":
-            commit.state = "pending"
-            edited = True
-
-        if parent_commit_id and commit.parent_commit_id is None:
-            commit.parent_commit_id = parent_commit_id
-            edited = True
-
-        if edited:
-            commit.save(update_fields=["parent_commit_id", "state"])
-
-    except Commit.DoesNotExist:
-        log.info(
-            "Creating new commit for upload",
-            extra=dict(
-                commit=commitid, branch=branch, repository=repository, owner=owner
-            ),
-        )
-        commit = Commit(commitid=commitid, repository=repository, state="pending")
-        commit.branch = branch
-        commit.pullid = pr
-        commit.merged = False if pr is not None else None
+    edited = False
+    if commit.state != "pending":
+        commit.state = "pending"
+        edited = True
+    if parent_commit_id and commit.parent_commit_id is None:
         commit.parent_commit_id = parent_commit_id
-        commit.save()
+        edited = True
+    if edited:
+        commit.save(update_fields=["parent_commit_id", "state"])
+    return commit
 
 
 def get_global_tokens():
