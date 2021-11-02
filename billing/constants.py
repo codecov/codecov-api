@@ -22,6 +22,8 @@ class StripeWebhookEvents:
 
 FREE_PLAN_NAME = "users-free"
 GHM_PLAN_NAME = "users"
+BASIC_PLAN_NAME = "users-basic"
+
 
 NON_PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
     "users-inappm": {
@@ -98,6 +100,18 @@ USER_PLAN_REPRESENTATIONS = {
         "value": FREE_PLAN_NAME,
         "billing_rate": None,
         "base_unit_price": 0,
+        "benefits": [
+            "Up to 5 users",
+            "Unlimited public repositories",
+            "Unlimited private repositories",
+        ],
+    },
+    BASIC_PLAN_NAME: {
+        "marketing_name": "Basic",
+        "value": BASIC_PLAN_NAME,
+        "billing_rate": None,
+        "base_unit_price": 0,
+        "monthly_uploads_limit": 250,
         "benefits": [
             "Up to 5 users",
             "Unlimited public repositories",

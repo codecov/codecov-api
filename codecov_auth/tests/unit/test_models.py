@@ -18,9 +18,7 @@ from core.tests.factories import RepositoryFactory
 
 class TestOwnerModel(TransactionTestCase):
     def setUp(self):
-        self.owner = OwnerFactory(
-            username="codecov_name", service_id="1234", email="name@codecov.io"
-        )
+        self.owner = OwnerFactory(username="codecov_name", email="name@codecov.io")
 
     def test_repo_total_credits_returns_correct_repos_for_legacy_plan(self):
         self.owner.plan = "5m"
@@ -74,12 +72,12 @@ class TestOwnerModel(TransactionTestCase):
             {
                 "service": SERVICE_GITHUB,
                 "get_config": None,
-                "expected": f"https://avatars0.githubusercontent.com/u/1234?v=3&s={DEFAULT_AVATAR_SIZE}",
+                "expected": f"https://avatars0.githubusercontent.com/u/{self.owner.service_id}?v=3&s={DEFAULT_AVATAR_SIZE}",
             },
             {
                 "service": SERVICE_GITHUB_ENTERPRISE,
                 "get_config": "github_enterprise",
-                "expected": f"github_enterprise/avatars/u/1234?v=3&s={DEFAULT_AVATAR_SIZE}",
+                "expected": f"github_enterprise/avatars/u/{self.owner.service_id}?v=3&s={DEFAULT_AVATAR_SIZE}",
             },
             {
                 "service": SERVICE_BITBUCKET,
@@ -358,10 +356,8 @@ class TestOwnerModel(TransactionTestCase):
         assert self.owner.root_organization == None
 
     def test_access_root_organization(self):
-        root = OwnerFactory(service_id="1", service="gitlab")
-        parent = OwnerFactory(
-            service_id="2", parent_service_id=root.service_id, service="gitlab"
-        )
+        root = OwnerFactory(service="gitlab")
+        parent = OwnerFactory(parent_service_id=root.service_id, service="gitlab")
         self.owner.parent_service_id = parent.service_id
         self.owner.service = "gitlab"
         self.owner.save()
