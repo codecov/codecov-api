@@ -13,7 +13,7 @@ class PlanProviders(models.TextChoices):
 class Account(BaseCodecovModel):
     stripe_customer_id = models.TextField(null=True)
     stripe_subscription_id = models.TextField(null=True)
-    plan = models.TextField(null=True, default=FREE_PLAN_NAME)
+    plan = models.TextField(default=FREE_PLAN_NAME)
     plan_provider = models.TextField(null=True, choices=PlanProviders.choices)
-    plan_user_count = models.SmallIntegerField(null=True, default=5)
-    plan_auto_activate = models.BooleanField(null=True, default=True)
+    max_activated_user_count = models.SmallIntegerField(default=5)
+    should_auto_activate_users = models.BooleanField(default=True)
