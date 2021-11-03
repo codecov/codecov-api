@@ -31,15 +31,11 @@ class GetFinalYamlInteractorTest(TransactionTestCase):
     )
     @async_to_sync
     async def test_when_commit_has_yaml(self, mock_fetch_yaml):
-        f = asyncio.Future()
-        f.set_result(
-            """
+        mock_fetch_yaml.return_value = """
         codecov:
           notify:
             require_ci_to_pass: no
         """
-        )
-        mock_fetch_yaml.return_value = f
         config = await self.execute(None, self.commit)
         assert config["codecov"]["require_ci_to_pass"] is False
 
