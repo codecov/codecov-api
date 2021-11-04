@@ -1,7 +1,7 @@
-import asyncio
 import logging
 from datetime import datetime, timedelta
 
+from asgiref.sync import async_to_sync
 from django.conf import settings
 from rest_framework.exceptions import NotFound
 from shared.torngit import get
@@ -28,8 +28,8 @@ class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
         )
 
         try:
-            actions_response = asyncio.run(
-                git.get_workflow_run(self.upload_params.get("build"))
+            actions_response = async_to_sync(git.get_workflow_run)(
+                self.upload_params.get("build")
             )
         except TorngitClientError as e:
             log.warning(
