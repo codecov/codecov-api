@@ -199,9 +199,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
             }
         }
         """
-        f = asyncio.Future()
-        f.set_result(repo)
-        command_mock.return_value = f
+        command_mock.return_value = repo
         query = query_repositories % (repo.author.username, repo.name)
         data = self.gql_request(query, user=self.user)
         assert data["owner"]["repository"]["name"] == repo.name
