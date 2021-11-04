@@ -1,5 +1,6 @@
 def run_sql(schema_editor):
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         create or replace function get_gitlab_root_group(int) returns jsonb as $$
         /* get root group by following parent_service_id to highest level */
         with recursive tree as (
@@ -128,4 +129,5 @@ def run_sql(schema_editor):
             limit 1
         ) select to_jsonb(data) from data limit 1;
         $$ language sql stable strict;
-    """)
+    """
+    )

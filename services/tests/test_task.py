@@ -1,5 +1,6 @@
-from services.task import TaskService, celery_app
 from shared import celery_config
+
+from services.task import TaskService, celery_app
 
 
 def test_refresh_task(mocker):

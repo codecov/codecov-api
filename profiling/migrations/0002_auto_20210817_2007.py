@@ -6,18 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('profiling', '0001_initial'),
+        ("profiling", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='profilingupload',
-            name='normalized_at',
+            model_name="profilingupload",
+            name="normalized_at",
             field=models.DateTimeField(null=True),
         ),
         migrations.AddField(
-            model_name='profilingupload',
-            name='normalized_location',
+            model_name="profilingupload",
+            name="normalized_location",
             field=models.TextField(null=True),
         ),
     ]

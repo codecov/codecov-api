@@ -1,17 +1,18 @@
 import json
 from unittest.mock import patch
 
+from rest_framework import status
+from rest_framework.reverse import reverse
+from rest_framework.settings import api_settings
+
 from codecov.tests.base_test import InternalAPITest
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import (
-    RepositoryFactory,
-    PullFactory,
-    CommitFactory,
     BranchFactory,
+    CommitFactory,
+    PullFactory,
+    RepositoryFactory,
 )
-from rest_framework.settings import api_settings
-from rest_framework.reverse import reverse
-from rest_framework import status
 
 get_permissions_method = (
     "internal_api.repo.repository_accessors.RepoAccessors.get_repo_permissions"
@@ -239,10 +240,7 @@ class RepoPullList(InternalAPITest):
             state="open",
             head=CommitFactory(repository=repo, author=user, pullid=None).commitid,
             base=CommitFactory(
-                repository=repo,
-                pullid=None,
-                author=user,
-                totals=None,
+                repository=repo, pullid=None, author=user, totals=None,
             ).commitid,
             compared_to=CommitFactory(
                 pullid=None,

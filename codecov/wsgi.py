@@ -20,6 +20,7 @@ if (
     and os.getenv("OPENTELEMETRY_CODECOV_RATE")
 ):
     from open_telemetry import instrument
+
     instrument()
 
 application = get_wsgi_application()

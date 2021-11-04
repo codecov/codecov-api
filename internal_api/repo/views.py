@@ -1,40 +1,36 @@
-import uuid
 import logging
+import uuid
 from datetime import datetime
-from django.utils import timezone
+
 from django.http import Http404
-
-from rest_framework import filters, mixins, viewsets
-from rest_framework.exceptions import PermissionDenied, NotAuthenticated
-from rest_framework.response import Response
+from django.utils import timezone
+from django_filters import BooleanFilter
+from django_filters import rest_framework as django_filters
+from rest_framework import filters, mixins, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import NotAuthenticated, PermissionDenied
 from rest_framework.permissions import SAFE_METHODS  # ['GET', 'HEAD', 'OPTIONS']
-from rest_framework import status
-
-from django_filters import rest_framework as django_filters, BooleanFilter
-from internal_api.repo.filter import RepositoryFilters, RepositoryOrderingFilter
+from rest_framework.response import Response
 
 from core.models import Repository
-from services.repo_providers import RepoProviderService
-from services.segment import SegmentService
-from services.decorators import torngit_safe
+from internal_api.mixins import OwnerPropertyMixin
 from internal_api.permissions import (
     RepositoryPermissionsService,
     UserIsAdminPermissions,
 )
-from internal_api.mixins import OwnerPropertyMixin
+from internal_api.repo.filter import RepositoryFilters, RepositoryOrderingFilter
+from services.decorators import torngit_safe
+from services.repo_providers import RepoProviderService
+from services.segment import SegmentService
 
 from .repository_accessors import RepoAccessors
+from .repository_actions import create_webhook_on_provider, delete_webhook_on_provider
 from .serializers import (
-    RepoWithMetricsSerializer,
     RepoDetailsSerializer,
+    RepoWithMetricsSerializer,
     SecretStringPayloadSerializer,
 )
-
 from .utils import encode_secret_string
-
-from .repository_actions import delete_webhook_on_provider, create_webhook_on_provider
-
 
 log = logging.getLogger(__name__)
 

@@ -1,5 +1,6 @@
 def run_sql(schema_editor):
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         create or replace function add_key_to_json(jsonb, text, jsonb) returns jsonb as $$
         select case when $1 is null and $3 is null then ('{"'||$2||'":null}')::jsonb
                     when $1 is null or $1::text = '{}' then ('{"'||$2||'":'||$3||'}')::jsonb
@@ -52,4 +53,5 @@ def run_sql(schema_editor):
                     when $3 is null then ('{"'||$2||'":null}')::jsonb
                     else ('{"'||$2||'":"'||$3||'"}')::jsonb end;
         $$ language sql stable;
-    """)
+    """
+    )

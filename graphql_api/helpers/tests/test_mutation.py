@@ -1,14 +1,14 @@
-from django.test import SimpleTestCase
 from asgiref.sync import sync_to_async
-
-from ..mutation import wrap_error_handling_mutation, resolve_union_error_type
+from django.test import SimpleTestCase
 
 from codecov.commands.exceptions import (
-    Unauthenticated,
-    ValidationError,
-    Unauthorized,
     NotFound,
+    Unauthenticated,
+    Unauthorized,
+    ValidationError,
 )
+
+from ..mutation import resolve_union_error_type, wrap_error_handling_mutation
 
 
 class HelperMutationTest(SimpleTestCase):

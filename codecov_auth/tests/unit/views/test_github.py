@@ -1,14 +1,14 @@
 from datetime import datetime
+
+from django.http.cookie import SimpleCookie
 from django.urls import reverse
 from django.utils import timezone
 from shared.torngit import Github
 from shared.torngit.exceptions import TorngitClientGeneralError
-from codecov_auth.helpers import decode_token_from_cookie
-from codecov_auth.tests.factories import OwnerFactory
-from codecov_auth.models import Session
-from django.http.cookie import SimpleCookie
 
-from codecov_auth.models import Owner
+from codecov_auth.helpers import decode_token_from_cookie
+from codecov_auth.models import Owner, Session
+from codecov_auth.tests.factories import OwnerFactory
 
 
 def _get_state_from_redis(mock_redis):

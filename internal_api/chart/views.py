@@ -1,19 +1,20 @@
+from rest_framework.parsers import JSONParser
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.parsers import JSONParser
 
 from codecov_auth.models import Owner
 from core.models import Commit
+from internal_api.mixins import OwnerPropertyMixin, RepositoriesMixin
+from internal_api.permissions import ChartPermissions
+
 from .filters import apply_default_filters, apply_simple_filters
 from .helpers import (
+    ChartQueryRunner,
     annotate_commits_with_totals,
     apply_grouping,
     validate_params,
-    ChartQueryRunner,
 )
-from internal_api.permissions import ChartPermissions
-from internal_api.mixins import RepositoriesMixin, OwnerPropertyMixin
 
 
 class RepositoryChartHandler(APIView, RepositoriesMixin):

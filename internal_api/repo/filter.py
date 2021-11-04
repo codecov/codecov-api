@@ -1,9 +1,11 @@
-from django_filters import rest_framework as django_filters, BooleanFilter
-from rest_framework import filters
-from core.models import Repository
-from django.db.models.functions import Cast
-from django.db.models.fields.json import KeyTextTransform
 from django.db.models import FloatField
+from django.db.models.fields.json import KeyTextTransform
+from django.db.models.functions import Cast
+from django_filters import BooleanFilter
+from django_filters import rest_framework as django_filters
+from rest_framework import filters
+
+from core.models import Repository
 
 
 class StringListFilter(django_filters.Filter):

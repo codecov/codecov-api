@@ -1,4 +1,5 @@
-from django.db.models import OuterRef, Exists, Func, QuerySet, F, Subquery, OuterRef, Q
+from django.db.models import Exists, F, Func, OuterRef, Q, QuerySet, Subquery
+
 from core.models import Pull
 
 

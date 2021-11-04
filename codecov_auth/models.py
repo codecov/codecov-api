@@ -1,30 +1,28 @@
-from datetime import datetime
+import binascii
+import logging
 import os
 import uuid
-import logging
-import binascii
-from hashlib import md5
+from datetime import datetime
 from enum import Enum
+from hashlib import md5
 
+from django.contrib.postgres.fields import ArrayField, CITextField
 from django.db import models
-from core.models import Repository, DateTimeWithoutTZField
-from utils.config import get_config
-from django.contrib.postgres.fields import CITextField, ArrayField
 
-from .managers import OwnerQuerySet
-from core.managers import RepositoryQuerySet
-from core.models import DateTimeWithoutTZField
-
+from billing.constants import FREE_PLAN_NAME, USER_PLAN_REPRESENTATIONS
+from codecov.models import BaseCodecovModel
 from codecov_auth.constants import (
     AVATAR_GITHUB_BASE_URL,
+    AVATARIO_BASE_URL,
     BITBUCKET_BASE_URL,
     GRAVATAR_BASE_URL,
-    AVATARIO_BASE_URL,
-    USER_PLAN_REPRESENTATIONS,
-    FREE_PLAN_NAME,
 )
-from codecov.models import BaseCodecovModel
 from codecov_auth.helpers import get_gitlab_url
+from core.managers import RepositoryQuerySet
+from core.models import DateTimeWithoutTZField, Repository
+from utils.config import get_config
+
+from .managers import OwnerQuerySet
 
 # Large number to represent Infinity as float('int') isnt JSON serializable
 INFINITY = 99999999
@@ -441,6 +439,10 @@ class Session(models.Model):
     type = models.TextField(choices=SessionType.choices)  # Really an ENUM in db
 
 
+def _generate_key():
+    return binascii.hexlify(os.urandom(20)).decode()
+
+
 class RepositoryToken(BaseCodecovModel):
     repository = models.ForeignKey(
         "core.Repository",
@@ -451,12 +453,9 @@ class RepositoryToken(BaseCodecovModel):
     token_type = models.CharField(max_length=50)
     valid_until = models.DateTimeField(blank=True, null=True)
     key = models.CharField(
-        max_length=40,
-        unique=True,
-        editable=False,
-        default=lambda: binascii.hexlify(os.urandom(20)).decode(),
+        max_length=40, unique=True, editable=False, default=_generate_key,
     )
 
     @classmethod
     def generate_key(cls):
-        return binascii.hexlify(os.urandom(20)).decode()
+        return _generate_key()

@@ -1,9 +1,8 @@
-from ariadne import convert_kwargs_to_snake_case, ObjectType
-from graphql_api.types.enums import OrderingDirection
-from graphql_api.helpers.connection import queryset_to_connection
+from ariadne import ObjectType, convert_kwargs_to_snake_case
 
 from graphql_api.dataloader.owner import load_owner_by_id
-
+from graphql_api.helpers.connection import queryset_to_connection
+from graphql_api.types.enums import OrderingDirection
 
 repository_bindable = ObjectType("Repository")
 
@@ -53,6 +52,7 @@ async def resolve_pulls(repository, info, **kwargs):
     return await queryset_to_connection(
         queryset, ordering="id", ordering_direction=OrderingDirection.ASC, **kwargs
     )
+
 
 @repository_bindable.field("commits")
 @convert_kwargs_to_snake_case

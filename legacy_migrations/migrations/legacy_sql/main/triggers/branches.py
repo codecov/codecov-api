@@ -1,5 +1,6 @@
 def run_sql(schema_editor):
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         create or replace function branches_update() returns trigger as $$
         declare _ownerid int;
         begin
@@ -27,4 +28,5 @@ def run_sql(schema_editor):
         for each row
         when (new.head is distinct from old.head)
         execute procedure branches_update();
-    """)
+    """
+    )

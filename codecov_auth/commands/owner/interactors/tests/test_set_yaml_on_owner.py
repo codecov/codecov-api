@@ -1,16 +1,16 @@
 import pytest
-from django.test import TransactionTestCase
 from django.contrib.auth.models import AnonymousUser
+from django.test import TransactionTestCase
 
-from codecov_auth.tests.factories import OwnerFactory
-
-from ..set_yaml_on_owner import SetYamlOnOwnerInteractor
 from codecov.commands.exceptions import (
+    NotFound,
     Unauthenticated,
     Unauthorized,
     ValidationError,
-    NotFound,
 )
+from codecov_auth.tests.factories import OwnerFactory
+
+from ..set_yaml_on_owner import SetYamlOnOwnerInteractor
 
 good_yaml = """
 codecov:

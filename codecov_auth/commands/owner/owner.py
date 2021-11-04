@@ -1,14 +1,14 @@
 from codecov.commands.base import BaseCommand
-
 from codecov_auth.models import Owner, Session
-from codecov_auth.commands.owner.interactors.create_api_token import CreateApiTokenInteractor
-from codecov_auth.commands.owner.interactors.set_yaml_on_owner import SetYamlOnOwnerInteractor
-from codecov_auth.commands.owner.interactors.delete_session import DeleteSessionInteractor
-from codecov_auth.commands.owner.interactors.update_profile import UpdateProfileInteractor
-from codecov_auth.commands.owner.interactors.fetch_owner import FetchOwnerInteractor
-from codecov_auth.commands.owner.interactors.trigger_sync import TriggerSyncInteractor
-from codecov_auth.commands.owner.interactors.is_syncing import IsSyncingInteractor
-from codecov_auth.commands.owner.interactors.onboard_user import OnboardUserInteractor
+
+from .interactors.create_api_token import CreateApiTokenInteractor
+from .interactors.delete_session import DeleteSessionInteractor
+from .interactors.fetch_owner import FetchOwnerInteractor
+from .interactors.is_syncing import IsSyncingInteractor
+from .interactors.onboard_user import OnboardUserInteractor
+from .interactors.set_yaml_on_owner import SetYamlOnOwnerInteractor
+from .interactors.trigger_sync import TriggerSyncInteractor
+from .interactors.update_profile import UpdateProfileInteractor
 
 
 class OwnerCommands(BaseCommand):

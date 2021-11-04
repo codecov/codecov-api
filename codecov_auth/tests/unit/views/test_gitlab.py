@@ -4,7 +4,6 @@ from django.urls import reverse
 from shared.torngit import Gitlab
 from shared.torngit.exceptions import TorngitClientGeneralError
 
-
 from codecov_auth.helpers import decode_token_from_cookie
 from codecov_auth.models import Session
 

@@ -1,4 +1,4 @@
-from rest_framework.routers import DefaultRouter, Route, DynamicRoute
+from rest_framework.routers import DefaultRouter, DynamicRoute, Route
 
 
 class OptionalTrailingSlashRouter(DefaultRouter):

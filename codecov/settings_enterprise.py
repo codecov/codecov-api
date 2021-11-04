@@ -1,7 +1,9 @@
-from .settings_base import *
 import os
 from urllib.parse import urlparse
+
 from utils.config import get_config, get_settings_module
+
+from .settings_base import *
 
 DEBUG = False
 THIS_POD_IP = os.environ.get("THIS_POD_IP")
@@ -73,4 +75,4 @@ if API_DOMAIN != DEFAULT_WHITELISTED_DOMAIN:
     ALLOWED_HOSTS.append(API_DOMAIN)
 # Referenced at module level of services/billing.py, so it needs to be defined
 STRIPE_API_KEY = None
-SILENCED_SYSTEM_CHECKS = ['urls.W002']
+SILENCED_SYSTEM_CHECKS = ["urls.W002"]

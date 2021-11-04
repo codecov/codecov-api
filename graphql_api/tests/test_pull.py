@@ -1,14 +1,12 @@
+from django.test import TransactionTestCase
 from freezegun import freeze_time
 
-from django.test import TransactionTestCase
-
-from core.models import Pull
 from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import RepositoryFactory, PullFactory, CommitFactory
 from compare.tests.factories import CommitComparisonFactory
+from core.models import Pull
+from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
 
 from .helper import GraphQLTestHelper, paginate_connection
-
 
 query_list_pull_request = """{
     me {

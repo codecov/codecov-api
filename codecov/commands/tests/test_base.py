@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AnonymousUser
 
 from core.commands.commit import CommitCommands
+
 from ..base import BaseCommand, BaseInteractor
 
 

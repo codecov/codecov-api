@@ -1,6 +1,6 @@
-from asgiref.sync import sync_to_async
 import enum
 
+from asgiref.sync import sync_to_async
 from cursor_pagination import CursorPaginator
 
 from graphql_api.types.enums import OrderingDirection
@@ -70,10 +70,7 @@ def queryset_to_connection(
     page = paginator.page(first=first, after=after, last=last, before=before)
     return {
         "edges": [
-            {
-                "cursor": paginator.cursor(page[pos]),
-                "node": repository,
-            }
+            {"cursor": paginator.cursor(page[pos]), "node": repository,}
             for pos, repository in enumerate(page)
         ],
         "total_count": queryset.count(),
