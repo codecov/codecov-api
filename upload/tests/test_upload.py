@@ -1,7 +1,7 @@
 import time
 from datetime import datetime, timedelta
 from json import dumps, loads
-from unittest.mock import PropertyMock, patch
+from unittest.mock import ANY, PropertyMock, patch
 from urllib.parse import urlencode
 
 import pytest
@@ -2448,8 +2448,9 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
             line.strip() for line in expected_error.split("\n")
         ]
 
-    @patch("asyncio.run", new_callable=PropertyMock)
-    def test_github_actions_client_error(self, mock_get):
+    @patch("upload.tokenless.github_actions.get", new_callable=PropertyMock)
+    def test_github_actions_client_error(self, mock_get_torngit):
+        mock_get = mock_get_torngit.return_value.get_workflow_run
         mock_get.side_effect = [TorngitClientGeneralError(500, None, None)]
 
         params = {"build": "12.34", "owner": "owner", "repo": "repo"}
@@ -2460,7 +2461,15 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
             e.value.args[0]
             == "Unable to locate build via Github Actions API. Please upload with the Codecov repository upload token to resolve issue."
         )
-
+        mock_get_torngit.assert_called_with(
+            "github",
+            token={"key": None},
+            repo={"name": "repo"},
+            owner={"username": "owner"},
+            oauth_consumer_token={"key": ANY, "secret": ANY},
+        )
+        mock_get.assert_called_with("12.34")
+        mock_get.reset_mock()
         mock_get.side_effect = [Exception("Not Found")]
 
         with pytest.raises(NotFound) as e:
@@ -2469,6 +2478,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
             e.value.args[0]
             == "Unable to locate build via Github Actions API. Please upload with the Codecov repository upload token to resolve issue."
         )
+        mock_get.assert_called_with("12.34")
 
     @patch(
         "upload.tokenless.github_actions.TokenlessGithubActionsHandler.get_build",
