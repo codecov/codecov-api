@@ -5,8 +5,15 @@ build_date ?= $(shell git show -s --date=iso8601-strict --pretty=format:%cd $$sh
 branch = $(shell git branch | grep \* | cut -f2 -d' ')
 epoch := $(shell date +"%s")
 
+build.local:
+	docker build -f Dockerfile . -t codecov/api:latest
+
+build.base:
+	docker build -f Dockerfile.requirements . -t codecov/baseapi:latest --build-arg SSH_PRIVATE_KEY="${ssh_private_key}"
+
 build:
-	docker build -f Dockerfile . -t codecov/api:latest --build-arg SSH_PRIVATE_KEY="${ssh_private_key}"
+	$(MAKE) build.base
+	$(MAKE) build.local
 
 build.enterprise:
 	docker build -f Dockerfile.enterprise . -t codecov/enterprise-api:${release_version} \
