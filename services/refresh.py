@@ -46,5 +46,4 @@ class RefreshService(object):
             ownerid, username, sync_repos, sync_teams, using_integration
         )
         # store in redis the task data to be used for `is_refreshing` logic
-        self.redis.hset("refresh", ownerid, dumps(resp.as_tuple()))
         self.redis.setex(self._get_key_name(ownerid), 900, dumps(resp.as_tuple()))
