@@ -366,7 +366,7 @@ def determine_upload_commit_to_use(upload_params, repository):
 
 
 def insert_commit(commitid, branch, pr, repository, owner, parent_commit_id=None):
-    commit, was_created = Commit.objects.get_or_create(
+    commit, was_created = Commit.objects.defer("report").get_or_create(
         commitid=commitid,
         repository=repository,
         defaults={
