@@ -22,6 +22,7 @@ build.enterprise:
 		--label "org.label-schema.vendor"="Codecov" \
 		--label "org.label-schema.version"="${release_version}" \
 		--squash
+	docker tag codecov/enterprise-api:${release_version} codecov/enterprise-api:latest-stable
 
 
 
