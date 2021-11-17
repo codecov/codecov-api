@@ -12,8 +12,5 @@ suffix=""
 if [[ "$STATSD_HOST" ]]; then
   suffix="--statsd-host ${STATSD_HOST}:${STATSD_PORT}"
 fi
-if [ $ELASTIC_APM_ENABLED ]; then
-  $prefix gunicorn codecov.wsgi:application --reload --bind 0.0.0.0:8000 --access-logfile '-' $suffix
-else
-  $prefix ddtrace-run gunicorn codecov.wsgi:application --reload --bind 0.0.0.0:8000 --access-logfile '-' $suffix
-fi
+
+$prefix gunicorn codecov.wsgi:application --reload --workers=${GUNICORN_WORKERS:-3} --threads=${GUNICORN_THREADS:-6} --worker-class=gthread --bind 0.0.0.0:8000 --access-logfile '-' $suffix

@@ -2,7 +2,7 @@ version: "3"
 
 services:
   api:
-    image: codecov/api:latest
+    image: codecov/enterprise-api:v4.6.2
     networks:
       - codecovapi
     ports:
@@ -14,8 +14,8 @@ services:
     depends_on:
       - postgres
       - redis
-    entrypoint:
-      - ./dev.sh
+#    entrypoint:
+#      - ./api
     volumes:
       - ./:/app
     environment:
@@ -27,7 +27,9 @@ services:
     networks:
       - codecovapi
     ports:
-      - "5432:5432"
+      - "5436:5432"
+    environment:
+      - POSTGRES_PASSWORD=postgres
   redis:
     image: redis:4.0-alpine
     volumes:

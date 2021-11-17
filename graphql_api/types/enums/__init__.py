@@ -4,4 +4,6 @@ from .enums import (
     OrderingDirection,
     PullRequestState,
     RepositoryOrdering,
+    TypeProjectOnboarding,
+    GoalOnboarding
 )

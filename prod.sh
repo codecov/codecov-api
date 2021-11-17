@@ -8,7 +8,7 @@ if [ -f "/usr/local/bin/berglas" ]; then
 fi
 
 if [ $ELASTIC_APM_ENABLED ]; then
-  $prefix gunicorn codecov.wsgi:application --workers=2 --bind 0.0.0.0:8000 --access-logfile '-' --statsd-host ${STATSD_HOST}:${STATSD_PORT}
+  $prefix gunicorn codecov.wsgi:application --workers=${GUNICORN_WORKERS:-3} --threads=${GUNICORN_THREADS:-6} --bind 0.0.0.0:8000 --access-logfile '-' --statsd-host ${STATSD_HOST}:${STATSD_PORT}
 else
-  $prefix ddtrace-run gunicorn codecov.wsgi:application --workers=2 --bind 0.0.0.0:8000 --access-logfile '-' --statsd-host ${STATSD_HOST}:${STATSD_PORT}
+  $prefix ddtrace-run gunicorn codecov.wsgi:application --workers=${GUNICORN_WORKERS:-3} --threads=${GUNICORN_THREADS:-6} --bind 0.0.0.0:8000 --access-logfile '-' --statsd-host ${STATSD_HOST}:${STATSD_PORT}
 fi

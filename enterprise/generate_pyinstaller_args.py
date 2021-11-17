@@ -7,7 +7,7 @@ import celery
 
 finder = ModuleFinder()
 
-so_extension = ".cpython-37m-x86_64-linux-gnu.so"
+so_extension = ".cpython-39-x86_64-linux-gnu.so"
 
 
 def get_relevant_paths(path):
@@ -31,9 +31,13 @@ def get_relevant_dirs(path):
 
 
 def find_imported_modules(filename):
-    finder.run_script(filename)
-    for name, mod in finder.modules.items():
-        yield name
+    try:
+        finder.run_script(filename)
+        for name, mod in finder.modules.items():
+            yield name
+    except AttributeError:
+        pass
+
 
 
 def generate_files_to_be_cythonized():
@@ -85,6 +89,7 @@ def main():
             "whitenoise",
             "whitenoise.middleware",
             "graphql_api",
+            "graphql_api.types.enums",
             "legacy_migrations",
             "legacy_migrations.migrations",
             "shared.celery_config",
