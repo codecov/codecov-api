@@ -38,6 +38,8 @@ services:
       - redis-volume:/data
     networks:
       - codecovapi
+    ports:
+      - "6400:6379"
 
 volumes:
   postgres-volume:
