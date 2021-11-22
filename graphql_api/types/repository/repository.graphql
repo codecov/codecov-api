@@ -10,7 +10,7 @@ type Repository {
   branch(name: String): Branch
   commit(id: String!): Commit
   pull(id: Int!): Pull
-  pulls(first: Int, after: String, last: Int, before: String): PullConnection
+  pulls(filters: PullsSetFilters, first: Int, after: String, last: Int, before: String): PullConnection
   commits(filters: CommitsSetFilters, first: Int, after: String, last: Int, before: String): CommitConnection
 }
 
