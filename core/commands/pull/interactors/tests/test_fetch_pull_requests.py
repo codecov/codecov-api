@@ -100,6 +100,8 @@ class FetchPullRequestsInteractorTest(TransactionTestCase):
             None, self.repository_with_pull_requests, self.filters
         )
         assert len(pull_request) is 3
+        for pull in pull_request:
+            assert pull.state == PullStates.OPEN.value
 
         # Execute without closed filter
         self.filters = {"state": PullStates.CLOSED}
@@ -107,6 +109,8 @@ class FetchPullRequestsInteractorTest(TransactionTestCase):
             None, self.repository_with_pull_requests, self.filters
         )
         assert len(pull_request) is 2
+        for pull in pull_request:
+            assert pull.state == PullStates.CLOSED.value
 
         # Execute without merged filter
         self.filters = {"state": PullStates.MERGED}
@@ -114,3 +118,5 @@ class FetchPullRequestsInteractorTest(TransactionTestCase):
             None, self.repository_with_pull_requests, self.filters
         )
         assert len(pull_request) is 1
+        for pull in pull_request:
+            assert pull.state == PullStates.MERGED.value
