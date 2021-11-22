@@ -3,8 +3,8 @@ from asgiref.sync import async_to_sync
 from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
 
-from core.tests.factories import OwnerFactory, PullFactory, RepositoryFactory
 from core.models import PullStates
+from core.tests.factories import OwnerFactory, PullFactory, RepositoryFactory
 from internal_api import pull
 from reports.tests.factories import UploadFactory
 
@@ -26,7 +26,7 @@ class FetchPullRequestsInteractorTest(TransactionTestCase):
             pullid=self.pull_id,
             repository_id=self.repository_with_pull_requests.repoid,
             title=self.pull_title,
-            state=PullStates.OPEN.value
+            state=PullStates.OPEN.value,
         )
 
     # helper to execute the interactor
@@ -37,7 +37,9 @@ class FetchPullRequestsInteractorTest(TransactionTestCase):
 
     def test_fetch_when_repository_has_no_pulls(self):
         self.filters = None
-        no_pull = async_to_sync(self.execute)(None, self.repository_no_pull_requests, self.filters)
+        no_pull = async_to_sync(self.execute)(
+            None, self.repository_no_pull_requests, self.filters
+        )
         assert len(no_pull) is 0
 
     def test_fetch_when_repository_has_pulls(self):
@@ -59,31 +61,31 @@ class FetchPullRequestsInteractorTest(TransactionTestCase):
             pullid=20,
             repository_id=self.repository_with_pull_requests.repoid,
             title="test-open-pr-2",
-            state=PullStates.OPEN.value
+            state=PullStates.OPEN.value,
         )
         PullFactory(
             pullid=21,
             repository_id=self.repository_with_pull_requests.repoid,
             title="test-open-pr-3",
-            state=PullStates.OPEN.value
+            state=PullStates.OPEN.value,
         )
         PullFactory(
             pullid=30,
             repository_id=self.repository_with_pull_requests.repoid,
             title="test-closed-pr-1",
-            state=PullStates.CLOSED.value
+            state=PullStates.CLOSED.value,
         )
         PullFactory(
             pullid=31,
             repository_id=self.repository_with_pull_requests.repoid,
             title="test-closed-pr-2",
-            state=PullStates.CLOSED.value
+            state=PullStates.CLOSED.value,
         )
         PullFactory(
             pullid=40,
             repository_id=self.repository_with_pull_requests.repoid,
             title="test-merged-pr-1",
-            state=PullStates.MERGED.value
+            state=PullStates.MERGED.value,
         )
         # Execute without filters
         self.filters = None
@@ -112,4 +114,3 @@ class FetchPullRequestsInteractorTest(TransactionTestCase):
             None, self.repository_with_pull_requests, self.filters
         )
         assert len(pull_request) is 1
-
