@@ -4,9 +4,9 @@ from django.utils.functional import cached_property
 
 from codecov_auth.models import Owner, Service
 from core.models import Repository
+from utils.services import get_long_service_name
 
 from .serializers import CommitRefQueryParamSerializer, PullIDQueryParamSerializer
-from utils.services import get_long_service_name
 
 
 class OwnerPropertyMixin:

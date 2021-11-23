@@ -1,8 +1,8 @@
-from corsheaders.defaults import default_headers
-
-from utils.config import get_config, get_settings_module, SettingsModule
 import os
 
+from corsheaders.defaults import default_headers
+
+from utils.config import SettingsModule, get_config, get_settings_module
 
 # SECURITY WARNING: keep the secret key used in production secret!
 # TODO: get this out of source control
@@ -105,15 +105,9 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",},
 ]
 
 
@@ -244,3 +238,5 @@ CORS_ALLOWED_ORIGIN_REGEXES = []
 CORS_ALLOWED_ORIGINS = []
 
 GRAPHQL_PLAYGROUND = False
+
+UPLOAD_THROTTLING_ENABLED = True

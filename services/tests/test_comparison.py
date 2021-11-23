@@ -1,29 +1,27 @@
-from django.test import TestCase
 import asyncio
 import json
+from unittest.mock import PropertyMock, patch
+
 import minio
-
-from unittest.mock import patch, PropertyMock
 import pytest
-
+from django.test import TestCase
 from shared.reports.resources import ReportFile
-from shared.reports.types import ReportLine, LineSession
+from shared.reports.types import LineSession, ReportLine
 from shared.utils.merge import LineType
 
-from core.tests.factories import CommitFactory, RepositoryFactory, PullFactory
 from codecov_auth.tests.factories import OwnerFactory
+from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
 from services.archive import SerializableReport
 from services.comparison import (
-    FileComparisonTraverseManager,
-    CreateLineComparisonVisitor,
-    CreateChangeSummaryVisitor,
-    LineComparison,
-    FileComparison,
     Comparison,
-    PullRequestComparison,
+    CreateChangeSummaryVisitor,
+    CreateLineComparisonVisitor,
+    FileComparison,
+    FileComparisonTraverseManager,
+    LineComparison,
     MissingComparisonReport,
+    PullRequestComparison,
 )
-
 
 # Pulled from core.tests.factories.CommitFactory files.
 # Contents don't actually matter, it's just for providing a format

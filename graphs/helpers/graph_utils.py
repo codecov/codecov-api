@@ -1,5 +1,6 @@
+from math import cos, pi, sin
+
 from shared.helpers.color import coverage_to_color
-from math import pi, sin, cos
 
 style_n_defs = """
 <style>rect.s{mask:url(#mask);}</style>

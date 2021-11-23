@@ -48,13 +48,12 @@ class ProfilingCommitCreateView(CreateAPIView):
     def perform_create(self, serializer):
         code = serializer.validated_data["code"]
         repository = self.request.auth.get_repositories()[0]
-        try:
-            serializer.instance = ProfilingCommit.objects.get(
-                code=code,
-                repository=repository,
-            )
-        except ProfilingCommit.DoesNotExist:
+        instance, was_created = ProfilingCommit.objects.get_or_create(
+            code=code, repository=repository,
+        )
+        serializer.instance = instance
+        if was_created:
             log.info(
                 "Creating new profiling commit", extra=dict(repoid=repository.repoid)
             )
-        return serializer.save(repository=repository)
+        return serializer.save()

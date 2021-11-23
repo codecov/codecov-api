@@ -1,10 +1,6 @@
 from django.test import TestCase
 
-from .factories import (
-    UploadFactory,
-    RepositoryFlagFactory,
-    UploadFlagMembershipFactory,
-)
+from .factories import RepositoryFlagFactory, UploadFactory, UploadFlagMembershipFactory
 
 
 class UploadTests(TestCase):

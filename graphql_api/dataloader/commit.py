@@ -3,8 +3,8 @@ from asgiref.sync import sync_to_async
 
 from core.models import Commit
 
-class CommitLoader(DataLoader):
 
+class CommitLoader(DataLoader):
     def __init__(self, repository_id, *args, **kwargs):
         self.repository_id = repository_id
         return super().__init__(*args, **kwargs)
@@ -13,7 +13,12 @@ class CommitLoader(DataLoader):
     def batch_load_fn(self, ids):
         # Need to return a list of commits in the same order as the ids
         # So fetching in bulk and generate a list based on ids
-        queryset = {commit.commitid: commit for commit in Commit.objects.filter(commitid__in=ids, repository_id=self.repository_id)}
+        queryset = {
+            commit.commitid: commit
+            for commit in Commit.objects.filter(
+                commitid__in=ids, repository_id=self.repository_id
+            )
+        }
         return [queryset.get(commit_id) for commit_id in ids]
 
 

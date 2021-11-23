@@ -1,6 +1,6 @@
 from django.urls import path, re_path
-from .views import RepositoryChartHandler, OrganizationChartHandler
 
+from .views import OrganizationChartHandler, RepositoryChartHandler
 
 urlpatterns = [
     re_path(

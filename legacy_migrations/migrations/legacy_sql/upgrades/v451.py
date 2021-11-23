@@ -1,6 +1,7 @@
 # 4.5.1
 def run_sql(schema_editor):
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         -- create enums used by commit_notifications table
         create type notifications as enum('comment', 'gitter', 'hipchat', 'irc', 'slack', 'status_changes', 'status_patch', 'status_project', 'webhook', 'checks_patch', 'checks_project', 'checks_changes');
         create type decorations as enum('standard', 'upgrade');
@@ -38,4 +39,5 @@ def run_sql(schema_editor):
 
         -- drop the old enum
         -- drop type plans__;
-    """)
+    """
+    )

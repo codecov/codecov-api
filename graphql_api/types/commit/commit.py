@@ -1,8 +1,8 @@
 import yaml
 from ariadne import ObjectType
 
-from graphql_api.dataloader.owner import load_owner_by_id
 from graphql_api.dataloader.commit import load_commit_by_id
+from graphql_api.dataloader.owner import load_owner_by_id
 from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.enums import OrderingDirection
 

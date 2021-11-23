@@ -22,8 +22,6 @@ asgiref==3.3.4
     # via
     #   django
     #   opentelemetry-util-http
-asn1crypto==1.4.0
-    # via cryptography
 astroid==2.6.6
     # via pylint
 attrs==20.3.0
@@ -61,7 +59,7 @@ cfgv==3.2.0
     # via pre-commit
 chardet==3.0.4
     # via requests
-git+ssh://git@github.com/codecov/opentelem-python.git@v0.0.3a1#egg=codecovopentelem
+git+ssh://git@github.com/codecov/opentelem-python.git@v0.0.4a1#egg=codecovopentelem
     # via -r requirements.in
 colour==0.1.5
     # via shared
@@ -71,7 +69,7 @@ coverage==6.0.1
     # via
     #   codecovopentelem
     #   pytest-cov
-cryptography==2.7
+cryptography==35.0.0
     # via shared
 ddtrace==0.46
     # via -r requirements.in
@@ -296,7 +294,7 @@ requests==2.25.1
     #   stripe
 rfc3986[idna2008]==1.4.0
     # via httpx
-rsa==4.6
+rsa==4.7.2
     # via google-auth
 s3transfer==0.2.1
     # via boto3
@@ -304,7 +302,7 @@ sentry-sdk==1.4.3
     # via -r requirements.in
 setproctitle==1.1.10
     # via -r requirements.in
-git+ssh://git@github.com/codecov/shared.git@v0.7.3#egg=shared
+git+ssh://git@github.com/codecov/shared.git@v0.7.12#egg=shared
     # via -r requirements.in
 simplejson==3.17.2
     # via -r requirements.in

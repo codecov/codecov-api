@@ -1,5 +1,6 @@
 def run_sql(schema_editor):
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         create or replace function get_user(int) returns jsonb as $$
         with data as (
             select ownerid::text, private_access, staff, service, service_id,
@@ -28,4 +29,5 @@ def run_sql(schema_editor):
             from data
             limit array_length($1, 1);
         $$ language sql stable strict;
-    """)
+    """
+    )

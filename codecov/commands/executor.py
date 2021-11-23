@@ -1,13 +1,11 @@
-from utils.services import get_long_service_name
-
 from codecov_auth.commands.owner import OwnerCommands
-from core.commands.repository import RepositoryCommands
-from core.commands.commit import CommitCommands
-from core.commands.branch import BranchCommands
 from compare.commands.compare import CompareCommands
+from core.commands.branch import BranchCommands
+from core.commands.commit import CommitCommands
 from core.commands.pull import PullCommands
 from core.commands.upload import UploadCommands
-
+from core.commands.repository import RepositoryCommands
+from utils.services import get_long_service_name
 
 mapping = {
     "commit": CommitCommands,

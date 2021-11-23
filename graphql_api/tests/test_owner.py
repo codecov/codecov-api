@@ -1,13 +1,14 @@
 import asyncio
-from unittest.mock import patch
-from freezegun import freeze_time
 import datetime
+from unittest.mock import patch
 
-from django.test import TransactionTestCase
 from ariadne import graphql_sync
+from django.test import TransactionTestCase
+from freezegun import freeze_time
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
+
 from .helper import GraphQLTestHelper, paginate_connection
 
 query_repositories = """{
@@ -51,13 +52,8 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 "yaml": None,
                 "repositories": {
                     "totalCount": 2,
-                    "edges": [
-                        {"node": {"name": "a"}},
-                        {"node": {"name": "b"}},
-                    ],
-                    "pageInfo": {
-                        "hasNextPage": False,
-                    },
+                    "edges": [{"node": {"name": "a"}}, {"node": {"name": "b"}},],
+                    "pageInfo": {"hasNextPage": False,},
                 },
             }
         }
@@ -203,9 +199,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
             }
         }
         """
-        f = asyncio.Future()
-        f.set_result(repo)
-        command_mock.return_value = f
+        command_mock.return_value = repo
         query = query_repositories % (repo.author.username, repo.name)
         data = self.gql_request(query, user=self.user)
         assert data["owner"]["repository"]["name"] == repo.name

@@ -1,12 +1,13 @@
 from unittest.mock import patch
 
-from django.test import TestCase
 from django.http.cookie import SimpleCookie
+from django.test import TestCase
 from django.urls import reverse
-from codecov_auth.views.bitbucket import BitbucketLoginView
-from codecov_auth.models import Owner
 from shared.torngit.bitbucket import Bitbucket
 from shared.torngit.exceptions import TorngitServer5xxCodeError
+
+from codecov_auth.models import Owner
+from codecov_auth.views.bitbucket import BitbucketLoginView
 from utils.encryption import encryptor
 
 
@@ -94,8 +95,10 @@ def test_get_bitbucket_already_token(client, settings, mocker, db, mock_redis):
     mocker.patch.object(
         Bitbucket, "get_authenticated_user", side_effect=fake_get_authenticated_user
     )
+
     async def fake_list_teams():
         return []
+
     mocker.patch.object(Bitbucket, "list_teams", side_effect=fake_list_teams)
     mocker.patch(
         "services.task.TaskService.refresh",
@@ -178,6 +181,7 @@ class TestBitbucketLoginView(TestCase):
     def test_fetch_user_data(self):
         async def fake_list_teams():
             return []
+
         with patch.object(
             Bitbucket, "get_authenticated_user", side_effect=fake_get_authenticated_user
         ):

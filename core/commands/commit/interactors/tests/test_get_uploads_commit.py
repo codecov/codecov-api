@@ -1,10 +1,10 @@
-from asgiref.sync import async_to_sync
 import pytest
-from django.test import TransactionTestCase
+from asgiref.sync import async_to_sync
 from django.contrib.auth.models import AnonymousUser
+from django.test import TransactionTestCase
 
 from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import RepositoryFactory, CommitFactory
+from core.tests.factories import CommitFactory, RepositoryFactory
 from reports.tests.factories import UploadFactory
 
 from ..get_uploads_of_commit import GetUploadsOfCommitInteractor

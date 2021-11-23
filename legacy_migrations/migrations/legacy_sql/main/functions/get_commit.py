@@ -1,5 +1,6 @@
 def run_sql(schema_editor):
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         create or replace function get_commitid_from_short(int, text) returns text as $$
             select commitid
             from commits
@@ -134,4 +135,5 @@ def run_sql(schema_editor):
                 return commitid_;
             end;
             $$ language plpgsql stable;
-    """)
+    """
+    )

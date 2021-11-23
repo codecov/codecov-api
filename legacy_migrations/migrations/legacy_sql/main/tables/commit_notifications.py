@@ -1,5 +1,6 @@
 def run_sql(schema_editor):
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         create table commit_notifications(
             id                    bigserial primary key,
             commit_id             bigint references commits(id) on delete cascade not null,
@@ -12,4 +13,5 @@ def run_sql(schema_editor):
         );
 
         create index commit_notifications_commit_id on commit_notifications (commit_id);
-    """)
+    """
+    )

@@ -1,8 +1,10 @@
 import math
 from fractions import Fraction
+
 from ariadne import ObjectType
 from asgiref.sync import sync_to_async
 from shared.utils.merge import LineType, line_type
+
 from graphql_api.types.enums import CoverageLine
 
 file_bindable = ObjectType("File")
@@ -33,10 +35,7 @@ def resolve_content(data, info):
         return []
 
     return [
-        {
-            "line": line_report[0],
-            "coverage": get_coverage_type(line_report[1]),
-        }
+        {"line": line_report[0], "coverage": get_coverage_type(line_report[1]),}
         for line_report in file_report.lines
     ]
 

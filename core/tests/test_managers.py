@@ -1,13 +1,13 @@
 from datetime import datetime
+
+from django.contrib.auth.models import AnonymousUser
+from django.test import TestCase
 from django.utils import timezone
 
-from django.test import TestCase
-from django.contrib.auth.models import AnonymousUser
-
+from codecov_auth.tests.factories import OwnerFactory
 from core.models import Repository
 
-from .factories import RepositoryFactory, CommitFactory
-from codecov_auth.tests.factories import OwnerFactory
+from .factories import CommitFactory, RepositoryFactory
 
 
 class RepositoryQuerySetTests(TestCase):
@@ -33,47 +33,19 @@ class RepositoryQuerySetTests(TestCase):
 
     def test_get_aggregated_coverage(self):
         CommitFactory(
-            totals={
-                "n": 10,
-                "h": 5,
-                "m": 5,
-                "p": 0,
-                "c": 50.0,
-                "C": 0.0,
-            },
+            totals={"n": 10, "h": 5, "m": 5, "p": 0, "c": 50.0, "C": 0.0,},
             repository=self.repo1,
         )
         CommitFactory(
-            totals={
-                "n": 10,
-                "h": 10,
-                "m": 0,
-                "p": 0,
-                "c": 100.0,
-                "C": 0.0,
-            },
+            totals={"n": 10, "h": 10, "m": 0, "p": 0, "c": 100.0, "C": 0.0,},
             repository=self.repo1,
         )
         CommitFactory(
-            totals={
-                "n": 90,
-                "h": 40,
-                "m": 50,
-                "p": 0,
-                "c": 60.0,
-                "C": 0.0,
-            },
+            totals={"n": 90, "h": 40, "m": 50, "p": 0, "c": 60.0, "C": 0.0,},
             repository=self.repo2,
         )
         CommitFactory(
-            totals={
-                "n": 100,
-                "h": 50,
-                "m": 50,
-                "p": 0,
-                "c": 50.0,
-                "C": 0.0,
-            },
+            totals={"n": 100, "h": 50, "m": 50, "p": 0, "c": 50.0, "C": 0.0,},
             repository=self.repo2,
         )
 

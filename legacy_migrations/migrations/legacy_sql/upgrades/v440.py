@@ -1,4 +1,3 @@
-from ..main.functions.insert_commit import run_sql as insert_commit_run_sql
 from ..main.functions.aggregates import run_sql as aggregates_run_sql
 from ..main.functions.coverage import run_sql as coverage_run_sql
 from ..main.functions.get_access_token import run_sql as get_access_token_run_sql
@@ -9,13 +8,16 @@ from ..main.functions.get_graph_for import run_sql as get_graph_for_run_sql
 from ..main.functions.get_ownerid import run_sql as get_ownerid_run_sql
 from ..main.functions.get_repo import run_sql as get_repo_run_sql
 from ..main.functions.get_user import run_sql as get_user_run_sql
+from ..main.functions.insert_commit import run_sql as insert_commit_run_sql
 from ..main.functions.refresh_repos import run_sql as refresh_repos_run_sql
 from ..main.functions.update_json import run_sql as update_json_run_sql
 from ..main.functions.verify_session import run_sql as verify_session_run_sql
 
+
 # v4.4.0
 def run_sql(schema_editor):
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
          ---- Column Updates -----
         drop trigger repo_yaml_update on repos;
         drop trigger owner_yaml_updated on owners;
@@ -86,10 +88,12 @@ def run_sql(schema_editor):
 
         -- insert_commit.sql
         drop function if exists insert_commit(integer, text, text, integer, json);
-    """)
+    """
+    )
     insert_commit_run_sql(schema_editor)
 
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         -- aggregates.sql
         drop function if exists _pop_first_as_json(json[]) cascade;
         drop function if exists _max_coverage(json[]) cascade;
@@ -98,28 +102,36 @@ def run_sql(schema_editor):
         drop function _min_coverage(json[], json);
         drop aggregate agg_totals(json);
         drop function _agg_report_totals(text[], json);
-    """)
+    """
+    )
     aggregates_run_sql(schema_editor)
 
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         -- coverage.sql
         drop function if exists get_coverage(service,citext,citext,citext);
-    """)
+    """
+    )
     coverage_run_sql(schema_editor)
 
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         -- get_access_token.sql
         drop function if exists get_access_token(int);
-    """)
+    """
+    )
     get_access_token_run_sql(schema_editor)
 
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         -- get_author.sql
         drop function if exists get_author(int);
-    """)
+    """
+    )
     get_author_run_sql(schema_editor)
 
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         -- get_commit.sql
         drop function if exists get_commit_totals(int, text);
         drop function if exists get_commit_totals(int, text, text);
@@ -127,16 +139,20 @@ def run_sql(schema_editor):
         drop function if exists get_commit_minimum(int, text);
         drop function if exists get_
         commit_on_branch(int, text);
-    """)
+    """
+    )
     get_commit_run_sql(schema_editor)
 
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         -- get_customer.sql
         drop function if exists get_customer(int);
-    """)
+    """
+    )
     get_customer_run_sql(schema_editor)
 
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         -- get_graph_for.sql
         drop function if exists sum_of_file_totals_filtering_sessionids(json, int[]);
         drop function if exists extract_totals(files json, sessionids int[]);
@@ -151,41 +167,51 @@ def run_sql(schema_editor):
         drop function if exists get_graph_for_totals_branch(int, text, text, text[]);
         drop function if exists get_graph_for_commits_pull(int, text, text, text[]);
         drop function if exists get_graph_for_commits_branch(int, text, text, text[]);
-    """)
+    """
+    )
     get_graph_for_run_sql(schema_editor)
 
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         -- get_ownerid.sql
         drop function if exists get_owner(service, citext);
         drop function if exists get_teams(service, integer[]);
-    """)
+    """
+    )
     get_ownerid_run_sql(schema_editor)
 
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         -- get_repo.sql
         drop function if exists get_repo(int);
         drop function if exists get_repo(int, citext);
         drop function if exists get_repo_by_token(uuid);
         drop function if exists get_repos(int, int, int);
-    """)
+    """
+    )
     get_repo_run_sql(schema_editor)
 
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         -- get_user.sql
         drop function if exists get_user(int);
         drop function if exists get_username(int);
         drop function if exists get_users(int[]);
-    """)
+    """
+    )
     get_user_run_sql(schema_editor)
 
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         -- refresh_repos.sql
         drop function if exists refresh_teams(service, json);
         drop function if exists refresh_repos(service, json, int, boolean);
-    """)
+    """
+    )
     refresh_repos_run_sql(schema_editor)
 
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         -- update_json.sql
         drop function if exists add_key_to_json(json, text, json);
         drop function if exists add_key_to_json(json, text, integer);
@@ -194,16 +220,20 @@ def run_sql(schema_editor):
         drop function if exists update_json(json, text, json);
         drop function if exists update_json(json, text, integer);
         drop function if exists update_json(json, text, text);
-    """)
+    """
+    )
     update_json_run_sql(schema_editor)
 
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         -- verify_session.sql
         drop function if exists verify_session(text, text, uuid, sessiontype);
-    """)
+    """
+    )
     verify_session_run_sql(schema_editor)
 
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         -- Trigger Changes --
         create or replace function commits_update_heads() returns trigger as $$
         begin
@@ -319,4 +349,5 @@ def run_sql(schema_editor):
             )
         ))
         execute procedure commits_update_heads();
-    """)
+    """
+    )

@@ -1,6 +1,7 @@
 # v4.4.3
 def run_sql(schema_editor):
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         ---- Table Changes -----
         alter table owners add column parent_service_id text;
 
@@ -186,4 +187,5 @@ def run_sql(schema_editor):
 
         end;
         $$ language plpgsql volatile;
-    """)
+    """
+    )

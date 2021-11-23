@@ -1,5 +1,6 @@
 def run_sql(schema_editor):
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         create or replace function get_coverage(service, citext, citext, citext default null) returns jsonb as $$
         -- floor is temporary here
         with d as (
@@ -18,4 +19,5 @@ def run_sql(schema_editor):
             limit 1
         ) select to_jsonb(d) from d;
         $$ language sql stable;
-    """)
+    """
+    )

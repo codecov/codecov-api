@@ -7,7 +7,6 @@ class RepositoryAsUser(object):
 
 
 class RepositoryAuthInterface(object):
-
     def get_scopes():
         raise NotImplementedError()
 

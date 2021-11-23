@@ -1,5 +1,6 @@
 def run_sql(schema_editor):
-    schema_editor.execute("""  
+    schema_editor.execute(
+        """  
         create table branches(
             repoid              int references repos on delete cascade not null,
             updatestamp         timestamptz not null,
@@ -12,4 +13,5 @@ def run_sql(schema_editor):
         create index branches_repoid on branches (repoid);
 
         create unique index branches_repoid_branch on branches (repoid, branch);
-    """)
+    """
+    )

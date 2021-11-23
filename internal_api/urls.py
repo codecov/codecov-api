@@ -1,26 +1,23 @@
-from django.urls import path, include
-from django.conf import urls, settings
+from django.conf import settings, urls
+from django.urls import include, path
+from rest_framework.exceptions import server_error
+from rest_framework.routers import DefaultRouter
 
+from internal_api.branch.views import BranchViewSet
+from internal_api.commit.views import CommitsViewSet
+from internal_api.compare.views import CompareViewSet
 from internal_api.owner.views import (
-    OwnerViewSet,
-    UserViewSet,
-    InvoiceViewSet,
     AccountDetailsViewSet,
+    InvoiceViewSet,
+    OwnerViewSet,
     PlanViewSet,
+    UserViewSet,
 )
 from internal_api.pull.views import PullViewSet
-from internal_api.commit.views import CommitsViewSet
-from internal_api.branch.views import BranchViewSet
 from internal_api.repo.views import RepositoryViewSet
-from internal_api.compare.views import CompareViewSet
-
-
-from rest_framework.routers import DefaultRouter
-from rest_framework.exceptions import server_error
-
 from utils.routers import OptionalTrailingSlashRouter, RetrieveUpdateDestroyRouter
-from .error_views import not_found
 
+from .error_views import not_found
 
 urls.handler404 = not_found
 urls.handler500 = server_error

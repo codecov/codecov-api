@@ -3,7 +3,7 @@ from unittest.mock import patch
 from django.core.exceptions import ObjectDoesNotExist
 from django.test import TransactionTestCase
 
-from codecov_auth.tests.factories import SessionFactory, OwnerFactory
+from codecov_auth.tests.factories import OwnerFactory, SessionFactory
 
 
 class LogoutViewTest(TransactionTestCase):

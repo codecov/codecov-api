@@ -1,5 +1,6 @@
 def run_sql(schema_editor):
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         create or replace function owner_yaml_updated() returns trigger as $$
         begin
             if (new.yaml->'codecov'->'bot')::citext is distinct from 'null' then
@@ -92,4 +93,5 @@ def run_sql(schema_editor):
         for each row
         when (new.username is not null and new.username is distinct from old.username)
         execute procedure owners_before_insert_or_update();
-    """)
+    """
+    )

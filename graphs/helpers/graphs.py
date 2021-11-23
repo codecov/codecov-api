@@ -1,14 +1,16 @@
-from graphs.settings import settings
 from operator import itemgetter
+
+from graphs.settings import settings
+
 from .graph_utils import (
-    _squarify,
     _layout,
-    _worst_ratio,
-    _max_aspect_ratio,
-    _svg_rect,
     _make_svg,
-    _tree_height,
+    _max_aspect_ratio,
+    _squarify,
     _svg_polar_rect,
+    _svg_rect,
+    _tree_height,
+    _worst_ratio,
 )
 
 

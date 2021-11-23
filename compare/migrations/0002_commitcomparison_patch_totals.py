@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('compare', '0001_initial'),
+        ("compare", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='commitcomparison',
-            name='patch_totals',
+            model_name="commitcomparison",
+            name="patch_totals",
             field=models.JSONField(null=True),
         ),
     ]

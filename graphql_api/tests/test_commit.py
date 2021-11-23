@@ -1,18 +1,20 @@
-import yaml
 import asyncio
 import datetime
-from unittest.mock import patch
-from django.test import TransactionTestCase
-from core.models import Commit
+from unittest.mock import AsyncMock, patch
 
+import yaml
+from django.test import TransactionTestCase
 from shared.reports.types import LineSession
+
 from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import RepositoryFactory, CommitFactory
+from core.models import Commit
+from core.tests.factories import CommitFactory, RepositoryFactory
 from reports.tests.factories import (
     CommitReportFactory,
-    UploadFactory,
     ReportLevelTotalsFactory,
+    UploadFactory,
 )
+
 from .helper import GraphQLTestHelper, paginate_connection
 
 query_commit = """
@@ -42,6 +44,7 @@ query FetchCommits($org: String!, $repo: String!) {
   }
 }
 """
+
 
 class MockCoverage(object):
     def __init__(self, cov):
@@ -110,11 +113,13 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
 
     def test_fetch_commits(self):
         query = query_commits % "message,commitid,ciPassed"
-        self.repo_2 = RepositoryFactory(author=self.org, name="test-repo", private=False)
+        self.repo_2 = RepositoryFactory(
+            author=self.org, name="test-repo", private=False
+        )
         commits_in_db = [
-            CommitFactory(repository=self.repo_2, commitid = 123),
-            CommitFactory(repository=self.repo_2, commitid = 456),
-            CommitFactory(repository=self.repo_2, commitid = 789),
+            CommitFactory(repository=self.repo_2, commitid=123),
+            CommitFactory(repository=self.repo_2, commitid=456),
+            CommitFactory(repository=self.repo_2, commitid=789),
         ]
         variables = {
             "org": self.org.username,
@@ -123,7 +128,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commits = paginate_connection(data["owner"]["repository"]["commits"])
         commits_commitid = [commit["commitid"] for commit in commits]
-        assert sorted(commits_commitid) == ['123', '456', '789']
+        assert sorted(commits_commitid) == ["123", "456", "789"]
 
     def test_fetch_parent_commit(self):
         query = query_commit % "parent { commitid } "
@@ -137,7 +142,9 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         assert commit["parent"]["commitid"] == self.parent_commit.commitid
 
     def test_resolve_commit_without_parent(self):
-        self.commit_without_parent = CommitFactory(repository=self.repo, parent_commit_id=None)
+        self.commit_without_parent = CommitFactory(
+            repository=self.repo, parent_commit_id=None
+        )
         query = query_commit % "parent { commitid } "
         variables = {
             "org": self.org.username,
@@ -177,7 +184,10 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             {"provider": session_two.provider},
         ]
 
-    @patch("core.commands.commit.commit.CommitCommands.get_final_yaml")
+    @patch(
+        "core.commands.commit.commit.CommitCommands.get_final_yaml",
+        new_callable=AsyncMock,
+    )
     def test_fetch_commit_yaml_call_the_command(self, command_mock):
         query = query_commit % "yaml"
         variables = {
@@ -188,9 +198,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
         fake_config = {"codecov": "yes"}
-        f = asyncio.Future()
-        f.set_result(fake_config)
-        command_mock.return_value = f
+        command_mock.return_value = fake_config
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
         assert commit["yaml"] == yaml.dump(fake_config)
@@ -219,9 +227,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             ],
             "totals": {"coverage": 83.0},
         }
-        f = asyncio.Future()
-        f.set_result("file content")
-        content_mock.return_value = f
+        content_mock.return_value = "file content"
 
         report_mock.return_value = MockReport()
         data = self.gql_request(query, variables=variables)
@@ -248,9 +254,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             "coverage": [],
             "totals": None,
         }
-        f = asyncio.Future()
-        f.set_result("file content")
-        content_mock.return_value = f
+        content_mock.return_value = "file content"
 
         report_mock.return_value = EmptyReport()
         data = self.gql_request(query, variables=variables)
@@ -286,9 +290,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
         fake_compare = {"state": "PENDING"}
-        f = asyncio.Future()
-        f.set_result(fake_compare)
-        command_mock.return_value = f
+        command_mock.return_value = fake_compare
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
         assert commit["compareWithParent"] == fake_compare
@@ -304,13 +306,9 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
         fake_compare = [
-            {
-                "head_name": "src/config.js",
-            },
+            {"head_name": "src/config.js",},
         ]
-        f = asyncio.Future()
-        f.set_result(fake_compare)
-        command_mock.return_value = f
+        command_mock.return_value = fake_compare
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
         assert commit["compareWithParent"]["impactedFiles"][0] == {

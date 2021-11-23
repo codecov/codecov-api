@@ -1,7 +1,9 @@
 from os import sync
+
 from ariadne import ObjectType
-from graphql_api.dataloader.owner import load_owner_by_id
+
 from graphql_api.dataloader.commit import load_commit_by_id
+from graphql_api.dataloader.owner import load_owner_by_id
 from graphql_api.types.enums.enums import PullRequestState
 
 pull_bindable = ObjectType("Pull")

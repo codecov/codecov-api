@@ -1,19 +1,20 @@
 import logging
-from contextlib import suppress
 from asyncio import iscoroutine
-from django.conf import settings
+from contextlib import suppress
 
-from sentry_sdk import capture_exception
 from ariadne import format_error
-from asgiref.sync import sync_to_async
-from django.contrib.auth.models import AnonymousUser
-
-from codecov_auth.authentication import CodecovTokenAuthentication
-from codecov.commands.exceptions import BaseException
-from codecov.commands.executor import get_executor_from_request
 
 # from .ariadne.views import GraphQLView
 from ariadne_django.views import GraphQLAsyncView
+from asgiref.sync import sync_to_async
+from django.conf import settings
+from django.contrib.auth.models import AnonymousUser
+from sentry_sdk import capture_exception
+
+from codecov.commands.exceptions import BaseException
+from codecov.commands.executor import get_executor_from_request
+from codecov_auth.authentication import CodecovTokenAuthentication
+
 from .schema import schema
 from .tracing import get_tracer_extension
 

@@ -3,6 +3,7 @@ from asgiref.sync import sync_to_async
 
 from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.enums import OrderingDirection
+from datetime import datetime
 
 upload_bindable = ObjectType("Upload")
 upload_bindable.set_alias("flags", "flag_names")

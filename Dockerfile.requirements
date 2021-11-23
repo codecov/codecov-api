@@ -1,5 +1,5 @@
 # BUILD STAGE - Download dependencies from GitHub that require SSH access
-FROM            python:3.7.9-alpine3.13 as build
+FROM            python:3.9.7-alpine3.14 as build
 
 RUN             apk update \
                 && apk add --update --no-cache \
@@ -34,7 +34,7 @@ RUN             pip wheel -r /requirements.txt
 
 
 # RUNTIME STAGE - Copy packages from build stage and install runtime dependencies
-FROM            python:3.7.9-alpine3.13
+FROM            python:3.9.7-alpine3.14
 
 RUN             apk upgrade expat binutils busybox && \
                 apk add --no-cache postgresql-libs && \

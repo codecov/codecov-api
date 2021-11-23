@@ -1,6 +1,7 @@
 # v4.4.8
 def run_sql(schema_editor):
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         --- transaction friendly enum column upates. See: https://stackoverflow.com/questions/1771543/adding-a-new-value-to-an-existing-enum-type#7834949 --
 
 
@@ -22,4 +23,5 @@ def run_sql(schema_editor):
         ALTER TABLE ONLY owners ALTER COLUMN plan SET DEFAULT 'users-free';	-- ALTER TABLE ONLY owners ALTER COLUMN plan SET DEFAULT 'users-free';
         ALTER TABLE ONLY owners ALTER COLUMN plan_user_count SET DEFAULT 5;	-- ALTER TABLE ONLY owners ALTER COLUMN plan_user_count SET DEFAULT 5;
         ALTER TABLE ONLY owners ALTER COLUMN plan_auto_activate SET DEFAULT true;	-- ALTER TABLE ONLY owners ALTER COLUMN plan_auto_activate SET DEFAULT true;
-    """)
+    """
+    )

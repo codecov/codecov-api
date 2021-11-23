@@ -1,5 +1,6 @@
 def run_sql(schema_editor):
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         create table pulls(
             repoid              int references repos on delete cascade not null,
             pullid              int not null,
@@ -19,4 +20,5 @@ def run_sql(schema_editor):
         create unique index pulls_repoid_pullid on pulls (repoid, pullid);
 
         create index pulls_repoid_state_open on pulls (repoid) where state = 'open';
-    """)
+    """
+    )

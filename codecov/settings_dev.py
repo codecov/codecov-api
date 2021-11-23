@@ -1,6 +1,6 @@
-from .settings_base import *
 import logging
 
+from .settings_base import *
 
 DEBUG = True
 ALLOWED_HOSTS = get_config("setup", "api_allowed_hosts", default=["localhost"])

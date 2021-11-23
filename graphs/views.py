@@ -1,21 +1,23 @@
 import json
-from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
-from rest_framework import exceptions
-from .helpers.badge import get_badge, format_coverage_precision
-from shared.reports.resources import Report
-from .helpers.graphs import tree, icicle, sunburst
-from codecov_auth.models import Owner
-from core.models import Repository, Branch, Pull
-from internal_api.mixins import RepoPropertyMixin
-from django.http import Http404
-from django.core.exceptions import ObjectDoesNotExist
-from rest_framework.negotiation import DefaultContentNegotiation
-from rest_framework.exceptions import NotFound
-from graphs.settings import settings
-from .mixins import GraphBadgeAPIMixin
-
 import logging
+
+from django.core.exceptions import ObjectDoesNotExist
+from django.http import Http404
+from rest_framework import exceptions
+from rest_framework.exceptions import NotFound
+from rest_framework.negotiation import DefaultContentNegotiation
+from rest_framework.permissions import AllowAny
+from rest_framework.views import APIView
+from shared.reports.resources import Report
+
+from codecov_auth.models import Owner
+from core.models import Branch, Pull, Repository
+from graphs.settings import settings
+from internal_api.mixins import RepoPropertyMixin
+
+from .helpers.badge import format_coverage_precision, get_badge
+from .helpers.graphs import icicle, sunburst, tree
+from .mixins import GraphBadgeAPIMixin
 
 log = logging.getLogger(__name__)
 

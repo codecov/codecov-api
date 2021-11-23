@@ -1,14 +1,14 @@
 from ariadne import MutationType
 
-from .create_api_token import resolve_create_api_token, error_create_api_token
+from .create_api_token import error_create_api_token, resolve_create_api_token
+from .delete_session import error_delete_session, resolve_delete_session
+from .onboard_user import error_onboard_user, resolve_onboard_user
+from .set_yaml_on_owner import error_set_yaml_error, resolve_set_yaml_on_owner
 from .sync_with_git_provider import (
-    resolve_sync_with_git_provider,
     error_sync_with_git_provider,
+    resolve_sync_with_git_provider,
 )
-from .set_yaml_on_owner import resolve_set_yaml_on_owner, error_set_yaml_error
-from .delete_session import resolve_delete_session, error_delete_session
-from .update_profile import resolve_update_profile, error_update_profile
-from .onboard_user import resolve_onboard_user, error_onboard_user
+from .update_profile import error_update_profile, resolve_update_profile
 
 mutation_bindable = MutationType()
 

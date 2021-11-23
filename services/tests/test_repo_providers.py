@@ -1,15 +1,14 @@
 from unittest.mock import patch
 
-from shared.torngit import Github, Bitbucket, Gitlab
+from django.conf import settings
+from django.contrib.auth.models import AnonymousUser
+from shared.torngit import Bitbucket, Github, Gitlab
 
 from codecov.tests.base_test import InternalAPITest
-from core.tests.factories import RepositoryFactory
 from codecov_auth.tests.factories import OwnerFactory
-from services.repo_providers import TorngitInitializationFailed, RepoProviderService
-
+from core.tests.factories import RepositoryFactory
+from services.repo_providers import RepoProviderService, TorngitInitializationFailed
 from utils.encryption import encryptor
-from django.contrib.auth.models import AnonymousUser
-from django.conf import settings
 
 
 def mock_get_config_verify_ssl_true(*args):
