@@ -13,6 +13,7 @@ class GetFileContentInteractor(BaseInteractor):
             )
             content = await repository_service.get_source(path, commit.commitid)
             return content.get("content").decode("utf-8")
+        # TODO raise this to the API so we can handle it.
         except Exception as e:
             log.info(
                 "GetFileContentInteractor - exception raised",

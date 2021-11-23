@@ -54,3 +54,13 @@ class ReportLevelTotalsFactory(DjangoModelFactory):
     misses = factory.Faker("pyint")
     partials = factory.Faker("pyint")
     files = factory.Faker("pyint")
+
+
+class UploadErrorFactory(DjangoModelFactory):
+    class Meta:
+        model = models.UploadError
+
+    report_session = factory.SubFactory(UploadFactory)
+    error_code = factory.Iterator(
+        ["file_not_in_storage", "report_expired", "report_empty"]
+    )

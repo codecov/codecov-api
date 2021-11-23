@@ -1,5 +1,4 @@
 type Commit {
-  errors: [ReportError]
   state: String
   message: String
   createdAt: DateTime
@@ -26,8 +25,4 @@ type UploadConnection {
 type UploadEdge {
   cursor: String!
   node: Upload!
-}
-
-type ReportError {
-  errorCode: String!
 }

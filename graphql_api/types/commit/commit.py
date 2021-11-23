@@ -7,20 +7,10 @@ from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.enums import OrderingDirection
 
 commit_bindable = ObjectType("Commit")
-report_error_bindable = ObjectType("ReportError")
 
 commit_bindable.set_alias("createdAt", "timestamp")
 commit_bindable.set_alias("pullId", "pullid")
 commit_bindable.set_alias("branchName", "branch")
-report_error_bindable.set_alias("errorCode", "error_code")
-
-
-@commit_bindable.field("errors")
-def resolve_file(commit, info):
-    print("Terry", commit.full_report)
-    command = info.context["executor"].get_command("commit")
-    commit_error = command.fetch_commit_errors(commit.state, commit.commitid, 0)
-    return commit_error
 
 
 @commit_bindable.field("coverageFile")

@@ -10,4 +10,20 @@ type Upload {
   uploadType: String
   jobCode: String
   buildCode: String
+  errors: UploadErrorsConnection
+}
+
+type UploadErrorsConnection {
+  edges: [UploadErrorsEdge]!
+  totalCount: Int!
+  pageInfo: PageInfo!
+}
+
+type UploadErrorsEdge {
+  cursor: String!
+  node: UploadError!
+}
+
+type UploadError{
+  errorCode: String!
 }
