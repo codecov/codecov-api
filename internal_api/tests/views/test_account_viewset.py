@@ -89,7 +89,7 @@ class AccountViewSetTests(APITestCase):
             "inactive_user_count": 1,
             "plan": {
                 "marketing_name": "Basic",
-                "value": "users-free",
+                "value": "users-basic",
                 "billing_rate": None,
                 "base_unit_price": 0,
                 "benefits": [
