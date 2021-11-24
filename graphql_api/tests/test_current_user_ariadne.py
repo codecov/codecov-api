@@ -42,7 +42,13 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
     def test_when_tracking_metadata(self):
         query = "{ me { trackingMetadata { ownerid } } }"
         data = self.gql_request(query, user=self.user)
-        assert data == {"me": {"trackingMetadata": {"ownerid": self.user.ownerid,},}}
+        assert data == {
+            "me": {
+                "trackingMetadata": {
+                    "ownerid": self.user.ownerid,
+                },
+            }
+        }
 
     def test_fetching_viewable_repositories(self):
         org_1 = OwnerFactory()
