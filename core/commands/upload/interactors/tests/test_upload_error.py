@@ -18,8 +18,6 @@ class GetUploadErrorInteractorTest(TransactionTestCase):
     def setUp(self):
         self.org = OwnerFactory()
         self.repo = RepositoryFactory(author=self.org, private=False)
-        self.commit = CommitFactory(repository=self.repo, state="error")
-        self.commit_report = CommitReportFactory(commit=self.commit)
 
     # helper to execute the interactor
     def execute(self, user, *args):
@@ -28,25 +26,41 @@ class GetUploadErrorInteractorTest(TransactionTestCase):
         return GetUploadErrorInteractor(current_user, service).execute(*args)
 
     def test_get_upload_errors(self):
-        upload = UploadFactory(report=self.commit_report)
+        commit = CommitFactory(repository=self.repo, state="error")
+        commit_report = CommitReportFactory(commit=commit)
+        upload = UploadFactory(report=commit_report)
+
         test_errors = [
             UploadErrorFactory(report_session=upload),
-            UploadErrorFactory(report_session=upload, error_code="test"),
-            UploadErrorFactory(report_session=upload, error_code="banana"),
+            UploadErrorFactory(report_session=upload),
+            UploadErrorFactory(report_session=upload),
         ]
-        interactor_errors = async_to_sync(self.execute)(None, self.commit)
+
+        interactor_errors = async_to_sync(self.execute)(None, commit)
 
         for test_error in test_errors:
             [current_error] = interactor_errors.filter(
                 error_code=test_error.error_code
             ).values()
 
-            assert current_error["error_code"] == test_error.error_code.test
+            assert current_error["error_code"] == test_error.error_code
 
-    # def test_get_upload_errors_no_error(self):
-    #     # Errors not related to the requested upload
-    #     UploadFactory()
-    #     UploadFactory()
-    #     UploadFactory()
-    #     errors = async_to_sync(self.execute)(None, self.commit)
-    #     assert errors is None
+    def test_get_upload_errors_no_error(self):
+        my_commit = CommitFactory(repository=self.repo, state="complete")
+        other_commit = CommitFactory(repository=self.repo, state="error")
+        my_report = CommitReportFactory(commit=my_commit)
+        other_report = CommitReportFactory(commit=other_commit)
+        my_upload = UploadFactory(report=my_report)
+        other_upload = UploadFactory(report=other_report)
+
+        test_errors = [
+            UploadErrorFactory(report_session=other_upload),
+            UploadErrorFactory(report_session=other_upload),
+            UploadErrorFactory(report_session=other_upload),
+        ]
+
+        interactor_errors = async_to_sync(self.execute)(None, my_commit)
+
+        for test_error in test_errors:
+            for error in interactor_errors.values():
+                assert error["error_code"] != test_error.error_code
