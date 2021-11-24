@@ -1,6 +1,6 @@
-from asgiref.sync import sync_to_async
 import yaml
 from ariadne import ObjectType
+from asgiref.sync import sync_to_async
 
 from graphql_api.dataloader.commit import load_commit_by_id
 from graphql_api.dataloader.owner import load_owner_by_id
@@ -31,6 +31,7 @@ def resolve_file(commit, info, path, flags=None):
 def resolve_totals(commit, info):
     command = info.context["executor"].get_command("commit")
     return command.fetch_totals(commit)
+
 
 @commit_bindable.field("author")
 def resolve_author(commit, info):
