@@ -52,13 +52,8 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 "yaml": None,
                 "repositories": {
                     "totalCount": 2,
-                    "edges": [
-                        {"node": {"name": "a"}},
-                        {"node": {"name": "b"}},
-                    ],
-                    "pageInfo": {
-                        "hasNextPage": False,
-                    },
+                    "edges": [{"node": {"name": "a"}}, {"node": {"name": "b"}},],
+                    "pageInfo": {"hasNextPage": False,},
                 },
             }
         }
