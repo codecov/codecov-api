@@ -1,3 +1,4 @@
+from asgiref.sync import sync_to_async
 import yaml
 from ariadne import ObjectType
 
@@ -28,9 +29,8 @@ def resolve_file(commit, info, path, flags=None):
 
 @commit_bindable.field("totals")
 def resolve_totals(commit, info):
-    if commit.commitreport and hasattr(commit.commitreport, "reportleveltotals"):
-        return commit.commitreport.reportleveltotals
-
+    command = info.context["executor"].get_command("commit")
+    return command.fetch_totals(commit)
 
 @commit_bindable.field("author")
 def resolve_author(commit, info):
