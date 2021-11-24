@@ -3,8 +3,8 @@ from compare.commands.compare import CompareCommands
 from core.commands.branch import BranchCommands
 from core.commands.commit import CommitCommands
 from core.commands.pull import PullCommands
-from core.commands.upload import UploadCommands
 from core.commands.repository import RepositoryCommands
+from core.commands.upload import UploadCommands
 from utils.services import get_long_service_name
 
 mapping = {

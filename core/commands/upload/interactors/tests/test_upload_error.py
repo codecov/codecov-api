@@ -1,14 +1,14 @@
 import pytest
 from asgiref.sync import async_to_sync
-from django.test import TransactionTestCase
 from django.contrib.auth.models import AnonymousUser
+from django.test import TransactionTestCase
 
 from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import RepositoryFactory, CommitFactory
+from core.tests.factories import CommitFactory, RepositoryFactory
 from reports.tests.factories import (
     CommitReportFactory,
-    UploadFactory,
     UploadErrorFactory,
+    UploadFactory,
 )
 
 from ..get_upload_error import GetUploadErrorInteractor

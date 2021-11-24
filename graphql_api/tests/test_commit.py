@@ -306,7 +306,9 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
         fake_compare = [
-            {"head_name": "src/config.js",},
+            {
+                "head_name": "src/config.js",
+            },
         ]
         command_mock.return_value = fake_compare
         data = self.gql_request(query, variables=variables)
