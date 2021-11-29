@@ -4,6 +4,7 @@ import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
 
 from codecov_auth.helpers import current_user_part_of_org
+from upload.helpers import get_uploads_per_user
 from graphql_api.actions.repository import list_repository_for_owner
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
 from graphql_api.helpers.connection import (
@@ -54,3 +55,8 @@ def resolve_yaml(owner, info):
 async def resolve_repository(owner, info, name):
     command = info.context["executor"].get_command("repository")
     return await command.fetch_repository(owner, name)
+
+
+@owner_bindable.field("numberOfUploads")
+async def resolve_number_of_uploads(owner, info, **kwargs):
+    return get_uploads_per_user(owner)
