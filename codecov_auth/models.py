@@ -9,7 +9,7 @@ from hashlib import md5
 from django.contrib.postgres.fields import ArrayField, CITextField
 from django.db import models
 
-from billing.constants import FREE_PLAN_NAME, USER_PLAN_REPRESENTATIONS
+from billing.constants import BASIC_PLAN_NAME, USER_PLAN_REPRESENTATIONS
 from codecov.models import BaseCodecovModel
 from codecov_auth.constants import (
     AVATAR_GITHUB_BASE_URL,
@@ -93,7 +93,7 @@ class Owner(models.Model):
     private_access = models.BooleanField(null=True)
     staff = models.BooleanField(null=True, default=False)
     cache = models.JSONField(null=True)
-    plan = models.TextField(null=True, default=FREE_PLAN_NAME)  # Really an ENUM in db
+    plan = models.TextField(null=True, default=BASIC_PLAN_NAME)  # Really an ENUM in db
     plan_provider = models.TextField(
         null=True, choices=PlanProviders.choices
     )  # postgres enum containing only "github"
