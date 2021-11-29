@@ -39,7 +39,6 @@ def find_imported_modules(filename):
         pass
 
 
-
 def generate_files_to_be_cythonized():
     files_to_exclude = []
     locations = get_relevant_paths(".")
@@ -58,14 +57,41 @@ def generate_files_to_be_cythonized():
 
 
 def main():
-    hidden_imports = {"billing.migrations", "celery_config", "codecov.graphs", "core.migrations", "reports.migrations",
-                      "codecov_auth.migrations", "compare.migrations", "corsheaders", "corsheaders.apps",
-                      "corsheaders.middleware", "dataclasses", "hooks", "profiling.migrations", "pythonjsonlogger",
-                      "pythonjsonlogger.jsonlogger", "rest_framework", "rest_framework.apps", "rest_framework.metadata",
-                      "rest_framework.mixins", "rest_framework.filters", "rest_framework.status", "utils",
-                      "utils.config", "utils.encryption", "utils.logging_configuration", "ariadne_django.apps",
-                      "whitenoise", "whitenoise.middleware", "graphql_api", "legacy_migrations",
-                      "legacy_migrations.migrations", "shared.celery_config", "kombu.transport.pyamqp"}
+    hidden_imports = {
+        "billing.migrations",
+        "celery_config",
+        "codecov.graphs",
+        "core.migrations",
+        "reports.migrations",
+        "codecov_auth.migrations",
+        "compare.migrations",
+        "corsheaders",
+        "corsheaders.apps",
+        "corsheaders.middleware",
+        "dataclasses",
+        "hooks",
+        "profiling.migrations",
+        "pythonjsonlogger",
+        "pythonjsonlogger.jsonlogger",
+        "rest_framework",
+        "rest_framework.apps",
+        "rest_framework.metadata",
+        "rest_framework.mixins",
+        "rest_framework.filters",
+        "rest_framework.status",
+        "utils",
+        "utils.config",
+        "utils.encryption",
+        "utils.logging_configuration",
+        "ariadne_django.apps",
+        "whitenoise",
+        "whitenoise.middleware",
+        "graphql_api",
+        "legacy_migrations",
+        "legacy_migrations.migrations",
+        "shared.celery_config",
+        "kombu.transport.pyamqp",
+    }
 
     base = celery.__file__.rsplit("/", 1)[0]
     hidden_imports.update(

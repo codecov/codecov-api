@@ -5,5 +5,5 @@ from .enums import (
     PullRequestState,
     RepositoryOrdering,
     TypeProjectOnboarding,
-    GoalOnboarding
+    GoalOnboarding,
 )
