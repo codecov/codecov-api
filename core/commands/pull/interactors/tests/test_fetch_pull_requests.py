@@ -95,7 +95,7 @@ class FetchPullRequestsInteractorTest(TransactionTestCase):
         assert len(pull_request) is 6
 
         # Execute without open filter
-        self.filters = {"state": PullStates.OPEN}
+        self.filters = {"state": [PullStates.OPEN]}
         pull_request = async_to_sync(self.execute)(
             None, self.repository_with_pull_requests, self.filters
         )
@@ -104,7 +104,7 @@ class FetchPullRequestsInteractorTest(TransactionTestCase):
             assert pull.state == PullStates.OPEN.value
 
         # Execute without closed filter
-        self.filters = {"state": PullStates.CLOSED}
+        self.filters = {"state": [PullStates.CLOSED]}
         pull_request = async_to_sync(self.execute)(
             None, self.repository_with_pull_requests, self.filters
         )
@@ -113,10 +113,17 @@ class FetchPullRequestsInteractorTest(TransactionTestCase):
             assert pull.state == PullStates.CLOSED.value
 
         # Execute without merged filter
-        self.filters = {"state": PullStates.MERGED}
+        self.filters = {"state": [PullStates.MERGED]}
         pull_request = async_to_sync(self.execute)(
             None, self.repository_with_pull_requests, self.filters
         )
         assert len(pull_request) is 1
         for pull in pull_request:
             assert pull.state == PullStates.MERGED.value
+
+        # Execute without merged filter
+        self.filters = {"state": [PullStates.MERGED, PullStates.OPEN]}
+        pull_request = async_to_sync(self.execute)(
+            None, self.repository_with_pull_requests, self.filters
+        )
+        assert len(pull_request) is 4

@@ -7,8 +7,9 @@ class FetchPullRequestsInteractor(BaseInteractor):
     def apply_filters_to_pulls_queryset(self, queryset, filters):
         filters = filters or {}
         state = filters.get("state")
-        if state:
-            queryset = queryset.filter(state=state.value)
+        if state and len(state) > 0:
+            state_values = [s.value for s in state]
+            queryset = queryset.filter(state__in=state_values)
         return queryset
 
     @sync_to_async
