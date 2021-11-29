@@ -46,11 +46,17 @@ def resolve_pull(repository, info, id):
 
 
 @repository_bindable.field("pulls")
-async def resolve_pulls(repository, info, **kwargs):
+@convert_kwargs_to_snake_case
+async def resolve_pulls(
+    repository, info, filters=None, ordering_direction=OrderingDirection.DESC, **kwargs
+):
     command = info.context["executor"].get_command("pull")
-    queryset = await command.fetch_pull_requests(repository)
+    queryset = await command.fetch_pull_requests(repository, filters)
     return await queryset_to_connection(
-        queryset, ordering="id", ordering_direction=OrderingDirection.ASC, **kwargs
+        queryset,
+        ordering="updatestamp",
+        ordering_direction=ordering_direction,
+        **kwargs,
     )
 
 
