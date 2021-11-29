@@ -1,13 +1,13 @@
 from ariadne import EnumType
 
 from .enums import (
-    RepositoryOrdering,
-    OrderingDirection,
-    CoverageLine,
     ComparisonError,
-    TypeProjectOnboarding,
+    CoverageLine,
     GoalOnboarding,
+    OrderingDirection,
     PullRequestState,
+    RepositoryOrdering,
+    TypeProjectOnboarding,
 )
 
 enum_types = [

@@ -1,7 +1,6 @@
 from django.test import TransactionTestCase
 
 from codecov_auth.tests.factories import OwnerFactory
-
 from graphql_api.tests.helper import GraphQLTestHelper, paginate_connection
 
 

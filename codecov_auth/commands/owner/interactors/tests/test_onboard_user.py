@@ -3,10 +3,9 @@ from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
 
 from codecov.commands.exceptions import Unauthenticated, Unauthorized, ValidationError
+from codecov_auth.commands.owner.interactors.onboard_user import OnboardUserInteractor
 from codecov_auth.models import OwnerProfile
 from codecov_auth.tests.factories import OwnerFactory
-
-from codecov_auth.commands.owner.interactors.onboard_user import OnboardUserInteractor
 
 
 class OnboardUserInteractorTest(TransactionTestCase):

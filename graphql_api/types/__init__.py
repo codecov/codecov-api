@@ -6,7 +6,7 @@ from .branch import branch, branch_bindable
 from .commit import commit, commit_bindable
 from .comparison import comparison, comparison_bindable
 from .coverage_totals import coverage_totals, coverage_totals_bindable
-from .enums import enums, enum_types
+from .enums import enum_types, enums
 from .file import commit_file, file_bindable
 from .me import me, me_bindable
 from .mutation import mutation, mutation_resolvers
