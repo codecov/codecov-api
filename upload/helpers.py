@@ -440,20 +440,6 @@ def check_commit_upload_constraints(commit: Commit):
                     raise Throttled()
 
 
-def get_uploads_per_user(owner: Owner):
-    limit = USER_PLAN_REPRESENTATIONS[owner.plan].get(
-        "monthly_uploads_limit"
-    )
-    if limit is not None:
-        uploads_used = ReportSession.objects.filter(
-            report__commit__repository__author_id=owner.ownerid,
-            created_at__gte=timezone.now() - timedelta(days=30),
-            report__commit__timestamp__gte=timezone.now() - timedelta(days=60),
-            upload_type="uploaded",
-        )[:limit].count()
-        return uploads_used
-
-
 def validate_upload(upload_params, repository, redis):
     """
     Make sure the upload can proceed and, if so, activate the repository if needed.

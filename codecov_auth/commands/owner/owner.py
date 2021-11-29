@@ -9,6 +9,7 @@ from .interactors.onboard_user import OnboardUserInteractor
 from .interactors.set_yaml_on_owner import SetYamlOnOwnerInteractor
 from .interactors.trigger_sync import TriggerSyncInteractor
 from .interactors.update_profile import UpdateProfileInteractor
+from .interactors.get_uploads_number_per_user import GetUploadsNumberPerUserInteractor
 
 
 class OwnerCommands(BaseCommand):
@@ -35,3 +36,6 @@ class OwnerCommands(BaseCommand):
 
     def onboard_user(self, params):
         return self.get_interactor(OnboardUserInteractor).execute(params)
+
+    def get_uploads_number_per_user(self, owner):
+        return self.get_interactor(GetUploadsNumberPerUserInteractor).execute(owner)
