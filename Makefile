@@ -35,16 +35,25 @@ build.enterprise-private:
 		--label "org.vcs-branch"="$(branch)" \
 		--squash
 
+run.enterprise:
+	docker-compose -f docker-compose-enterprise.yml up -d
+
+enterprise:
+	$(MAKE) build
+	$(MAKE) build.enterprise
+	$(MAKE) run.enterprise
+
 check-for-migration-conflicts:
 	python manage.py check_for_migration_conflicts
 
 push.enterprise-private:
 	docker push codecov/enterprise-private-api:${release_version}-${sha}
 
-push.enterprise:
-	docker push codecov/enterprise-api:${release_version}
-	docker tag codecov/enterprise-api:${release_version} codecov/enterprise-api:latest-stable
-	docker push codecov/enterprise-api:latest-stable
+# we don't want to do this locally anymore. Uncomment if you need it.
+# push.enterprise:
+# 	docker push codecov/enterprise-api:${release_version}
+# 	docker tag codecov/enterprise-api:${release_version} codecov/enterprise-api:latest-stable
+# 	docker push codecov/enterprise-api:latest-stable
 
 test:
 	python -m pytest --cov=./

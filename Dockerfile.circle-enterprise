@@ -57,16 +57,15 @@ COPY enterprise/generate_pyinstaller_args.py /pyinstaller/generate_pyinstaller_a
 COPY enterprise/hooks /hooks
 
 # Not the cleanest,  but this helps with layer caching.
-RUN  chmod a+x /pyinstaller/*
-RUN         ["/pyinstaller/cythonize_everything.sh"]
+RUN chmod a+x /pyinstaller/*
+RUN ["/pyinstaller/cythonize_everything.sh"]
 
 COPY enterprise/package.sh /pyinstaller/package.sh
-RUN  chmod a+x /pyinstaller/*
-RUN         ["/pyinstaller/package.sh"]
+RUN chmod a+x /pyinstaller/*
+RUN ["/pyinstaller/package.sh"]
 ENV RUN_ENV=ENTERPRISE
 # Create the codecov user to run the container as
- RUN             addgroup -S application \
-     && adduser -S codecov -G application
+RUN addgroup -S application && adduser -S codecov -G application
 RUN mkdir -p /config && chown codecov:application /config
 
 # copy the enterprise settings module.
@@ -75,7 +74,6 @@ COPY ./enterprise.sh /home/enterprise.sh
 RUN chown codecov:application /home/enterprise.sh && \
     chmod +x /home/enterprise.sh && \
     chown codecov:application /home/api
-
 
 FROM alpine:3.14
 
