@@ -3,6 +3,7 @@ import uuid
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.urls import reverse
+from shared.reports.enums import UploadState, UploadType
 
 from codecov.models import BaseCodecovModel
 from upload.constants import ci
@@ -88,6 +89,8 @@ class ReportSession(BaseCodecovModel):
     order_number = models.IntegerField(null=True)
     upload_type = models.CharField(max_length=100, default="uploaded")
     upload_extras = models.JSONField(default=dict)
+    state_id = models.IntegerField(null=True, choices=UploadState.choices())
+    upload_type_id = models.IntegerField(null=True, choices=UploadType.choices())
 
     class Meta:
         db_table = "reports_upload"
