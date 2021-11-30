@@ -32,4 +32,7 @@ class CompareCommands(BaseCommand):
         current_commit_totals = await self.get_command("commit").fetch_totals(comparison.compare_commit)
         parent_commit_totals = await self.get_command("commit").fetch_totals(comparison.base_commit)
 
+        if not current_commit_totals or not parent_commit_totals:
+            return None
+
         return await self.get_interactor(ChangeWithParentInteractor).execute(current_commit_totals, parent_commit_totals)
