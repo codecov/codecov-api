@@ -49,12 +49,6 @@ check-for-migration-conflicts:
 push.enterprise-private:
 	docker push codecov/enterprise-private-api:${release_version}-${sha}
 
-# we don't want to do this locally anymore. Uncomment if you need it.
-# push.enterprise:
-# 	docker push codecov/enterprise-api:${release_version}
-# 	docker tag codecov/enterprise-api:${release_version} codecov/enterprise-api:latest-stable
-# 	docker push codecov/enterprise-api:latest-stable
-
 test:
 	python -m pytest --cov=./
 

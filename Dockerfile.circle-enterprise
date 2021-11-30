@@ -19,7 +19,7 @@ COPY            . /app
 WORKDIR         /app
 
 
-RUN pip install pyinstaller
+RUN pip install pyinstaller==4.7
 # install cython
 RUN pip install cython==3.0a9
 RUN pip install tinyaes
