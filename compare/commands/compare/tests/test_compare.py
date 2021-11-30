@@ -31,24 +31,22 @@ class CompareCommandsTest(TransactionTestCase):
             compared_to=self.parent_commit.commitid,
             pullid=999,
         )
-        self.parent_commit_with_coverage = CommitFactory()
-        self.commit_with_coverage = CommitFactory(
-            parent_commit_id=self.parent_commit_with_coverage.commitid,
-            repository=self.parent_commit_with_coverage.repository,
+
+        parent_commit_with_coverage = CommitFactory()
+        ReportLevelTotalsFactory(
+            report=CommitReportFactory(commit=parent_commit_with_coverage),
+            coverage=63.32,
         )
-        self.report = CommitReportFactory(commit=self.commit_with_coverage)
-        self.report_totals = ReportLevelTotalsFactory(
-            report=self.report, coverage=78.38
+        commit_with_coverage = CommitFactory(
+            parent_commit_id=parent_commit_with_coverage.commitid,
+            repository=parent_commit_with_coverage.repository,
         )
-        self.report_for_parent = CommitReportFactory(
-            commit=self.parent_commit_with_coverage
-        )
-        self.report_totals_for_parent = ReportLevelTotalsFactory(
-            report=self.report_for_parent, coverage=63.32
+        ReportLevelTotalsFactory(
+            report=CommitReportFactory(commit=commit_with_coverage), coverage=78.38
         )
         self.comparison_with_coverage = CommitComparisonFactory(
-            base_commit=self.parent_commit_with_coverage,
-            compare_commit=self.commit_with_coverage,
+            base_commit=parent_commit_with_coverage,
+            compare_commit=commit_with_coverage,
         )
 
     async def test_compare_commit_when_no_parents(self):

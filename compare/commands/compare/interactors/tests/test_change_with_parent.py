@@ -11,8 +11,6 @@ from ..change_with_parent import ChangeWithParentInteractor
 
 class ChangeWithParentInteractorTest(TransactionTestCase):
     def setUp(self):
-        self.user = OwnerFactory(username="codecov-user")
-
         self.parent_commit = CommitFactory()
         self.commit = CommitFactory(
             parent_commit_id=self.parent_commit.commitid,
@@ -25,12 +23,6 @@ class ChangeWithParentInteractorTest(TransactionTestCase):
         self.report_for_parent = CommitReportFactory(commit=self.parent_commit)
         self.report_totals_for_parent = ReportLevelTotalsFactory(
             report=self.report_for_parent, coverage=63.32
-        )
-
-        self.parent_commit_without_coverage = CommitFactory()
-        self.commit_without_coverage = CommitFactory(
-            parent_commit_id=self.parent_commit_without_coverage.commitid,
-            repository=self.parent_commit_without_coverage.repository,
         )
 
     # helper to execute the interactor
