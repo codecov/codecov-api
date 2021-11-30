@@ -16,7 +16,7 @@ mkdir src
 echo 'true' > src/is_enterprise
 
 # # Exclude pycrypto and PyInstaller from built packages
-pyinstaller -F --exclude-module PyInstaller --add-data src:/src --name api --clean --key ${random_key} ${args_to_use} ${pyinstaller_args} /app/manage.py
+pyinstaller -F --exclude-module PyInstaller --add-data src:/src --name api --clean --key ${random_key} ${args_to_use} ${pyinstaller_args} /app/enterprise.py
 
 #cat api.spec
 

@@ -91,6 +91,9 @@ def main():
         "legacy_migrations.migrations",
         "shared.celery_config",
         "kombu.transport.pyamqp",
+        "gunicorn",
+        "gunicorn.glogging",
+        "gunicorn.workers.sync",
     }
 
     base = celery.__file__.rsplit("/", 1)[0]
