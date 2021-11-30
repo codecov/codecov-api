@@ -84,6 +84,7 @@ class StripeService(AbstractPaymentService):
 
     @_log_stripe_error
     def get_invoice(self, owner, invoice_id):
+        print("Get invoice")
         log.info(
             f"Fetching invoice {invoice_id} from Stripe for ownerid {owner.ownerid}"
         )
@@ -101,6 +102,7 @@ class StripeService(AbstractPaymentService):
 
     @_log_stripe_error
     def list_invoices(self, owner, limit=10):
+        print("List invoices")
         log.info(f"Fetching invoices from Stripe for ownerid {owner.ownerid}")
         if owner.stripe_customer_id is None:
             log.info("stripe_customer_id is None, not fetching invoices")
@@ -111,6 +113,7 @@ class StripeService(AbstractPaymentService):
 
     @_log_stripe_error
     def delete_subscription(self, owner):
+        print("Delete subscription")
         if owner.plan not in USER_PLAN_REPRESENTATIONS:
             log.info(
                 f"Downgrade to free plan from legacy plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
@@ -127,6 +130,7 @@ class StripeService(AbstractPaymentService):
 
     @_log_stripe_error
     def get_subscription(self, owner):
+        print("Get subscription")
         if owner.stripe_subscription_id is None:
             return None
         return stripe.Subscription.retrieve(
@@ -140,6 +144,7 @@ class StripeService(AbstractPaymentService):
 
     @_log_stripe_error
     def modify_subscription(self, owner, desired_plan):
+        print("Modify subscription")
         log.info(
             f"Updating Stripe subscription for owner {owner.ownerid} to {desired_plan['value']} by user #{self.requesting_user.ownerid}"
         )
@@ -231,6 +236,7 @@ class StripeService(AbstractPaymentService):
 
     @_log_stripe_error
     def create_checkout_session(self, owner, desired_plan):
+        print("Create checkout session")
         success_url, cancel_url = self._get_success_and_cancel_url(owner)
         log.info("Creating Stripe Checkout Session for owner: {owner.ownerid}")
         session = stripe.checkout.Session.create(
@@ -259,6 +265,7 @@ class StripeService(AbstractPaymentService):
 
     @_log_stripe_error
     def update_payment_method(self, owner, payment_method):
+        print("Update payment method")
         log.info(f"Stripe update payment method for owner {owner.ownerid}")
         if owner.stripe_subscription_id is None:
             log.info(
@@ -305,6 +312,7 @@ class BillingService:
         on current state, might create a stripe checkout session and return
         the checkout session's ID, which is a string. Otherwise returns None.
         """
+        print("update_plan")
         if desired_plan["value"] == "users-free":
             if owner.stripe_subscription_id is not None:
                 self.payment_service.delete_subscription(owner)

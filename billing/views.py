@@ -33,6 +33,7 @@ class StripeWebhookHandler(APIView):
             log.warning(f"Could not find customer")
 
     def invoice_payment_succeeded(self, invoice):
+        print("Invoice payment succeeded")
         log.info(
             "Setting delinquency status False",
             extra=dict(
@@ -54,6 +55,7 @@ class StripeWebhookHandler(APIView):
         self._log_updated(1)
 
     def invoice_payment_failed(self, invoice):
+        print("Invoice payment failed")
         log.info(
             "Setting delinquency status True",
             extra=dict(
@@ -68,6 +70,7 @@ class StripeWebhookHandler(APIView):
         self._log_updated(updated)
 
     def customer_subscription_deleted(self, subscription):
+        print("Customer subscription deleted")
         log.info(
             "Setting free plan and deactivating repos for stripe customer",
             extra=dict(
@@ -88,7 +91,12 @@ class StripeWebhookHandler(APIView):
         )
         self._log_updated(1)
 
+    # def subscription_schedule_created(self):
+
+    # def subscription_schedule_updated(self):
+
     def customer_created(self, customer):
+        print("Customer Created")
         # Based on what stripe doesn't gives us (an ownerid!)
         # in this event we cannot reliably create a customer,
         # so we're just logging that we created the event and
@@ -96,6 +104,7 @@ class StripeWebhookHandler(APIView):
         log.info("Customer created", extra=dict(stripe_customer_id=customer.id))
 
     def customer_subscription_created(self, subscription):
+        print("Customer Subscription Created")
         if not subscription.plan.id:
             log.warning(
                 "Subscription created missing plan id, exiting",
@@ -154,6 +163,7 @@ class StripeWebhookHandler(APIView):
         self._log_updated(1)
 
     def customer_subscription_updated(self, subscription):
+        print("Customer Subscription Updated")
         owner = Owner.objects.get(
             stripe_subscription_id=subscription.id,
             stripe_customer_id=subscription.customer,
@@ -193,6 +203,7 @@ class StripeWebhookHandler(APIView):
                 },
             )
 
+        # if upgrade, then do this, otherwise, deal with new subscription
         owner.plan = subscription.plan.name
         owner.plan_user_count = subscription.quantity
         owner.save()
@@ -202,6 +213,7 @@ class StripeWebhookHandler(APIView):
         log.info("Successfully updated info for 1 customer")
 
     def customer_updated(self, customer):
+        print("Customer Updated")
         new_default_payment_method = customer["invoice_settings"][
             "default_payment_method"
         ]
@@ -219,6 +231,7 @@ class StripeWebhookHandler(APIView):
             )
 
     def checkout_session_completed(self, checkout_session):
+        print("Checkout Session Completed")
         log.info(
             "Checkout session completed",
             extra=dict(ownerid=checkout_session.client_reference_id),
@@ -246,6 +259,7 @@ class StripeWebhookHandler(APIView):
         self._log_updated(1)
 
     def post(self, request, *args, **kwargs):
+        print("here 1")
         if settings.STRIPE_ENDPOINT_SECRET is None:
             log.critical(
                 "Stripe endpoint secret improperly configured -- webhooks will not be processed."
@@ -259,6 +273,7 @@ class StripeWebhookHandler(APIView):
         except stripe.error.SignatureVerificationError as e:
             log.warning(f"Stripe webhook event received with invalid signature -- {e}")
             return Response("Invalid signature", status=status.HTTP_400_BAD_REQUEST)
+        print("here 2")
         if self.event.type not in StripeWebhookEvents.subscribed_events:
             log.warning(
                 f"Unsupported Stripe webhook event received, exiting",
@@ -266,11 +281,13 @@ class StripeWebhookHandler(APIView):
             )
             return Response("Unsupported event type", status=204)
 
+        print("here 3")
         log.info(
             f"Stripe webhook event received",
             extra=dict(stripe_webhook_event=self.event.type),
         )
 
+        print("here 4")
         # Converts event names of the format X.Y.Z into X_Y_Z, and calls
         # the relevant method in this class
         getattr(self, self.event.type.replace(".", "_"))(self.event.data.object)
