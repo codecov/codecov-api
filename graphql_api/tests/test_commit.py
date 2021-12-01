@@ -316,7 +316,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
 
     @patch("compare.commands.compare.compare.CompareCommands.change_with_parent")
-    def test_impacted_files_comparison_call_the_command(self, command_mock):
+    def test_change_with_parent_call_the_command(self, command_mock):
         query = query_commit % "compareWithParent { changeWithParent }"
         variables = {
             "org": self.org.username,
