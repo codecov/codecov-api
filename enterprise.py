@@ -43,7 +43,7 @@ if __name__ == "__main__":
     else:
         application = get_wsgi_application()
         options = {
-            "bind": "0.0.0.0:{}".format(os.environ.get("CODECOV_API_PORT", 8000)),
+            "bind": "0.0.0.0:8000",
             "preload": True,
             "accesslog": "-",
             "statsd_host": os.environ.get("STATSD_HOST", None),
