@@ -1,3 +1,4 @@
+from core import models
 import pytest
 from asgiref.sync import async_to_sync
 from django.contrib.auth.models import AnonymousUser
@@ -26,41 +27,38 @@ class GetUploadErrorInteractorTest(TransactionTestCase):
         return GetUploadErrorInteractor(current_user, service).execute(*args)
 
     def test_get_upload_errors(self):
-        commit = CommitFactory(repository=self.repo, state="error")
+        commit = CommitFactory(repository=self.repo,)
         commit_report = CommitReportFactory(commit=commit)
-        upload = UploadFactory(report=commit_report)
+        upload = UploadFactory(report=commit_report, state="error")
+        UploadErrorFactory(report_session=upload, error_code="orange")
+        UploadErrorFactory(report_session=upload, error_code="apple")
+        UploadErrorFactory(report_session=upload, error_code="kiwi")
 
-        test_errors = [
-            UploadErrorFactory(report_session=upload),
-            UploadErrorFactory(report_session=upload),
-            UploadErrorFactory(report_session=upload),
-        ]
+        interactor_errors = async_to_sync(self.execute)(None, upload)
 
-        interactor_errors = async_to_sync(self.execute)(None, commit)
-
-        for test_error in test_errors:
-            [current_error] = interactor_errors.filter(
-                error_code=test_error.error_code
-            ).values()
-
-            assert current_error["error_code"] == test_error.error_code
+        assert len(interactor_errors.values()) == 3
+        assert set(interactor_errors.values_list("error_code", flat=True)) == {
+            "orange",
+            "apple",
+            "kiwi",
+        }
 
     def test_get_upload_errors_no_error(self):
-        my_commit = CommitFactory(repository=self.repo, state="complete")
-        other_commit = CommitFactory(repository=self.repo, state="error")
-        my_report = CommitReportFactory(commit=my_commit)
-        other_report = CommitReportFactory(commit=other_commit)
-        my_upload = UploadFactory(report=my_report)
-        other_upload = UploadFactory(report=other_report)
+        commit = CommitFactory(repository=self.repo,)
+        commit_report = CommitReportFactory(commit=commit)
 
-        test_errors = [
-            UploadErrorFactory(report_session=other_upload),
-            UploadErrorFactory(report_session=other_upload),
-            UploadErrorFactory(report_session=other_upload),
-        ]
+        # Some other fake errors on other uploads
+        other_upload = UploadFactory(report=commit_report, state="error")
+        UploadErrorFactory(report_session=other_upload)
+        UploadErrorFactory(report_session=other_upload)
 
-        interactor_errors = async_to_sync(self.execute)(None, my_commit)
+        another_upload = UploadFactory(report=commit_report, state="error")
+        UploadErrorFactory(report_session=another_upload)
+        UploadErrorFactory(report_session=another_upload)
+        UploadErrorFactory(report_session=another_upload)
 
-        for test_error in test_errors:
-            for error in interactor_errors.values():
-                assert error["error_code"] != test_error.error_code
+        upload = UploadFactory(report=commit_report)
+
+        interactor_errors = async_to_sync(self.execute)(None, upload)
+
+        assert len(interactor_errors.values()) == 0
