@@ -36,7 +36,7 @@ class FetchCommitsInteractorTest(TransactionTestCase):
         assert list(commits) == self.commits
 
     def test_fetch_commits_with_no_uploaded_coverage_filter(self):
-        self.filters = {"has_uploaded_coverage": False}
+        self.filters = {"hide_failed_ci": False}
         commits = async_to_sync(self.execute)(None, self.repo_2, self.filters)
         commits_with_filter = list(
             filter(lambda commit: commit.ci_passed is not None, self.commits_2)
