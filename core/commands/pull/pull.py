@@ -8,5 +8,7 @@ class PullCommands(BaseCommand):
     def fetch_pull_request(self, repository, id):
         return self.get_interactor(FetchPullRequestInteractor).execute(repository, id)
 
-    def fetch_pull_requests(self, repository):
-        return self.get_interactor(FetchPullRequestsInteractor).execute(repository)
+    def fetch_pull_requests(self, repository, filters):
+        return self.get_interactor(FetchPullRequestsInteractor).execute(
+            repository, filters
+        )
