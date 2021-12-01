@@ -15,7 +15,9 @@ POST=""
 fi
 if [[ "$1" = "api" || -z "$1" ]];
 then
+  # Migrate
   /home/api migrate
+  # Start api
   ${SUB}/home/api run${POST}
 else
   exec "$@"
