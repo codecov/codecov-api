@@ -4,12 +4,12 @@ from codecov_auth.models import Owner, Session
 from .interactors.create_api_token import CreateApiTokenInteractor
 from .interactors.delete_session import DeleteSessionInteractor
 from .interactors.fetch_owner import FetchOwnerInteractor
+from .interactors.get_uploads_number_per_user import GetUploadsNumberPerUserInteractor
 from .interactors.is_syncing import IsSyncingInteractor
 from .interactors.onboard_user import OnboardUserInteractor
 from .interactors.set_yaml_on_owner import SetYamlOnOwnerInteractor
 from .interactors.trigger_sync import TriggerSyncInteractor
 from .interactors.update_profile import UpdateProfileInteractor
-from .interactors.get_uploads_number_per_user import GetUploadsNumberPerUserInteractor
 
 
 class OwnerCommands(BaseCommand):

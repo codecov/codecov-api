@@ -120,8 +120,7 @@ def parse_params(data):
             "nullable": True,
             "default_setter": (lambda document: document.get("pull_request")),
             "coerce": (
-                lambda value: None if value in [
-                    "false", "null", "undefined"] else value
+                lambda value: None if value in ["false", "null", "undefined"] else value
             ),
         },
         # pull request number
@@ -210,8 +209,7 @@ def determine_repo_for_upload(upload_params):
         if using_global_token:
             git_service = service
         else:
-            git_service = TokenlessUploadHandler(
-                service, upload_params).verify_upload()
+            git_service = TokenlessUploadHandler(service, upload_params).verify_upload()
         try:
             repository = Repository.objects.get(
                 author__service=git_service,
@@ -219,8 +217,7 @@ def determine_repo_for_upload(upload_params):
                 author__username=upload_params.get("owner"),
             )
         except ObjectDoesNotExist:
-            raise NotFound(
-                f"Could not find a repository, try using repo upload token")
+            raise NotFound(f"Could not find a repository, try using repo upload token")
     else:
         raise ValidationError(
             "Need either a token or service to determine target repository"
@@ -299,8 +296,7 @@ def try_to_get_best_possible_bot_token(repository):
     if repository.author.oauth_token is not None:
         log.info(
             "Using repository owner as bot fallback",
-            extra=dict(repoid=repository.repoid,
-                       ownerid=repository.author.ownerid),
+            extra=dict(repoid=repository.repoid, ownerid=repository.author.ownerid),
         )
         return encryptor.decrypt_token(repository.author.oauth_token)
     if not repository.private:
@@ -350,8 +346,7 @@ def determine_upload_commit_to_use(upload_params, repository):
             return upload_params.get("commit")
 
         git_commit_message = git_commit_data.get("message", "").strip()
-        is_merge_commit = re.match(
-            r"^Merge\s\w{40}\sinto\s\w{40}$", git_commit_message)
+        is_merge_commit = re.match(r"^Merge\s\w{40}\sinto\s\w{40}$", git_commit_message)
 
         if is_merge_commit:
             # If the commit message says "Merge A into B", we'll extract A and use that as the commitid for this upload
@@ -434,8 +429,7 @@ def check_commit_upload_constraints(commit: Commit):
                 if uploads_used >= limit:
                     log.warning(
                         "User exceeded its limits for usage",
-                        extra=dict(ownerid=owner.ownerid,
-                                   repoid=commit.repository_id),
+                        extra=dict(ownerid=owner.ownerid, repoid=commit.repository_id),
                     )
                     raise Throttled()
 
@@ -500,8 +494,7 @@ def validate_upload(upload_params, repository, redis):
     repository.activated = True
     repository.active = True
     repository.deleted = False
-    repository.save(update_fields=["activated",
-                    "active", "deleted", "updatestamp"])
+    repository.save(update_fields=["activated", "active", "deleted", "updatestamp"])
 
 
 def _determine_responsible_owner(repository):
@@ -561,8 +554,7 @@ def store_report_in_redis(request, commitid, reportid, redis):
 
 def dispatch_upload_task(task_arguments, repository, redis):
     # Store task arguments in redis
-    cache_uploads_eta = get_config(
-        ("setup", "cache", "uploads"), default=86400)
+    cache_uploads_eta = get_config(("setup", "cache", "uploads"), default=86400)
     repo_queue_key = f"uploads/{repository.repoid}/{task_arguments.get('commit')}"
     countdown = 4 if task_arguments.get("version") == "v4" else 0
 
