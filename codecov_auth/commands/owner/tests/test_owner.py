@@ -56,7 +56,7 @@ class OwnerCommandsTest(TransactionTestCase):
     @patch(
         "codecov_auth.commands.owner.owner.GetUploadsNumberPerUserInteractor.execute"
     )
-    def get_uploads_number_per_user_delegate_to_interactor(self, interactor_mock):
+    def test_get_uploads_number_per_user_delegate_to_interactor(self, interactor_mock):
         owner = {}
         self.command.get_uploads_number_per_user(owner)
         interactor_mock.assert_called_once_with(owner)
