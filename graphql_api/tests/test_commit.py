@@ -314,3 +314,19 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         assert commit["compareWithParent"]["impactedFiles"][0] == {
             "headName": "src/config.js"
         }
+
+    @patch("compare.commands.compare.compare.CompareCommands.change_with_parent")
+    def test_impacted_files_comparison_call_the_command(self, command_mock):
+        query = query_commit % "compareWithParent { changeWithParent }"
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        fake_compare = 56.89
+        command_mock.return_value = fake_compare
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        assert commit["compareWithParent"]["changeWithParent"] == 56.89
