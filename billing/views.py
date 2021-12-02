@@ -91,9 +91,24 @@ class StripeWebhookHandler(APIView):
         )
         self._log_updated(1)
 
-    # def subscription_schedule_created(self):
+    # Shouldn't needed if I don't save anything to the database
+    def subscription_schedule_created(self, schedule):
+        print("Schedule created")
+        print(schedule)
 
-    # def subscription_schedule_updated(self):
+    # Shouldn't needed if I don't save anything to the database
+    def subscription_schedule_updated(self, schedule):
+        print("Schedule updated")
+        print(schedule)
+
+    def subscription_schedule_released(self, schedule):
+        print("Schedule released")
+        print(schedule)
+
+    def subscription_schedule_completed(self, schedule):
+        print("Schedule completed")
+        print(schedule)
+
 
     def customer_created(self, customer):
         print("Customer Created")
@@ -204,9 +219,10 @@ class StripeWebhookHandler(APIView):
             )
 
         # if upgrade, then do this, otherwise, deal with new subscription
-        owner.plan = subscription.plan.name
-        owner.plan_user_count = subscription.quantity
-        owner.save()
+        # # TODO: Add a way to detect if this is a downgrade not to do it here
+        # owner.plan = subscription.plan.name
+        # owner.plan_user_count = subscription.quantity
+        # owner.save()
 
         SegmentService().identify_user(owner)
 
@@ -259,7 +275,6 @@ class StripeWebhookHandler(APIView):
         self._log_updated(1)
 
     def post(self, request, *args, **kwargs):
-        print("here 1")
         if settings.STRIPE_ENDPOINT_SECRET is None:
             log.critical(
                 "Stripe endpoint secret improperly configured -- webhooks will not be processed."
@@ -273,7 +288,6 @@ class StripeWebhookHandler(APIView):
         except stripe.error.SignatureVerificationError as e:
             log.warning(f"Stripe webhook event received with invalid signature -- {e}")
             return Response("Invalid signature", status=status.HTTP_400_BAD_REQUEST)
-        print("here 2")
         if self.event.type not in StripeWebhookEvents.subscribed_events:
             log.warning(
                 f"Unsupported Stripe webhook event received, exiting",
@@ -281,13 +295,11 @@ class StripeWebhookHandler(APIView):
             )
             return Response("Unsupported event type", status=204)
 
-        print("here 3")
         log.info(
             f"Stripe webhook event received",
             extra=dict(stripe_webhook_event=self.event.type),
         )
 
-        print("here 4")
         # Converts event names of the format X.Y.Z into X_Y_Z, and calls
         # the relevant method in this class
         getattr(self, self.event.type.replace(".", "_"))(self.event.data.object)

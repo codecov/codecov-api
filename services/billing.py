@@ -144,6 +144,7 @@ class StripeService(AbstractPaymentService):
 
     @_log_stripe_error
     def modify_subscription(self, owner, desired_plan):
+        # Enters when I modify bw paid plans or change user numbers within a paid plan
         print("Modify subscription")
         log.info(
             f"Updating Stripe subscription for owner {owner.ownerid} to {desired_plan['value']} by user #{self.requesting_user.ownerid}"
@@ -152,59 +153,108 @@ class StripeService(AbstractPaymentService):
 
         proration_behavior = self._get_proration_params(owner, desired_plan)
 
-        stripe.Subscription.modify(
-            owner.stripe_subscription_id,
-            cancel_at_period_end=False,
-            items=[
-                {
-                    "id": subscription["items"]["data"][0]["id"],
-                    "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                    "quantity": desired_plan["quantity"],
-                }
-            ],
-            metadata=self._get_checkout_session_and_subscription_metadata(owner),
-            proration_behavior=proration_behavior,
-        )
+        subscription_schedule_id = subscription.schedule
+        # print("subscription_schedule_id")
+        # print(subscription_schedule_id)
 
-        # Segment analytics
-        if owner.plan != desired_plan["value"]:
-            SegmentService().account_changed_plan(
-                current_user_ownerid=self.requesting_user.ownerid,
-                org_ownerid=owner.ownerid,
-                plan_details={
-                    "new_plan": desired_plan["value"],
-                    "previous_plan": owner.plan,
-                },
-            )
-        if owner.plan_user_count and owner.plan_user_count < desired_plan["quantity"]:
-            SegmentService().account_increased_users(
-                current_user_ownerid=self.requesting_user.ownerid,
-                org_ownerid=owner.ownerid,
-                plan_details={
-                    "new_quantity": desired_plan["quantity"],
-                    "old_quantity": owner.plan_user_count,
-                    "plan": desired_plan["value"],
-                },
-            )
-        elif owner.plan_user_count and owner.plan_user_count > desired_plan["quantity"]:
-            SegmentService().account_decreased_users(
-                current_user_ownerid=self.requesting_user.ownerid,
-                org_ownerid=owner.ownerid,
-                plan_details={
-                    "new_quantity": desired_plan["quantity"],
-                    "old_quantity": owner.plan_user_count,
-                    "plan": desired_plan["value"],
-                },
+        # TODO Currently, if a user clicks on an existing subscription and modifies nothing it
+        # doesn't get prorated. Hasn't been an issue till now but I'm relying on that prorating logic
+        # to determine if we consider a scenario downgrade or not, so wanted to see your thoughts
+        is_downgrading = True if proration_behavior == "none" else False
+        subscription_id = owner.stripe_subscription_id
+
+        # print("is_downgrading")
+        # print(is_downgrading)
+
+        # Divide logic between downgrade and upgrade, where downgrade is either
+        # less seats or going to a lower plan
+        if is_downgrading:
+            print("in downgrading")
+            # if there a schedule
+            if subscription_schedule_id is None:
+                print("new schedule")
+                stripe.SubscriptionSchedule.create(
+                    from_subscription=subscription_id,
+                )
+            else:
+                print("modify schedule")
+                stripe.SubscriptionSchedule.modify(
+                    subscription_schedule_id,
+                )
+            # TODO: Add this in the webhook section when a schedule is released
+            # # Segment analytics
+            # if owner.plan != desired_plan["value"]:
+            #     SegmentService().account_changed_plan(
+            #         current_user_ownerid=self.requesting_user.ownerid,
+            #         org_ownerid=owner.ownerid,
+            #         plan_details={
+            #             "new_plan": desired_plan["value"],
+            #             "previous_plan": owner.plan,
+            #         },
+            #     )
+            # # Downgrade logic only
+            # if owner.plan_user_count and owner.plan_user_count > desired_plan["quantity"]:
+            #     SegmentService().account_decreased_users(
+            #         current_user_ownerid=self.requesting_user.ownerid,
+            #         org_ownerid=owner.ownerid,
+            #         plan_details={
+            #             "new_quantity": desired_plan["quantity"],
+            #             "old_quantity": owner.plan_user_count,
+            #             "plan": desired_plan["value"],
+            #         },
+            #     )
+        else:
+            print("in upgrading")
+            if subscription_schedule_id is not None:
+                print("releasing existing schedule")
+                stripe.SubscriptionSchedule.release(
+                    subscription.schedule,
+                )
+            stripe.Subscription.modify(
+                owner.stripe_subscription_id,
+                cancel_at_period_end=False,
+                items=[
+                    {
+                        "id": subscription["items"]["data"][0]["id"],
+                        "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                        "quantity": desired_plan["quantity"],
+                    }
+                ],
+                metadata=self._get_checkout_session_and_subscription_metadata(owner),
+                proration_behavior=proration_behavior,
             )
 
-        # Actually do the thing
-        owner.plan = desired_plan["value"]
-        owner.plan_user_count = desired_plan["quantity"]
-        owner.save()
+            # Segment analytics
+            if owner.plan != desired_plan["value"]:
+                SegmentService().account_changed_plan(
+                    current_user_ownerid=self.requesting_user.ownerid,
+                    org_ownerid=owner.ownerid,
+                    plan_details={
+                        "new_plan": desired_plan["value"],
+                        "previous_plan": owner.plan,
+                    },
+                )
+            # Upgrade logic only
+            if owner.plan_user_count and owner.plan_user_count < desired_plan["quantity"]:
+                SegmentService().account_increased_users(
+                    current_user_ownerid=self.requesting_user.ownerid,
+                    org_ownerid=owner.ownerid,
+                    plan_details={
+                        "new_quantity": desired_plan["quantity"],
+                        "old_quantity": owner.plan_user_count,
+                        "plan": desired_plan["value"],
+                    },
+                )
 
-        log.info(
-            f"Stripe subscription modified successfully for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
-        )
+            # Actually do the thing
+            # Should only be done if it's not a downgrade
+            owner.plan = desired_plan["value"]
+            owner.plan_user_count = desired_plan["quantity"]
+            owner.save()
+
+            log.info(
+                f"Stripe subscription modified successfully for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
+            )
 
     def _get_proration_params(self, owner, desired_plan):
         proration_behavior = "none"
