@@ -2,6 +2,7 @@ from asgiref.sync import sync_to_async
 
 from codecov.commands.base import BaseInteractor
 
+
 class ChangeWithParentInteractor(BaseInteractor):
     def change_coverage(self, commit_totals, compare_to_totals):
         return commit_totals.coverage - compare_to_totals.coverage
