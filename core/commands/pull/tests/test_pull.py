@@ -17,9 +17,10 @@ class PullCommandsTest(TransactionTestCase):
 
     @patch("core.commands.pull.pull.FetchPullRequestsInteractor.execute")
     def test_fetch_pull_requests_delegate_to_interactor(self, interactor_mock):
+        self.filters = None
         repo = RepositoryFactory()
-        self.command.fetch_pull_requests(repo)
-        interactor_mock.assert_called_once_with(repo)
+        self.command.fetch_pull_requests(repo, self.filters)
+        interactor_mock.assert_called_once_with(repo, self.filters)
 
     @patch("core.commands.pull.pull.FetchPullRequestInteractor.execute")
     def test_fetch_pull_request_delegate_to_interactor(self, interactor_mock):
