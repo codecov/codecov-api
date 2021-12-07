@@ -4,6 +4,7 @@ from codecov_auth.models import Owner, Session
 from .interactors.create_api_token import CreateApiTokenInteractor
 from .interactors.delete_session import DeleteSessionInteractor
 from .interactors.fetch_owner import FetchOwnerInteractor
+from .interactors.get_uploads_number_per_user import GetUploadsNumberPerUserInteractor
 from .interactors.is_syncing import IsSyncingInteractor
 from .interactors.onboard_user import OnboardUserInteractor
 from .interactors.set_yaml_on_owner import SetYamlOnOwnerInteractor
@@ -35,3 +36,6 @@ class OwnerCommands(BaseCommand):
 
     def onboard_user(self, params):
         return self.get_interactor(OnboardUserInteractor).execute(params)
+
+    def get_uploads_number_per_user(self, owner):
+        return self.get_interactor(GetUploadsNumberPerUserInteractor).execute(owner)
