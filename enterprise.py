@@ -10,6 +10,7 @@ from utils.config import get_settings_module
 class StandaloneApplication(BaseApplication):
     def __init__(self, app, options=None):
         self.options = options or {}
+        print(options)
         self.application = app
         super().__init__()
 
@@ -43,13 +44,10 @@ if __name__ == "__main__":
     else:
         application = get_wsgi_application()
         bind = "0.0.0.0:8000"
-        print(bind)
         options = {
             "bind": bind,
-            "preload": True,
             "accesslog": "-",
             "statsd_host": os.environ.get("STATSD_HOST", None),
             "statsd_port": os.environ.get("STATSD_PORT", None),
         }
-        print(options)
-        #StandaloneApplication(application, options).run()
+        StandaloneApplication(application, options).run()
