@@ -1,9 +1,8 @@
 from asgiref.sync import sync_to_async
 
 from codecov.commands.base import BaseInteractor
-from reports.models import UploadError
-
 from graphql_api.types.enums import UploadState
+from reports.models import UploadError
 
 
 class GetUploadErrorInteractor(BaseInteractor):

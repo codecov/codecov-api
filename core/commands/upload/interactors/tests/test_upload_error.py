@@ -3,10 +3,10 @@ from asgiref.sync import async_to_sync
 from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
 
-from graphql_api.types.enums import UploadState, UploadErrorEnum
 from codecov_auth.tests.factories import OwnerFactory
 from core import models
 from core.tests.factories import CommitFactory, RepositoryFactory
+from graphql_api.types.enums import UploadErrorEnum, UploadState
 from reports.tests.factories import (
     CommitReportFactory,
     UploadErrorFactory,
