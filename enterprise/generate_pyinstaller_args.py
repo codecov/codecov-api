@@ -94,6 +94,7 @@ def main():
         "gunicorn",
         "gunicorn.glogging",
         "gunicorn.workers.sync",
+        "gunicorn.instrument",
     }
 
     base = celery.__file__.rsplit("/", 1)[0]
