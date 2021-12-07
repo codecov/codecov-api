@@ -2,12 +2,12 @@ import os
 import sys
 
 from django.core.wsgi import get_wsgi_application
-from gunicorn.app.base import BaseApplication
+from gunicorn.app.base import Application
 
 from utils.config import get_settings_module
 
 
-class StandaloneApplication(BaseApplication):
+class StandaloneApplication(Application):
     def __init__(self, app, options=None):
         self.options = options or {}
         print(options)
@@ -22,6 +22,10 @@ class StandaloneApplication(BaseApplication):
         }
         for key, value in config.items():
             self.cfg.set(key.lower(), value)
+        print(self.cfg)
+        print(config)
+        print(self.options.items())
+        sys.stdout.flush()
 
     def load(self):
         return self.application
@@ -31,7 +35,6 @@ if __name__ == "__main__":
 
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", get_settings_module())
     if len(sys.argv) > 1 and sys.argv[1] != "run":
-
         try:
             from django.core.management import execute_from_command_line
         except ImportError as exc:
@@ -42,10 +45,12 @@ if __name__ == "__main__":
             ) from exc
         execute_from_command_line(sys.argv)
     else:
+        if len(sys.argv) > 2 and sys.argv[1] == "run":
+            del sys.argv[1]
         application = get_wsgi_application()
-        bind = "0.0.0.0:8000"
         options = {
-            "bind": bind,
+            "bind": "{0}:{1}".format(os.environ.get("CODECOV_API_BIND", "0.0.0.0"),
+                                     os.environ.get("CODECOV_API_PORT", 8000)),
             "accesslog": "-",
             "statsd_host": os.environ.get("STATSD_HOST", None),
             "statsd_port": os.environ.get("STATSD_PORT", None),
