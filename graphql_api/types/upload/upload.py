@@ -4,7 +4,12 @@ from ariadne import ObjectType
 from asgiref.sync import sync_to_async
 
 from graphql_api.helpers.connection import queryset_to_connection
-from graphql_api.types.enums import OrderingDirection
+from graphql_api.types.enums import (
+    OrderingDirection,
+    UploadErrorEnum,
+    UploadState,
+    UploadType,
+)
 
 upload_bindable = ObjectType("Upload")
 upload_bindable.set_alias("flags", "flag_names")
@@ -15,6 +20,16 @@ upload_error_bindable = ObjectType("UploadError")
     Note Uploads are called ReportSession in the model, so I'm keeping the argument
     in line with the code vs product name.
 """
+
+
+@upload_bindable.field("state")
+def resolve_state(upload, info):
+    return UploadState(upload.state)
+
+
+@upload_bindable.field("uploadType")
+def resolve_upload_type(upload, info):
+    return UploadType(upload.upload_type)
 
 
 @upload_bindable.field("errors")
@@ -28,3 +43,8 @@ async def resolve_errors(report_session, info, **kwargs):
         **kwargs
     )
     return result
+
+
+@upload_error_bindable.field("errorCode")
+def resolve_error_code(error, info):
+    return UploadErrorEnum(error.error_code)

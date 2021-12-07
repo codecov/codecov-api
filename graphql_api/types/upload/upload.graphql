@@ -1,13 +1,13 @@
 
 type Upload {
-  state: String!
+  state: UploadState!
   provider: String
   createdAt: DateTime!
   updatedAt: DateTime!
   flags: [String]
   downloadUrl: String
   ciUrl: String
-  uploadType: String
+  uploadType: UploadType
   jobCode: String
   buildCode: String
   errors: UploadErrorsConnection
@@ -25,5 +25,5 @@ type UploadErrorsEdge {
 }
 
 type UploadError{
-  errorCode: String!
+  errorCode: UploadErrorEnum
 }

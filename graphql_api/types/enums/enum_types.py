@@ -10,4 +10,7 @@ enum_types = [
     EnumType("TypeProjectOnboarding", enums.TypeProjectOnboarding),
     EnumType("GoalOnboarding", enums.GoalOnboarding),
     EnumType("PullRequestState", enums.PullRequestState),
+    EnumType("UploadState", enums.UploadState),
+    EnumType("UploadType", enums.UploadType),
+    EnumType("UploadErrorEnum", enums.UploadErrorEnum),
 ]

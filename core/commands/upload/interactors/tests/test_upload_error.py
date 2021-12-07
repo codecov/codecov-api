@@ -3,6 +3,7 @@ from asgiref.sync import async_to_sync
 from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
 
+from graphql_api.types.enums import UploadState, UploadErrorEnum
 from codecov_auth.tests.factories import OwnerFactory
 from core import models
 from core.tests.factories import CommitFactory, RepositoryFactory
@@ -29,18 +30,24 @@ class GetUploadErrorInteractorTest(TransactionTestCase):
     def test_get_upload_errors(self):
         commit = CommitFactory(repository=self.repo,)
         commit_report = CommitReportFactory(commit=commit)
-        upload = UploadFactory(report=commit_report, state="error")
-        UploadErrorFactory(report_session=upload, error_code="orange")
-        UploadErrorFactory(report_session=upload, error_code="apple")
-        UploadErrorFactory(report_session=upload, error_code="kiwi")
+        upload = UploadFactory(report=commit_report, state=UploadState.ERROR.value)
+        UploadErrorFactory(
+            report_session=upload, error_code=UploadErrorEnum.FILE_NOT_IN_STORAGE.value
+        )
+        UploadErrorFactory(
+            report_session=upload, error_code=UploadErrorEnum.REPORT_EXPIRED.value
+        )
+        UploadErrorFactory(
+            report_session=upload, error_code=UploadErrorEnum.REPORT_EXPIRED.value
+        )
 
         interactor_errors = async_to_sync(self.execute)(None, upload)
 
         assert len(interactor_errors.values()) == 3
         assert set(interactor_errors.values_list("error_code", flat=True)) == {
-            "orange",
-            "apple",
-            "kiwi",
+            UploadErrorEnum.FILE_NOT_IN_STORAGE.value,
+            UploadErrorEnum.REPORT_EXPIRED.value,
+            UploadErrorEnum.REPORT_EXPIRED.value,
         }
 
     def test_get_upload_errors_no_error(self):
@@ -48,14 +55,18 @@ class GetUploadErrorInteractorTest(TransactionTestCase):
         commit_report = CommitReportFactory(commit=commit)
 
         # Some other fake errors on other uploads
-        other_upload = UploadFactory(report=commit_report, state="error")
-        UploadErrorFactory(report_session=other_upload)
-        UploadErrorFactory(report_session=other_upload)
+        other_upload = UploadFactory(
+            report=commit_report, state=UploadState.ERROR.value
+        )
+        other_upload_error_1 = UploadErrorFactory(report_session=other_upload)
+        other_upload_error_2 = UploadErrorFactory(report_session=other_upload)
 
-        another_upload = UploadFactory(report=commit_report, state="error")
-        UploadErrorFactory(report_session=another_upload)
-        UploadErrorFactory(report_session=another_upload)
-        UploadErrorFactory(report_session=another_upload)
+        another_upload = UploadFactory(
+            report=commit_report, state=UploadState.ERROR.value
+        )
+        another_upload_error_1 = UploadErrorFactory(report_session=another_upload)
+        another_upload_error_2 = UploadErrorFactory(report_session=another_upload)
+        another_upload_error_3 = UploadErrorFactory(report_session=another_upload)
 
         upload = UploadFactory(report=commit_report)
 

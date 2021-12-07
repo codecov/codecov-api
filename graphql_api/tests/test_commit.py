@@ -9,6 +9,7 @@ from shared.reports.types import LineSession
 from codecov_auth.tests.factories import OwnerFactory
 from core.models import Commit
 from core.tests.factories import CommitFactory, RepositoryFactory
+from graphql_api.types.enums import UploadErrorEnum, UploadState
 from reports.tests.factories import (
     CommitReportFactory,
     ReportLevelTotalsFactory,
@@ -197,10 +198,10 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
 
     def test_fetch_commit_uploads_state(self):
         session_one = UploadFactory(
-            report=self.report, provider="circleci", state="complete"
+            report=self.report, provider="circleci", state=UploadState.PROCESSED.value
         )
         session_two = UploadFactory(
-            report=self.report, provider="travisci", state="error"
+            report=self.report, provider="travisci", state=UploadState.ERROR.value
         )
         query = (
             query_commit
@@ -224,14 +225,20 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         uploads = paginate_connection(commit["uploads"])
 
         assert uploads == [
-            {"state": session_one.state},
-            {"state": session_two.state},
+            {"state": UploadState.PROCESSED.name},
+            {"state": UploadState.ERROR.name},
         ]
 
     def test_fetch_commit_uploads_errors(self):
-        session = UploadFactory(report=self.report, provider="circleci", state="error")
-        error_one = UploadErrorFactory(report_session=session, error_code="apple")
-        error_two = UploadErrorFactory(report_session=session, error_code="kiwi")
+        session = UploadFactory(
+            report=self.report, provider="circleci", state=UploadState.ERROR.value
+        )
+        error_one = UploadErrorFactory(
+            report_session=session, error_code=UploadErrorEnum.REPORT_EXPIRED.value
+        )
+        error_two = UploadErrorFactory(
+            report_session=session, error_code=UploadErrorEnum.FILE_NOT_IN_STORAGE.value
+        )
 
         query = (
             query_commit
@@ -261,9 +268,16 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         [upload] = paginate_connection(commit["uploads"])
         errors = paginate_connection(upload["errors"])
 
+        print(
+            [
+                {"errorCode": UploadErrorEnum.REPORT_EXPIRED.name},
+                {"errorCode": UploadErrorEnum.FILE_NOT_IN_STORAGE.name},
+            ]
+        )
+
         assert errors == [
-            {"errorCode": error_one.error_code},
-            {"errorCode": error_two.error_code},
+            {"errorCode": UploadErrorEnum.REPORT_EXPIRED.name},
+            {"errorCode": UploadErrorEnum.FILE_NOT_IN_STORAGE.name},
         ]
 
     @patch(
