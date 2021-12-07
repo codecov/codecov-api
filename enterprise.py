@@ -42,11 +42,14 @@ if __name__ == "__main__":
         execute_from_command_line(sys.argv)
     else:
         application = get_wsgi_application()
+        bind = "0.0.0.0:8000"
+        print(bind)
         options = {
-            "bind": "0.0.0.0:8000",
+            "bind": bind,
             "preload": True,
             "accesslog": "-",
             "statsd_host": os.environ.get("STATSD_HOST", None),
             "statsd_port": os.environ.get("STATSD_PORT", None),
         }
-        StandaloneApplication(application, options).run()
+        print(options)
+        #StandaloneApplication(application, options).run()
