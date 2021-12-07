@@ -10,7 +10,6 @@ from utils.config import get_settings_module
 class StandaloneApplication(Application):
     def __init__(self, app, options=None):
         self.options = options or {}
-        print(options)
         self.application = app
         super().__init__()
 
@@ -22,10 +21,6 @@ class StandaloneApplication(Application):
         }
         for key, value in config.items():
             self.cfg.set(key.lower(), value)
-        print(self.cfg)
-        print(config)
-        print(self.options.items())
-        sys.stdout.flush()
 
     def load(self):
         return self.application
@@ -52,7 +47,6 @@ if __name__ == "__main__":
             "bind": "{0}:{1}".format(os.environ.get("CODECOV_API_BIND", "0.0.0.0"),
                                      os.environ.get("CODECOV_API_PORT", 8000)),
             "accesslog": "-",
-            "statsd_host": os.environ.get("STATSD_HOST", None),
-            "statsd_port": os.environ.get("STATSD_PORT", None),
+            "statsd_host": "{0}:{1}".format(os.environ.get("STATSD_HOST", None), os.environ.get("STATSD_PORT", None))
         }
         StandaloneApplication(application, options).run()
