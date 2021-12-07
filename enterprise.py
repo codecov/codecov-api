@@ -44,9 +44,13 @@ if __name__ == "__main__":
             del sys.argv[1]
         application = get_wsgi_application()
         options = {
-            "bind": "{0}:{1}".format(os.environ.get("CODECOV_API_BIND", "0.0.0.0"),
-                                     os.environ.get("CODECOV_API_PORT", 8000)),
+            "bind": "{0}:{1}".format(
+                os.environ.get("CODECOV_API_BIND", "0.0.0.0"),
+                os.environ.get("CODECOV_API_PORT", 8000),
+            ),
             "accesslog": "-",
-            "statsd_host": "{0}:{1}".format(os.environ.get("STATSD_HOST", None), os.environ.get("STATSD_PORT", None))
+            "statsd_host": "{0}:{1}".format(
+                os.environ.get("STATSD_HOST", None), os.environ.get("STATSD_PORT", None)
+            ),
         }
         StandaloneApplication(application, options).run()
