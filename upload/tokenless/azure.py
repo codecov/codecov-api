@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import requests
 from requests.exceptions import ConnectionError, HTTPError
 from rest_framework.exceptions import NotFound
+from simplejson import JSONDecodeError
 
 from upload.tokenless.base import BaseTokenlessUploadHandler
 
@@ -13,7 +14,7 @@ log = logging.getLogger(__name__)
 class TokenlessAzureHandler(BaseTokenlessUploadHandler):
     def get_build(self):
         try:
-            build = requests.get(
+            response = requests.get(
                 f"{self.server_uri}{self.project}/_apis/build/builds/{self.job}?api-version=5.0",
                 headers={"Accept": "application/json", "User-Agent": "Codecov"},
             )
@@ -31,15 +32,27 @@ class TokenlessAzureHandler(BaseTokenlessUploadHandler):
                 "Unable to locate build via Azure API. Please upload with the Codecov repository upload token to resolve issue."
             )
 
-        if not build:
+        if not response:
             raise NotFound(
                 "Unable to locate build via Azure API. Please upload with the Codecov repository upload token to resolve issue."
             )
-        if build.headers.get('content-type') != 'application/json':
-            raise NotFound(
-               "Unable to locate build via Azure API. Project is likely private, please upload with the Codecov repository upload token to resolve issue."
+        try:
+            build = response.json()
+        except (JSONDecodeError) as e:
+            log.warning(
+                f"Expected JSON in Azure response, got error {e} instead",
+                extra=dict(
+                    commit=self.upload_params.get("commit"),
+                    repo_name=self.upload_params.get("repo"),
+                    job=self.upload_params.get("job"),
+                    owner=self.upload_params.get("owner"),
+                    response=response,
+                ),
             )
-        return build.json()
+            raise NotFound(
+                "Unable to locate build via Azure API. Project is likely private, please upload with the Codecov repository upload token to resolve issue."
+            )
+        return build
 
     def verify(self):
 

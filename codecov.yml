@@ -1,2 +1,5 @@
 ignore:
   - "**tests**/test_*.py"
+comment:
+  show_critical_paths: true
+  layout: "reach,diff,flags,tree,betaprofiling"

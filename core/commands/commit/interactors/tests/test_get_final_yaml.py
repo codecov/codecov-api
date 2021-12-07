@@ -1,13 +1,14 @@
-from asgiref.sync import async_to_sync
 import asyncio
-import pytest
 from unittest.mock import patch
-from django.test import TransactionTestCase
+
+import pytest
+from asgiref.sync import async_to_sync
 from django.contrib.auth.models import AnonymousUser
+from django.test import TransactionTestCase
 from shared.torngit.exceptions import TorngitObjectNotFoundError
 
 from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import RepositoryFactory, CommitFactory
+from core.tests.factories import CommitFactory, RepositoryFactory
 
 from ..get_final_yaml import GetFinalYamlInteractor
 
@@ -30,15 +31,11 @@ class GetFinalYamlInteractorTest(TransactionTestCase):
     )
     @async_to_sync
     async def test_when_commit_has_yaml(self, mock_fetch_yaml):
-        f = asyncio.Future()
-        f.set_result(
-            """
+        mock_fetch_yaml.return_value = """
         codecov:
           notify:
             require_ci_to_pass: no
         """
-        )
-        mock_fetch_yaml.return_value = f
         config = await self.execute(None, self.commit)
         assert config["codecov"]["require_ci_to_pass"] is False
 

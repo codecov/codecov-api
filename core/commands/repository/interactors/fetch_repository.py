@@ -1,7 +1,7 @@
 from asgiref.sync import sync_to_async
 
-from core.models import Repository
 from codecov.commands.base import BaseInteractor
+from core.models import Repository
 
 
 class FetchRepositoryInteractor(BaseInteractor):
@@ -10,6 +10,7 @@ class FetchRepositoryInteractor(BaseInteractor):
         return (
             Repository.objects.viewable_repos(self.current_user)
             .filter(author=owner, name=name)
+            .with_cache_coverage()
             .select_related("author")
             .first()
         )

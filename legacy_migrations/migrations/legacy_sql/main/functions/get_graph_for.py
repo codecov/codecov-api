@@ -1,5 +1,6 @@
 def run_sql(schema_editor):
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         create or replace function sum_of_file_totals_filtering_sessionids(jsonb, int[]) returns text[] as $$
         -- sum totals for filtered flags
         -- in [<totals list a>, <totals list b>, <totals list c>], [1, 2]
@@ -235,4 +236,5 @@ def run_sql(schema_editor):
             limit 1
         ) select to_jsonb(data) from data limit 1;
         $$ language sql stable;
-    """)
+    """
+    )

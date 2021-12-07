@@ -1,5 +1,6 @@
 def run_sql(schema_editor):
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         create or replace function get_ownerid_if_member(service, citext, int) returns int as $$
         select ownerid
         from owners
@@ -88,4 +89,5 @@ def run_sql(schema_editor):
 
         end;
         $$ language plpgsql volatile;
-    """)
+    """
+    )

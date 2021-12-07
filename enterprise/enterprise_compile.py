@@ -1,12 +1,12 @@
 # Something more robust -- inspired by: https://bucharjan.cz/blog/using-cython-to-protect-a-python-codebase.html
-from setuptools import setup
-from setuptools.extension import Extension
+import os.path
+import shutil
+from pathlib import Path
 
 from Cython.Build import cythonize
 from Cython.Distutils import build_ext
-from pathlib import Path
-import shutil
-import os.path
+from setuptools import setup
+from setuptools.extension import Extension
 
 
 class MyBuildExt(build_ext):

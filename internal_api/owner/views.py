@@ -1,39 +1,29 @@
 import logging
 
-from django.shortcuts import get_object_or_404
 from django.db.models import Q
-
-from rest_framework import viewsets, mixins, filters, status
+from django.shortcuts import get_object_or_404
+from django_filters import rest_framework as django_filters
+from rest_framework import filters, mixins, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import (
-    PermissionDenied,
-    NotFound,
-    ValidationError,
-    NotAuthenticated,
-)
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.response import Response
 
-from django_filters import rest_framework as django_filters
-
+from billing.constants import CURRENTLY_OFFERED_PLANS
 from codecov_auth.models import Owner, Service
-from codecov_auth.constants import CURRENTLY_OFFERED_PLANS
-from services.billing import BillingService
-from services.task import TaskService
-from services.segment import SegmentService
-from services.decorators import stripe_safe
-
 from internal_api.mixins import OwnerPropertyMixin
 from internal_api.permissions import MemberOfOrgPermissions
-
-from .serializers import (
-    OwnerSerializer,
-    AccountDetailsSerializer,
-    UserSerializer,
-    StripeInvoiceSerializer,
-)
+from services.billing import BillingService
+from services.decorators import stripe_safe
+from services.segment import SegmentService
+from services.task import TaskService
 
 from .filters import UserFilters
-
+from .serializers import (
+    AccountDetailsSerializer,
+    OwnerSerializer,
+    StripeInvoiceSerializer,
+    UserSerializer,
+)
 
 log = logging.getLogger(__name__)
 

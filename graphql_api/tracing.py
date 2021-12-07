@@ -1,11 +1,10 @@
-from ariadne.contrib.tracing.apollotracing import ApolloTracingExtension
-from ariadne.contrib.tracing.opentracing import OpenTracingExtension
-from django.conf import settings
-
-from opentracing.scope_managers import ThreadLocalScopeManager
-from ddtrace.opentracer import Tracer
 import ddtrace
 import opentracing
+from ariadne.contrib.tracing.apollotracing import ApolloTracingExtension
+from ariadne.contrib.tracing.opentracing import OpenTracingExtension
+from ddtrace.opentracer import Tracer
+from django.conf import settings
+from opentracing.scope_managers import ThreadLocalScopeManager
 
 
 class MyTracer(Tracer):

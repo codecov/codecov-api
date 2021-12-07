@@ -1,15 +1,14 @@
-from django.utils import timezone
-from django.contrib.auth.backends import BaseBackend
+import hashlib
+import hmac
 import logging
 from base64 import b64decode
-import hmac
-import hashlib
 
-from rest_framework import authentication
-from rest_framework import exceptions
+from django.contrib.auth.backends import BaseBackend
+from django.utils import timezone
+from rest_framework import authentication, exceptions
 
-from codecov_auth.models import Session, Owner
 from codecov_auth.helpers import decode_token_from_cookie
+from codecov_auth.models import Owner, Session
 from utils.config import get_config
 from utils.services import get_long_service_name
 
@@ -29,7 +28,9 @@ class CodecovAuthMixin:
 
     def get_user_and_session(self, token, request):
         try:
-            session = Session.objects.get(token=token)
+            session = Session.objects.select_related("owner", "owner__profile").get(
+                token=token
+            )
         except Session.DoesNotExist:
             raise exceptions.AuthenticationFailed("No such user")
         if (
@@ -83,11 +84,20 @@ class CodecovAuthMixin:
         secret = get_config("setup", "http", "cookie_secret")
         return decode_token_from_cookie(secret, encoded_cookie)
 
+    def get_encoded_token_from_request(self, request):
+        # try with a token type header
+        token_type = request.META.get("HTTP_TOKEN_TYPE")
+        encoded_cookie = request.COOKIES.get(token_type)
+        if encoded_cookie:
+            return encoded_cookie
+        # try with the "service" arg from the route to get the cookie
+        service = request.resolver_match.kwargs.get("service")
+        return request.COOKIES.get(f"{get_long_service_name(service)}-token")
+
 
 class CodecovTokenAuthenticationBase(CodecovAuthMixin):
     def authenticate(self, request):
-        token_type = request.META.get("HTTP_TOKEN_TYPE")
-        encoded_cookie = request.COOKIES.get(token_type)
+        encoded_cookie = self.get_encoded_token_from_request(request)
 
         if not encoded_cookie:
             return None
@@ -148,8 +158,7 @@ class CodecovSessionAuthentication(
     # TODO: When this handles the /profile route, we will have to
     # add a 'service' url-param there
     def authenticate(self, request):
-        service = request.resolver_match.kwargs.get("service")
-        encoded_cookie = request.COOKIES.get(f"{service}-token")
+        encoded_cookie = self.get_encoded_token_from_request(request)
 
         if not encoded_cookie:
             return None

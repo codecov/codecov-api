@@ -1,9 +1,10 @@
 from django.contrib import admin
 from django.core.paginator import Paginator
 from django.db import connections
-from core.models import Repository
 from django.utils.functional import cached_property
+
 from codecov_auth.models import RepositoryToken
+from core.models import Repository
 
 
 class RepositoryTokenInline(admin.TabularInline):
@@ -17,7 +18,7 @@ class RepositoryTokenInline(admin.TabularInline):
         return False
 
     class Meta:
-        readonly_fields = ("key", )
+        readonly_fields = ("key",)
 
 
 class EstimatedCountPaginator(Paginator):
@@ -33,7 +34,7 @@ class EstimatedCountPaginator(Paginator):
 
         db_table = self.object_list.model._meta.db_table
         cursor = connections[self.object_list.db].cursor()
-        cursor.execute("SELECT reltuples FROM pg_class WHERE relname = %s", (db_table, ))
+        cursor.execute("SELECT reltuples FROM pg_class WHERE relname = %s", (db_table,))
         result = cursor.fetchone()
         if not result:
             return 0
@@ -44,7 +45,8 @@ class EstimatedCountPaginator(Paginator):
 class RepositoryAdmin(admin.ModelAdmin):
     inlines = [RepositoryTokenInline]
     list_display = ("name", "service_id", "author")
-    search_fields = ("author__username__iexact",)
+    search_fields = ("author__username__exact",)
+    show_full_result_count = False
     paginator = EstimatedCountPaginator
     fields = (
         "name",

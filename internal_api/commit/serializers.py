@@ -3,12 +3,12 @@ import json
 import logging
 
 from rest_framework import serializers
+from shared.reports.types import TOTALS_MAP
 
+from core.models import Commit, Repository
+from internal_api.owner.serializers import OwnerSerializer
 from services.archive import ReportService
 from services.repo_providers import RepoProviderService
-from core.models import Repository, Commit
-from internal_api.owner.serializers import OwnerSerializer
-from shared.reports.types import TOTALS_MAP
 
 log = logging.getLogger(__name__)
 

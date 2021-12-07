@@ -1,7 +1,6 @@
 from django.conf import settings
 from django.db import migrations
 
-
 """
 These classes can be used to skip altering DB state while maintaing the state of migrations.
 To use them you should manually replace the migration step in the migration file with its

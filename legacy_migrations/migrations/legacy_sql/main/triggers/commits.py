@@ -1,5 +1,6 @@
 def run_sql(schema_editor):
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         create or replace function commits_update_heads() returns trigger as $$
         begin
 
@@ -103,4 +104,5 @@ def run_sql(schema_editor):
         create trigger commits_insert_pr_branch after insert on commits
         for each row
         execute procedure commits_insert_pr_branch();
-    """)
+    """
+    )

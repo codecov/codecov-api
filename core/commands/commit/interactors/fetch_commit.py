@@ -1,9 +1,9 @@
 from asgiref.sync import sync_to_async
 from django.db.models import Prefetch
 
+from codecov.commands.base import BaseInteractor
 from core.models import Commit
 from reports.models import CommitReport
-from codecov.commands.base import BaseInteractor
 
 
 class FetchCommitInteractor(BaseInteractor):

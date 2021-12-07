@@ -1,7 +1,7 @@
 import ddtrace
 import opentracing
-from ariadne.contrib.tracing.opentracing import OpenTracingExtension
 from ariadne.contrib.tracing.apollotracing import ApolloTracingExtension
+from ariadne.contrib.tracing.opentracing import OpenTracingExtension
 from django.test import TestCase, override_settings
 
 from ..tracing import MyTracer, get_tracer_extension

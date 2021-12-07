@@ -1,6 +1,7 @@
 # v4.4.10
 def run_sql(schema_editor):
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         create or replace function owner_yaml_updated() returns trigger as $$
         begin
             if (new.yaml->'codecov'->'bot')::citext is distinct from 'null' then
@@ -24,4 +25,5 @@ def run_sql(schema_editor):
             return new;
         end;
         $$ language plpgsql;
-    """)
+    """
+    )

@@ -1,11 +1,11 @@
 from pathlib import Path
-from unittest.mock import patch, PropertyMock
+from unittest.mock import PropertyMock, patch
+
 from rest_framework.reverse import reverse
-
-from core.tests.factories import PullFactory, RepositoryFactory, CommitFactory
 from shared.reports.types import ReportTotals
-from codecov.tests.base_test import InternalAPITest
 
+from codecov.tests.base_test import InternalAPITest
+from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
 
 current_file = Path(__file__)
 
@@ -38,10 +38,7 @@ class TestCompareFlagsView(InternalAPITest):
         self.client.force_login(self.repo.author)
 
     def test_compare_flags___success(
-        self,
-        diff_totals_mock,
-        read_chunks_mock,
-        git_comparison_mock,
+        self, diff_totals_mock, read_chunks_mock, git_comparison_mock,
     ):
         head_chunks = open(
             current_file.parent.parent.parent
@@ -234,11 +231,7 @@ class TestCompareFlagsView(InternalAPITest):
 
     @patch("services.comparison.FlagComparison.base_report", new_callable=PropertyMock)
     def test_compare_flags_doesnt_crash_if_base_doesnt_have_flags(
-        self,
-        base_flag_mock,
-        diff_totals_mock,
-        read_chunks_mock,
-        git_comparison_mock,
+        self, base_flag_mock, diff_totals_mock, read_chunks_mock, git_comparison_mock,
     ):
         git_comparison_mock.return_value = {"diff": {"files": {}}}
         read_chunks_mock.return_value = ""

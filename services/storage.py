@@ -1,13 +1,13 @@
+import gzip
 import logging
-
 import os
 import sys
-import gzip
-import minio
 from datetime import timedelta
-from minio.error import ResponseError, BucketAlreadyOwnedByYou, BucketAlreadyExists
-from minio.credentials import Chain, EnvAWS, EnvMinio, IAMProvider, Credentials
 from io import BytesIO
+
+import minio
+from minio.credentials import Chain, Credentials, EnvAWS, EnvMinio, IAMProvider
+from minio.error import BucketAlreadyExists, BucketAlreadyOwnedByYou, ResponseError
 
 from utils.config import get_config
 
@@ -33,9 +33,9 @@ class StorageService(object):
         if "port" not in self.minio_config:
             self.minio_config["port"] = 9000
         if "iam_auth" not in self.minio_config:
-            self.minio_config['iam_auth'] = False
+            self.minio_config["iam_auth"] = False
         if "iam_endpoint" not in self.minio_config:
-            self.minio_config['iam_endpoint'] = None
+            self.minio_config["iam_endpoint"] = None
 
         if not MINIO_CLIENT:
             MINIO_CLIENT = self.init_minio_client(
@@ -44,33 +44,42 @@ class StorageService(object):
                 self.minio_config["access_key_id"],
                 self.minio_config["secret_access_key"],
                 self.minio_config["verify_ssl"],
-                self.minio_config['iam_auth'],
-                self.minio_config['iam_endpoint']
+                self.minio_config["iam_auth"],
+                self.minio_config["iam_endpoint"],
             )
             log.info("----- created minio_client: ---- ")
 
     def client(self):
         return MINIO_CLIENT if MINIO_CLIENT else None
 
-    def init_minio_client(self, host, port, access_key, secret_key, verify_ssl, iam_auth=False, iam_endpoint=None):
-        host = '{}:{}'.format(host, port)
+    def init_minio_client(
+        self,
+        host,
+        port,
+        access_key,
+        secret_key,
+        verify_ssl,
+        iam_auth=False,
+        iam_endpoint=None,
+    ):
+        host = "{}:{}".format(host, port)
         if iam_auth:
-            return minio.Minio(host,
-                               secure=verify_ssl,
-                               credentials=Credentials(
-                                   provider=Chain(
-                                       providers=[
-                                           IAMProvider(endpoint=iam_endpoint),
-                                           EnvMinio(),
-                                           EnvAWS()
-                                       ]
-                                   )))
+            return minio.Minio(
+                host,
+                secure=verify_ssl,
+                credentials=Credentials(
+                    provider=Chain(
+                        providers=[
+                            IAMProvider(endpoint=iam_endpoint),
+                            EnvMinio(),
+                            EnvAWS(),
+                        ]
+                    )
+                ),
+            )
 
         return minio.Minio(
-            host,
-            access_key=access_key,
-            secret_key=secret_key,
-            secure=verify_ssl,
+            host, access_key=access_key, secret_key=secret_key, secure=verify_ssl,
         )
 
     # writes the initial storage bucket to storage via minio.
@@ -78,7 +87,6 @@ class StorageService(object):
         if not MINIO_CLIENT.bucket_exists(bucket):
             MINIO_CLIENT.make_bucket(bucket, location=region)
             MINIO_CLIENT.set_bucket_policy(bucket, "*", "readonly")
-
 
     # Writes a file to storage will gzip if not compressed already
     def write_file(self, bucket, path, data, reduced_redundancy=False, gzipped=False):

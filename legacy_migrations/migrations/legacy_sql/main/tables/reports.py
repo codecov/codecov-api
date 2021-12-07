@@ -1,5 +1,6 @@
 def run_sql(schema_editor):
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         -- EOF
         --
         -- Create model CommitReport
@@ -137,4 +138,5 @@ def run_sql(schema_editor):
         ALTER TABLE "reports_uploadflagmembership" ADD CONSTRAINT "reports_reportsessio_report_session_id_7d7f9546_fk_reports_r" FOREIGN KEY ("upload_id") REFERENCES "reports_upload" ("id") DEFERRABLE INITIALLY DEFERRED;
         CREATE INDEX "reports_upload_report_id_f6b4ffae" ON "reports_upload" ("report_id");
         ALTER TABLE "reports_upload" ADD CONSTRAINT "reports_reportsessio_report_id_f6b4ffae_fk_reports_c" FOREIGN KEY ("report_id") REFERENCES "reports_commitreport" ("id") DEFERRABLE INITIALLY DEFERRED;
-    """)
+    """
+    )

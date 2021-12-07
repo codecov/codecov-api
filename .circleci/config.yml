@@ -38,11 +38,27 @@ gcloud_auth_enterprise: &gcloud_auth_enterprise
     gcloud auth configure-docker
 
 jobs:
+  linter:
+    docker:
+      - image: circleci/python:3.7.6
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - run:
+          name: Running linter
+          command: |
+            echo "Installing..."
+            pip3 install -Iv black==19.10b0 isort
+            echo "Linting..."
+            black --check .
+            echo "Sorting..."
+            isort --profile black --check .
   build:
     executor: codecov-deploy
     steps:
     - checkout
-    - setup_remote_docker
+    - setup_remote_docker:
+        version: 20.10.7
     - run:
         <<: *gcloud_auth
     - run:
@@ -199,6 +215,7 @@ workflows:
   version: 2
   build-test-deploy:
     jobs:
+      - linter
       - build:
           context: "circleci google deploy context"
           filters:

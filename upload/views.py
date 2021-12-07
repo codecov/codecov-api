@@ -1,44 +1,46 @@
-import logging
 import asyncio
+import logging
+from contextlib import suppress
+from datetime import datetime
+from json import dumps
+from urllib.parse import parse_qs
+from uuid import uuid4
 
 import minio
-from django.http import Http404
-from utils.services import get_long_service_name
-from datetime import datetime
-from rest_framework import status, renderers
-from rest_framework.views import APIView
-from django.views import View
-from rest_framework.permissions import AllowAny
-from rest_framework.exceptions import ValidationError
-from django.http import HttpResponse, HttpResponseServerError
-from django.utils.encoding import smart_text
-from urllib.parse import parse_qs
-from json import dumps
-from uuid import uuid4
+from asgiref.sync import sync_to_async
+from django.contrib.auth.models import AnonymousUser
+from django.http import Http404, HttpResponse, HttpResponseServerError
 from django.utils import timezone
 from django.utils.decorators import classonlymethod
-from asgiref.sync import sync_to_async
+from django.utils.encoding import smart_text
+from django.views import View
+from rest_framework import renderers, status
+from rest_framework.exceptions import APIException, ValidationError
+from rest_framework.permissions import AllowAny
+from rest_framework.views import APIView
 
-from core.commands.repository import RepositoryCommands
+from codecov_auth.authentication import CodecovTokenAuthentication
 from codecov_auth.commands.owner import OwnerCommands
-
-from .helpers import (
-    parse_params,
-    get_global_tokens,
-    determine_repo_for_upload,
-    determine_upload_branch_to_use,
-    determine_upload_pr_to_use,
-    determine_upload_commit_to_use,
-    insert_commit,
-    validate_upload,
-    parse_headers,
-    store_report_in_redis,
-    dispatch_upload_task,
-)
-from services.redis_configuration import get_redis_connection
+from core.commands.repository import RepositoryCommands
 from services.archive import ArchiveService
+from services.redis_configuration import get_redis_connection
 from services.segment import SegmentService
 from utils.config import get_config
+from utils.services import get_long_service_name
+
+from .helpers import (
+    check_commit_upload_constraints,
+    determine_repo_for_upload,
+    determine_upload_branch_to_use,
+    determine_upload_commit_to_use,
+    determine_upload_pr_to_use,
+    dispatch_upload_task,
+    insert_commit,
+    parse_headers,
+    parse_params,
+    store_report_in_redis,
+    validate_upload,
+)
 
 log = logging.getLogger(__name__)
 
@@ -134,8 +136,7 @@ class UploadHandler(APIView):
         redis = get_redis_connection()
         validate_upload(upload_params, repository, redis)
         log.info(
-            "Upload was determined to be valid",
-            extra=dict(repoid=repository.repoid)
+            "Upload was determined to be valid", extra=dict(repoid=repository.repoid)
         )
         # Do some processing to handle special cases for branch, pr, and commit values, and determine which values to use
         # note that these values may be different from the values provided in the upload_params
@@ -154,9 +155,10 @@ class UploadHandler(APIView):
                 upload_params=upload_params,
             ),
         )
-        insert_commit(
+        commit = insert_commit(
             commitid, branch, pr, repository, owner, upload_params.get("parent")
         )
+        check_commit_upload_constraints(commit)
 
         # --------- Handle the actual upload
 
@@ -267,10 +269,12 @@ class UploadHandler(APIView):
             build_url = f"{get_config((repository.service, 'url'))}/{owner.username}/{repository.name}/{upload_params.get('build')}"
         else:
             build_url = upload_params.get("build_url")
-
+        queue_params = upload_params.copy()
+        if upload_params.get("using_global_token"):
+            queue_params["service"] = request_params.get("service")
         # Define the task arguments to send when dispatching upload task to worker
         task_arguments = {
-            **upload_params,
+            **queue_params,
             "build_url": build_url,
             "reportid": reportid,
             "redis_key": redis_key,  # location of report for v2 uploads; this will be "None" for v4 uploads
@@ -314,6 +318,12 @@ class UploadHandler(APIView):
 
 
 class UploadDownloadHandler(View):
+    @sync_to_async
+    def get_user(self, request):
+        with suppress(APIException, TypeError):
+            return CodecovTokenAuthentication().authenticate(request)[0]
+        return AnonymousUser()
+
     @classonlymethod
     def as_view(_, **initkwargs):
         view = super().as_view(**initkwargs)
@@ -359,7 +369,7 @@ class UploadDownloadHandler(View):
     async def get(self, request, *args, **kwargs):
         self.read_params()
         self.validate_path()
-
+        request.user = await self.get_user(request)
         repo = await self.get_repo()
         raw_uploaded_report = await self.get_from_storage(repo)
 

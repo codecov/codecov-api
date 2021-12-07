@@ -1,9 +1,9 @@
-from .settings_base import *
 import logging
 
+from .settings_base import *
 
 DEBUG = True
-ALLOWED_HOSTS = ["localhost"]
+ALLOWED_HOSTS = get_config("setup", "api_allowed_hosts", default=["localhost"])
 
 
 WEBHOOK_URL = ""  # NGROK TUNNEL HERE
@@ -44,3 +44,5 @@ CORS_ALLOWED_ORIGINS = [
 
 COOKIES_DOMAIN = "localhost"
 SESSION_COOKIE_DOMAIN = "localhost"
+
+GRAPHQL_PLAYGROUND = True

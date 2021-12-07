@@ -1,13 +1,13 @@
-from asgiref.sync import sync_to_async
 import pytest
-from django.test import TransactionTestCase
+from asgiref.sync import sync_to_async
 from django.contrib.auth.models import AnonymousUser
+from django.test import TransactionTestCase
 
+from codecov.commands.exceptions import Unauthenticated
 from codecov_auth.models import Session
 from codecov_auth.tests.factories import OwnerFactory, SessionFactory
 
 from ..delete_session import DeleteSessionInteractor
-from codecov.commands.exceptions import Unauthenticated
 
 
 @sync_to_async

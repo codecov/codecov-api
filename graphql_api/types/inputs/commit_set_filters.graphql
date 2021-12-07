@@ -1,0 +1,3 @@
+input CommitsSetFilters {
+  hasUploadedCoverage: Boolean
+}

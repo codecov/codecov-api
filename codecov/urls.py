@@ -1,9 +1,9 @@
 from django.conf import settings
 from django.contrib import admin
-from django.urls import path, include, re_path
+from django.urls import include, path, re_path
 
+from codecov import views
 from internal_api.constants import INTERNAL_API_PREFIX
-from . import views
 
 urlpatterns = [
     path("billing/", include("billing.urls")),
@@ -13,8 +13,7 @@ urlpatterns = [
     path("health/", views.health),
     path("", views.health),
     path(
-        "<str:service>/<str:owner_username>/<str:repo_name>/",
-        include("graphs.urls"),
+        "<str:service>/<str:owner_username>/<str:repo_name>/", include("graphs.urls"),
     ),
     path("upload/", include("upload.urls")),
 ]

@@ -6,6 +6,32 @@ type Repository {
   latestCommitAt: DateTime
   updatedAt: DateTime
   author: Owner!
+  uploadToken: String
   branch(name: String): Branch
   commit(id: String!): Commit
+  pull(id: Int!): Pull
+  pulls(filters: PullsSetFilters, orderingDirection: OrderingDirection, first: Int, after: String, last: Int, before: String): PullConnection
+  commits(filters: CommitsSetFilters, first: Int, after: String, last: Int, before: String): CommitConnection
+}
+
+type PullConnection {
+  edges: [PullEdge]!
+  totalCount: Int!
+  pageInfo: PageInfo!
+}
+
+type PullEdge {
+  cursor: String!
+  node: Pull!
+}
+
+type CommitConnection {
+  edges: [CommitEdge]!
+  totalCount: Int!
+  pageInfo: PageInfo!
+}
+
+type CommitEdge {
+  cursor: String!
+  node: Commit!
 }

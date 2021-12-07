@@ -1,12 +1,13 @@
-import pytest
 from unittest.mock import patch
 
-from django.test import TransactionTestCase
+import pytest
 from django.contrib.auth.models import AnonymousUser
+from django.test import TransactionTestCase
 
-from codecov_auth.tests.factories import OwnerFactory
-from ..trigger_sync import TriggerSyncInteractor
 from codecov.commands.exceptions import Unauthenticated, ValidationError
+from codecov_auth.tests.factories import OwnerFactory
+
+from ..trigger_sync import TriggerSyncInteractor
 
 
 class IsSyncingInteractorTest(TransactionTestCase):

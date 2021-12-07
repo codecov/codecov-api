@@ -1,7 +1,8 @@
-from ariadne import ObjectType
+from ariadne import ObjectType, convert_kwargs_to_snake_case
 
 from graphql_api.dataloader.owner import load_owner_by_id
-
+from graphql_api.helpers.connection import queryset_to_connection
+from graphql_api.types.enums import OrderingDirection
 
 repository_bindable = ObjectType("Repository")
 
@@ -30,3 +31,40 @@ def resolve_author(repository, info):
 def resolve_commit(repository, info, id):
     command = info.context["executor"].get_command("commit")
     return command.fetch_commit(repository, id)
+
+
+@repository_bindable.field("uploadToken")
+def resolve_upload_token(repository, info):
+    command = info.context["executor"].get_command("repository")
+    return command.get_upload_token(repository)
+
+
+@repository_bindable.field("pull")
+def resolve_pull(repository, info, id):
+    command = info.context["executor"].get_command("pull")
+    return command.fetch_pull_request(repository, id)
+
+
+@repository_bindable.field("pulls")
+@convert_kwargs_to_snake_case
+async def resolve_pulls(
+    repository, info, filters=None, ordering_direction=OrderingDirection.DESC, **kwargs
+):
+    command = info.context["executor"].get_command("pull")
+    queryset = await command.fetch_pull_requests(repository, filters)
+    return await queryset_to_connection(
+        queryset,
+        ordering="updatestamp",
+        ordering_direction=ordering_direction,
+        **kwargs,
+    )
+
+
+@repository_bindable.field("commits")
+@convert_kwargs_to_snake_case
+async def resolve_commits(repository, info, filters=None, **kwargs):
+    command = info.context["executor"].get_command("commit")
+    queryset = await command.fetch_commits(repository, filters)
+    return await queryset_to_connection(
+        queryset, ordering="id", ordering_direction=OrderingDirection.ASC, **kwargs
+    )

@@ -2,22 +2,21 @@ import logging
 import re
 import uuid
 from json import dumps
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlencode, urlparse
 
-from django.utils import timezone
 from django.conf import settings
 from django.contrib.auth import login
 from django.core.exceptions import SuspiciousOperation
+from django.utils import timezone
 
 from codecov_auth.helpers import create_signed_value
-from codecov_auth.models import Session, Owner
-from utils.encryption import encryptor
-from utils.config import get_config
-from utils.services import get_short_service_name
+from codecov_auth.models import Owner, Session
+from services.redis_configuration import get_redis_connection
 from services.refresh import RefreshService
 from services.segment import SegmentService
-from services.redis_configuration import get_redis_connection
-
+from utils.config import get_config
+from utils.encryption import encryptor
+from utils.services import get_short_service_name
 
 log = logging.getLogger(__name__)
 
@@ -242,9 +241,40 @@ class LoginMixin(object):
         ## Segment tracking
         self.segment_service.identify_user(owner)
         self.segment_service.group(owner)
+        marketing_tags = self.retrieve_marketing_tags_from_cookie()
         if was_created:
-            self.segment_service.user_signed_up(owner, **request.GET.dict())
+            self.segment_service.user_signed_up(owner, **marketing_tags)
         else:
-            self.segment_service.user_signed_in(owner, **request.GET.dict())
+            self.segment_service.user_signed_in(owner, **marketing_tags)
 
         return (owner, was_created)
+
+    # below are functions to save marketing UTM params to cookie to retrieve them
+    # on the oauth callback for the tracking functions
+    def _get_utm_params(self, params: dict) -> dict:
+        filtered_params = {
+            "utm_department": params.get("utm_department", None),
+            "utm_campaign": params.get("utm_campaign", None),
+            "utm_medium": params.get("utm_medium", None),
+            "utm_source": params.get("utm_source", None),
+            "utm_content": params.get("utm_content", None),
+            "utm_term": params.get("utm_term", None),
+        }
+        # remove None values from the dict
+        return {k: v for k, v in filtered_params.items() if v is not None}
+
+    def store_to_cookie_utm_tags(self, response) -> None:
+        data = urlencode(self._get_utm_params(self.request.GET))
+        response.set_cookie(
+            "_marketing_tags",
+            data,
+            max_age=500,  # Same as state validatiy
+            httponly=True,
+            domain=settings.COOKIES_DOMAIN,
+        )
+
+    def retrieve_marketing_tags_from_cookie(self) -> dict:
+        cookie_data = self.request.COOKIES.get("_marketing_tags", "")
+        params_as_dict = parse_qs(cookie_data)
+        filtered_params = self._get_utm_params(params_as_dict)
+        return {k: v[0] for k, v in filtered_params.items()}

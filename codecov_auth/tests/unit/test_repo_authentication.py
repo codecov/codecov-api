@@ -1,5 +1,5 @@
-from datetime import timedelta
 import uuid
+from datetime import timedelta
 
 import pytest
 from django.utils import timezone
@@ -8,7 +8,9 @@ from rest_framework.test import APIRequestFactory
 
 from codecov_auth.authentication.repo_auth import (
     RepositoryLegacyQueryTokenAuthentication,
-    RepositoryLegacyTokenAuthentication, RepositoryTokenAuthentication)
+    RepositoryLegacyTokenAuthentication,
+    RepositoryTokenAuthentication,
+)
 from codecov_auth.models import RepositoryToken
 from core.tests.factories import RepositoryFactory, RepositoryTokenFactory
 
@@ -46,13 +48,14 @@ class TestRepositoryLegacyQueryTokenAuthentication(object):
         assert auth.get_scopes() == ["upload"]
         assert user.is_authenticated()
 
+
 class TestRepositoryLegacyTokenAuthentication(object):
     def test_authenticate_credentials_empty(self, db):
         token = None
         authentication = RepositoryLegacyTokenAuthentication()
         with pytest.raises(exceptions.AuthenticationFailed):
             authentication.authenticate_credentials(token)
-    
+
     def test_authenticate_credentials_not_uuid(self, db):
         token = "not-a-uuid"
         authentication = RepositoryLegacyTokenAuthentication()

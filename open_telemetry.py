@@ -1,14 +1,27 @@
-from opentelemetry import trace
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import SpanExporter, SpanExportResult
-from opentelemetry.sdk.trace.export import SimpleSpanProcessor
-from opentelemetry.sdk.trace import ReadableSpan
-from opentelemetry.instrumentation.django import DjangoInstrumentor
-from datetime import datetime
-import os
 import json
-import requests
 import logging
+import os
+import re
+from datetime import datetime
+
+import requests
+from codecovopentelem import (
+    CoverageSpanFilter,
+    UnableToStartProcessorException,
+    get_codecov_opentelemetry_instances,
+)
+from opentelemetry import trace
+from opentelemetry.instrumentation.django import DjangoInstrumentor
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import (
+    BatchSpanProcessor,
+    SpanExporter,
+    SpanExportResult,
+)
+
+from utils.version import get_current_version
+
+log = logging.getLogger(__name__)
 
 
 class CodecovExporter(SpanExporter):
@@ -23,16 +36,13 @@ class CodecovExporter(SpanExporter):
         """
         self.attributes = {
             # 'api' is the backend that this exporter talks to
-            'api': options['api'],
-
+            "api": options["api"],
             # 'env' is either 'test' or 'prod'
-            'env': options['env'],
-
+            "env": options["env"],
             # 'token' is a codecov-provided token bound to a repo
-            'token': options['token'],
-
+            "token": options["token"],
             # 'release' is the current release number, provided by user
-            'release': options['release'],
+            "release": options["release"],
         }
 
     def _date_to_millis(self, dt):
@@ -57,9 +67,11 @@ class CodecovExporter(SpanExporter):
         # ::calculate path::
         # NOTE: flask uses http.route & django uses http.target?
         # TODO: figure out exactly what's going on here..
-        path = span_attributes["http.route"] \
-            if "http.route" in span_attributes \
+        path = (
+            span_attributes["http.route"]
+            if "http.route" in span_attributes
             else span_attributes["http.target"]
+        )
 
         # path should be in format $path\/segments\/
         if path[0] == "/":
@@ -71,11 +83,14 @@ class CodecovExporter(SpanExporter):
         # for 404s it appears that django doesn't know how to set paths,
         # and so it ends up setting stuff like "HTTP GET", which totally
         # screws up results..
-        s["name"] = path #s["name"] if "name" in s else path
+        s["name"] = path  # s["name"] if "name" in s else path
 
-        url = span_attributes["http.scheme"] + "://" \
-            + span_attributes["http.server_name"] \
+        url = (
+            span_attributes["http.scheme"]
+            + "://"
+            + span_attributes["http.server_name"]
             + path
+        )
 
         # codecov-specific attributes
         s["attributes"] = {
@@ -90,7 +105,7 @@ class CodecovExporter(SpanExporter):
             "codecov.request.ua": "unknown",
             "codecov.request.user": "unknown",
             "codecov.request.action": "unknown",
-            "codecov.request.server": span_attributes["http.server_name"]
+            "codecov.request.server": span_attributes["http.server_name"],
         }
 
         s["events"] = []
@@ -114,13 +129,13 @@ class CodecovExporter(SpanExporter):
         returns #opentelemetry.sdk.trace.export.SpanExportResult
         see opentelemetry-python.readthedocs.io
         """
-        api = self.attributes['api']
+        api = self.attributes["api"]
 
         try:
             to_send = []
             headers = {
-                'content-type': 'application/json',
-                'Authorization': self.attributes['token']
+                "content-type": "application/json",
+                "Authorization": self.attributes["token"],
             }
             for span in spans:
                 to_send.append(self._format_span(span))
@@ -150,37 +165,30 @@ class CodecovExporter(SpanExporter):
 
 
 def instrument():
-    """
-    instrument is called in both development and production environments
-
-    NOTE TO DEVELOPERS:
-
-    * instrument() is currently being used with contract coverage work. This
-      is experimental, but because we want to collect production data must be
-      merged into master. The values hard-coded here are for demonstration
-      purposes only, and are to be removed before using contract coverage in
-      any serious capacity.
-    * also note that, unless TRANSMIT_SPANS is set in your environment, this
-      function will not be called
-    """
-    # api = os.environ['CODECOV_API']
-    # token = os.environ['CODECOV_TOKEN']
-    
-    # THESE ARE NOT PRODUCTION VALUES
-    env = os.environ.get('CODECOV_ENV')
-    api = "https://contract.codecov.dev"
-    token = "teststhnbb89l6t1om6zrst36d8ld5i3izrk"
-
-    trace.set_tracer_provider(TracerProvider())
-    tracer = trace.get_tracer_provider().get_tracer(__name__)
-
-    trace.get_tracer_provider().add_span_processor(
-        SimpleSpanProcessor(CodecovExporter({
-            'api': api,
-            'env': env,
-            'token': token,
-            'release': '0.0.9'
-        }))
-    )
-    print("instrumenting with OpenTelemetry")
+    provider = TracerProvider()
+    trace.set_tracer_provider(provider)
+    log.info("Configuring opentelemetry exporter")
+    current_version = get_current_version()
+    current_env = "production"
+    try:
+        generator, exporter = get_codecov_opentelemetry_instances(
+            repository_token=os.getenv("OPENTELEMETRY_TOKEN"),
+            version_identifier=current_version,
+            sample_rate=float(os.getenv("OPENTELEMETRY_CODECOV_RATE")),
+            untracked_export_rate=0,
+            filters={
+                CoverageSpanFilter.regex_name_filter: None,
+                CoverageSpanFilter.span_kind_filter: [
+                    trace.SpanKind.SERVER,
+                    trace.SpanKind.CONSUMER,
+                ],
+            },
+            code=f"{current_version}:{current_env}",
+            codecov_endpoint=os.getenv("OPENTELEMETRY_ENDPOINT"),
+            environment=current_env,
+        )
+        provider.add_span_processor(generator)
+        provider.add_span_processor(BatchSpanProcessor(exporter))
+    except UnableToStartProcessorException:
+        log.warning("Unable to start codecov open telemetry")
     DjangoInstrumentor().instrument()

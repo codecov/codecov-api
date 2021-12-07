@@ -1,17 +1,11 @@
 import json
-
-from unittest.mock import patch, call
+from unittest.mock import call, patch
 
 from rest_framework.test import APIClient, APITestCase
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.models import Pull
-
-from core.tests.factories import (
-    RepositoryFactory,
-    PullFactory,
-    CommitFactory,
-)
+from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
 
 
 class PullViewSetTests(APITestCase):
@@ -59,7 +53,9 @@ class PullViewSetTests(APITestCase):
         )
 
     def test_get_pulls_wrong_repo_token(self):
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + self.other_repo.upload_token)
+        self.client.credentials(
+            HTTP_AUTHORIZATION="Token " + self.other_repo.upload_token
+        )
         response = self.client.get("/api/github/codecov/testRepoName/pulls/")
         self.assertEqual(response.status_code, 403)
 
@@ -75,7 +71,9 @@ class PullViewSetTests(APITestCase):
         self.assertEqual(content["pullid"], 10)
 
     def test_get_pull_no_permissions(self):
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + self.other_repo.upload_token)
+        self.client.credentials(
+            HTTP_AUTHORIZATION="Token " + self.other_repo.upload_token
+        )
         response = self.client.get("/api/github/codecov/testRepoName/pulls/10/")
         self.assertEqual(response.status_code, 403)
 
@@ -89,28 +87,38 @@ class PullViewSetTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         content = json.loads(response.content.decode())
         self.assertEqual(content["user_provided_base_sha"], "new-sha")
-        self.assertEqual(Pull.objects.get(pullid=10, repository=self.repo).user_provided_base_sha, "new-sha")
+        self.assertEqual(
+            Pull.objects.get(pullid=10, repository=self.repo).user_provided_base_sha,
+            "new-sha",
+        )
         pulls_sync_mock.assert_called_once_with(repoid=self.repo.repoid, pullid="10")
 
     def test_update_pull_user_provided_base_no_permissions(self):
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + self.other_repo.upload_token)
+        self.client.credentials(
+            HTTP_AUTHORIZATION="Token " + self.other_repo.upload_token
+        )
         response = self.client.put(
             "/api/github/codecov/testRepoName/pulls/10/",
             {"user_provided_base_sha": "new-sha"},
         )
         self.assertEqual(response.status_code, 403)
-    
+
     @patch("services.task.TaskService.pulls_sync")
-    def test_put_not_found_pull_user_provided_base(self, pulls_sync_mock):
+    def test_create_new_pull_user_provided_base(self, pulls_sync_mock):
         self.client.credentials(HTTP_AUTHORIZATION="Token " + self.repo.upload_token)
         self.client.force_login(user=self.user)
         response = self.client.put(
             "/api/github/codecov/testRepoName/pulls/15/",
             {"user_provided_base_sha": "new-sha"},
         )
-        self.assertEqual(response.status_code, 404)
-        assert not pulls_sync_mock.called
-
+        self.assertEqual(response.status_code, 200)
+        content = json.loads(response.content.decode())
+        self.assertEqual(content["user_provided_base_sha"], "new-sha")
+        self.assertEqual(
+            Pull.objects.get(pullid=15, repository=self.repo).user_provided_base_sha,
+            "new-sha",
+        )
+        pulls_sync_mock.assert_called_once_with(repoid=self.repo.repoid, pullid="15")
 
     @patch("services.task.TaskService.pulls_sync")
     def test_post_pull_user_provided_base(self, pulls_sync_mock):

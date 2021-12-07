@@ -1,8 +1,8 @@
+from ariadne import ObjectType, convert_kwargs_to_snake_case
 from asgiref.sync import async_to_sync
-from ariadne import convert_kwargs_to_snake_case, ObjectType
 
+from graphql_api.actions.owner import get_owner_sessions, search_my_owners
 from graphql_api.actions.repository import search_repos
-from graphql_api.actions.owner import search_my_owners, get_owner_sessions
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
 from graphql_api.helpers.connection import (
     build_connection_graphql,
@@ -42,10 +42,7 @@ def resolve_viewable_repositories(
 ):
     queryset = search_repos(current_user, filters)
     return queryset_to_connection(
-        queryset,
-        ordering=ordering,
-        ordering_direction=ordering_direction,
-        **kwargs,
+        queryset, ordering=ordering, ordering_direction=ordering_direction, **kwargs,
     )
 
 

@@ -1,13 +1,13 @@
 import random
 import uuid
+from hashlib import sha1
 
 import factory
-
-from reports import models
-from hashlib import sha1
 from factory.django import DjangoModelFactory
+
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
+from reports import models
 
 
 class CommitReportFactory(DjangoModelFactory):
@@ -17,7 +17,7 @@ class CommitReportFactory(DjangoModelFactory):
     commit = factory.SubFactory(CommitFactory)
 
 
-class ReportSessionFactory(DjangoModelFactory):
+class UploadFactory(DjangoModelFactory):
     class Meta:
         model = models.ReportSession
 
@@ -33,12 +33,12 @@ class RepositoryFlagFactory(DjangoModelFactory):
     flag_name = factory.Faker("word")
 
 
-class ReportSessionFlagMembershipFactory(DjangoModelFactory):
+class UploadFlagMembershipFactory(DjangoModelFactory):
     class Meta:
-        model = models.ReportSessionFlagMembership
+        model = models.UploadFlagMembership
 
     flag = factory.SubFactory(RepositoryFlagFactory)
-    report_session = factory.SubFactory(ReportSessionFactory)
+    report_session = factory.SubFactory(UploadFactory)
 
 
 class ReportLevelTotalsFactory(DjangoModelFactory):

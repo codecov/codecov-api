@@ -1,9 +1,10 @@
+from django.contrib.auth.models import AnonymousUser
 from django.test import RequestFactory
 from django.urls import ResolverMatch
-from django.contrib.auth.models import AnonymousUser
 
 from codecov_auth.commands.owner import OwnerCommands
-from ..executor import Executor, get_executor_from_request, get_executor_from_command
+
+from ..executor import Executor, get_executor_from_command, get_executor_from_request
 
 
 def test_get_executor_from_request():

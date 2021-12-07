@@ -1,11 +1,15 @@
 import pytest
 from django.conf import settings
+from django.contrib.auth.models import AnonymousUser
 
 from codecov_auth.helpers import (
-    do_create_signed_value_v2,
-    decode_token_from_cookie,
     create_signed_value,
+    current_user_part_of_org,
+    decode_token_from_cookie,
+    do_create_signed_value_v2,
 )
+
+from ..factories import OwnerFactory
 
 
 def test_do_create_signed_value_v2():
@@ -51,3 +55,31 @@ def test_do_create_signed_value_v2_token_value():
     res = do_create_signed_value_v2(secret, name, value, clock=lambda: 1557329312)
     assert decode_token_from_cookie(secret, res) == value
     assert res == expected_result
+
+
+@pytest.mark.django_db
+def test_current_user_part_of_org_when_user_not_authenticated():
+    org = OwnerFactory()
+    current_user = AnonymousUser()
+    assert current_user_part_of_org(current_user, org) is False
+
+
+@pytest.mark.django_db
+def test_current_user_part_of_org_when_user_is_owner():
+    current_user = OwnerFactory()
+    assert current_user_part_of_org(current_user, current_user) is True
+
+
+@pytest.mark.django_db
+def test_current_user_part_of_org_when_user_doesnt_have_org():
+    org = OwnerFactory()
+    current_user = OwnerFactory(organizations=None)
+    assert current_user_part_of_org(current_user, current_user) is False
+
+
+@pytest.mark.django_db
+def test_current_user_part_of_org_when_user_doesnt_have_org():
+    org = OwnerFactory()
+    current_user = OwnerFactory(organizations=[org.ownerid])
+    current_user.save()
+    assert current_user_part_of_org(current_user, current_user) is True

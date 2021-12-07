@@ -1,5 +1,6 @@
 def run_sql(schema_editor):
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         create or replace function refresh_teams(service, jsonb) returns int[] as $$
         declare ownerids int[];
         declare _ownerid int;
@@ -155,4 +156,5 @@ def run_sql(schema_editor):
             return repos;
         end;
         $$ language plpgsql volatile;
-    """)
+    """
+    )

@@ -1,7 +1,9 @@
-from django.test import TransactionTestCase
 from unittest.mock import patch
 
+from django.test import TransactionTestCase
+
 from codecov_auth.tests.factories import OwnerFactory
+
 from ..owner import OwnerCommands
 
 
@@ -44,3 +46,17 @@ class OwnerCommandsTest(TransactionTestCase):
     def test_is_syncing_delegate_to_interactor(self, interactor_mock):
         self.command.is_syncing()
         interactor_mock.assert_called_once()
+
+    @patch("codecov_auth.commands.owner.owner.OnboardUserInteractor.execute")
+    def test_onboard_user_delegate_to_interactor(self, interactor_mock):
+        params = {}
+        self.command.onboard_user(params)
+        interactor_mock.assert_called_once_with(params)
+
+    @patch(
+        "codecov_auth.commands.owner.owner.GetUploadsNumberPerUserInteractor.execute"
+    )
+    def test_get_uploads_number_per_user_delegate_to_interactor(self, interactor_mock):
+        owner = {}
+        self.command.get_uploads_number_per_user(owner)
+        interactor_mock.assert_called_once_with(owner)

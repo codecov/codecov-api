@@ -1,15 +1,14 @@
 import logging
-import asyncio
+
+from asgiref.sync import async_to_sync
 from django.http import Http404
-
-from rest_framework.permissions import BasePermission
 from rest_framework.permissions import SAFE_METHODS  # ['GET', 'HEAD', 'OPTIONS']
+from rest_framework.permissions import BasePermission
 
-from services.decorators import torngit_safe
-from services.segment import SegmentService
-from services.repo_providers import get_generic_adapter_params, get_provider
 from internal_api.repo.repository_accessors import RepoAccessors
-
+from services.decorators import torngit_safe
+from services.repo_providers import get_generic_adapter_params, get_provider
+from services.segment import SegmentService
 
 log = logging.getLogger(__name__)
 
@@ -39,9 +38,9 @@ class RepositoryPermissionsService:
 
     def has_write_permissions(self, user, repo):
         return user.is_authenticated and (
-                repo.author.ownerid == user.ownerid
-                or self._fetch_provider_permissions(user, repo)[1]
-            )
+            repo.author.ownerid == user.ownerid
+            or self._fetch_provider_permissions(user, repo)[1]
+        )
 
     def user_is_activated(self, user, owner):
         if user.ownerid == owner.ownerid:
@@ -148,10 +147,8 @@ class UserIsAdminPermissions(BasePermission):
             },
         )
 
-        return asyncio.run(
-            torngit_provider_adapter.get_is_admin(
-                user={"username": user.username, "service_id": user.service_id}
-            )
+        return async_to_sync(torngit_provider_adapter.get_is_admin)(
+            user={"username": user.username, "service_id": user.service_id}
         )
 
 
@@ -168,4 +165,7 @@ class MemberOfOrgPermissions(BasePermission):
             return False
         if current_user == owner:
             return True
-        return owner.ownerid in (current_user.organizations or [])
+        if owner.ownerid in (current_user.organizations or []):
+            return True
+        else:
+            raise Http404("No Owner matches the given query.")

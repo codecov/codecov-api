@@ -1,10 +1,9 @@
 from pathlib import Path
 
-from services.archive import build_report, ArchiveService, MinioEndpoints, ReportService
-from core.tests.factories import CommitFactory, RepositoryFactory
-from services.storage import StorageService
 from core.models import Repository
-
+from core.tests.factories import CommitFactory, RepositoryFactory
+from services.archive import ArchiveService, MinioEndpoints, ReportService, build_report
+from services.storage import StorageService
 
 current_file = Path(__file__)
 

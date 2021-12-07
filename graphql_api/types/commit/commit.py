@@ -1,7 +1,7 @@
 import yaml
 from ariadne import ObjectType
-from asgiref.sync import sync_to_async
 
+from graphql_api.dataloader.commit import load_commit_by_id
 from graphql_api.dataloader.owner import load_owner_by_id
 from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.enums import OrderingDirection
@@ -28,7 +28,7 @@ def resolve_file(commit, info, path, flags=None):
 
 @commit_bindable.field("totals")
 def resolve_totals(commit, info):
-    if commit.commitreport:
+    if commit.commitreport and hasattr(commit.commitreport, "reportleveltotals"):
         return commit.commitreport.reportleveltotals
 
 

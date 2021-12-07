@@ -1,9 +1,10 @@
 from unittest.mock import patch
-from asgiref.sync import async_to_sync
 
+from asgiref.sync import async_to_sync
 from django.test import TransactionTestCase
 
 from codecov_auth.tests.factories import OwnerFactory
+
 from ..is_syncing import IsSyncingInteractor
 
 

@@ -4,4 +4,5 @@ type Mutation {
   syncWithGitProvider: SyncWithGitProviderPayload
   updateProfile(input: UpdateProfileInput!): UpdateProfilePayload
   deleteSession(input: DeleteSessionInput!): DeleteSessionPayload
+  onboardUser(input: OnboardUserInput!): OnboardUserPayload
 }

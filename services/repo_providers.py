@@ -1,12 +1,12 @@
-from shared.torngit import get
-
-from codecov_auth.models import Owner, SERVICE_GITHUB
-from core.models import Repository
-from utils.encryption import encryptor
-from utils.config import get_config
+from os import getenv
 
 from django.conf import settings
-from os import getenv
+from shared.torngit import get
+
+from codecov_auth.models import SERVICE_GITHUB, Owner
+from core.models import Repository
+from utils.config import get_config
+from utils.encryption import encryptor
 
 
 class TorngitInitializationFailed(Exception):

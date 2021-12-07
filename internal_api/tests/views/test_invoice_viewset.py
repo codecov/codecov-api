@@ -1,17 +1,14 @@
 import json
 import os
-from stripe.error import StripeError, InvalidRequestError
-
 from unittest.mock import patch
 
-from rest_framework.test import APITestCase
-from rest_framework.reverse import reverse
 from rest_framework import status
+from rest_framework.reverse import reverse
+from rest_framework.test import APITestCase
+from stripe.error import InvalidRequestError, StripeError
 
 from codecov_auth.tests.factories import OwnerFactory
-
 from internal_api.tests.test_utils import GetAdminProviderAdapter
-
 
 curr_path = os.path.dirname(__file__)
 
@@ -75,13 +72,13 @@ class InvoiceViewSetTests(APITestCase):
         assert response.data == expected_invoices
 
     @patch("internal_api.permissions.get_provider")
-    def test_invoices_returns_403_if_user_not_admin(self, get_provider_mock):
+    def test_invoices_returns_404_if_user_not_admin(self, get_provider_mock):
         get_provider_mock.return_value = GetAdminProviderAdapter()
         owner = OwnerFactory()
         response = self._list(
             kwargs={"service": owner.service, "owner_username": owner.username}
         )
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     @patch("services.billing.stripe.Invoice.retrieve")
     def test_invoice(self, mock_retrieve_invoice):

@@ -1,6 +1,6 @@
-from core.models import Commit
-
 from django.test import TestCase
+
+from core.models import Commit
 
 from .factories import CommitFactory
 

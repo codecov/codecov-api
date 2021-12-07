@@ -1,21 +1,20 @@
 import asyncio
 import logging
 
-from django_filters.rest_framework import DjangoFilterBackend
+from django.db.models import OuterRef, Subquery
 from django.shortcuts import Http404, get_object_or_404
-from django.db.models import Subquery, OuterRef
-from rest_framework import generics, filters
-from rest_framework import viewsets, mixins
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, generics, mixins, viewsets
 from rest_framework.exceptions import PermissionDenied
 
-from internal_api.mixins import RepoPropertyMixin
-from internal_api.repo.repository_accessors import RepoAccessors
+from core.models import Commit, Pull
 from internal_api.compare.serializers import FlagComparisonSerializer
-from services.comparison import Comparison
-from core.models import Pull, Commit
-from .serializers import PullSerializer, PullDetailSerializer
+from internal_api.mixins import RepoPropertyMixin
 from internal_api.permissions import RepositoryArtifactPermissions
+from internal_api.repo.repository_accessors import RepoAccessors
+from services.comparison import Comparison
 
+from .serializers import PullDetailSerializer, PullSerializer
 
 log = logging.getLogger(__name__)
 

@@ -1,8 +1,9 @@
-from glob import glob
-import celery
-from modulefinder import ModuleFinder
 import os
+from glob import glob
+from modulefinder import ModuleFinder
 from pathlib import Path
+
+import celery
 
 finder = ModuleFinder()
 
@@ -55,6 +56,7 @@ def generate_files_to_be_cythonized():
 def main():
     hidden_imports = set(
         [
+            "billing.migrations",
             "celery_config",
             "codecov.graphs",
             "core.migrations",

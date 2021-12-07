@@ -18,7 +18,7 @@ endif
 
 GCR_REPO := gcr.io/genuine-polymer-165712/codecov-api
 ENTERPRISE_GCR_REPO := gcr.io/codecov-enterprise-sandbox/codecov-api
-REQUIREMENTS_TAG := requirements-v1-$(shell sha1sum requirements.txt | cut -d ' ' -f 1)
+REQUIREMENTS_TAG := requirements-v1-$(shell sha1sum requirements.txt | cut -d ' ' -f 1)-$(shell sha1sum Dockerfile.requirements | cut -d ' ' -f 1)
 VERSION := release-$(shell git rev-parse --short=7 HEAD)
 
 # CIRCLECI

@@ -1,12 +1,12 @@
 import logging
 import time
 
+import redis_lock
+from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.core.management.commands.migrate import Command as MigrateCommand
-from django.conf import settings
 from django.db import connections
 from django.db.utils import IntegrityError, ProgrammingError
-import redis_lock
 
 from services.redis_configuration import get_redis_connection
 

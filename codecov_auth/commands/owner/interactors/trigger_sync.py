@@ -1,8 +1,8 @@
 from asgiref.sync import sync_to_async
 
 from codecov.commands.base import BaseInteractor
-from services.refresh import RefreshService
 from codecov.commands.exceptions import Unauthenticated
+from services.refresh import RefreshService
 
 
 class TriggerSyncInteractor(BaseInteractor):

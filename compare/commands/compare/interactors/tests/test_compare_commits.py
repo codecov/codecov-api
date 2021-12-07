@@ -2,7 +2,6 @@ from datetime import datetime
 from unittest.mock import patch
 
 from asgiref.sync import async_to_sync
-
 from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
 
@@ -24,6 +23,18 @@ class CompareCommitsInteractorTest(TransactionTestCase):
         self.stale_comparison = CommitComparisonFactory()
         self.stale_comparison.compare_commit.updatestamp = datetime.now()
         self.stale_comparison.compare_commit.save()
+
+    async def test_when_no_head_commit(self):
+        compare = await CompareCommitsInteractor(AnonymousUser(), "github").execute(
+            None, self.parent_commit
+        )
+        assert compare is None
+
+    async def test_when_no_base_commit(self):
+        compare = await CompareCommitsInteractor(AnonymousUser(), "github").execute(
+            None, self.parent_commit
+        )
+        assert compare is None
 
     @patch(
         "compare.commands.compare.interactors.compare_commits.TaskService.compute_comparison"

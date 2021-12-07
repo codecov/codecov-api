@@ -1,13 +1,16 @@
 import asyncio
-from unittest.mock import patch
-from freezegun import freeze_time
 import datetime
+from unittest.mock import patch
 
-from django.test import TransactionTestCase
 from ariadne import graphql_sync
+from django.test import TransactionTestCase
+from freezegun import freeze_time
 
+from billing.constants import BASIC_PLAN_NAME
 from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import RepositoryFactory
+from core.tests.factories import CommitFactory, OwnerFactory, RepositoryFactory
+from reports.tests.factories import CommitReportFactory, UploadFactory
+
 from .helper import GraphQLTestHelper, paginate_connection
 
 query_repositories = """{
@@ -51,13 +54,8 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 "yaml": None,
                 "repositories": {
                     "totalCount": 2,
-                    "edges": [
-                        {"node": {"name": "a"}},
-                        {"node": {"name": "b"}},
-                    ],
-                    "pageInfo": {
-                        "hasNextPage": False,
-                    },
+                    "edges": [{"node": {"name": "a"}}, {"node": {"name": "b"}},],
+                    "pageInfo": {"hasNextPage": False,},
                 },
             }
         }
@@ -203,9 +201,25 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
             }
         }
         """
-        f = asyncio.Future()
-        f.set_result(repo)
-        command_mock.return_value = f
+        command_mock.return_value = repo
         query = query_repositories % (repo.author.username, repo.name)
         data = self.gql_request(query, user=self.user)
         assert data["owner"]["repository"]["name"] == repo.name
+
+    def test_resolve_number_of_uploads_per_user(self):
+        query_uploads_number = """{
+            owner(username: "%s") {
+               numberOfUploads
+            }
+        }
+        """
+        repository = RepositoryFactory.create(
+            author__plan=BASIC_PLAN_NAME, author=self.user
+        )
+        first_commit = CommitFactory.create(repository=repository)
+        first_report = CommitReportFactory.create(commit=first_commit)
+        for i in range(150):
+            UploadFactory.create(report=first_report)
+        query = query_uploads_number % (repository.author.username)
+        data = self.gql_request(query, user=self.user)
+        assert data["owner"]["numberOfUploads"] == 150

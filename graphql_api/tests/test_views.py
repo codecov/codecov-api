@@ -1,11 +1,13 @@
 import json
+
 from ariadne import ObjectType, make_executable_schema
-from django.test import TestCase, override_settings, RequestFactory
+from django.test import RequestFactory, TestCase, override_settings
 from django.urls import ResolverMatch
 
 from codecov.commands.exceptions import Unauthorized
-from .helper import GraphQLTestHelper
+
 from ..views import AsyncGraphqlView
+from .helper import GraphQLTestHelper
 
 
 def generate_schema_that_raise_with(exception):

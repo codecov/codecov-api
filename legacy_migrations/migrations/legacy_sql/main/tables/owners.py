@@ -1,5 +1,6 @@
 def run_sql(schema_editor):
-    schema_editor.execute("""                  
+    schema_editor.execute(
+        """                  
         create table owners(
             ownerid                 serial primary key,
             service                 service not null,
@@ -46,4 +47,5 @@ def run_sql(schema_editor):
         alter table owners add column parent_service_id text;
 
         alter table owners add column root_parent_service_id text;
-    """)
+    """
+    )

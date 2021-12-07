@@ -1,6 +1,7 @@
 # v4.4.2
 def run_sql(schema_editor):
-    schema_editor.execute("""
+    schema_editor.execute(
+        """
         ---- Column Updates -----
         alter table owners add column avatar_url text;
 
@@ -99,4 +100,5 @@ def run_sql(schema_editor):
 
         end;
         $$ language plpgsql volatile strict;
-    """)
+    """
+    )

@@ -1,6 +1,8 @@
-from shared.helpers.color import coverage_to_color
 from math import floor
-import pathlib
+
+from shared.helpers.color import coverage_to_color
+
+from graphs.badges.badges import large_badge, medium_badge, small_badge, unknown_badge
 
 
 def get_badge(coverage, coverage_range, precision):
@@ -20,25 +22,20 @@ def get_badge(coverage, coverage_range, precision):
         color = coverage_to_color(*coverage_range)(coverage)
         # Use medium badge to fit coverage of 100%
         if float(coverage) == 100:
-            badge = "medium_badge"
+            badge = medium_badge
         # Use badge size based on precision (0 = small, 1 = medium, 2 = large)
         elif precision == 0:
-            badge = "small_badge"
+            badge = small_badge
         elif precision == 1:
-            badge = "medium_badge"
+            badge = medium_badge
         else:
-            badge = "large_badge"
+            badge = large_badge
     else:
-        badge = "unknown_badge"
+        badge = unknown_badge
 
-    path = pathlib.Path(__file__).parent / f"../xml/{badge}.xml"
-    with open(path, "r") as file:
-        data = file.read()
-        return (
-            data.format(color.hex, coverage).strip()
-            if badge != "unknown_badge"
-            else data
-        )
+    return (
+        badge.format(color.hex, coverage).strip() if badge != unknown_badge else badge
+    )
 
 
 def format_coverage_precision(coverage, precision):
