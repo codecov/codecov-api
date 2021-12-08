@@ -9,9 +9,11 @@ from shared.reports.types import LineSession
 from codecov_auth.tests.factories import OwnerFactory
 from core.models import Commit
 from core.tests.factories import CommitFactory, RepositoryFactory
+from graphql_api.types.enums import UploadErrorEnum, UploadState
 from reports.tests.factories import (
     CommitReportFactory,
     ReportLevelTotalsFactory,
+    UploadErrorFactory,
     UploadFactory,
 )
 
@@ -99,7 +101,16 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         self.report = CommitReportFactory(commit=self.commit)
 
     def test_fetch_commit(self):
-        query = query_commit % "message,createdAt,commitid,author { username }"
+        query = (
+            query_commit
+            % """
+            message,
+            createdAt,
+            commitid,
+            state,
+            author { username }
+        """
+        )
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
@@ -110,6 +121,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         assert commit["commitid"] == self.commit.commitid
         assert commit["message"] == self.commit.message
         assert commit["author"]["username"] == self.commit.author.username
+        assert commit["state"] == self.commit.state
 
     def test_fetch_commits(self):
         query = query_commits % "message,commitid,ciPassed"
@@ -182,6 +194,90 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         assert builds == [
             {"provider": session_one.provider},
             {"provider": session_two.provider},
+        ]
+
+    def test_fetch_commit_uploads_state(self):
+        session_one = UploadFactory(
+            report=self.report, provider="circleci", state=UploadState.PROCESSED.value
+        )
+        session_two = UploadFactory(
+            report=self.report, provider="travisci", state=UploadState.ERROR.value
+        )
+        query = (
+            query_commit
+            % """
+            uploads {
+                edges {
+                    node {
+                        state
+                    }
+                }
+            }
+        """
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        uploads = paginate_connection(commit["uploads"])
+
+        assert uploads == [
+            {"state": UploadState.PROCESSED.name},
+            {"state": UploadState.ERROR.name},
+        ]
+
+    def test_fetch_commit_uploads_errors(self):
+        session = UploadFactory(
+            report=self.report, provider="circleci", state=UploadState.ERROR.value
+        )
+        error_one = UploadErrorFactory(
+            report_session=session, error_code=UploadErrorEnum.REPORT_EXPIRED.value
+        )
+        error_two = UploadErrorFactory(
+            report_session=session, error_code=UploadErrorEnum.FILE_NOT_IN_STORAGE.value
+        )
+
+        query = (
+            query_commit
+            % """
+            uploads {
+                edges {
+                    node {
+                        errors {
+                            edges {
+                                node {
+                                    errorCode
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        [upload] = paginate_connection(commit["uploads"])
+        errors = paginate_connection(upload["errors"])
+
+        print(
+            [
+                {"errorCode": UploadErrorEnum.REPORT_EXPIRED.name},
+                {"errorCode": UploadErrorEnum.FILE_NOT_IN_STORAGE.name},
+            ]
+        )
+
+        assert errors == [
+            {"errorCode": UploadErrorEnum.REPORT_EXPIRED.name},
+            {"errorCode": UploadErrorEnum.FILE_NOT_IN_STORAGE.name},
         ]
 
     @patch(

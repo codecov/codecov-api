@@ -1,7 +1,7 @@
 #!/bin/sh
 
 set -e
-set -x
+#set -x
 
 find . -wholename "**/tests**" -delete
 
@@ -13,6 +13,6 @@ find . -wholename "**/__pycache__**" -delete
 
 rm -rf build
 
-echo $(find .)
+#echo $(find .)
 
 cat /pyinstaller/installer_args.txt

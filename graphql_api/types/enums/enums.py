@@ -43,3 +43,20 @@ class PullRequestState(enum.Enum):
     OPEN = "open"
     CLOSED = "closed"
     MERGED = "merged"
+
+
+class UploadState(enum.Enum):
+    UPLOADED = "uploaded"
+    PROCESSED = "processed"
+    ERROR = "error"
+
+
+class UploadType(enum.Enum):
+    UPLOADED = "uploaded"
+    CARRYFORWARDED = "carryforwarded"
+
+
+class UploadErrorEnum(enum.Enum):
+    FILE_NOT_IN_STORAGE = "file_not_in_storage"
+    REPORT_EXPIRED = "report_expired"
+    REPORT_EMPTY = "report_empty"
