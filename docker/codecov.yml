@@ -1,0 +1,11 @@
+setup:
+  loglvl: DEBUG
+  codecov_url: "http://localhost:9000"
+  codecov_api_url: "http://localhost:9000"
+  enterprise_license: ""
+  http:
+    cookie_secret: "secret"
+services:
+  database_url: "postgres://postgres:postgres@postgres/postgres"
+  minio:
+    hash_key: "testixik8qdauiab1yiffydimvi72ekq" #do not edit

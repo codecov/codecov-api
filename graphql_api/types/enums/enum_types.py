@@ -1,13 +1,27 @@
 from ariadne import EnumType
 
-from . import enums
+from .enums import (
+    ComparisonError,
+    CoverageLine,
+    GoalOnboarding,
+    OrderingDirection,
+    PullRequestState,
+    RepositoryOrdering,
+    TypeProjectOnboarding,
+    UploadErrorEnum,
+    UploadState,
+    UploadType,
+)
 
 enum_types = [
-    EnumType("RepositoryOrdering", enums.RepositoryOrdering),
-    EnumType("OrderingDirection", enums.OrderingDirection),
-    EnumType("CoverageLine", enums.CoverageLine),
-    EnumType("ComparisonError", enums.ComparisonError),
-    EnumType("TypeProjectOnboarding", enums.TypeProjectOnboarding),
-    EnumType("GoalOnboarding", enums.GoalOnboarding),
-    EnumType("PullRequestState", enums.PullRequestState),
+    EnumType("RepositoryOrdering", RepositoryOrdering),
+    EnumType("OrderingDirection", OrderingDirection),
+    EnumType("CoverageLine", CoverageLine),
+    EnumType("ComparisonError", ComparisonError),
+    EnumType("TypeProjectOnboarding", TypeProjectOnboarding),
+    EnumType("GoalOnboarding", GoalOnboarding),
+    EnumType("PullRequestState", PullRequestState),
+    EnumType("UploadState", UploadState),
+    EnumType("UploadType", UploadType),
+    EnumType("UploadErrorEnum", UploadErrorEnum),
 ]
