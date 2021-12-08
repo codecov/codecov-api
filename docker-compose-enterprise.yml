@@ -2,7 +2,7 @@ version: "3"
 
 services:
   api:
-    image: codecov/api:latest
+    image: codecov/enterprise-api:latest-stable
     networks:
       - codecovapi
     ports:
@@ -14,13 +14,13 @@ services:
     depends_on:
       - postgres
       - redis
-    entrypoint:
-      - ./dev.sh
     volumes:
       - ./:/app
+      - ${PWD}/docker/codecov.yml:/config/codecov.yml:ro
     environment:
       - RUN_ENV=DEV
   postgres:
+    hostname: postgres
     image: postgres:9.6-alpine
     volumes:
       - postgres-volume:/var/lib/postgresql/data
@@ -30,13 +30,16 @@ services:
       - "5436:5432"
     environment:
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_PASSWORD=postgres
   redis:
+    hostname: redis
     image: redis:4.0-alpine
     volumes:
       - redis-volume:/data
     networks:
       - codecovapi
+    ports:
+      - "6400:6379"
 
 volumes:
   postgres-volume:
