@@ -4,4 +4,7 @@ from .enums import (
     OrderingDirection,
     PullRequestState,
     RepositoryOrdering,
+    UploadErrorEnum,
+    UploadState,
+    UploadType,
 )

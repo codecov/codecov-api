@@ -4,6 +4,7 @@ from core.commands.branch import BranchCommands
 from core.commands.commit import CommitCommands
 from core.commands.pull import PullCommands
 from core.commands.repository import RepositoryCommands
+from core.commands.upload import UploadCommands
 from utils.services import get_long_service_name
 
 mapping = {
@@ -13,6 +14,7 @@ mapping = {
     "branch": BranchCommands,
     "compare": CompareCommands,
     "pull": PullCommands,
+    "upload": UploadCommands,
 }
 
 
