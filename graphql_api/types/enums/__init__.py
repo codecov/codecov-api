@@ -6,4 +6,7 @@ from .enums import (
     PullRequestState,
     RepositoryOrdering,
     TypeProjectOnboarding,
+    UploadErrorEnum,
+    UploadState,
+    UploadType,
 )

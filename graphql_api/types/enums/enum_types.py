@@ -8,6 +8,9 @@ from .enums import (
     PullRequestState,
     RepositoryOrdering,
     TypeProjectOnboarding,
+    UploadType,
+    UploadState,
+    UploadErrorEnum
 )
 
 enum_types = [
@@ -18,4 +21,7 @@ enum_types = [
     EnumType("TypeProjectOnboarding", TypeProjectOnboarding),
     EnumType("GoalOnboarding", GoalOnboarding),
     EnumType("PullRequestState", PullRequestState),
+    EnumType("UploadState", UploadState),
+    EnumType("UploadType", UploadType),
+    EnumType("UploadErrorEnum", UploadErrorEnum),
 ]
