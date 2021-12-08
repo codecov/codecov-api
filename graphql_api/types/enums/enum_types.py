@@ -8,9 +8,9 @@ from .enums import (
     PullRequestState,
     RepositoryOrdering,
     TypeProjectOnboarding,
-    UploadType,
+    UploadErrorEnum,
     UploadState,
-    UploadErrorEnum
+    UploadType,
 )
 
 enum_types = [
