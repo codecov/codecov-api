@@ -53,5 +53,8 @@ if __name__ == "__main__":
         statsd_host = os.environ.get("STATSD_HOST", None)
         if statsd_host is not None:
             statsd_port = os.environ.get("STATSD_PORT", 8125)
-            options["statsd_host"] = "{0}:{1}".format(statsd_host, statsd_port)
+            if isinstance(statsd_port, int):
+                options["statsd_host"] = "{0}:{1}".format(statsd_host, statsd_port)
+            else:
+                print("Invalid STATSD_PORT provided. Statsd not enabled.")
         StandaloneApplication(application, options).run()
