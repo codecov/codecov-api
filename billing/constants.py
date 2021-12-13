@@ -123,6 +123,32 @@ USER_PLAN_REPRESENTATIONS = {
     **GHM_PLAN_REPRESENTATION,
 }
 
+FREE_USER_PLAN_REPRESENTATIONS = {
+    FREE_PLAN_NAME: {
+        "marketing_name": "Basic",
+        "value": FREE_PLAN_NAME,
+        "billing_rate": None,
+        "base_unit_price": 0,
+        "benefits": [
+            "Up to 5 users",
+            "Unlimited public repositories",
+            "Unlimited private repositories",
+        ],
+    },
+    BASIC_PLAN_NAME: {
+        "marketing_name": "Basic",
+        "value": BASIC_PLAN_NAME,
+        "billing_rate": None,
+        "base_unit_price": 0,
+        "monthly_uploads_limit": 250,
+        "benefits": [
+            "Up to 5 users",
+            "Unlimited public repositories",
+            "Unlimited private repositories",
+        ],
+    },
+}
+
 
 CURRENTLY_OFFERED_PLANS = {
     FREE_PLAN_NAME: {
