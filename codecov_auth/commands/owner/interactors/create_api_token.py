@@ -9,7 +9,7 @@ class CreateApiTokenInteractor(BaseInteractor):
     def validate(self, name):
         if not self.current_user.is_authenticated:
             raise Unauthenticated()
-        if len(name) is 0:
+        if len(name) == 0:
             raise ValidationError("name cant be empty")
 
     def create_token(self, name):
