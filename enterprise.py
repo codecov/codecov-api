@@ -49,8 +49,9 @@ if __name__ == "__main__":
                 os.environ.get("CODECOV_API_PORT", 8000),
             ),
             "accesslog": "-",
-            "statsd_host": "{0}:{1}".format(
-                os.environ.get("STATSD_HOST", None), os.environ.get("STATSD_PORT", None)
-            ),
         }
+        statsd_host = os.environ.get("STATSD_HOST", None)
+        if statsd_host is not None:
+            statsd_port = os.environ.get("STATSD_PORT", 8125)
+            options["statsd_host"] = "{0}:{1}".format(statsd_host, statsd_port)
         StandaloneApplication(application, options).run()
