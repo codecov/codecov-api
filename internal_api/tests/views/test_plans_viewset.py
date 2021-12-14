@@ -26,6 +26,18 @@ class PlansViewSetTests(APITestCase):
                 ],
             },
             {
+                "marketing_name": "Basic",
+                "value": "users-basic",
+                "billing_rate": None,
+                "base_unit_price": 0,
+                "monthly_uploads_limit": 250,
+                "benefits": [
+                    "Up to 5 users",
+                    "Unlimited public repositories",
+                    "Unlimited private repositories",
+                ],
+            },
+            {
                 "marketing_name": "Pro Team",
                 "value": "users-pr-inappm",
                 "billing_rate": "monthly",

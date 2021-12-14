@@ -307,14 +307,14 @@ class AccountViewSetTests(APITestCase):
 
         response = self._update(
             kwargs={"service": self.user.service, "owner_username": self.user.username},
-            data={"plan": {"value": "users-free"}},
+            data={"plan": {"value": "users-basic"}},
         )
 
         assert response.status_code == status.HTTP_200_OK
 
         self.user.refresh_from_db()
 
-        assert self.user.plan == "users-free"
+        assert self.user.plan == "users-basic"
         assert self.user.plan_activated_users is None
         assert self.user.plan_user_count == 5
         assert response.data["plan_auto_activate"] is True
