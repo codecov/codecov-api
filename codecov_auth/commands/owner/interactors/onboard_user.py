@@ -32,13 +32,15 @@ class OnboardUserInteractor(BaseInteractor):
         self.current_user.business_email = params.get("business_email")
         self.current_user.email = params.get("email")
         self.current_user.save()
-        profile = OwnerProfile(
+
+        OwnerProfile.objects.update_or_create(
             owner=self.current_user,
-            type_projects=params.get("type_projects", []),
-            goals=params.get("goals", []),
-            other_goal=params.get("other_goal"),
+            defaults={
+                "type_projects":params.get("type_projects", []),
+                "goals":params.get("goals", []),
+                "other_goal":params.get("other_goal"),
+            }
         )
-        profile.save()
 
     @sync_to_async
     def execute(self, params):
