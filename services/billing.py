@@ -91,8 +91,7 @@ class StripeService(AbstractPaymentService):
         try:
             invoice = stripe.Invoice.retrieve(invoice_id)
         except stripe.error.InvalidRequestError as e:
-            log.info(
-                f"invoice {invoice_id} not found for owner {owner.ownerid}")
+            log.info(f"invoice {invoice_id} not found for owner {owner.ownerid}")
             return None
         if invoice["customer"] != owner.stripe_customer_id:
             log.info(
@@ -117,8 +116,7 @@ class StripeService(AbstractPaymentService):
             log.info(
                 f"Downgrade to basic plan from legacy plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
             )
-            stripe.Subscription.delete(
-                owner.stripe_subscription_id, prorate=False)
+            stripe.Subscription.delete(owner.stripe_subscription_id, prorate=False)
             owner.set_basic_plan()
         else:
             log.info(
@@ -146,8 +144,7 @@ class StripeService(AbstractPaymentService):
         log.info(
             f"Updating Stripe subscription for owner {owner.ownerid} to {desired_plan['value']} by user #{self.requesting_user.ownerid}"
         )
-        subscription = stripe.Subscription.retrieve(
-            owner.stripe_subscription_id)
+        subscription = stripe.Subscription.retrieve(owner.stripe_subscription_id)
 
         proration_behavior = self._get_proration_params(owner, desired_plan)
 
@@ -161,8 +158,7 @@ class StripeService(AbstractPaymentService):
                     "quantity": desired_plan["quantity"],
                 }
             ],
-            metadata=self._get_checkout_session_and_subscription_metadata(
-                owner),
+            metadata=self._get_checkout_session_and_subscription_metadata(owner),
             proration_behavior=proration_behavior,
         )
 
@@ -271,8 +267,7 @@ class StripeService(AbstractPaymentService):
             )
             return None
         # attach the payment method + set ass default on the invoice and subscription
-        stripe.PaymentMethod.attach(
-            payment_method, customer=owner.stripe_customer_id)
+        stripe.PaymentMethod.attach(payment_method, customer=owner.stripe_customer_id)
         stripe.Customer.modify(
             owner.stripe_customer_id,
             invoice_settings={"default_payment_method": payment_method},
@@ -287,8 +282,7 @@ class BillingService:
 
     def __init__(self, payment_service=None, requesting_user=None):
         if payment_service is None:
-            self.payment_service = StripeService(
-                requesting_user=requesting_user)
+            self.payment_service = StripeService(requesting_user=requesting_user)
         else:
             self.payment_service = payment_service
 
