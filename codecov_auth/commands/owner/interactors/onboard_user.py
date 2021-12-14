@@ -36,10 +36,10 @@ class OnboardUserInteractor(BaseInteractor):
         OwnerProfile.objects.update_or_create(
             owner=self.current_user,
             defaults={
-                "type_projects":params.get("type_projects", []),
-                "goals":params.get("goals", []),
-                "other_goal":params.get("other_goal"),
-            }
+                "type_projects": params.get("type_projects", []),
+                "goals": params.get("goals", []),
+                "other_goal": params.get("other_goal"),
+            },
         )
 
     @sync_to_async
