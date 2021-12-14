@@ -5,9 +5,9 @@ import stripe
 from django.conf import settings
 
 from billing.constants import (
+    FREE_PLAN_REPRESENTATIONS,
     PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
     USER_PLAN_REPRESENTATIONS,
-    FREE_USER_PLAN_REPRESENTATIONS
 )
 from codecov_auth.models import Owner
 from services.segment import SegmentService
@@ -115,14 +115,14 @@ class StripeService(AbstractPaymentService):
     def delete_subscription(self, owner):
         if owner.plan not in USER_PLAN_REPRESENTATIONS:
             log.info(
-                f"Downgrade to free plan from legacy plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
+                f"Downgrade to basic plan from legacy plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
             )
             stripe.Subscription.delete(
                 owner.stripe_subscription_id, prorate=False)
             owner.set_basic_plan()
         else:
             log.info(
-                f"Downgrade to basic free plan from user plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
+                f"Downgrade to basic basic plan from user plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
             )
             stripe.Subscription.modify(
                 owner.stripe_subscription_id, cancel_at_period_end=True, prorate=False
@@ -312,11 +312,11 @@ class BillingService:
         on current state, might create a stripe checkout session and return
         the checkout session's ID, which is a string. Otherwise returns None.
         """
-        if desired_plan["value"] in FREE_USER_PLAN_REPRESENTATIONS:
+        if desired_plan["value"] in FREE_PLAN_REPRESENTATIONS:
             if owner.stripe_subscription_id is not None:
                 self.payment_service.delete_subscription(owner)
             else:
-                owner.set_free_plan()
+                owner.set_basic_plan()
         elif desired_plan["value"] in PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS:
             if owner.stripe_subscription_id is not None:
                 self.payment_service.modify_subscription(owner, desired_plan)

@@ -100,8 +100,7 @@ class Owner(models.Model):
     )  # postgres enum containing only "github"
     plan_user_count = models.SmallIntegerField(null=True, default=5)
     plan_auto_activate = models.BooleanField(null=True, default=True)
-    plan_activated_users = ArrayField(
-        models.IntegerField(null=True), null=True)
+    plan_activated_users = ArrayField(models.IntegerField(null=True), null=True)
     did_trial = models.BooleanField(null=True)
     free = models.SmallIntegerField(default=0)
     invoice_details = models.TextField(null=True)
@@ -308,14 +307,12 @@ class Owner(models.Model):
         # Codecov config
         elif get_config("services", "gravatar") and self.email:
             return "{}/avatar/{}?s={}".format(
-                GRAVATAR_BASE_URL, md5(
-                    self.email.lower().encode()).hexdigest(), size
+                GRAVATAR_BASE_URL, md5(self.email.lower().encode()).hexdigest(), size
             )
 
         elif get_config("services", "avatars.io") and self.email:
             return "{}/avatar/{}/{}".format(
-                AVATARIO_BASE_URL, md5(
-                    self.email.lower().encode()).hexdigest(), size
+                AVATARIO_BASE_URL, md5(self.email.lower().encode()).hexdigest(), size
             )
 
         elif self.ownerid:
@@ -446,8 +443,7 @@ class Session(models.Model):
     name = models.TextField(null=True)
     useragent = models.TextField(null=True)
     ip = models.TextField(null=True)
-    owner = models.ForeignKey(
-        Owner, db_column="ownerid", on_delete=models.CASCADE)
+    owner = models.ForeignKey(Owner, db_column="ownerid", on_delete=models.CASCADE)
     lastseen = models.DateTimeField(null=True)
     # Really an ENUM in db
     type = models.TextField(choices=SessionType.choices)
