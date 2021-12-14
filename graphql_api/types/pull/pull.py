@@ -18,11 +18,14 @@ def resolve_state(pull, info):
 
 @pull_bindable.field("author")
 def resolve_author(pull, info):
-    return load_owner_by_id(info, pull.author_id)
+    if pull.author_id:
+        return load_owner_by_id(info, pull.author_id)
 
 
 @pull_bindable.field("head")
 def resolve_head(pull, info):
+    if pull.head == None:
+        return None
     return load_commit_by_id(info, pull.head, pull.repository_id)
 
 
