@@ -31,8 +31,6 @@ WORKDIR         /pip-packages/
 RUN             pip wheel -r /requirements.txt
 
 
-
-
 # RUNTIME STAGE - Copy packages from build stage and install runtime dependencies
 FROM            python:3.9.7-alpine3.14
 
@@ -50,8 +48,6 @@ RUN             apk upgrade expat binutils busybox && \
                 curl-dev \
                 libcurl
 
-RUN             wget -q -O /usr/local/bin/berglas https://storage.googleapis.com/berglas/0.5.0/linux_amd64/berglas && \
-                chmod +x /usr/local/bin/berglas
 
 WORKDIR         /pip-packages/
 COPY            --from=build /pip-packages/ /pip-packages/
