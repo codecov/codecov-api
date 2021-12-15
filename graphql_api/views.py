@@ -9,6 +9,7 @@ from ariadne_django.views import GraphQLAsyncView
 from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
+from django.http import HttpResponseNotAllowed
 from sentry_sdk import capture_exception
 
 from codecov.commands.exceptions import BaseException

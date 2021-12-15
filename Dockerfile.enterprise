@@ -13,16 +13,10 @@ RUN apk --update --no-cache add \
     pwgen \
     && pip install --upgrade pip
 
-# Build bootloader for alpine
-RUN git clone --depth 1 --single-branch --branch v3.5 https://github.com/pyinstaller/pyinstaller.git /tmp/pyinstaller \
-    && cd /tmp/pyinstaller/bootloader \
-    && CFLAGS="-Wno-stringop-overflow" python ./waf configure --no-lsb all \
-    && pip install .. \
-    && rm -Rf /tmp/pyinstaller
-
+RUN pip install pyinstaller==4.7
 # install cython 
-RUN pip install cython==3.0a1
-RUN pip install PyCrypto==2.6.1
+RUN pip install cython==3.0a9
+RUN pip install tinyaes
 
 # set settings module
 ENV DJANGO_SETTINGS_MODULE "codecov.settings_enterprise"
@@ -50,7 +44,7 @@ COPY enterprise/ldd /pyinstaller/ldd
 COPY enterprise/setup.py setup.py
 COPY enterprise/cythonize.sh /pyinstaller/cythonize_everything.sh
 
-COPY enterprise/package.sh /pyinstaller/package.sh
+
 COPY enterprise/pyi_rth_django.py /pyinstaller/pyi_rth_django.py
 COPY enterprise/generate_pyinstaller_args.py /pyinstaller/generate_pyinstaller_args.py
 
@@ -58,15 +52,15 @@ COPY enterprise/generate_pyinstaller_args.py /pyinstaller/generate_pyinstaller_a
 COPY enterprise/hooks /hooks
 
 # Not the cleanest,  but this helps with layer caching.
-RUN  chmod a+x /pyinstaller/*
-RUN         ["/pyinstaller/cythonize_everything.sh"]
+RUN chmod a+x /pyinstaller/*
+RUN ["/pyinstaller/cythonize_everything.sh"]
 
-RUN  chmod a+x /pyinstaller/*
-RUN         ["/pyinstaller/package.sh"]
+COPY enterprise/package.sh /pyinstaller/package.sh
+RUN chmod a+x /pyinstaller/*
+RUN ["/pyinstaller/package.sh"]
 ENV RUN_ENV=ENTERPRISE
 # Create the codecov user to run the container as
-RUN             addgroup -S application \
-    && adduser -S codecov -G application
+RUN addgroup -S application && adduser -S codecov -G application
 RUN mkdir -p /config && chown codecov:application /config
 
 # copy the enterprise settings module.
@@ -76,16 +70,15 @@ RUN chown codecov:application /home/enterprise.sh && \
     chmod +x /home/enterprise.sh && \
     chown codecov:application /home/api
 
-FROM alpine:3.13
+FROM alpine:3.14
 
-RUN         addgroup -S application && adduser -S codecov -G application
-RUN         rm -rf /home/codecov
+RUN         addgroup -S application && adduser -S codecov -G application && rm -rf /home/codecov
 USER        codecov
 COPY        --from=build /home/enterprise.sh /home/enterprise.sh
 COPY        --from=build /home/api /home/api
-
 ARG         RELEASE_VERSION
 ENV         RELEASE_VERSION $RELEASE_VERSION
-
+ENV         DJANGO_SETTINGS_MODULE "codecov.settings_enterprise"
+ENV         CODECOV_API_PORT=8000
 WORKDIR     /home
 ENTRYPOINT ["./enterprise.sh"]

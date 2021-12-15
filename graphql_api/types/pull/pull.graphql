@@ -1,10 +1,10 @@
 type Pull {
   title: String
-  state: PullRequestState!
-  pullId: Int!
-  author: Owner!
+  state: PullRequestState
+  pullId: Int
+  author: Owner
   updatestamp: DateTime
-  head: Commit!
+  head: Commit
   comparedTo: Commit
   compareWithBase: Comparison
 }

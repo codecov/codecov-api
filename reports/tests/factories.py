@@ -7,6 +7,7 @@ from factory.django import DjangoModelFactory
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
+from graphql_api.types.enums import UploadErrorEnum
 from reports import models
 
 
@@ -54,3 +55,17 @@ class ReportLevelTotalsFactory(DjangoModelFactory):
     misses = factory.Faker("pyint")
     partials = factory.Faker("pyint")
     files = factory.Faker("pyint")
+
+
+class UploadErrorFactory(DjangoModelFactory):
+    class Meta:
+        model = models.UploadError
+
+    report_session = factory.SubFactory(UploadFactory)
+    error_code = factory.Iterator(
+        [
+            UploadErrorEnum.FILE_NOT_IN_STORAGE,
+            UploadErrorEnum.REPORT_EMPTY,
+            UploadErrorEnum.REPORT_EXPIRED,
+        ]
+    )
