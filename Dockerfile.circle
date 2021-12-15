@@ -3,7 +3,7 @@ FROM            $REQUIREMENTS_IMAGE as berglas
 
 RUN             wget -q -O /tmp/berglas https://storage.googleapis.com/berglas/0.5.0/linux_amd64/berglas
 RUN             echo "2df8e7e16e406376ca8f604d9e6b73e9ea64225c  berglas" > /tmp/berglas.SHA256SUM
-RUN             cd tmp; sha1sum -a 256 -c /tmp/berglas.SHA256SUM
+RUN             cd /tmp && sha1sum -a 256 -c berglas.SHA256SUM
 
 FROM $REQUIREMENTS_IMAGE
 
