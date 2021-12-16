@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 
 import stripe
 from django.conf import settings
+from stripe.api_resources import subscription_schedule
 
 from billing.constants import (
     PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
@@ -84,7 +85,7 @@ class StripeService(AbstractPaymentService):
 
     @_log_stripe_error
     def get_invoice(self, owner, invoice_id):
-        print("Get invoice")
+        print("Testing - Get invoice")
         log.info(
             f"Fetching invoice {invoice_id} from Stripe for ownerid {owner.ownerid}"
         )
@@ -102,7 +103,7 @@ class StripeService(AbstractPaymentService):
 
     @_log_stripe_error
     def list_invoices(self, owner, limit=10):
-        print("List invoices")
+        print("Testing - List invoices")
         log.info(f"Fetching invoices from Stripe for ownerid {owner.ownerid}")
         if owner.stripe_customer_id is None:
             log.info("stripe_customer_id is None, not fetching invoices")
@@ -113,7 +114,8 @@ class StripeService(AbstractPaymentService):
 
     @_log_stripe_error
     def delete_subscription(self, owner):
-        print("Delete subscription")
+        # TODO: add a check to see if there is a schedule, if so, cancel the schedule instead
+        print("Testing - Delete subscription")
         if owner.plan not in USER_PLAN_REPRESENTATIONS:
             log.info(
                 f"Downgrade to free plan from legacy plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
@@ -130,7 +132,7 @@ class StripeService(AbstractPaymentService):
 
     @_log_stripe_error
     def get_subscription(self, owner):
-        print("Get subscription")
+        print("Testing - Get subscription")
         if owner.stripe_subscription_id is None:
             return None
         return stripe.Subscription.retrieve(
@@ -145,116 +147,179 @@ class StripeService(AbstractPaymentService):
     @_log_stripe_error
     def modify_subscription(self, owner, desired_plan):
         # Enters when I modify bw paid plans or change user numbers within a paid plan
-        print("Modify subscription")
+        print("Testing - Modify subscription")
+        # This should be only in the upgrading part
         log.info(
             f"Updating Stripe subscription for owner {owner.ownerid} to {desired_plan['value']} by user #{self.requesting_user.ownerid}"
         )
         subscription = stripe.Subscription.retrieve(owner.stripe_subscription_id)
-
         proration_behavior = self._get_proration_params(owner, desired_plan)
-
+        print("proration behavior")
+        print(proration_behavior)
+        print("Original subscription")
+        print(subscription)
+        print("Original subscription quantity")
+        print(subscription["quantity"])
+        print("Original subscription plan id")
+        print(subscription["plan"]["id"])
+        print("Original subscription plan name")
+        print(subscription["plan"]["name"])
+        print("Original subscription current period start")
+        print(subscription["current_period_start"])
+        print("Original subscription current period end")
+        print(subscription["current_period_end"])
+        # ASK: Is this a safe way to access a key?
         subscription_schedule_id = subscription.schedule
-        # print("subscription_schedule_id")
-        # print(subscription_schedule_id)
 
         # TODO Currently, if a user clicks on an existing subscription and modifies nothing it
         # doesn't get prorated. Hasn't been an issue till now but I'm relying on that prorating logic
         # to determine if we consider a scenario downgrade or not, so wanted to see your thoughts
-        is_downgrading = True if proration_behavior == "none" else False
+        is_upgrading = True if proration_behavior != "none" else False
         subscription_id = owner.stripe_subscription_id
 
-        # print("is_downgrading")
-        # print(is_downgrading)
+        stripe.SubscriptionSchedule.release(
+            subscription.schedule,
+        )
 
-        # Divide logic between downgrade and upgrade, where downgrade is either
-        # less seats or going to a lower plan
-        if is_downgrading:
-            print("in downgrading")
-            # if there a schedule
-            if subscription_schedule_id is None:
-                print("new schedule")
+        return
+
+
+        # $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+        # Divide logic bw immediate updates and scheduled updates
+        # Immediate updates: when user upgrades seats or plan
+        #   If the user is not in a schedule, update immediately
+        #   If the user is in a schedule, update the existing schedule
+        # Scheduled updates: when the user decreases seats or plan
+        #   If the user is not in a schedule, create a schedule
+        #   If the user is in a schedule, update the existing schedule
+        # $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+        if is_upgrading:
+            print("in upgrading")
+            # If the user is in a schedule, update the existing schedule
+            if subscription_schedule_id is not None:
+                self._modify_subscription_schedule(owner, subscription, desired_plan)
+            # Else since the user is not in a schedule, update immediately
+            else:
+                print("there is not a schedule")
+                print("applying changes immediately and reflecting that to the user")
+                stripe.Subscription.modify(
+                    owner.stripe_subscription_id,
+                    cancel_at_period_end=False,
+                    items=[
+                        {
+                            "id": subscription["items"]["data"][0]["id"],
+                            "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                            "quantity": desired_plan["quantity"],
+                        }
+                    ],
+                    metadata=self._get_checkout_session_and_subscription_metadata(owner),
+                    proration_behavior=proration_behavior,
+                )
+                # Segment analytics
+                # Track if there is a change of plan
+                # Should also be in schedule released webhook
+                if owner.plan != desired_plan["value"]:
+                    SegmentService().account_changed_plan(
+                        current_user_ownerid=self.requesting_user.ownerid,
+                        org_ownerid=owner.ownerid,
+                        plan_details={
+                            "new_plan": desired_plan["value"],
+                            "previous_plan": owner.plan,
+                        },
+                    )
+
+                # Should only be in upgrade only
+                if owner.plan_user_count and owner.plan_user_count < desired_plan["quantity"]:
+                    SegmentService().account_increased_users(
+                        current_user_ownerid=self.requesting_user.ownerid,
+                        org_ownerid=owner.ownerid,
+                        plan_details={
+                            "new_quantity": desired_plan["quantity"],
+                            "old_quantity": owner.plan_user_count,
+                            "plan": desired_plan["value"],
+                        },
+                    )
+
+                # Actually do the thing
+                owner.plan = desired_plan["value"]
+                owner.plan_user_count = desired_plan["quantity"]
+                owner.save()
+
+                log.info(
+                    f"Stripe subscription modified successfully for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
+                )
+        else:
+            # If the user is in a schedule, update the existing schedule
+            if subscription_schedule_id is not None:
+                self._modify_subscription_schedule(owner, subscription, desired_plan)
+            # Else since the user is not in a schedule, create a schedule
+            else:
+                print("there is not a schedule")
+                print("updating subscription, then creating a schedule for that subscription with existing info")
+                stripe.Subscription.modify(
+                    owner.stripe_subscription_id,
+                    cancel_at_period_end=False,
+                    items=[
+                        {
+                            "id": subscription["items"]["data"][0]["id"],
+                            "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                            "quantity": desired_plan["quantity"],
+                        }
+                    ],
+                    metadata=self._get_checkout_session_and_subscription_metadata(owner),
+                    proration_behavior=proration_behavior,
+                )
                 stripe.SubscriptionSchedule.create(
                     from_subscription=subscription_id,
                 )
-            else:
-                print("modify schedule")
-                stripe.SubscriptionSchedule.modify(
-                    subscription_schedule_id,
-                )
-            # TODO: Add this in the webhook section when a schedule is released
-            # # Segment analytics
-            # if owner.plan != desired_plan["value"]:
-            #     SegmentService().account_changed_plan(
-            #         current_user_ownerid=self.requesting_user.ownerid,
-            #         org_ownerid=owner.ownerid,
-            #         plan_details={
-            #             "new_plan": desired_plan["value"],
-            #             "previous_plan": owner.plan,
-            #         },
-            #     )
-            # # Downgrade logic only
-            # if owner.plan_user_count and owner.plan_user_count > desired_plan["quantity"]:
-            #     SegmentService().account_decreased_users(
-            #         current_user_ownerid=self.requesting_user.ownerid,
-            #         org_ownerid=owner.ownerid,
-            #         plan_details={
-            #             "new_quantity": desired_plan["quantity"],
-            #             "old_quantity": owner.plan_user_count,
-            #             "plan": desired_plan["value"],
-            #         },
-            #     )
-        else:
-            print("in upgrading")
-            if subscription_schedule_id is not None:
-                print("releasing existing schedule")
-                stripe.SubscriptionSchedule.release(
-                    subscription.schedule,
-                )
-            stripe.Subscription.modify(
-                owner.stripe_subscription_id,
-                cancel_at_period_end=False,
-                items=[
-                    {
-                        "id": subscription["items"]["data"][0]["id"],
-                        "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                        "quantity": desired_plan["quantity"],
-                    }
-                ],
-                metadata=self._get_checkout_session_and_subscription_metadata(owner),
-                proration_behavior=proration_behavior,
-            )
+                # TODO: Add this in the webhook section when a schedule is released
+                # Should also be in schedule released webhook
+                # elif owner.plan_user_count and owner.plan_user_count > desired_plan["quantity"]:
+                #     SegmentService().account_decreased_users(
+                #         current_user_ownerid=self.requesting_user.ownerid,
+                #         org_ownerid=owner.ownerid,
+                #         plan_details={
+                #             "new_quantity": desired_plan["quantity"],
+                #             "old_quantity": owner.plan_user_count,
+                #             "plan": desired_plan["value"],
+                #         },
+                #     )
 
-            # Segment analytics
-            if owner.plan != desired_plan["value"]:
-                SegmentService().account_changed_plan(
-                    current_user_ownerid=self.requesting_user.ownerid,
-                    org_ownerid=owner.ownerid,
-                    plan_details={
-                        "new_plan": desired_plan["value"],
-                        "previous_plan": owner.plan,
-                    },
-                )
-            # Upgrade logic only
-            if owner.plan_user_count and owner.plan_user_count < desired_plan["quantity"]:
-                SegmentService().account_increased_users(
-                    current_user_ownerid=self.requesting_user.ownerid,
-                    org_ownerid=owner.ownerid,
-                    plan_details={
-                        "new_quantity": desired_plan["quantity"],
-                        "old_quantity": owner.plan_user_count,
-                        "plan": desired_plan["value"],
-                    },
-                )
+                # Should also be in schedule released webhook
+                # owner.plan = desired_plan["value"]
+                # owner.plan_user_count = desired_plan["quantity"]
+                # owner.save()
 
-            # Actually do the thing
-            # Should only be done if it's not a downgrade
-            owner.plan = desired_plan["value"]
-            owner.plan_user_count = desired_plan["quantity"]
-            owner.save()
+                # Should also be in schedule released webhook
+                # log.info(
+                #     f"Stripe subscription modified successfully for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
+                # )
 
-            log.info(
-                f"Stripe subscription modified successfully for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
-            )
+    def _modify_subscription_schedule(self, owner, subscription, desired_plan):
+        print("there is a schedule")
+        print("updating schedule to update schedule with existing info")
+        subscription_schedule_id = subscription.schedule
+
+        subscription_start_date = subscription["current_period_start"]
+        stripe.SubscriptionSchedule.modify(
+            subscription_schedule_id,
+            end_behavior="release",
+            phases = [
+                {
+                    "start_date": subscription_start_date,
+                    "plans": [
+                        {
+                            "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                            "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                            "quantity": desired_plan["quantity"],
+                        }
+                    ]
+                }
+            ],
+            # Unsure if I need this
+            metadata=self._get_checkout_session_and_subscription_metadata(owner),
+        )
 
     def _get_proration_params(self, owner, desired_plan):
         proration_behavior = "none"
@@ -286,7 +351,7 @@ class StripeService(AbstractPaymentService):
 
     @_log_stripe_error
     def create_checkout_session(self, owner, desired_plan):
-        print("Create checkout session")
+        print("Testing - Create checkout session")
         success_url, cancel_url = self._get_success_and_cancel_url(owner)
         log.info("Creating Stripe Checkout Session for owner: {owner.ownerid}")
         session = stripe.checkout.Session.create(
@@ -315,7 +380,7 @@ class StripeService(AbstractPaymentService):
 
     @_log_stripe_error
     def update_payment_method(self, owner, payment_method):
-        print("Update payment method")
+        print("Testing - Update payment method")
         log.info(f"Stripe update payment method for owner {owner.ownerid}")
         if owner.stripe_subscription_id is None:
             log.info(
@@ -362,11 +427,12 @@ class BillingService:
         on current state, might create a stripe checkout session and return
         the checkout session's ID, which is a string. Otherwise returns None.
         """
-        print("update_plan")
+        print("Testing - update_plan")
         if desired_plan["value"] == "users-free":
             if owner.stripe_subscription_id is not None:
                 self.payment_service.delete_subscription(owner)
             else:
+                # TODO: Should we set users free to basic?
                 owner.set_free_plan()
         elif desired_plan["value"] in PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS:
             if owner.stripe_subscription_id is not None:

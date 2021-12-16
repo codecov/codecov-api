@@ -33,7 +33,7 @@ class StripeWebhookHandler(APIView):
             log.warning(f"Could not find customer")
 
     def invoice_payment_succeeded(self, invoice):
-        print("Invoice payment succeeded")
+        print("Testing - Webhook - Invoice payment succeeded")
         log.info(
             "Setting delinquency status False",
             extra=dict(
@@ -55,7 +55,7 @@ class StripeWebhookHandler(APIView):
         self._log_updated(1)
 
     def invoice_payment_failed(self, invoice):
-        print("Invoice payment failed")
+        print("Testing - Webhook - Invoice payment failed")
         log.info(
             "Setting delinquency status True",
             extra=dict(
@@ -70,7 +70,7 @@ class StripeWebhookHandler(APIView):
         self._log_updated(updated)
 
     def customer_subscription_deleted(self, subscription):
-        print("Customer subscription deleted")
+        print("Testing - Webhook - Customer subscription deleted")
         log.info(
             "Setting free plan and deactivating repos for stripe customer",
             extra=dict(
@@ -93,25 +93,34 @@ class StripeWebhookHandler(APIView):
 
     # Shouldn't needed if I don't save anything to the database
     def subscription_schedule_created(self, schedule):
-        print("Schedule created")
+        print("Testing - Webhook - Schedule created")
         print(schedule)
 
     # Shouldn't needed if I don't save anything to the database
     def subscription_schedule_updated(self, schedule):
-        print("Schedule updated")
+        print("Testing - Webhook - Schedule updated")
         print(schedule)
 
     def subscription_schedule_released(self, schedule):
-        print("Schedule released")
+        print("Testing - Webhook - Schedule released")
         print(schedule)
 
+        subscription = stripe.Subscription.retrieve(schedule["released_subscription"])
+        print("subscription")
+        print(subscription)
+        owner = Owner.objects.get(ownerid=subscription.metadata.obo_organization)
+
+        owner.plan = subscription.plan.name
+        owner.plan_user_count = subscription.quantity
+        owner.save()
+
     def subscription_schedule_completed(self, schedule):
-        print("Schedule completed")
+        print("Testing - Webhook - Schedule completed")
         print(schedule)
 
 
     def customer_created(self, customer):
-        print("Customer Created")
+        print("Testing - Webhook - Customer Created")
         # Based on what stripe doesn't gives us (an ownerid!)
         # in this event we cannot reliably create a customer,
         # so we're just logging that we created the event and
@@ -119,7 +128,7 @@ class StripeWebhookHandler(APIView):
         log.info("Customer created", extra=dict(stripe_customer_id=customer.id))
 
     def customer_subscription_created(self, subscription):
-        print("Customer Subscription Created")
+        print("Testing - Webhook - Customer Subscription Created")
         if not subscription.plan.id:
             log.warning(
                 "Subscription created missing plan id, exiting",
@@ -178,7 +187,7 @@ class StripeWebhookHandler(APIView):
         self._log_updated(1)
 
     def customer_subscription_updated(self, subscription):
-        print("Customer Subscription Updated")
+        print("Testing - Webhook - Customer Subscription Updated")
         owner = Owner.objects.get(
             stripe_subscription_id=subscription.id,
             stripe_customer_id=subscription.customer,
@@ -201,6 +210,7 @@ class StripeWebhookHandler(APIView):
             )
             return
 
+        # The logic below shouldn't be ran unless there was an update in the subscription 
         log.info(
             f"Subscription updated with -- "
             f"plan: {subscription.plan.name}, quantity: {subscription.quantity}",
@@ -229,7 +239,7 @@ class StripeWebhookHandler(APIView):
         log.info("Successfully updated info for 1 customer")
 
     def customer_updated(self, customer):
-        print("Customer Updated")
+        print("Testing - Webhook - Customer Updated")
         new_default_payment_method = customer["invoice_settings"][
             "default_payment_method"
         ]
@@ -247,7 +257,7 @@ class StripeWebhookHandler(APIView):
             )
 
     def checkout_session_completed(self, checkout_session):
-        print("Checkout Session Completed")
+        print("Testing - Webhook - Checkout Session Completed")
         log.info(
             "Checkout session completed",
             extra=dict(ownerid=checkout_session.client_reference_id),

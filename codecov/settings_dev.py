@@ -48,22 +48,22 @@ SESSION_COOKIE_DOMAIN = "localhost"
 
 GRAPHQL_PLAYGROUND = True
 
-LOGGING = {
-    "version": 1,
-    "filters": {"require_debug_true": {"()": "django.utils.log.RequireDebugTrue",}},
-    "formatters": {"console": {"format": "%(name)-12s %(levelname)-8s %(message)s"},},
-    "handlers": {
-        "console": {
-            "level": "DEBUG",
-            "filters": ["require_debug_true"],
-            "formatter": "console",
-            "class": "logging.StreamHandler",
-        }
-    },
-    "loggers": {
-        # 'django.db.backends': {
-        #     'level': 'DEBUG',
-        #     'handlers': ['console'],
-        # }
-    },
-}
+# LOGGING = {
+#     "version": 1,
+#     "filters": {"require_debug_true": {"()": "django.utils.log.RequireDebugTrue",}},
+#     "formatters": {"console": {"format": "%(name)-12s %(levelname)-8s %(message)s"},},
+#     "handlers": {
+#         "console": {
+#             "level": "DEBUG",
+#             "filters": ["require_debug_true"],
+#             "formatter": "console",
+#             "class": "logging.StreamHandler",
+#         }
+#     },
+#     "loggers": {
+#         # 'django.db.backends': {
+#         #     'level': 'DEBUG',
+#         #     'handlers': ['console'],
+#         # }
+#     },
+# }
