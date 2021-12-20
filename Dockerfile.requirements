@@ -19,16 +19,13 @@ RUN             apk update \
                 curl-dev \
                 && pip install --upgrade pip
 
-ARG             SSH_PRIVATE_KEY
 RUN             mkdir /root/.ssh/
-RUN             echo "${SSH_PRIVATE_KEY}" > /root/.ssh/id_rsa
 RUN             ssh-keyscan -H github.com >> /root/.ssh/known_hosts
-RUN             chmod 600 /root/.ssh/id_rsa
 
 COPY            requirements.txt /
 WORKDIR         /pip-packages/
 
-RUN             pip wheel -r /requirements.txt
+RUN             --mount=type=ssh pip wheel -r /requirements.txt
 
 
 
