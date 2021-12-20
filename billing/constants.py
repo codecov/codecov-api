@@ -20,7 +20,7 @@ class StripeWebhookEvents:
     )
 
 
-FREE_PLAN_NAME = "users-free"
+FREE_PLAN_NAME = "users-free"  # marketing name: Free
 GHM_PLAN_NAME = "users"
 BASIC_PLAN_NAME = "users-basic"
 
