@@ -28,7 +28,7 @@ build-requirements:
 	# if docker pull succeeds, we have already build this version of
 	# requirements.txt.  Otherwise, build and push a version tagged
 	# with the hash of this requirements.txt
-	docker pull ${GCR_REPO}:${REQUIREMENTS_TAG} || docker build \
+	docker pull ${GCR_REPO}:${REQUIREMENTS_TAG} || DOCKER_BUILDKIT=1 docker build \
 		-f Dockerfile.requirements . \
 		-t ${GCR_REPO}:${REQUIREMENTS_TAG} \
 		--ssh default \

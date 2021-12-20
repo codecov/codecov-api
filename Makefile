@@ -8,7 +8,7 @@ build.local:
 	docker build -f Dockerfile . -t codecov/api:latest
 
 build.base:
-	docker build -f Dockerfile.requirements . -t codecov/baseapi:latest --ssh default
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.requirements . -t codecov/baseapi:latest --ssh default
 
 build:
 	$(MAKE) build.base
