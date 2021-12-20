@@ -27,6 +27,7 @@ GITHUB_BOT_KEY = "testjltl8ckrcduovemrhp7upoqzs2sovquv9fzk"
 
 BITBUCKET_CLIENT_ID = "testqmo19ebdkseoby"
 BITBUCKET_CLIENT_SECRET = "testfi8hzehvz453qj8mhv21ca4rf83f"
+BITBUCKET_REDIRECT_URI = "localhost:8000"
 
 GITLAB_CLIENT_ID = "testq117krewaffvh4y2ktl1cpof8ufldd397vygenzuy24wb220rqg83cdaps4w"
 GITLAB_CLIENT_SECRET = (
@@ -46,3 +47,23 @@ COOKIES_DOMAIN = "localhost"
 SESSION_COOKIE_DOMAIN = "localhost"
 
 GRAPHQL_PLAYGROUND = True
+
+LOGGING = {
+    "version": 1,
+    "filters": {"require_debug_true": {"()": "django.utils.log.RequireDebugTrue",}},
+    "formatters": {"console": {"format": "%(name)-12s %(levelname)-8s %(message)s"},},
+    "handlers": {
+        "console": {
+            "level": "DEBUG",
+            "filters": ["require_debug_true"],
+            "formatter": "console",
+            "class": "logging.StreamHandler",
+        }
+    },
+    "loggers": {
+        # 'django.db.backends': {
+        #     'level': 'DEBUG',
+        #     'handlers': ['console'],
+        # }
+    },
+}

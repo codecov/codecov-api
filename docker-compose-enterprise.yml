@@ -1,0 +1,50 @@
+version: "3"
+
+services:
+  api:
+    image: codecov/enterprise-api:latest-stable
+    networks:
+      - codecovapi
+    ports:
+      - "5100:8000"
+    labels:
+      - "traefik.tags=api"
+      - "traefik.backend=api"
+      - "traefik.port=5100"
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./:/app
+      - ${PWD}/docker/codecov.yml:/config/codecov.yml:ro
+    environment:
+      - RUN_ENV=DEV
+  postgres:
+    hostname: postgres
+    image: postgres:9.6-alpine
+    volumes:
+      - postgres-volume:/var/lib/postgresql/data
+    networks:
+      - codecovapi
+    ports:
+      - "5436:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+  redis:
+    hostname: redis
+    image: redis:4.0-alpine
+    volumes:
+      - redis-volume:/data
+    networks:
+      - codecovapi
+    ports:
+      - "6400:6379"
+
+volumes:
+  postgres-volume:
+  redis-volume:
+
+networks:
+  codecovapi:
+    driver: bridge
