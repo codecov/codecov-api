@@ -40,7 +40,7 @@ build-requirements:
 # pulls intermediate dependencies image and adds app code
 build:
 	docker pull ${GCR_REPO}:${REQUIREMENTS_TAG}
-	docker build \
+	DOCKER_BUILDKIT=1 docker build \
 		-f Dockerfile.circle . \
 		-t ${GCR_REPO}:latest \
 		--build-arg REQUIREMENTS_IMAGE=${GCR_REPO}:${REQUIREMENTS_TAG}
