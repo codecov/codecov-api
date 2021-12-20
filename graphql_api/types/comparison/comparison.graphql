@@ -3,6 +3,7 @@ type Comparison {
   error: ComparisonError
   impactedFiles: [ImpactedFile]!
   patchTotals: CoverageTotals
+  changeWithParent: Float
 }
 
 type ImpactedFile {

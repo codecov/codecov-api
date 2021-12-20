@@ -22,6 +22,7 @@ build.enterprise:
 		--label "org.label-schema.vendor"="Codecov" \
 		--label "org.label-schema.version"="${release_version}" \
 		--squash
+	docker tag codecov/enterprise-api:${release_version} codecov/enterprise-api:latest-stable
 
 
 
@@ -34,16 +35,19 @@ build.enterprise-private:
 		--label "org.vcs-branch"="$(branch)" \
 		--squash
 
+run.enterprise:
+	docker-compose -f docker-compose-enterprise.yml up -d
+
+enterprise:
+	$(MAKE) build
+	$(MAKE) build.enterprise
+	$(MAKE) run.enterprise
+
 check-for-migration-conflicts:
 	python manage.py check_for_migration_conflicts
 
 push.enterprise-private:
 	docker push codecov/enterprise-private-api:${release_version}-${sha}
-
-push.enterprise:
-	docker push codecov/enterprise-api:${release_version}
-	docker tag codecov/enterprise-api:${release_version} codecov/enterprise-api:latest-stable
-	docker push codecov/enterprise-api:latest-stable
 
 test:
 	python -m pytest --cov=./

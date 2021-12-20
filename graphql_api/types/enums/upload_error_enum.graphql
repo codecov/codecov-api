@@ -1,0 +1,5 @@
+enum UploadErrorEnum {
+  FILE_NOT_IN_STORAGE
+  REPORT_EXPIRED
+  REPORT_EMPTY
+}
