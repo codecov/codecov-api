@@ -120,7 +120,7 @@ class StripeService(AbstractPaymentService):
             owner.set_basic_plan()
         else:
             log.info(
-                f"Downgrade to basic basic plan from user plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
+                f"Downgrade to basic plan from user plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
             )
             stripe.Subscription.modify(
                 owner.stripe_subscription_id, cancel_at_period_end=True, prorate=False

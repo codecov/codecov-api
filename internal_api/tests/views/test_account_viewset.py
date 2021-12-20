@@ -301,7 +301,7 @@ class AccountViewSetTests(APITestCase):
         assert self.user.plan_auto_activate is False
         assert response.data["plan_auto_activate"] is False
 
-    def test_update_can_set_plan_to_users_free(self):
+    def test_update_can_set_plan_to_users_basic(self):
         self.user.plan = "users-inappy"
         self.user.save()
 
