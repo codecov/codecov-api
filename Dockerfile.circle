@@ -1,9 +1,8 @@
 ARG REQUIREMENTS_IMAGE
-FROM            $REQUIREMENTS_IMAGE as berglas
+FROM            busybox:1.34.1 as berglas
 
-RUN             wget -q -O /tmp/berglas https://storage.googleapis.com/berglas/0.5.0/linux_amd64/berglas
-RUN             echo "2df8e7e16e406376ca8f604d9e6b73e9ea64225c  berglas" > /tmp/berglas.SHA256SUM
-RUN             cd /tmp && sha1sum -a 256 -c berglas.SHA256SUM
+ADD             https://storage.googleapis.com/berglas/0.5.0/linux_amd64/berglas /tmp/berglas
+RUN             echo "99dc4b3146d19b7e36cc6d339eeefa6a959a6d86143b7317e722d09a3b57ca45  berglas" | sha256sum -c
 
 FROM $REQUIREMENTS_IMAGE
 
