@@ -99,25 +99,88 @@ class StripeWebhookHandler(APIView):
     # Shouldn't needed if I don't save anything to the database
     def subscription_schedule_updated(self, schedule):
         print("Testing - Webhook - Schedule updated")
-        print(schedule)
+        # print(schedule)
+
+        # subscription = stripe.Subscription.retrieve(schedule["subscription"])
+        # owner = Owner.objects.get(ownerid=subscription.metadata.obo_organization)
+        # subscription_data = subscription["items"]["data"][0]
+
+        # print("Testing - for tracking stuff")
+        # print("current_user_ownerid")
+        # print(subscription.metadata.obo)
+        # print("owner.ownerid")
+        # print(owner.ownerid)
+        # print("desired_plan[quantity]")
+        # print(subscription_data["quantity"])
+        # print("desired_plan[value]")
+        # print(subscription_data["plan"]["name"])
+        # print("old_quantity")
+        # print(owner.plan_user_count)
 
     def subscription_schedule_released(self, schedule):
         print("Testing - Webhook - Schedule released")
         print(schedule)
 
         subscription = stripe.Subscription.retrieve(schedule["released_subscription"])
-        print("subscription")
-        print(subscription)
+        print('Woa woa! new subscription!')
+        print(subscription.__dict__)
+        print(subscription["items"])
         owner = Owner.objects.get(ownerid=subscription.metadata.obo_organization)
+        print("owner in view")
+        print(owner.__dict__)
+        subscription_data = subscription["items"]["data"][0]
+        requesting_user_id = subscription.metadata.obo
+
+        print("Testing - for tracking stuff")
+        print("current_user_ownerid")
+        print(subscription.metadata.obo)
+        print("owner.ownerid")
+        print(owner.ownerid)
+        print("desired_plan[quantity]")
+        print(subscription_data["quantity"])
+        print("desired_plan[value]")
+        print(subscription_data["plan"]["name"])
+
+        # Segment Analytics to see if user upgraded plan, increased or decreased users
+        if owner.plan_user_count and owner.plan_user_count > subscription_data["quantity"]:
+            self.segment_service.account_decreased_users(
+                current_user_ownerid=requesting_user_id,
+                org_ownerid=owner.ownerid,
+                plan_details={
+                    "new_quantity": subscription_data["quantity"],
+                    "old_quantity": owner.plan_user_count,
+                    "plan": subscription_data["plan"]["name"],
+                },
+            )
+
+        if owner.plan_user_count and owner.plan_user_count < subscription_data["quantity"]:
+            self.segment_service.account_increased_users(
+                current_user_ownerid=requesting_user_id,
+                org_ownerid=owner.ownerid,
+                plan_details={
+                    "new_quantity": subscription_data["quantity"],
+                    "old_quantity": owner.plan_user_count,
+                    "plan": subscription_data["plan"]["name"],
+                },
+            )
+
+        if owner.plan != subscription_data["plan"]["name"]:
+            self.segment_service.account_changed_plan(
+                current_user_ownerid=requesting_user_id,
+                org_ownerid=owner.ownerid,
+                plan_details={
+                    "new_plan": subscription_data["plan"]["name"],
+                    "previous_plan": owner.plan,
+                },
+            )
 
         owner.plan = subscription.plan.name
         owner.plan_user_count = subscription.quantity
         owner.save()
 
-    def subscription_schedule_completed(self, schedule):
-        print("Testing - Webhook - Schedule completed")
-        print(schedule)
-
+        log.info(
+            f"Stripe subscription modified successfully for owner {owner.ownerid} by user #{requesting_user_id}"
+        )
 
     def customer_created(self, customer):
         print("Testing - Webhook - Customer Created")
@@ -193,50 +256,52 @@ class StripeWebhookHandler(APIView):
             stripe_customer_id=subscription.customer,
         )
 
-        if subscription.status == "incomplete_expired":
+        subscription_schedule_id = subscription.schedule
+
+        # Only update if there isn't a scheduled subscription
+        if subscription_schedule_id is None:
+            print("Testing - there is no schedule")
+            if subscription.status == "incomplete_expired":
+                log.info(
+                    f"Subscription updated with status change "
+                    f"to 'incomplete_expired' -- cancelling to free",
+                    extra=dict(stripe_subscription_id=subscription.id),
+                )
+                owner.set_free_plan()
+                owner.repository_set.update(active=False, activated=False)
+                return
+            if subscription.plan.name not in PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS:
+                log.warning(
+                    f"Subscription update requested with invalid plan "
+                    f"{subscription.plan.name} -- doing nothing",
+                    extra=dict(stripe_subscription_id=subscription.id),
+                )
+                return
+
             log.info(
-                f"Subscription updated with status change "
-                f"to 'incomplete_expired' -- cancelling to free",
+                f"Subscription updated with -- "
+                f"plan: {subscription.plan.name}, quantity: {subscription.quantity}",
                 extra=dict(stripe_subscription_id=subscription.id),
             )
-            owner.set_free_plan()
-            owner.repository_set.update(active=False, activated=False)
-            return
-        if subscription.plan.name not in PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS:
-            log.warning(
-                f"Subscription update requested with invalid plan "
-                f"{subscription.plan.name} -- doing nothing",
-                extra=dict(stripe_subscription_id=subscription.id),
-            )
-            return
 
-        # The logic below shouldn't be ran unless there was an update in the subscription 
-        log.info(
-            f"Subscription updated with -- "
-            f"plan: {subscription.plan.name}, quantity: {subscription.quantity}",
-            extra=dict(stripe_subscription_id=subscription.id),
-        )
+            if self.event.data.get("previous_attributes", {}).get("status") == "trialing":
+                self.segment_service.trial_ended(
+                    owner.ownerid,
+                    {
+                        "trial_plan_name": subscription.plan.name,
+                        "trial_plan_user_count": subscription.quantity,
+                        "trial_end_date": subscription.trial_end,
+                        "trial_start_date": subscription.trial_start,
+                    },
+                )
 
-        if self.event.data.get("previous_attributes", {}).get("status") == "trialing":
-            self.segment_service.trial_ended(
-                owner.ownerid,
-                {
-                    "trial_plan_name": subscription.plan.name,
-                    "trial_plan_user_count": subscription.quantity,
-                    "trial_end_date": subscription.trial_end,
-                    "trial_start_date": subscription.trial_start,
-                },
-            )
+            owner.plan = subscription.plan.name
+            owner.plan_user_count = subscription.quantity
+            owner.save()
 
-        # if upgrade, then do this, otherwise, deal with new subscription
-        # # TODO: Add a way to detect if this is a downgrade not to do it here
-        # owner.plan = subscription.plan.name
-        # owner.plan_user_count = subscription.quantity
-        # owner.save()
+            SegmentService().identify_user(owner)
 
-        SegmentService().identify_user(owner)
-
-        log.info("Successfully updated info for 1 customer")
+            log.info("Successfully updated info for 1 customer")
 
     def customer_updated(self, customer):
         print("Testing - Webhook - Customer Updated")

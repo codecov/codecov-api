@@ -13,6 +13,16 @@ from core.tests.factories import RepositoryFactory
 
 from ..constants import StripeHTTPHeaders
 
+class MockOboOrg(object):
+    def __init__(self, owner):
+        self.obo_organization = owner.ownerid
+class MockSubscription(object):
+    def __init__(self, owner):
+        self.metadata = MockOboOrg(owner)
+        self.items = 'aaa'
+
+    def custom_params(self):
+        return {'a': 'b'}
 
 class StripeWebhookHandlerTests(APITestCase):
     def setUp(self):
@@ -321,6 +331,7 @@ class StripeWebhookHandlerTests(APITestCase):
                         "metadata": {"obo_organization": self.owner.ownerid},
                         "quantity": 20,
                         "status": "active",
+                        "schedule": None
                     }
                 },
             }
@@ -329,6 +340,34 @@ class StripeWebhookHandlerTests(APITestCase):
         self.owner.refresh_from_db()
         assert self.owner.plan == None
         assert self.owner.plan_user_count == 0
+        assert self.owner.plan_auto_activate == False
+
+    def test_customer_subscription_updated_does_nothing_there_is_a_schedule(self):
+        self.owner.plan = "users-pr-inappy"
+        self.owner.plan_user_count = 10
+        self.owner.plan_auto_activate = False
+        self.owner.save()
+
+        response = self._send_event(
+            payload={
+                "type": "customer.subscription.updated",
+                "data": {
+                    "object": {
+                        "id": self.owner.stripe_subscription_id,
+                        "customer": self.owner.stripe_customer_id,
+                        "plan": {"id": "fieown4", "name": "users-free"},
+                        "metadata": {"obo_organization": self.owner.ownerid},
+                        "quantity": 20,
+                        "status": "active",
+                        "schedule": "sub_sched_1K8xfkGlVGuVgOrkxvroyZdH",
+                    }
+                },
+            }
+        )
+
+        self.owner.refresh_from_db()
+        assert self.owner.plan == "users-pr-inappy"
+        assert self.owner.plan_user_count == 10
         assert self.owner.plan_auto_activate == False
 
     @patch("codecov_auth.models.Owner.set_free_plan")
@@ -356,6 +395,7 @@ class StripeWebhookHandlerTests(APITestCase):
                         "metadata": {"obo_organization": self.owner.ownerid},
                         "quantity": 20,
                         "status": "incomplete_expired",
+                        "schedule": None
                     }
                 },
             }
@@ -386,6 +426,7 @@ class StripeWebhookHandlerTests(APITestCase):
                         "metadata": {"obo_organization": self.owner.ownerid},
                         "quantity": quantity,
                         "status": "active",
+                        "schedule": None
                     }
                 },
             }
@@ -412,6 +453,7 @@ class StripeWebhookHandlerTests(APITestCase):
                         "metadata": {"obo_organization": self.owner.ownerid},
                         "quantity": 10,
                         "status": "active",
+                        "schedule": None,
                         "trial_start": trial_start,
                         "trial_end": trial_end,
                     },
@@ -429,6 +471,34 @@ class StripeWebhookHandlerTests(APITestCase):
                 "trial_start_date": trial_start,
             },
         )
+
+    # @patch("services.billing.stripe.Subscription.retrieve")
+    # def test_subscription_schedule_released_updates_owner(self, retrieve_subscription_mock):
+    #     self.owner.plan = "users-pr-inappy"
+    #     self.owner.plan_user_count = 10
+    #     self.owner.plan_auto_activate = False
+    #     self.owner.save()
+
+    #     retrieve_subscription_mock.return_value = MockSubscription(self.owner)
+
+    #     new_plan = "users-pr-inappm"
+    #     new_quantity = 8
+
+    #     schedule = self._send_event(
+    #         payload={
+    #             "type": "subscription_schedule.released",
+    #             "data": {
+    #                 "object": {
+    #                     "released_subscription": "sub_sched_1K8xfkGlVGuVgOrkxvroyZdH"
+    #                 }
+    #             },
+    #         }
+    #     )
+
+        # self.owner.refresh_from_db()
+        # assert self.owner.plan == plan_name
+        # assert self.owner.plan_user_count == quantity
+        # assert self.owner.plan_auto_activate == True
 
     def test_checkout_session_completed_sets_stripe_customer_id(self):
         self.owner.stripe_customer_id = None

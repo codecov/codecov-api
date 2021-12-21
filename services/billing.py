@@ -177,11 +177,24 @@ class StripeService(AbstractPaymentService):
         is_upgrading = True if proration_behavior != "none" else False
         subscription_id = owner.stripe_subscription_id
 
-        stripe.SubscriptionSchedule.release(
-            subscription.schedule,
-        )
+        # print("Testing - scheduleeees")
+        # a = stripe.SubscriptionSchedule.list(limit=1000)
 
-        return
+        # stripe.SubscriptionSchedule.release(
+        #     subscription.schedule,
+        # )
+
+        # return
+
+        print("Testing - segment stuff")
+        print("self.requesting_user.ownerid")
+        print(self.requesting_user.ownerid)
+        print("owner.ownerid")
+        print(owner.ownerid)
+        print("desired_plan[quantity]")
+        print(desired_plan["quantity"])
+        print("desired_plan[value]")
+        print(desired_plan["value"])
 
 
         # $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
@@ -217,8 +230,6 @@ class StripeService(AbstractPaymentService):
                     proration_behavior=proration_behavior,
                 )
                 # Segment analytics
-                # Track if there is a change of plan
-                # Should also be in schedule released webhook
                 if owner.plan != desired_plan["value"]:
                     SegmentService().account_changed_plan(
                         current_user_ownerid=self.requesting_user.ownerid,
@@ -273,35 +284,14 @@ class StripeService(AbstractPaymentService):
                 stripe.SubscriptionSchedule.create(
                     from_subscription=subscription_id,
                 )
-                # TODO: Add this in the webhook section when a schedule is released
-                # Should also be in schedule released webhook
-                # elif owner.plan_user_count and owner.plan_user_count > desired_plan["quantity"]:
-                #     SegmentService().account_decreased_users(
-                #         current_user_ownerid=self.requesting_user.ownerid,
-                #         org_ownerid=owner.ownerid,
-                #         plan_details={
-                #             "new_quantity": desired_plan["quantity"],
-                #             "old_quantity": owner.plan_user_count,
-                #             "plan": desired_plan["value"],
-                #         },
-                #     )
-
-                # Should also be in schedule released webhook
-                # owner.plan = desired_plan["value"]
-                # owner.plan_user_count = desired_plan["quantity"]
-                # owner.save()
-
-                # Should also be in schedule released webhook
-                # log.info(
-                #     f"Stripe subscription modified successfully for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
-                # )
+                # Potentially have to add another schedule.modify call to adjust for the proration_behavior (although that doesn't seem to be taking a lot of effect)
 
     def _modify_subscription_schedule(self, owner, subscription, desired_plan):
         print("there is a schedule")
         print("updating schedule to update schedule with existing info")
         subscription_schedule_id = subscription.schedule
-
         subscription_start_date = subscription["current_period_start"]
+
         stripe.SubscriptionSchedule.modify(
             subscription_schedule_id,
             end_behavior="release",
@@ -317,8 +307,8 @@ class StripeService(AbstractPaymentService):
                     ]
                 }
             ],
-            # Unsure if I need this
             metadata=self._get_checkout_session_and_subscription_metadata(owner),
+            proration_behavior="none",
         )
 
     def _get_proration_params(self, owner, desired_plan):
@@ -432,7 +422,6 @@ class BillingService:
             if owner.stripe_subscription_id is not None:
                 self.payment_service.delete_subscription(owner)
             else:
-                # TODO: Should we set users free to basic?
                 owner.set_free_plan()
         elif desired_plan["value"] in PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS:
             if owner.stripe_subscription_id is not None:
