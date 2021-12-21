@@ -30,9 +30,9 @@ backoff==1.6.0
     # via analytics-python
 billiard==3.6.3.0
     # via celery
-boto3==1.9.218
+boto3==1.20.25
     # via shared
-botocore==1.12.253
+botocore==1.23.25
     # via
     #   boto3
     #   s3transfer
@@ -57,7 +57,7 @@ cffi==1.14.2
     #   google-crc32c
 cfgv==3.2.0
     # via pre-commit
-chardet==3.0.4
+charset-normalizer==2.0.9
     # via requests
 git+ssh://git@github.com/codecov/opentelem-python.git@v0.0.4a1#egg=codecovopentelem
     # via -r requirements.in
@@ -94,11 +94,9 @@ django==3.1.13
     #   djangorestframework
 djangorestframework==3.12.2
     # via -r requirements.in
-docutils==0.15.2
-    # via botocore
 ecdsa==0.16.0
     # via tlslite-ng
-elastic-apm==6.3.3
+elastic-apm==6.7.2
     # via -r requirements.in
 environs==7.2.0
     # via -r requirements.in
@@ -165,7 +163,7 @@ marshmallow==3.8.0
     # via environs
 mccabe==0.6.1
     # via pylint
-minio==6.0.0
+minio==6.0.2
     # via
     #   -r requirements.in
     #   shared
@@ -284,7 +282,7 @@ redis==3.2.0
     #   -r requirements.in
     #   fakeredis
     #   python-redis-lock
-requests==2.25.1
+requests==2.26.0
     # via
     #   -r requirements.in
     #   analytics-python
@@ -296,9 +294,9 @@ rfc3986[idna2008]==1.4.0
     # via httpx
 rsa==4.7.2
     # via google-auth
-s3transfer==0.2.1
+s3transfer==0.5.0
     # via boto3
-sentry-sdk==1.4.3
+sentry-sdk==1.5.1
     # via -r requirements.in
 setproctitle==1.1.10
     # via -r requirements.in
@@ -352,7 +350,7 @@ toml==0.10.2
     #   pytest-cov
 typing-extensions==3.7.4.3
     # via ariadne
-urllib3==1.25.11
+urllib3==1.26.7
     # via
     #   botocore
     #   elastic-apm
