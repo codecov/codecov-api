@@ -30,4 +30,3 @@ class FetchRepoBranchesInteractorTest(TransactionTestCase):
         branches = async_to_sync(self.execute)(None, repository)
         assert any(branch.name == "master" for branch in branches)
         assert len(branches) == 3  # counting master too
-
