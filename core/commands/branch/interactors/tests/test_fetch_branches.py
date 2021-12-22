@@ -1,5 +1,5 @@
 import pytest
-from asgiref.sync import sync_to_async
+from asgiref.sync import async_to_sync
 from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
 
@@ -16,17 +16,18 @@ class FetchRepoBranchesInteractorTest(TransactionTestCase):
         self.head = CommitFactory(repository=self.repo)
         self.commit = CommitFactory(repository=self.repo)
         self.branches = [
-            BranchFactory(repository=self.repo, head=self.commit.commitid),
+            BranchFactory(repository=self.repo, head=self.head.commitid),
             BranchFactory(repository=self.repo, head=self.head.commitid),
         ]
 
-    # helper to execute the interactor
     def execute(self, user, *args):
         service = user.service if user else "github"
-        current_user = user or AnonymousUser()
+        current_user = user
         return FetchRepoBranchesInteractor(current_user, service).execute(*args)
 
-    @sync_to_async
     def test_fetch_branches(self):
-        branches = self.execute(self.repo)
-        assert list(branches) == self.branches
+        repository = self.repo
+        branches = async_to_sync(self.execute)(None, repository)
+        assert any(branch.name == "master" for branch in branches)
+        assert len(branches) == 3  # counting master too
+
