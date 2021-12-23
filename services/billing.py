@@ -127,7 +127,7 @@ class StripeService(AbstractPaymentService):
 
     @_log_stripe_error
     def get_subscription(self, owner):
-        if owner.stripe_subscription_id is None:
+        if not owner.stripe_subscription_id:
             return None
         return stripe.Subscription.retrieve(
             owner.stripe_subscription_id,
