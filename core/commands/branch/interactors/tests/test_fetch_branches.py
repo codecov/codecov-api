@@ -12,12 +12,14 @@ from ..fetch_branches import FetchRepoBranchesInteractor
 class FetchRepoBranchesInteractorTest(TransactionTestCase):
     def setUp(self):
         self.org = OwnerFactory(username="codecov")
-        self.repo = RepositoryFactory(author=self.org, name="gazebo", private=False)
+        self.repo = RepositoryFactory(
+            author=self.org, name="gazebo", private=False, branch="master"
+        )
         self.head = CommitFactory(repository=self.repo)
         self.commit = CommitFactory(repository=self.repo)
         self.branches = [
-            BranchFactory(repository=self.repo, head=self.head.commitid),
-            BranchFactory(repository=self.repo, head=self.head.commitid),
+            BranchFactory(repository=self.repo, head=self.head.commitid, name="test1"),
+            BranchFactory(repository=self.repo, head=self.head.commitid, name="test2"),
         ]
 
     def execute(self, user, *args):
@@ -29,4 +31,6 @@ class FetchRepoBranchesInteractorTest(TransactionTestCase):
         repository = self.repo
         branches = async_to_sync(self.execute)(None, repository)
         assert any(branch.name == "master" for branch in branches)
-        assert len(branches) == 3  # counting master too
+        assert any(branch.name == "test1" for branch in branches)
+        assert any(branch.name == "test2" for branch in branches)
+        assert len(branches) == 3
