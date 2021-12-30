@@ -5,7 +5,7 @@ branch = $(shell git branch | grep \* | cut -f2 -d' ')
 epoch := $(shell date +"%s")
 
 build.local:
-	docker build -f Dockerfile . -t codecov/api:latest
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile . -t codecov/api:latest
 
 build.base:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.requirements . -t codecov/baseapi:latest --ssh default
