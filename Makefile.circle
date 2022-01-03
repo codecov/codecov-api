@@ -9,7 +9,6 @@ tag ?= $(shell echo $$(git rev-list --count HEAD)$$(git show -s --format=.%ad.%h
 branch = $(shell git branch | grep \* | cut -f2 -d' ')
 docker_version = $(shell git describe --always --tags --dirty | sed 's/^v//')
 release_env = master
-ssh_private_key = `cat ~/.ssh/id_rsa`
 SEMANTIC_VERSION := `cat VERSION`
 
 ifneq ($(branch), master)
@@ -29,10 +28,10 @@ build-requirements:
 	# if docker pull succeeds, we have already build this version of
 	# requirements.txt.  Otherwise, build and push a version tagged
 	# with the hash of this requirements.txt
-	docker pull ${GCR_REPO}:${REQUIREMENTS_TAG} || docker build \
+	docker pull ${GCR_REPO}:${REQUIREMENTS_TAG} || DOCKER_BUILDKIT=1 docker build \
 		-f Dockerfile.requirements . \
 		-t ${GCR_REPO}:${REQUIREMENTS_TAG} \
-		--build-arg SSH_PRIVATE_KEY="${ssh_private_key}" \
+		--ssh default \
 	&& docker push ${GCR_REPO}:${REQUIREMENTS_TAG}; true
 
 # CIRCLECI
