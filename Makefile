@@ -1,4 +1,3 @@
-ssh_private_key = `cat ~/.ssh/codecov-io_rsa`
 sha := $(shell git rev-parse --short=7 HEAD)
 release_version = `cat VERSION`
 build_date ?= $(shell git show -s --date=iso8601-strict --pretty=format:%cd $$sha)
@@ -9,7 +8,7 @@ build.local:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile . -t codecov/api:latest
 
 build.base:
-	docker build -f Dockerfile.requirements . -t codecov/baseapi:latest --build-arg SSH_PRIVATE_KEY="${ssh_private_key}"
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.requirements . -t codecov/baseapi:latest --ssh default
 
 build:
 	$(MAKE) build.base
