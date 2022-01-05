@@ -15,10 +15,22 @@ class PlansViewSetTests(APITestCase):
         assert response.status_code == status.HTTP_200_OK
         assert response.data == [
             {
-                "marketing_name": "Basic",
+                "marketing_name": "Free",
                 "value": "users-free",
                 "billing_rate": None,
                 "base_unit_price": 0,
+                "benefits": [
+                    "Up to 5 users",
+                    "Unlimited public repositories",
+                    "Unlimited private repositories",
+                ],
+            },
+            {
+                "marketing_name": "Basic",
+                "value": "users-basic",
+                "billing_rate": None,
+                "base_unit_price": 0,
+                "monthly_uploads_limit": 250,
                 "benefits": [
                     "Up to 5 users",
                     "Unlimited public repositories",

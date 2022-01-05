@@ -93,7 +93,8 @@ class Owner(models.Model):
     private_access = models.BooleanField(null=True)
     staff = models.BooleanField(null=True, default=False)
     cache = models.JSONField(null=True)
-    plan = models.TextField(null=True, default=BASIC_PLAN_NAME)  # Really an ENUM in db
+    # Really an ENUM in db
+    plan = models.TextField(null=True, default=BASIC_PLAN_NAME)
     plan_provider = models.TextField(
         null=True, choices=PlanProviders.choices
     )  # postgres enum containing only "github"
@@ -395,6 +396,14 @@ class Owner(models.Model):
         self.stripe_subscription_id = None
         self.save()
 
+    def set_basic_plan(self):
+        log.info(f"Setting plan to users-basic for owner {self.ownerid}")
+        self.plan = "users-basic"
+        self.plan_activated_users = None
+        self.plan_user_count = 5
+        self.stripe_subscription_id = None
+        self.save()
+
 
 class OwnerProfile(BaseCodecovModel):
     class ProjectType(models.TextChoices):
@@ -436,7 +445,8 @@ class Session(models.Model):
     ip = models.TextField(null=True)
     owner = models.ForeignKey(Owner, db_column="ownerid", on_delete=models.CASCADE)
     lastseen = models.DateTimeField(null=True)
-    type = models.TextField(choices=SessionType.choices)  # Really an ENUM in db
+    # Really an ENUM in db
+    type = models.TextField(choices=SessionType.choices)
 
 
 def _generate_key():
