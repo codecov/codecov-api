@@ -217,7 +217,7 @@ protobuf==3.13.0
     #   ddtrace
     #   google-api-core
     #   googleapis-common-protos
-psycopg2==2.8.6
+psycopg2==2.9.2
     # via -r requirements.in
 py==1.11.0
     # via pytest
