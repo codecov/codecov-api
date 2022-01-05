@@ -80,7 +80,7 @@ class StripeWebhookHandler(APIView):
             stripe_subscription_id=subscription.id,
         )
 
-        owner.set_free_plan()
+        owner.set_basic_plan()
         owner.repository_set.update(active=False, activated=False)
 
         self.segment_service.account_cancelled_subscription(
@@ -165,7 +165,7 @@ class StripeWebhookHandler(APIView):
                 f"to 'incomplete_expired' -- cancelling to free",
                 extra=dict(stripe_subscription_id=subscription.id),
             )
-            owner.set_free_plan()
+            owner.set_basic_plan()
             owner.repository_set.update(active=False, activated=False)
             return
         if subscription.plan.name not in PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS:
