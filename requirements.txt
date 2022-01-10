@@ -134,7 +134,7 @@ h11==0.12.0
     # via httpcore
 httpcore==0.12.3
     # via httpx
-httplib2==0.18.1
+httplib2==0.20.2
     # via oauth2
 httpx==0.16.1
     # via shared
@@ -239,7 +239,9 @@ pylint-django==2.4.4
 pylint-plugin-utils==0.6
     # via pylint-django
 pyparsing==2.4.7
-    # via packaging
+    # via
+    #   httplib2
+    #   packaging
 pytest==6.2.5
     # via
     #   -r requirements.in
