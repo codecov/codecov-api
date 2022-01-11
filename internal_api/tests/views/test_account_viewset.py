@@ -13,23 +13,23 @@ from internal_api.tests.test_utils import GetAdminProviderAdapter
 
 curr_path = os.path.dirname(__file__)
 
+
 class MockSubscription(object):
     def __init__(self, subscription_params):
-        self.items = {
-            "data": [{
-                "id": "abc",
-            }]
-        }
+        self.items = {"data": [{"id": "abc",}]}
         self.cancel_at_period_end = False
         self.current_period_end = 1633512445
         self.latest_invoice = json.load(subscription_params["file"])["data"][0]
         self.customer = {
-            "invoice_settings": {"default_payment_method": subscription_params["default_payment_method"]}
+            "invoice_settings": {
+                "default_payment_method": subscription_params["default_payment_method"]
+            }
         }
         self.schedule = subscription_params["schedule_id"]
 
-    def __getitem__(self,key):
-        return getattr(self,key)
+    def __getitem__(self, key):
+        return getattr(self, key)
+
 
 class AccountViewSetTests(APITestCase):
     def _retrieve(self, kwargs={}):
@@ -383,7 +383,7 @@ class AccountViewSetTests(APITestCase):
         subscription_params = {
             "default_payment_method": default_payment_method,
             "file": f,
-            "schedule_id": None
+            "schedule_id": None,
         }
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)

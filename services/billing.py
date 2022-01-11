@@ -179,7 +179,9 @@ class StripeService(AbstractPaymentService):
             # If the user is in a schedule, update the existing schedule
             if subscription_schedule_id is not None:
                 print("Testing - updating schedule in upgrade")
-                self._modify_subscription_schedule(owner, subscription, subscription_schedule_id, desired_plan)
+                self._modify_subscription_schedule(
+                    owner, subscription, subscription_schedule_id, desired_plan
+                )
             # Else since the user is not in a schedule, update immediately
             else:
                 print("Testing - upgrading immediately")
@@ -193,7 +195,9 @@ class StripeService(AbstractPaymentService):
                             "quantity": desired_plan["quantity"],
                         }
                     ],
-                    metadata=self._get_checkout_session_and_subscription_metadata(owner),
+                    metadata=self._get_checkout_session_and_subscription_metadata(
+                        owner
+                    ),
                     proration_behavior=proration_behavior,
                 )
                 # Segment analytics
@@ -207,7 +211,10 @@ class StripeService(AbstractPaymentService):
                         },
                     )
 
-                if owner.plan_user_count and owner.plan_user_count < desired_plan["quantity"]:
+                if (
+                    owner.plan_user_count
+                    and owner.plan_user_count < desired_plan["quantity"]
+                ):
                     SegmentService().account_increased_users(
                         current_user_ownerid=self.requesting_user.ownerid,
                         org_ownerid=owner.ownerid,
@@ -229,7 +236,9 @@ class StripeService(AbstractPaymentService):
             # If the user is in a schedule, update the existing schedule
             if subscription_schedule_id is not None:
                 print("Testing - updating schedule in downgrade")
-                self._modify_subscription_schedule(owner, subscription, subscription_schedule_id, desired_plan)
+                self._modify_subscription_schedule(
+                    owner, subscription, subscription_schedule_id, desired_plan
+                )
             # Else since the user is not in a schedule, create a schedule
             else:
                 print("Testing - creating a schedule")
@@ -238,10 +247,14 @@ class StripeService(AbstractPaymentService):
                 )
                 subscription_schedule_id = schedule.id
 
-                self._modify_subscription_schedule(owner, subscription, subscription_schedule_id, desired_plan)
+                self._modify_subscription_schedule(
+                    owner, subscription, subscription_schedule_id, desired_plan
+                )
                 # Potentially have to add another schedule.modify call to adjust for the proration_behavior (although that doesn't seem to be taking a lot of effect)
 
-    def _modify_subscription_schedule(self, owner, subscription, subscription_schedule_id, desired_plan):
+    def _modify_subscription_schedule(
+        self, owner, subscription, subscription_schedule_id, desired_plan
+    ):
         print("updating existing schedule to update schedule with existing info")
         current_subscription_start_date = subscription["current_period_start"]
         current_subscription_end_date = subscription["current_period_end"]
@@ -256,23 +269,30 @@ class StripeService(AbstractPaymentService):
         stripe.SubscriptionSchedule.modify(
             subscription_schedule_id,
             end_behavior="release",
-            phases = [{
-                "start_date": current_subscription_start_date,
-                "end_date": current_subscription_end_date,
-                "plans": [{
-                    "plan": settings.STRIPE_PLAN_IDS[current_plan],
-                    "price": settings.STRIPE_PLAN_IDS[current_plan],
-                    "quantity": current_quantity
-                }],
-            }, {
-                "start_date": current_subscription_end_date,
-                "end_date": current_subscription_end_date+SCHEDULE_RELEASE_OFFSET,
-                "plans": [{
-                    "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                    "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                    "quantity": desired_plan["quantity"],
-                }]
-            }],
+            phases=[
+                {
+                    "start_date": current_subscription_start_date,
+                    "end_date": current_subscription_end_date,
+                    "plans": [
+                        {
+                            "plan": settings.STRIPE_PLAN_IDS[current_plan],
+                            "price": settings.STRIPE_PLAN_IDS[current_plan],
+                            "quantity": current_quantity,
+                        }
+                    ],
+                },
+                {
+                    "start_date": current_subscription_end_date,
+                    "end_date": current_subscription_end_date + SCHEDULE_RELEASE_OFFSET,
+                    "plans": [
+                        {
+                            "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                            "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                            "quantity": desired_plan["quantity"],
+                        }
+                    ],
+                },
+            ],
             metadata=self._get_checkout_session_and_subscription_metadata(owner),
             proration_behavior="none",
         )

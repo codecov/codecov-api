@@ -110,7 +110,10 @@ class StripeWebhookHandler(APIView):
         requesting_user_id = subscription.metadata.obo
 
         # Segment Analytics to see if user upgraded plan, increased or decreased users
-        if owner.plan_user_count and owner.plan_user_count > subscription_data["quantity"]:
+        if (
+            owner.plan_user_count
+            and owner.plan_user_count > subscription_data["quantity"]
+        ):
             self.segment_service.account_decreased_users(
                 current_user_ownerid=requesting_user_id,
                 org_ownerid=owner.ownerid,
@@ -121,7 +124,10 @@ class StripeWebhookHandler(APIView):
                 },
             )
 
-        if owner.plan_user_count and owner.plan_user_count < subscription_data["quantity"]:
+        if (
+            owner.plan_user_count
+            and owner.plan_user_count < subscription_data["quantity"]
+        ):
             self.segment_service.account_increased_users(
                 current_user_ownerid=requesting_user_id,
                 org_ownerid=owner.ownerid,
@@ -255,7 +261,10 @@ class StripeWebhookHandler(APIView):
                 extra=dict(stripe_subscription_id=subscription.id),
             )
 
-            if self.event.data.get("previous_attributes", {}).get("status") == "trialing":
+            if (
+                self.event.data.get("previous_attributes", {}).get("status")
+                == "trialing"
+            ):
                 self.segment_service.trial_ended(
                     owner.ownerid,
                     {
