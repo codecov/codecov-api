@@ -14,6 +14,7 @@ from services.segment import SegmentService
 
 log = logging.getLogger(__name__)
 
+SCHEDULE_RELEASE_OFFSET = 10
 
 if settings.STRIPE_API_KEY:
     stripe.api_key = settings.STRIPE_API_KEY
@@ -154,48 +155,14 @@ class StripeService(AbstractPaymentService):
         )
         subscription = stripe.Subscription.retrieve(owner.stripe_subscription_id)
         proration_behavior = self._get_proration_params(owner, desired_plan)
-        print("proration behavior")
-        print(proration_behavior)
-        print("Original subscription")
-        print(subscription)
-        print("Original subscription quantity")
-        print(subscription["quantity"])
-        print("Original subscription plan id")
-        print(subscription["plan"]["id"])
-        print("Original subscription plan name")
-        print(subscription["plan"]["name"])
-        print("Original subscription current period start")
-        print(subscription["current_period_start"])
-        print("Original subscription current period end")
-        print(subscription["current_period_end"])
-        # ASK: Is this a safe way to access a key?
         subscription_schedule_id = subscription.schedule
-
-        # TODO Currently, if a user clicks on an existing subscription and modifies nothing it
-        # doesn't get prorated. Hasn't been an issue till now but I'm relying on that prorating logic
-        # to determine if we consider a scenario downgrade or not, so wanted to see your thoughts
         is_upgrading = True if proration_behavior != "none" else False
         subscription_id = owner.stripe_subscription_id
-
-        # print("Testing - scheduleeees")
-        # a = stripe.SubscriptionSchedule.list(limit=1000)
-
         # stripe.SubscriptionSchedule.release(
         #     subscription.schedule,
         # )
 
         # return
-
-        print("Testing - segment stuff")
-        print("self.requesting_user.ownerid")
-        print(self.requesting_user.ownerid)
-        print("owner.ownerid")
-        print(owner.ownerid)
-        print("desired_plan[quantity]")
-        print(desired_plan["quantity"])
-        print("desired_plan[value]")
-        print(desired_plan["value"])
-
 
         # $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
         # Divide logic bw immediate updates and scheduled updates
@@ -208,14 +175,13 @@ class StripeService(AbstractPaymentService):
         # $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
         if is_upgrading:
-            print("in upgrading")
             # If the user is in a schedule, update the existing schedule
             if subscription_schedule_id is not None:
-                self._modify_subscription_schedule(owner, subscription, desired_plan)
+                print("Testing - updating schedule in upgrade")
+                self._modify_subscription_schedule(owner, subscription, subscription_schedule_id, desired_plan)
             # Else since the user is not in a schedule, update immediately
             else:
-                print("there is not a schedule")
-                print("applying changes immediately and reflecting that to the user")
+                print("Testing - upgrading immediately")
                 stripe.Subscription.modify(
                     owner.stripe_subscription_id,
                     cancel_at_period_end=False,
@@ -240,7 +206,6 @@ class StripeService(AbstractPaymentService):
                         },
                     )
 
-                # Should only be in upgrade only
                 if owner.plan_user_count and owner.plan_user_count < desired_plan["quantity"]:
                     SegmentService().account_increased_users(
                         current_user_ownerid=self.requesting_user.ownerid,
@@ -252,7 +217,6 @@ class StripeService(AbstractPaymentService):
                         },
                     )
 
-                # Actually do the thing
                 owner.plan = desired_plan["value"]
                 owner.plan_user_count = desired_plan["quantity"]
                 owner.save()
@@ -263,50 +227,51 @@ class StripeService(AbstractPaymentService):
         else:
             # If the user is in a schedule, update the existing schedule
             if subscription_schedule_id is not None:
-                self._modify_subscription_schedule(owner, subscription, desired_plan)
+                print("Testing - updating schedule in downgrade")
+                self._modify_subscription_schedule(owner, subscription, subscription_schedule_id, desired_plan)
             # Else since the user is not in a schedule, create a schedule
             else:
-                print("there is not a schedule")
-                print("updating subscription, then creating a schedule for that subscription with existing info")
-                stripe.Subscription.modify(
-                    owner.stripe_subscription_id,
-                    cancel_at_period_end=False,
-                    items=[
-                        {
-                            "id": subscription["items"]["data"][0]["id"],
-                            "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                            "quantity": desired_plan["quantity"],
-                        }
-                    ],
-                    metadata=self._get_checkout_session_and_subscription_metadata(owner),
-                    proration_behavior=proration_behavior,
-                )
-                stripe.SubscriptionSchedule.create(
+                print("Testing - creating a schedule")
+                schedule = stripe.SubscriptionSchedule.create(
                     from_subscription=subscription_id,
                 )
+                subscription_schedule_id = schedule.id
+
+                self._modify_subscription_schedule(owner, subscription, subscription_schedule_id, desired_plan)
                 # Potentially have to add another schedule.modify call to adjust for the proration_behavior (although that doesn't seem to be taking a lot of effect)
 
-    def _modify_subscription_schedule(self, owner, subscription, desired_plan):
-        print("there is a schedule")
-        print("updating schedule to update schedule with existing info")
-        subscription_schedule_id = subscription.schedule
-        subscription_start_date = subscription["current_period_start"]
+    def _modify_subscription_schedule(self, owner, subscription, subscription_schedule_id, desired_plan):
+        print("updating existing schedule to update schedule with existing info")
+        current_subscription_start_date = subscription["current_period_start"]
+        current_subscription_end_date = subscription["current_period_end"]
+
+        subscription_item = subscription["items"]["data"][0]
+        current_plan = subscription_item["plan"]["name"]
+        current_quantity = subscription_item["quantity"]
+
+        print("subscription")
+        print(subscription)
 
         stripe.SubscriptionSchedule.modify(
             subscription_schedule_id,
             end_behavior="release",
-            phases = [
-                {
-                    "start_date": subscription_start_date,
-                    "plans": [
-                        {
-                            "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                            "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                            "quantity": desired_plan["quantity"],
-                        }
-                    ]
-                }
-            ],
+            phases = [{
+                "start_date": current_subscription_start_date,
+                "end_date": current_subscription_end_date,
+                "plans": [{
+                    "plan": settings.STRIPE_PLAN_IDS[current_plan],
+                    "price": settings.STRIPE_PLAN_IDS[current_plan],
+                    "quantity": current_quantity
+                }],
+            }, {
+                "start_date": current_subscription_end_date,
+                "end_date": current_subscription_end_date+SCHEDULE_RELEASE_OFFSET,
+                "plans": [{
+                    "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    "quantity": desired_plan["quantity"],
+                }]
+            }],
             metadata=self._get_checkout_session_and_subscription_metadata(owner),
             proration_behavior="none",
         )

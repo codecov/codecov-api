@@ -13,6 +13,23 @@ from internal_api.tests.test_utils import GetAdminProviderAdapter
 
 curr_path = os.path.dirname(__file__)
 
+class MockSubscription(object):
+    def __init__(self, subscription_params):
+        self.items = {
+            "data": [{
+                "id": "abc",
+            }]
+        }
+        self.cancel_at_period_end = False
+        self.current_period_end = 1633512445
+        self.latest_invoice = json.load(subscription_params["file"])["data"][0]
+        self.customer = {
+            "invoice_settings": {"default_payment_method": subscription_params["default_payment_method"]}
+        }
+        self.schedule = subscription_params["schedule_id"]
+
+    def __getitem__(self,key):
+        return getattr(self,key)
 
 class AccountViewSetTests(APITestCase):
     def _retrieve(self, kwargs={}):
@@ -343,9 +360,12 @@ class AccountViewSetTests(APITestCase):
     def test_update_can_upgrade_to_paid_plan_for_existing_customer_and_set_plan_info(
         self, modify_subscription_mock, retrieve_subscription_mock,
     ):
+        print("mimomu")
         desired_plan = {"value": "users-pr-inappm", "quantity": 12}
         self.user.stripe_customer_id = "flsoe"
         self.user.stripe_subscription_id = "djfos"
+        self.user.plan = "users-pr-inappm"
+        self.user.plan_user_count = 8
         self.user.save()
 
         f = open("./services/tests/samples/stripe_invoice.json")
@@ -360,15 +380,13 @@ class AccountViewSetTests(APITestCase):
             }
         }
 
-        retrieve_subscription_mock.return_value = {
-            "items": {"data": [{"id": "abc"}]},
-            "cancel_at_period_end": False,
-            "current_period_end": 1633512445,
-            "latest_invoice": json.load(f)["data"][0],
-            "customer": {
-                "invoice_settings": {"default_payment_method": default_payment_method,}
-            },
+        subscription_params = {
+            "default_payment_method": default_payment_method,
+            "file": f,
+            "schedule_id": None
         }
+
+        retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
 
         response = self._update(
             kwargs={"service": self.user.service, "owner_username": self.user.username},

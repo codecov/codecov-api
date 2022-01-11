@@ -99,47 +99,15 @@ class StripeWebhookHandler(APIView):
     # Shouldn't needed if I don't save anything to the database
     def subscription_schedule_updated(self, schedule):
         print("Testing - Webhook - Schedule updated")
-        # print(schedule)
-
-        # subscription = stripe.Subscription.retrieve(schedule["subscription"])
-        # owner = Owner.objects.get(ownerid=subscription.metadata.obo_organization)
-        # subscription_data = subscription["items"]["data"][0]
-
-        # print("Testing - for tracking stuff")
-        # print("current_user_ownerid")
-        # print(subscription.metadata.obo)
-        # print("owner.ownerid")
-        # print(owner.ownerid)
-        # print("desired_plan[quantity]")
-        # print(subscription_data["quantity"])
-        # print("desired_plan[value]")
-        # print(subscription_data["plan"]["name"])
-        # print("old_quantity")
-        # print(owner.plan_user_count)
+        print(schedule)
 
     def subscription_schedule_released(self, schedule):
         print("Testing - Webhook - Schedule released")
-        print(schedule)
 
         subscription = stripe.Subscription.retrieve(schedule["released_subscription"])
-        print('Woa woa! new subscription!')
-        print(subscription.__dict__)
-        print(subscription["items"])
         owner = Owner.objects.get(ownerid=subscription.metadata.obo_organization)
-        print("owner in view")
-        print(owner.__dict__)
         subscription_data = subscription["items"]["data"][0]
         requesting_user_id = subscription.metadata.obo
-
-        print("Testing - for tracking stuff")
-        print("current_user_ownerid")
-        print(subscription.metadata.obo)
-        print("owner.ownerid")
-        print(owner.ownerid)
-        print("desired_plan[quantity]")
-        print(subscription_data["quantity"])
-        print("desired_plan[value]")
-        print(subscription_data["plan"]["name"])
 
         # Segment Analytics to see if user upgraded plan, increased or decreased users
         if owner.plan_user_count and owner.plan_user_count > subscription_data["quantity"]:
@@ -251,6 +219,8 @@ class StripeWebhookHandler(APIView):
 
     def customer_subscription_updated(self, subscription):
         print("Testing - Webhook - Customer Subscription Updated")
+        print("subscription")
+        print(subscription)
         owner = Owner.objects.get(
             stripe_subscription_id=subscription.id,
             stripe_customer_id=subscription.customer,
@@ -259,7 +229,7 @@ class StripeWebhookHandler(APIView):
         subscription_schedule_id = subscription.schedule
 
         # Only update if there isn't a scheduled subscription
-        if subscription_schedule_id is None:
+        if not subscription_schedule_id:
             print("Testing - there is no schedule")
             if subscription.status == "incomplete_expired":
                 log.info(

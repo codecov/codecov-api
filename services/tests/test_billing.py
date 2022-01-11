@@ -8,6 +8,25 @@ from codecov_auth.models import Service
 from codecov_auth.tests.factories import OwnerFactory
 from services.billing import AbstractPaymentService, BillingService, StripeService
 
+SCHEDULE_RELEASE_OFFSET = 10
+
+class MockSubscription(object):
+    def __init__(self, subscription_params):
+        self.schedule = subscription_params["schedule_id"]
+        self.current_period_start = subscription_params["start_date"]
+        self.current_period_end = subscription_params["end_date"]
+        self.items = {
+            "data": [{
+                "quantity": subscription_params["quantity"],
+                "id": subscription_params["id"],
+                "plan": {
+                    "name": subscription_params["name"]
+                }
+            }]
+        }
+
+    def __getitem__(self,key):
+        return getattr(self,key)
 
 class StripeServiceTests(TestCase):
     def setUp(self):
@@ -63,28 +82,46 @@ class StripeServiceTests(TestCase):
             owner.stripe_subscription_id, cancel_at_period_end=True, prorate=False
         )
 
+    @patch("services.segment.SegmentService.account_increased_users")
+    @patch("services.segment.SegmentService.account_changed_plan")
     @patch("services.billing.stripe.Subscription.modify")
     @patch("services.billing.stripe.Subscription.retrieve")
-    def test_modify_subscription_retrieves_subscription_and_modifies_first_item(
-        self, retrieve_mock, modify_mock
+    def test_modify_subscription_without_schedule_increases_user_count_immediately(
+        self, retrieve_subscription_mock, subscription_modify_mock, segment_changed_plan_mock, segment_increase_users_mock
     ):
-        owner = OwnerFactory(stripe_subscription_id="33043sdf")
+        original_user_count = 10
+        original_plan = "users-pr-inappy"
+        owner = OwnerFactory(
+            plan=original_plan,
+            plan_user_count=original_user_count,
+            stripe_subscription_id="33043sdf"
+        )
+
+        schedule_id = None
+        current_subscription_start_date = 1639628096
+        current_subscription_end_date = 1644107871
+        subscription_params = {
+            "schedule_id": schedule_id,
+            "start_date": current_subscription_start_date,
+            "end_date": current_subscription_end_date,
+            "quantity": original_user_count,
+            "name": original_plan,
+            "id": 105
+        }
+
+        retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+
         desired_plan_name = "users-pr-inappy"
         desired_user_count = 20
         desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
-
-        # only including fields relevant to implementation
-        subscription_item = {"id": 100}
-        retrieve_mock.return_value = {"items": {"data": [subscription_item]}}
-
         self.stripe.modify_subscription(owner, desired_plan)
 
-        modify_mock.assert_called_once_with(
+        subscription_modify_mock.assert_called_once_with(
             owner.stripe_subscription_id,
             cancel_at_period_end=False,
             items=[
                 {
-                    "id": subscription_item["id"],
+                    "id": subscription_params["id"],
                     "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
                     "quantity": desired_plan["quantity"],
                 }
@@ -97,36 +134,781 @@ class StripeServiceTests(TestCase):
                 "obo_email": self.user.email,
                 "obo": self.user.ownerid,
             },
-            proration_behavior="none",
+            proration_behavior="always_invoice",
+        )
+
+        segment_changed_plan_mock.assert_not_called()
+        segment_increase_users_mock.assert_called_with(
+            current_user_ownerid=self.user.ownerid, org_ownerid=owner.ownerid, plan_details={'new_quantity': desired_user_count, 'old_quantity': original_user_count, 'plan': desired_plan_name}
         )
 
         owner.refresh_from_db()
         assert owner.plan == desired_plan_name
         assert owner.plan_user_count == desired_user_count
 
+    @patch("services.segment.SegmentService.account_increased_users")
+    @patch("services.segment.SegmentService.account_changed_plan")
     @patch("services.billing.stripe.Subscription.modify")
     @patch("services.billing.stripe.Subscription.retrieve")
-    @patch("services.segment.SegmentService.account_changed_plan")
-    def test_modify_subscription_triggers_segment_on_plan_change(
-        self, changed_plan_mock, retrieve_mock, modify_mock
+    def test_modify_subscription_without_schedule_upgrades_plan_immediately(
+        self, retrieve_subscription_mock, subscription_modify_mock, segment_changed_plan_mock, segment_increase_users_mock
     ):
-        owner = OwnerFactory(stripe_subscription_id="33043", plan="users-pr-inappm")
+        original_plan = "users-pr-inappm"
+        original_user_count = 10
+        owner = OwnerFactory(
+            plan=original_plan,
+            plan_user_count=original_user_count,
+            stripe_subscription_id="33043sdf"
+        )
+
+        schedule_id = None
+        current_subscription_start_date = 1639628096
+        current_subscription_end_date = 1644107871
+        subscription_params = {
+            "schedule_id": schedule_id,
+            "start_date": current_subscription_start_date,
+            "end_date": current_subscription_end_date,
+            "quantity": original_user_count,
+            "name": original_plan,
+            "id": 101
+        }
+
+        retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+
         desired_plan_name = "users-pr-inappy"
+        desired_user_count = 10
+        desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
+        self.stripe.modify_subscription(owner, desired_plan)
+
+        subscription_modify_mock.assert_called_once_with(
+            owner.stripe_subscription_id,
+            cancel_at_period_end=False,
+            items=[
+                {
+                    "id": subscription_params["id"],
+                    "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    "quantity": desired_plan["quantity"],
+                }
+            ],
+            metadata={
+                "service": owner.service,
+                "obo_organization": owner.ownerid,
+                "username": owner.username,
+                "obo_name": self.user.name,
+                "obo_email": self.user.email,
+                "obo": self.user.ownerid,
+            },
+            proration_behavior="always_invoice",
+        )
+
+        segment_increase_users_mock.assert_not_called()
+        segment_changed_plan_mock.assert_called_with(
+            current_user_ownerid=self.user.ownerid, org_ownerid=owner.ownerid, plan_details={'new_plan': desired_plan_name, 'previous_plan': original_plan}
+        )
+
+        owner.refresh_from_db()
+        assert owner.plan == desired_plan_name
+        assert owner.plan_user_count == desired_user_count
+
+    @patch("services.segment.SegmentService.account_increased_users")
+    @patch("services.segment.SegmentService.account_changed_plan")
+    @patch("services.billing.stripe.Subscription.modify")
+    @patch("services.billing.stripe.Subscription.retrieve")
+    def test_modify_subscription_without_schedule_upgrades_plan_and_users_immediately(
+        self, retrieve_subscription_mock, subscription_modify_mock, segment_changed_plan_mock, segment_increase_users_mock
+    ):
+        original_user_count = 10
+        original_plan = "users-pr-inappm"
+        owner = OwnerFactory(
+            plan=original_plan,
+            plan_user_count=original_user_count,
+            stripe_subscription_id="33043sdf"
+        )
+
+        schedule_id = None
+        current_subscription_start_date = 1639628096
+        current_subscription_end_date = 1644107871
+        subscription_params = {
+            "schedule_id": schedule_id,
+            "start_date": current_subscription_start_date,
+            "end_date": current_subscription_end_date,
+            "quantity": original_user_count,
+            "name": original_plan,
+            "id": 102
+        }
+
+        retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+
+        desired_plan_name = "users-pr-inappy"
+        desired_user_count = 15
+        desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
+        self.stripe.modify_subscription(owner, desired_plan)
+
+        subscription_modify_mock.assert_called_once_with(
+            owner.stripe_subscription_id,
+            cancel_at_period_end=False,
+            items=[
+                {
+                    "id": subscription_params["id"],
+                    "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    "quantity": desired_plan["quantity"],
+                }
+            ],
+            metadata={
+                "service": owner.service,
+                "obo_organization": owner.ownerid,
+                "username": owner.username,
+                "obo_name": self.user.name,
+                "obo_email": self.user.email,
+                "obo": self.user.ownerid,
+            },
+            proration_behavior="always_invoice",
+        )
+
+        segment_increase_users_mock.assert_called_with(
+            current_user_ownerid=self.user.ownerid, org_ownerid=owner.ownerid, plan_details={'new_quantity': desired_user_count, 'old_quantity': original_user_count, 'plan': desired_plan_name}
+        )
+        segment_changed_plan_mock.assert_called_with(
+            current_user_ownerid=self.user.ownerid, org_ownerid=owner.ownerid, plan_details={'new_plan': desired_plan_name, 'previous_plan': original_plan}
+        )
+
+        owner.refresh_from_db()
+        assert owner.plan == desired_plan_name
+        assert owner.plan_user_count == desired_user_count
+
+    @patch("services.billing.stripe.SubscriptionSchedule.create")
+    @patch("services.billing.stripe.SubscriptionSchedule.modify")
+    @patch("services.billing.stripe.Subscription.retrieve")
+    def test_modify_subscription_without_schedule_adds_schedule_when_user_count_decreases(
+        self, retrieve_subscription_mock, schedule_modify_mock, create_mock
+    ):
+        original_user_count = 14
+        original_plan = "users-pr-inappm"
+        stripe_subscription_id = "33043sdf"
+        owner = OwnerFactory(
+            plan=original_plan,
+            plan_user_count=original_user_count,
+            stripe_subscription_id=stripe_subscription_id
+        )
+
+        schedule_id = None
+        current_subscription_start_date = 1639628096
+        current_subscription_end_date = 1644107871
+        subscription_params = {
+            "schedule_id": schedule_id,
+            "start_date": current_subscription_start_date,
+            "end_date": current_subscription_end_date,
+            "quantity": original_user_count,
+            "name": original_plan,
+            "id": 104
+        }
+
+        retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+
+        desired_plan_name = "users-pr-inappm"
+        desired_user_count = 8
+        desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
+
+        self.stripe.modify_subscription(owner, desired_plan)
+
+        create_mock.assert_called_once_with(from_subscription=stripe_subscription_id)
+        schedule_id = create_mock.return_value._mock_children["id"]
+
+        schedule_modify_mock.assert_called_once_with(
+            schedule_id,
+            end_behavior='release',
+            phases=[{
+                'start_date': current_subscription_start_date,
+                "end_date": current_subscription_end_date,
+                'plans': [{
+                    'plan': settings.STRIPE_PLAN_IDS[original_plan],
+                    'price': settings.STRIPE_PLAN_IDS[original_plan],
+                    'quantity': original_user_count
+                }],
+            }, {
+                'start_date': current_subscription_end_date,
+                "end_date": current_subscription_end_date+SCHEDULE_RELEASE_OFFSET,
+                'plans': [{
+                    'plan': settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    'price': settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    'quantity': desired_user_count
+                }],
+            }],
+            metadata={
+                "service": owner.service,
+                "obo_organization": owner.ownerid,
+                "username": owner.username,
+                "obo_name": self.user.name,
+                "obo_email": self.user.email,
+                "obo": self.user.ownerid,
+            },
+            proration_behavior='none'
+        )
+
+        owner.refresh_from_db()
+        assert owner.plan == original_plan
+        assert owner.plan_user_count == original_user_count
+
+    @patch("services.billing.stripe.SubscriptionSchedule.create")
+    @patch("services.billing.stripe.SubscriptionSchedule.modify")
+    @patch("services.billing.stripe.Subscription.retrieve")
+    def test_modify_subscription_without_schedule_adds_schedule_when_plan_downgrades(
+        self, retrieve_subscription_mock, schedule_modify_mock, create_mock
+    ):
+        original_user_count = 20
+        original_plan = "users-pr-inappy"
+        stripe_subscription_id = "33043sdf"
+        owner = OwnerFactory(
+            plan=original_plan,
+            plan_user_count=original_user_count,
+            stripe_subscription_id=stripe_subscription_id
+        )
+
+        schedule_id = None
+        current_subscription_start_date = 1639628096
+        current_subscription_end_date = 1644107871
+        subscription_params = {
+            "schedule_id": schedule_id,
+            "start_date": current_subscription_start_date,
+            "end_date": current_subscription_end_date,
+            "quantity": original_user_count,
+            "name": original_plan,
+            "id": 106
+        }
+
+        retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+
+        desired_plan_name = "users-pr-inappm"
         desired_user_count = 20
         desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
 
-        subscription_item = {"id": 100}
-        retrieve_mock.return_value = {"items": {"data": [subscription_item]}}
+        self.stripe.modify_subscription(owner, desired_plan)
+
+        create_mock.assert_called_once_with(from_subscription=stripe_subscription_id)
+        schedule_id = create_mock.return_value._mock_children["id"]
+
+        schedule_modify_mock.assert_called_once_with(
+            schedule_id,
+            end_behavior='release',
+            phases=[{
+                'start_date': current_subscription_start_date,
+                "end_date": current_subscription_end_date,
+                'plans': [{
+                    'plan': settings.STRIPE_PLAN_IDS[original_plan],
+                    'price': settings.STRIPE_PLAN_IDS[original_plan],
+                    'quantity': original_user_count
+                }],
+            }, {
+                'start_date': current_subscription_end_date,
+                "end_date": current_subscription_end_date+SCHEDULE_RELEASE_OFFSET,
+                'plans': [{
+                    'plan': settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    'price': settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    'quantity': desired_user_count
+                }],
+            }],
+            metadata={
+                "service": owner.service,
+                "obo_organization": owner.ownerid,
+                "username": owner.username,
+                "obo_name": self.user.name,
+                "obo_email": self.user.email,
+                "obo": self.user.ownerid,
+            },
+            proration_behavior='none'
+        )
+
+        owner.refresh_from_db()
+        assert owner.plan == original_plan
+        assert owner.plan_user_count == original_user_count
+
+    @patch("services.billing.stripe.SubscriptionSchedule.create")
+    @patch("services.billing.stripe.SubscriptionSchedule.modify")
+    @patch("services.billing.stripe.Subscription.retrieve")
+    def test_modify_subscription_without_schedule_adds_schedule_when_plan_and_count_downgrades(
+        self, retrieve_subscription_mock, schedule_modify_mock, create_mock
+    ):
+        original_user_count = 16
+        original_plan = "users-pr-inappy"
+        stripe_subscription_id = "33043sdf"
+        owner = OwnerFactory(
+            plan=original_plan,
+            plan_user_count=original_user_count,
+            stripe_subscription_id=stripe_subscription_id
+        )
+
+        schedule_id = None
+        current_subscription_start_date = 1639628096
+        current_subscription_end_date = 1644107871
+        subscription_params = {
+            "schedule_id": schedule_id,
+            "start_date": current_subscription_start_date,
+            "end_date": current_subscription_end_date,
+            "quantity": original_user_count,
+            "name": original_plan,
+            "id": 107
+        }
+
+        retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+
+        desired_plan_name = "users-pr-inappm"
+        desired_user_count = 7
+        desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
 
         self.stripe.modify_subscription(owner, desired_plan)
-        changed_plan_mock.assert_called_once_with(
-            current_user_ownerid=self.user.ownerid,
-            org_ownerid=owner.ownerid,
-            plan_details={
-                "new_plan": desired_plan_name,
-                "previous_plan": "users-pr-inappm",
+
+        create_mock.assert_called_once_with(from_subscription=stripe_subscription_id)
+        schedule_id = create_mock.return_value._mock_children["id"]
+
+        schedule_modify_mock.assert_called_once_with(
+            schedule_id,
+            end_behavior='release',
+            phases=[{
+                'start_date': current_subscription_start_date,
+                "end_date": current_subscription_end_date,
+                'plans': [{
+                    'plan': settings.STRIPE_PLAN_IDS[original_plan],
+                    'price': settings.STRIPE_PLAN_IDS[original_plan],
+                    'quantity': original_user_count
+                }],
+            }, {
+                'start_date': current_subscription_end_date,
+                "end_date": current_subscription_end_date+SCHEDULE_RELEASE_OFFSET,
+                'plans': [{
+                    'plan': settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    'price': settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    'quantity': desired_user_count
+                }],
+            }],
+            metadata={
+                "service": owner.service,
+                "obo_organization": owner.ownerid,
+                "username": owner.username,
+                "obo_name": self.user.name,
+                "obo_email": self.user.email,
+                "obo": self.user.ownerid,
             },
+            proration_behavior='none'
         )
+
+        owner.refresh_from_db()
+        assert owner.plan == original_plan
+        assert owner.plan_user_count == original_user_count
+
+    @patch("services.billing.stripe.SubscriptionSchedule.modify")
+    @patch("services.billing.stripe.Subscription.retrieve")
+    def test_modify_subscription_with_schedule_modifies_schedule_when_user_count_decreases(
+        self, retrieve_subscription_mock, schedule_modify_mock
+    ):
+        original_user_count = 13
+        original_plan = "users-pr-inappm"
+        stripe_subscription_id = "33043sdf"
+        owner = OwnerFactory(
+            plan=original_plan,
+            plan_user_count=original_user_count,
+            stripe_subscription_id=stripe_subscription_id
+        )
+
+        schedule_id = "sub_sched_1K77Y5GlVGuVgOrkJrLjRnne"
+        current_subscription_start_date = 1639628096
+        current_subscription_end_date = 1644107871
+        subscription_params = {
+            "schedule_id": schedule_id,
+            "start_date": current_subscription_start_date,
+            "end_date": current_subscription_end_date,
+            "quantity": original_user_count,
+            "name": original_plan,
+            "id": 108
+        }
+
+        retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+
+        desired_plan_name = "users-pr-inappm"
+        desired_user_count = 9
+        desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
+
+        self.stripe.modify_subscription(owner, desired_plan)
+
+        schedule_modify_mock.assert_called_once_with(
+            schedule_id,
+            end_behavior='release',
+            phases=[{
+                'start_date': current_subscription_start_date,
+                "end_date": current_subscription_end_date,
+                'plans': [{
+                    'plan': settings.STRIPE_PLAN_IDS[original_plan],
+                    'price': settings.STRIPE_PLAN_IDS[original_plan],
+                    'quantity': original_user_count
+                }],
+            }, {
+                'start_date': current_subscription_end_date,
+                "end_date": current_subscription_end_date+SCHEDULE_RELEASE_OFFSET,
+                'plans': [{
+                    'plan': settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    'price': settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    'quantity': desired_user_count
+                }],
+            }],
+            metadata={
+                "service": owner.service,
+                "obo_organization": owner.ownerid,
+                "username": owner.username,
+                "obo_name": self.user.name,
+                "obo_email": self.user.email,
+                "obo": self.user.ownerid,
+            },
+            proration_behavior='none'
+        )
+
+        owner.refresh_from_db()
+        assert owner.plan == original_plan
+        assert owner.plan_user_count == original_user_count
+
+    @patch("services.billing.stripe.SubscriptionSchedule.modify")
+    @patch("services.billing.stripe.Subscription.retrieve")
+    def test_modify_subscription_with_schedule_modifies_schedule_when_user_count_increases(
+        self, retrieve_subscription_mock, schedule_modify_mock
+    ):
+        original_user_count = 17
+        original_plan = "users-pr-inappm"
+        stripe_subscription_id = "33043sdf"
+        owner = OwnerFactory(
+            plan=original_plan,
+            plan_user_count=original_user_count,
+            stripe_subscription_id=stripe_subscription_id
+        )
+
+        desired_plan_name = "users-pr-inappm"
+        desired_user_count = 26
+
+        desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
+        schedule_id = "sub_sched_1K77Y5GlVGuVgOrkJrLjRnne"
+        current_subscription_start_date = 1639628096
+        current_subscription_end_date = 1644107871
+        subscription_params = {
+            "schedule_id": schedule_id,
+            "start_date": current_subscription_start_date,
+            "end_date": current_subscription_end_date,
+            "quantity": original_user_count,
+            "name": original_plan,
+            "id": 109
+        }
+
+        retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+
+        desired_plan_name = "users-pr-inappm"
+        desired_user_count = 26
+        desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
+
+        self.stripe.modify_subscription(owner, desired_plan)
+
+        schedule_modify_mock.assert_called_once_with(
+            schedule_id,
+            end_behavior='release',
+            phases=[{
+                'start_date': current_subscription_start_date,
+                "end_date": current_subscription_end_date,
+                'plans': [{
+                    'plan': settings.STRIPE_PLAN_IDS[original_plan],
+                    'price': settings.STRIPE_PLAN_IDS[original_plan],
+                    'quantity': original_user_count
+                }],
+            }, {
+                'start_date': current_subscription_end_date,
+                "end_date": current_subscription_end_date+SCHEDULE_RELEASE_OFFSET,
+                'plans': [{
+                    'plan': settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    'price': settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    'quantity': desired_user_count
+                }],
+            }],
+            metadata={
+                "service": owner.service,
+                "obo_organization": owner.ownerid,
+                "username": owner.username,
+                "obo_name": self.user.name,
+                "obo_email": self.user.email,
+                "obo": self.user.ownerid,
+            },
+            proration_behavior='none'
+        )
+
+        owner.refresh_from_db()
+        assert owner.plan == original_plan
+        assert owner.plan_user_count == original_user_count
+
+    @patch("services.billing.stripe.SubscriptionSchedule.modify")
+    @patch("services.billing.stripe.Subscription.retrieve")
+    def test_modify_subscription_with_schedule_modifies_schedule_when_plan_downgrades(
+        self, retrieve_subscription_mock, schedule_modify_mock
+    ):
+        original_user_count = 15
+        original_plan = "users-pr-inappy"
+        stripe_subscription_id = "33043sdf"
+        owner = OwnerFactory(
+            plan=original_plan,
+            plan_user_count=original_user_count,
+            stripe_subscription_id=stripe_subscription_id
+        )
+
+        schedule_id = "sub_sched_1K77Y5GlVGuVgOrkJrLjRn2e"
+        current_subscription_start_date = 1639628096
+        current_subscription_end_date = 1644107871
+        subscription_params = {
+            "schedule_id": schedule_id,
+            "start_date": current_subscription_start_date,
+            "end_date": current_subscription_end_date,
+            "quantity": original_user_count,
+            "name": original_plan,
+            "id": 110
+        }
+
+        retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+
+        desired_plan_name = "users-pr-inappm"
+        desired_user_count = 15
+        desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
+
+        self.stripe.modify_subscription(owner, desired_plan)
+
+        schedule_modify_mock.assert_called_once_with(
+            schedule_id,
+            end_behavior='release',
+            phases=[{
+                'start_date': current_subscription_start_date,
+                "end_date": current_subscription_end_date,
+                'plans': [{
+                    'plan': settings.STRIPE_PLAN_IDS[original_plan],
+                    'price': settings.STRIPE_PLAN_IDS[original_plan],
+                    'quantity': original_user_count
+                }],
+            }, {
+                'start_date': current_subscription_end_date,
+                "end_date": current_subscription_end_date+SCHEDULE_RELEASE_OFFSET,
+                'plans': [{
+                    'plan': settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    'price': settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    'quantity': desired_user_count
+                }],
+            }],
+            metadata={
+                "service": owner.service,
+                "obo_organization": owner.ownerid,
+                "username": owner.username,
+                "obo_name": self.user.name,
+                "obo_email": self.user.email,
+                "obo": self.user.ownerid,
+            },
+            proration_behavior='none'
+        )
+
+        owner.refresh_from_db()
+        assert owner.plan == original_plan
+        assert owner.plan_user_count == original_user_count
+
+    @patch("services.billing.stripe.SubscriptionSchedule.modify")
+    @patch("services.billing.stripe.Subscription.retrieve")
+    def test_modify_subscription_with_schedule_modifies_schedule_when_plan_upgrades(
+        self, retrieve_subscription_mock, schedule_modify_mock
+    ):
+        original_user_count = 15
+        original_plan = "users-pr-inappm"
+        stripe_subscription_id = "33043sdf"
+        owner = OwnerFactory(
+            plan=original_plan,
+            plan_user_count=original_user_count,
+            stripe_subscription_id=stripe_subscription_id
+        )
+
+        schedule_id = "sub_sched_1K77Y5GlVGuVgOrkJrLjRn2e"
+        current_subscription_start_date = 1639628096
+        current_subscription_end_date = 1644107871
+        subscription_params = {
+            "schedule_id": schedule_id,
+            "start_date": current_subscription_start_date,
+            "end_date": current_subscription_end_date,
+            "quantity": original_user_count,
+            "name": original_plan,
+            "id": 111
+        }
+
+        retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+
+        desired_plan_name = "users-pr-inappy"
+        desired_user_count = 15
+        desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
+        self.stripe.modify_subscription(owner, desired_plan)
+
+        schedule_modify_mock.assert_called_once_with(
+            schedule_id,
+            end_behavior='release',
+            phases=[{
+                'start_date': current_subscription_start_date,
+                "end_date": current_subscription_end_date,
+                'plans': [{
+                    'plan': settings.STRIPE_PLAN_IDS[original_plan],
+                    'price': settings.STRIPE_PLAN_IDS[original_plan],
+                    'quantity': original_user_count
+                }],
+            }, {
+                'start_date': current_subscription_end_date,
+                "end_date": current_subscription_end_date+SCHEDULE_RELEASE_OFFSET,
+                'plans': [{
+                    'plan': settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    'price': settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    'quantity': desired_user_count
+                }],
+            }],
+            metadata={
+                "service": owner.service,
+                "obo_organization": owner.ownerid,
+                "username": owner.username,
+                "obo_name": self.user.name,
+                "obo_email": self.user.email,
+                "obo": self.user.ownerid,
+            },
+            proration_behavior='none'
+        )
+
+        owner.refresh_from_db()
+        assert owner.plan == original_plan
+        assert owner.plan_user_count == original_user_count
+
+    @patch("services.billing.stripe.SubscriptionSchedule.modify")
+    @patch("services.billing.stripe.Subscription.retrieve")
+    def test_modify_subscription_with_schedule_modifies_schedule_when_plan_upgrades_and_count_decreases(
+        self, retrieve_subscription_mock, schedule_modify_mock
+    ):
+        original_user_count = 15
+        original_plan = "users-pr-inappm"
+        stripe_subscription_id = "33043sdf"
+        owner = OwnerFactory(
+            plan=original_plan,
+            plan_user_count=original_user_count,
+            stripe_subscription_id=stripe_subscription_id
+        )
+
+        schedule_id = "sub_sched_1K77Y5GlVGuVgOrkJrLjRn2e"
+        current_subscription_start_date = 1639628096
+        current_subscription_end_date = 1644107871
+        subscription_params = {
+            "schedule_id": schedule_id,
+            "start_date": current_subscription_start_date,
+            "end_date": current_subscription_end_date,
+            "quantity": original_user_count,
+            "name": original_plan,
+            "id": 112
+        }
+
+        retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+
+        desired_plan_name = "users-pr-inappy"
+        desired_user_count = 10
+        desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
+        self.stripe.modify_subscription(owner, desired_plan)
+
+        schedule_modify_mock.assert_called_once_with(
+            schedule_id,
+            end_behavior='release',
+            phases=[{
+                'start_date': current_subscription_start_date,
+                "end_date": current_subscription_end_date,
+                'plans': [{
+                    'plan': settings.STRIPE_PLAN_IDS[original_plan],
+                    'price': settings.STRIPE_PLAN_IDS[original_plan],
+                    'quantity': original_user_count
+                }],
+            }, {
+                'start_date': current_subscription_end_date,
+                "end_date": current_subscription_end_date+SCHEDULE_RELEASE_OFFSET,
+                'plans': [{
+                    'plan': settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    'price': settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    'quantity': desired_user_count
+                }],
+            }],
+            metadata={
+                "service": owner.service,
+                "obo_organization": owner.ownerid,
+                "username": owner.username,
+                "obo_name": self.user.name,
+                "obo_email": self.user.email,
+                "obo": self.user.ownerid,
+            },
+            proration_behavior='none'
+        )
+
+        owner.refresh_from_db()
+        assert owner.plan == original_plan
+        assert owner.plan_user_count == original_user_count
+
+    @patch("services.billing.stripe.SubscriptionSchedule.modify")
+    @patch("services.billing.stripe.Subscription.retrieve")
+    def test_modify_subscription_with_schedule_modifies_schedule_when_plan_downgrades_and_count_increases(
+        self, retrieve_subscription_mock, schedule_modify_mock
+    ):
+        original_user_count = 15
+        original_plan = "users-pr-inappy"
+        stripe_subscription_id = "33043sdf"
+        owner = OwnerFactory(
+            plan=original_plan,
+            plan_user_count=original_user_count,
+            stripe_subscription_id=stripe_subscription_id
+        )
+
+        schedule_id = "sub_sched_1K77Y5GlVGuVgOrkJrLjRn2e"
+        current_subscription_start_date = 1639628096
+        current_subscription_end_date = 1644107871
+        subscription_params = {
+            "schedule_id": schedule_id,
+            "start_date": current_subscription_start_date,
+            "end_date": current_subscription_end_date,
+            "quantity": original_user_count,
+            "name": original_plan,
+            "id": 113
+        }
+
+        retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+
+        desired_plan_name = "users-pr-inappm"
+        desired_user_count = 20
+        desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
+        self.stripe.modify_subscription(owner, desired_plan)
+
+        schedule_modify_mock.assert_called_once_with(
+            schedule_id,
+            end_behavior='release',
+            phases=[{
+                'start_date': current_subscription_start_date,
+                "end_date": current_subscription_end_date,
+                'plans': [{
+                    'plan': settings.STRIPE_PLAN_IDS[original_plan],
+                    'price': settings.STRIPE_PLAN_IDS[original_plan],
+                    'quantity': original_user_count
+                }],
+            }, {
+                'start_date': current_subscription_end_date,
+                "end_date": current_subscription_end_date+SCHEDULE_RELEASE_OFFSET,
+                'plans': [{
+                    'plan': settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    'price': settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    'quantity': desired_user_count
+                }],
+            }],
+            metadata={
+                "service": owner.service,
+                "obo_organization": owner.ownerid,
+                "username": owner.username,
+                "obo_name": self.user.name,
+                "obo_email": self.user.email,
+                "obo": self.user.ownerid,
+            },
+            proration_behavior='none'
+        )
+
+        owner.refresh_from_db()
+        assert owner.plan == original_plan
+        assert owner.plan_user_count == original_user_count
 
     def test_get_proration_params(self):
         # Test same plan, increased users
@@ -143,60 +925,6 @@ class StripeServiceTests(TestCase):
         owner = OwnerFactory(plan="users-pr-inappm", plan_user_count=20)
         desired_plan = {"value": "users-pr-inappy", "quantity": 14}
         self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
-
-    @patch("services.billing.stripe.Subscription.modify")
-    @patch("services.billing.stripe.Subscription.retrieve")
-    @patch("services.segment.SegmentService.account_increased_users")
-    def test_modify_subscription_triggers_segment_on_user_increase(
-        self, segment_increased_users_mock, retrieve_mock, modify_mock
-    ):
-        owner = OwnerFactory(
-            stripe_subscription_id="33043", plan="users-pr-inappy", plan_user_count=19
-        )
-        desired_plan_name = "users-pr-inappy"
-        desired_user_count = 20
-        desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
-
-        subscription_item = {"id": 100}
-        retrieve_mock.return_value = {"items": {"data": [subscription_item]}}
-
-        self.stripe.modify_subscription(owner, desired_plan)
-        segment_increased_users_mock.assert_called_once_with(
-            current_user_ownerid=self.user.ownerid,
-            org_ownerid=owner.ownerid,
-            plan_details={
-                "new_quantity": desired_user_count,
-                "old_quantity": 19,
-                "plan": desired_plan_name,
-            },
-        )
-
-    @patch("services.billing.stripe.Subscription.modify")
-    @patch("services.billing.stripe.Subscription.retrieve")
-    @patch("services.segment.SegmentService.account_decreased_users")
-    def test_modify_subscription_triggers_segment_on_user_increase(
-        self, segment_decreased_users_mock, retrieve_mock, modify_mock
-    ):
-        owner = OwnerFactory(
-            stripe_subscription_id="33043", plan="users-pr-inappy", plan_user_count=20
-        )
-        desired_plan_name = "users-pr-inappy"
-        desired_user_count = 15
-        desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
-
-        subscription_item = {"id": 100}
-        retrieve_mock.return_value = {"items": {"data": [subscription_item]}}
-
-        self.stripe.modify_subscription(owner, desired_plan)
-        segment_decreased_users_mock.assert_called_once_with(
-            current_user_ownerid=self.user.ownerid,
-            org_ownerid=owner.ownerid,
-            plan_details={
-                "new_quantity": desired_user_count,
-                "old_quantity": 20,
-                "plan": desired_plan_name,
-            },
-        )
 
     @patch("services.billing.stripe.checkout.Session.create")
     def test_create_checkout_session_creates_with_correct_args_and_returns_id(
