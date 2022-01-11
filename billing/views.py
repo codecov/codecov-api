@@ -83,7 +83,7 @@ class StripeWebhookHandler(APIView):
             stripe_subscription_id=subscription.id,
         )
 
-        owner.set_free_plan()
+        owner.set_basic_plan()
         owner.repository_set.update(active=False, activated=False)
 
         self.segment_service.account_cancelled_subscription(
@@ -237,9 +237,10 @@ class StripeWebhookHandler(APIView):
                     f"to 'incomplete_expired' -- cancelling to free",
                     extra=dict(stripe_subscription_id=subscription.id),
                 )
-                owner.set_free_plan()
+                owner.set_basic_plan()
                 owner.repository_set.update(active=False, activated=False)
                 return
+
             if subscription.plan.name not in PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS:
                 log.warning(
                     f"Subscription update requested with invalid plan "
@@ -268,10 +269,6 @@ class StripeWebhookHandler(APIView):
             owner.plan = subscription.plan.name
             owner.plan_user_count = subscription.quantity
             owner.save()
-
-            SegmentService().identify_user(owner)
-
-            log.info("Successfully updated info for 1 customer")
 
     def customer_updated(self, customer):
         print("Testing - Webhook - Customer Updated")

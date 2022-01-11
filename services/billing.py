@@ -6,6 +6,7 @@ from django.conf import settings
 from stripe.api_resources import subscription_schedule
 
 from billing.constants import (
+    FREE_PLAN_REPRESENTATIONS,
     PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
     USER_PLAN_REPRESENTATIONS,
 )
@@ -119,13 +120,13 @@ class StripeService(AbstractPaymentService):
         print("Testing - Delete subscription")
         if owner.plan not in USER_PLAN_REPRESENTATIONS:
             log.info(
-                f"Downgrade to free plan from legacy plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
+                f"Downgrade to basic plan from legacy plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
             )
             stripe.Subscription.delete(owner.stripe_subscription_id, prorate=False)
-            owner.set_free_plan()
+            owner.set_basic_plan()
         else:
             log.info(
-                f"Downgrade to free plan from user plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
+                f"Downgrade to basic plan from user plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
             )
             stripe.Subscription.modify(
                 owner.stripe_subscription_id, cancel_at_period_end=True, prorate=False
@@ -134,7 +135,7 @@ class StripeService(AbstractPaymentService):
     @_log_stripe_error
     def get_subscription(self, owner):
         print("Testing - Get subscription")
-        if owner.stripe_subscription_id is None:
+        if not owner.stripe_subscription_id:
             return None
         return stripe.Subscription.retrieve(
             owner.stripe_subscription_id,
@@ -383,11 +384,11 @@ class BillingService:
         the checkout session's ID, which is a string. Otherwise returns None.
         """
         print("Testing - update_plan")
-        if desired_plan["value"] == "users-free":
+        if desired_plan["value"] in FREE_PLAN_REPRESENTATIONS:
             if owner.stripe_subscription_id is not None:
                 self.payment_service.delete_subscription(owner)
             else:
-                owner.set_free_plan()
+                owner.set_basic_plan()
         elif desired_plan["value"] in PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS:
             if owner.stripe_subscription_id is not None:
                 self.payment_service.modify_subscription(owner, desired_plan)

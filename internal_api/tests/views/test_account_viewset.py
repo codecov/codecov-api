@@ -164,7 +164,7 @@ class AccountViewSetTests(APITestCase):
         response = self._retrieve()
         assert response.status_code == status.HTTP_200_OK
         assert response.data["plan"] == {
-            "marketing_name": "Basic",
+            "marketing_name": "Free",
             "value": "users-free",
             "billing_rate": None,
             "base_unit_price": 0,
@@ -318,20 +318,20 @@ class AccountViewSetTests(APITestCase):
         assert self.user.plan_auto_activate is False
         assert response.data["plan_auto_activate"] is False
 
-    def test_update_can_set_plan_to_users_free(self):
+    def test_update_can_set_plan_to_users_basic(self):
         self.user.plan = "users-inappy"
         self.user.save()
 
         response = self._update(
             kwargs={"service": self.user.service, "owner_username": self.user.username},
-            data={"plan": {"value": "users-free"}},
+            data={"plan": {"value": "users-basic"}},
         )
 
         assert response.status_code == status.HTTP_200_OK
 
         self.user.refresh_from_db()
 
-        assert self.user.plan == "users-free"
+        assert self.user.plan == "users-basic"
         assert self.user.plan_activated_users is None
         assert self.user.plan_user_count == 5
         assert response.data["plan_auto_activate"] is True
