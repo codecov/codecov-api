@@ -744,146 +744,139 @@ class UploadHandlerHelpersTest(TestCase):
                 == "upload/1c78206/report/plain"
             )
 
-    def test_validate_upload(self):
-        with self.subTest("repository moved"):
-            redis = MockRedis()
-            owner = G(Owner, plan="users-free")
-            repo = G(Repository, author=owner, name="")
-            commit = G(Commit)
+    def test_validate_upload_repository_moved(self):
+        redis = MockRedis()
+        owner = G(Owner, plan="users-free")
+        repo = G(Repository, author=owner, name="")
+        commit = G(Commit)
 
-            with self.assertRaises(ValidationError) as err:
-                validate_upload({"commit": commit.commitid}, repo, redis)
-
-            assert (
-                err.exception.detail[0]
-                == "This repository has moved or was deleted. Please login to Codecov to retrieve a new upload token."
-            )
-
-        with self.subTest("empty totals"):
-            redis = MockRedis()
-            owner = G(Owner, plan="5m")
-            repo = G(Repository, author=owner,)
-            commit = G(Commit, totals=None, repository=repo)
-
+        with self.assertRaises(ValidationError) as err:
             validate_upload({"commit": commit.commitid}, repo, redis)
-            repo.refresh_from_db()
-            assert repo.activated == True
-            assert repo.active == True
-            assert repo.deleted == False
 
-        with self.subTest("too many uploads for commit"):
-            redis = MockRedis()
-            owner = G(Owner, plan="users-free")
-            repo = G(Repository, author=owner,)
-            commit = G(Commit, totals={"s": 151}, repository=repo)
+        assert (
+            err.exception.detail[0]
+            == "This repository has moved or was deleted. Please login to Codecov to retrieve a new upload token."
+        )
 
-            with self.assertRaises(ValidationError) as err:
-                validate_upload({"commit": commit.commitid}, repo, redis)
-            assert err.exception.detail[0] == "Too many uploads to this commit."
+    def test_validate_upload_empty_totals(self):
+        redis = MockRedis()
+        owner = G(Owner, plan="5m")
+        repo = G(Repository, author=owner,)
+        commit = G(Commit, totals=None, repository=repo)
 
-        with self.subTest("repository blacklisted"):
-            redis = MockRedis(blacklisted=True)
-            owner = G(Owner, plan="users-free")
-            repo = G(Repository, author=owner)
-            commit = G(Commit)
+        validate_upload({"commit": commit.commitid}, repo, redis)
+        repo.refresh_from_db()
+        assert repo.activated == True
+        assert repo.active == True
+        assert repo.deleted == False
 
-            with self.assertRaises(ValidationError) as err:
-                validate_upload({"commit": commit.commitid}, repo, redis)
-            assert (
-                err.exception.detail[0]
-                == "Uploads rejected for this project. Please contact Codecov staff for more details. Sorry for the inconvenience."
-            )
+    def test_validate_upload_too_many_uploads_for_commit(self):
+        redis = MockRedis()
+        owner = G(Owner, plan="users-free")
+        repo = G(Repository, author=owner,)
+        commit = G(Commit, totals={"s": 151}, repository=repo)
 
-        with self.subTest("per repo billing invalid"):
-            redis = MockRedis()
-            owner = G(Owner, plan="1m")
-            repo_already_activated = G(
-                Repository, author=owner, private=True, activated=True, active=True
-            )
-            repo = G(
-                Repository, author=owner, private=True, activated=False, active=False
-            )
-            commit = G(Commit)
+        with self.assertRaises(ValidationError) as err:
+            validate_upload({"commit": commit.commitid}, repo, redis)
+        assert err.exception.detail[0] == "Too many uploads to this commit."
 
-            with self.assertRaises(ValidationError) as err:
-                validate_upload({"commit": commit.commitid}, repo, redis)
-            assert (
-                err.exception.detail[0]
-                == "Sorry, but this team has no private repository credits left."
-            )
+    def test_validate_upload_repository_blacklisted(self):
+        redis = MockRedis(blacklisted=True)
+        owner = G(Owner, plan="users-free")
+        repo = G(Repository, author=owner)
+        commit = G(Commit)
 
-        with self.subTest("gitlab subgroups"):
-            redis = MockRedis()
-            parent_group = G(Owner, plan="1m", parent_service_id=None, service="gitlab")
-            top_subgroup = G(
-                Owner,
-                plan="1m",
-                parent_service_id=parent_group.service_id,
-                service="gitlab",
-            )
-            bottom_subgroup = G(
-                Owner,
-                plan="1m",
-                parent_service_id=top_subgroup.service_id,
-                service="gitlab",
-            )
-            repo_already_activated = G(
-                Repository,
-                author=parent_group,
-                private=True,
-                activated=True,
-                active=True,
-            )
-            repo = G(Repository, author=bottom_subgroup, private=True, activated=False,)
-            commit = G(Commit)
+        with self.assertRaises(ValidationError) as err:
+            validate_upload({"commit": commit.commitid}, repo, redis)
+        assert (
+            err.exception.detail[0]
+            == "Uploads rejected for this project. Please contact Codecov staff for more details. Sorry for the inconvenience."
+        )
 
-            with self.assertRaises(ValidationError) as err:
-                validate_upload({"commit": commit.commitid}, repo, redis)
-            assert (
-                err.exception.detail[0]
-                == "Sorry, but this team has no private repository credits left."
-            )
+    def test_validate_upload_per_repo_billing_invalid(self):
+        redis = MockRedis()
+        owner = G(Owner, plan="1m")
+        repo_already_activated = G(
+            Repository, author=owner, private=True, activated=True, active=True
+        )
+        repo = G(Repository, author=owner, private=True, activated=False, active=False)
+        commit = G(Commit)
 
-        with self.subTest("valid upload repo not activated"):
-            redis = MockRedis()
-            owner = G(Owner, plan="users-free",)
-            repo = G(
-                Repository,
-                author=owner,
-                private=True,
-                activated=False,
-                deleted=False,
-                active=False,
-            )
-            commit = G(Commit)
+        with self.assertRaises(ValidationError) as err:
+            validate_upload({"commit": commit.commitid}, repo, redis)
+        assert (
+            err.exception.detail[0]
+            == "Sorry, but this team has no private repository credits left."
+        )
 
-            with patch(
-                "services.segment.SegmentService.account_activated_repository_on_upload"
-            ) as mock_segment_event:
-                validate_upload({"commit": commit.commitid}, repo, redis)
-                assert mock_segment_event.called
+    def test_validate_upload_gitlab_subgroups(self):
+        redis = MockRedis()
+        parent_group = G(Owner, plan="1m", parent_service_id=None, service="gitlab")
+        top_subgroup = G(
+            Owner,
+            plan="1m",
+            parent_service_id=parent_group.service_id,
+            service="gitlab",
+        )
+        bottom_subgroup = G(
+            Owner,
+            plan="1m",
+            parent_service_id=top_subgroup.service_id,
+            service="gitlab",
+        )
+        repo_already_activated = G(
+            Repository, author=parent_group, private=True, activated=True, active=True,
+        )
+        repo = G(Repository, author=bottom_subgroup, private=True, activated=False,)
+        commit = G(Commit)
 
-            repo.refresh_from_db()
-            assert repo.activated == True
-            assert repo.active == True
-            assert repo.deleted == False
+        with self.assertRaises(ValidationError) as err:
+            validate_upload({"commit": commit.commitid}, repo, redis)
+        assert (
+            err.exception.detail[0]
+            == "Sorry, but this team has no private repository credits left."
+        )
 
-        with self.subTest("valid upload repo activated"):
-            redis = MockRedis()
-            owner = G(Owner, plan="5m")
-            repo = G(Repository, author=owner, private=True, activated=True)
-            commit = G(Commit)
+    def test_validate_upload_valid_upload_repo_not_activated(self):
+        redis = MockRedis()
+        owner = G(Owner, plan="users-free",)
+        repo = G(
+            Repository,
+            author=owner,
+            private=True,
+            activated=False,
+            deleted=False,
+            active=False,
+        )
+        commit = G(Commit)
 
-            with patch(
-                "services.segment.SegmentService.account_activated_repository_on_upload"
-            ) as mock_segment_event:
-                validate_upload({"commit": commit.commitid}, repo, redis)
-                assert not mock_segment_event.called
+        with patch(
+            "services.segment.SegmentService.account_activated_repository_on_upload"
+        ) as mock_segment_event:
+            validate_upload({"commit": commit.commitid}, repo, redis)
+            assert mock_segment_event.called
 
-            repo.refresh_from_db()
-            assert repo.activated == True
-            assert repo.active == True
-            assert repo.deleted == False
+        repo.refresh_from_db()
+        assert repo.activated == True
+        assert repo.active == True
+        assert repo.deleted == False
+
+    def test_validate_upload_valid_upload_repo_activated(self):
+        redis = MockRedis()
+        owner = G(Owner, plan="5m")
+        repo = G(Repository, author=owner, private=True, activated=True)
+        commit = G(Commit)
+
+        with patch(
+            "services.segment.SegmentService.account_activated_repository_on_upload"
+        ) as mock_segment_event:
+            validate_upload({"commit": commit.commitid}, repo, redis)
+            assert not mock_segment_event.called
+
+        repo.refresh_from_db()
+        assert repo.activated == True
+        assert repo.active == True
+        assert repo.deleted == False
 
     @patch("services.task.TaskService.upload")
     def test_dispatch_upload_task(self, mock_task_service_upload):
