@@ -264,9 +264,6 @@ class StripeService(AbstractPaymentService):
         current_plan = subscription_item["plan"]["name"]
         current_quantity = subscription_item["quantity"]
 
-        print("subscription")
-        print(subscription)
-
         stripe.SubscriptionSchedule.modify(
             subscription_schedule_id,
             end_behavior="release",

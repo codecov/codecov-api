@@ -360,7 +360,6 @@ class AccountViewSetTests(APITestCase):
     def test_update_can_upgrade_to_paid_plan_for_existing_customer_and_set_plan_info(
         self, modify_subscription_mock, retrieve_subscription_mock,
     ):
-        print("mimomu")
         desired_plan = {"value": "users-pr-inappm", "quantity": 12}
         self.user.stripe_customer_id = "flsoe"
         self.user.stripe_subscription_id = "djfos"

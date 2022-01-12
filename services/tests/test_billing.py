@@ -40,6 +40,81 @@ class StripeServiceTests(TestCase):
         with self.assertRaises(Exception):
             StripeService(None)
 
+    def _assert_subscription_modify(
+        self, subscription_modify_mock, owner, subscription_params, desired_plan
+    ):
+        subscription_modify_mock.assert_called_once_with(
+            owner.stripe_subscription_id,
+            cancel_at_period_end=False,
+            items=[
+                {
+                    "id": subscription_params["id"],
+                    "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    "quantity": desired_plan["quantity"],
+                }
+            ],
+            metadata={
+                "service": owner.service,
+                "obo_organization": owner.ownerid,
+                "username": owner.username,
+                "obo_name": self.user.name,
+                "obo_email": self.user.email,
+                "obo": self.user.ownerid,
+            },
+            proration_behavior="always_invoice",
+        )
+
+    def _assert_schedule_modify(
+        self,
+        schedule_modify_mock,
+        owner,
+        subscription_params,
+        desired_plan,
+        schedule_id,
+    ):
+        schedule_modify_mock.assert_called_once_with(
+            schedule_id,
+            end_behavior="release",
+            phases=[
+                {
+                    "start_date": subscription_params["start_date"],
+                    "end_date": subscription_params["end_date"],
+                    "plans": [
+                        {
+                            "plan": settings.STRIPE_PLAN_IDS[
+                                subscription_params["name"]
+                            ],
+                            "price": settings.STRIPE_PLAN_IDS[
+                                subscription_params["name"]
+                            ],
+                            "quantity": subscription_params["quantity"],
+                        }
+                    ],
+                },
+                {
+                    "start_date": subscription_params["end_date"],
+                    "end_date": subscription_params["end_date"]
+                    + SCHEDULE_RELEASE_OFFSET,
+                    "plans": [
+                        {
+                            "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                            "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                            "quantity": desired_plan["quantity"],
+                        }
+                    ],
+                },
+            ],
+            metadata={
+                "service": owner.service,
+                "obo_organization": owner.ownerid,
+                "username": owner.username,
+                "obo_name": self.user.name,
+                "obo_email": self.user.email,
+                "obo": self.user.ownerid,
+            },
+            proration_behavior="none",
+        )
+
     @patch("services.billing.stripe.Invoice.list")
     def test_list_invoices_calls_stripe_invoice_list_with_customer_stripe_id(
         self, invoice_list_mock
@@ -224,25 +299,8 @@ class StripeServiceTests(TestCase):
         desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
         self.stripe.modify_subscription(owner, desired_plan)
 
-        subscription_modify_mock.assert_called_once_with(
-            owner.stripe_subscription_id,
-            cancel_at_period_end=False,
-            items=[
-                {
-                    "id": subscription_params["id"],
-                    "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                    "quantity": desired_plan["quantity"],
-                }
-            ],
-            metadata={
-                "service": owner.service,
-                "obo_organization": owner.ownerid,
-                "username": owner.username,
-                "obo_name": self.user.name,
-                "obo_email": self.user.email,
-                "obo": self.user.ownerid,
-            },
-            proration_behavior="always_invoice",
+        self._assert_subscription_modify(
+            subscription_modify_mock, owner, subscription_params, desired_plan
         )
 
         segment_changed_plan_mock.assert_not_called()
@@ -298,25 +356,8 @@ class StripeServiceTests(TestCase):
         desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
         self.stripe.modify_subscription(owner, desired_plan)
 
-        subscription_modify_mock.assert_called_once_with(
-            owner.stripe_subscription_id,
-            cancel_at_period_end=False,
-            items=[
-                {
-                    "id": subscription_params["id"],
-                    "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                    "quantity": desired_plan["quantity"],
-                }
-            ],
-            metadata={
-                "service": owner.service,
-                "obo_organization": owner.ownerid,
-                "username": owner.username,
-                "obo_name": self.user.name,
-                "obo_email": self.user.email,
-                "obo": self.user.ownerid,
-            },
-            proration_behavior="always_invoice",
+        self._assert_subscription_modify(
+            subscription_modify_mock, owner, subscription_params, desired_plan
         )
 
         segment_increase_users_mock.assert_not_called()
@@ -371,25 +412,8 @@ class StripeServiceTests(TestCase):
         desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
         self.stripe.modify_subscription(owner, desired_plan)
 
-        subscription_modify_mock.assert_called_once_with(
-            owner.stripe_subscription_id,
-            cancel_at_period_end=False,
-            items=[
-                {
-                    "id": subscription_params["id"],
-                    "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                    "quantity": desired_plan["quantity"],
-                }
-            ],
-            metadata={
-                "service": owner.service,
-                "obo_organization": owner.ownerid,
-                "username": owner.username,
-                "obo_name": self.user.name,
-                "obo_email": self.user.email,
-                "obo": self.user.ownerid,
-            },
-            proration_behavior="always_invoice",
+        self._assert_subscription_modify(
+            subscription_modify_mock, owner, subscription_params, desired_plan
         )
 
         segment_increase_users_mock.assert_called_with(
@@ -452,42 +476,8 @@ class StripeServiceTests(TestCase):
         create_mock.assert_called_once_with(from_subscription=stripe_subscription_id)
         schedule_id = create_mock.return_value._mock_children["id"]
 
-        schedule_modify_mock.assert_called_once_with(
-            schedule_id,
-            end_behavior="release",
-            phases=[
-                {
-                    "start_date": current_subscription_start_date,
-                    "end_date": current_subscription_end_date,
-                    "plans": [
-                        {
-                            "plan": settings.STRIPE_PLAN_IDS[original_plan],
-                            "price": settings.STRIPE_PLAN_IDS[original_plan],
-                            "quantity": original_user_count,
-                        }
-                    ],
-                },
-                {
-                    "start_date": current_subscription_end_date,
-                    "end_date": current_subscription_end_date + SCHEDULE_RELEASE_OFFSET,
-                    "plans": [
-                        {
-                            "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                            "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                            "quantity": desired_user_count,
-                        }
-                    ],
-                },
-            ],
-            metadata={
-                "service": owner.service,
-                "obo_organization": owner.ownerid,
-                "username": owner.username,
-                "obo_name": self.user.name,
-                "obo_email": self.user.email,
-                "obo": self.user.ownerid,
-            },
-            proration_behavior="none",
+        self._assert_schedule_modify(
+            schedule_modify_mock, owner, subscription_params, desired_plan, schedule_id
         )
 
         owner.refresh_from_db()
@@ -532,42 +522,8 @@ class StripeServiceTests(TestCase):
         create_mock.assert_called_once_with(from_subscription=stripe_subscription_id)
         schedule_id = create_mock.return_value._mock_children["id"]
 
-        schedule_modify_mock.assert_called_once_with(
-            schedule_id,
-            end_behavior="release",
-            phases=[
-                {
-                    "start_date": current_subscription_start_date,
-                    "end_date": current_subscription_end_date,
-                    "plans": [
-                        {
-                            "plan": settings.STRIPE_PLAN_IDS[original_plan],
-                            "price": settings.STRIPE_PLAN_IDS[original_plan],
-                            "quantity": original_user_count,
-                        }
-                    ],
-                },
-                {
-                    "start_date": current_subscription_end_date,
-                    "end_date": current_subscription_end_date + SCHEDULE_RELEASE_OFFSET,
-                    "plans": [
-                        {
-                            "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                            "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                            "quantity": desired_user_count,
-                        }
-                    ],
-                },
-            ],
-            metadata={
-                "service": owner.service,
-                "obo_organization": owner.ownerid,
-                "username": owner.username,
-                "obo_name": self.user.name,
-                "obo_email": self.user.email,
-                "obo": self.user.ownerid,
-            },
-            proration_behavior="none",
+        self._assert_schedule_modify(
+            schedule_modify_mock, owner, subscription_params, desired_plan, schedule_id
         )
 
         owner.refresh_from_db()
@@ -612,42 +568,8 @@ class StripeServiceTests(TestCase):
         create_mock.assert_called_once_with(from_subscription=stripe_subscription_id)
         schedule_id = create_mock.return_value._mock_children["id"]
 
-        schedule_modify_mock.assert_called_once_with(
-            schedule_id,
-            end_behavior="release",
-            phases=[
-                {
-                    "start_date": current_subscription_start_date,
-                    "end_date": current_subscription_end_date,
-                    "plans": [
-                        {
-                            "plan": settings.STRIPE_PLAN_IDS[original_plan],
-                            "price": settings.STRIPE_PLAN_IDS[original_plan],
-                            "quantity": original_user_count,
-                        }
-                    ],
-                },
-                {
-                    "start_date": current_subscription_end_date,
-                    "end_date": current_subscription_end_date + SCHEDULE_RELEASE_OFFSET,
-                    "plans": [
-                        {
-                            "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                            "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                            "quantity": desired_user_count,
-                        }
-                    ],
-                },
-            ],
-            metadata={
-                "service": owner.service,
-                "obo_organization": owner.ownerid,
-                "username": owner.username,
-                "obo_name": self.user.name,
-                "obo_email": self.user.email,
-                "obo": self.user.ownerid,
-            },
-            proration_behavior="none",
+        self._assert_schedule_modify(
+            schedule_modify_mock, owner, subscription_params, desired_plan, schedule_id
         )
 
         owner.refresh_from_db()
@@ -688,42 +610,8 @@ class StripeServiceTests(TestCase):
 
         self.stripe.modify_subscription(owner, desired_plan)
 
-        schedule_modify_mock.assert_called_once_with(
-            schedule_id,
-            end_behavior="release",
-            phases=[
-                {
-                    "start_date": current_subscription_start_date,
-                    "end_date": current_subscription_end_date,
-                    "plans": [
-                        {
-                            "plan": settings.STRIPE_PLAN_IDS[original_plan],
-                            "price": settings.STRIPE_PLAN_IDS[original_plan],
-                            "quantity": original_user_count,
-                        }
-                    ],
-                },
-                {
-                    "start_date": current_subscription_end_date,
-                    "end_date": current_subscription_end_date + SCHEDULE_RELEASE_OFFSET,
-                    "plans": [
-                        {
-                            "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                            "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                            "quantity": desired_user_count,
-                        }
-                    ],
-                },
-            ],
-            metadata={
-                "service": owner.service,
-                "obo_organization": owner.ownerid,
-                "username": owner.username,
-                "obo_name": self.user.name,
-                "obo_email": self.user.email,
-                "obo": self.user.ownerid,
-            },
-            proration_behavior="none",
+        self._assert_schedule_modify(
+            schedule_modify_mock, owner, subscription_params, desired_plan, schedule_id
         )
 
         owner.refresh_from_db()
@@ -768,42 +656,8 @@ class StripeServiceTests(TestCase):
 
         self.stripe.modify_subscription(owner, desired_plan)
 
-        schedule_modify_mock.assert_called_once_with(
-            schedule_id,
-            end_behavior="release",
-            phases=[
-                {
-                    "start_date": current_subscription_start_date,
-                    "end_date": current_subscription_end_date,
-                    "plans": [
-                        {
-                            "plan": settings.STRIPE_PLAN_IDS[original_plan],
-                            "price": settings.STRIPE_PLAN_IDS[original_plan],
-                            "quantity": original_user_count,
-                        }
-                    ],
-                },
-                {
-                    "start_date": current_subscription_end_date,
-                    "end_date": current_subscription_end_date + SCHEDULE_RELEASE_OFFSET,
-                    "plans": [
-                        {
-                            "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                            "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                            "quantity": desired_user_count,
-                        }
-                    ],
-                },
-            ],
-            metadata={
-                "service": owner.service,
-                "obo_organization": owner.ownerid,
-                "username": owner.username,
-                "obo_name": self.user.name,
-                "obo_email": self.user.email,
-                "obo": self.user.ownerid,
-            },
-            proration_behavior="none",
+        self._assert_schedule_modify(
+            schedule_modify_mock, owner, subscription_params, desired_plan, schedule_id
         )
 
         owner.refresh_from_db()
@@ -844,42 +698,8 @@ class StripeServiceTests(TestCase):
 
         self.stripe.modify_subscription(owner, desired_plan)
 
-        schedule_modify_mock.assert_called_once_with(
-            schedule_id,
-            end_behavior="release",
-            phases=[
-                {
-                    "start_date": current_subscription_start_date,
-                    "end_date": current_subscription_end_date,
-                    "plans": [
-                        {
-                            "plan": settings.STRIPE_PLAN_IDS[original_plan],
-                            "price": settings.STRIPE_PLAN_IDS[original_plan],
-                            "quantity": original_user_count,
-                        }
-                    ],
-                },
-                {
-                    "start_date": current_subscription_end_date,
-                    "end_date": current_subscription_end_date + SCHEDULE_RELEASE_OFFSET,
-                    "plans": [
-                        {
-                            "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                            "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                            "quantity": desired_user_count,
-                        }
-                    ],
-                },
-            ],
-            metadata={
-                "service": owner.service,
-                "obo_organization": owner.ownerid,
-                "username": owner.username,
-                "obo_name": self.user.name,
-                "obo_email": self.user.email,
-                "obo": self.user.ownerid,
-            },
-            proration_behavior="none",
+        self._assert_schedule_modify(
+            schedule_modify_mock, owner, subscription_params, desired_plan, schedule_id
         )
 
         owner.refresh_from_db()
@@ -919,42 +739,8 @@ class StripeServiceTests(TestCase):
         desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
         self.stripe.modify_subscription(owner, desired_plan)
 
-        schedule_modify_mock.assert_called_once_with(
-            schedule_id,
-            end_behavior="release",
-            phases=[
-                {
-                    "start_date": current_subscription_start_date,
-                    "end_date": current_subscription_end_date,
-                    "plans": [
-                        {
-                            "plan": settings.STRIPE_PLAN_IDS[original_plan],
-                            "price": settings.STRIPE_PLAN_IDS[original_plan],
-                            "quantity": original_user_count,
-                        }
-                    ],
-                },
-                {
-                    "start_date": current_subscription_end_date,
-                    "end_date": current_subscription_end_date + SCHEDULE_RELEASE_OFFSET,
-                    "plans": [
-                        {
-                            "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                            "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                            "quantity": desired_user_count,
-                        }
-                    ],
-                },
-            ],
-            metadata={
-                "service": owner.service,
-                "obo_organization": owner.ownerid,
-                "username": owner.username,
-                "obo_name": self.user.name,
-                "obo_email": self.user.email,
-                "obo": self.user.ownerid,
-            },
-            proration_behavior="none",
+        self._assert_schedule_modify(
+            schedule_modify_mock, owner, subscription_params, desired_plan, schedule_id
         )
 
         owner.refresh_from_db()
@@ -994,42 +780,8 @@ class StripeServiceTests(TestCase):
         desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
         self.stripe.modify_subscription(owner, desired_plan)
 
-        schedule_modify_mock.assert_called_once_with(
-            schedule_id,
-            end_behavior="release",
-            phases=[
-                {
-                    "start_date": current_subscription_start_date,
-                    "end_date": current_subscription_end_date,
-                    "plans": [
-                        {
-                            "plan": settings.STRIPE_PLAN_IDS[original_plan],
-                            "price": settings.STRIPE_PLAN_IDS[original_plan],
-                            "quantity": original_user_count,
-                        }
-                    ],
-                },
-                {
-                    "start_date": current_subscription_end_date,
-                    "end_date": current_subscription_end_date + SCHEDULE_RELEASE_OFFSET,
-                    "plans": [
-                        {
-                            "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                            "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                            "quantity": desired_user_count,
-                        }
-                    ],
-                },
-            ],
-            metadata={
-                "service": owner.service,
-                "obo_organization": owner.ownerid,
-                "username": owner.username,
-                "obo_name": self.user.name,
-                "obo_email": self.user.email,
-                "obo": self.user.ownerid,
-            },
-            proration_behavior="none",
+        self._assert_schedule_modify(
+            schedule_modify_mock, owner, subscription_params, desired_plan, schedule_id
         )
 
         owner.refresh_from_db()
@@ -1069,42 +821,8 @@ class StripeServiceTests(TestCase):
         desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
         self.stripe.modify_subscription(owner, desired_plan)
 
-        schedule_modify_mock.assert_called_once_with(
-            schedule_id,
-            end_behavior="release",
-            phases=[
-                {
-                    "start_date": current_subscription_start_date,
-                    "end_date": current_subscription_end_date,
-                    "plans": [
-                        {
-                            "plan": settings.STRIPE_PLAN_IDS[original_plan],
-                            "price": settings.STRIPE_PLAN_IDS[original_plan],
-                            "quantity": original_user_count,
-                        }
-                    ],
-                },
-                {
-                    "start_date": current_subscription_end_date,
-                    "end_date": current_subscription_end_date + SCHEDULE_RELEASE_OFFSET,
-                    "plans": [
-                        {
-                            "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                            "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                            "quantity": desired_user_count,
-                        }
-                    ],
-                },
-            ],
-            metadata={
-                "service": owner.service,
-                "obo_organization": owner.ownerid,
-                "username": owner.username,
-                "obo_name": self.user.name,
-                "obo_email": self.user.email,
-                "obo": self.user.ownerid,
-            },
-            proration_behavior="none",
+        self._assert_schedule_modify(
+            schedule_modify_mock, owner, subscription_params, desired_plan, schedule_id
         )
 
         owner.refresh_from_db()
