@@ -4,6 +4,7 @@ from django.conf import settings
 from django.test import TestCase
 from stripe.error import InvalidRequestError, StripeError
 
+from billing.constants import BASIC_PLAN_NAME
 from codecov_auth.models import Service
 from codecov_auth.tests.factories import OwnerFactory
 from services.billing import AbstractPaymentService, BillingService, StripeService
@@ -59,30 +60,131 @@ class StripeServiceTests(TestCase):
         invoice_list_mock.assert_not_called()
         assert invoices == []
 
-    @patch("codecov_auth.models.Owner.set_basic_plan")
     @patch("services.billing.stripe.Subscription.delete")
-    @patch("services.billing.stripe.Subscription.modify")
-    def test_delete_subscription_deletes_and_prorates_if_owner_not_on_user_plan(
-        self, modify_mock, delete_mock, set_basic_plan_mock
+    @patch("services.billing.stripe.Subscription.retrieve")
+    def test_delete_subscription_without_schedule_deletes_subscription_and_sets_plan_to_basic_if_invalid_plan(
+        self, retrieve_subscription_mock, delete_subscription_mock
     ):
-        owner = OwnerFactory(stripe_subscription_id="fowdldjfjwe", plan="v4-50m")
-        self.stripe.delete_subscription(owner)
-        delete_mock.assert_called_once_with(owner.stripe_subscription_id, prorate=False)
-        set_basic_plan_mock.assert_called_once()
+        plan = "v4-50m"
+        stripe_subscription_id = "sub_1K77Y5GlVGuVgOrkJrLjRnne"
+        stripe_schedule_id = None
+        owner = OwnerFactory(stripe_subscription_id=stripe_subscription_id, plan=plan)
+        subscription_params = {
+            "schedule_id": stripe_schedule_id,
+            "start_date": 1639628096,
+            "end_date": 1644107871,
+            "quantity": 10,
+            "name": plan,
+            "id": 105,
+        }
 
-    @patch("codecov_auth.models.Owner.set_basic_plan")
-    @patch("services.billing.stripe.Subscription.delete")
-    @patch("services.billing.stripe.Subscription.modify")
-    def test_delete_subscription_modifies_subscription_to_delete_at_end_of_billing_cycle_if_user_plan(
-        self, modify_mock, delete_mock, set_basic_plan_mock
-    ):
-        owner = OwnerFactory(stripe_subscription_id="fowdldjfjwe", plan="users-inappy")
+        retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
         self.stripe.delete_subscription(owner)
-        delete_mock.assert_not_called()
-        set_basic_plan_mock.assert_not_called()
-        modify_mock.assert_called_once_with(
-            owner.stripe_subscription_id, cancel_at_period_end=True, prorate=False
+        delete_subscription_mock.assert_called_once_with(
+            stripe_subscription_id, prorate=False
         )
+
+        owner.refresh_from_db()
+        assert owner.stripe_subscription_id == None
+        assert owner.plan == BASIC_PLAN_NAME
+        assert owner.plan_activated_users == None
+        assert owner.plan_user_count == 5
+
+    @patch("services.billing.stripe.SubscriptionSchedule.cancel")
+    @patch("services.billing.stripe.Subscription.retrieve")
+    def test_delete_subscription_with_schedule_deletes_schedule_and_sets_plan_to_basic_if_owner_not_on_user_plan(
+        self, retrieve_subscription_mock, schedule_cancel_mock
+    ):
+        plan = "v4-50m"
+        stripe_subscription_id = "sub_1K77Y5GlVGuVgOrkJrLjRnne"
+        stripe_schedule_id = "sub_sched_sch1K77Y5GlVGuVgOrkJrLjRnne"
+        owner = OwnerFactory(stripe_subscription_id=stripe_subscription_id, plan=plan)
+        subscription_params = {
+            "schedule_id": stripe_schedule_id,
+            "start_date": 1639628096,
+            "end_date": 1644107871,
+            "quantity": 10,
+            "name": plan,
+            "id": 215,
+        }
+
+        retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+        self.stripe.delete_subscription(owner)
+        schedule_cancel_mock.assert_called_once_with(stripe_schedule_id)
+
+        owner.refresh_from_db()
+        assert owner.stripe_subscription_id == None
+        assert owner.plan == BASIC_PLAN_NAME
+        assert owner.plan_activated_users == None
+        assert owner.plan_user_count == 5
+
+    @patch("services.billing.stripe.Subscription.retrieve")
+    @patch("services.billing.stripe.Subscription.modify")
+    def test_delete_subscription_without_schedule_modifies_subscription_to_delete_at_end_of_billing_cycle_if_valid_plan(
+        self, modify_mock, retrieve_subscription_mock
+    ):
+        plan = "users-pr-inappy"
+        stripe_subscription_id = "sub_1K77Y5GlVGuVgOrkJrLjRnne"
+        stripe_schedule_id = None
+        owner = OwnerFactory(
+            stripe_subscription_id=stripe_subscription_id,
+            plan=plan,
+            plan_activated_users=[4, 6, 3],
+            plan_user_count=9,
+        )
+        subscription_params = {
+            "schedule_id": stripe_schedule_id,
+            "start_date": 1639628096,
+            "end_date": 1644107871,
+            "quantity": 10,
+            "name": plan,
+            "id": 215,
+        }
+
+        retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+        self.stripe.delete_subscription(owner)
+        modify_mock.assert_called_once_with(
+            stripe_subscription_id, cancel_at_period_end=True, prorate=False
+        )
+        owner.refresh_from_db()
+        assert owner.stripe_subscription_id == stripe_subscription_id
+        assert owner.plan == plan
+        assert owner.plan_activated_users == [4, 6, 3]
+        assert owner.plan_user_count == 9
+
+    @patch("services.billing.stripe.Subscription.retrieve")
+    @patch("services.billing.stripe.SubscriptionSchedule.modify")
+    def test_delete_subscription_with_schedule_modifies_schedule_to_cancel_at_end_of_billing_cycle_if_valid_plan(
+        self, schedule_modify_mock, retrieve_subscription_mock
+    ):
+        plan = "users-pr-inappy"
+        stripe_subscription_id = "sub_1K77Y5GlVGuVgOrkJrLjRnne"
+        stripe_schedule_id = "sub_sched_sch1K77Y5GlVGuVgOrkJrLjRnne"
+        owner = OwnerFactory(
+            stripe_subscription_id=stripe_subscription_id,
+            plan=plan,
+            plan_activated_users=[4, 6, 3],
+            plan_user_count=9,
+        )
+        subscription_params = {
+            "schedule_id": stripe_schedule_id,
+            "start_date": 1639628096,
+            "end_date": 1644107871,
+            "quantity": 10,
+            "name": plan,
+            "id": 215,
+        }
+
+        retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+        self.stripe.delete_subscription(owner)
+        schedule_modify_mock.assert_called_once_with(
+            stripe_schedule_id, end_behavior="cancel"
+        )
+        owner.refresh_from_db()
+        assert owner.stripe_subscription_id == stripe_subscription_id
+        assert owner.plan == plan
+        assert owner.plan_activated_users == [4, 6, 3]
+        assert owner.plan_user_count == 9
 
     @patch("services.segment.SegmentService.account_increased_users")
     @patch("services.segment.SegmentService.account_changed_plan")

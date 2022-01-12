@@ -116,21 +116,35 @@ class StripeService(AbstractPaymentService):
 
     @_log_stripe_error
     def delete_subscription(self, owner):
-        # TODO: add a check to see if there is a schedule, if so, cancel the schedule instead
         print("Testing - Delete subscription")
+        subscription = stripe.Subscription.retrieve(owner.stripe_subscription_id)
+        subscription_schedule_id = subscription.schedule
+
         if owner.plan not in USER_PLAN_REPRESENTATIONS:
             log.info(
                 f"Downgrade to basic plan from legacy plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
             )
-            stripe.Subscription.delete(owner.stripe_subscription_id, prorate=False)
+            if not subscription_schedule_id:
+                stripe.Subscription.delete(owner.stripe_subscription_id, prorate=False)
+            else:
+                stripe.SubscriptionSchedule.cancel(subscription_schedule_id)
             owner.set_basic_plan()
         else:
             log.info(
                 f"Downgrade to basic plan from user plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
             )
-            stripe.Subscription.modify(
-                owner.stripe_subscription_id, cancel_at_period_end=True, prorate=False
-            )
+            if not subscription_schedule_id:
+                stripe.Subscription.modify(
+                    owner.stripe_subscription_id,
+                    cancel_at_period_end=True,
+                    prorate=False,
+                )
+            else:
+                # stripe.SubscriptionSchedule.modify(
+                #     subscription_schedule_id,
+                #     end_behavior="cancel",
+                # )
+                stripe.SubscriptionSchedule.cancel(subscription_schedule_id)
 
     @_log_stripe_error
     def get_subscription(self, owner):
@@ -148,22 +162,13 @@ class StripeService(AbstractPaymentService):
 
     @_log_stripe_error
     def modify_subscription(self, owner, desired_plan):
-        # Enters when I modify bw paid plans or change user numbers within a paid plan
         print("Testing - Modify subscription")
         # This should be only in the upgrading part
-        log.info(
-            f"Updating Stripe subscription for owner {owner.ownerid} to {desired_plan['value']} by user #{self.requesting_user.ownerid}"
-        )
         subscription = stripe.Subscription.retrieve(owner.stripe_subscription_id)
         proration_behavior = self._get_proration_params(owner, desired_plan)
         subscription_schedule_id = subscription.schedule
         is_upgrading = True if proration_behavior != "none" else False
         subscription_id = owner.stripe_subscription_id
-        # stripe.SubscriptionSchedule.release(
-        #     subscription.schedule,
-        # )
-
-        # return
 
         # $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
         # Divide logic bw immediate updates and scheduled updates
@@ -176,15 +181,16 @@ class StripeService(AbstractPaymentService):
         # $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
         if is_upgrading:
-            # If the user is in a schedule, update the existing schedule
-            if subscription_schedule_id is not None:
+            if subscription_schedule_id:
                 print("Testing - updating schedule in upgrade")
                 self._modify_subscription_schedule(
                     owner, subscription, subscription_schedule_id, desired_plan
                 )
-            # Else since the user is not in a schedule, update immediately
             else:
                 print("Testing - upgrading immediately")
+                log.info(
+                    f"Updating Stripe subscription for owner {owner.ownerid} to {desired_plan['value']} by user #{self.requesting_user.ownerid}"
+                )
                 stripe.Subscription.modify(
                     owner.stripe_subscription_id,
                     cancel_at_period_end=False,
@@ -233,13 +239,11 @@ class StripeService(AbstractPaymentService):
                     f"Stripe subscription modified successfully for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
                 )
         else:
-            # If the user is in a schedule, update the existing schedule
-            if subscription_schedule_id is not None:
+            if subscription_schedule_id:
                 print("Testing - updating schedule in downgrade")
                 self._modify_subscription_schedule(
                     owner, subscription, subscription_schedule_id, desired_plan
                 )
-            # Else since the user is not in a schedule, create a schedule
             else:
                 print("Testing - creating a schedule")
                 schedule = stripe.SubscriptionSchedule.create(
@@ -250,7 +254,6 @@ class StripeService(AbstractPaymentService):
                 self._modify_subscription_schedule(
                     owner, subscription, subscription_schedule_id, desired_plan
                 )
-                # Potentially have to add another schedule.modify call to adjust for the proration_behavior (although that doesn't seem to be taking a lot of effect)
 
     def _modify_subscription_schedule(
         self, owner, subscription, subscription_schedule_id, desired_plan
