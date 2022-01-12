@@ -140,11 +140,9 @@ class StripeService(AbstractPaymentService):
                     prorate=False,
                 )
             else:
-                # stripe.SubscriptionSchedule.modify(
-                #     subscription_schedule_id,
-                #     end_behavior="cancel",
-                # )
-                stripe.SubscriptionSchedule.cancel(subscription_schedule_id)
+                stripe.SubscriptionSchedule.modify(
+                    subscription_schedule_id, end_behavior="cancel",
+                )
 
     @_log_stripe_error
     def get_subscription(self, owner):
