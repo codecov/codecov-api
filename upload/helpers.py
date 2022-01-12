@@ -405,7 +405,7 @@ def get_global_tokens():
 
 
 def check_commit_upload_constraints(commit: Commit):
-    if settings.UPLOAD_THROTTLING_ENABLED:
+    if settings.UPLOAD_THROTTLING_ENABLED and commit.repository.private:
         owner = _determine_responsible_owner(commit.repository)
         limit = USER_PLAN_REPRESENTATIONS.get(owner.plan, {}).get(
             "monthly_uploads_limit"
@@ -420,6 +420,7 @@ def check_commit_upload_constraints(commit: Commit):
                 )
                 uploads_used = ReportSession.objects.filter(
                     report__commit__repository__author_id=owner.ownerid,
+                    report__commit__repository__private=True,
                     created_at__gte=timezone.now() - timedelta(days=30),
                     # attempt at making the query more performant by telling the db to not
                     # check old commits, which are unlikely to have recent uploads
