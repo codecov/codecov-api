@@ -156,7 +156,6 @@ class AccountViewSetTests(APITestCase):
             "latest_invoice": None,
             "schedule_id": "sub_sched_456",
         }
-        # json.load(subscription_params["file"])["data"][0]
 
         mock_retrieve_subscription.return_value = MockSubscription(subscription_params)
         schedule_params = {
@@ -414,7 +413,7 @@ class AccountViewSetTests(APITestCase):
             "default_payment_method": default_payment_method,
             "cancel_at_period_end": False,
             "current_period_end": 1633512445,
-            "file": f,
+            "latest_invoice": json.load(f)["data"][0],
             "schedule_id": None,
         }
 
@@ -549,7 +548,7 @@ class AccountViewSetTests(APITestCase):
 
         subscription_params = {
             "default_payment_method": default_payment_method,
-            "file": f,
+            "latest_invoice": json.load(f)["data"][0],
             "schedule_id": None,
         }
 
@@ -689,7 +688,7 @@ class AccountViewSetTests(APITestCase):
             "default_payment_method": default_payment_method,
             "cancel_at_period_end": False,
             "current_period_end": 1633512445,
-            "file": f,
+            "latest_invoice": json.load(f)["data"][0],
             "schedule_id": None,
         }
 
