@@ -51,7 +51,9 @@ class AccountViewSetTests(APITestCase):
     def setUp(self):
         self.service = "gitlab"
         self.user = OwnerFactory(
-            stripe_customer_id=1000, service=Service.GITHUB.value, service_id="1"
+            stripe_customer_id=1000,
+            service=Service.GITHUB.value,
+            service_id="10238974029348",
         )
         self.expected_invoice = {
             "number": "EF0A41E-0001",
@@ -125,6 +127,7 @@ class AccountViewSetTests(APITestCase):
             "plan_provider": owner.plan_provider,
             "activated_student_count": 0,
             "student_count": 0,
+            "schedule_detail": None,
         }
 
     def test_retrieve_account_gets_account_students(self):
@@ -156,6 +159,7 @@ class AccountViewSetTests(APITestCase):
             "plan_provider": owner.plan_provider,
             "activated_student_count": 1,
             "student_count": 3,
+            "schedule_detail": None,
         }
 
     def test_account_with_free_user_plan(self):
@@ -243,14 +247,15 @@ class AccountViewSetTests(APITestCase):
             }
         }
 
-        mock_subscription.return_value = {
-            "latest_invoice": json.load(f)["data"][0],
+        subscription_params = {
+            "default_payment_method": default_payment_method,
             "cancel_at_period_end": False,
             "current_period_end": 1633512445,
-            "customer": {
-                "invoice_settings": {"default_payment_method": default_payment_method,}
-            },
+            "file": f,
+            "schedule_id": None,
         }
+
+        mock_subscription.return_value = MockSubscription(subscription_params)
 
         self.user.stripe_subscription_id = "djfos"
         self.user.save()
@@ -517,15 +522,16 @@ class AccountViewSetTests(APITestCase):
             }
         }
 
-        retrieve_subscription_mock.return_value = {
-            "items": {"data": [{"id": "abc"}]},
+        subscription_params = {
+            "default_payment_method": default_payment_method,
             "cancel_at_period_end": False,
             "current_period_end": 1633512445,
-            "customer": {
-                "invoice_settings": {"default_payment_method": default_payment_method,}
-            },
-            "latest_invoice": json.load(f)["data"][0],
+            "file": f,
+            "schedule_id": None,
         }
+
+        retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+
         payment_method_id = "pm_123"
         kwargs = {"service": self.user.service, "owner_username": self.user.username}
         data = {"payment_method": payment_method_id}
