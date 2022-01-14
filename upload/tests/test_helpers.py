@@ -70,7 +70,7 @@ def test_try_to_get_best_possible_nothing_and_not_private(db, mocker):
 
 def test_check_commit_contraints_settings_disabled(db, settings):
     settings.UPLOAD_THROTTLING_ENABLED = False
-    repository = RepositoryFactory.create(author__plan=BASIC_PLAN_NAME)
+    repository = RepositoryFactory.create(author__plan=BASIC_PLAN_NAME, private=True)
     first_commit = CommitFactory.create(repository=repository)
     second_commit = CommitFactory.create(repository=repository)
     third_commit = CommitFactory.create(repository__author=repository.author)
@@ -87,23 +87,32 @@ def test_check_commit_contraints_settings_disabled(db, settings):
 
 def test_check_commit_contraints_settings_enabled(db, settings):
     settings.UPLOAD_THROTTLING_ENABLED = True
-    repository = RepositoryFactory.create(author__plan=BASIC_PLAN_NAME)
+    author = OwnerFactory.create(plan=BASIC_PLAN_NAME)
+    repository = RepositoryFactory.create(author=author, private=True)
+    public_repository = RepositoryFactory.create(author=author, private=False)
     first_commit = CommitFactory.create(repository=repository)
     second_commit = CommitFactory.create(repository=repository)
     third_commit = CommitFactory.create(repository__author=repository.author)
     fourth_commit = CommitFactory.create(repository=repository)
+    public_repository_commit = CommitFactory.create(repository=public_repository)
     unrelated_commit = CommitFactory.create()
     first_report = CommitReportFactory.create(commit=first_commit)
     fourth_report = CommitReportFactory.create(commit=fourth_commit)
+    check_commit_upload_constraints(second_commit)
+    for i in range(300):
+        UploadFactory.create(report__commit__repository=public_repository)
+    # ensuring public repos counts don't count torwards the quota
+    check_commit_upload_constraints(second_commit)
     for i in range(150):
         UploadFactory.create(report=first_report)
-    for i in range(150):
         UploadFactory.create(report=fourth_report)
     # first and fourth commit already has uploads made, we won't block uploads to them
     check_commit_upload_constraints(first_commit)
     check_commit_upload_constraints(fourth_commit)
     # unrelated commit belongs to a different user. Ensuring we don't block it
     check_commit_upload_constraints(unrelated_commit)
+    # public repositories commit should never be throttled
+    check_commit_upload_constraints(public_repository_commit)
     with pytest.raises(Throttled):
         # second commit does not have uploads made, so we block it
         check_commit_upload_constraints(second_commit)
