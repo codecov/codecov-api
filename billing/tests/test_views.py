@@ -30,6 +30,8 @@ class MockSubscription(object):
         self.metadata = MockOboOrg(owner)
         self.plan = MockSubscriptionPlan(params)
         self.quantity = params["new_quantity"]
+        self.customer = "cus_123"
+        self.id = params["subscription_id"]
         self.items = {
             "data": [
                 {
@@ -499,7 +501,11 @@ class StripeWebhookHandlerTests(APITestCase):
         self.owner.plan_user_count = 10
         self.owner.save()
 
-        self.new_params = {"new_plan": "users-pr-inappm", "new_quantity": 7}
+        self.new_params = {
+            "new_plan": "users-pr-inappm",
+            "new_quantity": 7,
+            "subscription_id": None,
+        }
 
         retrieve_subscription_mock.return_value = MockSubscription(
             self.owner, self.new_params
@@ -520,6 +526,80 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.owner.plan == self.new_params["new_plan"]
         assert self.owner.plan_user_count == self.new_params["new_quantity"]
 
+    @patch("services.billing.stripe.Subscription.retrieve")
+    def test_subscription_schedule_created_logs_a_new_schedule(
+        self, retrieve_subscription_mock
+    ):
+        original_plan = "users-pr-inappy"
+        original_quantity = 10
+        subscription_id = "sub_1K8xfkGlVGuVgOrkxvroyZdH"
+        self.owner.plan = original_plan
+        self.owner.plan_user_count = original_quantity
+        self.owner.save()
+
+        self.params = {
+            "new_plan": "users-pr-inappm",
+            "new_quantity": 7,
+            "subscription_id": subscription_id,
+        }
+
+        retrieve_subscription_mock.return_value = MockSubscription(
+            self.owner, self.params
+        )
+
+        self._send_event(
+            payload={
+                "type": "subscription_schedule.created",
+                "data": {"object": {"subscription": subscription_id}},
+            }
+        )
+
+        self.owner.refresh_from_db()
+        assert self.owner.plan == original_plan
+        assert self.owner.plan_user_count == original_quantity
+
+    @patch("services.billing.stripe.Subscription.retrieve")
+    def test_subscription_schedule_updated_logs_changes_to_schedule(
+        self, retrieve_subscription_mock
+    ):
+        original_plan = "users-pr-inappy"
+        original_quantity = 10
+        subscription_id = "sub_1K8xfkGlVGuVgOrkxvroyZdH"
+        new_plan = "plan_H6P3KZXwmAbqPS"
+        new_quantity = 7
+        self.owner.plan = original_plan
+        self.owner.plan_user_count = original_quantity
+        self.owner.save()
+
+        self.params = {
+            "new_plan": new_plan,
+            "new_quantity": new_quantity,
+            "subscription_id": subscription_id,
+        }
+
+        retrieve_subscription_mock.return_value = MockSubscription(
+            self.owner, self.params
+        )
+
+        self._send_event(
+            payload={
+                "type": "subscription_schedule.updated",
+                "data": {
+                    "object": {
+                        "subscription": subscription_id,
+                        "phases": [
+                            {},
+                            {"plans": [{"plan": new_plan, "quantity": new_quantity}]},
+                        ],
+                    }
+                },
+            }
+        )
+
+        self.owner.refresh_from_db()
+        assert self.owner.plan == original_plan
+        assert self.owner.plan_user_count == original_quantity
+
     @patch("services.segment.SegmentService.account_increased_users")
     @patch("services.billing.stripe.Subscription.retrieve")
     def test_subscription_schedule_released_calls_account_increased_users_segment(
@@ -531,7 +611,11 @@ class StripeWebhookHandlerTests(APITestCase):
         self.owner.plan_user_count = original_quantity
         self.owner.save()
 
-        self.new_params = {"new_plan": "users-pr-inappy", "new_quantity": 30}
+        self.new_params = {
+            "new_plan": "users-pr-inappy",
+            "new_quantity": 30,
+            "subscription_id": None,
+        }
 
         retrieve_subscription_mock.return_value = MockSubscription(
             self.owner, self.new_params
@@ -569,7 +653,11 @@ class StripeWebhookHandlerTests(APITestCase):
         self.owner.plan_user_count = original_quantity
         self.owner.save()
 
-        self.new_params = {"new_plan": "users-pr-inappy", "new_quantity": 13}
+        self.new_params = {
+            "new_plan": "users-pr-inappy",
+            "new_quantity": 13,
+            "subscription_id": None,
+        }
 
         retrieve_subscription_mock.return_value = MockSubscription(
             self.owner, self.new_params
@@ -607,7 +695,11 @@ class StripeWebhookHandlerTests(APITestCase):
         self.owner.plan_user_count = original_quantity
         self.owner.save()
 
-        self.new_params = {"new_plan": "users-pr-inappm", "new_quantity": 14}
+        self.new_params = {
+            "new_plan": "users-pr-inappm",
+            "new_quantity": 14,
+            "subscription_id": None,
+        }
 
         retrieve_subscription_mock.return_value = MockSubscription(
             self.owner, self.new_params
