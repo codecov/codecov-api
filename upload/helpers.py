@@ -8,8 +8,10 @@ from asgiref.sync import async_to_sync
 from cerberus import Validator
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Q
 from django.utils import timezone
 from rest_framework.exceptions import NotFound, Throttled, ValidationError
+from shared.reports.enums import UploadType
 from shared.torngit.exceptions import TorngitClientError, TorngitObjectNotFoundError
 
 from billing.constants import USER_PLAN_REPRESENTATIONS
@@ -451,17 +453,45 @@ def validate_upload(upload_params, repository, redis):
         commit = Commit.objects.get(
             commitid=upload_params.get("commit"), repository=repository
         )
-        session_count = commit.totals.get("s", 0) if commit.totals else 0
-        if (session_count or 0) > (get_config("setup", "max_sessions") or 150):
+        new_session_count = ReportSession.objects.filter(
+            ~Q(state="error"),
+            ~Q(upload_type=UploadType.carryforwarded.name),
+            report__commit=commit,
+        ).count()
+        session_count = (commit.totals.get("s") if commit.totals else 0) or 0
+        current_upload_limit = get_config("setup", "max_sessions") or 150
+        if session_count > current_upload_limit:
+            if new_session_count <= current_upload_limit:
+                log.info(
+                    "New session count would not have blocked this upload",
+                    extra=dict(
+                        commit=upload_params.get("commit"),
+                        session_count=session_count,
+                        repoid=repository.repoid,
+                        old_session_count=session_count,
+                        new_session_count=new_session_count,
+                    ),
+                )
             log.warning(
                 "Too many uploads to this commit",
                 extra=dict(
                     commit=upload_params.get("commit"),
                     session_count=session_count,
-                    repository=repository.repoid,
+                    repoid=repository.repoid,
                 ),
             )
             raise ValidationError("Too many uploads to this commit.")
+        elif new_session_count > current_upload_limit:
+            log.info(
+                "New session count would block this upload",
+                extra=dict(
+                    commit=upload_params.get("commit"),
+                    session_count=session_count,
+                    repoid=repository.repoid,
+                    old_session_count=session_count,
+                    new_session_count=new_session_count,
+                ),
+            )
     except Commit.DoesNotExist:
         pass
 
