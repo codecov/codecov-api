@@ -3,7 +3,6 @@ from abc import ABC, abstractmethod
 
 import stripe
 from django.conf import settings
-from stripe.api_resources import subscription_schedule
 
 from billing.constants import (
     FREE_PLAN_REPRESENTATIONS,
@@ -87,7 +86,6 @@ class StripeService(AbstractPaymentService):
 
     @_log_stripe_error
     def get_invoice(self, owner, invoice_id):
-        print("Testing - Get invoice")
         log.info(
             f"Fetching invoice {invoice_id} from Stripe for ownerid {owner.ownerid}"
         )
@@ -105,7 +103,6 @@ class StripeService(AbstractPaymentService):
 
     @_log_stripe_error
     def list_invoices(self, owner, limit=10):
-        print("Testing - List invoices")
         log.info(f"Fetching invoices from Stripe for ownerid {owner.ownerid}")
         if owner.stripe_customer_id is None:
             log.info("stripe_customer_id is None, not fetching invoices")
@@ -116,7 +113,6 @@ class StripeService(AbstractPaymentService):
 
     @_log_stripe_error
     def delete_subscription(self, owner):
-        print("Testing - Delete subscription")
         subscription = stripe.Subscription.retrieve(owner.stripe_subscription_id)
         subscription_schedule_id = subscription.schedule
 
@@ -133,20 +129,15 @@ class StripeService(AbstractPaymentService):
             log.info(
                 f"Downgrade to basic plan from user plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
             )
-            if not subscription_schedule_id:
-                stripe.Subscription.modify(
-                    owner.stripe_subscription_id,
-                    cancel_at_period_end=True,
-                    prorate=False,
-                )
-            else:
-                stripe.SubscriptionSchedule.modify(
-                    subscription_schedule_id, end_behavior="cancel",
-                )
+            if subscription_schedule_id:
+                stripe.SubscriptionSchedule.release(subscription_schedule_id)
+
+            stripe.Subscription.modify(
+                owner.stripe_subscription_id, cancel_at_period_end=True, prorate=False,
+            )
 
     @_log_stripe_error
     def get_subscription(self, owner):
-        print("Testing - Get subscription")
         if not owner.stripe_subscription_id:
             return None
         return stripe.Subscription.retrieve(
@@ -159,16 +150,26 @@ class StripeService(AbstractPaymentService):
         )
 
     @_log_stripe_error
+    def get_schedule(self, owner):
+        if not owner.stripe_subscription_id:
+            return None
+
+        subscription = self.get_subscription(owner)
+        subscription_schedule_id = subscription.schedule
+
+        if not subscription_schedule_id:
+            return None
+
+        return stripe.SubscriptionSchedule.retrieve(subscription_schedule_id)
+
+    @_log_stripe_error
     def modify_subscription(self, owner, desired_plan):
-        print("Testing - Modify subscription")
-        # This should be only in the upgrading part
         subscription = stripe.Subscription.retrieve(owner.stripe_subscription_id)
         proration_behavior = self._get_proration_params(owner, desired_plan)
         subscription_schedule_id = subscription.schedule
         is_upgrading = True if proration_behavior != "none" else False
         subscription_id = owner.stripe_subscription_id
 
-        # $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
         # Divide logic bw immediate updates and scheduled updates
         # Immediate updates: when user upgrades seats or plan
         #   If the user is not in a schedule, update immediately
@@ -176,16 +177,13 @@ class StripeService(AbstractPaymentService):
         # Scheduled updates: when the user decreases seats or plan
         #   If the user is not in a schedule, create a schedule
         #   If the user is in a schedule, update the existing schedule
-        # $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
         if is_upgrading:
             if subscription_schedule_id:
-                print("Testing - updating schedule in upgrade")
                 self._modify_subscription_schedule(
                     owner, subscription, subscription_schedule_id, desired_plan
                 )
             else:
-                print("Testing - upgrading immediately")
                 log.info(
                     f"Updating Stripe subscription for owner {owner.ownerid} to {desired_plan['value']} by user #{self.requesting_user.ownerid}"
                 )
@@ -238,12 +236,10 @@ class StripeService(AbstractPaymentService):
                 )
         else:
             if subscription_schedule_id:
-                print("Testing - updating schedule in downgrade")
                 self._modify_subscription_schedule(
                     owner, subscription, subscription_schedule_id, desired_plan
                 )
             else:
-                print("Testing - creating a schedule")
                 schedule = stripe.SubscriptionSchedule.create(
                     from_subscription=subscription_id,
                 )
@@ -256,7 +252,6 @@ class StripeService(AbstractPaymentService):
     def _modify_subscription_schedule(
         self, owner, subscription, subscription_schedule_id, desired_plan
     ):
-        print("updating existing schedule to update schedule with existing info")
         current_subscription_start_date = subscription["current_period_start"]
         current_subscription_end_date = subscription["current_period_end"]
 
@@ -325,7 +320,6 @@ class StripeService(AbstractPaymentService):
 
     @_log_stripe_error
     def create_checkout_session(self, owner, desired_plan):
-        print("Testing - Create checkout session")
         success_url, cancel_url = self._get_success_and_cancel_url(owner)
         log.info("Creating Stripe Checkout Session for owner: {owner.ownerid}")
         session = stripe.checkout.Session.create(
@@ -354,7 +348,6 @@ class StripeService(AbstractPaymentService):
 
     @_log_stripe_error
     def update_payment_method(self, owner, payment_method):
-        print("Testing - Update payment method")
         log.info(f"Stripe update payment method for owner {owner.ownerid}")
         if owner.stripe_subscription_id is None:
             log.info(
@@ -389,6 +382,9 @@ class BillingService:
     def get_subscription(self, owner):
         return self.payment_service.get_subscription(owner)
 
+    def get_schedule(self, owner):
+        return self.payment_service.get_schedule(owner)
+
     def get_invoice(self, owner, invoice_id):
         return self.payment_service.get_invoice(owner, invoice_id)
 
@@ -401,7 +397,6 @@ class BillingService:
         on current state, might create a stripe checkout session and return
         the checkout session's ID, which is a string. Otherwise returns None.
         """
-        print("Testing - update_plan")
         if desired_plan["value"] in FREE_PLAN_REPRESENTATIONS:
             if owner.stripe_subscription_id is not None:
                 self.payment_service.delete_subscription(owner)

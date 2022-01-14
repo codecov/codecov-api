@@ -227,10 +227,11 @@ class StripeServiceTests(TestCase):
         assert owner.plan_activated_users == [4, 6, 3]
         assert owner.plan_user_count == 9
 
+    @patch("services.billing.stripe.Subscription.modify")
     @patch("services.billing.stripe.Subscription.retrieve")
-    @patch("services.billing.stripe.SubscriptionSchedule.modify")
-    def test_delete_subscription_with_schedule_modifies_schedule_to_cancel_at_end_of_billing_cycle_if_valid_plan(
-        self, schedule_modify_mock, retrieve_subscription_mock
+    @patch("services.billing.stripe.SubscriptionSchedule.release")
+    def test_delete_subscription_with_schedule_releases_schedule_and_cancels_subscription_at_end_of_billing_cycle_if_valid_plan(
+        self, schedule_release_mock, retrieve_subscription_mock, modify_mock
     ):
         plan = "users-pr-inappy"
         stripe_subscription_id = "sub_1K77Y5GlVGuVgOrkJrLjRnne"
@@ -252,8 +253,9 @@ class StripeServiceTests(TestCase):
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
         self.stripe.delete_subscription(owner)
-        schedule_modify_mock.assert_called_once_with(
-            stripe_schedule_id, end_behavior="cancel"
+        schedule_release_mock.assert_called_once_with(stripe_schedule_id)
+        modify_mock.assert_called_once_with(
+            stripe_subscription_id, cancel_at_period_end=True, prorate=False
         )
         owner.refresh_from_db()
         assert owner.stripe_subscription_id == stripe_subscription_id

@@ -1,5 +1,6 @@
 import logging
 
+from django.conf import settings
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 
@@ -127,10 +128,40 @@ class SubscriptionDetailSerializer(serializers.Serializer):
     current_period_end = serializers.IntegerField()
 
 
+class StripeScheduledPhaseSerializer(serializers.Serializer):
+    start_date = serializers.IntegerField()
+    plan = serializers.SerializerMethodField()
+    quantity = serializers.SerializerMethodField()
+
+    def get_plan(self, phase):
+        plan_id = phase["plans"][0]["plan"]
+        stripe_plan_dict = settings.STRIPE_PLAN_IDS
+        plan_name = list(stripe_plan_dict.keys())[
+            list(stripe_plan_dict.values()).index(plan_id)
+        ]
+        marketing_plan_name = PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS[plan_name][
+            "billing_rate"
+        ]
+        return marketing_plan_name
+
+    def get_quantity(self, phase):
+        return phase["plans"][0]["quantity"]
+
+
+class ScheduleDetailSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    scheduled_phase = serializers.SerializerMethodField()
+
+    def get_scheduled_phase(self, schedule):
+        # Getting the second entry since the there is always going to be 2 phases, the current one
+        # (phase[0]) and the future/scheduled one (phase[1])
+        return StripeScheduledPhaseSerializer(schedule["phases"][1]).data
+
+
 class RootOrganizationSerializer(serializers.Serializer):
     """
     Minimalist serializer to expose the root organization of a sub group
-    so we can expose the minimal data required for the UI while hiding data
+    so we can expose the minimal data required for the UI while hiding data3
     that might only be for admin (invoice, billing data, etc)
     """
 
@@ -143,6 +174,7 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
     checkout_session_id = serializers.SerializerMethodField()
     subscription_detail = serializers.SerializerMethodField()
     root_organization = RootOrganizationSerializer()
+    schedule_detail = serializers.SerializerMethodField()
 
     class Meta:
         model = Owner
@@ -150,20 +182,21 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
         read_only_fields = ("integration_id",)
 
         fields = read_only_fields + (
-            "activated_user_count",
-            "inactive_user_count",
-            "plan_auto_activate",
-            "plan",
-            "subscription_detail",
-            "checkout_session_id",
-            "name",
-            "email",
-            "nb_active_private_repos",
-            "repo_total_credits",
-            "plan_provider",
-            "root_organization",
             "activated_student_count",
+            "activated_user_count",
+            "checkout_session_id",
+            "email",
+            "inactive_user_count",
+            "name",
+            "nb_active_private_repos",
+            "plan",
+            "plan_auto_activate",
+            "plan_provider",
+            "repo_total_credits",
+            "root_organization",
+            "schedule_detail",
             "student_count",
+            "subscription_detail",
         )
 
     def _get_billing(self):
@@ -174,6 +207,11 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
         subscription_detail = self._get_billing().get_subscription(owner)
         if subscription_detail:
             return SubscriptionDetailSerializer(subscription_detail).data
+
+    def get_schedule_detail(self, owner):
+        schedule_detail = self._get_billing().get_schedule(owner)
+        if schedule_detail:
+            return ScheduleDetailSerializer(schedule_detail).data
 
     def get_checkout_session_id(self, _):
         return self.context.get("checkout_session_id")
