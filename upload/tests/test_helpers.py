@@ -1,5 +1,7 @@
+from contextlib import nullcontext
+
 import pytest
-from rest_framework.exceptions import Throttled
+from rest_framework.exceptions import Throttled, ValidationError
 
 from billing.constants import BASIC_PLAN_NAME
 from core.tests.factories import CommitFactory, OwnerFactory, RepositoryFactory
@@ -7,6 +9,7 @@ from reports.tests.factories import CommitReportFactory, UploadFactory
 from upload.helpers import (
     check_commit_upload_constraints,
     try_to_get_best_possible_bot_token,
+    validate_upload,
 )
 
 
@@ -119,3 +122,21 @@ def test_check_commit_contraints_settings_enabled(db, settings):
     with pytest.raises(Throttled):
         # third commit belongs to a different repo, but same user
         check_commit_upload_constraints(third_commit)
+
+
+@pytest.mark.parametrize(
+    "totals_column_count, rows_count, should_raise",
+    [(151, 0, True), (151, 151, True), (0, 0, False), (0, 200, False)],
+)
+def test_validate_upload_too_many_uploads_for_commit(
+    db, totals_column_count, rows_count, should_raise, mocker
+):
+    redis = mocker.MagicMock(sismember=mocker.MagicMock(return_value=False))
+    owner = OwnerFactory.create(plan="users-free")
+    repo = RepositoryFactory.create(author=owner,)
+    commit = CommitFactory.create(totals={"s": totals_column_count}, repository=repo)
+    report = CommitReportFactory.create(commit=commit)
+    for i in range(rows_count):
+        UploadFactory.create(report=report)
+    with pytest.raises(ValidationError) if should_raise else nullcontext():
+        validate_upload({"commit": commit.commitid}, repo, redis)
