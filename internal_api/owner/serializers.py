@@ -116,6 +116,13 @@ class PlanSerializer(serializers.Serializer):
                 raise serializers.ValidationError(
                     f"Quantity cannot be lower than currently activated user count"
                 )
+            if (
+                plan["quantity"] == owner.plan_user_count
+                and plan["value"] == owner.plan
+            ):
+                raise serializers.ValidationError(
+                    f"Quantity or plan for paid plan must be different from the existing one"
+                )
         return plan
 
 

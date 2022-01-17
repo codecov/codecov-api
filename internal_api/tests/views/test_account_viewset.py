@@ -648,6 +648,25 @@ class AccountViewSetTests(APITestCase):
             == "Quantity cannot be lower than currently activated user count"
         )
 
+    def test_update_must_fail_if_quantity_and_plan_are_equal_to_the_owners_current_ones(
+        self,
+    ):
+        self.user.plan = "users-pr-inappy"
+        self.user.plan_user_count = 14
+        self.user.save()
+        desired_plan = {"value": "users-pr-inappy", "quantity": 14}
+
+        response = self._update(
+            kwargs={"service": self.user.service, "owner_username": self.user.username},
+            data={"plan": desired_plan},
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert (
+            response.data["plan"]["non_field_errors"][0]
+            == "Quantity or plan for paid plan must be different from the existing one"
+        )
+
     def test_update_quantity_must_be_at_least_5_if_paid_plan(self):
         desired_plan = {"value": "users-pr-inappy", "quantity": 4}
         response = self._update(
