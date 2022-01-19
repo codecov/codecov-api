@@ -90,6 +90,7 @@ class StripeServiceTests(TestCase):
                             "quantity": subscription_params["quantity"],
                         }
                     ],
+                    "proration_behavior": "none",
                 },
                 {
                     "start_date": subscription_params["end_date"],
@@ -102,6 +103,7 @@ class StripeServiceTests(TestCase):
                             "quantity": desired_plan["quantity"],
                         }
                     ],
+                    "proration_behavior": "none",
                 },
             ],
             metadata={
@@ -112,7 +114,6 @@ class StripeServiceTests(TestCase):
                 "obo_email": self.user.email,
                 "obo": self.user.ownerid,
             },
-            proration_behavior="none",
         )
 
     @patch("services.billing.stripe.Invoice.list")
