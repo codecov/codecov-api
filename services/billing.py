@@ -273,7 +273,7 @@ class StripeService(AbstractPaymentService):
                             "quantity": current_quantity,
                         }
                     ],
-                    "proration_behavior": "none"
+                    "proration_behavior": "none",
                 },
                 {
                     "start_date": current_subscription_end_date,
@@ -285,7 +285,7 @@ class StripeService(AbstractPaymentService):
                             "quantity": desired_plan["quantity"],
                         }
                     ],
-                    "proration_behavior": "none"
+                    "proration_behavior": "none",
                 },
             ],
             metadata=self._get_checkout_session_and_subscription_metadata(owner),
