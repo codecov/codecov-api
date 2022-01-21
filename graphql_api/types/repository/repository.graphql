@@ -13,6 +13,7 @@ type Repository {
   pulls(filters: PullsSetFilters, orderingDirection: OrderingDirection, first: Int, after: String, last: Int, before: String): PullConnection
   commits(filters: CommitsSetFilters, first: Int, after: String, last: Int, before: String): CommitConnection
   branches( first: Int, after: String, last: Int, before: String): BranchConnection
+  defaultBranch: String
 }
 
 type PullConnection {
