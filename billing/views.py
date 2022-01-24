@@ -101,24 +101,25 @@ class StripeWebhookHandler(APIView):
         )
 
     def subscription_schedule_updated(self, schedule):
-        scheduled_phase = schedule["phases"][1]
-        scheduled_plan = scheduled_phase["plans"][0]
-        plan_id = scheduled_plan["plan"]
-        stripe_plan_dict = settings.STRIPE_PLAN_IDS
-        plan_name = list(stripe_plan_dict.keys())[
-            list(stripe_plan_dict.values()).index(plan_id)
-        ]
-        quantity = scheduled_plan["quantity"]
-        subscription = stripe.Subscription.retrieve(schedule["subscription"])
-        log.info(
-            f"Schedule updated for customer "
-            f"with -- plan: {plan_name}, quantity {quantity}",
-            extra=dict(
-                stripe_customer_id=subscription.customer,
-                stripe_subscription_id=subscription.id,
-                ownerid=subscription.metadata.obo_organization,
-            ),
-        )
+        if schedule["subscription"]:
+            subscription = stripe.Subscription.retrieve(schedule["subscription"])
+            scheduled_phase = schedule["phases"][1]
+            scheduled_plan = scheduled_phase["plans"][0]
+            plan_id = scheduled_plan["plan"]
+            stripe_plan_dict = settings.STRIPE_PLAN_IDS
+            plan_name = list(stripe_plan_dict.keys())[
+                list(stripe_plan_dict.values()).index(plan_id)
+            ]
+            quantity = scheduled_plan["quantity"]
+            log.info(
+                f"Schedule updated for customer "
+                f"with -- plan: {plan_name}, quantity {quantity}",
+                extra=dict(
+                    stripe_customer_id=subscription.customer,
+                    stripe_subscription_id=subscription.id,
+                    ownerid=subscription.metadata.obo_organization,
+                ),
+            )
 
     def subscription_schedule_released(self, schedule):
 
@@ -171,7 +172,8 @@ class StripeWebhookHandler(APIView):
         owner.save()
 
         log.info(
-            f"Stripe subscription modified successfully for owner {owner.ownerid} by user #{requesting_user_id}"
+            f"Stripe subscription modified successfully for owner {owner.ownerid} by user #{requesting_user_id}",
+            extra=dict(ownerid=owner.ownerid, requesting_user_id=requesting_user_id,),
         )
 
     def customer_created(self, customer):
@@ -290,6 +292,9 @@ class StripeWebhookHandler(APIView):
             owner.plan = subscription.plan.name
             owner.plan_user_count = subscription.quantity
             owner.save()
+
+            SegmentService().identify_user(owner)
+            log.info("Successfully updated info for 1 customer")
 
     def customer_updated(self, customer):
         new_default_payment_method = customer["invoice_settings"][

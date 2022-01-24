@@ -118,18 +118,32 @@ class StripeService(AbstractPaymentService):
 
         if owner.plan not in USER_PLAN_REPRESENTATIONS:
             log.info(
-                f"Downgrade to basic plan from legacy plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
+                f"Downgrade to basic plan from legacy plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
+                extra=dict(ownerid=owner.ownerid),
             )
             if not subscription_schedule_id:
+                log.info(
+                    f"Deleting stripe subscription for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
+                    extra=dict(ownerid=owner.ownerid),
+                )
                 stripe.Subscription.delete(owner.stripe_subscription_id, prorate=False)
             else:
+                log.info(
+                    f"Cancelling schedule and deleting subscription for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
+                    extra=dict(ownerid=owner.ownerid),
+                )
                 stripe.SubscriptionSchedule.cancel(subscription_schedule_id)
             owner.set_basic_plan()
         else:
             log.info(
-                f"Downgrade to basic plan from user plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
+                f"Downgrade to basic plan from user plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
+                extra=dict(ownerid=owner.ownerid),
             )
             if subscription_schedule_id:
+                log.info(
+                    f"Releasing subscription from schedule for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
+                    extra=dict(ownerid=owner.ownerid),
+                )
                 stripe.SubscriptionSchedule.release(subscription_schedule_id)
 
             stripe.Subscription.modify(
@@ -167,8 +181,12 @@ class StripeService(AbstractPaymentService):
         subscription = stripe.Subscription.retrieve(owner.stripe_subscription_id)
         proration_behavior = self._get_proration_params(owner, desired_plan)
         subscription_schedule_id = subscription.schedule
+
+        # proration_behavior indicates whether we immediately invoice a user or not. We only immediately
+        # invoice a user if the user increases the number of seats or if the plan changes from monthly to yearly.
+        # An increase in seats and/or plan implies the user is upgrading, hence 'is_upgrading' is a consequence
+        # of proration_behavior providing an invoice, in this case, != "none"
         is_upgrading = True if proration_behavior != "none" else False
-        subscription_id = owner.stripe_subscription_id
 
         # Divide logic bw immediate updates and scheduled updates
         # Immediate updates: when user upgrades seats or plan
@@ -202,30 +220,8 @@ class StripeService(AbstractPaymentService):
                     ),
                     proration_behavior=proration_behavior,
                 )
-                # Segment analytics
-                if owner.plan != desired_plan["value"]:
-                    SegmentService().account_changed_plan(
-                        current_user_ownerid=self.requesting_user.ownerid,
-                        org_ownerid=owner.ownerid,
-                        plan_details={
-                            "new_plan": desired_plan["value"],
-                            "previous_plan": owner.plan,
-                        },
-                    )
 
-                if (
-                    owner.plan_user_count
-                    and owner.plan_user_count < desired_plan["quantity"]
-                ):
-                    SegmentService().account_increased_users(
-                        current_user_ownerid=self.requesting_user.ownerid,
-                        org_ownerid=owner.ownerid,
-                        plan_details={
-                            "new_quantity": desired_plan["quantity"],
-                            "old_quantity": owner.plan_user_count,
-                            "plan": desired_plan["value"],
-                        },
-                    )
+                self._segment_modify_subscription(owner, desired_plan)
 
                 owner.plan = desired_plan["value"]
                 owner.plan_user_count = desired_plan["quantity"]
@@ -241,13 +237,35 @@ class StripeService(AbstractPaymentService):
                 )
             else:
                 schedule = stripe.SubscriptionSchedule.create(
-                    from_subscription=subscription_id,
+                    from_subscription=owner.stripe_subscription_id,
                 )
                 subscription_schedule_id = schedule.id
 
                 self._modify_subscription_schedule(
                     owner, subscription, subscription_schedule_id, desired_plan
                 )
+
+    def _segment_modify_subscription(self, owner, desired_plan):
+        if owner.plan != desired_plan["value"]:
+            SegmentService().account_changed_plan(
+                current_user_ownerid=self.requesting_user.ownerid,
+                org_ownerid=owner.ownerid,
+                plan_details={
+                    "new_plan": desired_plan["value"],
+                    "previous_plan": owner.plan,
+                },
+            )
+
+        if owner.plan_user_count and owner.plan_user_count < desired_plan["quantity"]:
+            SegmentService().account_increased_users(
+                current_user_ownerid=self.requesting_user.ownerid,
+                org_ownerid=owner.ownerid,
+                plan_details={
+                    "new_quantity": desired_plan["quantity"],
+                    "old_quantity": owner.plan_user_count,
+                    "plan": desired_plan["value"],
+                },
+            )
 
     def _modify_subscription_schedule(
         self, owner, subscription, subscription_schedule_id, desired_plan

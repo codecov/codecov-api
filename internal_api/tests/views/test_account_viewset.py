@@ -226,6 +226,89 @@ class AccountViewSetTests(APITestCase):
             },
         }
 
+    @patch("services.billing.stripe.SubscriptionSchedule.retrieve")
+    @patch("services.billing.stripe.Subscription.retrieve")
+    def test_retrieve_account_returns_null_schedule_details_when_there_arent_two_scheduled_phases(
+        self, mock_retrieve_subscription, mock_retrieve_schedule
+    ):
+        owner = OwnerFactory(
+            admins=[self.user.ownerid], stripe_subscription_id="sub_2345687"
+        )
+        self.user.organizations = [owner.ownerid]
+        self.user.save()
+
+        subscription_params = {
+            "default_payment_method": None,
+            "cancel_at_period_end": False,
+            "current_period_end": 1633512445,
+            "latest_invoice": None,
+            "schedule_id": "sub_sched_456678999",
+        }
+
+        mock_retrieve_subscription.return_value = MockSubscription(subscription_params)
+        schedule_params = {
+            "id": 123,
+            "start_date": 123689126736,
+            "stripe_plan_id": "plan_H6P3KZXwmAbqPS",
+            "quantity": 6,
+        }
+        mock_retrieve_schedule.return_value = {
+            "id": schedule_params["id"],
+            "phases": [
+                {},
+                {},
+                {},
+                {
+                    "start_date": schedule_params["start_date"],
+                    "plans": [
+                        {
+                            "plan": schedule_params["stripe_plan_id"],
+                            "quantity": schedule_params["quantity"],
+                        }
+                    ],
+                },
+            ],
+        }
+
+        response = self._retrieve(
+            kwargs={"service": owner.service, "owner_username": owner.username}
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "activated_user_count": 0,
+            "root_organization": None,
+            "integration_id": owner.integration_id,
+            "plan_auto_activate": owner.plan_auto_activate,
+            "inactive_user_count": 1,
+            "plan": {
+                "marketing_name": "Basic",
+                "value": "users-basic",
+                "billing_rate": None,
+                "base_unit_price": 0,
+                "benefits": [
+                    "Up to 5 users",
+                    "Unlimited public repositories",
+                    "Unlimited private repositories",
+                ],
+                "quantity": 5,
+            },
+            "subscription_detail": {
+                "latest_invoice": None,
+                "default_payment_method": None,
+                "cancel_at_period_end": False,
+                "current_period_end": 1633512445,
+            },
+            "checkout_session_id": None,
+            "name": owner.name,
+            "email": owner.email,
+            "nb_active_private_repos": 0,
+            "repo_total_credits": 99999999,
+            "plan_provider": owner.plan_provider,
+            "activated_student_count": 0,
+            "student_count": 0,
+            "schedule_detail": {"id": "123", "scheduled_phase": None},
+        }
+
     @patch("services.billing.stripe.Subscription.retrieve")
     def test_retrieve_account_gets_none_for_schedule_details_when_schedule_is_nonexistent(
         self, mock_retrieve_subscription,

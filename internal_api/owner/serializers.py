@@ -160,15 +160,16 @@ class ScheduleDetailSerializer(serializers.Serializer):
     scheduled_phase = serializers.SerializerMethodField()
 
     def get_scheduled_phase(self, schedule):
-        # Getting the second entry since the there is always going to be 2 phases, the current one
-        # (phase[0]) and the future/scheduled one (phase[1])
-        return StripeScheduledPhaseSerializer(schedule["phases"][1]).data
+        if len(schedule["phases"]) == 2:
+            return StripeScheduledPhaseSerializer(schedule["phases"][1]).data
+        else:
+            return None
 
 
 class RootOrganizationSerializer(serializers.Serializer):
     """
     Minimalist serializer to expose the root organization of a sub group
-    so we can expose the minimal data required for the UI while hiding data3
+    so we can expose the minimal data required for the UI while hiding data
     that might only be for admin (invoice, billing data, etc)
     """
 
