@@ -81,3 +81,8 @@ async def resolve_branches(repository, info, **kwargs):
         ordering_direction=OrderingDirection.ASC,
         **kwargs,
     )
+
+
+@repository_bindable.field("defaultBranch")
+def resolve_default_branch(repository, info):
+    return repository.branch
