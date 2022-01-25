@@ -31,9 +31,20 @@ class MockSubscription(object):
         return getattr(self, key)
 
 
-class MockSmallSubscription(object):
-    def __init__(self, subscription_params):
-        self.schedule = subscription_params["schedule_id"]
+class MockMetadata(object):
+    def __init__(self):
+        self.obo = 2
+        self.obo_organization = 3
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+
+class MockSchedule(object):
+    def __init__(self, schedule_params, phases):
+        self.id = schedule_params["id"]
+        self.phases = phases
+        self.metadata = MockMetadata()
 
     def __getitem__(self, key):
         return getattr(self, key)
@@ -164,21 +175,20 @@ class AccountViewSetTests(APITestCase):
             "stripe_plan_id": "plan_H6P3KZXwmAbqPS",
             "quantity": 6,
         }
-        mock_retrieve_schedule.return_value = {
-            "id": schedule_params["id"],
-            "phases": [
-                {},
-                {
-                    "start_date": schedule_params["start_date"],
-                    "plans": [
-                        {
-                            "plan": schedule_params["stripe_plan_id"],
-                            "quantity": schedule_params["quantity"],
-                        }
-                    ],
-                },
-            ],
-        }
+        phases = [
+            {},
+            {
+                "start_date": schedule_params["start_date"],
+                "plans": [
+                    {
+                        "plan": schedule_params["stripe_plan_id"],
+                        "quantity": schedule_params["quantity"],
+                    }
+                ],
+            },
+        ]
+
+        mock_retrieve_schedule.return_value = MockSchedule(schedule_params, phases)
 
         response = self._retrieve(
             kwargs={"service": owner.service, "owner_username": owner.username}
@@ -252,23 +262,22 @@ class AccountViewSetTests(APITestCase):
             "stripe_plan_id": "plan_H6P3KZXwmAbqPS",
             "quantity": 6,
         }
-        mock_retrieve_schedule.return_value = {
-            "id": schedule_params["id"],
-            "phases": [
-                {},
-                {},
-                {},
-                {
-                    "start_date": schedule_params["start_date"],
-                    "plans": [
-                        {
-                            "plan": schedule_params["stripe_plan_id"],
-                            "quantity": schedule_params["quantity"],
-                        }
-                    ],
-                },
-            ],
-        }
+        phases = [
+            {},
+            {},
+            {},
+            {
+                "start_date": schedule_params["start_date"],
+                "plans": [
+                    {
+                        "plan": schedule_params["stripe_plan_id"],
+                        "quantity": schedule_params["quantity"],
+                    }
+                ],
+            },
+        ]
+
+        mock_retrieve_schedule.return_value = MockSchedule(schedule_params, phases)
 
         response = self._retrieve(
             kwargs={"service": owner.service, "owner_username": owner.username}
