@@ -9,7 +9,7 @@ from utils.config import SettingsModule, get_config, get_settings_module
 SECRET_KEY = "^fe*h^lqve%4)tl)0*rvx^zax$_5zu$7jg6o@2y!!-4*l^tne5"
 
 
-YAML_SECRET_KEY = b"]\xbb\x13\xf9}\xb3\xb7\x03)*0Kv\xb2\xcet"
+YAML_SECRET_KEY = b"\x00"
 
 
 AUTH_USER_MODEL = "codecov_auth.Owner"
