@@ -14,6 +14,37 @@ from core.tests.factories import RepositoryFactory
 from ..constants import StripeHTTPHeaders
 
 
+class MockSubscriptionPlan(object):
+    def __init__(self, params):
+        self.name = params["new_plan"]
+
+
+class MockOboOrg(object):
+    def __init__(self, owner):
+        self.obo_organization = owner.ownerid
+        self.obo = 15
+
+
+class MockSubscription(object):
+    def __init__(self, owner, params):
+        self.metadata = MockOboOrg(owner)
+        self.plan = MockSubscriptionPlan(params)
+        self.quantity = params["new_quantity"]
+        self.customer = "cus_123"
+        self.id = params["subscription_id"]
+        self.items = {
+            "data": [
+                {
+                    "quantity": params["new_quantity"],
+                    "plan": {"name": params["new_plan"]},
+                }
+            ]
+        }
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+
 class StripeWebhookHandlerTests(APITestCase):
     def setUp(self):
         self.owner = OwnerFactory(
@@ -321,6 +352,7 @@ class StripeWebhookHandlerTests(APITestCase):
                         "metadata": {"obo_organization": self.owner.ownerid},
                         "quantity": 20,
                         "status": "active",
+                        "schedule": None,
                     }
                 },
             }
@@ -329,6 +361,34 @@ class StripeWebhookHandlerTests(APITestCase):
         self.owner.refresh_from_db()
         assert self.owner.plan == None
         assert self.owner.plan_user_count == 0
+        assert self.owner.plan_auto_activate == False
+
+    def test_customer_subscription_updated_does_nothing_if_there_is_a_schedule(self):
+        self.owner.plan = "users-pr-inappy"
+        self.owner.plan_user_count = 10
+        self.owner.plan_auto_activate = False
+        self.owner.save()
+
+        response = self._send_event(
+            payload={
+                "type": "customer.subscription.updated",
+                "data": {
+                    "object": {
+                        "id": self.owner.stripe_subscription_id,
+                        "customer": self.owner.stripe_customer_id,
+                        "plan": {"id": "fieown4", "name": "users-free"},
+                        "metadata": {"obo_organization": self.owner.ownerid},
+                        "quantity": 20,
+                        "status": "active",
+                        "schedule": "sub_sched_1K8xfkGlVGuVgOrkxvroyZdH",
+                    }
+                },
+            }
+        )
+
+        self.owner.refresh_from_db()
+        assert self.owner.plan == "users-pr-inappy"
+        assert self.owner.plan_user_count == 10
         assert self.owner.plan_auto_activate == False
 
     @patch("codecov_auth.models.Owner.set_basic_plan")
@@ -356,6 +416,7 @@ class StripeWebhookHandlerTests(APITestCase):
                         "metadata": {"obo_organization": self.owner.ownerid},
                         "quantity": 20,
                         "status": "incomplete_expired",
+                        "schedule": None,
                     }
                 },
             }
@@ -386,6 +447,7 @@ class StripeWebhookHandlerTests(APITestCase):
                         "metadata": {"obo_organization": self.owner.ownerid},
                         "quantity": quantity,
                         "status": "active",
+                        "schedule": None,
                     }
                 },
             }
@@ -412,6 +474,7 @@ class StripeWebhookHandlerTests(APITestCase):
                         "metadata": {"obo_organization": self.owner.ownerid},
                         "quantity": 10,
                         "status": "active",
+                        "schedule": None,
                         "trial_start": trial_start,
                         "trial_end": trial_end,
                     },
@@ -427,6 +490,238 @@ class StripeWebhookHandlerTests(APITestCase):
                 "trial_plan_user_count": 10,
                 "trial_end_date": trial_end,
                 "trial_start_date": trial_start,
+            },
+        )
+
+    @patch("services.billing.stripe.Subscription.retrieve")
+    def test_subscription_schedule_released_updates_owner_with_existing_subscription(
+        self, retrieve_subscription_mock
+    ):
+        self.owner.plan = "users-pr-inappy"
+        self.owner.plan_user_count = 10
+        self.owner.save()
+
+        self.new_params = {
+            "new_plan": "users-pr-inappm",
+            "new_quantity": 7,
+            "subscription_id": None,
+        }
+
+        retrieve_subscription_mock.return_value = MockSubscription(
+            self.owner, self.new_params
+        )
+
+        self._send_event(
+            payload={
+                "type": "subscription_schedule.released",
+                "data": {
+                    "object": {
+                        "released_subscription": "sub_sched_1K8xfkGlVGuVgOrkxvroyZdH"
+                    }
+                },
+            }
+        )
+
+        self.owner.refresh_from_db()
+        assert self.owner.plan == self.new_params["new_plan"]
+        assert self.owner.plan_user_count == self.new_params["new_quantity"]
+
+    @patch("services.billing.stripe.Subscription.retrieve")
+    def test_subscription_schedule_created_logs_a_new_schedule(
+        self, retrieve_subscription_mock
+    ):
+        original_plan = "users-pr-inappy"
+        original_quantity = 10
+        subscription_id = "sub_1K8xfkGlVGuVgOrkxvroyZdH"
+        self.owner.plan = original_plan
+        self.owner.plan_user_count = original_quantity
+        self.owner.save()
+
+        self.params = {
+            "new_plan": "users-pr-inappm",
+            "new_quantity": 7,
+            "subscription_id": subscription_id,
+        }
+
+        retrieve_subscription_mock.return_value = MockSubscription(
+            self.owner, self.params
+        )
+
+        self._send_event(
+            payload={
+                "type": "subscription_schedule.created",
+                "data": {"object": {"subscription": subscription_id}},
+            }
+        )
+
+        self.owner.refresh_from_db()
+        assert self.owner.plan == original_plan
+        assert self.owner.plan_user_count == original_quantity
+
+    @patch("services.billing.stripe.Subscription.retrieve")
+    def test_subscription_schedule_updated_logs_changes_to_schedule(
+        self, retrieve_subscription_mock
+    ):
+        original_plan = "users-pr-inappy"
+        original_quantity = 10
+        subscription_id = "sub_1K8xfkGlVGuVgOrkxvroyZdH"
+        new_plan = "plan_H6P3KZXwmAbqPS"
+        new_quantity = 7
+        self.owner.plan = original_plan
+        self.owner.plan_user_count = original_quantity
+        self.owner.save()
+
+        self.params = {
+            "new_plan": new_plan,
+            "new_quantity": new_quantity,
+            "subscription_id": subscription_id,
+        }
+
+        retrieve_subscription_mock.return_value = MockSubscription(
+            self.owner, self.params
+        )
+
+        self._send_event(
+            payload={
+                "type": "subscription_schedule.updated",
+                "data": {
+                    "object": {
+                        "subscription": subscription_id,
+                        "phases": [
+                            {},
+                            {"plans": [{"plan": new_plan, "quantity": new_quantity}]},
+                        ],
+                    }
+                },
+            }
+        )
+
+        self.owner.refresh_from_db()
+        assert self.owner.plan == original_plan
+        assert self.owner.plan_user_count == original_quantity
+
+    @patch("services.segment.SegmentService.account_increased_users")
+    @patch("services.billing.stripe.Subscription.retrieve")
+    def test_subscription_schedule_released_calls_account_increased_users_segment(
+        self, retrieve_subscription_mock, account_increased_users_mock
+    ):
+        original_plan = "users-pr-inappy"
+        original_quantity = 20
+        self.owner.plan = original_plan
+        self.owner.plan_user_count = original_quantity
+        self.owner.save()
+
+        self.new_params = {
+            "new_plan": "users-pr-inappy",
+            "new_quantity": 30,
+            "subscription_id": None,
+        }
+
+        retrieve_subscription_mock.return_value = MockSubscription(
+            self.owner, self.new_params
+        )
+
+        self._send_event(
+            payload={
+                "type": "subscription_schedule.released",
+                "data": {
+                    "object": {
+                        "released_subscription": "sub_sched_1K8xfkGK49uVgOrkxvroyZdH"
+                    }
+                },
+            }
+        )
+
+        account_increased_users_mock.assert_called_once_with(
+            current_user_ownerid=15,
+            org_ownerid=self.owner.ownerid,
+            plan_details={
+                "new_quantity": self.new_params["new_quantity"],
+                "old_quantity": original_quantity,
+                "plan": self.new_params["new_plan"],
+            },
+        )
+
+    @patch("services.segment.SegmentService.account_decreased_users")
+    @patch("services.billing.stripe.Subscription.retrieve")
+    def test_subscription_schedule_released_calls_account_decreased_users_segment(
+        self, retrieve_subscription_mock, account_decreased_users_mock
+    ):
+        original_plan = "users-pr-inappy"
+        original_quantity = 18
+        self.owner.plan = original_plan
+        self.owner.plan_user_count = original_quantity
+        self.owner.save()
+
+        self.new_params = {
+            "new_plan": "users-pr-inappy",
+            "new_quantity": 13,
+            "subscription_id": None,
+        }
+
+        retrieve_subscription_mock.return_value = MockSubscription(
+            self.owner, self.new_params
+        )
+
+        self._send_event(
+            payload={
+                "type": "subscription_schedule.released",
+                "data": {
+                    "object": {
+                        "released_subscription": "sub_sched_1K8xfkGK49uVgOrkxvroyZdH"
+                    }
+                },
+            }
+        )
+
+        account_decreased_users_mock.assert_called_once_with(
+            current_user_ownerid=15,
+            org_ownerid=self.owner.ownerid,
+            plan_details={
+                "new_quantity": self.new_params["new_quantity"],
+                "old_quantity": original_quantity,
+                "plan": self.new_params["new_plan"],
+            },
+        )
+
+    @patch("services.segment.SegmentService.account_changed_plan")
+    @patch("services.billing.stripe.Subscription.retrieve")
+    def test_subscription_schedule_released_calls_account_changed_plan_segment(
+        self, retrieve_subscription_mock, account_changed_plan_mock
+    ):
+        original_plan = "users-pr-inappy"
+        original_quantity = 14
+        self.owner.plan = original_plan
+        self.owner.plan_user_count = original_quantity
+        self.owner.save()
+
+        self.new_params = {
+            "new_plan": "users-pr-inappm",
+            "new_quantity": 14,
+            "subscription_id": None,
+        }
+
+        retrieve_subscription_mock.return_value = MockSubscription(
+            self.owner, self.new_params
+        )
+
+        self._send_event(
+            payload={
+                "type": "subscription_schedule.released",
+                "data": {
+                    "object": {
+                        "released_subscription": "sub_sched_1K8xfkGK49uVgOrkxvroyZdH"
+                    }
+                },
+            }
+        )
+
+        account_changed_plan_mock.assert_called_once_with(
+            current_user_ownerid=15,
+            org_ownerid=self.owner.ownerid,
+            plan_details={
+                "new_plan": self.new_params["new_plan"],
+                "previous_plan": self.owner.plan,
             },
         )
 

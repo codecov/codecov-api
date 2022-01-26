@@ -1,5 +1,6 @@
 import logging
 
+from django.conf import settings
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 
@@ -115,6 +116,13 @@ class PlanSerializer(serializers.Serializer):
                 raise serializers.ValidationError(
                     f"Quantity cannot be lower than currently activated user count"
                 )
+            if (
+                plan["quantity"] == owner.plan_user_count
+                and plan["value"] == owner.plan
+            ):
+                raise serializers.ValidationError(
+                    f"Quantity or plan for paid plan must be different from the existing one"
+                )
         return plan
 
 
@@ -125,6 +133,46 @@ class SubscriptionDetailSerializer(serializers.Serializer):
     )
     cancel_at_period_end = serializers.BooleanField()
     current_period_end = serializers.IntegerField()
+
+
+class StripeScheduledPhaseSerializer(serializers.Serializer):
+    start_date = serializers.IntegerField()
+    plan = serializers.SerializerMethodField()
+    quantity = serializers.SerializerMethodField()
+
+    def get_plan(self, phase):
+        plan_id = phase["plans"][0]["plan"]
+        stripe_plan_dict = settings.STRIPE_PLAN_IDS
+        plan_name = list(stripe_plan_dict.keys())[
+            list(stripe_plan_dict.values()).index(plan_id)
+        ]
+        marketing_plan_name = PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS[plan_name][
+            "billing_rate"
+        ]
+        return marketing_plan_name
+
+    def get_quantity(self, phase):
+        return phase["plans"][0]["quantity"]
+
+
+class ScheduleDetailSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    scheduled_phase = serializers.SerializerMethodField()
+
+    def get_scheduled_phase(self, schedule):
+        if len(schedule["phases"]) == 2:
+            return StripeScheduledPhaseSerializer(schedule["phases"][1]).data
+        else:
+            # This error represents the phases object not having 2 phases; we are interested in the 2nd entry within phases
+            # since it represents the scheduled phase
+            log.error(
+                "Expecting schedule object to have 2 phases, returning None",
+                extra=dict(
+                    ownerid=schedule.metadata.obo_organization,
+                    requesting_user_id=schedule.metadata.obo,
+                ),
+            )
+            return None
 
 
 class RootOrganizationSerializer(serializers.Serializer):
@@ -143,6 +191,7 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
     checkout_session_id = serializers.SerializerMethodField()
     subscription_detail = serializers.SerializerMethodField()
     root_organization = RootOrganizationSerializer()
+    schedule_detail = serializers.SerializerMethodField()
 
     class Meta:
         model = Owner
@@ -150,20 +199,21 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
         read_only_fields = ("integration_id",)
 
         fields = read_only_fields + (
-            "activated_user_count",
-            "inactive_user_count",
-            "plan_auto_activate",
-            "plan",
-            "subscription_detail",
-            "checkout_session_id",
-            "name",
-            "email",
-            "nb_active_private_repos",
-            "repo_total_credits",
-            "plan_provider",
-            "root_organization",
             "activated_student_count",
+            "activated_user_count",
+            "checkout_session_id",
+            "email",
+            "inactive_user_count",
+            "name",
+            "nb_active_private_repos",
+            "plan",
+            "plan_auto_activate",
+            "plan_provider",
+            "repo_total_credits",
+            "root_organization",
+            "schedule_detail",
             "student_count",
+            "subscription_detail",
         )
 
     def _get_billing(self):
@@ -174,6 +224,11 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
         subscription_detail = self._get_billing().get_subscription(owner)
         if subscription_detail:
             return SubscriptionDetailSerializer(subscription_detail).data
+
+    def get_schedule_detail(self, owner):
+        schedule_detail = self._get_billing().get_schedule(owner)
+        if schedule_detail:
+            return ScheduleDetailSerializer(schedule_detail).data
 
     def get_checkout_session_id(self, _):
         return self.context.get("checkout_session_id")
