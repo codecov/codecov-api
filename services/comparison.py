@@ -477,6 +477,7 @@ class FileComparison:
 
 class Comparison(object):
     def __init__(self, user, base_commit, head_commit):
+        print("testing - in Comparison class")
         self.user = user
         self.base_commit = base_commit
         self.head_commit = head_commit

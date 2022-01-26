@@ -36,11 +36,14 @@ class SerializableReport(Report):
     def flags(self):
         """returns dict(:name=<Flag>)
         """
+        print("testing - from flags inside SerializeableReport")
         flags_dict = {}
         for sid, session in self.sessions.items():
             if session.flags is not None:
                 for flag in session.flags:
                     flags_dict[flag] = Flag(self, flag)
+        print("flags_dict.__dict__")
+        print(flags_dict)
         return flags_dict
 
 
@@ -54,6 +57,7 @@ def get_minio_client():
 
 
 def build_report(chunks, files, sessions, totals):
+    print("testing - in build_report")
     return SerializableReport(
         chunks=chunks, files=files, sessions=sessions, totals=totals
     )
@@ -277,6 +281,7 @@ class ReportService(object):
         Returns:
             SerializableReport: A report with all information from such commit
         """
+        print("testing - in build_report_from_commit")
         if not commit.report:
             return None
         commitid = commit.commitid
@@ -284,4 +289,6 @@ class ReportService(object):
         files = commit.report["files"]
         sessions = commit.report["sessions"]
         totals = commit.totals
+        print("commit")
+        print(commit.__dict__)
         return build_report(chunks, files, sessions, totals)
