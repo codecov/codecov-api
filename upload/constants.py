@@ -195,6 +195,13 @@ ci = {
         "instructions": "generic",
         "build_url": None,  # provided in upload,
     },
+    "woodpecker": {
+        "title": "WoodpeckerCI",
+        "icon": "custom",
+        "require_token_when_public": True,
+        "instructions": "generic",
+        "build_url": None,  # provided in upload,
+    },
 }
 
 errors = {
