@@ -39,9 +39,7 @@ class SerializableReport(Report):
         flags_dict = {}
         for sid, session in self.sessions.items():
             if session.flags is not None:
-                carriedforward = (
-                    True if session.session_type.value == "carriedforward" else False
-                )
+                carriedforward = session.session_type.value == "carriedforward"
                 carriedforward_from = None
                 if "carriedforward_from" in session.session_extras:
                     carriedforward_from = session.session_extras["carriedforward_from"]

@@ -124,7 +124,7 @@ class TestReport(object):
         mocked = mocker.patch.object(ArchiveService, "read_chunks")
         f = open(current_file.parent / "samples" / "chunks.txt", "r")
         mocked.return_value = f.read()
-        report_with_carried_forward_flag = report = {
+        report_with_carried_forward_flag = {
             "files": {
                 "awesome/__init__.py": [
                     2,
