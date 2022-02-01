@@ -3,14 +3,16 @@ import logging
 from .settings_base import *
 
 DEBUG = True
-ALLOWED_HOSTS = get_config("setup", "api_allowed_hosts", default=["localhost"])
+ALLOWED_HOSTS = get_config(
+    "setup", "api_allowed_hosts", default=["localhost", "local-api-stripe.ngrok.io"]
+)
 
 
 WEBHOOK_URL = ""  # NGROK TUNNEL HERE
 
 
 STRIPE_API_KEY = "sk_test_testurtke3v89d4udnesfxh413qnioseSuuwkdBMDvk4ZLesyoD4sSUoG4XDkPXsjN9MzRPaeylnqbgIOhnFI9Urg00BTUxkOh1"
-STRIPE_ENDPOINT_SECRET = "whsec_testaln4a44tnbpj25h10d8fobw37m6f"
+STRIPE_ENDPOINT_SECRET = "whsec_test9qhqqzmp6d4n51fl8vtj3w0bomno"
 STRIPE_PLAN_IDS = {
     "users-pr-inappm": "plan_H6P3KZXwmAbqPS",
     "users-pr-inappy": "plan_H6P16wij3lUuxg",

@@ -14,6 +14,42 @@ from internal_api.tests.test_utils import GetAdminProviderAdapter
 curr_path = os.path.dirname(__file__)
 
 
+class MockSubscription(object):
+    def __init__(self, subscription_params):
+        self.items = {"data": [{"id": "abc",}]}
+        self.cancel_at_period_end = False
+        self.current_period_end = 1633512445
+        self.latest_invoice = subscription_params["latest_invoice"]
+        self.customer = {
+            "invoice_settings": {
+                "default_payment_method": subscription_params["default_payment_method"]
+            }
+        }
+        self.schedule = subscription_params["schedule_id"]
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+
+class MockMetadata(object):
+    def __init__(self):
+        self.obo = 2
+        self.obo_organization = 3
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+
+class MockSchedule(object):
+    def __init__(self, schedule_params, phases):
+        self.id = schedule_params["id"]
+        self.phases = phases
+        self.metadata = MockMetadata()
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+
 class AccountViewSetTests(APITestCase):
     def _retrieve(self, kwargs={}):
         if not kwargs:
@@ -34,7 +70,9 @@ class AccountViewSetTests(APITestCase):
     def setUp(self):
         self.service = "gitlab"
         self.user = OwnerFactory(
-            stripe_customer_id=1000, service=Service.GITHUB.value, service_id="1"
+            stripe_customer_id=1000,
+            service=Service.GITHUB.value,
+            service_id="10238974029348",
         )
         self.expected_invoice = {
             "number": "EF0A41E-0001",
@@ -108,6 +146,242 @@ class AccountViewSetTests(APITestCase):
             "plan_provider": owner.plan_provider,
             "activated_student_count": 0,
             "student_count": 0,
+            "schedule_detail": None,
+        }
+
+    @patch("services.billing.stripe.SubscriptionSchedule.retrieve")
+    @patch("services.billing.stripe.Subscription.retrieve")
+    def test_retrieve_account_gets_account_fields_when_there_are_scheduled_details(
+        self, mock_retrieve_subscription, mock_retrieve_schedule
+    ):
+        owner = OwnerFactory(
+            admins=[self.user.ownerid], stripe_subscription_id="sub_123"
+        )
+        self.user.organizations = [owner.ownerid]
+        self.user.save()
+
+        subscription_params = {
+            "default_payment_method": None,
+            "cancel_at_period_end": False,
+            "current_period_end": 1633512445,
+            "latest_invoice": None,
+            "schedule_id": "sub_sched_456",
+        }
+
+        mock_retrieve_subscription.return_value = MockSubscription(subscription_params)
+        schedule_params = {
+            "id": 123,
+            "start_date": 123689126736,
+            "stripe_plan_id": "plan_H6P3KZXwmAbqPS",
+            "quantity": 6,
+        }
+        phases = [
+            {},
+            {
+                "start_date": schedule_params["start_date"],
+                "plans": [
+                    {
+                        "plan": schedule_params["stripe_plan_id"],
+                        "quantity": schedule_params["quantity"],
+                    }
+                ],
+            },
+        ]
+
+        mock_retrieve_schedule.return_value = MockSchedule(schedule_params, phases)
+
+        response = self._retrieve(
+            kwargs={"service": owner.service, "owner_username": owner.username}
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "activated_user_count": 0,
+            "root_organization": None,
+            "integration_id": owner.integration_id,
+            "plan_auto_activate": owner.plan_auto_activate,
+            "inactive_user_count": 1,
+            "plan": {
+                "marketing_name": "Basic",
+                "value": "users-basic",
+                "billing_rate": None,
+                "base_unit_price": 0,
+                "benefits": [
+                    "Up to 5 users",
+                    "Unlimited public repositories",
+                    "Unlimited private repositories",
+                ],
+                "quantity": 5,
+            },
+            "subscription_detail": {
+                "latest_invoice": None,
+                "default_payment_method": None,
+                "cancel_at_period_end": False,
+                "current_period_end": 1633512445,
+            },
+            "checkout_session_id": None,
+            "name": owner.name,
+            "email": owner.email,
+            "nb_active_private_repos": 0,
+            "repo_total_credits": 99999999,
+            "plan_provider": owner.plan_provider,
+            "activated_student_count": 0,
+            "student_count": 0,
+            "schedule_detail": {
+                "id": "123",
+                "scheduled_phase": {
+                    "plan": "monthly",
+                    "quantity": schedule_params["quantity"],
+                    "start_date": schedule_params["start_date"],
+                },
+            },
+        }
+
+    @patch("services.billing.stripe.SubscriptionSchedule.retrieve")
+    @patch("services.billing.stripe.Subscription.retrieve")
+    def test_retrieve_account_returns_null_schedule_details_when_there_arent_two_scheduled_phases(
+        self, mock_retrieve_subscription, mock_retrieve_schedule
+    ):
+        owner = OwnerFactory(
+            admins=[self.user.ownerid], stripe_subscription_id="sub_2345687"
+        )
+        self.user.organizations = [owner.ownerid]
+        self.user.save()
+
+        subscription_params = {
+            "default_payment_method": None,
+            "cancel_at_period_end": False,
+            "current_period_end": 1633512445,
+            "latest_invoice": None,
+            "schedule_id": "sub_sched_456678999",
+        }
+
+        mock_retrieve_subscription.return_value = MockSubscription(subscription_params)
+        schedule_params = {
+            "id": 123,
+            "start_date": 123689126736,
+            "stripe_plan_id": "plan_H6P3KZXwmAbqPS",
+            "quantity": 6,
+        }
+        phases = [
+            {},
+            {},
+            {},
+            {
+                "start_date": schedule_params["start_date"],
+                "plans": [
+                    {
+                        "plan": schedule_params["stripe_plan_id"],
+                        "quantity": schedule_params["quantity"],
+                    }
+                ],
+            },
+        ]
+
+        mock_retrieve_schedule.return_value = MockSchedule(schedule_params, phases)
+
+        response = self._retrieve(
+            kwargs={"service": owner.service, "owner_username": owner.username}
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "activated_user_count": 0,
+            "root_organization": None,
+            "integration_id": owner.integration_id,
+            "plan_auto_activate": owner.plan_auto_activate,
+            "inactive_user_count": 1,
+            "plan": {
+                "marketing_name": "Basic",
+                "value": "users-basic",
+                "billing_rate": None,
+                "base_unit_price": 0,
+                "benefits": [
+                    "Up to 5 users",
+                    "Unlimited public repositories",
+                    "Unlimited private repositories",
+                ],
+                "quantity": 5,
+            },
+            "subscription_detail": {
+                "latest_invoice": None,
+                "default_payment_method": None,
+                "cancel_at_period_end": False,
+                "current_period_end": 1633512445,
+            },
+            "checkout_session_id": None,
+            "name": owner.name,
+            "email": owner.email,
+            "nb_active_private_repos": 0,
+            "repo_total_credits": 99999999,
+            "plan_provider": owner.plan_provider,
+            "activated_student_count": 0,
+            "student_count": 0,
+            "schedule_detail": {"id": "123", "scheduled_phase": None},
+        }
+
+    @patch("services.billing.stripe.Subscription.retrieve")
+    def test_retrieve_account_gets_none_for_schedule_details_when_schedule_is_nonexistent(
+        self, mock_retrieve_subscription,
+    ):
+        owner = OwnerFactory(
+            admins=[self.user.ownerid], stripe_subscription_id="sub_123"
+        )
+        self.user.organizations = [owner.ownerid]
+        self.user.save()
+
+        subscription_params = {
+            "default_payment_method": None,
+            "cancel_at_period_end": False,
+            "current_period_end": 1633512445,
+            "latest_invoice": None,
+            "schedule_id": None,
+        }
+        # json.load(subscription_params["file"])["data"][0]
+
+        mock_retrieve_subscription.return_value = MockSubscription(subscription_params)
+        schedule_params = {
+            "id": 123,
+            "start_date": 123689126736,
+            "stripe_plan_id": "plan_H6P3KZXwmAbqPS",
+            "quantity": 6,
+        }
+
+        response = self._retrieve(
+            kwargs={"service": owner.service, "owner_username": owner.username}
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "activated_user_count": 0,
+            "root_organization": None,
+            "integration_id": owner.integration_id,
+            "plan_auto_activate": owner.plan_auto_activate,
+            "inactive_user_count": 1,
+            "plan": {
+                "marketing_name": "Basic",
+                "value": "users-basic",
+                "billing_rate": None,
+                "base_unit_price": 0,
+                "benefits": [
+                    "Up to 5 users",
+                    "Unlimited public repositories",
+                    "Unlimited private repositories",
+                ],
+                "quantity": 5,
+            },
+            "subscription_detail": {
+                "latest_invoice": None,
+                "default_payment_method": None,
+                "cancel_at_period_end": False,
+                "current_period_end": 1633512445,
+            },
+            "checkout_session_id": None,
+            "name": owner.name,
+            "email": owner.email,
+            "nb_active_private_repos": 0,
+            "repo_total_credits": 99999999,
+            "plan_provider": owner.plan_provider,
+            "activated_student_count": 0,
+            "student_count": 0,
+            "schedule_detail": None,
         }
 
     def test_retrieve_account_gets_account_students(self):
@@ -139,6 +413,7 @@ class AccountViewSetTests(APITestCase):
             "plan_provider": owner.plan_provider,
             "activated_student_count": 1,
             "student_count": 3,
+            "schedule_detail": None,
         }
 
     def test_account_with_free_user_plan(self):
@@ -226,14 +501,15 @@ class AccountViewSetTests(APITestCase):
             }
         }
 
-        mock_subscription.return_value = {
-            "latest_invoice": json.load(f)["data"][0],
+        subscription_params = {
+            "default_payment_method": default_payment_method,
             "cancel_at_period_end": False,
             "current_period_end": 1633512445,
-            "customer": {
-                "invoice_settings": {"default_payment_method": default_payment_method,}
-            },
+            "latest_invoice": json.load(f)["data"][0],
+            "schedule_id": None,
         }
+
+        mock_subscription.return_value = MockSubscription(subscription_params)
 
         self.user.stripe_subscription_id = "djfos"
         self.user.save()
@@ -346,6 +622,8 @@ class AccountViewSetTests(APITestCase):
         desired_plan = {"value": "users-pr-inappm", "quantity": 12}
         self.user.stripe_customer_id = "flsoe"
         self.user.stripe_subscription_id = "djfos"
+        self.user.plan = "users-pr-inappm"
+        self.user.plan_user_count = 8
         self.user.save()
 
         f = open("./services/tests/samples/stripe_invoice.json")
@@ -360,15 +638,13 @@ class AccountViewSetTests(APITestCase):
             }
         }
 
-        retrieve_subscription_mock.return_value = {
-            "items": {"data": [{"id": "abc"}]},
-            "cancel_at_period_end": False,
-            "current_period_end": 1633512445,
+        subscription_params = {
+            "default_payment_method": default_payment_method,
             "latest_invoice": json.load(f)["data"][0],
-            "customer": {
-                "invoice_settings": {"default_payment_method": default_payment_method,}
-            },
+            "schedule_id": None,
         }
+
+        retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
 
         response = self._update(
             kwargs={"service": self.user.service, "owner_username": self.user.username},
@@ -464,6 +740,25 @@ class AccountViewSetTests(APITestCase):
             == "Quantity cannot be lower than currently activated user count"
         )
 
+    def test_update_must_fail_if_quantity_and_plan_are_equal_to_the_owners_current_ones(
+        self,
+    ):
+        self.user.plan = "users-pr-inappy"
+        self.user.plan_user_count = 14
+        self.user.save()
+        desired_plan = {"value": "users-pr-inappy", "quantity": 14}
+
+        response = self._update(
+            kwargs={"service": self.user.service, "owner_username": self.user.username},
+            data={"plan": desired_plan},
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert (
+            response.data["plan"]["non_field_errors"][0]
+            == "Quantity or plan for paid plan must be different from the existing one"
+        )
+
     def test_update_quantity_must_be_at_least_5_if_paid_plan(self):
         desired_plan = {"value": "users-pr-inappy", "quantity": 4}
         response = self._update(
@@ -500,15 +795,16 @@ class AccountViewSetTests(APITestCase):
             }
         }
 
-        retrieve_subscription_mock.return_value = {
-            "items": {"data": [{"id": "abc"}]},
+        subscription_params = {
+            "default_payment_method": default_payment_method,
             "cancel_at_period_end": False,
             "current_period_end": 1633512445,
-            "customer": {
-                "invoice_settings": {"default_payment_method": default_payment_method,}
-            },
             "latest_invoice": json.load(f)["data"][0],
+            "schedule_id": None,
         }
+
+        retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+
         payment_method_id = "pm_123"
         kwargs = {"service": self.user.service, "owner_username": self.user.username}
         data = {"payment_method": payment_method_id}
