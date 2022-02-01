@@ -4,7 +4,6 @@ from internal_api.commit.serializers import CommitSerializer, ReportTotalsSerial
 
 
 class TotalsComparisonSerializer(serializers.Serializer):
-    print("testing - in totalsComparisonSerializer")
     base = ReportTotalsSerializer()
     head = ReportTotalsSerializer()
 

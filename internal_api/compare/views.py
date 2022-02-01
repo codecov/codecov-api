@@ -29,11 +29,9 @@ class CompareViewSet(
     permission_classes = [RepositoryArtifactPermissions]
 
     def get_object(self):
-        print("testing - in get_object")
         compare_data = self.get_compare_data()
 
         if "pull" in compare_data:
-            print("testing - in get_object - pull")
             try:
                 comparison = PullRequestComparison(
                     user=self.request.user, pull=compare_data["pull"]
@@ -41,7 +39,6 @@ class CompareViewSet(
             except MissingComparisonCommit:
                 raise NotFound("Sorry, we are missing a commit for that pull request.")
         else:
-            print("testing - in get_object - comparison")
             comparison = Comparison(
                 user=self.request.user,
                 base_commit=compare_data["base"],
@@ -52,7 +49,6 @@ class CompareViewSet(
 
     @torngit_safe
     def retrieve(self, request, *args, **kwargs):
-        print("testing - in retrieve")
         comparison = self.get_object()
 
         # Some checks here for pseudo-comparisons. Basically, when pseudo-comparing,
@@ -63,10 +59,8 @@ class CompareViewSet(
                 comparison.pseudo_diff_adjusts_tracked_lines
                 and comparison.allow_coverage_offsets
             ):
-                print("testing - in retrieve - isInstance")
                 comparison.update_base_report_with_pseudo_diff()
             elif comparison.pseudo_diff_adjusts_tracked_lines:
-                print("testing - in retrieve - adjusted lines")
                 return Response(
                     data={
                         "detail": f"Changes found in between %.7s...%.7s (pseudo...base) "
@@ -75,7 +69,6 @@ class CompareViewSet(
                     },
                     status=400,
                 )
-        print("testing - in retrieve - calling serializer")
         serializer = self.get_serializer(comparison)
 
         try:
@@ -91,7 +84,6 @@ class CompareViewSet(
     )
     @torngit_safe
     def file(self, request, *args, **kwargs):
-        print("testing - in file")
         comparison = self.get_object()
         file_path = file_path = kwargs.get("file_path")
         if file_path not in comparison.head_report:
@@ -107,10 +99,9 @@ class CompareViewSet(
     @action(detail=False, methods=["get"])
     @torngit_safe
     def flags(self, request, *args, **kwargs):
-        print("testing - in flags")
         comparison = self.get_object()
         flags = [
             comparison.flag_comparison(flag_name)
-            for flag_name in comparison.available_flags
+            for flag_name in comparison.non_carried_forward_flags
         ]
         return Response(FlagComparisonSerializer(flags, many=True).data)

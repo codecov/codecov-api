@@ -477,7 +477,6 @@ class FileComparison:
 
 class Comparison(object):
     def __init__(self, user, base_commit, head_commit):
-        print("testing - in Comparison class")
         self.user = user
         self.base_commit = base_commit
         self.head_commit = head_commit
@@ -594,6 +593,15 @@ class Comparison(object):
     @property
     def available_flags(self):
         return self.head_report.flags.keys()
+
+    @property
+    def non_carried_forward_flags(self):
+        flags_dict = self.head_report.flags
+        filtered_dict = {}
+        for flag, vals in flags_dict.items():
+            if vals.carriedforward == False:
+                filtered_dict[flag] = vals
+        return filtered_dict.keys()
 
     @cached_property
     def has_unmerged_base_commits(self):

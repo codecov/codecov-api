@@ -54,6 +54,4 @@ class CompareSlugMixin(RepoPropertyMixin):
         )
         serializer.is_valid(raise_exception=True)
         validated_data = serializer.validated_data
-        print("validated data")
-        print(validated_data)
         return validated_data
