@@ -593,11 +593,7 @@ class Comparison(object):
     @property
     def non_carried_forward_flags(self):
         flags_dict = self.head_report.flags
-        filtered_dict = {}
-        for flag, vals in flags_dict.items():
-            if vals.carriedforward == False:
-                filtered_dict[flag] = vals
-        return filtered_dict.keys()
+        return [flag for flag, vals in flags_dict.items() if not vals.carriedforward]
 
     @cached_property
     def has_unmerged_base_commits(self):
