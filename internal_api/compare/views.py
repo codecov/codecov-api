@@ -69,7 +69,6 @@ class CompareViewSet(
                     },
                     status=400,
                 )
-
         serializer = self.get_serializer(comparison)
 
         try:
@@ -103,6 +102,6 @@ class CompareViewSet(
         comparison = self.get_object()
         flags = [
             comparison.flag_comparison(flag_name)
-            for flag_name in comparison.available_flags
+            for flag_name in comparison.non_carried_forward_flags
         ]
         return Response(FlagComparisonSerializer(flags, many=True).data)
