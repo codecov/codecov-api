@@ -49,11 +49,12 @@ class UploadState(enum.Enum):
     UPLOADED = "uploaded"
     PROCESSED = "processed"
     ERROR = "error"
+    COMPLETE = "complete"
 
 
 class UploadType(enum.Enum):
     UPLOADED = "uploaded"
-    CARRYFORWARDED = "carryforwarded"
+    CARRIEDFORWARD = "carriedforward"
 
 
 class UploadErrorEnum(enum.Enum):

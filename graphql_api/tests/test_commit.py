@@ -10,6 +10,7 @@ from codecov_auth.tests.factories import OwnerFactory
 from core.models import Commit
 from core.tests.factories import CommitFactory, RepositoryFactory
 from graphql_api.types.enums import UploadErrorEnum, UploadState
+from graphql_api.types.enums.enums import UploadType
 from reports.tests.factories import (
     CommitReportFactory,
     ReportLevelTotalsFactory,
@@ -203,6 +204,12 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         session_two = UploadFactory(
             report=self.report, provider="travisci", state=UploadState.ERROR.value
         )
+        session_three = UploadFactory(
+            report=self.report, provider="travisci", state=UploadState.COMPLETE.value
+        )
+        session_four = UploadFactory(
+            report=self.report, provider="travisci", state=UploadState.UPLOADED.value
+        )
         query = (
             query_commit
             % """
@@ -227,6 +234,45 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         assert uploads == [
             {"state": UploadState.PROCESSED.name},
             {"state": UploadState.ERROR.name},
+            {"state": UploadState.COMPLETE.name},
+            {"state": UploadState.UPLOADED.name},
+        ]
+
+    def test_fetch_commit_uploads_type(self):
+        session_one = UploadFactory(
+            report=self.report,
+            provider="circleci",
+            upload_type=UploadType.UPLOADED.value,
+        )
+        session_two = UploadFactory(
+            report=self.report,
+            provider="travisci",
+            upload_type=UploadType.CARRIEDFORWARD.value,
+        )
+        query = (
+            query_commit
+            % """
+            uploads {
+                edges {
+                    node {
+                        uploadType
+                    }
+                }
+            }
+        """
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        uploads = paginate_connection(commit["uploads"])
+
+        assert uploads == [
+            {"uploadType": UploadType.UPLOADED.name},
+            {"uploadType": UploadType.CARRIEDFORWARD.name},
         ]
 
     def test_fetch_commit_uploads_errors(self):
