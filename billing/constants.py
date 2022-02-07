@@ -9,14 +9,17 @@ class StripeHTTPHeaders:
 
 class StripeWebhookEvents:
     subscribed_events = (
-        "invoice.payment_succeeded",
-        "invoice.payment_failed",
-        "customer.subscription.deleted",
+        "checkout.session.completed",
         "customer.created",
-        "customer.updated",
         "customer.subscription.created",
         "customer.subscription.updated",
-        "checkout.session.completed",
+        "customer.subscription.deleted",
+        "customer.updated",
+        "invoice.payment_failed",
+        "invoice.payment_succeeded",
+        "subscription_schedule.created",
+        "subscription_schedule.released",
+        "subscription_schedule.updated",
     )
 
 

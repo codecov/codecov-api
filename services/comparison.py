@@ -591,8 +591,9 @@ class Comparison(object):
         return FlagComparison(self, flag_name)
 
     @property
-    def available_flags(self):
-        return self.head_report.flags.keys()
+    def non_carried_forward_flags(self):
+        flags_dict = self.head_report.flags
+        return [flag for flag, vals in flags_dict.items() if not vals.carriedforward]
 
     @cached_property
     def has_unmerged_base_commits(self):
