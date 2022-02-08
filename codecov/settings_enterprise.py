@@ -15,7 +15,7 @@ CORS_ALLOW_CREDENTIALS = True
 # This is "fine" because the app surely won't be in a working state without a valid url.
 CODECOV_URL = get_config("setup", "codecov_url", default="http://localhost")
 CODECOV_API_URL = get_config("setup", "codecov_api_url", default=CODECOV_URL)
-
+CODECOV_DASHBOARD_URL = get_config("setup", "codecov_dashboard_url", default=CODECOV_URL)
 
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": (
