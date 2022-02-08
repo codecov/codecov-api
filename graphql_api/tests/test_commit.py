@@ -1,5 +1,5 @@
 import asyncio
-import datetime
+from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, patch
 
 import yaml
@@ -129,19 +129,24 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         self.repo_2 = RepositoryFactory(
             author=self.org, name="test-repo", private=False
         )
+        # This test relies on fetching commits based on their "updatestamp". The Commit class has a "save"
+        # method that gets called after you create a CommitFactory object, overriding the value you set on
+        # that property. Because of this, we rely on the order of the entries to be created as UpdateStamp is
+        # default to now, so the last entry will be created last, and the assertion should always be true.
         commits_in_db = [
             CommitFactory(repository=self.repo_2, commitid=123),
             CommitFactory(repository=self.repo_2, commitid=456),
             CommitFactory(repository=self.repo_2, commitid=789),
         ]
+
         variables = {
             "org": self.org.username,
             "repo": self.repo_2.name,
         }
         data = self.gql_request(query, variables=variables)
         commits = paginate_connection(data["owner"]["repository"]["commits"])
-        commits_commitid = [commit["commitid"] for commit in commits]
-        assert sorted(commits_commitid) == ["123", "456", "789"]
+        commits_commitids = [commit["commitid"] for commit in commits]
+        assert commits_commitids == ["789", "456", "123"]
 
     def test_fetch_parent_commit(self):
         query = query_commit % "parent { commitid } "

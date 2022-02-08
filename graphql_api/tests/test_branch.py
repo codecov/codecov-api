@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime, timedelta
 from unittest.mock import patch
 
 import yaml
@@ -27,13 +27,19 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
         self.org = OwnerFactory(username="codecov")
         self.repo = RepositoryFactory(author=self.org, name="gazebo", private=False)
-        self.head = CommitFactory(repository=self.repo)
+        self.head = CommitFactory(repository=self.repo, timestamp=datetime.now())
         self.commit = CommitFactory(repository=self.repo)
         self.branch = BranchFactory(
-            repository=self.repo, head=self.commit.commitid, name="test1"
+            repository=self.repo,
+            head=self.head.commitid,
+            name="test1",
+            updatestamp=(datetime.now() + timedelta(1)),
         )
-        self.branch = BranchFactory(
-            repository=self.repo, head=self.head.commitid, name="test2"
+        self.branch_2 = BranchFactory(
+            repository=self.repo,
+            head=self.commit.commitid,
+            name="test2",
+            updatestamp=(datetime.now() + timedelta(2)),
         )
 
     def test_fetch_branch(self):
@@ -71,7 +77,13 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         branches = data["owner"]["repository"]["branches"]["edges"]
         assert type(branches) == list
-        assert any(branch["node"]["name"] == "master" for branch in branches)
-        assert any(branch["node"]["name"] == "test1" for branch in branches)
-        assert any(branch["node"]["name"] == "test2" for branch in branches)
         assert len(branches) == 3
+        # This test relies on fetching commits based on their "updatestamp". The Commit class has a "save"
+        # method that gets called after you create a CommitFactory object, overriding the value you set on
+        # that property. Because of this, we rely on the order of the entries to be created as UpdateStamp is
+        # default to now, so the last entry will be created last, and the assertion should always be true.
+        assert branches == [
+            {"node": {"name": "test2"}},
+            {"node": {"name": "test1"}},
+            {"node": {"name": "master"}},
+        ]
