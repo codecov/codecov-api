@@ -78,10 +78,6 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         branches = data["owner"]["repository"]["branches"]["edges"]
         assert type(branches) == list
         assert len(branches) == 3
-        # This test relies on fetching commits based on their "updatestamp". The Commit class has a "save"
-        # method that gets called after you create a CommitFactory object, overriding the value you set on
-        # that property. Because of this, we rely on the order of the entries to be created as UpdateStamp is
-        # default to now, so the last entry will be created last, and the assertion should always be true.
         assert branches == [
             {"node": {"name": "test2"}},
             {"node": {"name": "test1"}},
