@@ -6,7 +6,7 @@ from corsheaders.defaults import default_headers
 from utils.config import SettingsModule, get_config, get_settings_module
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "*"  # Unused
+SECRET_KEY = "*" # Unused
 
 
 YAML_SECRET_KEY = b"]\xbb\x13\xf9}\xb3\xb7\x03)*0Kv\xb2\xcet"
@@ -115,15 +115,9 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",},
 ]
 
 
