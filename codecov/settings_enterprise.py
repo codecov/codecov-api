@@ -46,6 +46,10 @@ if CODECOV_API_URL.startswith("https://"):
 elif CODECOV_API_URL.startswith("http://"):
     API_DOMAIN = CODECOV_API_URL[7:]
 
+COOKIES_DOMAIN = get_config("setup", "http", "cookies_domain", default=f".{DEFAULT_WHITELISTED_DOMAIN}")
+SESSION_COOKIE_DOMAIN = get_config(
+    "setup", "http", "cookies_domain", default=f".{DEFAULT_WHITELISTED_DOMAIN}"
+)
 CORS_ALLOWED_ORIGINS = get_config(
     "setup", "api_cors_allowed_origins", default=[CODECOV_URL]
 )
