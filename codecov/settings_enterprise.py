@@ -28,7 +28,12 @@ REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
     "PAGE_SIZE": 20,
 }
-
+BITBUCKET_REDIRECT_URI = get_config(
+    "bitbucket", "redirect_uri", default=f"{CODECOV_URL}/login/bitbucket"
+)
+GITLAB_REDIRECT_URI = get_config(
+    "gitlab", "redirect_uri", default=f"{CODECOV_URL}/login/gitlab"
+)
 
 # select out CODECOV_URL domain
 if CODECOV_URL.startswith("https://"):
