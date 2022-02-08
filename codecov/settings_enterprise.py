@@ -15,7 +15,9 @@ CORS_ALLOW_CREDENTIALS = True
 # This is "fine" because the app surely won't be in a working state without a valid url.
 CODECOV_URL = get_config("setup", "codecov_url", default="http://localhost")
 CODECOV_API_URL = get_config("setup", "codecov_api_url", default=CODECOV_URL)
-CODECOV_DASHBOARD_URL = get_config("setup", "codecov_dashboard_url", default=CODECOV_URL)
+CODECOV_DASHBOARD_URL = get_config(
+    "setup", "codecov_dashboard_url", default=CODECOV_URL
+)
 
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": (
@@ -46,7 +48,9 @@ if CODECOV_API_URL.startswith("https://"):
 elif CODECOV_API_URL.startswith("http://"):
     API_DOMAIN = CODECOV_API_URL[7:]
 
-COOKIES_DOMAIN = get_config("setup", "http", "cookies_domain", default=f".{DEFAULT_WHITELISTED_DOMAIN}")
+COOKIES_DOMAIN = get_config(
+    "setup", "http", "cookies_domain", default=f".{DEFAULT_WHITELISTED_DOMAIN}"
+)
 SESSION_COOKIE_DOMAIN = get_config(
     "setup", "http", "cookies_domain", default=f".{DEFAULT_WHITELISTED_DOMAIN}"
 )
