@@ -147,10 +147,6 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             ),
         ]
 
-        print(commits_in_db)
-        print(commits_in_db[0].timestamp)
-        print(commits_in_db[1].timestamp)
-        print(commits_in_db[2].timestamp)
         variables = {
             "org": self.org.username,
             "repo": self.repo_2.name,
