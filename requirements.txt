@@ -77,7 +77,7 @@ deprecated==1.2.12
     # via opentelemetry-api
 distlib==0.3.1
     # via virtualenv
-django==3.1.13
+django==3.2.12
     # via
     #   -r requirements.in
     #   ariadne-django
