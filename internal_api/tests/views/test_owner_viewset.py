@@ -31,6 +31,22 @@ class OwnerViewSetTests(APITestCase):
             "integration_id": owner.integration_id,
         }
 
+    def test_retrieve_returns_owner_with_period_username(self):
+        owner = OwnerFactory(username = "codecov.test")
+        response = self._retrieve(
+            kwargs={"service": owner.service, "username": owner.username}
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "service": owner.service,
+            "username": owner.username,
+            "name": owner.name,
+            "stats": owner.cache["stats"],
+            "avatar_url": owner.avatar_url,
+            "ownerid": owner.ownerid,
+            "integration_id": owner.integration_id,
+        }
+
     def test_retrieve_returns_404_if_no_matching_username(self):
         response = self._retrieve(kwargs={"service": "github", "username": "fff"})
         assert response.status_code == status.HTTP_404_NOT_FOUND
