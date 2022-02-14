@@ -6,7 +6,7 @@ from corsheaders.defaults import default_headers
 from utils.config import SettingsModule, get_config, get_settings_module
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("UNUSED_SECRET_KEY")
+SECRET_KEY = get_config("DJANGO__SECRET_KEY")
 
 
 YAML_SECRET_KEY = b"]\xbb\x13\xf9}\xb3\xb7\x03)*0Kv\xb2\xcet"
