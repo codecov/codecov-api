@@ -1,5 +1,5 @@
 import asyncio
-import datetime
+from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, patch
 
 import yaml
@@ -130,18 +130,31 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             author=self.org, name="test-repo", private=False
         )
         commits_in_db = [
-            CommitFactory(repository=self.repo_2, commitid=123),
-            CommitFactory(repository=self.repo_2, commitid=456),
-            CommitFactory(repository=self.repo_2, commitid=789),
+            CommitFactory(
+                repository=self.repo_2,
+                commitid=123,
+                timestamp=datetime.today() - timedelta(days=3),
+            ),
+            CommitFactory(
+                repository=self.repo_2,
+                commitid=456,
+                timestamp=datetime.today() - timedelta(days=1),
+            ),
+            CommitFactory(
+                repository=self.repo_2,
+                commitid=789,
+                timestamp=datetime.today() - timedelta(days=2),
+            ),
         ]
+
         variables = {
             "org": self.org.username,
             "repo": self.repo_2.name,
         }
         data = self.gql_request(query, variables=variables)
         commits = paginate_connection(data["owner"]["repository"]["commits"])
-        commits_commitid = [commit["commitid"] for commit in commits]
-        assert sorted(commits_commitid) == ["123", "456", "789"]
+        commits_commitids = [commit["commitid"] for commit in commits]
+        assert commits_commitids == ["456", "789", "123"]
 
     def test_fetch_parent_commit(self):
         query = query_commit % "parent { commitid } "
