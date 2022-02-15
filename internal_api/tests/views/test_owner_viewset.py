@@ -32,7 +32,7 @@ class OwnerViewSetTests(APITestCase):
         }
 
     def test_retrieve_returns_owner_with_period_username(self):
-        owner = OwnerFactory(username = "codecov.test")
+        owner = OwnerFactory(username="codecov.test")
         response = self._retrieve(
             kwargs={"service": owner.service, "username": owner.username}
         )
