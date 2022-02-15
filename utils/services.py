@@ -1,4 +1,11 @@
-short_services = {"gh": "github", "bb": "bitbucket", "gl": "gitlab"}
+short_services = {
+    "gh": "github",
+    "bb": "bitbucket",
+    "gl": "gitlab",
+    "ghe": "github_enterprise",
+    "gle": "gitlab_enterprise",
+    "bbs": "bitbucket_server",
+}
 long_services = {value: key for (key, value) in short_services.items()}
 
 

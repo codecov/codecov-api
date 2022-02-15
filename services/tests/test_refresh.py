@@ -62,7 +62,6 @@ def test_refresh_makes_proper_redis_calls(
     mock_result_from_tuple, mock_refresh, mock_redis
 ):
     RefreshService().trigger_refresh(5, "codecov")
-    assert mock_redis.hget("refresh", 5) == b'{"random": "data"}'
     assert mock_redis.get("refresh_5") == b'{"random": "data"}'
 
 

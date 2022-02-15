@@ -1,6 +1,6 @@
 import asyncio
-import datetime
-from unittest.mock import patch
+from datetime import datetime, timedelta
+from unittest.mock import AsyncMock, patch
 
 import yaml
 from django.test import TransactionTestCase
@@ -9,9 +9,12 @@ from shared.reports.types import LineSession
 from codecov_auth.tests.factories import OwnerFactory
 from core.models import Commit
 from core.tests.factories import CommitFactory, RepositoryFactory
+from graphql_api.types.enums import UploadErrorEnum, UploadState
+from graphql_api.types.enums.enums import UploadType
 from reports.tests.factories import (
     CommitReportFactory,
     ReportLevelTotalsFactory,
+    UploadErrorFactory,
     UploadFactory,
 )
 
@@ -99,7 +102,16 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         self.report = CommitReportFactory(commit=self.commit)
 
     def test_fetch_commit(self):
-        query = query_commit % "message,createdAt,commitid,author { username }"
+        query = (
+            query_commit
+            % """
+            message,
+            createdAt,
+            commitid,
+            state,
+            author { username }
+        """
+        )
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
@@ -110,6 +122,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         assert commit["commitid"] == self.commit.commitid
         assert commit["message"] == self.commit.message
         assert commit["author"]["username"] == self.commit.author.username
+        assert commit["state"] == self.commit.state
 
     def test_fetch_commits(self):
         query = query_commits % "message,commitid,ciPassed"
@@ -117,18 +130,31 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             author=self.org, name="test-repo", private=False
         )
         commits_in_db = [
-            CommitFactory(repository=self.repo_2, commitid=123),
-            CommitFactory(repository=self.repo_2, commitid=456),
-            CommitFactory(repository=self.repo_2, commitid=789),
+            CommitFactory(
+                repository=self.repo_2,
+                commitid=123,
+                timestamp=datetime.today() - timedelta(days=3),
+            ),
+            CommitFactory(
+                repository=self.repo_2,
+                commitid=456,
+                timestamp=datetime.today() - timedelta(days=1),
+            ),
+            CommitFactory(
+                repository=self.repo_2,
+                commitid=789,
+                timestamp=datetime.today() - timedelta(days=2),
+            ),
         ]
+
         variables = {
             "org": self.org.username,
             "repo": self.repo_2.name,
         }
         data = self.gql_request(query, variables=variables)
         commits = paginate_connection(data["owner"]["repository"]["commits"])
-        commits_commitid = [commit["commitid"] for commit in commits]
-        assert sorted(commits_commitid) == ["123", "456", "789"]
+        commits_commitids = [commit["commitid"] for commit in commits]
+        assert commits_commitids == ["456", "789", "123"]
 
     def test_fetch_parent_commit(self):
         query = query_commit % "parent { commitid } "
@@ -184,7 +210,139 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             {"provider": session_two.provider},
         ]
 
-    @patch("core.commands.commit.commit.CommitCommands.get_final_yaml")
+    def test_fetch_commit_uploads_state(self):
+        session_one = UploadFactory(
+            report=self.report, provider="circleci", state=UploadState.PROCESSED.value
+        )
+        session_two = UploadFactory(
+            report=self.report, provider="travisci", state=UploadState.ERROR.value
+        )
+        session_three = UploadFactory(
+            report=self.report, provider="travisci", state=UploadState.COMPLETE.value
+        )
+        session_four = UploadFactory(
+            report=self.report, provider="travisci", state=UploadState.UPLOADED.value
+        )
+        query = (
+            query_commit
+            % """
+            uploads {
+                edges {
+                    node {
+                        state
+                    }
+                }
+            }
+        """
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        uploads = paginate_connection(commit["uploads"])
+
+        assert uploads == [
+            {"state": UploadState.PROCESSED.name},
+            {"state": UploadState.ERROR.name},
+            {"state": UploadState.COMPLETE.name},
+            {"state": UploadState.UPLOADED.name},
+        ]
+
+    def test_fetch_commit_uploads_type(self):
+        session_one = UploadFactory(
+            report=self.report,
+            provider="circleci",
+            upload_type=UploadType.UPLOADED.value,
+        )
+        session_two = UploadFactory(
+            report=self.report,
+            provider="travisci",
+            upload_type=UploadType.CARRIEDFORWARD.value,
+        )
+        query = (
+            query_commit
+            % """
+            uploads {
+                edges {
+                    node {
+                        uploadType
+                    }
+                }
+            }
+        """
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        uploads = paginate_connection(commit["uploads"])
+
+        assert uploads == [
+            {"uploadType": UploadType.UPLOADED.name},
+            {"uploadType": UploadType.CARRIEDFORWARD.name},
+        ]
+
+    def test_fetch_commit_uploads_errors(self):
+        session = UploadFactory(
+            report=self.report, provider="circleci", state=UploadState.ERROR.value
+        )
+        error_one = UploadErrorFactory(
+            report_session=session, error_code=UploadErrorEnum.REPORT_EXPIRED.value
+        )
+        error_two = UploadErrorFactory(
+            report_session=session, error_code=UploadErrorEnum.FILE_NOT_IN_STORAGE.value
+        )
+
+        query = (
+            query_commit
+            % """
+            uploads {
+                edges {
+                    node {
+                        errors {
+                            edges {
+                                node {
+                                    errorCode
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        [upload] = paginate_connection(commit["uploads"])
+        errors = paginate_connection(upload["errors"])
+
+        print(
+            [
+                {"errorCode": UploadErrorEnum.REPORT_EXPIRED.name},
+                {"errorCode": UploadErrorEnum.FILE_NOT_IN_STORAGE.name},
+            ]
+        )
+
+        assert errors == [
+            {"errorCode": UploadErrorEnum.REPORT_EXPIRED.name},
+            {"errorCode": UploadErrorEnum.FILE_NOT_IN_STORAGE.name},
+        ]
+
+    @patch(
+        "core.commands.commit.commit.CommitCommands.get_final_yaml",
+        new_callable=AsyncMock,
+    )
     def test_fetch_commit_yaml_call_the_command(self, command_mock):
         query = query_commit % "yaml"
         variables = {
@@ -195,9 +353,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
         fake_config = {"codecov": "yes"}
-        f = asyncio.Future()
-        f.set_result(fake_config)
-        command_mock.return_value = f
+        command_mock.return_value = fake_config
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
         assert commit["yaml"] == yaml.dump(fake_config)
@@ -226,9 +382,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             ],
             "totals": {"coverage": 83.0},
         }
-        f = asyncio.Future()
-        f.set_result("file content")
-        content_mock.return_value = f
+        content_mock.return_value = "file content"
 
         report_mock.return_value = MockReport()
         data = self.gql_request(query, variables=variables)
@@ -255,9 +409,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             "coverage": [],
             "totals": None,
         }
-        f = asyncio.Future()
-        f.set_result("file content")
-        content_mock.return_value = f
+        content_mock.return_value = "file content"
 
         report_mock.return_value = EmptyReport()
         data = self.gql_request(query, variables=variables)
@@ -293,9 +445,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
         fake_compare = {"state": "PENDING"}
-        f = asyncio.Future()
-        f.set_result(fake_compare)
-        command_mock.return_value = f
+        command_mock.return_value = fake_compare
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
         assert commit["compareWithParent"] == fake_compare
@@ -313,11 +463,25 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         fake_compare = [
             {"head_name": "src/config.js",},
         ]
-        f = asyncio.Future()
-        f.set_result(fake_compare)
-        command_mock.return_value = f
+        command_mock.return_value = fake_compare
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
         assert commit["compareWithParent"]["impactedFiles"][0] == {
             "headName": "src/config.js"
         }
+
+    @patch("compare.commands.compare.compare.CompareCommands.change_with_parent")
+    def test_change_with_parent_call_the_command(self, command_mock):
+        query = query_commit % "compareWithParent { changeWithParent }"
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        fake_compare = 56.89
+        command_mock.return_value = fake_compare
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        assert commit["compareWithParent"]["changeWithParent"] == 56.89

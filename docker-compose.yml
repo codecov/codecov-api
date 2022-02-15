@@ -27,7 +27,10 @@ services:
     networks:
       - codecovapi
     ports:
-      - "5432:5432"
+      - "5436:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
   redis:
     image: redis:4.0-alpine
     volumes:

@@ -8,9 +8,12 @@ from reports.models import CommitReport
 class FetchCommitsInteractor(BaseInteractor):
     def apply_filters_to_commits_queryset(self, queryset, filters):
         filters = filters or {}
-        has_uploaded_coverage = filters.get("has_uploaded_coverage")
-        if has_uploaded_coverage is False:
-            queryset = queryset.exclude(ci_passed__isnull=True)
+        hide_failed_ci = filters.get("hide_failed_ci")
+        branch_name = filters.get("branch_name")
+        if hide_failed_ci is True:
+            queryset = queryset.filter(ci_passed=True)
+        if branch_name:
+            queryset = queryset.filter(branch=branch_name)
         return queryset
 
     @sync_to_async

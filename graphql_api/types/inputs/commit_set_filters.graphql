@@ -1,3 +1,4 @@
 input CommitsSetFilters {
-  hasUploadedCoverage: Boolean
+  hideFailedCI: Boolean
+  branchName: String
 }

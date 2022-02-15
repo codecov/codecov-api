@@ -54,3 +54,9 @@ def resolve_yaml(owner, info):
 async def resolve_repository(owner, info, name):
     command = info.context["executor"].get_command("repository")
     return await command.fetch_repository(owner, name)
+
+
+@owner_bindable.field("numberOfUploads")
+async def resolve_number_of_uploads(owner, info, **kwargs):
+    command = info.context["executor"].get_command("owner")
+    return await command.get_uploads_number_per_user(owner)

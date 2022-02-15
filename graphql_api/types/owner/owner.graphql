@@ -1,8 +1,9 @@
 type Owner {
   avatarUrl: String
-  username: String!
+  username: String
   isCurrentUserPartOfOrg: Boolean!
   yaml: String
   repositories(filters: RepositorySetFilters, ordering: RepositoryOrdering, orderingDirection: OrderingDirection, first: Int, after: String, last: Int, before: String): RepositoryConnection!
   repository(name: String!): Repository
+  numberOfUploads: Int
 }

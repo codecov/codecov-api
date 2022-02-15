@@ -50,18 +50,18 @@ class RepositoryAccessorsTestCase(TestCase):
                 "name": "new-repo",
                 "branch": "default",
                 "private": True,
-                "service_id": "123",
+                "service_id": "7293846",
                 "fork": {
                     "repo": {
                         "name": "fork-repo",
                         "branch": "master",
                         "private": True,
-                        "service_id": "678",
+                        "service_id": "4720394",
                     },
-                    "owner": {"username": "fork_owner", "service_id": "234"},
+                    "owner": {"username": "fork_owner", "service_id": "0956093"},
                 },
             },
-            "owner": {"username": "new-org", "service_id": "456"},
+            "owner": {"username": "new-org", "service_id": "9437469"},
         }
 
         class MockedRepoService:

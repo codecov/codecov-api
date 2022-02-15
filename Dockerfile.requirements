@@ -1,5 +1,7 @@
+# syntax=docker/dockerfile:1.3
+
 # BUILD STAGE - Download dependencies from GitHub that require SSH access
-FROM            python:3.7.9-alpine3.13 as build
+FROM            python:3.9.7-alpine3.14 as build
 
 RUN             apk update \
                 && apk add --update --no-cache \
@@ -19,22 +21,17 @@ RUN             apk update \
                 curl-dev \
                 && pip install --upgrade pip
 
-ARG             SSH_PRIVATE_KEY
 RUN             mkdir /root/.ssh/
-RUN             echo "${SSH_PRIVATE_KEY}" > /root/.ssh/id_rsa
 RUN             ssh-keyscan -H github.com >> /root/.ssh/known_hosts
-RUN             chmod 600 /root/.ssh/id_rsa
 
 COPY            requirements.txt /
 WORKDIR         /pip-packages/
 
-RUN             pip wheel -r /requirements.txt
-
-
+RUN             --mount=type=ssh pip wheel -r /requirements.txt
 
 
 # RUNTIME STAGE - Copy packages from build stage and install runtime dependencies
-FROM            python:3.7.9-alpine3.13
+FROM            python:3.9.7-alpine3.14
 
 RUN             apk upgrade expat binutils busybox && \
                 apk add --no-cache postgresql-libs && \
@@ -50,8 +47,6 @@ RUN             apk upgrade expat binutils busybox && \
                 curl-dev \
                 libcurl
 
-RUN             wget -q -O /usr/local/bin/berglas https://storage.googleapis.com/berglas/0.5.0/linux_amd64/berglas && \
-                chmod +x /usr/local/bin/berglas
 
 WORKDIR         /pip-packages/
 COPY            --from=build /pip-packages/ /pip-packages/

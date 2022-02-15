@@ -16,7 +16,7 @@ from .pull import pull, pull_bindable
 from .query import query, query_bindable
 from .repository import repository, repository_bindable
 from .session import session, session_bindable
-from .upload import upload, upload_bindable
+from .upload import upload, upload_bindable, upload_error_bindable
 from .user import user, user_bindable
 
 inputs = ariadne_load_local_graphql(__file__, "./inputs")
@@ -57,6 +57,7 @@ bindables = [
     coverage_totals_bindable,
     file_bindable,
     upload_bindable,
+    upload_error_bindable,
     datetime_scalar,
     profile_bindable,
     *mutation_resolvers,

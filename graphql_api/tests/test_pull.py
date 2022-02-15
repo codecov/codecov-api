@@ -5,6 +5,7 @@ from codecov_auth.tests.factories import OwnerFactory
 from compare.tests.factories import CommitComparisonFactory
 from core.models import Pull
 from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
+from reports.tests.factories import CommitReportFactory, ReportLevelTotalsFactory
 
 from .helper import GraphQLTestHelper, paginate_connection
 
@@ -41,13 +42,17 @@ query_pull_request_detail = """{
                         username
                     }
                     head {
-                        commitid
+                        totals {
+                            coverage
+                        }
                     }
                     comparedTo {
                         commitid
                     }
                     compareWithBase {
-                        state
+                        patchTotals {
+                            coverage
+                        }
                     }
                 }
             }
@@ -100,7 +105,48 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "pullId": my_pull.pullid,
             "updatestamp": "2021-02-02T00:00:00",
             "author": {"username": "test-pull-user"},
-            "head": {"commitid": "5672734ij1n234918231290j12nasdfioasud0f9"},
+            "head": {"totals": None},
+            "comparedTo": None,
+            "compareWithBase": None,
+        }
+
+    @freeze_time("2021-02-02")
+    def test_when_repository_has_null_author(self):
+        my_pull = PullFactory(
+            repository=self.repository,
+            title="test-null-author",
+            author=None,
+            head=None,
+            compared_to=None,
+        )
+        pull = self.fetch_one_pull_request(my_pull.pullid)
+        assert pull == {
+            "title": "test-null-author",
+            "state": "OPEN",
+            "pullId": my_pull.pullid,
+            "updatestamp": "2021-02-02T00:00:00",
+            "author": None,
+            "head": None,
+            "comparedTo": None,
+            "compareWithBase": None,
+        }
+
+    @freeze_time("2021-02-02")
+    def test_when_repository_has_null_head(self):
+        my_pull = PullFactory(
+            repository=self.repository,
+            title="test-null-head",
+            author=self.user,
+            head=None,
+        )
+        pull = self.fetch_one_pull_request(my_pull.pullid)
+        assert pull == {
+            "title": "test-null-head",
+            "state": "OPEN",
+            "pullId": my_pull.pullid,
+            "updatestamp": "2021-02-02T00:00:00",
+            "author": {"username": "test-pull-user"},
+            "head": None,
             "comparedTo": None,
             "compareWithBase": None,
         }
@@ -111,11 +157,19 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             repository=self.repository,
             author=self.user,
             commitid="5672734ij1n234918231290j12nasdfioasud0f9",
+            totals={"c": "78.38", "diff": [0, 0, 0, 0, 0, "14"]},
         )
+        report = CommitReportFactory(commit=head)
+        ReportLevelTotalsFactory(report=report, coverage=78.38)
         compared_to = CommitFactory(
             repository=self.repository,
             author=self.user,
             commitid="9asd78fa7as8d8fa97s8d7fgagsd8fa9asd8f77s",
+        )
+        CommitComparisonFactory(
+            base_commit=compared_to,
+            compare_commit=head,
+            patch_totals={"coverage": 87.39},
         )
         my_pull = PullFactory(
             repository=self.repository,
@@ -124,7 +178,6 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             head=head.commitid,
             compared_to=compared_to.commitid,
         )
-        compare = CommitComparisonFactory(base_commit=compared_to, compare_commit=head)
         pull = self.fetch_one_pull_request(my_pull.pullid)
         assert pull == {
             "title": "test-pull-request",
@@ -132,7 +185,7 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "pullId": my_pull.pullid,
             "updatestamp": "2021-02-02T00:00:00",
             "author": {"username": "test-pull-user"},
-            "head": {"commitid": "5672734ij1n234918231290j12nasdfioasud0f9"},
+            "head": {"totals": {"coverage": 78.38}},
             "comparedTo": {"commitid": "9asd78fa7as8d8fa97s8d7fgagsd8fa9asd8f77s"},
-            "compareWithBase": {"state": compare.state},
+            "compareWithBase": {"patchTotals": {"coverage": 87.39}},
         }

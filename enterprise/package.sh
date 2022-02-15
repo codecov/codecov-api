@@ -1,7 +1,7 @@
 #!/bin/sh
 # Simple wrapper around pyinstaller
 set -e
-set -x
+#set -x
 
 # Generate a random key for encryption
 random_key=$(pwgen -s 16 1)
@@ -10,15 +10,15 @@ random_key=$(pwgen -s 16 1)
 PATH="/pyinstaller:$PATH"
 
 args_to_use=$(cat /pyinstaller/installer_args.txt)
-echo $(find . -name "*.so")
+#echo $(find . -name "*.so")
 
 mkdir src
 echo 'true' > src/is_enterprise
 
 # # Exclude pycrypto and PyInstaller from built packages
-pyinstaller -F --exclude-module pycrypto --exclude-module PyInstaller --add-data src:/src --name api --clean --key $random_key ${args_to_use} ${pyinstaller_args} /app/manage.py
+pyinstaller -F --exclude-module PyInstaller --add-data src:/src --name api --clean --key ${random_key} ${args_to_use} ${pyinstaller_args} /app/enterprise.py
 
-cat api.spec
+#cat api.spec
 
 
 # Clean up
@@ -28,4 +28,4 @@ rm -rf /hooks
 mv -v app/dist/* /home
 rm -rf /app
 rm -rf /pyinstaller
-rm -rf /usr/local/lib/python3.8/site-packages
+rm -rf /usr/local/lib/python3.9/site-packages

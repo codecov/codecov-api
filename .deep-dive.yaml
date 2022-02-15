@@ -1,6 +1,6 @@
 search:
   exclude_files:
-    python3libs: '/usr/lib/python3\.8.*'
+    python3libs: '/usr/lib/python3\.9.*'
   files:
     python: '.*\.pyc?'
     json:  '.*\.json'

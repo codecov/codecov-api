@@ -1,5 +1,7 @@
+from contextlib import nullcontext
+
 import pytest
-from rest_framework.exceptions import Throttled
+from rest_framework.exceptions import Throttled, ValidationError
 
 from billing.constants import BASIC_PLAN_NAME
 from core.tests.factories import CommitFactory, OwnerFactory, RepositoryFactory
@@ -7,6 +9,7 @@ from reports.tests.factories import CommitReportFactory, UploadFactory
 from upload.helpers import (
     check_commit_upload_constraints,
     try_to_get_best_possible_bot_token,
+    validate_upload,
 )
 
 
@@ -70,7 +73,7 @@ def test_try_to_get_best_possible_nothing_and_not_private(db, mocker):
 
 def test_check_commit_contraints_settings_disabled(db, settings):
     settings.UPLOAD_THROTTLING_ENABLED = False
-    repository = RepositoryFactory.create(author__plan=BASIC_PLAN_NAME)
+    repository = RepositoryFactory.create(author__plan=BASIC_PLAN_NAME, private=True)
     first_commit = CommitFactory.create(repository=repository)
     second_commit = CommitFactory.create(repository=repository)
     third_commit = CommitFactory.create(repository__author=repository.author)
@@ -87,26 +90,53 @@ def test_check_commit_contraints_settings_disabled(db, settings):
 
 def test_check_commit_contraints_settings_enabled(db, settings):
     settings.UPLOAD_THROTTLING_ENABLED = True
-    repository = RepositoryFactory.create(author__plan=BASIC_PLAN_NAME)
+    author = OwnerFactory.create(plan=BASIC_PLAN_NAME)
+    repository = RepositoryFactory.create(author=author, private=True)
+    public_repository = RepositoryFactory.create(author=author, private=False)
     first_commit = CommitFactory.create(repository=repository)
     second_commit = CommitFactory.create(repository=repository)
     third_commit = CommitFactory.create(repository__author=repository.author)
     fourth_commit = CommitFactory.create(repository=repository)
+    public_repository_commit = CommitFactory.create(repository=public_repository)
     unrelated_commit = CommitFactory.create()
     first_report = CommitReportFactory.create(commit=first_commit)
     fourth_report = CommitReportFactory.create(commit=fourth_commit)
+    check_commit_upload_constraints(second_commit)
+    for i in range(300):
+        UploadFactory.create(report__commit__repository=public_repository)
+    # ensuring public repos counts don't count torwards the quota
+    check_commit_upload_constraints(second_commit)
     for i in range(150):
         UploadFactory.create(report=first_report)
-    for i in range(150):
         UploadFactory.create(report=fourth_report)
     # first and fourth commit already has uploads made, we won't block uploads to them
     check_commit_upload_constraints(first_commit)
     check_commit_upload_constraints(fourth_commit)
     # unrelated commit belongs to a different user. Ensuring we don't block it
     check_commit_upload_constraints(unrelated_commit)
+    # public repositories commit should never be throttled
+    check_commit_upload_constraints(public_repository_commit)
     with pytest.raises(Throttled):
         # second commit does not have uploads made, so we block it
         check_commit_upload_constraints(second_commit)
     with pytest.raises(Throttled):
         # third commit belongs to a different repo, but same user
         check_commit_upload_constraints(third_commit)
+
+
+@pytest.mark.parametrize(
+    "totals_column_count, rows_count, should_raise",
+    [(151, 0, True), (151, 151, True), (0, 0, False), (0, 200, False)],
+)
+def test_validate_upload_too_many_uploads_for_commit(
+    db, totals_column_count, rows_count, should_raise, mocker
+):
+    redis = mocker.MagicMock(sismember=mocker.MagicMock(return_value=False))
+    owner = OwnerFactory.create(plan="users-free")
+    repo = RepositoryFactory.create(author=owner,)
+    commit = CommitFactory.create(totals={"s": totals_column_count}, repository=repo)
+    report = CommitReportFactory.create(commit=commit)
+    for i in range(rows_count):
+        UploadFactory.create(report=report)
+    with pytest.raises(ValidationError) if should_raise else nullcontext():
+        validate_upload({"commit": commit.commitid}, repo, redis)

@@ -1,0 +1,6 @@
+enum UploadState {
+  UPLOADED
+  PROCESSED
+  ERROR
+  COMPLETE
+}
