@@ -224,7 +224,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, user=self.user)
         assert data["owner"]["numberOfUploads"] == 150
 
-    def test_resolve_is_current_user_not_an_admin(self):
+    def test_is_current_user_not_an_admin(self):
         query_current_user_is_admin = """{
             owner(username: "%s") {
                isAdmin
@@ -237,7 +237,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, user=user)
         assert data["owner"]["isAdmin"] is False
 
-    def test_resolve_is_current_user_an_admin(self):
+    def test_is_current_user_an_admin(self):
         query_current_user_is_admin = """{
             owner(username: "%s") {
                isAdmin
