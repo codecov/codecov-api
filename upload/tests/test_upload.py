@@ -956,18 +956,12 @@ class UploadHandlerRouteTest(APITestCase):
 
         headers = response.headers
 
-        assert headers["accept"] == ("Accept", "text/*")
-        assert headers["access-control-allow-origin"] == (
-            "Access-Control-Allow-Origin",
-            "*",
-        )
-        assert headers["access-control-allow-method"] == (
-            "Access-Control-Allow-Method",
-            "POST",
-        )
-        assert headers["access-control-allow-headers"] == (
-            "Access-Control-Allow-Headers",
-            "Origin, Content-Type, Accept, X-User-Agent",
+        assert headers["accept"] == "text/*"
+        assert headers["access-control-allow-origin"] == "*"
+        assert headers["access-control-allow-method"] == "POST"
+        assert (
+            headers["access-control-allow-headers"]
+            == "Origin, Content-Type, Accept, X-User-Agent"
         )
 
     def test_invalid_request_params(self):
@@ -1018,15 +1012,12 @@ class UploadHandlerRouteTest(APITestCase):
 
         headers = response.headers
 
-        assert headers["access-control-allow-origin"] == (
-            "Access-Control-Allow-Origin",
-            "*",
+        assert headers["access-control-allow-origin"] == "*"
+        assert (
+            headers["access-control-allow-headers"]
+            == "Origin, Content-Type, Accept, X-User-Agent"
         )
-        assert headers["access-control-allow-headers"] == (
-            "Access-Control-Allow-Headers",
-            "Origin, Content-Type, Accept, X-User-Agent",
-        )
-        assert headers["content-type"] != ("Content-Type", "text/plain",)
+        assert headers["content-type"] != "text/plain"
 
         assert mock_dispatch_upload.call_args[0][0] == {
             "commit": "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
@@ -1094,15 +1085,12 @@ class UploadHandlerRouteTest(APITestCase):
 
         headers = response.headers
 
-        assert headers["access-control-allow-origin"] == (
-            "Access-Control-Allow-Origin",
-            "*",
+        assert headers["access-control-allow-origin"] == "*"
+        assert (
+            headers["access-control-allow-headers"]
+            == "Origin, Content-Type, Accept, X-User-Agent"
         )
-        assert headers["access-control-allow-headers"] == (
-            "Access-Control-Allow-Headers",
-            "Origin, Content-Type, Accept, X-User-Agent",
-        )
-        assert headers["content-type"] != ("Content-Type", "text/plain",)
+        assert headers["content-type"] != "text/plain"
 
         assert mock_dispatch_upload.call_args[0][0] == {
             "commit": "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
