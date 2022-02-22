@@ -126,7 +126,7 @@ def test_check_commit_contraints_settings_enabled(db, settings):
 
 @pytest.mark.parametrize(
     "totals_column_count, rows_count, should_raise",
-    [(151, 0, True), (151, 151, True), (0, 0, False), (0, 200, False)],
+    [(151, 0, False), (151, 151, True), (0, 0, False), (0, 200, True)],
 )
 def test_validate_upload_too_many_uploads_for_commit(
     db, totals_column_count, rows_count, should_raise, mocker
