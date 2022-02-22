@@ -22,6 +22,7 @@ from simplejson import JSONDecodeError
 from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
 from core.models import Commit, Repository
+from reports.tests.factories import CommitReportFactory, UploadFactory
 from upload.helpers import (
     determine_repo_for_upload,
     determine_upload_branch_to_use,
@@ -775,6 +776,9 @@ class UploadHandlerHelpersTest(TestCase):
         owner = G(Owner, plan="users-free")
         repo = G(Repository, author=owner,)
         commit = G(Commit, totals={"s": 151}, repository=repo)
+        report = CommitReportFactory.create(commit=commit)
+        for i in range(151):
+            UploadFactory.create(report=report)
 
         with self.assertRaises(ValidationError) as err:
             validate_upload({"commit": commit.commitid}, repo, redis)
