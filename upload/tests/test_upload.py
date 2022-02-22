@@ -954,7 +954,7 @@ class UploadHandlerRouteTest(APITestCase):
     def test_options_headers(self):
         response = self._options(kwargs={"version": "v2"})
 
-        headers = response._headers
+        headers = response.headers
 
         assert headers["accept"] == ("Accept", "text/*")
         assert headers["access-control-allow-origin"] == (
@@ -1016,7 +1016,7 @@ class UploadHandlerRouteTest(APITestCase):
 
         assert response.status_code == 200
 
-        headers = response._headers
+        headers = response.headers
 
         assert headers["access-control-allow-origin"] == (
             "Access-Control-Allow-Origin",
@@ -1092,7 +1092,7 @@ class UploadHandlerRouteTest(APITestCase):
 
         assert response.status_code == 200
 
-        headers = response._headers
+        headers = response.headers
 
         assert headers["access-control-allow-origin"] == (
             "Access-Control-Allow-Origin",
