@@ -72,11 +72,10 @@ class Repository(models.Model):
         C_SHARP = "c#"
         F_SHARP = "f#"
 
-
     repoid = models.AutoField(primary_key=True)
     name = CITextField()
     author = models.ForeignKey(
-        "codecov_auth.Owner", db_column="ownerid", on_delete=models.CASCADE,
+        "codecov_auth.Owner", db_column="ownerid", on_delete=models.CASCADE
     )
     service_id = models.TextField()
     private = models.BooleanField()

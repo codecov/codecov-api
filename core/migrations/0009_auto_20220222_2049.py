@@ -5,134 +5,79 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('core', '0008_version_v4_6_4'),
-    ]
+    dependencies = [("core", "0008_version_v4_6_4")]
 
     operations = [
         migrations.AlterModelOptions(
-            name='repository',
-            options={'ordering': ['-repoid'], 'verbose_name_plural': 'Repositories'},
+            name="repository",
+            options={"ordering": ["-repoid"], "verbose_name_plural": "Repositories"},
         ),
         migrations.AlterField(
-            model_name='repository',
-            name='language',
+            model_name="repository",
+            name="language",
             field=models.TextField(
-                blank=True, 
+                blank=True,
                 choices=[
-                    ('javascript', 'Javascript'), 
-                    ('shell', 'Shell'), 
-                    ('python', 'Python'), 
-                    ('ruby', 'Ruby'), 
-                    ('perl', 'Perl'), 
-                    ('dart', 'Dart'), 
-                    ('java', 'Java'), 
-                    ('c', 'C'), 
-                    ('clojure', 'Clojure'), 
-                    ('d', 'D'), 
-                    ('fortran', 'Fortran'), 
-                    ('go', 'Go'), 
-                    ('groovy', 'Groovy'), 
-                    ('kotlin', 'Kotlin'), 
-                    ('php', 'Php'), 
-                    ('r', 'R'), 
-                    ('scala', 'Scala'), 
-                    ('swift', 'Swift'), 
-                    ('objective-c', 'Objective C'), 
-                    ('xtend', 'Xtend'),
-                    ('typescript', 'Typescript'), 
-                    ('haskell', 'Haskell'), 
-                    ('rust', 'Rust'), 
-                    ('lua', 'Lua'), 
-                    ('matlab', 'Matlab'),
-                    ('assembly', 'Assembly'), 
-                    ('scheme', 'Scheme'), 
-                    ('powershell', 'Powershell'), 
-                    ('apex', 'Apex'), 
-                    ('verilog', 'Verilog'), 
-                    ('common lisp', 'Common Lisp'), 
-                    ('erlang', 'Erlang'), 
-                    ('julia', 'Julia'), 
-                    ('prolog', 'Prolog'), 
-                    ('vue', 'Vue'), 
-                    ('c++', 'Cpp'), 
-                    ('c#', 'C Sharp'), 
-                    ('f#', 'F Sharp')
-                ], 
-                null=True
+                    ("javascript", "Javascript"),
+                    ("shell", "Shell"),
+                    ("python", "Python"),
+                    ("ruby", "Ruby"),
+                    ("perl", "Perl"),
+                    ("dart", "Dart"),
+                    ("java", "Java"),
+                    ("c", "C"),
+                    ("clojure", "Clojure"),
+                    ("d", "D"),
+                    ("fortran", "Fortran"),
+                    ("go", "Go"),
+                    ("groovy", "Groovy"),
+                    ("kotlin", "Kotlin"),
+                    ("php", "Php"),
+                    ("r", "R"),
+                    ("scala", "Scala"),
+                    ("swift", "Swift"),
+                    ("objective-c", "Objective C"),
+                    ("xtend", "Xtend"),
+                    ("typescript", "Typescript"),
+                    ("haskell", "Haskell"),
+                    ("rust", "Rust"),
+                    ("lua", "Lua"),
+                    ("matlab", "Matlab"),
+                    ("assembly", "Assembly"),
+                    ("scheme", "Scheme"),
+                    ("powershell", "Powershell"),
+                    ("apex", "Apex"),
+                    ("verilog", "Verilog"),
+                    ("common lisp", "Common Lisp"),
+                    ("erlang", "Erlang"),
+                    ("julia", "Julia"),
+                    ("prolog", "Prolog"),
+                    ("vue", "Vue"),
+                    ("c++", "Cpp"),
+                    ("c#", "C Sharp"),
+                    ("f#", "F Sharp"),
+                ],
+                null=True,
             ),
         ),
-
-        migrations.RunSQL(
-            "ALTER TYPE languages ADD VALUE IF NOT exists 'typescript';"
-        ),
-
-        migrations.RunSQL(
-            "ALTER TYPE languages ADD VALUE IF NOT exists 'haskell';"
-        ),
-
-        migrations.RunSQL(
-            "ALTER TYPE languages ADD VALUE IF NOT exists 'rust';"
-        ),
-
-        migrations.RunSQL(
-            "ALTER TYPE languages ADD VALUE IF NOT exists 'lua';"
-        ),
-
-        migrations.RunSQL(
-            "ALTER TYPE languages ADD VALUE IF NOT exists 'matlab';"
-        ),
-
-        migrations.RunSQL(
-            "ALTER TYPE languages ADD VALUE IF NOT exists 'assembly';"
-        ),
-
-        migrations.RunSQL(
-            "ALTER TYPE languages ADD VALUE IF NOT exists 'scheme';"
-        ),
-
-        migrations.RunSQL(
-            "ALTER TYPE languages ADD VALUE IF NOT exists 'powershell';"
-        ),
-
-        migrations.RunSQL(
-            "ALTER TYPE languages ADD VALUE IF NOT exists 'apex';"
-        ),
-
-        migrations.RunSQL(
-            "ALTER TYPE languages ADD VALUE IF NOT exists 'verilog';"
-        ),
-
+        migrations.RunSQL("ALTER TYPE languages ADD VALUE IF NOT exists 'typescript';"),
+        migrations.RunSQL("ALTER TYPE languages ADD VALUE IF NOT exists 'haskell';"),
+        migrations.RunSQL("ALTER TYPE languages ADD VALUE IF NOT exists 'rust';"),
+        migrations.RunSQL("ALTER TYPE languages ADD VALUE IF NOT exists 'lua';"),
+        migrations.RunSQL("ALTER TYPE languages ADD VALUE IF NOT exists 'matlab';"),
+        migrations.RunSQL("ALTER TYPE languages ADD VALUE IF NOT exists 'assembly';"),
+        migrations.RunSQL("ALTER TYPE languages ADD VALUE IF NOT exists 'scheme';"),
+        migrations.RunSQL("ALTER TYPE languages ADD VALUE IF NOT exists 'powershell';"),
+        migrations.RunSQL("ALTER TYPE languages ADD VALUE IF NOT exists 'apex';"),
+        migrations.RunSQL("ALTER TYPE languages ADD VALUE IF NOT exists 'verilog';"),
         migrations.RunSQL(
             "ALTER TYPE languages ADD VALUE IF NOT exists 'common lisp';"
         ),
-
-        migrations.RunSQL(
-            "ALTER TYPE languages ADD VALUE IF NOT exists 'erlang';"
-        ),
-
-        migrations.RunSQL(
-            "ALTER TYPE languages ADD VALUE IF NOT exists 'julia';"
-        ),
-
-        migrations.RunSQL(
-            "ALTER TYPE languages ADD VALUE IF NOT exists 'prolog';"
-        ),
-
-        migrations.RunSQL(
-            "ALTER TYPE languages ADD VALUE IF NOT exists 'vue';"
-        ),
-
-        migrations.RunSQL(
-            "ALTER TYPE languages ADD VALUE IF NOT exists 'c++';"
-        ),
-
-        migrations.RunSQL(
-            "ALTER TYPE languages ADD VALUE IF NOT exists 'c#';"
-        ),
-
-        migrations.RunSQL(
-            "ALTER TYPE languages ADD VALUE IF NOT exists 'f#';"
-        ),
-
+        migrations.RunSQL("ALTER TYPE languages ADD VALUE IF NOT exists 'erlang';"),
+        migrations.RunSQL("ALTER TYPE languages ADD VALUE IF NOT exists 'julia';"),
+        migrations.RunSQL("ALTER TYPE languages ADD VALUE IF NOT exists 'prolog';"),
+        migrations.RunSQL("ALTER TYPE languages ADD VALUE IF NOT exists 'vue';"),
+        migrations.RunSQL("ALTER TYPE languages ADD VALUE IF NOT exists 'c++';"),
+        migrations.RunSQL("ALTER TYPE languages ADD VALUE IF NOT exists 'c#';"),
+        migrations.RunSQL("ALTER TYPE languages ADD VALUE IF NOT exists 'f#';"),
     ]
