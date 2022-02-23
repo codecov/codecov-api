@@ -53,6 +53,25 @@ class Repository(models.Model):
         SWIFT = "swift"
         OBJECTIVE_C = "objective-c"
         XTEND = "xtend"
+        TYPESCRIPT = "typescript"
+        HASKELL = "haskell"
+        RUST = "rust"
+        LUA = "lua"
+        MATLAB = "matlab"
+        ASSEMBLY = "assembly"
+        SCHEME = "scheme"
+        POWERSHELL = "powershell"
+        APEX = "apex"
+        VERILOG = "verilog"
+        COMMON_LISP = "common lisp"
+        ERLANG = "erlang"
+        JULIA = "julia"
+        PROLOG = "prolog"
+        VUE = "vue"
+        CPP = "c++"
+        C_SHARP = "c#"
+        F_SHARP = "f#"
+
 
     repoid = models.AutoField(primary_key=True)
     name = CITextField()
