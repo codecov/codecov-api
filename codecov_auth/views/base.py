@@ -268,7 +268,7 @@ class LoginMixin(object):
         response.set_cookie(
             "_marketing_tags",
             data,
-            max_age=500,  # Same as state validatiy
+            max_age=86400,  # Same as state validatiy
             httponly=True,
             domain=settings.COOKIES_DOMAIN,
         )

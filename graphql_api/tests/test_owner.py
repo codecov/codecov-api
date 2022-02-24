@@ -223,3 +223,31 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         query = query_uploads_number % (repository.author.username)
         data = self.gql_request(query, user=self.user)
         assert data["owner"]["numberOfUploads"] == 150
+
+    def test_is_current_user_not_an_admin(self):
+        query_current_user_is_admin = """{
+            owner(username: "%s") {
+               isAdmin
+            }
+        }
+        """
+        user = OwnerFactory(username="random_org_user", service="github")
+        owner = OwnerFactory(username="random_org_test", service="github")
+        query = query_current_user_is_admin % (owner.username)
+        data = self.gql_request(query, user=user)
+        assert data["owner"]["isAdmin"] is False
+
+    def test_is_current_user_an_admin(self):
+        query_current_user_is_admin = """{
+            owner(username: "%s") {
+               isAdmin
+            }
+        }
+        """
+        user = OwnerFactory(username="random_org_admin", service="github")
+        owner = OwnerFactory(
+            username="random_org_test", service="github", admins=[user.ownerid]
+        )
+        query = query_current_user_is_admin % (owner.username)
+        data = self.gql_request(query, user=user)
+        assert data["owner"]["isAdmin"] is True
