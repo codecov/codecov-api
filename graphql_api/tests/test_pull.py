@@ -54,6 +54,14 @@ query_pull_request_detail = """{
                             coverage
                         }
                     }
+                    commits {
+                        totalCount
+                        edges {
+                            node {
+                                commitid
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -108,6 +116,7 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "head": {"totals": None},
             "comparedTo": None,
             "compareWithBase": None,
+            "commits": {"edges": [], "totalCount": 0},
         }
 
     @freeze_time("2021-02-02")
@@ -129,6 +138,7 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "head": None,
             "comparedTo": None,
             "compareWithBase": None,
+            "commits": {"edges": [], "totalCount": 0},
         }
 
     @freeze_time("2021-02-02")
@@ -149,6 +159,7 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "head": None,
             "comparedTo": None,
             "compareWithBase": None,
+            "commits": {"edges": [], "totalCount": 0},
         }
 
     @freeze_time("2021-02-02")
@@ -188,4 +199,25 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "head": {"totals": {"coverage": 78.38}},
             "comparedTo": {"commitid": "9asd78fa7as8d8fa97s8d7fgagsd8fa9asd8f77s"},
             "compareWithBase": {"patchTotals": {"coverage": 87.39}},
+            "commits": {"edges": [], "totalCount": 0},
         }
+
+    def test_fetch_commits_request(self):
+        my_pull = PullFactory(repository=self.repository)
+
+        CommitFactory(
+            repository=self.repository, pullid=my_pull.pullid, commitid="11111",
+        )
+        CommitFactory(
+            repository=self.repository, pullid=my_pull.pullid, commitid="22222",
+        )
+        CommitFactory(
+            repository=self.repository, pullid=my_pull.pullid, commitid="33333",
+        )
+
+        pull = self.fetch_one_pull_request(my_pull.pullid)
+
+        assert pull["commits"]["totalCount"] == 3
+        assert pull["commits"]["edges"][0]["node"] == {"commitid": "33333"}
+        assert pull["commits"]["edges"][1]["node"] == {"commitid": "22222"}
+        assert pull["commits"]["edges"][2]["node"] == {"commitid": "11111"}
