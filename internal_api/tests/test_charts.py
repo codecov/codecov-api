@@ -361,7 +361,6 @@ class CoverageChartHelpersTest(TestCase):
             )
 
     def test_annotate_commit_with_totals_no_complexity_sets_ratio_to_None(self):
-        print("heyreee")
         no_complexity_commitid = "sdfkjwepj42"
         G(
             Commit,
