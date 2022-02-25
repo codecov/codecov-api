@@ -155,7 +155,7 @@ class CoverageChartHelpersTest(TestCase):
         self.repo2_org1 = RepositoryFactory(author=self.org1, name="repo2")
         setup_commits(self.repo2_org1, 10)
 
-        self.org2 = OwnerFactory(username="org2")
+        self.org2 = OwnerFactory(username="org2", service_id=1239128)
         self.repo1_org2 = RepositoryFactory(author=self.org2, name="repo1")
         setup_commits(self.repo1_org2, 10)
 
@@ -254,6 +254,7 @@ class CoverageChartHelpersTest(TestCase):
             "start_date": start_date.isoformat(),
             "end_date": end_date.isoformat(),
             "repositories": [self.repo1_org1.name, self.repo2_org1.name],
+            "service": "github",
         }
         queryset = apply_simple_filters(Commit.objects.all(), data, self.user)
 
@@ -275,14 +276,26 @@ class CoverageChartHelpersTest(TestCase):
         )
         setup_commits(no_permissions_repo, 10)
 
-        data = {
-            "owner_username": self.org1.username,
-        }
+        data = {"owner_username": self.org1.username, "service": "github"}
 
         queryset = apply_simple_filters(Commit.objects.all(), data, self.user)
         assert queryset.count() > 0
         for commit in queryset:
             assert commit.repository.name != no_permissions_repo
+
+    def test_apply_simple_filters_without_service(self):
+        """
+        This test verifies that when no commits are returned if the user doesn't provide both a username and the service
+        """
+        repo = RepositoryFactory(author=self.org1, name="random_repo")
+        setup_commits(repo, 10)
+
+        data = {
+            "owner_username": self.org1.username,
+        }
+
+        queryset = apply_simple_filters(Commit.objects.all(), data, self.user)
+        assert queryset.count() == 0
 
     def test_apply_simple_filters_branch_filtering(self):
         # Verify that when no "branch" param is provided, we filter commits by the repo's default branch
@@ -298,6 +311,7 @@ class CoverageChartHelpersTest(TestCase):
 
         data = {
             "owner_username": self.org1.username,
+            "service": "gh",
             "repositories": [self.repo1_org1.name, branch_test.name],
         }
         queryset = apply_simple_filters(Commit.objects.all(), data, self.user)
@@ -314,6 +328,7 @@ class CoverageChartHelpersTest(TestCase):
         data = {
             "owner_username": self.org1.username,
             "repositories": [branch_test.name],
+            "service": "github",
             "branch": "not_default",
         }
         queryset = apply_simple_filters(Commit.objects.all(), data, self.user)
@@ -346,6 +361,7 @@ class CoverageChartHelpersTest(TestCase):
             )
 
     def test_annotate_commit_with_totals_no_complexity_sets_ratio_to_None(self):
+        print("heyreee")
         no_complexity_commitid = "sdfkjwepj42"
         G(
             Commit,
