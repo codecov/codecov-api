@@ -45,10 +45,9 @@ def resolve_compare_with_base(pull, info, **kwargs):
 
 
 @pull_bindable.field("commits")
-@convert_kwargs_to_snake_case
 async def resolve_commits(pull, info, **kwargs):
     command = info.context["executor"].get_command("commit")
-    queryset = await command.fetch_pull_commits(pull)
+    queryset = await command.fetch_commits_by_pullid(pull)
 
     return await queryset_to_connection(
         queryset,

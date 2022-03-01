@@ -29,8 +29,8 @@ class CommitCommandsTest(TransactionTestCase):
         interactor_mock.assert_called_once_with(self.repository, self.filters)
 
     @patch("core.commands.commit.commit.FetchPullCommitsInteractor.execute")
-    def test_fetch_pull_commits_delegate_to_interactor(self, interactor_mock):
-        self.command.fetch_pull_commits(self.pull)
+    def test_fetch_commits_by_pullid_delegate_to_interactor(self, interactor_mock):
+        self.command.fetch_commits_by_pullid(self.pull)
         interactor_mock.assert_called_once_with(self.pull)
 
     @patch("core.commands.commit.commit.GetUploadsOfCommitInteractor.execute")
