@@ -12,17 +12,13 @@ class FetchCommitsInteractorTest(TransactionTestCase):
     def setUp(self):
         self.org = OwnerFactory()
         self.repo = RepositoryFactory(author=self.org, private=False)
-        self.pull_1 = PullFactory(pullid=1, repository_id=self.repo.repoid,)
-        self.pull_2 = PullFactory(pullid=2, repository_id=self.repo.repoid,)
-        self.pull_3 = PullFactory(pullid=3, repository_id=self.repo.repoid,)
+        self.pull_1 = PullFactory(pullid=2, repository_id=self.repo.repoid,)
+        self.pull_2 = PullFactory(pullid=3, repository_id=self.repo.repoid,)
         self.commits_pr_1 = [
             CommitFactory(repository=self.repo, pullid=self.pull_1.pullid),
+            CommitFactory(repository=self.repo, pullid=self.pull_1.pullid),
         ]
-        self.commits_pr_2 = [
-            CommitFactory(repository=self.repo, pullid=self.pull_2.pullid),
-            CommitFactory(repository=self.repo, pullid=self.pull_2.pullid),
-        ]
-        self.commits_pr_3 = []
+        self.commits_pr_2 = []
 
     # helper to execute the interactor
     def execute(self, user, pull, *args):
@@ -33,9 +29,9 @@ class FetchCommitsInteractorTest(TransactionTestCase):
         )
 
     def test_fetch_commits_by_pullid(self):
-        commits = async_to_sync(self.execute)(None, self.pull_2)
-        assert list(commits) == self.commits_pr_2
+        commits = async_to_sync(self.execute)(None, self.pull_1)
+        assert list(commits) == self.commits_pr_1
 
     def test_fetch_commits_by_pullid_no_commits(self):
-        commits = async_to_sync(self.execute)(None, self.pull_3)
-        assert list(commits) == self.commits_pr_3
+        commits = async_to_sync(self.execute)(None, self.pull_2)
+        assert list(commits) == self.commits_pr_2
