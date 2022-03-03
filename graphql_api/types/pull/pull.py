@@ -1,6 +1,6 @@
 from os import sync
 
-from ariadne import ObjectType, convert_kwargs_to_snake_case
+from ariadne import ObjectType
 
 from graphql_api.dataloader.commit import load_commit_by_id
 from graphql_api.dataloader.owner import load_owner_by_id
@@ -51,7 +51,7 @@ async def resolve_commits(pull, info, **kwargs):
 
     return await queryset_to_connection(
         queryset,
-        ordering="timestamp",
+        ordering="updatestamp",
         ordering_direction=OrderingDirection.DESC,
         **kwargs,
     )
