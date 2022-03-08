@@ -478,8 +478,8 @@ class UploadHandlerHelpersTest(TestCase):
             expected_value = None
             assert expected_value == determine_upload_pr_to_use(upload_params)
 
-        with self.subTest("pullid set to True"):
-            upload_params = {"branch": None, "pr": True}
+        with self.subTest("pullid set to true"):
+            upload_params = {"branch": None, "pr": "true"}
 
             expected_value = None
             assert expected_value == determine_upload_pr_to_use(upload_params)
