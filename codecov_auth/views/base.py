@@ -264,7 +264,10 @@ class LoginMixin(object):
         return {k: v for k, v in filtered_params.items() if v is not None}
 
     def store_to_cookie_utm_tags(self, response) -> None:
-        data = urlencode(self._get_utm_params(dict(self.request.GET)))
+        # request.GET is a QUeryDict, not a dict.
+        # THe difference is that all entries are lists, so we get just the first item
+        request_GET_dict = {k: v[0] for k, v in dict(self.request.GET).items()}
+        data = urlencode(self._get_utm_params(request_GET_dict))
         response.set_cookie(
             "_marketing_tags",
             data,
