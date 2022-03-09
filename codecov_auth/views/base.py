@@ -264,7 +264,7 @@ class LoginMixin(object):
         return {k: v for k, v in filtered_params.items() if v is not None}
 
     def store_to_cookie_utm_tags(self, response) -> None:
-        data = urlencode(self._get_utm_params(self.request.GET))
+        data = urlencode(self._get_utm_params(dict(self.request.GET)))
         response.set_cookie(
             "_marketing_tags",
             data,
