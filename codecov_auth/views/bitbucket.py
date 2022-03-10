@@ -40,7 +40,7 @@ class BitbucketLoginView(View, LoginMixin):
             user=authenticated_user,
             orgs=user_orgs,
             is_student=False,
-            has_private_access=False,
+            has_private_access=True,
         )
 
     def redirect_to_bitbucket_step(self, request):
