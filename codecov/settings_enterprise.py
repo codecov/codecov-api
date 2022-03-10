@@ -53,11 +53,14 @@ STRIPE_API_KEY = None
 SILENCED_SYSTEM_CHECKS = ["urls.W002"]
 UPLOAD_THROTTLING_ENABLED = False
 
-BITBUCKET_REDIRECT_URI = f'{CODECOV_URL}/login/bb'
-CODECOV_DASHBOARD_URL = CODECOV_URL
+BITBUCKET_REDIRECT_URI = get_config(
+    "bitbucket", "redirect_uri", default=f"{CODECOV_URL}/login/bitbucket"
+)
+CODECOV_DASHBOARD_URL = get_config(
+    "setup", "codecov_dashboard_url", default=CODECOV_URL
+)
 
-# Unless the user has overriden the cookies domain, we set it to be the CODECOV_URL host
-if not COOKIES_DOMAIN or COOKIES_DOMAIN == '.codecov.io':
-    COOKIES_DOMAIN = DEFAULT_WHITELISTED_DOMAIN
-if not SESSION_COOKIE_DOMAIN or SESSION_COOKIE_DOMAIN == '.codecov.io':
-    SESSION_COOKIE_DOMAIN = DEFAULT_WHITELISTED_DOMAIN
+COOKIES_DOMAIN = get_config(
+    "setup", "http", "cookies_domain", default=f".{DEFAULT_WHITELISTED_DOMAIN}"
+)
+SESSION_COOKIE_DOMAIN = COOKIES_DOMAIN
