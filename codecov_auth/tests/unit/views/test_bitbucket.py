@@ -190,7 +190,7 @@ class TestBitbucketLoginView(TestCase):
                 token = {"key": "aaaa", "secret": "bbbb"}
                 res = view.fetch_user_data(token)
                 assert res == {
-                    "has_private_access": False,
+                    "has_private_access": True,
                     "is_student": False,
                     "orgs": [],
                     "user": {

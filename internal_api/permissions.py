@@ -110,6 +110,10 @@ class ChartPermissions(BasePermission):
     permissions_service = RepositoryPermissionsService()
 
     def has_permission(self, request, view):
+        log.info(
+            f"Coverage chart has repositories {view.repositories}",
+            extra=dict(user=request.user),
+        )
         for repo in view.repositories:
             # TODO: this can cause a provider-api request for every repo in the list,
             # can we just rely on our stored read permissions? In fact, it seems like
