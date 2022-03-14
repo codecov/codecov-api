@@ -264,14 +264,15 @@ class LoginMixin(object):
         return {k: v for k, v in filtered_params.items() if v is not None}
 
     def store_to_cookie_utm_tags(self, response) -> None:
-        data = urlencode(self._get_utm_params(self.request.GET))
-        response.set_cookie(
-            "_marketing_tags",
-            data,
-            max_age=86400,  # Same as state validatiy
-            httponly=True,
-            domain=settings.COOKIES_DOMAIN,
-        )
+        if not settings.IS_ENTERPRISE:
+            data = urlencode(self._get_utm_params(self.request.GET))
+            response.set_cookie(
+                "_marketing_tags",
+                data,
+                max_age=86400,  # Same as state validatiy
+                httponly=True,
+                domain=settings.COOKIES_DOMAIN,
+            )
 
     def retrieve_marketing_tags_from_cookie(self) -> dict:
         cookie_data = self.request.COOKIES.get("_marketing_tags", "")
