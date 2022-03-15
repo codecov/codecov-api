@@ -20,6 +20,7 @@ then
   # Start api
   ${SUB}/home/api run${POST}
 elif [[ "$1" = "rti" || -z "$1" ]];
+then
   ${SUB}/home/api run${POST}
 else
   exec "$@"
