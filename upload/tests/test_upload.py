@@ -22,6 +22,7 @@ from simplejson import JSONDecodeError
 from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
 from core.models import Commit, Repository
+from reports.tests.factories import CommitReportFactory, UploadFactory
 from upload.helpers import (
     determine_repo_for_upload,
     determine_upload_branch_to_use,
@@ -477,8 +478,8 @@ class UploadHandlerHelpersTest(TestCase):
             expected_value = None
             assert expected_value == determine_upload_pr_to_use(upload_params)
 
-        with self.subTest("pullid set to True"):
-            upload_params = {"branch": None, "pr": True}
+        with self.subTest("pullid set to true"):
+            upload_params = {"branch": None, "pr": "true"}
 
             expected_value = None
             assert expected_value == determine_upload_pr_to_use(upload_params)
@@ -775,6 +776,9 @@ class UploadHandlerHelpersTest(TestCase):
         owner = G(Owner, plan="users-free")
         repo = G(Repository, author=owner,)
         commit = G(Commit, totals={"s": 151}, repository=repo)
+        report = CommitReportFactory.create(commit=commit)
+        for i in range(151):
+            UploadFactory.create(report=report)
 
         with self.assertRaises(ValidationError) as err:
             validate_upload({"commit": commit.commitid}, repo, redis)
@@ -966,7 +970,8 @@ class UploadHandlerRouteTest(APITestCase):
             "Origin, Content-Type, Accept, X-User-Agent",
         )
 
-    def test_invalid_request_params(self):
+    @patch("shared.metrics.metrics.incr")
+    def test_invalid_request_params(self, mock_metrics):
         query_params = {
             "pr": 9838,
             "flags": "flags!!!",
@@ -975,7 +980,9 @@ class UploadHandlerRouteTest(APITestCase):
         response = self._post(kwargs={"version": "v5"}, query=query_params)
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
+        mock_metrics.assert_called_once_with("uploads.rejected", 1)
 
+    @patch("shared.metrics.metrics.incr")
     @patch("upload.views.get_redis_connection")
     @patch("upload.views.uuid4")
     @patch("upload.views.dispatch_upload_task")
@@ -986,6 +993,7 @@ class UploadHandlerRouteTest(APITestCase):
         mock_dispatch_upload,
         mock_uuid4,
         mock_get_redis,
+        mock_metrics,
     ):
         class MockRepoProviderAdapter:
             async def get_commit(self, commit, token):
@@ -1011,6 +1019,7 @@ class UploadHandlerRouteTest(APITestCase):
         )
 
         assert response.status_code == 200
+        mock_metrics.assert_called_once_with("uploads.accepted", 1)
 
         headers = response._headers
 
@@ -1052,6 +1061,7 @@ class UploadHandlerRouteTest(APITestCase):
             == "https://codecov.io/github/codecovtest/upload-test-repo/commit/b521e55aef79b101f48e2544837ca99a7fa3bf6b"
         )
 
+    @patch("shared.metrics.metrics.incr")
     @patch("upload.views.get_redis_connection")
     @patch("upload.views.uuid4")
     @patch("upload.views.dispatch_upload_task")
@@ -1062,6 +1072,7 @@ class UploadHandlerRouteTest(APITestCase):
         mock_dispatch_upload,
         mock_uuid4,
         mock_get_redis,
+        mock_metrics,
     ):
         class MockRepoProviderAdapter:
             async def get_commit(self, commit, token):
@@ -1087,6 +1098,7 @@ class UploadHandlerRouteTest(APITestCase):
         )
 
         assert response.status_code == 200
+        mock_metrics.assert_called_once_with("uploads.accepted", 1)
 
         headers = response._headers
 

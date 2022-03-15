@@ -267,8 +267,8 @@ def determine_upload_pr_to_use(upload_params):
     pullid = is_pull_noted_in_branch.match(upload_params.get("branch") or "")
     if pullid:
         return pullid.groups()[1]
-    # The value of pr can be "True" and we use that info when determining upload branch, however we don't want to save that value to the db
-    elif upload_params.get("pr") is True:
+    # The value of pr can be "true" and we use that info when determining upload branch, however we don't want to save that value to the db
+    elif upload_params.get("pr") == "true":
         return None
     else:
         return upload_params.get("pr")
@@ -460,10 +460,10 @@ def validate_upload(upload_params, repository, redis):
         ).count()
         session_count = (commit.totals.get("s") if commit.totals else 0) or 0
         current_upload_limit = get_config("setup", "max_sessions") or 150
-        if session_count > current_upload_limit:
-            if new_session_count <= current_upload_limit:
+        if new_session_count > current_upload_limit:
+            if session_count <= current_upload_limit:
                 log.info(
-                    "New session count would not have blocked this upload",
+                    "Old session count would not have blocked this upload",
                     extra=dict(
                         commit=upload_params.get("commit"),
                         session_count=session_count,
@@ -481,9 +481,9 @@ def validate_upload(upload_params, repository, redis):
                 ),
             )
             raise ValidationError("Too many uploads to this commit.")
-        elif new_session_count > current_upload_limit:
+        elif session_count > current_upload_limit:
             log.info(
-                "New session count would block this upload",
+                "Old session count would block this upload",
                 extra=dict(
                     commit=upload_params.get("commit"),
                     session_count=session_count,
