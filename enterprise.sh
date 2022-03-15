@@ -19,6 +19,8 @@ then
   /home/api migrate
   # Start api
   ${SUB}/home/api run${POST}
+elif [[ "$1" = "rti" || -z "$1" ]];
+  ${SUB}/home/api run${POST}
 else
   exec "$@"
 fi
