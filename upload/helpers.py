@@ -8,8 +8,10 @@ from asgiref.sync import async_to_sync
 from cerberus import Validator
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Q
 from django.utils import timezone
 from rest_framework.exceptions import NotFound, Throttled, ValidationError
+from shared.reports.enums import UploadType
 from shared.torngit.exceptions import TorngitClientError, TorngitObjectNotFoundError
 
 from billing.constants import USER_PLAN_REPRESENTATIONS
@@ -265,8 +267,8 @@ def determine_upload_pr_to_use(upload_params):
     pullid = is_pull_noted_in_branch.match(upload_params.get("branch") or "")
     if pullid:
         return pullid.groups()[1]
-    # The value of pr can be "True" and we use that info when determining upload branch, however we don't want to save that value to the db
-    elif upload_params.get("pr") is True:
+    # The value of pr can be "true" and we use that info when determining upload branch, however we don't want to save that value to the db
+    elif upload_params.get("pr") == "true":
         return None
     else:
         return upload_params.get("pr")
@@ -405,7 +407,7 @@ def get_global_tokens():
 
 
 def check_commit_upload_constraints(commit: Commit):
-    if settings.UPLOAD_THROTTLING_ENABLED:
+    if settings.UPLOAD_THROTTLING_ENABLED and commit.repository.private:
         owner = _determine_responsible_owner(commit.repository)
         limit = USER_PLAN_REPRESENTATIONS.get(owner.plan, {}).get(
             "monthly_uploads_limit"
@@ -420,6 +422,7 @@ def check_commit_upload_constraints(commit: Commit):
                 )
                 uploads_used = ReportSession.objects.filter(
                     report__commit__repository__author_id=owner.ownerid,
+                    report__commit__repository__private=True,
                     created_at__gte=timezone.now() - timedelta(days=30),
                     # attempt at making the query more performant by telling the db to not
                     # check old commits, which are unlikely to have recent uploads
@@ -450,17 +453,45 @@ def validate_upload(upload_params, repository, redis):
         commit = Commit.objects.get(
             commitid=upload_params.get("commit"), repository=repository
         )
-        session_count = commit.totals.get("s", 0) if commit.totals else 0
-        if (session_count or 0) > (get_config("setup", "max_sessions") or 150):
+        new_session_count = ReportSession.objects.filter(
+            ~Q(state="error"),
+            ~Q(upload_type=UploadType.carryforwarded.name),
+            report__commit=commit,
+        ).count()
+        session_count = (commit.totals.get("s") if commit.totals else 0) or 0
+        current_upload_limit = get_config("setup", "max_sessions") or 150
+        if new_session_count > current_upload_limit:
+            if session_count <= current_upload_limit:
+                log.info(
+                    "Old session count would not have blocked this upload",
+                    extra=dict(
+                        commit=upload_params.get("commit"),
+                        session_count=session_count,
+                        repoid=repository.repoid,
+                        old_session_count=session_count,
+                        new_session_count=new_session_count,
+                    ),
+                )
             log.warning(
                 "Too many uploads to this commit",
                 extra=dict(
                     commit=upload_params.get("commit"),
                     session_count=session_count,
-                    repository=repository.repoid,
+                    repoid=repository.repoid,
                 ),
             )
             raise ValidationError("Too many uploads to this commit.")
+        elif session_count > current_upload_limit:
+            log.info(
+                "Old session count would block this upload",
+                extra=dict(
+                    commit=upload_params.get("commit"),
+                    session_count=session_count,
+                    repoid=repository.repoid,
+                    old_session_count=session_count,
+                    new_session_count=new_session_count,
+                ),
+            )
     except Commit.DoesNotExist:
         pass
 

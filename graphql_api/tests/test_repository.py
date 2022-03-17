@@ -18,6 +18,7 @@ query Repository($name: String!){
                 updatedAt
                 latestCommitAt
                 uploadToken
+                defaultBranch
             }
         }
     }
@@ -46,6 +47,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "latestCommitAt": None,
             "updatedAt": "2021-01-01T00:00:00+00:00",
             "uploadToken": repo.upload_token,
+            "defaultBranch": "master",
         }
 
     @freeze_time("2021-01-01")
@@ -65,4 +67,5 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "coverage": 75,
             "updatedAt": "2021-01-01T00:00:00+00:00",
             "uploadToken": repo.upload_token,
+            "defaultBranch": "master",
         }

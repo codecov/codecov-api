@@ -80,13 +80,101 @@ class StripeWebhookHandler(APIView):
             stripe_subscription_id=subscription.id,
         )
 
-        owner.set_free_plan()
+        owner.set_basic_plan()
         owner.repository_set.update(active=False, activated=False)
 
         self.segment_service.account_cancelled_subscription(
             owner.ownerid, {"plan": subscription.plan.name}
         )
         self._log_updated(1)
+
+    def subscription_schedule_created(self, schedule):
+        subscription = stripe.Subscription.retrieve(schedule["subscription"])
+        log.info(
+            f"Schedule created for customer "
+            f"with -- plan: {subscription.plan.name}, quantity {subscription.quantity}",
+            extra=dict(
+                stripe_customer_id=subscription.customer,
+                stripe_subscription_id=subscription.id,
+                ownerid=subscription.metadata.obo_organization,
+            ),
+        )
+
+    def subscription_schedule_updated(self, schedule):
+        if schedule["subscription"]:
+            subscription = stripe.Subscription.retrieve(schedule["subscription"])
+            scheduled_phase = schedule["phases"][1]
+            scheduled_plan = scheduled_phase["plans"][0]
+            plan_id = scheduled_plan["plan"]
+            stripe_plan_dict = settings.STRIPE_PLAN_IDS
+            plan_name = list(stripe_plan_dict.keys())[
+                list(stripe_plan_dict.values()).index(plan_id)
+            ]
+            quantity = scheduled_plan["quantity"]
+            log.info(
+                f"Schedule updated for customer "
+                f"with -- plan: {plan_name}, quantity {quantity}",
+                extra=dict(
+                    stripe_customer_id=subscription.customer,
+                    stripe_subscription_id=subscription.id,
+                    ownerid=subscription.metadata.obo_organization,
+                ),
+            )
+
+    def subscription_schedule_released(self, schedule):
+
+        subscription = stripe.Subscription.retrieve(schedule["released_subscription"])
+        owner = Owner.objects.get(ownerid=subscription.metadata.obo_organization)
+        subscription_data = subscription["items"]["data"][0]
+        requesting_user_id = subscription.metadata.obo
+
+        # Segment Analytics to see if user upgraded plan, increased or decreased users
+        if (
+            owner.plan_user_count
+            and owner.plan_user_count > subscription_data["quantity"]
+        ):
+            self.segment_service.account_decreased_users(
+                current_user_ownerid=requesting_user_id,
+                org_ownerid=owner.ownerid,
+                plan_details={
+                    "new_quantity": subscription_data["quantity"],
+                    "old_quantity": owner.plan_user_count,
+                    "plan": subscription_data["plan"]["name"],
+                },
+            )
+
+        if (
+            owner.plan_user_count
+            and owner.plan_user_count < subscription_data["quantity"]
+        ):
+            self.segment_service.account_increased_users(
+                current_user_ownerid=requesting_user_id,
+                org_ownerid=owner.ownerid,
+                plan_details={
+                    "new_quantity": subscription_data["quantity"],
+                    "old_quantity": owner.plan_user_count,
+                    "plan": subscription_data["plan"]["name"],
+                },
+            )
+
+        if owner.plan != subscription_data["plan"]["name"]:
+            self.segment_service.account_changed_plan(
+                current_user_ownerid=requesting_user_id,
+                org_ownerid=owner.ownerid,
+                plan_details={
+                    "new_plan": subscription_data["plan"]["name"],
+                    "previous_plan": owner.plan,
+                },
+            )
+
+        owner.plan = subscription.plan.name
+        owner.plan_user_count = subscription.quantity
+        owner.save()
+
+        log.info(
+            f"Stripe subscription modified successfully for owner {owner.ownerid} by user #{requesting_user_id}",
+            extra=dict(ownerid=owner.ownerid, requesting_user_id=requesting_user_id,),
+        )
 
     def customer_created(self, customer):
         # Based on what stripe doesn't gives us (an ownerid!)
@@ -118,7 +206,7 @@ class StripeWebhookHandler(APIView):
             return
 
         log.info(
-            f"Subscription created for customer"
+            f"Subscription created for customer "
             f"with -- plan: {subscription.plan.name}, quantity {subscription.quantity}",
             extra=dict(
                 stripe_customer_id=subscription.customer,
@@ -159,47 +247,54 @@ class StripeWebhookHandler(APIView):
             stripe_customer_id=subscription.customer,
         )
 
-        if subscription.status == "incomplete_expired":
+        subscription_schedule_id = subscription.schedule
+
+        # Only update if there isn't a scheduled subscription
+        if not subscription_schedule_id:
+            if subscription.status == "incomplete_expired":
+                log.info(
+                    f"Subscription updated with status change "
+                    f"to 'incomplete_expired' -- cancelling to free",
+                    extra=dict(stripe_subscription_id=subscription.id),
+                )
+                owner.set_basic_plan()
+                owner.repository_set.update(active=False, activated=False)
+                return
+
+            if subscription.plan.name not in PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS:
+                log.warning(
+                    f"Subscription update requested with invalid plan "
+                    f"{subscription.plan.name} -- doing nothing",
+                    extra=dict(stripe_subscription_id=subscription.id),
+                )
+                return
+
             log.info(
-                f"Subscription updated with status change "
-                f"to 'incomplete_expired' -- cancelling to free",
+                f"Subscription updated with -- "
+                f"plan: {subscription.plan.name}, quantity: {subscription.quantity}",
                 extra=dict(stripe_subscription_id=subscription.id),
             )
-            owner.set_free_plan()
-            owner.repository_set.update(active=False, activated=False)
-            return
-        if subscription.plan.name not in PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS:
-            log.warning(
-                f"Subscription update requested with invalid plan "
-                f"{subscription.plan.name} -- doing nothing",
-                extra=dict(stripe_subscription_id=subscription.id),
-            )
-            return
 
-        log.info(
-            f"Subscription updated with -- "
-            f"plan: {subscription.plan.name}, quantity: {subscription.quantity}",
-            extra=dict(stripe_subscription_id=subscription.id),
-        )
+            if (
+                self.event.data.get("previous_attributes", {}).get("status")
+                == "trialing"
+            ):
+                self.segment_service.trial_ended(
+                    owner.ownerid,
+                    {
+                        "trial_plan_name": subscription.plan.name,
+                        "trial_plan_user_count": subscription.quantity,
+                        "trial_end_date": subscription.trial_end,
+                        "trial_start_date": subscription.trial_start,
+                    },
+                )
 
-        if self.event.data.get("previous_attributes", {}).get("status") == "trialing":
-            self.segment_service.trial_ended(
-                owner.ownerid,
-                {
-                    "trial_plan_name": subscription.plan.name,
-                    "trial_plan_user_count": subscription.quantity,
-                    "trial_end_date": subscription.trial_end,
-                    "trial_start_date": subscription.trial_start,
-                },
-            )
+            owner.plan = subscription.plan.name
+            owner.plan_user_count = subscription.quantity
+            owner.save()
 
-        owner.plan = subscription.plan.name
-        owner.plan_user_count = subscription.quantity
-        owner.save()
-
-        SegmentService().identify_user(owner)
-
-        log.info("Successfully updated info for 1 customer")
+            SegmentService().identify_user(owner)
+            log.info("Successfully updated info for 1 customer")
 
     def customer_updated(self, customer):
         new_default_payment_method = customer["invoice_settings"][

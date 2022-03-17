@@ -30,6 +30,7 @@ log = logging.getLogger(__name__)
 
 class OwnerViewSet(viewsets.GenericViewSet, mixins.RetrieveModelMixin):
     lookup_field = "username"
+    lookup_value_regex = "[^/]+"
     serializer_class = OwnerSerializer
 
     def get_queryset(self):

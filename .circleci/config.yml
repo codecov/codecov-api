@@ -38,14 +38,14 @@ gcloud_auth_enterprise: &gcloud_auth_enterprise
     gcloud auth configure-docker
 
 jobs:
-  linter:
+  lint-isort:
     docker:
       - image: circleci/python:3.7.6
     working_directory: ~/repo
     steps:
       - checkout
       - run:
-          name: Running linter
+          name: Running black and isort
           command: |
             echo "Installing..."
             pip3 install -Iv black==19.10b0 isort
@@ -78,7 +78,7 @@ jobs:
     steps:
     - checkout
     - setup_remote_docker:
-        version: 20.10.6
+        version: 20.10.7
     - run: |
         ssh remote-docker \<<EOF
           sudo bash -c 'echo "{\"experimental\": true}" > /etc/docker/daemon.json'
@@ -121,19 +121,20 @@ jobs:
           apk add git
           chmod +x codecov-alpine
           ./codecov-alpine -R . --url https://stage-web.codecov.dev -t $CODECOV_STAGING_TOKEN -F unit
-  lint:
+  pylint-django:
     executor: codecov-api
     steps:
     - attach_workspace:
         at: .
     - run:
-        name: Pylint
+        name: Running pylint-django
         command: make lint
   portable:
     executor: codecov-deploy
     steps:
       - checkout
-      - setup_remote_docker
+      - setup_remote_docker:
+          version: 20.10.7
       - run:
           <<: *gcloud_auth
       - run: echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKER_USERNAME" --password-stdin
@@ -143,7 +144,8 @@ jobs:
       steps:
       - attach_workspace:
           at: .
-      - setup_remote_docker
+      - setup_remote_docker:
+          version: 20.10.7
       - run:
           <<: *gcloud_auth
       - run:
@@ -154,7 +156,8 @@ jobs:
       executor: codecov-deploy
       steps:
       - checkout
-      - setup_remote_docker
+      - setup_remote_docker:
+          version: 20.10.7
       - run:
           <<: *gcloud_auth_enterprise
       - run:
@@ -167,7 +170,8 @@ jobs:
     steps:
     - attach_workspace:
         at: .
-    - setup_remote_docker
+    - setup_remote_docker:
+        version: 20.10.7
     - run:
         <<: *gcloud_auth
     - run:
@@ -179,7 +183,8 @@ jobs:
     steps:
     - attach_workspace:
         at: .
-    - setup_remote_docker
+    - setup_remote_docker:
+        version: 20.10.7
     - run:
         <<: *gcloud_auth
     - run:
@@ -190,7 +195,8 @@ jobs:
     executor: codecov-deploy
     steps:
       - checkout
-      - setup_remote_docker
+      - setup_remote_docker:
+          version: 20.10.7
       - run:
           <<: *gcloud_auth_enterprise
       - run: echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKER_USERNAME" --password-stdin
@@ -202,7 +208,8 @@ jobs:
     executor: codecov-deploy
     steps:
       - checkout
-      - setup_remote_docker
+      - setup_remote_docker:
+          version: 20.10.7
       - run:
           <<: *gcloud_auth_enterprise
       - run: echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKER_USERNAME" --password-stdin
@@ -215,13 +222,13 @@ workflows:
   version: 2
   build-test-deploy:
     jobs:
-      - linter
+      - lint-isort
       - build:
           context: "circleci google deploy context"
           filters:
             tags:
               only: /.*/
-      - lint:
+      - pylint-django:
           context: "circleci google deploy context" 
           requires:
             - build
@@ -257,7 +264,7 @@ workflows:
           requires:
             - build
             - test
-            - lint
+            - lint-isort
           filters:
             branches:
               only:
@@ -268,7 +275,7 @@ workflows:
           requires:
             - build
             - test
-            - lint
+            - lint-isort
           filters:
             branches:
               only: staging
@@ -277,7 +284,7 @@ workflows:
           requires:
             - build
             - test
-            - lint
+            - lint-isort
             - dive
           filters:
             branches:
@@ -301,7 +308,7 @@ workflows:
           requires:
             - build-enterprise
             - test
-            - lint
+            - lint-isort
             - dive-enterprise
           filters:
             tags:
