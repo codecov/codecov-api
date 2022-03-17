@@ -359,7 +359,9 @@ class LineComparisonTests(TestCase):
 
 class FileComparisonConstructorTests(TestCase):
     def test_constructor_no_keyError_if_diff_data_segements_is_missing(self):
-        file_comp = FileComparison(head_file=ReportFile("file1"), base_file=ReportFile("file1"), diff_data={})
+        file_comp = FileComparison(
+            head_file=ReportFile("file1"), base_file=ReportFile("file1"), diff_data={}
+        )
 
 
 class FileComparisonTests(TestCase):
