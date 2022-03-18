@@ -8,6 +8,7 @@ from django.conf import settings
 from django.contrib.auth import login
 from django.core.exceptions import SuspiciousOperation
 from django.utils import timezone
+from rest_framework.exceptions import APIException
 
 from codecov_auth.helpers import create_signed_value
 from codecov_auth.models import Owner, Session
@@ -116,10 +117,6 @@ class StateMixin(object):
 class LoginMixin(object):
     segment_service = SegmentService()
 
-    def get_is_enterprise(self):
-        # TODO Change when rolling out enterprise
-        return False
-
     def get_or_create_org(self, single_organization):
         owner, was_created = Owner.objects.get_or_create(
             service=self.service, service_id=single_organization["id"]
@@ -131,13 +128,16 @@ class LoginMixin(object):
         formatted_orgs = [
             dict(username=org["username"], id=str(org["id"])) for org in user_orgs
         ]
+
+        if settings.IS_ENTERPRISE and get_config(self.service, "organizations"):
+            orgs_in_settings = set(get_config(self.service, "organizations"))
+            orgs_in_user = set(org["username"] for org in formatted_orgs)
+            if not (orgs_in_settings & orgs_in_user):
+                raise UserNotInOrganization()
+
         upserted_orgs = []
         for org in formatted_orgs:
             upserted_orgs.append(self.get_or_create_org(org))
-
-        if self.get_is_enterprise() and get_config(self.service, "organizations"):
-            # TODO Change when rolling out enterprise
-            pass
 
         self._check_user_count_limitations()
         user, is_new_user = self._get_or_create_user(user_dict, request)
@@ -151,6 +151,8 @@ class LoginMixin(object):
                 ["student", "student_created_at", "student_updated_at"]
             )
 
+        # Updated by the task `SyncTeams` that is called after login.
+        # We will only set this for the initial "oranizations is none" login.
         if user.organizations is None:
             user.organizations = [o.ownerid for o in upserted_orgs]
             fields_to_update.extend(["organizations"])
@@ -279,3 +281,9 @@ class LoginMixin(object):
         params_as_dict = parse_qs(cookie_data)
         filtered_params = self._get_utm_params(params_as_dict)
         return {k: v[0] for k, v in filtered_params.items()}
+
+
+class UserNotInOrganization(APIException):
+    status_code = 401
+    default_detail = "You must be a member of an organization listed in the Codecov Enterprise setup."
+    default_code = "not-in-organization"

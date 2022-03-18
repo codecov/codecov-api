@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 from django.core.exceptions import SuspiciousOperation
@@ -8,7 +8,7 @@ from django.test import RequestFactory, TestCase, override_settings
 from freezegun import freeze_time
 
 from codecov_auth.tests.factories import OwnerFactory
-from codecov_auth.views.base import LoginMixin, StateMixin
+from codecov_auth.views.base import LoginMixin, StateMixin, UserNotInOrganization
 
 
 def set_up_mixin(to=None):
@@ -160,6 +160,7 @@ class LoginMixinTests(TestCase):
         )
         user_signed_in_mock.assert_called_once()
 
+    @override_settings(IS_ENTERPRISE=False)
     @patch("services.segment.SegmentService.user_signed_in")
     def test_set_marketing_tags_on_cookies(self, user_signed_in_mock):
         owner = OwnerFactory(service="github")
@@ -210,3 +211,69 @@ class LoginMixinTests(TestCase):
                 "utm_term": "f",
             },
         )
+
+    def mock_get_or_create_owner(self, user_dict, *args):
+        owner = OwnerFactory(service_id=user_dict.get("id", 89), service="github",)
+        owner.organizations = [1, 2]
+        return owner, True
+
+    @override_settings(IS_ENTERPRISE=True)
+    @patch(
+        "codecov_auth.views.base.LoginMixin._get_or_create_user",
+        mock_get_or_create_owner,
+    )
+    @patch(
+        "codecov_auth.views.base.LoginMixin.get_or_create_org", mock_get_or_create_owner
+    )
+    @patch("services.refresh.RefreshService.trigger_refresh", lambda *args: None)
+    @patch("codecov_auth.views.base.get_config")
+    def test_login_from_user_dict_enterprise_raise_usernotinorganization_error(
+        self, mock_get_config: Mock
+    ):
+        user_dict = dict(orgs=[], is_student=False,)
+        mock_get_config.return_value = ["awesome-team", "modest_mice"]
+        with pytest.raises(UserNotInOrganization) as exp:
+            self.mixin_instance.login_from_user_dict(
+                user_dict, self.request, HttpResponse()
+            )
+            assert exp.status_code == 401
+        mock_get_config.assert_called_with("github", "organizations")
+
+    @patch(
+        "codecov_auth.views.base.LoginMixin._get_or_create_user",
+        mock_get_or_create_owner,
+    )
+    @patch(
+        "codecov_auth.views.base.LoginMixin.get_or_create_org", mock_get_or_create_owner
+    )
+    @patch("services.refresh.RefreshService.trigger_refresh", lambda *args: None)
+    @patch("codecov_auth.views.base.get_config")
+    @override_settings(IS_ENTERPRISE=True)
+    def test_login_from_user_dict_enterprise_orgs_passes_if_user_in_org(
+        self, mock_get_config: Mock
+    ):
+        mock_get_config.return_value = ["awesome-team", "modest_mice"]
+        user_dict = dict(orgs=[dict(username="awesome-team", id=29)], is_student=False,)
+        # This time it should not raise an exception because the user is in one of the orgs
+        self.mixin_instance.login_from_user_dict(
+            user_dict, self.request, HttpResponse()
+        )
+        mock_get_config.assert_called_with("github", "organizations")
+
+    @patch(
+        "codecov_auth.views.base.LoginMixin._get_or_create_user",
+        mock_get_or_create_owner,
+    )
+    @patch(
+        "codecov_auth.views.base.LoginMixin.get_or_create_org", mock_get_or_create_owner
+    )
+    @patch("services.refresh.RefreshService.trigger_refresh", lambda *args: None)
+    @patch("codecov_auth.views.base.get_config")
+    @override_settings(IS_ENTERPRISE=False)
+    def test_login_from_user_dict_passes_if_not_enterprise(self, mock_get_config: Mock):
+        user_dict = dict(orgs=[], is_student=False,)
+        # This time it should not raise an exception because the user is in one of the orgs
+        self.mixin_instance.login_from_user_dict(
+            user_dict, self.request, HttpResponse()
+        )
+        mock_get_config.assert_not_called()
