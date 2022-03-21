@@ -267,8 +267,8 @@ def determine_upload_pr_to_use(upload_params):
     pullid = is_pull_noted_in_branch.match(upload_params.get("branch") or "")
     if pullid:
         return pullid.groups()[1]
-    # The value of pr can be "True" and we use that info when determining upload branch, however we don't want to save that value to the db
-    elif upload_params.get("pr") is True:
+    # The value of pr can be "true" and we use that info when determining upload branch, however we don't want to save that value to the db
+    elif upload_params.get("pr") == "true":
         return None
     else:
         return upload_params.get("pr")

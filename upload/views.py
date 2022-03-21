@@ -18,6 +18,7 @@ from rest_framework import renderers, status
 from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
+from shared.metrics import metrics
 
 from codecov_auth.authentication import CodecovTokenAuthentication
 from codecov_auth.commands.owner import OwnerCommands
@@ -110,6 +111,7 @@ class UploadHandler(APIView):
             )
             response.status_code = status.HTTP_400_BAD_REQUEST
             response.content = "Invalid request parameters"
+            metrics.incr("uploads.rejected", 1)
             return response
 
         # Try to determine the repository associated with the upload based on the params provided
@@ -119,6 +121,7 @@ class UploadHandler(APIView):
         except ValidationError as e:
             response.status_code = status.HTTP_400_BAD_REQUEST
             response.content = "Could not determine repo and owner"
+            metrics.incr("uploads.rejected", 1)
             return response
 
         log.info(
@@ -249,6 +252,7 @@ class UploadHandler(APIView):
                         upload_params=upload_params,
                     ),
                 )
+                metrics.incr("uploads.rejected", 1)
                 return HttpResponseServerError("Unknown error, please try again later")
             log.info(
                 "Returning presign put",
@@ -314,6 +318,7 @@ class UploadHandler(APIView):
             response["Content-Type"] = "application/json"
 
         response.status_code = status.HTTP_200_OK
+        metrics.incr("uploads.accepted", 1)
         return response
 
 

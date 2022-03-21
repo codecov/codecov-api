@@ -35,9 +35,12 @@ class RepositoriesMixin:
         """
         List of repositories passed in through request query parameters. Used when generating chart response data.
         """
+        service = get_long_service_name(self.kwargs.get("service"))
+
         return Repository.objects.filter(
             name__in=self.request.data.get("repositories", []),
             author__username=self.kwargs.get("owner_username"),
+            author__service=service,
         )
 
 
