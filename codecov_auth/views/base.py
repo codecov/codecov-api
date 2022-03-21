@@ -1,14 +1,15 @@
 import logging
 import re
 import uuid
+from functools import reduce
 from json import dumps
 from urllib.parse import parse_qs, urlencode, urlparse
 
 from django.conf import settings
 from django.contrib.auth import login
-from django.core.exceptions import SuspiciousOperation
+from django.core.exceptions import PermissionDenied, SuspiciousOperation
 from django.utils import timezone
-from rest_framework.exceptions import APIException
+from shared.license import LICENSE_ERRORS_MESSAGES, get_current_license
 
 from codecov_auth.helpers import create_signed_value
 from codecov_auth.models import Owner, Session
@@ -133,13 +134,17 @@ class LoginMixin(object):
             orgs_in_settings = set(get_config(self.service, "organizations"))
             orgs_in_user = set(org["username"] for org in formatted_orgs)
             if not (orgs_in_settings & orgs_in_user):
-                raise UserNotInOrganization()
+                # Change for core PermissionDenied exception
+                raise PermissionDenied(
+                    "You must be a member of an organization listed in the Codecov Enterprise setup."
+                )
+            # TODO: Implement GitHub teams verification
 
         upserted_orgs = []
         for org in formatted_orgs:
             upserted_orgs.append(self.get_or_create_org(org))
 
-        self._check_user_count_limitations()
+        self._check_user_count_limitations(user_dict["user"])
         user, is_new_user = self._get_or_create_user(user_dict, request)
         fields_to_update = []
         if user_dict.get("is_student") != user.student:
@@ -212,9 +217,47 @@ class LoginMixin(object):
             samesite=settings.COOKIE_SAME_SITE,
         )
 
-    def _check_user_count_limitations(self):
-        # TODO (Thiago): Do when on enterprise
-        pass
+    def _check_user_count_limitations(self, login_data):
+        if not settings.IS_ENTERPRISE:
+            return
+        license = get_current_license()
+        if not license.is_valid:
+            return
+
+        try:
+            user_logging_in_if_exists = Owner.objects.get(
+                service=f"{self.service}", service_id=login_data["id"]
+            )
+        except Owner.DoesNotExist:
+            user_logging_in_if_exists = None
+
+        if license.number_allowed_users:
+            if license.is_pr_billing:
+                # User is consuming seat if found in _any_ owner's plan_activated_users
+                is_consuming_seat = user_logging_in_if_exists and Owner.objects.filter(
+                    plan_activated_users__contains=[user_logging_in_if_exists.ownerid]
+                )
+                if not is_consuming_seat:
+                    owners_with_activated_users = Owner.objects.exclude(
+                        plan_activated_users__len=0
+                    )
+                    all_distinct_actiaved_users = reduce(
+                        lambda acc, curr: set(curr.plan_activated_users) | acc,
+                        owners_with_activated_users,
+                        set(),
+                    )
+                    if len(all_distinct_actiaved_users) > license.number_allowed_users:
+                        raise PermissionDenied(
+                            LICENSE_ERRORS_MESSAGES["users-exceeded"]
+                        )
+            elif not user_logging_in_if_exists or (
+                user_logging_in_if_exists and not user_logging_in_if_exists.oauth_token
+            ):
+                users_on_service_count = Owner.objects.filter(
+                    oauth_token__isnull=False, service=f"{self.service}"
+                ).count()
+                if users_on_service_count > license.number_allowed_users:
+                    raise PermissionDenied(LICENSE_ERRORS_MESSAGES["users-exceeded"])
 
     def _get_or_create_user(self, user_dict, request):
         fields_to_update = ["oauth_token", "private_access", "updatestamp"]
@@ -281,9 +324,3 @@ class LoginMixin(object):
         params_as_dict = parse_qs(cookie_data)
         filtered_params = self._get_utm_params(params_as_dict)
         return {k: v[0] for k, v in filtered_params.items()}
-
-
-class UserNotInOrganization(APIException):
-    status_code = 401
-    default_detail = "You must be a member of an organization listed in the Codecov Enterprise setup."
-    default_code = "not-in-organization"
