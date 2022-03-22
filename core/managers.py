@@ -196,9 +196,12 @@ class RepositoryQuerySet(QuerySet):
             ),
             output_field=FloatField(),
         )
+
         return self.annotate(
             true_coverage=coverage_from_cache,
-            coverage=Coalesce(coverage_from_cache, Value(-1)),
+            coverage=Coalesce(
+                coverage_from_cache, Value(-1), output_field=FloatField()
+            ),
         )
 
     def with_cache_latest_commit_at(self):

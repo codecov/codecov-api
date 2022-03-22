@@ -954,20 +954,14 @@ class UploadHandlerRouteTest(APITestCase):
     def test_options_headers(self):
         response = self._options(kwargs={"version": "v2"})
 
-        headers = response._headers
+        headers = response.headers
 
-        assert headers["accept"] == ("Accept", "text/*")
-        assert headers["access-control-allow-origin"] == (
-            "Access-Control-Allow-Origin",
-            "*",
-        )
-        assert headers["access-control-allow-method"] == (
-            "Access-Control-Allow-Method",
-            "POST",
-        )
-        assert headers["access-control-allow-headers"] == (
-            "Access-Control-Allow-Headers",
-            "Origin, Content-Type, Accept, X-User-Agent",
+        assert headers["accept"] == "text/*"
+        assert headers["access-control-allow-origin"] == "*"
+        assert headers["access-control-allow-method"] == "POST"
+        assert (
+            headers["access-control-allow-headers"]
+            == "Origin, Content-Type, Accept, X-User-Agent"
         )
 
     @patch("shared.metrics.metrics.incr")
@@ -1021,17 +1015,14 @@ class UploadHandlerRouteTest(APITestCase):
         assert response.status_code == 200
         mock_metrics.assert_called_once_with("uploads.accepted", 1)
 
-        headers = response._headers
+        headers = response.headers
 
-        assert headers["access-control-allow-origin"] == (
-            "Access-Control-Allow-Origin",
-            "*",
+        assert headers["access-control-allow-origin"] == "*"
+        assert (
+            headers["access-control-allow-headers"]
+            == "Origin, Content-Type, Accept, X-User-Agent"
         )
-        assert headers["access-control-allow-headers"] == (
-            "Access-Control-Allow-Headers",
-            "Origin, Content-Type, Accept, X-User-Agent",
-        )
-        assert headers["content-type"] != ("Content-Type", "text/plain",)
+        assert headers["content-type"] != "text/plain"
 
         assert mock_dispatch_upload.call_args[0][0] == {
             "commit": "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
@@ -1100,17 +1091,14 @@ class UploadHandlerRouteTest(APITestCase):
         assert response.status_code == 200
         mock_metrics.assert_called_once_with("uploads.accepted", 1)
 
-        headers = response._headers
+        headers = response.headers
 
-        assert headers["access-control-allow-origin"] == (
-            "Access-Control-Allow-Origin",
-            "*",
+        assert headers["access-control-allow-origin"] == "*"
+        assert (
+            headers["access-control-allow-headers"]
+            == "Origin, Content-Type, Accept, X-User-Agent"
         )
-        assert headers["access-control-allow-headers"] == (
-            "Access-Control-Allow-Headers",
-            "Origin, Content-Type, Accept, X-User-Agent",
-        )
-        assert headers["content-type"] != ("Content-Type", "text/plain",)
+        assert headers["content-type"] != "text/plain"
 
         assert mock_dispatch_upload.call_args[0][0] == {
             "commit": "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
