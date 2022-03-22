@@ -40,7 +40,9 @@ class GithubLoginView(LoginMixin, StateMixin, View):
                     teams = []
                     curr_page = 1
                     while True:
-                        curr_teams = await repo_service.api(client, "get", f"/user/teams?per_page=100&page={curr_page}")
+                        curr_teams = await repo_service.api(
+                            client, "get", f"/user/teams?per_page=100&page={curr_page}"
+                        )
                         teams.extend(curr_teams)
                         curr_page += 1
                         if len(curr_teams) == 0:
