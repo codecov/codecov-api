@@ -32,14 +32,21 @@ class GithubLoginView(LoginMixin, StateMixin, View):
         return f"{base_url}?{query_str}"
 
     async def _get_teams_data(self, repo_service):
+        # https://docs.github.com/en/rest/reference/teams#list-teams-for-the-authenticated-user
         teams = []
         if settings.IS_ENTERPRISE:
             async with repo_service.get_client() as client:
                 try:
-                    teams = await repo_service.api(client, "get", "/user/teams")
+                    teams = []
+                    curr_page = 1
+                    while True:
+                        curr_teams = await repo_service.api(client, "get", f"/user/teams?per_page=100&page={curr_page}")
+                        teams.extend(curr_teams)
+                        curr_page += 1
+                        if len(curr_teams) == 0:
+                            break
                 except TorngitError as exp:
                     log.error(f"Failed to get GitHub teams information: {exp}")
-        log.debug(teams)
         return teams
 
     @async_to_sync
