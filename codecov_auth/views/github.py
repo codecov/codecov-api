@@ -18,10 +18,6 @@ class GithubLoginView(LoginMixin, StateMixin, View):
     service = "github"
     error_redirection_page = "/"
 
-    def get_is_enterprise(self):
-        # TODO Change when rolling out enterprise
-        return False
-
     def get_url_to_redirect_to(self, scope):
         repo_service = Github
         base_url = urljoin(repo_service.service_url, "login/oauth/authorize")
@@ -35,8 +31,21 @@ class GithubLoginView(LoginMixin, StateMixin, View):
         query_str = urlencode(query)
         return f"{base_url}?{query_str}"
 
+    async def _get_teams_data(self, repo_service):
+        teams = []
+        if settings.IS_ENTERPRISE:
+            async with repo_service.get_client() as client:
+                try:
+                    teams = await repo_service.api(client, "get", "/user/teams")
+                except TorngitError as exp:
+                    log.error(f"Failed to get GitHub teams information: {exp}")
+        log.debug(teams)
+        return teams
+
     @async_to_sync
     async def fetch_user_data(self, code):
+        # https://docs.github.com/en/rest/reference/teams#list-teams-for-the-authenticated-user
+        # This is specific to GitHub
         repo_service = Github(
             oauth_consumer_token=dict(
                 key=settings.GITHUB_CLIENT_ID, secret=settings.GITHUB_CLIENT_SECRET
@@ -46,9 +55,13 @@ class GithubLoginView(LoginMixin, StateMixin, View):
         user_orgs = await repo_service.list_teams()
         is_student = await repo_service.is_student()
         has_private_access = "repo" in authenticated_user["scope"].split(",")
+
+        teams = await self._get_teams_data(repo_service)
+
         return dict(
             user=authenticated_user,
             orgs=user_orgs,
+            teams=teams,
             is_student=is_student,
             has_private_access=has_private_access,
         )
@@ -73,7 +86,7 @@ class GithubLoginView(LoginMixin, StateMixin, View):
         else:
             scope = ["user:email", "read:org", "repo:status", "write:repo_hook"]
             if (
-                self.get_is_enterprise()
+                settings.IS_ENTERPRISE
                 or request.COOKIES.get("ghpr") == "true"
                 or request.GET.get("private")
             ):

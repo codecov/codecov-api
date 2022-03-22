@@ -272,7 +272,7 @@ class LoginMixinTests(TestCase):
         self.mixin_instance.login_from_user_dict(
             user_dict, self.request, HttpResponse()
         )
-        mock_get_config.assert_called_with("github", "organizations")
+        mock_get_config.assert_any_call("github", "organizations")
 
     @patch(
         "codecov_auth.views.base.LoginMixin._get_or_create_user",
@@ -388,3 +388,88 @@ class LoginMixinTests(TestCase):
             Owner.objects.get(service="github", service_id="batata_frita").ownerid == 2
         )
         self.mixin_instance._check_user_count_limitations(dict(id="batata_frita"))
+
+    @override_settings(IS_ENTERPRISE=True)
+    @patch("services.refresh.RefreshService.trigger_refresh", lambda *args: None)
+    @patch(
+        "codecov_auth.views.base.LoginMixin._set_proper_cookies_and_session",
+        lambda *args: None,
+    )
+    @patch(
+        "codecov_auth.views.base.LoginMixin._check_user_count_limitations",
+        lambda *args: True,
+    )
+    @patch(
+        "codecov_auth.views.base.LoginMixin._get_or_create_user",
+        mock_get_or_create_owner,
+    )
+    @patch("codecov_auth.views.base.get_config")
+    def test_github_teams_restrictions(self, mock_get_config: Mock):
+        def side_effect(*args):
+            if len(args) == 2 and args[0] == "github" and args[1] == "organizations":
+                return ["my-org"]
+            if len(args) == 2 and args[0] == "github" and args[1] == "teams":
+                return ["My Team"]
+
+        mock_get_config.side_effect = side_effect
+        user_dict = dict(
+            orgs=[dict(username="my-org", id=29)],
+            is_student=False,
+            user=dict(id=121, login="something"),
+            teams=[],
+        )
+        # Raise exception because user is not member of My Team
+        with pytest.raises(PermissionDenied) as exp:
+            self.mixin_instance.login_from_user_dict(
+                user_dict, self.request, HttpResponse()
+            )
+            mock_get_config.assert_any_call("github", "organizations")
+            mock_get_config.assert_any_call("github", "teams")
+            assert (
+                str(exp)
+                == "You must be a member of an allowed team in your organization."
+            )
+            assert exp.status_code == 401
+        # No exception if user is in My Team
+        user_dict["teams"] = [dict(name="My Team")]
+        self.mixin_instance.login_from_user_dict(
+            user_dict, self.request, HttpResponse()
+        )
+        mock_get_config.assert_any_call("github", "organizations")
+        mock_get_config.assert_any_call("github", "teams")
+
+    @override_settings(IS_ENTERPRISE=True)
+    @patch("services.refresh.RefreshService.trigger_refresh", lambda *args: None)
+    @patch(
+        "codecov_auth.views.base.LoginMixin._set_proper_cookies_and_session",
+        lambda *args: None,
+    )
+    @patch(
+        "codecov_auth.views.base.LoginMixin._check_user_count_limitations",
+        lambda *args: True,
+    )
+    @patch(
+        "codecov_auth.views.base.LoginMixin._get_or_create_user",
+        mock_get_or_create_owner,
+    )
+    @patch("codecov_auth.views.base.get_config")
+    def test_github_teams_restrictions_no_teams_in_config(self, mock_get_config: Mock):
+        def side_effect(*args):
+            if len(args) == 2 and args[0] == "github" and args[1] == "organizations":
+                return ["my-org"]
+            if len(args) == 2 and args[0] == "github" and args[1] == "teams":
+                return []
+
+        mock_get_config.side_effect = side_effect
+        user_dict = dict(
+            orgs=[dict(username="my-org", id=29)],
+            is_student=False,
+            user=dict(id=121, login="something"),
+            teams=[dict(name="My Team")],
+        )
+        # Don't raise exception if there's no team in the config
+        self.mixin_instance.login_from_user_dict(
+            user_dict, self.request, HttpResponse()
+        )
+        mock_get_config.assert_any_call("github", "organizations")
+        mock_get_config.assert_any_call("github", "teams")

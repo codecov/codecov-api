@@ -12,7 +12,7 @@ from django.utils import timezone
 from shared.license import LICENSE_ERRORS_MESSAGES, get_current_license
 
 from codecov_auth.helpers import create_signed_value
-from codecov_auth.models import Owner, Session
+from codecov_auth.models import Owner, Service, Session
 from services.redis_configuration import get_redis_connection
 from services.refresh import RefreshService
 from services.segment import SegmentService
@@ -138,7 +138,13 @@ class LoginMixin(object):
                 raise PermissionDenied(
                     "You must be a member of an organization listed in the Codecov Enterprise setup."
                 )
-            # TODO: Implement GitHub teams verification
+            if get_config(self.service, "teams") and "teams" in user_dict:
+                teams_in_settings = set(get_config(self.service, "teams"))
+                teams_in_user = set([team["name"] for team in user_dict["teams"]])
+                if not (teams_in_settings & teams_in_user):
+                    raise PermissionDenied(
+                        "You must be a member of an allowed team in your organization."
+                    )
 
         upserted_orgs = []
         for org in formatted_orgs:
