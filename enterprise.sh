@@ -24,7 +24,6 @@ then
   # Start api
   ${SUB}/home/api run${POST}
 else
-else
   exec "$@"
 fi
 
