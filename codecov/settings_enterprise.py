@@ -52,3 +52,15 @@ if API_DOMAIN != DEFAULT_WHITELISTED_DOMAIN:
 STRIPE_API_KEY = None
 SILENCED_SYSTEM_CHECKS = ["urls.W002"]
 UPLOAD_THROTTLING_ENABLED = False
+
+BITBUCKET_REDIRECT_URI = get_config(
+    "bitbucket", "redirect_uri", default=f"{CODECOV_URL}/login/bitbucket"
+)
+CODECOV_DASHBOARD_URL = get_config(
+    "setup", "codecov_dashboard_url", default=CODECOV_URL
+)
+
+COOKIES_DOMAIN = get_config(
+    "setup", "http", "cookies_domain", default=f".{DEFAULT_WHITELISTED_DOMAIN}"
+)
+SESSION_COOKIE_DOMAIN = COOKIES_DOMAIN
