@@ -227,6 +227,15 @@ GITLAB_REDIRECT_URI = get_config(
 GITLAB_BOT_KEY = get_config("gitlab", "bot", "key")
 
 
+GITLAB_ENTERPRISE_CLIENT_ID = get_config("gitlab_enterprise", "client_id")
+GITLAB_ENTERPRISE_CLIENT_SECRET = get_config("gitlab_enterprise", "client_secret")
+GITLAB_ENTERPRISE_REDIRECT_URI = get_config(
+    "gitlab_enterprise", "redirect_uri", default="https://codecov.io/login/gitlab"
+)
+GITLAB_ENTERPRISE_BOT_KEY = get_config("gitlab_enterprise", "bot", "key")
+GITLAB_ENTERPRISE_URL = get_config("gitlab_enterprise", "url")
+GITLAB_ENTERPRISE_API_URL = get_config("gitlab_enterprise", "api_url")
+
 SEGMENT_API_KEY = get_config("setup", "segment", "key", default=None)
 SEGMENT_ENABLED = get_config("setup", "segment", "enabled", default=False) and not bool(
     get_config("setup", "enterprise_license", default=False)
