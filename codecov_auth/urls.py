@@ -2,7 +2,7 @@ from django.urls import path
 
 from .views.bitbucket import BitbucketLoginView
 from .views.github import GithubLoginView
-from .views.github_enterprise import GitHubEnterpriseLoginView
+from .views.github_enterprise import GithubEnterpriseLoginView
 from .views.gitlab import GitlabLoginView
 from .views.logout import logout_view
 
@@ -16,8 +16,8 @@ urlpatterns = [
     path("login/bb", BitbucketLoginView.as_view(), name="bb-login"),
     path(
         "login/github-enterprise",
-        GitHubEnterpriseLoginView.as_view(),
+        GithubEnterpriseLoginView.as_view(),
         name="github-enterprise-login",
     ),
-    path("login/ghe", GitHubEnterpriseLoginView.as_view(), name="ghe-login"),
+    path("login/ghe", GithubEnterpriseLoginView.as_view(), name="ghe-login"),
 ]

@@ -10,7 +10,7 @@ from .github import GithubLoginView
 log = logging.getLogger(__name__)
 
 
-class GitHubEnterpriseLoginView(GithubLoginView):
+class GithubEnterpriseLoginView(GithubLoginView):
     service = "github_enterprise"
     error_redirection_page = "/"
 
