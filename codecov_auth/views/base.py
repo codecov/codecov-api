@@ -246,7 +246,7 @@ class LoginMixin(object):
                 if not is_consuming_seat:
                     owners_with_activated_users = Owner.objects.exclude(
                         plan_activated_users__len=0
-                    )
+                    ).exclude(plan_activated_users__isnull=True)
                     all_distinct_actiaved_users = reduce(
                         lambda acc, curr: set(curr.plan_activated_users) | acc,
                         owners_with_activated_users,
