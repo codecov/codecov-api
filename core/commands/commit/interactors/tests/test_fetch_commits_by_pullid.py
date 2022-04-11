@@ -12,8 +12,8 @@ class FetchCommitsInteractorTest(TransactionTestCase):
     def setUp(self):
         self.org = OwnerFactory()
         self.repo = RepositoryFactory(author=self.org, private=False)
-        self.pull_1 = PullFactory(pullid=2, repository_id=self.repo.repoid,)
-        self.pull_2 = PullFactory(pullid=3, repository_id=self.repo.repoid,)
+        self.pull_1 = PullFactory(pullid=2, repository_id=self.repo.repoid)
+        self.pull_2 = PullFactory(pullid=3, repository_id=self.repo.repoid)
         self.commits_pr_1 = [
             CommitFactory(repository=self.repo, pullid=self.pull_1.pullid),
             CommitFactory(repository=self.repo, pullid=self.pull_1.pullid),

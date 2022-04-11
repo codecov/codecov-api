@@ -34,8 +34,7 @@ class SerializableReport(Report):
 
     @property
     def flags(self):
-        """returns dict(:name=<Flag>)
-        """
+        """returns dict(:name=<Flag>)"""
         flags_dict = {}
         for sid, session in self.sessions.items():
             if session.flags is not None:

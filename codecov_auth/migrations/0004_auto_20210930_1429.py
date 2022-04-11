@@ -6,9 +6,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ("codecov_auth", "0003_auto_20210924_1003"),
-    ]
+    dependencies = [("codecov_auth", "0003_auto_20210924_1003")]
 
     operations = [
         migrations.AlterField(
@@ -27,5 +25,5 @@ class Migration(migrations.Migration):
                 default=list,
                 size=None,
             ),
-        ),
+        )
     ]

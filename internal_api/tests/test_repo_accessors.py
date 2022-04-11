@@ -20,7 +20,7 @@ class RepositoryAccessorsTestCase(TestCase):
         )
 
         self.user = OwnerFactory(
-            username="codecov-user", service="github", organizations=[self.org.ownerid],
+            username="codecov-user", service="github", organizations=[self.org.ownerid]
         )
 
         self.client.force_login(user=self.user)

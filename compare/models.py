@@ -32,5 +32,5 @@ class CommitComparison(BaseCodecovModel):
             models.UniqueConstraint(
                 name="unique_comparison_between_commit",
                 fields=["base_commit", "compare_commit"],
-            ),
+            )
         ]

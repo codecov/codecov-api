@@ -218,7 +218,7 @@ class RepositoryQuerySet(QuerySet):
         return self.annotate(
             true_latest_commit_at=latest_commit_at_from_cache,
             latest_commit_at=Coalesce(
-                latest_commit_at_from_cache, Value(datetime.datetime(1900, 1, 1)),
+                latest_commit_at_from_cache, Value(datetime.datetime(1900, 1, 1))
             ),
         )
 

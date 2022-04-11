@@ -40,10 +40,7 @@ def _build_paginator_ordering(primary_ordering, ordering_direction, unique_order
         else unique_ordering
     )
 
-    return (
-        primary_ordering_with_direction,
-        unique_ordering_with_direction,
-    )
+    return (primary_ordering_with_direction, unique_ordering_with_direction)
 
 
 @sync_to_async
@@ -70,7 +67,7 @@ def queryset_to_connection(
     page = paginator.page(first=first, after=after, last=last, before=before)
     return {
         "edges": [
-            {"cursor": paginator.cursor(page[pos]), "node": repository,}
+            {"cursor": paginator.cursor(page[pos]), "node": repository}
             for pos, repository in enumerate(page)
         ],
         "total_count": queryset.count(),
