@@ -54,7 +54,7 @@ class TokenlessCirrusHandler(BaseTokenlessUploadHandler):
         build = response.json()
         log.info(
             "Cirrus CI build response found.",
-            extra=dict(build=build, upload_params=self.upload_params,),
+            extra=dict(build=build, upload_params=self.upload_params),
         )
         if "errors" in build or build.get("data") is None:
             log.warning(

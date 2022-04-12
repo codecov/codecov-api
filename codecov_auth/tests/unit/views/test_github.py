@@ -1,6 +1,9 @@
+import re
 from datetime import datetime
 
+import pytest
 from django.http.cookie import SimpleCookie
+from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
 from shared.torngit import Github
@@ -9,6 +12,7 @@ from shared.torngit.exceptions import TorngitClientGeneralError
 from codecov_auth.helpers import decode_token_from_cookie
 from codecov_auth.models import Owner, Session
 from codecov_auth.tests.factories import OwnerFactory
+from codecov_auth.views.github import GithubLoginView
 
 
 def _get_state_from_redis(mock_redis):
@@ -386,3 +390,45 @@ def test_get_github_already_owner_already_exist(
     assert owner.service_id == "44376991"
     assert owner.private_access is True
     assert res.url == "http://localhost:3000/gh"
+
+
+@pytest.mark.asyncio
+@override_settings(IS_ENTERPRISE=True)
+async def test__get_teams_info(client, mocker):
+    github = GithubLoginView()
+    repo_service = Github()
+
+    async def helper_api(*args):
+        url: str = args[2]
+        if url.startswith("/user/teams"):
+            match = re.search(r"&page=(\d+)", url)
+            page_number = match.group(1)
+            if page_number == "1":
+                return [dict(name="My team")]
+            elif page_number == "2":
+                return [dict(name="My team in another page")]
+            return []
+        return None
+
+    mocker.patch.object(Github, "api", side_effect=helper_api)
+    result = await github._get_teams_data(repo_service)
+    assert result == [dict(name="My team"), dict(name="My team in another page")]
+
+
+@pytest.mark.asyncio
+@override_settings(IS_ENTERPRISE=True)
+async def test__get_teams_info_fails(client, mocker):
+    github = GithubLoginView()
+    repo_service = Github()
+
+    async def helper_api(*args):
+        raise TorngitClientGeneralError(
+            status_code=500,
+            response_data=dict(error="generic error"),
+            message="generic error",
+        )
+
+    mocker.patch.object(Github, "api", side_effect=helper_api)
+
+    result = await github._get_teams_data(repo_service)
+    assert result == []

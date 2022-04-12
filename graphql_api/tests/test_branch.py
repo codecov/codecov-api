@@ -69,10 +69,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             }
         }
         """
-        variables = {
-            "org": self.org.username,
-            "repo": self.repo.name,
-        }
+        variables = {"org": self.org.username, "repo": self.repo.name}
         query = query_branches % (self.org.username, self.repo.name)
         data = self.gql_request(query, variables=variables)
         branches = data["owner"]["repository"]["branches"]["edges"]

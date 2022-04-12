@@ -42,7 +42,7 @@ class OwnerManagerTests(TestCase):
             users_of = Owner.objects.users_of(owner=org)
             self.assertCountEqual(
                 [user.ownerid for user in users_of],
-                [self.owner.ownerid, owner_in_org_and_plan_activated_users.ownerid,],
+                [self.owner.ownerid, owner_in_org_and_plan_activated_users.ownerid],
             )
 
         with self.subTest("no users"):

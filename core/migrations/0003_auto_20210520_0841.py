@@ -7,9 +7,7 @@ from utils.migrations import RiskyRunSQL
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ("core", "0002_auto_20210517_1223"),
-    ]
+    dependencies = [("core", "0002_auto_20210517_1223")]
 
     operations = [
         migrations.AlterField(

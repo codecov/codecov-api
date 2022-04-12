@@ -5,9 +5,7 @@ from django.db import migrations
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ("codecov_auth", "0006_auto_20211123_1535"),
-    ]
+    dependencies = [("codecov_auth", "0006_auto_20211123_1535")]
 
     operations = [
         migrations.RunSQL(

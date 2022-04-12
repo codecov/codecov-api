@@ -133,7 +133,7 @@ def test_validate_upload_too_many_uploads_for_commit(
 ):
     redis = mocker.MagicMock(sismember=mocker.MagicMock(return_value=False))
     owner = OwnerFactory.create(plan="users-free")
-    repo = RepositoryFactory.create(author=owner,)
+    repo = RepositoryFactory.create(author=owner)
     commit = CommitFactory.create(totals={"s": totals_column_count}, repository=repo)
     report = CommitReportFactory.create(commit=commit)
     for i in range(rows_count):

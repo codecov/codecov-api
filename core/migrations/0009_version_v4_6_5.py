@@ -10,10 +10,6 @@ def add_version(apps, schema):
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ("core", "0008_version_v4_6_4"),
-    ]
+    dependencies = [("core", "0008_version_v4_6_4")]
 
-    operations = [
-        migrations.RunPython(add_version),
-    ]
+    operations = [migrations.RunPython(add_version)]

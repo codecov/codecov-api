@@ -11,9 +11,7 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-        ("core", "0001_initial"),
-    ]
+    dependencies = [("core", "0001_initial")]
 
     operations = [
         migrations.CreateModel(
@@ -32,7 +30,7 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={"abstract": False,},
+            options={"abstract": False},
         ),
         migrations.CreateModel(
             name="ReportSession",
@@ -53,7 +51,7 @@ class Migration(migrations.Migration):
                 ("upload_type", models.CharField(max_length=100, default="uploaded")),
                 ("upload_extras", models.JSONField(default=dict)),
             ],
-            options={"db_table": "reports_upload",},
+            options={"db_table": "reports_upload"},
         ),
         migrations.CreateModel(
             name="SessionLevelTotals",
@@ -79,7 +77,7 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={"db_table": "reports_uploadleveltotals",},
+            options={"db_table": "reports_uploadleveltotals"},
         ),
         migrations.CreateModel(
             name="RepositoryFlag",
@@ -98,7 +96,7 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={"abstract": False,},
+            options={"abstract": False},
         ),
         migrations.CreateModel(
             name="ReportSessionFlagMembership",
@@ -120,7 +118,7 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={"db_table": "reports_uploadflagmembership",},
+            options={"db_table": "reports_uploadflagmembership"},
         ),
         migrations.CreateModel(
             name="ReportSessionError",
@@ -141,7 +139,7 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={"db_table": "reports_uploaderror",},
+            options={"db_table": "reports_uploaderror"},
         ),
         migrations.AddField(
             model_name="reportsession",
@@ -183,7 +181,7 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={"abstract": False,},
+            options={"abstract": False},
         ),
         migrations.CreateModel(
             name="ReportDetails",
@@ -206,6 +204,6 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={"abstract": False,},
+            options={"abstract": False},
         ),
     ]
