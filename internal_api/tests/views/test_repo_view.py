@@ -101,10 +101,7 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
             author=self.org, active=True, private=True, name="B"
         )
 
-        repos_with_permission = [
-            self.repo1.repoid,
-            self.repo2.repoid,
-        ]
+        repos_with_permission = [self.repo1.repoid, self.repo2.repoid]
 
         self.user = OwnerFactory(
             username="codecov-user",
@@ -545,10 +542,7 @@ class TestRepositoryViewSetExtraActions(RepositoryViewSetTestSuite):
             repository=self.repo2,
         )
 
-        repos_with_permission = [
-            self.repo1.repoid,
-            self.repo2.repoid,
-        ]
+        repos_with_permission = [self.repo1.repoid, self.repo2.repoid]
 
         self.user = OwnerFactory(
             username="codecov-user",
@@ -768,9 +762,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
             repository=self.repo,
         )
 
-        PullFactory(
-            pullid=2, repository=self.repo, author=self.repo.author,
-        )
+        PullFactory(pullid=2, repository=self.repo, author=self.repo.author)
 
         BranchFactory(authors=[self.org.ownerid], repository=self.repo)
 

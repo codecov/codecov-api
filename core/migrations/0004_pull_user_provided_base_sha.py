@@ -5,14 +5,12 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ("core", "0003_auto_20210520_0841"),
-    ]
+    dependencies = [("core", "0003_auto_20210520_0841")]
 
     operations = [
         migrations.AddField(
             model_name="pull",
             name="user_provided_base_sha",
             field=models.TextField(null=True),
-        ),
+        )
     ]

@@ -51,7 +51,7 @@ MIDDLEWARE = [
 ]
 
 AUTHENTICATION_BACKENDS = [
-    "codecov_auth.authentication.CodecovTokenAuthenticationBackend",
+    "codecov_auth.authentication.CodecovTokenAuthenticationBackend"
 ]
 
 ROOT_URLCONF = "codecov.urls"
@@ -67,9 +67,9 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-            ],
+            ]
         },
-    },
+    }
 ]
 
 WSGI_APPLICATION = "codecov.wsgi.application"
@@ -113,11 +113,11 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
     },
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",},
-    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",},
-    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
 
@@ -179,7 +179,7 @@ LOGGING = {
             else "json",
             "class": "logging.StreamHandler",
             "stream": "ext://sys.stdout",  # Default is stderr
-        },
+        }
     },
     "loggers": {},
 }
@@ -225,9 +225,7 @@ SEGMENT_ENABLED = get_config("setup", "segment", "enabled", default=False) and n
     get_config("setup", "enterprise_license", default=False)
 )
 
-CORS_ALLOW_HEADERS = list(default_headers) + [
-    "token-type",
-]
+CORS_ALLOW_HEADERS = list(default_headers) + ["token-type"]
 
 SKIP_RISKY_MIGRATION_STEPS = get_config("migrations", "skip_risky_steps", default=False)
 

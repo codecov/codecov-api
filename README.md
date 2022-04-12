@@ -75,7 +75,8 @@ Do not change `requirements.txt` directly.
 
 ### Formatting
 
-This project uses `black` for formatting.
+This project uses `black` for formatting.      
+You can run the linter using the command `make lint`.
 
 ### Migrations
 

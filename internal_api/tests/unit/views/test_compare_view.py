@@ -32,7 +32,7 @@ def build_commits(client):
         author__username="ThiagoCodecov",
     )
     parent_commit = CommitFactory.create(
-        message="test_compare_parent", commitid="c5b6730", repository=repo,
+        message="test_compare_parent", commitid="c5b6730", repository=repo
     )
     commit_base = CommitFactory.create(
         message="test_compare_commits_base",

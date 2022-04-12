@@ -29,6 +29,6 @@ class Migration(migrations.Migration):
                 ("max_activated_user_count", models.SmallIntegerField(default=5)),
                 ("should_auto_activate_users", models.BooleanField(default=True)),
             ],
-            options={"abstract": False,},
-        ),
+            options={"abstract": False},
+        )
     ]

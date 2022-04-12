@@ -12,9 +12,7 @@ urlpatterns = [
     re_path("^validate/?", include("validate.urls")),
     path("health/", views.health),
     path("", views.health),
-    path(
-        "<str:service>/<str:owner_username>/<str:repo_name>/", include("graphs.urls"),
-    ),
+    path("<str:service>/<str:owner_username>/<str:repo_name>/", include("graphs.urls")),
     path("upload/", include("upload.urls")),
     path("webhooks/", include("webhook_handlers.urls")),
     path("graphql/", include("graphql_api.urls")),
