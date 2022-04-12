@@ -1,7 +1,7 @@
 aiodataloader
 ariadne
 ariadne_django
-celery
+celery[redis]
 cerberus
 ddtrace
 Django
