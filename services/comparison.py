@@ -397,7 +397,7 @@ class FileComparison:
                 lambda a, b: a + b,
                 [len(segment["lines"]) for segment in self.diff_data["segments"]],
             )
-            if self.diff_data is not None and self.diff_data["segments"]
+            if self.diff_data is not None and self.diff_data.get("segments")
             else 0
         )
 
@@ -458,7 +458,9 @@ class FileComparison:
             FileComparisonTraverseManager(
                 head_file_eof=self.head_file.eof if self.head_file is not None else 0,
                 base_file_eof=self.base_file.eof if self.base_file is not None else 0,
-                segments=self.diff_data["segments"] if self.diff_data else [],
+                segments=self.diff_data["segments"]
+                if self.diff_data and "segments" in self.diff_data
+                else [],
                 src=self.src,
             ).apply([change_summary_visitor, create_lines_visitor])
 
