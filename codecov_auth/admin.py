@@ -4,6 +4,7 @@ from django.shortcuts import redirect
 
 from codecov_auth.models import Owner
 from utils.services import get_short_service_name
+from services.task import TaskService
 
 
 def impersonate_owner(self, request, queryset):
@@ -50,4 +51,9 @@ class OwnerAdmin(admin.ModelAdmin):
         return False
 
     def has_delete_permission(self, _, obj=None):
-        return False
+        return True
+
+    def delete_queryset(self, request, queryset) -> None:
+        for owner in queryset:
+            TaskService().delete_owner(ownerid=owner.ownerid)
+        super().delete_queryset(request, queryset)
