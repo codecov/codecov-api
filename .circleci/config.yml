@@ -48,7 +48,7 @@ jobs:
           name: Running black and isort
           command: |
             echo "Installing..."
-            pip3 install -Iv black==19.10b0 isort
+            pip3 install -Iv black==22.3.0 isort
             echo "Linting..."
             black --check .
             echo "Sorting..."
@@ -128,7 +128,7 @@ jobs:
         at: .
     - run:
         name: Running pylint-django
-        command: make lint
+        command: make lint.ci
   portable:
     executor: codecov-deploy
     steps:

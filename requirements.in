@@ -1,7 +1,7 @@
 aiodataloader
 ariadne
 ariadne_django
-celery
+celery[redis]
 cerberus
 ddtrace
 Django
@@ -30,6 +30,7 @@ pytest
 pytest-cov
 pytest-django
 pytest-mock
+pytest-asyncio
 python-dateutil
 python-json-logger
 python-redis-lock

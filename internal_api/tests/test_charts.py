@@ -290,9 +290,7 @@ class CoverageChartHelpersTest(TestCase):
         repo = RepositoryFactory(author=self.org1, name="random_repo")
         setup_commits(repo, 10)
 
-        data = {
-            "owner_username": self.org1.username,
-        }
+        data = {"owner_username": self.org1.username}
 
         queryset = apply_simple_filters(Commit.objects.all(), data, self.user)
         assert queryset.count() == 0
@@ -961,7 +959,7 @@ class TestOrganizationChartHandler(InternalAPITest):
 
     def test_basic_success(self):
         response = self._get(
-            kwargs={"owner_username": self.org.username, "service": self.org.service,},
+            kwargs={"owner_username": self.org.username, "service": self.org.service},
             data={
                 "grouping_unit": "day",
                 "repositories": [self.repo1.name, self.repo2.name],

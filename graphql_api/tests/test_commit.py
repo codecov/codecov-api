@@ -147,10 +147,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             ),
         ]
 
-        variables = {
-            "org": self.org.username,
-            "repo": self.repo_2.name,
-        }
+        variables = {"org": self.org.username, "repo": self.repo_2.name}
         data = self.gql_request(query, variables=variables)
         commits = paginate_connection(data["owner"]["repository"]["commits"])
         commits_commitids = [commit["commitid"] for commit in commits]
@@ -404,11 +401,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             "commit": self.commit.commitid,
             "path": "path",
         }
-        fake_coverage = {
-            "content": "file content",
-            "coverage": [],
-            "totals": None,
-        }
+        fake_coverage = {"content": "file content", "coverage": [], "totals": None}
         content_mock.return_value = "file content"
 
         report_mock.return_value = EmptyReport()
@@ -460,9 +453,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
-        fake_compare = [
-            {"head_name": "src/config.js",},
-        ]
+        fake_compare = [{"head_name": "src/config.js"}]
         command_mock.return_value = fake_compare
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]

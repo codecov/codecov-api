@@ -173,7 +173,7 @@ class StripeWebhookHandler(APIView):
 
         log.info(
             f"Stripe subscription modified successfully for owner {owner.ownerid} by user #{requesting_user_id}",
-            extra=dict(ownerid=owner.ownerid, requesting_user_id=requesting_user_id,),
+            extra=dict(ownerid=owner.ownerid, requesting_user_id=requesting_user_id),
         )
 
     def customer_created(self, customer):

@@ -357,6 +357,13 @@ class LineComparisonTests(TestCase):
         assert lc.sessions is None
 
 
+class FileComparisonConstructorTests(TestCase):
+    def test_constructor_no_keyError_if_diff_data_segements_is_missing(self):
+        file_comp = FileComparison(
+            head_file=ReportFile("file1"), base_file=ReportFile("file1"), diff_data={}
+        )
+
+
 class FileComparisonTests(TestCase):
     def setUp(self):
         self.file_comparison = FileComparison(
@@ -1077,8 +1084,8 @@ class ComparisonHasUnmergedBaseCommitsTests(TestCase):
 
     def test_returns_true_if_reverse_comparison_has_commits(self, get_adapter_mock):
         commits = ["a", "b"]
-        get_adapter_mock.return_value = ComparisonHasUnmergedBaseCommitsTests.MockFetchDiffCoro(
-            commits
+        get_adapter_mock.return_value = (
+            ComparisonHasUnmergedBaseCommitsTests.MockFetchDiffCoro(commits)
         )
         assert self.comparison.has_unmerged_base_commits is True
 
@@ -1086,7 +1093,7 @@ class ComparisonHasUnmergedBaseCommitsTests(TestCase):
         self, get_adapter_mock
     ):
         commits = ["a"]
-        get_adapter_mock.return_value = ComparisonHasUnmergedBaseCommitsTests.MockFetchDiffCoro(
-            commits
+        get_adapter_mock.return_value = (
+            ComparisonHasUnmergedBaseCommitsTests.MockFetchDiffCoro(commits)
         )
         assert self.comparison.has_unmerged_base_commits is False

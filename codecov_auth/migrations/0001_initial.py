@@ -107,7 +107,7 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={"db_table": "owners", "ordering": ["ownerid"],},
+            options={"db_table": "owners", "ordering": ["ownerid"]},
         ),
         migrations.CreateModel(
             name="Session",
@@ -134,7 +134,7 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={"db_table": "sessions", "ordering": ["-lastseen"],},
+            options={"db_table": "sessions", "ordering": ["-lastseen"]},
         ),
         migrations.AddConstraint(
             model_name="owner",
