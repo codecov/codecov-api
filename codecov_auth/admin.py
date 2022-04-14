@@ -3,8 +3,8 @@ from django.contrib import admin, messages
 from django.shortcuts import redirect
 
 from codecov_auth.models import Owner
-from utils.services import get_short_service_name
 from services.task import TaskService
+from utils.services import get_short_service_name
 
 
 def impersonate_owner(self, request, queryset):
