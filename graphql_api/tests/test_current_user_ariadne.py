@@ -35,14 +35,14 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
                 "user": {
                     "username": self.user.username,
                     "avatarUrl": self.user.avatar_url,
-                },
+                }
             }
         }
 
     def test_when_tracking_metadata(self):
         query = "{ me { trackingMetadata { ownerid } } }"
         data = self.gql_request(query, user=self.user)
-        assert data == {"me": {"trackingMetadata": {"ownerid": self.user.ownerid,},}}
+        assert data == {"me": {"trackingMetadata": {"ownerid": self.user.ownerid}}}
 
     def test_fetching_viewable_repositories(self):
         org_1 = OwnerFactory()
@@ -299,9 +299,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, user=self.user)
         orgs = paginate_connection(data["me"]["myOrganizations"])
 
-        assert orgs == [
-            {"username": "spotify"},
-        ]
+        assert orgs == [{"username": "spotify"}]
 
     def test_sync_repo_not_authenticated(self):
         mutation = """

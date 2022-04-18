@@ -17,9 +17,7 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-    ]
+    dependencies = [migrations.swappable_dependency(settings.AUTH_USER_MODEL)]
 
     operations = [
         migrations.CreateModel(
@@ -72,12 +70,12 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={"db_table": "commits",},
+            options={"db_table": "commits"},
         ),
         migrations.CreateModel(
             name="Version",
-            fields=[("version", models.TextField(primary_key=True, serialize=False)),],
-            options={"db_table": "version",},
+            fields=[("version", models.TextField(primary_key=True, serialize=False))],
+            options={"db_table": "version"},
         ),
         migrations.CreateModel(
             name="Repository",
@@ -130,7 +128,7 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={"db_table": "repos", "ordering": ["-repoid"],},
+            options={"db_table": "repos", "ordering": ["-repoid"]},
         ),
         migrations.CreateModel(
             name="Pull",
@@ -178,7 +176,7 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={"db_table": "pulls", "ordering": ["-pullid"],},
+            options={"db_table": "pulls", "ordering": ["-pullid"]},
         ),
         migrations.CreateModel(
             name="CommitNotification",
@@ -235,7 +233,7 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={"db_table": "commit_notifications",},
+            options={"db_table": "commit_notifications"},
         ),
         migrations.AddField(
             model_name="commit",
@@ -279,7 +277,7 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={"db_table": "branches",},
+            options={"db_table": "branches"},
         ),
         migrations.AddConstraint(
             model_name="repository",

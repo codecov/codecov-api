@@ -42,7 +42,7 @@ def resolve_viewable_repositories(
 ):
     queryset = search_repos(current_user, filters)
     return queryset_to_connection(
-        queryset, ordering=ordering, ordering_direction=ordering_direction, **kwargs,
+        queryset, ordering=ordering, ordering_direction=ordering_direction, **kwargs
     )
 
 

@@ -10,15 +10,11 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ("codecov_auth", "0002_auto_20210817_1346"),
-    ]
+    dependencies = [("codecov_auth", "0002_auto_20210817_1346")]
 
     operations = [
         migrations.AddField(
-            model_name="owner",
-            name="business_email",
-            field=models.TextField(null=True),
+            model_name="owner", name="business_email", field=models.TextField(null=True)
         ),
         migrations.AddField(
             model_name="owner",
@@ -71,6 +67,6 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={"abstract": False,},
+            options={"abstract": False},
         ),
     ]

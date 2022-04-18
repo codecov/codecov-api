@@ -10,9 +10,7 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-        ("core", "0004_pull_user_provided_base_sha"),
-    ]
+    dependencies = [("core", "0004_pull_user_provided_base_sha")]
 
     operations = [
         migrations.CreateModel(

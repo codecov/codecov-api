@@ -66,7 +66,10 @@ async def resolve_commits(repository, info, filters=None, **kwargs):
     command = info.context["executor"].get_command("commit")
     queryset = await command.fetch_commits(repository, filters)
     return await queryset_to_connection(
-        queryset, ordering="id", ordering_direction=OrderingDirection.ASC, **kwargs
+        queryset,
+        ordering="timestamp",
+        ordering_direction=OrderingDirection.DESC,
+        **kwargs,
     )
 
 
@@ -78,7 +81,7 @@ async def resolve_branches(repository, info, **kwargs):
     return await queryset_to_connection(
         queryset,
         ordering="updatestamp",
-        ordering_direction=OrderingDirection.ASC,
+        ordering_direction=OrderingDirection.DESC,
         **kwargs,
     )
 

@@ -4,7 +4,7 @@ from graphs.helpers.graph_utils import _tree_height
 class TestGraphsUtils(object):
     def test_tree_height(self):
 
-        tree = [{"name": "name_0",}]
+        tree = [{"name": "name_0"}]
 
         height = _tree_height(tree)
         assert height == 1

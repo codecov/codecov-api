@@ -5,9 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ("core", "0004_pull_user_provided_base_sha"),
-    ]
+    dependencies = [("core", "0004_pull_user_provided_base_sha")]
 
     operations = [
         migrations.AddField(
@@ -17,6 +15,6 @@ class Migration(migrations.Migration):
             preserve_default=False,
         ),
         migrations.AlterField(
-            model_name="pull", name="pullid", field=models.IntegerField(),
+            model_name="pull", name="pullid", field=models.IntegerField()
         ),
     ]

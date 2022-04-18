@@ -28,7 +28,7 @@ class GetUploadErrorInteractorTest(TransactionTestCase):
         return GetUploadErrorInteractor(current_user, service).execute(*args)
 
     def test_get_upload_errors(self):
-        commit = CommitFactory(repository=self.repo,)
+        commit = CommitFactory(repository=self.repo)
         commit_report = CommitReportFactory(commit=commit)
         upload = UploadFactory(report=commit_report, state=UploadState.ERROR.value)
         UploadErrorFactory(
@@ -51,7 +51,7 @@ class GetUploadErrorInteractorTest(TransactionTestCase):
         }
 
     def test_get_upload_errors_no_error(self):
-        commit = CommitFactory(repository=self.repo,)
+        commit = CommitFactory(repository=self.repo)
         commit_report = CommitReportFactory(commit=commit)
 
         # Some other fake errors on other uploads

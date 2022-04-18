@@ -1,12 +1,12 @@
 import os
+from urllib.parse import urlparse
 
 from corsheaders.defaults import default_headers
 
 from utils.config import SettingsModule, get_config, get_settings_module
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# TODO: get this out of source control
-SECRET_KEY = "^fe*h^lqve%4)tl)0*rvx^zax$_5zu$7jg6o@2y!!-4*l^tne5"
+SECRET_KEY = "*"  # Unused
 
 
 AUTH_USER_MODEL = "codecov_auth.Owner"
@@ -48,7 +48,7 @@ MIDDLEWARE = [
 ]
 
 AUTHENTICATION_BACKENDS = [
-    "codecov_auth.authentication.CodecovTokenAuthenticationBackend",
+    "codecov_auth.authentication.CodecovTokenAuthenticationBackend"
 ]
 
 ROOT_URLCONF = "codecov.urls"
@@ -64,21 +64,31 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-            ],
+            ]
         },
-    },
+    }
 ]
 
 WSGI_APPLICATION = "codecov.wsgi.application"
 
-
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
-DATABASE_USER = get_config("services", "database", "username", default="postgres")
-DATABASE_NAME = get_config("services", "database", "name", default="postgres")
-DATABASE_PASSWORD = get_config("services", "database", "password", default="postgres")
-DATABASE_HOST = get_config("services", "database", "host", default="postgres")
-DATABASE_PORT = get_config("services", "database", "port", default=5432)
+db_url = get_config("services", "database_url")
+if db_url:
+    db_conf = urlparse(db_url)
+    DATABASE_USER = db_conf.username
+    DATABASE_NAME = db_conf.path.replace("/", "")
+    DATABASE_PASSWORD = db_conf.password
+    DATABASE_HOST = db_conf.hostname
+    DATABASE_PORT = db_conf.port
+else:
+    DATABASE_USER = get_config("services", "database", "username", default="postgres")
+    DATABASE_NAME = get_config("services", "database", "name", default="postgres")
+    DATABASE_PASSWORD = get_config(
+        "services", "database", "password", default="postgres"
+    )
+    DATABASE_HOST = get_config("services", "database", "host", default="postgres")
+    DATABASE_PORT = get_config("services", "database", "port", default=5432)
 # this is the time in seconds django decides to keep the connection open after the request
 # the default is 0 seconds, meaning django closes the connection after every request
 # https://docs.djangoproject.com/en/3.1/ref/settings/#conn-max-age
@@ -100,11 +110,11 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
     },
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",},
-    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",},
-    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
 
@@ -166,7 +176,7 @@ LOGGING = {
             else "json",
             "class": "logging.StreamHandler",
             "stream": "ext://sys.stdout",  # Default is stderr
-        },
+        }
     },
     "loggers": {},
 }
@@ -212,9 +222,7 @@ SEGMENT_ENABLED = get_config("setup", "segment", "enabled", default=False) and n
     get_config("setup", "enterprise_license", default=False)
 )
 
-CORS_ALLOW_HEADERS = list(default_headers) + [
-    "token-type",
-]
+CORS_ALLOW_HEADERS = list(default_headers) + ["token-type"]
 
 SKIP_RISKY_MIGRATION_STEPS = get_config("migrations", "skip_risky_steps", default=False)
 

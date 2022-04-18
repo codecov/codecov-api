@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime, timedelta
 from unittest.mock import patch
 
 import yaml
@@ -27,13 +27,19 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
         self.org = OwnerFactory(username="codecov")
         self.repo = RepositoryFactory(author=self.org, name="gazebo", private=False)
-        self.head = CommitFactory(repository=self.repo)
+        self.head = CommitFactory(repository=self.repo, timestamp=datetime.now())
         self.commit = CommitFactory(repository=self.repo)
         self.branch = BranchFactory(
-            repository=self.repo, head=self.commit.commitid, name="test1"
+            repository=self.repo,
+            head=self.head.commitid,
+            name="test1",
+            updatestamp=(datetime.now() + timedelta(1)),
         )
-        self.branch = BranchFactory(
-            repository=self.repo, head=self.head.commitid, name="test2"
+        self.branch_2 = BranchFactory(
+            repository=self.repo,
+            head=self.commit.commitid,
+            name="test2",
+            updatestamp=(datetime.now() + timedelta(2)),
         )
 
     def test_fetch_branch(self):
@@ -63,15 +69,14 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             }
         }
         """
-        variables = {
-            "org": self.org.username,
-            "repo": self.repo.name,
-        }
+        variables = {"org": self.org.username, "repo": self.repo.name}
         query = query_branches % (self.org.username, self.repo.name)
         data = self.gql_request(query, variables=variables)
         branches = data["owner"]["repository"]["branches"]["edges"]
         assert type(branches) == list
-        assert any(branch["node"]["name"] == "master" for branch in branches)
-        assert any(branch["node"]["name"] == "test1" for branch in branches)
-        assert any(branch["node"]["name"] == "test2" for branch in branches)
         assert len(branches) == 3
+        assert branches == [
+            {"node": {"name": "test2"}},
+            {"node": {"name": "test1"}},
+            {"node": {"name": "master"}},
+        ]

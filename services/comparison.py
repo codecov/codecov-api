@@ -61,7 +61,7 @@ class FileComparisonTraverseManager:
         ^^ Generally client code should supply both, except in a couple cases:
           1. The file is newly tracked. In this case, there is no base file, so we should
              iterate only over the head file lines.
-          2. The file is deleted. As of right now (4/2/2020), we don't show deleted files in 
+          2. The file is deleted. As of right now (4/2/2020), we don't show deleted files in
              comparisons, but if we were to support that, we would not supply a head_file_eof
              and instead only iterate over lines in the base file.
 
@@ -397,7 +397,7 @@ class FileComparison:
                 lambda a, b: a + b,
                 [len(segment["lines"]) for segment in self.diff_data["segments"]],
             )
-            if self.diff_data is not None and self.diff_data["segments"]
+            if self.diff_data is not None and self.diff_data.get("segments")
             else 0
         )
 
@@ -458,7 +458,9 @@ class FileComparison:
             FileComparisonTraverseManager(
                 head_file_eof=self.head_file.eof if self.head_file is not None else 0,
                 base_file_eof=self.base_file.eof if self.base_file is not None else 0,
-                segments=self.diff_data["segments"] if self.diff_data else [],
+                segments=self.diff_data["segments"]
+                if self.diff_data and "segments" in self.diff_data
+                else [],
                 src=self.src,
             ).apply([change_summary_visitor, create_lines_visitor])
 
@@ -555,8 +557,8 @@ class Comparison(object):
     @property
     def upload_commits(self):
         """
-            Returns the commits that have uploads between base and head.
-            :return: Queryset of core.models.Commit objects
+        Returns the commits that have uploads between base and head.
+        :return: Queryset of core.models.Commit objects
         """
         commit_ids = [commit["commitid"] for commit in self.git_commits]
         commits_queryset = Commit.objects.filter(
