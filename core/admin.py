@@ -73,7 +73,7 @@ class RepositoryAdmin(admin.ModelAdmin):
         return self.fields
 
     def has_delete_permission(self, request, obj=None):
-        return True
+        return False
 
     def has_add_permission(self, _, obj=None):
         return False

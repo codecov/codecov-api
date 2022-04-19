@@ -1,8 +1,13 @@
+import imp
+from unittest.mock import MagicMock, patch
+
 from django.contrib.admin.helpers import ACTION_CHECKBOX_NAME
+from django.contrib.admin.sites import AdminSite
 from django.test import TestCase
 from django.urls import reverse
 
-from codecov_auth.models import Service
+from codecov_auth.admin import OwnerAdmin
+from codecov_auth.models import Owner, Service
 from codecov_auth.tests.factories import OwnerFactory
 
 
@@ -10,6 +15,7 @@ class OwnerAdminTest(TestCase):
     def setUp(self):
         self.staff_user = OwnerFactory(staff=True)
         self.client.force_login(user=self.staff_user)
+        self.owner_admin = OwnerAdmin(Owner, AdminSite)
 
     def test_owner_admin_detail_page(self):
         response = self.client.get(
@@ -49,3 +55,14 @@ class OwnerAdminTest(TestCase):
             )
             self.assertIn("/bb/", response.url)
             self.assertEqual(response.cookies.get("staff_user").value, "impersonate_me")
+
+    @patch("codecov_auth.admin.TaskService.delete_owner")
+    def test_delete_queryset(self, delete_mock):
+        user_to_delete = OwnerFactory()
+
+        queryset = MagicMock()
+        queryset.__iter__.return_value = [user_to_delete]
+
+        self.owner_admin.delete_queryset(MagicMock(), queryset)
+
+        delete_mock.assert_called_once_with(ownerid=user_to_delete.ownerid)
