@@ -13,20 +13,18 @@ class CommitLoader(DataLoader):
 
     @sync_to_async
     def batch_load_fn(self, ids):
-        prefetch = Prefetch(
-            "reports", queryset=CommitReport.objects.select_related("reportleveltotals")
-        )
-
         queryset = Commit.objects.filter(
             commitid__in=ids, repository_id=self.repository_id
-        ).prefetch_related(prefetch)
+        ).prefetch_related(
+            Prefetch(
+                "reports",
+                queryset=CommitReport.objects.select_related("reportleveltotals"),
+            )
+        )
 
         # Need to return a list of commits in the same order as the ids
         # So fetching in bulk and generate a list based on ids
-        results = {
-            commit.commitid: commit
-            for commit in queryset
-        }
+        results = {commit.commitid: commit for commit in queryset}
         return [results.get(commit_id) for commit_id in ids]
 
 

@@ -3,6 +3,7 @@ from os import sync
 from ariadne import ObjectType
 
 from graphql_api.dataloader.commit import load_commit_by_id
+from graphql_api.dataloader.commit_comparison import load_commit_comparison
 from graphql_api.dataloader.owner import load_owner_by_id
 from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.enums import OrderingDirection
@@ -39,9 +40,22 @@ def resolve_base(pull, info):
 
 
 @pull_bindable.field("compareWithBase")
-def resolve_compare_with_base(pull, info, **kwargs):
+async def resolve_compare_with_base(pull, info, **kwargs):
+    head_commit = await load_commit_by_id(info, pull.head, pull.repository_id)
+    compared_commit = await load_commit_by_id(
+        info, pull.compared_to, pull.repository_id
+    )
+    comparison = await load_commit_comparison(
+        info, (compared_commit.commitid, head_commit.commitid)
+    )
+
     command = info.context["executor"].get_command("compare")
-    return command.compare_pull_request(pull)
+    return await command.compare_pull_request(
+        pull,
+        head_commit=head_commit,
+        compared_commit=compared_commit,
+        comparison=comparison,
+    )
 
 
 @pull_bindable.field("commits")

@@ -75,8 +75,8 @@ async def resolve_commits(repository, info, filters=None, **kwargs):
 
     # cache commits in dataloader
     # TODO: might be nice to do this generically in queryset_to_connection
-    for edge in res['edges']:
-        commit = edge['node']
+    for edge in res["edges"]:
+        commit = edge["node"]
         cache_commit_by_id(info, repository.repoid, commit)
 
     return res

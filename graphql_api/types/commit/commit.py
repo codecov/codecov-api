@@ -43,7 +43,9 @@ def resolve_author(commit, info):
 @commit_bindable.field("parent")
 async def resolve_parent(commit, info):
     if commit.parent_commit_id is not None:
-        return await load_commit_by_id(info, commit.parent_commit_id, commit.repository.repoid)
+        return await load_commit_by_id(
+            info, commit.parent_commit_id, commit.repository.repoid
+        )
 
 
 @commit_bindable.field("yaml")
@@ -69,8 +71,12 @@ async def resolve_compare_with_parent(commit, info, **kwargs):
     parent_commit = None
     comparison = None
     if commit.parent_commit_id is not None:
-        parent_commit = await load_commit_by_id(info, commit.parent_commit_id, commit.repository.repoid)
-        comparison = await load_commit_comparison(info, (commit.parent_commit_id, commit.commitid))
+        parent_commit = await load_commit_by_id(
+            info, commit.parent_commit_id, commit.repository.repoid
+        )
+        comparison = await load_commit_comparison(
+            info, (commit.parent_commit_id, commit.commitid)
+        )
 
     return await command.compare_commit_with_parent(
         commit, parent_commit=parent_commit, comparison=comparison
