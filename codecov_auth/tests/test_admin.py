@@ -1,4 +1,3 @@
-import imp
 from unittest.mock import MagicMock, patch
 
 from django.contrib.admin.helpers import ACTION_CHECKBOX_NAME
