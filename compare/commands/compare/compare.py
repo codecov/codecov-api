@@ -6,12 +6,13 @@ from .interactors.get_impacted_files import GetImpactedFilesInteractor
 
 
 class CompareCommands(BaseCommand):
-    async def compare_commit_with_parent(self, commit):
-        parent_commit = await self.get_command("commit").fetch_commit(
-            commit.repository, commit.parent_commit_id
-        )
+    async def compare_commit_with_parent(self, commit, parent_commit=None, comparison=None):
+        if parent_commit is None:
+            parent_commit = await self.get_command("commit").fetch_commit(
+                commit.repository, commit.parent_commit_id
+            )
         return await self.get_interactor(CompareCommitsInteractor).execute(
-            commit, parent_commit
+            commit, parent_commit, comparison=comparison
         )
 
     async def compare_pull_request(self, pull):

@@ -1,7 +1,9 @@
 from aiodataloader import DataLoader
 from asgiref.sync import sync_to_async
+from django.db.models import Prefetch
 
 from core.models import Commit
+from reports.models import CommitReport
 
 
 class CommitLoader(DataLoader):
@@ -11,21 +13,35 @@ class CommitLoader(DataLoader):
 
     @sync_to_async
     def batch_load_fn(self, ids):
+        prefetch = Prefetch(
+            "reports", queryset=CommitReport.objects.select_related("reportleveltotals")
+        )
+
+        queryset = Commit.objects.filter(
+            commitid__in=ids, repository_id=self.repository_id
+        ).prefetch_related(prefetch)
+
         # Need to return a list of commits in the same order as the ids
         # So fetching in bulk and generate a list based on ids
-        queryset = {
+        results = {
             commit.commitid: commit
-            for commit in Commit.objects.filter(
-                commitid__in=ids, repository_id=self.repository_id
-            )
+            for commit in queryset
         }
-        return [queryset.get(commit_id) for commit_id in ids]
+        return [results.get(commit_id) for commit_id in ids]
 
 
-def load_commit_by_id(info, commit_id, repository_id):
+def commit_loader(info, repository_id):
     CONTEXT_KEY = f"__commit_loader_{repository_id}"
     if CONTEXT_KEY not in info.context:
         # One loader per HTTP request that we init when we need it
         info.context[CONTEXT_KEY] = CommitLoader(repository_id)
+    return info.context[CONTEXT_KEY]
 
-    return info.context[CONTEXT_KEY].load(commit_id)
+
+def load_commit_by_id(info, commit_id, repository_id):
+    return commit_loader(info, repository_id).load(commit_id)
+
+
+def cache_commit_by_id(info, repository_id, commit):
+    loader = commit_loader(info, repository_id)
+    loader.prime(commit.id, commit)

@@ -3,6 +3,7 @@ from ariadne import ObjectType
 from asgiref.sync import sync_to_async
 
 from graphql_api.dataloader.commit import load_commit_by_id
+from graphql_api.dataloader.commit_comparison import load_commit_comparison
 from graphql_api.dataloader.owner import load_owner_by_id
 from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.enums import OrderingDirection
@@ -40,9 +41,9 @@ def resolve_author(commit, info):
 
 
 @commit_bindable.field("parent")
-def resolve_parent(commit, info):
-    command = info.context["executor"].get_command("commit")
-    return command.fetch_commit(commit.repository, commit.parent_commit_id)
+async def resolve_parent(commit, info):
+    if commit.parent_commit_id is not None:
+        return await load_commit_by_id(info, commit.parent_commit_id, commit.repository.repoid)
 
 
 @commit_bindable.field("yaml")
@@ -62,9 +63,18 @@ async def resolve_list_uploads(commit, info, **kwargs):
 
 
 @commit_bindable.field("compareWithParent")
-def resolve_compare_with_parent(commit, info, **kwargs):
+async def resolve_compare_with_parent(commit, info, **kwargs):
     command = info.context["executor"].get_command("compare")
-    return command.compare_commit_with_parent(commit)
+
+    parent_commit = None
+    comparison = None
+    if commit.parent_commit_id is not None:
+        parent_commit = await load_commit_by_id(info, commit.parent_commit_id, commit.repository.repoid)
+        comparison = await load_commit_comparison(info, (commit.parent_commit_id, commit.commitid))
+
+    return await command.compare_commit_with_parent(
+        commit, parent_commit=parent_commit, comparison=comparison
+    )
 
 
 @commit_bindable.field("flagNames")

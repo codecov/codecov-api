@@ -1,5 +1,6 @@
 from ariadne import ObjectType, convert_kwargs_to_snake_case
 
+from graphql_api.dataloader.commit import cache_commit_by_id
 from graphql_api.dataloader.owner import load_owner_by_id
 from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.enums import OrderingDirection
@@ -65,12 +66,20 @@ async def resolve_pulls(
 async def resolve_commits(repository, info, filters=None, **kwargs):
     command = info.context["executor"].get_command("commit")
     queryset = await command.fetch_commits(repository, filters)
-    return await queryset_to_connection(
+    res = await queryset_to_connection(
         queryset,
         ordering="timestamp",
         ordering_direction=OrderingDirection.DESC,
         **kwargs,
     )
+
+    # cache commits in dataloader
+    # TODO: might be nice to do this generically in queryset_to_connection
+    for edge in res['edges']:
+        commit = edge['node']
+        cache_commit_by_id(info, repository.repoid, commit)
+
+    return res
 
 
 @repository_bindable.field("branches")
