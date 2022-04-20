@@ -56,3 +56,6 @@ class OwnerAdmin(admin.ModelAdmin):
     def delete_queryset(self, request, queryset) -> None:
         for owner in queryset:
             TaskService().delete_owner(ownerid=owner.ownerid)
+
+    def delete_model(self, request, obj) -> None:
+        TaskService().delete_owner(ownerid=obj.ownerid)

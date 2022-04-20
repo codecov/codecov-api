@@ -58,10 +58,17 @@ class OwnerAdminTest(TestCase):
     @patch("codecov_auth.admin.TaskService.delete_owner")
     def test_delete_queryset(self, delete_mock):
         user_to_delete = OwnerFactory()
-
+        ownerid = user_to_delete.ownerid
         queryset = MagicMock()
         queryset.__iter__.return_value = [user_to_delete]
 
         self.owner_admin.delete_queryset(MagicMock(), queryset)
 
-        delete_mock.assert_called_once_with(ownerid=user_to_delete.ownerid)
+        delete_mock.assert_called_once_with(ownerid=ownerid)
+
+    @patch("codecov_auth.admin.TaskService.delete_owner")
+    def test_delete_model(self, delete_mock):
+        user_to_delete = OwnerFactory()
+        ownerid = user_to_delete.ownerid
+        self.owner_admin.delete_model(MagicMock(), user_to_delete)
+        delete_mock.assert_called_once_with(ownerid=ownerid)
