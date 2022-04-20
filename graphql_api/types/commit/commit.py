@@ -1,10 +1,10 @@
 import yaml
 from ariadne import ObjectType
-from asgiref.sync import sync_to_async
 
-from graphql_api.dataloader.commit import load_commit_by_id
-from graphql_api.dataloader.commit_comparison import load_commit_comparison
-from graphql_api.dataloader.owner import load_owner_by_id
+from graphql_api.dataloader.commit import CommitLoader
+from graphql_api.dataloader.commit_comparison import CommitComparisonLoader
+from graphql_api.dataloader.commit_report import CommitReportLoader
+from graphql_api.dataloader.owner import OwnerLoader
 from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.enums import OrderingDirection
 
@@ -29,22 +29,23 @@ def resolve_file(commit, info, path, flags=None):
 
 
 @commit_bindable.field("totals")
-def resolve_totals(commit, info):
-    command = info.context["executor"].get_command("commit")
-    return command.fetch_totals(commit)
+async def resolve_totals(commit, info):
+    commit_report = await CommitReportLoader.loader(info).load(commit.id)
+    if commit_report:
+        return commit_report.reportleveltotals
 
 
 @commit_bindable.field("author")
 def resolve_author(commit, info):
     if commit.author_id:
-        return load_owner_by_id(info, commit.author_id)
+        return OwnerLoader.loader(info).load(commit.author_id)
 
 
 @commit_bindable.field("parent")
 async def resolve_parent(commit, info):
     if commit.parent_commit_id is not None:
-        return await load_commit_by_id(
-            info, commit.parent_commit_id, commit.repository.repoid
+        return await CommitLoader.loader(info, commit.repository.repoid).load(
+            commit.parent_commit_id
         )
 
 
@@ -66,18 +67,17 @@ async def resolve_list_uploads(commit, info, **kwargs):
 
 @commit_bindable.field("compareWithParent")
 async def resolve_compare_with_parent(commit, info, **kwargs):
-    command = info.context["executor"].get_command("compare")
-
     parent_commit = None
     comparison = None
     if commit.parent_commit_id is not None:
-        parent_commit = await load_commit_by_id(
-            info, commit.parent_commit_id, commit.repository.repoid
+        parent_commit = await CommitLoader.loader(info, commit.repository.repoid).load(
+            commit.parent_commit_id
         )
-        comparison = await load_commit_comparison(
-            info, (commit.parent_commit_id, commit.commitid)
+        comparison = await CommitComparisonLoader.loader(info).load(
+            (commit.parent_commit_id, commit.commitid)
         )
 
+    command = info.context["executor"].get_command("compare")
     return await command.compare_commit_with_parent(
         commit, parent_commit=parent_commit, comparison=comparison
     )
