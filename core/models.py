@@ -53,11 +53,29 @@ class Repository(models.Model):
         SWIFT = "swift"
         OBJECTIVE_C = "objective-c"
         XTEND = "xtend"
+        TYPESCRIPT = "typescript"
+        HASKELL = "haskell"
+        RUST = "rust"
+        LUA = "lua"
+        MATLAB = "matlab"
+        ASSEMBLY = "assembly"
+        SCHEME = "scheme"
+        POWERSHELL = "powershell"
+        APEX = "apex"
+        VERILOG = "verilog"
+        COMMON_LISP = "common lisp"
+        ERLANG = "erlang"
+        JULIA = "julia"
+        PROLOG = "prolog"
+        VUE = "vue"
+        CPP = "c++"
+        C_SHARP = "c#"
+        F_SHARP = "f#"
 
     repoid = models.AutoField(primary_key=True)
     name = CITextField()
     author = models.ForeignKey(
-        "codecov_auth.Owner", db_column="ownerid", on_delete=models.CASCADE,
+        "codecov_auth.Owner", db_column="ownerid", on_delete=models.CASCADE
     )
     service_id = models.TextField()
     private = models.BooleanField()

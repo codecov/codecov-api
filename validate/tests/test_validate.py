@@ -48,12 +48,12 @@ class TestValidateYamlHandler(APITestCase):
 
     def test_post_valid_yaml(self):
         yaml = {
-            "ignore": ["Pods/.*",],
+            "ignore": ["Pods/.*"],
             "coverage": {
                 "round": "down",
                 "precision": 2,
                 "range": [70.0, 100.0],
-                "status": {"project": {"default": {"base": "auto",}}},
+                "status": {"project": {"default": {"base": "auto"}}},
                 "notify": {
                     "slack": {
                         "default": {
@@ -71,12 +71,12 @@ class TestValidateYamlHandler(APITestCase):
 
     def test_post_invalid_yaml(self):
         yaml = {
-            "ignore": ["Pods/.*",],
+            "ignore": ["Pods/.*"],
             "coverage": {
                 "round": "down",
                 "precision": 2,
                 "range": [70.0, 100.0],
-                "status": {"project": {"default": {"base": "auto",}}, "patch": "nope",},
+                "status": {"project": {"default": {"base": "auto"}}, "patch": "nope"},
             },
         }
 

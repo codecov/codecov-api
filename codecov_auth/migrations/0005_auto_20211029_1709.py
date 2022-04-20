@@ -6,9 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
     atomic = False
 
-    dependencies = [
-        ("codecov_auth", "0004_auto_20210930_1429"),
-    ]
+    dependencies = [("codecov_auth", "0004_auto_20210930_1429")]
 
     operations = [
         migrations.RunSQL("ALTER TYPE plans ADD VALUE IF NOT EXISTS 'users-basic';")

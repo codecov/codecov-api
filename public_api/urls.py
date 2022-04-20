@@ -11,5 +11,5 @@ urlpatterns = [
     path(
         "<str:service>/<str:owner_username>/<str:repo_name>/",
         include(repository_router.urls),
-    ),
+    )
 ]

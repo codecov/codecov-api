@@ -35,14 +35,14 @@ WEBHOOK_EVENTS = {
 @async_to_sync
 async def delete_webhook_on_provider(repository_service, repo):
     """
-        Deletes webhook on provider
+    Deletes webhook on provider
     """
     return await repository_service.delete_webhook(hookid=repo.hookid)
 
 
 def create_webhook_on_provider(repository_service, repo):
     """
-        Creates webhook on provider
+    Creates webhook on provider
     """
 
     webhook_url = settings.WEBHOOK_URL

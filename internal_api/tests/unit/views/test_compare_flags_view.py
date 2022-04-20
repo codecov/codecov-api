@@ -38,7 +38,7 @@ class TestCompareFlagsView(InternalAPITest):
         self.client.force_login(self.repo.author)
 
     def test_compare_flags___success(
-        self, diff_totals_mock, read_chunks_mock, git_comparison_mock,
+        self, diff_totals_mock, read_chunks_mock, git_comparison_mock
     ):
         head_chunks = open(
             current_file.parent.parent.parent
@@ -201,7 +201,7 @@ class TestCompareFlagsView(InternalAPITest):
         assert response.data == expected_result
 
     def test_compare_flags_with_report_with_cff_and_non_cff(
-        self, diff_totals_mock, read_chunks_mock, git_comparison_mock,
+        self, diff_totals_mock, read_chunks_mock, git_comparison_mock
     ):
         report = {
             "files": {
@@ -363,7 +363,7 @@ class TestCompareFlagsView(InternalAPITest):
                     "partials": 0,
                     "sessions": 1,
                 },
-            },
+            }
         ]
         # Only the non-carried forward report is returned
         assert len(response.data) == 1
@@ -409,7 +409,7 @@ class TestCompareFlagsView(InternalAPITest):
 
     @patch("services.comparison.FlagComparison.base_report", new_callable=PropertyMock)
     def test_compare_flags_doesnt_crash_if_base_doesnt_have_flags(
-        self, base_flag_mock, diff_totals_mock, read_chunks_mock, git_comparison_mock,
+        self, base_flag_mock, diff_totals_mock, read_chunks_mock, git_comparison_mock
     ):
         git_comparison_mock.return_value = {"diff": {"files": {}}}
         read_chunks_mock.return_value = ""

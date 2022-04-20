@@ -48,7 +48,7 @@ class BitbucketLoginView(View, LoginMixin):
             oauth_consumer_token=dict(
                 key=settings.BITBUCKET_CLIENT_ID,
                 secret=settings.BITBUCKET_CLIENT_SECRET,
-            ),
+            )
         )
         oauth_token_pair = repo_service.generate_request_token(
             settings.BITBUCKET_REDIRECT_URI
@@ -74,7 +74,7 @@ class BitbucketLoginView(View, LoginMixin):
             oauth_consumer_token=dict(
                 key=settings.BITBUCKET_CLIENT_ID,
                 secret=settings.BITBUCKET_CLIENT_SECRET,
-            ),
+            )
         )
         oauth_verifier = request.GET.get("oauth_verifier")
         # we use an unsigned cookie here because that's what tornado also does

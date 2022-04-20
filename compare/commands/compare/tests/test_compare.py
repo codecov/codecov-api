@@ -23,7 +23,7 @@ class CompareCommandsTest(TransactionTestCase):
             repository=self.parent_commit.repository,
         )
         self.comparison = CommitComparisonFactory(
-            base_commit=self.parent_commit, compare_commit=self.commit,
+            base_commit=self.parent_commit, compare_commit=self.commit
         )
         self.pull = PullFactory(
             repository=self.commit.repository,
@@ -45,8 +45,7 @@ class CompareCommandsTest(TransactionTestCase):
             report=CommitReportFactory(commit=commit_with_coverage), coverage=78.38
         )
         self.comparison_with_coverage = CommitComparisonFactory(
-            base_commit=parent_commit_with_coverage,
-            compare_commit=commit_with_coverage,
+            base_commit=parent_commit_with_coverage, compare_commit=commit_with_coverage
         )
 
     async def test_compare_commit_when_no_parents(self):

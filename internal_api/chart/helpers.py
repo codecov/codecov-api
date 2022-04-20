@@ -76,7 +76,7 @@ def validate_params(data):
                 "year",
             ],  # must be one of the values accepted by Django's Trunc function; for more info see https://docs.djangoproject.com/en/3.0/ref/models/database-functions/#trunc
         },
-        "agg_function": {"type": "string", "allowed": ["min", "max"],},
+        "agg_function": {"type": "string", "allowed": ["min", "max"]},
         "agg_value": {"type": "string", "allowed": ["timestamp", "coverage"]},
         "coverage_timestamp_ordering": {
             "type": "string",

@@ -350,7 +350,7 @@ class GithubWebhookHandlerTests(APITestCase):
 
         response = self._post_event_data(
             event=GitHubWebhookEvents.STATUS,
-            data={"repository": {"id": self.repo.service_id},},
+            data={"repository": {"id": self.repo.service_id}},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -359,7 +359,7 @@ class GithubWebhookHandlerTests(APITestCase):
     def test_status_exits_early_for_codecov_statuses(self):
         response = self._post_event_data(
             event=GitHubWebhookEvents.STATUS,
-            data={"context": "codecov/", "repository": {"id": self.repo.service_id},},
+            data={"context": "codecov/", "repository": {"id": self.repo.service_id}},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -368,7 +368,7 @@ class GithubWebhookHandlerTests(APITestCase):
     def test_status_exits_early_for_pending_statuses(self):
         response = self._post_event_data(
             event=GitHubWebhookEvents.STATUS,
-            data={"state": "pending", "repository": {"id": self.repo.service_id},},
+            data={"state": "pending", "repository": {"id": self.repo.service_id}},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -405,7 +405,7 @@ class GithubWebhookHandlerTests(APITestCase):
 
         response = self._post_event_data(
             event=GitHubWebhookEvents.PULL_REQUEST,
-            data={"repository": {"id": self.repo.service_id},},
+            data={"repository": {"id": self.repo.service_id}},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -442,7 +442,7 @@ class GithubWebhookHandlerTests(APITestCase):
                 "repository": {"id": self.repo.service_id},
                 "action": "edited",
                 "number": pull.pullid,
-                "pull_request": {"title": new_title,},
+                "pull_request": {"title": new_title},
             },
         )
 
