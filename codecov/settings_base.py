@@ -9,9 +9,6 @@ from utils.config import SettingsModule, get_config, get_settings_module
 SECRET_KEY = "*"  # Unused
 
 
-YAML_SECRET_KEY = b"]\xbb\x13\xf9}\xb3\xb7\x03)*0Kv\xb2\xcet"
-
-
 AUTH_USER_MODEL = "codecov_auth.Owner"
 
 # Application definition
