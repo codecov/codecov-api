@@ -19,6 +19,7 @@ query Repository($name: String!){
                 latestCommitAt
                 uploadToken
                 defaultBranch
+                author { username }
             }
         }
     }
@@ -48,6 +49,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "updatedAt": "2021-01-01T00:00:00+00:00",
             "uploadToken": repo.upload_token,
             "defaultBranch": "master",
+            "author": {"username": "codecov-user"},
         }
 
     @freeze_time("2021-01-01")
@@ -68,4 +70,5 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "updatedAt": "2021-01-01T00:00:00+00:00",
             "uploadToken": repo.upload_token,
             "defaultBranch": "master",
+            "author": {"username": "codecov-user"},
         }
