@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views.bitbucket import BitbucketLoginView
+from .views.bitbucket_server import BitbucketServerLoginView
 from .views.github import GithubLoginView
 from .views.github_enterprise import GithubEnterpriseLoginView
 from .views.gitlab import GitlabLoginView
@@ -27,4 +28,10 @@ urlpatterns = [
         name="gitlab-enterprise-login",
     ),
     path("login/gle", GitlabEnterpriseLoginView.as_view(), name="gle-login"),
+    path(
+        "login/bitbucket-server",
+        BitbucketServerLoginView.as_view(),
+        name="bitbucket-server-login",
+    ),
+    path("login/bbs", BitbucketServerLoginView.as_view(), name="bbs-login"),
 ]

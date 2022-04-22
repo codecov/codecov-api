@@ -216,6 +216,11 @@ BITBUCKET_REDIRECT_URI = get_config(
     "bitbucket", "redirect_uri", default="https://codecov.io/login/bitbucket"
 )
 
+BITBUCKET_SERVER_URL = get_config("bitbucket_server", "url")
+BITBUCKET_SERVER_CLIENT_ID = get_config("bitbucket_server", "client_id")
+BITBUCKET_SERVER_CLIENT_SECRET = get_config("bitbucket_server", "client_secret")
+BITBUCKET_SERVER_BOT_KEY = get_config("bitbucket_server", "bot", "key")
+
 GITLAB_CLIENT_ID = get_config("gitlab", "client_id")
 GITLAB_CLIENT_SECRET = get_config("gitlab", "client_secret")
 GITLAB_REDIRECT_URI = get_config(
