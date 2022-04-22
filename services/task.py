@@ -113,4 +113,4 @@ class TaskService(object):
         log.info(f"Triggering delete_owner task for owner: {ownerid}")
         self._create_signature(
             "app.tasks.delete_owner.DeleteOwner", kwargs=dict(ownerid=ownerid)
-        )
+        ).apply_async()
