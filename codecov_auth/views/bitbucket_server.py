@@ -24,8 +24,11 @@ log = logging.getLogger(__name__)
 # There are no clients for this right now, so we're skipping it. (2022-04-07)
 class BitbucketServerLoginView(View, LoginMixin):
     service = SERVICE_BITBUCKET_SERVER
-    _OAUTH_WHOAMI = settings.BITBUCKET_SERVER_URL + "/plugins/servlet/applinks/whoami"
-    _OAUTH_VERSION = "1.0"
+    # Legacy links that I copied.
+    # Probably should go in shared (get_authenticated_user)
+    # https://github.com/codecov/codecov.io/blob/54568e8deab82c3c77e5d313a182cfe9a93f3154/app/handlers/bitbucket_server/login.py#L35
+    # _OAUTH_WHOAMI = settings.BITBUCKET_SERVER_URL + "/plugins/servlet/applinks/whoami"
+    # _OAUTH_VERSION = "1.0"
 
     @async_to_sync
     async def fetch_user_data(self, token):
