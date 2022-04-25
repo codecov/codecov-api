@@ -24,15 +24,6 @@ log = logging.getLogger(__name__)
 # There are no clients for this right now, so we're skipping it. (2022-04-07)
 class BitbucketServerLoginView(View, LoginMixin):
     service = SERVICE_BITBUCKET_SERVER
-    _OAUTH_REQUEST_TOKEN_URL = (
-        settings.BITBUCKET_SERVER_URL + "/plugins/servlet/oauth/request-token"
-    )
-    _OAUTH_ACCESS_TOKEN_URL = (
-        settings.BITBUCKET_SERVER_URL + "/plugins/servlet/oauth/access-token"
-    )
-    _OAUTH_AUTHORIZE_URL = (
-        settings.BITBUCKET_SERVER_URL + "/plugins/servlet/oauth/authorize"
-    )
     _OAUTH_WHOAMI = settings.BITBUCKET_SERVER_URL + "/plugins/servlet/applinks/whoami"
     _OAUTH_VERSION = "1.0"
 
@@ -61,6 +52,9 @@ class BitbucketServerLoginView(View, LoginMixin):
 
     @async_to_sync
     async def redirect_to_bitbucket_server_step(self, request):
+        # For this part we need a client with no token
+        # And the consumer needs to have the defined client id. The secret is ignored.
+        # https://developer.atlassian.com/server/jira/platform/oauth/
         consumer = oauth.Consumer(settings.BITBUCKET_SERVER_CLIENT_ID, "")
         client = oauth.Client(consumer)
         client.set_signature_method(signature)
@@ -72,7 +66,13 @@ class BitbucketServerLoginView(View, LoginMixin):
                 httponly=True,
                 expires_days=1,
             )
-        resp, content = client.request(self._OAUTH_REQUEST_TOKEN_URL, "POST")
+        # In this part we make a request for the unauthorized request token.
+        # Here the user will be redirected to the authorize page and allow our app to be used.
+        # At the end of this step client will see a screen saying "you have authorized this application. Return to application and click continue."
+        request_token_url = (
+            f"{settings.BITBUCKET_SERVER_URL}/plugins/servlet/oauth/request-token"
+        )
+        resp, content = client.request(request_token_url, "POST")
         if resp["status"] != "200":
             raise Exception("Invalid response %s: %s" % (resp["status"], content))
         request_token = {
@@ -86,7 +86,8 @@ class BitbucketServerLoginView(View, LoginMixin):
         ).decode()
 
         url_params = urlencode(dict(oauth_token=auth_token))
-        response = redirect(f"{self._OAUTH_AUTHORIZE_URL}?{url_params}")
+        authorize_url = f"{settings.BITBUCKET_SERVER_URL}/plugins/servlet/oauth/authorize?{url_params}"
+        response = redirect(authorize_url)
         response.set_cookie(
             "_oauth_request_token", data, domain=settings.COOKIES_DOMAIN
         )
@@ -94,6 +95,9 @@ class BitbucketServerLoginView(View, LoginMixin):
         return response
 
     def actual_login_step(self, request):
+        # Retrieve the authorized request_token and create a new client
+        # This new client has the same consumer as before, but uses the request token.
+        # ! Each request_token can only be used once
         request_cookie = request.COOKIES.get("_oauth_request_token")
         if not request_cookie:
             log.warning(
@@ -110,9 +114,13 @@ class BitbucketServerLoginView(View, LoginMixin):
         client.set_signature_method(signature)
 
         # Get the access token from the request token
+        # The access token can be stored and reused.
         response = redirect(settings.CODECOV_DASHBOARD_URL + "/bbs")
         response.delete_cookie("_oauth_request_token", domain=settings.COOKIES_DOMAIN)
-        resp, content = client.request(self._OAUTH_ACCESS_TOKEN_URL, "POST")
+        access_token_url = (
+            f"{settings.BITBUCKET_SERVER_URL}/plugins/servlet/oauth/access-token"
+        )
+        resp, content = client.request(access_token_url, "POST")
         if resp["status"] != "200":
             raise Exception("Invalid response %s: %s" % (resp["status"], content))
         access_token = {
