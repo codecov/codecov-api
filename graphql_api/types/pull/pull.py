@@ -1,3 +1,4 @@
+import asyncio
 from os import sync
 
 from ariadne import ObjectType
@@ -41,13 +42,16 @@ def resolve_base(pull, info):
 
 @pull_bindable.field("compareWithBase")
 async def resolve_compare_with_base(pull, info, **kwargs):
-    head_commit = await CommitLoader.loader(info, pull.repository_id).load(pull.head)
-    compared_commit = await CommitLoader.loader(info, pull.repository_id).load(
-        pull.compared_to
-    )
-    comparison = await CommitComparisonLoader.loader(info).load(
-        (compared_commit.commitid, head_commit.commitid)
-    )
+    head_commit = None
+    compared_commit = None
+    comparison = None
+    if pull.head is not None and pull.compared_to is not None:
+        commit_loader = CommitLoader.loader(info, pull.repository_id)
+        head_commit, compared_commit, comparison = await asyncio.gather(
+            commit_loader.load(pull.head),
+            commit_loader.load(pull.compared_to),
+            CommitComparisonLoader.loader(info).load((pull.compared_to, pull.head)),
+        )
 
     command = info.context["executor"].get_command("compare")
     return await command.compare_pull_request(
