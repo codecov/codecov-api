@@ -9,7 +9,7 @@ class CompareCommands(BaseCommand):
     async def compare_commit_with_parent(
         self, commit, parent_commit=None, comparison=None
     ):
-        if parent_commit is None:
+        if parent_commit is None and commit.parent_commit_id is not None:
             parent_commit = await self.get_command("commit").fetch_commit(
                 commit.repository, commit.parent_commit_id
             )
@@ -24,10 +24,12 @@ class CompareCommands(BaseCommand):
             head_commit = await self.get_command("commit").fetch_commit(
                 pull.repository, pull.head
             )
+
         if compared_commit is None:
             compared_commit = await self.get_command("commit").fetch_commit(
                 pull.repository, pull.compared_to
             )
+
         return await self.get_interactor(CompareCommitsInteractor).execute(
             head_commit, compared_commit, comparison=comparison
         )

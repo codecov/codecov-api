@@ -1,3 +1,5 @@
+import asyncio
+
 import yaml
 from ariadne import ObjectType
 
@@ -42,9 +44,9 @@ def resolve_author(commit, info):
 
 
 @commit_bindable.field("parent")
-async def resolve_parent(commit, info):
+def resolve_parent(commit, info):
     if commit.parent_commit_id is not None:
-        return await CommitLoader.loader(info, commit.repository.repoid).load(
+        return CommitLoader.loader(info, commit.repository.repoid).load(
             commit.parent_commit_id
         )
 
@@ -70,11 +72,13 @@ async def resolve_compare_with_parent(commit, info, **kwargs):
     parent_commit = None
     comparison = None
     if commit.parent_commit_id is not None:
-        parent_commit = await CommitLoader.loader(info, commit.repository.repoid).load(
-            commit.parent_commit_id
-        )
-        comparison = await CommitComparisonLoader.loader(info).load(
-            (commit.parent_commit_id, commit.commitid)
+        parent_commit, comparison = await asyncio.gather(
+            CommitLoader.loader(info, commit.repository.repoid).load(
+                commit.parent_commit_id
+            ),
+            CommitComparisonLoader.loader(info).load(
+                (commit.parent_commit_id, commit.commitid)
+            ),
         )
 
     command = info.context["executor"].get_command("compare")

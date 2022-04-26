@@ -9,6 +9,6 @@ class CommitReportLoader(BaseLoader):
         return commit_report.commit_id
 
     def batch_queryset(self, keys):
-        return CommitReport.objects.filter(commit__id__in=keys).select_related(
+        return CommitReport.objects.filter(commit_id__in=keys).select_related(
             "reportleveltotals"
         )
