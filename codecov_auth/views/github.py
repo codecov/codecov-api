@@ -18,6 +18,14 @@ class GithubLoginView(LoginMixin, StateMixin, View):
     service = "github"
     error_redirection_page = "/"
 
+    @property
+    def get_repo_service_instance(self):
+        return Github(
+            oauth_consumer_token=dict(
+                key=settings.GITHUB_CLIENT_ID, secret=settings.GITHUB_CLIENT_SECRET
+            )
+        )
+
     def get_url_to_redirect_to(self, scope):
         repo_service = Github
         base_url = urljoin(repo_service.service_url, "login/oauth/authorize")
@@ -55,11 +63,7 @@ class GithubLoginView(LoginMixin, StateMixin, View):
     async def fetch_user_data(self, code):
         # https://docs.github.com/en/rest/reference/teams#list-teams-for-the-authenticated-user
         # This is specific to GitHub
-        repo_service = Github(
-            oauth_consumer_token=dict(
-                key=settings.GITHUB_CLIENT_ID, secret=settings.GITHUB_CLIENT_SECRET
-            )
-        )
+        repo_service = self.get_repo_service_instance
         authenticated_user = await repo_service.get_authenticated_user(code)
         user_orgs = await repo_service.list_teams()
         is_student = await repo_service.is_student()
