@@ -65,4 +65,5 @@ async def resolve_number_of_uploads(owner, info, **kwargs):
 @owner_bindable.field("isAdmin")
 def resolve_is_current_user_an_admin(owner, info):
     current_user = info.context["request"].user
-    return owner.is_admin(current_user)
+    command = info.context["executor"].get_command("owner")
+    return command.get_is_current_user_an_admin(owner, current_user)
