@@ -680,44 +680,32 @@ class UploadHandlerHelpersTest(TestCase):
             ) == {"content_type": "application/x-gzip", "reduced_redundancy": False}
 
         with self.subTest("v4"):
-            assert (
-                parse_headers(
-                    {"X_Content_Type": "text/html", "X_Reduced_Redundancy": "false"},
-                    {"version": "v4"},
-                )
-                == {"content_type": "text/plain", "reduced_redundancy": False}
-            )
+            assert parse_headers(
+                {"X_Content_Type": "text/html", "X_Reduced_Redundancy": "false"},
+                {"version": "v4"},
+            ) == {"content_type": "text/plain", "reduced_redundancy": False}
 
-            assert (
-                parse_headers(
-                    {"X_Content_Type": "plain/text", "X_Reduced_Redundancy": "true"},
-                    {"version": "v4"},
-                )
-                == {"content_type": "plain/text", "reduced_redundancy": True}
-            )
+            assert parse_headers(
+                {"X_Content_Type": "plain/text", "X_Reduced_Redundancy": "true"},
+                {"version": "v4"},
+            ) == {"content_type": "plain/text", "reduced_redundancy": True}
 
-            assert (
-                parse_headers(
-                    {
-                        "X_Content_Type": "application/x-gzip",
-                        "X_Reduced_Redundancy": "true",
-                    },
-                    {"version": "v4", "package": "node"},
-                )
-                == {"content_type": "application/x-gzip", "reduced_redundancy": False}
-            )
+            assert parse_headers(
+                {
+                    "X_Content_Type": "application/x-gzip",
+                    "X_Reduced_Redundancy": "true",
+                },
+                {"version": "v4", "package": "node"},
+            ) == {"content_type": "application/x-gzip", "reduced_redundancy": False}
 
         with self.subTest("Unsafe content type"):
-            assert (
-                parse_headers(
-                    {
-                        "Content_Disposition": None,
-                        "X_Content_Type": "multipart/form-data",
-                    },
-                    {"version": "v4"},
-                )
-                == {"content_type": "text/plain", "reduced_redundancy": True}
-            )
+            assert parse_headers(
+                {
+                    "Content_Disposition": None,
+                    "X_Content_Type": "multipart/form-data",
+                },
+                {"version": "v4"},
+            ) == {"content_type": "text/plain", "reduced_redundancy": True}
 
     def test_store_report_in_redis(self):
 
