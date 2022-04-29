@@ -1084,8 +1084,8 @@ class ComparisonHasUnmergedBaseCommitsTests(TestCase):
 
     def test_returns_true_if_reverse_comparison_has_commits(self, get_adapter_mock):
         commits = ["a", "b"]
-        get_adapter_mock.return_value = (
-            ComparisonHasUnmergedBaseCommitsTests.MockFetchDiffCoro(commits)
+        get_adapter_mock.return_value = ComparisonHasUnmergedBaseCommitsTests.MockFetchDiffCoro(
+            commits
         )
         assert self.comparison.has_unmerged_base_commits is True
 
@@ -1093,7 +1093,7 @@ class ComparisonHasUnmergedBaseCommitsTests(TestCase):
         self, get_adapter_mock
     ):
         commits = ["a"]
-        get_adapter_mock.return_value = (
-            ComparisonHasUnmergedBaseCommitsTests.MockFetchDiffCoro(commits)
+        get_adapter_mock.return_value = ComparisonHasUnmergedBaseCommitsTests.MockFetchDiffCoro(
+            commits
         )
         assert self.comparison.has_unmerged_base_commits is False
