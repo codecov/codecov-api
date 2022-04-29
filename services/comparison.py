@@ -733,11 +733,16 @@ class PullRequestComparison(Comparison):
             1) The repository yaml or app yaml settings allow pseudo_comparisons
             2) the pull request's 'compared_to' field is defined
         """
-        return walk(
-            _dict=self.pull.repository.yaml,
-            keys=("codecov", "allow_pseudo_compare"),
-            _else=get_config(("site", "codecov", "allow_pseudo_compare"), default=True),
-        ) and bool(self.pull.compared_to)
+        return (
+            walk(
+                _dict=self.pull.repository.yaml,
+                keys=("codecov", "allow_pseudo_compare"),
+                _else=get_config(
+                    ("site", "codecov", "allow_pseudo_compare"), default=True
+                ),
+            )
+            and bool(self.pull.compared_to)
+        )
 
     @cached_property
     def allow_coverage_offsets(self):
