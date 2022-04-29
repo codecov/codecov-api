@@ -4,7 +4,7 @@ from django.test import TransactionTestCase
 from codecov_auth.tests.factories import OwnerFactory, GetAdminProviderAdapter
 from ..get_is_current_user_an_admin import GetIsCurrentUserAnAdminInteractor, _is_admin_on_provider
 from asgiref.sync import async_to_sync
-from codecov.commands.exceptions import NotFound
+from unittest.mock import patch
 
 
 class GetIsCurrentUserAnAdminInteractorTest(TransactionTestCase):
@@ -39,3 +39,16 @@ class GetIsCurrentUserAnAdminInteractorTest(TransactionTestCase):
         isAdmin = async_to_sync(
             GetIsCurrentUserAnAdminInteractor(owner, current_user).execute)(owner, current_user)
         assert isAdmin == False
+
+    @patch("codecov_auth.commands.owner.interactors.get_is_current_user_an_admin.get_provider")
+    def test_is_admin_on_provider_invokes_torngit_adapter(self, mocked_get_adapter):
+        current_user = OwnerFactory(ownerid=3)
+        owner = self.owner_has_no_admins
+        mocked_get_adapter.return_value = GetAdminProviderAdapter()
+        async_to_sync(_is_admin_on_provider)(
+            owner, current_user)
+        print(mocked_get_adapter.return_value)
+        assert mocked_get_adapter.return_value.last_call_args == {
+            "username": current_user.username,
+            "service_id": current_user.service_id,
+        }
