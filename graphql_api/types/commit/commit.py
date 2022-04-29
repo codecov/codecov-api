@@ -81,6 +81,10 @@ async def resolve_compare_with_parent(commit, info, **kwargs):
             ),
         )
 
+    # TODO: we may be able to return the comparison here if found.
+    # still calling the command below to handle `needs_recalculation`
+    # (maybe move that logic into the model and call it here)
+
     command = info.context["executor"].get_command("compare")
     return await command.compare_commit_with_parent(
         commit, parent_commit=parent_commit, comparison=comparison

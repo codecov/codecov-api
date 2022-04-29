@@ -43,11 +43,16 @@ class BaseLoader(DataLoader):
 
     @sync_to_async
     def batch_load_fn(self, keys):
-        # this implements the aiodataloader interface to batch load
-        # records for an ordered list of keys
+        """
+        This implements the aiodataloader interface to batch load records for an
+        ordered list of keys.
+
+        Each time we call `load` in the same tick of the event loop, aiodataloader
+        remembers the load key and defers the results.  At the end of the tick we
+        batch load the records for all those keys.
+        """
 
         queryset = self.batch_queryset(keys)
-
         results = {self.key(record): record for record in queryset}
 
         # the returned list of records must be in the exact order of `keys`
