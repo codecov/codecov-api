@@ -1,12 +1,12 @@
-from os import sync
-
 from ariadne import ObjectType
+from asgiref.sync import sync_to_async
 
 from graphql_api.dataloader.commit import load_commit_by_id
 from graphql_api.dataloader.owner import load_owner_by_id
 from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.enums import OrderingDirection
 from graphql_api.types.enums.enums import PullRequestState
+from services.comparison import PullRequestComparison
 
 pull_bindable = ObjectType("Pull")
 
@@ -55,3 +55,10 @@ async def resolve_commits(pull, info, **kwargs):
         ordering_direction=OrderingDirection.ASC,
         **kwargs,
     )
+
+
+@pull_bindable.field("pullComparison")
+@sync_to_async
+def resolve_pull_comparison(pull, info):
+    request = info.context["request"]
+    return PullRequestComparison(request.user, pull)

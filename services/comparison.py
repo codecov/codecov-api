@@ -472,6 +472,7 @@ class FileComparison:
 
     @cached_property
     def lines(self):
+        print("IN LINES")
         if self.total_diff_length > MAX_DIFF_SIZE and not self.bypass_max_diff:
             return None
         return self._calculated_changes_and_lines[1]

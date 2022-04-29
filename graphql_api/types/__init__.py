@@ -8,11 +8,14 @@ from .comparison import comparison, comparison_bindable
 from .coverage_totals import coverage_totals, coverage_totals_bindable
 from .enums import enum_types, enums
 from .file import commit_file, file_bindable
+from .file_comparison import file_comparison, file_comparison_bindable
+from .line_comparison import line_comparison, line_comparison_bindable
 from .me import me, me_bindable
 from .mutation import mutation, mutation_resolvers
 from .owner import owner, owner_bindable
 from .profile import profile, profile_bindable
 from .pull import pull, pull_bindable
+from .pull_comparison import pull_comparison, pull_comparison_bindable
 from .query import query, query_bindable
 from .repository import repository, repository_bindable
 from .session import session, session_bindable
@@ -28,7 +31,10 @@ types = [
     branch,
     commit,
     comparison,
+    file_comparison,
+    line_comparison,
     pull,
+    pull_comparison,
     user,
     owner,
     repository,
@@ -49,7 +55,10 @@ bindables = [
     branch_bindable,
     commit_bindable,
     comparison_bindable,
+    file_comparison_bindable,
+    line_comparison_bindable,
     pull_bindable,
+    pull_comparison_bindable,
     user_bindable,
     owner_bindable,
     repository_bindable,
