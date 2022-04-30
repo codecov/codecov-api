@@ -60,12 +60,3 @@ class OwnerCommandsTest(TransactionTestCase):
         owner = {}
         self.command.get_uploads_number_per_user(owner)
         interactor_mock.assert_called_once_with(owner)
-
-    @patch(
-        "codecov_auth.commands.owner.owner.GetIsCurrentUserAnAdminInteractor.execute"
-    )
-    def test_get_is_current_user_an_admin_delegate_to_interactor(self, interactor_mock):
-        owner = {}
-        current_user = {}
-        self.command.get_is_current_user_an_admin(owner, current_user)
-        interactor_mock.assert_called_once_with(owner, current_user)
