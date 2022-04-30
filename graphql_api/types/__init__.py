@@ -18,6 +18,7 @@ from .pull import pull, pull_bindable
 from .pull_comparison import pull_comparison, pull_comparison_bindable
 from .query import query, query_bindable
 from .repository import repository, repository_bindable
+from .segment_comparison import segment_comparison, segment_comparison_bindable
 from .session import session, session_bindable
 from .upload import upload, upload_bindable, upload_error_bindable
 from .user import user, user_bindable
@@ -32,6 +33,7 @@ types = [
     commit,
     comparison,
     file_comparison,
+    segment_comparison,
     line_comparison,
     pull,
     pull_comparison,
@@ -56,6 +58,7 @@ bindables = [
     commit_bindable,
     comparison_bindable,
     file_comparison_bindable,
+    segment_comparison_bindable,
     line_comparison_bindable,
     pull_bindable,
     pull_comparison_bindable,

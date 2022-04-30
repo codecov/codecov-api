@@ -158,11 +158,10 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         query = """
             pullId
             pullComparison {
-                fileComparisons {
+                files {
                     baseName
                     headName
                     isNewFile
-                    hasDiff
                     baseTotals {
                         coverage
                         fileCount
@@ -196,12 +195,11 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         assert res == {
             "pullId": pull.pullid,
             "pullComparison": {
-                "fileComparisons": [
+                "files": [
                     {
                         "baseName": "foo.py",
                         "headName": "bar.py",
                         "isNewFile": False,
-                        "hasDiff": True,
                         "baseTotals": totals,
                         "headTotals": totals,
                     },
@@ -209,7 +207,6 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                         "baseName": None,
                         "headName": "baz.py",
                         "isNewFile": True,
-                        "hasDiff": True,
                         "baseTotals": totals,
                         "headTotals": totals,
                     },
@@ -221,49 +218,59 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
     def test_pull_comparison_line_comparisons(self, files_mock):
         pull = self._create_pull(4)
 
-        TestFileComparison = namedtuple("TestFileComparison", ["lines"])
+        TestFileComparison = namedtuple("TestFileComparison", ["has_diff", "segments"])
+        TestSegmentComparison = namedtuple("TestSegmentComparison", ["header", "lines"])
         TestLineComparison = namedtuple(
             "TestLineComparison", ["number", "coverage", "value"]
         )
         files_mock.return_value = [
             TestFileComparison(
-                lines=[
-                    TestLineComparison(
-                        number={
-                            "head": "1",
-                            "base": "1",
-                        },
-                        coverage={
-                            "base": LineType.miss,
-                            "head": LineType.hit,
-                        },
-                        value=" line1",
-                    ),
-                    TestLineComparison(
-                        number={
-                            "base": None,
-                            "head": "2",
-                        },
-                        coverage={
-                            "base": None,
-                            "head": LineType.hit,
-                        },
-                        value="+ line2",
-                    ),
-                ]
+                has_diff=True,
+                segments=[
+                    TestSegmentComparison(
+                        header=[1, 2, 3, 4],
+                        lines=[
+                            TestLineComparison(
+                                number={
+                                    "head": "1",
+                                    "base": "1",
+                                },
+                                coverage={
+                                    "base": LineType.miss,
+                                    "head": LineType.hit,
+                                },
+                                value=" line1",
+                            ),
+                            TestLineComparison(
+                                number={
+                                    "base": None,
+                                    "head": "2",
+                                },
+                                coverage={
+                                    "base": None,
+                                    "head": LineType.hit,
+                                },
+                                value="+ line2",
+                            ),
+                        ],
+                    )
+                ],
             )
         ]
 
         query = """
             pullId
             pullComparison {
-                fileComparisons {
-                    lines {
-                        baseNumber
-                        headNumber
-                        baseCoverage
-                        headCoverage
-                        content
+                files {
+                    segments {
+                        header
+                        lines {
+                            baseNumber
+                            headNumber
+                            baseCoverage
+                            headCoverage
+                            content
+                        }
                     }
                 }
             }
@@ -273,23 +280,28 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         assert res == {
             "pullId": pull.pullid,
             "pullComparison": {
-                "fileComparisons": [
+                "files": [
                     {
-                        "lines": [
+                        "segments": [
                             {
-                                "baseNumber": "1",
-                                "headNumber": "1",
-                                "baseCoverage": "M",
-                                "headCoverage": "H",
-                                "content": " line1",
-                            },
-                            {
-                                "baseNumber": None,
-                                "headNumber": "2",
-                                "baseCoverage": None,
-                                "headCoverage": "H",
-                                "content": "+ line2",
-                            },
+                                "header": "@@ -1,2 +3,4 @@",
+                                "lines": [
+                                    {
+                                        "baseNumber": "1",
+                                        "headNumber": "1",
+                                        "baseCoverage": "M",
+                                        "headCoverage": "H",
+                                        "content": " line1",
+                                    },
+                                    {
+                                        "baseNumber": None,
+                                        "headNumber": "2",
+                                        "baseCoverage": None,
+                                        "headCoverage": "H",
+                                        "content": "+ line2",
+                                    },
+                                ],
+                            }
                         ]
                     }
                 ]

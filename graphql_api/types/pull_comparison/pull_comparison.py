@@ -6,12 +6,10 @@ from services.comparison import PullRequestComparison
 pull_comparison_bindable = ObjectType("PullComparison")
 
 
-@pull_comparison_bindable.field("fileComparisons")
+@pull_comparison_bindable.field("files")
 @sync_to_async
 def resolve_file_comparisons(pull_comparison: PullRequestComparison, info):
-    # `files` returns a generator that yields lazily
-    # use `list` here to force evaluation while we're in a sync context
-    return list(pull_comparison.files)
+    return [file for file in pull_comparison.files if file.has_diff]
 
 
 @pull_comparison_bindable.field("baseTotals")

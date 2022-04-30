@@ -22,11 +22,6 @@ def resolve_is_new_file(file_comparison: FileComparison, info):
     return base_name is None and head_name is not None
 
 
-@file_comparison_bindable.field("hasDiff")
-def resolve_has_diff(file_comparison: FileComparison, info):
-    return file_comparison.has_diff
-
-
 @file_comparison_bindable.field("baseTotals")
 def resolve_base_totals(file_comparison: FileComparison, info):
     return file_comparison.totals["base"]

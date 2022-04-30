@@ -4,6 +4,5 @@ type FileComparison {
     isNewFile: Boolean
     baseTotals: CoverageTotals
     headTotals: CoverageTotals
-    hasDiff: Boolean
-    lines: [LineComparison!]!
+    segments: [SegmentComparison!]!
 }
