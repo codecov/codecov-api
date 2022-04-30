@@ -700,10 +700,7 @@ class UploadHandlerHelpersTest(TestCase):
 
         with self.subTest("Unsafe content type"):
             assert parse_headers(
-                {
-                    "Content_Disposition": None,
-                    "X_Content_Type": "multipart/form-data",
-                },
+                {"Content_Disposition": None, "X_Content_Type": "multipart/form-data"},
                 {"version": "v4"},
             ) == {"content_type": "text/plain", "reduced_redundancy": True}
 
