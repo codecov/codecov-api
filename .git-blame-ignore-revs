@@ -8,5 +8,8 @@
 #
 # $ git config blame.ignoreRevsFile .git-blame-ignore-revs
 
+# Run black on entire codebase
 714d1f8da36b57b59d2a40d66c0a9a2cefa60b87
+
+# Linting the whole codecov codebase
 899fe2bc94c1d4e6c07c5b04d3d353b889a37229
