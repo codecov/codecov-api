@@ -116,7 +116,7 @@ class Repository(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["author", "name"], name="repos_slug"),
             models.UniqueConstraint(
-                fields=["author", "service_id"], name="repos_service_ids"
+                fields=["service_id", "author"], name="repos_service_ids"
             ),
         ]
         verbose_name_plural = "Repositories"
