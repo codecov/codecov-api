@@ -26,7 +26,8 @@ class GetIsCurrentUserAnAdminInteractor(BaseInteractor):
     @sync_to_async
     def execute(self, owner, current_user):
         admins = owner.admins
-        print(current_user.ownerid in admins)
+        if not hasattr(current_user, "ownerid"):
+            return False
         if owner.ownerid == current_user.ownerid:
             return True
         else:
