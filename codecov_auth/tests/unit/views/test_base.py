@@ -215,10 +215,7 @@ class LoginMixinTests(TestCase):
         )
 
     def mock_get_or_create_owner(self, user_dict, *args):
-        owner = OwnerFactory(
-            service_id=user_dict.get("id", 89),
-            service="github",
-        )
+        owner = OwnerFactory(service_id=user_dict.get("id", 89), service="github",)
         owner.organizations = [1, 2]
         return owner, True
 
@@ -239,10 +236,7 @@ class LoginMixinTests(TestCase):
     def test_login_from_user_dict_enterprise_raise_usernotinorganization_error(
         self, mock_get_config: Mock
     ):
-        user_dict = dict(
-            orgs=[],
-            is_student=False,
-        )
+        user_dict = dict(orgs=[], is_student=False,)
         mock_get_config.return_value = ["awesome-team", "modest_mice"]
         with pytest.raises(PermissionDenied) as exp:
             self.mixin_instance.login_from_user_dict(
@@ -309,9 +303,7 @@ class LoginMixinTests(TestCase):
     ):
         login_data = dict(id=121)
         license = LicenseInformation(
-            is_valid=True,
-            message=None,
-            number_allowed_users=2,
+            is_valid=True, message=None, number_allowed_users=2,
         )
         mock_get_current_license.return_value = license
         self.mixin_instance._check_user_count_limitations(login_data)
