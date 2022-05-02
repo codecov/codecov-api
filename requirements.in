@@ -15,7 +15,7 @@ factory-boy
 fakeredis
 freezegun
 git+ssh://git@github.com/codecov/opentelem-python.git@v0.0.4a1#egg=codecovopentelem
-git+ssh://git@github.com/codecov/shared.git@v0.7.16#egg=shared
+git+ssh://git@github.com/codecov/shared.git@v0.7.17#egg=shared
 gunicorn
 https://github.com/photocrowd/django-cursor-pagination/archive/f560902696b0c8509e4d95c10ba0d62700181d84.tar.gz
 minio
