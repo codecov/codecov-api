@@ -26,14 +26,6 @@ class GetIsCurrentUserAnAdminInteractorTest(TransactionTestCase):
         )(owner, current_user)
         assert isAdmin == True
 
-    def test_user_admin_in_org(self):
-        current_user = OwnerFactory(ownerid=2)
-        owner = self.owner_has_admins
-        isAdmin = async_to_sync(
-            GetIsCurrentUserAnAdminInteractor(owner, current_user).execute
-        )(owner, current_user)
-        assert isAdmin == True
-
     def test_user_not_admin_in_org(self):
         current_user = OwnerFactory(ownerid=3)
         owner = self.owner_has_admins
@@ -66,6 +58,18 @@ class GetIsCurrentUserAnAdminInteractorTest(TransactionTestCase):
     @patch(
         "codecov_auth.commands.owner.interactors.get_is_current_user_an_admin.get_provider"
     )
+    def test_is_admin_in_org_not_on_provider(self, mocked_get_adapter):
+        current_user = OwnerFactory(ownerid=2)
+        owner = self.owner_has_admins
+        mocked_get_adapter.return_value = GetAdminProviderAdapter(result=False)
+        isAdmin = async_to_sync(
+            GetIsCurrentUserAnAdminInteractor(owner, current_user).execute
+        )(owner, current_user)
+        assert isAdmin == True
+
+    @patch(
+        "codecov_auth.commands.owner.interactors.get_is_current_user_an_admin.get_provider"
+    )
     def test_is_admin_on_provider(self, mocked_get_adapter):
         current_user = OwnerFactory(ownerid=3)
         owner = self.owner_has_no_admins
@@ -79,7 +83,7 @@ class GetIsCurrentUserAnAdminInteractorTest(TransactionTestCase):
     @patch(
         "codecov_auth.commands.owner.interactors.get_is_current_user_an_admin.get_provider"
     )
-    def test_is_admin_not_on_provider(self, mocked_get_adapter):
+    def test_is_admin_not_in_org_or_on_provider(self, mocked_get_adapter):
         current_user = OwnerFactory(ownerid=3)
         owner = self.owner_has_no_admins
         mocked_get_adapter.return_value = GetAdminProviderAdapter(result=False)

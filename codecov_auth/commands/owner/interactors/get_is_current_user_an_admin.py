@@ -12,12 +12,7 @@ def _is_admin_on_provider(owner, current_user):
         owner.service,
         {
             **get_generic_adapter_params(current_user, owner.service),
-            **{
-                "owner": {
-                    "username": owner.username,
-                    "service_id": owner.service_id,
-                }
-            },
+            **{"owner": {"username": owner.username, "service_id": owner.service_id,}},
         },
     )
 
@@ -31,10 +26,9 @@ class GetIsCurrentUserAnAdminInteractor(BaseInteractor):
     @sync_to_async
     def execute(self, owner, current_user):
         admins = owner.admins
+        print(current_user.ownerid in admins)
         if owner.ownerid == current_user.ownerid:
             return True
-        elif admins and bool(admins[0]):
-            return current_user.ownerid in admins
         else:
             try:
                 isAdmin = async_to_sync(_is_admin_on_provider)(owner, current_user)
@@ -42,7 +36,7 @@ class GetIsCurrentUserAnAdminInteractor(BaseInteractor):
                     # save admin provider in admins list
                     owner.admins.append(current_user.ownerid)
                     owner.save()
-                return isAdmin
+                return isAdmin or (current_user.ownerid in admins)
             except Exception as error:
                 print("Error Calling Admin Provider " + repr(error))
                 return False
