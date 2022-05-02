@@ -19,6 +19,10 @@ class TestGraphHandler(APITestCase):
         path = f"/{kwargs.get('service')}/{kwargs.get('owner_username')}/{kwargs.get('repo_name')}/branch/{kwargs.get('branch')}/graphs/{graph_type}.{kwargs.get('ext')}"
         return self.client.get(path, data=data)
 
+    def _get_commit(self, graph_type, kwargs={}, data={}):
+        path = f"/{kwargs.get('service')}/{kwargs.get('owner_username')}/{kwargs.get('repo_name')}/commit/{kwargs.get('commit')}/graphs/{graph_type}.{kwargs.get('ext')}"
+        return self.client.get(path, data=data)
+
     def _get_pull(self, graph_type, kwargs={}, data={}):
         path = f"/{kwargs.get('service')}/{kwargs.get('owner_username')}/{kwargs.get('repo_name')}/pull/{kwargs.get('pull')}/graphs/{graph_type}.{kwargs.get('ext')}"
         return self.client.get(path, data=data)
@@ -381,6 +385,65 @@ class TestGraphHandler(APITestCase):
                 "repo_name": "repo1",
                 "ext": "svg",
                 "branch": "branch1",
+            },
+            data={"token": "12345678"},
+        )
+        expected_graph = """<svg baseProfile="full" width="300" height="300" viewBox="0 0 300 300" version="1.1"
+            xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events"
+            xmlns:xlink="http://www.w3.org/1999/xlink">
+
+            <style>rect.s{mask:url(#mask);}</style>
+            <defs>
+            <pattern id="white" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <rect width="2" height="2" transform="translate(0,0)" fill="white"></rect>
+            </pattern>
+            <mask id="mask">
+                <rect x="0" y="0" width="100%" height="100%" fill="url(#white)"></rect>
+            </mask>
+            </defs>
+
+            <rect x="0" y="0" width="210.0" height="150.0" fill="#4c1" stroke="white" stroke-width="1" class=" tooltipped" data-content="tests/test_sample.py"><title>tests/test_sample.py</title></rect>
+            <rect x="210.0" y="0" width="90.0" height="150.0" fill="#e05d44" stroke="white" stroke-width="1" class=" tooltipped" data-content="tests/__init__.py"><title>tests/__init__.py</title></rect>
+            <rect x="0" y="150.0" width="300.0" height="150.0" fill="#efa41b" stroke="white" stroke-width="1" class=" tooltipped" data-content="awesome/__init__.py"><title>awesome/__init__.py</title></rect>
+        </svg>"""
+        graph = response.content.decode("utf-8")
+        graph = [line.strip() for line in graph.split("\n")]
+        expected_graph = [line.strip() for line in expected_graph.split("\n")]
+        assert expected_graph == graph
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_commit_graph(self):
+        gh_owner = OwnerFactory(service="github")
+        repo = RepositoryFactory(
+            author=gh_owner,
+            active=True,
+            private=True,
+            name="repo1",
+            image_token="12345678",
+        )
+        commit_1 = CommitFactory(repository=repo, author=gh_owner)
+        commit_2 = CommitFactory(
+            repository=repo, author=gh_owner, parent_commit_id=commit_1.commitid
+        )
+
+        # add another file to commit_2 and assert that the expected graph
+        # below still pertains to commit_1
+        commit_2.report["files"]["another_file.py"] = [
+            2,
+            [0, 10, 8, 2, 0, "80.00000", 0, 0, 0, 0, 0, 0, 0],
+            [[0, 10, 8, 2, 0, "80.00000", 0, 0, 0, 0, 0, 0, 0]],
+            [0, 2, 1, 1, 0, "50.00000", 0, 0, 0, 0, 0, 0, 0],
+        ]
+        commit_2.save()
+
+        response = self._get_commit(
+            "tree",
+            kwargs={
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "svg",
+                "commit": commit_1.commitid,
             },
             data={"token": "12345678"},
         )
