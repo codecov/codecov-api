@@ -10,7 +10,6 @@ django-dynamic-fixture
 django-filter
 djangorestframework
 elastic-apm
-environs
 factory-boy
 fakeredis
 freezegun
@@ -44,4 +43,3 @@ stripe
 tlslite-ng
 vcrpy
 whitenoise
-
