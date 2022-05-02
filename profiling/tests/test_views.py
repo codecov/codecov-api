@@ -65,7 +65,7 @@ def test_creating_profiling_commit_no_code(db):
     client.credentials(HTTP_AUTHORIZATION="repotoken " + token.key)
     response = client.post(
         url,
-        {"environment": "production", "version_identifier": "v1.0.9",},
+        {"environment": "production", "version_identifier": "v1.0.9"},
         format="json",
     )
     assert response.status_code == 400

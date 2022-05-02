@@ -79,7 +79,7 @@ class StorageService(object):
             )
 
         return minio.Minio(
-            host, access_key=access_key, secret_key=secret_key, secure=verify_ssl,
+            host, access_key=access_key, secret_key=secret_key, secure=verify_ssl
         )
 
     # writes the initial storage bucket to storage via minio.

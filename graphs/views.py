@@ -70,10 +70,10 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
 
     def get_coverage(self):
         """
-            Note: This endpoint has the behaviour of returning a gray badge with the word 'unknwon' instead of returning a 404
-                  when the user enters an invalid service, owner, repo or when coverage is not found for a branch. 
+        Note: This endpoint has the behaviour of returning a gray badge with the word 'unknwon' instead of returning a 404
+              when the user enters an invalid service, owner, repo or when coverage is not found for a branch.
 
-                  We also need to support service abbreviations for users already using them
+              We also need to support service abbreviations for users already using them
         """
         coverage_range = [70, 100]
 
@@ -116,7 +116,7 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
     def flag_coverage(self, flag, commit):
         """
         Looks into a commit's report sessions and returns the coverage for a perticular flag
-        
+
         Parameters
         flag (string): name of flag
         commit (obj): commit object containing report

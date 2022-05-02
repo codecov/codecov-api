@@ -463,7 +463,7 @@ class RepositoryToken(BaseCodecovModel):
     token_type = models.CharField(max_length=50)
     valid_until = models.DateTimeField(blank=True, null=True)
     key = models.CharField(
-        max_length=40, unique=True, editable=False, default=_generate_key,
+        max_length=40, unique=True, editable=False, default=_generate_key
     )
 
     @classmethod

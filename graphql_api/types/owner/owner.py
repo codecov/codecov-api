@@ -60,3 +60,9 @@ async def resolve_repository(owner, info, name):
 async def resolve_number_of_uploads(owner, info, **kwargs):
     command = info.context["executor"].get_command("owner")
     return await command.get_uploads_number_per_user(owner)
+
+
+@owner_bindable.field("isAdmin")
+def resolve_is_current_user_an_admin(owner, info):
+    current_user = info.context["request"].user
+    return owner.is_admin(current_user)

@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from django.test import TransactionTestCase
 from freezegun import freeze_time
 
@@ -28,32 +30,36 @@ query_list_pull_request = """{
 }
 """
 
+default_pull_request_detail_query = """
+    title
+    state
+    pullId
+    updatestamp
+    author {
+        username
+    }
+    head {
+        totals {
+            coverage
+        }
+    }
+    comparedTo {
+        commitid
+    }
+    compareWithBase {
+        patchTotals {
+            coverage
+        }
+    }
+"""
+
 query_pull_request_detail = """{
     me {
         owner {
             repository(name: "test-repo-for-pull") {
                 name
                 pull(id: %s) {
-                    title
-                    state
-                    pullId
-                    updatestamp
-                    author {
-                        username
-                    }
-                    head {
-                        totals {
-                            coverage
-                        }
-                    }
-                    comparedTo {
-                        commitid
-                    }
-                    compareWithBase {
-                        patchTotals {
-                            coverage
-                        }
-                    }
+                    %s
                 }
             }
         }
@@ -67,8 +73,8 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query_list_pull_request, user=self.user)
         return paginate_connection(data["me"]["owner"]["repository"]["pulls"])
 
-    def fetch_one_pull_request(self, id):
-        data = self.gql_request(query_pull_request_detail % id, user=self.user)
+    def fetch_one_pull_request(self, id, query=default_pull_request_detail_query):
+        data = self.gql_request(query_pull_request_detail % (id, query), user=self.user)
         return data["me"]["owner"]["repository"]["pull"]
 
     def setUp(self):
@@ -188,4 +194,50 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "head": {"totals": {"coverage": 78.38}},
             "comparedTo": {"commitid": "9asd78fa7as8d8fa97s8d7fgagsd8fa9asd8f77s"},
             "compareWithBase": {"patchTotals": {"coverage": 87.39}},
+        }
+
+    @freeze_time("2021-02-02")
+    def test_fetch_commits_request(self):
+        query = """
+            commits {
+                totalCount
+                edges {
+                    node {
+                        commitid
+                    }
+                }
+            }
+        """
+        my_pull = PullFactory(repository=self.repository)
+
+        CommitFactory(
+            repository=self.repository,
+            pullid=my_pull.pullid,
+            commitid="11111",
+            timestamp=datetime.today() - timedelta(days=1),
+        )
+        CommitFactory(
+            repository=self.repository,
+            pullid=my_pull.pullid,
+            commitid="22222",
+            timestamp=datetime.today() - timedelta(days=2),
+        )
+        CommitFactory(
+            repository=self.repository,
+            pullid=my_pull.pullid,
+            commitid="33333",
+            timestamp=datetime.today() - timedelta(days=3),
+        )
+
+        pull = self.fetch_one_pull_request(my_pull.pullid, query)
+
+        assert pull == {
+            "commits": {
+                "edges": [
+                    {"node": {"commitid": "11111"}},
+                    {"node": {"commitid": "22222"}},
+                    {"node": {"commitid": "33333"}},
+                ],
+                "totalCount": 3,
+            }
         }

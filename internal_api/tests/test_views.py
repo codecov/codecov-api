@@ -240,7 +240,7 @@ class RepoPullList(InternalAPITest):
             state="open",
             head=CommitFactory(repository=repo, author=user, pullid=None).commitid,
             base=CommitFactory(
-                repository=repo, pullid=None, author=user, totals=None,
+                repository=repo, pullid=None, author=user, totals=None
             ).commitid,
             compared_to=CommitFactory(
                 pullid=None,

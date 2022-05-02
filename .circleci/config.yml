@@ -38,17 +38,17 @@ gcloud_auth_enterprise: &gcloud_auth_enterprise
     gcloud auth configure-docker
 
 jobs:
-  linter:
+  lint-isort:
     docker:
       - image: circleci/python:3.7.6
     working_directory: ~/repo
     steps:
       - checkout
       - run:
-          name: Running linter
+          name: Running black and isort
           command: |
             echo "Installing..."
-            pip3 install -Iv black==19.10b0 isort
+            pip3 install -Iv black==22.3.0 isort
             echo "Linting..."
             black --check .
             echo "Sorting..."
@@ -121,14 +121,14 @@ jobs:
           apk add git
           chmod +x codecov-alpine
           ./codecov-alpine -R . --url https://stage-web.codecov.dev -t $CODECOV_STAGING_TOKEN -F unit
-  lint:
+  pylint-django:
     executor: codecov-api
     steps:
     - attach_workspace:
         at: .
     - run:
-        name: Pylint
-        command: make lint
+        name: Running pylint-django
+        command: make lint.ci
   portable:
     executor: codecov-deploy
     steps:
@@ -222,13 +222,13 @@ workflows:
   version: 2
   build-test-deploy:
     jobs:
-      - linter
+      - lint-isort
       - build:
           context: "circleci google deploy context"
           filters:
             tags:
               only: /.*/
-      - lint:
+      - pylint-django:
           context: "circleci google deploy context" 
           requires:
             - build
@@ -264,7 +264,7 @@ workflows:
           requires:
             - build
             - test
-            - lint
+            - lint-isort
           filters:
             branches:
               only:
@@ -275,7 +275,7 @@ workflows:
           requires:
             - build
             - test
-            - lint
+            - lint-isort
           filters:
             branches:
               only: staging
@@ -284,7 +284,7 @@ workflows:
           requires:
             - build
             - test
-            - lint
+            - lint-isort
             - dive
           filters:
             branches:
@@ -308,7 +308,7 @@ workflows:
           requires:
             - build-enterprise
             - test
-            - lint
+            - lint-isort
             - dive-enterprise
           filters:
             tags:

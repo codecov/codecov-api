@@ -3,13 +3,13 @@ from redis import Redis
 from utils.config import get_config
 
 
-def get_redis_url():
+def get_redis_url() -> str:
     url = get_config("services", "redis_url")
     if url is not None:
         return url
     hostname = "redis"
     port = 6379
-    return f"redis://redis:@{hostname}:{port}"
+    return f"redis://{hostname}:{port}"
 
 
 def get_redis_connection() -> Redis:

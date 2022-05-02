@@ -85,8 +85,8 @@ class UploadDownloadHelperTest(APITestCase):
             data={"path": "v4/raw/hasssshhh"},
         )
         assert response.status_code == 200
-        headers = response._headers
-        assert headers["content-type"] == ("Content-Type", "text/plain")
+        headers = response.headers
+        assert headers["content-type"] == "text/plain"
 
     @patch("services.archive.ArchiveService.read_file")
     def test_invalid_repo_archive_path(self, mock_read_file):
