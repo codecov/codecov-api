@@ -18,19 +18,20 @@ def _get_state_from_redis(mock_redis):
     return key_redis.replace("oauth-state-", "")
 
 
-@override_settings(GITHUB_ENTERPRISE_CLIENT_ID="3d44be0e772666136a13")
-def test_get_ghe_redirect(client, mocker, mock_redis):
+def test_get_ghe_redirect(client, mocker, mock_redis, settings):
     mock_get_config = mocker.patch(
         "shared.torngit.github_enterprise.get_config",
         side_effect=lambda *args: "https://my.githubenterprise.com",
     )
+    settings.IS_ENTERPRISE = True
+    settings.GITHUB_ENTERPRISE_CLIENT_ID = "3d44be0e772666136a13"
     url = reverse("ghe-login")
     res = client.get(url)
     state = _get_state_from_redis(mock_redis)
     assert res.status_code == 302
     assert (
         res.url
-        == f"https://my.githubenterprise.com/login/oauth/authorize?response_type=code&scope=user%3Aemail%2Cread%3Aorg%2Crepo%3Astatus%2Cwrite%3Arepo_hook&client_id=3d44be0e772666136a13&state={state}"
+        == f"https://my.githubenterprise.com/login/oauth/authorize?response_type=code&scope=user%3Aemail%2Cread%3Aorg%2Crepo%3Astatus%2Cwrite%3Arepo_hook%2Crepo&client_id=3d44be0e772666136a13&state={state}"
     )
     mock_get_config.assert_called_with("github_enterprise", "url")
 
