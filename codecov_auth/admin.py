@@ -3,6 +3,7 @@ from django.contrib import admin, messages
 from django.shortcuts import redirect
 
 from codecov_auth.models import Owner
+from services.task import TaskService
 from utils.services import get_short_service_name
 
 
@@ -51,3 +52,10 @@ class OwnerAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, _, obj=None):
         return False
+
+    def delete_queryset(self, request, queryset) -> None:
+        for owner in queryset:
+            TaskService().delete_owner(ownerid=owner.ownerid)
+
+    def delete_model(self, request, obj) -> None:
+        TaskService().delete_owner(ownerid=obj.ownerid)
