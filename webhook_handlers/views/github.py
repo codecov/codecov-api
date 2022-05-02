@@ -536,5 +536,3 @@ class GithubWebhookHandler(APIView):
 
         handler = getattr(self, self.event, self.unhandled_webhook_event)
         return handler(request, *args, **kwargs)
-
-        return Response()
