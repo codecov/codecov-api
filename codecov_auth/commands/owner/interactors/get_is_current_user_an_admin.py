@@ -12,7 +12,12 @@ def _is_admin_on_provider(owner, current_user):
         owner.service,
         {
             **get_generic_adapter_params(current_user, owner.service),
-            **{"owner": {"username": owner.username, "service_id": owner.service_id,}},
+            **{
+                "owner": {
+                    "username": owner.username,
+                    "service_id": owner.service_id,
+                }
+            },
         },
     )
 
