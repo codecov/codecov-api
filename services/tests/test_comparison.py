@@ -511,6 +511,11 @@ class FileComparisonTests(TestCase):
 
         assert segments[0].header == segment["header"]
 
+    def test_segments_no_diff(self):
+        self.file_comparison.diff_data = None
+        segments = self.file_comparison.segments
+        assert segments == []
+
     def test_change_summary(self):
         head_lines = [
             [1, "", [], 0, None],
