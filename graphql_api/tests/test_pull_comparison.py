@@ -118,8 +118,16 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
     def test_pull_comparison_file_comparisons(self, files_mock):
         pull = self._create_pull(3)
 
-        report_totals = ReportTotals(
+        base_report_totals = ReportTotals(
             coverage=75.0,
+            files=1,
+            lines=6,
+            hits=3,
+            misses=2,
+            partials=1,
+        )
+        head_report_totals = ReportTotals(
+            coverage=85.0,
             files=1,
             lines=6,
             hits=3,
@@ -138,8 +146,8 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                 },
                 has_diff=True,
                 totals={
-                    "base": report_totals,
-                    "head": report_totals,
+                    "base": base_report_totals,
+                    "head": head_report_totals,
                 },
             ),
             TestFileComparison(
@@ -149,8 +157,8 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                 },
                 has_diff=True,
                 totals={
-                    "base": report_totals,
-                    "head": report_totals,
+                    "base": base_report_totals,
+                    "head": head_report_totals,
                 },
             ),
         ]
@@ -182,8 +190,16 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             }
         """
 
-        totals = {
+        base_totals = {
             "coverage": 75.0,
+            "fileCount": 1,
+            "lineCount": 6,
+            "hitsCount": 3,
+            "missesCount": 2,
+            "partialsCount": 1,
+        }
+        head_totals = {
+            "coverage": 85.0,
             "fileCount": 1,
             "lineCount": 6,
             "hitsCount": 3,
@@ -200,15 +216,15 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                         "baseName": "foo.py",
                         "headName": "bar.py",
                         "isNewFile": False,
-                        "baseTotals": totals,
-                        "headTotals": totals,
+                        "baseTotals": base_totals,
+                        "headTotals": head_totals,
                     },
                     {
                         "baseName": None,
                         "headName": "baz.py",
                         "isNewFile": True,
-                        "baseTotals": totals,
-                        "headTotals": totals,
+                        "baseTotals": base_totals,
+                        "headTotals": head_totals,
                     },
                 ]
             },
@@ -253,9 +269,30 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                 value="+ line2",
                             ),
                         ],
-                    )
+                    ),
                 ],
-            )
+            ),
+            TestFileComparison(
+                has_diff=True,
+                segments=[
+                    TestSegmentComparison(
+                        header=[1, None, 1, None],
+                        lines=[
+                            TestLineComparison(
+                                number={
+                                    "head": "1",
+                                    "base": "1",
+                                },
+                                coverage={
+                                    "base": LineType.miss,
+                                    "head": LineType.hit,
+                                },
+                                value=" line1",
+                            ),
+                        ],
+                    ),
+                ],
+            ),
         ]
 
         query = """
@@ -303,7 +340,23 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                 ],
                             }
                         ]
-                    }
+                    },
+                    {
+                        "segments": [
+                            {
+                                "header": "@@ -1 +1 @@",
+                                "lines": [
+                                    {
+                                        "baseNumber": "1",
+                                        "headNumber": "1",
+                                        "baseCoverage": "M",
+                                        "headCoverage": "H",
+                                        "content": " line1",
+                                    },
+                                ],
+                            }
+                        ]
+                    },
                 ]
             },
         }
