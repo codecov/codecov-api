@@ -123,7 +123,10 @@ def test_check_commit_contraints_settings_enabled(db, settings):
     with pytest.raises(Throttled) as excinfo:
         # third commit belongs to a different repo, but same user
         check_commit_upload_constraints(third_commit)
-    assert "Throttled due to limit on private repository coverage uploads" in excinfo.value.detail
+    assert (
+        "Throttled due to limit on private repository coverage uploads"
+        in excinfo.value.detail
+    )
 
 
 @pytest.mark.parametrize(
