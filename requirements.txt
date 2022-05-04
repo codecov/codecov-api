@@ -354,9 +354,7 @@ tenacity==6.2.0
 text-unidecode==1.3
     # via faker
 tlslite-ng==0.7.6
-    # via
-    #   -r requirements.in
-    #   shared
+    # via shared
 toml==0.10.2
     # via
     #   pre-commit
