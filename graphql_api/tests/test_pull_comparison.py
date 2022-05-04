@@ -6,6 +6,8 @@ from shared.reports.types import ReportTotals
 from shared.utils.merge import LineType
 
 from codecov_auth.tests.factories import OwnerFactory
+from compare.models import CommitComparison
+from compare.tests.factories import CommitComparisonFactory
 from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
 
 from .helper import GraphQLTestHelper
@@ -58,6 +60,11 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             repository=self.repository,
             author=self.user,
         )
+        self.commit_comparison = CommitComparisonFactory(
+            base_commit=self.base_commit,
+            compare_commit=self.head_commit,
+            state=CommitComparison.CommitComparisonStates.PROCESSED,
+        )
 
     @patch("services.comparison.Comparison.totals", new_callable=PropertyMock)
     def test_pull_comparison_totals(self, totals_mock):
@@ -77,9 +84,9 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
 
         query = """
             pullId
-            pullComparison {
+            compareWithBase {
                 baseTotals {
-                    coverage
+                    percentCovered
                     fileCount
                     lineCount
                     hitsCount
@@ -87,7 +94,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                     partialsCount
                 }
                 headTotals {
-                    coverage
+                    percentCovered
                     fileCount
                     lineCount
                     hitsCount
@@ -99,7 +106,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
 
         res = self._request(query, pull)
         totals = {
-            "coverage": 75.0,
+            "percentCovered": 75.0,
             "fileCount": 1,
             "lineCount": 6,
             "hitsCount": 3,
@@ -108,7 +115,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         }
         assert res == {
             "pullId": pull.pullid,
-            "pullComparison": {
+            "compareWithBase": {
                 "baseTotals": totals,
                 "headTotals": totals,
             },
@@ -165,13 +172,13 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
 
         query = """
             pullId
-            pullComparison {
-                files {
+            compareWithBase {
+                fileComparisons {
                     baseName
                     headName
                     isNewFile
                     baseTotals {
-                        coverage
+                        percentCovered
                         fileCount
                         lineCount
                         hitsCount
@@ -179,7 +186,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                         partialsCount
                     }
                     headTotals {
-                        coverage
+                        percentCovered
                         fileCount
                         lineCount
                         hitsCount
@@ -191,7 +198,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         """
 
         base_totals = {
-            "coverage": 75.0,
+            "percentCovered": 75.0,
             "fileCount": 1,
             "lineCount": 6,
             "hitsCount": 3,
@@ -199,7 +206,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             "partialsCount": 1,
         }
         head_totals = {
-            "coverage": 85.0,
+            "percentCovered": 85.0,
             "fileCount": 1,
             "lineCount": 6,
             "hitsCount": 3,
@@ -210,8 +217,8 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         res = self._request(query, pull)
         assert res == {
             "pullId": pull.pullid,
-            "pullComparison": {
-                "files": [
+            "compareWithBase": {
+                "fileComparisons": [
                     {
                         "baseName": "foo.py",
                         "headName": "bar.py",
@@ -297,8 +304,8 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
 
         query = """
             pullId
-            pullComparison {
-                files {
+            compareWithBase {
+                fileComparisons {
                     segments {
                         header
                         lines {
@@ -316,8 +323,8 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         res = self._request(query, pull)
         assert res == {
             "pullId": pull.pullid,
-            "pullComparison": {
-                "files": [
+            "compareWithBase": {
+                "fileComparisons": [
                     {
                         "segments": [
                             {
@@ -358,5 +365,39 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                         ]
                     },
                 ]
+            },
+        }
+
+    def test_pull_comparison_pending(self):
+        pull = self._create_pull(5)
+
+        self.commit_comparison.state = CommitComparison.CommitComparisonStates.PENDING
+        self.commit_comparison.save()
+
+        query = """
+            pullId
+            compareWithBase {
+                state
+                baseTotals {
+                    percentCovered
+                }
+                headTotals {
+                    percentCovered
+                }
+                fileComparisons {
+                    baseName
+                    headName
+                }
+            }
+        """
+
+        res = self._request(query, pull)
+        assert res == {
+            "pullId": pull.pullid,
+            "compareWithBase": {
+                "state": "pending",
+                "baseTotals": None,
+                "headTotals": None,
+                "fileComparisons": None,
             },
         }

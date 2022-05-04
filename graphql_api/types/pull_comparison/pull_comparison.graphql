@@ -1,5 +1,0 @@
-type PullComparison {
-    baseTotals: CoverageTotals
-    headTotals: CoverageTotals
-    files: [FileComparison!]!
-}

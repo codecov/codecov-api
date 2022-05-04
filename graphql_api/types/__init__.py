@@ -15,7 +15,6 @@ from .mutation import mutation, mutation_resolvers
 from .owner import owner, owner_bindable
 from .profile import profile, profile_bindable
 from .pull import pull, pull_bindable
-from .pull_comparison import pull_comparison, pull_comparison_bindable
 from .query import query, query_bindable
 from .repository import repository, repository_bindable
 from .segment_comparison import segment_comparison, segment_comparison_bindable
@@ -36,7 +35,6 @@ types = [
     segment_comparison,
     line_comparison,
     pull,
-    pull_comparison,
     user,
     owner,
     repository,
@@ -61,7 +59,6 @@ bindables = [
     segment_comparison_bindable,
     line_comparison_bindable,
     pull_bindable,
-    pull_comparison_bindable,
     user_bindable,
     owner_bindable,
     repository_bindable,
