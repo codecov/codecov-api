@@ -474,9 +474,6 @@ class GithubWebhookHandler(APIView):
         )
         return Response()
 
-    def marketplace_subscription(self, request, *args, **kwargs):
-        return self._handle_marketplace_events(request, *args, **kwargs)
-
     def marketplace_purchase(self, request, *args, **kwargs):
         return self._handle_marketplace_events(request, *args, **kwargs)
 
@@ -536,5 +533,3 @@ class GithubWebhookHandler(APIView):
 
         handler = getattr(self, self.event, self.unhandled_webhook_event)
         return handler(request, *args, **kwargs)
-
-        return Response()
