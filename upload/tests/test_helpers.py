@@ -1,4 +1,3 @@
-import re
 from contextlib import nullcontext
 
 import pytest
