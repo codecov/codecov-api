@@ -2,7 +2,7 @@ import hmac
 import json
 import uuid
 from collections import namedtuple
-from hashlib import sha1
+from hashlib import sha256
 from unittest.mock import call, patch
 
 import pytest
@@ -36,7 +36,7 @@ class GithubWebhookHandlerTests(APITestCase):
             **{
                 GitHubHTTPHeaders.EVENT: event,
                 GitHubHTTPHeaders.DELIVERY_TOKEN: uuid.UUID(int=5),
-                GitHubHTTPHeaders.SIGNATURE: "sha1="
+                GitHubHTTPHeaders.SIGNATURE_256: "sha256="
                 + hmac.new(
                     get_config(
                         "github",
@@ -44,7 +44,7 @@ class GithubWebhookHandlerTests(APITestCase):
                         default=b"testixik8qdauiab1yiffydimvi72ekq",
                     ),
                     json.dumps(data, separators=(",", ":")).encode("utf-8"),
-                    digestmod=sha1,
+                    digestmod=sha256,
                 ).hexdigest(),
             },
             data=data,
