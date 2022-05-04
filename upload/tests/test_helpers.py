@@ -119,9 +119,10 @@ def test_check_commit_contraints_settings_enabled(db, settings):
     with pytest.raises(Throttled):
         # second commit does not have uploads made, so we block it
         check_commit_upload_constraints(second_commit)
-    with pytest.raises(Throttled):
+    with pytest.raises(Throttled) as excinfo:
         # third commit belongs to a different repo, but same user
         check_commit_upload_constraints(third_commit)
+    assert excinfo.value.detail == "Request was throttled. Throttled due to limit on private repository coverage uploads to Codecov on a free plan."
 
 
 @pytest.mark.parametrize(
