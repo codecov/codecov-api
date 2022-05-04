@@ -40,6 +40,5 @@ sentry-sdk
 setproctitle
 simplejson
 stripe
-tlslite-ng
 vcrpy
 whitenoise
