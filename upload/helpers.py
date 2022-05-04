@@ -433,7 +433,8 @@ def check_commit_upload_constraints(commit: Commit):
                         "User exceeded its limits for usage",
                         extra=dict(ownerid=owner.ownerid, repoid=commit.repository_id),
                     )
-                    raise Throttled()
+                    message = "Request was throttled. Throttled due to limit on private repository coverage uploads to Codecov on a free plan."
+                    raise Throttled(detail=message)
 
 
 def validate_upload(upload_params, repository, redis):
