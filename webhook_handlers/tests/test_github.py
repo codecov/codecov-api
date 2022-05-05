@@ -105,7 +105,7 @@ class GithubWebhookHandlerTests(APITestCase):
                 },
             )
 
-    @patch('utils.config.get_config')
+    @patch("utils.config.get_config")
     def test_signature_too_short(self, mock_get_config):
         with pytest.raises(PermissionDenied):
             self._post_event_data(event=GitHubWebhookEvents.PING)
