@@ -3,10 +3,11 @@ import json
 import uuid
 from collections import namedtuple
 from hashlib import sha256
-from unittest.mock import call, patch
+from unittest.mock import call, create_autospec, patch
 
 import pytest
 from rest_framework import status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 
@@ -103,6 +104,11 @@ class GithubWebhookHandlerTests(APITestCase):
                     },
                 },
             )
+
+    @patch('utils.config.get_config')
+    def test_signature_too_short(self, mock_get_config):
+        with pytest.raises(PermissionDenied):
+            self._post_event_data(event=GitHubWebhookEvents.PING)
 
     def test_ping_returns_pong_and_200(self):
         response = self._post_event_data(event=GitHubWebhookEvents.PING)
