@@ -67,8 +67,8 @@ def queryset_to_connection(
     page = paginator.page(first=first, after=after, last=last, before=before)
     return {
         "edges": [
-            {"cursor": paginator.cursor(page[pos]), "node": repository}
-            for pos, repository in enumerate(page)
+            {"cursor": paginator.cursor(page[pos]), "node": record}
+            for pos, record in enumerate(page)
         ],
         "total_count": queryset.count(),
         "page_info": {
