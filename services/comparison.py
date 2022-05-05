@@ -526,9 +526,17 @@ class FileComparison:
 class Comparison(object):
     def __init__(self, user, base_commit, head_commit):
         self.user = user
-        self.base_commit = base_commit
-        self.head_commit = head_commit
+        self._base_commit = base_commit
+        self._head_commit = head_commit
         self.report_service = ReportService()
+
+    @cached_property
+    def base_commit(self):
+        return self._base_commit
+
+    @cached_property
+    def head_commit(self):
+        return self._head_commit
 
     @cached_property
     def files(self):
@@ -686,19 +694,30 @@ class PullRequestComparison(Comparison):
 
     def __init__(self, user, pull):
         self.pull = pull
+        super().__init__(
+            user=user,
+            # these are lazy loaded in the property methods below
+            base_commit=None,
+            head_commit=None,
+        )
 
+    @cached_property
+    def base_commit(self):
         try:
-            super().__init__(
-                user=user,
-                base_commit=Commit.objects.get(
-                    repository=self.pull.repository,
-                    commitid=self.pull.compared_to
-                    if self.is_pseudo_comparison
-                    else pull.base,
-                ),
-                head_commit=Commit.objects.get(
-                    repository=self.pull.repository, commitid=pull.head
-                ),
+            return Commit.objects.get(
+                repository=self.pull.repository,
+                commitid=self.pull.compared_to
+                if self.is_pseudo_comparison
+                else self.pull.base,
+            )
+        except Commit.DoesNotExist:
+            raise MissingComparisonCommit()
+
+    @cached_property
+    def head_commit(self):
+        try:
+            return Commit.objects.get(
+                repository=self.pull.repository, commitid=self.pull.head
             )
         except Commit.DoesNotExist:
             raise MissingComparisonCommit()
