@@ -53,7 +53,7 @@ class GithubWebhookHandler(APIView):
             key = bytes(key, "utf-8")
 
         sig = "sha256=" + hmac.new(key, request.body, digestmod=sha256).hexdigest()
-        webhook_sig = request.META.get(GitHubHTTPHeaders.SIGNATURE_256)
+        webhook_sig = request.META.get(GitHubHTTPHeaders.SIGNATURE_256) + ""
 
         if len(sig) != len(webhook_sig):
             raise PermissionDenied()
