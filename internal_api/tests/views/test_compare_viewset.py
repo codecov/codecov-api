@@ -296,6 +296,7 @@ class TestCompareViewSetRetrieve(APITestCase):
                 "pullid": PullFactory(
                     base=self.base.commitid,
                     head="123456",
+                    compared_to=self.base.commitid,
                     pullid=2,
                     repository=self.repo,
                 ).pullid
