@@ -7,7 +7,6 @@ from unittest.mock import call, patch
 
 import pytest
 from rest_framework import status
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 
@@ -104,11 +103,6 @@ class GithubWebhookHandlerTests(APITestCase):
                     },
                 },
             )
-
-    @patch("utils.config.get_config")
-    def test_signature_too_short(self, mock_get_config):
-        with pytest.raises(PermissionDenied):
-            self._post_event_data(event=GitHubWebhookEvents.PING)
 
     def test_ping_returns_pong_and_200(self):
         response = self._post_event_data(event=GitHubWebhookEvents.PING)
@@ -734,6 +728,7 @@ class GithubWebhookHandlerTests(APITestCase):
                 GitHubHTTPHeaders.EVENT: "",
                 GitHubHTTPHeaders.DELIVERY_TOKEN: uuid.UUID(int=5),
                 GitHubHTTPHeaders.SIGNATURE: 0,
+                GitHubHTTPHeaders.SIGNATURE_256: 0,
             },
             data={},
             format="json"
