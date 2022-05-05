@@ -3,7 +3,7 @@ import json
 import uuid
 from collections import namedtuple
 from hashlib import sha256
-from unittest.mock import call, create_autospec, patch
+from unittest.mock import call, patch
 
 import pytest
 from rest_framework import status
