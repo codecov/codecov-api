@@ -401,3 +401,36 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                 "fileComparisons": None,
             },
         }
+
+    def test_pull_comparison_no_comparison(self):
+        pull = self._create_pull(6)
+
+        self.commit_comparison.delete()
+
+        query = """
+            pullId
+            compareWithBase {
+                state
+                baseTotals {
+                    percentCovered
+                }
+                headTotals {
+                    percentCovered
+                }
+                fileComparisons {
+                    baseName
+                    headName
+                }
+            }
+        """
+
+        res = self._request(query, pull)
+        assert res == {
+            "pullId": pull.pullid,
+            "compareWithBase": {
+                "state": "pending",
+                "baseTotals": None,
+                "headTotals": None,
+                "fileComparisons": None,
+            },
+        }

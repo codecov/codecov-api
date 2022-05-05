@@ -42,7 +42,7 @@ async def resolve_compare_with_base(pull, info, **kwargs):
     command = info.context["executor"].get_command("compare")
     commit_comparison = await command.compare_pull_request(pull)
 
-    if commit_comparison.is_processed:
+    if commit_comparison and commit_comparison.is_processed:
         # store the comparison in the context - to be used in the `Comparison` resolvers
         user = info.context["request"].user
         info.context["comparison"] = PullRequestComparison(user, pull)
