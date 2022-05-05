@@ -16,14 +16,12 @@ class CompareCommitsInteractor(BaseInteractor):
         TaskService().compute_comparison(comparison.id)
 
     @sync_to_async
-    def execute(self, head_commit, compare_to_commit, comparison=None):
+    def execute(self, head_commit, compare_to_commit):
         if not head_commit or not compare_to_commit:
             return None
-        created = False
-        if comparison is None:
-            comparison, created = self.get_or_create_comparison(
-                head_commit, compare_to_commit
-            )
+        comparison, created = self.get_or_create_comparison(
+            head_commit, compare_to_commit
+        )
         if created or self.needs_recalculation(comparison):
             comparison.state = CommitComparison.CommitComparisonStates.PENDING
             comparison.save()

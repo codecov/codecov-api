@@ -1,7 +1,6 @@
 from ariadne import ObjectType, convert_kwargs_to_snake_case
 
-from graphql_api.dataloader.commit import CommitLoader
-from graphql_api.dataloader.owner import OwnerLoader
+from graphql_api.dataloader.owner import load_owner_by_id
 from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.enums import OrderingDirection
 
@@ -25,7 +24,7 @@ def resolve_branch(repository, info, name):
 
 @repository_bindable.field("author")
 def resolve_author(repository, info):
-    return OwnerLoader.loader(info).load(repository.author_id)
+    return load_owner_by_id(info, repository.author_id)
 
 
 @repository_bindable.field("commit")
@@ -66,20 +65,12 @@ async def resolve_pulls(
 async def resolve_commits(repository, info, filters=None, **kwargs):
     command = info.context["executor"].get_command("commit")
     queryset = await command.fetch_commits(repository, filters)
-    res = await queryset_to_connection(
+    return await queryset_to_connection(
         queryset,
         ordering="timestamp",
         ordering_direction=OrderingDirection.DESC,
         **kwargs,
     )
-
-    for edge in res["edges"]:
-        commit = edge["node"]
-        # cache all resulting commits in dataloader
-        loader = CommitLoader.loader(info, repository.repoid)
-        loader.cache(commit)
-
-    return res
 
 
 @repository_bindable.field("branches")

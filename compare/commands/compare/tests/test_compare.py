@@ -60,6 +60,14 @@ class CompareCommandsTest(TransactionTestCase):
         compare = await self.command.compare_pull_request(self.pull)
         assert compare is not None
 
+    async def test_change_with_parent_without_coverage(self):
+        change = await self.command.change_with_parent(self.comparison)
+        assert change is None
+
+    async def test_change_with_parent_with_coverage(self):
+        change = await self.command.change_with_parent(self.comparison_with_coverage)
+        assert float(change) == 15.06
+
     @patch("compare.commands.compare.compare.GetImpactedFilesInteractor.execute")
     def test_get_impacted_files_delegrate_to_interactor(self, interactor_mock):
         self.command.get_impacted_files(self.comparison)
