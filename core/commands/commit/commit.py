@@ -5,6 +5,7 @@ from services.repo_providers import RepoProviderService
 from .interactors.fetch_commit import FetchCommitInteractor
 from .interactors.fetch_commits import FetchCommitsInteractor
 from .interactors.fetch_commits_by_pullid import FetchCommitsByPullidInteractor
+from .interactors.fetch_totals import FetchTotalsInteractor
 from .interactors.get_file_content import GetFileContentInteractor
 from .interactors.get_final_yaml import GetFinalYamlInteractor
 from .interactors.get_uploads_of_commit import GetUploadsOfCommitInteractor
@@ -22,6 +23,9 @@ class CommitCommands(BaseCommand):
 
     def fetch_commits_by_pullid(self, pull):
         return self.get_interactor(FetchCommitsByPullidInteractor).execute(pull)
+
+    def fetch_totals(self, commit):
+        return self.get_interactor(FetchTotalsInteractor).execute(commit)
 
     def get_final_yaml(self, commit):
         return self.get_interactor(GetFinalYamlInteractor).execute(commit)

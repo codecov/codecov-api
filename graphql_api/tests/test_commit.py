@@ -7,7 +7,6 @@ from django.test import TransactionTestCase
 from shared.reports.types import LineSession
 
 from codecov_auth.tests.factories import OwnerFactory
-from compare.tests.factories import CommitComparisonFactory
 from core.models import Commit
 from core.tests.factories import CommitFactory, RepositoryFactory
 from graphql_api.types.enums import UploadErrorEnum, UploadState
@@ -462,15 +461,8 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             "headName": "src/config.js"
         }
 
-    def test_change_with_parent_call_the_command(self):
-        parent_report = CommitReportFactory(commit=self.parent_commit)
-        ReportLevelTotalsFactory(report=parent_report, coverage=12.34)
-        ReportLevelTotalsFactory(report=self.report, coverage=23.45)
-        CommitComparisonFactory(
-            base_commit=self.parent_commit,
-            compare_commit=self.commit,
-        )
-
+    @patch("compare.commands.compare.compare.CompareCommands.change_with_parent")
+    def test_change_with_parent_call_the_command(self, command_mock):
         query = query_commit % "compareWithParent { changeWithParent }"
         variables = {
             "org": self.org.username,
@@ -479,6 +471,8 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
+        fake_compare = 56.89
+        command_mock.return_value = fake_compare
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
-        assert commit["compareWithParent"]["changeWithParent"] == 11.11
+        assert commit["compareWithParent"]["changeWithParent"] == 56.89
