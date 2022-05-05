@@ -54,8 +54,9 @@ async def resolve_pulls(
     queryset = await command.fetch_pull_requests(repository, filters)
     return await queryset_to_connection(
         queryset,
-        ordering="updatestamp",
+        ordering="pullid",
         ordering_direction=ordering_direction,
+        ordering_unique=True,
         **kwargs,
     )
 
