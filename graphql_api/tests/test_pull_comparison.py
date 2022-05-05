@@ -402,10 +402,11 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             },
         }
 
-    def test_pull_comparison_no_comparison(self):
-        pull = self._create_pull(6)
+    @patch("compare.commands.compare.compare.CompareCommitsInteractor.execute")
+    def test_pull_comparison_no_comparison(self, compare_mock):
+        compare_mock.return_value = None
 
-        self.commit_comparison.delete()
+        pull = self._create_pull(6)
 
         query = """
             pullId
@@ -425,12 +426,4 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         """
 
         res = self._request(query, pull)
-        assert res == {
-            "pullId": pull.pullid,
-            "compareWithBase": {
-                "state": "pending",
-                "baseTotals": None,
-                "headTotals": None,
-                "fileComparisons": None,
-            },
-        }
+        assert res == {"pullId": pull.pullid, "compareWithBase": None}
