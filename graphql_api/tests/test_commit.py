@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, PropertyMock, patch
 
 import yaml
 from django.test import TransactionTestCase
@@ -474,3 +474,21 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
         assert commit["compareWithParent"]["changeWithParent"] == 56.89
+
+    @patch("services.profiling.CriticalFiles.filenames", new_callable=PropertyMock)
+    def test_commit_critical_files(self, filenames):
+        filenames.return_value = ["one", "two", "three"]
+
+        query = query_commit % "criticalFiles { name }"
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        assert commit["criticalFiles"] == [
+            {"name": "one"},
+            {"name": "two"},
+            {"name": "three"},
+        ]

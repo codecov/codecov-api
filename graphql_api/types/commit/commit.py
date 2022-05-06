@@ -1,11 +1,13 @@
 import yaml
 from ariadne import ObjectType
+from asgiref.sync import sync_to_async
 
 from core.models import Commit
 from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.owner import OwnerLoader
 from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.enums import OrderingDirection
+from services.profiling import CriticalFiles
 
 commit_bindable = ObjectType("Commit")
 
@@ -77,3 +79,16 @@ async def resolve_compare_with_parent(commit, info, **kwargs):
 @commit_bindable.field("flagNames")
 def resolve_flags(commit, info, **kwargs):
     return commit.full_report.flags.keys()
+
+
+@commit_bindable.field("criticalFiles")
+@sync_to_async
+def resolve_critical_files(commit: Commit, info, **kwargs):
+    """
+    The critical files for this particular commit (might be empty
+    depending on whether the profiling info included a commit SHA).
+    The results of this resolver could be different than that of the
+    `repository.criticalFiles` resolver.
+    """
+    critical_files = CriticalFiles(commit.repository, commit_sha=commit.commitid)
+    return [{"name": filename} for filename in critical_files.filenames]
