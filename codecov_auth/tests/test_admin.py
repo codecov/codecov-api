@@ -72,3 +72,24 @@ class OwnerAdminTest(TestCase):
         ownerid = user_to_delete.ownerid
         self.owner_admin.delete_model(MagicMock(), user_to_delete)
         delete_mock.assert_called_once_with(ownerid=ownerid)
+
+    @patch("codecov_auth.admin.admin.ModelAdmin.get_deleted_objects")
+    def test_confirmation_deleted_objects(self, mocked_deleted_objs):
+
+        user_to_delete = OwnerFactory()
+        deleted_objs = [
+            'Owner: <a href="/admin/codecov_auth/owner/{}/change/">{};</a>'.format(
+                user_to_delete.ownerid, user_to_delete
+            )
+        ]
+        mocked_deleted_objs.return_value = deleted_objs, {"owners": 1}, set(), []
+
+        (
+            deleted_objects,
+            model_count,
+            perms_needed,
+            protected,
+        ) = self.owner_admin.get_deleted_objects([user_to_delete], MagicMock())
+
+        mocked_deleted_objs.assert_called_once()
+        assert deleted_objects == ()
