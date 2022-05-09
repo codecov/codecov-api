@@ -80,7 +80,7 @@ class BitbucketServerLoginView(View, LoginMixin):
         auth_token_secret = request_token["oauth_token_secret"]
 
         data = (
-            base64.b64encode(auth_token) + b"|" + base64.b64encode(auth_token_secret)
+            base64.b64encode(auth_token.encode()) + b"|" + base64.b64encode(auth_token_secret.encode())
         ).decode()
 
         url_params = urlencode(dict(oauth_token=auth_token))

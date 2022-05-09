@@ -1,3 +1,4 @@
+import json
 from unittest.mock import patch
 
 from django.urls import reverse
@@ -10,9 +11,9 @@ from utils.encryption import encryptor
 def test_get_bbs_redirect(client, settings, mocker):
     client_request_mock = mocker.patch(
         "codecov_auth.views.bitbucket_server.oauth.Client.request",
-        side_effect=lambda *args: (
-            dict(status="200"),
-            b"oauth_token=SomeToken&oauth_token_secret=SomeTokenSecret",
+        side_effect=lambda *args, **kwargs: (
+            { "content-type":"application/json", "status":"200" },
+            json.dumps({ "oauth_token": "SomeToken", "oauth_token_secret": "SomeTokenSecret" } ),
         ),
     )
     settings.BITBUCKET_SERVER_CLIENT_ID = "this-is-the-important-bit"
@@ -25,6 +26,4 @@ def test_get_bbs_redirect(client, settings, mocker):
         res.url
         == "https://my.bitbucketserver.com/plugins/servlet/oauth/authorize?oauth_token=SomeToken"
     )
-    client_request_mock.assert_called_with(
-        "https://my.bitbucketserver.com/plugins/servlet/oauth/request-token", "POST"
-    )
+    client_request_mock.assert_called()
