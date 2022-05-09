@@ -22,16 +22,17 @@ urlpatterns = [
         name="github-enterprise-login",
     ),
     path("login/ghe", GithubEnterpriseLoginView.as_view(), name="ghe-login"),
-    path(
+    re_path(
         r"login/gitlab[-_]enterprise/?",
         GitlabEnterpriseLoginView.as_view(),
         name="gitlab-enterprise-login",
     ),
     path("login/gle", GitlabEnterpriseLoginView.as_view(), name="gle-login"),
     re_path(
-        r"login/bitbucket[-_]server",
+        r"login/bitbucket[-_]server/?",
         BitbucketServerLoginView.as_view(),
         name="bitbucket-server-login",
     ),
     path("login/bbs", BitbucketServerLoginView.as_view(), name="bbs-login"),
+    path("login/stash", BitbucketServerLoginView.as_view(), name="stash-login"),
 ]
