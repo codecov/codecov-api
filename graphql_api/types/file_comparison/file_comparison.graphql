@@ -1,0 +1,8 @@
+type FileComparison {
+    baseName: String
+    headName: String
+    isNewFile: Boolean
+    baseTotals: CoverageTotals
+    headTotals: CoverageTotals
+    segments: [SegmentComparison!]!
+}

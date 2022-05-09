@@ -482,6 +482,40 @@ class FileComparisonTests(TestCase):
             "head": LineType.hit,
         }
 
+    def test_segments(self):
+        head_lines = [
+            [1, "", [], 0, None],
+            ["1/2", "", [], 0, None],
+            [1, "", [], 0, None],
+        ]
+        base_lines = [[0, "", [], 0, None], [1, "", [], 0, None], [0, "", [], 0, None]]
+
+        first_line_val = "unchanged line from src"
+        second_line_val = "+this is an added line"
+        third_line_val = "-this is a removed line"
+        last_line_val = "this is the third line"
+
+        segment = {
+            "header": ["2", "2", "2", "2"],
+            "lines": [second_line_val, third_line_val],
+        }
+
+        self.file_comparison.head_file._lines = head_lines
+        self.file_comparison.base_file._lines = base_lines
+        self.file_comparison.diff_data = {"segments": [segment]}
+
+        segments = self.file_comparison.segments
+
+        assert len(segments) == 1
+        assert segments[0].lines == self.file_comparison.lines
+
+        assert segments[0].header == segment["header"]
+
+    def test_segments_no_diff(self):
+        self.file_comparison.diff_data = None
+        segments = self.file_comparison.segments
+        assert segments == []
+
     def test_change_summary(self):
         head_lines = [
             [1, "", [], 0, None],

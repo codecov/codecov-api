@@ -1,0 +1,7 @@
+type LineComparison {
+    baseNumber: String
+    headNumber: String
+    baseCoverage: CoverageLine
+    headCoverage: CoverageLine
+    content: String
+}

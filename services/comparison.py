@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import functools
 import json
 import logging
@@ -99,7 +100,7 @@ class FileComparisonTraverseManager:
         """
         self.head_file_eof = head_file_eof
         self.base_file_eof = base_file_eof
-        self.segments = segments
+        self.segments = copy.deepcopy(segments)
         self.src = src
 
         if self.segments:
@@ -305,6 +306,9 @@ class LineComparison:
         self.added = _is_added(value)
         self.removed = _is_removed(value)
 
+    def __eq__(self, other):
+        return isinstance(other, LineComparison) and self.__dict__ == other.__dict__
+
     @property
     def number(self):
         return {
@@ -339,6 +343,36 @@ class LineComparison:
         ]
         if session_coverage:
             return functools.reduce(lambda a, b: a + b, session_coverage)
+
+
+class SegmentComparison:
+    def __init__(self, base_file, head_file, segment):
+        self.base_file = base_file
+        self.head_file = head_file
+        self.segment = segment
+
+    @cached_property
+    def base_file_eof(self):
+        return self.base_file.eof if self.base_file is not None else 0
+
+    @cached_property
+    def head_file_eof(self):
+        return self.head_file.eof if self.head_file is not None else 0
+
+    @cached_property
+    def header(self):
+        return self.segment["header"]
+
+    @cached_property
+    def lines(self):
+        visitor = CreateLineComparisonVisitor(self.base_file, self.head_file)
+        traverse_manager = FileComparisonTraverseManager(
+            head_file_eof=self.head_file_eof,
+            base_file_eof=self.base_file_eof,
+            segments=[self.segment],
+        )
+        traverse_manager.apply([visitor])
+        return visitor.lines
 
 
 class FileComparison:
@@ -476,13 +510,33 @@ class FileComparison:
             return None
         return self._calculated_changes_and_lines[1]
 
+    @cached_property
+    def segments(self):
+        if not self.diff_data or self.diff_data.get("segments") is None:
+            return []
+
+        return [
+            SegmentComparison(
+                base_file=self.base_file, head_file=self.head_file, segment=segment
+            )
+            for segment in self.diff_data["segments"]
+        ]
+
 
 class Comparison(object):
     def __init__(self, user, base_commit, head_commit):
         self.user = user
-        self.base_commit = base_commit
-        self.head_commit = head_commit
+        self._base_commit = base_commit
+        self._head_commit = head_commit
         self.report_service = ReportService()
+
+    @cached_property
+    def base_commit(self):
+        return self._base_commit
+
+    @cached_property
+    def head_commit(self):
+        return self._head_commit
 
     @cached_property
     def files(self):
@@ -640,19 +694,30 @@ class PullRequestComparison(Comparison):
 
     def __init__(self, user, pull):
         self.pull = pull
+        super().__init__(
+            user=user,
+            # these are lazy loaded in the property methods below
+            base_commit=None,
+            head_commit=None,
+        )
 
+    @cached_property
+    def base_commit(self):
         try:
-            super().__init__(
-                user=user,
-                base_commit=Commit.objects.get(
-                    repository=self.pull.repository,
-                    commitid=self.pull.compared_to
-                    if self.is_pseudo_comparison
-                    else pull.base,
-                ),
-                head_commit=Commit.objects.get(
-                    repository=self.pull.repository, commitid=pull.head
-                ),
+            return Commit.objects.get(
+                repository=self.pull.repository,
+                commitid=self.pull.compared_to
+                if self.is_pseudo_comparison
+                else self.pull.base,
+            )
+        except Commit.DoesNotExist:
+            raise MissingComparisonCommit()
+
+    @cached_property
+    def head_commit(self):
+        try:
+            return Commit.objects.get(
+                repository=self.pull.repository, commitid=self.pull.head
             )
         except Commit.DoesNotExist:
             raise MissingComparisonCommit()
