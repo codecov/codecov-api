@@ -118,6 +118,7 @@ class Owner(models.Model):
     student_created_at = DateTimeWithoutTZField(null=True)
     student_updated_at = DateTimeWithoutTZField(null=True)
     onboarding_completed = models.BooleanField(default=False)
+    is_superuser = models.BooleanField(null=True)
 
     objects = OwnerQuerySet.as_manager()
 
