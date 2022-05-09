@@ -10,7 +10,6 @@ django-dynamic-fixture
 django-filter
 djangorestframework
 elastic-apm
-environs
 factory-boy
 fakeredis
 freezegun
@@ -41,7 +40,5 @@ sentry-sdk
 setproctitle
 simplejson
 stripe
-tlslite-ng
 vcrpy
 whitenoise
-
