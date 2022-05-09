@@ -57,10 +57,12 @@ class BitbucketServerLoginView(View, LoginMixin):
         # For this part we need a client with no token
         # And the consumer needs to have the defined client id. The secret is ignored.
         # https://developer.atlassian.com/server/jira/platform/oauth/
-        repo_service = BitbucketServer(oauth_consumer_token=dict(
+        repo_service = BitbucketServer(
+            oauth_consumer_token=dict(
                 key=settings.BITBUCKET_SERVER_CLIENT_ID,
                 secret="",
-        ))
+            )
+        )
 
         if request.GET.get("redirect"):
             self.set_cookie(
@@ -80,7 +82,9 @@ class BitbucketServerLoginView(View, LoginMixin):
         auth_token_secret = request_token["oauth_token_secret"]
 
         data = (
-            base64.b64encode(auth_token.encode()) + b"|" + base64.b64encode(auth_token_secret.encode())
+            base64.b64encode(auth_token.encode())
+            + b"|"
+            + base64.b64encode(auth_token_secret.encode())
         ).decode()
 
         url_params = urlencode(dict(oauth_token=auth_token))
@@ -107,10 +111,13 @@ class BitbucketServerLoginView(View, LoginMixin):
             base64.b64decode(i).decode() for i in request_cookie.split("|")
         ]
         token = oauth.Token(cookie_key, cookie_secret)
-        repo_service = BitbucketServer(oauth_consumer_token=dict(
+        repo_service = BitbucketServer(
+            oauth_consumer_token=dict(
                 key=settings.BITBUCKET_SERVER_CLIENT_ID,
                 secret=settings.BITBUCKET_SERVER_CLIENT_SECRET,
-        ), token=token)
+            ),
+            token=token,
+        )
         # Get the access token from the request token
         # The access token can be stored and reused.
         response = redirect(settings.CODECOV_DASHBOARD_URL + "/bbs")

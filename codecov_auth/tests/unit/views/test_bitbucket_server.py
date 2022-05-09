@@ -12,8 +12,10 @@ def test_get_bbs_redirect(client, settings, mocker):
     client_request_mock = mocker.patch(
         "codecov_auth.views.bitbucket_server.oauth.Client.request",
         side_effect=lambda *args, **kwargs: (
-            { "content-type":"application/json", "status":"200" },
-            json.dumps({ "oauth_token": "SomeToken", "oauth_token_secret": "SomeTokenSecret" } ),
+            {"content-type": "application/json", "status": "200"},
+            json.dumps(
+                {"oauth_token": "SomeToken", "oauth_token_secret": "SomeTokenSecret"}
+            ),
         ),
     )
     settings.BITBUCKET_SERVER_CLIENT_ID = "this-is-the-important-bit"
