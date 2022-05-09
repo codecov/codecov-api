@@ -8,6 +8,7 @@ from hashlib import md5
 
 from django.contrib.postgres.fields import ArrayField, CITextField
 from django.db import models
+from django.forms import ValidationError
 
 from billing.constants import BASIC_PLAN_NAME, USER_PLAN_REPRESENTATIONS
 from codecov.models import BaseCodecovModel
@@ -267,6 +268,14 @@ class Owner(models.Model):
         # TODO : Implement real permissioning system
         # Required to implement django's user-model interface for Django Admin
         return self.is_staff
+
+    def clean(self):
+        if self.staff:
+            domain = self.email.split("@")[1]
+            if domain != "codecov.io":
+                raise ValidationError(
+                    "User not part of Codecov cannot be a staff member"
+                )
 
     @property
     def avatar_url(self, size=DEFAULT_AVATAR_SIZE):

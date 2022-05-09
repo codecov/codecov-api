@@ -45,6 +45,7 @@ class OwnerAdmin(admin.ModelAdmin):
             + [field.name for field in obj._meta.many_to_many]
         )
         fields.remove("oauth_token")
+        fields.remove("staff")
         return fields
 
     def has_add_permission(self, _, obj=None):
