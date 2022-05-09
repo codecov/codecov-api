@@ -27,7 +27,7 @@ def resolve_is_new_file(file_comparison: FileComparison, info) -> bool:
 
 
 @file_comparison_bindable.field("hasDiff")
-def resovle_has_diff(file_comparison: FileComparison, info) -> bool:
+def resolve_has_diff(file_comparison: FileComparison, info) -> bool:
     return file_comparison.has_diff
 
 
