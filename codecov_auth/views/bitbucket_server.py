@@ -11,7 +11,6 @@ from django.shortcuts import redirect
 from django.urls import reverse
 from django.views import View
 from shared.torngit import BitbucketServer
-from shared.torngit.bitbucket_server import signature
 from shared.torngit.exceptions import TorngitServerFailureError
 
 from codecov_auth.models import SERVICE_BITBUCKET_SERVER
@@ -39,7 +38,7 @@ class BitbucketServerLoginView(View, LoginMixin):
             ),
             token=token,
         )
-        user_data = await repo_service.get_authenticated_user()
+        user_data = await repo_service.get_authenticated()
         authenticated_user = {
             "access_token": token,
             "id": user_data["uuid"][1:-1],
@@ -58,9 +57,10 @@ class BitbucketServerLoginView(View, LoginMixin):
         # For this part we need a client with no token
         # And the consumer needs to have the defined client id. The secret is ignored.
         # https://developer.atlassian.com/server/jira/platform/oauth/
-        consumer = oauth.Consumer(settings.BITBUCKET_SERVER_CLIENT_ID, "")
-        client = oauth.Client(consumer)
-        client.set_signature_method(signature)
+        repo_service = BitbucketServer(oauth_consumer_token=dict(
+                key=settings.BITBUCKET_SERVER_CLIENT_ID,
+                secret="",
+        ))
 
         if request.GET.get("redirect"):
             self.set_cookie(
@@ -75,12 +75,7 @@ class BitbucketServerLoginView(View, LoginMixin):
         request_token_url = (
             f"{settings.BITBUCKET_SERVER_URL}/plugins/servlet/oauth/request-token"
         )
-        resp, content = client.request(request_token_url, "POST")
-        if resp["status"] != "200":
-            raise Exception("Invalid response %s: %s" % (resp["status"], content))
-        request_token = {
-            k.decode("utf-8"): v for k, v in dict(parse_qsl(content)).items()
-        }
+        request_token = await repo_service.api("POST", request_token_url)
         auth_token = request_token["oauth_token"]
         auth_token_secret = request_token["oauth_token_secret"]
 
@@ -111,11 +106,11 @@ class BitbucketServerLoginView(View, LoginMixin):
         cookie_key, cookie_secret = [
             base64.b64decode(i).decode() for i in request_cookie.split("|")
         ]
-        consumer = oauth.Consumer(settings.BITBUCKET_SERVER_CLIENT_ID, "")
         token = oauth.Token(cookie_key, cookie_secret)
-        client = oauth.Client(consumer, token)
-        client.set_signature_method(signature)
-
+        repo_service = BitbucketServer(oauth_consumer_token=dict(
+                key=settings.BITBUCKET_SERVER_CLIENT_ID,
+                secret=settings.BITBUCKET_SERVER_CLIENT_SECRET,
+        ), token=token)
         # Get the access token from the request token
         # The access token can be stored and reused.
         response = redirect(settings.CODECOV_DASHBOARD_URL + "/bbs")
@@ -123,13 +118,7 @@ class BitbucketServerLoginView(View, LoginMixin):
         access_token_url = (
             f"{settings.BITBUCKET_SERVER_URL}/plugins/servlet/oauth/access-token"
         )
-        resp, content = client.request(access_token_url, "POST")
-        if resp["status"] != "200":
-            raise Exception("Invalid response %s: %s" % (resp["status"], content))
-        access_token = {
-            k.decode("utf-8"): v.decode("utf-8")
-            for k, v in dict(parse_qsl(content)).items()
-        }
+        access_token = repo_service.api("POST", access_token_url)
         auth_token = access_token["oauth_token"]
         auth_token_secret = access_token["oauth_token_secret"]
 
