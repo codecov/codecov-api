@@ -271,7 +271,7 @@ class Owner(models.Model):
 
     def clean(self):
         if self.staff:
-            domain = self.email.split("@")[1]
+            domain = self.email.split("@")[1] if self.email else ""
             if domain != "codecov.io":
                 raise ValidationError(
                     "User not part of Codecov cannot be a staff member"
