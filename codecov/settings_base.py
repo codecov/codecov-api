@@ -232,7 +232,7 @@ GITLAB_BOT_KEY = get_config("gitlab", "bot", "key")
 GITLAB_ENTERPRISE_CLIENT_ID = get_config("gitlab_enterprise", "client_id")
 GITLAB_ENTERPRISE_CLIENT_SECRET = get_config("gitlab_enterprise", "client_secret")
 GITLAB_ENTERPRISE_REDIRECT_URI = get_config(
-    "gitlab_enterprise", "redirect_uri", default="https://codecov.io/login/gitlab"
+    "gitlab_enterprise", "redirect_uri", default="https://codecov.io/login/gitlab_enterprise"
 )
 GITLAB_ENTERPRISE_BOT_KEY = get_config("gitlab_enterprise", "bot", "key")
 GITLAB_ENTERPRISE_URL = get_config("gitlab_enterprise", "url")

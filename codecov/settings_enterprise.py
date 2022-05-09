@@ -62,7 +62,9 @@ GITLAB_REDIRECT_URI = get_config(
 
 
 GITLAB_ENTERPRISE_REDIRECT_URI = get_config(
-    "gitlab_enterprise", "redirect_uri", default=f"{CODECOV_URL}/login/gle"
+    "gitlab_enterprise",
+    "redirect_uri",
+    default=f"{CODECOV_URL}/login/gitlab_enterprise",
 )
 
 CODECOV_DASHBOARD_URL = get_config(
