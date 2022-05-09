@@ -1,5 +1,3 @@
-from os import sync
-
 from ariadne import ObjectType
 
 from graphql_api.dataloader.commit import load_commit_by_id
@@ -7,6 +5,7 @@ from graphql_api.dataloader.owner import load_owner_by_id
 from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.enums import OrderingDirection
 from graphql_api.types.enums.enums import PullRequestState
+from services.comparison import PullRequestComparison
 
 pull_bindable = ObjectType("Pull")
 
@@ -39,9 +38,16 @@ def resolve_base(pull, info):
 
 
 @pull_bindable.field("compareWithBase")
-def resolve_compare_with_base(pull, info, **kwargs):
+async def resolve_compare_with_base(pull, info, **kwargs):
     command = info.context["executor"].get_command("compare")
-    return command.compare_pull_request(pull)
+    commit_comparison = await command.compare_pull_request(pull)
+
+    if commit_comparison and commit_comparison.is_processed:
+        # store the comparison in the context - to be used in the `Comparison` resolvers
+        user = info.context["request"].user
+        info.context["comparison"] = PullRequestComparison(user, pull)
+
+    return commit_comparison
 
 
 @pull_bindable.field("commits")
