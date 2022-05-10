@@ -25,7 +25,7 @@ def resolve_file_comparisons(comparison, info):
         return None
 
     comparison = info.context["comparison"]
-    return [file for file in comparison.files if file.has_diff]
+    return [file for file in comparison.files if file.has_diff or file.has_changes]
 
 
 @comparison_bindable.field("baseTotals")
