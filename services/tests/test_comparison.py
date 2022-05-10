@@ -1,5 +1,6 @@
 import asyncio
 import json
+from collections import Counter
 from unittest.mock import PropertyMock, patch
 
 import minio
@@ -508,7 +509,6 @@ class FileComparisonTests(TestCase):
 
         assert len(segments) == 1
         assert segments[0].lines == self.file_comparison.lines
-
         assert segments[0].header == segment["header"]
 
     def test_segments_no_diff(self):
@@ -541,6 +541,19 @@ class FileComparisonTests(TestCase):
         self.file_comparison.src = src
 
         assert self.file_comparison.change_summary == {"hits": 2, "misses": -2}
+
+    @patch(
+        "services.comparison.FileComparison.change_summary", new_callable=PropertyMock
+    )
+    def test_has_changes(self, change_summary_mock):
+        change_summary_mock.return_value = Counter()
+        assert self.file_comparison.has_changes == False
+
+        change_summary_mock.return_value = Counter({"hits": 0, "misses": 0})
+        assert self.file_comparison.has_changes == False
+
+        change_summary_mock.return_value = Counter({"hits": 1, "misses": -1})
+        assert self.file_comparison.has_changes == True
 
     @patch("services.comparison.FileComparisonTraverseManager.apply")
     def test_does_not_calculate_changes_if_no_diff_and_should_search_for_changes_is_False(
@@ -1131,3 +1144,99 @@ class ComparisonHasUnmergedBaseCommitsTests(TestCase):
             ComparisonHasUnmergedBaseCommitsTests.MockFetchDiffCoro(commits)
         )
         assert self.comparison.has_unmerged_base_commits is False
+
+
+class SourceSegmentTests(TestCase):
+    def _report_lines(self, hits):
+        return [
+            # from shared.reports.types.ReportLine
+            # values are [coverage, type, sessions, messages, complexity]
+            [hit, "", [], 0, None]
+            for hit in hits
+        ]
+
+    def _src(self, n):
+        return [f"line{i+1}" for i in range(n)]
+
+    def setUp(self):
+        self.file_comparison = FileComparison(
+            base_file=ReportFile("file1"), head_file=ReportFile("file1")
+        )
+
+    def test_single_segment(self):
+        self.file_comparison.src = self._src(12)
+        self.file_comparison.head_file._lines = self._report_lines(
+            [1 for _ in range(12)]
+        )
+        self.file_comparison.base_file._lines = self._report_lines(
+            [
+                1,
+                1,  # first line of segment
+                1,
+                1,
+                0,  # coverage changed
+                0,  # coverage changed
+                1,
+                0,  # coverage changed
+                1,
+                1,
+                1,  # last line of segment
+                1,
+            ]
+        )
+
+        segments = self.file_comparison.segments
+        assert len(segments) == 1
+
+        segment_lines = segments[0].lines
+        assert segment_lines[0].value == "line2"
+        assert segment_lines[-1].value == "line11"
+        assert len(segment_lines) == 10
+
+    def test_multiple_segments(self):
+        self.file_comparison.src = self._src(25)
+        self.file_comparison.head_file._lines = self._report_lines(
+            [1 for _ in range(25)]
+        )
+        self.file_comparison.base_file._lines = self._report_lines(
+            [
+                1,
+                1,  # first line of segment 1
+                1,
+                1,
+                0,  # coverage changed
+                0,  # coverage changed
+                1,
+                0,  # coverage changed
+                1,
+                1,
+                1,  # last line of segment 1
+                1,
+                1,
+                1,
+                1,
+                1,  # first line of segment 2
+                1,
+                1,
+                0,  # coverage changed
+                1,
+                1,
+                1,  # last line of segment 2
+                1,
+                1,
+                1,
+            ]
+        )
+
+        segments = self.file_comparison.segments
+        assert len(segments) == 2
+
+        assert segments[0].lines[0].value == "line2"
+        assert segments[0].lines[-1].value == "line11"
+        assert len(segments[0].lines) == 10
+        assert segments[0].header is None
+
+        assert segments[1].lines[0].value == "line16"
+        assert segments[1].lines[-1].value == "line22"
+        assert len(segments[1].lines) == 7
+        assert segments[1].header is None
