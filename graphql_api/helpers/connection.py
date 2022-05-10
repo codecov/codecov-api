@@ -53,6 +53,7 @@ def queryset_to_connection(
     after=None,
     last=None,
     before=None,
+    ordering_unique=False,
 ):
     """
     A method to take a queryset and return it in paginated order based on the cursor pattern.
@@ -60,10 +61,14 @@ def queryset_to_connection(
     if not first and not after:
         first = 100
 
-    paginator_ordering = _build_paginator_ordering(
+    primary_ordering, pk_ordering = _build_paginator_ordering(
         ordering, ordering_direction, queryset.model._meta.pk.name
     )
-    paginator = CursorPaginator(queryset, ordering=paginator_ordering)
+    ordering = (primary_ordering,)
+    if not ordering_unique:
+        # we need to use the primary key to make sure the ordering is unique
+        ordering = (primary_ordering, pk_ordering)
+    paginator = CursorPaginator(queryset, ordering=ordering)
     page = paginator.page(first=first, after=after, last=last, before=before)
     return {
         "edges": [
