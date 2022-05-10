@@ -346,6 +346,10 @@ class LineComparison:
 
 
 class SegmentComparison:
+    """
+    Comparison for a segment that corresponds 1-to-1 with a diff chunk.
+    """
+
     def __init__(self, base_file, head_file, segment):
         self.base_file = base_file
         self.head_file = head_file
@@ -373,6 +377,67 @@ class SegmentComparison:
         )
         traverse_manager.apply([visitor])
         return visitor.lines
+
+
+class SourceSegment(SegmentComparison):
+    """
+    Comparison for a segment of source that is not part of a diff.
+    Finds relevant segments where coverage has changed and expose just those lines.
+    """
+
+    # additional lines included before and after each segment
+    padding_lines = 3
+
+    # max distance between lines with coverage changes in a single segment
+    line_distance = 10
+
+    @classmethod
+    def segments(cls, file_comparison):
+        lines = file_comparison.lines
+
+        coverage_changed = []
+        for idx, line in enumerate(lines):
+            if line.coverage["base"] != line.coverage["head"]:
+                coverage_changed.append(idx)
+
+        segmented_lines, last = [[]], None
+        for line_number in coverage_changed:
+            if last is None or line_number - last <= cls.line_distance:
+                segmented_lines[-1].append(line_number)
+            else:
+                segmented_lines.append([line_number])
+            last = line_number
+
+        segments = []
+        for group in segmented_lines:
+            # padding lines before first coverage change
+            start_line_number = group[0] - cls.padding_lines
+            start_line_number = max(start_line_number, 0)
+            # padding lines after last coverage change
+            end_line_number = group[-1] + cls.padding_lines
+            end_line_number = min(end_line_number, len(lines) - 1)
+
+            segment = cls(
+                file_comparison, lines[start_line_number : end_line_number + 1]
+            )
+            segments.append(segment)
+
+        return segments
+
+    def __init__(self, file_comparison, lines):
+        self.file_comparison = file_comparison
+        self._lines = lines
+        super().__init__(
+            self.file_comparison.base_file, self.file_comparison.head_file, None
+        )
+
+    @property
+    def header(self):
+        return None
+
+    @property
+    def lines(self):
+        return self._lines
 
 
 class FileComparison:
@@ -504,6 +569,10 @@ class FileComparison:
     def change_summary(self):
         return self._calculated_changes_and_lines[0]
 
+    @property
+    def has_changes(self):
+        return any(self.change_summary.values())
+
     @cached_property
     def lines(self):
         if self.total_diff_length > MAX_DIFF_SIZE and not self.bypass_max_diff:
@@ -513,7 +582,10 @@ class FileComparison:
     @cached_property
     def segments(self):
         if not self.diff_data or self.diff_data.get("segments") is None:
-            return []
+            if self.src:
+                return SourceSegment.segments(self)
+            else:
+                return []
 
         return [
             SegmentComparison(
