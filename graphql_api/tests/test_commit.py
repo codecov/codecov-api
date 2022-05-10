@@ -17,6 +17,7 @@ from reports.tests.factories import (
     UploadErrorFactory,
     UploadFactory,
 )
+from services.profiling import CriticalFile
 
 from .helper import GraphQLTestHelper, paginate_connection
 
@@ -475,9 +476,15 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         commit = data["owner"]["repository"]["commit"]
         assert commit["compareWithParent"]["changeWithParent"] == 56.89
 
-    @patch("services.profiling.CriticalFiles.filenames", new_callable=PropertyMock)
-    def test_commit_critical_files(self, filenames):
-        filenames.return_value = ["one", "two", "three"]
+    @patch(
+        "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
+    )
+    def test_commit_critical_files(self, critical_files):
+        critical_files.return_value = [
+            CriticalFile("one"),
+            CriticalFile("two"),
+            CriticalFile("three"),
+        ]
 
         query = query_commit % "criticalFiles { name }"
         variables = {

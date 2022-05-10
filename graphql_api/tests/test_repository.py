@@ -6,6 +6,7 @@ from freezegun import freeze_time
 from codecov_auth.tests.factories import OwnerFactory
 from core.commands import repository
 from core.tests.factories import PullFactory, RepositoryFactory
+from services.profiling import CriticalFile
 
 from .helper import GraphQLTestHelper
 
@@ -95,9 +96,15 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         assert res["pulls"]["edges"][0]["node"]["pullId"] == 3
         assert res["pulls"]["edges"][1]["node"]["pullId"] == 2
 
-    @patch("services.profiling.CriticalFiles.filenames", new_callable=PropertyMock)
-    def test_repository_critical_files(self, filenames):
-        filenames.return_value = ["one", "two", "three"]
+    @patch(
+        "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
+    )
+    def test_repository_critical_files(self, critical_files):
+        critical_files.return_value = [
+            CriticalFile("one"),
+            CriticalFile("two"),
+            CriticalFile("three"),
+        ]
         repo = RepositoryFactory(
             author=self.user,
             active=True,

@@ -9,7 +9,7 @@ from shared.profiling import ProfilingSummaryDataAnalyzer
 
 from core.tests.factories import CommitFactory, RepositoryFactory
 from profiling.tests.factories import ProfilingCommitFactory
-from services.profiling import CriticalFiles
+from services.profiling import ProfilingSummary
 
 test_summary = """
 {
@@ -53,10 +53,10 @@ test_summary = """
 """
 
 
-class CriticalFilesTests(TestCase):
+class ProfilingSummaryTests(TestCase):
     def setUp(self):
         self.repo = RepositoryFactory()
-        self.service = CriticalFiles(self.repo)
+        self.service = ProfilingSummary(self.repo)
 
     def test_latest_profiling_commit(self):
         ProfilingCommitFactory(repository=self.repo, version_identifier="0.0.1")
@@ -99,7 +99,7 @@ class CriticalFilesTests(TestCase):
         )
         ProfilingCommitFactory(last_summarized_at=datetime(2022, 4, 1, 0, 0, 0))
 
-        service = CriticalFiles(self.repo, commit_sha=commit1.commitid)
+        service = ProfilingSummary(self.repo, commit_sha=commit1.commitid)
         assert service.latest_profiling_commit() == pc
 
     def test_summary_data_not_summarized(self):
@@ -134,9 +134,9 @@ class CriticalFilesTests(TestCase):
             == expected.get_critical_files_filenames()
         )
 
-    @patch("services.profiling.CriticalFiles.summary_data")
-    @patch("services.profiling.CriticalFiles.latest_profiling_commit")
-    def test_filenames(self, latest_profiling_commit, summary_data):
+    @patch("services.profiling.ProfilingSummary.summary_data")
+    @patch("services.profiling.ProfilingSummary.latest_profiling_commit")
+    def test_critical_files(self, latest_profiling_commit, summary_data):
         latest_profiling_commit.return_value = ProfilingCommitFactory(
             repository=self.repo,
             last_summarized_at=datetime.now(),
@@ -145,25 +145,30 @@ class CriticalFilesTests(TestCase):
             json.loads(test_summary)
         )
 
-        assert self.service.filenames == ["app.py", "handlers.py"]
+        filenames = [cf.name for cf in self.service.critical_files]
+        assert filenames == ["app.py", "handlers.py"]
 
-    @patch("services.profiling.CriticalFiles.summary_data")
-    @patch("services.profiling.CriticalFiles.latest_profiling_commit")
-    def test_filenames_no_profiling_commit(self, latest_profiling_commit, summary_data):
+    @patch("services.profiling.ProfilingSummary.summary_data")
+    @patch("services.profiling.ProfilingSummary.latest_profiling_commit")
+    def test_critical_files_no_profiling_commit(
+        self, latest_profiling_commit, summary_data
+    ):
         latest_profiling_commit.return_value = None
         summary_data.return_value = ProfilingSummaryDataAnalyzer(
             json.loads(test_summary)
         )
 
-        assert self.service.filenames == []
+        assert self.service.critical_files == []
 
-    @patch("services.profiling.CriticalFiles.summary_data")
-    @patch("services.profiling.CriticalFiles.latest_profiling_commit")
-    def test_filenames_no_summary_data(self, latest_profiling_commit, summary_data):
+    @patch("services.profiling.ProfilingSummary.summary_data")
+    @patch("services.profiling.ProfilingSummary.latest_profiling_commit")
+    def test_critical_files_no_summary_data(
+        self, latest_profiling_commit, summary_data
+    ):
         latest_profiling_commit.return_value = ProfilingCommitFactory(
             repository=self.repo,
             last_summarized_at=datetime.now(),
         )
         summary_data.return_value = None
 
-        assert self.service.filenames == []
+        assert self.service.critical_files == []

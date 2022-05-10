@@ -1,3 +1,5 @@
+from typing import List
+
 import yaml
 from ariadne import ObjectType
 from asgiref.sync import sync_to_async
@@ -7,7 +9,7 @@ from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.owner import OwnerLoader
 from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.enums import OrderingDirection
-from services.profiling import CriticalFiles
+from services.profiling import CriticalFile, ProfilingSummary
 
 commit_bindable = ObjectType("Commit")
 
@@ -83,12 +85,12 @@ def resolve_flags(commit, info, **kwargs):
 
 @commit_bindable.field("criticalFiles")
 @sync_to_async
-def resolve_critical_files(commit: Commit, info, **kwargs):
+def resolve_critical_files(commit: Commit, info, **kwargs) -> List[CriticalFile]:
     """
     The critical files for this particular commit (might be empty
     depending on whether the profiling info included a commit SHA).
     The results of this resolver could be different than that of the
     `repository.criticalFiles` resolver.
     """
-    critical_files = CriticalFiles(commit.repository, commit_sha=commit.commitid)
-    return [{"name": filename} for filename in critical_files.filenames]
+    profiling_summary = ProfilingSummary(commit.repository, commit_sha=commit.commitid)
+    return profiling_summary.critical_files

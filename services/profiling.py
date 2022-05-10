@@ -11,7 +11,12 @@ from services.archive import ArchiveService
 log = logging.getLogger(__name__)
 
 
-class CriticalFiles:
+class CriticalFile:
+    def __init__(self, name):
+        self.name = name
+
+
+class ProfilingSummary:
     def __init__(self, repo: Repository, commit_sha: Optional[str] = None):
         self.repo = repo
         self.commit_sha = commit_sha
@@ -55,12 +60,15 @@ class CriticalFiles:
             return None
 
     @property
-    def filenames(self) -> List[str]:
+    def critical_files(self) -> List[CriticalFile]:
         """
-        Get the most recent critical file filenames
+        Get the most recent critical files
         """
         if profiling_commit := self.latest_profiling_commit():
             summary = self.summary_data(profiling_commit)
             if summary:
-                return summary.get_critical_files_filenames()
+                return [
+                    CriticalFile(name)
+                    for name in summary.get_critical_files_filenames()
+                ]
         return []
