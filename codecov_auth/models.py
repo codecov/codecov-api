@@ -80,8 +80,8 @@ class Owner(models.Model):
     business_email = models.TextField(null=True)
     name = models.TextField(null=True)
     oauth_token = models.TextField(null=True)
-    stripe_customer_id = models.TextField(null=True)
-    stripe_subscription_id = models.TextField(null=True)
+    stripe_customer_id = models.TextField(null=True, blank=True)
+    stripe_subscription_id = models.TextField(null=True, blank=True)
 
     # createstamp seems to be used by legacy to track first login
     # so we shouldn't touch this outside login
@@ -94,11 +94,11 @@ class Owner(models.Model):
     staff = models.BooleanField(null=True, default=False)
     cache = models.JSONField(null=True)
     # Really an ENUM in db
-    plan = models.TextField(null=True, default=BASIC_PLAN_NAME)
+    plan = models.TextField(null=True, default=BASIC_PLAN_NAME, blank=True)
     plan_provider = models.TextField(
-        null=True, choices=PlanProviders.choices
+        null=True, choices=PlanProviders.choices, blank=True
     )  # postgres enum containing only "github"
-    plan_user_count = models.SmallIntegerField(null=True, default=5)
+    plan_user_count = models.SmallIntegerField(null=True, default=5, blank=True)
     plan_auto_activate = models.BooleanField(null=True, default=True)
     plan_activated_users = ArrayField(models.IntegerField(null=True), null=True)
     did_trial = models.BooleanField(null=True)
@@ -267,6 +267,14 @@ class Owner(models.Model):
         # TODO : Implement real permissioning system
         # Required to implement django's user-model interface for Django Admin
         return self.is_staff
+
+    def clean(self):
+        if not self.plan:
+            self.plan = None
+        if not self.stripe_customer_id:
+            self.stripe_customer_id = None
+        if not self.stripe_subscription_id:
+            self.stripe_subscription_id = None
 
     @property
     def avatar_url(self, size=DEFAULT_AVATAR_SIZE):

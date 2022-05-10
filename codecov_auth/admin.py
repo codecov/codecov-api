@@ -45,6 +45,11 @@ class OwnerAdmin(admin.ModelAdmin):
             + [field.name for field in obj._meta.many_to_many]
         )
         fields.remove("oauth_token")
+        fields.remove("plan")
+        fields.remove("plan_provider")
+        fields.remove("plan_user_count")
+        fields.remove("stripe_customer_id")
+        fields.remove("stripe_subscription_id")
         return fields
 
     def has_add_permission(self, _, obj=None):
