@@ -2,7 +2,7 @@ import hmac
 import logging
 import re
 from contextlib import suppress
-from hashlib import sha1
+from hashlib import sha256
 
 from rest_framework import status
 from rest_framework.exceptions import NotFound, PermissionDenied
@@ -52,9 +52,9 @@ class GithubWebhookHandler(APIView):
             # must convert to bytearray for use with hmac
             key = bytes(key, "utf-8")
 
-        sig = "sha1=" + hmac.new(key, request.body, digestmod=sha1).hexdigest()
+        sig = "sha256=" + hmac.new(key, request.body, digestmod=sha256).hexdigest()
 
-        if sig != request.META.get(GitHubHTTPHeaders.SIGNATURE):
+        if sig != request.META.get(GitHubHTTPHeaders.SIGNATURE_256):
             raise PermissionDenied()
 
     def unhandled_webhook_event(self, request, *args, **kwargs):
