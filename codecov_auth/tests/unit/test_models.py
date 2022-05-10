@@ -66,6 +66,16 @@ class TestOwnerModel(TransactionTestCase):
 
         assert self.owner.nb_active_private_repos == 1
 
+    def test_plan_is_null_when_validating_form(self):
+        owner = OwnerFactory()
+        owner.plan = ""
+        owner.stripe_customer_id = ""
+        owner.stripe_subscription_id = ""
+        owner.clean()
+        assert owner.plan == None
+        assert owner.stripe_customer_id == None
+        assert owner.stripe_subscription_id == None
+
     @patch("codecov_auth.models.get_config")
     def test_main_avatar_url_services(self, mock_get_config):
         test_cases = [
