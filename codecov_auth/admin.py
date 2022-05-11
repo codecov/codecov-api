@@ -45,6 +45,7 @@ class OwnerAdmin(admin.ModelAdmin):
             + [field.name for field in obj._meta.many_to_many]
         )
         fields.remove("oauth_token")
+        fields.remove("staff")
         fields.remove("plan")
         fields.remove("plan_provider")
         fields.remove("plan_user_count")

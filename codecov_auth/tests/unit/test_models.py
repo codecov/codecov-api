@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+from django.forms import ValidationError
 from django.test import TransactionTestCase
 
 from codecov_auth.models import (
@@ -75,6 +76,16 @@ class TestOwnerModel(TransactionTestCase):
         assert owner.plan == None
         assert owner.stripe_customer_id == None
         assert owner.stripe_subscription_id == None
+        
+    def test_setting_staff_on_for_not_a_codecov_member(self):
+        user_not_part_of_codecov = OwnerFactory(email="user@notcodecov.io", staff=True)
+        with self.assertRaises(ValidationError):
+            user_not_part_of_codecov.clean()
+
+    def test_setting_staff_on_with_email_null(self):
+        user_with_null_email = OwnerFactory(email=None, staff=True)
+        with self.assertRaises(ValidationError):
+            user_with_null_email.clean()
 
     @patch("codecov_auth.models.get_config")
     def test_main_avatar_url_services(self, mock_get_config):

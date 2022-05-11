@@ -8,6 +8,7 @@ from hashlib import md5
 
 from django.contrib.postgres.fields import ArrayField, CITextField
 from django.db import models
+from django.forms import ValidationError
 
 from billing.constants import BASIC_PLAN_NAME, USER_PLAN_REPRESENTATIONS
 from codecov.models import BaseCodecovModel
@@ -269,12 +270,19 @@ class Owner(models.Model):
         return self.is_staff
 
     def clean(self):
+        if self.staff:
+            domain = self.email.split("@")[1] if self.email else ""
+            if domain != "codecov.io":
+                raise ValidationError(
+                    "User not part of Codecov cannot be a staff member"
+                )
         if not self.plan:
             self.plan = None
         if not self.stripe_customer_id:
             self.stripe_customer_id = None
         if not self.stripe_subscription_id:
             self.stripe_subscription_id = None
+
 
     @property
     def avatar_url(self, size=DEFAULT_AVATAR_SIZE):
