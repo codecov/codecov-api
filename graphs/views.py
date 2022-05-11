@@ -229,7 +229,8 @@ class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         if repo.private and repo.image_token != self.request.query_params.get("token"):
             return None
 
-        if commitid := self.kwargs.get("commit"):
+        commitid = self.kwargs.get("commit")
+        if commitid:
             commit = repo.commits.filter(commitid=commitid).first()
         else:
             branch_name = self.kwargs.get("branch") or repo.branch
