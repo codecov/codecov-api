@@ -24,6 +24,11 @@ urlpatterns = [
         name="branch-graph",
     ),
     re_path(
+        "commit/(?P<commit>[^/].+)/(graph|graphs)/(?P<graph>tree|icicle|sunburst|commits).(?P<ext>[^/]+)",
+        GraphHandler.as_view(),
+        name="commit-graph",
+    ),
+    re_path(
         "(graph|graphs)/(?P<graph>tree|icicle|sunburst|commits).(?P<ext>[^/]+)",
         GraphHandler.as_view(),
         name="default-graph",
