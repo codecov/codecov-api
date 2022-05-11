@@ -37,6 +37,7 @@ class OwnerAdmin(admin.ModelAdmin):
     readonly_fields = []
     search_fields = ("username__iexact",)
     actions = [impersonate_owner]
+    autocomplete_fields = ('bot',)
 
     def get_readonly_fields(self, _, obj=None):
         fields = (
@@ -46,6 +47,8 @@ class OwnerAdmin(admin.ModelAdmin):
         )
         fields.remove("oauth_token")
         fields.remove("staff")
+        fields.remove("bot")
+        fields.remove("integration_id")
         return fields
 
     def has_add_permission(self, _, obj=None):
