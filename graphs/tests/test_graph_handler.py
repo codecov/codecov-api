@@ -424,22 +424,39 @@ class TestGraphHandler(APITestCase):
             image_token="12345678",
         )
         commit_1 = CommitFactory(repository=repo, author=gh_owner)
-        commit_2 = CommitFactory(
-            repository=repo, author=gh_owner, parent_commit_id=commit_1.commitid
-        )
 
-        # TODO: commit factory is currently creating a singleton report instance
-        # (changing it here would change it for all commits)
-        commit_2.report = copy.deepcopy(commit_2.report)
-        # add another file to commit_2 and assert that the expected graph
-        # below still pertains to commit_1
-        commit_2.report["files"]["another_file.py"] = [
-            2,
-            [0, 10, 8, 2, 0, "80.00000", 0, 0, 0, 0, 0, 0, 0],
-            [[0, 10, 8, 2, 0, "80.00000", 0, 0, 0, 0, 0, 0, 0]],
-            [0, 2, 1, 1, 0, "50.00000", 0, 0, 0, 0, 0, 0, 0],
-        ]
-        commit_2.save()
+        # make sure commit 2 report is different than commit 1 and
+        # assert that the expected graph below still pertains to commit_1
+        commit_2 = CommitFactory(
+            repository=repo,
+            author=gh_owner,
+            parent_commit_id=commit_1.commitid,
+            report={
+                "files": {
+                    "awesome/test_file.py": [
+                        2,
+                        [0, 10, 8, 2, 0, "80.00000", 0, 0, 0, 0, 0, 0, 0],
+                        [[0, 10, 8, 2, 0, "80.00000", 0, 0, 0, 0, 0, 0, 0]],
+                        [0, 2, 1, 1, 0, "50.00000", 0, 0, 0, 0, 0, 0, 0],
+                    ],
+                },
+                "sessions": {
+                    "0": {
+                        "N": None,
+                        "a": "v4/raw/2019-01-10/4434BC2A2EC4FCA57F77B473D83F928C/abf6d4df662c47e32460020ab14abf9303581429/9ccc55a1-8b41-4bb1-a946-ee7a33a7fb56.txt",
+                        "c": None,
+                        "d": 1547084427,
+                        "e": None,
+                        "f": ["unittests"],
+                        "j": None,
+                        "n": None,
+                        "p": None,
+                        "t": [3, 20, 17, 3, 0, "85.00000", 0, 0, 0, 0, 0, 0, 0],
+                        "": None,
+                    }
+                },
+            },
+        )
 
         response = self._get_commit(
             "tree",
