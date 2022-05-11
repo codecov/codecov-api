@@ -1,3 +1,5 @@
+import copy
+
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -426,6 +428,9 @@ class TestGraphHandler(APITestCase):
             repository=repo, author=gh_owner, parent_commit_id=commit_1.commitid
         )
 
+        # TODO: commit factory is currently creating a singleton report instance
+        # (changing it here would change it for all commits)
+        commit_2.report = copy.deepcopy(commit_2.report)
         # add another file to commit_2 and assert that the expected graph
         # below still pertains to commit_1
         commit_2.report["files"]["another_file.py"] = [
