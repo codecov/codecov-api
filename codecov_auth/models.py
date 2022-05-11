@@ -101,7 +101,9 @@ class Owner(models.Model):
     )  # postgres enum containing only "github"
     plan_user_count = models.SmallIntegerField(null=True, default=5, blank=True)
     plan_auto_activate = models.BooleanField(null=True, default=True)
-    plan_activated_users = ArrayField(models.IntegerField(null=True), null=True, blank=True)
+    plan_activated_users = ArrayField(
+        models.IntegerField(null=True), null=True, blank=True
+    )
     did_trial = models.BooleanField(null=True)
     free = models.SmallIntegerField(default=0)
     invoice_details = models.TextField(null=True)
