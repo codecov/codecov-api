@@ -431,7 +431,7 @@ class TestGraphHandler(APITestCase):
             parent_commit_id=commit_1.commitid,
             report={
                 "files": {
-                    "awesome/test_file.py": [
+                    "different/test_file.py": [
                         2,
                         [0, 10, 8, 2, 0, "80.00000", 0, 0, 0, 0, 0, 0, 0],
                         [[0, 10, 8, 2, 0, "80.00000", 0, 0, 0, 0, 0, 0, 0]],
