@@ -81,8 +81,8 @@ class Owner(models.Model):
     business_email = models.TextField(null=True)
     name = models.TextField(null=True)
     oauth_token = models.TextField(null=True)
-    stripe_customer_id = models.TextField(null=True, blank=True)
-    stripe_subscription_id = models.TextField(null=True, blank=True)
+    stripe_customer_id = models.TextField(null=True)
+    stripe_subscription_id = models.TextField(null=True)
 
     # createstamp seems to be used by legacy to track first login
     # so we shouldn't touch this outside login
@@ -95,11 +95,11 @@ class Owner(models.Model):
     staff = models.BooleanField(null=True, default=False)
     cache = models.JSONField(null=True)
     # Really an ENUM in db
-    plan = models.TextField(null=True, default=BASIC_PLAN_NAME, blank=True)
+    plan = models.TextField(null=True, default=BASIC_PLAN_NAME)
     plan_provider = models.TextField(
-        null=True, choices=PlanProviders.choices, blank=True
+        null=True, choices=PlanProviders.choices
     )  # postgres enum containing only "github"
-    plan_user_count = models.SmallIntegerField(null=True, default=5, blank=True)
+    plan_user_count = models.SmallIntegerField(null=True, default=5)
     plan_auto_activate = models.BooleanField(null=True, default=True)
     plan_activated_users = ArrayField(models.IntegerField(null=True), null=True)
     did_trial = models.BooleanField(null=True)
