@@ -46,6 +46,7 @@ class OwnerAdmin(admin.ModelAdmin):
         )
         fields.remove("oauth_token")
         fields.remove("staff")
+        fields.remove("plan_activated_users")
         return fields
 
     def has_add_permission(self, _, obj=None):
