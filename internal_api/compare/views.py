@@ -32,10 +32,13 @@ class CompareViewSet(
         compare_data = self.get_compare_data()
 
         if "pull" in compare_data:
+            comparison = PullRequestComparison(
+                user=self.request.user, pull=compare_data["pull"]
+            )
             try:
-                comparison = PullRequestComparison(
-                    user=self.request.user, pull=compare_data["pull"]
-                )
+                # make sure we have a base and head commit
+                comparison.base_commit
+                comparison.head_commit
             except MissingComparisonCommit:
                 raise NotFound("Sorry, we are missing a commit for that pull request.")
         else:
