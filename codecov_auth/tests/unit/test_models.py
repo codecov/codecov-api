@@ -76,7 +76,7 @@ class TestOwnerModel(TransactionTestCase):
         assert owner.plan == None
         assert owner.stripe_customer_id == None
         assert owner.stripe_subscription_id == None
-        
+
     def test_setting_staff_on_for_not_a_codecov_member(self):
         user_not_part_of_codecov = OwnerFactory(email="user@notcodecov.io", staff=True)
         with self.assertRaises(ValidationError):

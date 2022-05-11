@@ -283,7 +283,6 @@ class Owner(models.Model):
         if not self.stripe_subscription_id:
             self.stripe_subscription_id = None
 
-
     @property
     def avatar_url(self, size=DEFAULT_AVATAR_SIZE):
         if self.service == SERVICE_GITHUB and self.service_id:
