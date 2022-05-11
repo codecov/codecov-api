@@ -37,7 +37,7 @@ class OwnerAdmin(admin.ModelAdmin):
     readonly_fields = []
     search_fields = ("username__iexact",)
     actions = [impersonate_owner]
-    autocomplete_fields = ('bot',)
+    autocomplete_fields = ("bot",)
 
     def get_readonly_fields(self, _, obj=None):
         fields = (
