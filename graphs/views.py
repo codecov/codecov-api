@@ -141,7 +141,6 @@ class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
     filename = "graph"
 
     def get_object(self, request, *args, **kwargs):
-
         options = dict()
         graph = self.kwargs.get("graph")
 
@@ -229,13 +228,17 @@ class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
             return None
         if repo.private and repo.image_token != self.request.query_params.get("token"):
             return None
-        branch_name = self.kwargs.get("branch") or repo.branch
-        branch = Branch.objects.filter(
-            name=branch_name, repository_id=repo.repoid
-        ).first()
-        if branch is None:
-            return None
 
-        commit = repo.commits.filter(commitid=branch.head).first()
+        if commitid := self.kwargs.get("commit"):
+            commit = repo.commits.filter(commitid=commitid).first()
+        else:
+            branch_name = self.kwargs.get("branch") or repo.branch
+            branch = Branch.objects.filter(
+                name=branch_name, repository_id=repo.repoid
+            ).first()
+            if branch is None:
+                return None
+
+            commit = repo.commits.filter(commitid=branch.head).first()
 
         return commit
