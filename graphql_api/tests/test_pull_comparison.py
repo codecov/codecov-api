@@ -337,7 +337,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                     {
                         "segments": [
                             {
-                                "header": "@@ -1,2 +3,4 @@",
+                                "header": "-1,2 +3,4",
                                 "lines": [
                                     {
                                         "baseNumber": "1",
@@ -360,7 +360,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                     {
                         "segments": [
                             {
-                                "header": "@@ -1 +1 @@",
+                                "header": "-1 +1",
                                 "lines": [
                                     {
                                         "baseNumber": "1",
