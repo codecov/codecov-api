@@ -24,7 +24,7 @@ def resolve_header(segment_comparison: SegmentComparison, info) -> Optional[str]
     head = f"{head_starting}"
     if head_extracted is not None:
         head = f"{head},{head_extracted}"
-    return f"@@ -{base} +{head} @@"
+    return f"-{base} +{head}"
 
 
 @segment_comparison_bindable.field("lines")
