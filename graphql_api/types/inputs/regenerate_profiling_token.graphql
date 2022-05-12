@@ -1,0 +1,3 @@
+input RegenerateProfilingTokenInput {
+  repoName: String!
+}

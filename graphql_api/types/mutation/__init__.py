@@ -7,6 +7,7 @@ from .onboard_user import gql_onboard_user
 from .set_yaml_on_owner import gql_set_yaml_on_owner
 from .sync_with_git_provider import gql_sync_with_git_provider
 from .update_profile import gql_update_profile
+from .regenerate_profiling_token import gql_regenerate_profling_token
 
 mutation = ariadne_load_local_graphql(__file__, "mutation.graphql")
 mutation = mutation + gql_create_api_token
@@ -15,3 +16,4 @@ mutation = mutation + gql_delete_session
 mutation = mutation + gql_set_yaml_on_owner
 mutation = mutation + gql_update_profile
 mutation = mutation + gql_onboard_user
+mutation = mutation + gql_regenerate_profling_token

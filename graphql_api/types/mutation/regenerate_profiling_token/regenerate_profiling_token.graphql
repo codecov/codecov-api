@@ -1,0 +1,6 @@
+union RegenerateProfilingTokenError = UnauthenticatedError | ValidationError | UnauthorizedError | NotFoundError
+
+type RegenerateProfilingTokenPayload {
+    error: RegenerateProfilingTokenError
+    profilingToken: String
+}
