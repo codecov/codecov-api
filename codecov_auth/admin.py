@@ -56,14 +56,16 @@ class OwnerAdmin(admin.ModelAdmin):
             for changed_field in form.changed_data:
                 prev_value = getattr(old_owner, str(changed_field))
                 new_value = getattr(new_owner, str(changed_field))
-                new_owner.changed_fields[changed_field] = "Prev_value: " + str(prev_value) + ", New_value: " + str(new_value)
+                new_owner.changed_fields[changed_field] = (
+                    "Prev_value: " + str(prev_value) + ", New_value: " + str(new_value)
+                )
 
         return super().save_model(request, new_owner, form, change)
 
     def log_change(self, request, object, message):
         message.append(object.changed_fields)
         return super().log_change(request, object, message)
-        
+
     def has_add_permission(self, _, obj=None):
         return False
 
