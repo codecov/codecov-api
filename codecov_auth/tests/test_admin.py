@@ -83,7 +83,7 @@ class OwnerAdminTest(TestCase):
         self.owner_admin.save_model(
             request=MagicMock, new_owner=owner, form=form, change=True
         )
-        assert owner.changed_fields["staff"] == "Prev_value: True, New_value: False"
+        assert owner.changed_fields["staff"] == "prev value: True, new value: False"
 
         message = []
         message.append({"changed": {"fields": ["staff"]}})
@@ -91,5 +91,5 @@ class OwnerAdminTest(TestCase):
         assert mocked_super_log_change.called_once()
         assert message == [
             {"changed": {"fields": ["staff"]}},
-            {"staff": "Prev_value: True, New_value: False"},
+            {"staff": "prev value: True, new value: False"},
         ]
