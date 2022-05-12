@@ -1,8 +1,7 @@
+from django.contrib.admin.sites import AdminSite
 from django.test import TestCase
 
 from codecov_auth.tests.factories import OwnerFactory
-from django.contrib.admin.sites import AdminSite
-
 from core.admin import RepositoryAdmin
 from core.models import Repository
 
