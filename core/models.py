@@ -105,7 +105,7 @@ class Repository(models.Model):
         null=True,
         on_delete=models.SET_NULL,
         related_name="bot_repos",
-        blank=True
+        blank=True,
     )
     activated = models.BooleanField(null=True, default=False)
     deleted = models.BooleanField(default=False)

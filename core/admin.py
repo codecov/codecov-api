@@ -48,7 +48,7 @@ class RepositoryAdmin(admin.ModelAdmin):
     search_fields = ("author__username__exact",)
     show_full_result_count = False
     autocomplete_fields = ("bot",)
-    
+
     paginator = EstimatedCountPaginator
     fields = (
         "name",
