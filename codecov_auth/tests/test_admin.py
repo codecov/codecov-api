@@ -72,3 +72,24 @@ class OwnerAdminTest(TestCase):
         ownerid = user_to_delete.ownerid
         self.owner_admin.delete_model(MagicMock(), user_to_delete)
         delete_mock.assert_called_once_with(ownerid=ownerid)
+
+    @patch("codecov_auth.admin.admin.ModelAdmin.log_change")
+    def test_prev_and_new_values_in_log_entry(self, mocked_super_log_change):
+        owner = OwnerFactory(staff=True)
+        owner.save()
+        owner.staff = False
+        form = MagicMock()
+        form.changed_data = ["staff"]
+        self.owner_admin.save_model(
+            request=MagicMock, new_owner=owner, form=form, change=True
+        )
+        assert owner.changed_fields["staff"] == "Prev_value: True, New_value: False"
+
+        message = []
+        message.append({"changed": {"fields": ["staff"]}})
+        self.owner_admin.log_change(MagicMock, owner, message)
+        assert mocked_super_log_change.called_once()
+        assert message == [
+            {"changed": {"fields": ["staff"]}},
+            {"staff": "Prev_value: True, New_value: False"},
+        ]
