@@ -56,9 +56,9 @@ class OwnerAdmin(admin.ModelAdmin):
             for changed_field in form.changed_data:
                 prev_value = getattr(old_owner, changed_field)
                 new_value = getattr(new_owner, changed_field)
-                new_owner.changed_fields[changed_field] = (
-                    f"prev value: {prev_value}, new value: {new_value}"
-                )
+                new_owner.changed_fields[
+                    changed_field
+                ] = f"prev value: {prev_value}, new value: {new_value}"
 
         return super().save_model(request, new_owner, form, change)
 
