@@ -5,6 +5,7 @@ from datetime import datetime
 
 from django.contrib.postgres.fields import ArrayField, CITextField
 from django.db import models
+from django.forms import ValidationError
 from django.utils.functional import cached_property
 
 from services.archive import ReportService
@@ -104,6 +105,7 @@ class Repository(models.Model):
         null=True,
         on_delete=models.SET_NULL,
         related_name="bot_repos",
+        blank=True
     )
     activated = models.BooleanField(null=True, default=False)
     deleted = models.BooleanField(default=False)
@@ -135,6 +137,10 @@ class Repository(models.Model):
         self.yaml = None
         self.cache = None
         self.save()
+
+    def clean(self):
+        if self.using_integration is None:
+            raise ValidationError("using_integration cannot be null")
 
 
 class Branch(models.Model):

@@ -47,6 +47,8 @@ class RepositoryAdmin(admin.ModelAdmin):
     list_display = ("name", "service_id", "author")
     search_fields = ("author__username__exact",)
     show_full_result_count = False
+    autocomplete_fields = ("bot",)
+    
     paginator = EstimatedCountPaginator
     fields = (
         "name",
@@ -70,7 +72,10 @@ class RepositoryAdmin(admin.ModelAdmin):
     )
 
     def get_readonly_fields(self, request, obj=None):
-        return self.fields
+        readonly_fields = list(self.fields)
+        readonly_fields.remove("bot")
+        readonly_fields.remove("using_integration")
+        return readonly_fields
 
     def has_delete_permission(self, request, obj=None):
         return False
