@@ -34,3 +34,7 @@ class CommitComparison(BaseCodecovModel):
                 fields=["base_commit", "compare_commit"],
             )
         ]
+
+    @property
+    def is_processed(self):
+        return self.state == CommitComparison.CommitComparisonStates.PROCESSED

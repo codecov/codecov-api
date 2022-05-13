@@ -1,0 +1,4 @@
+type SegmentComparison {
+    header: String
+    lines: [LineComparison!]!
+}

@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import functools
 import json
 import logging
@@ -99,7 +100,7 @@ class FileComparisonTraverseManager:
         """
         self.head_file_eof = head_file_eof
         self.base_file_eof = base_file_eof
-        self.segments = segments
+        self.segments = copy.deepcopy(segments)
         self.src = src
 
         if self.segments:
@@ -305,6 +306,9 @@ class LineComparison:
         self.added = _is_added(value)
         self.removed = _is_removed(value)
 
+    def __eq__(self, other):
+        return isinstance(other, LineComparison) and self.__dict__ == other.__dict__
+
     @property
     def number(self):
         return {
@@ -339,6 +343,101 @@ class LineComparison:
         ]
         if session_coverage:
             return functools.reduce(lambda a, b: a + b, session_coverage)
+
+
+class SegmentComparison:
+    """
+    Comparison for a segment that corresponds 1-to-1 with a diff chunk.
+    """
+
+    def __init__(self, base_file, head_file, segment):
+        self.base_file = base_file
+        self.head_file = head_file
+        self.segment = segment
+
+    @cached_property
+    def base_file_eof(self):
+        return self.base_file.eof if self.base_file is not None else 0
+
+    @cached_property
+    def head_file_eof(self):
+        return self.head_file.eof if self.head_file is not None else 0
+
+    @cached_property
+    def header(self):
+        return self.segment["header"]
+
+    @cached_property
+    def lines(self):
+        visitor = CreateLineComparisonVisitor(self.base_file, self.head_file)
+        traverse_manager = FileComparisonTraverseManager(
+            head_file_eof=self.head_file_eof,
+            base_file_eof=self.base_file_eof,
+            segments=[self.segment],
+        )
+        traverse_manager.apply([visitor])
+        return visitor.lines
+
+
+class SourceSegment(SegmentComparison):
+    """
+    Comparison for a segment of source that is not part of a diff.
+    Finds relevant segments where coverage has changed and expose just those lines.
+    """
+
+    # additional lines included before and after each segment
+    padding_lines = 3
+
+    # max distance between lines with coverage changes in a single segment
+    line_distance = 10
+
+    @classmethod
+    def segments(cls, file_comparison):
+        lines = file_comparison.lines
+
+        coverage_changed = []
+        for idx, line in enumerate(lines):
+            if line.coverage["base"] != line.coverage["head"]:
+                coverage_changed.append(idx)
+
+        segmented_lines, last = [[]], None
+        for line_number in coverage_changed:
+            if last is None or line_number - last <= cls.line_distance:
+                segmented_lines[-1].append(line_number)
+            else:
+                segmented_lines.append([line_number])
+            last = line_number
+
+        segments = []
+        for group in segmented_lines:
+            # padding lines before first coverage change
+            start_line_number = group[0] - cls.padding_lines
+            start_line_number = max(start_line_number, 0)
+            # padding lines after last coverage change
+            end_line_number = group[-1] + cls.padding_lines
+            end_line_number = min(end_line_number, len(lines) - 1)
+
+            segment = cls(
+                file_comparison, lines[start_line_number : end_line_number + 1]
+            )
+            segments.append(segment)
+
+        return segments
+
+    def __init__(self, file_comparison, lines):
+        self.file_comparison = file_comparison
+        self._lines = lines
+        super().__init__(
+            self.file_comparison.base_file, self.file_comparison.head_file, None
+        )
+
+    @property
+    def header(self):
+        return None
+
+    @property
+    def lines(self):
+        return self._lines
 
 
 class FileComparison:
@@ -470,19 +569,46 @@ class FileComparison:
     def change_summary(self):
         return self._calculated_changes_and_lines[0]
 
+    @property
+    def has_changes(self):
+        return any(self.change_summary.values())
+
     @cached_property
     def lines(self):
         if self.total_diff_length > MAX_DIFF_SIZE and not self.bypass_max_diff:
             return None
         return self._calculated_changes_and_lines[1]
 
+    @cached_property
+    def segments(self):
+        if not self.diff_data or self.diff_data.get("segments") is None:
+            if self.src:
+                return SourceSegment.segments(self)
+            else:
+                return []
+
+        return [
+            SegmentComparison(
+                base_file=self.base_file, head_file=self.head_file, segment=segment
+            )
+            for segment in self.diff_data["segments"]
+        ]
+
 
 class Comparison(object):
     def __init__(self, user, base_commit, head_commit):
         self.user = user
-        self.base_commit = base_commit
-        self.head_commit = head_commit
+        self._base_commit = base_commit
+        self._head_commit = head_commit
         self.report_service = ReportService()
+
+    @cached_property
+    def base_commit(self):
+        return self._base_commit
+
+    @cached_property
+    def head_commit(self):
+        return self._head_commit
 
     @cached_property
     def files(self):
@@ -640,19 +766,30 @@ class PullRequestComparison(Comparison):
 
     def __init__(self, user, pull):
         self.pull = pull
+        super().__init__(
+            user=user,
+            # these are lazy loaded in the property methods below
+            base_commit=None,
+            head_commit=None,
+        )
 
+    @cached_property
+    def base_commit(self):
         try:
-            super().__init__(
-                user=user,
-                base_commit=Commit.objects.get(
-                    repository=self.pull.repository,
-                    commitid=self.pull.compared_to
-                    if self.is_pseudo_comparison
-                    else pull.base,
-                ),
-                head_commit=Commit.objects.get(
-                    repository=self.pull.repository, commitid=pull.head
-                ),
+            return Commit.objects.get(
+                repository=self.pull.repository,
+                commitid=self.pull.compared_to
+                if self.is_pseudo_comparison
+                else self.pull.base,
+            )
+        except Commit.DoesNotExist:
+            raise MissingComparisonCommit()
+
+    @cached_property
+    def head_commit(self):
+        try:
+            return Commit.objects.get(
+                repository=self.pull.repository, commitid=self.pull.head
             )
         except Commit.DoesNotExist:
             raise MissingComparisonCommit()

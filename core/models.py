@@ -319,6 +319,7 @@ class CommitNotification(models.Model):
     class DecorationTypes(models.TextChoices):
         STANDARD = "standard"
         UPGRADE = "upgrade"
+        UPLOAD_LIMIT = "upload_limit"
 
     class States(models.TextChoices):
         PENDING = "pending"

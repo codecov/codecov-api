@@ -45,7 +45,26 @@ class OwnerAdmin(admin.ModelAdmin):
             + [field.name for field in obj._meta.many_to_many]
         )
         fields.remove("oauth_token")
+        fields.remove("staff")
         return fields
+
+    def save_model(self, request, new_owner, form, change) -> None:
+        if change:
+            old_owner = Owner.objects.get(ownerid=new_owner.ownerid)
+            new_owner.changed_fields = dict()
+
+            for changed_field in form.changed_data:
+                prev_value = getattr(old_owner, changed_field)
+                new_value = getattr(new_owner, changed_field)
+                new_owner.changed_fields[
+                    changed_field
+                ] = f"prev value: {prev_value}, new value: {new_value}"
+
+        return super().save_model(request, new_owner, form, change)
+
+    def log_change(self, request, object, message):
+        message.append(object.changed_fields)
+        return super().log_change(request, object, message)
 
     def has_add_permission(self, _, obj=None):
         return False
