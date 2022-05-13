@@ -30,17 +30,14 @@ class BitbucketServerWebhookHandler(APIView):
             repo_id = body["pullRequest"]["toRef"]["repository"]["id"]
 
         return get_object_or_404(
-            Repository,
-            author__service="bitbucket_server",
-            service_id=repo_id
+            Repository, author__service="bitbucket_server", service_id=repo_id
         )
 
     def post(self, request, *args, **kwargs):
         self.event = self.request.META.get(BitbucketServerHTTPHeaders.EVENT)
         event_hook_id = self.request.META.get(BitbucketServerHTTPHeaders.UUID)
 
-        # For some reason self.event is actually a tuple. We want just the string value.
-        repo = self._get_repo(self.event[0], self.request.data)
+        repo = self._get_repo(self.event, self.request.data)
         if not repo.active:
             return Response(data=WebhookHandlerErrorMessages.SKIP_NOT_ACTIVE)
 
@@ -84,9 +81,16 @@ class BitbucketServerWebhookHandler(APIView):
     def _handle_repo_refs_change(self, repo):
         ref_type = self.request.data["push"]["changes"]["old"]["type"]
         if ref_type == "branch":
-            Branch.objects.filter(repository=repo, name=self.request.data["push"]["changes"]["old"]["name"]).delete()
+            Branch.objects.filter(
+                repository=repo,
+                name=self.request.data["push"]["changes"]["old"]["name"],
+            ).delete()
         if self.request.data["push"]["changes"]["new"]:
-            if self.request.data["push"]["changes"]["new"]["type"] == "branch" and repo.cache and "yaml" in repo.cache:
+            if (
+                self.request.data["push"]["changes"]["new"]["type"] == "branch"
+                and repo.cache
+                and "yaml" in repo.cache
+            ):
                 return Response(data="Synchronize codecov.yml")
             else:
                 return Response(data="Synchronize codecov.yml skipped")

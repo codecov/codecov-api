@@ -4,9 +4,9 @@ from django.urls import include, path
 from billing.views import StripeWebhookHandler
 
 from .views.bitbucket import BitbucketWebhookHandler
+from .views.bitbucket_server import BitbucketServerWebhookHandler
 from .views.github import GithubWebhookHandler
 from .views.gitlab import GitLabWebhookHandler
-from .views.bitbucket_server import BitbucketServerWebhookHandler
 
 urlpatterns = [
     path("github", GithubWebhookHandler.as_view(), name="github-webhook"),
@@ -22,6 +22,10 @@ urlpatterns = [
         GitLabWebhookHandler.as_view(),
         name="gitlab_enterprise-webhook",
     ),
-    path("bitbucket_server", BitbucketServerWebhookHandler.as_view(), name="bitbucket-server-webhook"),
+    path(
+        "bitbucket_server",
+        BitbucketServerWebhookHandler.as_view(),
+        name="bitbucket-server-webhook",
+    ),
     path("stripe", StripeWebhookHandler.as_view(), name="old-stripe-webhook"),
 ]

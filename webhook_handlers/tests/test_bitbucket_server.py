@@ -27,7 +27,10 @@ class TestBitbucketServerWebhookHandler(APITestCase):
     ):
         return self.client.post(
             reverse("bitbucket-server-webhook"),
-            **{BitbucketServerHTTPHeaders.EVENT: event, BitbucketServerHTTPHeaders.UUID: hookid},
+            **{
+                BitbucketServerHTTPHeaders.EVENT: event,
+                BitbucketServerHTTPHeaders.UUID: hookid,
+            },
             data=data,
             format="json",
         )
@@ -50,7 +53,12 @@ class TestBitbucketServerWebhookHandler(APITestCase):
         pullid = 1
         response = self._post_event_data(
             event=BitbucketServerWebhookEvents.PULL_REQUEST_CREATED,
-            data={"pullRequest": {"id": pullid, "toRef": { "repository": { "id": "some-unknown-value"}}}},
+            data={
+                "pullRequest": {
+                    "id": pullid,
+                    "toRef": {"repository": {"id": "some-unknown-value"}},
+                }
+            },
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -59,7 +67,13 @@ class TestBitbucketServerWebhookHandler(APITestCase):
         self.repo.save()
         response = self._post_event_data(
             event=BitbucketServerWebhookEvents.PULL_REQUEST_CREATED,
-            data={"pullRequest": {"toRef": { "repository": { "id": "673a6070-3421-46c9-9d48-90745f7bfe8e"}}}},
+            data={
+                "pullRequest": {
+                    "toRef": {
+                        "repository": {"id": "673a6070-3421-46c9-9d48-90745f7bfe8e"}
+                    }
+                }
+            },
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == WebhookHandlerErrorMessages.SKIP_NOT_ACTIVE
@@ -69,7 +83,14 @@ class TestBitbucketServerWebhookHandler(APITestCase):
         pullid = 1
         response = self._post_event_data(
             event=BitbucketServerWebhookEvents.PULL_REQUEST_CREATED,
-            data={"pullRequest": {"id": pullid, "toRef": { "repository": { "id": "673a6070-3421-46c9-9d48-90745f7bfe8e"}}}},
+            data={
+                "pullRequest": {
+                    "id": pullid,
+                    "toRef": {
+                        "repository": {"id": "673a6070-3421-46c9-9d48-90745f7bfe8e"}
+                    },
+                }
+            },
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == "Opening pull request in Codecov"
@@ -80,8 +101,14 @@ class TestBitbucketServerWebhookHandler(APITestCase):
         pullid = 1
         response = self._post_event_data(
             event=BitbucketServerWebhookEvents.PULL_REQUEST_MERGED,
-            data={"pullRequest": {"id": pullid, "toRef": { "repository": { "id": "673a6070-3421-46c9-9d48-90745f7bfe8e"}}}},
-
+            data={
+                "pullRequest": {
+                    "id": pullid,
+                    "toRef": {
+                        "repository": {"id": "673a6070-3421-46c9-9d48-90745f7bfe8e"}
+                    },
+                }
+            },
         )
         assert response.status_code == status.HTTP_200_OK
         self.pull.refresh_from_db()
@@ -91,7 +118,14 @@ class TestBitbucketServerWebhookHandler(APITestCase):
         pullid = 1
         response = self._post_event_data(
             event=BitbucketServerWebhookEvents.PULL_REQUEST_REJECTED,
-            data={"pullRequest": {"id": pullid, "toRef": { "repository": { "id": "673a6070-3421-46c9-9d48-90745f7bfe8e"}}}},
+            data={
+                "pullRequest": {
+                    "id": pullid,
+                    "toRef": {
+                        "repository": {"id": "673a6070-3421-46c9-9d48-90745f7bfe8e"}
+                    },
+                }
+            },
         )
         assert response.status_code == status.HTTP_200_OK
         self.pull.refresh_from_db()
@@ -105,26 +139,26 @@ class TestBitbucketServerWebhookHandler(APITestCase):
                 "repository": {"id": "673a6070-3421-46c9-9d48-90745f7bfe8e"},
                 "push": {
                     "changes": {
-                            "new": None,
-                            "old": {
-                                "type": "branch",
-                                "name": "name-of-branch",
-                                "target": {},
-                            },
-                            "links": {},
-                            "created": False,
-                            "forced": False,
-                            "closed": False,
-                            "commits": [
-                                {
-                                    "hash": "03f4a7270240708834de475bcf21532d6134777e",
-                                    "type": "commit",
-                                    "message": "commit message\n",
-                                    "author": {},
-                                    "links": {},
-                                }
-                            ],
-                            "truncated": False,
+                        "new": None,
+                        "old": {
+                            "type": "branch",
+                            "name": "name-of-branch",
+                            "target": {},
+                        },
+                        "links": {},
+                        "created": False,
+                        "forced": False,
+                        "closed": False,
+                        "commits": [
+                            {
+                                "hash": "03f4a7270240708834de475bcf21532d6134777e",
+                                "type": "commit",
+                                "message": "commit message\n",
+                                "author": {},
+                                "links": {},
+                            }
+                        ],
+                        "truncated": False,
                     }
                 },
             },
@@ -141,33 +175,32 @@ class TestBitbucketServerWebhookHandler(APITestCase):
             data={
                 "repository": {"id": "673a6070-3421-46c9-9d48-90745f7bfe8e"},
                 "push": {
-                    "changes":
-                        {
-                            "new": {
-                                "type": "branch",
-                                "name": "name-of-branch",
-                                "target": {},
-                            },
-                            "old": {
-                                "type": "branch",
-                                "name": "name-of-branch",
-                                "target": {},
-                            },
-                            "links": {},
-                            "created": False,
-                            "forced": False,
-                            "closed": False,
-                            "commits": [
-                                {
-                                    "hash": "03f4a7270240708834de475bcf21532d6134777e",
-                                    "type": "commit",
-                                    "message": "commit message\n",
-                                    "author": {},
-                                    "links": {},
-                                }
-                            ],
-                            "truncated": False,
-                        }
+                    "changes": {
+                        "new": {
+                            "type": "branch",
+                            "name": "name-of-branch",
+                            "target": {},
+                        },
+                        "old": {
+                            "type": "branch",
+                            "name": "name-of-branch",
+                            "target": {},
+                        },
+                        "links": {},
+                        "created": False,
+                        "forced": False,
+                        "closed": False,
+                        "commits": [
+                            {
+                                "hash": "03f4a7270240708834de475bcf21532d6134777e",
+                                "type": "commit",
+                                "message": "commit message\n",
+                                "author": {},
+                                "links": {},
+                            }
+                        ],
+                        "truncated": False,
+                    }
                 },
             },
         )
@@ -183,33 +216,32 @@ class TestBitbucketServerWebhookHandler(APITestCase):
             data={
                 "repository": {"id": "673a6070-3421-46c9-9d48-90745f7bfe8e"},
                 "push": {
-                    "changes":
-                        {
-                            "new": {
-                                "type": "branch",
-                                "name": "name-of-branch",
-                                "target": {},
-                            },
-                            "old": {
-                                "type": "branch",
-                                "name": "name-of-branch",
-                                "target": {},
-                            },
-                            "links": {},
-                            "created": False,
-                            "forced": False,
-                            "closed": False,
-                            "commits": [
-                                {
-                                    "hash": "03f4a7270240708834de475bcf21532d6134777e",
-                                    "type": "commit",
-                                    "message": "commit message\n",
-                                    "author": {},
-                                    "links": {},
-                                }
-                            ],
-                            "truncated": False,
-                        }
+                    "changes": {
+                        "new": {
+                            "type": "branch",
+                            "name": "name-of-branch",
+                            "target": {},
+                        },
+                        "old": {
+                            "type": "branch",
+                            "name": "name-of-branch",
+                            "target": {},
+                        },
+                        "links": {},
+                        "created": False,
+                        "forced": False,
+                        "closed": False,
+                        "commits": [
+                            {
+                                "hash": "03f4a7270240708834de475bcf21532d6134777e",
+                                "type": "commit",
+                                "message": "commit message\n",
+                                "author": {},
+                                "links": {},
+                            }
+                        ],
+                        "truncated": False,
+                    }
                 },
             },
         )
