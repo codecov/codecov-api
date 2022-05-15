@@ -64,7 +64,8 @@ class ProfilingSummary:
         """
         Get the most recent critical files
         """
-        if profiling_commit := self.latest_profiling_commit():
+        profiling_commit = self.latest_profiling_commit()
+        if profiling_commit:
             summary = self.summary_data(profiling_commit)
             if summary:
                 return [
