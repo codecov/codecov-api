@@ -114,4 +114,3 @@ class OwnerAdminTest(TestCase):
             {"changed": {"fields": ["staff"]}},
             {"staff": "prev value: True, new value: False"},
         ]
-
