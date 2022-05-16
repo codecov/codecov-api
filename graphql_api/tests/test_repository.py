@@ -1,9 +1,12 @@
+from unittest.mock import PropertyMock, patch
+
 from django.test import TransactionTestCase
 from freezegun import freeze_time
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.commands import repository
 from core.tests.factories import PullFactory, RepositoryFactory
+from services.profiling import CriticalFile
 
 from .helper import GraphQLTestHelper
 
@@ -29,6 +32,7 @@ default_fields = """
     uploadToken
     defaultBranch
     author { username }
+    criticalFiles { name }
 """
 
 
@@ -58,6 +62,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "uploadToken": repo.upload_token,
             "defaultBranch": "master",
             "author": {"username": "codecov-user"},
+            "criticalFiles": [],
         }
 
     @freeze_time("2021-01-01")
@@ -79,6 +84,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "uploadToken": repo.upload_token,
             "defaultBranch": "master",
             "author": {"username": "codecov-user"},
+            "criticalFiles": [],
         }
 
     def test_repository_pulls(self):
@@ -89,3 +95,24 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         res = self.fetch_repository(repo.name, "pulls { edges { node { pullId } } }")
         assert res["pulls"]["edges"][0]["node"]["pullId"] == 3
         assert res["pulls"]["edges"][1]["node"]["pullId"] == 2
+
+    @patch(
+        "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
+    )
+    def test_repository_critical_files(self, critical_files):
+        critical_files.return_value = [
+            CriticalFile("one"),
+            CriticalFile("two"),
+            CriticalFile("three"),
+        ]
+        repo = RepositoryFactory(
+            author=self.user,
+            active=True,
+            private=True,
+        )
+        res = self.fetch_repository(repo.name)
+        assert res["criticalFiles"] == [
+            {"name": "one"},
+            {"name": "two"},
+            {"name": "three"},
+        ]
