@@ -13,17 +13,24 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterField(
-            model_name="owner",
-            name="bot",
-            field=models.ForeignKey(
-                blank=True,
-                db_column="bot",
-                null=True,
-                on_delete=django.db.models.deletion.SET_NULL,
-                to=settings.AUTH_USER_MODEL,
-            ),
-        ),
+        migrations.RunSQL(
+            """--
+            -- Alter field bot on Owner
+            --
+            """,
+            state_operations=[
+                migrations.AlterField(
+                    model_name="owner",
+                    name="bot",
+                    field=models.ForeignKey(
+                        blank=True,
+                        db_column="bot",
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                 ),
+        ]),
         migrations.AlterField(
             model_name="owner",
             name="integration_id",
