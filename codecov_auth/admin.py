@@ -78,3 +78,13 @@ class OwnerAdmin(admin.ModelAdmin):
 
     def delete_model(self, request, obj) -> None:
         TaskService().delete_owner(ownerid=obj.ownerid)
+
+    def get_deleted_objects(self, objs, request):
+        (
+            deleted_objects,
+            model_count,
+            perms_needed,
+            protected,
+        ) = super().get_deleted_objects(objs, request)
+        deleted_objects = ()
+        return deleted_objects, model_count, perms_needed, protected

@@ -14,6 +14,7 @@ type Commit {
   coverageFile(path: String!, flags: [String]): File
   compareWithParent: Comparison
   uploads(first: Int, after: String, last: Int, before: String): UploadConnection
+  criticalFiles: [CriticalFile!]!
 }
 
 type UploadConnection {
