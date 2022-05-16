@@ -13,16 +13,25 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterField(
-            model_name="repository",
-            name="bot",
-            field=models.ForeignKey(
-                blank=True,
-                db_column="bot",
-                null=True,
-                on_delete=django.db.models.deletion.SET_NULL,
-                related_name="bot_repos",
-                to=settings.AUTH_USER_MODEL,
-            ),
+        migrations.RunSQL(
+            """--
+            -- Alter field bot on Repository
+            --
+            COMMIT;
+            """,
+            state_operations=[
+                migrations.AlterField(
+                    model_name="repository",
+                    name="bot",
+                    field=models.ForeignKey(
+                        blank=True,
+                        db_column="bot",
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="bot_repos",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+            ],
         ),
     ]
