@@ -425,9 +425,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         flags = data["owner"]["repository"]["commit"]["flagNames"]
         assert flags == ["flag_a", "flag_b"]
 
-    @patch(
-        "compare.commands.compare.compare.CompareCommands.compare_commit_with_parent"
-    )
+    @patch("compare.commands.compare.compare.CompareCommands.compare_commits")
     def test_fetch_commit_compare_call_the_command(self, command_mock):
         query = query_commit % "compareWithParent { state }"
         variables = {

@@ -3,7 +3,7 @@ import asyncio
 from django.test import TestCase, TransactionTestCase
 
 from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
-from graphql_api.dataloader.commit import load_commit_by_id
+from graphql_api.dataloader.commit import CommitLoader
 
 
 class GraphQLResolveInfo:
@@ -65,41 +65,34 @@ class CommitLoaderTestCase(TransactionTestCase):
         self.info = GraphQLResolveInfo()
 
     async def test_pull_with_one_commit(self):
-        commit = await load_commit_by_id(
-            self.info, self.pulls[0].head, self.pulls[0].repository_id
-        )
+        loader = CommitLoader.loader(self.info, self.pulls[0].repository_id)
+        commit = await loader.load(self.pulls[0].head)
         assert commit == self.pull_1_commit
 
     async def test_pull_with_many_commit(self):
-        commit = await load_commit_by_id(
-            self.info, self.pulls[1].head, self.pulls[1].repository_id
-        )
+        loader = CommitLoader.loader(self.info, self.pulls[1].repository_id)
+        commit = await loader.load(self.pulls[1].head)
         assert commit == self.pull_3_commits[2]
 
     async def test_pull_base_commit(self):
-        commit = await load_commit_by_id(
-            self.info, self.pulls[0].base, self.pulls[0].repository_id
-        )
+        loader = CommitLoader.loader(self.info, self.pulls[0].repository_id)
+        commit = await loader.load(self.pulls[0].base)
         assert commit == self.base_commit
 
     async def test_on_multiple_pulls_commit(self):
-        commit = await load_commit_by_id(
-            self.info, self.pulls[1].base, self.pulls[1].repository_id
-        )
+        loader = CommitLoader.loader(self.info, self.pulls[1].repository_id)
+        commit = await loader.load(self.pulls[1].base)
         assert commit == self.base_commit
 
-        commit_2 = await load_commit_by_id(
-            self.info, self.pulls[2].base, self.pulls[2].repository_id
-        )
+        loader = CommitLoader.loader(self.info, self.pulls[2].repository_id)
+        commit_2 = await loader.load(self.pulls[2].base)
         assert commit_2 == self.base_commit
 
     async def test_repeated_commit_in_(self):
-        commit = await load_commit_by_id(
-            self.info, self.pulls[1].base, self.pulls[1].repository_id
-        )
+        loader = CommitLoader.loader(self.info, self.pulls[1].repository_id)
+        commit = await loader.load(self.pulls[1].base)
         assert commit == self.base_commit
 
-        commit_2 = await load_commit_by_id(
-            self.info, self.pulls[2].base, self.pulls[2].repository_id
-        )
+        loader = CommitLoader.loader(self.info, self.pulls[2].repository_id)
+        commit_2 = await loader.load(self.pulls[2].base)
         assert commit_2 == self.base_commit

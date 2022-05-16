@@ -11,14 +11,22 @@ from ..fetch_commits_by_pullid import FetchCommitsByPullidInteractor
 class FetchCommitsInteractorTest(TransactionTestCase):
     def setUp(self):
         self.org = OwnerFactory()
-        self.repo = RepositoryFactory(author=self.org, private=False)
-        self.pull_1 = PullFactory(pullid=2, repository_id=self.repo.repoid)
-        self.pull_2 = PullFactory(pullid=3, repository_id=self.repo.repoid)
+        self.repo_1 = RepositoryFactory(author=self.org, private=False)
+        self.repo_2 = RepositoryFactory(author=self.org, private=False)
+        self.pull_1 = PullFactory(pullid=2, repository_id=self.repo_1.repoid)
+        self.pull_2 = PullFactory(pullid=3, repository_id=self.repo_1.repoid)
+        self.pull_3 = PullFactory(pullid=2, repository_id=self.repo_2.repoid)
+        self.pull_4 = PullFactory(pullid=3, repository_id=self.repo_2.repoid)
         self.commits_pr_1 = [
-            CommitFactory(repository=self.repo, pullid=self.pull_1.pullid),
-            CommitFactory(repository=self.repo, pullid=self.pull_1.pullid),
+            CommitFactory(repository=self.repo_1, pullid=self.pull_1.pullid),
+            CommitFactory(repository=self.repo_1, pullid=self.pull_1.pullid),
         ]
         self.commits_pr_2 = []
+
+        CommitFactory(repository=self.repo_1, pullid=self.pull_1.pullid, deleted=True)
+        CommitFactory(repository=self.repo_1, pullid=self.pull_2.pullid, deleted=True)
+        CommitFactory(repository=self.repo_2, pullid=self.pull_3.pullid)
+        CommitFactory(repository=self.repo_2, pullid=self.pull_4.pullid)
 
     # helper to execute the interactor
     def execute(self, user, pull, *args):

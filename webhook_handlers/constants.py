@@ -2,6 +2,7 @@ class GitHubHTTPHeaders:
     EVENT = "HTTP_X_GITHUB_EVENT"
     DELIVERY_TOKEN = "HTTP_X_GITHUB_DELIVERY"
     SIGNATURE = "HTTP_X_HUB_SIGNATURE"
+    SIGNATURE_256 = "HTTP_X_HUB_SIGNATURE_256"
 
 
 class GitHubWebhookEvents:
@@ -16,7 +17,6 @@ class GitHubWebhookEvents:
     INSTALLATION_REPOSITORIES = "installation_repositories"
     ORGANIZATION = "organization"
     MARKETPLACE_PURCHASE = "marketplace_purchase"
-    MARKETPLACE_SUBSCRIPTION = "marketplace_subscription"
     MEMBER = "member"
 
     repository_events = [PULL_REQUEST, DELETE, PUSH, PUBLIC, STATUS, REPOSITORY, MEMBER]
