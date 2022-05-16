@@ -139,6 +139,14 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             hits=3,
             misses=2,
             partials=1,
+            diff=ReportTotals(
+                coverage=0.5,
+                files=1,
+                lines=2,
+                hits=1,
+                misses=1,
+                partials=0,
+            ),
         )
 
         TestFileComparison = namedtuple(
@@ -196,6 +204,14 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                         missesCount
                         partialsCount
                     }
+                    patchTotals {
+                        percentCovered
+                        fileCount
+                        lineCount
+                        hitsCount
+                        missesCount
+                        partialsCount
+                    }
                 }
             }
         """
@@ -216,6 +232,14 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             "missesCount": 2,
             "partialsCount": 1,
         }
+        patch_totals = {
+            "percentCovered": 0.5,
+            "fileCount": 1,
+            "lineCount": 2,
+            "hitsCount": 1,
+            "missesCount": 1,
+            "partialsCount": 0,
+        }
 
         res = self._request(query)
         assert res == {
@@ -230,6 +254,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                         "hasChanges": False,
                         "baseTotals": base_totals,
                         "headTotals": head_totals,
+                        "patchTotals": patch_totals,
                     },
                     {
                         "baseName": None,
@@ -239,6 +264,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                         "hasChanges": False,
                         "baseTotals": base_totals,
                         "headTotals": head_totals,
+                        "patchTotals": patch_totals,
                     },
                 ]
             },
@@ -337,7 +363,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                     {
                         "segments": [
                             {
-                                "header": "@@ -1,2 +3,4 @@",
+                                "header": "-1,2 +3,4",
                                 "lines": [
                                     {
                                         "baseNumber": "1",
@@ -360,7 +386,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                     {
                         "segments": [
                             {
-                                "header": "@@ -1 +1 @@",
+                                "header": "-1 +1",
                                 "lines": [
                                     {
                                         "baseNumber": "1",
