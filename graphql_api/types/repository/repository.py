@@ -100,6 +100,7 @@ async def resolve_branches(repository, info, **kwargs):
 def resolve_default_branch(repository, info):
     return repository.branch
 
+
 @repository_bindable.field("profilingToken")
 def resolve_profiling_token(repository, info):
     command = info.context["executor"].get_command("repository")

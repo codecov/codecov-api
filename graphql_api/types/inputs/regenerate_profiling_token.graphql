@@ -1,3 +1,4 @@
 input RegenerateProfilingTokenInput {
+  owner: String!
   repoName: String!
 }
