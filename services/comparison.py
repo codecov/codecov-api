@@ -306,9 +306,6 @@ class LineComparison:
         self.added = _is_added(value)
         self.removed = _is_removed(value)
 
-    def __eq__(self, other):
-        return isinstance(other, LineComparison) and self.__dict__ == other.__dict__
-
     @property
     def number(self):
         return {
@@ -347,8 +344,8 @@ class LineComparison:
 
 class Segment:
     """
-    A segment represents a continuous set of lines in a file where either the coverage
-    has changed or the code has change (i.e. is part of a diff).
+    A segment represents a continuous subset set of lines in a file where either
+    the coverage has changed or the code has changed (i.e. is part of a diff).
     """
 
     # additional lines included before and after each segment
@@ -383,10 +380,10 @@ class Segment:
 
         segments = []
         for group in segmented_lines:
-            # padding lines before first coverage change
+            # padding lines before first line of interest
             start_line_number = group[0] - cls.padding_lines
             start_line_number = max(start_line_number, 0)
-            # padding lines after last coverage change
+            # padding lines after last line of interest
             end_line_number = group[-1] + cls.padding_lines
             end_line_number = min(end_line_number, len(lines) - 1)
 
