@@ -17,6 +17,7 @@ class Migration(migrations.Migration):
             """--
             -- Alter field bot on Owner
             --
+            COMMIT;
             """,
             state_operations=[
                 migrations.AlterField(
