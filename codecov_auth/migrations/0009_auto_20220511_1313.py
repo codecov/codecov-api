@@ -29,8 +29,9 @@ class Migration(migrations.Migration):
                         on_delete=django.db.models.deletion.SET_NULL,
                         to=settings.AUTH_USER_MODEL,
                     ),
-                 ),
-        ]),
+                ),
+            ],
+        ),
         migrations.AlterField(
             model_name="owner",
             name="integration_id",
