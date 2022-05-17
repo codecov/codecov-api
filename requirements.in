@@ -30,6 +30,8 @@ pytest-cov
 pytest-django
 pytest-mock
 pytest-asyncio
+pytest-vcr
+beautifulsoup4
 python-dateutil
 python-json-logger
 python-redis-lock
