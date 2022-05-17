@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.contrib import admin, messages
+from django.contrib.admin.models import LogEntry
 from django.shortcuts import redirect
 
 from codecov_auth.models import Owner
@@ -97,3 +98,30 @@ class OwnerAdmin(admin.ModelAdmin):
         ) = super().get_deleted_objects(objs, request)
         deleted_objects = ()
         return deleted_objects, model_count, perms_needed, protected
+
+
+@admin.register(LogEntry)
+class LogEntryAdmin(admin.ModelAdmin):
+    fields = (
+        "action_time",
+        "user",
+        "content_type",
+        "object_id",
+        "object_repr",
+        "action_flag",
+        "change_message",
+    )
+    list_display = ["__str__", "action_time", "user", "change_message"]
+
+    def get_readonly_fields(self, request, obj):
+        return self.fields
+
+    # keep only view permission
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
