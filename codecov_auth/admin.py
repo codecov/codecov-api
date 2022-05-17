@@ -47,6 +47,7 @@ class OwnerAdmin(admin.ModelAdmin):
         )
         fields.remove("oauth_token")
         fields.remove("staff")
+        fields.remove("plan_activated_users")
         fields.remove("plan")
         fields.remove("plan_provider")
         fields.remove("plan_user_count")
