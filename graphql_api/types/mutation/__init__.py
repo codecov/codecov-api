@@ -4,10 +4,10 @@ from .create_api_token import gql_create_api_token
 from .delete_session import gql_delete_session
 from .mutation import mutation_resolvers
 from .onboard_user import gql_onboard_user
+from .regenerate_profiling_token import gql_regenerate_profling_token
 from .set_yaml_on_owner import gql_set_yaml_on_owner
 from .sync_with_git_provider import gql_sync_with_git_provider
 from .update_profile import gql_update_profile
-from .regenerate_profiling_token import gql_regenerate_profling_token
 
 mutation = ariadne_load_local_graphql(__file__, "mutation.graphql")
 mutation = mutation + gql_create_api_token

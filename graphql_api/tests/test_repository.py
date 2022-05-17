@@ -1,6 +1,6 @@
+from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
 from freezegun import freeze_time
-from django.contrib.auth.models import AnonymousUser
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.commands import repository
@@ -38,7 +38,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
     def fetch_repository(self, name, fields=None):
         data = self.gql_request(
             query_repository % (fields or default_fields),
-            user= self.user,
+            user=self.user,
             variables={"name": name},
         )
         return data["me"]["owner"]["repository"]
@@ -60,7 +60,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "uploadToken": repo.upload_token,
             "defaultBranch": "master",
             "author": {"username": "codecov-user"},
-            "profilingToken":None
+            "profilingToken": None,
         }
 
     @freeze_time("2021-01-01")
@@ -82,7 +82,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "uploadToken": repo.upload_token,
             "defaultBranch": "master",
             "author": {"username": "codecov-user"},
-            "profilingToken":None
+            "profilingToken": None,
         }
 
     def test_repository_pulls(self):
@@ -94,11 +94,10 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         assert res["pulls"]["edges"][0]["node"]["pullId"] == 3
         assert res["pulls"]["edges"][1]["node"]["pullId"] == 2
 
-
     def test_repository_get_profiling_token(self):
         user = OwnerFactory()
         repo = RepositoryFactory(author=user, name="gazebo")
-        RepositoryTokenFactory(repository=repo, key='random')
+        RepositoryTokenFactory(repository=repo, key="random")
 
         data = self.gql_request(
             query_repository % "profilingToken",

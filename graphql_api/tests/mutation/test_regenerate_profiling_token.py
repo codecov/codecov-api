@@ -1,7 +1,7 @@
 from django.test import TransactionTestCase
 
-from core.tests.factories import RepositoryFactory, RepositoryTokenFactory
 from codecov_auth.tests.factories import OwnerFactory
+from core.tests.factories import RepositoryFactory, RepositoryTokenFactory
 from graphql_api.tests.helper import GraphQLTestHelper
 
 query = """
@@ -22,21 +22,35 @@ class RegenerateProfilingToken(GraphQLTestHelper, TransactionTestCase):
         self.repo = RepositoryFactory(author=self.org, name="gazebo")
 
     def test_when_unauthenticated(self):
-        data = self.gql_request(query, variables={"input": {"repoName": "gazebo","owner":"codecov"}})
-        assert data["regenerateProfilingToken"]["error"]["__typename"] == "UnauthenticatedError"
+        data = self.gql_request(
+            query, variables={"input": {"repoName": "gazebo", "owner": "codecov"}}
+        )
+        assert (
+            data["regenerateProfilingToken"]["error"]["__typename"]
+            == "UnauthenticatedError"
+        )
 
     def test_when_validation_error_repo_not_viewable(self):
         random_user = OwnerFactory(organizations=[self.org.ownerid])
-        data = self.gql_request(query, user=random_user, variables={"input": {"repoName": "gazebo","owner":"codecov"}})
-        assert data["regenerateProfilingToken"]["error"]["__typename"] == "ValidationError"
+        data = self.gql_request(
+            query,
+            user=random_user,
+            variables={"input": {"repoName": "gazebo", "owner": "codecov"}},
+        )
+        assert (
+            data["regenerateProfilingToken"]["error"]["__typename"] == "ValidationError"
+        )
 
     def test_when_authenticated_regenerate_token(self):
-        user = OwnerFactory(organizations=[self.org.ownerid], permission=[self.repo.repoid])
-        RepositoryTokenFactory(repository=self.repo, key='random')
-        data = self.gql_request( 
-            query, user=user, variables={"input":{"owner":"codecov","repoName": "gazebo"}}
+        user = OwnerFactory(
+            organizations=[self.org.ownerid], permission=[self.repo.repoid]
         )
-        newToken =  data["regenerateProfilingToken"]["profilingToken"] 
+        RepositoryTokenFactory(repository=self.repo, key="random")
+        data = self.gql_request(
+            query,
+            user=user,
+            variables={"input": {"owner": "codecov", "repoName": "gazebo"}},
+        )
+        newToken = data["regenerateProfilingToken"]["profilingToken"]
         assert newToken != "random"
         assert len(newToken) == 40
-        
