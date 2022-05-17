@@ -53,6 +53,9 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
     def test_when_repository_has_no_coverage(self):
 
         repo = RepositoryFactory(author=self.user, active=True, private=True, name="a")
+        profiling_token = RepositoryTokenFactory(
+            repository_id=repo.repoid, token_type="profiling"
+        ).key
         assert self.fetch_repository(repo.name) == {
             "name": "a",
             "active": True,
@@ -63,7 +66,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "uploadToken": repo.upload_token,
             "defaultBranch": "master",
             "author": {"username": "codecov-user"},
-            "profilingToken": None,
+            "profilingToken": profiling_token,
             "criticalFiles": [],
         }
 
@@ -76,6 +79,9 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             name="b",
             cache={"commit": {"totals": {"c": 75}}},
         )
+        profiling_token = RepositoryTokenFactory(
+            repository_id=repo.repoid, token_type="profiling"
+        ).key
         assert self.fetch_repository(repo.name) == {
             "name": "b",
             "active": True,
@@ -86,7 +92,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "uploadToken": repo.upload_token,
             "defaultBranch": "master",
             "author": {"username": "codecov-user"},
-            "profilingToken": None,
+            "profilingToken": profiling_token,
             "criticalFiles": [],
         }
 
@@ -101,7 +107,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
 
     def test_repository_get_profiling_token(self):
         user = OwnerFactory()
-        repo = RepositoryFactory(author=user, name="gazebo")
+        repo = RepositoryFactory(author=user, name="gazebo", active=True)
         RepositoryTokenFactory(repository=repo, key="random")
 
         data = self.gql_request(

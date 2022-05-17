@@ -16,7 +16,7 @@ class RepositoryCommands(BaseCommand):
     def get_profiling_token(self, repository):
         return self.get_interactor(GetProfilingTokenInteractor).execute(repository)
 
-    def regenerate_profiling_token(self, repoName, owner):
+    def regenerate_profiling_token(self, repo_name, owner):
         return self.get_interactor(RegenerateProfilingTokenInteractor).execute(
-            repoName, owner
+            repo_name, owner
         )

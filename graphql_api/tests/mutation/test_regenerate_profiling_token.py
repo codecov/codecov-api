@@ -19,7 +19,7 @@ mutation($input: RegenerateProfilingTokenInput!) {
 class RegenerateProfilingToken(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
         self.org = OwnerFactory(name="codecov")
-        self.repo = RepositoryFactory(author=self.org, name="gazebo")
+        self.repo = RepositoryFactory(author=self.org, name="gazebo", active=True)
 
     def test_when_unauthenticated(self):
         data = self.gql_request(

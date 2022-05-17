@@ -14,11 +14,11 @@ class RegenerateProfilingTokenInteractor(BaseInteractor):
             raise ValidationError("Repo not found")
 
     @sync_to_async
-    def execute(self, repoName, owner):
+    def execute(self, repo_name, owner):
         author = Owner.objects.filter(name=owner, service=self.service).first()
         repo = (
             Repository.objects.viewable_repos(self.current_user)
-            .filter(author=author, name=repoName)
+            .filter(author=author, name=repo_name, active=True)
             .first()
         )
         self.validate(repo)
@@ -26,7 +26,10 @@ class RegenerateProfilingTokenInteractor(BaseInteractor):
         token = RepositoryToken.objects.filter(
             repository_id=repo.repoid, token_type="profiling"
         ).first()
-        if token:
-            token.key = token.generate_key()
+        if not token:
+            token = RepositoryToken(repository_id=repo.repoid, token_type="profiling")
             token.save()
             return token.key
+        token.key = token.generate_key()
+        token.save()
+        return token.key

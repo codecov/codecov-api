@@ -10,7 +10,7 @@ from graphql_api.helpers.mutation import (
 async def resolve_regenerate_profling_token(_, info, input):
     command = info.context["executor"].get_command("repository")
     profilingToken = await command.regenerate_profiling_token(
-        repoName=input.get("repoName"), owner=input.get("owner")
+        repo_name=input.get("repoName"), owner=input.get("owner")
     )
     return {"profiling_token": profilingToken}
 
