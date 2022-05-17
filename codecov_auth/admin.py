@@ -102,7 +102,7 @@ class OwnerAdmin(admin.ModelAdmin):
 
 @admin.register(LogEntry)
 class LogEntryAdmin(admin.ModelAdmin):
-    fields = (
+    readonly_fields = (
         "action_time",
         "user",
         "content_type",
@@ -112,9 +112,6 @@ class LogEntryAdmin(admin.ModelAdmin):
         "change_message",
     )
     list_display = ["__str__", "action_time", "user", "change_message"]
-
-    def get_readonly_fields(self, request, obj):
-        return self.fields
 
     # keep only view permission
     def has_add_permission(self, request):
