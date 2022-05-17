@@ -1,9 +1,14 @@
-from ariadne import ObjectType, convert_kwargs_to_snake_case
+from typing import List
 
+from ariadne import ObjectType, convert_kwargs_to_snake_case
+from asgiref.sync import sync_to_async
+
+from core.models import Repository
 from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.owner import OwnerLoader
 from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.enums import OrderingDirection
+from services.profiling import CriticalFile, ProfilingSummary
 
 repository_bindable = ObjectType("Repository")
 
@@ -105,3 +110,17 @@ def resolve_default_branch(repository, info):
 def resolve_profiling_token(repository, info):
     command = info.context["executor"].get_command("repository")
     return command.get_profiling_token(repository)
+
+
+@repository_bindable.field("criticalFiles")
+@sync_to_async
+def resolve_critical_files(repository: Repository, info) -> List[CriticalFile]:
+    """
+    The current critical files for this repository - not tied to any
+    particular commit or branch.  Based on the most recently received
+    profiling data.
+
+    See the `commit.criticalFiles` resolver for commit-specific files.
+    """
+    profiling_summary = ProfilingSummary(repository)
+    return profiling_summary.critical_files

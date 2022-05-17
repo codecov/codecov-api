@@ -6,5 +6,6 @@ type FileComparison {
     hasChanges: Boolean!
     baseTotals: CoverageTotals
     headTotals: CoverageTotals
+    patchTotals: CoverageTotals
     segments: [SegmentComparison!]!
 }

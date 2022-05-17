@@ -46,6 +46,13 @@ def resolve_head_totals(file_comparison: FileComparison, info) -> dict:
     return file_comparison.totals["head"]
 
 
+@file_comparison_bindable.field("patchTotals")
+def resolve_patch_percent_covered(
+    file_comparison: FileComparison, info
+) -> Optional[dict]:
+    return file_comparison.totals["head"].diff
+
+
 @file_comparison_bindable.field("segments")
 @sync_to_async
 def resolve_segments(file_comparison: FileComparison, info) -> List[SegmentComparison]:
