@@ -37,6 +37,7 @@ class OwnerAdmin(admin.ModelAdmin):
     readonly_fields = []
     search_fields = ("username__iexact",)
     actions = [impersonate_owner]
+    autocomplete_fields = ("bot",)
 
     def get_readonly_fields(self, _, obj=None):
         fields = (
@@ -47,6 +48,13 @@ class OwnerAdmin(admin.ModelAdmin):
         fields.remove("oauth_token")
         fields.remove("staff")
         fields.remove("plan_activated_users")
+        fields.remove("plan")
+        fields.remove("plan_provider")
+        fields.remove("plan_user_count")
+        fields.remove("stripe_customer_id")
+        fields.remove("stripe_subscription_id")
+        fields.remove("bot")
+        fields.remove("integration_id")
         return fields
 
     def save_model(self, request, new_owner, form, change) -> None:
@@ -79,3 +87,13 @@ class OwnerAdmin(admin.ModelAdmin):
 
     def delete_model(self, request, obj) -> None:
         TaskService().delete_owner(ownerid=obj.ownerid)
+
+    def get_deleted_objects(self, objs, request):
+        (
+            deleted_objects,
+            model_count,
+            perms_needed,
+            protected,
+        ) = super().get_deleted_objects(objs, request)
+        deleted_objects = ()
+        return deleted_objects, model_count, perms_needed, protected
