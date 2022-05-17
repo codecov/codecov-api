@@ -37,6 +37,7 @@ class OwnerAdmin(admin.ModelAdmin):
     readonly_fields = []
     search_fields = ("username__iexact",)
     actions = [impersonate_owner]
+    autocomplete_fields = ("bot",)
 
     def get_readonly_fields(self, _, obj=None):
         fields = (
@@ -51,7 +52,27 @@ class OwnerAdmin(admin.ModelAdmin):
         fields.remove("plan_user_count")
         fields.remove("stripe_customer_id")
         fields.remove("stripe_subscription_id")
+        fields.remove("bot")
+        fields.remove("integration_id")
         return fields
+
+    def save_model(self, request, new_owner, form, change) -> None:
+        if change:
+            old_owner = Owner.objects.get(ownerid=new_owner.ownerid)
+            new_owner.changed_fields = dict()
+
+            for changed_field in form.changed_data:
+                prev_value = getattr(old_owner, changed_field)
+                new_value = getattr(new_owner, changed_field)
+                new_owner.changed_fields[
+                    changed_field
+                ] = f"prev value: {prev_value}, new value: {new_value}"
+
+        return super().save_model(request, new_owner, form, change)
+
+    def log_change(self, request, object, message):
+        message.append(object.changed_fields)
+        return super().log_change(request, object, message)
 
     def has_add_permission(self, _, obj=None):
         return False
@@ -65,3 +86,13 @@ class OwnerAdmin(admin.ModelAdmin):
 
     def delete_model(self, request, obj) -> None:
         TaskService().delete_owner(ownerid=obj.ownerid)
+
+    def get_deleted_objects(self, objs, request):
+        (
+            deleted_objects,
+            model_count,
+            perms_needed,
+            protected,
+        ) = super().get_deleted_objects(objs, request)
+        deleted_objects = ()
+        return deleted_objects, model_count, perms_needed, protected
