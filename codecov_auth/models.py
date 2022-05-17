@@ -278,6 +278,12 @@ class Owner(models.Model):
                 raise ValidationError(
                     "User not part of Codecov cannot be a staff member"
                 )
+        if not self.plan:
+            self.plan = None
+        if not self.stripe_customer_id:
+            self.stripe_customer_id = None
+        if not self.stripe_subscription_id:
+            self.stripe_subscription_id = None
 
     @property
     def avatar_url(self, size=DEFAULT_AVATAR_SIZE):

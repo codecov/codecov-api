@@ -47,6 +47,11 @@ class OwnerAdmin(admin.ModelAdmin):
         )
         fields.remove("oauth_token")
         fields.remove("staff")
+        fields.remove("plan")
+        fields.remove("plan_provider")
+        fields.remove("plan_user_count")
+        fields.remove("stripe_customer_id")
+        fields.remove("stripe_subscription_id")
         fields.remove("bot")
         fields.remove("integration_id")
         return fields
