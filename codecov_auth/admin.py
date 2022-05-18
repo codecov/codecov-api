@@ -1,8 +1,11 @@
 from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.admin.models import LogEntry
+from django.db.models.fields import BLANK_CHOICE_DASH
+from django.forms import Select
 from django.shortcuts import redirect
 
+from billing.constants import USER_PLAN_REPRESENTATIONS
 from codecov_auth.models import Owner
 from services.task import TaskService
 from utils.services import get_short_service_name
@@ -57,6 +60,14 @@ class OwnerAdmin(admin.ModelAdmin):
         fields.remove("bot")
         fields.remove("integration_id")
         return fields
+
+    def get_form(self, request, obj=None, change=False, **kwargs):
+        form = super().get_form(request, obj, change, **kwargs)
+        PLANS_CHOICES = [(x, x) for x in USER_PLAN_REPRESENTATIONS.keys()]
+        form.base_fields["plan"].widget = Select(
+            choices=BLANK_CHOICE_DASH + PLANS_CHOICES
+        )
+        return form
 
     def save_model(self, request, new_owner, form, change) -> None:
         if change:
