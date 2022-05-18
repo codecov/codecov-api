@@ -109,3 +109,27 @@ class OwnerAdmin(admin.ModelAdmin):
         ) = super().get_deleted_objects(objs, request)
         deleted_objects = ()
         return deleted_objects, model_count, perms_needed, protected
+
+
+@admin.register(LogEntry)
+class LogEntryAdmin(admin.ModelAdmin):
+    readonly_fields = (
+        "action_time",
+        "user",
+        "content_type",
+        "object_id",
+        "object_repr",
+        "action_flag",
+        "change_message",
+    )
+    list_display = ["__str__", "action_time", "user", "change_message"]
+
+    # keep only view permission
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
