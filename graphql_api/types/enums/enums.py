@@ -46,6 +46,7 @@ class PullRequestState(enum.Enum):
 
 
 class UploadState(enum.Enum):
+    STARTED = "started"
     UPLOADED = "uploaded"
     PROCESSED = "processed"
     ERROR = "error"
