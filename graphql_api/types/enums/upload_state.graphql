@@ -1,4 +1,5 @@
 enum UploadState {
+  STARTED
   UPLOADED
   PROCESSED
   ERROR
