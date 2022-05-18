@@ -39,23 +39,72 @@ class OwnerAdmin(admin.ModelAdmin):
     actions = [impersonate_owner]
     autocomplete_fields = ("bot",)
 
-    def get_readonly_fields(self, _, obj=None):
-        fields = (
-            list(self.readonly_fields)
-            + [field.name for field in obj._meta.fields]
-            + [field.name for field in obj._meta.many_to_many]
-        )
-        fields.remove("oauth_token")
-        fields.remove("staff")
-        fields.remove("plan_activated_users")
-        fields.remove("plan")
-        fields.remove("plan_provider")
-        fields.remove("plan_user_count")
-        fields.remove("stripe_customer_id")
-        fields.remove("stripe_subscription_id")
-        fields.remove("bot")
-        fields.remove("integration_id")
-        return fields
+    # the displayed fields
+    fields = (
+        "staff",
+        "ownerid",
+        "username",
+        "service",
+        "email",
+        "business_email",
+        "name",
+        "service_id",
+        "createstamp",
+        "plan",
+        "plan_provider",
+        "plan_user_count",
+        "plan_activated_users",
+        "plan_auto_activate",
+        "integration_id",
+        "bot",
+        "stripe_customer_id",
+        "stripe_subscription_id",
+        "parent_service_id",
+        "root_parent_service_id",
+        "private_access",
+        "cache",
+        "did_trial",
+        "free",
+        "invoice_details",
+        "delinquent",
+        "yaml",
+        "updatestamp",
+        "organizations",
+        "admins",
+        "permission",
+        "student",
+        "student_created_at",
+        "student_updated_at",
+        "onboarding_completed",
+    )
+    readonly_fields = (
+        "ownerid",
+        "username",
+        "service",
+        "email",
+        "business_email",
+        "name",
+        "service_id",
+        "createstamp",
+        "plan_auto_activate",
+        "parent_service_id",
+        "root_parent_service_id",
+        "private_access",
+        "cache",
+        "did_trial",
+        "free",
+        "invoice_details",
+        "delinquent",
+        "yaml",
+        "updatestamp",
+        "organizations",
+        "admins",
+        "permission",
+        "student",
+        "student_created_at",
+        "student_updated_at",
+        "onboarding_completed",
+    )
 
     def save_model(self, request, new_owner, form, change) -> None:
         if change:
