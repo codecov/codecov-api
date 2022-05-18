@@ -23,13 +23,10 @@ class RegenerateProfilingTokenInteractor(BaseInteractor):
         )
         self.validate(repo)
 
-        token = RepositoryToken.objects.filter(
+        token, created = RepositoryToken.objects.get_or_create(
             repository_id=repo.repoid, token_type="profiling"
-        ).first()
-        if not token:
-            token = RepositoryToken(repository_id=repo.repoid, token_type="profiling")
+        )
+        if not created:
+            token.key = token.generate_key()
             token.save()
-            return token.key
-        token.key = token.generate_key()
-        token.save()
         return token.key
