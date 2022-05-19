@@ -67,6 +67,16 @@ class TestOwnerModel(TransactionTestCase):
 
         assert self.owner.nb_active_private_repos == 1
 
+    def test_plan_is_null_when_validating_form(self):
+        owner = OwnerFactory()
+        owner.plan = ""
+        owner.stripe_customer_id = ""
+        owner.stripe_subscription_id = ""
+        owner.clean()
+        assert owner.plan == None
+        assert owner.stripe_customer_id == None
+        assert owner.stripe_subscription_id == None
+
     def test_setting_staff_on_for_not_a_codecov_member(self):
         user_not_part_of_codecov = OwnerFactory(email="user@notcodecov.io", staff=True)
         with self.assertRaises(ValidationError):

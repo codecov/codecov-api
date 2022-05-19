@@ -81,8 +81,8 @@ class Owner(models.Model):
     business_email = models.TextField(null=True)
     name = models.TextField(null=True)
     oauth_token = models.TextField(null=True)
-    stripe_customer_id = models.TextField(null=True)
-    stripe_subscription_id = models.TextField(null=True)
+    stripe_customer_id = models.TextField(null=True, blank=True)
+    stripe_subscription_id = models.TextField(null=True, blank=True)
 
     # createstamp seems to be used by legacy to track first login
     # so we shouldn't touch this outside login
@@ -95,13 +95,15 @@ class Owner(models.Model):
     staff = models.BooleanField(null=True, default=False)
     cache = models.JSONField(null=True)
     # Really an ENUM in db
-    plan = models.TextField(null=True, default=BASIC_PLAN_NAME)
+    plan = models.TextField(null=True, default=BASIC_PLAN_NAME, blank=True)
     plan_provider = models.TextField(
-        null=True, choices=PlanProviders.choices
+        null=True, choices=PlanProviders.choices, blank=True
     )  # postgres enum containing only "github"
-    plan_user_count = models.SmallIntegerField(null=True, default=5)
+    plan_user_count = models.SmallIntegerField(null=True, default=5, blank=True)
     plan_auto_activate = models.BooleanField(null=True, default=True)
-    plan_activated_users = ArrayField(models.IntegerField(null=True), null=True)
+    plan_activated_users = ArrayField(
+        models.IntegerField(null=True), null=True, blank=True
+    )
     did_trial = models.BooleanField(null=True)
     free = models.SmallIntegerField(default=0)
     invoice_details = models.TextField(null=True)
@@ -110,10 +112,10 @@ class Owner(models.Model):
     updatestamp = DateTimeWithoutTZField(default=datetime.now)
     organizations = ArrayField(models.IntegerField(null=True), null=True)
     admins = ArrayField(models.IntegerField(null=True), null=True)
-    integration_id = models.IntegerField(null=True)
+    integration_id = models.IntegerField(null=True, blank=True)
     permission = ArrayField(models.IntegerField(null=True), null=True)
     bot = models.ForeignKey(
-        "Owner", db_column="bot", null=True, on_delete=models.SET_NULL
+        "Owner", db_column="bot", null=True, on_delete=models.SET_NULL, blank=True
     )
     student = models.BooleanField(default=False)
     student_created_at = DateTimeWithoutTZField(null=True)
@@ -276,6 +278,12 @@ class Owner(models.Model):
                 raise ValidationError(
                     "User not part of Codecov cannot be a staff member"
                 )
+        if not self.plan:
+            self.plan = None
+        if not self.stripe_customer_id:
+            self.stripe_customer_id = None
+        if not self.stripe_subscription_id:
+            self.stripe_subscription_id = None
 
     @property
     def avatar_url(self, size=DEFAULT_AVATAR_SIZE):

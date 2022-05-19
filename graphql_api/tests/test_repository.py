@@ -1,9 +1,12 @@
+from unittest.mock import PropertyMock, patch
+
 from django.test import TransactionTestCase
 from freezegun import freeze_time
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.commands import repository
-from core.tests.factories import PullFactory, RepositoryFactory
+from core.tests.factories import PullFactory, RepositoryFactory, RepositoryTokenFactory
+from services.profiling import CriticalFile
 
 from .helper import GraphQLTestHelper
 
@@ -29,6 +32,8 @@ default_fields = """
     uploadToken
     defaultBranch
     author { username }
+    profilingToken
+    criticalFiles { name }
 """
 
 
@@ -48,6 +53,9 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
     def test_when_repository_has_no_coverage(self):
 
         repo = RepositoryFactory(author=self.user, active=True, private=True, name="a")
+        profiling_token = RepositoryTokenFactory(
+            repository_id=repo.repoid, token_type="profiling"
+        ).key
         assert self.fetch_repository(repo.name) == {
             "name": "a",
             "active": True,
@@ -58,6 +66,8 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "uploadToken": repo.upload_token,
             "defaultBranch": "master",
             "author": {"username": "codecov-user"},
+            "profilingToken": profiling_token,
+            "criticalFiles": [],
         }
 
     @freeze_time("2021-01-01")
@@ -69,6 +79,9 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             name="b",
             cache={"commit": {"totals": {"c": 75}}},
         )
+        profiling_token = RepositoryTokenFactory(
+            repository_id=repo.repoid, token_type="profiling"
+        ).key
         assert self.fetch_repository(repo.name) == {
             "name": "b",
             "active": True,
@@ -79,6 +92,8 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "uploadToken": repo.upload_token,
             "defaultBranch": "master",
             "author": {"username": "codecov-user"},
+            "profilingToken": profiling_token,
+            "criticalFiles": [],
         }
 
     def test_repository_pulls(self):
@@ -89,3 +104,36 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         res = self.fetch_repository(repo.name, "pulls { edges { node { pullId } } }")
         assert res["pulls"]["edges"][0]["node"]["pullId"] == 3
         assert res["pulls"]["edges"][1]["node"]["pullId"] == 2
+
+    def test_repository_get_profiling_token(self):
+        user = OwnerFactory()
+        repo = RepositoryFactory(author=user, name="gazebo", active=True)
+        RepositoryTokenFactory(repository=repo, key="random")
+
+        data = self.gql_request(
+            query_repository % "profilingToken",
+            user=user,
+            variables={"name": repo.name},
+        )
+        assert data["me"]["owner"]["repository"]["profilingToken"] == "random"
+
+    @patch(
+        "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
+    )
+    def test_repository_critical_files(self, critical_files):
+        critical_files.return_value = [
+            CriticalFile("one"),
+            CriticalFile("two"),
+            CriticalFile("three"),
+        ]
+        repo = RepositoryFactory(
+            author=self.user,
+            active=True,
+            private=True,
+        )
+        res = self.fetch_repository(repo.name)
+        assert res["criticalFiles"] == [
+            {"name": "one"},
+            {"name": "two"},
+            {"name": "three"},
+        ]
