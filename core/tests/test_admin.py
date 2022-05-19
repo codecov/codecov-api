@@ -9,12 +9,10 @@ from core.models import Repository
 from core.tests.factories import RepositoryFactory
 
 
-
 class AdminTest(TestCase):
     def setUp(self):
         self.user = OwnerFactory()
         self.repo_admin = RepositoryAdmin(Repository, AdminSite)
-
 
     def test_staff_can_access_admin(self):
         self.user.staff = True
@@ -28,7 +26,6 @@ class AdminTest(TestCase):
         self.client.force_login(user=self.user)
         response = self.client.get("/admin/")
         self.assertEqual(response.status_code, 302)
-
 
     def test_readonly_fields(self):
         readonly_fields = self.repo_admin.get_readonly_fields(request=None)
@@ -58,4 +55,3 @@ class AdminTest(TestCase):
             {"changed": {"fields": ["using_integration"]}},
             {"using_integration": "prev value: True, new value: False"},
         ]
-        
