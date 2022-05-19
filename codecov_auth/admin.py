@@ -1,7 +1,11 @@
 from django.conf import settings
 from django.contrib import admin, messages
+from django.contrib.admin.models import LogEntry
+from django.db.models.fields import BLANK_CHOICE_DASH
+from django.forms import Select
 from django.shortcuts import redirect
 
+from billing.constants import USER_PLAN_REPRESENTATIONS
 from codecov_auth.models import Owner
 from services.task import TaskService
 from utils.services import get_short_service_name
@@ -39,23 +43,80 @@ class OwnerAdmin(admin.ModelAdmin):
     actions = [impersonate_owner]
     autocomplete_fields = ("bot",)
 
-    def get_readonly_fields(self, _, obj=None):
-        fields = (
-            list(self.readonly_fields)
-            + [field.name for field in obj._meta.fields]
-            + [field.name for field in obj._meta.many_to_many]
+    # the displayed fields
+    fields = (
+        "staff",
+        "ownerid",
+        "username",
+        "service",
+        "email",
+        "business_email",
+        "name",
+        "service_id",
+        "createstamp",
+        "plan",
+        "plan_provider",
+        "plan_user_count",
+        "plan_activated_users",
+        "plan_auto_activate",
+        "integration_id",
+        "bot",
+        "stripe_customer_id",
+        "stripe_subscription_id",
+        "parent_service_id",
+        "root_parent_service_id",
+        "private_access",
+        "cache",
+        "did_trial",
+        "free",
+        "invoice_details",
+        "delinquent",
+        "yaml",
+        "updatestamp",
+        "organizations",
+        "admins",
+        "permission",
+        "student",
+        "student_created_at",
+        "student_updated_at",
+        "onboarding_completed",
+    )
+    readonly_fields = (
+        "ownerid",
+        "username",
+        "service",
+        "email",
+        "business_email",
+        "name",
+        "service_id",
+        "createstamp",
+        "plan_auto_activate",
+        "parent_service_id",
+        "root_parent_service_id",
+        "private_access",
+        "cache",
+        "did_trial",
+        "free",
+        "invoice_details",
+        "delinquent",
+        "yaml",
+        "updatestamp",
+        "organizations",
+        "admins",
+        "permission",
+        "student",
+        "student_created_at",
+        "student_updated_at",
+        "onboarding_completed",
+    )
+
+    def get_form(self, request, obj=None, change=False, **kwargs):
+        form = super().get_form(request, obj, change, **kwargs)
+        PLANS_CHOICES = [(x, x) for x in USER_PLAN_REPRESENTATIONS.keys()]
+        form.base_fields["plan"].widget = Select(
+            choices=BLANK_CHOICE_DASH + PLANS_CHOICES
         )
-        fields.remove("oauth_token")
-        fields.remove("staff")
-        fields.remove("plan_activated_users")
-        fields.remove("plan")
-        fields.remove("plan_provider")
-        fields.remove("plan_user_count")
-        fields.remove("stripe_customer_id")
-        fields.remove("stripe_subscription_id")
-        fields.remove("bot")
-        fields.remove("integration_id")
-        return fields
+        return form
 
     def save_model(self, request, new_owner, form, change) -> None:
         if change:
@@ -97,3 +158,27 @@ class OwnerAdmin(admin.ModelAdmin):
         ) = super().get_deleted_objects(objs, request)
         deleted_objects = ()
         return deleted_objects, model_count, perms_needed, protected
+
+
+@admin.register(LogEntry)
+class LogEntryAdmin(admin.ModelAdmin):
+    readonly_fields = (
+        "action_time",
+        "user",
+        "content_type",
+        "object_id",
+        "object_repr",
+        "action_flag",
+        "change_message",
+    )
+    list_display = ["__str__", "action_time", "user", "change_message"]
+
+    # keep only view permission
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
