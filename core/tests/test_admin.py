@@ -35,7 +35,7 @@ class AdminTest(TestCase):
         form = MagicMock()
         form.changed_data = ["using_integration"]
         self.repo_admin.save_model(
-            request=MagicMock, new_repo=repo, form=form, change=True
+            request=MagicMock, new_obj=repo, form=form, change=True
         )
         assert (
             repo.changed_fields["using_integration"]
