@@ -3,6 +3,7 @@ from django.core.paginator import Paginator
 from django.db import connections
 from django.utils.functional import cached_property
 
+from codecov.admin import AdminMixin
 from codecov_auth.models import RepositoryToken
 from core.models import Repository
 
@@ -42,7 +43,7 @@ class EstimatedCountPaginator(Paginator):
 
 
 @admin.register(Repository)
-class RepositoryAdmin(admin.ModelAdmin):
+class RepositoryAdmin(AdminMixin, admin.ModelAdmin):
     inlines = [RepositoryTokenInline]
     list_display = ("name", "service_id", "author")
     search_fields = ("author__username__exact",)
