@@ -22,3 +22,51 @@ class Measurement(models.Model):
                 fields=["owner_id", "repo_id", "branch", "name", "meta", "timestamp"]
             ),
         ]
+
+
+class MeasurementSummary(models.Model):
+    timestamp_bin = models.DateTimeField(primary_key=True)
+    owner_id = models.BigIntegerField()
+    repo_id = models.BigIntegerField()
+    branch = models.TextField()
+    name = models.TextField()
+    meta = models.TextField()
+    value_avg = models.FloatField()
+    value_max = models.FloatField()
+    value_min = models.FloatField()
+    value_count = models.FloatField()
+
+    @classmethod
+    def agg_by(cls, interval):
+        model_classes = {
+            "hour": MeasurementSummaryHour,
+            "day": MeasurementSummaryDay,
+            "week": MeasurementSummaryWeek,
+        }
+
+        model_class = model_classes.get(interval)
+        if not model_class:
+            raise ValueError(f"cannot aggregate by '{interval}'")
+        return model_class.objects
+
+    class Meta:
+        abstract = True
+        # these are backed by TimescaleDB "continuous aggregates"
+        # (materialized views)
+        managed = False
+        ordering = ["timestamp_bin"]
+
+
+class MeasurementSummaryHour(MeasurementSummary):
+    class Meta(MeasurementSummary.Meta):
+        db_table = "timeseries_measurement_summary_hour"
+
+
+class MeasurementSummaryDay(MeasurementSummary):
+    class Meta(MeasurementSummary.Meta):
+        db_table = "timeseries_measurement_summary_day"
+
+
+class MeasurementSummaryWeek(MeasurementSummary):
+    class Meta(MeasurementSummary.Meta):
+        db_table = "timeseries_measurement_summary_week"
