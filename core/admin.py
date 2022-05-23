@@ -50,7 +50,8 @@ class RepositoryAdmin(admin.ModelAdmin):
     autocomplete_fields = ("bot",)
 
     paginator = EstimatedCountPaginator
-    fields = (
+
+    readonly_fields = (
         "name",
         "author",
         "service_id",
@@ -64,12 +65,11 @@ class RepositoryAdmin(admin.ModelAdmin):
         "yaml",
         "cache",
         "image_token",
-        "using_integration",
         "hookid",
-        "bot",
         "activated",
         "deleted",
     )
+    fields = readonly_fields + ("bot", "using_integration")
 
     def save_model(self, request, new_repo, form, change) -> None:
         if change:
@@ -88,12 +88,6 @@ class RepositoryAdmin(admin.ModelAdmin):
     def log_change(self, request, object, message):
         message.append(object.changed_fields)
         return super().log_change(request, object, message)
-
-    def get_readonly_fields(self, request, obj=None):
-        readonly_fields = list(self.fields)
-        readonly_fields.remove("bot")
-        readonly_fields.remove("using_integration")
-        return readonly_fields
 
     def has_delete_permission(self, request, obj=None):
         return False

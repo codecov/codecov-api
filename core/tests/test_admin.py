@@ -27,11 +27,6 @@ class AdminTest(TestCase):
         response = self.client.get("/admin/")
         self.assertEqual(response.status_code, 302)
 
-    def test_readonly_fields(self):
-        readonly_fields = self.repo_admin.get_readonly_fields(request=None)
-        assert "bot" not in readonly_fields
-        assert "using_integration" not in readonly_fields
-
     @patch("core.admin.admin.ModelAdmin.log_change")
     def test_prev_and_new_values_in_log_entry(self, mocked_super_log_change):
         repo = RepositoryFactory(using_integration=True)
