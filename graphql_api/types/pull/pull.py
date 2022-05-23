@@ -1,10 +1,7 @@
-import asyncio
-from os import sync
-
 from ariadne import ObjectType
 
-from core.models import Commit
 from graphql_api.dataloader.commit import CommitLoader
+from graphql_api.dataloader.comparison import ComparisonLoader
 from graphql_api.dataloader.owner import OwnerLoader
 from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.enums import OrderingDirection
@@ -43,32 +40,15 @@ def resolve_base(pull, info):
 
 @pull_bindable.field("compareWithBase")
 async def resolve_compare_with_base(pull, info, **kwargs):
-    loader = CommitLoader.loader(info, pull.repository_id)
+    comparison_loader = ComparisonLoader.loader(info, pull.repository_id)
+    comparison = await comparison_loader.load((pull.compared_to, pull.head))
 
-    async def empty():
-        return None
-
-    loads = []
-    if pull.head:
-        loads.append(loader.load(pull.head))
-    else:
-        loads.append(empty())
-    if pull.compared_to:
-        loads.append(loader.load(pull.compared_to))
-    else:
-        loads.append(empty())
-
-    head_commit, compared_commit = await asyncio.gather(*loads)
-
-    command = info.context["executor"].get_command("compare")
-    commit_comparison = await command.compare_commits(head_commit, compared_commit)
-
-    if commit_comparison and commit_comparison.is_processed:
+    if comparison and comparison.is_processed:
         # store the comparison in the context - to be used in the `Comparison` resolvers
         user = info.context["request"].user
         info.context["comparison"] = PullRequestComparison(user, pull)
 
-    return commit_comparison
+    return comparison
 
 
 @pull_bindable.field("commits")
