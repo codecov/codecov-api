@@ -6,6 +6,7 @@ from django.forms import Select
 from django.shortcuts import redirect
 
 from billing.constants import USER_PLAN_REPRESENTATIONS
+from codecov.admin import AdminMixin
 from codecov_auth.models import Owner
 from services.task import TaskService
 from utils.services import get_short_service_name
@@ -35,7 +36,7 @@ impersonate_owner.short_description = "Impersonate the selected user"
 
 
 @admin.register(Owner)
-class OwnerAdmin(admin.ModelAdmin):
+class OwnerAdmin(AdminMixin, admin.ModelAdmin):
     exclude = ("oauth_token",)
     list_display = ("name", "username", "email", "service")
     readonly_fields = []
@@ -117,24 +118,6 @@ class OwnerAdmin(admin.ModelAdmin):
             choices=BLANK_CHOICE_DASH + PLANS_CHOICES
         )
         return form
-
-    def save_model(self, request, new_owner, form, change) -> None:
-        if change:
-            old_owner = Owner.objects.get(ownerid=new_owner.ownerid)
-            new_owner.changed_fields = dict()
-
-            for changed_field in form.changed_data:
-                prev_value = getattr(old_owner, changed_field)
-                new_value = getattr(new_owner, changed_field)
-                new_owner.changed_fields[
-                    changed_field
-                ] = f"prev value: {prev_value}, new value: {new_value}"
-
-        return super().save_model(request, new_owner, form, change)
-
-    def log_change(self, request, object, message):
-        message.append(object.changed_fields)
-        return super().log_change(request, object, message)
 
     def has_add_permission(self, _, obj=None):
         return False
