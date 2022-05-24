@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from django.test import TestCase, TransactionTestCase
+from django.test import TestCase
 
 from timeseries.models import MeasurementSummary
 

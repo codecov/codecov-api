@@ -1,3 +1,6 @@
+from django.conf import settings
+
+
 class DatabaseRouter:
     """
     A router to control all database operations on models across multiple databases.
@@ -22,4 +25,7 @@ class DatabaseRouter:
         return obj1_database == obj2_database
 
     def allow_migrate(self, db, app_label, model_name=None, **hints):
+        if db == "timeseries" and not settings.TIMESERIES_ENABLED:
+            return False
+
         return db == self.databases.get(app_label, "default")

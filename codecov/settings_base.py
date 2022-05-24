@@ -91,6 +91,8 @@ else:
     DATABASE_HOST = get_config("services", "database", "host", default="postgres")
     DATABASE_PORT = get_config("services", "database", "port", default=5432)
 
+TIMESERIES_ENABLED = os.environ.get("TIMESERIES_ENABLED", False)
+
 timeseries_database_url = get_config("services", "timeseries_database_url")
 if timeseries_database_url:
     timeseries_database_conf = urlparse(timeseries_database_url)
