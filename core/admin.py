@@ -48,8 +48,11 @@ class RepositoryAdmin(AdminMixin, admin.ModelAdmin):
     list_display = ("name", "service_id", "author")
     search_fields = ("author__username__exact",)
     show_full_result_count = False
+    autocomplete_fields = ("bot",)
+
     paginator = EstimatedCountPaginator
-    fields = (
+
+    readonly_fields = (
         "name",
         "author",
         "service_id",
@@ -63,15 +66,11 @@ class RepositoryAdmin(AdminMixin, admin.ModelAdmin):
         "yaml",
         "cache",
         "image_token",
-        "using_integration",
         "hookid",
-        "bot",
         "activated",
         "deleted",
     )
-
-    def get_readonly_fields(self, request, obj=None):
-        return self.fields
+    fields = readonly_fields + ("bot", "using_integration")
 
     def has_delete_permission(self, request, obj=None):
         return False
