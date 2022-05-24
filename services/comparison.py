@@ -306,9 +306,6 @@ class LineComparison:
         self.added = _is_added(value)
         self.removed = _is_removed(value)
 
-    def __eq__(self, other):
-        return isinstance(other, LineComparison) and self.__dict__ == other.__dict__
-
     @property
     def number(self):
         return {
@@ -345,99 +342,98 @@ class LineComparison:
             return functools.reduce(lambda a, b: a + b, session_coverage)
 
 
-class SegmentComparison:
+class Segment:
     """
-    Comparison for a segment that corresponds 1-to-1 with a diff chunk.
-    """
-
-    def __init__(self, base_file, head_file, segment):
-        self.base_file = base_file
-        self.head_file = head_file
-        self.segment = segment
-
-    @cached_property
-    def base_file_eof(self):
-        return self.base_file.eof if self.base_file is not None else 0
-
-    @cached_property
-    def head_file_eof(self):
-        return self.head_file.eof if self.head_file is not None else 0
-
-    @cached_property
-    def header(self):
-        return self.segment["header"]
-
-    @cached_property
-    def lines(self):
-        visitor = CreateLineComparisonVisitor(self.base_file, self.head_file)
-        traverse_manager = FileComparisonTraverseManager(
-            head_file_eof=self.head_file_eof,
-            base_file_eof=self.base_file_eof,
-            segments=[self.segment],
-        )
-        traverse_manager.apply([visitor])
-        return visitor.lines
-
-
-class SourceSegment(SegmentComparison):
-    """
-    Comparison for a segment of source that is not part of a diff.
-    Finds relevant segments where coverage has changed and expose just those lines.
+    A segment represents a continuous subset set of lines in a file where either
+    the coverage has changed or the code has changed (i.e. is part of a diff).
     """
 
     # additional lines included before and after each segment
     padding_lines = 3
 
     # max distance between lines with coverage changes in a single segment
-    line_distance = 10
+    line_distance = 6
 
     @classmethod
     def segments(cls, file_comparison):
         lines = file_comparison.lines
 
-        coverage_changed = []
+        # line numbers of interest (i.e. coverage changed or code changed)
+        line_numbers = []
         for idx, line in enumerate(lines):
-            if line.coverage["base"] != line.coverage["head"]:
-                coverage_changed.append(idx)
+            if (
+                line.coverage["base"] != line.coverage["head"]
+                or line.added
+                or line.removed
+            ):
+                line_numbers.append(idx)
 
-        segmented_lines, last = [[]], None
-        for line_number in coverage_changed:
-            if last is None or line_number - last <= cls.line_distance:
-                segmented_lines[-1].append(line_number)
-            else:
-                segmented_lines.append([line_number])
-            last = line_number
+        segmented_lines = []
+        if len(line_numbers) > 0:
+            segmented_lines, last = [[]], None
+            for line_number in line_numbers:
+                if last is None or line_number - last <= cls.line_distance:
+                    segmented_lines[-1].append(line_number)
+                else:
+                    segmented_lines.append([line_number])
+                last = line_number
 
         segments = []
         for group in segmented_lines:
-            # padding lines before first coverage change
+            # padding lines before first line of interest
             start_line_number = group[0] - cls.padding_lines
             start_line_number = max(start_line_number, 0)
-            # padding lines after last coverage change
+            # padding lines after last line of interest
             end_line_number = group[-1] + cls.padding_lines
             end_line_number = min(end_line_number, len(lines) - 1)
 
-            segment = cls(
-                file_comparison, lines[start_line_number : end_line_number + 1]
-            )
+            segment = cls(lines[start_line_number : end_line_number + 1])
             segments.append(segment)
 
         return segments
 
-    def __init__(self, file_comparison, lines):
-        self.file_comparison = file_comparison
+    def __init__(self, lines):
         self._lines = lines
-        super().__init__(
-            self.file_comparison.base_file, self.file_comparison.head_file, None
-        )
 
     @property
     def header(self):
-        return None
+        base_start = None
+        head_start = None
+        num_removed = 0
+        num_added = 0
+        num_context = 0
+
+        for line in self.lines:
+            if base_start is None and line.number["base"] is not None:
+                base_start = int(line.number["base"])
+            if head_start is None and line.number["head"] is not None:
+                head_start = int(line.number["head"])
+            if line.added:
+                num_added += 1
+            elif line.removed:
+                num_removed += 1
+            else:
+                num_context += 1
+
+        return (
+            base_start,
+            num_context + num_removed,
+            head_start,
+            num_context + num_added,
+        )
 
     @property
     def lines(self):
         return self._lines
+
+    @property
+    def has_unintended_changes(self):
+        for line in self.lines:
+            head_coverage = line.coverage["base"]
+            base_coverage = line.coverage["head"]
+            if not (line.added or line.removed) and (base_coverage != head_coverage):
+                return True
+        return False
 
 
 class FileComparison:
@@ -581,18 +577,7 @@ class FileComparison:
 
     @cached_property
     def segments(self):
-        if not self.diff_data or self.diff_data.get("segments") is None:
-            if self.src:
-                return SourceSegment.segments(self)
-            else:
-                return []
-
-        return [
-            SegmentComparison(
-                base_file=self.base_file, head_file=self.head_file, segment=segment
-            )
-            for segment in self.diff_data["segments"]
-        ]
+        return Segment.segments(self)
 
 
 class Comparison(object):

@@ -4,7 +4,7 @@ from typing import List, Optional
 from ariadne import ObjectType
 from asgiref.sync import sync_to_async
 
-from services.comparison import FileComparison, SegmentComparison
+from services.comparison import FileComparison, Segment
 
 file_comparison_bindable = ObjectType("FileComparison")
 
@@ -24,6 +24,20 @@ def resolve_is_new_file(file_comparison: FileComparison, info) -> bool:
     base_name = file_comparison.name["base"]
     head_name = file_comparison.name["head"]
     return base_name is None and head_name is not None
+
+
+@file_comparison_bindable.field("isRenamedFile")
+def resolve_is_renamed_file(file_comparison: FileComparison, info) -> bool:
+    base_name = file_comparison.name["base"]
+    head_name = file_comparison.name["head"]
+    return base_name is not None and head_name is not None and base_name != head_name
+
+
+@file_comparison_bindable.field("isDeletedFile")
+def resolve_is_deleted_file(file_comparison: FileComparison, info) -> bool:
+    base_name = file_comparison.name["base"]
+    head_name = file_comparison.name["head"]
+    return base_name is not None and head_name is None
 
 
 @file_comparison_bindable.field("hasDiff")
@@ -55,13 +69,13 @@ def resolve_patch_percent_covered(
 
 @file_comparison_bindable.field("segments")
 @sync_to_async
-def resolve_segments(file_comparison: FileComparison, info) -> List[SegmentComparison]:
-    if file_comparison.has_changes:
-        comparison = info.context["comparison"]
+def resolve_segments(file_comparison: FileComparison, info) -> List[Segment]:
+    comparison = info.context["comparison"]
 
-        # this file comparison has coverage changes - reinstantiate with the
-        # full source code so we can include relevant segments
-        file_comparison = comparison.get_file_comparison(
-            file_comparison.name["head"], with_src=True, bypass_max_diff=True
-        )
+    # reinstantiate with the full source code so we can include
+    # unintended coverage changes
+    file_comparison = comparison.get_file_comparison(
+        file_comparison.name["head"], with_src=True, bypass_max_diff=True
+    )
+
     return file_comparison.segments
