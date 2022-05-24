@@ -2,6 +2,8 @@ type FileComparison {
     baseName: String
     headName: String
     isNewFile: Boolean!
+    isRenamedFile: Boolean!
+    isDeletedFile: Boolean!
     hasDiff: Boolean!
     hasChanges: Boolean!
     baseTotals: CoverageTotals

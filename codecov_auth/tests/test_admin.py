@@ -102,7 +102,7 @@ class OwnerAdminTest(TestCase):
         form = MagicMock()
         form.changed_data = ["staff"]
         self.owner_admin.save_model(
-            request=MagicMock, new_owner=owner, form=form, change=True
+            request=MagicMock, new_obj=owner, form=form, change=True
         )
         assert owner.changed_fields["staff"] == "prev value: True, new value: False"
 

@@ -1,23 +1,21 @@
 from typing import List, Optional
+from xmlrpc.client import Boolean
 
 from ariadne import ObjectType
 
-from services.comparison import LineComparison, SegmentComparison
+from services.comparison import LineComparison, Segment
 
 segment_comparison_bindable = ObjectType("SegmentComparison")
 
 
 @segment_comparison_bindable.field("header")
-def resolve_header(segment_comparison: SegmentComparison, info) -> Optional[str]:
-    if segment_comparison.header is None:
-        return None
-
+def resolve_header(segment: Segment, info) -> Optional[str]:
     (
         base_starting,
         base_extracted,
         head_starting,
         head_extracted,
-    ) = segment_comparison.header
+    ) = segment.header
     base = f"{base_starting}"
     if base_extracted is not None:
         base = f"{base},{base_extracted}"
@@ -28,5 +26,10 @@ def resolve_header(segment_comparison: SegmentComparison, info) -> Optional[str]
 
 
 @segment_comparison_bindable.field("lines")
-def resolve_lines(segment_comparison: SegmentComparison, info) -> List[LineComparison]:
-    return segment_comparison.lines
+def resolve_lines(segment: Segment, info) -> List[LineComparison]:
+    return segment.lines
+
+
+@segment_comparison_bindable.field("hasUnintendedChanges")
+def resolve_has_unintended_changes(segment: Segment, info) -> Boolean:
+    return segment.has_unintended_changes
