@@ -8,3 +8,7 @@ type CoverageAnnotation {
     line: Int
     coverage: CoverageLine
 }
+
+type CriticalFile {
+  name: String!
+}

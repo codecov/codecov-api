@@ -1,8 +1,11 @@
 type FileComparison {
     baseName: String
     headName: String
-    isNewFile: Boolean
+    isNewFile: Boolean!
+    hasDiff: Boolean!
+    hasChanges: Boolean!
     baseTotals: CoverageTotals
     headTotals: CoverageTotals
+    patchTotals: CoverageTotals
     segments: [SegmentComparison!]!
 }

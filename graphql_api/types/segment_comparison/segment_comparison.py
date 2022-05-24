@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from ariadne import ObjectType
 
@@ -8,7 +8,10 @@ segment_comparison_bindable = ObjectType("SegmentComparison")
 
 
 @segment_comparison_bindable.field("header")
-def resolve_header(segment_comparison: SegmentComparison, info) -> str:
+def resolve_header(segment_comparison: SegmentComparison, info) -> Optional[str]:
+    if segment_comparison.header is None:
+        return None
+
     (
         base_starting,
         base_extracted,
@@ -21,7 +24,7 @@ def resolve_header(segment_comparison: SegmentComparison, info) -> str:
     head = f"{head_starting}"
     if head_extracted is not None:
         head = f"{head},{head_extracted}"
-    return f"@@ -{base} +{head} @@"
+    return f"-{base} +{head}"
 
 
 @segment_comparison_bindable.field("lines")
