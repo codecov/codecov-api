@@ -89,3 +89,7 @@ class MeasurementTests(TestCase):
         assert results[1].value_min == 4
         assert results[1].value_max == 5
         assert results[1].value_count == 2
+
+    def test_measurement_agg_invalid(self):
+        with self.assertRaises(ValueError):
+            MeasurementSummary.agg_by("invalid").all()
