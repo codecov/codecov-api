@@ -4,7 +4,7 @@ from .interactors.fetch_repository import FetchRepositoryInteractor
 from .interactors.get_profiling_token import GetProfilingTokenInteractor
 from .interactors.get_upload_token import GetUploadTokenInteractor
 from .interactors.regenerate_profiling_token import RegenerateProfilingTokenInteractor
-
+from .interactors.get_graph_token import GetGraphTokenInteractor
 
 class RepositoryCommands(BaseCommand):
     def fetch_repository(self, owner, name):
@@ -20,3 +20,6 @@ class RepositoryCommands(BaseCommand):
         return self.get_interactor(RegenerateProfilingTokenInteractor).execute(
             repo_name, owner
         )
+        
+    def get_graph_token(self, repository):
+        return self.get_interactor(GetGraphTokenInteractor).execute(repository)
