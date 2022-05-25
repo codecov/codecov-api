@@ -416,9 +416,9 @@ class Segment:
                 num_context += 1
 
         return (
-            base_start,
+            base_start or 0,
             num_context + num_removed,
-            head_start,
+            head_start or 0,
             num_context + num_added,
         )
 
