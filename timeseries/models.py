@@ -11,15 +11,15 @@ class Measurement(models.Model):
 
     owner_id = models.BigIntegerField(null=False)
     repo_id = models.BigIntegerField(null=False)
+    flag_id = models.BigIntegerField(null=True)
     branch = models.TextField(null=True)
     name = models.TextField(null=False, blank=False)
-    meta = models.TextField(null=True)
     value = models.FloatField(null=False)
 
     class Meta:
         indexes = [
             models.Index(
-                fields=["owner_id", "repo_id", "branch", "name", "meta", "timestamp"]
+                fields=["owner_id", "repo_id", "flag_id", "branch", "name", "timestamp"]
             ),
         ]
 
@@ -28,9 +28,9 @@ class MeasurementSummary(models.Model):
     timestamp_bin = models.DateTimeField(primary_key=True)
     owner_id = models.BigIntegerField()
     repo_id = models.BigIntegerField()
+    flag_id = models.BigIntegerField()
     branch = models.TextField()
     name = models.TextField()
-    meta = models.TextField()
     value_avg = models.FloatField()
     value_max = models.FloatField()
     value_min = models.FloatField()
@@ -39,9 +39,9 @@ class MeasurementSummary(models.Model):
     @classmethod
     def agg_by(cls, interval):
         model_classes = {
-            "hour": MeasurementSummaryHour,
-            "day": MeasurementSummaryDay,
-            "week": MeasurementSummaryWeek,
+            "1day": MeasurementSummary1Day,
+            "7day": MeasurementSummary7Day,
+            "30day": MeasurementSummary30Day,
         }
 
         model_class = model_classes.get(interval)
@@ -57,16 +57,16 @@ class MeasurementSummary(models.Model):
         ordering = ["timestamp_bin"]
 
 
-class MeasurementSummaryHour(MeasurementSummary):
+class MeasurementSummary1Day(MeasurementSummary):
     class Meta(MeasurementSummary.Meta):
-        db_table = "timeseries_measurement_summary_hour"
+        db_table = "timeseries_measurement_summary_1day"
 
 
-class MeasurementSummaryDay(MeasurementSummary):
+class MeasurementSummary7Day(MeasurementSummary):
     class Meta(MeasurementSummary.Meta):
-        db_table = "timeseries_measurement_summary_day"
+        db_table = "timeseries_measurement_summary_7day"
 
 
-class MeasurementSummaryWeek(MeasurementSummary):
+class MeasurementSummary30Day(MeasurementSummary):
     class Meta(MeasurementSummary.Meta):
-        db_table = "timeseries_measurement_summary_week"
+        db_table = "timeseries_measurement_summary_30day"

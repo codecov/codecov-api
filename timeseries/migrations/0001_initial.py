@@ -16,9 +16,9 @@ class Migration(migrations.Migration):
                 ("timestamp", models.DateTimeField(primary_key=True, serialize=False)),
                 ("owner_id", models.BigIntegerField()),
                 ("repo_id", models.BigIntegerField()),
+                ("flag_id", models.BigIntegerField(null=True)),
                 ("branch", models.TextField(null=True)),
                 ("name", models.TextField()),
-                ("meta", models.TextField(null=True)),
                 ("value", models.FloatField()),
             ],
         ),
@@ -29,8 +29,15 @@ class Migration(migrations.Migration):
         migrations.AddIndex(
             model_name="measurement",
             index=models.Index(
-                fields=["owner_id", "repo_id", "branch", "name", "meta", "timestamp"],
-                name="timeseries__owner_i_9f4313_idx",
+                fields=[
+                    "owner_id",
+                    "repo_id",
+                    "flag_id",
+                    "branch",
+                    "name",
+                    "timestamp",
+                ],
+                name="timeseries__owner_i_2cc713_idx",
             ),
         ),
         migrations.RunSQL(

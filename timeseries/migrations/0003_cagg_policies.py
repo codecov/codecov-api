@@ -3,22 +3,28 @@
 from django.db import migrations
 
 CAGG_POLICIES = {
-    "hour": {
-        "lookback": "1 day",
-        "refresh_every": "1 hour",
+    # refresh the last 3 days of daily aggregates every 8 hours
+    "1day": {
+        "lookback": "3 days",
+        "refresh_every": "8 hours",
     },
-    "day": {
-        "lookback": "1 week",
+    # refersh the last 3 weeks of weekly aggregates every day
+    "7day": {
+        "lookback": "21 days",
         "refresh_every": "1 day",
     },
-    "week": {"lookback": "30 days", "refresh_every": "1 day"},
+    # refresh the last 90 days of 30 day aggregates every week
+    "30day": {
+        "lookback": "90 days",
+        "refresh_every": "7 days",
+    },
 }
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("timeseries", "0003_measurement_summary"),
+        ("timeseries", "0002_continuous_aggregates"),
     ]
 
     operations = [

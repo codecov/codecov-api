@@ -14,24 +14,24 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RunSQL(
             f"""
-                create materialized view timeseries_measurement_summary_{interval}
+                create materialized view timeseries_measurement_summary_{days}day
                 with (timescaledb.continuous) as
                 select
                     owner_id,
                     repo_id,
+                    flag_id,
                     branch,
                     name,
-                    meta,
-                    time_bucket(interval '1 {interval}', timestamp) as timestamp_bin,
+                    time_bucket(interval '{days} days', timestamp) as timestamp_bin,
                     avg(value) as value_avg,
                     max(value) as value_max,
                     min(value) as value_min,
                     count(value) as value_count
                 from timeseries_measurement
                 group by
-                    owner_id, repo_id, branch, name, meta, timestamp_bin;
+                    owner_id, repo_id, flag_id, branch, name, timestamp_bin;
             """,
-            reverse_sql=f"drop materialized view timeseries_measurement_summary_{interval};",
+            reverse_sql=f"drop materialized view timeseries_measurement_summary_{days}day;",
         )
-        for interval in ["hour", "day", "week"]
+        for days in [1, 7, 30]
     ]
