@@ -18,6 +18,7 @@ class Migration(migrations.Migration):
                 ("repo_id", models.BigIntegerField()),
                 ("flag_id", models.BigIntegerField(null=True)),
                 ("branch", models.TextField(null=True)),
+                ("commit_sha", models.TextField(null=True)),
                 ("name", models.TextField()),
                 ("value", models.FloatField()),
             ],
@@ -38,6 +39,13 @@ class Migration(migrations.Migration):
                     "timestamp",
                 ],
                 name="timeseries__owner_i_2cc713_idx",
+            ),
+        ),
+        migrations.AddIndex(
+            model_name="measurement",
+            index=models.Index(
+                fields=["repo_id", "commit_sha", "timestamp"],
+                name="timeseries__repo_id_2f66ee_idx",
             ),
         ),
         migrations.RunSQL(

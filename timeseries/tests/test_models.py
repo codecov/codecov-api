@@ -63,7 +63,7 @@ class MeasurementTests(TestCase):
 
     def test_measurement_agg_30day(self):
         # Timescale's origin for time buckets is 2000-01-03
-        # (30 day offsets will be aligned on that origin)
+        # 30 day offsets will be aligned on that origin
 
         MeasurementFactory(timestamp=datetime(2000, 1, 3), value=1)
         MeasurementFactory(timestamp=datetime(2000, 1, 4), value=2)
@@ -73,9 +73,6 @@ class MeasurementTests(TestCase):
         MeasurementFactory(timestamp=datetime(2000, 2, 11), value=5)
 
         results = MeasurementSummary.agg_by("30day").all()
-
-        for result in results:
-            print(result.timestamp_bin, result.value_count)
 
         assert len(results) == 2
         assert results[0].value_avg == 2

@@ -3,20 +3,17 @@
 from django.db import migrations
 
 CAGG_POLICIES = {
-    # refresh the last 3 days of daily aggregates every 8 hours
     "1day": {
         "lookback": "3 days",
-        "refresh_every": "8 hours",
-    },
-    # refersh the last 3 weeks of weekly aggregates every day
-    "7day": {
-        "lookback": "21 days",
         "refresh_every": "1 day",
     },
-    # refresh the last 90 days of 30 day aggregates every week
+    "7day": {
+        "lookback": "21 days",
+        "refresh_every": "7 days",
+    },
     "30day": {
         "lookback": "90 days",
-        "refresh_every": "7 days",
+        "refresh_every": "30 days",
     },
 }
 
@@ -37,7 +34,7 @@ class Migration(migrations.Migration):
                 schedule_interval => INTERVAL '{intervals['refresh_every']}'
             );
             """,
-            reverse_sql="select remove_continuous_aggregate_policy('timeseries_measurement_summary_{name}');",
+            reverse_sql=f"select remove_continuous_aggregate_policy('timeseries_measurement_summary_{name}');",
         )
         for name, intervals in CAGG_POLICIES.items()
     ]
