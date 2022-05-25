@@ -2,11 +2,12 @@ import pytest
 from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
 
+from codecov.commands.exceptions import Unauthenticated
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
 
 from ..get_graph_token import GetGraphTokenInteractor
-from codecov.commands.exceptions import Unauthenticated
+
 
 class GetGraphTokenInteractorTest(TransactionTestCase):
     def setUp(self):
@@ -24,9 +25,9 @@ class GetGraphTokenInteractorTest(TransactionTestCase):
             await self.execute(user="", repo=self.random_repo)
 
     async def test_get_graph_token_repo_not_in_my_org(self):
-        token = await self.execute(user =self.user, repo=self.random_repo)
+        token = await self.execute(user=self.user, repo=self.random_repo)
         assert token is None
 
     async def test_get_graph_token_repo_in_my_org(self):
-        token = await self.execute(user =self.user, repo=self.repo_in_org)
+        token = await self.execute(user=self.user, repo=self.repo_in_org)
         assert token is self.repo_in_org.image_token

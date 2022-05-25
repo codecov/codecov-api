@@ -70,7 +70,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "author": {"username": "codecov-user"},
             "profilingToken": profiling_token,
             "criticalFiles": [],
-            "graphToken" : graphToken
+            "graphToken": graphToken,
         }
 
     @freeze_time("2021-01-01")
@@ -98,7 +98,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "author": {"username": "codecov-user"},
             "profilingToken": profiling_token,
             "criticalFiles": [],
-            "graphToken" : graphToken
+            "graphToken": graphToken,
         }
 
     def test_repository_pulls(self):
