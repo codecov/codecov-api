@@ -10,7 +10,7 @@ class FetchRepositoryInteractor(BaseInteractor):
         return (
             Repository.objects.viewable_repos(self.current_user)
             .filter(author=owner, name=name)
-            .with_cache_coverage()
+            .with_recent_commit_totals()
             .select_related("author")
             .first()
         )

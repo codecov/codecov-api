@@ -1,3 +1,4 @@
+import datetime
 from unittest.mock import PropertyMock, patch
 
 from django.test import TransactionTestCase
@@ -5,7 +6,13 @@ from freezegun import freeze_time
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.commands import repository
-from core.tests.factories import PullFactory, RepositoryFactory, RepositoryTokenFactory
+from core.models import Repository
+from core.tests.factories import (
+    CommitFactory,
+    PullFactory,
+    RepositoryFactory,
+    RepositoryTokenFactory,
+)
 from services.profiling import CriticalFile
 
 from .helper import GraphQLTestHelper
@@ -77,8 +84,17 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             active=True,
             private=True,
             name="b",
-            cache={"commit": {"totals": {"c": 75}}},
         )
+
+        hour_ago = datetime.datetime.now() - datetime.timedelta(hours=1)
+        CommitFactory(repository=repo, totals={"c": 75}, timestamp=hour_ago)
+        CommitFactory(repository=repo, totals={"c": 85})
+
+        # trigger in the database is updating `updatestamp` after creating
+        # associated commits
+        repo.updatestamp = datetime.datetime.now()
+        repo.save()
+
         profiling_token = RepositoryTokenFactory(
             repository_id=repo.repoid, token_type="profiling"
         ).key

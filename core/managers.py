@@ -7,8 +7,6 @@ from django.db.models import (
     DateTimeField,
     F,
     FloatField,
-    IntegerField,
-    JSONField,
     OuterRef,
     Q,
     QuerySet,
@@ -41,6 +39,40 @@ class RepositoryQuerySet(QuerySet):
         'with_latest_commit_totals_before' on queryset first.
         """
         return self.exclude(latest_commit_totals__isnull=True)
+
+    def with_recent_commit_totals(self):
+        """
+        Annotates queryset with recent commit totals from latest commit
+        that is more than an hour old.  This ensures that the coverage totals
+        are not changing as the most recent commit is uploading coverage
+        reports.
+        """
+        from core.models import Commit
+
+        timestamp = datetime.datetime.now() - datetime.timedelta(hours=1)
+
+        commits_queryset = Commit.objects.filter(
+            repository_id=OuterRef("pk"),
+            state=Commit.CommitStates.COMPLETE,
+            branch=OuterRef("branch"),
+            timestamp__lte=timestamp,
+        ).order_by("-timestamp")
+
+        coverage = Cast(
+            KeyTextTransform("c", "recent_commit_totals"),
+            output_field=FloatField(),
+        )
+
+        return self.annotate(
+            recent_commit_totals=Subquery(commits_queryset.values("totals")[:1])
+        ).annotate(
+            recent_coverage=coverage,
+            coverage=Coalesce(
+                coverage,
+                Value(-1),
+                output_field=FloatField(),
+            ),
+        )
 
     def with_latest_commit_totals_before(
         self, before_date, branch, include_previous_totals=False
@@ -180,27 +212,6 @@ class RepositoryQuerySet(QuerySet):
                     )
                 )
                 * 100
-            ),
-        )
-
-    def with_cache_coverage(self):
-        """
-        Annotates queryset with coverage based on a Repository's cache. We annotate:
-        - true_coverage as the real value from the cache
-        - coverage as the true_coverage except NULL are transformed to -1
-        This make sure when we order the repo with no coverage appears last.
-        """
-        coverage_from_cache = Cast(
-            KeyTextTransform(
-                "c", KeyTextTransform("totals", KeyTextTransform("commit", "cache"))
-            ),
-            output_field=FloatField(),
-        )
-
-        return self.annotate(
-            true_coverage=coverage_from_cache,
-            coverage=Coalesce(
-                coverage_from_cache, Value(-1), output_field=FloatField()
             ),
         )
 
