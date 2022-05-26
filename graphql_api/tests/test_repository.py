@@ -32,6 +32,7 @@ query Repository($name: String!){
 default_fields = """
     name
     coverage
+    coverageSha
     active
     private
     updatedAt
@@ -68,6 +69,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "active": True,
             "private": True,
             "coverage": None,
+            "coverageSha": None,
             "latestCommitAt": None,
             "updatedAt": "2021-01-01T00:00:00+00:00",
             "uploadToken": repo.upload_token,
@@ -87,7 +89,9 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
 
         hour_ago = datetime.datetime.now() - datetime.timedelta(hours=1)
-        CommitFactory(repository=repo, totals={"c": 75}, timestamp=hour_ago)
+        coverage_commit = CommitFactory(
+            repository=repo, totals={"c": 75}, timestamp=hour_ago
+        )
         CommitFactory(repository=repo, totals={"c": 85})
 
         # trigger in the database is updating `updatestamp` after creating
@@ -104,6 +108,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "latestCommitAt": None,
             "private": True,
             "coverage": 75,
+            "coverageSha": coverage_commit.commitid,
             "updatedAt": "2021-01-01T00:00:00+00:00",
             "uploadToken": repo.upload_token,
             "defaultBranch": "master",

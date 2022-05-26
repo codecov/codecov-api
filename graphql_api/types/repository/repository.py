@@ -23,9 +23,12 @@ repository_bindable.set_alias("latestCommitAt", "true_latest_commit_at")
 
 @repository_bindable.field("coverage")
 def resolve_coverage(repository: Repository, info):
-    totals = repository.recent_commit_totals
-    if totals:
-        return totals["c"]
+    return repository.recent_coverage
+
+
+@repository_bindable.field("coverageSha")
+def resolve_coverage_sha(repository: Repository, info):
+    return repository.coverage_sha
 
 
 @repository_bindable.field("branch")

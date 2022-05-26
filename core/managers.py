@@ -40,7 +40,7 @@ class RepositoryQuerySet(QuerySet):
         """
         return self.exclude(latest_commit_totals__isnull=True)
 
-    def with_recent_commit_totals(self):
+    def with_recent_coverage(self):
         """
         Annotates queryset with recent commit totals from latest commit
         that is more than an hour old.  This ensures that the coverage totals
@@ -64,7 +64,8 @@ class RepositoryQuerySet(QuerySet):
         )
 
         return self.annotate(
-            recent_commit_totals=Subquery(commits_queryset.values("totals")[:1])
+            recent_commit_totals=Subquery(commits_queryset.values("totals")[:1]),
+            coverage_sha=Subquery(commits_queryset.values("commitid")[:1]),
         ).annotate(
             recent_coverage=coverage,
             coverage=Coalesce(
