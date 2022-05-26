@@ -3,6 +3,7 @@ from django.core.paginator import Paginator
 from django.db import connections
 from django.utils.functional import cached_property
 
+from codecov.admin import AdminMixin
 from codecov_auth.models import RepositoryToken
 from core.models import Repository
 
@@ -42,13 +43,16 @@ class EstimatedCountPaginator(Paginator):
 
 
 @admin.register(Repository)
-class RepositoryAdmin(admin.ModelAdmin):
+class RepositoryAdmin(AdminMixin, admin.ModelAdmin):
     inlines = [RepositoryTokenInline]
     list_display = ("name", "service_id", "author")
     search_fields = ("author__username__exact",)
     show_full_result_count = False
+    autocomplete_fields = ("bot",)
+
     paginator = EstimatedCountPaginator
-    fields = (
+
+    readonly_fields = (
         "name",
         "author",
         "service_id",
@@ -62,15 +66,11 @@ class RepositoryAdmin(admin.ModelAdmin):
         "yaml",
         "cache",
         "image_token",
-        "using_integration",
         "hookid",
-        "bot",
         "activated",
         "deleted",
     )
-
-    def get_readonly_fields(self, request, obj=None):
-        return self.fields
+    fields = readonly_fields + ("bot", "using_integration")
 
     def has_delete_permission(self, request, obj=None):
         return False
