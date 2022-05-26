@@ -34,6 +34,7 @@ default_fields = """
     author { username }
     profilingToken
     criticalFiles { name }
+    graphToken
 """
 
 
@@ -56,6 +57,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         profiling_token = RepositoryTokenFactory(
             repository_id=repo.repoid, token_type="profiling"
         ).key
+        graphToken = repo.image_token
         assert self.fetch_repository(repo.name) == {
             "name": "a",
             "active": True,
@@ -68,6 +70,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "author": {"username": "codecov-user"},
             "profilingToken": profiling_token,
             "criticalFiles": [],
+            "graphToken": graphToken,
         }
 
     @freeze_time("2021-01-01")
@@ -82,6 +85,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         profiling_token = RepositoryTokenFactory(
             repository_id=repo.repoid, token_type="profiling"
         ).key
+        graphToken = repo.image_token
         assert self.fetch_repository(repo.name) == {
             "name": "b",
             "active": True,
@@ -94,6 +98,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "author": {"username": "codecov-user"},
             "profilingToken": profiling_token,
             "criticalFiles": [],
+            "graphToken": graphToken,
         }
 
     def test_repository_pulls(self):
@@ -137,3 +142,14 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             {"name": "two"},
             {"name": "three"},
         ]
+
+    def test_repository_get_graph_token(self):
+        user = OwnerFactory()
+        repo = RepositoryFactory(author=user)
+
+        data = self.gql_request(
+            query_repository % "graphToken",
+            user=user,
+            variables={"name": repo.name},
+        )
+        assert data["me"]["owner"]["repository"]["graphToken"] == repo.image_token
