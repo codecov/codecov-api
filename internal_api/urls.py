@@ -82,5 +82,6 @@ if not settings.IS_ENTERPRISE:
 else:
     urlpatterns += [
         path("charts/", include("internal_api.chart.urls")),
+        path("license/", include("internal_api.license.urls")),
         path("<str:service>/<str:owner_username>/", include(repository_router.urls)),
     ]
