@@ -1,6 +1,7 @@
 import asyncio
 import json
-from unittest.mock import PropertyMock, patch
+from collections import Counter
+from unittest.mock import MagicMock, PropertyMock, patch
 
 import minio
 import pytest
@@ -482,6 +483,48 @@ class FileComparisonTests(TestCase):
             "head": LineType.hit,
         }
 
+    @patch("services.comparison.FileComparison.lines", new_callable=PropertyMock)
+    def test_segments_diff_only(self, lines):
+        lines.return_value = [
+            LineComparison([1], [1], 1, 1, "first line", False),
+            LineComparison(None, [1], None, 2, "+this is an added line", True),
+            LineComparison([1], None, 2, None, "-this is a removed line", True),
+            LineComparison([1], [1], 3, 3, "last line", False),
+        ]
+
+        segments = self.file_comparison.segments
+
+        assert len(segments) == 1
+        assert segments[0].lines == self.file_comparison.lines
+        assert segments[0].header == (1, 3, 1, 3)
+        assert segments[0].has_unintended_changes == False
+
+    @patch("services.comparison.FileComparison.lines", new_callable=PropertyMock)
+    def test_segments_changes_only(self, lines):
+        lines.return_value = [
+            LineComparison([1], [1], 1, 1, "first line", False),
+            LineComparison([0], [1], 2, 2, "middle line", False),  # coverage added
+            LineComparison([1], [1], 3, 3, "last line", False),
+        ]
+
+        segments = self.file_comparison.segments
+
+        assert len(segments) == 1
+        assert segments[0].lines == self.file_comparison.lines
+        assert segments[0].header == (1, 3, 1, 3)
+        assert segments[0].has_unintended_changes
+
+    @patch("services.comparison.FileComparison.lines", new_callable=PropertyMock)
+    def test_segments_no_changes_no_diff(self, lines):
+        lines.return_value = [
+            LineComparison([1], [1], 1, 1, "first line", False),
+            LineComparison([1], [1], 2, 2, "middle line", False),
+            LineComparison([1], [1], 3, 3, "last line", False),
+        ]
+
+        segments = self.file_comparison.segments
+        assert len(segments) == 0
+
     def test_change_summary(self):
         head_lines = [
             [1, "", [], 0, None],
@@ -507,6 +550,19 @@ class FileComparisonTests(TestCase):
         self.file_comparison.src = src
 
         assert self.file_comparison.change_summary == {"hits": 2, "misses": -2}
+
+    @patch(
+        "services.comparison.FileComparison.change_summary", new_callable=PropertyMock
+    )
+    def test_has_changes(self, change_summary_mock):
+        change_summary_mock.return_value = Counter()
+        assert self.file_comparison.has_changes == False
+
+        change_summary_mock.return_value = Counter({"hits": 0, "misses": 0})
+        assert self.file_comparison.has_changes == False
+
+        change_summary_mock.return_value = Counter({"hits": 1, "misses": -1})
+        assert self.file_comparison.has_changes == True
 
     @patch("services.comparison.FileComparisonTraverseManager.apply")
     def test_does_not_calculate_changes_if_no_diff_and_should_search_for_changes_is_False(
@@ -1097,3 +1153,129 @@ class ComparisonHasUnmergedBaseCommitsTests(TestCase):
             ComparisonHasUnmergedBaseCommitsTests.MockFetchDiffCoro(commits)
         )
         assert self.comparison.has_unmerged_base_commits is False
+
+
+class SegmentTests(TestCase):
+    def _report_lines(self, hits):
+        return [
+            # from shared.reports.types.ReportLine
+            # values are [coverage, type, sessions, messages, complexity]
+            [hit, "", [], 0, None]
+            for hit in hits
+        ]
+
+    def _src(self, n):
+        return [f"line{i+1}" for i in range(n)]
+
+    def setUp(self):
+        self.file_comparison = FileComparison(
+            base_file=ReportFile("file1"), head_file=ReportFile("file1")
+        )
+
+    def test_single_segment(self):
+        self.file_comparison.src = self._src(12)
+        self.file_comparison.head_file._lines = self._report_lines(
+            [1 for _ in range(12)]
+        )
+        self.file_comparison.base_file._lines = self._report_lines(
+            [
+                1,
+                1,  # first line of segment
+                1,
+                1,
+                0,  # coverage changed
+                0,  # coverage changed
+                1,
+                0,  # coverage changed
+                1,
+                1,
+                1,  # last line of segment
+                1,
+            ]
+        )
+
+        segments = self.file_comparison.segments
+        assert len(segments) == 1
+
+        segment_lines = segments[0].lines
+        assert segment_lines[0].value == "line2"
+        assert segment_lines[-1].value == "line11"
+        assert len(segment_lines) == 10
+
+    def test_multiple_segments(self):
+        self.file_comparison.src = self._src(25)
+        self.file_comparison.head_file._lines = self._report_lines(
+            [1 for _ in range(25)]
+        )
+        self.file_comparison.base_file._lines = self._report_lines(
+            [
+                1,
+                1,  # first line of segment 1
+                1,
+                1,
+                0,  # coverage changed
+                0,  # coverage changed
+                1,
+                0,  # coverage changed
+                1,
+                1,
+                1,  # last line of segment 1
+                1,
+                1,
+                1,
+                1,
+                1,  # first line of segment 2
+                1,
+                1,
+                0,  # coverage changed
+                1,
+                1,
+                1,  # last line of segment 2
+                1,
+                1,
+                1,
+            ]
+        )
+
+        segments = self.file_comparison.segments
+        assert len(segments) == 2
+
+        assert segments[0].lines[0].value == "line2"
+        assert segments[0].lines[-1].value == "line11"
+        assert len(segments[0].lines) == 10
+        assert segments[0].header == (2, 10, 2, 10)
+        assert segments[0].has_unintended_changes
+
+        assert segments[1].lines[0].value == "line16"
+        assert segments[1].lines[-1].value == "line22"
+        assert len(segments[1].lines) == 7
+        assert segments[1].header == (16, 7, 16, 7)
+        assert segments[1].has_unintended_changes
+
+    @patch("services.comparison.FileComparison.lines", new_callable=PropertyMock)
+    def test_header_new_file(self, lines):
+        lines.return_value = [
+            LineComparison(None, [1], None, 1, "+line1", True),
+            LineComparison(None, [1], None, 2, "+line2", True),
+            LineComparison(None, [1], None, 3, "+line3", True),
+        ]
+
+        file_comparison = FileComparison(base_file=None, head_file=ReportFile("file1"))
+
+        segments = file_comparison.segments
+        assert len(segments) == 1
+        assert segments[0].header == (0, 0, 1, 3)
+
+    @patch("services.comparison.FileComparison.lines", new_callable=PropertyMock)
+    def test_header_deleted_file(self, lines):
+        lines.return_value = [
+            LineComparison([1], None, 1, None, "-line1", True),
+            LineComparison([1], None, 2, None, "-line2", True),
+            LineComparison([1], None, 3, None, "-line3", True),
+        ]
+
+        file_comparison = FileComparison(base_file=ReportFile("file1"), head_file=None)
+
+        segments = file_comparison.segments
+        assert len(segments) == 1
+        assert segments[0].header == (1, 3, 0, 0)

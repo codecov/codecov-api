@@ -48,17 +48,13 @@ class CompareCommandsTest(TransactionTestCase):
             base_commit=parent_commit_with_coverage, compare_commit=commit_with_coverage
         )
 
-    async def test_compare_commit_when_no_parents(self):
-        compare = await self.command.compare_commit_with_parent(self.parent_commit)
+    async def test_compare_commits(self):
+        compare = await self.command.compare_commits(self.commit, self.parent_commit)
+        assert compare is not None
+
+    async def test_compare_commits_missing_commit(self):
+        compare = await self.command.compare_commits(self.parent_commit, None)
         assert compare is None
-
-    async def test_compare_commit_when_parents(self):
-        compare = await self.command.compare_commit_with_parent(self.commit)
-        assert compare is not None
-
-    async def test_compare_pull_request(self):
-        compare = await self.command.compare_pull_request(self.pull)
-        assert compare is not None
 
     async def test_change_with_parent_without_coverage(self):
         change = await self.command.change_with_parent(self.comparison)

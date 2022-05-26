@@ -1,8 +1,14 @@
-from ariadne import ObjectType, convert_kwargs_to_snake_case
+from typing import List
 
-from graphql_api.dataloader.owner import load_owner_by_id
+from ariadne import ObjectType, convert_kwargs_to_snake_case
+from asgiref.sync import sync_to_async
+
+from core.models import Repository
+from graphql_api.dataloader.commit import CommitLoader
+from graphql_api.dataloader.owner import OwnerLoader
 from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.enums import OrderingDirection
+from services.profiling import CriticalFile, ProfilingSummary
 
 repository_bindable = ObjectType("Repository")
 
@@ -24,7 +30,7 @@ def resolve_branch(repository, info, name):
 
 @repository_bindable.field("author")
 def resolve_author(repository, info):
-    return load_owner_by_id(info, repository.author_id)
+    return OwnerLoader.loader(info).load(repository.author_id)
 
 
 @repository_bindable.field("commit")
@@ -54,8 +60,9 @@ async def resolve_pulls(
     queryset = await command.fetch_pull_requests(repository, filters)
     return await queryset_to_connection(
         queryset,
-        ordering="updatestamp",
+        ordering="pullid",
         ordering_direction=ordering_direction,
+        ordering_unique=True,
         **kwargs,
     )
 
@@ -65,12 +72,20 @@ async def resolve_pulls(
 async def resolve_commits(repository, info, filters=None, **kwargs):
     command = info.context["executor"].get_command("commit")
     queryset = await command.fetch_commits(repository, filters)
-    return await queryset_to_connection(
+    res = await queryset_to_connection(
         queryset,
         ordering="timestamp",
         ordering_direction=OrderingDirection.DESC,
         **kwargs,
     )
+
+    for edge in res["edges"]:
+        commit = edge["node"]
+        # cache all resulting commits in dataloader
+        loader = CommitLoader.loader(info, repository.repoid)
+        loader.cache(commit)
+
+    return res
 
 
 @repository_bindable.field("branches")
@@ -89,3 +104,28 @@ async def resolve_branches(repository, info, **kwargs):
 @repository_bindable.field("defaultBranch")
 def resolve_default_branch(repository, info):
     return repository.branch
+
+
+@repository_bindable.field("profilingToken")
+def resolve_profiling_token(repository, info):
+    command = info.context["executor"].get_command("repository")
+    return command.get_profiling_token(repository)
+
+
+@repository_bindable.field("criticalFiles")
+@sync_to_async
+def resolve_critical_files(repository: Repository, info) -> List[CriticalFile]:
+    """
+    The current critical files for this repository - not tied to any
+    particular commit or branch.  Based on the most recently received
+    profiling data.
+
+    See the `commit.criticalFiles` resolver for commit-specific files.
+    """
+    profiling_summary = ProfilingSummary(repository)
+    return profiling_summary.critical_files
+
+
+@repository_bindable.field("graphToken")
+def resolve_graph_token(repository, info):
+    return repository.image_token

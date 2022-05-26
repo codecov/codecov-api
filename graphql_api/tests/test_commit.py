@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, PropertyMock, patch
 
 import yaml
 from django.test import TransactionTestCase
@@ -17,6 +17,7 @@ from reports.tests.factories import (
     UploadErrorFactory,
     UploadFactory,
 )
+from services.profiling import CriticalFile
 
 from .helper import GraphQLTestHelper, paginate_connection
 
@@ -425,9 +426,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         flags = data["owner"]["repository"]["commit"]["flagNames"]
         assert flags == ["flag_a", "flag_b"]
 
-    @patch(
-        "compare.commands.compare.compare.CompareCommands.compare_commit_with_parent"
-    )
+    @patch("compare.commands.compare.compare.CompareCommands.compare_commits")
     def test_fetch_commit_compare_call_the_command(self, command_mock):
         query = query_commit % "compareWithParent { state }"
         variables = {
@@ -476,3 +475,27 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
         assert commit["compareWithParent"]["changeWithParent"] == 56.89
+
+    @patch(
+        "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
+    )
+    def test_commit_critical_files(self, critical_files):
+        critical_files.return_value = [
+            CriticalFile("one"),
+            CriticalFile("two"),
+            CriticalFile("three"),
+        ]
+
+        query = query_commit % "criticalFiles { name }"
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        assert commit["criticalFiles"] == [
+            {"name": "one"},
+            {"name": "two"},
+            {"name": "three"},
+        ]

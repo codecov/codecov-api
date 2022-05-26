@@ -8,9 +8,15 @@ from services.task import TaskService
 
 class CompareCommitsInteractor(BaseInteractor):
     def get_or_create_comparison(self, head_commit, compare_to_commit):
-        return CommitComparison.objects.get_or_create(
+        commit_comparison, created = CommitComparison.objects.get_or_create(
             base_commit=compare_to_commit, compare_commit=head_commit
         )
+
+        # optimization: set these on the result for `needs_calculation` below
+        commit_comparison.base_commit = compare_to_commit
+        commit_comparison.compare_commit = head_commit
+
+        return (commit_comparison, created)
 
     def trigger_task(self, comparison):
         TaskService().compute_comparison(comparison.id)
@@ -30,8 +36,12 @@ class CompareCommitsInteractor(BaseInteractor):
 
     def needs_recalculation(self, comparison):
         timezone = pytz.utc
-        return timezone.normalize(comparison.updated_at) < timezone.localize(
+        return (
             comparison.compare_commit.updatestamp
-        ) or timezone.normalize(comparison.updated_at) < timezone.localize(
+            and timezone.normalize(comparison.updated_at)
+            < timezone.localize(comparison.compare_commit.updatestamp)
+        ) or (
             comparison.base_commit.updatestamp
+            and timezone.normalize(comparison.updated_at)
+            < timezone.localize(comparison.base_commit.updatestamp)
         )
