@@ -17,6 +17,7 @@ type Repository {
   defaultBranch: String
   profilingToken: String
   criticalFiles: [CriticalFile!]!
+  graphToken: String
 }
 
 type PullConnection {
