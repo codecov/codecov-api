@@ -1,9 +1,12 @@
 import json
+from datetime import datetime
 from unittest.mock import patch
 
+from django.test import RequestFactory
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.settings import api_settings
+from shared.license import LicenseInformation
 
 from codecov.tests.base_test import InternalAPITest
 from codecov_auth.tests.factories import OwnerFactory
@@ -13,6 +16,7 @@ from core.tests.factories import (
     PullFactory,
     RepositoryFactory,
 )
+from internal_api.license.views import LicenseView
 
 get_permissions_method = (
     "internal_api.repo.repository_accessors.RepoAccessors.get_repo_permissions"
@@ -738,3 +742,34 @@ class BranchViewSetTests(InternalAPITest):
         response = self._get_branches()
 
         assert response.status_code == 403
+
+
+class LicenseViewTest(InternalAPITest):
+    @patch("internal_api.license.views.get_current_license")
+    def test_licnese(self, mocked_license):
+        mocked_license.return_value = LicenseInformation(
+            is_valid=True,
+            message=None,
+            url="https://codeov.mysite.com",
+            number_allowed_users=5,
+            number_allowed_repos=10,
+            expires=datetime.strptime("2020-05-09 00:00:00", "%Y-%m-%d %H:%M:%S"),
+            is_trial=True,
+            is_pr_billing=False,
+        )
+
+        request = RequestFactory().get("/")
+        view = LicenseView()
+        view.setup(request)
+        response = view.get(request)
+
+        expected_result = {
+            "trial": True,
+            "url": "https://codeov.mysite.com",
+            "users": 5,
+            "repos": 10,
+            "expires_at": "2020-05-09T00:00:00Z",
+            "pr_billing": False,
+        }
+
+        assert response.data == expected_result
