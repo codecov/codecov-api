@@ -1,4 +1,12 @@
+from enum import Enum
+
 import django.db.models as models
+
+
+class Interval(Enum):
+    INTERVAL_1_DAY = 1
+    INTERVAL_7_DAY = 7
+    INTERVAL_30_DAY = 30
 
 
 class Measurement(models.Model):
@@ -51,11 +59,11 @@ class MeasurementSummary(models.Model):
     value_count = models.FloatField()
 
     @classmethod
-    def agg_by(cls, interval):
+    def agg_by(cls, interval: Interval) -> models.Manager:
         model_classes = {
-            "1day": MeasurementSummary1Day,
-            "7day": MeasurementSummary7Day,
-            "30day": MeasurementSummary30Day,
+            Interval.INTERVAL_1_DAY: MeasurementSummary1Day,
+            Interval.INTERVAL_7_DAY: MeasurementSummary7Day,
+            Interval.INTERVAL_30_DAY: MeasurementSummary30Day,
         }
 
         model_class = model_classes.get(interval)

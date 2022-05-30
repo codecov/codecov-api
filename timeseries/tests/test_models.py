@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 from django.test import TestCase
 
-from timeseries.models import MeasurementSummary
+from timeseries.models import Interval, MeasurementSummary
 
 from .factories import MeasurementFactory
 
@@ -27,7 +27,7 @@ class MeasurementTests(TestCase):
             timestamp=datetime(2022, 1, 2, 0, 1, 0, tzinfo=timezone.utc), value=5
         )
 
-        results = MeasurementSummary.agg_by("1day").all()
+        results = MeasurementSummary.agg_by(Interval.INTERVAL_1_DAY).all()
 
         assert len(results) == 2
         assert results[0].value_avg == 2
@@ -49,7 +49,7 @@ class MeasurementTests(TestCase):
         MeasurementFactory(timestamp=datetime(2022, 1, 10), value=4)
         MeasurementFactory(timestamp=datetime(2022, 1, 16), value=5)
 
-        results = MeasurementSummary.agg_by("7day").all()
+        results = MeasurementSummary.agg_by(Interval.INTERVAL_7_DAY).all()
 
         assert len(results) == 2
         assert results[0].value_avg == 2
@@ -72,7 +72,7 @@ class MeasurementTests(TestCase):
         MeasurementFactory(timestamp=datetime(2000, 2, 2), value=4)
         MeasurementFactory(timestamp=datetime(2000, 2, 11), value=5)
 
-        results = MeasurementSummary.agg_by("30day").all()
+        results = MeasurementSummary.agg_by(Interval.INTERVAL_30_DAY).all()
 
         assert len(results) == 2
         assert results[0].value_avg == 2
