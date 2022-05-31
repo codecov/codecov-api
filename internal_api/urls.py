@@ -6,6 +6,7 @@ from rest_framework.routers import DefaultRouter
 from internal_api.branch.views import BranchViewSet
 from internal_api.commit.views import CommitsViewSet
 from internal_api.compare.views import CompareViewSet
+from internal_api.enterprise_urls import urlpatterns as enterprise_urlpatterns
 from internal_api.owner.views import (
     AccountDetailsViewSet,
     InvoiceViewSet,
@@ -80,8 +81,4 @@ if not settings.IS_ENTERPRISE:
         ),
     ]
 else:
-    urlpatterns += [
-        path("charts/", include("internal_api.chart.urls")),
-        path("license/", include("internal_api.license.urls")),
-        path("<str:service>/<str:owner_username>/", include(repository_router.urls)),
-    ]
+    urlpatterns += enterprise_urlpatterns
