@@ -113,6 +113,12 @@ class Repository(models.Model):
     class Meta:
         db_table = "repos"
         ordering = ["-repoid"]
+        indexes = [
+            models.Index(
+                fields=["service_id", "author"],
+                name="repos_service_id_author",
+            ),
+        ]
         constraints = [
             models.UniqueConstraint(fields=["author", "name"], name="repos_slug"),
             models.UniqueConstraint(
