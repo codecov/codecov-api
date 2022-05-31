@@ -3,6 +3,7 @@ type Repository {
   active: Boolean!
   private: Boolean!
   coverage: Float
+  coverageSha: String
   latestCommitAt: DateTime
   updatedAt: DateTime
   author: Owner!
