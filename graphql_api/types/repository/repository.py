@@ -124,3 +124,8 @@ def resolve_critical_files(repository: Repository, info) -> List[CriticalFile]:
     """
     profiling_summary = ProfilingSummary(repository)
     return profiling_summary.critical_files
+
+
+@repository_bindable.field("graphToken")
+def resolve_graph_token(repository, info):
+    return repository.image_token

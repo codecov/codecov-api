@@ -78,6 +78,6 @@ async def resolve_commits(pull, info, **kwargs):
     return await queryset_to_connection(
         queryset,
         ordering="updatestamp",
-        ordering_direction=OrderingDirection.ASC,
+        ordering_direction=OrderingDirection.DESC,
         **kwargs,
     )

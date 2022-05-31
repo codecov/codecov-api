@@ -1251,3 +1251,31 @@ class SegmentTests(TestCase):
         assert len(segments[1].lines) == 7
         assert segments[1].header == (16, 7, 16, 7)
         assert segments[1].has_unintended_changes
+
+    @patch("services.comparison.FileComparison.lines", new_callable=PropertyMock)
+    def test_header_new_file(self, lines):
+        lines.return_value = [
+            LineComparison(None, [1], None, 1, "+line1", True),
+            LineComparison(None, [1], None, 2, "+line2", True),
+            LineComparison(None, [1], None, 3, "+line3", True),
+        ]
+
+        file_comparison = FileComparison(base_file=None, head_file=ReportFile("file1"))
+
+        segments = file_comparison.segments
+        assert len(segments) == 1
+        assert segments[0].header == (0, 0, 1, 3)
+
+    @patch("services.comparison.FileComparison.lines", new_callable=PropertyMock)
+    def test_header_deleted_file(self, lines):
+        lines.return_value = [
+            LineComparison([1], None, 1, None, "-line1", True),
+            LineComparison([1], None, 2, None, "-line2", True),
+            LineComparison([1], None, 3, None, "-line3", True),
+        ]
+
+        file_comparison = FileComparison(base_file=ReportFile("file1"), head_file=None)
+
+        segments = file_comparison.segments
+        assert len(segments) == 1
+        assert segments[0].header == (1, 3, 0, 0)
