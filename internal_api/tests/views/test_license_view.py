@@ -7,6 +7,7 @@ from rest_framework.reverse import reverse
 from shared.license import LicenseInformation
 
 from codecov.tests.base_test import InternalAPITest
+from codecov_auth.tests.factories import OwnerFactory
 from internal_api.license.views import LicenseView
 
 # This is because the license endpoint is in enterprise mode, django loads the urls before
@@ -16,6 +17,10 @@ urlpatterns = [path("license/", include("internal_api.license.urls"))]
 
 
 class LicenseViewTest(InternalAPITest):
+    def setUp(self):
+        self.user = OwnerFactory()
+        self.client.force_login(user=self.user)
+
     @patch("internal_api.license.views.get_current_license")
     def test_licnese_view(self, mocked_license):
         mocked_license.return_value = LicenseInformation(
