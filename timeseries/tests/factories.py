@@ -15,5 +15,5 @@ class MeasurementFactory(DjangoModelFactory):
     repo_id = 1
     name = "testing"
     branch = "master"
-    value = factory.LazyAttribute(lambda: random.random() * 1000)
-    timestamp = factory.LazyAttribute(lambda: datetime.now())
+    value = factory.LazyAttribute(lambda _: random.random() * 1000)
+    timestamp = factory.LazyAttribute(lambda _: datetime.now())
