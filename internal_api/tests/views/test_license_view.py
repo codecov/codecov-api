@@ -10,11 +10,6 @@ from codecov.tests.base_test import InternalAPITest
 from codecov_auth.tests.factories import OwnerFactory
 from internal_api.license.views import LicenseView
 
-# This is because the license endpoint is in enterprise mode, django loads the urls before
-# running the test, which is when the enterprise flag is false, which does not include
-# the license endpoint in the list of urls and we cannot reload them automatically.
-urlpatterns = [path("license/", include("internal_api.license.urls"))]
-
 
 class LicenseViewTest(InternalAPITest):
     def setUp(self):
@@ -50,7 +45,7 @@ class LicenseViewTest(InternalAPITest):
 
         assert response.data == expected_result
 
-    @override_settings(ROOT_URLCONF=__name__)
+    @override_settings(ROOT_URLCONF="internal_api.enterprise_urls")
     @patch("internal_api.license.views.get_current_license")
     def test_licnese_url(self, mocked_license):
         mocked_license.return_value = LicenseInformation(
