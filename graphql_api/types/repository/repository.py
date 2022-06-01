@@ -1,5 +1,6 @@
 from typing import List
 
+import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
 from asgiref.sync import sync_to_async
 
@@ -129,3 +130,8 @@ def resolve_critical_files(repository: Repository, info) -> List[CriticalFile]:
 @repository_bindable.field("graphToken")
 def resolve_graph_token(repository, info):
     return repository.image_token
+
+
+@repository_bindable.field("yaml")
+def resolve_repo_yaml(repository, info):
+    return yaml.dump(repository.yaml)
