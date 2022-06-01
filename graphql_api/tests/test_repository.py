@@ -1,3 +1,4 @@
+import datetime
 from unittest.mock import PropertyMock, patch
 
 from django.test import TransactionTestCase
@@ -5,7 +6,13 @@ from freezegun import freeze_time
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.commands import repository
-from core.tests.factories import PullFactory, RepositoryFactory, RepositoryTokenFactory
+from core.models import Repository
+from core.tests.factories import (
+    CommitFactory,
+    PullFactory,
+    RepositoryFactory,
+    RepositoryTokenFactory,
+)
 from services.profiling import CriticalFile
 
 from .helper import GraphQLTestHelper
@@ -25,6 +32,7 @@ query Repository($name: String!){
 default_fields = """
     name
     coverage
+    coverageSha
     active
     private
     updatedAt
@@ -67,6 +75,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "active": True,
             "private": True,
             "coverage": None,
+            "coverageSha": None,
             "latestCommitAt": None,
             "updatedAt": "2021-01-01T00:00:00+00:00",
             "uploadToken": repo.upload_token,
@@ -88,6 +97,18 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             cache={"commit": {"totals": {"c": 75}}},
             yaml=self.yaml,
         )
+
+        hour_ago = datetime.datetime.now() - datetime.timedelta(hours=1)
+        coverage_commit = CommitFactory(
+            repository=repo, totals={"c": 75}, timestamp=hour_ago
+        )
+        CommitFactory(repository=repo, totals={"c": 85})
+
+        # trigger in the database is updating `updatestamp` after creating
+        # associated commits
+        repo.updatestamp = datetime.datetime.now()
+        repo.save()
+
         profiling_token = RepositoryTokenFactory(
             repository_id=repo.repoid, token_type="profiling"
         ).key
@@ -98,6 +119,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "latestCommitAt": None,
             "private": True,
             "coverage": 75,
+            "coverageSha": coverage_commit.commitid,
             "updatedAt": "2021-01-01T00:00:00+00:00",
             "uploadToken": repo.upload_token,
             "defaultBranch": "master",
