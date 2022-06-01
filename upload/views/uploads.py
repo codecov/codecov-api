@@ -1,14 +1,16 @@
 import logging
-from distutils.log import info
 
 from django.http import HttpRequest, HttpResponseNotAllowed, HttpResponseNotFound
 from rest_framework.generics import ListCreateAPIView
 from rest_framework.permissions import AllowAny
 
+from upload.serializers import UploadSerializer
+
 log = logging.getLogger(__name__)
 
 
 class UploadViews(ListCreateAPIView):
+    serializer_class = UploadSerializer
     permission_classes = [
         AllowAny,
     ]
