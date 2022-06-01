@@ -1,9 +1,10 @@
+import datetime
 from unittest.mock import patch
 
 from django.test import TransactionTestCase
 
 from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import RepositoryFactory
+from core.tests.factories import CommitFactory, RepositoryFactory
 
 from .helper import GraphQLTestHelper, paginate_connection
 
@@ -191,14 +192,12 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
                 self.assertEqual(repos_name, ["C", "B", "A"])
 
         with self.subTest("COVERAGE"):
-            repo_1.cache = {"commit": {"totals": {"c": "42"}}}
-            repo_1.save()
+            hour_ago = datetime.datetime.now() - datetime.timedelta(hours=1)
+            CommitFactory(repository=repo_1, totals={"c": "42"}, timestamp=hour_ago)
+            CommitFactory(repository=repo_2, totals={"c": "100.2"}, timestamp=hour_ago)
 
-            repo_2.cache = {"commit": {"totals": {"c": "100.2"}}}
-            repo_2.save()
-
-            repo_3.cache = {"commit": {"totals": {"c": "0"}}}
-            repo_3.save()
+            # too recent, should not be considered
+            CommitFactory(repository=repo_2, totals={"c": "10"})
 
             with self.subTest("no ordering Direction"):
                 data = self.gql_request(
