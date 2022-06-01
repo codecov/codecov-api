@@ -122,8 +122,8 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
     def has_add_permission(self, _, obj=None):
         return False
 
-    def has_delete_permission(self, _, obj=None):
-        return False
+    def has_delete_permission(self, request, obj=None):
+        return bool(request.user and request.user.is_superuser)
 
     def delete_queryset(self, request, queryset) -> None:
         for owner in queryset:

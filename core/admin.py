@@ -73,7 +73,7 @@ class RepositoryAdmin(AdminMixin, admin.ModelAdmin):
     fields = readonly_fields + ("bot", "using_integration")
 
     def has_delete_permission(self, request, obj=None):
-        return False
-
+        return bool(request.user and request.user.is_superuser)
+        
     def has_add_permission(self, _, obj=None):
         return False
