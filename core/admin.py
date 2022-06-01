@@ -74,6 +74,6 @@ class RepositoryAdmin(AdminMixin, admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return bool(request.user and request.user.is_superuser)
-        
+
     def has_add_permission(self, _, obj=None):
         return False
