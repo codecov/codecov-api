@@ -192,3 +192,13 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             variables={"name": repo.name},
         )
         assert data["me"]["owner"]["repository"]["yaml"] == "test: test\n"
+
+    def test_repository_resolve_yaml_no_yaml(self):
+        user = OwnerFactory()
+        repo = RepositoryFactory(author=user, name="no_yaml")
+        data = self.gql_request(
+            query_repository % "yaml",
+            user=user,
+            variables={"name": repo.name},
+        )
+        assert data["me"]["owner"]["repository"]["yaml"] == None
