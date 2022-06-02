@@ -1,3 +1,4 @@
+import datetime
 from unittest.mock import PropertyMock, patch
 
 from django.test import TransactionTestCase
@@ -5,7 +6,13 @@ from freezegun import freeze_time
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.commands import repository
-from core.tests.factories import PullFactory, RepositoryFactory, RepositoryTokenFactory
+from core.models import Repository
+from core.tests.factories import (
+    CommitFactory,
+    PullFactory,
+    RepositoryFactory,
+    RepositoryTokenFactory,
+)
 from services.profiling import CriticalFile
 
 from .helper import GraphQLTestHelper
@@ -25,6 +32,7 @@ query Repository($name: String!){
 default_fields = """
     name
     coverage
+    coverageSha
     active
     private
     updatedAt
@@ -34,6 +42,7 @@ default_fields = """
     author { username }
     profilingToken
     criticalFiles { name }
+    graphToken
 """
 
 
@@ -56,11 +65,13 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         profiling_token = RepositoryTokenFactory(
             repository_id=repo.repoid, token_type="profiling"
         ).key
+        graphToken = repo.image_token
         assert self.fetch_repository(repo.name) == {
             "name": "a",
             "active": True,
             "private": True,
             "coverage": None,
+            "coverageSha": None,
             "latestCommitAt": None,
             "updatedAt": "2021-01-01T00:00:00+00:00",
             "uploadToken": repo.upload_token,
@@ -68,6 +79,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "author": {"username": "codecov-user"},
             "profilingToken": profiling_token,
             "criticalFiles": [],
+            "graphToken": graphToken,
         }
 
     @freeze_time("2021-01-01")
@@ -77,23 +89,37 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             active=True,
             private=True,
             name="b",
-            cache={"commit": {"totals": {"c": 75}}},
         )
+
+        hour_ago = datetime.datetime.now() - datetime.timedelta(hours=1)
+        coverage_commit = CommitFactory(
+            repository=repo, totals={"c": 75}, timestamp=hour_ago
+        )
+        CommitFactory(repository=repo, totals={"c": 85})
+
+        # trigger in the database is updating `updatestamp` after creating
+        # associated commits
+        repo.updatestamp = datetime.datetime.now()
+        repo.save()
+
         profiling_token = RepositoryTokenFactory(
             repository_id=repo.repoid, token_type="profiling"
         ).key
+        graphToken = repo.image_token
         assert self.fetch_repository(repo.name) == {
             "name": "b",
             "active": True,
             "latestCommitAt": None,
             "private": True,
             "coverage": 75,
+            "coverageSha": coverage_commit.commitid,
             "updatedAt": "2021-01-01T00:00:00+00:00",
             "uploadToken": repo.upload_token,
             "defaultBranch": "master",
             "author": {"username": "codecov-user"},
             "profilingToken": profiling_token,
             "criticalFiles": [],
+            "graphToken": graphToken,
         }
 
     def test_repository_pulls(self):
@@ -137,3 +163,14 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             {"name": "two"},
             {"name": "three"},
         ]
+
+    def test_repository_get_graph_token(self):
+        user = OwnerFactory()
+        repo = RepositoryFactory(author=user)
+
+        data = self.gql_request(
+            query_repository % "graphToken",
+            user=user,
+            variables={"name": repo.name},
+        )
+        assert data["me"]["owner"]["repository"]["graphToken"] == repo.image_token

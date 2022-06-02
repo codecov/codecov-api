@@ -5,6 +5,7 @@ import stripe
 from django.conf import settings
 
 from billing.constants import (
+    ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
     FREE_PLAN_REPRESENTATIONS,
     PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
     USER_PLAN_REPRESENTATIONS,
@@ -417,7 +418,10 @@ class BillingService:
                 self.payment_service.delete_subscription(owner)
             else:
                 owner.set_basic_plan()
-        elif desired_plan["value"] in PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS:
+        elif (
+            desired_plan["value"] in PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS
+            or desired_plan["value"] in ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS
+        ):
             if owner.stripe_subscription_id is not None:
                 self.payment_service.modify_subscription(owner, desired_plan)
             else:
