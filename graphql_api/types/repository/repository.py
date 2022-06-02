@@ -144,5 +144,5 @@ def resolve_graph_token(repository, info):
 @repository_bindable.field("yaml")
 def resolve_repo_yaml(repository, info):
     if repository.yaml is None:
-        return
+        return None
     return yaml.dump(repository.yaml)

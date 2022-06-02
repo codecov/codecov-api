@@ -94,7 +94,6 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             active=True,
             private=True,
             name="b",
-            cache={"commit": {"totals": {"c": 75}}},
             yaml=self.yaml,
         )
 
