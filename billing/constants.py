@@ -83,6 +83,34 @@ PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
     },
 }
 
+# TODO: Update these values
+ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS = {
+    "users-enterprisem": {
+        "marketing_name": "Enterprise Cloud",
+        "value": "users-enterprisem",
+        "billing_rate": "monthly",
+        "base_unit_price": 12,  # Update me
+        "benefits": [
+            "Configureable # of users",
+            "Unlimited public repositories",
+            "Unlimited private repositories",
+            "Priority Support",
+        ],
+    },
+    "users-enterprisey": {
+        "marketing_name": "Enterprise Cloud",
+        "value": "users-enterprisey",
+        "billing_rate": "annual",
+        "base_unit_price": 10,  # Update me
+        "benefits": [
+            "Configureable # of users",
+            "Unlimited public repositories",
+            "Unlimited private repositories",
+            "Priority Support",
+        ],
+    },
+}
+
 GHM_PLAN_REPRESENTATION = {
     GHM_PLAN_NAME: {
         "marketing_name": "Github Marketplace",
@@ -124,6 +152,7 @@ USER_PLAN_REPRESENTATIONS = {
     **NON_PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
     **PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
     **GHM_PLAN_REPRESENTATION,
+    **ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
 }
 
 FREE_PLAN_REPRESENTATIONS = {
