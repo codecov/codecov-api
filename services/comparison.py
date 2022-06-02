@@ -581,11 +581,11 @@ class FileComparison:
 
 
 class Comparison(object):
-    def __init__(self, user, base_commit, head_commit):
+    def __init__(self, user, base_commit, head_commit, report_service=ReportService()):
         self.user = user
         self._base_commit = base_commit
         self._head_commit = head_commit
-        self.report_service = ReportService()
+        self.report_service = report_service
 
     @cached_property
     def base_commit(self):
@@ -726,15 +726,15 @@ class FlagComparison(object):
         self.comparison = comparison
         self.flag_name = flag_name
 
-    @property
+    @cached_property
     def head_report(self):
         return self.comparison.head_report.flags.get(self.flag_name)
 
-    @property
+    @cached_property
     def base_report(self):
         return self.comparison.base_report.flags.get(self.flag_name)
 
-    @property
+    @cached_property
     def diff_totals(self):
         if self.head_report is None:
             return None
@@ -756,6 +756,7 @@ class PullRequestComparison(Comparison):
             # these are lazy loaded in the property methods below
             base_commit=None,
             head_commit=None,
+            report_service=ReportService()
         )
 
     @cached_property
