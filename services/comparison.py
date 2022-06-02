@@ -756,7 +756,7 @@ class PullRequestComparison(Comparison):
             # these are lazy loaded in the property methods below
             base_commit=None,
             head_commit=None,
-            report_service=ReportService()
+            report_service=ReportService(),
         )
 
     @cached_property

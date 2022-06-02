@@ -6,8 +6,8 @@ from uuid import uuid4
 
 from django.conf import settings
 from django.utils import timezone
-from minio import Minio
 from django.utils.functional import cached_property
+from minio import Minio
 from shared.helpers.flag import Flag
 from shared.reports.resources import Report
 
