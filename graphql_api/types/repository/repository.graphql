@@ -18,6 +18,7 @@ type Repository {
   profilingToken: String
   criticalFiles: [CriticalFile!]!
   graphToken: String
+  yaml: String
 }
 
 type PullConnection {

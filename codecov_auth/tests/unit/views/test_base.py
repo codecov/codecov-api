@@ -185,6 +185,25 @@ class LoginMixinTests(TestCase):
             == "utm_department=a&utm_campaign=b&utm_medium=c&utm_source=d&utm_content=e&utm_term=f"
         )
 
+    @override_settings(IS_ENTERPRISE=True)
+    def test_get_marketing_tags_on_enterprise(self):
+        self.request = RequestFactory().get(
+            "",
+            {
+                "utm_department": "a",
+                "utm_campaign": "b",
+                "utm_medium": "c",
+                "utm_source": "d",
+                "utm_content": "e",
+                "utm_term": "f",
+            },
+        )
+        self.mixin_instance.request = self.request
+        response = HttpResponse()
+        self.mixin_instance.store_to_cookie_utm_tags(response)
+        marketing_tags = self.mixin_instance.retrieve_marketing_tags_from_cookie()
+        assert marketing_tags == {}
+
     @patch("services.segment.SegmentService.user_signed_in")
     def test_use_marketing_tags_from_cookies(self, user_signed_in_mock):
         owner = OwnerFactory(service_id=89, service="github")
