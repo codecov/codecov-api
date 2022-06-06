@@ -146,3 +146,9 @@ def resolve_repo_yaml(repository, info):
     if repository.yaml is None:
         return None
     return yaml.dump(repository.yaml)
+
+
+@repository_bindable.field("bot")
+@sync_to_async
+def resolve_repo_bot(repository, info):
+    return repository.bot

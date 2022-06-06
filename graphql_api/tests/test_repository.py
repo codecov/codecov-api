@@ -44,6 +44,7 @@ default_fields = """
     criticalFiles { name }
     graphToken
     yaml
+    bot { username }
 """
 
 
@@ -85,6 +86,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "criticalFiles": [],
             "graphToken": graphToken,
             "yaml": "test: test\n",
+            "bot" : None
         }
 
     @freeze_time("2021-01-01")
@@ -127,6 +129,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "criticalFiles": [],
             "graphToken": graphToken,
             "yaml": "test: test\n",
+            "bot" : None
         }
 
     def test_repository_pulls(self):
@@ -201,3 +204,14 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             variables={"name": repo.name},
         )
         assert data["me"]["owner"]["repository"]["yaml"] == None
+
+    def test_repository_resolve_bot(self):
+        user = OwnerFactory()
+        bot = OwnerFactory(username='random_bot')
+        repo = RepositoryFactory(author=user, bot=bot)
+        data = self.gql_request(
+            query_repository % "bot {username}",
+            user=user,
+            variables={"name": repo.name},
+        )
+        assert data["me"]["owner"]["repository"]["bot"]["username"] == "random_bot"
