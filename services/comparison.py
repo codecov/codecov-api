@@ -579,7 +579,9 @@ class FileComparison:
     def segments(self):
         return Segment.segments(self)
 
+
 report_service = ReportService()
+
 
 class Comparison(object):
     def __init__(self, user, base_commit, head_commit):
