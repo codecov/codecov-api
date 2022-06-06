@@ -86,7 +86,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "criticalFiles": [],
             "graphToken": graphToken,
             "yaml": "test: test\n",
-            "bot" : None
+            "bot": None,
         }
 
     @freeze_time("2021-01-01")
@@ -129,7 +129,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "criticalFiles": [],
             "graphToken": graphToken,
             "yaml": "test: test\n",
-            "bot" : None
+            "bot": None,
         }
 
     def test_repository_pulls(self):
@@ -207,7 +207,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
 
     def test_repository_resolve_bot(self):
         user = OwnerFactory()
-        bot = OwnerFactory(username='random_bot')
+        bot = OwnerFactory(username="random_bot")
         repo = RepositoryFactory(author=user, bot=bot)
         data = self.gql_request(
             query_repository % "bot {username}",
