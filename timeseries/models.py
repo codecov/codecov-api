@@ -31,6 +31,7 @@ class Measurement(models.Model):
 
     class Meta:
         indexes = [
+            # for querying measurements
             models.Index(
                 fields=[
                     "owner_id",
@@ -41,8 +42,32 @@ class Measurement(models.Model):
                     "timestamp",
                 ]
             ),
-            # for updating measurements efficiently
-            models.Index(fields=["repo_id", "commit_sha", "timestamp"]),
+        ]
+        constraints = [
+            # for updating measurements
+            models.UniqueConstraint(
+                fields=[
+                    "name",
+                    "owner_id",
+                    "repo_id",
+                    "flag_id",
+                    "commit_sha",
+                    "timestamp",
+                ],
+                condition=models.Q(flag_id__isnull=False),
+                name="timeseries_measurement_flag_unique",
+            ),
+            models.UniqueConstraint(
+                fields=[
+                    "name",
+                    "owner_id",
+                    "repo_id",
+                    "commit_sha",
+                    "timestamp",
+                ],
+                condition=models.Q(flag_id__isnull=True),
+                name="timeseries_measurement_noflag_unique",
+            ),
         ]
 
 
