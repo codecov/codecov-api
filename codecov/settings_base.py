@@ -202,24 +202,12 @@ GITHUB_CLIENT_SECRET = get_config("github", "client_secret")
 GITHUB_BOT_KEY = get_config("github", "bot", "key")
 GITHUB_ACTIONS_TOKEN = get_config("github", "actions_token")
 
-GITHUB_ENTERPRISE_URL = get_config("github_enterprise", "url")
-GITHUB_ENTERPRISE_API_URL = get_config("github_enterprise", "api_url")
-GITHUB_ENTERPRISE_CLIENT_ID = get_config("github_enterprise", "client_id")
-GITHUB_ENTERPRISE_CLIENT_SECRET = get_config("github_enterprise", "client_secret")
-GITHUB_ENTERPRISE_BOT_KEY = get_config("github_enterprise", "bot", "key")
-GITHUB_ENTERPRISE_ACTIONS_TOKEN = get_config("github_enterprise", "actions_token")
-
 BITBUCKET_CLIENT_ID = get_config("bitbucket", "client_id")
 BITBUCKET_CLIENT_SECRET = get_config("bitbucket", "client_secret")
 BITBUCKET_BOT_KEY = get_config("bitbucket", "bot", "key")
 BITBUCKET_REDIRECT_URI = get_config(
     "bitbucket", "redirect_uri", default="https://codecov.io/login/bitbucket"
 )
-
-BITBUCKET_SERVER_URL = get_config("bitbucket_server", "url")
-BITBUCKET_SERVER_CLIENT_ID = get_config("bitbucket_server", "client_id")
-BITBUCKET_SERVER_CLIENT_SECRET = get_config("bitbucket_server", "client_secret")
-BITBUCKET_SERVER_BOT_KEY = get_config("bitbucket_server", "bot", "key")
 
 GITLAB_CLIENT_ID = get_config("gitlab", "client_id")
 GITLAB_CLIENT_SECRET = get_config("gitlab", "client_secret")
@@ -228,17 +216,6 @@ GITLAB_REDIRECT_URI = get_config(
 )
 GITLAB_BOT_KEY = get_config("gitlab", "bot", "key")
 
-
-GITLAB_ENTERPRISE_CLIENT_ID = get_config("gitlab_enterprise", "client_id")
-GITLAB_ENTERPRISE_CLIENT_SECRET = get_config("gitlab_enterprise", "client_secret")
-GITLAB_ENTERPRISE_REDIRECT_URI = get_config(
-    "gitlab_enterprise",
-    "redirect_uri",
-    default="https://codecov.io/login/gitlab_enterprise",
-)
-GITLAB_ENTERPRISE_BOT_KEY = get_config("gitlab_enterprise", "bot", "key")
-GITLAB_ENTERPRISE_URL = get_config("gitlab_enterprise", "url")
-GITLAB_ENTERPRISE_API_URL = get_config("gitlab_enterprise", "api_url")
 
 SEGMENT_API_KEY = get_config("setup", "segment", "key", default=None)
 SEGMENT_ENABLED = get_config("setup", "segment", "enabled", default=False) and not bool(

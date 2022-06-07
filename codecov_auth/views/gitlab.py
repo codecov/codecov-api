@@ -20,30 +20,15 @@ class GitlabLoginView(LoginMixin, StateMixin, View):
     service = "gitlab"
     error_redirection_page = "/"
 
-    @property
-    def repo_service_instance(self):
-        return Gitlab(
-            oauth_consumer_token=dict(
-                key=settings.GITHUB_CLIENT_ID, secret=settings.GITHUB_CLIENT_SECRET
-            )
-        )
-
-    @property
-    def redirect_info(self):
-        return dict(
-            redirect_uri=settings.GITLAB_REDIRECT_URI,
-            repo_service=Gitlab(),
-            client_id=settings.GITLAB_CLIENT_ID,
-        )
-
     def get_url_to_redirect_to(self):
-        redirect_info = self.redirect_info
-        base_url = urljoin(redirect_info["repo_service"].service_url, "oauth/authorize")
+        repo_service = Gitlab
+        base_url = urljoin(repo_service.service_url, "oauth/authorize")
         state = self.generate_state()
+        redirect_uri = settings.GITLAB_REDIRECT_URI
         query = dict(
             response_type="code",
-            client_id=redirect_info["client_id"],
-            redirect_uri=redirect_info["redirect_uri"],
+            client_id=settings.GITLAB_CLIENT_ID,
+            redirect_uri=redirect_uri,
             state=state,
         )
         query_str = urlencode(query)
@@ -51,8 +36,12 @@ class GitlabLoginView(LoginMixin, StateMixin, View):
 
     @async_to_sync
     async def fetch_user_data(self, request, code):
-        redirect_uri = self.redirect_info["redirect_uri"]
-        repo_service = self.repo_service_instance
+        redirect_uri = settings.GITLAB_REDIRECT_URI
+        repo_service = Gitlab(
+            oauth_consumer_token=dict(
+                key=settings.GITLAB_CLIENT_ID, secret=settings.GITLAB_CLIENT_SECRET
+            )
+        )
         user_dict = await repo_service.get_authenticated_user(code, redirect_uri)
         user_dict["login"] = user_dict["username"]
         user_orgs = await repo_service.list_teams()
