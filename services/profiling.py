@@ -2,6 +2,7 @@ import json
 import logging
 from typing import List, Optional
 
+from django.utils.functional import cached_property
 from shared.profiling import ProfilingSummaryDataAnalyzer
 
 from core.models import Repository
@@ -59,7 +60,7 @@ class ProfilingSummary:
             )
             return None
 
-    @property
+    @cached_property
     def critical_files(self) -> List[CriticalFile]:
         """
         Get the most recent critical files
