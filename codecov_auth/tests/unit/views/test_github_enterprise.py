@@ -225,7 +225,6 @@ def test_get_ghe_already_with_code_github_error(
     settings.COOKIES_DOMAIN = ".simple.site"
     settings.COOKIE_SECRET = "secret"
 
-
     async def helper_func(*args, **kwargs):
         raise TorngitClientGeneralError(403, "response", "message")
 
@@ -263,7 +262,6 @@ def test_get_ghe_already_with_code_with_email(client, mocker, db, mock_redis, se
     settings.GITHUB_ENTERPRISE_CLIENT_ID = "3d44be0e772666136a13"
     settings.COOKIES_DOMAIN = ".simple.site"
     settings.COOKIE_SECRET = "secret"
-
 
     async def helper_func(*args, **kwargs):
         return {
@@ -337,7 +335,6 @@ def test_get_ghe_already_owner_already_exist(client, mocker, db, mock_redis, set
     assert owner.bot is not None
     settings.COOKIES_DOMAIN = ".simple.site"
     settings.COOKIE_SECRET = "secret"
-
 
     async def helper_func(*args, **kwargs):
         return {

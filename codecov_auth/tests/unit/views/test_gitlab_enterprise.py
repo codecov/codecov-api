@@ -49,7 +49,7 @@ def test_get_gle_redirect(client, settings, mock_redis, mocker):
 )
 @override_settings(GITLAB_ENTERPRISE_REDIRECT_URI="http://localhost/login/gle")
 def test_get_gle_already_with_code(client, mocker, db, settings, mock_redis):
-    settings.COOKIE_SECRET = 'secret'
+    settings.COOKIE_SECRET = "secret"
     settings.COOKIES_DOMAIN = ".simple.site"
 
     async def helper_func(*args, **kwargs):

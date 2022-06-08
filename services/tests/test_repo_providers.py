@@ -1,13 +1,13 @@
 from unittest.mock import patch
-from codecov_auth.models import Owner
-import pytest
-from shared.encryption.token import encode_token
 
+import pytest
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
+from shared.encryption.token import encode_token
 from shared.torngit import Bitbucket, Github, Gitlab
 
 from codecov.tests.base_test import InternalAPITest
+from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
 from services.repo_providers import RepoProviderService, TorngitInitializationFailed
@@ -58,25 +58,24 @@ class TestRepoProviderService(InternalAPITest):
         assert provider._on_token_refresh is not None
 
     def test_refresh_callback(self):
-            repo = RepositoryFactory.create(
-                author__unencrypted_oauth_token="testaaft3ituvli790m1yajovjv5eg0r4j0264iw",
-                author__username="ThiagoCodecov",
-                author__service="gitlab",
-            )
-            provider = RepoProviderService().get_by_name(
-                repo.author, repo.name, repo.author, repo.author.service
-            )
-            assert isinstance(Gitlab(), type(provider))
-            assert provider._on_token_refresh is not None
-            new_token = { 'key': '00001023102301', 'refresh_token': '20349230952'}
-            provider._on_token_refresh(new_token)
-            owner = Owner.objects.filter(ownerid=repo.author.ownerid).first()
-            assert owner.username == "ThiagoCodecov"
-            saved_token = encryptor.decrypt_token(owner.oauth_token)
-            print(saved_token)
-            assert saved_token['key'] == '00001023102301'
-            assert saved_token['refresh_token'] == '20349230952'
-
+        repo = RepositoryFactory.create(
+            author__unencrypted_oauth_token="testaaft3ituvli790m1yajovjv5eg0r4j0264iw",
+            author__username="ThiagoCodecov",
+            author__service="gitlab",
+        )
+        provider = RepoProviderService().get_by_name(
+            repo.author, repo.name, repo.author, repo.author.service
+        )
+        assert isinstance(Gitlab(), type(provider))
+        assert provider._on_token_refresh is not None
+        new_token = {"key": "00001023102301", "refresh_token": "20349230952"}
+        provider._on_token_refresh(new_token)
+        owner = Owner.objects.filter(ownerid=repo.author.ownerid).first()
+        assert owner.username == "ThiagoCodecov"
+        saved_token = encryptor.decrypt_token(owner.oauth_token)
+        print(saved_token)
+        assert saved_token["key"] == "00001023102301"
+        assert saved_token["refresh_token"] == "20349230952"
 
     def test_get_adapter_returns_adapter_for_repo_authors_service(self):
         some_other_user = OwnerFactory(service="github")

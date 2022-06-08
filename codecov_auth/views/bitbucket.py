@@ -30,8 +30,8 @@ class BitbucketLoginView(View, LoginMixin):
         )
         user_data = await repo_service.get_authenticated_user()
         authenticated_user = {
-            "access_token": token['key'],
-            "secret": token['secret'],
+            "access_token": token["key"],
+            "secret": token["secret"],
             "id": user_data["uuid"][1:-1],
             "login": user_data.pop("username"),
         }

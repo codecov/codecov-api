@@ -1,19 +1,17 @@
+import logging
 from os import getenv
 from typing import Callable, Dict
 
-from django.conf import settings
-from codecov_auth.views.base import LoginMixin
-from shared.torngit import get
-from shared.encryption.token import encode_token
 from asgiref.sync import sync_to_async
+from django.conf import settings
+from shared.encryption.token import encode_token
+from shared.torngit import get
 
 from codecov_auth.models import Owner, Service
+from codecov_auth.views.base import LoginMixin
 from core.models import Repository
 from utils.config import get_config
 from utils.encryption import encryptor
-
-
-import logging
 
 log = logging.getLogger(__name__)
 
@@ -25,27 +23,32 @@ class TorngitInitializationFailed(Exception):
 
     pass
 
-def get_token_refresh_callback(user: Owner, service: Service) -> Callable[[Dict], None]:
-        """
-        Produces a callback function that will encode and update the oauth token of a user.
-        This callback is passed to the TorngitAdapter for the service.
-        """
-        if service != Service.GITLAB and service != Service.GITLAB_ENTERPRISE:
-            return None
-        
-        def callback(new_token: Dict) -> None:
-            if 'key' not in new_token and 'access_token' not in new_token:
-                log.error("Can't save updated token. Key missing from dict", extra=dict(owner=user.ownerid, username=user.username, service=service))
-                return
-            # shared uses a key with the token.
-            # providers return access_token.
-            # We can have both just in case
-            new_token['access_token'] = new_token['key']
-            string_to_save = encode_token(new_token)
-            user.oauth_token = encryptor.encode(string_to_save).decode()
-            user.save()
 
-        return callback
+def get_token_refresh_callback(user: Owner, service: Service) -> Callable[[Dict], None]:
+    """
+    Produces a callback function that will encode and update the oauth token of a user.
+    This callback is passed to the TorngitAdapter for the service.
+    """
+    if service != Service.GITLAB and service != Service.GITLAB_ENTERPRISE:
+        return None
+
+    def callback(new_token: Dict) -> None:
+        if "key" not in new_token and "access_token" not in new_token:
+            log.error(
+                "Can't save updated token. Key missing from dict",
+                extra=dict(owner=user.ownerid, username=user.username, service=service),
+            )
+            return
+        # shared uses a key with the token.
+        # providers return access_token.
+        # We can have both just in case
+        new_token["access_token"] = new_token["key"]
+        string_to_save = encode_token(new_token)
+        user.oauth_token = encryptor.encode(string_to_save).decode()
+        user.save()
+
+    return callback
+
 
 def get_generic_adapter_params(user, service, use_ssl=False, token=None):
     if use_ssl:
@@ -84,7 +87,6 @@ def get_provider(service, adapter_params):
 
 
 class RepoProviderService(object):
-
     def get_adapter(self, user: Owner, repo: Repository, use_ssl=False, token=None):
         """
         Return the corresponding implementation for calling the repository provider
