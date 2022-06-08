@@ -43,6 +43,7 @@ default_fields = """
     profilingToken
     criticalFiles { name }
     graphToken
+    yaml
 """
 
 
@@ -57,11 +58,14 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
 
     def setUp(self):
         self.user = OwnerFactory(username="codecov-user")
+        self.yaml = {"test": "test"}
 
     @freeze_time("2021-01-01")
     def test_when_repository_has_no_coverage(self):
 
-        repo = RepositoryFactory(author=self.user, active=True, private=True, name="a")
+        repo = RepositoryFactory(
+            author=self.user, active=True, private=True, name="a", yaml=self.yaml
+        )
         profiling_token = RepositoryTokenFactory(
             repository_id=repo.repoid, token_type="profiling"
         ).key
@@ -80,6 +84,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "profilingToken": profiling_token,
             "criticalFiles": [],
             "graphToken": graphToken,
+            "yaml": "test: test\n",
         }
 
     @freeze_time("2021-01-01")
@@ -89,6 +94,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             active=True,
             private=True,
             name="b",
+            yaml=self.yaml,
         )
 
         hour_ago = datetime.datetime.now() - datetime.timedelta(hours=1)
@@ -120,6 +126,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "profilingToken": profiling_token,
             "criticalFiles": [],
             "graphToken": graphToken,
+            "yaml": "test: test\n",
         }
 
     def test_repository_pulls(self):
@@ -174,3 +181,23 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             variables={"name": repo.name},
         )
         assert data["me"]["owner"]["repository"]["graphToken"] == repo.image_token
+
+    def test_repository_resolve_yaml(self):
+        user = OwnerFactory()
+        repo = RepositoryFactory(author=user, name="has_yaml", yaml=self.yaml)
+        data = self.gql_request(
+            query_repository % "yaml",
+            user=user,
+            variables={"name": repo.name},
+        )
+        assert data["me"]["owner"]["repository"]["yaml"] == "test: test\n"
+
+    def test_repository_resolve_yaml_no_yaml(self):
+        user = OwnerFactory()
+        repo = RepositoryFactory(author=user, name="no_yaml")
+        data = self.gql_request(
+            query_repository % "yaml",
+            user=user,
+            variables={"name": repo.name},
+        )
+        assert data["me"]["owner"]["repository"]["yaml"] == None

@@ -326,7 +326,10 @@ class LoginMixin(object):
             )
 
     def retrieve_marketing_tags_from_cookie(self) -> dict:
-        cookie_data = self.request.COOKIES.get("_marketing_tags", "")
-        params_as_dict = parse_qs(cookie_data)
-        filtered_params = self._get_utm_params(params_as_dict)
-        return {k: v[0] for k, v in filtered_params.items()}
+        if not settings.IS_ENTERPRISE:
+            cookie_data = self.request.COOKIES.get("_marketing_tags", "")
+            params_as_dict = parse_qs(cookie_data)
+            filtered_params = self._get_utm_params(params_as_dict)
+            return {k: v[0] for k, v in filtered_params.items()}
+        else:
+            return {}

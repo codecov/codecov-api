@@ -4,6 +4,7 @@ type FileComparison {
     isNewFile: Boolean!
     isRenamedFile: Boolean!
     isDeletedFile: Boolean!
+    isCriticalFile: Boolean!
     hasDiff: Boolean!
     hasChanges: Boolean!
     baseTotals: CoverageTotals
