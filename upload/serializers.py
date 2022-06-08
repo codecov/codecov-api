@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from core.models import Commit
 from reports.models import ReportSession
 from services.archive import ArchiveService
 
@@ -32,3 +33,12 @@ class UploadSerializer(serializers.ModelSerializer):
             "report",
         )
         model = ReportSession
+
+class CommitSerializer(serializers.ModelSerializer):
+    class Meta:
+        fields = (
+            "commitid",
+            "parent_commit_id",
+            "pullid",
+        )
+        model = Commit
