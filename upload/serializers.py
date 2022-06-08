@@ -34,6 +34,7 @@ class UploadSerializer(serializers.ModelSerializer):
         )
         model = ReportSession
 
+
 class CommitSerializer(serializers.ModelSerializer):
     class Meta:
         fields = (
