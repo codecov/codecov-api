@@ -1,5 +1,7 @@
+from distutils.log import Log
 import logging
 import re
+from typing import Dict
 import uuid
 from functools import reduce
 from json import dumps
@@ -10,6 +12,7 @@ from django.contrib.auth import login
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
 from django.utils import timezone
 from shared.license import LICENSE_ERRORS_MESSAGES, get_current_license
+from shared.encryption.token import encode_token
 
 from codecov_auth.helpers import create_signed_value
 from codecov_auth.models import Owner, Service, Session
@@ -267,6 +270,7 @@ class LoginMixin(object):
                 if users_on_service_count > license.number_allowed_users:
                     raise PermissionDenied(LICENSE_ERRORS_MESSAGES["users-exceeded"])
 
+      
     def _get_or_create_user(self, user_dict, request):
         fields_to_update = ["oauth_token", "private_access", "updatestamp"]
         login_data = user_dict["user"]
@@ -279,7 +283,7 @@ class LoginMixin(object):
             fields_to_update.append("username")
             owner.username = login_data["login"]
 
-        owner.oauth_token = encryptor.encode(login_data["access_token"]).decode()
+        owner.oauth_token = encryptor.encode(encode_token(login_data)).decode()
         owner.private_access = user_dict["has_private_access"]
         if user_dict["user"].get("name"):
             owner.name = user_dict["user"]["name"]

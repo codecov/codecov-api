@@ -28,10 +28,10 @@ class BitbucketLoginView(View, LoginMixin):
             ),
             token=token,
         )
-        stuff_to_save = "%(key)s:%(secret)s" % token
         user_data = await repo_service.get_authenticated_user()
         authenticated_user = {
-            "access_token": stuff_to_save,
+            "access_token": token['key'],
+            "secret": token['secret'],
             "id": user_data["uuid"][1:-1],
             "login": user_data.pop("username"),
         }
