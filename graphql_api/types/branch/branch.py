@@ -1,6 +1,10 @@
 import string
 from ariadne import ObjectType
+from shared.reports.resources import Report
+from shared.reports.types import ReportFileSummary
+from dataclasses import dataclass
 from core.models import Branch
+from typing import List
 
 branch_bindable = ObjectType("Branch")
 
@@ -19,28 +23,39 @@ async def resolve_files(branch: Branch, info, path: string):
     commit_report = head_commit.full_report
     report_files = commit_report.files
 
-    filtered_file_paths = _get_files_filtered_by_path(report_files, path)
+    filtered_file_paths = filter_files_by_url_path(report_files, path)
     file_tree = traverse(filtered_file_paths, commit_report)
 
     return file_tree
 
-def traverse(paths, commit_report):
+
+@dataclass
+class FilteredFilePath:
+    """Class for keeping track of paths filtered by . """
+    full_path: str
+    stripped_path: str
+
+    def __init__(self, full_path: str, stripped_path: str):
+        self.full_path = full_path
+        self.stripped_path = stripped_path
+
+def traverse(paths: List[FilteredFilePath], commit_report: Report):
     grouped = {}
 
     for path in paths:
-        parts = path.get("changing_name").split("/", 1)
+        parts = path.stripped_path.split("/", 1)
         if len(parts) == 1:
             # Treated as a file
             name = parts[0]
-            file_path = path.get("file_path")
-            totals = commit_report.get(file_path).totals
+            full_path = path.full_path
+            totals = commit_report.get(full_path).totals
             grouped[name] = {
                 "type": "file",
                 "name": name,
                 "hits": totals.hits,
                 "lines": totals.lines,
                 "coverage": totals.coverage,
-                "file_path": file_path,
+                "full_path": full_path,
             }
         else:
             # Treated as a directory
@@ -51,7 +66,7 @@ def traverse(paths, commit_report):
                     "name": dirname,
                     "child_paths": [],
                 }
-            path_obj = {"changing_name": remaining_path, "file_path": path.get("file_path")}
+            path_obj = FilteredFilePath(stripped_path=remaining_path, full_path=path.full_path)
             grouped[dirname]["child_paths"].append(path_obj)
 
     res = []
@@ -80,16 +95,14 @@ def traverse(paths, commit_report):
 
     return res
 
-
-
-def _get_files_filtered_by_path(report_files, path):
+def filter_files_by_url_path(report_file_paths: List[ReportFileSummary], url_path: str) -> List[FilteredFilePath]:
     filtered_files = []
 
-    for _file in report_files:
-        if _file.startswith(path) :
-            filtered_files.append({
-                "file_path": _file,
-                "changing_name": _file if not path else _file.replace(path + '/', '', 1)
-            })
+    for path in report_file_paths:
+        if path.startswith(url_path):
+            filtered_files.append(FilteredFilePath(
+                full_path=path,
+                stripped_path=path if not url_path else path.replace(url_path + '/', '', 1)
+            ))
 
     return filtered_files

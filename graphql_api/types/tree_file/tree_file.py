@@ -9,7 +9,7 @@ def resolve_name(data, info):
 @tree_file_bindable.field("filePath")
 def resolve_(data, info):
     if data["type"] == "file":
-        return data["file_path"]
+        return data["full_path"]
     return None
 
 @tree_file_bindable.field("percentCovered")
