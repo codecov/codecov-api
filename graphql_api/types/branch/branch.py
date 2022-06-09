@@ -1,12 +1,15 @@
 import string
+from dataclasses import dataclass
+from typing import List
+
 from ariadne import ObjectType
 from shared.reports.resources import Report
 from shared.reports.types import ReportFileSummary
-from dataclasses import dataclass
+
 from core.models import Branch
-from typing import List
 
 branch_bindable = ObjectType("Branch")
+
 
 @branch_bindable.field("head")
 def resolve_head_commit(branch, info):
@@ -31,13 +34,15 @@ async def resolve_files(branch: Branch, info, path: string):
 
 @dataclass
 class FilteredFilePath:
-    """Class for keeping track of paths filtered by . """
+    """Class for keeping track of paths filtered by ."""
+
     full_path: str
     stripped_path: str
 
     def __init__(self, full_path: str, stripped_path: str):
         self.full_path = full_path
         self.stripped_path = stripped_path
+
 
 def traverse(paths: List[FilteredFilePath], commit_report: Report):
     grouped = {}
@@ -66,7 +71,9 @@ def traverse(paths: List[FilteredFilePath], commit_report: Report):
                     "name": dirname,
                     "child_paths": [],
                 }
-            path_obj = FilteredFilePath(stripped_path=remaining_path, full_path=path.full_path)
+            path_obj = FilteredFilePath(
+                stripped_path=remaining_path, full_path=path.full_path
+            )
             grouped[dirname]["child_paths"].append(path_obj)
 
     res = []
@@ -84,25 +91,34 @@ def traverse(paths: List[FilteredFilePath], commit_report: Report):
                 hits += child["hits"]
                 lines += child["lines"]
 
-            res.append({
-                "type": item["type"],
-                "name": item["name"],
-                "hits": hits,
-                "lines": lines,
-                "coverage": (hits/lines)*100,
-                "children": children,
-            })
+            res.append(
+                {
+                    "type": item["type"],
+                    "name": item["name"],
+                    "hits": hits,
+                    "lines": lines,
+                    "coverage": (hits / lines) * 100,
+                    "children": children,
+                }
+            )
 
     return res
 
-def filter_files_by_url_path(report_file_paths: List[ReportFileSummary], url_path: str) -> List[FilteredFilePath]:
+
+def filter_files_by_url_path(
+    report_file_paths: List[ReportFileSummary], url_path: str
+) -> List[FilteredFilePath]:
     filtered_files = []
 
     for path in report_file_paths:
         if path.startswith(url_path):
-            filtered_files.append(FilteredFilePath(
-                full_path=path,
-                stripped_path=path if not url_path else path.replace(url_path + '/', '', 1)
-            ))
+            filtered_files.append(
+                FilteredFilePath(
+                    full_path=path,
+                    stripped_path=path
+                    if not url_path
+                    else path.replace(url_path + "/", "", 1),
+                )
+            )
 
     return filtered_files
