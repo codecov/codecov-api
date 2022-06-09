@@ -1,18 +1,16 @@
-import re
 from datetime import datetime
+from unittest.mock import Mock, patch
 
-import pytest
 from django.http.cookie import SimpleCookie
 from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
-from shared.torngit import Github
+from shared.torngit import GithubEnterprise
 from shared.torngit.exceptions import TorngitClientGeneralError
 
 from codecov_auth.helpers import decode_token_from_cookie
 from codecov_auth.models import Owner, Session
 from codecov_auth.tests.factories import OwnerFactory
-from codecov_auth.views.github import GithubLoginView
 
 
 def _get_state_from_redis(mock_redis):
@@ -20,28 +18,39 @@ def _get_state_from_redis(mock_redis):
     return key_redis.replace("oauth-state-", "")
 
 
-def test_get_github_redirect(client, mock_redis, settings):
-    settings.IS_ENTERPRISE = False
-    url = reverse("github-login")
+def test_get_ghe_redirect(client, mocker, mock_redis, settings):
+    mock_get_config = mocker.patch(
+        "shared.torngit.github_enterprise.get_config",
+        side_effect=lambda *args: "https://my.githubenterprise.com",
+    )
+    settings.IS_ENTERPRISE = True
+    settings.GITHUB_ENTERPRISE_CLIENT_ID = "3d44be0e772666136a13"
+    url = reverse("ghe-login")
     res = client.get(url)
     state = _get_state_from_redis(mock_redis)
     assert res.status_code == 302
     assert (
         res.url
-        == f"https://github.com/login/oauth/authorize?response_type=code&scope=user%3Aemail%2Cread%3Aorg%2Crepo%3Astatus%2Cwrite%3Arepo_hook&client_id=3d44be0e772666136a13&state={state}"
+        == f"https://my.githubenterprise.com/login/oauth/authorize?response_type=code&scope=user%3Aemail%2Cread%3Aorg%2Crepo%3Astatus%2Cwrite%3Arepo_hook%2Crepo&client_id=3d44be0e772666136a13&state={state}"
     )
+    mock_get_config.assert_called_with("github_enterprise", "url")
 
 
-def test_get_github_redirect_with_ghpr_cookie(client, mock_redis, settings):
+def test_get_ghe_redirect_with_ghpr_cookie(client, mocker, mock_redis, settings):
+    mock_get_config = mocker.patch(
+        "shared.torngit.github_enterprise.get_config",
+        side_effect=lambda *args: "https://my.githubenterprise.com",
+    )
+    settings.GITHUB_ENTERPRISE_CLIENT_ID = "3d44be0e772666136a13"
     settings.COOKIES_DOMAIN = ".simple.site"
     client.cookies = SimpleCookie({"ghpr": "true"})
-    url = reverse("github-login")
+    url = reverse("ghe-login")
     res = client.get(url)
     state = _get_state_from_redis(mock_redis)
     assert res.status_code == 302
     assert (
         res.url
-        == f"https://github.com/login/oauth/authorize?response_type=code&scope=user%3Aemail%2Cread%3Aorg%2Crepo%3Astatus%2Cwrite%3Arepo_hook%2Crepo&client_id=3d44be0e772666136a13&state={state}"
+        == f"https://my.githubenterprise.com/login/oauth/authorize?response_type=code&scope=user%3Aemail%2Cread%3Aorg%2Crepo%3Astatus%2Cwrite%3Arepo_hook%2Crepo&client_id=3d44be0e772666136a13&state={state}"
     )
     assert "ghpr" in res.cookies
     ghpr_cooke = res.cookies["ghpr"]
@@ -49,15 +58,20 @@ def test_get_github_redirect_with_ghpr_cookie(client, mock_redis, settings):
     assert ghpr_cooke.get("domain") == ".simple.site"
 
 
-def test_get_github_redirect_with_private_url(client, mock_redis, settings):
+def test_get_github_redirect_with_private_url(client, mocker, mock_redis, settings):
+    mock_get_config = mocker.patch(
+        "shared.torngit.github_enterprise.get_config",
+        side_effect=lambda *args: "https://my.githubenterprise.com",
+    )
+    settings.GITHUB_ENTERPRISE_CLIENT_ID = "3d44be0e772666136a13"
     settings.COOKIES_DOMAIN = ".simple.site"
-    url = reverse("github-login")
+    url = reverse("ghe-login")
     res = client.get(url, {"private": "true"})
     state = _get_state_from_redis(mock_redis)
     assert res.status_code == 302
     assert (
         res.url
-        == f"https://github.com/login/oauth/authorize?response_type=code&scope=user%3Aemail%2Cread%3Aorg%2Crepo%3Astatus%2Cwrite%3Arepo_hook%2Crepo&client_id=3d44be0e772666136a13&state={state}"
+        == f"https://my.githubenterprise.com/login/oauth/authorize?response_type=code&scope=user%3Aemail%2Cread%3Aorg%2Crepo%3Astatus%2Cwrite%3Arepo_hook%2Crepo&client_id=3d44be0e772666136a13&state={state}"
     )
     assert "ghpr" in res.cookies
     ghpr_cooke = res.cookies["ghpr"]
@@ -65,7 +79,12 @@ def test_get_github_redirect_with_private_url(client, mock_redis, settings):
     assert ghpr_cooke.get("domain") == ".simple.site"
 
 
-def test_get_github_already_with_code(client, mocker, db, mock_redis, settings):
+def test_get_ghe_already_with_code(client, mocker, db, mock_redis, settings):
+    mock_get_config = mocker.patch(
+        "shared.torngit.github_enterprise.get_config",
+        side_effect=lambda *args: "https://my.githubenterprise.com",
+    )
+    settings.GITHUB_ENTERPRISE_CLIENT_ID = "3d44be0e772666136a13"
     settings.COOKIES_DOMAIN = ".simple.site"
     now = datetime.now()
     now_tz = timezone.now()
@@ -77,17 +96,17 @@ def test_get_github_already_with_code(client, mocker, db, mock_redis, settings):
             "node_id": "MDQ6VXNlcjQ0Mzc2OTkx",
             "avatar_url": "https://avatars3.githubusercontent.com/u/44376991?v=4",
             "gravatar_id": "",
-            "url": "https://api.github.com/users/ThiagoCodecov",
+            "url": "https://api.githubenterprise.com/users/ThiagoCodecov",
             "html_url": "https://github.com/ThiagoCodecov",
-            "followers_url": "https://api.github.com/users/ThiagoCodecov/followers",
-            "following_url": "https://api.github.com/users/ThiagoCodecov/following{/other_user}",
-            "gists_url": "https://api.github.com/users/ThiagoCodecov/gists{/gist_id}",
-            "starred_url": "https://api.github.com/users/ThiagoCodecov/starred{/owner}{/repo}",
-            "subscriptions_url": "https://api.github.com/users/ThiagoCodecov/subscriptions",
-            "organizations_url": "https://api.github.com/users/ThiagoCodecov/orgs",
-            "repos_url": "https://api.github.com/users/ThiagoCodecov/repos",
-            "events_url": "https://api.github.com/users/ThiagoCodecov/events{/privacy}",
-            "received_events_url": "https://api.github.com/users/ThiagoCodecov/received_events",
+            "followers_url": "https://api.githubenterprise.com/users/ThiagoCodecov/followers",
+            "following_url": "https://api.githubenterprise.com/users/ThiagoCodecov/following{/other_user}",
+            "gists_url": "https://api.githubenterprise.com/users/ThiagoCodecov/gists{/gist_id}",
+            "starred_url": "https://api.githubenterprise.com/users/ThiagoCodecov/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.githubenterprise.com/users/ThiagoCodecov/subscriptions",
+            "organizations_url": "https://api.githubenterprise.com/users/ThiagoCodecov/orgs",
+            "repos_url": "https://api.githubenterprise.com/users/ThiagoCodecov/repos",
+            "events_url": "https://api.githubenterprise.com/users/ThiagoCodecov/events{/privacy}",
+            "received_events_url": "https://api.githubenterprise.com/users/ThiagoCodecov/received_events",
             "type": "User",
             "site_admin": False,
             "name": "Thiago",
@@ -122,9 +141,13 @@ def test_get_github_already_with_code(client, mocker, db, mock_redis, settings):
     async def is_student(*args, **kwargs):
         return False
 
-    mocker.patch.object(Github, "get_authenticated_user", side_effect=helper_func)
-    mocker.patch.object(Github, "list_teams", side_effect=helper_list_teams_func)
-    mocker.patch.object(Github, "is_student", side_effect=is_student)
+    mocker.patch.object(
+        GithubEnterprise, "get_authenticated_user", side_effect=helper_func
+    )
+    mocker.patch.object(
+        GithubEnterprise, "list_teams", side_effect=helper_list_teams_func
+    )
+    mocker.patch.object(GithubEnterprise, "is_student", side_effect=is_student)
     mocker.patch(
         "services.task.TaskService.refresh",
         return_value=mocker.MagicMock(
@@ -132,14 +155,14 @@ def test_get_github_already_with_code(client, mocker, db, mock_redis, settings):
         ),
     )
 
-    url = reverse("github-login")
-    mock_redis.setex("oauth-state-abc", 300, "http://localhost:3000/gh")
+    url = reverse("ghe-login")
+    mock_redis.setex("oauth-state-abc", 300, "http://localhost:3000/ghe")
     res = client.get(url, {"code": "aaaaaaa", "state": "abc"})
     assert res.status_code == 302
-    assert "github-token" in res.cookies
-    assert "github-username" in res.cookies
-    token_cookie = res.cookies["github-token"]
-    username_cookie = res.cookies["github-username"]
+    assert "github_enterprise-token" in res.cookies
+    assert "github_enterprise-username" in res.cookies
+    token_cookie = res.cookies["github_enterprise-token"]
+    username_cookie = res.cookies["github_enterprise-username"]
     cookie_token = decode_token_from_cookie(settings.COOKIE_SECRET, token_cookie.value)
     assert username_cookie.value == "ThiagoCodecov"
     assert username_cookie.get("domain") == ".simple.site"
@@ -150,7 +173,7 @@ def test_get_github_already_with_code(client, mocker, db, mock_redis, settings):
     assert owner.service_id == "44376991"
     assert owner.email is None
     assert owner.private_access is True
-    assert owner.service == "github"
+    assert owner.service == "github_enterprise"
     assert owner.name == "Thiago"
     assert owner.oauth_token is not None  # cannot test exact value
     assert owner.stripe_customer_id is None
@@ -184,40 +207,55 @@ def test_get_github_already_with_code(client, mocker, db, mock_redis, settings):
     assert len(owner.organizations) == 1
     org = Owner.objects.get(ownerid=owner.organizations[0])
     assert org.service_id == "8226205"
-    assert org.service == "github"
-    assert res.url == "http://localhost:3000/gh"
+    assert org.service == "github_enterprise"
+    assert res.url == "http://localhost:3000/ghe"
 
 
-def test_get_github_already_with_code_github_error(
+def test_get_ghe_already_with_code_github_error(
     client, mocker, db, mock_redis, settings
 ):
+    mock_get_config = mocker.patch(
+        "shared.torngit.github_enterprise.get_config",
+        side_effect=lambda *args: "https://my.githubenterprise.com",
+    )
+    settings.GITHUB_ENTERPRISE_CLIENT_ID = "3d44be0e772666136a13"
     settings.COOKIES_DOMAIN = ".simple.site"
 
     async def helper_func(*args, **kwargs):
         raise TorngitClientGeneralError(403, "response", "message")
 
-    mock_redis.setex("oauth-state-abc", 300, "http://localhost:3000/gh")
+    mock_redis.setex("oauth-state-abc", 300, "http://localhost:3000/ghe")
 
-    mocker.patch.object(Github, "get_authenticated_user", side_effect=helper_func)
-    url = reverse("github-login")
+    mocker.patch.object(
+        GithubEnterprise, "get_authenticated_user", side_effect=helper_func
+    )
+    url = reverse("ghe-login")
     res = client.get(url, {"code": "aaaaaaa", "state": "abc"})
     assert res.status_code == 302
-    assert "github-token" not in res.cookies
-    assert "github-username" not in res.cookies
+    assert "github_enterprise-token" not in res.cookies
+    assert "github_enterprise-username" not in res.cookies
     assert res.url == "/"
 
 
 def test_state_not_known(client, mocker, db, mock_redis, settings):
-    url = reverse("github-login")
+    mock_get_config = mocker.patch(
+        "shared.torngit.github_enterprise.get_config",
+        side_effect=lambda *args: "https://my.githubenterprise.com",
+    )
+    settings.GITHUB_ENTERPRISE_CLIENT_ID = "3d44be0e772666136a13"
+    url = reverse("ghe-login")
     res = client.get(url, {"code": "aaaaaaa", "state": "doesnt exist"})
     assert res.status_code == 400
-    assert "github-token" not in res.cookies
-    assert "github-username" not in res.cookies
+    assert "github_enterprise-token" not in res.cookies
+    assert "github_enterprise-username" not in res.cookies
 
 
-def test_get_github_already_with_code_with_email(
-    client, mocker, db, mock_redis, settings
-):
+def test_get_ghe_already_with_code_with_email(client, mocker, db, mock_redis, settings):
+    mock_get_config = mocker.patch(
+        "shared.torngit.github_enterprise.get_config",
+        side_effect=lambda *args: "https://my.githubenterprise.com",
+    )
+    settings.GITHUB_ENTERPRISE_CLIENT_ID = "3d44be0e772666136a13"
     settings.COOKIES_DOMAIN = ".simple.site"
 
     async def helper_func(*args, **kwargs):
@@ -240,25 +278,29 @@ def test_get_github_already_with_code_with_email(
         ]
 
     async def is_student(*args, **kwargs):
-        return True
+        return False
 
-    mocker.patch.object(Github, "get_authenticated_user", side_effect=helper_func)
-    mocker.patch.object(Github, "list_teams", side_effect=helper_list_teams_func)
-    mocker.patch.object(Github, "is_student", side_effect=is_student)
+    mocker.patch.object(
+        GithubEnterprise, "get_authenticated_user", side_effect=helper_func
+    )
+    mocker.patch.object(
+        GithubEnterprise, "list_teams", side_effect=helper_list_teams_func
+    )
+    mocker.patch.object(GithubEnterprise, "is_student", side_effect=is_student)
     mocker.patch(
         "services.task.TaskService.refresh",
         return_value=mocker.MagicMock(
             as_tuple=mocker.MagicMock(return_value=("a", "b"))
         ),
     )
-    mock_redis.setex("oauth-state-abc", 300, "http://localhost:3000/gh")
-    url = reverse("github-login")
+    mock_redis.setex("oauth-state-abc", 300, "http://localhost:3000/ghe")
+    url = reverse("ghe-login")
     res = client.get(url, {"code": "aaaaaaa", "state": "abc"})
     assert res.status_code == 302
-    assert "github-token" in res.cookies
-    assert "github-username" in res.cookies
-    token_cookie = res.cookies["github-token"]
-    username_cookie = res.cookies["github-username"]
+    assert "github_enterprise-token" in res.cookies
+    assert "github_enterprise-username" in res.cookies
+    token_cookie = res.cookies["github_enterprise-token"]
+    username_cookie = res.cookies["github_enterprise-username"]
     cookie_token = decode_token_from_cookie(settings.COOKIE_SECRET, token_cookie.value)
     assert username_cookie.value == "ThiagoCodecov"
     assert username_cookie.get("domain") == ".simple.site"
@@ -269,73 +311,20 @@ def test_get_github_already_with_code_with_email(
     assert owner.service_id == "44376991"
     assert owner.email == "thiago@codecov.io"
     assert owner.private_access is True
-    assert res.url == "http://localhost:3000/gh"
+    assert res.url == "http://localhost:3000/ghe"
 
 
-def test_get_github_already_with_code_is_student(
-    client, mocker, db, mock_redis, settings
-):
-    settings.COOKIES_DOMAIN = ".simple.site"
-
-    async def helper_func(*args, **kwargs):
-        return {
-            "login": "ThiagoCodecov",
-            "id": 44376991,
-            "access_token": "testh04ph89fx0nkd3diauxcw75fyiuo3b86fw4j",
-            "scope": "read:org,repo:status,user:email,write:repo_hook,repo",
-        }
-
-    async def helper_list_teams_func(*args, **kwargs):
-        return [
-            {
-                "email": "hello@codecov.io",
-                "id": "8226205",
-                "name": "Codecov",
-                "username": "codecov",
-            }
-        ]
-
-    async def is_student(*args, **kwargs):
-        return True
-
-    mocker.patch.object(Github, "get_authenticated_user", side_effect=helper_func)
-    mocker.patch.object(Github, "list_teams", side_effect=helper_list_teams_func)
-    mocker.patch.object(Github, "is_student", side_effect=is_student)
-    mocker.patch(
-        "services.task.TaskService.refresh",
-        return_value=mocker.MagicMock(
-            as_tuple=mocker.MagicMock(return_value=("a", "b"))
-        ),
+def test_get_ghe_already_owner_already_exist(client, mocker, db, mock_redis, settings):
+    mock_get_config = mocker.patch(
+        "shared.torngit.github_enterprise.get_config",
+        side_effect=lambda *args: "https://my.githubenterprise.com",
     )
-    mock_redis.setex("oauth-state-abc", 300, "http://localhost:3000/gh")
-    url = reverse("github-login")
-    res = client.get(url, {"code": "aaaaaaa", "state": "abc"})
-    assert res.status_code == 302
-    assert "github-token" in res.cookies
-    assert "github-username" in res.cookies
-    token_cookie = res.cookies["github-token"]
-    username_cookie = res.cookies["github-username"]
-    cookie_token = decode_token_from_cookie(settings.COOKIE_SECRET, token_cookie.value)
-    assert username_cookie.value == "ThiagoCodecov"
-    assert username_cookie.get("domain") == ".simple.site"
-    assert token_cookie.get("domain") == ".simple.site"
-    session = Session.objects.get(token=cookie_token)
-    owner = session.owner
-    owner.refresh_from_db()
-    assert owner.username == "ThiagoCodecov"
-    assert owner.email is None
-    assert owner.service_id == "44376991"
-    assert owner.private_access is True
-    assert res.url == "http://localhost:3000/gh"
-    assert owner.student is True
-
-
-def test_get_github_already_owner_already_exist(
-    client, mocker, db, mock_redis, settings
-):
-    the_bot = OwnerFactory.create(service="github")
+    settings.GITHUB_ENTERPRISE_CLIENT_ID = "3d44be0e772666136a13"
+    the_bot = OwnerFactory.create(service="github_enterprise")
     the_bot.save()
-    owner = OwnerFactory.create(bot=the_bot, service="github", service_id="44376991")
+    owner = OwnerFactory.create(
+        bot=the_bot, service="github_enterprise", service_id="44376991"
+    )
     owner.save()
     old_ownerid = owner.ownerid
     assert owner.bot is not None
@@ -362,23 +351,27 @@ def test_get_github_already_owner_already_exist(
     async def is_student(*args, **kwargs):
         return True
 
-    mocker.patch.object(Github, "get_authenticated_user", side_effect=helper_func)
-    mocker.patch.object(Github, "list_teams", side_effect=helper_list_teams_func)
-    mocker.patch.object(Github, "is_student", side_effect=is_student)
+    mocker.patch.object(
+        GithubEnterprise, "get_authenticated_user", side_effect=helper_func
+    )
+    mocker.patch.object(
+        GithubEnterprise, "list_teams", side_effect=helper_list_teams_func
+    )
+    mocker.patch.object(GithubEnterprise, "is_student", side_effect=is_student)
     mocker.patch(
         "services.task.TaskService.refresh",
         return_value=mocker.MagicMock(
             as_tuple=mocker.MagicMock(return_value=("a", "b"))
         ),
     )
-    url = reverse("github-login")
-    mock_redis.setex("oauth-state-abc", 300, "http://localhost:3000/gh")
+    url = reverse("ghe-login")
+    mock_redis.setex("oauth-state-abc", 300, "http://localhost:3000/ghe")
     res = client.get(url, {"code": "aaaaaaa", "state": "abc"})
     assert res.status_code == 302
-    assert "github-token" in res.cookies
-    assert "github-username" in res.cookies
-    token_cookie = res.cookies["github-token"]
-    username_cookie = res.cookies["github-username"]
+    assert "github_enterprise-token" in res.cookies
+    assert "github_enterprise-username" in res.cookies
+    token_cookie = res.cookies["github_enterprise-token"]
+    username_cookie = res.cookies["github_enterprise-username"]
     cookie_token = decode_token_from_cookie(settings.COOKIE_SECRET, token_cookie.value)
     assert username_cookie.value == "ThiagoCodecov"
     assert username_cookie.get("domain") == ".simple.site"
@@ -390,46 +383,4 @@ def test_get_github_already_owner_already_exist(
     assert owner.bot is None
     assert owner.service_id == "44376991"
     assert owner.private_access is True
-    assert res.url == "http://localhost:3000/gh"
-
-
-@pytest.mark.asyncio
-@override_settings(IS_ENTERPRISE=True)
-async def test__get_teams_info(client, mocker):
-    github = GithubLoginView()
-    repo_service = Github()
-
-    async def helper_api(*args):
-        url: str = args[2]
-        if url.startswith("/user/teams"):
-            match = re.search(r"&page=(\d+)", url)
-            page_number = match.group(1)
-            if page_number == "1":
-                return [dict(name="My team")]
-            elif page_number == "2":
-                return [dict(name="My team in another page")]
-            return []
-        return None
-
-    mocker.patch.object(Github, "api", side_effect=helper_api)
-    result = await github._get_teams_data(repo_service)
-    assert result == [dict(name="My team"), dict(name="My team in another page")]
-
-
-@pytest.mark.asyncio
-@override_settings(IS_ENTERPRISE=True)
-async def test__get_teams_info_fails(client, mocker):
-    github = GithubLoginView()
-    repo_service = Github()
-
-    async def helper_api(*args):
-        raise TorngitClientGeneralError(
-            status_code=500,
-            response_data=dict(error="generic error"),
-            message="generic error",
-        )
-
-    mocker.patch.object(Github, "api", side_effect=helper_api)
-
-    result = await github._get_teams_data(repo_service)
-    assert result == []
+    assert res.url == "http://localhost:3000/ghe"
