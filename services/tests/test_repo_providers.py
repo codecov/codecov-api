@@ -73,7 +73,6 @@ class TestRepoProviderService(InternalAPITest):
         owner = Owner.objects.filter(ownerid=repo.author.ownerid).first()
         assert owner.username == "ThiagoCodecov"
         saved_token = encryptor.decrypt_token(owner.oauth_token)
-        print(saved_token)
         assert saved_token["key"] == "00001023102301"
         assert saved_token["refresh_token"] == "20349230952"
 

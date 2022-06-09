@@ -8,7 +8,6 @@ from shared.encryption.token import encode_token
 from shared.torngit import get
 
 from codecov_auth.models import Owner, Service
-from codecov_auth.views.base import LoginMixin
 from core.models import Repository
 from utils.config import get_config
 from utils.encryption import encryptor
