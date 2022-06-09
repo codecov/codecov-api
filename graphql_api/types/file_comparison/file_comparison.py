@@ -79,3 +79,26 @@ def resolve_segments(file_comparison: FileComparison, info) -> List[Segment]:
     )
 
     return file_comparison.segments
+
+
+@file_comparison_bindable.field("isCriticalFile")
+@sync_to_async
+def resolve_is_critical_file(file_comparison: FileComparison, info) -> bool:
+    if "profiling_summary" in info.context:
+        if "critical_filenames" not in info.context:
+            info.context["critical_filenames"] = set(
+                [
+                    critical_file.name
+                    for critical_file in info.context[
+                        "profiling_summary"
+                    ].critical_files
+                ]
+            )
+
+        base_name = file_comparison.name["base"]
+        head_name = file_comparison.name["head"]
+        critical_filenames = info.context["critical_filenames"]
+
+        return base_name in critical_filenames or head_name in critical_filenames
+
+    return False

@@ -19,6 +19,7 @@ type Repository {
   criticalFiles: [CriticalFile!]!
   graphToken: String
   yaml: String
+  bot: Owner
 }
 
 type PullConnection {
