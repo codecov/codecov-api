@@ -139,6 +139,10 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
             perms_needed,
             protected,
         ) = super().get_deleted_objects(objs, request)
+
+        if request.user and request.user.is_superuser:
+            perms_needed = set()
+
         deleted_objects = ()
         return deleted_objects, model_count, perms_needed, protected
 
