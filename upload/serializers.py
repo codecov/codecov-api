@@ -51,7 +51,7 @@ class OwnerSerializer(serializers.ModelSerializer):
 
 
 class CommitSerializer(serializers.ModelSerializer):
-    author = OwnerSerializer
+    author = OwnerSerializer()
 
     class Meta:
         model = Commit
