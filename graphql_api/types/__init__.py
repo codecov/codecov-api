@@ -8,6 +8,7 @@ from .comparison import comparison, comparison_bindable
 from .coverage_totals import coverage_totals, coverage_totals_bindable
 from .enums import enum_types, enums
 from .file import commit_file, file_bindable
+from .tree_file import tree_file, tree_file_bindable
 from .file_comparison import file_comparison, file_comparison_bindable
 from .line_comparison import line_comparison, line_comparison_bindable
 from .me import me, me_bindable
@@ -43,6 +44,7 @@ types = [
     session,
     mutation,
     errors,
+    tree_file,
     coverage_totals,
     upload,
     commit_file,
@@ -67,6 +69,7 @@ bindables = [
     file_bindable,
     upload_bindable,
     upload_error_bindable,
+    tree_file_bindable,
     datetime_scalar,
     profile_bindable,
     *mutation_resolvers,

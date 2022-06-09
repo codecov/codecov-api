@@ -1,4 +1,5 @@
 type Branch {
   name: String!
   head: Commit!
+  files(path: String): [TreeFile!]!
 }

@@ -1,0 +1,6 @@
+type TreeFile {
+    name: String!
+    type: String!
+    filePath: String
+    percentCovered: Float!
+}
