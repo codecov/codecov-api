@@ -1,13 +1,16 @@
 from dataclasses import dataclass
+from typing import List, Union
+
 from shared.reports.resources import Report
-from shared.reports.types import ReportFileSummary
-from typing import List
+
 
 @dataclass
 class FilteredFilePath:
     """Class for keeping track of paths filtered by ."""
+
     full_path: str
     stripped_path: str
+
 
 @dataclass
 class TreeFile:
@@ -18,11 +21,13 @@ class TreeFile:
     coverage: float
     full_path: str
 
+
 @dataclass
 class Dir:
     kind: str
     name: str
     child_paths: list
+
 
 @dataclass
 class TreeDir:
@@ -33,7 +38,10 @@ class TreeDir:
     coverage: float
     children: list
 
-def path_tree(paths: List[FilteredFilePath], commit_report: Report):
+
+def path_tree(
+    paths: List[FilteredFilePath], commit_report: Report
+) -> List[Union[TreeFile, TreeDir]]:
     file_dir_tree = {}
 
     for path in paths:
@@ -86,12 +94,13 @@ def path_tree(paths: List[FilteredFilePath], commit_report: Report):
                     name=item.name,
                     hits=hits,
                     lines=lines,
-                    coverage=(hits/lines)*100,
+                    coverage=(hits / lines) * 100,
                     children=children,
                 )
             )
 
     return res
+
 
 def filter_files_by_path_prefix(
     report_file_paths: list, path_prefix: str

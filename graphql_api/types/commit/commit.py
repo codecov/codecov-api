@@ -1,6 +1,6 @@
+import string
 from typing import List
 
-import string
 import yaml
 from ariadne import ObjectType
 from asgiref.sync import sync_to_async
@@ -10,8 +10,8 @@ from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.owner import OwnerLoader
 from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.enums import OrderingDirection
+from services.path import filter_files_by_path_prefix, path_tree
 from services.profiling import CriticalFile, ProfilingSummary
-from services.path import path_tree, filter_files_by_path_prefix
 
 commit_bindable = ObjectType("Commit")
 

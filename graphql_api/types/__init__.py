@@ -13,13 +13,13 @@ from .line_comparison import line_comparison, line_comparison_bindable
 from .me import me, me_bindable
 from .mutation import mutation, mutation_resolvers
 from .owner import owner, owner_bindable
+from .path_contents import path_content, path_content_bindable
 from .profile import profile, profile_bindable
 from .pull import pull, pull_bindable
 from .query import query, query_bindable
 from .repository import repository, repository_bindable
 from .segment_comparison import segment_comparison, segment_comparison_bindable
 from .session import session, session_bindable
-from .path_contents import path_content, path_content_bindable
 from .upload import upload, upload_bindable, upload_error_bindable
 from .user import user, user_bindable
 
