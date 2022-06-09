@@ -52,7 +52,7 @@ class OwnerSerializer(serializers.ModelSerializer):
 
 class CommitSerializer(serializers.ModelSerializer):
     author = OwnerSerializer
-    
+
     class Meta:
         model = Commit
         read_only_fields = (
