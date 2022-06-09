@@ -18,7 +18,7 @@ class RepositoryQuerySetTests(TestCase):
 
         connections = async_to_sync(queryset_to_connection)(
             Repository.objects.all(),
-            ordering=RepositoryOrdering.NAME.value,
+            ordering=(RepositoryOrdering.NAME.value, RepositoryOrdering.ID.value),
             ordering_direction=OrderingDirection.ASC,
         )
         repos = [edge["node"] for edge in connections["edges"]]
@@ -27,7 +27,7 @@ class RepositoryQuerySetTests(TestCase):
 
         connections = async_to_sync(queryset_to_connection)(
             Repository.objects.all(),
-            ordering=RepositoryOrdering.NAME.value,
+            ordering=(RepositoryOrdering.NAME.value, RepositoryOrdering.ID.value),
             ordering_direction=OrderingDirection.DESC,
         )
         repos = [edge["node"] for edge in connections["edges"]]
@@ -43,7 +43,7 @@ class RepositoryQuerySetTests(TestCase):
 
         connections = async_to_sync(queryset_to_connection)(
             Repository.objects.all(),
-            ordering=RepositoryOrdering.NAME,
+            ordering=(RepositoryOrdering.NAME,),
             ordering_direction=OrderingDirection.ASC,
         )
         repos = [edge["node"] for edge in connections["edges"]]

@@ -63,7 +63,7 @@ async def resolve_list_uploads(commit, info, **kwargs):
     command = info.context["executor"].get_command("commit")
     queryset = await command.get_uploads_of_commit(commit)
     return await queryset_to_connection(
-        queryset, ordering="id", ordering_direction=OrderingDirection.ASC, **kwargs
+        queryset, ordering=("id",), ordering_direction=OrderingDirection.ASC, **kwargs
     )
 
 

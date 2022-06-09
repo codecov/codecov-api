@@ -234,9 +234,9 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
         assert pull == {
             "commits": {
                 "edges": [
-                    {"node": {"commitid": "33333"}},
-                    {"node": {"commitid": "22222"}},
                     {"node": {"commitid": "11111"}},
+                    {"node": {"commitid": "22222"}},
+                    {"node": {"commitid": "33333"}},
                 ],
                 "totalCount": 3,
             }

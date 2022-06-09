@@ -3,6 +3,7 @@ from os import sync
 
 from ariadne import ObjectType
 
+from core.models import Commit
 from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.owner import OwnerLoader
 from graphql_api.helpers.connection import queryset_to_connection
@@ -77,7 +78,7 @@ async def resolve_commits(pull, info, **kwargs):
 
     return await queryset_to_connection(
         queryset,
-        ordering="updatestamp",
+        ordering=("timestamp",),
         ordering_direction=OrderingDirection.DESC,
         **kwargs,
     )
