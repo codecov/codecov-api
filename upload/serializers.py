@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from codecov_auth.models import Owner
 from core.models import Commit
 from reports.models import ReportSession
 from services.archive import ArchiveService
@@ -35,11 +36,28 @@ class UploadSerializer(serializers.ModelSerializer):
         model = ReportSession
 
 
+class OwnerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Owner
+        fields = (
+            "avatar_url",
+            "service",
+            "username",
+            "name",
+            "ownerid",
+            "integration_id",
+        )
+        read_only_fields = fields
+
+
 class CommitSerializer(serializers.ModelSerializer):
+    author = OwnerSerializer
+    
     class Meta:
         model = Commit
         read_only_fields = (
             "message",
+            "author",
             "timestamp",
             "ci_passed",
             "state",
