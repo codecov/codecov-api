@@ -15,6 +15,7 @@ class FilteredFilePath:
 @dataclass
 class TreeFile:
     """Class for keeping track of files in a path_tree"""
+
     kind: str
     name: str
     hits: int
@@ -23,10 +24,10 @@ class TreeFile:
     full_path: str
 
 
-
 @dataclass
 class TreeDir:
     """Class for keeping track of directory in a path_tree"""
+
     kind: str
     name: str
     hits: int
@@ -38,6 +39,7 @@ class TreeDir:
 @dataclass
 class Dir:
     """Class for keeping track of an object containing files and directories"""
+
     kind: str
     name: str
     child_paths: list
