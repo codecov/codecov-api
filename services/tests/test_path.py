@@ -20,6 +20,8 @@ file_data = [
     [0, 2, 1, 1, 0, "50.00000", 0, 0, 0, 0, 0, 0, 0],
 ]
 
+# I wrote this one to have different data per file
+#  so the totals aren't super obivous
 file_data2 = [
     2,
     [0, 10, 3, 2, 0, "30.00000", 0, 0, 0, 0, 0, 0, 0],
@@ -27,8 +29,7 @@ file_data2 = [
     [0, 2, 1, 1, 0, "50.00000", 0, 0, 0, 0, 0, 0, 0],
 ]
 
-# Add a test when there is 1 file and 1 folder w/ a nested file
-# Add a test when there is 1 file, 1 folder w/ a nested file and subfolder, with 2 nested files
+
 class TestPath(TestCase):
     def test_path_tree_with_one_path(self):
         files = {"file.py": file_data}

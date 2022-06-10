@@ -13,14 +13,14 @@ def resolve_name(data: Union[TreeFile, TreeDir], info) -> str:
 
 
 @path_content_bindable.field("filePath")
-def resolve_(data: Union[TreeFile, TreeDir], info) -> str:
+def resolve_file_path(data: Union[TreeFile, TreeDir], info) -> str:
     if data.kind == "file":
         return data.full_path
     return None
 
 
 @path_content_bindable.field("percentCovered")
-def resolve_content(data: Union[TreeFile, TreeDir], info) -> float:
+def resolve_percent_covered(data: Union[TreeFile, TreeDir], info) -> float:
     return data.coverage
 
 

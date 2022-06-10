@@ -108,6 +108,8 @@ async def resolve_path_contents(head_commit: Commit, info, path: string):
     """
     # TODO: Might need to add reports here filtered by flags in the future
     commit_report = head_commit.full_report
+    if not commit_report:
+        raise Exception("No reports found in the head commit")
     report_files = commit_report.files
 
     filtered_file_paths = filter_files_by_path_prefix(report_files, path)
