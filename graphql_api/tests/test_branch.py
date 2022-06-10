@@ -143,9 +143,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
         res = self.gql_request(query_files, variables=variables, with_errors=True)
         assert res["errors"] is not None
-        assert res["errors"][0]["message"] == "INTERNAL SERVER ERROR"
-        assert res["errors"][0]["type"] == "ServerError"
-        assert res["errors"][0].get("extensions") is None
+        assert res["errors"][0]["message"] == "No reports found in the head commit"
 
     @patch("core.models.ReportService.build_report_from_commit")
     def test_fetch_files_with_files(self, report_mock):
