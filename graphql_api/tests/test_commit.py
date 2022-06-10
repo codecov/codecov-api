@@ -325,13 +325,6 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         [upload] = paginate_connection(commit["uploads"])
         errors = paginate_connection(upload["errors"])
 
-        print(
-            [
-                {"errorCode": UploadErrorEnum.REPORT_EXPIRED.name},
-                {"errorCode": UploadErrorEnum.FILE_NOT_IN_STORAGE.name},
-            ]
-        )
-
         assert errors == [
             {"errorCode": UploadErrorEnum.REPORT_EXPIRED.name},
             {"errorCode": UploadErrorEnum.FILE_NOT_IN_STORAGE.name},
