@@ -8,9 +8,20 @@ class RepositoryOrdering(enum.Enum):
     NAME = "name"
 
 
+class PathContentsValue(enum.Enum):
+    CONTENT_NAME = "name"
+    COVERAGE = "coverage"
+
+
 class OrderingDirection(enum.Enum):
     ASC = "ascending"
     DESC = "descending"
+
+
+class PathContentsFilters(enum.Enum):
+    SEARCH_VALUE = "searchValue"
+    ORDERING_DIRECTION = "orderingDirection"
+    ORDERING_VALUE = "orderingValue"
 
 
 class CoverageLine(enum.Enum):

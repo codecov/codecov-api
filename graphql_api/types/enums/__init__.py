@@ -3,6 +3,8 @@ from .enums import (
     CoverageLine,
     GoalOnboarding,
     OrderingDirection,
+    PathContentsFilters,
+    PathContentsValue,
     PullRequestState,
     RepositoryOrdering,
     TypeProjectOnboarding,

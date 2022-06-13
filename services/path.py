@@ -1,7 +1,10 @@
+import os.path
 from dataclasses import dataclass
 from typing import List, Union
 
 from shared.reports.resources import Report
+
+from graphql_api.types.enums import PathContentsFilters
 
 
 @dataclass
@@ -45,7 +48,42 @@ class Dir:
     child_paths: list
 
 
-def path_tree(
+def build_tree(
+    report_files: list, path: str, filters: PathContentsFilters, commit_report: Report
+) -> List[Union[TreeFile, TreeDir]]:
+    tree = []
+    search_value = filters.get(PathContentsFilters.SEARCH_VALUE.value)
+    if search_value:
+        tree = _search_tree(
+            files=report_files, search_value=search_value, commit_report=commit_report
+        )
+    else:
+        tree = _path_tree(files=report_files, path=path, commit_report=commit_report)
+
+    return tree
+
+
+def _search_tree(
+    files: list, search_value: str, commit_report: Report
+) -> List[TreeFile]:
+    filtered_paths_by_search = _filtered_paths_by_search(
+        report_file_paths=files, search_value=search_value
+    )
+    return _build_search_tree(
+        paths=filtered_paths_by_search, commit_report=commit_report
+    )
+
+
+def _path_tree(
+    files: list, path: str, commit_report: Report
+) -> List[Union[TreeFile, TreeDir]]:
+    filtered_files_by_path = _filter_files_by_path(
+        report_file_paths=files, path_prefix=path
+    )
+    return _build_path_tree(paths=filtered_files_by_path, commit_report=commit_report)
+
+
+def _build_path_tree(
     paths: List[FilteredFilePath], commit_report: Report
 ) -> List[Union[TreeFile, TreeDir]]:
     file_dir_tree = {}
@@ -85,7 +123,7 @@ def path_tree(
             res.append(item)
         else:
             # recurse
-            children = path_tree(item.child_paths, commit_report)
+            children = _build_path_tree(item.child_paths, commit_report)
 
             # sum up hits/lines from children
             hits, lines = (0, 0)
@@ -108,7 +146,26 @@ def path_tree(
     return res
 
 
-def filter_files_by_path_prefix(
+def _build_search_tree(paths: List[str], commit_report: Report) -> List[TreeFile]:
+    search_tree = []
+    for path in paths:
+        totals = commit_report.get(path).totals
+        path_name = os.path.split(path)[1]
+        search_tree.append(
+            TreeFile(
+                name=path_name,
+                kind="file",
+                hits=totals.hits,
+                lines=totals.lines,
+                coverage=totals.coverage,
+                full_path=path,
+            )
+        )
+    return search_tree
+
+
+# Utils to filter paths by conditions
+def _filter_files_by_path(
     report_file_paths: list, path_prefix: str
 ) -> List[FilteredFilePath]:
     filtered_files = []
@@ -125,3 +182,7 @@ def filter_files_by_path_prefix(
             )
 
     return filtered_files
+
+
+def _filtered_paths_by_search(report_file_paths, search_value) -> List[str]:
+    return [path for path in report_file_paths if search_value in path]
