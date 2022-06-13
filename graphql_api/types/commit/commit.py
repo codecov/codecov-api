@@ -1,5 +1,5 @@
 import string
-from typing import List
+from typing import List, Union
 
 import yaml
 from ariadne import ObjectType
@@ -10,7 +10,7 @@ from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.owner import OwnerLoader
 from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.enums import OrderingDirection
-from services.path import filter_files_by_path_prefix, path_tree
+from services.path import TreeDir, TreeFile, filter_files_by_path_prefix, path_tree
 from services.profiling import CriticalFile, ProfilingSummary
 
 commit_bindable = ObjectType("Commit")
@@ -99,7 +99,10 @@ def resolve_critical_files(commit: Commit, info, **kwargs) -> List[CriticalFile]
 
 
 @commit_bindable.field("pathContents")
-async def resolve_path_contents(head_commit: Commit, info, path: string):
+@sync_to_async
+def resolve_path_contents(
+    head_commit: Commit, info, path: string
+) -> List[Union[TreeFile, TreeDir]]:
     """
     The file directory tree is a list of all the files and directories
     extracted from the commit report of the latest, head commit.
