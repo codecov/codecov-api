@@ -3,6 +3,7 @@ type Repository {
   active: Boolean!
   private: Boolean!
   coverage: Float
+  coverageSha: String
   latestCommitAt: DateTime
   updatedAt: DateTime
   author: Owner!
@@ -17,6 +18,8 @@ type Repository {
   profilingToken: String
   criticalFiles: [CriticalFile!]!
   graphToken: String
+  yaml: String
+  bot: Owner
 }
 
 type PullConnection {

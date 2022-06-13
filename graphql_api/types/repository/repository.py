@@ -1,5 +1,6 @@
 from typing import List
 
+import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
 from asgiref.sync import sync_to_async
 
@@ -17,9 +18,18 @@ repository_bindable.set_alias("updatedAt", "updatestamp")
 # latest_commit_at and coverage have their NULL value defaulted to -1/an old date
 # so the NULL would end up last in the queryset as we do not have control over
 # the order_by call. The true value of is under true_*; which would actually contain NULL
-# see with_cache_latest_commit_at()/with_cache_coverage() from core/managers.py
+# see with_cache_latest_commit_at() from core/managers.py
 repository_bindable.set_alias("latestCommitAt", "true_latest_commit_at")
-repository_bindable.set_alias("coverage", "true_coverage")
+
+
+@repository_bindable.field("coverage")
+def resolve_coverage(repository: Repository, info):
+    return repository.recent_coverage
+
+
+@repository_bindable.field("coverageSha")
+def resolve_coverage_sha(repository: Repository, info):
+    return repository.coverage_sha
 
 
 @repository_bindable.field("branch")
@@ -129,3 +139,16 @@ def resolve_critical_files(repository: Repository, info) -> List[CriticalFile]:
 @repository_bindable.field("graphToken")
 def resolve_graph_token(repository, info):
     return repository.image_token
+
+
+@repository_bindable.field("yaml")
+def resolve_repo_yaml(repository, info):
+    if repository.yaml is None:
+        return None
+    return yaml.dump(repository.yaml)
+
+
+@repository_bindable.field("bot")
+@sync_to_async
+def resolve_repo_bot(repository, info):
+    return repository.bot
