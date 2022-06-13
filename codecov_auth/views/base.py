@@ -130,22 +130,7 @@ class LoginMixin(object):
             dict(username=org["username"], id=str(org["id"])) for org in user_orgs
         ]
 
-        if settings.IS_ENTERPRISE and get_config(self.service, "organizations"):
-            orgs_in_settings = set(get_config(self.service, "organizations"))
-            orgs_in_user = set(org["username"] for org in formatted_orgs)
-            if not (orgs_in_settings & orgs_in_user):
-                # Change for core PermissionDenied exception
-                raise PermissionDenied(
-                    "You must be a member of an organization listed in the Codecov Enterprise setup."
-                )
-            if get_config(self.service, "teams") and "teams" in user_dict:
-                teams_in_settings = set(get_config(self.service, "teams"))
-                teams_in_user = set([team["name"] for team in user_dict["teams"]])
-                if not (teams_in_settings & teams_in_user):
-                    raise PermissionDenied(
-                        "You must be a member of an allowed team in your organization."
-                    )
-
+        self._check_enterprise_organizations_membership(user_dict, formatted_orgs)
         upserted_orgs = []
         for org in formatted_orgs:
             upserted_orgs.append(self.get_or_create_org(org))
@@ -222,6 +207,23 @@ class LoginMixin(object):
             secure=True,
             samesite=settings.COOKIE_SAME_SITE,
         )
+
+    def _check_enterprise_organizations_membership(self, user_dict, orgs):
+        """Checks if a user belongs to the restricted organizations (or teams if GitHub) allowed in settings."""
+        if settings.IS_ENTERPRISE and get_config(self.service, "organizations"):
+            orgs_in_settings = set(get_config(self.service, "organizations"))
+            orgs_in_user = set(org["username"] for org in orgs)
+            if not (orgs_in_settings & orgs_in_user):
+                raise PermissionDenied(
+                    "You must be a member of an organization listed in the Codecov Enterprise setup."
+                )
+            if get_config(self.service, "teams") and "teams" in user_dict:
+                teams_in_settings = set(get_config(self.service, "teams"))
+                teams_in_user = set([team["name"] for team in user_dict["teams"]])
+                if not (teams_in_settings & teams_in_user):
+                    raise PermissionDenied(
+                        "You must be a member of an allowed team in your organization."
+                    )
 
     def _check_user_count_limitations(self, login_data):
         if not settings.IS_ENTERPRISE:
@@ -326,7 +328,10 @@ class LoginMixin(object):
             )
 
     def retrieve_marketing_tags_from_cookie(self) -> dict:
-        cookie_data = self.request.COOKIES.get("_marketing_tags", "")
-        params_as_dict = parse_qs(cookie_data)
-        filtered_params = self._get_utm_params(params_as_dict)
-        return {k: v[0] for k, v in filtered_params.items()}
+        if not settings.IS_ENTERPRISE:
+            cookie_data = self.request.COOKIES.get("_marketing_tags", "")
+            params_as_dict = parse_qs(cookie_data)
+            filtered_params = self._get_utm_params(params_as_dict)
+            return {k: v[0] for k, v in filtered_params.items()}
+        else:
+            return {}

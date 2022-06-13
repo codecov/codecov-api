@@ -117,6 +117,12 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
         form.base_fields["plan"].widget = Select(
             choices=BLANK_CHOICE_DASH + PLANS_CHOICES
         )
+
+        is_superuser = request.user.is_superuser
+
+        if not is_superuser:
+            form.base_fields["staff"].disabled = True
+
         return form
 
     def has_add_permission(self, _, obj=None):
