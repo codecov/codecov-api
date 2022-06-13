@@ -1,12 +1,10 @@
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
-from django.test import TransactionTestCase
-from shared.reports.types import LineSession
+from django.test import TransactionTestCase, override_settings
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import BranchFactory, CommitFactory, RepositoryFactory
-from reports.tests.factories import CommitReportFactory
 
 from .helper import GraphQLTestHelper
 
@@ -127,6 +125,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             {"node": {"name": "master"}},
         ]
 
+    @override_settings(DEBUG=True)
     def test_fetch_path_contents_with_no_report(self):
         commit_without_report = CommitFactory(repository=self.repo, report=None)
         branch = BranchFactory(

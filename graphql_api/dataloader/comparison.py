@@ -61,7 +61,9 @@ class ComparisonLoader(BaseLoader):
                     compare_commit=commits_by_commitid[compare_commitid],
                 )
                 for (base_commitid, compare_commitid) in missing_keys
-                if commits_by_commitid[base_commitid]
+                if base_commitid
+                and commits_by_commitid[base_commitid]
+                and compare_commitid
                 and commits_by_commitid[compare_commitid]
             ]
         )

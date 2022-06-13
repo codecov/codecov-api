@@ -40,6 +40,9 @@ def resolve_base(pull, info):
 
 @pull_bindable.field("compareWithBase")
 async def resolve_compare_with_base(pull, info, **kwargs):
+    if not pull.compared_to or not pull.head:
+        return None
+
     comparison_loader = ComparisonLoader.loader(info, pull.repository_id)
     comparison = await comparison_loader.load((pull.compared_to, pull.head))
 
