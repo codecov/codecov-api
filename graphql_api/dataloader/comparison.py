@@ -1,8 +1,9 @@
 from asgiref.sync import sync_to_async
+from django.db.models import Prefetch
 
 from compare.models import CommitComparison
-from core.commands import repository
 from core.models import Commit
+from reports.models import CommitReport
 from services.comparison import recalculate_comparison
 
 from .loader import BaseLoader
@@ -21,6 +22,11 @@ class ComparisonLoader(BaseLoader):
         return super().__init__(*args, **kwargs)
 
     def batch_queryset(self, keys):
+        # prefetch the CommitReport with the ReportLevelTotals
+        reports_prefetch = Prefetch(
+            "reports", queryset=CommitReport.objects.select_related("reportleveltotals")
+        )
+
         return CommitComparison.objects.raw(
             f"""
             select
@@ -35,7 +41,16 @@ class ComparisonLoader(BaseLoader):
             where (base_commit.commitid, compare_commit.commitid) in %s
         """,
             [tuple(keys)],
-        ).prefetch_related("base_commit", "compare_commit")
+        ).prefetch_related(
+            Prefetch(
+                "base_commit",
+                queryset=Commit.objects.prefetch_related(reports_prefetch),
+            ),
+            Prefetch(
+                "compare_commit",
+                queryset=Commit.objects.prefetch_related(reports_prefetch),
+            ),
+        )
 
     @sync_to_async
     def batch_load_fn(self, keys):
