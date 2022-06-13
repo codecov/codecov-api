@@ -1,4 +1,5 @@
-from typing import List
+import string
+from typing import List, Union
 
 import yaml
 from ariadne import ObjectType
@@ -9,6 +10,7 @@ from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.owner import OwnerLoader
 from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.enums import OrderingDirection
+from services.path import TreeDir, TreeFile, filter_files_by_path_prefix, path_tree
 from services.profiling import CriticalFile, ProfilingSummary
 
 commit_bindable = ObjectType("Commit")
@@ -94,3 +96,24 @@ def resolve_critical_files(commit: Commit, info, **kwargs) -> List[CriticalFile]
     """
     profiling_summary = ProfilingSummary(commit.repository, commit_sha=commit.commitid)
     return profiling_summary.critical_files
+
+
+@commit_bindable.field("pathContents")
+@sync_to_async
+def resolve_path_contents(
+    head_commit: Commit, info, path: string
+) -> List[Union[TreeFile, TreeDir]]:
+    """
+    The file directory tree is a list of all the files and directories
+    extracted from the commit report of the latest, head commit.
+    The is resolver results in a list that represent the tree with files
+    and nested directories.
+    """
+    # TODO: Might need to add reports here filtered by flags in the future
+    commit_report = head_commit.full_report
+    if not commit_report:
+        raise Exception("No reports found in the head commit")
+    report_files = commit_report.files
+
+    filtered_file_paths = filter_files_by_path_prefix(report_files, path)
+    return path_tree(filtered_file_paths, commit_report)

@@ -13,6 +13,7 @@ from .line_comparison import line_comparison, line_comparison_bindable
 from .me import me, me_bindable
 from .mutation import mutation, mutation_resolvers
 from .owner import owner, owner_bindable
+from .path_contents import path_content, path_content_bindable
 from .profile import profile, profile_bindable
 from .pull import pull, pull_bindable
 from .query import query, query_bindable
@@ -43,6 +44,7 @@ types = [
     session,
     mutation,
     errors,
+    path_content,
     coverage_totals,
     upload,
     commit_file,
@@ -67,6 +69,7 @@ bindables = [
     file_bindable,
     upload_bindable,
     upload_error_bindable,
+    path_content_bindable,
     datetime_scalar,
     profile_bindable,
     *mutation_resolvers,
