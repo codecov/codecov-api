@@ -4,9 +4,9 @@ from django.test import TestCase
 
 from services.archive import SerializableReport
 from services.path import (
-    FilteredFilePath,
     Dir,
     File,
+    FilteredFilePath,
     _build_path_list,
     _build_search_list,
     _filter_files_by_path,
@@ -36,12 +36,14 @@ file_data2 = [
     [0, 2, 1, 1, 0, "50.00000", 0, 0, 0, 0, 0, 0, 0],
 ]
 
+
 class MockOrderValue(object):
     def __init__(self, value):
         self.value = value
 
     def __getitem__(self, key):
         return getattr(self, key)
+
 
 class TestPath(TestCase):
     def test_path_contents_without_filters_or_path(self):
@@ -160,7 +162,7 @@ class TestPath(TestCase):
         filters = {
             "ordering": {
                 "direction": MockOrderValue("ascending"),
-                "parameter": MockOrderValue("name")
+                "parameter": MockOrderValue("name"),
             }
         }
         tree = path_contents(files_list, path, filters, commit_report)
@@ -192,7 +194,7 @@ class TestPath(TestCase):
         filters = {
             "ordering": {
                 "direction": MockOrderValue("descending"),
-                "parameter": MockOrderValue("name")
+                "parameter": MockOrderValue("name"),
             }
         }
         tree = path_contents(files_list, path, filters, commit_report)
@@ -224,7 +226,7 @@ class TestPath(TestCase):
         filters = {
             "ordering": {
                 "direction": MockOrderValue("descending"),
-                "parameter": MockOrderValue("coverage")
+                "parameter": MockOrderValue("coverage"),
             }
         }
         tree = path_contents(files_list, path, filters, commit_report)

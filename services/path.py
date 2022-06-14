@@ -6,7 +6,6 @@ from typing import List, Union
 from shared.reports.resources import Report
 
 
-
 @dataclass
 class FilteredFilePath:
     """Class for keeping track of paths filtered by the path prefix."""
@@ -38,6 +37,7 @@ class Dir:
     coverage: float
     children: list
 
+
 @dataclass
 class Group:
     """Class for keeping track of an object containing files and directories"""
@@ -61,9 +61,7 @@ def path_contents(
     return apply_filters(tree=tree, filters=filters)
 
 
-def apply_filters(
-    tree: List[Union[File, Dir]], filters
-) -> List[Union[File, Dir]]:
+def apply_filters(tree: List[Union[File, Dir]], filters) -> List[Union[File, Dir]]:
     filter_parameter = filters.get("ordering", {}).get("parameter")
     filter_direction = filters.get("ordering", {}).get("direction")
     if filter_parameter and filter_direction:
@@ -79,9 +77,7 @@ def apply_filters(
     return tree
 
 
-def search_list(
-    files: list, search_value: str, commit_report: Report
-) -> List[File]:
+def search_list(files: list, search_value: str, commit_report: Report) -> List[File]:
     filtered_paths_by_search = _filtered_files_by_search(
         report_file_paths=files, search_value=search_value
     )
@@ -90,9 +86,7 @@ def search_list(
     )
 
 
-def path_list(
-    files: list, path: str, commit_report: Report
-) -> List[Union[File, Dir]]:
+def path_list(files: list, path: str, commit_report: Report) -> List[Union[File, Dir]]:
     filtered_files_by_path = _filter_files_by_path(
         report_file_paths=files, path_prefix=path
     )
