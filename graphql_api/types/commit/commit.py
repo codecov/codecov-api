@@ -9,7 +9,7 @@ from core.models import Commit
 from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.owner import OwnerLoader
 from graphql_api.helpers.connection import queryset_to_connection
-from graphql_api.types.enums import OrderingDirection, PathContentsFilters
+from graphql_api.types.enums import OrderingDirection
 from services.path import TreeDir, TreeFile, build_tree
 from services.profiling import CriticalFile, ProfilingSummary
 
@@ -101,7 +101,7 @@ def resolve_critical_files(commit: Commit, info, **kwargs) -> List[CriticalFile]
 @commit_bindable.field("pathContents")
 @sync_to_async
 def resolve_path_contents(
-    head_commit: Commit, info, path: string, filters: PathContentsFilters
+    head_commit: Commit, info, path: string, filters
 ) -> List[Union[TreeFile, TreeDir]]:
     """
     The file directory tree is a list of all the files and directories

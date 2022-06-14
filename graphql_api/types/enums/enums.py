@@ -1,6 +1,11 @@
 import enum
 
 
+class PathContentsParameter(enum.Enum):
+    NAME = "name"
+    COVERAGE = "coverage"
+
+
 class RepositoryOrdering(enum.Enum):
     COMMIT_DATE = "latest_commit_at"
     COVERAGE = "coverage"
@@ -8,20 +13,9 @@ class RepositoryOrdering(enum.Enum):
     NAME = "name"
 
 
-class PathContentsValue(enum.Enum):
-    CONTENT_NAME = "name"
-    COVERAGE = "coverage"
-
-
 class OrderingDirection(enum.Enum):
     ASC = "ascending"
     DESC = "descending"
-
-
-class PathContentsFilters(enum.Enum):
-    SEARCH_VALUE = "searchValue"
-    ORDERING_DIRECTION = "orderingDirection"
-    ORDERING_PARAMETER = "orderingParameter"
 
 
 class CoverageLine(enum.Enum):

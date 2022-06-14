@@ -1,10 +1,15 @@
+import enum
 import os.path
 from dataclasses import dataclass
 from typing import List, Union
 
 from shared.reports.resources import Report
 
-from graphql_api.types.enums import OrderingDirection, PathContentsFilters
+
+class PathContentsFilters(enum.Enum):
+    SEARCH_VALUE = "searchValue"
+    ORDERING_DIRECTION = "orderingDirection"
+    ORDERING_PARAMETER = "orderingParameter"
 
 
 @dataclass
@@ -55,7 +60,7 @@ class Dir:
 
 
 def build_tree(
-    report_files: list, path: str, filters: PathContentsFilters, commit_report: Report
+    report_files: list, path: str, filters, commit_report: Report
 ) -> List[Union[TreeFile, TreeDir]]:
     tree = []
     search_value = filters.get(PathContentsFilters.SEARCH_VALUE.value)
@@ -65,28 +70,22 @@ def build_tree(
         )
     else:
         tree = path_tree(files=report_files, path=path, commit_report=commit_report)
-
-    print(tree)
     return apply_filters(tree=tree, filters=filters)
 
 
 def apply_filters(
-    tree: List[Union[TreeFile, TreeDir]], filters: PathContentsFilters
+    tree: List[Union[TreeFile, TreeDir]], filters
 ) -> List[Union[TreeFile, TreeDir]]:
     filter_parameter = filters.get(PathContentsFilters.ORDERING_PARAMETER.value)
     filter_direction = filters.get(PathContentsFilters.ORDERING_DIRECTION.value)
     if filter_parameter and filter_direction:
         parameter_value = filter_parameter.value
         direction_value = filter_direction.value
-        # Used to cast the sorting type
-        sorting_type = type(parameter_value)
-        sorting_direction = (
-            True if direction_value == OrderingDirection.DESC.value else False
-        )
+        is_reverse = True if direction_value == "descending" else False
         tree = sorted(
             tree,
-            key=lambda x: sorting_type(x[parameter_value]),
-            reverse=sorting_direction,
+            key=lambda x: x[parameter_value],
+            reverse=is_reverse,
         )
 
     return tree
@@ -95,7 +94,7 @@ def apply_filters(
 def search_tree(
     files: list, search_value: str, commit_report: Report
 ) -> List[TreeFile]:
-    filtered_paths_by_search = _filtered_paths_by_search(
+    filtered_paths_by_search = _filtered_files_by_search(
         report_file_paths=files, search_value=search_value
     )
     return _build_search_tree(
@@ -129,7 +128,7 @@ def _build_path_tree(
                 kind="file",
                 hits=totals.hits,
                 lines=totals.lines,
-                coverage=totals.coverage,
+                coverage=float(totals.coverage),
                 full_path=full_path,
             )
         else:
@@ -213,5 +212,5 @@ def _filter_files_by_path(
     return filtered_files
 
 
-def _filtered_paths_by_search(report_file_paths, search_value) -> List[str]:
+def _filtered_files_by_search(report_file_paths, search_value) -> List[str]:
     return [path for path in report_file_paths if search_value in path]

@@ -1,5 +1,5 @@
 input PathContentsFilters {
   searchValue: String
   orderingDirection: OrderingDirection
-  orderingParameter: PathContentsValue
+  orderingParameter: PathContentsParameter
 }
