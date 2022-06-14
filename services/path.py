@@ -6,11 +6,6 @@ from typing import List, Union
 from shared.reports.resources import Report
 
 
-class PathContentsFilters(enum.Enum):
-    SEARCH_VALUE = "searchValue"
-    ORDERING_DIRECTION = "orderingDirection"
-    ORDERING_PARAMETER = "orderingParameter"
-
 
 @dataclass
 class FilteredFilePath:
@@ -21,8 +16,8 @@ class FilteredFilePath:
 
 
 @dataclass
-class TreeFile:
-    """Class for keeping track of files in a path_tree"""
+class File:
+    """Class for keeping track of files in a list of paths"""
 
     kind: str
     name: str
@@ -31,13 +26,10 @@ class TreeFile:
     coverage: float
     full_path: str
 
-    def __getitem__(self, item):
-        return getattr(self, item)
-
 
 @dataclass
-class TreeDir:
-    """Class for keeping track of directory in a path_tree"""
+class Dir:
+    """Class for keeping track of directory in a list of paths"""
 
     kind: str
     name: str
@@ -46,12 +38,8 @@ class TreeDir:
     coverage: float
     children: list
 
-    def __getitem__(self, item):
-        return getattr(self, item)
-
-
 @dataclass
-class Dir:
+class Group:
     """Class for keeping track of an object containing files and directories"""
 
     kind: str
@@ -59,61 +47,61 @@ class Dir:
     child_paths: list
 
 
-def build_tree(
+def path_contents(
     report_files: list, path: str, filters, commit_report: Report
-) -> List[Union[TreeFile, TreeDir]]:
+) -> List[Union[File, Dir]]:
     tree = []
-    search_value = filters.get(PathContentsFilters.SEARCH_VALUE.value)
+    search_value = filters.get("searchValue")
     if search_value:
-        tree = search_tree(
+        tree = search_list(
             files=report_files, search_value=search_value, commit_report=commit_report
         )
     else:
-        tree = path_tree(files=report_files, path=path, commit_report=commit_report)
+        tree = path_list(files=report_files, path=path, commit_report=commit_report)
     return apply_filters(tree=tree, filters=filters)
 
 
 def apply_filters(
-    tree: List[Union[TreeFile, TreeDir]], filters
-) -> List[Union[TreeFile, TreeDir]]:
-    filter_parameter = filters.get(PathContentsFilters.ORDERING_PARAMETER.value)
-    filter_direction = filters.get(PathContentsFilters.ORDERING_DIRECTION.value)
+    tree: List[Union[File, Dir]], filters
+) -> List[Union[File, Dir]]:
+    filter_parameter = filters.get("ordering", {}).get("parameter")
+    filter_direction = filters.get("ordering", {}).get("direction")
     if filter_parameter and filter_direction:
         parameter_value = filter_parameter.value
         direction_value = filter_direction.value
         is_reverse = True if direction_value == "descending" else False
         tree = sorted(
             tree,
-            key=lambda x: x[parameter_value],
+            key=lambda x: getattr(x, parameter_value),
             reverse=is_reverse,
         )
 
     return tree
 
 
-def search_tree(
+def search_list(
     files: list, search_value: str, commit_report: Report
-) -> List[TreeFile]:
+) -> List[File]:
     filtered_paths_by_search = _filtered_files_by_search(
         report_file_paths=files, search_value=search_value
     )
-    return _build_search_tree(
+    return _build_search_list(
         paths=filtered_paths_by_search, commit_report=commit_report
     )
 
 
-def path_tree(
+def path_list(
     files: list, path: str, commit_report: Report
-) -> List[Union[TreeFile, TreeDir]]:
+) -> List[Union[File, Dir]]:
     filtered_files_by_path = _filter_files_by_path(
         report_file_paths=files, path_prefix=path
     )
-    return _build_path_tree(paths=filtered_files_by_path, commit_report=commit_report)
+    return _build_path_list(paths=filtered_files_by_path, commit_report=commit_report)
 
 
-def _build_path_tree(
+def _build_path_list(
     paths: List[FilteredFilePath], commit_report: Report
-) -> List[Union[TreeFile, TreeDir]]:
+) -> List[Union[File, Dir]]:
     file_dir_tree = {}
 
     for path in paths:
@@ -123,7 +111,7 @@ def _build_path_tree(
             name = parts[0]
             full_path = path.full_path
             totals = commit_report.get(full_path).totals
-            file_dir_tree[name] = TreeFile(
+            file_dir_tree[name] = File(
                 name=name,
                 kind="file",
                 hits=totals.hits,
@@ -135,7 +123,7 @@ def _build_path_tree(
             # Treated as a directory
             dirname, remaining_path = parts
             if dirname not in file_dir_tree:
-                file_dir_tree[dirname] = Dir(
+                file_dir_tree[dirname] = Group(
                     kind="dir",
                     name=dirname,
                     child_paths=[],
@@ -145,13 +133,13 @@ def _build_path_tree(
             )
             file_dir_tree[dirname].child_paths.append(filteredFilePath)
 
-    res = []
+    file_dir_list = []
     for item in file_dir_tree.values():
         if item.kind == "file":
-            res.append(item)
+            file_dir_list.append(item)
         else:
             # recurse
-            children = _build_path_tree(item.child_paths, commit_report)
+            children = _build_path_list(item.child_paths, commit_report)
 
             # sum up hits/lines from children
             hits, lines = (0, 0)
@@ -160,8 +148,8 @@ def _build_path_tree(
                 hits += child.hits
                 lines += child.lines
 
-            res.append(
-                TreeDir(
+            file_dir_list.append(
+                Dir(
                     kind=item.kind,
                     name=item.name,
                     hits=hits,
@@ -171,16 +159,16 @@ def _build_path_tree(
                 )
             )
 
-    return res
+    return file_dir_list
 
 
-def _build_search_tree(paths: List[str], commit_report: Report) -> List[TreeFile]:
-    search_tree = []
+def _build_search_list(paths: List[str], commit_report: Report) -> List[File]:
+    search_list = []
     for path in paths:
         totals = commit_report.get(path).totals
         path_name = os.path.split(path)[1]
-        search_tree.append(
-            TreeFile(
+        search_list.append(
+            File(
                 name=path_name,
                 kind="file",
                 hits=totals.hits,
@@ -189,7 +177,7 @@ def _build_search_tree(paths: List[str], commit_report: Report) -> List[TreeFile
                 full_path=path,
             )
         )
-    return search_tree
+    return search_list
 
 
 # Utils to filter paths by conditions

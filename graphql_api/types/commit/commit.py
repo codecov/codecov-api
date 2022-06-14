@@ -10,7 +10,7 @@ from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.owner import OwnerLoader
 from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.enums import OrderingDirection
-from services.path import TreeDir, TreeFile, build_tree
+from services.path import Dir, File, path_contents
 from services.profiling import CriticalFile, ProfilingSummary
 
 commit_bindable = ObjectType("Commit")
@@ -102,7 +102,7 @@ def resolve_critical_files(commit: Commit, info, **kwargs) -> List[CriticalFile]
 @sync_to_async
 def resolve_path_contents(
     head_commit: Commit, info, path: string, filters
-) -> List[Union[TreeFile, TreeDir]]:
+) -> List[Union[File, Dir]]:
     """
     The file directory tree is a list of all the files and directories
     extracted from the commit report of the latest, head commit.
@@ -114,7 +114,7 @@ def resolve_path_contents(
     if not commit_report:
         raise Exception("No reports found in the head commit")
     report_files = commit_report.files
-    return build_tree(
+    return path_contents(
         report_files=report_files,
         path=path,
         filters=filters,

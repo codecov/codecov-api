@@ -1,7 +1,7 @@
 """
 Possible value for the search values for a path tree of a pull request
 """
-enum PathContentsParameter{
+enum OrderingParameter{
     NAME
     COVERAGE
 }

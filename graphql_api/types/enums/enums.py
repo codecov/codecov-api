@@ -1,7 +1,7 @@
 import enum
 
 
-class PathContentsParameter(enum.Enum):
+class OrderingParameter(enum.Enum):
     NAME = "name"
     COVERAGE = "coverage"
 

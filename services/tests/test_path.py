@@ -1,20 +1,19 @@
 import enum
-from distutils.command.build import build
 
 from django.test import TestCase
 
 from services.archive import SerializableReport
 from services.path import (
     FilteredFilePath,
-    TreeDir,
-    TreeFile,
-    _build_path_tree,
-    _build_search_tree,
+    Dir,
+    File,
+    _build_path_list,
+    _build_search_list,
     _filter_files_by_path,
     _filtered_files_by_search,
-    build_tree,
-    path_tree,
-    search_tree,
+    path_contents,
+    path_list,
+    search_list,
 )
 
 # Pulled from core.tests.factories.CommitFactory files.
@@ -37,19 +36,15 @@ file_data2 = [
     [0, 2, 1, 1, 0, "50.00000", 0, 0, 0, 0, 0, 0, 0],
 ]
 
+class MockOrderValue(object):
+    def __init__(self, value):
+        self.value = value
 
-class MockOrderingDirection(enum.Enum):
-    ASC = "ascending"
-    DESC = "descending"
-
-
-class MockPathContentsParameter(enum.Enum):
-    NAME = "name"
-    COVERAGE = "coverage"
-
+    def __getitem__(self, key):
+        return getattr(self, key)
 
 class TestPath(TestCase):
-    def test_build_tree_without_filters_or_path(self):
+    def test_path_contents_without_filters_or_path(self):
         files = {
             "rand/path/file1.py": file_data,
             "rand/path/file2.py": file_data,
@@ -59,24 +54,24 @@ class TestPath(TestCase):
         files_list = [f for f in files.keys()]
         path = ""
         filters = {}
-        tree = build_tree(files_list, path, filters, commit_report)
+        tree = path_contents(files_list, path, filters, commit_report)
 
         expected_result = [
-            TreeDir(
+            Dir(
                 kind="dir",
                 name="rand",
                 hits=16,
                 lines=20,
                 coverage=80.0,
                 children=[
-                    TreeDir(
+                    Dir(
                         kind="dir",
                         name="path",
                         hits=16,
                         lines=20,
                         coverage=80.0,
                         children=[
-                            TreeFile(
+                            File(
                                 kind="file",
                                 name="file1.py",
                                 hits=8,
@@ -84,7 +79,7 @@ class TestPath(TestCase):
                                 coverage=80.0,
                                 full_path="rand/path/file1.py",
                             ),
-                            TreeFile(
+                            File(
                                 kind="file",
                                 name="file2.py",
                                 hits=8,
@@ -96,21 +91,21 @@ class TestPath(TestCase):
                     )
                 ],
             ),
-            TreeDir(
+            Dir(
                 kind="dir",
                 name="weird",
                 hits=8,
                 lines=10,
                 coverage=80.0,
                 children=[
-                    TreeDir(
+                    Dir(
                         kind="dir",
                         name="poth",
                         hits=8,
                         lines=10,
                         coverage=80.0,
                         children=[
-                            TreeFile(
+                            File(
                                 kind="file",
                                 name="file3.py",
                                 hits=8,
@@ -125,7 +120,7 @@ class TestPath(TestCase):
         ]
         assert tree == expected_result
 
-    def test_build_tree_with_search_value(self):
+    def test_path_contents_with_search_value(self):
         files = {
             "rand/path/file1.py": file_data,
             "rand/path/file2.py": file_data,
@@ -135,10 +130,10 @@ class TestPath(TestCase):
         files_list = [f for f in files.keys()]
         path = ""
         filters = {"searchValue": "rand"}
-        tree = build_tree(files_list, path, filters, commit_report)
+        tree = path_contents(files_list, path, filters, commit_report)
 
         expected_result = [
-            TreeFile(
+            File(
                 kind="file",
                 name="file1.py",
                 hits=8,
@@ -146,7 +141,7 @@ class TestPath(TestCase):
                 coverage=80.0,
                 full_path="rand/path/file1.py",
             ),
-            TreeFile(
+            File(
                 kind="file",
                 name="file2.py",
                 hits=8,
@@ -157,18 +152,20 @@ class TestPath(TestCase):
         ]
         assert tree == expected_result
 
-    def test_build_tree_with_ascending_name(self):
+    def test_path_contents_with_ascending_name(self):
         files = {"aaa.py": file_data, "zzz.py": file_data}
         commit_report = SerializableReport(files=files)
         files_list = [f for f in files.keys()]
         path = ""
         filters = {
-            "orderingDirection": MockOrderingDirection.ASC,
-            "orderingParameter": MockPathContentsParameter.NAME,
+            "ordering": {
+                "direction": MockOrderValue("ascending"),
+                "parameter": MockOrderValue("name")
+            }
         }
-        tree = build_tree(files_list, path, filters, commit_report)
+        tree = path_contents(files_list, path, filters, commit_report)
         expected_result = [
-            TreeFile(
+            File(
                 kind="file",
                 name="aaa.py",
                 hits=8,
@@ -176,7 +173,7 @@ class TestPath(TestCase):
                 coverage=80.0,
                 full_path="aaa.py",
             ),
-            TreeFile(
+            File(
                 kind="file",
                 name="zzz.py",
                 hits=8,
@@ -187,18 +184,20 @@ class TestPath(TestCase):
         ]
         assert tree == expected_result
 
-    def test_build_tree_with_descending_name(self):
+    def test_path_contents_with_descending_name(self):
         files = {"aaa.py": file_data, "zzz.py": file_data}
         commit_report = SerializableReport(files=files)
         files_list = [f for f in files.keys()]
         path = ""
         filters = {
-            "orderingDirection": MockOrderingDirection.DESC,
-            "orderingParameter": MockPathContentsParameter.NAME,
+            "ordering": {
+                "direction": MockOrderValue("descending"),
+                "parameter": MockOrderValue("name")
+            }
         }
-        tree = build_tree(files_list, path, filters, commit_report)
+        tree = path_contents(files_list, path, filters, commit_report)
         expected_result = [
-            TreeFile(
+            File(
                 kind="file",
                 name="zzz.py",
                 hits=8,
@@ -206,7 +205,7 @@ class TestPath(TestCase):
                 coverage=80.0,
                 full_path="zzz.py",
             ),
-            TreeFile(
+            File(
                 kind="file",
                 name="aaa.py",
                 hits=8,
@@ -217,18 +216,20 @@ class TestPath(TestCase):
         ]
         assert tree == expected_result
 
-    def test_build_tree_with_descending_coverage(self):
+    def test_path_contents_with_descending_coverage(self):
         files = {"aaa.py": file_data, "zzz.py": file_data2}
         commit_report = SerializableReport(files=files)
         files_list = [f for f in files.keys()]
         path = ""
         filters = {
-            "orderingDirection": MockOrderingDirection.DESC,
-            "orderingParameter": MockPathContentsParameter.COVERAGE,
+            "ordering": {
+                "direction": MockOrderValue("descending"),
+                "parameter": MockOrderValue("coverage")
+            }
         }
-        tree = build_tree(files_list, path, filters, commit_report)
+        tree = path_contents(files_list, path, filters, commit_report)
         expected_result = [
-            TreeFile(
+            File(
                 kind="file",
                 name="aaa.py",
                 hits=8,
@@ -236,7 +237,7 @@ class TestPath(TestCase):
                 coverage=80.0,
                 full_path="aaa.py",
             ),
-            TreeFile(
+            File(
                 kind="file",
                 name="zzz.py",
                 hits=3,
@@ -252,10 +253,10 @@ class TestPath(TestCase):
         files_list = [f for f in files.keys()]
         path = "folder"
         commit_report = SerializableReport(files=files)
-        tree = path_tree(files_list, path, commit_report)
+        tree = path_list(files_list, path, commit_report)
 
         expected_result = [
-            TreeFile(
+            File(
                 kind="file",
                 name="file.py",
                 hits=8,
@@ -275,10 +276,10 @@ class TestPath(TestCase):
         files_list = [f for f in files.keys()]
         search = "rand"
         commit_report = SerializableReport(files=files)
-        tree = search_tree(files_list, search, commit_report)
+        tree = search_list(files_list, search, commit_report)
 
         expected_result = [
-            TreeFile(
+            File(
                 kind="file",
                 name="file1.py",
                 hits=8,
@@ -286,7 +287,7 @@ class TestPath(TestCase):
                 coverage=80.0,
                 full_path="rand/path/file1.py",
             ),
-            TreeFile(
+            File(
                 kind="file",
                 name="file2.py",
                 hits=8,
@@ -297,14 +298,14 @@ class TestPath(TestCase):
         ]
         assert tree == expected_result
 
-    def test_build_path_tree_with_one_path(self):
+    def test_build_path_list_with_one_path(self):
         files = {"file.py": file_data}
         commit_report = SerializableReport(files=files)
         paths = [FilteredFilePath(full_path="file.py", stripped_path="file.py")]
-        tree = _build_path_tree(paths, commit_report)
+        tree = _build_path_list(paths, commit_report)
 
         expected_result = [
-            TreeFile(
+            File(
                 kind="file",
                 name="file.py",
                 hits=8,
@@ -315,14 +316,14 @@ class TestPath(TestCase):
         ]
         assert tree == expected_result
 
-    def test_build_path_tree_with_one_stripped_path(self):
+    def test_build_path_list_with_one_stripped_path(self):
         files = {"folder/file.py": file_data}
         commit_report = SerializableReport(files=files)
         paths = [FilteredFilePath(full_path="folder/file.py", stripped_path="file.py")]
-        tree = _build_path_tree(paths, commit_report)
+        tree = _build_path_list(paths, commit_report)
 
         expected_result = [
-            TreeFile(
+            File(
                 kind="file",
                 name="file.py",
                 hits=8,
@@ -333,17 +334,17 @@ class TestPath(TestCase):
         ]
         assert tree == expected_result
 
-    def test_build_path_tree_with_many_paths(self):
+    def test_build_path_list_with_many_paths(self):
         files = {"file1.py": file_data, "file2.py": file_data, "file3.py": file_data}
         commit_report = SerializableReport(files=files)
         paths = [
             FilteredFilePath(full_path=path, stripped_path=path)
             for path in files.keys()
         ]
-        tree = _build_path_tree(paths, commit_report)
+        tree = _build_path_list(paths, commit_report)
 
         expected_result = [
-            TreeFile(
+            File(
                 kind="file",
                 name="file1.py",
                 hits=8,
@@ -351,7 +352,7 @@ class TestPath(TestCase):
                 coverage=80.00000,
                 full_path="file1.py",
             ),
-            TreeFile(
+            File(
                 kind="file",
                 name="file2.py",
                 hits=8,
@@ -359,7 +360,7 @@ class TestPath(TestCase):
                 coverage=80.00000,
                 full_path="file2.py",
             ),
-            TreeFile(
+            File(
                 kind="file",
                 name="file3.py",
                 hits=8,
@@ -370,7 +371,7 @@ class TestPath(TestCase):
         ]
         assert tree == expected_result
 
-    def test_build_path_tree_with_many_nested_paths(self):
+    def test_build_path_list_with_many_nested_paths(self):
         files = {
             "fileA.py": file_data,
             "folder/fileB.py": file_data2,
@@ -382,10 +383,10 @@ class TestPath(TestCase):
             FilteredFilePath(full_path=path, stripped_path=path)
             for path in files.keys()
         ]
-        tree = _build_path_tree(paths, commit_report)
+        tree = _build_path_list(paths, commit_report)
 
         expected_result = [
-            TreeFile(
+            File(
                 kind="file",
                 name="fileA.py",
                 hits=8,
@@ -393,14 +394,14 @@ class TestPath(TestCase):
                 coverage=80.00000,
                 full_path="fileA.py",
             ),
-            TreeDir(
+            Dir(
                 kind="dir",
                 name="folder",
                 hits=14,
                 lines=30,
                 coverage=46.666666666666664,
                 children=[
-                    TreeFile(
+                    File(
                         kind="file",
                         name="fileB.py",
                         hits=3,
@@ -408,14 +409,14 @@ class TestPath(TestCase):
                         coverage=30.00000,
                         full_path="folder/fileB.py",
                     ),
-                    TreeDir(
+                    Dir(
                         kind="dir",
                         name="subfolder",
                         hits=11,
                         lines=20,
                         coverage=55.00000000000001,
                         children=[
-                            TreeFile(
+                            File(
                                 kind="file",
                                 name="fileC.py",
                                 hits=8,
@@ -423,7 +424,7 @@ class TestPath(TestCase):
                                 coverage=80.00000,
                                 full_path="folder/subfolder/fileC.py",
                             ),
-                            TreeFile(
+                            File(
                                 kind="file",
                                 name="fileD.py",
                                 hits=3,
@@ -438,7 +439,7 @@ class TestPath(TestCase):
         ]
         assert tree == expected_result
 
-    def test_build_search_tree(self):
+    def test_build_search_list(self):
         files = {
             "rand/path/file1.py": file_data,
             "rand/path/file2.py": file_data,
@@ -446,10 +447,10 @@ class TestPath(TestCase):
         }
         commit_report = SerializableReport(files=files)
         paths = [path for path in files.keys()]
-        tree = _build_search_tree(paths, commit_report)
+        tree = _build_search_list(paths, commit_report)
 
         expected_result = [
-            TreeFile(
+            File(
                 kind="file",
                 name="file1.py",
                 hits=8,
@@ -457,7 +458,7 @@ class TestPath(TestCase):
                 coverage=80.0,
                 full_path="rand/path/file1.py",
             ),
-            TreeFile(
+            File(
                 kind="file",
                 name="file2.py",
                 hits=8,
@@ -465,7 +466,7 @@ class TestPath(TestCase):
                 coverage=80.0,
                 full_path="rand/path/file2.py",
             ),
-            TreeFile(
+            File(
                 kind="file",
                 name="file3.py",
                 hits=8,
