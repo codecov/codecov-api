@@ -21,7 +21,7 @@ class OrderingDirection(enum.Enum):
 class PathContentsFilters(enum.Enum):
     SEARCH_VALUE = "searchValue"
     ORDERING_DIRECTION = "orderingDirection"
-    ORDERING_VALUE = "orderingValue"
+    ORDERING_PARAMETER = "orderingParameter"
 
 
 class CoverageLine(enum.Enum):

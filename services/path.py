@@ -4,7 +4,7 @@ from typing import List, Union
 
 from shared.reports.resources import Report
 
-from graphql_api.types.enums import PathContentsFilters
+from graphql_api.types.enums import OrderingDirection, PathContentsFilters
 
 
 @dataclass
@@ -26,6 +26,9 @@ class TreeFile:
     coverage: float
     full_path: str
 
+    def __getitem__(self, item):
+        return getattr(self, item)
+
 
 @dataclass
 class TreeDir:
@@ -37,6 +40,9 @@ class TreeDir:
     lines: int
     coverage: float
     children: list
+
+    def __getitem__(self, item):
+        return getattr(self, item)
 
 
 @dataclass
@@ -54,16 +60,39 @@ def build_tree(
     tree = []
     search_value = filters.get(PathContentsFilters.SEARCH_VALUE.value)
     if search_value:
-        tree = _search_tree(
+        tree = search_tree(
             files=report_files, search_value=search_value, commit_report=commit_report
         )
     else:
-        tree = _path_tree(files=report_files, path=path, commit_report=commit_report)
+        tree = path_tree(files=report_files, path=path, commit_report=commit_report)
+
+    print(tree)
+    return apply_filters(tree=tree, filters=filters)
+
+
+def apply_filters(
+    tree: List[Union[TreeFile, TreeDir]], filters: PathContentsFilters
+) -> List[Union[TreeFile, TreeDir]]:
+    filter_parameter = filters.get(PathContentsFilters.ORDERING_PARAMETER.value)
+    filter_direction = filters.get(PathContentsFilters.ORDERING_DIRECTION.value)
+    if filter_parameter and filter_direction:
+        parameter_value = filter_parameter.value
+        direction_value = filter_direction.value
+        # Used to cast the sorting type
+        sorting_type = type(parameter_value)
+        sorting_direction = (
+            True if direction_value == OrderingDirection.DESC.value else False
+        )
+        tree = sorted(
+            tree,
+            key=lambda x: sorting_type(x[parameter_value]),
+            reverse=sorting_direction,
+        )
 
     return tree
 
 
-def _search_tree(
+def search_tree(
     files: list, search_value: str, commit_report: Report
 ) -> List[TreeFile]:
     filtered_paths_by_search = _filtered_paths_by_search(
@@ -74,7 +103,7 @@ def _search_tree(
     )
 
 
-def _path_tree(
+def path_tree(
     files: list, path: str, commit_report: Report
 ) -> List[Union[TreeFile, TreeDir]]:
     filtered_files_by_path = _filter_files_by_path(
@@ -138,7 +167,7 @@ def _build_path_tree(
                     name=item.name,
                     hits=hits,
                     lines=lines,
-                    coverage=(hits / lines) * 100,
+                    coverage=float(hits / lines) * 100,
                     children=children,
                 )
             )
@@ -157,7 +186,7 @@ def _build_search_tree(paths: List[str], commit_report: Report) -> List[TreeFile
                 kind="file",
                 hits=totals.hits,
                 lines=totals.lines,
-                coverage=totals.coverage,
+                coverage=float(totals.coverage),
                 full_path=path,
             )
         )
