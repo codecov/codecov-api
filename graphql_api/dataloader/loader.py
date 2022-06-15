@@ -17,9 +17,13 @@ class BaseLoader(DataLoader):
 
         if context_key not in info.context:
             # one loader of a given (type, args) per request
-            info.context[context_key] = cls(*args)
+            info.context[context_key] = cls(info, *args)
 
         return info.context[context_key]
+
+    def __init__(self, info, *args, **kwargs):
+        self.info = info
+        super().__init__(*args, **kwargs)
 
     @classmethod
     def key(cls, record):

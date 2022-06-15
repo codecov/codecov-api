@@ -1,15 +1,27 @@
 from asgiref.sync import sync_to_async
-from django.db.models import Prefetch
 
 from compare.models import CommitComparison
 from core.models import Commit
-from reports.models import CommitReport
 from services.comparison import recalculate_comparison
 
+from .commit import CommitLoader
 from .loader import BaseLoader
 
 comparison_table = CommitComparison._meta.db_table
 commit_table = Commit._meta.db_table
+
+
+class CommitCache:
+    def __init__(self, commits):
+        self.commits = commits
+        self._by_pk = {commit.pk: commit for commit in self.commits}
+        self._by_commitid = {commit.commitid: commit for commit in self.commits}
+
+    def get_by_pk(self, pk):
+        return self._by_pk[pk]
+
+    def get_by_commitid(self, commitid):
+        return self._by_commitid[commitid]
 
 
 class ComparisonLoader(BaseLoader):
@@ -17,16 +29,11 @@ class ComparisonLoader(BaseLoader):
     def key(cls, commit_comparison):
         return (commit_comparison.base_commitid, commit_comparison.compare_commitid)
 
-    def __init__(self, repository_id, *args, **kwargs):
+    def __init__(self, info, repository_id, *args, **kwargs):
         self.repository_id = repository_id
-        return super().__init__(*args, **kwargs)
+        return super().__init__(info, *args, **kwargs)
 
     def batch_queryset(self, keys):
-        # prefetch the CommitReport with the ReportLevelTotals
-        reports_prefetch = Prefetch(
-            "reports", queryset=CommitReport.objects.select_related("reportleveltotals")
-        )
-
         return CommitComparison.objects.raw(
             f"""
             select
@@ -41,60 +48,75 @@ class ComparisonLoader(BaseLoader):
             where (base_commit.commitid, compare_commit.commitid) in %s
         """,
             [tuple(keys)],
-        ).prefetch_related(
-            Prefetch(
-                "base_commit",
-                queryset=Commit.objects.prefetch_related(reports_prefetch),
-            ),
-            Prefetch(
-                "compare_commit",
-                queryset=Commit.objects.prefetch_related(reports_prefetch),
-            ),
         )
 
+    async def batch_load_fn(self, keys):
+        # flat list of all commits involved in all comparisons
+        commitids = set(commitid for key in keys for commitid in key)
+
+        commit_loader = CommitLoader.loader(self.info, self.repository_id)
+        commits = await commit_loader.load_many(commitids)
+
+        commit_cache = CommitCache(commits)
+
+        return await self._load_comparisons(keys, commit_cache)
+
     @sync_to_async
-    def batch_load_fn(self, keys):
+    def _load_comparisons(self, keys, commit_cache):
         queryset = self.batch_queryset(keys)
         comparisons = {self.key(record): record for record in queryset}
 
-        # keys for comparisons that were not found
-        missing_keys = set(keys) - set(comparisons.keys())
-
-        # commits relevant to the missing comparisons
-        commit_queryset = Commit.objects.filter(
-            repository_id=self.repository_id,
-            commitid__in=set(commitid for key in missing_keys for commitid in key),
-        )
-        commits_by_commitid = {commit.commitid: commit for commit in commit_queryset}
-        commits_by_pk = {commit.pk: commit for commit in commit_queryset}
-
         # create missing comparisons
-        created_comparisons = CommitComparison.objects.bulk_create(
-            [
-                CommitComparison(
-                    base_commit=commits_by_commitid[base_commitid],
-                    compare_commit=commits_by_commitid[compare_commitid],
-                )
-                for (base_commitid, compare_commitid) in missing_keys
-                if base_commitid
-                and commits_by_commitid[base_commitid]
-                and compare_commitid
-                and commits_by_commitid[compare_commitid]
-            ]
+        missing_keys = set(keys) - set(comparisons.keys())
+        created_comparisons = self._create_missing_comparisons(
+            missing_keys, commit_cache
         )
         for comparison in created_comparisons:
-            comparison.base_commit = commits_by_pk[comparison.base_commit_id]
-            comparison.compare_commit = commits_by_pk[comparison.compare_commit_id]
             key = (
                 comparison.base_commit.commitid,
                 comparison.compare_commit.commitid,
             )
             comparisons[key] = comparison
-            recalculate_comparison(comparison)
 
         # return comparisons in order
         results = [comparisons.get(key) for key in keys]
-        for comparison in results:
+        self._refresh_comparisons(results, commit_cache)
+        return results
+
+    def _create_missing_comparisons(self, keys, commit_cache):
+        """
+        Create new comparisons for the given keys.
+        """
+        created_comparisons = CommitComparison.objects.bulk_create(
+            [
+                CommitComparison(
+                    base_commit=commit_cache.get_by_commitid(base_commitid),
+                    compare_commit=commit_cache.get_by_commitid(compare_commitid),
+                )
+                for (base_commitid, compare_commitid) in keys
+                if base_commitid
+                and commit_cache.get_by_commitid(base_commitid)
+                and compare_commitid
+                and commit_cache.get_by_commitid(compare_commitid)
+            ]
+        )
+        for comparison in created_comparisons:
+            comparison.base_commit = commit_cache.get_by_pk(comparison.base_commit_id)
+            comparison.compare_commit = commit_cache.get_by_pk(
+                comparison.compare_commit_id
+            )
+            recalculate_comparison(comparison)
+
+        return created_comparisons
+
+    def _refresh_comparisons(self, comparisons, commit_cache):
+        """
+        Make sure all the given comparison calculations are up-to-date.
+        """
+        for comparison in comparisons:
+            comparison.base_commit = commit_cache.get_by_pk(comparison.base_commit_id)
+            comparison.compare_commit = commit_cache.get_by_pk(
+                comparison.compare_commit_id
+            )
             if comparison and comparison.needs_recalculation:
                 recalculate_comparison(comparison)
-        return results

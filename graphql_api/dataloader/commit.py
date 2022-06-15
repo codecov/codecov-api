@@ -11,9 +11,9 @@ class CommitLoader(BaseLoader):
     def key(cls, commit):
         return commit.commitid
 
-    def __init__(self, repository_id, *args, **kwargs):
+    def __init__(self, info, repository_id, *args, **kwargs):
         self.repository_id = repository_id
-        return super().__init__(*args, **kwargs)
+        return super().__init__(info, *args, **kwargs)
 
     def batch_queryset(self, keys):
         # prefetch the CommitReport with the ReportLevelTotals
