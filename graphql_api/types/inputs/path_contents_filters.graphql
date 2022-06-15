@@ -1,9 +1,9 @@
 input PathContentsFilters {
   searchValue: String
-  ordering: Ordering
+  ordering: PathContentsOrdering
 }
 
-input Ordering {
+input PathContentsOrdering {
   direction: OrderingDirection
   parameter: OrderingParameter
 }
