@@ -21,6 +21,10 @@ class CommitLoader(BaseLoader):
             "reports", queryset=CommitReport.objects.select_related("reportleveltotals")
         )
 
-        return Commit.objects.filter(
-            commitid__in=keys, repository_id=self.repository_id
-        ).prefetch_related(prefetch)
+        # We don't select the `report` column here b/c it can be many MBs of JSON
+        # and can cause performance issues
+        return (
+            Commit.objects.filter(commitid__in=keys, repository_id=self.repository_id)
+            .defer("report")
+            .prefetch_related(prefetch)
+        )
