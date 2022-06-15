@@ -43,19 +43,21 @@ def sample_report():
 class SaveCommitMeasurementsTest(TestCase):
     databases = {"default", "timeseries"}
 
-    @patch("core.models.Commit.full_report", new_callable=PropertyMock)
+    @patch("services.archive.ReportService.build_report_from_commit")
     def test_insert_commit_measurement(self, mock_report):
         mock_report.return_value = sample_report()
 
         commit = CommitFactory(branch="foo")
         save_commit_measurements(commit)
 
-        measurement = Measurement.objects.filter(
+        measurement_queryset = Measurement.objects.filter(
             name=MeasurementName.COVERAGE.value,
             commit_sha=commit.commitid,
             timestamp=commit.timestamp,
-        ).first()
+        )
+        assert measurement_queryset.count() == 1
 
+        measurement = measurement_queryset.first()
         assert measurement
         assert measurement.name == MeasurementName.COVERAGE.value
         assert measurement.owner_id == commit.author_id
@@ -68,7 +70,7 @@ class SaveCommitMeasurementsTest(TestCase):
         assert measurement.branch == "foo"
         assert measurement.value == 60.0
 
-    @patch("core.models.Commit.full_report", new_callable=PropertyMock)
+    @patch("services.archive.ReportService.build_report_from_commit")
     def test_update_commit_measurement(self, mock_report):
         mock_report.return_value = sample_report()
 
@@ -105,7 +107,7 @@ class SaveCommitMeasurementsTest(TestCase):
         assert measurement.branch == "foo"
         assert measurement.value == 60.0
 
-    @patch("core.models.Commit.full_report", new_callable=PropertyMock)
+    @patch("services.archive.ReportService.build_report_from_commit")
     def test_commit_measurement_insert_flags(self, mock_report):
         mock_report.return_value = sample_report()
 
@@ -159,7 +161,7 @@ class SaveCommitMeasurementsTest(TestCase):
         assert measurement.branch == "foo"
         assert measurement.value == 100.0
 
-    @patch("core.models.Commit.full_report", new_callable=PropertyMock)
+    @patch("services.archive.ReportService.build_report_from_commit")
     def test_commit_measurement_update_flags(self, mock_report):
         mock_report.return_value = sample_report()
 

@@ -1,11 +1,14 @@
-from datetime import datetime
+import logging
 
 import dateutil.parser as dateparser
 from django.core.management.base import BaseCommand, CommandError
+from django.utils import timezone
 
 from codecov_auth.models import Owner
 from core.models import Repository
 from timeseries.helpers import refresh_measurement_summaries, save_repo_measurements
+
+logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
@@ -27,11 +30,15 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        start_date = dateparser.isoparse(options["start_date"])
+        start_date = dateparser.isoparse(options["start_date"]).replace(
+            tzinfo=timezone.get_current_timezone()
+        )
         if options["end_date"] is not None:
-            end_date = dateparser.isoparse(options["end_date"])
+            end_date = dateparser.isoparse(options["end_date"]).replace(
+                tzinfo=timezone.get_current_timezone()
+            )
         else:
-            end_date = datetime.now()
+            end_date = timezone.now()
 
         owner_name = options["owner"]
         owner = Owner.objects.filter(username=owner_name).first()
@@ -44,11 +51,16 @@ class Command(BaseCommand):
             if repo is None:
                 raise CommandError(f"No such repo: {owner_name}/{repo_name}")
 
+            logger.info(f"saving measurements for repo: {owner_name}/{repo_name}")
             save_repo_measurements(repo, start_date=start_date, end_date=end_date)
         else:
             repos = Repository.objects.filter(author=owner, deleted=False)
             for repo in repos.iterator():
+                logger.info(f"saving measurements for repo: {owner_name}/{repo.name}")
                 save_repo_measurements(repo, start_date=start_date, end_date=end_date)
 
         if options["refresh"]:
+            logger.info(
+                f"refreshing measurement summaries from {start_date} to {end_date}"
+            )
             refresh_measurement_summaries(start_date, end_date)

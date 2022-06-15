@@ -4,6 +4,7 @@ from django.db import connections
 
 from core.models import Commit, Repository
 from reports.models import RepositoryFlag
+from services.archive import ReportService
 from timeseries.models import Measurement, MeasurementName
 
 
@@ -14,7 +15,8 @@ def save_commit_measurements(commit: Commit) -> None:
       - the report total coverage
       - the flag coverage for each relevant flag
     """
-    report = commit.full_report
+    report_service = ReportService()
+    report = report_service.build_report_from_commit(commit)
 
     Measurement(
         name=MeasurementName.COVERAGE.value,

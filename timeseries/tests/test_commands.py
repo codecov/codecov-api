@@ -1,6 +1,7 @@
 from datetime import datetime
 from unittest.mock import patch
 
+import pytz
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import TestCase
@@ -37,13 +38,13 @@ class BackfillCommandTest(TestCase):
 
         save_repo_measurements.assert_called_once_with(
             self.repo1,
-            start_date=datetime(2022, 1, 1, 0, 0, 0),
-            end_date=datetime(2022, 6, 7, 0, 0, 0),
+            start_date=datetime(2022, 1, 1, 0, 0, 0, tzinfo=pytz.utc),
+            end_date=datetime(2022, 6, 7, 0, 0, 0, tzinfo=pytz.utc),
         )
 
         refresh_measurement_summaries.assert_called_once_with(
-            datetime(2022, 1, 1, 0, 0, 0),
-            datetime(2022, 6, 7, 0, 0, 0),
+            datetime(2022, 1, 1, 0, 0, 0, tzinfo=pytz.utc),
+            datetime(2022, 6, 7, 0, 0, 0, tzinfo=pytz.utc),
         )
 
     @patch(
@@ -64,13 +65,13 @@ class BackfillCommandTest(TestCase):
 
         save_repo_measurements.assert_called_once_with(
             self.repo1,
-            start_date=datetime(2022, 1, 1, 0, 0, 0),
-            end_date=datetime(2022, 1, 2, 0, 0, 0),
+            start_date=datetime(2022, 1, 1, 0, 0, 0, tzinfo=pytz.utc),
+            end_date=datetime(2022, 1, 2, 0, 0, 0, tzinfo=pytz.utc),
         )
 
         refresh_measurement_summaries.assert_called_once_with(
-            datetime(2022, 1, 1, 0, 0, 0),
-            datetime(2022, 1, 2, 0, 0, 0),
+            datetime(2022, 1, 1, 0, 0, 0, tzinfo=pytz.utc),
+            datetime(2022, 1, 2, 0, 0, 0, tzinfo=pytz.utc),
         )
 
     @patch(
@@ -91,18 +92,18 @@ class BackfillCommandTest(TestCase):
         assert save_repo_measurements.call_count == 2
         save_repo_measurements.assert_any_call(
             self.repo1,
-            start_date=datetime(2022, 1, 1, 0, 0, 0),
-            end_date=datetime(2022, 6, 7, 0, 0, 0),
+            start_date=datetime(2022, 1, 1, 0, 0, 0, tzinfo=pytz.utc),
+            end_date=datetime(2022, 6, 7, 0, 0, 0, tzinfo=pytz.utc),
         )
         save_repo_measurements.assert_any_call(
             self.repo2,
-            start_date=datetime(2022, 1, 1, 0, 0, 0),
-            end_date=datetime(2022, 6, 7, 0, 0, 0),
+            start_date=datetime(2022, 1, 1, 0, 0, 0, tzinfo=pytz.utc),
+            end_date=datetime(2022, 6, 7, 0, 0, 0, tzinfo=pytz.utc),
         )
 
         refresh_measurement_summaries.assert_called_once_with(
-            datetime(2022, 1, 1, 0, 0, 0),
-            datetime(2022, 6, 7, 0, 0, 0),
+            datetime(2022, 1, 1, 0, 0, 0, tzinfo=pytz.utc),
+            datetime(2022, 6, 7, 0, 0, 0, tzinfo=pytz.utc),
         )
 
     def test_call_command_no_start_date(self):
