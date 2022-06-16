@@ -12,10 +12,12 @@ from django.utils.functional import cached_property
 from shared.helpers.yaml import walk
 from shared.utils.merge import LineType, line_type
 
+from compare.models import CommitComparison
 from core.models import Commit
 from services.archive import ReportService
 from services.redis_configuration import get_redis_connection
 from services.repo_providers import RepoProviderService
+from services.task import TaskService
 from utils.config import get_config
 
 log = logging.getLogger(__name__)
@@ -917,3 +919,10 @@ class PullRequestComparison(Comparison):
 
     def update_base_report_with_pseudo_diff(self):
         self.base_report.shift_lines_by_diff(self.pseudo_diff, forward=True)
+
+
+def recalculate_comparison(comparison: CommitComparison) -> None:
+    if comparison.state != CommitComparison.CommitComparisonStates.PENDING:
+        comparison.state = CommitComparison.CommitComparisonStates.PENDING
+        comparison.save()
+    TaskService().compute_comparison(comparison.id)
