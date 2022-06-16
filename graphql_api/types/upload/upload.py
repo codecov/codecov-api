@@ -38,7 +38,7 @@ async def resolve_errors(report_session, info, **kwargs):
     queryset = await command.get_upload_errors(report_session)
     result = await queryset_to_connection(
         queryset,
-        ordering="updated_at",
+        ordering=("updated_at",),
         ordering_direction=OrderingDirection.ASC,
         **kwargs
     )

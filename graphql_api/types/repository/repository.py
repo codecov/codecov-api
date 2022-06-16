@@ -70,9 +70,8 @@ async def resolve_pulls(
     queryset = await command.fetch_pull_requests(repository, filters)
     return await queryset_to_connection(
         queryset,
-        ordering="pullid",
+        ordering=("pullid",),
         ordering_direction=ordering_direction,
-        ordering_unique=True,
         **kwargs,
     )
 
@@ -84,7 +83,7 @@ async def resolve_commits(repository, info, filters=None, **kwargs):
     queryset = await command.fetch_commits(repository, filters)
     res = await queryset_to_connection(
         queryset,
-        ordering="timestamp",
+        ordering=("timestamp",),
         ordering_direction=OrderingDirection.DESC,
         **kwargs,
     )
@@ -105,7 +104,7 @@ async def resolve_branches(repository, info, **kwargs):
     queryset = await command.fetch_branches(repository)
     return await queryset_to_connection(
         queryset,
-        ordering="updatestamp",
+        ordering=("updatestamp",),
         ordering_direction=OrderingDirection.DESC,
         **kwargs,
     )
@@ -146,3 +145,9 @@ def resolve_repo_yaml(repository, info):
     if repository.yaml is None:
         return None
     return yaml.dump(repository.yaml)
+
+
+@repository_bindable.field("bot")
+@sync_to_async
+def resolve_repo_bot(repository, info):
+    return repository.bot

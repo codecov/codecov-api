@@ -9,6 +9,7 @@ from codecov_auth.tests.factories import OwnerFactory
 from compare.models import CommitComparison
 from compare.tests.factories import CommitComparisonFactory
 from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
+from services.profiling import CriticalFile
 
 from .helper import GraphQLTestHelper
 
@@ -122,10 +123,13 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         }
 
     @patch(
+        "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
+    )
+    @patch(
         "services.comparison.PullRequestComparison.files",
         new_callable=PropertyMock,
     )
-    def test_pull_comparison_file_comparisons(self, files_mock):
+    def test_pull_comparison_file_comparisons(self, files_mock, critical_files):
         base_report_totals = ReportTotals(
             coverage=75.0,
             files=1,
@@ -179,6 +183,9 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                     "head": head_report_totals,
                 },
             ),
+        ]
+        critical_files.return_value = [
+            CriticalFile("foo.py"),
         ]
 
         query = """
@@ -276,6 +283,149 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                     },
                 ]
             },
+        }
+
+    @patch(
+        "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
+    )
+    @patch(
+        "services.comparison.PullRequestComparison.files",
+        new_callable=PropertyMock,
+    )
+    def test_pull_comparison_is_critical_file(self, files_mock, critical_files):
+
+        TestFileComparisonIsCriticalFile = namedtuple(
+            "TestFileComparisonIsCriticalFile", ["name", "has_diff", "has_changes"]
+        )
+
+        files_mock.return_value = [
+            TestFileComparisonIsCriticalFile(
+                name={
+                    "base": "foo.py",
+                    "head": "bar.py",
+                },
+                has_diff=True,
+                has_changes=False,
+            ),
+            TestFileComparisonIsCriticalFile(
+                name={
+                    "base": None,
+                    "head": "baz.py",
+                },
+                has_diff=True,
+                has_changes=False,
+            ),
+        ]
+
+        critical_files.return_value = [
+            CriticalFile("foo.py"),
+        ]
+
+        query = """
+            pullId
+            compareWithBase {
+                fileComparisons {
+                    baseName
+                    headName
+                    isCriticalFile
+                }
+            }
+        """
+
+        res = self._request(query)
+        assert res == {
+            "pullId": self.pull.pullid,
+            "compareWithBase": {
+                "fileComparisons": [
+                    {
+                        "baseName": "foo.py",
+                        "headName": "bar.py",
+                        "isCriticalFile": True,
+                    },
+                    {
+                        "baseName": None,
+                        "headName": "baz.py",
+                        "isCriticalFile": False,
+                    },
+                ]
+            },
+        }
+
+    @patch(
+        "services.comparison.PullRequestComparison.files",
+        new_callable=PropertyMock,
+    )
+    def test_pull_comparison_is_critical_file_returns_false_through_repositories(
+        self, files_mock
+    ):
+
+        TestFileComparisonIsCriticalFile = namedtuple(
+            "TestFileComparisonIsCriticalFile", ["name", "has_diff", "has_changes"]
+        )
+
+        files_mock.return_value = [
+            TestFileComparisonIsCriticalFile(
+                name={
+                    "base": "foo.py",
+                    "head": "bar.py",
+                },
+                has_diff=True,
+                has_changes=False,
+            ),
+        ]
+
+        query = """
+            query {
+                me {
+                    owner {
+                        repositories (first: 1) {
+                            edges {
+                                node {
+                                    pull (id: %s) {
+                                        pullId
+                                        compareWithBase {
+                                            fileComparisons {
+                                                baseName
+                                                headName
+                                                isCriticalFile
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+
+        data = self.gql_request(query % (self.pull.pullid), user=self.user)
+
+        assert data == {
+            "me": {
+                "owner": {
+                    "repositories": {
+                        "edges": [
+                            {
+                                "node": {
+                                    "pull": {
+                                        "pullId": 2,
+                                        "compareWithBase": {
+                                            "fileComparisons": [
+                                                {
+                                                    "baseName": "foo.py",
+                                                    "headName": "bar.py",
+                                                    "isCriticalFile": False,
+                                                }
+                                            ]
+                                        },
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
         }
 
     @patch(
@@ -542,26 +692,66 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             },
         }
 
-    @patch("compare.commands.compare.compare.CompareCommitsInteractor.execute")
-    def test_pull_comparison_no_comparison(self, compare_mock):
-        compare_mock.return_value = None
+    @patch("services.comparison.TaskService.compute_comparison")
+    def test_pull_comparison_no_comparison(self, compute_comparison):
+        self.commit_comparison.delete()
 
         query = """
             pullId
             compareWithBase {
                 state
-                baseTotals {
-                    percentCovered
-                }
-                headTotals {
-                    percentCovered
-                }
-                fileComparisons {
-                    baseName
-                    headName
-                }
+            }
+        """
+
+        res = self._request(query)
+        # it regenerates the comparison as needed
+        assert res["compareWithBase"] != None
+
+    def test_pull_comparison_missing_commit(self):
+        self.head_commit.delete()
+        self.commit_comparison.delete()
+
+        query = """
+            pullId
+            compareWithBase {
+                state
             }
         """
 
         res = self._request(query)
         assert res == {"pullId": self.pull.pullid, "compareWithBase": None}
+
+    def test_pull_comparison_missing_sha(self):
+        self.pull.compared_to = None
+        self.pull.save()
+
+        query = """
+            pullId
+            compareWithBase {
+                state
+            }
+        """
+
+        res = self._request(query)
+        assert res == {"pullId": self.pull.pullid, "compareWithBase": None}
+
+    @patch("services.comparison.TaskService.compute_comparison")
+    @patch("compare.models.CommitComparison.needs_recalculation", callable=PropertyMock)
+    def test_pull_comparison_needs_recalculation(
+        self, needs_recalculation, compute_comparison
+    ):
+        needs_recalculation.return_value = True
+
+        query = """
+            pullId
+            compareWithBase {
+                state
+            }
+        """
+
+        res = self._request(query)
+        # recalculates comparison
+        assert res == {
+            "pullId": self.pull.pullid,
+            "compareWithBase": {"state": "pending"},
+        }

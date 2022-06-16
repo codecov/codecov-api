@@ -7,6 +7,7 @@ from django.test import TransactionTestCase
 from shared.reports.types import LineSession
 
 from codecov_auth.tests.factories import OwnerFactory
+from compare.tests.factories import CommitComparisonFactory
 from core.models import Commit
 from core.tests.factories import CommitFactory, RepositoryFactory
 from graphql_api.types.enums import UploadErrorEnum, UploadState
@@ -325,13 +326,6 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         [upload] = paginate_connection(commit["uploads"])
         errors = paginate_connection(upload["errors"])
 
-        print(
-            [
-                {"errorCode": UploadErrorEnum.REPORT_EXPIRED.name},
-                {"errorCode": UploadErrorEnum.FILE_NOT_IN_STORAGE.name},
-            ]
-        )
-
         assert errors == [
             {"errorCode": UploadErrorEnum.REPORT_EXPIRED.name},
             {"errorCode": UploadErrorEnum.FILE_NOT_IN_STORAGE.name},
@@ -426,8 +420,11 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         flags = data["owner"]["repository"]["commit"]["flagNames"]
         assert flags == ["flag_a", "flag_b"]
 
-    @patch("compare.commands.compare.compare.CompareCommands.compare_commits")
-    def test_fetch_commit_compare_call_the_command(self, command_mock):
+    def test_fetch_commit_compare_call_the_command(self):
+        CommitComparisonFactory(
+            base_commit=self.parent_commit,
+            compare_commit=self.commit,
+        )
         query = query_commit % "compareWithParent { state }"
         variables = {
             "org": self.org.username,
@@ -436,11 +433,23 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
-        fake_compare = {"state": "PENDING"}
-        command_mock.return_value = fake_compare
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
-        assert commit["compareWithParent"] == fake_compare
+        assert commit["compareWithParent"] == {"state": "pending"}
+
+    def test_fetch_commit_compare_no_parent(self):
+        self.commit.parent_commit_id = None
+        self.commit.save()
+
+        query = query_commit % "compareWithParent { state }"
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        assert commit["compareWithParent"] == None
 
     @patch("compare.commands.compare.compare.CompareCommands.get_impacted_files")
     def test_impacted_files_comparison_call_the_command(self, command_mock):

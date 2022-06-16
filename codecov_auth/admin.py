@@ -117,13 +117,19 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
         form.base_fields["plan"].widget = Select(
             choices=BLANK_CHOICE_DASH + PLANS_CHOICES
         )
+
+        is_superuser = request.user.is_superuser
+
+        if not is_superuser:
+            form.base_fields["staff"].disabled = True
+
         return form
 
     def has_add_permission(self, _, obj=None):
         return False
 
-    def has_delete_permission(self, _, obj=None):
-        return False
+    def has_delete_permission(self, request, obj=None):
+        return bool(request.user and request.user.is_superuser)
 
     def delete_queryset(self, request, queryset) -> None:
         for owner in queryset:
@@ -139,6 +145,10 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
             perms_needed,
             protected,
         ) = super().get_deleted_objects(objs, request)
+
+        if request.user and request.user.is_superuser:
+            perms_needed = set()
+
         deleted_objects = ()
         return deleted_objects, model_count, perms_needed, protected
 
