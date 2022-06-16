@@ -5,7 +5,7 @@ from freezegun import freeze_time
 
 from codecov_auth.tests.factories import OwnerFactory
 from compare.tests.factories import CommitComparisonFactory
-from core.models import Pull
+from core.models import Commit
 from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
 from reports.tests.factories import CommitReportFactory, ReportLevelTotalsFactory
 
@@ -150,6 +150,30 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "title": "test-null-head",
             "state": "OPEN",
             "pullId": my_pull.pullid,
+            "updatestamp": "2021-02-02T00:00:00",
+            "author": {"username": "test-pull-user"},
+            "head": None,
+            "comparedTo": None,
+            "compareWithBase": None,
+        }
+
+    @freeze_time("2021-02-02")
+    def test_when_repository_has_missing_head_commit(self):
+        pull = PullFactory(
+            repository=self.repository,
+            title="test-missing-head-commit",
+            author=self.user,
+        )
+        Commit.objects.filter(
+            repository_id=self.repository.pk,
+            commitid=pull.head,
+        ).delete()
+
+        res = self.fetch_one_pull_request(pull.pullid)
+        assert res == {
+            "title": "test-missing-head-commit",
+            "state": "OPEN",
+            "pullId": pull.pullid,
             "updatestamp": "2021-02-02T00:00:00",
             "author": {"username": "test-pull-user"},
             "head": None,
