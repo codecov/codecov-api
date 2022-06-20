@@ -22,6 +22,7 @@ commit_bindable.set_alias("branchName", "branch")
 
 
 @commit_bindable.field("coverageFile")
+@sync_to_async
 def resolve_file(commit, info, path, flags=None):
     commit_report = commit.full_report.filter(flags=flags)
     file_report = commit_report.get(path)
@@ -80,6 +81,7 @@ def resolve_compare_with_parent(commit, info, **kwargs):
 
 
 @commit_bindable.field("flagNames")
+@sync_to_async
 def resolve_flags(commit, info, **kwargs):
     return commit.full_report.flags.keys()
 
@@ -100,7 +102,7 @@ def resolve_critical_files(commit: Commit, info, **kwargs) -> List[CriticalFile]
 @commit_bindable.field("pathContents")
 @sync_to_async
 def resolve_path_contents(
-    head_commit: Commit, info, path: string, filters
+    head_commit: Commit, info, path: string = None, filters=None
 ) -> List[Union[File, Dir]]:
     """
     The file directory tree is a list of all the files and directories
@@ -115,7 +117,7 @@ def resolve_path_contents(
     report_files = commit_report.files
     return path_contents(
         report_files=report_files,
-        path=path,
-        filters=filters,
+        path=path or "",
+        filters=filters or {},
         commit_report=commit_report,
     )
