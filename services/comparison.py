@@ -582,12 +582,14 @@ class FileComparison:
         return Segment.segments(self)
 
 
+report_service = ReportService()
+
+
 class Comparison(object):
     def __init__(self, user, base_commit, head_commit):
         self.user = user
         self._base_commit = base_commit
         self._head_commit = head_commit
-        self.report_service = ReportService()
 
     @cached_property
     def base_commit(self):
@@ -642,14 +644,14 @@ class Comparison(object):
     @cached_property
     def base_report(self):
         try:
-            return self.report_service.build_report_from_commit(self.base_commit)
+            return report_service.build_report_from_commit(self.base_commit)
         except minio.error.NoSuchKey:
             raise MissingComparisonReport()
 
     @cached_property
     def head_report(self):
         try:
-            report = self.report_service.build_report_from_commit(self.head_commit)
+            report = report_service.build_report_from_commit(self.head_commit)
         except minio.error.NoSuchKey:
             raise MissingComparisonReport()
 
@@ -728,15 +730,15 @@ class FlagComparison(object):
         self.comparison = comparison
         self.flag_name = flag_name
 
-    @property
+    @cached_property
     def head_report(self):
         return self.comparison.head_report.flags.get(self.flag_name)
 
-    @property
+    @cached_property
     def base_report(self):
         return self.comparison.base_report.flags.get(self.flag_name)
 
-    @property
+    @cached_property
     def diff_totals(self):
         if self.head_report is None:
             return None

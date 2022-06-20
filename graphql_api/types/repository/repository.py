@@ -45,8 +45,8 @@ def resolve_author(repository, info):
 
 @repository_bindable.field("commit")
 def resolve_commit(repository, info, id):
-    command = info.context["executor"].get_command("commit")
-    return command.fetch_commit(repository, id)
+    loader = CommitLoader.loader(info, repository.pk)
+    return loader.load(id)
 
 
 @repository_bindable.field("uploadToken")
