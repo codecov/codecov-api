@@ -5,6 +5,7 @@ from rest_framework.generics import ListCreateAPIView
 from rest_framework.permissions import AllowAny, BasePermission
 
 from upload.serializers import UploadSerializer
+from upload.throttles import UploadsPerCommitThrottle, UploadsPerWindowThrottle
 
 log = logging.getLogger(__name__)
 
@@ -19,6 +20,7 @@ class UploadViews(ListCreateAPIView):
     permission_classes = [
         CanDoCoverageUploadsPermission,
     ]
+    throttle_classes = [UploadsPerCommitThrottle, UploadsPerWindowThrottle]
 
     def create(self, request: HttpRequest, repo: str, commit_id: str, report_id: str):
         log.info(
