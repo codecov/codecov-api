@@ -331,6 +331,31 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             {"errorCode": UploadErrorEnum.FILE_NOT_IN_STORAGE.name},
         ]
 
+    def test_fetch_commit_ci_and_download_url(self):
+        session_one = UploadFactory(
+            report=self.report,
+            provider="circleci",
+            storage_path="sample/storage-path",
+            job_code=123,
+            build_code=456,
+        )
+        print(session_one.__dict__)
+        query = query_commit % "uploads { edges { node { ciUrl downloadUrl } } }"
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        uploads = paginate_connection(commit["uploads"])
+        assert uploads == [
+            {
+                "ciUrl": "https://circleci.com/gh/codecov/gazebo/456#tests/containers/123",
+                "downloadUrl": "/upload/gh/codecov/gazebo/download?path=sample/storage-path",
+            }
+        ]
+
     @patch(
         "core.commands.commit.commit.CommitCommands.get_final_yaml",
         new_callable=AsyncMock,
