@@ -100,7 +100,7 @@ def resolve_critical_files(commit: Commit, info, **kwargs) -> List[CriticalFile]
 @commit_bindable.field("pathContents")
 @sync_to_async
 def resolve_path_contents(
-    head_commit: Commit, info, path: string, filters
+    head_commit: Commit, info, path: string, filters={}
 ) -> List[Union[File, Dir]]:
     """
     The file directory tree is a list of all the files and directories

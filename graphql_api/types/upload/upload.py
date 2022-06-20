@@ -48,3 +48,15 @@ async def resolve_errors(report_session, info, **kwargs):
 @upload_error_bindable.field("errorCode")
 def resolve_error_code(error, info):
     return UploadErrorEnum(error.error_code)
+
+
+@upload_bindable.field("ciUrl")
+@sync_to_async
+def resolve_ci_url(upload, info):
+    return upload.ci_url
+
+
+@upload_bindable.field("downloadUrl")
+@sync_to_async
+def resolve_download_url(upload, info):
+    return upload.download_url
