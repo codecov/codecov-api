@@ -13,15 +13,15 @@ commit_table = Commit._meta.db_table
 
 class CommitCache:
     def __init__(self, commits):
-        self.commits = commits
+        self.commits = [commit for commit in commits if commit]
         self._by_pk = {commit.pk: commit for commit in self.commits}
         self._by_commitid = {commit.commitid: commit for commit in self.commits}
 
     def get_by_pk(self, pk):
-        return self._by_pk[pk]
+        return self._by_pk.get(pk)
 
     def get_by_commitid(self, commitid):
-        return self._by_commitid[commitid]
+        return self._by_commitid.get(commitid)
 
 
 class ComparisonLoader(BaseLoader):
@@ -114,9 +114,12 @@ class ComparisonLoader(BaseLoader):
         Make sure all the given comparison calculations are up-to-date.
         """
         for comparison in comparisons:
-            comparison.base_commit = commit_cache.get_by_pk(comparison.base_commit_id)
-            comparison.compare_commit = commit_cache.get_by_pk(
-                comparison.compare_commit_id
-            )
-            if comparison and comparison.needs_recalculation:
-                recalculate_comparison(comparison)
+            if comparison:
+                comparison.base_commit = commit_cache.get_by_pk(
+                    comparison.base_commit_id
+                )
+                comparison.compare_commit = commit_cache.get_by_pk(
+                    comparison.compare_commit_id
+                )
+                if comparison.needs_recalculation:
+                    recalculate_comparison(comparison)
