@@ -7,6 +7,7 @@ from asgiref.sync import sync_to_async
 
 from core.models import Commit
 from graphql_api.dataloader.commit import CommitLoader
+from graphql_api.dataloader.comparison import ComparisonLoader
 from graphql_api.dataloader.owner import OwnerLoader
 from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.enums import OrderingDirection
@@ -21,6 +22,7 @@ commit_bindable.set_alias("branchName", "branch")
 
 
 @commit_bindable.field("coverageFile")
+@sync_to_async
 def resolve_file(commit, info, path, flags=None):
     commit_report = commit.full_report.filter(flags=flags)
     file_report = commit_report.get(path)
@@ -70,17 +72,16 @@ async def resolve_list_uploads(commit, info, **kwargs):
 
 
 @commit_bindable.field("compareWithParent")
-async def resolve_compare_with_parent(commit, info, **kwargs):
-    parent_commit = None
-    if commit.parent_commit_id:
-        parent_commit = await CommitLoader.loader(info, commit.repository_id).load(
-            commit.parent_commit_id
-        )
-    command = info.context["executor"].get_command("compare")
-    return await command.compare_commits(commit, parent_commit)
+def resolve_compare_with_parent(commit, info, **kwargs):
+    if not commit.parent_commit_id:
+        return None
+
+    comparison_loader = ComparisonLoader.loader(info, commit.repository_id)
+    return comparison_loader.load((commit.parent_commit_id, commit.commitid))
 
 
 @commit_bindable.field("flagNames")
+@sync_to_async
 def resolve_flags(commit, info, **kwargs):
     return commit.full_report.flags.keys()
 
@@ -101,7 +102,7 @@ def resolve_critical_files(commit: Commit, info, **kwargs) -> List[CriticalFile]
 @commit_bindable.field("pathContents")
 @sync_to_async
 def resolve_path_contents(
-    head_commit: Commit, info, path: string, filters
+    head_commit: Commit, info, path: string = None, filters=None
 ) -> List[Union[File, Dir]]:
     """
     The file directory tree is a list of all the files and directories
@@ -116,7 +117,7 @@ def resolve_path_contents(
     report_files = commit_report.files
     return path_contents(
         report_files=report_files,
-        path=path,
-        filters=filters,
+        path=path or "",
+        filters=filters or {},
         commit_report=commit_report,
     )

@@ -207,7 +207,10 @@ class ChartQueryRunner:
         )
 
         # Get list of relevant repoids
-        repos = Repository.objects.filter(author=organization).viewable_repos(self.user)
+        repos = Repository.objects.filter(
+            author=organization,
+            active=True,
+        ).viewable_repos(self.user)
 
         if self.request_params.get("repositories", []):
             repos = repos.filter(name__in=self.request_params.get("repositories", []))
