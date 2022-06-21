@@ -511,9 +511,18 @@ class TestChartQueryRunnerQuery(TestCase):
 
     def setUp(self):
         self.org = OwnerFactory()
-        self.repo1 = RepositoryFactory(author=self.org)
-        self.repo2 = RepositoryFactory(author=self.org)
-        self.user = OwnerFactory(permission=[self.repo1.repoid, self.repo2.repoid])
+        self.repo1 = RepositoryFactory(author=self.org, active=True)
+        self.repo2 = RepositoryFactory(author=self.org, active=True)
+        self.repo3 = RepositoryFactory(author=self.org)
+        self.repo4 = RepositoryFactory(author=self.org, active=True)
+        self.user = OwnerFactory(
+            permission=[
+                self.repo1.repoid,
+                self.repo2.repoid,
+                self.repo3.repoid,
+                self.repo4.repoid,
+            ]
+        )
         self.commit1 = G(
             model=Commit,
             repository=self.repo1,
@@ -526,6 +535,13 @@ class TestChartQueryRunnerQuery(TestCase):
             repository=self.repo2,
             totals={"h": 14, "n": 25, "p": 6, "m": 5},
             branch=self.repo2.branch,
+            state="complete",
+        )
+        self.commit3 = G(
+            model=Commit,
+            repository=self.repo3,
+            totals={"h": 14, "n": 25, "p": 6, "m": 5},
+            branch=self.repo3.branch,
             state="complete",
         )
 
@@ -664,8 +680,8 @@ class TestChartQueryRunnerHelperMethods(TestCase):
 
     def test_repoids(self):
         repo1, repo2 = (
-            RepositoryFactory(author=self.org),
-            RepositoryFactory(author=self.org),
+            RepositoryFactory(author=self.org, active=True),
+            RepositoryFactory(author=self.org, active=True),
         )
         self.user.permission = [repo1.repoid, repo2.repoid]
         self.user.save()
@@ -725,8 +741,8 @@ class TestChartQueryRunnerHelperMethods(TestCase):
         self,
     ):
         repo1, repo2 = (
-            RepositoryFactory(author=self.org),
-            RepositoryFactory(author=self.org),
+            RepositoryFactory(author=self.org, active=True),
+            RepositoryFactory(author=self.org, active=True),
         )
         self.user.permission = [repo1.repoid, repo2.repoid]
         self.user.save()
@@ -773,7 +789,7 @@ class TestChartQueryRunnerHelperMethods(TestCase):
             ).start_date == datetime.date(start_date)
 
         with self.subTest("returns first_commit_date if not supplied"):
-            repo = RepositoryFactory(author=self.org)
+            repo = RepositoryFactory(author=self.org, active=True)
             self.user.permission = [repo.repoid]
             self.user.save()
             commit = G(
@@ -931,8 +947,8 @@ class RepositoryCoverageChartTest(InternalAPITest):
 class TestOrganizationChartHandler(InternalAPITest):
     def setUp(self):
         self.org = OwnerFactory()
-        self.repo1 = RepositoryFactory(author=self.org)
-        self.repo2 = RepositoryFactory(author=self.org)
+        self.repo1 = RepositoryFactory(author=self.org, active=True)
+        self.repo2 = RepositoryFactory(author=self.org, active=True)
         self.user = OwnerFactory(permission=[self.repo1.repoid, self.repo2.repoid])
         self.commit1 = G(
             model=Commit,

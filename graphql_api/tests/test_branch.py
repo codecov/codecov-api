@@ -1,12 +1,10 @@
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
-from django.test import TransactionTestCase
-from shared.reports.types import LineSession
+from django.test import TransactionTestCase, override_settings
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import BranchFactory, CommitFactory, RepositoryFactory
-from reports.tests.factories import CommitReportFactory
 
 from .helper import GraphQLTestHelper
 
@@ -23,12 +21,12 @@ query FetchBranch($org: String!, $repo: String!, $branch: String!) {
 """
 
 query_files = """
-  query FetchFiles($org: String!, $repo: String!, $branch: String!, $path: String!) {
+  query FetchFiles($org: String!, $repo: String!, $branch: String!, $path: String!, $filters: PathContentsFilters!) {
     owner(username: $org) {
       repository(name: $repo) {
         branch(name: $branch) {
           head {
-            pathContents (path: $path) {
+            pathContents (path: $path, filters: $filters) {
               name
               filePath
               percentCovered
@@ -127,7 +125,8 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             {"node": {"name": "master"}},
         ]
 
-    def test_fetch_files_with_no_report(self):
+    @override_settings(DEBUG=True)
+    def test_fetch_path_contents_with_no_report(self):
         commit_without_report = CommitFactory(repository=self.repo, report=None)
         branch = BranchFactory(
             repository=self.repo,
@@ -140,18 +139,20 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             "repo": self.repo.name,
             "branch": branch.name,
             "path": "",
+            "filters": {},
         }
         res = self.gql_request(query_files, variables=variables, with_errors=True)
         assert res["errors"] is not None
         assert res["errors"][0]["message"] == "No reports found in the head commit"
 
     @patch("core.models.ReportService.build_report_from_commit")
-    def test_fetch_files_with_files(self, report_mock):
+    def test_fetch_path_contents_with_files(self, report_mock):
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
             "branch": self.branch.name,
             "path": "",
+            "filters": {},
         }
         report_mock.return_value = MockReport()
         data = self.gql_request(query_files, variables=variables)
@@ -190,12 +191,13 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         assert expected_data == data
 
     @patch("core.models.ReportService.build_report_from_commit")
-    def test_fetch_files_with_files_and_path_prefix(self, report_mock):
+    def test_fetch_path_contents_with_files_and_path_prefix(self, report_mock):
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
             "branch": self.branch.name,
             "path": "folder",
+            "filters": {},
         }
         report_mock.return_value = MockReport()
         data = self.gql_request(query_files, variables=variables)

@@ -15,7 +15,7 @@ type Commit {
   compareWithParent: Comparison
   uploads(first: Int, after: String, last: Int, before: String): UploadConnection
   criticalFiles: [CriticalFile!]!
-  pathContents(path: String): [PathContent!]!
+  pathContents(path: String, filters: PathContentsFilters): [PathContent!]!
 }
 
 type UploadConnection {
