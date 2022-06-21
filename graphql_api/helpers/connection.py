@@ -68,8 +68,7 @@ class Connection:
         }
 
 
-@sync_to_async
-def queryset_to_connection(
+def queryset_to_connection_sync(
     queryset,
     *,
     ordering,
@@ -89,3 +88,8 @@ def queryset_to_connection(
     paginator = CursorPaginator(queryset, ordering=ordering)
     page = paginator.page(first=first, after=after, last=last, before=before)
     return Connection(queryset, paginator, page)
+
+
+@sync_to_async
+def queryset_to_connection(*args, **kwargs):
+    return queryset_to_connection_sync(*args, **kwargs)

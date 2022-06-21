@@ -1,4 +1,5 @@
 type Branch {
   name: String!
   head: Commit!
+  flags(first: Int, after: String, last: Int, before: String): FlagConnection!
 }
