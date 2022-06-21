@@ -54,8 +54,6 @@ class UploadsPerCommitThrottle(BaseThrottle):
                         repoid=repository.repoid,
                     ),
                 )
-                print(new_session_count)
-                print(current_upload_limit)
                 return False
             elif session_count > current_upload_limit:
                 log.info(
