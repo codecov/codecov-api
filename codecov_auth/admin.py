@@ -44,44 +44,6 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
     actions = [impersonate_owner]
     autocomplete_fields = ("bot",)
 
-    # the displayed fields
-    fields = (
-        "staff",
-        "ownerid",
-        "username",
-        "service",
-        "email",
-        "business_email",
-        "name",
-        "service_id",
-        "createstamp",
-        "plan",
-        "plan_provider",
-        "plan_user_count",
-        "plan_activated_users",
-        "plan_auto_activate",
-        "integration_id",
-        "bot",
-        "stripe_customer_id",
-        "stripe_subscription_id",
-        "parent_service_id",
-        "root_parent_service_id",
-        "private_access",
-        "cache",
-        "did_trial",
-        "free",
-        "invoice_details",
-        "delinquent",
-        "yaml",
-        "updatestamp",
-        "organizations",
-        "admins",
-        "permission",
-        "student",
-        "student_created_at",
-        "student_updated_at",
-        "onboarding_completed",
-    )
     readonly_fields = (
         "ownerid",
         "username",
@@ -102,13 +64,25 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
         "delinquent",
         "yaml",
         "updatestamp",
-        "organizations",
         "admins",
         "permission",
         "student",
         "student_created_at",
         "student_updated_at",
         "onboarding_completed",
+    )
+
+    fields = readonly_fields + (
+        "staff",
+        "plan",
+        "plan_provider",
+        "plan_user_count",
+        "plan_activated_users",
+        "integration_id",
+        "bot",
+        "stripe_customer_id",
+        "stripe_subscription_id",
+        "organizations",
     )
 
     def get_form(self, request, obj=None, change=False, **kwargs):

@@ -110,7 +110,7 @@ class Owner(models.Model):
     delinquent = models.BooleanField(null=True)
     yaml = models.JSONField(null=True)
     updatestamp = DateTimeWithoutTZField(default=datetime.now)
-    organizations = ArrayField(models.IntegerField(null=True), null=True)
+    organizations = ArrayField(models.IntegerField(null=True), null=True, blank=True)
     admins = ArrayField(models.IntegerField(null=True), null=True)
     integration_id = models.IntegerField(null=True, blank=True)
     permission = ArrayField(models.IntegerField(null=True), null=True)
