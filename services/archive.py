@@ -13,6 +13,8 @@ from shared.reports.resources import Report
 from services.storage import StorageService
 from utils.config import get_config
 
+from datetime import datetime
+
 log = logging.getLogger(__name__)
 
 
@@ -265,6 +267,26 @@ class ArchiveService(object):
             expires = self.ttl
 
         return self.storage.create_presigned_put(self.root, path, expires)
+    
+
+    def create_raw_upload_presigned_get(self, commit_sha, filename, date_string=None, repo_hash=None, expires=None):
+        if repo_hash is None:
+            repo_hash = self.storage_hash
+        
+        if date_string is None:
+            date_string = datetime.now().strftime('%Y-%m-%d')
+
+        path = 'v4/raw/{}/{}/{}/{}'.format(
+            date_string,
+            self.storage_hash,
+            commit_sha,
+            filename
+        )
+
+        if expires is None:
+            expires = self.ttl
+        
+        return self.storage.create_presigned_get(self.root, path, expires)
 
 
 class ReportService(object):

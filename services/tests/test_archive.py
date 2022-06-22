@@ -4,6 +4,9 @@ from core.models import Repository
 from core.tests.factories import CommitFactory, RepositoryFactory
 from services.archive import ArchiveService, MinioEndpoints, ReportService, build_report
 from services.storage import StorageService
+import pytest
+from time import time
+import requests
 
 current_file = Path(__file__)
 
@@ -214,3 +217,11 @@ class TestReport(object):
         repo = RepositoryFactory.create()
         service = ArchiveService(repo)
         assert service.create_raw_upload_presigned_put("ABCD") == "presigned url"
+
+
+    def test_create_raw_upload_presigned_get(self, db, mocker):
+        mocked = mocker.patch.object(StorageService, "create_presigned_get")
+        mocked.return_value = "presigned url"
+        repo = RepositoryFactory.create()
+        service = ArchiveService(repo)
+        assert service.create_raw_upload_presigned_get(filename='random.txt', commit_sha='abc') == "presigned url"

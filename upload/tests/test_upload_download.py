@@ -56,25 +56,9 @@ class UploadDownloadHelperTest(APITestCase):
         )
         assert response.status_code == 404
 
-    @patch("services.archive.ArchiveService.get_archive_hash")
-    @patch("services.archive.ArchiveService.read_file")
-    def test_invalid_archive_path(self, read_file, get_archive_hash):
-        read_file.side_effect = [minio.error.NoSuchKey]
-        get_archive_hash.return_value = "path"
-        response = self._get(
-            kwargs={
-                "service": "gh",
-                "owner_username": "codecovtest",
-                "repo_name": "upload-test-repo",
-            },
-            data={"path": "v4/raw/path"},
-        )
-        assert response.status_code == 404
 
-    @patch("services.archive.ArchiveService.get_archive_hash")
-    @patch("services.archive.ArchiveService.read_file")
-    def test_valid_repo_archive_path(self, mock_read_file, get_archive_hash):
-        mock_read_file.return_value = "Report!"
+    @patch("services.archive.ArchiveService.get_archive_hash") 
+    def test_valid_repo_archive_path(self, get_archive_hash):
         get_archive_hash.return_value = "hasssshhh"
         response = self._get(
             kwargs={
@@ -88,9 +72,7 @@ class UploadDownloadHelperTest(APITestCase):
         headers = response._headers
         assert headers["content-type"] == ("Content-Type", "text/plain")
 
-    @patch("services.archive.ArchiveService.read_file")
-    def test_invalid_repo_archive_path(self, mock_read_file):
-        mock_read_file.return_value = "Report!"
+    def test_invalid_repo_archive_path(self):
         response = self._get(
             kwargs={
                 "service": "gh",
