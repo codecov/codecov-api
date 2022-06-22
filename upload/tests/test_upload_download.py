@@ -58,7 +58,9 @@ class UploadDownloadHelperTest(APITestCase):
 
     @patch("services.archive.ArchiveService.get_archive_hash")
     @patch("services.archive.ArchiveService.create_raw_upload_presigned_get")
-    def test_invalid_archive_path(self, create_raw_upload_presigned_get, get_archive_hash):
+    def test_invalid_archive_path(
+        self, create_raw_upload_presigned_get, get_archive_hash
+    ):
         create_raw_upload_presigned_get.side_effect = [minio.error.NoSuchKey]
         get_archive_hash.return_value = "path"
         response = self._get(
