@@ -219,10 +219,14 @@ class TestReport(object):
         service = ArchiveService(repo)
         assert service.create_raw_upload_presigned_put("ABCD") == "presigned url"
 
-
     def test_create_raw_upload_presigned_get(self, db, mocker):
         mocked = mocker.patch.object(StorageService, "create_presigned_get")
         mocked.return_value = "presigned url"
         repo = RepositoryFactory.create()
         service = ArchiveService(repo)
-        assert service.create_raw_upload_presigned_get(filename='random.txt', commit_sha='abc') == "presigned url"
+        assert (
+            service.create_raw_upload_presigned_get(
+                filename="random.txt", commit_sha="abc"
+            )
+            == "presigned url"
+        )

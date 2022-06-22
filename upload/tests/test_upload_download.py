@@ -56,8 +56,7 @@ class UploadDownloadHelperTest(APITestCase):
         )
         assert response.status_code == 404
 
-
-    @patch("services.archive.ArchiveService.get_archive_hash") 
+    @patch("services.archive.ArchiveService.get_archive_hash")
     def test_valid_repo_archive_path(self, get_archive_hash):
         get_archive_hash.return_value = "hasssshhh"
         response = self._get(

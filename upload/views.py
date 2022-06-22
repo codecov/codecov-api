@@ -359,9 +359,9 @@ class UploadDownloadHandler(View):
         self.owner_username = self.kwargs.get("owner_username")
 
     def read_path(self):
-        self.file_name = self.path.rsplit('/', 1)[1]
-        self.commitid = self.path.rsplit('/', 2)[1]
-        self.date_string = self.path.rsplit('/', 4)[1]
+        self.file_name = self.path.rsplit("/", 1)[1]
+        self.commitid = self.path.rsplit("/", 2)[1]
+        self.date_string = self.path.rsplit("/", 4)[1]
 
     @sync_to_async
     def get_upload_presigned_url(self, repo):
@@ -372,11 +372,13 @@ class UploadDownloadHandler(View):
             raise Http404("Requested report could not be found")
         try:
             return archive_service.create_raw_upload_presigned_get(
-                    commit_sha=self.commitid, filename=self.file_name, date_string=self.date_string)
+                commit_sha=self.commitid,
+                filename=self.file_name,
+                date_string=self.date_string,
+            )
 
         except minio.error.NoSuchKey as e:
             raise Http404("Requested report could not be found")
-
 
     async def get(self, request, *args, **kwargs):
         self.read_params()
@@ -384,7 +386,7 @@ class UploadDownloadHandler(View):
         self.read_path()
         request.user = await self.get_user(request)
         repo = await self.get_repo()
-        
+
         presigned_url = await self.get_upload_presigned_url(repo)
 
         response = HttpResponse(presigned_url)
