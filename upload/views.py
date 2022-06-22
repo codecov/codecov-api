@@ -359,10 +359,9 @@ class UploadDownloadHandler(View):
         self.owner_username = self.kwargs.get("owner_username")
 
     def read_path(self):
-        path = self.path.split('/')
-        self.file_name = path[-1]
-        self.commitid = path[-2]
-        self.date_string = path[-4]
+        self.file_name = self.path.rsplit('/', 1)[1]
+        self.commitid = self.path.rsplit('/', 2)[1]
+        self.date_string = self.path.rsplit('/', 4)[1]
 
     @sync_to_async
     def get_upload_presigned_url(self, repo):
