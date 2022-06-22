@@ -65,7 +65,7 @@ class UploadDownloadHelperTest(APITestCase):
                 "owner_username": "codecovtest",
                 "repo_name": "upload-test-repo",
             },
-            data={"path": "v4/raw/hasssshhh"},
+            data={"path": "v4/raw/22-5-2022/hasssshhh/commitid/random.txt"},
         )
         assert response.status_code == 200
 
