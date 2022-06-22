@@ -1,5 +1,6 @@
 import logging
 from base64 import b16encode
+from datetime import datetime
 from enum import Enum
 from hashlib import md5
 from uuid import uuid4
@@ -12,8 +13,6 @@ from shared.reports.resources import Report
 
 from services.storage import StorageService
 from utils.config import get_config
-
-from datetime import datetime
 
 log = logging.getLogger(__name__)
 

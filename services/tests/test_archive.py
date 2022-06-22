@@ -1,12 +1,13 @@
 from pathlib import Path
+from time import time
+
+import pytest
+import requests
 
 from core.models import Repository
 from core.tests.factories import CommitFactory, RepositoryFactory
 from services.archive import ArchiveService, MinioEndpoints, ReportService, build_report
 from services.storage import StorageService
-import pytest
-from time import time
-import requests
 
 current_file = Path(__file__)
 
