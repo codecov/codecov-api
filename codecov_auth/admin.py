@@ -102,7 +102,6 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
         "delinquent",
         "yaml",
         "updatestamp",
-        "organizations",
         "admins",
         "permission",
         "student",
