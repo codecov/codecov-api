@@ -5,6 +5,7 @@ from datetime import datetime
 
 from django.contrib.postgres.fields import ArrayField, CITextField
 from django.db import models
+from django.forms import ValidationError
 from django.utils.functional import cached_property
 
 from services.archive import ReportService
@@ -53,11 +54,29 @@ class Repository(models.Model):
         SWIFT = "swift"
         OBJECTIVE_C = "objective-c"
         XTEND = "xtend"
+        TYPESCRIPT = "typescript"
+        HASKELL = "haskell"
+        RUST = "rust"
+        LUA = "lua"
+        MATLAB = "matlab"
+        ASSEMBLY = "assembly"
+        SCHEME = "scheme"
+        POWERSHELL = "powershell"
+        APEX = "apex"
+        VERILOG = "verilog"
+        COMMON_LISP = "common lisp"
+        ERLANG = "erlang"
+        JULIA = "julia"
+        PROLOG = "prolog"
+        VUE = "vue"
+        CPP = "c++"
+        C_SHARP = "c#"
+        F_SHARP = "f#"
 
     repoid = models.AutoField(primary_key=True)
     name = CITextField()
     author = models.ForeignKey(
-        "codecov_auth.Owner", db_column="ownerid", on_delete=models.CASCADE,
+        "codecov_auth.Owner", db_column="ownerid", on_delete=models.CASCADE
     )
     service_id = models.TextField()
     private = models.BooleanField()
@@ -86,6 +105,7 @@ class Repository(models.Model):
         null=True,
         on_delete=models.SET_NULL,
         related_name="bot_repos",
+        blank=True,
     )
     activated = models.BooleanField(null=True, default=False)
     deleted = models.BooleanField(default=False)
@@ -93,6 +113,12 @@ class Repository(models.Model):
     class Meta:
         db_table = "repos"
         ordering = ["-repoid"]
+        indexes = [
+            models.Index(
+                fields=["service_id", "author"],
+                name="repos_service_id_author",
+            ),
+        ]
         constraints = [
             models.UniqueConstraint(fields=["author", "name"], name="repos_slug"),
             models.UniqueConstraint(
@@ -117,6 +143,10 @@ class Repository(models.Model):
         self.yaml = None
         self.cache = None
         self.save()
+
+    def clean(self):
+        if self.using_integration is None:
+            raise ValidationError("using_integration cannot be null")
 
 
 class Branch(models.Model):
@@ -301,6 +331,7 @@ class CommitNotification(models.Model):
     class DecorationTypes(models.TextChoices):
         STANDARD = "standard"
         UPGRADE = "upgrade"
+        UPLOAD_LIMIT = "upload_limit"
 
     class States(models.TextChoices):
         PENDING = "pending"

@@ -70,10 +70,10 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
 
     def get_coverage(self):
         """
-            Note: This endpoint has the behaviour of returning a gray badge with the word 'unknwon' instead of returning a 404
-                  when the user enters an invalid service, owner, repo or when coverage is not found for a branch. 
+        Note: This endpoint has the behaviour of returning a gray badge with the word 'unknwon' instead of returning a 404
+              when the user enters an invalid service, owner, repo or when coverage is not found for a branch.
 
-                  We also need to support service abbreviations for users already using them
+              We also need to support service abbreviations for users already using them
         """
         coverage_range = [70, 100]
 
@@ -116,7 +116,7 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
     def flag_coverage(self, flag, commit):
         """
         Looks into a commit's report sessions and returns the coverage for a perticular flag
-        
+
         Parameters
         flag (string): name of flag
         commit (obj): commit object containing report
@@ -141,7 +141,6 @@ class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
     filename = "graph"
 
     def get_object(self, request, *args, **kwargs):
-
         options = dict()
         graph = self.kwargs.get("graph")
 
@@ -229,13 +228,18 @@ class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
             return None
         if repo.private and repo.image_token != self.request.query_params.get("token"):
             return None
-        branch_name = self.kwargs.get("branch") or repo.branch
-        branch = Branch.objects.filter(
-            name=branch_name, repository_id=repo.repoid
-        ).first()
-        if branch is None:
-            return None
 
-        commit = repo.commits.filter(commitid=branch.head).first()
+        commitid = self.kwargs.get("commit")
+        if commitid:
+            commit = repo.commits.filter(commitid=commitid).first()
+        else:
+            branch_name = self.kwargs.get("branch") or repo.branch
+            branch = Branch.objects.filter(
+                name=branch_name, repository_id=repo.repoid
+            ).first()
+            if branch is None:
+                return None
+
+            commit = repo.commits.filter(commitid=branch.head).first()
 
         return commit

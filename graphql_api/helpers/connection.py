@@ -22,28 +22,12 @@ def build_connection_graphql(connection_name, type_node):
     """
 
 
-def _build_paginator_ordering(primary_ordering, ordering_direction, unique_ordering):
-    primary_ordering_value = (
-        primary_ordering.value
-        if isinstance(primary_ordering, enum.Enum)
-        else primary_ordering
-    )
-
-    primary_ordering_with_direction = (
-        f"-{primary_ordering_value}"
-        if ordering_direction == OrderingDirection.DESC
-        else primary_ordering_value
-    )
-    unique_ordering_with_direction = (
-        f"-{unique_ordering}"
-        if ordering_direction == OrderingDirection.DESC
-        else unique_ordering
-    )
-
-    return (
-        primary_ordering_with_direction,
-        unique_ordering_with_direction,
-    )
+def field_order(field, ordering):
+    if isinstance(field, enum.Enum):
+        field = field.value
+    if ordering == OrderingDirection.DESC:
+        field = f"-{field}"
+    return field
 
 
 @sync_to_async
@@ -63,14 +47,12 @@ def queryset_to_connection(
     if not first and not after:
         first = 100
 
-    paginator_ordering = _build_paginator_ordering(
-        ordering, ordering_direction, queryset.model._meta.pk.name
-    )
-    paginator = CursorPaginator(queryset, ordering=paginator_ordering)
+    ordering = tuple(field_order(field, ordering_direction) for field in ordering)
+    paginator = CursorPaginator(queryset, ordering=ordering)
     page = paginator.page(first=first, after=after, last=last, before=before)
     return {
         "edges": [
-            {"cursor": paginator.cursor(page[pos]), "node": repository,}
+            {"cursor": paginator.cursor(page[pos]), "node": repository}
             for pos, repository in enumerate(page)
         ],
         "total_count": queryset.count(),

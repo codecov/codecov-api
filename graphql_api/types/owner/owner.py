@@ -2,6 +2,7 @@ import json
 
 import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
+from asgiref.sync import sync_to_async
 
 from codecov_auth.helpers import current_user_part_of_org
 from graphql_api.actions.repository import list_repository_for_owner
@@ -11,6 +12,7 @@ from graphql_api.helpers.connection import (
     queryset_to_connection,
 )
 from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
+from services.profiling import ProfilingSummary
 
 owner = ariadne_load_local_graphql(__file__, "owner.graphql")
 owner = owner + build_connection_graphql("RepositoryConnection", "Repository")
@@ -30,7 +32,7 @@ def resolve_repositories(
     current_user = info.context["request"].user
     queryset = list_repository_for_owner(current_user, owner, filters)
     return queryset_to_connection(
-        queryset, ordering=ordering, ordering_direction=ordering_direction, **kwargs
+        queryset, ordering=(ordering,), ordering_direction=ordering_direction, **kwargs
     )
 
 
@@ -53,7 +55,11 @@ def resolve_yaml(owner, info):
 @owner_bindable.field("repository")
 async def resolve_repository(owner, info, name):
     command = info.context["executor"].get_command("repository")
-    return await command.fetch_repository(owner, name)
+    repository = await command.fetch_repository(owner, name)
+
+    info.context["profiling_summary"] = ProfilingSummary(repository)
+
+    return repository
 
 
 @owner_bindable.field("numberOfUploads")
@@ -65,4 +71,5 @@ async def resolve_number_of_uploads(owner, info, **kwargs):
 @owner_bindable.field("isAdmin")
 def resolve_is_current_user_an_admin(owner, info):
     current_user = info.context["request"].user
-    return owner.is_admin(current_user)
+    command = info.context["executor"].get_command("owner")
+    return command.get_is_current_user_an_admin(owner, current_user)

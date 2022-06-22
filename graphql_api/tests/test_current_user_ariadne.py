@@ -1,9 +1,10 @@
+import datetime
 from unittest.mock import patch
 
 from django.test import TransactionTestCase
 
 from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import RepositoryFactory
+from core.tests.factories import CommitFactory, RepositoryFactory
 
 from .helper import GraphQLTestHelper, paginate_connection
 
@@ -35,14 +36,14 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
                 "user": {
                     "username": self.user.username,
                     "avatarUrl": self.user.avatar_url,
-                },
+                }
             }
         }
 
     def test_when_tracking_metadata(self):
         query = "{ me { trackingMetadata { ownerid } } }"
         data = self.gql_request(query, user=self.user)
-        assert data == {"me": {"trackingMetadata": {"ownerid": self.user.ownerid,},}}
+        assert data == {"me": {"trackingMetadata": {"ownerid": self.user.ownerid}}}
 
     def test_fetching_viewable_repositories(self):
         org_1 = OwnerFactory()
@@ -191,14 +192,12 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
                 self.assertEqual(repos_name, ["C", "B", "A"])
 
         with self.subTest("COVERAGE"):
-            repo_1.cache = {"commit": {"totals": {"c": "42"}}}
-            repo_1.save()
+            hour_ago = datetime.datetime.now() - datetime.timedelta(hours=1)
+            CommitFactory(repository=repo_1, totals={"c": "42"}, timestamp=hour_ago)
+            CommitFactory(repository=repo_2, totals={"c": "100.2"}, timestamp=hour_ago)
 
-            repo_2.cache = {"commit": {"totals": {"c": "100.2"}}}
-            repo_2.save()
-
-            repo_3.cache = {"commit": {"totals": {"c": "0"}}}
-            repo_3.save()
+            # too recent, should not be considered
+            CommitFactory(repository=repo_2, totals={"c": "10"})
 
             with self.subTest("no ordering Direction"):
                 data = self.gql_request(
@@ -299,9 +298,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, user=self.user)
         orgs = paginate_connection(data["me"]["myOrganizations"])
 
-        assert orgs == [
-            {"username": "spotify"},
-        ]
+        assert orgs == [{"username": "spotify"}]
 
     def test_sync_repo_not_authenticated(self):
         mutation = """

@@ -182,23 +182,25 @@ def _svg_polar_rect(
 
     large_arc_flag = 1 if end - start > 0.5 else 0
 
-    path_args = "M {} {} L {} {} A {} {} 0 {} 0 {} {} L {} {} A {} {} 0 {} 1 {} {} z".format(
-        cx + tpx_inner,
-        cy + tpy_inner,
-        cx + spx_outer,
-        cy + spy_outer,
-        outer_radius,
-        outer_radius,
-        large_arc_flag,
-        cx + tpx_outer,
-        cy + tpy_outer,
-        cx + spx_inner,
-        cy + spy_inner,
-        inner_radius,
-        inner_radius,
-        large_arc_flag,
-        cx + tpx_inner,
-        cy + tpy_inner,
+    path_args = (
+        "M {} {} L {} {} A {} {} 0 {} 0 {} {} L {} {} A {} {} 0 {} 1 {} {} z".format(
+            cx + tpx_inner,
+            cy + tpy_inner,
+            cx + spx_outer,
+            cy + spy_outer,
+            outer_radius,
+            outer_radius,
+            large_arc_flag,
+            cx + tpx_outer,
+            cy + tpy_outer,
+            cx + spx_inner,
+            cy + spy_inner,
+            inner_radius,
+            inner_radius,
+            large_arc_flag,
+            cx + tpx_inner,
+            cy + tpy_inner,
+        )
     )
 
     return '<path d="{0}" fill="{1}" stroke="{2}" stroke-width="{3}" />'.format(

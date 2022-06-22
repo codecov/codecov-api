@@ -29,11 +29,7 @@ class GetImpactedFilesInteractor(BaseInteractor):
         added_diff_coverage = file.get("added_diff_coverage", [])
         if not added_diff_coverage:
             return None
-        patch_coverage = {
-            "hits": 0,
-            "misses": 0,
-            "partials": 0,
-        }
+        patch_coverage = {"hits": 0, "misses": 0, "partials": 0}
         for added_coverage in added_diff_coverage:
             [_, type_coverage] = added_coverage
             if type_coverage == "h":

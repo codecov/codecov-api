@@ -1,0 +1,6 @@
+type PathContent {
+    name: String!
+    type: String!
+    filePath: String
+    percentCovered: Float!
+}

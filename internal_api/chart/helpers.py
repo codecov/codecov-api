@@ -76,7 +76,7 @@ def validate_params(data):
                 "year",
             ],  # must be one of the values accepted by Django's Trunc function; for more info see https://docs.djangoproject.com/en/3.0/ref/models/database-functions/#trunc
         },
-        "agg_function": {"type": "string", "allowed": ["min", "max"],},
+        "agg_function": {"type": "string", "allowed": ["min", "max"]},
         "agg_value": {"type": "string", "allowed": ["timestamp", "coverage"]},
         "coverage_timestamp_ordering": {
             "type": "string",
@@ -207,7 +207,10 @@ class ChartQueryRunner:
         )
 
         # Get list of relevant repoids
-        repos = Repository.objects.filter(author=organization).viewable_repos(self.user)
+        repos = Repository.objects.filter(
+            author=organization,
+            active=True,
+        ).viewable_repos(self.user)
 
         if self.request_params.get("repositories", []):
             repos = repos.filter(name__in=self.request_params.get("repositories", []))

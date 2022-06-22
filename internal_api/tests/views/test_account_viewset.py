@@ -16,7 +16,7 @@ curr_path = os.path.dirname(__file__)
 
 class MockSubscription(object):
     def __init__(self, subscription_params):
-        self.items = {"data": [{"id": "abc",}]}
+        self.items = {"data": [{"id": "abc"}]}
         self.cancel_at_period_end = False
         self.current_period_end = 1633512445
         self.latest_invoice = subscription_params["latest_invoice"]
@@ -320,7 +320,7 @@ class AccountViewSetTests(APITestCase):
 
     @patch("services.billing.stripe.Subscription.retrieve")
     def test_retrieve_account_gets_none_for_schedule_details_when_schedule_is_nonexistent(
-        self, mock_retrieve_subscription,
+        self, mock_retrieve_subscription
     ):
         owner = OwnerFactory(
             admins=[self.user.ownerid], stripe_subscription_id="sub_123"
@@ -597,7 +597,7 @@ class AccountViewSetTests(APITestCase):
 
     @patch("services.billing.stripe.checkout.Session.create")
     def test_update_can_upgrade_to_paid_plan_for_new_customer_and_return_checkout_session_id(
-        self, create_checkout_session_mock,
+        self, create_checkout_session_mock
     ):
         expected_id = "this is the id"
         create_checkout_session_mock.return_value = {"id": expected_id}
@@ -617,7 +617,7 @@ class AccountViewSetTests(APITestCase):
     @patch("services.billing.stripe.Subscription.retrieve")
     @patch("services.billing.stripe.Subscription.modify")
     def test_update_can_upgrade_to_paid_plan_for_existing_customer_and_set_plan_info(
-        self, modify_subscription_mock, retrieve_subscription_mock,
+        self, modify_subscription_mock, retrieve_subscription_mock
     ):
         desired_plan = {"value": "users-pr-inappm", "quantity": 12}
         self.user.stripe_customer_id = "flsoe"
@@ -685,7 +685,7 @@ class AccountViewSetTests(APITestCase):
 
     @patch("services.billing.stripe.checkout.Session.create")
     def test_update_must_validate_active_users_without_counting_active_students(
-        self, create_checkout_session_mock,
+        self, create_checkout_session_mock
     ):
         expected_id = "sample id"
         create_checkout_session_mock.return_value = {"id": expected_id}
@@ -778,7 +778,7 @@ class AccountViewSetTests(APITestCase):
     @patch("services.billing.stripe.PaymentMethod.attach")
     @patch("services.billing.stripe.Customer.modify")
     def test_update_payment_method(
-        self, modify_customer_mock, attach_payment_mock, retrieve_subscription_mock,
+        self, modify_customer_mock, attach_payment_mock, retrieve_subscription_mock
     ):
         self.user.stripe_customer_id = "flsoe"
         self.user.stripe_subscription_id = "djfos"

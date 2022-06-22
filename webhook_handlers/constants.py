@@ -2,6 +2,7 @@ class GitHubHTTPHeaders:
     EVENT = "HTTP_X_GITHUB_EVENT"
     DELIVERY_TOKEN = "HTTP_X_GITHUB_DELIVERY"
     SIGNATURE = "HTTP_X_HUB_SIGNATURE"
+    SIGNATURE_256 = "HTTP_X_HUB_SIGNATURE_256"
 
 
 class GitHubWebhookEvents:
@@ -16,7 +17,6 @@ class GitHubWebhookEvents:
     INSTALLATION_REPOSITORIES = "installation_repositories"
     ORGANIZATION = "organization"
     MARKETPLACE_PURCHASE = "marketplace_purchase"
-    MARKETPLACE_SUBSCRIPTION = "marketplace_subscription"
     MEMBER = "member"
 
     repository_events = [PULL_REQUEST, DELETE, PUSH, PUBLIC, STATUS, REPOSITORY, MEMBER]
@@ -25,6 +25,11 @@ class GitHubWebhookEvents:
 class BitbucketHTTPHeaders:
     EVENT = "HTTP_X_EVENT_KEY"
     UUID = "HTTP_X_HOOK_UUID"
+
+
+class BitbucketServerHTTPHeaders:
+    EVENT = "X-Event-Key"
+    UUID = "X-Request-Id"
 
 
 class BitbucketWebhookEvents:
@@ -43,6 +48,24 @@ class BitbucketWebhookEvents:
         REPO_PUSH,
         REPO_COMMIT_STATUS_CREATED,
         REPO_COMMIT_STATUS_UPDATED,
+    ]
+
+
+class BitbucketServerWebhookEvents:
+    REPO_MODIFIED = "repo:modified"
+    REPO_REFS_CHANGED = "repo:refs_changed"
+    PULL_REQUEST_CREATED = "pr:opened"
+    PULL_REQUEST_MERGED = "pr:merged"
+    PULL_REQUEST_REJECTED = "pr:declined"
+    PULL_REQUEST_DELETED = "pr:deleted"
+
+    subscribed_events = [
+        REPO_MODIFIED,
+        REPO_REFS_CHANGED,
+        PULL_REQUEST_CREATED,
+        PULL_REQUEST_MERGED,
+        PULL_REQUEST_REJECTED,
+        PULL_REQUEST_DELETED,
     ]
 
 

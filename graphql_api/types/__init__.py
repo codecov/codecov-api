@@ -8,13 +8,17 @@ from .comparison import comparison, comparison_bindable
 from .coverage_totals import coverage_totals, coverage_totals_bindable
 from .enums import enum_types, enums
 from .file import commit_file, file_bindable
+from .file_comparison import file_comparison, file_comparison_bindable
+from .line_comparison import line_comparison, line_comparison_bindable
 from .me import me, me_bindable
 from .mutation import mutation, mutation_resolvers
 from .owner import owner, owner_bindable
+from .path_contents import path_content, path_content_bindable
 from .profile import profile, profile_bindable
 from .pull import pull, pull_bindable
 from .query import query, query_bindable
 from .repository import repository, repository_bindable
+from .segment_comparison import segment_comparison, segment_comparison_bindable
 from .session import session, session_bindable
 from .upload import upload, upload_bindable, upload_error_bindable
 from .user import user, user_bindable
@@ -28,6 +32,9 @@ types = [
     branch,
     commit,
     comparison,
+    file_comparison,
+    segment_comparison,
+    line_comparison,
     pull,
     user,
     owner,
@@ -37,6 +44,7 @@ types = [
     session,
     mutation,
     errors,
+    path_content,
     coverage_totals,
     upload,
     commit_file,
@@ -49,6 +57,9 @@ bindables = [
     branch_bindable,
     commit_bindable,
     comparison_bindable,
+    file_comparison_bindable,
+    segment_comparison_bindable,
+    line_comparison_bindable,
     pull_bindable,
     user_bindable,
     owner_bindable,
@@ -58,6 +69,7 @@ bindables = [
     file_bindable,
     upload_bindable,
     upload_error_bindable,
+    path_content_bindable,
     datetime_scalar,
     profile_bindable,
     *mutation_resolvers,

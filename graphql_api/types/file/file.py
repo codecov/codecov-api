@@ -35,7 +35,7 @@ def resolve_content(data, info):
         return []
 
     return [
-        {"line": line_report[0], "coverage": get_coverage_type(line_report[1]),}
+        {"line": line_report[0], "coverage": get_coverage_type(line_report[1])}
         for line_report in file_report.lines
     ]
 

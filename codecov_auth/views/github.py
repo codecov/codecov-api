@@ -18,37 +18,69 @@ class GithubLoginView(LoginMixin, StateMixin, View):
     service = "github"
     error_redirection_page = "/"
 
-    def get_is_enterprise(self):
-        # TODO Change when rolling out enterprise
-        return False
+    @property
+    def repo_service_instance(self):
+        return Github(
+            oauth_consumer_token=dict(
+                key=settings.GITHUB_CLIENT_ID, secret=settings.GITHUB_CLIENT_SECRET
+            )
+        )
+
+    @property
+    def redirect_info(self):
+        return dict(repo_service=Github(), client_id=settings.GITHUB_CLIENT_ID)
 
     def get_url_to_redirect_to(self, scope):
-        repo_service = Github
-        base_url = urljoin(repo_service.service_url, "login/oauth/authorize")
+        redirect_info = self.redirect_info
+        base_url = urljoin(
+            redirect_info["repo_service"].service_url, "login/oauth/authorize"
+        )
         state = self.generate_state()
         query = dict(
             response_type="code",
             scope=",".join(scope),
-            client_id=settings.GITHUB_CLIENT_ID,
+            client_id=redirect_info["client_id"],
             state=state,
         )
         query_str = urlencode(query)
         return f"{base_url}?{query_str}"
 
+    async def _get_teams_data(self, repo_service):
+        # https://docs.github.com/en/rest/reference/teams#list-teams-for-the-authenticated-user
+        teams = []
+        if settings.IS_ENTERPRISE:
+            async with repo_service.get_client() as client:
+                try:
+                    teams = []
+                    curr_page = 1
+                    while True:
+                        curr_teams = await repo_service.api(
+                            client, "get", f"/user/teams?per_page=100&page={curr_page}"
+                        )
+                        teams.extend(curr_teams)
+                        curr_page += 1
+                        if len(curr_teams) == 0:
+                            break
+                except TorngitError as exp:
+                    log.error(f"Failed to get GitHub teams information: {exp}")
+        return teams
+
     @async_to_sync
     async def fetch_user_data(self, code):
-        repo_service = Github(
-            oauth_consumer_token=dict(
-                key=settings.GITHUB_CLIENT_ID, secret=settings.GITHUB_CLIENT_SECRET
-            )
-        )
+        # https://docs.github.com/en/rest/reference/teams#list-teams-for-the-authenticated-user
+        # This is specific to GitHub
+        repo_service = self.repo_service_instance
         authenticated_user = await repo_service.get_authenticated_user(code)
         user_orgs = await repo_service.list_teams()
         is_student = await repo_service.is_student()
         has_private_access = "repo" in authenticated_user["scope"].split(",")
+
+        teams = await self._get_teams_data(repo_service)
+
         return dict(
             user=authenticated_user,
             orgs=user_orgs,
+            teams=teams,
             is_student=is_student,
             has_private_access=has_private_access,
         )
@@ -73,10 +105,11 @@ class GithubLoginView(LoginMixin, StateMixin, View):
         else:
             scope = ["user:email", "read:org", "repo:status", "write:repo_hook"]
             if (
-                self.get_is_enterprise()
+                settings.IS_ENTERPRISE
                 or request.COOKIES.get("ghpr") == "true"
                 or request.GET.get("private")
             ):
+                log.info("Appending repo to scope")
                 scope.append("repo")
                 url_to_redirect_to = self.get_url_to_redirect_to(scope)
                 response = redirect(url_to_redirect_to)

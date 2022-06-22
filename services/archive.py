@@ -7,6 +7,7 @@ from uuid import uuid4
 
 from django.conf import settings
 from django.utils import timezone
+from django.utils.functional import cached_property
 from minio import Minio
 from shared.helpers.flag import Flag
 from shared.reports.resources import Report
@@ -33,10 +34,9 @@ class SerializableReport(Report):
         for f in self.files:
             yield self.get(f)
 
-    @property
+    @cached_property
     def flags(self):
-        """returns dict(:name=<Flag>)
-        """
+        """returns dict(:name=<Flag>)"""
         flags_dict = {}
         for sid, session in self.sessions.items():
             if session.flags is not None:
@@ -89,11 +89,6 @@ class ArchiveService(object):
     storage_hash = None
 
     """
-    Boolean. True if enterprise, False if not.
-    """
-    enterprise = False
-
-    """
     Time to life, how long presigned PUTs/GETs should live
     """
     ttl = 10
@@ -101,7 +96,6 @@ class ArchiveService(object):
     def __init__(self, repository):
         self.root = get_config("services", "minio", "bucket", default="archive")
         self.region = get_config("services", "minio", "region", default="us-east-1")
-        self.enterprise = bool(get_config("setup", "enterprise_license"))
 
         self.storage = StorageService()
         self.storage_hash = self.get_archive_hash(repository)
@@ -119,7 +113,7 @@ class ArchiveService(object):
     """
 
     def is_enterprise(self):
-        return self.enterprise
+        return settings.IS_ENTERPRISE
 
     """
     Generates a hash key from repo specific information.

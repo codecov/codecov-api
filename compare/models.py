@@ -1,3 +1,4 @@
+import pytz
 from django.db import models
 
 from codecov.models import BaseCodecovModel
@@ -32,5 +33,22 @@ class CommitComparison(BaseCodecovModel):
             models.UniqueConstraint(
                 name="unique_comparison_between_commit",
                 fields=["base_commit", "compare_commit"],
-            ),
+            )
         ]
+
+    @property
+    def is_processed(self):
+        return self.state == CommitComparison.CommitComparisonStates.PROCESSED
+
+    @property
+    def needs_recalculation(self):
+        timezone = pytz.utc
+        return (
+            self.compare_commit.updatestamp
+            and timezone.normalize(self.updated_at)
+            < timezone.localize(self.compare_commit.updatestamp)
+        ) or (
+            self.base_commit.updatestamp
+            and timezone.normalize(self.updated_at)
+            < timezone.localize(self.base_commit.updatestamp)
+        )

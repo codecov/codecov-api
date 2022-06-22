@@ -9,7 +9,10 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from billing.constants import PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS
+from billing.constants import (
+    ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
+    PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
+)
 from codecov_auth.models import Owner
 from services.billing import BillingService
 from services.segment import SegmentService
@@ -173,7 +176,7 @@ class StripeWebhookHandler(APIView):
 
         log.info(
             f"Stripe subscription modified successfully for owner {owner.ownerid} by user #{requesting_user_id}",
-            extra=dict(ownerid=owner.ownerid, requesting_user_id=requesting_user_id,),
+            extra=dict(ownerid=owner.ownerid, requesting_user_id=requesting_user_id),
         )
 
     def customer_created(self, customer):
@@ -194,7 +197,11 @@ class StripeWebhookHandler(APIView):
             )
             return
 
-        if subscription.plan.name not in PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS:
+        pro_plans = {
+            **PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
+            **ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
+        }
+        if subscription.plan.name not in pro_plans:
             log.warning(
                 f"Subscription creation requested for invalid plan "
                 f"'{subscription.plan.name}' -- doing nothing",
@@ -260,8 +267,11 @@ class StripeWebhookHandler(APIView):
                 owner.set_basic_plan()
                 owner.repository_set.update(active=False, activated=False)
                 return
-
-            if subscription.plan.name not in PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS:
+            pro_plans = {
+                **PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
+                **ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
+            }
+            if subscription.plan.name not in pro_plans:
                 log.warning(
                     f"Subscription update requested with invalid plan "
                     f"{subscription.plan.name} -- doing nothing",

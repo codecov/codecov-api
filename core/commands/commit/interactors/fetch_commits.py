@@ -22,6 +22,10 @@ class FetchCommitsInteractor(BaseInteractor):
         prefetch = Prefetch(
             "reports", queryset=CommitReport.objects.select_related("reportleveltotals")
         )
-        queryset = repository.commits.prefetch_related(prefetch).all()
+
+        # We don't select the `report` column here b/c it can be many MBs of JSON
+        # and can cause performance issues
+        queryset = repository.commits.defer("report").prefetch_related(prefetch).all()
         queryset = self.apply_filters_to_commits_queryset(queryset, filters)
+
         return queryset

@@ -337,13 +337,12 @@ def determine_upload_commit_to_use(upload_params, repository):
         except TorngitObjectNotFoundError as e:
             log.warning(
                 "Unable to fetch commit. Not found",
-                extra=dict(commit=upload_params.get("commit"),),
+                extra=dict(commit=upload_params.get("commit")),
             )
             return upload_params.get("commit")
         except TorngitClientError as e:
             log.warning(
-                "Unable to fetch commit",
-                extra=dict(commit=upload_params.get("commit"),),
+                "Unable to fetch commit", extra=dict(commit=upload_params.get("commit"))
             )
             return upload_params.get("commit")
 
@@ -414,7 +413,7 @@ def check_commit_upload_constraints(commit: Commit):
         )
         if limit is not None:
             did_commit_uploads_start_already = ReportSession.objects.filter(
-                report__commit=commit,
+                report__commit=commit
             ).exists()
             if not did_commit_uploads_start_already:
                 limit = USER_PLAN_REPRESENTATIONS[owner.plan].get(
@@ -434,7 +433,8 @@ def check_commit_upload_constraints(commit: Commit):
                         "User exceeded its limits for usage",
                         extra=dict(ownerid=owner.ownerid, repoid=commit.repository_id),
                     )
-                    raise Throttled()
+                    message = "Request was throttled. Throttled due to limit on private repository coverage uploads to Codecov on a free plan. Please upgrade your plan if you require additional uploads this month."
+                    raise Throttled(detail=message)
 
 
 def validate_upload(upload_params, repository, redis):
@@ -591,7 +591,7 @@ def dispatch_upload_task(task_arguments, repository, redis):
 
     redis.rpush(repo_queue_key, dumps(task_arguments))
     redis.expire(
-        repo_queue_key, cache_uploads_eta if cache_uploads_eta is not True else 86400,
+        repo_queue_key, cache_uploads_eta if cache_uploads_eta is not True else 86400
     )
     redis.setex(
         f"latest_upload/{repository.repoid}/{task_arguments.get('commit')}",

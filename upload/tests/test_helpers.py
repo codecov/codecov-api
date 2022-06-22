@@ -119,9 +119,13 @@ def test_check_commit_contraints_settings_enabled(db, settings):
     with pytest.raises(Throttled):
         # second commit does not have uploads made, so we block it
         check_commit_upload_constraints(second_commit)
-    with pytest.raises(Throttled):
+    with pytest.raises(Throttled) as excinfo:
         # third commit belongs to a different repo, but same user
         check_commit_upload_constraints(third_commit)
+    assert (
+        "Throttled due to limit on private repository coverage uploads"
+        in excinfo.value.detail
+    )
 
 
 @pytest.mark.parametrize(
@@ -133,7 +137,7 @@ def test_validate_upload_too_many_uploads_for_commit(
 ):
     redis = mocker.MagicMock(sismember=mocker.MagicMock(return_value=False))
     owner = OwnerFactory.create(plan="users-free")
-    repo = RepositoryFactory.create(author=owner,)
+    repo = RepositoryFactory.create(author=owner)
     commit = CommitFactory.create(totals={"s": totals_column_count}, repository=repo)
     report = CommitReportFactory.create(commit=commit)
     for i in range(rows_count):
