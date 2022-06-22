@@ -68,8 +68,7 @@ class UploadDownloadHelperTest(APITestCase):
             data={"path": "v4/raw/hasssshhh"},
         )
         assert response.status_code == 200
-        headers = response.headers
-        assert headers["content-type"] == "text/plain"
+        assert response["content-type"] == "text/plain"
 
     def test_invalid_repo_archive_path(self):
         response = self._get(
