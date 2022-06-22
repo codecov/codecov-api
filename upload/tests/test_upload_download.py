@@ -56,9 +56,11 @@ class UploadDownloadHelperTest(APITestCase):
         )
         assert response.status_code == 404
 
+    @patch("services.archive.ArchiveService.create_raw_upload_presigned_get")
     @patch("services.archive.ArchiveService.get_archive_hash")
-    def test_valid_repo_archive_path(self, get_archive_hash):
+    def test_valid_repo_archive_path(self, get_archive_hash, create_raw_upload_presigned_get):
         get_archive_hash.return_value = "hasssshhh"
+        create_raw_upload_presigned_get.return_value='presigned_url'
         response = self._get(
             kwargs={
                 "service": "gh",
