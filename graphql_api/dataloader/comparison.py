@@ -63,31 +63,28 @@ class ComparisonLoader(BaseLoader):
 
     @sync_to_async
     def _load_comparisons(self, keys, commit_cache):
+        # initial fetch of comparisons (we may be missing some at this point)
         queryset = self.batch_queryset(keys)
         comparisons = {self.key(record): record for record in queryset}
 
-        # create missing comparisons
+        # handle missing comparisons
         missing_keys = set(keys) - set(comparisons.keys())
-        created_comparisons = self._create_missing_comparisons(
-            missing_keys, commit_cache
-        )
-        for comparison in created_comparisons:
-            key = (
-                comparison.base_commit.commitid,
-                comparison.compare_commit.commitid,
-            )
-            comparisons[key] = comparison
+        if len(missing_keys) > 0:
+            # create comparisons for the missing keys
+            for record in self._create_comparisons(missing_keys, commit_cache):
+                comparisons[self.key(record)] = record
 
-        # return comparisons in order
-        results = [comparisons.get(key) for key in keys]
-        self._refresh_comparisons(results, commit_cache)
-        return results
+        # recalculate comparisons if needed
+        self._refresh_comparisons(comparisons, missing_keys, commit_cache)
 
-    def _create_missing_comparisons(self, keys, commit_cache):
+        # return comparisons in the same order as `keys`
+        return [comparisons.get(key) for key in keys]
+
+    def _create_comparisons(self, keys, commit_cache):
         """
-        Create new comparisons for the given keys.
+        Insert new comparisons for the given keys (skipping insert of any duplicates).
         """
-        created_comparisons = CommitComparison.objects.bulk_create(
+        CommitComparison.objects.bulk_create(
             [
                 CommitComparison(
                     base_commit=commit_cache.get_by_commitid(base_commitid),
@@ -98,28 +95,22 @@ class ComparisonLoader(BaseLoader):
                 and commit_cache.get_by_commitid(base_commitid)
                 and compare_commitid
                 and commit_cache.get_by_commitid(compare_commitid)
-            ]
+            ],
+            ignore_conflicts=True,
         )
-        for comparison in created_comparisons:
+
+        # refetch missing comparisons (since they cannot be returned from the create call abbove)
+        return self.batch_queryset(keys)
+
+    def _refresh_comparisons(self, comparisons, missing_keys, commit_cache):
+        """
+        Recalculate comparisons for newly added or out-of-date comparisons.
+        """
+        for key, comparison in comparisons.items():
             comparison.base_commit = commit_cache.get_by_pk(comparison.base_commit_id)
             comparison.compare_commit = commit_cache.get_by_pk(
                 comparison.compare_commit_id
             )
-            recalculate_comparison(comparison)
 
-        return created_comparisons
-
-    def _refresh_comparisons(self, comparisons, commit_cache):
-        """
-        Make sure all the given comparison calculations are up-to-date.
-        """
-        for comparison in comparisons:
-            if comparison:
-                comparison.base_commit = commit_cache.get_by_pk(
-                    comparison.base_commit_id
-                )
-                comparison.compare_commit = commit_cache.get_by_pk(
-                    comparison.compare_commit_id
-                )
-                if comparison.needs_recalculation:
-                    recalculate_comparison(comparison)
+            if key in missing_keys or comparison.needs_recalculation:
+                recalculate_comparison(comparison)
