@@ -14,10 +14,9 @@ from rest_framework.permissions import AllowAny, BasePermission
 from shared.metrics import metrics
 
 from codecov_auth.authentication.repo_auth import RepositoryTokenAuthentication
-from core.models import Commit, Repository
-from reports.models import ReportSession
+from core.models import Repository
 from services.archive import ArchiveService
-from upload.helpers import parse_params
+from upload.helpers import determine_repo_for_upload, parse_params
 from upload.serializers import UploadSerializer
 from upload.throttles import UploadsPerCommitThrottle, UploadsPerWindowThrottle
 
@@ -32,7 +31,7 @@ class CanDoCoverageUploadsPermission(BasePermission):
 class UploadViews(ListCreateAPIView):
     serializer_class = UploadSerializer
     permission_classes = [
-        CanDoCoverageUploadsPermission,
+        AllowAny,
     ]
     throttle_classes = [UploadsPerCommitThrottle, UploadsPerWindowThrottle]
 
@@ -56,6 +55,8 @@ class UploadViews(ListCreateAPIView):
         return response
 
     def _get_upload_params(self, request, *args, **kwargs):
+        # NOTE: Not sure if this is needed. It was mostly copied from the old upload endpoint
+        # We might decide to use a different schema on this one
         # Parse request parameters
         request_params = {
             **request.query_params.dict(),  # query_params is a QueryDict, need to convert to dict to process it properly
@@ -77,6 +78,7 @@ class UploadViews(ListCreateAPIView):
     def _generate_presigned_put(
         self, repository: Repository, commitid: str, reportid: str, *args, **kwargs
     ):
+        # TODO: differentiate presigned puts of normal upload reports and mutation testing uplaod reports
         archive_service = ArchiveService(repository)
         try:
             upload_url = archive_service.create_raw_upload_presigned_put(
@@ -123,22 +125,20 @@ class MutationTestingUploadView(UploadViews):
             return response
 
         # Verify that the repo exists and the upload token is for that repo
+        # TODO: THere will be a separate function for validating the uplaod token, probably (CODE-1559)
         try:
-            repo_obj: Repository = Repository.objects.get(repoid=repo)
-            token = upload_params.get("token")
-            # TODO: Verify how this check should look like
-            if repo_obj.upload_token and repo_obj.upload_token != token:
-                response.status_code = status.HTTP_400_BAD_REQUEST
-                response.content = "Upload token and repo's token don't match"
-                metrics.incr("uploads.rejected", 1)
-                return response
-        except Repository.DoesNotExist:
+            # TODO: There will probably be a new function for getting the repo as well
+            repo_obj: Repository = determine_repo_for_upload(upload_params)
+        except ValidationError as e:
             response.status_code = status.HTTP_400_BAD_REQUEST
-            response.content = f'Could not find repository "{repo}"'
+            response.content = "Could not determine repo and owner"
+            metrics.incr("uploads.rejected", 1)
             return response
 
         # TEMP - Only codecov repos can uplaod mutation testing reports for now
-        if not repo_obj.name.startswith("codecov"):
+        # REVIEW: check how to make this verification
+        log.warning(repo_obj)
+        if not (repo_obj.author.name.lower() == 'codecov' or repo_obj.author.username.lower() == 'codecov'):
             response.status_code = status.HTTP_403_FORBIDDEN
             response.content = "Feature currently unnavailable outside codecov"
             return response
