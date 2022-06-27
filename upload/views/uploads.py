@@ -57,7 +57,7 @@ class UploadViews(ListCreateAPIView):
     def _generate_presigned_put(
         self, repository: Repository, commitid: str, reportid: str, *args, **kwargs
     ):
-        # TODO: differentiate presigned puts of normal upload reports and mutation testing uplaod reports
+        # REVIEW: should we differentiate presigned puts of normal upload reports and mutation testing uplaod reports?
         archive_service = ArchiveService(repository)
         try:
             upload_url = archive_service.create_raw_upload_presigned_put(
