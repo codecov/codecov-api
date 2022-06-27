@@ -54,27 +54,6 @@ class UploadViews(ListCreateAPIView):
         ] = "Origin, Content-Type, Accept, X-User-Agent"
         return response
 
-    def _get_upload_params(self, request, *args, **kwargs):
-        # NOTE: Not sure if this is needed. It was mostly copied from the old upload endpoint
-        # We might decide to use a different schema on this one
-        # Parse request parameters
-        request_params = {
-            **request.query_params.dict(),  # query_params is a QueryDict, need to convert to dict to process it properly
-            **kwargs,
-        }
-        request_params["token"] = request_params.get("token") or request.META.get(
-            "HTTP_X_UPLOAD_TOKEN"
-        )
-        try:
-            # note: try to avoid mutating upload_params past this point, to make it easier to reason about the state of this variable
-            return parse_params(request_params)
-        except ValidationError as e:
-            log.warning(
-                "Failed to parse upload request params",
-                extra=dict(request_params=request_params, errors=str(e)),
-            )
-            return None
-
     def _generate_presigned_put(
         self, repository: Repository, commitid: str, reportid: str, *args, **kwargs
     ):
@@ -117,17 +96,31 @@ class MutationTestingUploadView(UploadViews):
 
         # Parse upload params
         # Not sure why we have to do this, or if it can be dropped, but seems important in the old endpoint
-        upload_params = self._get_upload_params(request, kwargs=self.kwargs)
-        if upload_params is None:
+        # REVIEW: verify if we really need this here
+        request_params = {
+            **request.query_params.dict(),  # query_params is a QueryDict, need to convert to dict to process it properly
+            **self.kwargs,
+        }
+        request_params["token"] = request_params.get("token") or request.META.get(
+            "HTTP_X_UPLOAD_TOKEN"
+        )
+        try:
+            # note: try to avoid mutating upload_params past this point, to make it easier to reason about the state of this variable
+            upload_params = parse_params(request_params)
+        except ValidationError as e:
+            log.warning(
+                "Failed to parse upload request params",
+                extra=dict(request_params=request_params, errors=str(e)),
+            )
             response.status_code = status.HTTP_400_BAD_REQUEST
             response.content = "Invalid request parameters"
             metrics.incr("uploads.rejected", 1)
             return response
 
         # Verify that the repo exists and the upload token is for that repo
-        # TODO: THere will be a separate function for validating the uplaod token, probably (CODE-1559)
+        # FIXME: THere will be a separate function for validating the uplaod token, probably (CODE-1559)
         try:
-            # TODO: There will probably be a new function for getting the repo as well
+            # FIXME: There will probably be a new function for getting the repo as well
             repo_obj: Repository = determine_repo_for_upload(upload_params)
         except ValidationError as e:
             response.status_code = status.HTTP_400_BAD_REQUEST
@@ -138,7 +131,10 @@ class MutationTestingUploadView(UploadViews):
         # TEMP - Only codecov repos can uplaod mutation testing reports for now
         # REVIEW: check how to make this verification
         log.warning(repo_obj)
-        if not (repo_obj.author.name.lower() == 'codecov' or repo_obj.author.username.lower() == 'codecov'):
+        if not (
+            repo_obj.author.name.lower() == "codecov"
+            or repo_obj.author.username.lower() == "codecov"
+        ):
             response.status_code = status.HTTP_403_FORBIDDEN
             response.content = "Feature currently unnavailable outside codecov"
             return response
@@ -153,7 +149,7 @@ class MutationTestingUploadView(UploadViews):
         # Send task to worker
         # dispatch_upload_task(task_arguments, repository, redis)
 
-        # TODO: Segment Tracking
+        # TODO: Segment Tracking.
         # segment_upload_data = upload_params.copy()
         # segment_upload_data["repository_id"] = repository.repoid
         # segment_upload_data["repository_name"] = repository.name
