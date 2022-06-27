@@ -41,13 +41,6 @@ class Migration(migrations.Migration):
                 name="timeseries__owner_i_2cc713_idx",
             ),
         ),
-        migrations.AddIndex(
-            model_name="measurement",
-            index=models.Index(
-                fields=["repo_id", "commit_sha", "timestamp"],
-                name="timeseries__repo_id_2f66ee_idx",
-            ),
-        ),
         migrations.RunSQL(
             "SELECT create_hypertable('timeseries_measurement', 'timestamp');",
             reverse_sql="",

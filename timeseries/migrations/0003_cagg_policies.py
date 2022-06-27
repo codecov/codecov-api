@@ -2,21 +2,6 @@
 
 from django.db import migrations
 
-CAGG_POLICIES = {
-    "1day": {
-        "lookback": "3 days",
-        "refresh_every": "1 day",
-    },
-    "7day": {
-        "lookback": "21 days",
-        "refresh_every": "7 days",
-    },
-    "30day": {
-        "lookback": "90 days",
-        "refresh_every": "30 days",
-    },
-}
-
 
 class Migration(migrations.Migration):
 
@@ -29,12 +14,12 @@ class Migration(migrations.Migration):
             f"""
             select add_continuous_aggregate_policy(
                 'timeseries_measurement_summary_{name}',
-                start_offset => INTERVAL '{intervals['lookback']}',
-                end_offset => INTERVAL '1 hour',
-                schedule_interval => INTERVAL '{intervals['refresh_every']}'
+                start_offset => NULL,
+                end_offset => NULL,
+                schedule_interval => INTERVAL '24 hours'
             );
             """,
             reverse_sql=f"select remove_continuous_aggregate_policy('timeseries_measurement_summary_{name}');",
         )
-        for name, intervals in CAGG_POLICIES.items()
+        for name in ["1day", "7day", "30day"]
     ]

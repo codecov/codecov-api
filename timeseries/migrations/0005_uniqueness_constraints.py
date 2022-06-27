@@ -10,10 +10,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveIndex(
-            model_name="measurement",
-            name="timeseries__repo_id_2f66ee_idx",
-        ),
         migrations.AddConstraint(
             model_name="measurement",
             constraint=models.UniqueConstraint(
