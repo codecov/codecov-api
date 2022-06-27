@@ -92,7 +92,8 @@ class Repository(models.Model):
         null=True,
         blank=True,
     )
-    branch = models.TextField(default="master") # this is the default branch (e.g. master or main)
+    # this is the default branch (e.g. master or main)
+    branch = models.TextField(default="master")
     upload_token = models.UUIDField(unique=True, default=uuid.uuid4)
     yaml = models.JSONField(null=True)
     cache = models.JSONField(null=True)
