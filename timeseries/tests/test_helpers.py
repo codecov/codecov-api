@@ -71,6 +71,20 @@ class SaveCommitMeasurementsTest(TestCase):
         assert measurement.value == 60.0
 
     @patch("services.archive.ReportService.build_report_from_commit")
+    def test_insert_commit_measurement_no_report(self, mock_report):
+        mock_report.return_value = None
+
+        commit = CommitFactory(branch="foo")
+        save_commit_measurements(commit)
+
+        measurement_queryset = Measurement.objects.filter(
+            name=MeasurementName.COVERAGE.value,
+            commit_sha=commit.commitid,
+            timestamp=commit.timestamp,
+        )
+        assert measurement_queryset.count() == 0
+
+    @patch("services.archive.ReportService.build_report_from_commit")
     def test_update_commit_measurement(self, mock_report):
         mock_report.return_value = sample_report()
 

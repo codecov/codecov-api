@@ -18,6 +18,9 @@ def save_commit_measurements(commit: Commit) -> None:
     report_service = ReportService()
     report = report_service.build_report_from_commit(commit)
 
+    if not report:
+        return
+
     Measurement(
         name=MeasurementName.COVERAGE.value,
         owner_id=commit.author_id,
