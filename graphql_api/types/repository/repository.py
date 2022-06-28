@@ -81,20 +81,20 @@ async def resolve_pulls(
 async def resolve_commits(repository, info, filters=None, **kwargs):
     command = info.context["executor"].get_command("commit")
     queryset = await command.fetch_commits(repository, filters)
-    res = await queryset_to_connection(
+    connection = await queryset_to_connection(
         queryset,
         ordering=("timestamp",),
         ordering_direction=OrderingDirection.DESC,
         **kwargs,
     )
 
-    for edge in res["edges"]:
+    for edge in connection.edges:
         commit = edge["node"]
         # cache all resulting commits in dataloader
         loader = CommitLoader.loader(info, repository.repoid)
         loader.cache(commit)
 
-    return res
+    return connection
 
 
 @repository_bindable.field("branches")
