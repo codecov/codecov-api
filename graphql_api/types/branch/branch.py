@@ -1,8 +1,11 @@
-from ariadne import ObjectType
+from typing import Mapping
+
+from ariadne import ObjectType, convert_kwargs_to_snake_case
 from asgiref.sync import sync_to_async
 from django.conf import settings
 
 from core.models import Branch
+from graphql_api.actions.flags import flags_for_repo
 from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.helpers.connection import queryset_to_connection_sync
 from graphql_api.helpers.lookahead import lookahead
@@ -21,21 +24,22 @@ def resolve_head_commit(branch, info):
 
 
 @branch_bindable.field("flags")
+@convert_kwargs_to_snake_case
 @sync_to_async
-def resolve_flags(branch: Branch, info, **kwargs):
-    info.context["branch"] = branch
-
+def resolve_flags(
+    branch: Branch,
+    info,
+    filters: Mapping = None,
+    ordering_direction: OrderingDirection = OrderingDirection.ASC,
+    **kwargs
+):
     repository = branch.repository
 
-    queryset = RepositoryFlag.objects.filter(
-        repository=repository,
-        # TODO: this should ultimately be filtered by branch as well
-    )
-
-    results = queryset_to_connection_sync(
+    queryset = flags_for_repo(repository, filters)
+    connection = queryset_to_connection_sync(
         queryset,
         ordering=("flag_name",),
-        ordering_direction=OrderingDirection.ASC,
+        ordering_direction=ordering_direction,
         **kwargs,
     )
 
@@ -48,7 +52,7 @@ def resolve_flags(branch: Branch, info, **kwargs):
     if node:
         if settings.TIMESERIES_ENABLED:
             interval = Interval[node.args["interval"]]
-            flag_ids = [edge["node"].pk for edge in results.edges]
+            flag_ids = [edge["node"].pk for edge in connection.edges]
 
             measurements = MeasurementSummary.agg_by(interval).filter(
                 # TODO: use MeasurementName enum from other branch
@@ -67,4 +71,4 @@ def resolve_flags(branch: Branch, info, **kwargs):
         else:
             info.context["measurements"] = []
 
-    return results
+    return connection

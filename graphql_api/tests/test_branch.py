@@ -544,3 +544,106 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                 }
             }
         }
+
+    def test_fetch_flags_term_filter(self):
+        query = """
+            query Flags(
+                $org: String!
+                $repo: String!
+                $branch: String!
+                $filters: FlagSetFilters!
+            ) {
+                owner(username: $org) {
+                    repository(name: $repo) {
+                        branch(name: $branch) {
+                            flags(filters: $filters) {
+                                edges {
+                                    node {
+                                        name
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+        RepositoryFlagFactory(repository=self.repo, flag_name="flag1")
+        RepositoryFlagFactory(repository=self.repo, flag_name="flag2")
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "branch": self.branch.name,
+            "filters": {"term": "ag1"},
+        }
+        data = self.gql_request(query, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "branch": {
+                        "flags": {
+                            "edges": [
+                                {
+                                    "node": {
+                                        "name": "flag1",
+                                    }
+                                },
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+
+    def test_fetch_flags_ordering_direction(self):
+        query = """
+            query Flags(
+                $org: String!
+                $repo: String!
+                $branch: String!
+            ) {
+                owner(username: $org) {
+                    repository(name: $repo) {
+                        branch(name: $branch) {
+                            flags(orderingDirection: DESC) {
+                                edges {
+                                    node {
+                                        name
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+        RepositoryFlagFactory(repository=self.repo, flag_name="flag1")
+        RepositoryFlagFactory(repository=self.repo, flag_name="flag2")
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "branch": self.branch.name,
+        }
+        data = self.gql_request(query, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "branch": {
+                        "flags": {
+                            "edges": [
+                                {
+                                    "node": {
+                                        "name": "flag2",
+                                    }
+                                },
+                                {
+                                    "node": {
+                                        "name": "flag1",
+                                    }
+                                },
+                            ]
+                        }
+                    }
+                }
+            }
+        }
