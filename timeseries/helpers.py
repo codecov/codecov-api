@@ -21,10 +21,12 @@ def save_commit_measurements(commit: Commit) -> None:
     if not report:
         return
 
+    repository = commit.repository
+
     Measurement(
         name=MeasurementName.COVERAGE.value,
-        owner_id=commit.author_id,
-        repo_id=commit.repository_id,
+        owner_id=repository.author_id,
+        repo_id=repository.pk,
         flag_id=None,
         branch=commit.branch,
         commit_sha=commit.commitid,
@@ -33,17 +35,17 @@ def save_commit_measurements(commit: Commit) -> None:
     ).upsert()
 
     for flag_name, flag in report.flags.items():
-        repo_flag = commit.repository.flags.filter(flag_name=flag_name).first()
+        repo_flag = repository.flags.filter(flag_name=flag_name).first()
         if repo_flag is None:
             repo_flag = RepositoryFlag.objects.create(
-                repository_id=commit.repository_id,
+                repository_id=repository.pk,
                 flag_name=flag_name,
             )
 
         Measurement(
             name=MeasurementName.FLAG_COVERAGE.value,
-            owner_id=commit.author_id,
-            repo_id=commit.repository_id,
+            owner_id=repository.author_id,
+            repo_id=repository.pk,
             flag_id=repo_flag.pk,
             branch=commit.branch,
             commit_sha=commit.commitid,

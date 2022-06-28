@@ -60,7 +60,7 @@ class SaveCommitMeasurementsTest(TestCase):
         measurement = measurement_queryset.first()
         assert measurement
         assert measurement.name == MeasurementName.COVERAGE.value
-        assert measurement.owner_id == commit.author_id
+        assert measurement.owner_id == commit.repository.author_id
         assert measurement.repo_id == commit.repository_id
         assert measurement.flag_id == None
         assert measurement.commit_sha == commit.commitid
@@ -92,7 +92,7 @@ class SaveCommitMeasurementsTest(TestCase):
 
         MeasurementFactory(
             name=MeasurementName.COVERAGE.value,
-            owner_id=commit.author_id,
+            owner_id=commit.repository.author_id,
             repo_id=commit.repository_id,
             flag_id=None,
             commit_sha=commit.commitid,
@@ -111,7 +111,7 @@ class SaveCommitMeasurementsTest(TestCase):
 
         assert measurement
         assert measurement.name == MeasurementName.COVERAGE.value
-        assert measurement.owner_id == commit.author_id
+        assert measurement.owner_id == commit.repository.author_id
         assert measurement.repo_id == commit.repository_id
         assert measurement.flag_id == None
         assert measurement.commit_sha == commit.commitid
@@ -146,7 +146,7 @@ class SaveCommitMeasurementsTest(TestCase):
 
         assert measurement
         assert measurement.name == MeasurementName.FLAG_COVERAGE.value
-        assert measurement.owner_id == commit.author_id
+        assert measurement.owner_id == commit.repository.author_id
         assert measurement.repo_id == commit.repository_id
         assert measurement.flag_id == repository_flag1.pk
         assert measurement.commit_sha == commit.commitid
@@ -165,7 +165,7 @@ class SaveCommitMeasurementsTest(TestCase):
 
         assert measurement
         assert measurement.name == MeasurementName.FLAG_COVERAGE.value
-        assert measurement.owner_id == commit.author_id
+        assert measurement.owner_id == commit.repository.author_id
         assert measurement.repo_id == commit.repository_id
         assert measurement.flag_id == repository_flag2.pk
         assert measurement.commit_sha == commit.commitid
@@ -191,7 +191,7 @@ class SaveCommitMeasurementsTest(TestCase):
 
         MeasurementFactory(
             name=MeasurementName.FLAG_COVERAGE.value,
-            owner_id=commit.author_id,
+            owner_id=commit.repository.author_id,
             repo_id=commit.repository_id,
             flag_id=repository_flag1.pk,
             commit_sha=commit.commitid,
@@ -202,7 +202,7 @@ class SaveCommitMeasurementsTest(TestCase):
 
         MeasurementFactory(
             name=MeasurementName.FLAG_COVERAGE.value,
-            owner_id=commit.author_id,
+            owner_id=commit.repository.author_id,
             repo_id=commit.repository_id,
             flag_id=repository_flag2.pk,
             commit_sha=commit.commitid,
@@ -222,7 +222,7 @@ class SaveCommitMeasurementsTest(TestCase):
 
         assert measurement
         assert measurement.name == MeasurementName.FLAG_COVERAGE.value
-        assert measurement.owner_id == commit.author_id
+        assert measurement.owner_id == commit.repository.author_id
         assert measurement.repo_id == commit.repository_id
         assert measurement.flag_id == repository_flag1.pk
         assert measurement.commit_sha == commit.commitid
@@ -241,7 +241,7 @@ class SaveCommitMeasurementsTest(TestCase):
 
         assert measurement
         assert measurement.name == MeasurementName.FLAG_COVERAGE.value
-        assert measurement.owner_id == commit.author_id
+        assert measurement.owner_id == commit.repository.author_id
         assert measurement.repo_id == commit.repository_id
         assert measurement.flag_id == repository_flag2.pk
         assert measurement.commit_sha == commit.commitid
