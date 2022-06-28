@@ -1,4 +1,6 @@
 import logging
+from importlib.resources import path
+from typing import Tuple
 
 from django.http import (
     HttpRequest,
@@ -7,6 +9,7 @@ from django.http import (
     HttpResponseNotFound,
     HttpResponseServerError,
 )
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListCreateAPIView
@@ -16,7 +19,8 @@ from shared.metrics import metrics
 from codecov_auth.authentication.repo_auth import RepositoryTokenAuthentication
 from core.models import Repository
 from services.archive import ArchiveService
-from upload.helpers import determine_repo_for_upload, parse_params
+from services.redis_configuration import get_redis_connection
+from upload.helpers import determine_repo_for_upload, dispatch_upload_task, parse_params
 from upload.serializers import UploadSerializer
 from upload.throttles import UploadsPerCommitThrottle, UploadsPerWindowThrottle
 
@@ -54,9 +58,25 @@ class UploadViews(ListCreateAPIView):
         ] = "Origin, Content-Type, Accept, X-User-Agent"
         return response
 
+    def _get_upload_path(
+        self, repository: Repository, commitid: str, reportid: str, *args, **kwargs
+    ):
+        archive_service = ArchiveService(repository)
+        path = "/".join(
+            (
+                "v4/raw",
+                timezone.now().strftime("%Y-%m-%d"),
+                archive_service.get_archive_hash(repository),
+                commitid,
+                f"{reportid}.txt",
+            )
+        )
+        return path
+
     def _generate_presigned_put(
         self, repository: Repository, commitid: str, reportid: str, *args, **kwargs
     ):
+
         # REVIEW: should we differentiate presigned puts of normal upload reports and mutation testing uplaod reports?
         archive_service = ArchiveService(repository)
         try:
@@ -130,7 +150,6 @@ class MutationTestingUploadView(UploadViews):
 
         # TEMP - Only codecov repos can uplaod mutation testing reports for now
         # REVIEW: check how to make this verification
-        log.warning(repo_obj)
         if not (
             repo_obj.author.name.lower() == "codecov"
             or repo_obj.author.username.lower() == "codecov"
@@ -147,7 +166,24 @@ class MutationTestingUploadView(UploadViews):
 
         # TODO:
         # Send task to worker
-        # dispatch_upload_task(task_arguments, repository, redis)
+        # Define the task arguments to send when dispatching upload task to worker
+
+        task_arguments = {
+            "reportid": report_id,
+            "url": self._get_upload_path(repo_obj, commit_id, report_id),
+            "commit": commit_id,
+        }
+
+        log.info(
+            "Dispatching upload to worker (new upload)",
+            extra=dict(
+                commit=commit_id, task_arguments=task_arguments, repoid=repo_obj.repoid
+            ),
+        )
+
+        # Send task to worker
+        redis = get_redis_connection()
+        dispatch_upload_task(task_arguments, repo_obj, redis)
 
         # TODO: Segment Tracking.
         # segment_upload_data = upload_params.copy()
@@ -158,6 +194,7 @@ class MutationTestingUploadView(UploadViews):
         # SegmentService().account_uploaded_coverage_report(
         #     owner.ownerid, segment_upload_data
         # )
+
         response.status_code = status.HTTP_200_OK
         response.content = upload_url
         metrics.incr("uploads.accepted", 1)

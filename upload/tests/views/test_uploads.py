@@ -1,3 +1,4 @@
+import re
 from unittest.mock import patch
 
 from django.http import HttpRequest, QueryDict
@@ -45,18 +46,36 @@ class MutationUploadTests(APITestCase, TestCase):
         )
         assert generated_presigned_put == "presigned url"
 
+    @patch("upload.views.uploads.ArchiveService")
+    def test_get_upload_path(self, mock_archive_service):
+        instance = mock_archive_service.return_value
+        instance.get_archive_hash.return_value = "hash"
+        upload_path = self.uploader_class._get_upload_path(
+            self.repository, "commit_sha", "report_id"
+        )
+        assert re.match(
+            r"v4/raw/\d{4}-\d{2}-\d{2}/hash/commit_sha/report_id.txt", upload_path
+        )
+
+    @patch("upload.views.uploads.dispatch_upload_task")
     @patch(
         "upload.views.uploads.parse_params"
     )  # Mocking cause I'm not sure we're gonna actually use it later
     @patch("upload.views.uploads.determine_repo_for_upload")
     @patch("upload.views.uploads.ArchiveService")
     def test_mutation_test_uplaod(
-        self, mock_archive_service, mock_repo_for_upload, mock_parse_params
+        self,
+        mock_archive_service,
+        mock_repo_for_upload,
+        mock_parse_params,
+        mock_dispatch,
     ):
         instance = mock_archive_service.return_value
         instance.create_raw_upload_presigned_put.return_value = "presigned url"
+        instance.get_archive_hash.return_value = "hash"
         mock_repo_for_upload.return_value = self.repository
         mock_parse_params.return_value = {}
+        mock_dispatch.return_value = True
         request_params = {
             "version": "v4",
             "commit": "3be5c52bd748c508a7e96993c02cf3518c816e84",
@@ -80,6 +99,7 @@ class MutationUploadTests(APITestCase, TestCase):
         response = self.client.post(url, data=request_params)
         assert response.status_code == 200
         assert response.content.decode() == "presigned url"
+        mock_dispatch.assert_called()
 
     @patch(
         "upload.views.uploads.parse_params"
