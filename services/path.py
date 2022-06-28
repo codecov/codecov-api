@@ -48,16 +48,25 @@ class Group:
 
 
 def path_contents(
-    report_files: list, path: str, filters, commit_report: Report
+    report_files: list,
+    path: str,
+    filters,
+    commit_report: Report,
 ) -> List[Union[File, Dir]]:
     tree = []
     search_value = filters.get("searchValue")
     if search_value:
         tree = search_list(
-            files=report_files, search_value=search_value, commit_report=commit_report
+            files=report_files,
+            search_value=search_value,
+            commit_report=commit_report,
         )
     else:
-        tree = path_list(files=report_files, path=path, commit_report=commit_report)
+        tree = path_list(
+            files=report_files,
+            path=path,
+            commit_report=commit_report,
+        )
     return apply_filters(tree=tree, filters=filters)
 
 
@@ -77,24 +86,37 @@ def apply_filters(tree: List[Union[File, Dir]], filters) -> List[Union[File, Dir
     return tree
 
 
-def search_list(files: list, search_value: str, commit_report: Report) -> List[File]:
+def search_list(
+    files: list,
+    search_value: str,
+    commit_report: Report,
+) -> List[File]:
     filtered_paths_by_search = _filtered_files_by_search(
         report_file_paths=files, search_value=search_value
     )
     return _build_search_list(
-        paths=filtered_paths_by_search, commit_report=commit_report
+        paths=filtered_paths_by_search,
+        commit_report=commit_report,
     )
 
 
-def path_list(files: list, path: str, commit_report: Report) -> List[Union[File, Dir]]:
+def path_list(
+    files: list,
+    path: str,
+    commit_report: Report,
+) -> List[Union[File, Dir]]:
     filtered_files_by_path = _filter_files_by_path(
         report_file_paths=files, path_prefix=path
     )
-    return _build_path_list(paths=filtered_files_by_path, commit_report=commit_report)
+    return _build_path_list(
+        paths=filtered_files_by_path,
+        commit_report=commit_report,
+    )
 
 
 def _build_path_list(
-    paths: List[FilteredFilePath], commit_report: Report
+    paths: List[FilteredFilePath],
+    commit_report: Report,
 ) -> List[Union[File, Dir]]:
     file_dir_tree = {}
 
@@ -133,7 +155,10 @@ def _build_path_list(
             file_dir_list.append(item)
         else:
             # recurse
-            children = _build_path_list(item.child_paths, commit_report)
+            children = _build_path_list(
+                paths=item.child_paths,
+                commit_report=commit_report,
+            )
 
             # sum up hits/lines from children
             hits, lines = (0, 0)
@@ -156,7 +181,10 @@ def _build_path_list(
     return file_dir_list
 
 
-def _build_search_list(paths: List[str], commit_report: Report) -> List[File]:
+def _build_search_list(
+    paths: List[str],
+    commit_report: Report,
+) -> List[File]:
     search_list = []
     for path in paths:
         totals = commit_report.get(path).totals
