@@ -23,8 +23,11 @@ def resolve_head_commit(branch, info):
 @sync_to_async
 def resolve_flags(branch: Branch, info, **kwargs):
     info.context["branch"] = branch
+
+    repository = branch.repository
+
     queryset = RepositoryFlag.objects.filter(
-        repository=branch.repository,
+        repository=repository,
         # TODO: this should ultimately be filtered by branch as well
     )
 
@@ -46,8 +49,10 @@ def resolve_flags(branch: Branch, info, **kwargs):
         flag_ids = [edge["node"].pk for edge in results.edges]
 
         measurements = MeasurementSummary.agg_by(interval).filter(
+            # TODO: use MeasurementName enum from other branch
             name="flag_coverage",
-            repo_id=branch.repository_id,
+            owner_id=repository.author_id,
+            repo_id=repository.pk,
             branch=branch.name,
             flag_id__in=flag_ids,
             timestamp_bin__gte=node.args["after"],
