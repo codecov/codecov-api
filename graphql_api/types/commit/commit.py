@@ -26,6 +26,20 @@ commit_bindable.set_alias("branchName", "branch")
 def resolve_file(commit, info, path, flags=None):
     commit_report = commit.full_report.filter(flags=flags)
     file_report = commit_report.get(path)
+
+    critical_filenames = []
+    if "profiling_summary" in info.context:
+        if "critical_filenames" not in info.context:
+            info.context["critical_filenames"] = set(
+                [
+                    critical_file.name
+                    for critical_file in info.context[
+                        "profiling_summary"
+                    ].critical_files
+                ]
+            )
+        critical_filenames = info.context["critical_filenames"]
+
     return {
         "commit_report": commit_report,
         "file_report": file_report,
@@ -115,6 +129,18 @@ def resolve_path_contents(
     if not commit_report:
         raise Exception("No reports found in the head commit")
     report_files = commit_report.files
+
+    if "profiling_summary" in info.context:
+        if "critical_filenames" not in info.context:
+            info.context["critical_filenames"] = set(
+                [
+                    critical_file.name
+                    for critical_file in info.context[
+                        "profiling_summary"
+                    ].critical_files
+                ]
+            )
+
     return path_contents(
         report_files=report_files,
         path=path or "",

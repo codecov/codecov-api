@@ -375,14 +375,17 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         commit = data["owner"]["repository"]["commit"]
         assert commit["yaml"] == yaml.dump(fake_config)
 
+    @patch(
+        "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
+    )
     @patch("core.commands.commit.commit.CommitCommands.get_file_content")
     @patch("core.models.ReportService.build_report_from_commit")
     def test_fetch_commit_coverage_file_call_the_command(
-        self, report_mock, content_mock
+        self, report_mock, content_mock, critical_files
     ):
         query = (
             query_commit
-            % 'coverageFile(path: "path") { content,coverage { line,coverage }, totals {coverage} }'
+            % 'coverageFile(path: "path") { content, isCriticalFile, coverage { line,coverage }, totals {coverage} }'
         )
         variables = {
             "org": self.org.username,
@@ -400,6 +403,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             "totals": {"coverage": 83.0},
         }
         content_mock.return_value = "file content"
+        critical_files.return_value = [CriticalFile("path")]
 
         report_mock.return_value = MockReport()
         data = self.gql_request(query, variables=variables)
@@ -407,13 +411,19 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         assert coverageFile["content"] == fake_coverage["content"]
         assert coverageFile["coverage"] == fake_coverage["coverage"]
         assert coverageFile["totals"] == fake_coverage["totals"]
+        assert coverageFile["isCriticalFile"] == True
 
+    @patch(
+        "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
+    )
     @patch("core.commands.commit.commit.CommitCommands.get_file_content")
     @patch("core.models.ReportService.build_report_from_commit")
-    def test_fetch_commit_with_no_coverage_data(self, report_mock, content_mock):
+    def test_fetch_commit_with_no_coverage_data(
+        self, report_mock, content_mock, critical_files
+    ):
         query = (
             query_commit
-            % 'coverageFile(path: "path") { content,coverage { line,coverage }, totals {coverage} }'
+            % 'coverageFile(path: "path") { content, isCriticalFile, coverage { line,coverage }, totals {coverage} }'
         )
         variables = {
             "org": self.org.username,
@@ -423,6 +433,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
         fake_coverage = {"content": "file content", "coverage": [], "totals": None}
         content_mock.return_value = "file content"
+        critical_files.return_value = []
 
         report_mock.return_value = EmptyReport()
         data = self.gql_request(query, variables=variables)
@@ -430,6 +441,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         assert coverageFile["content"] == fake_coverage["content"]
         assert coverageFile["coverage"] == fake_coverage["coverage"]
         assert coverageFile["totals"] == fake_coverage["totals"]
+        assert coverageFile["isCriticalFile"] == False
 
     @patch("core.models.ReportService.build_report_from_commit")
     def test_flag_names(self, report_mock):
