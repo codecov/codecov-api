@@ -328,6 +328,44 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
+    @override_settings(TIMESERIES_ENABLED=False)
+    def test_fetch_flags_timeseries_not_enabled(self):
+        flag1 = RepositoryFlagFactory(repository=self.repo, flag_name="flag1")
+        flag2 = RepositoryFlagFactory(repository=self.repo, flag_name="flag2")
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "branch": self.branch.name,
+            "before": timezone.now().isoformat(),
+        }
+        data = self.gql_request(query_flags, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "branch": {
+                        "flags": {
+                            "edges": [
+                                {
+                                    "node": {
+                                        "name": "flag1",
+                                        "percentCovered": None,
+                                        "measurements": [],
+                                    }
+                                },
+                                {
+                                    "node": {
+                                        "name": "flag2",
+                                        "percentCovered": None,
+                                        "measurements": [],
+                                    }
+                                },
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+
     def test_fetch_flags_with_measurements(self):
         flag1 = RepositoryFlagFactory(repository=self.repo, flag_name="flag1")
         flag2 = RepositoryFlagFactory(repository=self.repo, flag_name="flag2")

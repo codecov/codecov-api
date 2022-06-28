@@ -1,5 +1,6 @@
 from ariadne import ObjectType
 from asgiref.sync import sync_to_async
+from django.conf import settings
 
 from core.models import Branch
 from graphql_api.dataloader.commit import CommitLoader
@@ -45,22 +46,25 @@ def resolve_flags(branch: Branch, info, **kwargs):
     # need.
     node = lookahead(info, ("edges", "node", "measurements"))
     if node:
-        interval = Interval[node.args["interval"]]
-        flag_ids = [edge["node"].pk for edge in results.edges]
+        if settings.TIMESERIES_ENABLED:
+            interval = Interval[node.args["interval"]]
+            flag_ids = [edge["node"].pk for edge in results.edges]
 
-        measurements = MeasurementSummary.agg_by(interval).filter(
-            # TODO: use MeasurementName enum from other branch
-            name="flag_coverage",
-            owner_id=repository.author_id,
-            repo_id=repository.pk,
-            branch=branch.name,
-            flag_id__in=flag_ids,
-            timestamp_bin__gte=node.args["after"],
-            timestamp_bin__lte=node.args["before"],
-        )
+            measurements = MeasurementSummary.agg_by(interval).filter(
+                # TODO: use MeasurementName enum from other branch
+                name="flag_coverage",
+                owner_id=repository.author_id,
+                repo_id=repository.pk,
+                branch=branch.name,
+                flag_id__in=flag_ids,
+                timestamp_bin__gte=node.args["after"],
+                timestamp_bin__lte=node.args["before"],
+            )
 
-        # force eager execution of query while we're in a sync context
-        # (and store for child resolvers)
-        info.context["measurements"] = list(measurements)
+            # force eager execution of query while we're in a sync context
+            # (and store for child resolvers)
+            info.context["measurements"] = list(measurements)
+        else:
+            info.context["measurements"] = []
 
     return results
