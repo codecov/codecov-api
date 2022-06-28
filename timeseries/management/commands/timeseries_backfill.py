@@ -1,6 +1,7 @@
 import logging
 
 import dateutil.parser as dateparser
+from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
@@ -30,6 +31,9 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        if not settings.TIMESERIES_ENABLED:
+            raise CommandError(f"Timeseries not enabled")
+
         start_date = dateparser.isoparse(options["start_date"]).replace(
             tzinfo=timezone.get_current_timezone()
         )
