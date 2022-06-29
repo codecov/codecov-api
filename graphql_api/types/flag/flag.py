@@ -24,11 +24,11 @@ def resolve_percent_covered(flag: RepositoryFlag, info) -> float:
     measurements = [
         measurement
         for measurement in info.context["measurements"]
-        if measurement.flag_id == flag.pk
+        if measurement["flag_id"] == flag.pk
     ]
 
     if len(measurements) > 0:
-        return measurements[-1].value_avg
+        return measurements[-1]["avg"]
 
 
 @flag_bindable.field("measurements")
@@ -40,5 +40,5 @@ def resolve_measurements(
     return [
         measurement
         for measurement in info.context["measurements"]
-        if measurement.flag_id == flag.pk
+        if measurement["flag_id"] == flag.pk
     ]
