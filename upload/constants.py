@@ -46,7 +46,7 @@ ci = {
         "icon": "custom",
         "require_token_when_public": True,
         "instructions": "generic",
-        "build_url": "https://g.codefresh.io/repositories/{owner.username}/{repo.name}/builds/{upload.build_code_code}",
+        "build_url": "https://g.codefresh.io/repositories/{owner.username}/{repo.name}/builds/{upload.build_code}",
     },
     "bitbucket": {
         "title": "Bitbucket Pipelines",
