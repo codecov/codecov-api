@@ -60,15 +60,18 @@ class ProfilingSummaryTests(TestCase):
 
     def test_latest_profiling_commit(self):
         ProfilingCommitFactory(repository=self.repo, version_identifier="0.0.1")
-        pc = ProfilingCommitFactory(
-            repository=self.repo,
-            version_identifier="0.0.3",
-            last_summarized_at=datetime(2022, 2, 1, 0, 0, 0),
-        )
         ProfilingCommitFactory(
             repository=self.repo,
             version_identifier="0.0.2",
+            last_summarized_at=datetime(2022, 2, 1, 0, 0, 0),
+        )
+        pc = ProfilingCommitFactory(
+            repository=self.repo,
+            version_identifier="0.0.3",
             last_summarized_at=datetime(2022, 1, 1, 0, 0, 0),
+        )
+        ProfilingCommitFactory(
+            repository=self.repo, version_identifier="0.0.4", last_summarized_at=None
         )
         ProfilingCommitFactory(last_summarized_at=datetime(2022, 3, 1, 0, 0, 0))
 
