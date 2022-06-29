@@ -647,3 +647,32 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                 }
             }
         }
+
+    @patch("timeseries.models.MeasurementSummary.agg_by")
+    def test_fetch_flags_empty_lookahead(self, agg_by):
+        query = """
+            query Flags(
+                $org: String!
+                $repo: String!
+                $branch: String!
+            ) {
+                owner(username: $org) {
+                    repository(name: $repo) {
+                        branch(name: $branch) {
+                            flags {
+                                __typename
+                            }
+                        }
+                    }
+                }
+            }
+        """
+        RepositoryFlagFactory(repository=self.repo, flag_name="flag1")
+        RepositoryFlagFactory(repository=self.repo, flag_name="flag2")
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "branch": self.branch.name,
+        }
+        self.gql_request(query, variables=variables)
+        assert agg_by.call_count == 0
