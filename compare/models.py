@@ -53,6 +53,7 @@ class CommitComparison(BaseCodecovModel):
             < timezone.localize(self.base_commit.updatestamp)
         )
 
+
 class FlagComparison(BaseCodecovModel):
     commit_comparison = models.ForeignKey(
         CommitComparison, on_delete=models.CASCADE, related_name="flag_comparisons"
