@@ -35,12 +35,10 @@ def save_commit_measurements(commit: Commit) -> None:
     ).upsert()
 
     for flag_name, flag in report.flags.items():
-        repo_flag = repository.flags.filter(flag_name=flag_name).first()
-        if repo_flag is None:
-            repo_flag = RepositoryFlag.objects.create(
-                repository_id=repository.pk,
-                flag_name=flag_name,
-            )
+        repo_flag, created = RepositoryFlag.objects.get_or_create(
+            repository_id=repository.pk,
+            flag_name=flag_name,
+        )
 
         Measurement(
             name=MeasurementName.FLAG_COVERAGE.value,

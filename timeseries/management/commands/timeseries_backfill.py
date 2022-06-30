@@ -25,6 +25,12 @@ class Command(BaseCommand):
         parser.add_argument("--owner", type=str, required=True, help="owner username")
         parser.add_argument("--repo", type=str, required=False, help="repository name")
         parser.add_argument(
+            "--service",
+            type=str,
+            default="github",
+            help="Git service provider",
+        )
+        parser.add_argument(
             "--refresh",
             action="store_true",
             help="refresh aggregate summaries",
@@ -45,7 +51,8 @@ class Command(BaseCommand):
             end_date = timezone.now()
 
         owner_name = options["owner"]
-        owner = Owner.objects.filter(username=owner_name).first()
+        service = options["service"]
+        owner = Owner.objects.filter(username=owner_name, service=service).first()
         if owner is None:
             raise CommandError(f"No such owner: {owner_name}")
 
