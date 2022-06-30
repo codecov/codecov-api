@@ -40,7 +40,6 @@ class TestMeasurement(TransactionTestCase, GraphQLTestHelper):
         self.user = OwnerFactory()
         self.repo = RepositoryFactory(
             author=self.user,
-            active=True,
             private=True,
         )
 
@@ -62,9 +61,12 @@ class TestMeasurement(TransactionTestCase, GraphQLTestHelper):
     def test_measurements_basic(self):
         MeasurementFactory(value=1, owner_id=self.user.pk, repo_id=self.repo.pk)
         MeasurementFactory(value=2, owner_id=self.user.pk, repo_id=self.repo.pk)
+
+        # should not be included in response since the `name` does not match query
         MeasurementFactory(
             value=3, owner_id=self.user.pk, repo_id=self.repo.pk, name="other"
         )
+        # should not be included in response since the `owner_id` does not match query
         MeasurementFactory(value=3, owner_id=999, repo_id=self.repo.pk)
 
         res = self._request(
@@ -85,7 +87,7 @@ class TestMeasurement(TransactionTestCase, GraphQLTestHelper):
         assert measurements[0]["min"] == 1
         assert measurements[0]["max"] == 2
 
-    def test_measurements_repo_filter(self):
+    def test_measurements_filter_by_repo(self):
         MeasurementFactory(value=1, repo_id=self.repo.pk, owner_id=self.user.pk)
         MeasurementFactory(value=2, repo_id=999, owner_id=self.user.pk)
 
@@ -107,7 +109,7 @@ class TestMeasurement(TransactionTestCase, GraphQLTestHelper):
         assert len(measurements) == 1
         assert measurements[0]["avg"] == 1
 
-    def test_measurements_flag_filter(self):
+    def test_measurements_filter_by_flag(self):
         MeasurementFactory(
             value=1, repo_id=self.repo.pk, owner_id=self.user.pk, flag_id=1
         )
@@ -133,7 +135,7 @@ class TestMeasurement(TransactionTestCase, GraphQLTestHelper):
         assert len(measurements) == 1
         assert measurements[0]["avg"] == 1
 
-    def test_measurements_branch_filter(self):
+    def test_measurements_filter_by_branch(self):
         MeasurementFactory(
             value=1, repo_id=self.repo.pk, owner_id=self.user.pk, branch="foo"
         )
@@ -222,7 +224,7 @@ class TestMeasurement(TransactionTestCase, GraphQLTestHelper):
         assert len(measurements) == 1
         assert measurements[0]["avg"] == 2
 
-    def test_measurements_after_filter(self):
+    def test_measurements_filter_by_after(self):
         MeasurementFactory(
             value=1,
             repo_id=self.repo.pk,
@@ -254,7 +256,7 @@ class TestMeasurement(TransactionTestCase, GraphQLTestHelper):
         assert len(measurements) == 1
         assert measurements[0]["avg"] == 1
 
-    def test_measurements_before_filter(self):
+    def test_measurements_filter_by_before(self):
         MeasurementFactory(
             value=1,
             repo_id=self.repo.pk,
@@ -288,7 +290,6 @@ class TestMeasurement(TransactionTestCase, GraphQLTestHelper):
 
     def test_measurements_no_access(self):
         repo = RepositoryFactory(
-            active=True,
             private=True,
         )
         MeasurementFactory(value=1, owner_id=repo.author_id, repo_id=repo.pk)
@@ -314,7 +315,6 @@ class TestMeasurement(TransactionTestCase, GraphQLTestHelper):
     @override_settings(TIMESERIES_ENABLED=False)
     def test_measurements_timeseries_not_enabled(self):
         repo = RepositoryFactory(
-            active=True,
             private=True,
         )
         MeasurementFactory(value=1, owner_id=repo.author_id, repo_id=repo.pk)

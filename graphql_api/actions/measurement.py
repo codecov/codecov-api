@@ -1,5 +1,6 @@
 import operator
 from functools import reduce
+from typing import Mapping
 
 from asgiref.sync import sync_to_async
 from django.db.models import Avg, Max, Min, Q
@@ -34,7 +35,7 @@ def measurement_queryset(
     return [list(queryset) for queryset in querysets]
 
 
-def filter_queryset(queryset: QuerySet, filter: dict) -> QuerySet:
+def filter_queryset(queryset: QuerySet, filter: Mapping) -> QuerySet:
     queryset = queryset.filter(
         timestamp_bin__gte=filter["after"],
         timestamp_bin__lte=filter["before"],
