@@ -44,3 +44,8 @@ def resolve_content(data, info):
 def resolve_content(data, info):
     file_report = data.get("file_report")
     return file_report.totals if file_report else None
+
+
+@file_bindable.field("isCriticalFile")
+def resolve_is_critical_file(data, info):
+    return data.get("path") in info.context["critical_filenames"]

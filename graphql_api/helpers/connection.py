@@ -1,7 +1,10 @@
 import enum
+from dataclasses import dataclass
+from functools import cached_property
 
 from asgiref.sync import sync_to_async
-from cursor_pagination import CursorPaginator
+from cursor_pagination import CursorPage, CursorPaginator
+from django.db.models import QuerySet
 
 from graphql_api.types.enums import OrderingDirection
 
@@ -30,6 +33,41 @@ def field_order(field, ordering):
     return field
 
 
+@dataclass
+class Connection:
+    queryset: QuerySet
+    paginator: CursorPaginator
+    page: CursorPage
+
+    @cached_property
+    def edges(self):
+        return [
+            {"cursor": self.paginator.cursor(self.page[pos]), "node": node}
+            for pos, node in enumerate(self.page)
+        ]
+
+    @sync_to_async
+    def total_count(self, *args, **kwargs):
+        return self.queryset.count()
+
+    @cached_property
+    def start_cursor(self):
+        return self.paginator.cursor(self.page[0]) if len(self.page) > 0 else None
+
+    @cached_property
+    def end_cursor(self):
+        return self.paginator.cursor(self.page[-1]) if len(self.page) > 0 else None
+
+    @cached_property
+    def page_info(self):
+        return {
+            "has_next_page": self.page.has_next,
+            "has_previous_page": self.page.has_previous,
+            "start_cursor": self.start_cursor,
+            "end_cursor": self.end_cursor,
+        }
+
+
 @sync_to_async
 def queryset_to_connection(
     queryset,
@@ -50,16 +88,4 @@ def queryset_to_connection(
     ordering = tuple(field_order(field, ordering_direction) for field in ordering)
     paginator = CursorPaginator(queryset, ordering=ordering)
     page = paginator.page(first=first, after=after, last=last, before=before)
-    return {
-        "edges": [
-            {"cursor": paginator.cursor(page[pos]), "node": repository}
-            for pos, repository in enumerate(page)
-        ],
-        "total_count": queryset.count(),
-        "page_info": {
-            "has_next_page": page.has_next,
-            "has_previous_page": page.has_previous,
-            "start_cursor": paginator.cursor(page[0]) if len(page) > 0 else None,
-            "end_cursor": paginator.cursor(page[-1]) if len(page) > 0 else None,
-        },
-    }
+    return Connection(queryset, paginator, page)
