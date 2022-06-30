@@ -71,7 +71,7 @@ class MockReport(object):
         ]
 
 
-class TestCommit(GraphQLTestHelper, TransactionTestCase):
+class TestBranch(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
         self.org = OwnerFactory(username="codecov")
         self.repo = RepositoryFactory(author=self.org, name="gazebo", private=False)
