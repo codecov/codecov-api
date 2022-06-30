@@ -24,7 +24,7 @@ class ProfilingSummary:
 
     def latest_profiling_commit(self) -> Optional[ProfilingCommit]:
         """
-        Get the most recently summarized ProfilingCommit
+        Get the most recent summarized ProfilingCommit
         """
         filters = {
             "last_summarized_at__isnull": False,
@@ -34,11 +34,7 @@ class ProfilingSummary:
         if self.commit_sha is not None:
             filters["commit_sha"] = self.commit_sha
 
-        return (
-            ProfilingCommit.objects.filter(**filters)
-            .order_by("-last_summarized_at")
-            .first()
-        )
+        return ProfilingCommit.objects.filter(**filters).order_by("-id").first()
 
     def summary_data(
         self, profiling_commit: ProfilingCommit
