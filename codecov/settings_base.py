@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "compare",
     "profiling",
     "public_api",
+    "timeseries",
 ]
 
 MIDDLEWARE = [
@@ -89,6 +90,34 @@ else:
     )
     DATABASE_HOST = get_config("services", "database", "host", default="postgres")
     DATABASE_PORT = get_config("services", "database", "port", default=5432)
+
+TIMESERIES_ENABLED = get_config("setup", "timeseries", "enabled", default=False)
+
+timeseries_database_url = get_config("services", "timeseries_database_url")
+if timeseries_database_url:
+    timeseries_database_conf = urlparse(timeseries_database_url)
+    TIMESERIES_DATABASE_USER = timeseries_database_conf.username
+    TIMESERIES_DATABASE_NAME = timeseries_database_conf.path.replace("/", "")
+    TIMESERIES_DATABASE_PASSWORD = timeseries_database_conf.password
+    TIMESERIES_DATABASE_HOST = timeseries_database_conf.hostname
+    TIMESERIES_DATABASE_PORT = timeseries_database_conf.port
+else:
+    TIMESERIES_DATABASE_USER = get_config(
+        "services", "timeseries_database", "username", default="postgres"
+    )
+    TIMESERIES_DATABASE_NAME = get_config(
+        "services", "timeseries_database", "name", default="postgres"
+    )
+    TIMESERIES_DATABASE_PASSWORD = get_config(
+        "services", "timeseries_database", "password", default="postgres"
+    )
+    TIMESERIES_DATABASE_HOST = get_config(
+        "services", "timeseries_database", "host", default="timescale"
+    )
+    TIMESERIES_DATABASE_PORT = get_config(
+        "services", "timeseries_database", "port", default=5432
+    )
+
 # this is the time in seconds django decides to keep the connection open after the request
 # the default is 0 seconds, meaning django closes the connection after every request
 # https://docs.djangoproject.com/en/3.1/ref/settings/#conn-max-age
@@ -103,8 +132,20 @@ DATABASES = {
         "HOST": DATABASE_HOST,
         "PORT": DATABASE_PORT,
         "CONN_MAX_AGE": CONN_MAX_AGE,
-    }
+    },
+    "timeseries": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": TIMESERIES_DATABASE_NAME,
+        "USER": TIMESERIES_DATABASE_USER,
+        "PASSWORD": TIMESERIES_DATABASE_PASSWORD,
+        "HOST": TIMESERIES_DATABASE_HOST,
+        "PORT": TIMESERIES_DATABASE_PORT,
+        "CONN_MAX_AGE": CONN_MAX_AGE,
+    },
 }
+
+DATABASE_ROUTERS = ["codecov.db.DatabaseRouter"]
+
 # Password validation
 # https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators
 
