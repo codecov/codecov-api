@@ -18,6 +18,7 @@ def resolve_timestamp(flag: RepositoryFlag, info) -> str:
 @sync_to_async
 def resolve_percent_covered(flag: RepositoryFlag, info) -> float:
     if "measurements" not in info.context:
+        # We're using the most recent timeseries measurement for the coverage value
         return None
 
     # measurements are fetched in parent resolver

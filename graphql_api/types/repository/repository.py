@@ -17,7 +17,7 @@ from graphql_api.helpers.connection import (
 from graphql_api.helpers.lookahead import lookahead
 from graphql_api.types.enums import OrderingDirection
 from services.profiling import CriticalFile, ProfilingSummary
-from timeseries.models import Interval, MeasurementSummary
+from timeseries.models import Interval, MeasurementName, MeasurementSummary
 
 repository_bindable = ObjectType("Repository")
 
@@ -193,8 +193,7 @@ def resolve_flags(
             measurements = (
                 MeasurementSummary.agg_by(interval)
                 .filter(
-                    # TODO: use MeasurementName enum from other branch
-                    name="flag_coverage",
+                    name=MeasurementName.FLAG_COVERAGE.value,
                     owner_id=repository.author_id,
                     repo_id=repository.pk,
                     flag_id__in=flag_ids,
