@@ -3,4 +3,4 @@ type Measurement {
     avg: Float!
     min: Float!
     max: Float!
-} 
+}
