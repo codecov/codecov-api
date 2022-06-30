@@ -52,3 +52,12 @@ class CommitComparison(BaseCodecovModel):
             and timezone.normalize(self.updated_at)
             < timezone.localize(self.base_commit.updatestamp)
         )
+
+class FlagComparison(BaseCodecovModel):
+    commit_comparison = models.ForeignKey(
+        CommitComparison, on_delete=models.CASCADE, related_name="flag_comparisons"
+    )
+    flag_name = models.TextField(null=True)
+    carriedforward = models.BooleanField(null=True)
+    coverage_totals = models.JSONField(null=True)
+    patch_totals = models.JSONField(null=True)
