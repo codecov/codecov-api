@@ -1,12 +1,18 @@
 from enum import Enum
 
 import django.db.models as models
+from django.db import connections
 
 
 class Interval(Enum):
     INTERVAL_1_DAY = 1
     INTERVAL_7_DAY = 7
     INTERVAL_30_DAY = 30
+
+
+class MeasurementName(Enum):
+    COVERAGE = "coverage"
+    FLAG_COVERAGE = "flag_coverage"
 
 
 class Measurement(models.Model):
@@ -69,6 +75,43 @@ class Measurement(models.Model):
                 name="timeseries_measurement_noflag_unique",
             ),
         ]
+
+    def upsert(self):
+        """
+        Insert or update a measurement
+        """
+        conflict_target = (
+            "(name, owner_id, repo_id, commit_sha, timestamp) WHERE flag_id IS NULL"
+            if self.flag_id is None
+            else "(name, owner_id, repo_id, flag_id, commit_sha, timestamp) WHERE flag_id IS NOT NULL"
+        )
+
+        sql = f"""
+            INSERT INTO timeseries_measurement
+                (name, owner_id, repo_id, flag_id, branch, commit_sha, timestamp, value)
+            VALUES
+                (%s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT {conflict_target}
+            DO UPDATE SET
+                branch = EXCLUDED.branch,
+                value = EXCLUDED.value
+        """
+
+        connection = connections["timeseries"]
+        with connection.cursor() as cursor:
+            cursor.execute(
+                sql,
+                [
+                    self.name,
+                    self.owner_id,
+                    self.repo_id,
+                    self.flag_id,
+                    self.branch,
+                    self.commit_sha,
+                    self.timestamp,
+                    self.value,
+                ],
+            )
 
 
 class MeasurementSummary(models.Model):
