@@ -3,6 +3,7 @@ from django.db import models
 
 from codecov.models import BaseCodecovModel
 from core.models import Commit
+from reports.models import RepositoryFlag
 
 
 class CommitComparison(BaseCodecovModel):
@@ -56,9 +57,10 @@ class CommitComparison(BaseCodecovModel):
 
 class FlagComparison(BaseCodecovModel):
     commit_comparison = models.ForeignKey(
-        CommitComparison, on_delete=models.CASCADE, related_name="flag_comparisons"
+        CommitComparison, on_delete=models.CASCADE, related_name="commit_comparisons"
     )
-    flag_name = models.TextField(null=True)
-    carriedforward = models.BooleanField(null=True)
+    repositoryflag = models.ForeignKey(
+        RepositoryFlag, on_delete=models.CASCADE, related_name="flag_comparisons"
+    )
     coverage_totals = models.JSONField(null=True)
     patch_totals = models.JSONField(null=True)
