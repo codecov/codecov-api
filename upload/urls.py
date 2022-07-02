@@ -14,12 +14,12 @@ urlpatterns = [
     ),
     # Empty routes that will become the new upload endpoint eventually
     path(
-        "<str:repo>/commits/<str:commit_id>/reports/<str:report_id>/uploads",
+        "<str:repo>/commits/<str:commitid>/reports/<str:reportid>/uploads",
         UploadViews.as_view(),
         name="new_upload.uploads",
     ),
     path(
-        "<str:repo>/commits/<str:commit_id>/reports",
+        "<str:repo>/commits/<str:commitid>/reports",
         ReportViews.as_view(),
         name="new_upload.reports",
     ),
