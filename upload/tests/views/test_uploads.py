@@ -7,9 +7,6 @@ from core.tests.factories import CommitFactory, RepositoryFactory
 from reports.models import CommitReport, ReportSession
 from upload.views.uploads import CanDoCoverageUploadsPermission
 
-from billing.constants import BASIC_PLAN_NAME
-from codecov_auth.tests.factories import OwnerFactory
-
 
 def test_uploads_get_not_allowed(client, db):
     url = reverse("new_upload.uploads", args=["the-repo", "commit-sha", "report-id"])
