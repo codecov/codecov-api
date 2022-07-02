@@ -21,7 +21,7 @@ urlpatterns = [
         name="new_upload.mutation_uploads",
     ),
     path(
-        "<str:repo>/commits/<str:commit_id>/reports/<str:report_id>/uploads",
+        "<str:repo>/commits/<str:commitid>/reports/<str:reportid>/uploads",
         UploadViews.as_view(),
         name="new_upload.uploads",
     ),

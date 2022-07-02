@@ -42,5 +42,5 @@ class UploadViews(ListCreateAPIView):
 
         return instance
 
-    def list(self, request: HttpRequest, repo: str, commit_id: str, report_id: str):
+    def list(self, request: HttpRequest, repo: str, commitid: str, reportid: str):
         return HttpResponseNotAllowed(permitted_methods=["POST"])

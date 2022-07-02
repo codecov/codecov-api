@@ -29,6 +29,7 @@ def test_uploads_post_empty(db, mocker):
     commit_report = CommitReport.objects.create(commit=commit)
     report = ReportSession.objects.create(report=commit_report, name="some_name")
     repository.save()
+    commit.save()
     commit_report.save()
     report.save()
 
