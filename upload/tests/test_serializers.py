@@ -15,7 +15,11 @@ def get_fake_upload():
     return UploadFactory.create(report=report)
 
 
-def test_serialize_upload(transactional_db):
+def test_serialize_upload(transactional_db, mocker):
+    mocker.patch(
+        "services.archive.StorageService.create_presigned_put",
+        return_value="presigned put",
+    )
     fake_upload = get_fake_upload()
     serializer = UploadSerializer(instance=fake_upload)
     assert (
