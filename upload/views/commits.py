@@ -4,7 +4,7 @@ from django.http import HttpRequest, HttpResponseNotAllowed, HttpResponseNotFoun
 from rest_framework.generics import ListCreateAPIView
 from rest_framework.permissions import AllowAny
 
-from core.models import Commit
+from core.models import Commit, Repository
 from upload.serializers import CommitSerializer
 
 log = logging.getLogger(__name__)
@@ -17,9 +17,10 @@ class CommitViews(ListCreateAPIView):
         AllowAny,
     ]
 
-    def create(self, request: HttpRequest, repo: str):
-        log.info("Received request to create Commit", extra=dict(repo=repo))
-        return HttpResponseNotFound("Not available")
+    def perform_create(self, serializer):
+        repo = self.kwargs["repo"]
+        repository = Repository.objects.get(name=repo)
+        return serializer.save(repository=repository)
 
     def list(self, request: HttpRequest, repo: str):
         return HttpResponseNotAllowed(permitted_methods=["POST"])

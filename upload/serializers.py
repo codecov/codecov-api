@@ -51,20 +51,22 @@ class OwnerSerializer(serializers.ModelSerializer):
 
 
 class CommitSerializer(serializers.ModelSerializer):
-    author = OwnerSerializer()
+    author = OwnerSerializer
 
     class Meta:
         model = Commit
         read_only_fields = (
             "message",
-            "author",
             "timestamp",
             "ci_passed",
             "state",
+            "repository",
+            "timestamp",
         )
         fields = read_only_fields + (
             "commitid",
             "parent_commit_id",
             "pullid",
             "branch",
+            "author",
         )
