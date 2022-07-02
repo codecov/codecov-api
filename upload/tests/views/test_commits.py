@@ -13,7 +13,7 @@ def test_commits_get_not_allowed(client):
     assert res.status_code == 405
 
 
-def test_commit_post_empty(db):
+def test_commit_post_empty(db, client):
     repository = RepositoryFactory.create()
     repository.save()
 
@@ -35,7 +35,6 @@ def test_commit_post_empty(db):
         format="json",
     )
     response_json = response.json()
-    print(response.content)
     assert response.status_code == 201
     assert all(
         map(
