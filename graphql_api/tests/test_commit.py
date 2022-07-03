@@ -7,6 +7,7 @@ from django.test import TransactionTestCase
 from shared.reports.types import LineSession
 
 from codecov_auth.tests.factories import OwnerFactory
+from compare.tests.factories import CommitComparisonFactory
 from core.models import Commit
 from core.tests.factories import CommitFactory, RepositoryFactory
 from graphql_api.types.enums import UploadErrorEnum, UploadState
@@ -325,16 +326,34 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         [upload] = paginate_connection(commit["uploads"])
         errors = paginate_connection(upload["errors"])
 
-        print(
-            [
-                {"errorCode": UploadErrorEnum.REPORT_EXPIRED.name},
-                {"errorCode": UploadErrorEnum.FILE_NOT_IN_STORAGE.name},
-            ]
-        )
-
         assert errors == [
             {"errorCode": UploadErrorEnum.REPORT_EXPIRED.name},
             {"errorCode": UploadErrorEnum.FILE_NOT_IN_STORAGE.name},
+        ]
+
+    def test_fetch_commit_ci_and_download_url(self):
+        session_one = UploadFactory(
+            report=self.report,
+            provider="circleci",
+            storage_path="sample/storage-path",
+            job_code=123,
+            build_code=456,
+        )
+        print(session_one.__dict__)
+        query = query_commit % "uploads { edges { node { ciUrl downloadUrl } } }"
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        uploads = paginate_connection(commit["uploads"])
+        assert uploads == [
+            {
+                "ciUrl": "https://circleci.com/gh/codecov/gazebo/456#tests/containers/123",
+                "downloadUrl": "/upload/gh/codecov/gazebo/download?path=sample/storage-path",
+            }
         ]
 
     @patch(
@@ -356,14 +375,17 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         commit = data["owner"]["repository"]["commit"]
         assert commit["yaml"] == yaml.dump(fake_config)
 
+    @patch(
+        "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
+    )
     @patch("core.commands.commit.commit.CommitCommands.get_file_content")
     @patch("core.models.ReportService.build_report_from_commit")
     def test_fetch_commit_coverage_file_call_the_command(
-        self, report_mock, content_mock
+        self, report_mock, content_mock, critical_files
     ):
         query = (
             query_commit
-            % 'coverageFile(path: "path") { content,coverage { line,coverage }, totals {coverage} }'
+            % 'coverageFile(path: "path") { content, isCriticalFile, coverage { line,coverage }, totals {coverage} }'
         )
         variables = {
             "org": self.org.username,
@@ -381,6 +403,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             "totals": {"coverage": 83.0},
         }
         content_mock.return_value = "file content"
+        critical_files.return_value = [CriticalFile("path")]
 
         report_mock.return_value = MockReport()
         data = self.gql_request(query, variables=variables)
@@ -388,13 +411,19 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         assert coverageFile["content"] == fake_coverage["content"]
         assert coverageFile["coverage"] == fake_coverage["coverage"]
         assert coverageFile["totals"] == fake_coverage["totals"]
+        assert coverageFile["isCriticalFile"] == True
 
+    @patch(
+        "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
+    )
     @patch("core.commands.commit.commit.CommitCommands.get_file_content")
     @patch("core.models.ReportService.build_report_from_commit")
-    def test_fetch_commit_with_no_coverage_data(self, report_mock, content_mock):
+    def test_fetch_commit_with_no_coverage_data(
+        self, report_mock, content_mock, critical_files
+    ):
         query = (
             query_commit
-            % 'coverageFile(path: "path") { content,coverage { line,coverage }, totals {coverage} }'
+            % 'coverageFile(path: "path") { content, isCriticalFile, coverage { line,coverage }, totals {coverage} }'
         )
         variables = {
             "org": self.org.username,
@@ -404,6 +433,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
         fake_coverage = {"content": "file content", "coverage": [], "totals": None}
         content_mock.return_value = "file content"
+        critical_files.return_value = []
 
         report_mock.return_value = EmptyReport()
         data = self.gql_request(query, variables=variables)
@@ -411,6 +441,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         assert coverageFile["content"] == fake_coverage["content"]
         assert coverageFile["coverage"] == fake_coverage["coverage"]
         assert coverageFile["totals"] == fake_coverage["totals"]
+        assert coverageFile["isCriticalFile"] == False
 
     @patch("core.models.ReportService.build_report_from_commit")
     def test_flag_names(self, report_mock):
@@ -426,8 +457,11 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         flags = data["owner"]["repository"]["commit"]["flagNames"]
         assert flags == ["flag_a", "flag_b"]
 
-    @patch("compare.commands.compare.compare.CompareCommands.compare_commits")
-    def test_fetch_commit_compare_call_the_command(self, command_mock):
+    def test_fetch_commit_compare_call_the_command(self):
+        CommitComparisonFactory(
+            base_commit=self.parent_commit,
+            compare_commit=self.commit,
+        )
         query = query_commit % "compareWithParent { state }"
         variables = {
             "org": self.org.username,
@@ -436,11 +470,23 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
-        fake_compare = {"state": "PENDING"}
-        command_mock.return_value = fake_compare
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
-        assert commit["compareWithParent"] == fake_compare
+        assert commit["compareWithParent"] == {"state": "pending"}
+
+    def test_fetch_commit_compare_no_parent(self):
+        self.commit.parent_commit_id = None
+        self.commit.save()
+
+        query = query_commit % "compareWithParent { state }"
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        assert commit["compareWithParent"] == None
 
     @patch("compare.commands.compare.compare.CompareCommands.get_impacted_files")
     def test_impacted_files_comparison_call_the_command(self, command_mock):

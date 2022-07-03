@@ -13,11 +13,11 @@ class ReportViews(ListCreateAPIView):
         AllowAny,
     ]
 
-    def create(self, request: HttpRequest, repo: str, commit_id: str):
+    def create(self, request: HttpRequest, repo: str, commitid: str):
         log.info(
-            "Request to create new report", extra=dict(repo=repo, commit_id=commit_id)
+            "Request to create new report", extra=dict(repo=repo, commit_id=commitid)
         )
         return HttpResponseNotFound("Not available")
 
-    def list(self, request: HttpRequest, repo: str, commit_id: str):
+    def list(self, request: HttpRequest, repo: str, commitid: str):
         return HttpResponseNotAllowed(permitted_methods=["POST"])

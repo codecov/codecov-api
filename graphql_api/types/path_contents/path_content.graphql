@@ -1,0 +1,18 @@
+interface PathContent {
+    name: String!
+    path: String
+    percentCovered: Float!
+}
+
+type PathContentFile implements PathContent  {
+    name: String!
+    path: String
+    percentCovered: Float!
+    isCriticalFile: Boolean!
+}
+
+type PathContentDir implements PathContent {
+    name: String!
+    path: String
+    percentCovered: Float!
+}

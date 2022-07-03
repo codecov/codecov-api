@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from django.conf import settings
 from django.utils import timezone
+from django.utils.functional import cached_property
 from minio import Minio
 from shared.helpers.flag import Flag
 from shared.reports.resources import Report
@@ -35,7 +36,7 @@ class SerializableReport(Report):
         for f in self.files:
             yield self.get(f)
 
-    @property
+    @cached_property
     def flags(self):
         """returns dict(:name=<Flag>)"""
         flags_dict = {}

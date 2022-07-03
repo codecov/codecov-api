@@ -8,6 +8,7 @@ from codecov_auth.authentication.repo_auth import RepositoryTokenAuthentication
 from profiling.models import ProfilingCommit
 from profiling.serializers import ProfilingCommitSerializer, ProfilingUploadSerializer
 from services.archive import ArchiveService, MinioEndpoints
+from services.segment import SegmentService
 from services.task import TaskService
 
 log = logging.getLogger(__name__)
@@ -25,7 +26,8 @@ class ProfilingUploadCreateView(CreateAPIView):
 
     def perform_create(self, serializer):
         location = "{}.txt".format(uuid4())
-        archive_service = ArchiveService(self.request.auth.get_repositories()[0])
+        repository = self.request.auth.get_repositories()[0]
+        archive_service = ArchiveService(repository)
         path = MinioEndpoints.profiling_upload.get_path(
             version="v4",
             repo_hash=archive_service.storage_hash,
@@ -37,6 +39,7 @@ class ProfilingUploadCreateView(CreateAPIView):
         instance = serializer.save(raw_upload_location=path)
         task = TaskService().normalize_profiling_upload(instance.id)
         log.info("Spun normalization task", extra=dict(task_id=task.id))
+        SegmentService().impact_analysis_profiling_upload_created(repo=repository)
         return instance
 
 
@@ -56,4 +59,5 @@ class ProfilingCommitCreateView(CreateAPIView):
             log.info(
                 "Creating new profiling commit", extra=dict(repoid=repository.repoid)
             )
+            SegmentService().impact_analysis_profiling_commit_created(repo=repository)
         return serializer.save()

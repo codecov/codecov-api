@@ -2,6 +2,7 @@ import json
 import logging
 from typing import List, Optional
 
+from django.utils.functional import cached_property
 from shared.profiling import ProfilingSummaryDataAnalyzer
 
 from core.models import Repository
@@ -23,7 +24,7 @@ class ProfilingSummary:
 
     def latest_profiling_commit(self) -> Optional[ProfilingCommit]:
         """
-        Get the most recently summarized ProfilingCommit
+        Get the most recent summarized ProfilingCommit
         """
         filters = {
             "last_summarized_at__isnull": False,
@@ -33,11 +34,7 @@ class ProfilingSummary:
         if self.commit_sha is not None:
             filters["commit_sha"] = self.commit_sha
 
-        return (
-            ProfilingCommit.objects.filter(**filters)
-            .order_by("-last_summarized_at")
-            .first()
-        )
+        return ProfilingCommit.objects.filter(**filters).order_by("-id").first()
 
     def summary_data(
         self, profiling_commit: ProfilingCommit
@@ -59,7 +56,7 @@ class ProfilingSummary:
             )
             return None
 
-    @property
+    @cached_property
     def critical_files(self) -> List[CriticalFile]:
         """
         Get the most recent critical files

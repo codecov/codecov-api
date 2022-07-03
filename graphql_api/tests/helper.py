@@ -14,6 +14,7 @@ class GraphQLTestHelper:
         provider="gh",
         user=None,
         variables={},
+        with_errors=False,
     ):
         url = f"/graphql/{provider}"
         headers = {}
@@ -32,7 +33,7 @@ class GraphQLTestHelper:
             **headers,
         )
 
-        return response.json()["data"]
+        return response.json() if with_errors else response.json()["data"]
 
 
 def paginate_connection(connection):

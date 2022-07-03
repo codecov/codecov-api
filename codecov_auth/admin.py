@@ -44,44 +44,6 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
     actions = [impersonate_owner]
     autocomplete_fields = ("bot",)
 
-    # the displayed fields
-    fields = (
-        "staff",
-        "ownerid",
-        "username",
-        "service",
-        "email",
-        "business_email",
-        "name",
-        "service_id",
-        "createstamp",
-        "plan",
-        "plan_provider",
-        "plan_user_count",
-        "plan_activated_users",
-        "plan_auto_activate",
-        "integration_id",
-        "bot",
-        "stripe_customer_id",
-        "stripe_subscription_id",
-        "parent_service_id",
-        "root_parent_service_id",
-        "private_access",
-        "cache",
-        "did_trial",
-        "free",
-        "invoice_details",
-        "delinquent",
-        "yaml",
-        "updatestamp",
-        "organizations",
-        "admins",
-        "permission",
-        "student",
-        "student_created_at",
-        "student_updated_at",
-        "onboarding_completed",
-    )
     readonly_fields = (
         "ownerid",
         "username",
@@ -102,7 +64,6 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
         "delinquent",
         "yaml",
         "updatestamp",
-        "organizations",
         "admins",
         "permission",
         "student",
@@ -111,19 +72,38 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
         "onboarding_completed",
     )
 
+    fields = readonly_fields + (
+        "staff",
+        "plan",
+        "plan_provider",
+        "plan_user_count",
+        "plan_activated_users",
+        "integration_id",
+        "bot",
+        "stripe_customer_id",
+        "stripe_subscription_id",
+        "organizations",
+    )
+
     def get_form(self, request, obj=None, change=False, **kwargs):
         form = super().get_form(request, obj, change, **kwargs)
         PLANS_CHOICES = [(x, x) for x in USER_PLAN_REPRESENTATIONS.keys()]
         form.base_fields["plan"].widget = Select(
             choices=BLANK_CHOICE_DASH + PLANS_CHOICES
         )
+
+        is_superuser = request.user.is_superuser
+
+        if not is_superuser:
+            form.base_fields["staff"].disabled = True
+
         return form
 
     def has_add_permission(self, _, obj=None):
         return False
 
-    def has_delete_permission(self, _, obj=None):
-        return False
+    def has_delete_permission(self, request, obj=None):
+        return bool(request.user and request.user.is_superuser)
 
     def delete_queryset(self, request, queryset) -> None:
         for owner in queryset:
@@ -139,6 +119,10 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
             perms_needed,
             protected,
         ) = super().get_deleted_objects(objs, request)
+
+        if request.user and request.user.is_superuser:
+            perms_needed = set()
+
         deleted_objects = ()
         return deleted_objects, model_count, perms_needed, protected
 
