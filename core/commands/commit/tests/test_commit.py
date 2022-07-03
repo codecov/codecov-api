@@ -16,12 +16,6 @@ class CommitCommandsTest(TransactionTestCase):
         self.pull = PullFactory(repository_id=self.repository.repoid)
         self.command = CommitCommands(self.user, "github")
 
-    @patch("core.commands.commit.commit.FetchCommitInteractor.execute")
-    def test_fetch_commit_delegate_to_interactor(self, interactor_mock):
-        commit_id = "123"
-        self.command.fetch_commit(self.repository, commit_id)
-        interactor_mock.assert_called_once_with(self.repository, commit_id)
-
     @patch("core.commands.commit.commit.FetchCommitsInteractor.execute")
     def test_fetch_commits_delegate_to_interactor(self, interactor_mock):
         self.filters = None

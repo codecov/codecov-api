@@ -2,6 +2,7 @@ type File {
     content: String
     coverage: [CoverageAnnotation]
     totals: CoverageTotals
+    isCriticalFile: Boolean
 }
 
 type CoverageAnnotation {

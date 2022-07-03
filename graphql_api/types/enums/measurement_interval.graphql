@@ -1,0 +1,5 @@
+enum MeasurementInterval {
+    INTERVAL_1_DAY
+    INTERVAL_7_DAY
+    INTERVAL_30_DAY
+}

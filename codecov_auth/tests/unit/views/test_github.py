@@ -20,7 +20,8 @@ def _get_state_from_redis(mock_redis):
     return key_redis.replace("oauth-state-", "")
 
 
-def test_get_github_redirect(client, mock_redis):
+def test_get_github_redirect(client, mock_redis, settings):
+    settings.IS_ENTERPRISE = False
     url = reverse("github-login")
     res = client.get(url)
     state = _get_state_from_redis(mock_redis)

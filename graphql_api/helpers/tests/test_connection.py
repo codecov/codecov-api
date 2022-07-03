@@ -16,21 +16,21 @@ class RepositoryQuerySetTests(TestCase):
         repo_4 = RepositoryFactory(name="b")
         repo_5 = RepositoryFactory(name="a")
 
-        connections = async_to_sync(queryset_to_connection)(
+        connection = async_to_sync(queryset_to_connection)(
             Repository.objects.all(),
-            ordering=RepositoryOrdering.NAME.value,
+            ordering=(RepositoryOrdering.NAME.value, RepositoryOrdering.ID.value),
             ordering_direction=OrderingDirection.ASC,
         )
-        repos = [edge["node"] for edge in connections["edges"]]
+        repos = [edge["node"] for edge in connection.edges]
 
         self.assertEqual(repos, [repo_5, repo_2, repo_3, repo_4, repo_1])
 
-        connections = async_to_sync(queryset_to_connection)(
+        connection = async_to_sync(queryset_to_connection)(
             Repository.objects.all(),
-            ordering=RepositoryOrdering.NAME.value,
+            ordering=(RepositoryOrdering.NAME.value, RepositoryOrdering.ID.value),
             ordering_direction=OrderingDirection.DESC,
         )
-        repos = [edge["node"] for edge in connections["edges"]]
+        repos = [edge["node"] for edge in connection.edges]
 
         self.assertEqual(repos, [repo_1, repo_4, repo_3, repo_2, repo_5])
 
@@ -41,11 +41,27 @@ class RepositoryQuerySetTests(TestCase):
         repo_2 = RepositoryFactory(name="b")
         repo_3 = RepositoryFactory(name="c")
 
-        connections = async_to_sync(queryset_to_connection)(
+        connection = async_to_sync(queryset_to_connection)(
             Repository.objects.all(),
-            ordering=RepositoryOrdering.NAME,
+            ordering=(RepositoryOrdering.NAME,),
             ordering_direction=OrderingDirection.ASC,
         )
-        repos = [edge["node"] for edge in connections["edges"]]
+        repos = [edge["node"] for edge in connection.edges]
 
         self.assertEqual(repos, [repo_1, repo_2, repo_3])
+
+    def test_queryset_to_connection_defers_count(self):
+        from graphql_api.helpers.connection import queryset_to_connection
+
+        RepositoryFactory(name="a")
+        RepositoryFactory(name="b")
+        RepositoryFactory(name="c")
+
+        connection = async_to_sync(queryset_to_connection)(
+            Repository.objects.all(),
+            ordering=(RepositoryOrdering.NAME,),
+            ordering_direction=OrderingDirection.ASC,
+        )
+
+        count = async_to_sync(connection.total_count)()
+        assert count == 3

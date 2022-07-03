@@ -27,6 +27,11 @@ class BitbucketHTTPHeaders:
     UUID = "HTTP_X_HOOK_UUID"
 
 
+class BitbucketServerHTTPHeaders:
+    EVENT = "X-Event-Key"
+    UUID = "X-Request-Id"
+
+
 class BitbucketWebhookEvents:
     PULL_REQUEST_CREATED = "pullrequest:created"
     PULL_REQUEST_UPDATED = "pullrequest:updated"
@@ -43,6 +48,24 @@ class BitbucketWebhookEvents:
         REPO_PUSH,
         REPO_COMMIT_STATUS_CREATED,
         REPO_COMMIT_STATUS_UPDATED,
+    ]
+
+
+class BitbucketServerWebhookEvents:
+    REPO_MODIFIED = "repo:modified"
+    REPO_REFS_CHANGED = "repo:refs_changed"
+    PULL_REQUEST_CREATED = "pr:opened"
+    PULL_REQUEST_MERGED = "pr:merged"
+    PULL_REQUEST_REJECTED = "pr:declined"
+    PULL_REQUEST_DELETED = "pr:deleted"
+
+    subscribed_events = [
+        REPO_MODIFIED,
+        REPO_REFS_CHANGED,
+        PULL_REQUEST_CREATED,
+        PULL_REQUEST_MERGED,
+        PULL_REQUEST_REJECTED,
+        PULL_REQUEST_DELETED,
     ]
 
 

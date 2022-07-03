@@ -98,6 +98,12 @@ class SegmentEvent(Enum):
     USER_SIGNED_IN = "User Signed In"
     USER_SIGNED_OUT = "User Signed Out"
     USER_SIGNED_UP = "User Signed Up"
+    IMPACT_ANALYSIS_PROFILING_COMMIT_CREATED = (
+        "Impact Analysis Profiling Commit Created"
+    )
+    IMPACT_ANALYSIS_PROFILING_UPLOAD_CREATED = (
+        "Impact Analysis Profiling Upload Created"
+    )
 
 
 class SegmentOwner:
@@ -489,4 +495,22 @@ class SegmentService:
             event=SegmentEvent.ACCOUNT_UPLOADED_COVERAGE_REPORT.value,
             properties=upload_details,
             context={"groupId": org_ownerid},
+        )
+
+    @segment_enabled
+    def impact_analysis_profiling_commit_created(self, repo):
+        analytics.track(
+            user_id=BLANK_SEGMENT_USER_ID,
+            event=SegmentEvent.IMPACT_ANALYSIS_PROFILING_COMMIT_CREATED.value,
+            properties={"repo_id": repo.repoid, "repo_owner_id": repo.author.ownerid},
+            context={"groupId": repo.author.ownerid},
+        )
+
+    @segment_enabled
+    def impact_analysis_profiling_upload_created(self, repo):
+        analytics.track(
+            user_id=BLANK_SEGMENT_USER_ID,
+            event=SegmentEvent.IMPACT_ANALYSIS_PROFILING_UPLOAD_CREATED.value,
+            properties={"repo_id": repo.repoid, "repo_owner_id": repo.author.ownerid},
+            context={"groupId": repo.author.ownerid},
         )

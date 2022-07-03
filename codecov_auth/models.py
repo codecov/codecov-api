@@ -110,7 +110,7 @@ class Owner(models.Model):
     delinquent = models.BooleanField(null=True)
     yaml = models.JSONField(null=True)
     updatestamp = DateTimeWithoutTZField(default=datetime.now)
-    organizations = ArrayField(models.IntegerField(null=True), null=True)
+    organizations = ArrayField(models.IntegerField(null=True), null=True, blank=True)
     admins = ArrayField(models.IntegerField(null=True), null=True)
     integration_id = models.IntegerField(null=True, blank=True)
     permission = ArrayField(models.IntegerField(null=True), null=True)
@@ -121,7 +121,7 @@ class Owner(models.Model):
     student_created_at = DateTimeWithoutTZField(null=True)
     student_updated_at = DateTimeWithoutTZField(null=True)
     onboarding_completed = models.BooleanField(default=False)
-    is_superuser = models.BooleanField(null=True)
+    is_superuser = models.BooleanField(null=True, default=False)
 
     objects = OwnerQuerySet.as_manager()
 
