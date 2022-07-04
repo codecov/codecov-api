@@ -5,6 +5,10 @@ from django.utils import timezone
 from rest_framework.generics import ListCreateAPIView
 from rest_framework.permissions import AllowAny, BasePermission
 
+from codecov_auth.authentication.repo_auth import (
+    GlobalTokenAuthentication,
+    RepositoryLegacyTokenAuthentication,
+)
 from core.models import Commit, Repository
 from services.archive import ArchiveService, MinioEndpoints
 from services.redis_configuration import get_redis_connection
@@ -22,6 +26,10 @@ class CanDoCoverageUploadsPermission(BasePermission):
 
 class UploadViews(ListCreateAPIView):
     serializer_class = UploadSerializer
+    authentication_classes = [
+        GlobalTokenAuthentication,
+        RepositoryLegacyTokenAuthentication,
+    ]
     permission_classes = [
         CanDoCoverageUploadsPermission,
     ]
