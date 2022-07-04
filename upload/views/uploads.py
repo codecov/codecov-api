@@ -7,6 +7,8 @@ from rest_framework.permissions import AllowAny, BasePermission
 
 from core.models import Commit, Repository
 from services.archive import ArchiveService, MinioEndpoints
+from services.redis_configuration import get_redis_connection
+from upload.helpers import dispatch_upload_task
 from upload.serializers import UploadSerializer
 from upload.throttles import UploadsPerCommitThrottle, UploadsPerWindowThrottle
 
@@ -39,8 +41,20 @@ class UploadViews(ListCreateAPIView):
             reportid=self.kwargs["reportid"],
         )
         instance = serializer.save(storage_path=path, report_id=self.kwargs["reportid"])
-
+        self.trigger_upload_task(repository, commitid, instance)
+        self.activate_repo(repository)
         return instance
 
     def list(self, request: HttpRequest, repo: str, commit_id: str, report_id: str):
         return HttpResponseNotAllowed(permitted_methods=["POST"])
+
+    def trigger_upload_task(self, repository, commit_id, upload):
+        redis = get_redis_connection()
+        task_arguments = {"commit": commit_id, "upload_pk": upload.id, "version": "v4"}
+        dispatch_upload_task(task_arguments, repository, redis)
+
+    def activate_repo(self, repository):
+        repository.activated = True
+        repository.active = True
+        repository.deleted = False
+        repository.save(update_fields=["activated", "active", "deleted", "updatestamp"])
