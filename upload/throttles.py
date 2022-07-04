@@ -19,13 +19,14 @@ log = logging.getLogger(__name__)
 
 class UploadsPerCommitThrottle(BaseThrottle):
     def allow_request(self, request, view):
+        commit_id = view.kwargs.get("commitid")
         try:
             repository = Repository.objects.get(
                 name=view.kwargs.get("repo"),
                 author=request.user,
             )
             commit = Commit.objects.get(
-                commitid=view.kwargs.get("commit_id"), repository=repository
+                commitid=commit_id, repository=repository
             )
             new_session_count = ReportSession.objects.filter(
                 ~Q(state="error"),
@@ -39,7 +40,7 @@ class UploadsPerCommitThrottle(BaseThrottle):
                     log.info(
                         "Old session count would not have blocked this upload",
                         extra=dict(
-                            commit=view.kwargs.get("commit_id"),
+                            commit=commit_id,
                             session_count=session_count,
                             repoid=repository.repoid,
                             old_session_count=session_count,
@@ -49,7 +50,7 @@ class UploadsPerCommitThrottle(BaseThrottle):
                 log.warning(
                     "Too many uploads to this commit",
                     extra=dict(
-                        commit=view.kwargs.get("commit_id"),
+                        commit=commit_id,
                         session_count=session_count,
                         repoid=repository.repoid,
                     ),
@@ -59,7 +60,7 @@ class UploadsPerCommitThrottle(BaseThrottle):
                 log.info(
                     "Old session count would block this upload",
                     extra=dict(
-                        commit=view.kwargs.get("commit_id"),
+                        commit=commit_id,
                         session_count=session_count,
                         repoid=repository.repoid,
                         old_session_count=session_count,
@@ -73,7 +74,7 @@ class UploadsPerCommitThrottle(BaseThrottle):
 
 class UploadsPerWindowThrottle(BaseThrottle):
     def allow_request(self, request, view):
-        commit_id = view.kwargs.get("commit_id")
+        commit_id = view.kwargs.get("commitid")
         try:
             repository = Repository.objects.get(
                 name=view.kwargs.get("repo"),
