@@ -25,9 +25,7 @@ class UploadsPerCommitThrottle(BaseThrottle):
                 name=view.kwargs.get("repo"),
                 author=request.user,
             )
-            commit = Commit.objects.get(
-                commitid=commit_id, repository=repository
-            )
+            commit = Commit.objects.get(commitid=commit_id, repository=repository)
             new_session_count = ReportSession.objects.filter(
                 ~Q(state="error"),
                 ~Q(upload_type=UploadType.carryforwarded.name),
