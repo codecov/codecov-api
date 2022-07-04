@@ -15,13 +15,16 @@ def test_uploads_get_not_allowed(client):
     assert res.status_code == 401
 
 
-def test_uploads_post_empty(db, mocker):
+def test_uploads_post_empty(db, mocker, mock_redis):
     mocker.patch.object(
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
     )
     mocker.patch(
         "services.archive.StorageService.create_presigned_put",
         return_value="presigned put",
+    )
+    mocker.patch(
+        "upload.views.uploads.UploadViews.trigger_upload_task", return_value=True
     )
     repository = RepositoryFactory(name="the_repo", author__username="codecov")
     commit = CommitFactory(repository=repository)
