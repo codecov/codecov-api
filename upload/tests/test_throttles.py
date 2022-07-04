@@ -15,15 +15,13 @@ class ThrottlesTests(APITestCase):
 
     def get_response(self, repo, commitid, reportid):
         _url = reverse("new_upload.uploads", args=[repo, commitid, reportid])
-        self.client.get(_url)
-        return self.client.get(_url)
+        return self.client.post(_url)
 
     def request_should_throttle(self, commit):
         response = self.get_response(
             commit.repository.name, commit.commitid, "random_id"
         )
-        # TODO change status_code to 429 after implementing the auth class for the view
-        assert response.status_code == 403
+        assert response.status_code == 429
 
     def request_should_not_throttle(self, commit):
         response = self.get_response(
