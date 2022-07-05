@@ -17,8 +17,7 @@ class ThrottlesTests(APITestCase):
 
     def get_response(self, repo, commitid, reportid):
         _url = reverse("new_upload.uploads", args=[repo, commitid, reportid])
-        res = self.client.post(_url, data={"state": "uploaded"}, format="json")
-        return res
+        return self.client.post(_url)
 
     def request_should_throttle(self, commit, reportid):
         response = self.get_response(commit.repository.name, commit.commitid, reportid)
