@@ -79,7 +79,7 @@ class UploadDownloadHelperTest(APITestCase):
         self, get_archive_hash, create_raw_upload_presigned_get
     ):
         get_archive_hash.return_value = "hasssshhh"
-        create_raw_upload_presigned_get.return_value = "presigned_url"
+        create_raw_upload_presigned_get.return_value = "presigned_url_mock"
         response = self._get(
             kwargs={
                 "service": "gh",
@@ -88,6 +88,7 @@ class UploadDownloadHelperTest(APITestCase):
             },
             data={"path": "v4/raw/22-5-2022/hasssshhh/commitid/random.txt"},
         )
+        assert response["Content-Type"] == "application/json"
         assert response.status_code == 200
 
     def test_invalid_repo_archive_path(self):

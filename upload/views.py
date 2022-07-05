@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 from contextlib import suppress
 from datetime import datetime
@@ -389,6 +390,6 @@ class UploadDownloadHandler(View):
 
         presigned_url = await self.get_upload_presigned_url(repo)
 
-        response = HttpResponse(presigned_url)
-        response["Content-Type"] = "text/plain"
+        response = HttpResponse(json.dumps({"presigned_url": presigned_url}))
+        response["Content-Type"] = "application/json"
         return response
