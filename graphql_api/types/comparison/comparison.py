@@ -1,7 +1,9 @@
+from typing import List
+
 from ariadne import ObjectType
 from asgiref.sync import sync_to_async
 
-from compare.models import CommitComparison
+from compare.models import CommitComparison, FlagComparison
 
 comparison_bindable = ObjectType("Comparison")
 
@@ -46,3 +48,29 @@ def resolve_head_totals(comparison, info):
 
     comparison = info.context["comparison"]
     return comparison.totals["head"]
+
+
+@comparison_bindable.field("flagComparisons")
+@sync_to_async
+def resolve_flag_comparisons(comparison, info) -> List[FlagComparison]:
+    if "comparison" not in info.context:
+        return None
+
+    comparison = info.context["comparison"]
+    commit_comparison = CommitComparison.objects.filter(
+        base_commit=comparison.base_commit, compare_commit=comparison.head_commit
+    ).first()
+
+    if not commit_comparison:
+        return None
+
+    flag_comparisons = (
+        FlagComparison.objects.select_related("repositoryflag")
+        .filter(commit_comparison=commit_comparison.id)
+        .all()
+    )
+
+    if not flag_comparisons:
+        return []
+
+    return flag_comparisons
