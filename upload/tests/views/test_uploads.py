@@ -8,10 +8,11 @@ from reports.models import CommitReport, ReportSession
 from upload.views.uploads import CanDoCoverageUploadsPermission
 
 
-def test_uploads_get_not_allowed(client, db):
+def test_uploads_get_not_allowed(db):
     url = reverse("new_upload.uploads", args=["the-repo", "commit-sha", "report-id"])
     assert url == "/upload/the-repo/commits/commit-sha/reports/report-id/uploads"
-    client.force_login(OwnerFactory(plan=BASIC_PLAN_NAME))
+    client = APIClient()
+    client.force_authenticate(user=OwnerFactory(plan=BASIC_PLAN_NAME))
     res = client.get(url)
     assert res.status_code == 405
 
