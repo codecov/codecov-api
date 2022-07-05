@@ -361,15 +361,11 @@ class CommitNotification(models.Model):
         db_table = "commit_notifications"
 
 
-class CommitYamlError(BaseCodecovModel):
+class CommitError(BaseCodecovModel):
     commit = models.ForeignKey(
         "Commit",
-        db_column="commitid",
         related_name="errors",
         on_delete=models.CASCADE,
     )
     error_code = models.CharField(max_length=100)
     error_params = models.JSONField(default=dict)
-
-    class Meta:
-        db_table = "commit_yamlerror"
