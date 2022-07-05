@@ -8,6 +8,7 @@ from django.db import models
 from django.forms import ValidationError
 from django.utils.functional import cached_property
 
+from codecov.models import BaseCodecovModel
 from services.archive import ReportService
 
 from .encoders import ReportJSONEncoder
@@ -358,3 +359,17 @@ class CommitNotification(models.Model):
 
     class Meta:
         db_table = "commit_notifications"
+
+
+class CommitYamlError(BaseCodecovModel):
+    commit = models.ForeignKey(
+        "Commit",
+        db_column="commitid",
+        related_name="errors",
+        on_delete=models.CASCADE,
+    )
+    error_code = models.CharField(max_length=100)
+    error_params = models.JSONField(default=dict)
+
+    class Meta:
+        db_table = "commit_yamlerror"
