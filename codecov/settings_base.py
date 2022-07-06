@@ -309,3 +309,4 @@ CORS_ALLOWED_ORIGINS = []
 GRAPHQL_PLAYGROUND = False
 
 UPLOAD_THROTTLING_ENABLED = True
+MAX_UPLOAD_LIMIT = get_config("setup", "max_sessions", default=150)
