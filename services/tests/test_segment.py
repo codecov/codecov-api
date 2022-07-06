@@ -546,3 +546,16 @@ class SegmentServiceTests(TestCase):
                 properties=repo_details,
                 context={"groupId": repo.author.ownerid},
             )
+
+    @patch("analytics.track")
+    def test_impact_analysis_profiling_upload_created(self, track_mock):
+        repo = RepositoryFactory()
+        repo_details = {"repo_id": repo.repoid, "repo_owner_id": repo.author.ownerid}
+        with self.settings(SEGMENT_ENABLED=True):
+            self.segment_service.impact_analysis_profiling_upload_created(repo=repo)
+            track_mock.assert_called_once_with(
+                user_id=BLANK_SEGMENT_USER_ID,
+                event=SegmentEvent.IMPACT_ANALYSIS_PROFILING_UPLOAD_CREATED.value,
+                properties=repo_details,
+                context={"groupId": repo.author.ownerid},
+            )

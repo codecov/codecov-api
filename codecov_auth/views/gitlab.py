@@ -24,7 +24,7 @@ class GitlabLoginView(LoginMixin, StateMixin, View):
     def repo_service_instance(self):
         return Gitlab(
             oauth_consumer_token=dict(
-                key=settings.GITHUB_CLIENT_ID, secret=settings.GITHUB_CLIENT_SECRET
+                key=settings.GITLAB_CLIENT_ID, secret=settings.GITLAB_CLIENT_SECRET
             )
         )
 

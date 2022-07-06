@@ -1,6 +1,11 @@
 import enum
 
 
+class OrderingParameter(enum.Enum):
+    NAME = "name"
+    COVERAGE = "coverage"
+
+
 class RepositoryOrdering(enum.Enum):
     COMMIT_DATE = "latest_commit_at"
     COVERAGE = "coverage"
