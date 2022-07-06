@@ -32,7 +32,7 @@ class UploadsPerCommitThrottle(BaseThrottle):
                 report__commit=commit,
             ).count()
             session_count = (commit.totals.get("s") if commit.totals else 0) or 0
-            current_upload_limit = get_config("setup", "max_sessions") or 150
+            current_upload_limit = settings.MAX_UPLOAD_LIMIT
             if new_session_count > current_upload_limit:
                 if session_count <= current_upload_limit:
                     log.info(
