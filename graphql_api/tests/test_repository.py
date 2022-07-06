@@ -216,7 +216,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
         assert data["me"]["owner"]["repository"]["bot"]["username"] == "random_bot"
 
-    def test_repository_resolve_activated(self):
+    def test_repository_resolve_activated_true(self):
         user = OwnerFactory()
         repo = RepositoryFactory(author=user, activated=True)
         data = self.gql_request(
@@ -226,7 +226,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
         assert data["me"]["owner"]["repository"]["activated"] == True
 
-    def test_repository_resolve_activated(self):
+    def test_repository_resolve_activated_false(self):
         user = OwnerFactory()
         repo = RepositoryFactory(author=user, activated=False)
         data = self.gql_request(
