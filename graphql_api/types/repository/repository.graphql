@@ -1,6 +1,7 @@
 type Repository {
   name: String!
   active: Boolean!
+  activated: Boolean!
   private: Boolean!
   coverage: Float
   coverageSha: String

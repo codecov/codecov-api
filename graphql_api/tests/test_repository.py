@@ -215,3 +215,23 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             variables={"name": repo.name},
         )
         assert data["me"]["owner"]["repository"]["bot"]["username"] == "random_bot"
+
+    def test_repository_resolve_activated_true(self):
+        user = OwnerFactory()
+        repo = RepositoryFactory(author=user, activated=True)
+        data = self.gql_request(
+            query_repository % "activated",
+            user=user,
+            variables={"name": repo.name},
+        )
+        assert data["me"]["owner"]["repository"]["activated"] == True
+
+    def test_repository_resolve_activated_false(self):
+        user = OwnerFactory()
+        repo = RepositoryFactory(author=user, activated=False)
+        data = self.gql_request(
+            query_repository % "activated",
+            user=user,
+            variables={"name": repo.name},
+        )
+        assert data["me"]["owner"]["repository"]["activated"] == False
