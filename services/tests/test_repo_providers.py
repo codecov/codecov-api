@@ -76,6 +76,21 @@ class TestRepoProviderService(InternalAPITest):
         assert saved_token["key"] == "00001023102301"
         assert saved_token["refresh_token"] == "20349230952"
 
+    def test_refresh_callback_error(self):
+        repo = RepositoryFactory.create(
+            author__unencrypted_oauth_token="testaaft3ituvli790m1yajovjv5eg0r4j0264iw",
+            author__username="ThiagoCodecov",
+            author__service="gitlab",
+        )
+        provider = RepoProviderService().get_by_name(
+            repo.author, repo.name, repo.author, repo.author.service
+        )
+        assert isinstance(Gitlab(), type(provider))
+        assert provider._on_token_refresh is not None
+        defective_token = {"refresh_token": "20349230952"}
+        with pytest.raises(Exception):
+            provider._on_token_refresh(defective_token)
+
     def test_get_adapter_returns_adapter_for_repo_authors_service(self):
         some_other_user = OwnerFactory(service="github")
         repo = RepositoryFactory.create(
