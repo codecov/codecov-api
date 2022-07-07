@@ -4,6 +4,7 @@ import re
 from contextlib import suppress
 from hashlib import sha256
 
+from django.utils.crypto import constant_time_compare
 from rest_framework import status
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.permissions import AllowAny
@@ -54,7 +55,13 @@ class GithubWebhookHandler(APIView):
 
         sig = "sha256=" + hmac.new(key, request.body, digestmod=sha256).hexdigest()
 
-        if sig != request.META.get(GitHubHTTPHeaders.SIGNATURE_256):
+        if (
+            not request.META.get(GitHubHTTPHeaders.SIGNATURE_256)
+            or len(sig) != len(request.META.get(GitHubHTTPHeaders.SIGNATURE_256))
+            or not constant_time_compare(
+                sig, request.META.get(GitHubHTTPHeaders.SIGNATURE_256)
+            )
+        ):
             raise PermissionDenied()
 
     def unhandled_webhook_event(self, request, *args, **kwargs):
