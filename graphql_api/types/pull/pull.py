@@ -1,4 +1,5 @@
 from ariadne import ObjectType
+from asgiref.sync import sync_to_async
 
 from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.comparison import ComparisonLoader
@@ -44,14 +45,17 @@ async def resolve_compare_with_base(pull, info, **kwargs):
         return None
 
     comparison_loader = ComparisonLoader.loader(info, pull.repository_id)
-    comparison = await comparison_loader.load((pull.compared_to, pull.head))
+    commit_comparison = await comparison_loader.load((pull.compared_to, pull.head))
 
-    if comparison and comparison.is_processed:
-        # store the comparison in the context - to be used in the `Comparison` resolvers
+    if commit_comparison and commit_comparison.is_processed:
         user = info.context["request"].user
-        info.context["comparison"] = PullRequestComparison(user, pull)
+        comparison = PullRequestComparison(user, pull)
+        await sync_to_async(comparison.validate)()
 
-    return comparison
+        # store the comparison in the context - to be used in the `Comparison` resolvers
+        info.context["comparison"] = comparison
+
+    return commit_comparison
 
 
 @pull_bindable.field("commits")
