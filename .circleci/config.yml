@@ -101,6 +101,8 @@ jobs:
   test:
     executor: codecov-api
     working_directory: ~/repo
+    environment:
+      SETUP__TIMESERIES__ENABLED: true
     steps:
     - checkout
     - run:
