@@ -10,6 +10,7 @@ from rest_framework.test import APITestCase
 
 from codecov_auth.tests.factories import OwnerFactory, SessionFactory
 from core.models import Pull, Repository
+from core.tests.factories import PullFactory, RepositoryFactory
 from internal_api.tests.test_utils import GetAdminProviderAdapter
 
 
@@ -53,6 +54,7 @@ class UserViewSetTests(APITestCase):
                 "email": user.email,
                 "ownerid": user.ownerid,
                 "student": user.student,
+                "last_pull_timestamp": None,
             }
             for user in self.users
         ]
@@ -73,6 +75,7 @@ class UserViewSetTests(APITestCase):
             "email": self.users[0].email,
             "ownerid": self.users[0].ownerid,
             "student": self.users[0].student,
+            "last_pull_timestamp": None,
         }
 
     def test_list_sets_is_admin(self):
@@ -90,6 +93,7 @@ class UserViewSetTests(APITestCase):
             "email": self.users[1].email,
             "ownerid": self.users[1].ownerid,
             "student": self.users[1].student,
+            "last_pull_timestamp": None,
         }
 
     def test_list_can_filter_by_activated(self):
@@ -108,6 +112,7 @@ class UserViewSetTests(APITestCase):
                 "email": self.users[0].email,
                 "ownerid": self.users[0].ownerid,
                 "student": self.users[0].student,
+                "last_pull_timestamp": None,
             }
         ]
 
@@ -127,6 +132,7 @@ class UserViewSetTests(APITestCase):
                 "email": self.users[1].email,
                 "ownerid": self.users[1].ownerid,
                 "student": self.users[1].student,
+                "last_pull_timestamp": None,
             }
         ]
 
@@ -150,6 +156,7 @@ class UserViewSetTests(APITestCase):
                 "email": self.users[1].email,
                 "ownerid": self.users[1].ownerid,
                 "student": self.users[1].student,
+                "last_pull_timestamp": None,
             },
             {
                 "name": self.users[2].name,
@@ -159,6 +166,7 @@ class UserViewSetTests(APITestCase):
                 "email": self.users[2].email,
                 "ownerid": self.users[2].ownerid,
                 "student": self.users[2].student,
+                "last_pull_timestamp": None,
             },
         ]
 
@@ -183,6 +191,7 @@ class UserViewSetTests(APITestCase):
                 "email": self.users[1].email,
                 "ownerid": self.users[1].ownerid,
                 "student": self.users[1].student,
+                "last_pull_timestamp": None,
             },
             {
                 "name": "thor",
@@ -192,6 +201,7 @@ class UserViewSetTests(APITestCase):
                 "email": self.users[2].email,
                 "ownerid": self.users[2].ownerid,
                 "student": self.users[2].student,
+                "last_pull_timestamp": None,
             },
         ]
         assert response.data["results"][0] == expected_result[0]
@@ -219,6 +229,7 @@ class UserViewSetTests(APITestCase):
                 "email": "thanos@gmail.com",
                 "ownerid": self.users[0].ownerid,
                 "student": self.users[0].student,
+                "last_pull_timestamp": None,
             },
             {
                 "name": self.users[2].name,
@@ -228,6 +239,7 @@ class UserViewSetTests(APITestCase):
                 "email": "thor@gmail.com",
                 "ownerid": self.users[2].ownerid,
                 "student": self.users[2].student,
+                "last_pull_timestamp": None,
             },
         ]
 
@@ -285,6 +297,47 @@ class UserViewSetTests(APITestCase):
 
         assert [r["email"] for r in response.data["results"]] == ["d", "c", "b", "a"]
 
+    def test_list_can_order_by_last_pull_timestamp(self):
+        repo = RepositoryFactory()
+        pull1 = PullFactory(author=self.users[1], repository=repo)
+        pull2 = PullFactory(author=self.users[2], repository=repo)
+
+        # avoid `save` which sets `updatestamp`
+        Pull.objects.filter(pk=pull1.pk).update(
+            updatestamp=datetime(2022, 1, 1, 0, 0, 0)
+        )
+        Pull.objects.filter(pk=pull2.pk).update(
+            updatestamp=datetime(2022, 2, 1, 0, 0, 0)
+        )
+
+        response = self._list(query_params={"ordering": "last_pull_timestamp"})
+        assert [r["ownerid"] for r in response.data["results"]] == [
+            self.users[0].ownerid,
+            self.users[3].ownerid,
+            self.users[1].ownerid,
+            self.users[2].ownerid,
+        ]
+        assert [r["last_pull_timestamp"] for r in response.data["results"]] == [
+            None,
+            None,
+            datetime(2022, 1, 1, 0, 0, 0),
+            datetime(2022, 2, 1, 0, 0, 0),
+        ]
+
+        response = self._list(query_params={"ordering": "-last_pull_timestamp"})
+        assert [r["ownerid"] for r in response.data["results"]] == [
+            self.users[2].ownerid,
+            self.users[1].ownerid,
+            self.users[0].ownerid,
+            self.users[3].ownerid,
+        ]
+        assert [r["last_pull_timestamp"] for r in response.data["results"]] == [
+            datetime(2022, 2, 1, 0, 0, 0),
+            datetime(2022, 1, 1, 0, 0, 0),
+            None,
+            None,
+        ]
+
     def test_patch_with_ownerid(self):
         response = self._patch(
             kwargs={
@@ -304,6 +357,7 @@ class UserViewSetTests(APITestCase):
             "email": self.users[0].email,
             "ownerid": self.users[0].ownerid,
             "student": self.users[0].student,
+            "last_pull_timestamp": None,
         }
 
     def test_patch_can_set_activated_to_true(self):
@@ -325,6 +379,7 @@ class UserViewSetTests(APITestCase):
             "email": self.users[0].email,
             "ownerid": self.users[0].ownerid,
             "student": self.users[0].student,
+            "last_pull_timestamp": None,
         }
 
         self.owner.refresh_from_db()
@@ -353,6 +408,7 @@ class UserViewSetTests(APITestCase):
             "email": self.users[1].email,
             "ownerid": self.users[1].ownerid,
             "student": self.users[1].student,
+            "last_pull_timestamp": None,
         }
 
         self.owner.refresh_from_db()
@@ -425,6 +481,7 @@ class UserViewSetTests(APITestCase):
             "email": self.users[2].email,
             "ownerid": self.users[2].ownerid,
             "student": self.users[2].student,
+            "last_pull_timestamp": None,
         }
 
         self.owner.refresh_from_db()
@@ -452,6 +509,7 @@ class UserViewSetTests(APITestCase):
             "email": self.users[2].email,
             "ownerid": self.users[2].ownerid,
             "student": self.users[2].student,
+            "last_pull_timestamp": None,
         }
 
         self.owner.refresh_from_db()

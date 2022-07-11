@@ -1,6 +1,6 @@
 import logging
 
-from django.db.models import Q
+from django.db.models import F, Q
 from django.shortcuts import get_object_or_404
 from django_filters import rest_framework as django_filters
 from rest_framework import filters, mixins, status, viewsets
@@ -116,6 +116,30 @@ class AccountDetailsViewSet(
         return Response(self.get_serializer(owner).data)
 
 
+class UsersOrderingFilter(filters.OrderingFilter):
+    def filter_queryset(self, request, queryset, view):
+        ordering = self.get_ordering(request, queryset, view)
+
+        if ordering:
+            ordering = [self._order_expression(order) for order in ordering]
+            return queryset.order_by(*ordering)
+
+        return queryset
+
+    def _order_expression(self, order):
+        """
+        Special cases for `last_pull_timestamp`:
+        - nulls first when ascending
+        - nulls last when descending
+        """
+        if order == "last_pull_timestamp":
+            return F("last_pull_timestamp").asc(nulls_first=True)
+        elif order == "-last_pull_timestamp":
+            return F("last_pull_timestamp").desc(nulls_last=True)
+        else:
+            return order
+
+
 class UserViewSet(
     viewsets.GenericViewSet,
     mixins.ListModelMixin,
@@ -125,12 +149,12 @@ class UserViewSet(
     serializer_class = UserSerializer
     filter_backends = (
         django_filters.DjangoFilterBackend,
-        filters.OrderingFilter,
+        UsersOrderingFilter,
         filters.SearchFilter,
     )
     filterset_class = UserFilters
     permission_classes = [MemberOfOrgPermissions]
-    ordering_fields = ("name", "username", "email")
+    ordering_fields = ("name", "username", "email", "last_pull_timestamp")
     lookup_field = "user_username_or_ownerid"
     search_fields = ["name", "username", "email"]
 
@@ -154,7 +178,7 @@ class UserViewSet(
         )
 
     def get_queryset(self):
-        return self._base_queryset()
+        return self._base_queryset().annotate_last_pull_timestamp()
 
 
 class PlanViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
