@@ -31,21 +31,8 @@ def get_token_refresh_callback(user: Owner, service: Service) -> Callable[[Dict]
     if service != Service.GITLAB and service != Service.GITLAB_ENTERPRISE:
         return None
 
+    @sync_to_async
     def callback(new_token: Dict) -> None:
-        if "key" not in new_token:
-            # REVIEW should we remove the old token from the database at this point?
-            # And leave the user without a token at all. Seems better than leaving it
-            # with a token that just doesn't work.
-
-            # REVIEW what exception should we raise here?
-            raise Exception(
-                "Can't save updated token. Key missing from dict",
-                extra=dict(owner=user.ownerid, username=user.username, service=service),
-            )
-
-        # shared uses a key with the token.
-        # providers return access_token.
-        # We can have both just in case
         string_to_save = encode_token(new_token)
         user.oauth_token = encryptor.encode(string_to_save).decode()
         user.save()
