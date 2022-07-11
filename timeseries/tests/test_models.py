@@ -1,5 +1,7 @@
 from datetime import datetime, timezone
 
+import pytest
+from django.conf import settings
 from django.test import TestCase
 
 from timeseries.models import Interval, MeasurementSummary
@@ -7,6 +9,9 @@ from timeseries.models import Interval, MeasurementSummary
 from .factories import MeasurementFactory
 
 
+@pytest.mark.skipif(
+    not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
+)
 class MeasurementTests(TestCase):
     databases = {"timeseries"}
 

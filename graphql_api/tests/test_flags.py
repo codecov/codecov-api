@@ -1,5 +1,7 @@
 from unittest.mock import patch
 
+import pytest
+from django.conf import settings
 from django.test import TransactionTestCase, override_settings
 from django.utils import timezone
 
@@ -46,6 +48,9 @@ fragment FlagFragment on Flag {
 """
 
 
+@pytest.mark.skipif(
+    not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
+)
 class TestFlags(GraphQLTestHelper, TransactionTestCase):
     databases = {"default", "timeseries"}
 

@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
 from unittest.mock import PropertyMock, patch
 
+import pytest
+from django.conf import settings
 from django.test import TransactionTestCase, override_settings
 from django.utils import timezone
 
@@ -29,6 +31,9 @@ base_query = """{
 """
 
 
+@pytest.mark.skipif(
+    not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
+)
 class TestMeasurement(TransactionTestCase, GraphQLTestHelper):
     databases = {"default", "timeseries"}
 

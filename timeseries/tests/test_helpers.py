@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
 from unittest.mock import PropertyMock, patch
 
+import pytest
+from django.conf import settings
 from django.test import TestCase
 from shared.reports.resources import Report, ReportFile, ReportLine
 from shared.utils.sessions import Session
@@ -40,6 +42,9 @@ def sample_report():
     return report
 
 
+@pytest.mark.skipif(
+    not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
+)
 class SaveCommitMeasurementsTest(TestCase):
     databases = {"default", "timeseries"}
 
@@ -283,6 +288,9 @@ class SaveRepoMeasurementsTest(TestCase):
         save_commit_measurements.assert_any_call(self.commit3)
 
 
+@pytest.mark.skipif(
+    not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
+)
 class RefreshMeasurementSummariesTest(TestCase):
     databases = {"timeseries"}
 
