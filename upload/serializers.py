@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from codecov_auth.models import Owner
-from core.models import Commit
+from core.models import Commit, Repository
 from reports.models import ReportSession
 from services.archive import ArchiveService
 
@@ -19,7 +19,6 @@ class UploadSerializer(serializers.ModelSerializer):
             "env",
             "name",
             "provider",
-            "report",
             "storage_path",
             "raw_upload_location",
         )
@@ -30,7 +29,6 @@ class UploadSerializer(serializers.ModelSerializer):
             "created_at",
             "external_id",
             "storage_path",
-            "report",
             "raw_upload_location",
         )
         model = ReportSession
@@ -52,13 +50,20 @@ class OwnerSerializer(serializers.ModelSerializer):
             "username",
             "name",
             "ownerid",
-            "integration_id",
         )
         read_only_fields = fields
 
 
+class RepositorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Repository
+        fields = ("name", "private", "active", "language", "yaml")
+        read_only_fields = fields
+
+
 class CommitSerializer(serializers.ModelSerializer):
-    author = OwnerSerializer
+    author = OwnerSerializer(read_only=True)
+    repository = RepositorySerializer(read_only=True)
 
     class Meta:
         model = Commit
@@ -67,7 +72,6 @@ class CommitSerializer(serializers.ModelSerializer):
             "timestamp",
             "ci_passed",
             "state",
-            "repository",
             "timestamp",
         )
         fields = read_only_fields + (
@@ -75,5 +79,6 @@ class CommitSerializer(serializers.ModelSerializer):
             "parent_commit_id",
             "pullid",
             "branch",
+            "repository",
             "author",
         )

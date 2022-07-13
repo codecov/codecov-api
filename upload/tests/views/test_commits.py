@@ -27,7 +27,6 @@ def test_commit_post_empty(db, client):
     response = client.post(
         url,
         {
-            "author": owner.ownerid,
             "message": "The commit message",
             "ci_passed": False,
             "commitid": "commit_sha",
@@ -42,6 +41,12 @@ def test_commit_post_empty(db, client):
             ["author", "commitid", "timestamp", "message", "repository"],
         )
     )
-    assert response_json["repository"] == repository.repoid
-    assert response_json["author"] == owner.ownerid
+    assert response_json["repository"] == {
+        "name": repository.name,
+        "private": repository.private,
+        "active": repository.active,
+        "language": repository.language,
+        "yaml": repository.yaml,
+    }
+    assert response_json["author"] is None  # This is filled by the worker
     assert response_json["commitid"] == "commit_sha"
