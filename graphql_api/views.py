@@ -30,7 +30,9 @@ def get_user(request):
 
 class AsyncGraphqlView(GraphQLAsyncView):
     schema = schema
-    extensions = [get_tracer_extension()]
+    extensions = (
+        [get_tracer_extension()] if settings.RUN_ENVIRONMENT != "enterprise" else []
+    )
 
     def get(self, *args, **kwargs):
         if settings.GRAPHQL_PLAYGROUND:

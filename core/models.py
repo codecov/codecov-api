@@ -8,10 +8,9 @@ from django.db import models
 from django.forms import ValidationError
 from django.utils.functional import cached_property
 
-from services.archive import ReportService
-
 from core.encoders import ReportJSONEncoder
 from core.managers import RepositoryQuerySet
+from services.archive import ReportService
 
 
 class DateTimeWithoutTZField(models.DateTimeField):

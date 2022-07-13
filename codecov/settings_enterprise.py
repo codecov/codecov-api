@@ -5,6 +5,7 @@ from utils.config import get_config, get_settings_module
 
 from .settings_base import *
 
+RUN_ENVIRONMENT = "enterprise"
 DEBUG = False
 THIS_POD_IP = os.environ.get("THIS_POD_IP")
 ALLOWED_HOSTS = get_config("setup", "api_allowed_hosts", default=["*"])

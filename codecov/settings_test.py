@@ -1,5 +1,6 @@
 from .settings_base import *
 
+RUN_ENVIRONMENT = "test"
 DEBUG = True
 ALLOWED_HOSTS = ["localhost"]
 WEBHOOK_URL = ""  # NGROK TUNNEL HERE

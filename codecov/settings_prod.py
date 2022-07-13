@@ -5,6 +5,7 @@ from sentry_sdk.integrations.django import DjangoIntegration
 
 from .settings_base import *
 
+RUN_ENVIRONMENT = "prod"
 DEBUG = False
 THIS_POD_IP = os.environ.get("THIS_POD_IP")
 ALLOWED_HOSTS = get_config(

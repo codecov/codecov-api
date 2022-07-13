@@ -10,7 +10,7 @@ ALLOWED_HOSTS = get_config(
 
 WEBHOOK_URL = ""  # NGROK TUNNEL HERE
 
-
+RUN_ENVIRONMENT = "dev"
 STRIPE_API_KEY = "sk_test_testurtke3v89d4udnesfxh413qnioseSuuwkdBMDvk4ZLesyoD4sSUoG4XDkPXsjN9MzRPaeylnqbgIOhnFI9Urg00BTUxkOh1"
 STRIPE_ENDPOINT_SECRET = "whsec_test9qhqqzmp6d4n51fl8vtj3w0bomno"
 STRIPE_PLAN_IDS = {
