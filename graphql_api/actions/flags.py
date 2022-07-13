@@ -1,4 +1,4 @@
-from typing import Mapping, Iterable
+from typing import Iterable, Mapping
 
 from django.db.models import QuerySet
 
@@ -23,7 +23,9 @@ def _apply_filters(queryset: QuerySet, filters: Mapping) -> QuerySet:
     return queryset
 
 
-def get_flag_comparisons(commit_comparison: CommitComparison) -> Iterable[FlagComparison]:
+def get_flag_comparisons(
+    commit_comparison: CommitComparison,
+) -> Iterable[FlagComparison]:
     queryset = (
         FlagComparison.objects.select_related("repositoryflag")
         .filter(commit_comparison=commit_comparison.id)

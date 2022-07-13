@@ -8,8 +8,8 @@ from shared.utils.merge import LineType
 from codecov_auth.tests.factories import OwnerFactory
 from compare.models import CommitComparison
 from compare.tests.factories import CommitComparisonFactory, FlagComparisonFactory
-from reports.tests.factories import RepositoryFlagFactory
 from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
+from reports.tests.factories import RepositoryFlagFactory
 from services.profiling import CriticalFile
 
 from .helper import GraphQLTestHelper
@@ -140,26 +140,24 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         """
 
         res = self._request(query)
-        assert res == {'compareWithBase': {'flagComparisons': []}}
+        assert res == {"compareWithBase": {"flagComparisons": []}}
 
     def test_pull_flag_comparisons(self):
         FlagComparisonFactory(
             commit_comparison=self.commit_comparison,
             repositoryflag=RepositoryFlagFactory(
-                repository=self.repository,
-                flag_name="flag_one"
+                repository=self.repository, flag_name="flag_one"
             ),
-            coverage_totals = {"coverage": "85.71429"},
-            patch_totals = {"coverage": "29.28364"}
+            coverage_totals={"coverage": "85.71429"},
+            patch_totals={"coverage": "29.28364"},
         )
         FlagComparisonFactory(
             commit_comparison=self.commit_comparison,
             repositoryflag=RepositoryFlagFactory(
-                repository=self.repository,
-                flag_name="flag_two"
+                repository=self.repository, flag_name="flag_two"
             ),
-            coverage_totals = {"coverage": "75.273820"},
-            patch_totals = {"coverage": "68.283496"}
+            coverage_totals={"coverage": "75.273820"},
+            patch_totals={"coverage": "68.283496"},
         )
         query = """
             compareWithBase {
@@ -176,7 +174,22 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         """
 
         res = self._request(query)
-        assert res == {'compareWithBase': {'flagComparisons': [{'name': 'flag_one', 'patchTotals': {'percentCovered': 29.28364}, 'headTotals': {'percentCovered': 85.71429}}, {'name': 'flag_two', 'patchTotals': {'percentCovered': 68.283496}, 'headTotals': {'percentCovered': 75.27382}}]}}
+        assert res == {
+            "compareWithBase": {
+                "flagComparisons": [
+                    {
+                        "name": "flag_one",
+                        "patchTotals": {"percentCovered": 29.28364},
+                        "headTotals": {"percentCovered": 85.71429},
+                    },
+                    {
+                        "name": "flag_two",
+                        "patchTotals": {"percentCovered": 68.283496},
+                        "headTotals": {"percentCovered": 75.27382},
+                    },
+                ]
+            }
+        }
 
     @patch(
         "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
