@@ -54,12 +54,4 @@ def resolve_head_totals(comparison, info):
 @comparison_bindable.field("flagComparisons")
 @sync_to_async
 def resolve_flag_comparisons(comparison, info) -> List[FlagComparison]:
-    if not comparison:
-        return None
-
-    flag_comparisons = get_flag_comparisons(comparison)
-
-    if not flag_comparisons:
-        return []
-
-    return flag_comparisons
+    return list(get_flag_comparisons(comparison))
