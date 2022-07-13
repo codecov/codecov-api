@@ -62,6 +62,7 @@ def main():
         "celery_config",
         "codecov.graphs",
         "core.migrations",
+        "core.managers"
         "reports.migrations",
         "codecov_auth.migrations",
         "compare.migrations",

@@ -10,8 +10,8 @@ from django.utils.functional import cached_property
 
 from services.archive import ReportService
 
-from encoders import ReportJSONEncoder
-from managers import RepositoryQuerySet
+from core.encoders import ReportJSONEncoder
+from core.managers import RepositoryQuerySet
 
 
 class DateTimeWithoutTZField(models.DateTimeField):
