@@ -57,7 +57,7 @@ class CommitComparison(BaseCodecovModel):
 
 class FlagComparison(BaseCodecovModel):
     commit_comparison = models.ForeignKey(
-        CommitComparison, on_delete=models.CASCADE, related_name="commit_comparisons"
+        CommitComparison, on_delete=models.CASCADE, related_name="flag_comparisons"
     )
     repositoryflag = models.ForeignKey(
         RepositoryFlag, on_delete=models.CASCADE, related_name="flag_comparisons"
