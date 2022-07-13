@@ -66,3 +66,9 @@ class UploadViews(ListCreateAPIView):
         repository.active = True
         repository.deleted = False
         repository.save(update_fields=["activated", "active", "deleted", "updatestamp"])
+
+    def get_repo(self):
+        # TODO this is not final - how is getting the repo is still in discuss
+        repoid = self.kwargs["repo"]
+        repository: Repository = Repository.objects.get(name=repoid)
+        return repository

@@ -21,10 +21,7 @@ class UploadsPerCommitThrottle(BaseThrottle):
     def allow_request(self, request, view):
         commit_id = view.kwargs.get("commitid")
         try:
-            repository = Repository.objects.get(
-                name=view.kwargs.get("repo"),
-                author=request.user,
-            )
+            repository = view.get_repo()
             commit = Commit.objects.get(commitid=commit_id, repository=repository)
             new_session_count = ReportSession.objects.filter(
                 ~Q(state="error"),
@@ -74,10 +71,7 @@ class UploadsPerWindowThrottle(BaseThrottle):
     def allow_request(self, request, view):
         commit_id = view.kwargs.get("commitid")
         try:
-            repository = Repository.objects.get(
-                name=view.kwargs.get("repo"),
-                author=request.user,
-            )
+            repository = view.get_repo()
             commit = Commit.objects.defer("report").get(
                 commitid=commit_id,
                 repository=repository,
