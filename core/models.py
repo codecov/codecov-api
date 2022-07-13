@@ -127,6 +127,7 @@ class Repository(models.Model):
         verbose_name_plural = "Repositories"
 
     objects = RepositoryQuerySet.as_manager()
+    repos = RepositoryQuerySet.as_manager()
 
     def __str__(self):
         return f"Repo<{self.author}/{self.name}>"
