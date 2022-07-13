@@ -1,3 +1,5 @@
+from distutils.command import upload
+
 from django.urls import reverse
 from rest_framework.test import APIClient
 
@@ -19,11 +21,11 @@ def test_uploads_post_empty(db, mocker, mock_redis):
     mocker.patch.object(
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
     )
-    mocker.patch(
+    presigned_put_mock = mocker.patch(
         "services.archive.StorageService.create_presigned_put",
         return_value="presigned put",
     )
-    mocker.patch(
+    upload_task_mock = mocker.patch(
         "upload.views.uploads.UploadViews.trigger_upload_task", return_value=True
     )
     repository = RepositoryFactory(name="the_repo", author__username="codecov")
@@ -51,6 +53,8 @@ def test_uploads_post_empty(db, mocker, mock_redis):
     assert all(
         map(
             lambda x: x in response_json.keys(),
-            ["external_id", "created_at", "report", "raw_upload_location"],
+            ["external_id", "created_at", "raw_upload_location"],
         )
     )
+    presigned_put_mock.assert_called()
+    upload_task_mock.assert_called()
