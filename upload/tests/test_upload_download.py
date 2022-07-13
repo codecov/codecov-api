@@ -57,11 +57,9 @@ class UploadDownloadHelperTest(APITestCase):
         assert response.status_code == 404
 
     @patch("services.archive.ArchiveService.get_archive_hash")
-    @patch("services.archive.ArchiveService.create_raw_upload_presigned_get")
-    def test_invalid_archive_path(
-        self, create_raw_upload_presigned_get, get_archive_hash
-    ):
-        create_raw_upload_presigned_get.side_effect = [minio.error.NoSuchKey]
+    @patch("services.archive.ArchiveService.read_file")
+    def test_invalid_archive_path(self, read_file, get_archive_hash):
+        read_file.side_effect = [minio.error.NoSuchKey]
         get_archive_hash.return_value = "path"
         response = self._get(
             kwargs={
@@ -73,25 +71,26 @@ class UploadDownloadHelperTest(APITestCase):
         )
         assert response.status_code == 404
 
-    @patch("services.archive.ArchiveService.create_raw_upload_presigned_get")
     @patch("services.archive.ArchiveService.get_archive_hash")
-    def test_valid_repo_archive_path(
-        self, get_archive_hash, create_raw_upload_presigned_get
-    ):
+    @patch("services.archive.ArchiveService.read_file")
+    def test_valid_repo_archive_path(self, mock_read_file, get_archive_hash):
+        mock_read_file.return_value = "Report!"
         get_archive_hash.return_value = "hasssshhh"
-        create_raw_upload_presigned_get.return_value = "presigned_url_mock"
         response = self._get(
             kwargs={
                 "service": "gh",
                 "owner_username": "codecovtest",
                 "repo_name": "upload-test-repo",
             },
-            data={"path": "v4/raw/22-5-2022/hasssshhh/commitid/random.txt"},
+            data={"path": "v4/raw/hasssshhh"},
         )
-        assert response["Content-Type"] == "application/json"
         assert response.status_code == 200
+        headers = response.headers
+        assert headers["content-type"] == "text/plain"
 
-    def test_invalid_repo_archive_path(self):
+    @patch("services.archive.ArchiveService.read_file")
+    def test_invalid_repo_archive_path(self, mock_read_file):
+        mock_read_file.return_value = "Report!"
         response = self._get(
             kwargs={
                 "service": "gh",

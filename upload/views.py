@@ -1,5 +1,4 @@
 import asyncio
-import json
 import logging
 from contextlib import suppress
 from datetime import datetime
@@ -359,24 +358,15 @@ class UploadDownloadHandler(View):
         self.repo_name = self.kwargs.get("repo_name")
         self.owner_username = self.kwargs.get("owner_username")
 
-    def read_path(self):
-        self.file_name = self.path.rsplit("/", 1)[1]
-        self.commitid = self.path.rsplit("/", 2)[1]
-        self.date_string = self.path.rsplit("/", 4)[1]
-
     @sync_to_async
-    def get_upload_presigned_url(self, repo):
+    def get_from_storage(self, repo):
         archive_service = ArchiveService(repo)
 
         # Verify that the repo hash in the path matches the repo in the URL by generating the repo hash
         if archive_service.storage_hash not in self.path:
             raise Http404("Requested report could not be found")
         try:
-            return archive_service.create_raw_upload_presigned_get(
-                commit_sha=self.commitid,
-                filename=self.file_name,
-                date_string=self.date_string,
-            )
+            return archive_service.read_file(self.path)
 
         except minio.error.NoSuchKey as e:
             raise Http404("Requested report could not be found")
@@ -384,12 +374,10 @@ class UploadDownloadHandler(View):
     async def get(self, request, *args, **kwargs):
         self.read_params()
         self.validate_path()
-        self.read_path()
         request.user = await self.get_user(request)
         repo = await self.get_repo()
+        raw_uploaded_report = await self.get_from_storage(repo)
 
-        presigned_url = await self.get_upload_presigned_url(repo)
-
-        response = HttpResponse(json.dumps({"presigned_url": presigned_url}))
-        response["Content-Type"] = "application/json"
+        response = HttpResponse(raw_uploaded_report)
+        response["Content-Type"] = "text/plain"
         return response
