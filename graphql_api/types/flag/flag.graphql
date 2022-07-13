@@ -1,0 +1,5 @@
+type Flag {
+    name: String!
+    percentCovered: Float
+    measurements(interval: MeasurementInterval!, after: DateTime!, before: DateTime!): [Measurement!]!
+} 

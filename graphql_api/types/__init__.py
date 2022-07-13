@@ -9,8 +9,10 @@ from .coverage_totals import coverage_totals, coverage_totals_bindable
 from .enums import enum_types, enums
 from .file import commit_file, file_bindable
 from .file_comparison import file_comparison, file_comparison_bindable
+from .flag import flag, flag_bindable
 from .line_comparison import line_comparison, line_comparison_bindable
 from .me import me, me_bindable
+from .measurement import measurement, measurement_bindable
 from .mutation import mutation, mutation_resolvers
 from .owner import owner, owner_bindable
 from .path_contents import (
@@ -37,8 +39,10 @@ types = [
     commit,
     comparison,
     file_comparison,
+    flag,
     segment_comparison,
     line_comparison,
+    measurement,
     pull,
     user,
     owner,
@@ -62,8 +66,10 @@ bindables = [
     commit_bindable,
     comparison_bindable,
     file_comparison_bindable,
+    flag_bindable,
     segment_comparison_bindable,
     line_comparison_bindable,
+    measurement_bindable,
     pull_bindable,
     user_bindable,
     owner_bindable,

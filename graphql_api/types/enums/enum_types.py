@@ -1,5 +1,7 @@
 from ariadne import EnumType
 
+from timeseries.models import Interval as MeasurementInterval
+
 from .enums import (
     ComparisonError,
     CoverageLine,
@@ -26,4 +28,5 @@ enum_types = [
     EnumType("UploadState", UploadState),
     EnumType("UploadType", UploadType),
     EnumType("UploadErrorEnum", UploadErrorEnum),
+    EnumType("MeasurementInterval", MeasurementInterval),
 ]
