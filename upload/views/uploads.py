@@ -36,10 +36,9 @@ class UploadViews(ListCreateAPIView):
     throttle_classes = [UploadsPerCommitThrottle, UploadsPerWindowThrottle]
 
     def perform_create(self, serializer):
-        repoid = self.kwargs["repo"]
         commitid = self.kwargs["commitid"]
         commit: Commit = Commit.objects.get(commitid=commitid)
-        repository: Repository = Repository.objects.get(name=repoid)
+        repository = self.get_repo()
         archive_service = ArchiveService(repository)
         path = MinioEndpoints.raw.get_path(
             version="v4",
