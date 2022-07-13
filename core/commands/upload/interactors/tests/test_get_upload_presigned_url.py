@@ -15,7 +15,7 @@ from ..get_upload_presigned_url import GetUploadPresignedUrlInteractor
 class GetUploadPresignedUrlInteractorTest(TransactionTestCase):
     def setUp(self):
         self.org = OwnerFactory()
-        repo = RepositoryFactory(author=self.org, private=False)
+        repo = RepositoryFactory(author=self.org, private=True)
         commit = CommitFactory(repository=repo)
         commit_report = CommitReportFactory(commit=commit)
         self.upload = UploadFactory(
@@ -27,9 +27,10 @@ class GetUploadPresignedUrlInteractorTest(TransactionTestCase):
         service = user.service if user else "github"
         return GetUploadPresignedUrlInteractor(user, service).execute(*args)
 
-    def test_get_presigned_url_no_owner(self):
+    def test_get_presigned_url_repo_not_found(self):
+        owner = OwnerFactory()
         with pytest.raises(Exception):
-            async_to_sync(self.execute)(None, self.upload)
+            async_to_sync(self.execute)(owner, self.upload)
 
     @patch("services.archive.ArchiveService.get_archive_hash")
     @patch("services.archive.ArchiveService.create_raw_upload_presigned_get")

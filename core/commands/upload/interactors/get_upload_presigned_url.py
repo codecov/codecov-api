@@ -19,13 +19,9 @@ class GetUploadPresignedUrlInteractor(BaseInteractor):
         self.owner_username = download_url[3]
 
     async def read_repo(self):
-        print(self.owner_username)
         owner = await OwnerCommands(self.current_user, self.service).fetch_owner(
             self.owner_username
         )
-        if owner is None:
-            raise Exception("Unable to find owner")
-
         repo = await RepositoryCommands(
             self.current_user, self.service
         ).fetch_repository(owner, self.repo_name)
