@@ -7,6 +7,7 @@ from django.db.models import (
     DateTimeField,
     F,
     FloatField,
+    Manager,
     OuterRef,
     Q,
     QuerySet,
@@ -16,6 +17,14 @@ from django.db.models import (
 )
 from django.db.models.fields.json import KeyTextTransform
 from django.db.models.functions import Cast, Coalesce
+
+
+class RepositoryManager(Manager):
+    def get_queryset(self):
+        return RepositoryQuerySet(self.model, using=self._db)
+
+    def viewable_repos(self, owner):
+        return self.get_queryset().viewable_repos(owner)
 
 
 class RepositoryQuerySet(QuerySet):

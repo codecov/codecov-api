@@ -9,7 +9,7 @@ from django.forms import ValidationError
 from django.utils.functional import cached_property
 
 from core.encoders import ReportJSONEncoder
-from core.managers import RepositoryQuerySet
+from core.managers import RepositoryManager, RepositoryQuerySet
 from services.archive import ReportService
 
 
@@ -127,7 +127,7 @@ class Repository(models.Model):
         verbose_name_plural = "Repositories"
 
     objects = RepositoryQuerySet.as_manager()
-    repos = RepositoryQuerySet.as_manager()
+    repos = RepositoryManager()
 
     def __str__(self):
         return f"Repo<{self.author}/{self.name}>"
