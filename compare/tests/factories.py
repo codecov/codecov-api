@@ -20,7 +20,7 @@ class FlagComparisonFactory(factory.django.DjangoModelFactory):
 
     commit_comparison = factory.SubFactory(CommitComparisonFactory)
     repositoryflag = factory.SubFactory(RepositoryFlagFactory)
-    coverage_totals = {
+    head_totals = {
         "diff": 0,
         "hits": 12,
         "files": 1,
@@ -44,6 +44,21 @@ class FlagComparisonFactory(factory.django.DjangoModelFactory):
         "methods": 2,
         "branches": 2,
         "coverage": "28.57143",
+        "messages": 0,
+        "partials": 1,
+        "sessions": 0,
+        "complexity": 0,
+        "complexity_total": 0,
+    }
+    base_totals = {
+        "diff": 0,
+        "hits": 2,
+        "files": 2,
+        "lines": 7,
+        "misses": 4,
+        "methods": 2,
+        "branches": 2,
+        "coverage": "72.92638",
         "messages": 0,
         "partials": 1,
         "sessions": 0,

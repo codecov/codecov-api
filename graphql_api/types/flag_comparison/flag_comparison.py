@@ -17,4 +17,9 @@ def resolve_patch_totals(flag_comparison: FlagComparison, info) -> float:
 
 @flag_comparison_bindable.field("headTotals")
 def resolve_headTotals(flag_comparison: FlagComparison, info) -> float:
-    return flag_comparison.coverage_totals
+    return flag_comparison.head_totals
+
+
+@flag_comparison_bindable.field("baseTotals")
+def resolve_headTotals(flag_comparison: FlagComparison, info) -> float:
+    return flag_comparison.base_totals

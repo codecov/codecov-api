@@ -62,5 +62,6 @@ class FlagComparison(BaseCodecovModel):
     repositoryflag = models.ForeignKey(
         RepositoryFlag, on_delete=models.CASCADE, related_name="flag_comparisons"
     )
-    coverage_totals = models.JSONField(null=True)
+    head_totals = models.JSONField(null=True)
+    base_totals = models.JSONField(null=True)
     patch_totals = models.JSONField(null=True)
