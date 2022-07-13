@@ -973,9 +973,9 @@ class UploadHandlerRouteTest(APITestCase):
         mock_metrics.assert_called_once_with("uploads.rejected", 1)
 
     @patch("shared.metrics.metrics.incr")
-    @patch("upload.views.views.get_redis_connection")
-    @patch("upload.views.views.uuid4")
-    @patch("upload.views.views.dispatch_upload_task")
+    @patch("upload.views.legacy.get_redis_connection")
+    @patch("upload.views.legacy.uuid4")
+    @patch("upload.views.legacy.dispatch_upload_task")
     @patch("services.repo_providers.RepoProviderService.get_adapter")
     def test_successful_upload_v2(
         self,
@@ -1049,9 +1049,9 @@ class UploadHandlerRouteTest(APITestCase):
         )
 
     @patch("shared.metrics.metrics.incr")
-    @patch("upload.views.views.get_redis_connection")
-    @patch("upload.views.views.uuid4")
-    @patch("upload.views.views.dispatch_upload_task")
+    @patch("upload.views.legacy.get_redis_connection")
+    @patch("upload.views.legacy.uuid4")
+    @patch("upload.views.legacy.dispatch_upload_task")
     @patch("services.repo_providers.RepoProviderService.get_adapter")
     def test_successful_upload_v2_slash(
         self,
@@ -1126,9 +1126,9 @@ class UploadHandlerRouteTest(APITestCase):
 
     @patch("services.storage.MINIO_CLIENT.presigned_put_object")
     @patch("services.archive.ArchiveService.get_archive_hash")
-    @patch("upload.views.views.get_redis_connection")
-    @patch("upload.views.views.uuid4")
-    @patch("upload.views.views.dispatch_upload_task")
+    @patch("upload.views.legacy.get_redis_connection")
+    @patch("upload.views.legacy.uuid4")
+    @patch("upload.views.legacy.dispatch_upload_task")
     @patch("services.repo_providers.RepoProviderService.get_adapter")
     def test_upload_v4(
         self,
@@ -1176,9 +1176,9 @@ class UploadHandlerRouteTest(APITestCase):
 
     @patch("services.storage.MINIO_CLIENT.presigned_put_object")
     @patch("services.archive.ArchiveService.get_archive_hash")
-    @patch("upload.views.views.get_redis_connection")
-    @patch("upload.views.views.uuid4")
-    @patch("upload.views.views.dispatch_upload_task")
+    @patch("upload.views.legacy.get_redis_connection")
+    @patch("upload.views.legacy.uuid4")
+    @patch("upload.views.legacy.dispatch_upload_task")
     @patch("services.repo_providers.RepoProviderService.get_adapter")
     def test_upload_v4_with_upload_token_header(
         self,

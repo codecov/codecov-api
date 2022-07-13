@@ -1,9 +1,9 @@
 from django.urls import path, re_path
 
-from .views import UploadDownloadHandler, UploadHandler
-from .views.commits import CommitViews
-from .views.reports import ReportViews
-from .views.uploads import UploadViews
+from upload.views.commits import CommitViews
+from upload.views.legacy import UploadDownloadHandler, UploadHandler
+from upload.views.reports import ReportViews
+from upload.views.uploads import UploadViews
 
 urlpatterns = [
     # use regex to make trailing slash optional
