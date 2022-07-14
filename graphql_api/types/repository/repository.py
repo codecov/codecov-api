@@ -187,7 +187,10 @@ def resolve_flags(
     node = lookahead(info, ("edges", "node", "measurements"))
     if node:
         if settings.TIMESERIES_ENABLED:
-            interval = Interval[node.args["interval"]]
+            interval = node.args["interval"]
+            if isinstance(interval, str):
+                interval = Interval[interval]
+
             flag_ids = [edge["node"].pk for edge in connection.edges]
 
             measurements = (
