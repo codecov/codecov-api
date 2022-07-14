@@ -800,6 +800,9 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             pullId
             compareWithBase {
                 state
+                fileComparisons {
+                    headName
+                }
             }
         """
 
@@ -811,7 +814,10 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         assert res["errors"] is not None
         assert res["errors"][0]["message"] == "Missing head report"
         assert (
-            res["data"]["me"]["owner"]["repository"]["pull"]["compareWithBase"] is None
+            res["data"]["me"]["owner"]["repository"]["pull"]["compareWithBase"][
+                "fileComparisons"
+            ]
+            is None
         )
 
     def test_pull_comparison_missing_base_report(self):
@@ -823,6 +829,9 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             pullId
             compareWithBase {
                 state
+                fileComparisons {
+                    headName
+                }
             }
         """
 
@@ -834,7 +843,10 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         assert res["errors"] is not None
         assert res["errors"][0]["message"] == "Missing base report"
         assert (
-            res["data"]["me"]["owner"]["repository"]["pull"]["compareWithBase"] is None
+            res["data"]["me"]["owner"]["repository"]["pull"]["compareWithBase"][
+                "fileComparisons"
+            ]
+            is None
         )
 
     def test_pull_comparison_missing_commit(self):
