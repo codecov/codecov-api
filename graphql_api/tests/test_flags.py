@@ -16,7 +16,7 @@ query_flags = """
 query Flags(
     $org: String!
     $repo: String!
-    $before: DateTime!
+    $measurementsBefore: DateTime!
 ) {
     owner(username: $org) {
         repository(name: $repo) {
@@ -37,7 +37,7 @@ fragment FlagFragment on Flag {
     measurements(
         interval: INTERVAL_1_DAY
         after: "2000-01-01T00:00:00",
-        before: $before
+        before: $measurementsBefore
     ) {
         timestamp
         avg
@@ -65,7 +65,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
-            "before": timezone.now().isoformat(),
+            "measurementsBefore": timezone.now().isoformat(),
         }
         data = self.gql_request(query_flags, variables=variables)
         assert data == {
@@ -100,7 +100,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
-            "before": timezone.now().isoformat(),
+            "measurementsBefore": timezone.now().isoformat(),
         }
         data = self.gql_request(query_flags, variables=variables)
         assert data == {
@@ -194,7 +194,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
-            "before": timezone.now().isoformat(),
+            "measurementsBefore": timezone.now().isoformat(),
         }
         data = self.gql_request(query_flags, variables=variables)
         assert data == {
