@@ -1,14 +1,8 @@
-import json
-
 import minio
 from asgiref.sync import sync_to_async
 
 from codecov.commands.base import BaseInteractor
-from codecov_auth.commands.owner import OwnerCommands
-from core.commands.repository import RepositoryCommands
 from core.models import Repository
-from graphql_api.types.enums import UploadState
-from reports.models import UploadError
 from services.archive import ArchiveService
 
 
