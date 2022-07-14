@@ -1,7 +1,8 @@
-from typing import Mapping
+from typing import Iterable, Mapping
 
 from django.db.models import QuerySet
 
+from compare.models import CommitComparison, FlagComparison
 from core.models import Repository
 from reports.models import RepositoryFlag
 
@@ -19,4 +20,15 @@ def _apply_filters(queryset: QuerySet, filters: Mapping) -> QuerySet:
     if term:
         queryset = queryset.filter(flag_name__contains=term)
 
+    return queryset
+
+
+def get_flag_comparisons(
+    commit_comparison: CommitComparison,
+) -> Iterable[FlagComparison]:
+    queryset = (
+        FlagComparison.objects.select_related("repositoryflag")
+        .filter(commit_comparison=commit_comparison.id)
+        .all()
+    )
     return queryset
