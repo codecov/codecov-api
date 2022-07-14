@@ -133,7 +133,10 @@ DATABASES = {
         "PORT": DATABASE_PORT,
         "CONN_MAX_AGE": CONN_MAX_AGE,
     },
-    "timeseries": {
+}
+
+if TIMESERIES_ENABLED:
+    DATABASES["timeseries"] = {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": TIMESERIES_DATABASE_NAME,
         "USER": TIMESERIES_DATABASE_USER,
@@ -141,8 +144,7 @@ DATABASES = {
         "HOST": TIMESERIES_DATABASE_HOST,
         "PORT": TIMESERIES_DATABASE_PORT,
         "CONN_MAX_AGE": CONN_MAX_AGE,
-    },
-}
+    }
 
 DATABASE_ROUTERS = ["codecov.db.DatabaseRouter"]
 
