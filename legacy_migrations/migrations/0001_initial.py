@@ -26,10 +26,6 @@ def forwards_func(apps, schema_editor):
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ("core", "0001_initial"),
-    ]
+    dependencies = [("core", "0001_initial")]
 
-    operations = [
-        migrations.RunPython(forwards_func),
-    ]
+    operations = [migrations.RunPython(forwards_func)]

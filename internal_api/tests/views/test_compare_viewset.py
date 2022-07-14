@@ -264,7 +264,7 @@ class TestCompareViewSetRetrieve(APITestCase):
         assert response.status_code == status.HTTP_200_OK
         assert response.data["files"] == self.expected_files
 
-    def test_pullid_with_nonexistent_commit_returns_404(
+    def test_pullid_with_nonexistent_base_returns_404(
         self, adapter_mock, base_report_mock, head_report_mock
     ):
         adapter_mock.return_value = self.mocked_compare_adapter
@@ -276,6 +276,27 @@ class TestCompareViewSetRetrieve(APITestCase):
                 "pullid": PullFactory(
                     base="123456",
                     head=self.head.commitid,
+                    pullid=2,
+                    repository=self.repo,
+                ).pullid
+            }
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_pullid_with_nonexistent_head_returns_404(
+        self, adapter_mock, base_report_mock, head_report_mock
+    ):
+        adapter_mock.return_value = self.mocked_compare_adapter
+        base_report_mock.return_value = self.base_report
+        head_report_mock.return_value = self.head_report
+
+        response = self._get_comparison(
+            query_params={
+                "pullid": PullFactory(
+                    base=self.base.commitid,
+                    head="123456",
+                    compared_to=self.base.commitid,
                     pullid=2,
                     repository=self.repo,
                 ).pullid
@@ -378,7 +399,9 @@ class TestCompareViewSetRetrieve(APITestCase):
         self, adapter_mock, base_report_mock, head_report_mock
     ):
         base_report_mock.return_value = None
-        head_report_mock.side_effect = comparison.MissingComparisonReport()
+        head_report_mock.side_effect = comparison.MissingComparisonReport(
+            "Missing head report"
+        )
         adapter_mock.return_value = self.mocked_compare_adapter
 
         response = self._get_comparison()

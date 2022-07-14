@@ -5,6 +5,7 @@ import stripe
 from django.conf import settings
 
 from billing.constants import (
+    ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
     FREE_PLAN_REPRESENTATIONS,
     PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
     USER_PLAN_REPRESENTATIONS,
@@ -147,7 +148,7 @@ class StripeService(AbstractPaymentService):
                 stripe.SubscriptionSchedule.release(subscription_schedule_id)
 
             stripe.Subscription.modify(
-                owner.stripe_subscription_id, cancel_at_period_end=True, prorate=False,
+                owner.stripe_subscription_id, cancel_at_period_end=True, prorate=False
             )
 
     @_log_stripe_error
@@ -237,7 +238,7 @@ class StripeService(AbstractPaymentService):
                 )
             else:
                 schedule = stripe.SubscriptionSchedule.create(
-                    from_subscription=owner.stripe_subscription_id,
+                    from_subscription=owner.stripe_subscription_id
                 )
                 subscription_schedule_id = schedule.id
 
@@ -327,11 +328,7 @@ class StripeService(AbstractPaymentService):
         return proration_behavior
 
     def _get_success_and_cancel_url(self, owner):
-        short_services = {
-            "github": "gh",
-            "bitbucket": "bb",
-            "gitlab": "gl",
-        }
+        short_services = {"github": "gh", "bitbucket": "bb", "gitlab": "gl"}
         base_path = f"/account/{short_services[owner.service]}/{owner.username}/billing"
         success_url = f"{settings.CODECOV_DASHBOARD_URL}{base_path}?success"
         cancel_url = f"{settings.CODECOV_DASHBOARD_URL}{base_path}?cancel"
@@ -421,7 +418,10 @@ class BillingService:
                 self.payment_service.delete_subscription(owner)
             else:
                 owner.set_basic_plan()
-        elif desired_plan["value"] in PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS:
+        elif (
+            desired_plan["value"] in PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS
+            or desired_plan["value"] in ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS
+        ):
             if owner.stripe_subscription_id is not None:
                 self.payment_service.modify_subscription(owner, desired_plan)
             else:

@@ -1,0 +1,7 @@
+input MeasurementSetFilters {
+    repoId: Int
+    branch: String
+    flagId: Int
+    after: DateTime!
+    before: DateTime!
+}

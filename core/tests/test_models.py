@@ -1,8 +1,9 @@
+from django.forms import ValidationError
 from django.test import TestCase
 
 from core.models import Commit
 
-from .factories import CommitFactory
+from .factories import CommitFactory, RepositoryFactory
 
 
 class CommitTests(TestCase):
@@ -43,3 +44,10 @@ class CommitTests(TestCase):
             Commit.report_totals_by_file_name(self.commit.id)
         )
         self.assertEqual(report_totals_by_file_name, [])
+
+
+class RepoTests(TestCase):
+    def test_clean_repo(self):
+        repo = RepositoryFactory(using_integration=None)
+        with self.assertRaises(ValidationError):
+            repo.clean()

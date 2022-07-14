@@ -4,6 +4,10 @@ type Comparison {
   impactedFiles: [ImpactedFile]!
   patchTotals: CoverageTotals
   changeWithParent: Float
+  baseTotals: CoverageTotals
+  headTotals: CoverageTotals
+  fileComparisons: [FileComparison!]
+  flagComparisons: [FlagComparison]
 }
 
 type ImpactedFile {

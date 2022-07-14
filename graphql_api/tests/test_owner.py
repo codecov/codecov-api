@@ -7,7 +7,7 @@ from django.test import TransactionTestCase
 from freezegun import freeze_time
 
 from billing.constants import BASIC_PLAN_NAME
-from codecov_auth.tests.factories import OwnerFactory
+from codecov_auth.tests.factories import GetAdminProviderAdapter, OwnerFactory
 from core.tests.factories import CommitFactory, OwnerFactory, RepositoryFactory
 from reports.tests.factories import CommitReportFactory, UploadFactory
 
@@ -54,8 +54,8 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 "yaml": None,
                 "repositories": {
                     "totalCount": 2,
-                    "edges": [{"node": {"name": "a"}}, {"node": {"name": "b"}},],
-                    "pageInfo": {"hasNextPage": False,},
+                    "edges": [{"node": {"name": "a"}}, {"node": {"name": "b"}}],
+                    "pageInfo": {"hasNextPage": False},
                 },
             }
         }
@@ -223,3 +223,35 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         query = query_uploads_number % (repository.author.username)
         data = self.gql_request(query, user=self.user)
         assert data["owner"]["numberOfUploads"] == 150
+
+    def test_is_current_user_not_an_admin(self):
+        query_current_user_is_admin = """{
+            owner(username: "%s") {
+               isAdmin
+            }
+        }
+        """
+        user = OwnerFactory(username="random_org_user", service="github")
+        owner = OwnerFactory(username="random_org_test", service="github")
+        query = query_current_user_is_admin % (owner.username)
+        data = self.gql_request(query, user=user)
+        assert data["owner"]["isAdmin"] is False
+
+    @patch(
+        "codecov_auth.commands.owner.interactors.get_is_current_user_an_admin.get_provider"
+    )
+    def test_is_current_user_an_admin(self, mocked_get_adapter):
+        query_current_user_is_admin = """{
+            owner(username: "%s") {
+               isAdmin
+            }
+        }
+        """
+        user = OwnerFactory(username="random_org_admin", service="github")
+        owner = OwnerFactory(
+            username="random_org_test", service="github", admins=[user.ownerid]
+        )
+        mocked_get_adapter.return_value = GetAdminProviderAdapter()
+        query = query_current_user_is_admin % (owner.username)
+        data = self.gql_request(query, user=user)
+        assert data["owner"]["isAdmin"] is True

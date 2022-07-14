@@ -1,9 +1,7 @@
 from codecov.commands.base import BaseCommand
-from services.archive import ReportService
-from services.repo_providers import RepoProviderService
 
-from .interactors.fetch_commit import FetchCommitInteractor
 from .interactors.fetch_commits import FetchCommitsInteractor
+from .interactors.fetch_commits_by_pullid import FetchCommitsByPullidInteractor
 from .interactors.fetch_totals import FetchTotalsInteractor
 from .interactors.get_file_content import GetFileContentInteractor
 from .interactors.get_final_yaml import GetFinalYamlInteractor
@@ -14,11 +12,11 @@ class CommitCommands(BaseCommand):
     def get_file_content(self, commit, path):
         return self.get_interactor(GetFileContentInteractor).execute(commit, path)
 
-    def fetch_commit(self, repository, commit_id):
-        return self.get_interactor(FetchCommitInteractor).execute(repository, commit_id)
-
     def fetch_commits(self, repository, filters):
         return self.get_interactor(FetchCommitsInteractor).execute(repository, filters)
+
+    def fetch_commits_by_pullid(self, pull):
+        return self.get_interactor(FetchCommitsByPullidInteractor).execute(pull)
 
     def fetch_totals(self, commit):
         return self.get_interactor(FetchTotalsInteractor).execute(commit)

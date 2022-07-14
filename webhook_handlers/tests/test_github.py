@@ -2,7 +2,7 @@ import hmac
 import json
 import uuid
 from collections import namedtuple
-from hashlib import sha1
+from hashlib import sha256
 from unittest.mock import call, patch
 
 import pytest
@@ -36,7 +36,7 @@ class GithubWebhookHandlerTests(APITestCase):
             **{
                 GitHubHTTPHeaders.EVENT: event,
                 GitHubHTTPHeaders.DELIVERY_TOKEN: uuid.UUID(int=5),
-                GitHubHTTPHeaders.SIGNATURE: "sha1="
+                GitHubHTTPHeaders.SIGNATURE_256: "sha256="
                 + hmac.new(
                     get_config(
                         "github",
@@ -44,7 +44,7 @@ class GithubWebhookHandlerTests(APITestCase):
                         default=b"testixik8qdauiab1yiffydimvi72ekq",
                     ),
                     json.dumps(data, separators=(",", ":")).encode("utf-8"),
-                    digestmod=sha1,
+                    digestmod=sha256,
                 ).hexdigest(),
             },
             data=data,
@@ -350,7 +350,7 @@ class GithubWebhookHandlerTests(APITestCase):
 
         response = self._post_event_data(
             event=GitHubWebhookEvents.STATUS,
-            data={"repository": {"id": self.repo.service_id},},
+            data={"repository": {"id": self.repo.service_id}},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -359,7 +359,7 @@ class GithubWebhookHandlerTests(APITestCase):
     def test_status_exits_early_for_codecov_statuses(self):
         response = self._post_event_data(
             event=GitHubWebhookEvents.STATUS,
-            data={"context": "codecov/", "repository": {"id": self.repo.service_id},},
+            data={"context": "codecov/", "repository": {"id": self.repo.service_id}},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -368,7 +368,7 @@ class GithubWebhookHandlerTests(APITestCase):
     def test_status_exits_early_for_pending_statuses(self):
         response = self._post_event_data(
             event=GitHubWebhookEvents.STATUS,
-            data={"state": "pending", "repository": {"id": self.repo.service_id},},
+            data={"state": "pending", "repository": {"id": self.repo.service_id}},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -405,7 +405,7 @@ class GithubWebhookHandlerTests(APITestCase):
 
         response = self._post_event_data(
             event=GitHubWebhookEvents.PULL_REQUEST,
-            data={"repository": {"id": self.repo.service_id},},
+            data={"repository": {"id": self.repo.service_id}},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -442,7 +442,7 @@ class GithubWebhookHandlerTests(APITestCase):
                 "repository": {"id": self.repo.service_id},
                 "action": "edited",
                 "number": pull.pullid,
-                "pull_request": {"title": new_title,},
+                "pull_request": {"title": new_title},
             },
         )
 
@@ -670,7 +670,7 @@ class GithubWebhookHandlerTests(APITestCase):
 
     @patch("services.billing.stripe.Subscription.retrieve")
     @patch("services.task.TaskService.sync_plans")
-    def test_marketplace_subscription_triggers_sync_plans_task(
+    def test_marketplace_purchase_triggers_sync_plans_task(
         self, sync_plans_mock, subscription_retrieve_mock
     ):
         sender = {"id": 545, "login": "buddy@guy.com"}
@@ -693,7 +693,7 @@ class GithubWebhookHandlerTests(APITestCase):
     @patch("logging.Logger.warning")
     @patch("services.billing.stripe.Subscription.retrieve")
     @patch("services.task.TaskService.sync_plans")
-    def test_marketplace_subscription_purchase_but_user_has_stripe_subscription(
+    def test_marketplace_purchase_but_user_has_stripe_subscription(
         self, sync_plans_mock, subscription_retrieve_mock, log_warning_mock
     ):
         sender = {"id": 545, "login": "buddy@guy.com"}

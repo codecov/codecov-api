@@ -1,8 +1,8 @@
 from dateutil import parser
 from django.db.models import F, Q
-from django.db.models.functions import Trunc
 
 from core.models import Repository
+from utils.services import get_long_service_name
 
 
 def apply_default_filters(queryset):
@@ -20,15 +20,24 @@ def apply_simple_filters(queryset, data, user):
     Apply any coverage chart filtering parameters that can be construed as a simple queryset.filter call.
     """
 
-    queryset = queryset.filter(
-        repository__author__username=data.get(
-            "owner_username"
-        )  # filter by the organization in the request route
-    ).filter(
-        # make sure we only return repositories that are either public or that the logged-in user has permission to view.
-        # this is important because if no "repository" param was provided then the permissions check will succeed, but we still
-        # want to make sure we return only all repositories the logged-in user has permissions to view.
-        repository__in=Repository.objects.viewable_repos(user)
+    service = get_long_service_name(data.get("service"))
+
+    queryset = (
+        queryset.filter(
+            repository__author__username=data.get(
+                "owner_username"
+            )  # filter by the organization in the request route
+        )
+        .filter(
+            repository__author__service=service
+            # this avoids fetching the wrong user that uses the same username for different providers
+        )
+        .filter(
+            # make sure we only return repositories that are either public or that the logged-in user has permission to view.
+            # this is important because if no "repository" param was provided then the permissions check will succeed, but we still
+            # want to make sure we return only all repositories the logged-in user has permissions to view.
+            repository__in=Repository.objects.viewable_repos(user)
+        )
     )
 
     # Handle branch filtering

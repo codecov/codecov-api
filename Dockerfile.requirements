@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.3
 
 # BUILD STAGE - Download dependencies from GitHub that require SSH access
-FROM            python:3.9.7-alpine3.14 as build
+FROM            python:3.9.10-alpine3.14 as build
 
 RUN             apk update \
                 && apk add --update --no-cache \
@@ -31,9 +31,9 @@ RUN             --mount=type=ssh pip wheel -r /requirements.txt
 
 
 # RUNTIME STAGE - Copy packages from build stage and install runtime dependencies
-FROM            python:3.9.7-alpine3.14
+FROM            python:3.9.10-alpine3.14
 
-RUN             apk upgrade expat binutils busybox && \
+RUN             apk -U upgrade binutils busybox expat libretls && \
                 apk add --no-cache postgresql-libs && \
                 apk add --no-cache --virtual .build-deps gcc \
                 musl-dev \

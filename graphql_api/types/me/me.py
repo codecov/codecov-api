@@ -42,7 +42,7 @@ def resolve_viewable_repositories(
 ):
     queryset = search_repos(current_user, filters)
     return queryset_to_connection(
-        queryset, ordering=ordering, ordering_direction=ordering_direction, **kwargs,
+        queryset, ordering=(ordering,), ordering_direction=ordering_direction, **kwargs
     )
 
 
@@ -51,7 +51,7 @@ def resolve_my_organizations(current_user, _, filters=None, **kwargs):
     queryset = search_my_owners(current_user, filters)
     return queryset_to_connection(
         queryset,
-        ordering="ownerid",
+        ordering=("ownerid",),
         ordering_direction=OrderingDirection.DESC,
         **kwargs,
     )
@@ -62,7 +62,7 @@ def resolve_sessions(current_user, _, **kwargs):
     queryset = get_owner_sessions(current_user)
     return queryset_to_connection(
         queryset,
-        ordering="sessionid",
+        ordering=("sessionid",),
         ordering_direction=OrderingDirection.DESC,
         **kwargs,
     )

@@ -255,7 +255,7 @@ class SegmentServiceTests(TestCase):
             track_mock.assert_called_once_with(
                 user_id=self.owner.ownerid,
                 event=SegmentEvent.ACCOUNT_DEACTIVATED_USER.value,
-                properties={"role": "admin", "user": owner_to_deactivate.ownerid,},
+                properties={"role": "admin", "user": owner_to_deactivate.ownerid},
                 context={"groupId": org.ownerid},
             )
 
@@ -308,9 +308,7 @@ class SegmentServiceTests(TestCase):
         owner = OwnerFactory()
         repo = RepositoryFactory(author=owner)
         with self.settings(SEGMENT_ENABLED=True):
-            self.segment_service.account_activated_repository(
-                owner.ownerid, repo,
-            )
+            self.segment_service.account_activated_repository(owner.ownerid, repo)
             track_mock.assert_called_once_with(
                 user_id=owner.ownerid,
                 event=SegmentEvent.ACCOUNT_ACTIVATED_REPOSITORY.value,
@@ -323,9 +321,7 @@ class SegmentServiceTests(TestCase):
         owner = OwnerFactory()
         repo = RepositoryFactory(author=owner)
         with self.settings(SEGMENT_ENABLED=True):
-            self.segment_service.account_deactivated_repository(
-                owner.ownerid, repo,
-            )
+            self.segment_service.account_deactivated_repository(owner.ownerid, repo)
             track_mock.assert_called_once_with(
                 user_id=owner.ownerid,
                 event=SegmentEvent.ACCOUNT_DEACTIVATED_REPOSITORY.value,
@@ -338,9 +334,7 @@ class SegmentServiceTests(TestCase):
         owner = OwnerFactory()
         repo = RepositoryFactory(author=owner)
         with self.settings(SEGMENT_ENABLED=True):
-            self.segment_service.account_erased_repository(
-                owner.ownerid, repo,
-            )
+            self.segment_service.account_erased_repository(owner.ownerid, repo)
             track_mock.assert_called_once_with(
                 user_id=owner.ownerid,
                 event=SegmentEvent.ACCOUNT_ERASED_REPOSITORY.value,
@@ -353,9 +347,7 @@ class SegmentServiceTests(TestCase):
         owner = OwnerFactory()
         repo = RepositoryFactory(author=owner)
         with self.settings(SEGMENT_ENABLED=True):
-            self.segment_service.account_deleted_repository(
-                owner.ownerid, repo,
-            )
+            self.segment_service.account_deleted_repository(owner.ownerid, repo)
             track_mock.assert_called_once_with(
                 user_id=owner.ownerid,
                 event=SegmentEvent.ACCOUNT_DELETED_REPOSITORY.value,
@@ -369,7 +361,7 @@ class SegmentServiceTests(TestCase):
         repo = RepositoryFactory(author=owner)
         with self.settings(SEGMENT_ENABLED=True):
             self.segment_service.account_activated_repository_on_upload(
-                owner.ownerid, repo,
+                owner.ownerid, repo
             )
             track_mock.assert_called_once_with(
                 user_id=BLANK_SEGMENT_USER_ID,
@@ -540,4 +532,30 @@ class SegmentServiceTests(TestCase):
                 event=SegmentEvent.ACCOUNT_UPLOADED_COVERAGE_REPORT.value,
                 properties=upload_details,
                 context={"groupId": owner.ownerid},
+            )
+
+    @patch("analytics.track")
+    def test_impact_analysis_profiling_commit_created(self, track_mock):
+        repo = RepositoryFactory()
+        repo_details = {"repo_id": repo.repoid, "repo_owner_id": repo.author.ownerid}
+        with self.settings(SEGMENT_ENABLED=True):
+            self.segment_service.impact_analysis_profiling_commit_created(repo=repo)
+            track_mock.assert_called_once_with(
+                user_id=BLANK_SEGMENT_USER_ID,
+                event=SegmentEvent.IMPACT_ANALYSIS_PROFILING_COMMIT_CREATED.value,
+                properties=repo_details,
+                context={"groupId": repo.author.ownerid},
+            )
+
+    @patch("analytics.track")
+    def test_impact_analysis_profiling_upload_created(self, track_mock):
+        repo = RepositoryFactory()
+        repo_details = {"repo_id": repo.repoid, "repo_owner_id": repo.author.ownerid}
+        with self.settings(SEGMENT_ENABLED=True):
+            self.segment_service.impact_analysis_profiling_upload_created(repo=repo)
+            track_mock.assert_called_once_with(
+                user_id=BLANK_SEGMENT_USER_ID,
+                event=SegmentEvent.IMPACT_ANALYSIS_PROFILING_UPLOAD_CREATED.value,
+                properties=repo_details,
+                context={"groupId": repo.author.ownerid},
             )

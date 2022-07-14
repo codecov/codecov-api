@@ -47,7 +47,7 @@ class PullViewSet(
                 Commit.objects.filter(
                     commitid=OuterRef("head"), repository=OuterRef("repository")
                 ).values("ci_passed")[:1]
-            ),
+            )
         )
 
     def perform_update(self, serializer):
