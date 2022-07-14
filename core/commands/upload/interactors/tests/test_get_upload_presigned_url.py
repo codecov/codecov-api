@@ -2,7 +2,6 @@ from unittest.mock import patch
 
 import minio
 import pytest
-from asgiref.sync import async_to_sync
 from django.test import TransactionTestCase
 
 from codecov_auth.tests.factories import OwnerFactory
@@ -15,6 +14,7 @@ from ..get_upload_presigned_url import GetUploadPresignedUrlInteractor
 class GetUploadPresignedUrlInteractorTest(TransactionTestCase):
     def setUp(self):
         self.org = OwnerFactory()
+        self.randomOwner = OwnerFactory()
         repo = RepositoryFactory(author=self.org, private=True)
         commit = CommitFactory(repository=repo)
         commit_report = CommitReportFactory(commit=commit)
@@ -27,38 +27,39 @@ class GetUploadPresignedUrlInteractorTest(TransactionTestCase):
         service = user.service if user else "github"
         return GetUploadPresignedUrlInteractor(user, service).execute(*args)
 
-    def test_get_presigned_url_repo_not_found(self):
-        owner = OwnerFactory()
+    async def test_get_presigned_url_repo_not_found(self):
         with pytest.raises(Exception):
-            async_to_sync(self.execute)(owner, self.upload)
+            await self.execute(self.randomOwner, self.upload)
 
     @patch("services.archive.ArchiveService.get_archive_hash")
     @patch("services.archive.ArchiveService.create_raw_upload_presigned_get")
-    def test_noSuchKey_minio_error(
+    async def test_noSuchKey_minio_error(
         self, create_raw_upload_presigned_get, get_archive_hash
     ):
         create_raw_upload_presigned_get.side_effect = [minio.error.NoSuchKey]
         get_archive_hash.return_value = "path"
 
         with pytest.raises(Exception):
-            async_to_sync(self.execute)(self.org, self.upload)
+            await self.execute(self.org, self.upload)
 
     @patch("services.archive.ArchiveService.get_archive_hash")
     @patch("services.archive.ArchiveService.create_raw_upload_presigned_get")
-    def test_invalid_archive_storage_path(
+    async def test_invalid_archive_storage_path(
         self, create_raw_upload_presigned_get, get_archive_hash
     ):
         create_raw_upload_presigned_get = "mocked presigned url"
         get_archive_hash.return_value = "random"
 
         with pytest.raises(Exception):
-            async_to_sync(self.execute)(self.org, self.upload)
+            await self.execute(self.org, self.upload)
 
     @patch("services.archive.ArchiveService.create_raw_upload_presigned_get")
     @patch("services.archive.ArchiveService.get_archive_hash")
-    def test_get_presigned_url(self, get_archive_hash, create_raw_upload_presigned_get):
+    async def test_get_presigned_url(
+        self, get_archive_hash, create_raw_upload_presigned_get
+    ):
         get_archive_hash.return_value = "942173DE95CBF167C5683F40B7DB34C0"
         create_raw_upload_presigned_get.return_value = "presigned_url_mock"
 
-        presigned_url = async_to_sync(self.execute)(self.org, self.upload)
+        presigned_url = await self.execute(self.org, self.upload)
         assert presigned_url == "presigned_url_mock"
