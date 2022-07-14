@@ -50,7 +50,6 @@ async def resolve_compare_with_base(pull, info, **kwargs):
     if commit_comparison and commit_comparison.is_processed:
         user = info.context["request"].user
         comparison = PullRequestComparison(user, pull)
-        await sync_to_async(comparison.validate)()
 
         # store the comparison in the context - to be used in the `Comparison` resolvers
         info.context["comparison"] = comparison
