@@ -34,7 +34,6 @@ class GetUploadPresignedUrlInteractor(BaseInteractor):
     def get_upload_presigned_url(self, repo, download_url):
         archive_service = ArchiveService(repo)
         download_url_parts = self.get_url_parts(download_url=download_url)
-        print(download_url_parts)
 
         if archive_service.storage_hash not in download_url:
             raise Exception("Requested report could not be found")
