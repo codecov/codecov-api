@@ -1,9 +1,12 @@
+import pytest
+from django.forms import ValidationError
 from django.urls import reverse
 from rest_framework.test import APIClient
 
 from billing.constants import BASIC_PLAN_NAME
 from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import RepositoryFactory
+from core.tests.factories import CommitFactory, RepositoryFactory
+from upload.views.commits import CommitViews
 
 
 def test_commits_get_not_allowed(client):
@@ -11,6 +14,36 @@ def test_commits_get_not_allowed(client):
     assert url == "/upload/the-repo/commits"
     res = client.get(url)
     assert res.status_code == 405
+
+
+def test_get_repo(db):
+    repository = RepositoryFactory(name="the_repo", author__username="codecov")
+    repository.save()
+    upload_views = CommitViews()
+    upload_views.kwargs = dict(repo=repository.name)
+    recovered_repo = upload_views.get_repo()
+    assert recovered_repo == repository
+
+
+def test_get_repo_error(db):
+    upload_views = CommitViews()
+    upload_views.kwargs = dict(repo="repo_missing")
+    with pytest.raises(ValidationError):
+        upload_views.get_repo()
+
+
+def test_get_queryset(db):
+    target_repo = RepositoryFactory(name="the_repo", author__username="codecov")
+    random_repo = RepositoryFactory()
+    target_commit_1 = CommitFactory(repository=target_repo)
+    target_commit_2 = CommitFactory(repository=target_repo)
+    random_commit = CommitFactory(repository=random_repo)
+    upload_views = CommitViews()
+    upload_views.kwargs = dict(repo=target_repo.name)
+    recovered_commits = upload_views.get_queryset()
+    assert target_commit_1 in recovered_commits
+    assert target_commit_2 in recovered_commits
+    assert random_commit not in recovered_commits
 
 
 def test_commit_post_empty(db, client):
