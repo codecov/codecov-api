@@ -399,7 +399,9 @@ class TestCompareViewSetRetrieve(APITestCase):
         self, adapter_mock, base_report_mock, head_report_mock
     ):
         base_report_mock.return_value = None
-        head_report_mock.side_effect = comparison.MissingComparisonReport()
+        head_report_mock.side_effect = comparison.MissingComparisonReport(
+            "Missing head report"
+        )
         adapter_mock.return_value = self.mocked_compare_adapter
 
         response = self._get_comparison()
