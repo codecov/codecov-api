@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, PropertyMock, patch
 
 import yaml
-from asgiref.sync import sync_to_async
 from django.test import TransactionTestCase
 from shared.reports.types import LineSession
 
@@ -339,7 +338,6 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             job_code=123,
             build_code=456,
         )
-        print(session_one.__dict__)
         query = query_commit % "uploads { edges { node { ciUrl } } }"
         variables = {
             "org": self.org.username,
@@ -363,7 +361,6 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             report=self.report,
             storage_path="v4/raw/2022-06-23/942173DE95CBF167C5683F40B7DB34C0/ee3ecad424e67419d6c4531540f1ef5df045ff12/919ccc6d-7972-4895-b289-f2d569683a17.txt",
         )
-        print(upload.__dict__)
         query = query_commit % "uploads { edges { node { downloadUrl } } }"
         variables = {
             "org": self.org.username,

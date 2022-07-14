@@ -1,53 +1,56 @@
+import json
+
 import minio
 from asgiref.sync import sync_to_async
 
 from codecov.commands.base import BaseInteractor
 from codecov_auth.commands.owner import OwnerCommands
 from core.commands.repository import RepositoryCommands
+from core.models import Repository
 from graphql_api.types.enums import UploadState
 from reports.models import UploadError
 from services.archive import ArchiveService
 
 
 class GetUploadPresignedUrlInteractor(BaseInteractor):
-    def read_download_url(self):
-        download_url = self.download_url.rsplit("/")
-        self.file_name = download_url[-1]
-        self.commitid = download_url[-2]
-        self.date_string = download_url[-4]
-        self.repo_name = download_url[4]
-        self.owner_username = download_url[3]
+    def get_url_parts(self, download_url):
+        url = download_url.rsplit("/")
+        file_name = url[-1]
+        commitid = url[-2]
+        date_string = url[-4]
 
-    async def read_repo(self):
-        owner = await OwnerCommands(self.current_user, self.service).fetch_owner(
-            self.owner_username
-        )
-        repo = await RepositoryCommands(
-            self.current_user, self.service
-        ).fetch_repository(owner, self.repo_name)
+        return {
+            "file_name": file_name,
+            "commitid": commitid,
+            "date_string": date_string,
+        }
+
+    def get_repo_from_upload(self, repoid):
+        repo = Repository.objects.get(repoid=repoid)
         if repo is None:
-            raise Exception("Unable to find repo")
-        self.repo = repo
+            raise Exception("Repo could not be found")
+        return repo
 
-    async def get_upload_presigned_url(self):
-        archive_service = ArchiveService(self.repo)
+    def get_upload_presigned_url(self, repo, download_url):
+        archive_service = ArchiveService(repo)
+        download_url_parts = self.get_url_parts(download_url=download_url)
+        print(download_url_parts)
 
-        # Verify that the repo hash in the path matches the repo in the URL by generating the repo hash
-        if archive_service.storage_hash not in self.download_url:
+        if archive_service.storage_hash not in download_url:
             raise Exception("Requested report could not be found")
         try:
             return archive_service.create_raw_upload_presigned_get(
-                commit_sha=self.commitid,
-                filename=self.file_name,
-                date_string=self.date_string,
+                commit_sha=download_url_parts["commitid"],
+                filename=download_url_parts["file_name"],
+                date_string=download_url_parts["date_string"],
             )
 
         except minio.error.NoSuchKey as e:
             raise Exception("Requested report could not be found")
 
-    async def execute(self, upload):
-        self.download_url = upload.download_url
-        self.read_download_url()
-        await self.read_repo()
-
-        return await self.get_upload_presigned_url()
+    @sync_to_async
+    def execute(self, upload):
+        repo = self.get_repo_from_upload(repoid=upload.report.commit.repository_id)
+        return self.get_upload_presigned_url(
+            repo=repo, download_url=upload.download_url
+        )
