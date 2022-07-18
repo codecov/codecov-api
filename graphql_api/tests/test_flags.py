@@ -429,6 +429,14 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
         self.gql_request(query, variables=variables)
         assert agg_by.call_count == 0
 
+    def test_repository_flags_metadata_inactive(self):
+        data = self.gql_request(
+            query_repo,
+            variables={"org": self.org.username, "repo": self.repo.name},
+        )
+        assert data["owner"]["repository"]["flagsMeasurementsActive"] == False
+        assert data["owner"]["repository"]["flagsMeasurementsBackfilled"] == False
+
     def test_repository_flags_metadata_active(self):
         DatasetFactory(
             name=MeasurementName.FLAG_COVERAGE.value, repository_id=self.repo.pk
