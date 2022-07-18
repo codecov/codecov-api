@@ -1,14 +1,10 @@
 import datetime
 from unittest.mock import PropertyMock, patch
 
-import pytest
-from django.conf import settings
-from django.test import TransactionTestCase
+from django.test import TransactionTestCase, override_settings
 from freezegun import freeze_time
 
 from codecov_auth.tests.factories import OwnerFactory
-from core.commands import repository
-from core.models import Repository
 from core.tests.factories import (
     CommitFactory,
     PullFactory,
@@ -16,8 +12,6 @@ from core.tests.factories import (
     RepositoryTokenFactory,
 )
 from services.profiling import CriticalFile
-from timeseries.models import MeasurementName
-from timeseries.tests.factories import DatasetFactory
 
 from .helper import GraphQLTestHelper
 
@@ -230,6 +224,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
         assert data["me"]["owner"]["repository"]["activated"] == True
 
+    @override_settings(TIMESERIES_ENABLED=False)
     def test_repository_resolve_activated_false(self):
         user = OwnerFactory()
         repo = RepositoryFactory(author=user, activated=False)
@@ -240,6 +235,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
         assert data["me"]["owner"]["repository"]["activated"] == False
 
+    @override_settings(TIMESERIES_ENABLED=False)
     def test_repository_flags_metadata(self):
         user = OwnerFactory()
         repo = RepositoryFactory(author=user)
