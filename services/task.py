@@ -1,7 +1,10 @@
 import logging
+from datetime import datetime
 
 from celery import Celery, chain, signature
 from shared import celery_config
+
+from core.models import Repository
 
 celery_app = Celery("tasks")
 celery_app.config_from_object("shared.celery_config:BaseCeleryConfig")
@@ -113,4 +116,21 @@ class TaskService(object):
         log.info(f"Triggering delete_owner task for owner: {ownerid}")
         self._create_signature(
             "app.tasks.delete_owner.DeleteOwner", kwargs=dict(ownerid=ownerid)
+        ).apply_async()
+
+    def backfill_repo(
+        self, repository: Repository, start_date: datetime, end_date: datetime
+    ):
+        start_date = start_date.isoformat()
+        end_date = end_date.isoformat()
+        log.info(
+            f"Triggering timeseries backfill task for repo: {repository.pk} ({start_date} - {end_date}"
+        )
+        self._create_signature(
+            "app.tasks.timeseries.backfill",
+            kwargs=dict(
+                repoid=repository.pk,
+                start_date=start_date,
+                end_date=end_date,
+            ),
         ).apply_async()

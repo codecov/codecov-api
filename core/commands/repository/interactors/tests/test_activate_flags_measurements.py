@@ -1,8 +1,12 @@
+from unittest.mock import patch
+
 import pytest
 from asgiref.sync import async_to_sync
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
+from django.utils import timezone
+from freezegun import freeze_time
 
 from codecov.commands.exceptions import Unauthenticated, ValidationError
 from codecov_auth.tests.factories import OwnerFactory
@@ -50,3 +54,8 @@ class ActivateFlagsMeasurementsInteractorTest(TransactionTestCase):
             name=MeasurementName.FLAG_COVERAGE.value,
             repository_id=self.repo.pk,
         ).exists()
+
+    @patch("services.task.TaskService.backfill_repo")
+    def test_triggers_task(self, backfill_repo):
+        self.execute(user=self.user)
+        backfill_repo.assert_called_once

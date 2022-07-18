@@ -1,9 +1,11 @@
 from asgiref.sync import sync_to_async
+from django.utils import timezone
 
 from codecov.commands.base import BaseInteractor
 from codecov.commands.exceptions import Unauthenticated, ValidationError
 from codecov_auth.models import Owner
 from core.models import Repository
+from services.task import TaskService
 from timeseries.models import Dataset, MeasurementName
 
 
@@ -13,6 +15,13 @@ class ActivateFlagsMeasurementsInteractor(BaseInteractor):
             raise Unauthenticated()
         if not repo:
             raise ValidationError("Repo not found")
+
+    def backfill(self, repository):
+        TaskService().backfill_repo(
+            repository,
+            start_date=timezone.datetime(2000, 1, 1),
+            end_date=timezone.now(),
+        )
 
     @sync_to_async
     def execute(self, repo_name, owner_name):
@@ -28,4 +37,8 @@ class ActivateFlagsMeasurementsInteractor(BaseInteractor):
             name=MeasurementName.FLAG_COVERAGE.value,
             repository_id=repo.pk,
         )
+
+        if created:
+            self.backfill(repo)
+
         return dataset
