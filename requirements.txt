@@ -149,7 +149,7 @@ httpcore==0.12.3
     # via httpx
 httplib2==0.20.2
     # via oauth2
-httpx==0.16.1
+httpx==0.17.0
     # via shared
 identify==2.2.2
     # via pre-commit
