@@ -42,7 +42,8 @@ class ActivateFlagsMeasurementsInteractorTest(TransactionTestCase):
         with pytest.raises(ValidationError):
             await self.execute(user=self.user, repo_name="wrong")
 
-    def test_creates_dataset(self):
+    @patch("services.task.TaskService.backfill_repo")
+    def test_creates_dataset(self, backfill_repo):
         assert not Dataset.objects.filter(
             name=MeasurementName.FLAG_COVERAGE.value,
             repository_id=self.repo.pk,
