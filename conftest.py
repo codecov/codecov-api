@@ -4,7 +4,6 @@ from pathlib import Path
 import fakeredis
 import pytest
 import vcr
-from django.conf import settings
 
 
 def pytest_configure(config):
@@ -12,7 +11,6 @@ def pytest_configure(config):
     pytest_configure is the canonical way to configure test server for entire testing suite
     """
     print("called pytest_configure hook")
-    settings.TIMESERIES_ENABLED = True
 
 
 @pytest.fixture
