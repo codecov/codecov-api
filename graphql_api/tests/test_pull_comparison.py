@@ -163,7 +163,8 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             repositoryflag=RepositoryFlagFactory(
                 repository=self.repository, flag_name="flag_one"
             ),
-            coverage_totals={"coverage": "85.71429"},
+            head_totals={"coverage": "85.71429"},
+            base_totals={"coverage": "92.2973"},
             patch_totals={"coverage": "29.28364"},
         )
         FlagComparisonFactory(
@@ -171,7 +172,8 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             repositoryflag=RepositoryFlagFactory(
                 repository=self.repository, flag_name="flag_two"
             ),
-            coverage_totals={"coverage": "75.273820"},
+            head_totals={"coverage": "75.273820"},
+            base_totals={"coverage": "16.293"},
             patch_totals={"coverage": "68.283496"},
         )
         query = """
@@ -182,6 +184,9 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                         percentCovered
                     }
                     headTotals {
+                        percentCovered
+                    }
+                    baseTotals {
                         percentCovered
                     }
                 }
@@ -196,11 +201,13 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                         "name": "flag_one",
                         "patchTotals": {"percentCovered": 29.28364},
                         "headTotals": {"percentCovered": 85.71429},
+                        "baseTotals": {"percentCovered": 92.2973},
                     },
                     {
                         "name": "flag_two",
                         "patchTotals": {"percentCovered": 68.283496},
                         "headTotals": {"percentCovered": 75.27382},
+                        "baseTotals": {"percentCovered": 16.293},
                     },
                 ]
             }
