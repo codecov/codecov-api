@@ -164,3 +164,34 @@ class MeasurementSummary7Day(MeasurementSummary):
 class MeasurementSummary30Day(MeasurementSummary):
     class Meta(MeasurementSummary.Meta):
         db_table = "timeseries_measurement_summary_30day"
+
+
+class Dataset(models.Model):
+    # this will likely correspond to a measurement name above
+    name = models.TextField(null=False, blank=False)
+
+    # not a true foreign key since repositories are in a
+    # different database
+    repository_id = models.IntegerField(null=False)
+
+    # indicates whether the backfill task has completed for this dataset
+    backfilled = models.BooleanField(null=False, default=False)
+
+    class Meta:
+        indexes = [
+            models.Index(
+                fields=[
+                    "name",
+                    "repository_id",
+                ]
+            ),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    "name",
+                    "repository_id",
+                ],
+                name="name_repository_id_unique",
+            ),
+        ]
