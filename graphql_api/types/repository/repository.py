@@ -17,7 +17,7 @@ from graphql_api.helpers.connection import (
 from graphql_api.helpers.lookahead import lookahead
 from graphql_api.types.enums import OrderingDirection
 from services.profiling import CriticalFile, ProfilingSummary
-from timeseries.models import Interval, MeasurementName, MeasurementSummary
+from timeseries.models import Dataset, Interval, MeasurementName, MeasurementSummary
 
 repository_bindable = ObjectType("Repository")
 
@@ -219,3 +219,32 @@ def resolve_flags(
             info.context["measurements"] = []
 
     return connection
+
+
+@repository_bindable.field("flagsMeasurementsActive")
+@sync_to_async
+def resolve_flags_measurements_active(repository: Repository, info) -> bool:
+    if not settings.TIMESERIES_ENABLED:
+        return False
+
+    return Dataset.objects.filter(
+        name=MeasurementName.FLAG_COVERAGE.value,
+        repository_id=repository.pk,
+    ).exists()
+
+
+@repository_bindable.field("flagsMeasurementsBackfilled")
+@sync_to_async
+def resolve_flags_measurements_backfilled(repository: Repository, info) -> bool:
+    if not settings.TIMESERIES_ENABLED:
+        return False
+
+    dataset = Dataset.objects.filter(
+        name=MeasurementName.FLAG_COVERAGE.value,
+        repository_id=repository.pk,
+    ).first()
+
+    if not dataset:
+        return False
+
+    return dataset.backfilled
