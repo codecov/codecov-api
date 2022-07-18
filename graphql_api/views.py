@@ -18,7 +18,6 @@ from codecov_auth.authentication import CodecovTokenAuthentication
 from services import ServiceException
 
 from .schema import schema
-from .tracing import get_tracer_extension
 
 log = logging.getLogger(__name__)
 
@@ -31,7 +30,7 @@ def get_user(request):
 
 class AsyncGraphqlView(GraphQLAsyncView):
     schema = schema
-    extensions = [get_tracer_extension()]
+    extensions = []
 
     def get(self, *args, **kwargs):
         if settings.GRAPHQL_PLAYGROUND:
