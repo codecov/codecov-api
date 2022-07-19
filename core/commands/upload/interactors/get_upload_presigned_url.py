@@ -19,12 +19,6 @@ class GetUploadPresignedUrlInteractor(BaseInteractor):
             "date_string": date_string,
         }
 
-    def get_repo_from_upload(self, repoid):
-        repo = Repository.objects.get(repoid=repoid)
-        if repo is None:
-            raise Exception("Repo could not be found")
-        return repo
-
     def get_upload_presigned_url(self, repo, download_url):
         archive_service = ArchiveService(repo)
         download_url_parts = self.get_url_parts(download_url=download_url)
@@ -43,7 +37,8 @@ class GetUploadPresignedUrlInteractor(BaseInteractor):
 
     @sync_to_async
     def execute(self, upload):
-        repo = self.get_repo_from_upload(repoid=upload.report.commit.repository_id)
+        repo = upload.report.commit.repository
+
         return self.get_upload_presigned_url(
             repo=repo, download_url=upload.download_url
         )
