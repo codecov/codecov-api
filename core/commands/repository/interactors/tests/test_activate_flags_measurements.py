@@ -27,6 +27,7 @@ class ActivateFlagsMeasurementsInteractorTest(TransactionTestCase):
         self.repo = RepositoryFactory(author=self.org, name="test-repo", active=True)
         self.user = OwnerFactory(permission=[self.repo.pk])
 
+    @async_to_sync
     def execute(self, user, repo_name=None):
         current_user = user or AnonymousUser()
         return ActivateFlagsMeasurementsInteractor(current_user, "github").execute(
@@ -34,13 +35,13 @@ class ActivateFlagsMeasurementsInteractorTest(TransactionTestCase):
             owner_name="test-org",
         )
 
-    async def test_unauthenticated(self):
+    def test_unauthenticated(self):
         with pytest.raises(Unauthenticated):
-            await self.execute(user=None)
+            self.execute(user=None)
 
-    async def test_repo_not_found(self):
+    def test_repo_not_found(self):
         with pytest.raises(ValidationError):
-            await self.execute(user=self.user, repo_name="wrong")
+            self.execute(user=self.user, repo_name="wrong")
 
     @patch("services.task.TaskService.backfill_repo")
     def test_creates_dataset(self, backfill_repo):
@@ -49,7 +50,7 @@ class ActivateFlagsMeasurementsInteractorTest(TransactionTestCase):
             repository_id=self.repo.pk,
         ).exists()
 
-        async_to_sync(self.execute)(user=self.user)
+        self.execute(user=self.user)
 
         assert Dataset.objects.filter(
             name=MeasurementName.FLAG_COVERAGE.value,
@@ -57,6 +58,11 @@ class ActivateFlagsMeasurementsInteractorTest(TransactionTestCase):
         ).exists()
 
     @patch("services.task.TaskService.backfill_repo")
+    @freeze_time("2022-01-01T00:00:00")
     def test_triggers_task(self, backfill_repo):
         self.execute(user=self.user)
-        backfill_repo.assert_called_once
+        backfill_repo.assert_called_once_with(
+            self.repo,
+            start_date=timezone.datetime(2000, 1, 1),
+            end_date=timezone.datetime(2022, 1, 1, tzinfo=timezone.utc),
+        )

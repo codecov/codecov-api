@@ -124,7 +124,7 @@ class TaskService(object):
         start_date = start_date.isoformat()
         end_date = end_date.isoformat()
         log.info(
-            f"Triggering timeseries backfill task for repo: {repository.pk} ({start_date} - {end_date}"
+            f"Triggering timeseries backfill task for repo: {repository.pk} ({start_date} - {end_date})"
         )
         self._create_signature(
             "app.tasks.timeseries.backfill",

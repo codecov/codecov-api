@@ -19,6 +19,8 @@ class ActivateFlagsMeasurementsInteractor(BaseInteractor):
     def backfill(self, repository):
         TaskService().backfill_repo(
             repository,
+            # this date is a bit arbitrary - just picking something old enough such
+            # that it encompasses most (if not all) commit timestamps in the database
             start_date=timezone.datetime(2000, 1, 1),
             end_date=timezone.now(),
         )
