@@ -67,7 +67,7 @@ class TestRepoProviderService(InternalAPITest):
             self.repo_gl.author,
             self.repo_gl.author.service,
         )
-        assert isinstance(Gitlab(), type(provider))
+        assert isinstance(provider, Gitlab)
         assert provider._on_token_refresh is not None
 
     @pytest.mark.asyncio
@@ -81,6 +81,11 @@ class TestRepoProviderService(InternalAPITest):
         assert isinstance(Gitlab(), type(provider))
         assert provider._on_token_refresh is not None
         assert inspect.isawaitable(provider._on_token_refresh())
+        owner = await self.get_owner_gl()
+        saved_token = encryptor.decrypt_token(owner.oauth_token)
+        assert saved_token["key"] == "testaaft3ituvli790m1yajovjv5eg0r4j0264iw"
+        assert "refresh_token" not in saved_token
+
         new_token = {"key": "00001023102301", "refresh_token": "20349230952"}
         await provider._on_token_refresh(new_token)
         owner = await self.get_owner_gl()

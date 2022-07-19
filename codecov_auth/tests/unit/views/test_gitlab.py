@@ -46,15 +46,18 @@ def test_get_gitlab_already_with_code(client, mocker, db, settings, mock_redis):
     settings.COOKIES_DOMAIN = ".simple.site"
     settings.COOKIE_SECRET = "cookie-secret"
 
+    access_token = "testp2twc8gxedplfn91tm4zn4r4ak2xgyr4ug96q86r2gr0re0143f20nuftka8"
+    refresh_token = "testqyuk6z4s086jcvwoncxz8owl57o30qx1mhxlw3lgqliisujsiakh3ejq91tt"
+
     async def helper_func(*args, **kwargs):
         return {
             "id": 3124507,
             "name": "Thiago Ramos",
             "username": "ThiagoCodecov",
             "state": "active",
-            "access_token": "testp2twc8gxedplfn91tm4zn4r4ak2xgyr4ug96q86r2gr0re0143f20nuftka8",
+            "access_token": access_token,
             "token_type": "Bearer",
-            "refresh_token": "testqyuk6z4s086jcvwoncxz8owl57o30qx1mhxlw3lgqliisujsiakh3ejq91tt",
+            "refresh_token": refresh_token,
             "scope": "api",
         }
 
@@ -93,10 +96,7 @@ def test_get_gitlab_already_with_code(client, mocker, db, settings, mock_redis):
     assert owner.username == "ThiagoCodecov"
     assert owner.service_id == "3124507"
     assert res.url == "http://localhost:3000/gl"
-    assert (
-        encryptor.decode(owner.oauth_token)
-        == "testp2twc8gxedplfn91tm4zn4r4ak2xgyr4ug96q86r2gr0re0143f20nuftka8: :testqyuk6z4s086jcvwoncxz8owl57o30qx1mhxlw3lgqliisujsiakh3ejq91tt"
-    )
+    assert encryptor.decode(owner.oauth_token) == f"{access_token}: :{refresh_token}"
 
 
 def test_get_github_already_with_code_github_error(
