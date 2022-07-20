@@ -21,7 +21,7 @@ class ThrottlesUnitTests(APITestCase):
     def set_view_obj(self, commit):
         view = MagicMock()
         d = {"commitid": commit.commitid}
-        view.kwargs.__getitem__.side_effect = d.__getitem__
+        view.kwargs.get.side_effect = d.get
         view.get_repo.return_value = commit.repository
         return view
 
