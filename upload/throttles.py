@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 
 class UploadsPerCommitThrottle(BaseThrottle):
     def allow_request(self, request, view):
-        commit_id = view.kwargs.get("commitid")
+        commit_id = view.kwargs["commitid"]
         try:
             repository = view.get_repo()
             commit = Commit.objects.get(commitid=commit_id, repository=repository)
@@ -45,7 +45,7 @@ class UploadsPerCommitThrottle(BaseThrottle):
 
 class UploadsPerWindowThrottle(BaseThrottle):
     def allow_request(self, request, view):
-        commit_id = view.kwargs.get("commitid")
+        commit_id = view.kwargs["commitid"]
         try:
             repository = view.get_repo()
             commit = Commit.objects.defer("report").get(

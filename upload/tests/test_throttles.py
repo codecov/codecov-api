@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock, Mock
+
 from django.test import override_settings
 from django.urls import reverse
 from rest_framework.test import APIClient, APITestCase
@@ -5,30 +7,43 @@ from rest_framework.test import APIClient, APITestCase
 from billing.constants import BASIC_PLAN_NAME
 from core.tests.factories import CommitFactory, OwnerFactory, RepositoryFactory
 from reports.tests.factories import CommitReportFactory, UploadFactory
+from upload.throttles import UploadsPerCommitThrottle, UploadsPerWindowThrottle
 
 
-class ThrottlesTests(APITestCase):
+class ThrottlesUnitTests(APITestCase):
     def setUp(self):
         self.owner = OwnerFactory(plan=BASIC_PLAN_NAME)
-        self.client = APIClient()
-        self.client.force_authenticate(user=self.owner)
-
-    def get_response(self, repo, commitid, reportid):
-        _url = reverse("new_upload.uploads", args=[repo, commitid, reportid])
-        return self.client.post(_url)
-
-    def request_should_throttle(self, commit):
-        response = self.get_response(
-            commit.repository.name, commit.commitid, "random_id"
-        )
-        # TODO change status_code to 429 after implementing the auth class for the view
-        assert response.status_code == 403
 
     def request_should_not_throttle(self, commit):
-        response = self.get_response(
-            commit.repository.name, commit.commitid, "random_id"
-        )
-        assert response.status_code != 429
+        self.uploads_per_window_not_throttled(commit)
+        self.uploads_per_commit_not_throttled(commit)
+
+    def set_view_obj(self, commit):
+        view = MagicMock()
+        d = {"commitid": commit.commitid}
+        view.kwargs.__getitem__.side_effect = d.__getitem__
+        view.get_repo.return_value = commit.repository
+        return view
+
+    def uploads_per_commit_throttled(self, commit):
+        throttle_class = UploadsPerCommitThrottle()
+        view = self.set_view_obj(commit)
+        assert not throttle_class.allow_request(Mock(), view)
+
+    def uploads_per_window_throttled(self, commit):
+        throttle_class = UploadsPerWindowThrottle()
+        view = self.set_view_obj(commit)
+        assert not throttle_class.allow_request(Mock(), view)
+
+    def uploads_per_commit_not_throttled(self, commit):
+        throttle_class = UploadsPerCommitThrottle()
+        view = self.set_view_obj(commit)
+        assert throttle_class.allow_request(Mock(), view)
+
+    def uploads_per_window_not_throttled(self, commit):
+        throttle_class = UploadsPerWindowThrottle()
+        view = self.set_view_obj(commit)
+        assert throttle_class.allow_request(Mock(), view)
 
     @override_settings(UPLOAD_THROTTLING_ENABLED=False)
     def test_check_commit_contraints_settings_disabled(self):
@@ -90,9 +105,9 @@ class ThrottlesTests(APITestCase):
         self.request_should_not_throttle(public_repository_commit)
 
         # third commit does not have uploads made, so we block it
-        self.request_should_throttle(third_commit)
+        self.uploads_per_window_throttled(third_commit)
         # first commit belongs to a different repo, but same user
-        self.request_should_throttle(first_commit)
+        self.uploads_per_window_throttled(first_commit)
 
     def test_validate_upload_too_many_uploads_for_commit(self):
         par = [(151, 0, False), (151, 151, True), (0, 0, False), (0, 200, True)]
@@ -107,6 +122,6 @@ class ThrottlesTests(APITestCase):
                 UploadFactory.create(report=report)
 
             if should_raise:
-                self.request_should_throttle(commit)
+                self.uploads_per_commit_throttled(commit)
             else:
                 self.request_should_not_throttle(commit)
