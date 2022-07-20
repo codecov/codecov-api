@@ -29,7 +29,8 @@ class LookaheadNode:
             name = arg.name.value
             value_node = arg.value
             if isinstance(value_node, VariableNode):
-                value = self.info.variable_values[name]
+                variable_name = value_node.name.value
+                value = self.info.variable_values[variable_name]
             else:
                 value = value_node.value
             args[name] = value

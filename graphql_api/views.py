@@ -15,9 +15,9 @@ from sentry_sdk import capture_exception
 from codecov.commands.exceptions import BaseException
 from codecov.commands.executor import get_executor_from_request
 from codecov_auth.authentication import CodecovTokenAuthentication
+from services import ServiceException
 
 from .schema import schema
-from .tracing import get_tracer_extension
 
 log = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ def get_user(request):
 
 class AsyncGraphqlView(GraphQLAsyncView):
     schema = schema
-    extensions = [get_tracer_extension()]
+    extensions = []
 
     def get(self, *args, **kwargs):
         if settings.GRAPHQL_PLAYGROUND:
@@ -58,13 +58,16 @@ class AsyncGraphqlView(GraphQLAsyncView):
         formatted["message"] = "INTERNAL SERVER ERROR"
         formatted["type"] = "ServerError"
         # if this is one of our own command exception, we can tell a bit more
-        if isinstance(error.original_error, BaseException):
-            formatted["message"] = error.original_error.message
-            formatted["type"] = type(error.original_error).__name__
+        original_error = error.original_error
+        if isinstance(original_error, BaseException) or isinstance(
+            original_error, ServiceException
+        ):
+            formatted["message"] = original_error.message
+            formatted["type"] = type(original_error).__name__
         else:
             # otherwise it's not supposed to happen, so we log it
-            log.error("GraphQL internal server error", exc_info=error.original_error)
-            capture_exception(error.original_error)
+            log.error("GraphQL internal server error", exc_info=original_error)
+            capture_exception(original_error)
         return formatted
 
 

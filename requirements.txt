@@ -111,7 +111,7 @@ djangorestframework==3.12.2
     # via -r requirements.in
 ecdsa==0.16.0
     # via tlslite-ng
-elastic-apm==6.7.2
+elastic-apm==6.10.1
     # via -r requirements.in
 factory-boy==3.2.0
     # via -r requirements.in
@@ -149,7 +149,7 @@ httpcore==0.12.3
     # via httpx
 httplib2==0.20.2
     # via oauth2
-httpx==0.16.1
+httpx==0.17.0
     # via shared
 identify==2.2.2
     # via pre-commit

@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
 from unittest.mock import PropertyMock, patch
 
+import pytest
+from django.conf import settings
 from django.test import TestCase
 from shared.reports.resources import Report, ReportFile, ReportLine
 from shared.utils.sessions import Session
@@ -12,7 +14,7 @@ from timeseries.helpers import (
     save_commit_measurements,
     save_repo_measurements,
 )
-from timeseries.models import Measurement, MeasurementName
+from timeseries.models import Dataset, Measurement, MeasurementName
 from timeseries.tests.factories import MeasurementFactory
 
 
@@ -40,6 +42,9 @@ def sample_report():
     return report
 
 
+@pytest.mark.skipif(
+    not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
+)
 class SaveCommitMeasurementsTest(TestCase):
     databases = {"default", "timeseries"}
 
@@ -252,8 +257,11 @@ class SaveCommitMeasurementsTest(TestCase):
         assert measurement.value == 100.0
 
 
+@pytest.mark.skipif(
+    not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
+)
 class SaveRepoMeasurementsTest(TestCase):
-    databases = {"default"}
+    databases = {"default", "timeseries"}
 
     def setUp(self):
         self.repo = RepositoryFactory()
@@ -282,7 +290,20 @@ class SaveRepoMeasurementsTest(TestCase):
         save_commit_measurements.assert_any_call(self.commit2)
         save_commit_measurements.assert_any_call(self.commit3)
 
+        coverage_dataset = Dataset.objects.get(
+            name=MeasurementName.COVERAGE.value, repository_id=self.repo.pk
+        )
+        assert coverage_dataset.backfilled
 
+        flag_coverage_dataset = Dataset.objects.get(
+            name=MeasurementName.FLAG_COVERAGE.value, repository_id=self.repo.pk
+        )
+        assert flag_coverage_dataset.backfilled
+
+
+@pytest.mark.skipif(
+    not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
+)
 class RefreshMeasurementSummariesTest(TestCase):
     databases = {"timeseries"}
 

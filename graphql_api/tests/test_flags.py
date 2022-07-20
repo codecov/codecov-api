@@ -1,5 +1,7 @@
 from unittest.mock import patch
 
+import pytest
+from django.conf import settings
 from django.test import TransactionTestCase, override_settings
 from django.utils import timezone
 
@@ -14,7 +16,7 @@ query_flags = """
 query Flags(
     $org: String!
     $repo: String!
-    $before: DateTime!
+    $measurementsBefore: DateTime!
 ) {
     owner(username: $org) {
         repository(name: $repo) {
@@ -35,7 +37,7 @@ fragment FlagFragment on Flag {
     measurements(
         interval: INTERVAL_1_DAY
         after: "2000-01-01T00:00:00",
-        before: $before
+        before: $measurementsBefore
     ) {
         timestamp
         avg
@@ -46,6 +48,9 @@ fragment FlagFragment on Flag {
 """
 
 
+@pytest.mark.skipif(
+    not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
+)
 class TestFlags(GraphQLTestHelper, TransactionTestCase):
     databases = {"default", "timeseries"}
 
@@ -60,7 +65,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
-            "before": timezone.now().isoformat(),
+            "measurementsBefore": timezone.now().isoformat(),
         }
         data = self.gql_request(query_flags, variables=variables)
         assert data == {
@@ -95,7 +100,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
-            "before": timezone.now().isoformat(),
+            "measurementsBefore": timezone.now().isoformat(),
         }
         data = self.gql_request(query_flags, variables=variables)
         assert data == {
@@ -189,7 +194,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
-            "before": timezone.now().isoformat(),
+            "measurementsBefore": timezone.now().isoformat(),
         }
         data = self.gql_request(query_flags, variables=variables)
         assert data == {
