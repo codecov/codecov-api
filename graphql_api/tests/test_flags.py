@@ -342,7 +342,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
-    def test_fetch_flags_flagsName_filter(self):
+    def test_fetch_flags_flagsNames_filter(self):
         query = """
             query Flags(
                 $org: String!
@@ -368,7 +368,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
-            "filters": {"flagsName": ["flag1", "flag3"]},
+            "filters": {"flagsNames": ["flag1", "flag3"]},
         }
         data = self.gql_request(query, variables=variables)
         assert data == {
@@ -383,7 +383,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
-    def test_fetch_flags_flagsName_and_term_filters(self):
+    def test_fetch_flags_flagsNames_and_term_filters(self):
         query = """
             query Flags(
                 $org: String!
@@ -411,7 +411,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
-            "filters": {"flagsName": ["flag1", "flag3"], "term": "random"},
+            "filters": {"flagsNames": ["flag1", "flag3"], "term": "random"},
         }
         data = self.gql_request(query, variables=variables)
         assert data == {

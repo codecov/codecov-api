@@ -1,4 +1,4 @@
 input FlagSetFilters {
   term: String
-  flagNames: [String]
+  flagsNames: [String]
 }
