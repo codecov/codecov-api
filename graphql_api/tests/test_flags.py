@@ -376,12 +376,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                 "repository": {
                     "flags": {
                         "edges": [
-                            {
-                                "node": {
-                                    "name": "flag1",
-                                    "name": "flag3"
-                                }
-                            },
+                            {"node": {"name": "flag1", "name": "flag3"}},
                         ]
                     }
                 }
@@ -428,8 +423,8 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                 "node": {
                                     "name": "flag1",
                                     "name": "flag3",
-                                    "name":"random1",
-                                    "name":"random2"
+                                    "name": "random1",
+                                    "name": "random2",
                                 }
                             },
                         ]
@@ -437,8 +432,6 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                 }
             }
         }
-
-
 
     def test_fetch_flags_ordering_direction(self):
         query = """
