@@ -34,6 +34,7 @@ query Flags(
 fragment FlagFragment on Flag {
     name
     percentCovered
+    percentChange
     measurements(
         interval: INTERVAL_1_DAY
         after: "2000-01-01T00:00:00",
@@ -77,6 +78,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                 "node": {
                                     "name": "flag1",
                                     "percentCovered": None,
+                                    "percentChange": None,
                                     "measurements": [],
                                 }
                             },
@@ -84,6 +86,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                 "node": {
                                     "name": "flag2",
                                     "percentCovered": None,
+                                    "percentChange": None,
                                     "measurements": [],
                                 }
                             },
@@ -112,6 +115,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                 "node": {
                                     "name": "flag1",
                                     "percentCovered": None,
+                                    "percentChange": None,
                                     "measurements": [],
                                 }
                             },
@@ -119,6 +123,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                 "node": {
                                     "name": "flag2",
                                     "percentCovered": None,
+                                    "percentChange": None,
                                     "measurements": [],
                                 }
                             },
@@ -206,6 +211,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                 "node": {
                                     "name": "flag1",
                                     "percentCovered": 80.0,
+                                    "percentChange": 6.666666666666665,
                                     "measurements": [
                                         {
                                             "timestamp": "2022-06-21T00:00:00+00:00",
@@ -226,6 +232,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                 "node": {
                                     "name": "flag2",
                                     "percentCovered": 90.0,
+                                    "percentChange": 5.882352941176472,
                                     "measurements": [
                                         {
                                             "timestamp": "2022-06-21T00:00:00+00:00",
@@ -261,6 +268,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                 node {
                                     name
                                     percentCovered
+                                    percentChange
                                 }
                             }
                         }
@@ -284,12 +292,14 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                 "node": {
                                     "name": "flag1",
                                     "percentCovered": None,
+                                    "percentChange": None,
                                 }
                             },
                             {
                                 "node": {
                                     "name": "flag2",
                                     "percentCovered": None,
+                                    "percentChange": None,
                                 }
                             },
                         ]

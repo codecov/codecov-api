@@ -15,7 +15,6 @@ def resolve_timestamp(flag: RepositoryFlag, info) -> str:
 
 
 @flag_bindable.field("percentCovered")
-@sync_to_async
 def resolve_percent_covered(flag: RepositoryFlag, info) -> float:
     if "measurements" not in info.context:
         # We're using the most recent timeseries measurement for the coverage value
@@ -32,8 +31,24 @@ def resolve_percent_covered(flag: RepositoryFlag, info) -> float:
         return measurements[-1]["avg"]
 
 
+@flag_bindable.field("percentChange")
+def resolve_percent_covered(flag: RepositoryFlag, info) -> float:
+    if "measurements" not in info.context:
+        # We're using the most recent timeseries measurement for the coverage value
+        return None
+
+    # measurements are fetched in parent resolver
+    measurements = [
+        measurement
+        for measurement in info.context["measurements"]
+        if measurement["flag_id"] == flag.pk
+    ]
+
+    if len(measurements) > 0:
+        return ((measurements[-1]["avg"] / measurements[0]["avg"]) - 1) * 100
+
+
 @flag_bindable.field("measurements")
-@sync_to_async
 def resolve_measurements(
     flag: RepositoryFlag, info, interval: Interval, after: str, before: str
 ) -> Iterable[MeasurementSummary]:
