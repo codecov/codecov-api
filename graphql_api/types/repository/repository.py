@@ -7,7 +7,7 @@ from django.conf import settings
 from django.db.models import Avg, Max, Min
 
 from core.models import Repository
-from graphql_api.actions.flags import flags_for_repo
+from graphql_api.actions.flags import flag_measurements, flags_for_repo
 from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.owner import OwnerLoader
 from graphql_api.helpers.connection import (
@@ -193,29 +193,10 @@ def resolve_flags(
 
             flag_ids = [edge["node"].pk for edge in connection.edges]
 
-            measurements = (
-                MeasurementSummary.agg_by(interval)
-                .filter(
-                    name=MeasurementName.FLAG_COVERAGE.value,
-                    owner_id=repository.author_id,
-                    repo_id=repository.pk,
-                    flag_id__in=flag_ids,
-                    timestamp_bin__gte=node.args["after"],
-                    timestamp_bin__lte=node.args["before"],
-                )
-                .values("timestamp_bin", "owner_id", "repo_id", "flag_id")
-                .annotate(
-                    avg=Avg("value_avg"),
-                    min=Min("value_min"),
-                    max=Max("value_max"),
-                )
-                .order_by("timestamp_bin")
+            info.context["measurements"] = flag_measurements(
+                repository, flag_ids, interval, node.args["after"], node.args["before"]
             )
-
-            # force eager execution of query while we're in a sync context
-            # (and store for child resolvers)
-            info.context["measurements"] = list(measurements)
         else:
-            info.context["measurements"] = []
+            info.context["measurements"] = {}
 
     return connection
