@@ -342,7 +342,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
-    def test_fetch_flags_flagsNames_filter(self):
+    def test_fetch_flags_filter_by_flags_names(self):
         query = """
             query Flags(
                 $org: String!
