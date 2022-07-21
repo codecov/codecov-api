@@ -16,6 +16,7 @@ query_flags = """
 query Flags(
     $org: String!
     $repo: String!
+    $measurementsAfter: DateTime!
     $measurementsBefore: DateTime!
 ) {
     owner(username: $org) {
@@ -34,9 +35,10 @@ query Flags(
 fragment FlagFragment on Flag {
     name
     percentCovered
+    percentChange
     measurements(
         interval: INTERVAL_1_DAY
-        after: "2000-01-01T00:00:00",
+        after: $measurementsAfter,
         before: $measurementsBefore
     ) {
         timestamp
@@ -65,7 +67,8 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
-            "measurementsBefore": timezone.now().isoformat(),
+            "measurementsAfter": timezone.datetime(2022, 1, 1),
+            "measurementsBefore": timezone.datetime(2022, 12, 31),
         }
         data = self.gql_request(query_flags, variables=variables)
         assert data == {
@@ -77,6 +80,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                 "node": {
                                     "name": "flag1",
                                     "percentCovered": None,
+                                    "percentChange": None,
                                     "measurements": [],
                                 }
                             },
@@ -84,6 +88,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                 "node": {
                                     "name": "flag2",
                                     "percentCovered": None,
+                                    "percentChange": None,
                                     "measurements": [],
                                 }
                             },
@@ -100,7 +105,8 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
-            "measurementsBefore": timezone.now().isoformat(),
+            "measurementsAfter": timezone.datetime(2022, 1, 1),
+            "measurementsBefore": timezone.datetime(2022, 12, 31),
         }
         data = self.gql_request(query_flags, variables=variables)
         assert data == {
@@ -112,6 +118,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                 "node": {
                                     "name": "flag1",
                                     "percentCovered": None,
+                                    "percentChange": None,
                                     "measurements": [],
                                 }
                             },
@@ -119,6 +126,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                 "node": {
                                     "name": "flag2",
                                     "percentCovered": None,
+                                    "percentChange": None,
                                     "measurements": [],
                                 }
                             },
@@ -194,7 +202,8 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
-            "measurementsBefore": timezone.now().isoformat(),
+            "measurementsAfter": timezone.datetime(2022, 6, 20),
+            "measurementsBefore": timezone.datetime(2022, 6, 23),
         }
         data = self.gql_request(query_flags, variables=variables)
         assert data == {
@@ -206,7 +215,14 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                 "node": {
                                     "name": "flag1",
                                     "percentCovered": 80.0,
+                                    "percentChange": 6.666666666666665,
                                     "measurements": [
+                                        {
+                                            "timestamp": "2022-06-20T00:00:00+00:00",
+                                            "avg": None,
+                                            "min": None,
+                                            "max": None,
+                                        },
                                         {
                                             "timestamp": "2022-06-21T00:00:00+00:00",
                                             "avg": 75.0,
@@ -219,6 +235,12 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                             "min": 75.0,
                                             "max": 85.0,
                                         },
+                                        {
+                                            "timestamp": "2022-06-23T00:00:00+00:00",
+                                            "avg": None,
+                                            "min": None,
+                                            "max": None,
+                                        },
                                     ],
                                 }
                             },
@@ -226,7 +248,14 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                 "node": {
                                     "name": "flag2",
                                     "percentCovered": 90.0,
+                                    "percentChange": 5.882352941176472,
                                     "measurements": [
+                                        {
+                                            "timestamp": "2022-06-20T00:00:00+00:00",
+                                            "avg": None,
+                                            "min": None,
+                                            "max": None,
+                                        },
                                         {
                                             "timestamp": "2022-06-21T00:00:00+00:00",
                                             "avg": 85.0,
@@ -238,6 +267,12 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                             "avg": 90.0,
                                             "min": 85.0,
                                             "max": 95.0,
+                                        },
+                                        {
+                                            "timestamp": "2022-06-23T00:00:00+00:00",
+                                            "avg": None,
+                                            "min": None,
+                                            "max": None,
                                         },
                                     ],
                                 }
@@ -261,6 +296,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                 node {
                                     name
                                     percentCovered
+                                    percentChange
                                 }
                             }
                         }
@@ -284,12 +320,14 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                 "node": {
                                     "name": "flag1",
                                     "percentCovered": None,
+                                    "percentChange": None,
                                 }
                             },
                             {
                                 "node": {
                                     "name": "flag2",
                                     "percentCovered": None,
+                                    "percentChange": None,
                                 }
                             },
                         ]
