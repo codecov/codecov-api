@@ -342,6 +342,56 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
+    def test_fetch_flags_filter_by_flags_names(self):
+        query = """
+            query Flags(
+                $org: String!
+                $repo: String!
+                $filters: FlagSetFilters!
+            ) {
+                owner(username: $org) {
+                    repository(name: $repo) {
+                        flags(filters: $filters) {
+                            edges {
+                                node {
+                                    name
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+        RepositoryFlagFactory(repository=self.repo, flag_name="flag1")
+        RepositoryFlagFactory(repository=self.repo, flag_name="flag2")
+        RepositoryFlagFactory(repository=self.repo, flag_name="flag3")
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "filters": {"flagsNames": ["flag1", "flag3"]},
+        }
+        data = self.gql_request(query, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "flags": {
+                        "edges": [
+                            {
+                                "node": {
+                                    "name": "flag1",
+                                }
+                            },
+                            {
+                                "node": {
+                                    "name": "flag3",
+                                }
+                            },
+                        ]
+                    }
+                }
+            }
+        }
+
     def test_fetch_flags_ordering_direction(self):
         query = """
             query Flags(
