@@ -1,5 +1,7 @@
 import logging
+from builtins import property
 
+from attr import field
 from django.db.models import F, Q
 from django.shortcuts import get_object_or_404
 from django_filters import rest_framework as django_filters
@@ -9,6 +11,7 @@ from rest_framework.exceptions import NotFound, PermissionDenied, ValidationErro
 from rest_framework.response import Response
 
 from billing.constants import CURRENTLY_OFFERED_PLANS
+from billing.helpers import on_enterprise_plan
 from codecov_auth.models import Owner, Service
 from internal_api.mixins import OwnerPropertyMixin
 from internal_api.permissions import MemberOfOrgPermissions
@@ -117,6 +120,19 @@ class AccountDetailsViewSet(
 
 
 class UsersOrderingFilter(filters.OrderingFilter):
+    def get_valid_fields(self, queryset, view, context=None):
+        fields = super().get_valid_fields(queryset, view, context=context or {})
+
+        if "last_pull_timestamp" not in queryset.query.annotations:
+            # queryset not always annotated with `last_pull_timestamp`
+            fields = [
+                (name, verbose_name)
+                for (name, verbose_name) in fields
+                if name != "last_pull_timestamp"
+            ]
+
+        return fields
+
     def filter_queryset(self, request, queryset, view):
         ordering = self.get_ordering(request, queryset, view)
 
@@ -178,7 +194,11 @@ class UserViewSet(
         )
 
     def get_queryset(self):
-        return self._base_queryset().annotate_last_pull_timestamp()
+        qs = self._base_queryset()
+        if on_enterprise_plan(self.owner):
+            # pull ordering only available for enterprise
+            qs = qs.annotate_last_pull_timestamp()
+        return qs
 
 
 class PlanViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):

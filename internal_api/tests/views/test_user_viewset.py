@@ -297,7 +297,10 @@ class UserViewSetTests(APITestCase):
 
         assert [r["email"] for r in response.data["results"]] == ["d", "c", "b", "a"]
 
-    def test_list_can_order_by_last_pull_timestamp(self):
+    @patch("internal_api.owner.views.on_enterprise_plan")
+    def test_list_can_order_by_last_pull_timestamp(self, on_enterprise_plan):
+        on_enterprise_plan.return_value = True
+
         repo = RepositoryFactory()
         pull1 = PullFactory(author=self.users[1], repository=repo)
         pull2 = PullFactory(author=self.users[2], repository=repo)
