@@ -22,6 +22,9 @@ def flags_for_repo(repository: Repository, filters: Mapping = None) -> QuerySet:
 
 def _apply_filters(queryset: QuerySet, filters: Mapping) -> QuerySet:
     term = filters.get("term")
+    flags_names = filters.get("flags_names")
+    if flags_names:
+        queryset = queryset.filter(flag_name__in=flags_names)
     if term:
         queryset = queryset.filter(flag_name__contains=term)
 
