@@ -19,11 +19,11 @@ def resolve_timestamp(flag: RepositoryFlag, info) -> str:
 
 @flag_bindable.field("percentCovered")
 def resolve_percent_covered(flag: RepositoryFlag, info) -> float:
-    if "measurements" not in info.context:
+    if "flag_measurements" not in info.context:
         # we rely on measurements for this computed value
         return None
 
-    measurements = info.context["measurements"].get(flag.pk, [])
+    measurements = info.context["flag_measurements"].get(flag.pk, [])
     if len(measurements) > 0:
         # coverage returned is the most recent measurement average
         return measurements[-1]["avg"]
@@ -31,12 +31,12 @@ def resolve_percent_covered(flag: RepositoryFlag, info) -> float:
 
 @flag_bindable.field("percentChange")
 def resolve_percent_change(flag: RepositoryFlag, info) -> float:
-    if "measurements" not in info.context:
+    if "flag_measurements" not in info.context:
         # we rely on measurements for this computed value
         return None
 
-    measurements = info.context["measurements"].get(flag.pk, [])
-    if len(measurements) > 0:
+    measurements = info.context["flag_measurements"].get(flag.pk, [])
+    if len(measurements) > 1:
         return ((measurements[-1]["avg"] / measurements[0]["avg"]) - 1) * 100
 
 
@@ -44,7 +44,7 @@ def resolve_percent_change(flag: RepositoryFlag, info) -> float:
 def resolve_measurements(
     flag: RepositoryFlag, info, interval: Interval, after: str, before: str
 ) -> Iterable[MeasurementSummary]:
-    measurements = info.context["measurements"].get(flag.pk, [])
+    measurements = info.context["flag_measurements"].get(flag.pk, [])
     if len(measurements) == 0:
         return []
     return fill_empty_measurements(measurements, interval, after, before)

@@ -193,10 +193,10 @@ def resolve_flags(
 
             flag_ids = [edge["node"].pk for edge in connection.edges]
 
-            info.context["measurements"] = flag_measurements(
+            info.context["flag_measurements"] = flag_measurements(
                 repository, flag_ids, interval, node.args["after"], node.args["before"]
             )
         else:
-            info.context["measurements"] = {}
+            info.context["flag_measurements"] = {}
 
     return connection
