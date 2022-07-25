@@ -28,7 +28,9 @@ class CommitViews(ListCreateAPIView):
         # TODO we should make sure that the commit is not already there, otherwise we'll get 500
         repository = self.get_repo()
         commit = serializer.save(repository=repository)
-        TaskService().update_commit(commitid=commit.commitid, repoid=commit.repoid)
+        TaskService().update_commit(
+            commitid=commit.commitid, repoid=commit.repository.repoid
+        )
         return commit
 
     def list(self, request: HttpRequest, repo: str):
