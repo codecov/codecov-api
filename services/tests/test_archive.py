@@ -1,8 +1,6 @@
 from pathlib import Path
 from time import time
-
-import pytest
-import requests
+from unittest.mock import patch
 
 from core.models import Repository
 from core.tests.factories import CommitFactory, RepositoryFactory
@@ -229,4 +227,25 @@ class TestReport(object):
                 filename="random.txt", commit_sha="abc"
             )
             == "presigned url"
+        )
+
+    def test_create_presigned_get(self, db, mocker):
+        storage = StorageService()
+        storage.create_root_storage("hasna")
+
+        url = "v4/repos/aaaa/commits/{}/file.txt".format(int(time()))
+        get_url = storage.create_presigned_get("hasna", url, 10)
+
+        assert url in get_url
+        assert "/hasna" in get_url
+
+    @patch("services.storage.MINIO_CLIENT.presigned_get_object")
+    def test_create_presigned_get_minio_client(self, mock_storage_get, db):
+        storage = StorageService()
+        mock_storage_get.return_value = "minio_presigned_get_url"
+
+        url = "v4/repos/aaaa/commits/{}/file.txt".format(int(time()))
+
+        assert (
+            storage.create_presigned_get("hasna", url, 10) == "minio_presigned_get_url"
         )
