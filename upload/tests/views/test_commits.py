@@ -6,6 +6,7 @@ from rest_framework.test import APIClient
 from billing.constants import BASIC_PLAN_NAME
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
+from services.task import TaskService
 from upload.views.commits import CommitViews
 
 
@@ -46,7 +47,9 @@ def test_get_queryset(db):
     assert random_commit not in recovered_commits
 
 
-def test_commit_post_empty(db, client):
+def test_commit_post_empty(db, client, mocker):
+    mocked_call = mocker.patch.object(TaskService, "update_commit")
+
     repository = RepositoryFactory.create()
     repository.save()
 
@@ -83,3 +86,4 @@ def test_commit_post_empty(db, client):
     }
     assert response_json["author"] is None  # This is filled by the worker
     assert response_json["commitid"] == "commit_sha"
+    mocked_call.assert_called_with(commitid="commit_sha", repoid=repository.repoid)
