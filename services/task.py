@@ -114,3 +114,10 @@ class TaskService(object):
         self._create_signature(
             "app.tasks.delete_owner.DeleteOwner", kwargs=dict(ownerid=ownerid)
         ).apply_async()
+
+    def update_commit(self, commitid, repoid):
+        log.info(f"Triggering commit_update task for commit: {commitid}")
+        self._create_signature(
+            "app.tasks.commit_update.CommitUpdate",
+            kwargs=dict(commitid=commitid, repoid=repoid),
+        ).apply_async()
