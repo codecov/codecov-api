@@ -229,16 +229,6 @@ class TestReport(object):
             == "presigned url"
         )
 
-    def test_create_presigned_get(self, db, mocker):
-        storage = StorageService()
-        storage.create_root_storage("hasna")
-
-        url = "v4/repos/aaaa/commits/{}/file.txt".format(int(time()))
-        get_url = storage.create_presigned_get("hasna", url, 10)
-
-        assert url in get_url
-        assert "/hasna" in get_url
-
     @patch("services.storage.MINIO_CLIENT.presigned_get_object")
     def test_create_presigned_get_minio_client(self, mock_storage_get, db):
         storage = StorageService()
