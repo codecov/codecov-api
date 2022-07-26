@@ -124,7 +124,7 @@ class LoginMixinTests(TestCase):
     def test_get_or_create_user_calls_segment_identify_user(self, identify_user_mock):
         self.mixin_instance._get_or_create_user(
             {
-                "user": {"id": 12345, "access_token": "4567", "login": "testuser"},
+                "user": {"id": 12345, "key": "4567", "login": "testuser"},
                 "has_private_access": False,
             },
             self.request,
@@ -137,7 +137,7 @@ class LoginMixinTests(TestCase):
     ):
         self.mixin_instance._get_or_create_user(
             {
-                "user": {"id": 12345, "access_token": "4567", "login": "testuser"},
+                "user": {"id": 12345, "key": "4567", "login": "testuser"},
                 "has_private_access": False,
             },
             self.request,
@@ -153,7 +153,7 @@ class LoginMixinTests(TestCase):
             {
                 "user": {
                     "id": owner.service_id,
-                    "access_token": "02or0sa",
+                    "key": "02or0sa",
                     "login": owner.username,
                 },
                 "has_private_access": owner.private_access,
@@ -214,7 +214,7 @@ class LoginMixinTests(TestCase):
             {
                 "user": {
                     "id": owner.service_id,
-                    "access_token": "02or0sa",
+                    "key": "02or0sa",
                     "login": owner.username,
                 },
                 "has_private_access": owner.private_access,
