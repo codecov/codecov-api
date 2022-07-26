@@ -18,3 +18,8 @@ class UploadCommandsTest(TransactionTestCase):
     def test_get_upload_errors_delegate_to_interactor(self, interactor_mock):
         self.command.get_upload_errors(self.report_session)
         interactor_mock.assert_called_once_with(self.report_session)
+
+    @patch("core.commands.upload.upload.GetUploadPresignedUrlInteractor.execute")
+    def test_get_upload_presigned_url_interactor(self, interactor_mock):
+        self.command.get_upload_presigned_url(self.report_session)
+        interactor_mock.assert_called_once_with(self.report_session)
