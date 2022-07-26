@@ -1,13 +1,17 @@
+import inspect
 from unittest.mock import patch
 
+import pytest
+from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from shared.torngit import Bitbucket, Github, Gitlab
 
 from codecov.tests.base_test import InternalAPITest
+from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
-from services.repo_providers import RepoProviderService, TorngitInitializationFailed
+from services.repo_providers import RepoProviderService
 from utils.encryption import encryptor
 
 
@@ -31,16 +35,64 @@ def mock_get_env_ca_bundle(*args):
 
 
 class TestRepoProviderService(InternalAPITest):
-    def test_get_torngit_with_names(self):
-        repo = RepositoryFactory.create(
+    def setUp(self):
+        self.repo_gh = RepositoryFactory.create(
             author__unencrypted_oauth_token="testaaft3ituvli790m1yajovjv5eg0r4j0264iw",
             author__username="ThiagoCodecov",
             author__service="github",
         )
+        self.repo_gl = RepositoryFactory.create(
+            author__unencrypted_oauth_token="testaaft3ituvli790m1yajovjv5eg0r4j0264iw",
+            author__username="ThiagoCodecov",
+            author__service="gitlab",
+        )
+
+    @sync_to_async
+    def get_owner_gl(self):
+        return Owner.objects.filter(ownerid=self.repo_gl.author.ownerid).first()
+
+    def test_get_torngit_with_names(self):
         provider = RepoProviderService().get_by_name(
-            repo.author, repo.name, repo.author, repo.author.service
+            self.repo_gh.author,
+            self.repo_gh.name,
+            self.repo_gh.author,
+            self.repo_gh.author.service,
         )
         assert isinstance(Github(), type(provider))
+
+    def test_get_torngit_with_names(self):
+        provider = RepoProviderService().get_by_name(
+            self.repo_gl.author,
+            self.repo_gl.name,
+            self.repo_gl.author,
+            self.repo_gl.author.service,
+        )
+        assert isinstance(provider, Gitlab)
+        assert provider._on_token_refresh is not None
+
+    @pytest.mark.asyncio
+    async def test_refresh_callback(self):
+        provider = RepoProviderService().get_by_name(
+            self.repo_gl.author,
+            self.repo_gl.name,
+            self.repo_gl.author,
+            self.repo_gl.author.service,
+        )
+        assert isinstance(Gitlab(), type(provider))
+        assert provider._on_token_refresh is not None
+        assert inspect.isawaitable(provider._on_token_refresh())
+        owner = await self.get_owner_gl()
+        saved_token = encryptor.decrypt_token(owner.oauth_token)
+        assert saved_token["key"] == "testaaft3ituvli790m1yajovjv5eg0r4j0264iw"
+        assert "refresh_token" not in saved_token
+
+        new_token = {"key": "00001023102301", "refresh_token": "20349230952"}
+        await provider._on_token_refresh(new_token)
+        owner = await self.get_owner_gl()
+        assert owner.username == "ThiagoCodecov"
+        saved_token = encryptor.decrypt_token(owner.oauth_token)
+        assert saved_token["key"] == "00001023102301"
+        assert saved_token["refresh_token"] == "20349230952"
 
     def test_get_adapter_returns_adapter_for_repo_authors_service(self):
         some_other_user = OwnerFactory(service="github")

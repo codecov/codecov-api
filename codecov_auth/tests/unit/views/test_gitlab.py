@@ -6,6 +6,7 @@ from shared.torngit.exceptions import TorngitClientGeneralError
 
 from codecov_auth.helpers import decode_token_from_cookie
 from codecov_auth.models import Session
+from utils.encryption import encryptor
 
 
 def _get_state_from_redis(mock_redis):
@@ -43,6 +44,10 @@ def test_get_gitlab_already_with_code(client, mocker, db, settings, mock_redis):
         "testi1iinnfrhnf2q6htycgexmp04f1z2mrd7w7u8bigskhwq2km6yls8e2mddzh"
     )
     settings.COOKIES_DOMAIN = ".simple.site"
+    settings.COOKIE_SECRET = "cookie-secret"
+
+    access_token = "testp2twc8gxedplfn91tm4zn4r4ak2xgyr4ug96q86r2gr0re0143f20nuftka8"
+    refresh_token = "testqyuk6z4s086jcvwoncxz8owl57o30qx1mhxlw3lgqliisujsiakh3ejq91tt"
 
     async def helper_func(*args, **kwargs):
         return {
@@ -50,9 +55,9 @@ def test_get_gitlab_already_with_code(client, mocker, db, settings, mock_redis):
             "name": "Thiago Ramos",
             "username": "ThiagoCodecov",
             "state": "active",
-            "access_token": "testp2twc8gxedplfn91tm4zn4r4ak2xgyr4ug96q86r2gr0re0143f20nuftka8",
+            "access_token": access_token,
             "token_type": "Bearer",
-            "refresh_token": "testqyuk6z4s086jcvwoncxz8owl57o30qx1mhxlw3lgqliisujsiakh3ejq91tt",
+            "refresh_token": refresh_token,
             "scope": "api",
         }
 
@@ -91,6 +96,7 @@ def test_get_gitlab_already_with_code(client, mocker, db, settings, mock_redis):
     assert owner.username == "ThiagoCodecov"
     assert owner.service_id == "3124507"
     assert res.url == "http://localhost:3000/gl"
+    assert encryptor.decode(owner.oauth_token) == f"{access_token}: :{refresh_token}"
 
 
 def test_get_github_already_with_code_github_error(
