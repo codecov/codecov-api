@@ -1,0 +1,4 @@
+input ActivateFlagsMeasurementsInput {
+  owner: String!
+  repoName: String!
+}

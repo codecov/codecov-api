@@ -8,7 +8,8 @@ from django.utils import timezone
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
 from reports.tests.factories import RepositoryFlagFactory
-from timeseries.tests.factories import MeasurementFactory
+from timeseries.models import MeasurementName
+from timeseries.tests.factories import DatasetFactory, MeasurementFactory
 
 from .helper import GraphQLTestHelper
 
@@ -45,6 +46,20 @@ fragment FlagFragment on Flag {
         avg
         min
         max
+    }
+}
+"""
+
+query_repo = """
+query Repo(
+    $org: String!
+    $repo: String!
+) {
+    owner(username: $org) {
+        repository(name: $repo) {
+            flagsMeasurementsActive
+            flagsMeasurementsBackfilled
+        }
     }
 }
 """
@@ -501,3 +516,37 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
         }
         self.gql_request(query, variables=variables)
         assert agg_by.call_count == 0
+
+    def test_repository_flags_metadata_inactive(self):
+        data = self.gql_request(
+            query_repo,
+            variables={"org": self.org.username, "repo": self.repo.name},
+        )
+        assert data["owner"]["repository"]["flagsMeasurementsActive"] == False
+        assert data["owner"]["repository"]["flagsMeasurementsBackfilled"] == False
+
+    def test_repository_flags_metadata_active(self):
+        DatasetFactory(
+            name=MeasurementName.FLAG_COVERAGE.value, repository_id=self.repo.pk
+        )
+
+        data = self.gql_request(
+            query_repo,
+            variables={"org": self.org.username, "repo": self.repo.name},
+        )
+        assert data["owner"]["repository"]["flagsMeasurementsActive"] == True
+        assert data["owner"]["repository"]["flagsMeasurementsBackfilled"] == False
+
+    def test_repository_flags_metadata_backfilled(self):
+        DatasetFactory(
+            name=MeasurementName.FLAG_COVERAGE.value,
+            repository_id=self.repo.pk,
+            backfilled=True,
+        )
+
+        data = self.gql_request(
+            query_repo,
+            variables={"org": self.org.username, "repo": self.repo.name},
+        )
+        assert data["owner"]["repository"]["flagsMeasurementsActive"] == True
+        assert data["owner"]["repository"]["flagsMeasurementsBackfilled"] == True
