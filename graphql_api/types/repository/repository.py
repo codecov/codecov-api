@@ -1,15 +1,23 @@
-from typing import List
+from typing import List, Mapping
 
 import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
 from asgiref.sync import sync_to_async
+from django.conf import settings
+from django.db.models import Avg, Max, Min
 
 from core.models import Repository
+from graphql_api.actions.flags import flag_measurements, flags_for_repo
 from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.owner import OwnerLoader
-from graphql_api.helpers.connection import queryset_to_connection
+from graphql_api.helpers.connection import (
+    queryset_to_connection,
+    queryset_to_connection_sync,
+)
+from graphql_api.helpers.lookahead import lookahead
 from graphql_api.types.enums import OrderingDirection
 from services.profiling import CriticalFile, ProfilingSummary
+from timeseries.models import Interval, MeasurementName, MeasurementSummary
 
 repository_bindable = ObjectType("Repository")
 
@@ -81,20 +89,20 @@ async def resolve_pulls(
 async def resolve_commits(repository, info, filters=None, **kwargs):
     command = info.context["executor"].get_command("commit")
     queryset = await command.fetch_commits(repository, filters)
-    res = await queryset_to_connection(
+    connection = await queryset_to_connection(
         queryset,
         ordering=("timestamp",),
         ordering_direction=OrderingDirection.DESC,
         **kwargs,
     )
 
-    for edge in res["edges"]:
+    for edge in connection.edges:
         commit = edge["node"]
         # cache all resulting commits in dataloader
         loader = CommitLoader.loader(info, repository.repoid)
         loader.cache(commit)
 
-    return res
+    return connection
 
 
 @repository_bindable.field("branches")
@@ -151,3 +159,44 @@ def resolve_repo_yaml(repository, info):
 @sync_to_async
 def resolve_repo_bot(repository, info):
     return repository.bot
+
+
+@repository_bindable.field("flags")
+@convert_kwargs_to_snake_case
+@sync_to_async
+def resolve_flags(
+    repository: Repository,
+    info,
+    filters: Mapping = None,
+    ordering_direction: OrderingDirection = OrderingDirection.ASC,
+    **kwargs
+):
+    queryset = flags_for_repo(repository, filters)
+    connection = queryset_to_connection_sync(
+        queryset,
+        ordering=("flag_name",),
+        ordering_direction=ordering_direction,
+        **kwargs,
+    )
+
+    # We fetch the measurements in this resolver since there are multiple child
+    # flag resolvers that depend on this data.  Additionally, we're able to fetch
+    # measurements for all the flags being returned at once.
+    # Use the lookahead to make sure we don't overfetch measurements that we don't
+    # need.
+    node = lookahead(info, ("edges", "node", "measurements"))
+    if node:
+        if settings.TIMESERIES_ENABLED:
+            interval = node.args["interval"]
+            if isinstance(interval, str):
+                interval = Interval[interval]
+
+            flag_ids = [edge["node"].pk for edge in connection.edges]
+
+            info.context["flag_measurements"] = flag_measurements(
+                repository, flag_ids, interval, node.args["after"], node.args["before"]
+            )
+        else:
+            info.context["flag_measurements"] = {}
+
+    return connection

@@ -1,10 +1,11 @@
 from datetime import datetime, timedelta
-from unittest.mock import patch
+from unittest.mock import PropertyMock, patch
 
 from django.test import TransactionTestCase, override_settings
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import BranchFactory, CommitFactory, RepositoryFactory
+from services.profiling import CriticalFile
 
 from .helper import GraphQLTestHelper
 
@@ -27,10 +28,13 @@ query_files = """
         branch(name: $branch) {
           head {
             pathContents (path: $path, filters: $filters) {
+              __typename
               name
-              filePath
+              path
               percentCovered
-              type
+              ... on PathContentFile {
+                isCriticalFile
+              }
             }
           }
         }
@@ -67,7 +71,7 @@ class MockReport(object):
         ]
 
 
-class TestCommit(GraphQLTestHelper, TransactionTestCase):
+class TestBranch(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
         self.org = OwnerFactory(username="codecov")
         self.repo = RepositoryFactory(author=self.org, name="gazebo", private=False)
@@ -145,8 +149,11 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         assert res["errors"] is not None
         assert res["errors"][0]["message"] == "No reports found in the head commit"
 
+    @patch(
+        "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
+    )
     @patch("core.models.ReportService.build_report_from_commit")
-    def test_fetch_path_contents_with_files(self, report_mock):
+    def test_fetch_path_contents_with_files(self, report_mock, critical_files):
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
@@ -155,6 +162,8 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             "filters": {},
         }
         report_mock.return_value = MockReport()
+        critical_files.return_value = [CriticalFile("fileA.py")]
+
         data = self.gql_request(query_files, variables=variables)
 
         expected_data = {
@@ -164,22 +173,24 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                         "head": {
                             "pathContents": [
                                 {
+                                    "__typename": "PathContentFile",
                                     "name": "fileA.py",
-                                    "filePath": "fileA.py",
+                                    "path": "fileA.py",
                                     "percentCovered": 83.0,
-                                    "type": "file",
+                                    "isCriticalFile": True,
                                 },
                                 {
+                                    "__typename": "PathContentFile",
                                     "name": "fileB.py",
-                                    "filePath": "fileB.py",
+                                    "path": "fileB.py",
                                     "percentCovered": 83.0,
-                                    "type": "file",
+                                    "isCriticalFile": False,
                                 },
                                 {
+                                    "__typename": "PathContentDir",
                                     "name": "folder",
-                                    "filePath": None,
+                                    "path": None,
                                     "percentCovered": 80.0,
-                                    "type": "dir",
                                 },
                             ]
                         }
@@ -190,8 +201,13 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
 
         assert expected_data == data
 
+    @patch(
+        "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
+    )
     @patch("core.models.ReportService.build_report_from_commit")
-    def test_fetch_path_contents_with_files_and_path_prefix(self, report_mock):
+    def test_fetch_path_contents_with_files_and_path_prefix(
+        self, report_mock, critical_files
+    ):
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
@@ -200,6 +216,8 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             "filters": {},
         }
         report_mock.return_value = MockReport()
+        critical_files.return_value = [CriticalFile("folder/fileB.py")]
+
         data = self.gql_request(query_files, variables=variables)
 
         expected_data = {
@@ -209,16 +227,17 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                         "head": {
                             "pathContents": [
                                 {
+                                    "__typename": "PathContentFile",
                                     "name": "fileB.py",
-                                    "filePath": "folder/fileB.py",
+                                    "path": "folder/fileB.py",
                                     "percentCovered": 83.0,
-                                    "type": "file",
+                                    "isCriticalFile": True,
                                 },
                                 {
+                                    "__typename": "PathContentDir",
                                     "name": "subfolder",
-                                    "filePath": None,
+                                    "path": None,
                                     "percentCovered": 80.0,
-                                    "type": "dir",
                                 },
                             ]
                         }

@@ -17,6 +17,11 @@ executors:
         password: $GCLOUD_SERVICE_KEY
     - image: circleci/postgres:9.6.2
       name: postgres
+    - image: timescale/timescaledb-ha:pg14-latest
+      name: timescale
+      environment:
+        POSTGRES_HOST_AUTH_METHOD: trust
+        POSTGRES_PASSWORD: password
     working_directory: /api
 
 gcloud_auth: &gcloud_auth
@@ -95,11 +100,19 @@ jobs:
           make -f Makefile.circle tag-enterprise
   test:
     executor: codecov-api
+    working_directory: ~/repo
+    environment:
+      SETUP__TIMESERIES__ENABLED: true
     steps:
+    - checkout
     - run:
         name: verify postgres is up
         command: |
           while ! nc -vz postgres 5432; do sleep 1; echo "waiting for postgres"; done
+    - run:
+        name: verify timescale is up
+        command: |
+          while ! nc -vz timescale 5432; do sleep 1; echo "waiting for timescale"; done
     - run:
         name: run tests
         command: |
@@ -110,11 +123,18 @@ jobs:
         command: |
           make check-for-migration-conflicts
     - run:
-        name: codecov
+        name: codecov python uploader
         command: |
           apk add git
-          chmod +x codecov-alpine
-          ./codecov-alpine -R . -F unit
+          codecov --auto-load-params-from circleci do-upload --flag unit-python-uploader
+    - run:
+        name: codecov latest uploader
+        command: |
+          apk add curl
+          apk add git
+          curl -o codecov-latest https://uploader.codecov.io/latest/linux/codecov
+          chmod +x codecov-latest
+          ./codecov-latest -F unit-latest-uploader -Z
     - run:
         name: codecov-staging
         command: |

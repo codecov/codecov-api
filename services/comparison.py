@@ -14,6 +14,7 @@ from shared.utils.merge import LineType, line_type
 
 from compare.models import CommitComparison
 from core.models import Commit
+from services import ServiceException
 from services.archive import ReportService
 from services.redis_configuration import get_redis_connection
 from services.repo_providers import RepoProviderService
@@ -37,8 +38,10 @@ def _is_removed(line_value):
     return line_value and line_value[0] == "-"
 
 
-class ComparisonException(Exception):
-    pass
+class ComparisonException(ServiceException):
+    @property
+    def message(self):
+        return str(self)
 
 
 class MissingComparisonCommit(ComparisonException):
@@ -591,6 +594,11 @@ class Comparison(object):
         self._base_commit = base_commit
         self._head_commit = head_commit
 
+    def validate(self):
+        # make sure head and base reports exist (will throw an error if not)
+        self.head_report
+        self.base_report
+
     @cached_property
     def base_commit(self):
         return self._base_commit
@@ -646,14 +654,14 @@ class Comparison(object):
         try:
             return report_service.build_report_from_commit(self.base_commit)
         except minio.error.NoSuchKey:
-            raise MissingComparisonReport()
+            raise MissingComparisonReport("Missing base report")
 
     @cached_property
     def head_report(self):
         try:
             report = report_service.build_report_from_commit(self.head_commit)
         except minio.error.NoSuchKey:
-            raise MissingComparisonReport()
+            raise MissingComparisonReport("Missing head report")
 
         report.apply_diff(self.git_comparison["diff"])
         return report
@@ -772,7 +780,7 @@ class PullRequestComparison(Comparison):
                 else self.pull.base,
             )
         except Commit.DoesNotExist:
-            raise MissingComparisonCommit()
+            raise MissingComparisonCommit("Missing base commit")
 
     @cached_property
     def head_commit(self):
@@ -781,7 +789,7 @@ class PullRequestComparison(Comparison):
                 repository=self.pull.repository, commitid=self.pull.head
             )
         except Commit.DoesNotExist:
-            raise MissingComparisonCommit()
+            raise MissingComparisonCommit("Missing head commit")
 
     @cached_property
     def _files_with_changes_hash_key(self):
