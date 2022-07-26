@@ -1,4 +1,5 @@
 from asgiref.sync import sync_to_async
+from django.conf import settings
 from django.utils import timezone
 
 from codecov.commands.base import BaseInteractor
@@ -15,6 +16,8 @@ class ActivateFlagsMeasurementsInteractor(BaseInteractor):
             raise Unauthenticated()
         if not repo:
             raise ValidationError("Repo not found")
+        if not settings.TIMESERIES_ENABLED:
+            raise ValidationError("Timeseries storage not enabled")
 
     def backfill(self, repository):
         TaskService().backfill_repo(
