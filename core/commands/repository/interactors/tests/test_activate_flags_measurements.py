@@ -4,7 +4,7 @@ import pytest
 from asgiref.sync import async_to_sync
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
-from django.test import TransactionTestCase
+from django.test import TransactionTestCase, override_settings
 from django.utils import timezone
 from freezegun import freeze_time
 
@@ -42,6 +42,11 @@ class ActivateFlagsMeasurementsInteractorTest(TransactionTestCase):
     def test_repo_not_found(self):
         with pytest.raises(ValidationError):
             self.execute(user=self.user, repo_name="wrong")
+
+    @override_settings(TIMESERIES_ENABLED=False)
+    def test_timeseries_not_enabled(self):
+        with pytest.raises(ValidationError):
+            self.execute(user=self.user)
 
     @patch("services.task.TaskService.backfill_repo")
     def test_creates_dataset(self, backfill_repo):
