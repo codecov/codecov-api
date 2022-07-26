@@ -331,16 +331,14 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             {"errorCode": UploadErrorEnum.FILE_NOT_IN_STORAGE.name},
         ]
 
-    def test_fetch_commit_ci_and_download_url(self):
+    def test_fetch_commit_ci(self):
         session_one = UploadFactory(
             report=self.report,
             provider="circleci",
-            storage_path="sample/storage-path",
             job_code=123,
             build_code=456,
         )
-        print(session_one.__dict__)
-        query = query_commit % "uploads { edges { node { ciUrl downloadUrl } } }"
+        query = query_commit % "uploads { edges { node { ciUrl } } }"
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
@@ -352,7 +350,29 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         assert uploads == [
             {
                 "ciUrl": "https://circleci.com/gh/codecov/gazebo/456#tests/containers/123",
-                "downloadUrl": "/upload/gh/codecov/gazebo/download?path=sample/storage-path",
+            }
+        ]
+
+    @patch("core.commands.upload.upload.UploadCommands.get_upload_presigned_url")
+    def test_fetch_download_url(self, get_upload_presigned_url):
+        get_upload_presigned_url.return_value = "presigned_url_mock"
+
+        upload = UploadFactory(
+            report=self.report,
+            storage_path="v4/raw/2022-06-23/942173DE95CBF167C5683F40B7DB34C0/ee3ecad424e67419d6c4531540f1ef5df045ff12/919ccc6d-7972-4895-b289-f2d569683a17.txt",
+        )
+        query = query_commit % "uploads { edges { node { downloadUrl } } }"
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        uploads = paginate_connection(commit["uploads"])
+        assert uploads == [
+            {
+                "downloadUrl": "presigned_url_mock",
             }
         ]
 

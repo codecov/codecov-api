@@ -1,0 +1,78 @@
+interactions:
+- request:
+    body: null
+    headers:
+      host:
+      - minio:9000
+      x-amz-content-sha256:
+      - e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+      x-amz-date:
+      - 20220622T121514Z
+    method: GET
+    uri: http://minio:9000/archive?location=
+  response:
+    body:
+      string: '<?xml version="1.0" encoding="UTF-8"?>
+
+        <LocationConstraint xmlns="http://s3.amazonaws.com/doc/2006-03-01/"></LocationConstraint>'
+    headers:
+      Accept-Ranges:
+      - bytes
+      Content-Security-Policy:
+      - block-all-mixed-content
+      Content-Type:
+      - application/xml
+      Date:
+      - Wed, 22 Jun 2022 12:15:14 GMT
+      Server:
+      - Minio/RELEASE.2019-04-09T01-22-30Z
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      X-Amz-Request-Id:
+      - 16FAF06173122EC0
+      X-Minio-Deployment-Id:
+      - eac53635-8dc9-48b8-a84e-755e2779a894
+      X-Xss-Protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      host:
+      - minio:9000
+      user-agent:
+      - MinIO (Linux; aarch64) minio-py/6.0.2
+      x-amz-content-sha256:
+      - e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+      x-amz-date:
+      - 20220622T121514Z
+    method: HEAD
+    uri: http://minio:9000/archive/
+  response:
+    body:
+      string: ''
+    headers:
+      Accept-Ranges:
+      - bytes
+      Content-Security-Policy:
+      - block-all-mixed-content
+      Date:
+      - Wed, 22 Jun 2022 12:15:14 GMT
+      Server:
+      - Minio/RELEASE.2019-04-09T01-22-30Z
+      Vary:
+      - Origin
+      X-Amz-Request-Id:
+      - 16FAF06173BDDBF8
+      X-Minio-Deployment-Id:
+      - eac53635-8dc9-48b8-a84e-755e2779a894
+      X-Xss-Protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+version: 1

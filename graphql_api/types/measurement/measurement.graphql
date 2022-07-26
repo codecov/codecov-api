@@ -1,6 +1,6 @@
 type Measurement {
     timestamp: DateTime!
-    avg: Float!
-    min: Float!
-    max: Float!
+    avg: Float
+    min: Float
+    max: Float
 }
