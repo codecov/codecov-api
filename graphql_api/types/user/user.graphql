@@ -5,4 +5,5 @@ type User {
   student: Boolean!
   studentCreatedAt: DateTime,
   studentUpdatedAt: DateTime,
+  cannySSOToken: String
 }

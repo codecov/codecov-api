@@ -311,3 +311,5 @@ CORS_ALLOWED_ORIGINS = []
 GRAPHQL_PLAYGROUND = False
 
 UPLOAD_THROTTLING_ENABLED = True
+
+CANNY_SSO_PRIVATE_TOKEN = get_config("canny", "sso_private_token", default="")
