@@ -1,10 +1,10 @@
+from datetime import datetime, timedelta
 from typing import List, Mapping
 
 import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
 from asgiref.sync import sync_to_async
 from django.conf import settings
-from django.db.models import Avg, Max, Min
 
 from core.models import Repository
 from graphql_api.actions.flags import flag_measurements, flags_for_repo
@@ -225,7 +225,10 @@ def resolve_flags_measurements_backfilled(repository: Repository, info) -> bool:
         repository_id=repository.pk,
     ).first()
 
-    if not dataset:
+    if not dataset or not dataset.created_at:
         return False
 
-    return dataset.backfilled
+    # returns `False` for an hour after creation
+    # TODO: this should eventually read `dataset.backfilled` which will
+    # be updated via the worker
+    return dataset.created_at + timedelta(hours=1) < datetime.now()

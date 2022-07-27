@@ -1,5 +1,6 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
+from typing import Iterable
 
 from celery import Celery, chain, signature
 from shared import celery_config
@@ -119,18 +120,45 @@ class TaskService(object):
         ).apply_async()
 
     def backfill_repo(
-        self, repository: Repository, start_date: datetime, end_date: datetime
+        self,
+        repository: Repository,
+        start_date: datetime,
+        end_date: datetime,
+        dataset_names: Iterable[str] = None,
     ):
-        start_date = start_date.isoformat()
-        end_date = end_date.isoformat()
         log.info(
-            f"Triggering timeseries backfill task for repo: {repository.pk} ({start_date} - {end_date})"
-        )
-        self._create_signature(
-            "app.tasks.timeseries.backfill",
-            kwargs=dict(
+            f"Triggering timeseries backfill tasks for repo",
+            extra=dict(
                 repoid=repository.pk,
-                start_date=start_date,
-                end_date=end_date,
+                start_date=start_date.isoformat(),
+                end_date=end_date.isoformat(),
+                dataset_names=dataset_names,
             ),
-        ).apply_async()
+        )
+
+        # This controls the batch size for the task - we'll backfill
+        # measurements 10 days at a time in this case.  I picked this
+        # somewhat arbitrarily - we might need to tweak to see what's
+        # most appropriate.
+        delta = timedelta(days=10)
+
+        task_end_date = end_date
+        while task_end_date > start_date:
+            task_start_date = task_end_date - delta
+            if task_start_date < start_date:
+                task_start_date = start_date
+
+            kwargs = dict(
+                repoid=repository.pk,
+                start_date=task_start_date.isoformat(),
+                end_date=task_end_date.isoformat(),
+            )
+            if dataset_names is not None:
+                kwargs["dataset_names"] = dataset_names
+
+            self._create_signature(
+                celery_config.timeseries_backfill_task_name,
+                kwargs=kwargs,
+            ).apply_async()
+
+            task_end_date = task_start_date
