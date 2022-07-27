@@ -231,4 +231,4 @@ def resolve_flags_measurements_backfilled(repository: Repository, info) -> bool:
     # returns `False` for an hour after creation
     # TODO: this should eventually read `dataset.backfilled` which will
     # be updated via the worker
-    return dataset.created_at + timedelta(hours=1) < datetime.now()
+    return datetime.now() > dataset.created_at + timedelta(hours=1)
