@@ -1,14 +1,17 @@
 import logging
 import re
 import uuid
+from distutils.log import Log
 from functools import reduce
 from json import dumps
+from typing import Dict
 from urllib.parse import parse_qs, urlencode, urlparse
 
 from django.conf import settings
 from django.contrib.auth import login
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
 from django.utils import timezone
+from shared.encryption.token import encode_token
 from shared.license import LICENSE_ERRORS_MESSAGES, get_current_license
 
 from codecov_auth.helpers import create_signed_value
@@ -279,7 +282,7 @@ class LoginMixin(object):
             fields_to_update.append("username")
             owner.username = login_data["login"]
 
-        owner.oauth_token = encryptor.encode(login_data["access_token"]).decode()
+        owner.oauth_token = encryptor.encode(encode_token(login_data)).decode()
         owner.private_access = user_dict["has_private_access"]
         if user_dict["user"].get("name"):
             owner.name = user_dict["user"]["name"]

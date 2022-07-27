@@ -43,6 +43,7 @@ def test_get_ghe_redirect_with_ghpr_cookie(client, mocker, mock_redis, settings)
     )
     settings.GITHUB_ENTERPRISE_CLIENT_ID = "3d44be0e772666136a13"
     settings.COOKIES_DOMAIN = ".simple.site"
+    settings.COOKIE_SECRET = "secret"
     client.cookies = SimpleCookie({"ghpr": "true"})
     url = reverse("ghe-login")
     res = client.get(url)
@@ -65,6 +66,7 @@ def test_get_github_redirect_with_private_url(client, mocker, mock_redis, settin
     )
     settings.GITHUB_ENTERPRISE_CLIENT_ID = "3d44be0e772666136a13"
     settings.COOKIES_DOMAIN = ".simple.site"
+    settings.COOKIE_SECRET = "secret"
     url = reverse("ghe-login")
     res = client.get(url, {"private": "true"})
     state = _get_state_from_redis(mock_redis)
@@ -86,6 +88,7 @@ def test_get_ghe_already_with_code(client, mocker, db, mock_redis, settings):
     )
     settings.GITHUB_ENTERPRISE_CLIENT_ID = "3d44be0e772666136a13"
     settings.COOKIES_DOMAIN = ".simple.site"
+    settings.COOKIE_SECRET = "secret"
     now = datetime.now()
     now_tz = timezone.now()
 
@@ -220,6 +223,7 @@ def test_get_ghe_already_with_code_github_error(
     )
     settings.GITHUB_ENTERPRISE_CLIENT_ID = "3d44be0e772666136a13"
     settings.COOKIES_DOMAIN = ".simple.site"
+    settings.COOKIE_SECRET = "secret"
 
     async def helper_func(*args, **kwargs):
         raise TorngitClientGeneralError(403, "response", "message")
@@ -257,6 +261,7 @@ def test_get_ghe_already_with_code_with_email(client, mocker, db, mock_redis, se
     )
     settings.GITHUB_ENTERPRISE_CLIENT_ID = "3d44be0e772666136a13"
     settings.COOKIES_DOMAIN = ".simple.site"
+    settings.COOKIE_SECRET = "secret"
 
     async def helper_func(*args, **kwargs):
         return {
@@ -329,6 +334,7 @@ def test_get_ghe_already_owner_already_exist(client, mocker, db, mock_redis, set
     old_ownerid = owner.ownerid
     assert owner.bot is not None
     settings.COOKIES_DOMAIN = ".simple.site"
+    settings.COOKIE_SECRET = "secret"
 
     async def helper_func(*args, **kwargs):
         return {

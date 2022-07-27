@@ -22,6 +22,8 @@ type Repository {
   graphToken: String
   yaml: String
   bot: Owner
+  flagsMeasurementsActive: Boolean!
+  flagsMeasurementsBackfilled: Boolean!
 }
 
 type PullConnection {

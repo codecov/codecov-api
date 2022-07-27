@@ -34,6 +34,7 @@ def test_get_github_redirect(client, mock_redis, settings):
 
 def test_get_github_redirect_with_ghpr_cookie(client, mock_redis, settings):
     settings.COOKIES_DOMAIN = ".simple.site"
+    settings.COOKIE_SECRET = "secret"
     client.cookies = SimpleCookie({"ghpr": "true"})
     url = reverse("github-login")
     res = client.get(url)
@@ -51,6 +52,7 @@ def test_get_github_redirect_with_ghpr_cookie(client, mock_redis, settings):
 
 def test_get_github_redirect_with_private_url(client, mock_redis, settings):
     settings.COOKIES_DOMAIN = ".simple.site"
+    settings.COOKIE_SECRET = "secret"
     url = reverse("github-login")
     res = client.get(url, {"private": "true"})
     state = _get_state_from_redis(mock_redis)
@@ -67,6 +69,7 @@ def test_get_github_redirect_with_private_url(client, mock_redis, settings):
 
 def test_get_github_already_with_code(client, mocker, db, mock_redis, settings):
     settings.COOKIES_DOMAIN = ".simple.site"
+    settings.COOKIE_SECRET = "secret"
     now = datetime.now()
     now_tz = timezone.now()
 
@@ -192,6 +195,7 @@ def test_get_github_already_with_code_github_error(
     client, mocker, db, mock_redis, settings
 ):
     settings.COOKIES_DOMAIN = ".simple.site"
+    settings.COOKIE_SECRET = "secret"
 
     async def helper_func(*args, **kwargs):
         raise TorngitClientGeneralError(403, "response", "message")
@@ -219,6 +223,7 @@ def test_get_github_already_with_code_with_email(
     client, mocker, db, mock_redis, settings
 ):
     settings.COOKIES_DOMAIN = ".simple.site"
+    settings.COOKIE_SECRET = "secret"
 
     async def helper_func(*args, **kwargs):
         return {
@@ -276,6 +281,7 @@ def test_get_github_already_with_code_is_student(
     client, mocker, db, mock_redis, settings
 ):
     settings.COOKIES_DOMAIN = ".simple.site"
+    settings.COOKIE_SECRET = "secret"
 
     async def helper_func(*args, **kwargs):
         return {
@@ -340,6 +346,7 @@ def test_get_github_already_owner_already_exist(
     old_ownerid = owner.ownerid
     assert owner.bot is not None
     settings.COOKIES_DOMAIN = ".simple.site"
+    settings.COOKIE_SECRET = "secret"
 
     async def helper_func(*args, **kwargs):
         return {

@@ -55,6 +55,8 @@ class GitlabLoginView(LoginMixin, StateMixin, View):
         repo_service = self.repo_service_instance
         user_dict = await repo_service.get_authenticated_user(code, redirect_uri)
         user_dict["login"] = user_dict["username"]
+        # Comply to torngit's token encoding
+        user_dict["key"] = user_dict["access_token"]
         user_orgs = await repo_service.list_teams()
         return dict(
             user=user_dict, orgs=user_orgs, is_student=False, has_private_access=True

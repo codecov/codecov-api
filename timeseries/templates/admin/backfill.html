@@ -1,0 +1,28 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<form action="" method="post">
+  {% csrf_token %}
+  <input type="hidden" name="action" value="backfill">
+
+  <table>
+    {{ form }}
+  </table>
+
+  <br>
+
+  <p>Backfill will be performed for the following datasets:</p>
+  <p>
+    <ul>
+      {% for dataset in datasets %}
+        <li>
+          <strong>{{ dataset.name }} (repo={{dataset.repository_id}})</strong>
+          <input type="hidden" name="_selected_action" value="{{ dataset.pk }}" />
+        </li>
+      {% endfor %}
+    </ul>
+  </p>
+
+  <input type="submit" name="backfill" class="default" value="Trigger backfill task">
+</form>
+{% endblock %}

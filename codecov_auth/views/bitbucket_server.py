@@ -41,9 +41,9 @@ class BitbucketServerLoginView(View, LoginMixin):
         # https://developer.atlassian.com/static/rest/bitbucket-server/4.0.1/bitbucket-rest.html#idp2649152
         user = await repo_service.api("GET", "/users/%s" % username)
 
-        stuff_to_save = "%(key)s:%(secret)s" % token
         authenticated_user = {
-            "access_token": stuff_to_save,
+            "key": token["key"],
+            "secret": token["secret"],
             "id": user["id"],
             "login": user["name"],
         }
