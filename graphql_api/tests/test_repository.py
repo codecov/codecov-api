@@ -27,6 +27,22 @@ query Repository($name: String!){
 }
 """
 
+query_repositories = """
+query Repositories($repoNames: [String!]!) {
+    me {
+        owner {
+            repositories(filters: { repoNames: $repoNames }) {
+                edges {
+                    node {
+                        %s
+                    }
+                }
+            }
+        }
+    }
+}
+"""
+
 default_fields = """
     name
     coverage
@@ -55,6 +71,14 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             variables={"name": name},
         )
         return data["me"]["owner"]["repository"]
+
+    def fetch_repositories(self, repo_names, fields=None):
+        data = self.gql_request(
+            query_repositories % (fields or default_fields),
+            user=self.user,
+            variables={"repoNames": repo_names},
+        )
+        return [edge["node"] for edge in data["me"]["owner"]["repositories"]["edges"]]
 
     def setUp(self):
         self.user = OwnerFactory(username="codecov-user")
@@ -132,6 +156,20 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "yaml": "test: test\n",
             "bot": None,
         }
+
+    @freeze_time("2021-01-01")
+    def test_repositories_oldest_commit_at(self):
+        repo = RepositoryFactory(author=self.user)
+
+        CommitFactory(repository=repo, totals={"c": 75})
+        CommitFactory(repository=repo, totals={"c": 85})
+
+        # oldestCommitAt not loaded for multiple repos
+        assert self.fetch_repositories([repo.name], fields="oldestCommitAt") == [
+            {
+                "oldestCommitAt": None,
+            }
+        ]
 
     def test_repository_pulls(self):
         repo = RepositoryFactory(author=self.user, active=True, private=True, name="a")
