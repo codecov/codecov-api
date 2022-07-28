@@ -34,10 +34,24 @@ class UploadViews(ListCreateAPIView):
             reportid=report.external_id,
         )
         instance = serializer.save(storage_path=path, report_id=report.id)
+        self.activate_repo(repository)
         return instance
 
     def list(self, request: HttpRequest, repo: str, commit_sha: str, reportid: str):
         return HttpResponseNotAllowed(permitted_methods=["POST"])
+
+    def activate_repo(self, repository):
+        # Only update the fields if needed
+        if (
+            repository.activated == True
+            and repository.active == True
+            and repository.deleted == False
+        ):
+            return
+        repository.activated = True
+        repository.active = True
+        repository.deleted = False
+        repository.save(update_fields=["activated", "active", "deleted", "updatestamp"])
 
     def get_repo(self) -> Repository:
         # TODO this is not final - how is getting the repo is still in discuss
