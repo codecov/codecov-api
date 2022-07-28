@@ -47,7 +47,7 @@ NON_PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
         "billing_rate": "annual",
         "base_unit_price": 10,
         "benefits": [
-            "Configureable # of users",
+            "Configurable # of users",
             "Unlimited public repositories",
             "Unlimited private repositories",
             "Priority Support",
