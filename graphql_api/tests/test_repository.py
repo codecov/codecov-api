@@ -35,6 +35,7 @@ default_fields = """
     private
     updatedAt
     latestCommitAt
+    oldestCommitAt
     uploadToken
     defaultBranch
     author { username }
@@ -76,6 +77,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "coverage": None,
             "coverageSha": None,
             "latestCommitAt": None,
+            "oldestCommitAt": None,
             "updatedAt": "2021-01-01T00:00:00+00:00",
             "uploadToken": repo.upload_token,
             "defaultBranch": "master",
@@ -116,6 +118,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "name": "b",
             "active": True,
             "latestCommitAt": None,
+            "oldestCommitAt": "2020-12-31T23:00:00",  # hour ago
             "private": True,
             "coverage": 75,
             "coverageSha": coverage_commit.commitid,
