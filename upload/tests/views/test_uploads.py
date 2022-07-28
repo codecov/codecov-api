@@ -5,10 +5,13 @@ from rest_framework.test import APIClient
 
 from core.tests.factories import CommitFactory, RepositoryFactory
 from reports.models import CommitReport
-from upload.views.uploads import UploadViews
+from upload.views.uploads import CanDoCoverageUploadsPermission, UploadViews
 
 
-def test_uploads_get_not_allowed(client):
+def test_uploads_get_not_allowed(client, mocker):
+    mocker.patch.object(
+        CanDoCoverageUploadsPermission, "has_permission", return_value=True
+    )
     url = reverse("new_upload.uploads", args=["the-repo", "commit-sha", "report-id"])
     assert url == "/upload/the-repo/commits/commit-sha/reports/report-id/uploads"
     res = client.get(url)
@@ -80,6 +83,9 @@ def test_get_report_error(db):
 
 
 def test_uploads_post_empty(db, mocker, mock_redis):
+    mocker.patch.object(
+        CanDoCoverageUploadsPermission, "has_permission", return_value=True
+    )
     presigned_put_mock = mocker.patch(
         "services.archive.StorageService.create_presigned_put",
         return_value="presigned put",

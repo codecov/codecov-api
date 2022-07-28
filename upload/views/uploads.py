@@ -14,11 +14,15 @@ from upload.serializers import UploadSerializer
 log = logging.getLogger(__name__)
 
 
+class CanDoCoverageUploadsPermission(BasePermission):
+    def has_permission(self, request, view):
+        return request.auth is not None and "upload" in request.auth.get_scopes()
+
+
 class UploadViews(ListCreateAPIView):
     serializer_class = UploadSerializer
     permission_classes = [
-        # TODO: implement the correct permissions
-        AllowAny,
+        CanDoCoverageUploadsPermission,
     ]
 
     def perform_create(self, serializer):
