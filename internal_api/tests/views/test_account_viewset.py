@@ -445,7 +445,7 @@ class AccountViewSetTests(APITestCase):
             "billing_rate": "monthly",
             "base_unit_price": 12,
             "benefits": [
-                "Configureable # of users",
+                "Configurable # of users",
                 "Unlimited public repositories",
                 "Unlimited private repositories",
                 "Priority Support",
@@ -464,7 +464,7 @@ class AccountViewSetTests(APITestCase):
             "billing_rate": "annual",
             "base_unit_price": 10,
             "benefits": [
-                "Configureable # of users",
+                "Configurable # of users",
                 "Unlimited public repositories",
                 "Unlimited private repositories",
                 "Priority Support",

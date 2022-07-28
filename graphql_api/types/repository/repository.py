@@ -30,6 +30,14 @@ repository_bindable.set_alias("updatedAt", "updatestamp")
 repository_bindable.set_alias("latestCommitAt", "true_latest_commit_at")
 
 
+@repository_bindable.field("oldestCommitAt")
+def resolve_oldest_commit_at(repository: Repository, info):
+    if hasattr(repository, "oldest_commit_at"):
+        return repository.oldest_commit_at
+    else:
+        return None
+
+
 @repository_bindable.field("coverage")
 def resolve_coverage(repository: Repository, info):
     return repository.recent_coverage
