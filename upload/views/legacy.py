@@ -25,9 +25,6 @@ from core.commands.repository import RepositoryCommands
 from services.archive import ArchiveService
 from services.redis_configuration import get_redis_connection
 from services.segment import SegmentService
-from utils.config import get_config
-from utils.services import get_long_service_name
-
 from upload.helpers import (
     check_commit_upload_constraints,
     determine_repo_for_upload,
@@ -41,6 +38,8 @@ from upload.helpers import (
     store_report_in_redis,
     validate_upload,
 )
+from utils.config import get_config
+from utils.services import get_long_service_name
 
 log = logging.getLogger(__name__)
 
