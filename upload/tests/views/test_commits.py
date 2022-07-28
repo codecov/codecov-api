@@ -9,13 +9,6 @@ from core.tests.factories import CommitFactory, RepositoryFactory
 from upload.views.commits import CommitViews
 
 
-def test_commits_get_not_allowed(client):
-    url = reverse("new_upload.commits", args=["the-repo"])
-    assert url == "/upload/the-repo/commits"
-    res = client.get(url)
-    assert res.status_code == 405
-
-
 def test_get_repo(db):
     repository = RepositoryFactory(name="the_repo", author__username="codecov")
     repository.save()
@@ -44,6 +37,33 @@ def test_get_queryset(db):
     assert target_commit_1 in recovered_commits
     assert target_commit_2 in recovered_commits
     assert random_commit not in recovered_commits
+
+
+def test_commits_get(client, db):
+    repo = RepositoryFactory(name="the-repo")
+    commit_1 = CommitFactory(repository=repo)
+    commit_2 = CommitFactory(repository=repo)
+    # Some other commit in the DB that doens't belong to repo
+    # It should not be returned in the response
+    CommitFactory()
+    url = reverse("new_upload.commits", args=[repo.name])
+    assert url == f"/upload/{repo.name}/commits"
+    res = client.get(url)
+    assert res.status_code == 200
+    content = res.json()
+    assert content.get("count") == 2
+    # Test that we get the correct commits back, regardless of order
+    assert content.get("results")[0].get("commitid") in [
+        commit_1.commitid,
+        commit_2.commitid,
+    ]
+    assert content.get("results")[1].get("commitid") in [
+        commit_1.commitid,
+        commit_2.commitid,
+    ]
+    assert content.get("results")[0].get("commitid") != content.get("results")[1].get(
+        "commitid"
+    )
 
 
 def test_commit_post_empty(db, client):

@@ -1,10 +1,11 @@
 import logging
-from django.forms import ValidationError
 
+from django.forms import ValidationError
 from django.http import HttpRequest, HttpResponseNotAllowed, HttpResponseNotFound
-from core.models import Commit, Repository
 from rest_framework.generics import ListCreateAPIView
 from rest_framework.permissions import AllowAny
+
+from core.models import Commit, Repository
 from upload.serializers import CommitSerializer
 
 log = logging.getLogger(__name__)
@@ -25,9 +26,6 @@ class CommitViews(ListCreateAPIView):
     def perform_create(self, serializer):
         repository = self.get_repo()
         return serializer.save(repository=repository)
-
-    def list(self, request: HttpRequest, repo: str):
-        return HttpResponseNotAllowed(permitted_methods=["POST"])
 
     def get_repo(self) -> Repository:
         # TODO this is not final - how is getting the repo is still in discuss
