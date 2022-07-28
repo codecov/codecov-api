@@ -8,8 +8,14 @@ from reports.models import CommitReport
 from upload.views.uploads import UploadViews
 
 
-def test_uploads_get_not_allowed(client):
-    url = reverse("new_upload.uploads", args=["the-repo", "commit-sha", "report-id"])
+def test_uploads_get_not_allowed(client, db):
+    repository = RepositoryFactory(name="the-repo", author__username="codecov")
+    owner = repository.author
+    client = APIClient()
+    client.force_authenticate(user=owner)
+    url = reverse(
+        "new_upload.uploads", args=[repository.name, "commit-sha", "report-id"]
+    )
     assert url == "/upload/the-repo/commits/commit-sha/reports/report-id/uploads"
     res = client.get(url)
     assert res.status_code == 405

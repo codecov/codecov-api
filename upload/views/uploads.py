@@ -10,6 +10,7 @@ from core.models import Commit, Repository
 from reports.models import CommitReport
 from services.archive import ArchiveService, MinioEndpoints
 from upload.serializers import UploadSerializer
+from upload.throttles import UploadsPerCommitThrottle, UploadsPerWindowThrottle
 
 log = logging.getLogger(__name__)
 
@@ -20,6 +21,7 @@ class UploadViews(ListCreateAPIView):
         # TODO: implement the correct permissions
         AllowAny,
     ]
+    throttle_classes = [UploadsPerCommitThrottle, UploadsPerWindowThrottle]
 
     def perform_create(self, serializer):
         repository = self.get_repo()
