@@ -3,7 +3,6 @@ import logging
 from contextlib import suppress
 from datetime import datetime
 from json import dumps
-from urllib.parse import parse_qs
 from uuid import uuid4
 
 import minio
@@ -29,7 +28,7 @@ from services.segment import SegmentService
 from utils.config import get_config
 from utils.services import get_long_service_name
 
-from .helpers import (
+from upload.helpers import (
     check_commit_upload_constraints,
     determine_repo_for_upload,
     determine_upload_branch_to_use,
