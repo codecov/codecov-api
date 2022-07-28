@@ -29,14 +29,44 @@ def test_compute_comparison_task(mocker):
 def test_backfill_repo(mocker):
     signature_mock = mocker.patch("services.task.signature")
     repo = RepositoryFactory()
-    TaskService().backfill_repo(repo, datetime(2020, 1, 1), datetime(2022, 1, 1))
-    signature_mock.assert_called_with(
+    TaskService().backfill_repo(
+        repo,
+        start_date=datetime(2022, 1, 1),
+        end_date=datetime(2022, 1, 25),
+        dataset_names=["testing"],
+    )
+
+    assert signature_mock.call_count == 3
+    signature_mock.assert_any_call(
         "app.tasks.timeseries.backfill",
         args=None,
         kwargs=dict(
             repoid=repo.pk,
-            start_date="2020-01-01T00:00:00",
-            end_date="2022-01-01T00:00:00",
+            start_date="2022-01-15T00:00:00",
+            end_date="2022-01-25T00:00:00",
+            dataset_names=["testing"],
+        ),
+        app=celery_app,
+    )
+    signature_mock.assert_any_call(
+        "app.tasks.timeseries.backfill",
+        args=None,
+        kwargs=dict(
+            repoid=repo.pk,
+            start_date="2022-01-05T00:00:00",
+            end_date="2022-01-15T00:00:00",
+            dataset_names=["testing"],
+        ),
+        app=celery_app,
+    )
+    signature_mock.assert_any_call(
+        "app.tasks.timeseries.backfill",
+        args=None,
+        kwargs=dict(
+            repoid=repo.pk,
+            start_date="2022-01-01T00:00:00",
+            end_date="2022-01-05T00:00:00",
+            dataset_names=["testing"],
         ),
         app=celery_app,
     )
