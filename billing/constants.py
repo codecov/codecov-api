@@ -35,7 +35,7 @@ NON_PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
         "billing_rate": "monthly",
         "base_unit_price": 12,
         "benefits": [
-            "Configureable # of users",
+            "Configurable # of users",
             "Unlimited public repositories",
             "Unlimited private repositories",
             "Priority Support",
@@ -63,7 +63,7 @@ PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
         "billing_rate": "monthly",
         "base_unit_price": 12,
         "benefits": [
-            "Configureable # of users",
+            "Configurable # of users",
             "Unlimited public repositories",
             "Unlimited private repositories",
             "Priority Support",
@@ -75,7 +75,7 @@ PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
         "billing_rate": "annual",
         "base_unit_price": 10,
         "benefits": [
-            "Configureable # of users",
+            "Configurable # of users",
             "Unlimited public repositories",
             "Unlimited private repositories",
             "Priority Support",
@@ -91,7 +91,7 @@ ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS = {
         "billing_rate": "monthly",
         "base_unit_price": 12,  # Update me
         "benefits": [
-            "Configureable # of users",
+            "Configurable # of users",
             "Unlimited public repositories",
             "Unlimited private repositories",
             "Priority Support",
@@ -103,7 +103,7 @@ ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS = {
         "billing_rate": "annual",
         "base_unit_price": 10,  # Update me
         "benefits": [
-            "Configureable # of users",
+            "Configurable # of users",
             "Unlimited public repositories",
             "Unlimited private repositories",
             "Priority Support",
@@ -118,7 +118,7 @@ GHM_PLAN_REPRESENTATION = {
         "billing_rate": None,
         "base_unit_price": 12,
         "benefits": [
-            "Configureable # of users",
+            "Configurable # of users",
             "Unlimited public repositories",
             "Unlimited private repositories",
         ],
