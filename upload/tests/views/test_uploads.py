@@ -84,6 +84,9 @@ def test_uploads_post_empty(db, mocker, mock_redis):
         "services.archive.StorageService.create_presigned_put",
         return_value="presigned put",
     )
+    upload_task_mock = mocker.patch(
+        "upload.views.uploads.UploadViews.trigger_upload_task", return_value=True
+    )
     repository = RepositoryFactory(name="the_repo", author__username="codecov")
     commit = CommitFactory(repository=repository)
     commit_report = CommitReport.objects.create(commit=commit)
@@ -111,3 +114,4 @@ def test_uploads_post_empty(db, mocker, mock_redis):
         )
     )
     presigned_put_mock.assert_called()
+    upload_task_mock.assert_called()
