@@ -15,7 +15,7 @@ urlpatterns = [
     ),
     # Empty routes that will become the new upload endpoint eventually
     path(
-        "<str:repo>/commits/<str:commitid>/reports/<str:reportid>/mutation_uploads",
+        "<str:repo>/commits/<str:commit_sha>/reports/<str:reportid>/mutation_uploads",
         MutationTestUploadView.as_view(),
         name="new_upload.mutation_uploads",
     ),
