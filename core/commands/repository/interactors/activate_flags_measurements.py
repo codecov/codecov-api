@@ -29,9 +29,7 @@ class ActivateFlagsMeasurementsInteractor(BaseInteractor):
         )
 
         newest_commit = (
-            Commit.objects.filter(
-                repository_id=repository.pk,
-            )
+            Commit.objects.filter(repository_id=repository.pk)
             .order_by("-timestamp")
             .first()
         )
@@ -47,6 +45,7 @@ class ActivateFlagsMeasurementsInteractor(BaseInteractor):
                 repository,
                 start_date=start_date,
                 end_date=end_date,
+                dataset_names=[MeasurementName.FLAG_COVERAGE.value],
             )
 
     @sync_to_async

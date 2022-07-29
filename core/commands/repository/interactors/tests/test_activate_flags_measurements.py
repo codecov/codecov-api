@@ -12,7 +12,7 @@ from freezegun import freeze_time
 from codecov.commands.exceptions import Unauthenticated, ValidationError
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
-from timeseries.models import Dataset, MeasurementName
+from timeseries.models import Dataset, Measurement, MeasurementName
 
 from ..activate_flags_measurements import ActivateFlagsMeasurementsInteractor
 
@@ -73,6 +73,7 @@ class ActivateFlagsMeasurementsInteractorTest(TransactionTestCase):
             self.repo,
             start_date=timezone.datetime(2000, 1, 1),
             end_date=timezone.datetime(2022, 1, 1),
+            dataset_names=[MeasurementName.FLAG_COVERAGE.value],
         )
 
     @patch("services.task.TaskService.backfill_repo")
