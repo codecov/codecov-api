@@ -1,3 +1,4 @@
+from datetime import datetime
 from unittest.mock import patch
 
 import pytest
@@ -10,7 +11,7 @@ from freezegun import freeze_time
 
 from codecov.commands.exceptions import Unauthenticated, ValidationError
 from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import RepositoryFactory
+from core.tests.factories import CommitFactory, RepositoryFactory
 from timeseries.models import Dataset, MeasurementName
 
 from ..activate_flags_measurements import ActivateFlagsMeasurementsInteractor
@@ -65,9 +66,16 @@ class ActivateFlagsMeasurementsInteractorTest(TransactionTestCase):
     @patch("services.task.TaskService.backfill_repo")
     @freeze_time("2022-01-01T00:00:00")
     def test_triggers_task(self, backfill_repo):
+        CommitFactory(repository=self.repo, timestamp=datetime(2000, 1, 1, 1, 1, 1))
+        CommitFactory(repository=self.repo, timestamp=datetime(2021, 12, 31, 1, 1, 1))
         self.execute(user=self.user)
         backfill_repo.assert_called_once_with(
             self.repo,
             start_date=timezone.datetime(2000, 1, 1),
-            end_date=timezone.datetime(2022, 1, 1, tzinfo=timezone.utc),
+            end_date=timezone.datetime(2022, 1, 1),
         )
+
+    @patch("services.task.TaskService.backfill_repo")
+    def test_no_commits(self, backfill_repo):
+        self.execute(user=self.user)
+        assert backfill_repo.call_count == 0
