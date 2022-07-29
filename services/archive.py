@@ -24,6 +24,9 @@ class MinioEndpoints(Enum):
     profiling_upload = (
         "{version}/repos/{repo_hash}/profilinguploads/{profiling_version}/{location}"
     )
+    mutation_testing_upload = (
+        "{version}/raw/mutation/{date}/{repo_hash}/{commit_sha}/{reportid}.txt"
+    )
 
     def get_path(self, **kwaargs):
         return self.value.format(**kwaargs)
