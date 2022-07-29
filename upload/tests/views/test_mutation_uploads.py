@@ -43,7 +43,6 @@ def test_mutation_upload(db, mocker):
                 "storage_path",
                 "created_at",
                 "external_id",
-                "report",
                 "raw_upload_location",
             ],
         )
