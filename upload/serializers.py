@@ -1,7 +1,5 @@
 from rest_framework import serializers
 
-from codecov_auth.models import Owner
-from core.models import Commit
 from reports.models import ReportSession
 from services.archive import ArchiveService
 
@@ -18,7 +16,6 @@ class UploadSerializer(serializers.ModelSerializer):
             "env",
             "name",
             "provider",
-            "report",
             "storage_path",
             "raw_upload_location",
         )
@@ -28,7 +25,6 @@ class UploadSerializer(serializers.ModelSerializer):
             "created_at",
             "external_id",
             "storage_path",
-            "report",
             "raw_upload_location",
         )
         model = ReportSession
