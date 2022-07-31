@@ -69,11 +69,13 @@ class DatasetAdminTest(TestCase):
             self.repo1,
             start_date=timezone.datetime(2000, 1, 1, tzinfo=timezone.utc),
             end_date=timezone.datetime(2022, 1, 1, tzinfo=timezone.utc),
+            dataset_names=[self.dataset1.name],
         )
         backfill_repo.assert_any_call(
             self.repo2,
             start_date=timezone.datetime(2000, 1, 1, tzinfo=timezone.utc),
             end_date=timezone.datetime(2022, 1, 1, tzinfo=timezone.utc),
+            dataset_names=[self.dataset2.name],
         )
 
         self.dataset1.refresh_from_db()
