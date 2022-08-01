@@ -1,7 +1,10 @@
+from datetime import datetime
 from enum import Enum
 
 import django.db.models as models
 from django.db import connections
+
+from core.models import DateTimeWithoutTZField
 
 
 class Interval(Enum):
@@ -167,6 +170,8 @@ class MeasurementSummary30Day(MeasurementSummary):
 
 
 class Dataset(models.Model):
+    id = models.AutoField(primary_key=True)
+
     # this will likely correspond to a measurement name above
     name = models.TextField(null=False, blank=False)
 
@@ -176,6 +181,9 @@ class Dataset(models.Model):
 
     # indicates whether the backfill task has completed for this dataset
     backfilled = models.BooleanField(null=False, default=False)
+
+    created_at = DateTimeWithoutTZField(default=datetime.now)
+    updated_at = DateTimeWithoutTZField(default=datetime.now)
 
     class Meta:
         indexes = [
