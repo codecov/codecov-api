@@ -67,3 +67,12 @@ class UploadErrorEnum(enum.Enum):
     FILE_NOT_IN_STORAGE = "file_not_in_storage"
     REPORT_EXPIRED = "report_expired"
     REPORT_EMPTY = "report_empty"
+
+
+class LoginProvider(enum.Enum):
+    GITHUB = "github"
+    GITHUB_ENTERPRISE = "github_enterprise"
+    GITLAB = "gitlab"
+    GITLAB_ENTERPRISE = "gitlab_enterprise"
+    BITBUCKET = "bitbucket"
+    BITBUCKET_SERVER = "bitbucket_server"

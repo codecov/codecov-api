@@ -5,6 +5,7 @@ type Repository {
   private: Boolean!
   coverage: Float
   coverageSha: String
+  oldestCommitAt: DateTime
   latestCommitAt: DateTime
   updatedAt: DateTime
   author: Owner!
@@ -22,6 +23,8 @@ type Repository {
   graphToken: String
   yaml: String
   bot: Owner
+  flagsMeasurementsActive: Boolean!
+  flagsMeasurementsBackfilled: Boolean!
 }
 
 type PullConnection {

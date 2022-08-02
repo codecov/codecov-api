@@ -3,6 +3,7 @@ scalar DateTime
 type Query {
   me: Me
   owner(username: String!): Owner
+  loginProviders: [LoginProvider!]!
 }
 
 type PageInfo {

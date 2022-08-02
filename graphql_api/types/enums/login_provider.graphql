@@ -1,0 +1,8 @@
+enum LoginProvider {
+    GITHUB
+    GITHUB_ENTERPRISE
+    GITLAB
+    GITLAB_ENTERPRISE
+    BITBUCKET
+    BITBUCKET_SERVER
+}
