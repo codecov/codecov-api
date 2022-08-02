@@ -28,6 +28,8 @@ def test_compute_comparison_task(mocker):
 @pytest.mark.django_db
 def test_backfill_repo(mocker):
     signature_mock = mocker.patch("services.task.signature")
+    apply_async_mock = mocker.patch("celery.group.apply_async")
+
     repo = RepositoryFactory()
     TaskService().backfill_repo(
         repo,
@@ -70,3 +72,5 @@ def test_backfill_repo(mocker):
         ),
         app=celery_app,
     )
+
+    apply_async_mock.assert_called_once_with()
