@@ -1,4 +1,4 @@
-from django.db.models import Exists, F, Func, OuterRef, Q, QuerySet, Subquery
+from django.db.models import Exists, F, Func, Manager, OuterRef, Q, QuerySet, Subquery
 
 from core.models import Pull
 
@@ -57,3 +57,20 @@ class OwnerQuerySet(QuerySet):
                 )
             )
         )
+
+
+# We cannot use `QuerySet.as_manager()` since it relies on the `inspect` module and will
+# not play nicely with Cython (which we use for self-hosted):
+# https://cython.readthedocs.io/en/latest/src/userguide/limitations.html#inspect-support
+class OwnerManager(Manager):
+    def get_queryset(self):
+        return OwnerQuerySet(self.model, using=self._db)
+
+    def users_of(self, *args, **kwargs):
+        return self.get_queryset().users_of(*args, **kwargs)
+
+    def annotate_activated_in(self, *args, **kwargs):
+        return self.get_queryset().annotate_activated_in(*args, **kwargs)
+
+    def annotate_is_admin_in(self, *args, **kwargs):
+        return self.get_queryset().annotate_is_admin_in(*args, **kwargs)
