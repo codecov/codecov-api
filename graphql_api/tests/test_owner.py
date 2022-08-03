@@ -1,5 +1,5 @@
 import asyncio
-import datetime
+from hashlib import sha1
 from unittest.mock import patch
 
 from ariadne import graphql_sync
@@ -15,7 +15,7 @@ from .helper import GraphQLTestHelper, paginate_connection
 
 query_repositories = """{
     owner(username: "%s") {
-        ownerid
+        pendoOwnerid
         isCurrentUserPartOfOrg
         yaml
         repositories%s {
@@ -49,9 +49,11 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
     def test_fetching_repositories(self):
         query = query_repositories % (self.user.username, "", "")
         data = self.gql_request(query, user=self.user)
+        hash_ownerid = sha1(str(self.user.ownerid).encode())
+        pendoOwnerid = hash_ownerid.hexdigest()
         assert data == {
             "owner": {
-                "ownerid": self.user.ownerid,
+                "pendoOwnerid": pendoOwnerid,
                 "isCurrentUserPartOfOrg": True,
                 "yaml": None,
                 "repositories": {
@@ -258,7 +260,9 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, user=user)
         assert data["owner"]["isAdmin"] is True
 
-    def test_ownerid(self):
+    def test_pendoOwnerid(self):
         query = query_repositories % (self.user.username, "", "")
         data = self.gql_request(query, user=self.user)
-        assert data["owner"]["ownerid"] == self.user.ownerid
+        hash_ownerid = sha1(str(self.user.ownerid).encode())
+        pendoOwnerid = hash_ownerid.hexdigest()
+        assert data["owner"]["pendoOwnerid"] == pendoOwnerid

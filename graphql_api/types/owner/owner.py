@@ -1,6 +1,7 @@
 from typing import Iterable
 
 import yaml
+from hashlib import sha1
 from ariadne import ObjectType, convert_kwargs_to_snake_case
 from django.conf import settings
 
@@ -88,3 +89,8 @@ def resolve_is_current_user_an_admin(owner, info):
     current_user = info.context["request"].user
     command = info.context["executor"].get_command("owner")
     return command.get_is_current_user_an_admin(owner, current_user)
+
+@owner_bindable.field("pendoOwnerid")
+def resolve_pendo_ownerid(owner, info):
+    hash_ownerid= sha1(str(owner.ownerid).encode())
+    return hash_ownerid.hexdigest()
