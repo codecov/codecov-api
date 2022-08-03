@@ -403,7 +403,12 @@ class LoginMixinTests(TestCase):
         # User doesn't exist, and existing users will raise error
         with pytest.raises(PermissionDenied) as exp:
             OwnerFactory(ownerid=1, service="github", plan_activated_users=[1, 2, 3])
-            OwnerFactory(ownerid=2, service="github", service_id="batata_frita")
+            OwnerFactory(
+                ownerid=2,
+                service="github",
+                service_id="batata_frita",
+                plan_activated_users=[],
+            )
             OwnerFactory(ownerid=3, service="github", plan_activated_users=None)
             assert (
                 Owner.objects.exclude(plan_activated_users__len=0)

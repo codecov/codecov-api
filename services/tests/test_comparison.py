@@ -706,7 +706,7 @@ class ComparisonTests(TestCase):
         head_report_mock,
         git_comparison_mock,
     ):
-        from internal_api.tests.views.test_compare_viewset import (
+        from api.internal.tests.views.test_compare_viewset import (
             MockedComparisonAdapter,
         )
 
@@ -733,7 +733,7 @@ class ComparisonTests(TestCase):
         head_report_mock,
         git_comparison_mock,
     ):
-        from internal_api.tests.views.test_compare_viewset import (
+        from api.internal.tests.views.test_compare_viewset import (
             MockedComparisonAdapter,
         )
 
