@@ -5,6 +5,7 @@ from rest_framework.test import APIClient
 
 from core.tests.factories import CommitFactory, RepositoryFactory
 from reports.models import CommitReport
+from reports.tests.factories import UploadFactory
 from upload.views.uploads import UploadViews
 
 
@@ -115,3 +116,15 @@ def test_uploads_post_empty(db, mocker, mock_redis):
     )
     presigned_put_mock.assert_called()
     upload_task_mock.assert_called()
+
+
+def test_trigger_upload_task(db, mocker):
+    upload_views = UploadViews()
+    repo = RepositoryFactory.create()
+    upload = UploadFactory.create()
+    commitid = "commit id"
+    mocked_redis = mocker.patch("upload.views.uploads.get_redis_connection")
+    mocked_dispatched_task = mocker.patch("upload.views.uploads.dispatch_upload_task")
+    upload_views.trigger_upload_task(repo, commitid, upload)
+    mocked_redis.assert_called()
+    mocked_dispatched_task.assert_called()
