@@ -15,6 +15,7 @@ from .helper import GraphQLTestHelper, paginate_connection
 
 query_repositories = """{
     owner(username: "%s") {
+        ownerid
         isCurrentUserPartOfOrg
         yaml
         repositories%s {
@@ -50,6 +51,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, user=self.user)
         assert data == {
             "owner": {
+                "ownerid": self.user.ownerid,
                 "isCurrentUserPartOfOrg": True,
                 "yaml": None,
                 "repositories": {
@@ -255,3 +257,8 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         query = query_current_user_is_admin % (owner.username)
         data = self.gql_request(query, user=user)
         assert data["owner"]["isAdmin"] is True
+
+    def test_ownerid(self):
+        query = query_repositories % (self.user.username, "", "")
+        data = self.gql_request(query, user=self.user)
+        assert data["owner"]["ownerid"] == self.user.ownerid

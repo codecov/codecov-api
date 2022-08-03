@@ -8,4 +8,5 @@ type Owner {
   numberOfUploads: Int
   isAdmin: Boolean!
   measurements(name: String!, interval: MeasurementInterval!, filters: [MeasurementSetFilters!]!): [[Measurement!]!]!
+  ownerid: Int!
 }
