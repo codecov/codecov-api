@@ -36,12 +36,12 @@ class CommitSerializer(serializers.ModelSerializer):
             "ci_passed",
             "state",
             "timestamp",
+            "repository",
+            "author",
         )
         fields = read_only_fields + (
             "commitid",
             "parent_commit_id",
             "pullid",
             "branch",
-            "repository",
-            "author",
         )
