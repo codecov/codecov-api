@@ -103,4 +103,3 @@ def test_commit_post_empty(db, client):
     }
     assert response_json["author"] is None  # This is filled by the worker
     assert response_json["commitid"] == "commit_sha"
-    
