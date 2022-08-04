@@ -472,13 +472,17 @@ def _generate_key():
 
 
 class RepositoryToken(BaseCodecovModel):
+    class TokenType(models.TextChoices):
+        UPLOAD = "UPLOAD"
+        PROFILING = "PROFILING"
+
     repository = models.ForeignKey(
         "core.Repository",
         db_column="repoid",
         on_delete=models.CASCADE,
         related_name="tokens",
     )
-    token_type = models.CharField(max_length=50)
+    token_type = models.CharField(max_length=50, choices=TokenType.choices)
     valid_until = models.DateTimeField(blank=True, null=True)
     key = models.CharField(
         max_length=40, unique=True, editable=False, default=_generate_key
