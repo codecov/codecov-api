@@ -15,7 +15,7 @@ from .helper import GraphQLTestHelper, paginate_connection
 
 query_repositories = """{
     owner(username: "%s") {
-        pendoOwnerid
+        hashOwnerid
         isCurrentUserPartOfOrg
         yaml
         repositories%s {
@@ -50,10 +50,10 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         query = query_repositories % (self.user.username, "", "")
         data = self.gql_request(query, user=self.user)
         hash_ownerid = sha1(str(self.user.ownerid).encode())
-        pendoOwnerid = hash_ownerid.hexdigest()
+        hashOwnerid = hash_ownerid.hexdigest()
         assert data == {
             "owner": {
-                "pendoOwnerid": pendoOwnerid,
+                "hashOwnerid": hashOwnerid,
                 "isCurrentUserPartOfOrg": True,
                 "yaml": None,
                 "repositories": {
@@ -260,9 +260,9 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, user=user)
         assert data["owner"]["isAdmin"] is True
 
-    def test_pendoOwnerid(self):
+    def test_hashOwnerid(self):
         query = query_repositories % (self.user.username, "", "")
         data = self.gql_request(query, user=self.user)
         hash_ownerid = sha1(str(self.user.ownerid).encode())
-        pendoOwnerid = hash_ownerid.hexdigest()
-        assert data["owner"]["pendoOwnerid"] == pendoOwnerid
+        hashOwnerid = hash_ownerid.hexdigest()
+        assert data["owner"]["hashOwnerid"] == hashOwnerid
