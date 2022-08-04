@@ -1,5 +1,9 @@
 from ariadne import MutationType
 
+from .activate_flags_measurements import (
+    error_activate_flags_measurements,
+    resolve_activate_flags_measurements,
+)
 from .create_api_token import error_create_api_token, resolve_create_api_token
 from .delete_session import error_delete_session, resolve_delete_session
 from .onboard_user import error_onboard_user, resolve_onboard_user
@@ -24,6 +28,9 @@ mutation_bindable.field("deleteSession")(resolve_delete_session)
 mutation_bindable.field("updateProfile")(resolve_update_profile)
 mutation_bindable.field("onboardUser")(resolve_onboard_user)
 mutation_bindable.field("regenerateProfilingToken")(resolve_regenerate_profling_token)
+mutation_bindable.field("activateFlagsMeasurements")(
+    resolve_activate_flags_measurements
+)
 
 mutation_resolvers = [
     mutation_bindable,
@@ -34,4 +41,5 @@ mutation_resolvers = [
     error_update_profile,
     error_onboard_user,
     error_generate_profiling_token,
+    error_activate_flags_measurements,
 ]

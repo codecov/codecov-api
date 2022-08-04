@@ -14,7 +14,7 @@ from timeseries.helpers import (
     save_commit_measurements,
     save_repo_measurements,
 )
-from timeseries.models import Measurement, MeasurementName
+from timeseries.models import Dataset, Measurement, MeasurementName
 from timeseries.tests.factories import MeasurementFactory
 
 
@@ -257,8 +257,11 @@ class SaveCommitMeasurementsTest(TestCase):
         assert measurement.value == 100.0
 
 
+@pytest.mark.skipif(
+    not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
+)
 class SaveRepoMeasurementsTest(TestCase):
-    databases = {"default"}
+    databases = {"default", "timeseries"}
 
     def setUp(self):
         self.repo = RepositoryFactory()
@@ -286,6 +289,16 @@ class SaveRepoMeasurementsTest(TestCase):
         assert save_commit_measurements.call_count == 2
         save_commit_measurements.assert_any_call(self.commit2)
         save_commit_measurements.assert_any_call(self.commit3)
+
+        coverage_dataset = Dataset.objects.get(
+            name=MeasurementName.COVERAGE.value, repository_id=self.repo.pk
+        )
+        assert coverage_dataset.backfilled
+
+        flag_coverage_dataset = Dataset.objects.get(
+            name=MeasurementName.FLAG_COVERAGE.value, repository_id=self.repo.pk
+        )
+        assert flag_coverage_dataset.backfilled
 
 
 @pytest.mark.skipif(

@@ -1,7 +1,11 @@
 import logging
+from datetime import datetime, timedelta
+from typing import Iterable
 
-from celery import Celery, chain, signature
+from celery import Celery, chain, group, signature
 from shared import celery_config
+
+from core.models import Repository
 
 celery_app = Celery("tasks")
 celery_app.config_from_object("shared.celery_config:BaseCeleryConfig")
@@ -114,3 +118,53 @@ class TaskService(object):
         self._create_signature(
             "app.tasks.delete_owner.DeleteOwner", kwargs=dict(ownerid=ownerid)
         ).apply_async()
+
+    def backfill_repo(
+        self,
+        repository: Repository,
+        start_date: datetime,
+        end_date: datetime,
+        dataset_names: Iterable[str] = None,
+    ):
+        log.info(
+            f"Triggering timeseries backfill tasks for repo",
+            extra=dict(
+                repoid=repository.pk,
+                start_date=start_date.isoformat(),
+                end_date=end_date.isoformat(),
+                dataset_names=dataset_names,
+            ),
+        )
+
+        # This controls the batch size for the task - we'll backfill
+        # measurements 10 days at a time in this case.  I picked this
+        # somewhat arbitrarily - we might need to tweak to see what's
+        # most appropriate.
+        delta = timedelta(days=10)
+
+        signatures = []
+
+        task_end_date = end_date
+        while task_end_date > start_date:
+            task_start_date = task_end_date - delta
+            if task_start_date < start_date:
+                task_start_date = start_date
+
+            kwargs = dict(
+                repoid=repository.pk,
+                start_date=task_start_date.isoformat(),
+                end_date=task_end_date.isoformat(),
+            )
+            if dataset_names is not None:
+                kwargs["dataset_names"] = dataset_names
+
+            signatures.append(
+                self._create_signature(
+                    celery_config.timeseries_backfill_task_name,
+                    kwargs=kwargs,
+                )
+            )
+
+            task_end_date = task_start_date
+
+        group(signatures).apply_async()

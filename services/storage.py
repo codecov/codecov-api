@@ -175,3 +175,7 @@ class StorageService(object):
     def create_presigned_put(self, bucket, path, expires):
         expires = timedelta(seconds=expires)
         return MINIO_CLIENT.presigned_put_object(bucket, path, expires)
+
+    def create_presigned_get(self, bucket, path, expires):
+        expires = timedelta(seconds=expires)
+        return MINIO_CLIENT.presigned_get_object(bucket, path, expires)

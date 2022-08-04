@@ -6,6 +6,7 @@ from .enums import (
     ComparisonError,
     CoverageLine,
     GoalOnboarding,
+    LoginProvider,
     OrderingDirection,
     OrderingParameter,
     PullRequestState,
@@ -29,4 +30,5 @@ enum_types = [
     EnumType("UploadType", UploadType),
     EnumType("UploadErrorEnum", UploadErrorEnum),
     EnumType("MeasurementInterval", MeasurementInterval),
+    EnumType("LoginProvider", LoginProvider),
 ]
