@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 
 from django.conf import settings
 from rest_framework import serializers
@@ -256,6 +257,7 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     activated = serializers.BooleanField()
     is_admin = serializers.BooleanField()
+    last_pull_timestamp = serializers.SerializerMethodField()
 
     class Meta:
         model = Owner
@@ -267,6 +269,7 @@ class UserSerializer(serializers.ModelSerializer):
             "ownerid",
             "student",
             "name",
+            "last_pull_timestamp",
         )
 
     def update(self, instance, validated_data):
@@ -302,3 +305,8 @@ class UserSerializer(serializers.ModelSerializer):
 
         # Re-fetch from DB to set activated and admin fields
         return self.context["view"].get_object()
+
+    def get_last_pull_timestamp(self, obj):
+        # this field comes from an annotation that may not always be applied to the queryset
+        if hasattr(obj, "last_pull_timestamp"):
+            return obj.last_pull_timestamp
