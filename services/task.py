@@ -54,11 +54,11 @@ class TaskService(object):
             kwargs=dict(repoid=repoid, commitid=commitid, debug=debug, rebuild=rebuild),
         ).apply_async(countdown=countdown)
 
-    def mutation_test_upload(self, repoid, commitid, upload_path, debug=False):
+    def mutation_test_upload(self, repoid, commit_sha, upload_path, debug=False):
         self._create_signature(
             "app.tasks.mutation_test.upload",
             kwargs=dict(
-                repoid=repoid, commitid=commitid, upload_path=upload_path, debug=debug
+                repoid=repoid, commitid=commit_sha, upload_path=upload_path, debug=debug
             ),
         ).apply_async()
 

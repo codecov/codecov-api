@@ -1,10 +1,9 @@
 from datetime import datetime
 
 import pytest
-from celery import Task
 from shared import celery_config
 
-from core.tests.factories import RepositoryFactory
+from core.tests.factories import CommitFactory, RepositoryFactory
 from services.task import TaskService, celery_app
 
 
@@ -37,6 +36,26 @@ def test_backfill_repo(mocker):
             repoid=repo.pk,
             start_date="2020-01-01T00:00:00",
             end_date="2022-01-01T00:00:00",
+        ),
+        app=celery_app,
+    )
+
+
+@pytest.mark.django_db
+def test_mutation_upload(mocker):
+    signature_mock = mocker.patch("services.task.signature")
+    repo = RepositoryFactory()
+    commit = CommitFactory(repository=repo)
+    upload_path = "some_upload_path"
+    TaskService().mutation_test_upload(repo.repoid, commit.commitid, upload_path)
+    signature_mock.assert_called_with(
+        "app.tasks.mutation_test.upload",
+        args=None,
+        kwargs=dict(
+            repoid=repo.repoid,
+            commitid=commit.commitid,
+            upload_path=upload_path,
+            debug=False,
         ),
         app=celery_app,
     )
