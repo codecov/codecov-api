@@ -1,8 +1,7 @@
 from django.conf import settings
 
+from billing import constants
 from codecov_auth.models import Owner
-
-from . import constants
 
 
 def on_enterprise_plan(owner: Owner) -> bool:
