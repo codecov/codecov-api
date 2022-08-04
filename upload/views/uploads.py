@@ -5,6 +5,7 @@ from django.http import HttpRequest, HttpResponseNotAllowed, HttpResponseNotFoun
 from django.utils import timezone
 from rest_framework.generics import ListCreateAPIView
 from rest_framework.permissions import AllowAny, BasePermission
+from shared.metrics import metrics
 
 from core.models import Commit, Repository
 from reports.models import CommitReport
@@ -34,6 +35,7 @@ class UploadViews(ListCreateAPIView):
             reportid=report.external_id,
         )
         instance = serializer.save(storage_path=path, report_id=report.id)
+        metrics.incr("uploads.accepted", 1)
         return instance
 
     def list(self, request: HttpRequest, repo: str, commit_sha: str, reportid: str):
@@ -46,6 +48,7 @@ class UploadViews(ListCreateAPIView):
             repository = Repository.objects.get(name=repoid)
             return repository
         except Repository.DoesNotExist:
+            metrics.incr("uploads.rejected", 1)
             raise ValidationError(f"Repository {repoid} not found")
 
     def get_commit(self) -> Commit:
@@ -57,6 +60,7 @@ class UploadViews(ListCreateAPIView):
             )
             return commit
         except Commit.DoesNotExist:
+            metrics.incr("uploads.rejected", 1)
             raise ValidationError(f"Commit {commit_sha} not found")
 
     def get_report(self) -> CommitReport:
@@ -68,4 +72,5 @@ class UploadViews(ListCreateAPIView):
             )
             return report
         except CommitReport.DoesNotExist:
+            metrics.incr("uploads.rejected", 1)
             raise ValidationError(f"Report {report_id} not found")
