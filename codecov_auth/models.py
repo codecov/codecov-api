@@ -473,8 +473,8 @@ def _generate_key():
 
 class RepositoryToken(BaseCodecovModel):
     class TokenType(models.TextChoices):
-        UPLOAD = "UPLOAD"
-        PROFILING = "PROFILING"
+        UPLOAD = "upload"
+        PROFILING = "profiling"
 
     repository = models.ForeignKey(
         "core.Repository",
