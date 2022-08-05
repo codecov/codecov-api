@@ -96,7 +96,7 @@ def test_commit_post_empty(db, client):
     )
     assert response_json["repository"] == {
         "name": repository.name,
-        "private": repository.private,
+        "is_private": repository.private,
         "active": repository.active,
         "language": repository.language,
         "yaml": repository.yaml,
