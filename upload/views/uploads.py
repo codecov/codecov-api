@@ -42,9 +42,9 @@ class UploadViews(ListCreateAPIView):
     def list(self, request: HttpRequest, repo: str, commit_sha: str, reportid: str):
         return HttpResponseNotAllowed(permitted_methods=["POST"])
 
-    def trigger_upload_task(self, repository, commit_id, upload):
+    def trigger_upload_task(self, repository, commit_sha, upload):
         redis = get_redis_connection()
-        task_arguments = {"commit": commit_id, "upload_pk": upload.id, "version": "v4"}
+        task_arguments = {"commit": commit_sha, "upload_pk": upload.id, "version": "v4"}
         dispatch_upload_task(task_arguments, repository, redis)
 
     def get_repo(self) -> Repository:
