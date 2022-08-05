@@ -1,3 +1,5 @@
+from rest_framework.exceptions import ErrorDetail
+
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
 from upload.serializers import CommitSerializer
@@ -38,7 +40,9 @@ def test_invalid_update_data(transactional_db, mocker):
     new_data = {"pullid": "1"}
     serializer = CommitSerializer(commit, new_data)
     assert not serializer.is_valid()
-    assert serializer.errors["commitid"][0] == "This field is required."
+    assert serializer.errors == {
+        "commitid": [ErrorDetail(string="This field is required.", code="required")]
+    }
 
 
 def test_valid_update_data(transactional_db, mocker):
