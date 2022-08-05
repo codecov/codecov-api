@@ -18,9 +18,11 @@ class OwnerSerializer(serializers.ModelSerializer):
 
 
 class RepositorySerializer(serializers.ModelSerializer):
+    is_private = serializers.BooleanField(source="private")
+
     class Meta:
         model = Repository
-        fields = ("name", "private", "active", "language", "yaml")
+        fields = ("name", "is_private", "active", "language", "yaml")
         read_only_fields = fields
 
 
@@ -35,7 +37,6 @@ class CommitSerializer(serializers.ModelSerializer):
             "timestamp",
             "ci_passed",
             "state",
-            "timestamp",
             "repository",
             "author",
         )
