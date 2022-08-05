@@ -6,23 +6,31 @@ from upload.serializers import CommitSerializer
 def test_contains_expected_fields(transactional_db, mocker):
     commit = CommitFactory.create()
     serializer = CommitSerializer(commit)
-    print(serializer.data)
-    expected_data = set(
-        [
-            "message",
-            "timestamp",
-            "ci_passed",
-            "state",
-            "timestamp",
-            "repository",
-            "author",
-            "commitid",
-            "parent_commit_id",
-            "pullid",
-            "branch",
-        ]
-    )
-    assert set(serializer.data.keys()) == expected_data
+    expected_data = {
+        "message": commit.message,
+        "ci_passed": commit.ci_passed,
+        "state": commit.state,
+        "repository": {
+            "name": commit.repository.name,
+            "is_private": commit.repository.private,
+            "active": commit.repository.active,
+            "language": commit.repository.language,
+            "yaml": commit.repository.yaml,
+        },
+        "author": {
+            "avatar_url": commit.author.avatar_url,
+            "service": commit.author.service,
+            "username": commit.author.username,
+            "name": commit.author.name,
+            "ownerid": commit.author.ownerid,
+        },
+        "commitid": commit.commitid,
+        "parent_commit_id": commit.parent_commit_id,
+        "pullid": commit.pullid,
+        "branch": commit.branch,
+        "timestamp": commit.timestamp.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+    }
+    assert serializer.data == expected_data
 
 
 def test_invalid_update_data(transactional_db, mocker):
