@@ -18,3 +18,13 @@ def test_compute_comparison_task(mocker):
         kwargs=dict(comparison_id=5),
         app=celery_app,
     )
+
+def test_update_commit_task(mocker):
+    signature_mock = mocker.patch("services.task.signature")
+    TaskService().update_commit(1,2)
+    signature_mock.assert_called_with(
+        "app.tasks.commit_update.CommitUpdate",
+        args=None,
+        kwargs=dict(commitid=1, repoid=2),
+        app=celery_app,
+    )
