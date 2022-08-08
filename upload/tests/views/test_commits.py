@@ -5,6 +5,7 @@ from rest_framework.test import APIClient
 
 from billing.constants import BASIC_PLAN_NAME
 from codecov_auth.tests.factories import OwnerFactory
+from core.models import Commit
 from core.tests.factories import CommitFactory, RepositoryFactory
 from upload.views.commits import CommitViews
 
@@ -79,27 +80,28 @@ def test_commit_post_empty(db, client):
     )
     response = client.post(
         url,
-        {
-            "message": "The commit message",
-            "ci_passed": False,
-            "commitid": "commit_sha",
-        },
+        {"commitid": "commit_sha", "pullid": "4", "branch": "abc"},
         format="json",
     )
     response_json = response.json()
-    assert response.status_code == 201
-    assert all(
-        map(
-            lambda x: x in response_json.keys(),
-            ["author", "commitid", "timestamp", "message", "repository"],
-        )
-    )
-    assert response_json["repository"] == {
-        "name": repository.name,
-        "is_private": repository.private,
-        "active": repository.active,
-        "language": repository.language,
-        "yaml": repository.yaml,
+    commit = Commit.objects.get(commitid="commit_sha")
+    expected_response = {
+        "author": None,
+        "branch": "abc",
+        "ci_passed": None,
+        "commitid": "commit_sha",
+        "message": None,
+        "parent_commit_id": None,
+        "repository": {
+            "name": repository.name,
+            "is_private": repository.private,
+            "active": repository.active,
+            "language": repository.language,
+            "yaml": repository.yaml,
+        },
+        "pullid": 4,
+        "state": None,
+        "timestamp": commit.timestamp.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
     }
-    assert response_json["author"] is None  # This is filled by the worker
-    assert response_json["commitid"] == "commit_sha"
+    assert response.status_code == 201
+    assert expected_response == response_json
