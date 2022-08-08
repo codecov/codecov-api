@@ -111,3 +111,19 @@ def test_uploads_post_empty(db, mocker, mock_redis):
         )
     )
     presigned_put_mock.assert_called()
+
+
+def test_activate_repo(db):
+    repo = RepositoryFactory(active=False, deleted=True, activated=False)
+    upload_views = UploadViews()
+    upload_views.activate_repo(repo)
+    assert repo.active
+    assert repo.activated
+    assert not repo.deleted
+
+
+def test_activate_already_activated_repo(db):
+    repo = RepositoryFactory(active=True)
+    upload_views = UploadViews()
+    upload_views.activate_repo(repo)
+    assert repo.active
