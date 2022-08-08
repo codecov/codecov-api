@@ -362,6 +362,10 @@ class CommitNotification(models.Model):
 
 
 class CommitError(BaseCodecovModel):
+    class CommitErrorType(models.TextChoices):
+        YAML = "yaml"
+        BOT = "bot"
+
     commit = models.ForeignKey(
         "Commit",
         related_name="errors",
@@ -369,3 +373,4 @@ class CommitError(BaseCodecovModel):
     )
     error_code = models.CharField(max_length=100)
     error_params = models.JSONField(default=dict)
+    error_type = models.TextField(null=True, choices=CommitErrorType.choices)
