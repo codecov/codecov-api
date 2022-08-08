@@ -19,9 +19,10 @@ def test_compute_comparison_task(mocker):
         app=celery_app,
     )
 
+
 def test_update_commit_task(mocker):
     signature_mock = mocker.patch("services.task.signature")
-    TaskService().update_commit(1,2)
+    TaskService().update_commit(1, 2)
     signature_mock.assert_called_with(
         "app.tasks.commit_update.CommitUpdate",
         args=None,
