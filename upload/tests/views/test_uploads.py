@@ -123,7 +123,7 @@ def test_activate_repo(db):
 
 
 def test_activate_already_activated_repo(db):
-    repo = RepositoryFactory(active=True)
+    repo = RepositoryFactory(active=True, activated=True, deleted=False)
     upload_views = UploadViews()
     upload_views.activate_repo(repo)
     assert repo.active
