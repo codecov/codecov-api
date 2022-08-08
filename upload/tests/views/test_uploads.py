@@ -83,6 +83,7 @@ def test_get_report_error(db):
 
 
 def test_uploads_post_empty(db, mocker, mock_redis):
+    # TODO remove the mock object and test the flow with the permissions
     mocker.patch.object(
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
     )
