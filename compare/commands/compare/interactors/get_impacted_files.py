@@ -1,13 +1,34 @@
 import json
 import logging
+from dataclasses import dataclass
+from typing import List
+from xmlrpc.client import Boolean
 
 from asgiref.sync import sync_to_async
 from shared.reports.types import ReportTotals
 
 from codecov.commands.base import BaseInteractor
+from compare.models import CommitComparison
 from services.archive import ArchiveService
 
 log = logging.getLogger(__name__)
+
+# Idk if this is the place for this, but it types the response :) thoughts?
+@dataclass
+class ImpactedFileFromArchive:
+    base_name: str
+    head_name: str
+    base_coverage: ReportTotals
+    head_coverage: ReportTotals
+    patch_coverage: ReportTotals
+
+
+def check_path_in_list(report_file, path: str) -> Boolean:
+    return (
+        True
+        if report_file["head_name"] == path or report_file["base_name"] == path
+        else False
+    )
 
 
 class GetImpactedFilesInteractor(BaseInteractor):
@@ -49,17 +70,38 @@ class GetImpactedFilesInteractor(BaseInteractor):
         totals.coverage = (100 * totals.hits / nb_branches) if nb_branches > 0 else None
         file[key] = totals
 
-    def deserialize_comparison(self, impacted_files):
-        flat_impacted_files = impacted_files.get("files", [])
+    def deserialize_comparison(
+        self, report_data, path: str
+    ) -> List[ImpactedFileFromArchive]:
+        flat_impacted_files = report_data.get("files", [])
+        if path:
+            flat_impacted_files = list(
+                filter(
+                    lambda report_file: check_path_in_list(report_file, path),
+                    flat_impacted_files,
+                )
+            )
+        deserialized_impacted_files = []
         for file in flat_impacted_files:
             file["patch_coverage"] = self.compute_patch_per_file(file)
             self.deserialize_totals(file, "base_coverage")
             self.deserialize_totals(file, "head_coverage")
             self.deserialize_totals(file, "patch_coverage")
-        return flat_impacted_files
+            deserialized_impacted_files.append(
+                ImpactedFileFromArchive(
+                    head_name=file["head_name"],
+                    base_name=file["base_name"],
+                    head_coverage=file["head_coverage"],
+                    base_coverage=file["base_coverage"],
+                    patch_coverage=file["patch_coverage"],
+                )
+            )
+        return deserialized_impacted_files
 
-    async def execute(self, comparison):
+    async def execute(
+        self, comparison: CommitComparison, path: str = None
+    ) -> List[ImpactedFileFromArchive]:
         if not comparison.report_storage_path:
             return []
-        data = await self.get_comparison_data_from_archive(comparison)
-        return self.deserialize_comparison(data)
+        report_data = await self.get_comparison_data_from_archive(comparison)
+        return self.deserialize_comparison(report_data, path)
