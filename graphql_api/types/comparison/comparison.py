@@ -1,7 +1,10 @@
+from typing import List
+
 from ariadne import ObjectType
 from asgiref.sync import sync_to_async
 
-from compare.models import CommitComparison
+from compare.models import FlagComparison
+from graphql_api.actions.flags import get_flag_comparisons
 
 comparison_bindable = ObjectType("Comparison")
 
@@ -25,6 +28,7 @@ def resolve_file_comparisons(comparison, info):
         return None
 
     comparison = info.context["comparison"]
+    comparison.validate()
     return [file for file in comparison.files if file.has_diff or file.has_changes]
 
 
@@ -35,6 +39,7 @@ def resolve_base_totals(comparison, info):
         return None
 
     comparison = info.context["comparison"]
+    comparison.validate()
     return comparison.totals["base"]
 
 
@@ -45,4 +50,11 @@ def resolve_head_totals(comparison, info):
         return None
 
     comparison = info.context["comparison"]
+    comparison.validate()
     return comparison.totals["head"]
+
+
+@comparison_bindable.field("flagComparisons")
+@sync_to_async
+def resolve_flag_comparisons(comparison, info) -> List[FlagComparison]:
+    return list(get_flag_comparisons(comparison))

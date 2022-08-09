@@ -1,3 +1,5 @@
+import asyncio
+
 from asgiref.sync import sync_to_async
 from shared.yaml import UserYaml, fetch_current_yaml_from_provider_via_reference
 from shared.yaml.validation import validate_yaml
@@ -25,10 +27,23 @@ class GetFinalYamlInteractor(BaseInteractor):
             # be used, so we return None here
             return None
 
+    @sync_to_async
+    def owner_yaml(self, commit):
+        return commit.repository.author.yaml
+
+    @sync_to_async
+    def repo_yaml(self, commit):
+        return commit.repository.yaml
+
     async def execute(self, commit):
-        owner_yaml = commit.repository.author.yaml
-        commit_yaml = await self.get_yaml_from_service(commit)
-        repo_yaml = commit.repository.yaml
+        owner_yaml, repo_yaml, commit_yaml = await asyncio.gather(
+            self.owner_yaml(commit),
+            self.repo_yaml(commit),
+            self.get_yaml_from_service(commit),
+        )
+
         return UserYaml.get_final_yaml(
-            owner_yaml=owner_yaml, repo_yaml=repo_yaml, commit_yaml=commit_yaml
+            owner_yaml=owner_yaml,
+            repo_yaml=repo_yaml,
+            commit_yaml=commit_yaml,
         ).to_dict()

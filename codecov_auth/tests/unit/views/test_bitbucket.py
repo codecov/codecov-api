@@ -194,7 +194,8 @@ class TestBitbucketLoginView(TestCase):
                     "is_student": False,
                     "orgs": [],
                     "user": {
-                        "access_token": "aaaa:bbbb",
+                        "key": "aaaa",
+                        "secret": "bbbb",
                         "id": "9a01f37b-b1b2-40c5-8c5e-1a39f4b5e645",
                         "login": "ThiagoCodecov",
                     },

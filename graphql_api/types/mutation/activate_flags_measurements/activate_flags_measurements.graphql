@@ -1,0 +1,5 @@
+union ActivateFlagsMeasurementsError = UnauthenticatedError | ValidationError
+
+type ActivateFlagsMeasurementsPayload {
+  error: ActivateFlagsMeasurementsError
+}

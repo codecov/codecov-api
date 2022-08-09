@@ -5,7 +5,7 @@ from django.db import connections
 from core.models import Commit, Repository
 from reports.models import RepositoryFlag
 from services.archive import ReportService
-from timeseries.models import Measurement, MeasurementName
+from timeseries.models import Dataset, Measurement, MeasurementName
 
 
 def save_commit_measurements(commit: Commit) -> None:
@@ -58,8 +58,17 @@ def save_repo_measurements(
     """
     Save the timeseries measurements relevant to a given repository and date range.
     Currently these are:
-      - commit measurements each of the repository's commits in the time range
+      - commit measurements for each of the repository's commits in the time range
     """
+    coverage_dataset, created = Dataset.objects.get_or_create(
+        name=MeasurementName.COVERAGE.value,
+        repository_id=repository.pk,
+    )
+    flag_coverage_dataset, created = Dataset.objects.get_or_create(
+        name=MeasurementName.FLAG_COVERAGE.value,
+        repository_id=repository.pk,
+    )
+
     commits = repository.commits.filter(
         timestamp__gte=start_date,
         timestamp__lte=end_date,
@@ -68,6 +77,11 @@ def save_repo_measurements(
     for commit in commits.iterator():
         commit.repository = repository
         save_commit_measurements(commit)
+
+    coverage_dataset.backfilled = True
+    coverage_dataset.save()
+    flag_coverage_dataset.backfilled = True
+    flag_coverage_dataset.save()
 
 
 def refresh_measurement_summaries(start_date: datetime, end_date: datetime) -> None:

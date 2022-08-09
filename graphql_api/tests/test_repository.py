@@ -1,12 +1,10 @@
 import datetime
 from unittest.mock import PropertyMock, patch
 
-from django.test import TransactionTestCase
+from django.test import TransactionTestCase, override_settings
 from freezegun import freeze_time
 
 from codecov_auth.tests.factories import OwnerFactory
-from core.commands import repository
-from core.models import Repository
 from core.tests.factories import (
     CommitFactory,
     PullFactory,
@@ -29,6 +27,22 @@ query Repository($name: String!){
 }
 """
 
+query_repositories = """
+query Repositories($repoNames: [String!]!) {
+    me {
+        owner {
+            repositories(filters: { repoNames: $repoNames }) {
+                edges {
+                    node {
+                        %s
+                    }
+                }
+            }
+        }
+    }
+}
+"""
+
 default_fields = """
     name
     coverage
@@ -37,6 +51,7 @@ default_fields = """
     private
     updatedAt
     latestCommitAt
+    oldestCommitAt
     uploadToken
     defaultBranch
     author { username }
@@ -56,6 +71,14 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             variables={"name": name},
         )
         return data["me"]["owner"]["repository"]
+
+    def fetch_repositories(self, repo_names, fields=None):
+        data = self.gql_request(
+            query_repositories % (fields or default_fields),
+            user=self.user,
+            variables={"repoNames": repo_names},
+        )
+        return [edge["node"] for edge in data["me"]["owner"]["repositories"]["edges"]]
 
     def setUp(self):
         self.user = OwnerFactory(username="codecov-user")
@@ -78,6 +101,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "coverage": None,
             "coverageSha": None,
             "latestCommitAt": None,
+            "oldestCommitAt": None,
             "updatedAt": "2021-01-01T00:00:00+00:00",
             "uploadToken": repo.upload_token,
             "defaultBranch": "master",
@@ -118,6 +142,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "name": "b",
             "active": True,
             "latestCommitAt": None,
+            "oldestCommitAt": "2020-12-31T23:00:00",  # hour ago
             "private": True,
             "coverage": 75,
             "coverageSha": coverage_commit.commitid,
@@ -131,6 +156,20 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "yaml": "test: test\n",
             "bot": None,
         }
+
+    @freeze_time("2021-01-01")
+    def test_repositories_oldest_commit_at(self):
+        repo = RepositoryFactory(author=self.user)
+
+        CommitFactory(repository=repo, totals={"c": 75})
+        CommitFactory(repository=repo, totals={"c": 85})
+
+        # oldestCommitAt not loaded for multiple repos
+        assert self.fetch_repositories([repo.name], fields="oldestCommitAt") == [
+            {
+                "oldestCommitAt": None,
+            }
+        ]
 
     def test_repository_pulls(self):
         repo = RepositoryFactory(author=self.user, active=True, private=True, name="a")
@@ -215,3 +254,40 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             variables={"name": repo.name},
         )
         assert data["me"]["owner"]["repository"]["bot"]["username"] == "random_bot"
+
+    def test_repository_resolve_activated_true(self):
+        user = OwnerFactory()
+        repo = RepositoryFactory(author=user, activated=True)
+        data = self.gql_request(
+            query_repository % "activated",
+            user=user,
+            variables={"name": repo.name},
+        )
+        assert data["me"]["owner"]["repository"]["activated"] == True
+
+    @override_settings(TIMESERIES_ENABLED=False)
+    def test_repository_resolve_activated_false(self):
+        user = OwnerFactory()
+        repo = RepositoryFactory(author=user, activated=False)
+        data = self.gql_request(
+            query_repository % "activated",
+            user=user,
+            variables={"name": repo.name},
+        )
+        assert data["me"]["owner"]["repository"]["activated"] == False
+
+    @override_settings(TIMESERIES_ENABLED=False)
+    def test_repository_flags_metadata(self):
+        user = OwnerFactory()
+        repo = RepositoryFactory(author=user)
+        data = self.gql_request(
+            query_repository
+            % """
+                flagsMeasurementsActive
+                flagsMeasurementsBackfilled
+            """,
+            user=user,
+            variables={"name": repo.name},
+        )
+        assert data["me"]["owner"]["repository"]["flagsMeasurementsActive"] == False
+        assert data["me"]["owner"]["repository"]["flagsMeasurementsBackfilled"] == False

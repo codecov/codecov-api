@@ -69,6 +69,15 @@ class UploadErrorEnum(enum.Enum):
     REPORT_EMPTY = "report_empty"
 
 
+class LoginProvider(enum.Enum):
+    GITHUB = "github"
+    GITHUB_ENTERPRISE = "github_enterprise"
+    GITLAB = "gitlab"
+    GITLAB_ENTERPRISE = "gitlab_enterprise"
+    BITBUCKET = "bitbucket"
+    BITBUCKET_SERVER = "bitbucket_server"
+
+
 class CommitErrorTypes(enum.Enum):
     class Yaml(enum.Enum):
         INVALID = "invalid"

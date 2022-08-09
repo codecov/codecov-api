@@ -5,10 +5,12 @@ from django.test import TransactionTestCase
 from shared.reports.types import ReportTotals
 from shared.utils.merge import LineType
 
+import services.comparison as comparison
 from codecov_auth.tests.factories import OwnerFactory
 from compare.models import CommitComparison
-from compare.tests.factories import CommitComparisonFactory
+from compare.tests.factories import CommitComparisonFactory, FlagComparisonFactory
 from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
+from reports.tests.factories import RepositoryFlagFactory
 from services.profiling import CriticalFile
 
 from .helper import GraphQLTestHelper
@@ -40,6 +42,20 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         return data["me"]["owner"]["repository"]["pull"]
 
     def setUp(self):
+        # mock reports for all tests in this class
+        self.head_report_patcher = patch(
+            "services.comparison.Comparison.head_report", new_callable=PropertyMock
+        )
+        self.head_report = self.head_report_patcher.start()
+        self.head_report.return_value = None
+        self.addCleanup(self.head_report_patcher.stop)
+        self.base_report_patcher = patch(
+            "services.comparison.Comparison.base_report", new_callable=PropertyMock
+        )
+        self.base_report = self.base_report_patcher.start()
+        self.base_report.return_value = None
+        self.addCleanup(self.base_report_patcher.stop)
+
         self.user = OwnerFactory()
         self.repository = RepositoryFactory(
             author=self.user,
@@ -120,6 +136,81 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                 "baseTotals": totals,
                 "headTotals": totals,
             },
+        }
+
+    def test_pull_no_flag_comparisons_for_commit_comparison(self):
+        # Just running this w/ the commit_comparison in setup will yield nothing
+        query = """
+            compareWithBase {
+                flagComparisons {
+                    name
+                    patchTotals {
+                        percentCovered
+                    }
+                    headTotals {
+                        percentCovered
+                    }
+                }
+            }
+        """
+
+        res = self._request(query)
+        assert res == {"compareWithBase": {"flagComparisons": []}}
+
+    def test_pull_flag_comparisons(self):
+        FlagComparisonFactory(
+            commit_comparison=self.commit_comparison,
+            repositoryflag=RepositoryFlagFactory(
+                repository=self.repository, flag_name="flag_one"
+            ),
+            head_totals={"coverage": "85.71429"},
+            base_totals={"coverage": "92.2973"},
+            patch_totals={"coverage": "29.28364"},
+        )
+        FlagComparisonFactory(
+            commit_comparison=self.commit_comparison,
+            repositoryflag=RepositoryFlagFactory(
+                repository=self.repository, flag_name="flag_two"
+            ),
+            head_totals={"coverage": "75.273820"},
+            base_totals={"coverage": "16.293"},
+            patch_totals={"coverage": "68.283496"},
+        )
+        query = """
+            compareWithBase {
+                flagComparisons {
+                    name
+                    patchTotals {
+                        percentCovered
+                    }
+                    headTotals {
+                        percentCovered
+                    }
+                    baseTotals {
+                        percentCovered
+                    }
+                }
+            }
+        """
+
+        res = self._request(query)
+        assert res == {
+            "compareWithBase": {
+                "flagComparisons": [
+                    {
+                        "name": "flag_one",
+                        "patchTotals": {"percentCovered": 29.28364},
+                        "headTotals": {"percentCovered": 85.71429},
+                        "baseTotals": {"percentCovered": 92.2973},
+                    },
+                    {
+                        "name": "flag_two",
+                        "patchTotals": {"percentCovered": 68.283496},
+                        "headTotals": {"percentCovered": 75.27382},
+                        "baseTotals": {"percentCovered": 16.293},
+                    },
+                ]
+            }
         }
 
     @patch(
@@ -706,6 +797,64 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         res = self._request(query)
         # it regenerates the comparison as needed
         assert res["compareWithBase"] != None
+
+    def test_pull_comparison_missing_head_report(self):
+        self.head_report.side_effect = comparison.MissingComparisonReport(
+            "Missing head report"
+        )
+
+        query = """
+            pullId
+            compareWithBase {
+                state
+                fileComparisons {
+                    headName
+                }
+            }
+        """
+
+        res = self.gql_request(
+            base_query % (self.repository.name, self.pull.pullid, query),
+            user=self.user,
+            with_errors=True,
+        )
+        assert res["errors"] is not None
+        assert res["errors"][0]["message"] == "Missing head report"
+        assert (
+            res["data"]["me"]["owner"]["repository"]["pull"]["compareWithBase"][
+                "fileComparisons"
+            ]
+            is None
+        )
+
+    def test_pull_comparison_missing_base_report(self):
+        self.base_report.side_effect = comparison.MissingComparisonReport(
+            "Missing base report"
+        )
+
+        query = """
+            pullId
+            compareWithBase {
+                state
+                fileComparisons {
+                    headName
+                }
+            }
+        """
+
+        res = self.gql_request(
+            base_query % (self.repository.name, self.pull.pullid, query),
+            user=self.user,
+            with_errors=True,
+        )
+        assert res["errors"] is not None
+        assert res["errors"][0]["message"] == "Missing base report"
+        assert (
+            res["data"]["me"]["owner"]["repository"]["pull"]["compareWithBase"][
+                "fileComparisons"
+            ]
+            is None
+        )
 
     def test_pull_comparison_missing_commit(self):
         self.head_commit.delete()
