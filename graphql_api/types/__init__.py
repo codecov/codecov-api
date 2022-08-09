@@ -10,6 +10,7 @@ from .enums import enum_types, enums
 from .file import commit_file, file_bindable
 from .file_comparison import file_comparison, file_comparison_bindable
 from .flag import flag, flag_bindable
+from .flag_comparison import flag_comparison, flag_comparison_bindable
 from .line_comparison import line_comparison, line_comparison_bindable
 from .me import me, me_bindable
 from .measurement import measurement, measurement_bindable
@@ -40,6 +41,7 @@ types = [
     comparison,
     file_comparison,
     flag,
+    flag_comparison,
     segment_comparison,
     line_comparison,
     measurement,
@@ -67,6 +69,7 @@ bindables = [
     comparison_bindable,
     file_comparison_bindable,
     flag_bindable,
+    flag_comparison_bindable,
     segment_comparison_bindable,
     line_comparison_bindable,
     measurement_bindable,

@@ -1,13 +1,13 @@
+from datetime import datetime, timedelta
 from typing import List, Mapping
 
 import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
 from asgiref.sync import sync_to_async
 from django.conf import settings
-from django.db.models import Avg, Max, Min
 
 from core.models import Repository
-from graphql_api.actions.flags import flags_for_repo
+from graphql_api.actions.flags import flag_measurements, flags_for_repo
 from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.owner import OwnerLoader
 from graphql_api.helpers.connection import (
@@ -17,7 +17,7 @@ from graphql_api.helpers.connection import (
 from graphql_api.helpers.lookahead import lookahead
 from graphql_api.types.enums import OrderingDirection
 from services.profiling import CriticalFile, ProfilingSummary
-from timeseries.models import Interval, MeasurementName, MeasurementSummary
+from timeseries.models import Dataset, Interval, MeasurementName, MeasurementSummary
 
 repository_bindable = ObjectType("Repository")
 
@@ -28,6 +28,14 @@ repository_bindable.set_alias("updatedAt", "updatestamp")
 # the order_by call. The true value of is under true_*; which would actually contain NULL
 # see with_cache_latest_commit_at() from core/managers.py
 repository_bindable.set_alias("latestCommitAt", "true_latest_commit_at")
+
+
+@repository_bindable.field("oldestCommitAt")
+def resolve_oldest_commit_at(repository: Repository, info):
+    if hasattr(repository, "oldest_commit_at"):
+        return repository.oldest_commit_at
+    else:
+        return None
 
 
 @repository_bindable.field("coverage")
@@ -187,32 +195,48 @@ def resolve_flags(
     node = lookahead(info, ("edges", "node", "measurements"))
     if node:
         if settings.TIMESERIES_ENABLED:
-            interval = Interval[node.args["interval"]]
+            interval = node.args["interval"]
+            if isinstance(interval, str):
+                interval = Interval[interval]
+
             flag_ids = [edge["node"].pk for edge in connection.edges]
 
-            measurements = (
-                MeasurementSummary.agg_by(interval)
-                .filter(
-                    name=MeasurementName.FLAG_COVERAGE.value,
-                    owner_id=repository.author_id,
-                    repo_id=repository.pk,
-                    flag_id__in=flag_ids,
-                    timestamp_bin__gte=node.args["after"],
-                    timestamp_bin__lte=node.args["before"],
-                )
-                .values("timestamp_bin", "owner_id", "repo_id", "flag_id")
-                .annotate(
-                    avg=Avg("value_avg"),
-                    min=Min("value_min"),
-                    max=Max("value_max"),
-                )
-                .order_by("timestamp_bin")
+            info.context["flag_measurements"] = flag_measurements(
+                repository, flag_ids, interval, node.args["after"], node.args["before"]
             )
-
-            # force eager execution of query while we're in a sync context
-            # (and store for child resolvers)
-            info.context["measurements"] = list(measurements)
         else:
-            info.context["measurements"] = []
+            info.context["flag_measurements"] = {}
 
     return connection
+
+
+@repository_bindable.field("flagsMeasurementsActive")
+@sync_to_async
+def resolve_flags_measurements_active(repository: Repository, info) -> bool:
+    if not settings.TIMESERIES_ENABLED:
+        return False
+
+    return Dataset.objects.filter(
+        name=MeasurementName.FLAG_COVERAGE.value,
+        repository_id=repository.pk,
+    ).exists()
+
+
+@repository_bindable.field("flagsMeasurementsBackfilled")
+@sync_to_async
+def resolve_flags_measurements_backfilled(repository: Repository, info) -> bool:
+    if not settings.TIMESERIES_ENABLED:
+        return False
+
+    dataset = Dataset.objects.filter(
+        name=MeasurementName.FLAG_COVERAGE.value,
+        repository_id=repository.pk,
+    ).first()
+
+    if not dataset or not dataset.created_at:
+        return False
+
+    # returns `False` for an hour after creation
+    # TODO: this should eventually read `dataset.backfilled` which will
+    # be updated via the worker
+    return datetime.now() > dataset.created_at + timedelta(hours=1)

@@ -6,5 +6,6 @@ type Mutation {
   deleteSession(input: DeleteSessionInput!): DeleteSessionPayload
   onboardUser(input: OnboardUserInput!): OnboardUserPayload
   regenerateProfilingToken(input: RegenerateProfilingTokenInput!): RegenerateProfilingTokenPayload
+  activateFlagsMeasurements(input: ActivateFlagsMeasurementsInput!): ActivateFlagsMeasurementsPayload
 }
   

@@ -17,3 +17,12 @@ class MeasurementFactory(DjangoModelFactory):
     branch = "master"
     value = factory.LazyAttribute(lambda _: random.random() * 1000)
     timestamp = factory.LazyAttribute(lambda _: datetime.now())
+
+
+class DatasetFactory(DjangoModelFactory):
+    class Meta:
+        model = models.Dataset
+
+    repository_id = 1
+    name = "testing"
+    backfilled = False

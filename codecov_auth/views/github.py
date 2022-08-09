@@ -71,6 +71,8 @@ class GithubLoginView(LoginMixin, StateMixin, View):
         # This is specific to GitHub
         repo_service = self.repo_service_instance
         authenticated_user = await repo_service.get_authenticated_user(code)
+        # Comply to torngit's token encoding
+        authenticated_user["key"] = authenticated_user["access_token"]
         user_orgs = await repo_service.list_teams()
         is_student = await repo_service.is_student()
         has_private_access = "repo" in authenticated_user["scope"].split(",")
