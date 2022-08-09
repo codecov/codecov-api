@@ -5,6 +5,7 @@ import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
 from asgiref.sync import sync_to_async
 from django.conf import settings
+from django.forms.utils import from_current_timezone
 
 from core.models import Repository
 from graphql_api.actions.flags import flag_measurements, flags_for_repo
@@ -195,14 +196,22 @@ def resolve_flags(
     node = lookahead(info, ("edges", "node", "measurements"))
     if node:
         if settings.TIMESERIES_ENABLED:
+            # TODO: is there a way to have these automatically casted at a
+            # lower level (i.e. based on the schema)?
             interval = node.args["interval"]
             if isinstance(interval, str):
                 interval = Interval[interval]
+            after = node.args["after"]
+            if isinstance(after, str):
+                after = from_current_timezone(datetime.fromisoformat(after))
+            before = node.args["before"]
+            if isinstance(before, str):
+                before = from_current_timezone(datetime.fromisoformat(before))
 
             flag_ids = [edge["node"].pk for edge in connection.edges]
 
             info.context["flag_measurements"] = flag_measurements(
-                repository, flag_ids, interval, node.args["after"], node.args["before"]
+                repository, flag_ids, interval, after, before
             )
         else:
             info.context["flag_measurements"] = {}

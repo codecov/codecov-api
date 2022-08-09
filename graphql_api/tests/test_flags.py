@@ -62,6 +62,22 @@ query Repo(
         repository(name: $repo) {
             flagsMeasurementsActive
             flagsMeasurementsBackfilled
+            flags {
+                edges {
+                    node {
+                        measurements(
+                            interval: INTERVAL_1_DAY
+                            after: "2022-01-01",
+                            before: "2022-12-31",
+                        ) {
+                            timestamp
+                            avg
+                            min
+                            max
+                        }
+                    }
+                }
+            }
         }
     }
 }
