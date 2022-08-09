@@ -67,3 +67,15 @@ class UploadErrorEnum(enum.Enum):
     FILE_NOT_IN_STORAGE = "file_not_in_storage"
     REPORT_EXPIRED = "report_expired"
     REPORT_EMPTY = "report_empty"
+
+
+class CommitErrorTypes(enum.Enum):
+    class Yaml(enum.Enum):
+        INVALID = "invalid"
+        CLIENT_ERROR = "client_error"
+        UNKNOWN_ERROR = "unknown_error"
+
+    class Bot(enum.Enum):
+        UNAUTHENTICATED = "unauthenticated"
+        REPO_BOT_INVALID = "repo_bot_invalid"
+        OWNER_BOT_INVALID = "owner_bot_invalid"

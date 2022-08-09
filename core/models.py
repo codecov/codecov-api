@@ -361,16 +361,24 @@ class CommitNotification(models.Model):
         db_table = "commit_notifications"
 
 
-class CommitError(BaseCodecovModel):
+class PossibleError(models.Model):
     class CommitErrorType(models.TextChoices):
         YAML = "yaml"
         BOT = "bot"
 
+    code = models.TextField(unique=True, null=True)
+    type = models.TextField(null=True, choices=CommitErrorType.choices)
+
+
+class CommitError(BaseCodecovModel):
     commit = models.ForeignKey(
         "Commit",
         related_name="errors",
         on_delete=models.CASCADE,
     )
-    error_code = models.CharField(max_length=100)
+    error_code = models.ForeignKey(
+        "PossibleError",
+        related_name="error_types",
+        on_delete=models.CASCADE,
+    )
     error_params = models.JSONField(default=dict)
-    error_type = models.TextField(null=True, choices=CommitErrorType.choices)
