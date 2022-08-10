@@ -1,13 +1,9 @@
 from codecov.commands.base import BaseCommand
 
 from .interactors.change_with_parent import ChangeWithParentInteractor
-from .interactors.get_impacted_files import GetImpactedFilesInteractor
 
 
 class CompareCommands(BaseCommand):
-    def get_impacted_files(self, comparison):
-        return self.get_interactor(GetImpactedFilesInteractor).execute(comparison)
-
     async def change_with_parent(self, comparison):
         current_commit_totals = await self.get_command("commit").fetch_totals(
             comparison.compare_commit
