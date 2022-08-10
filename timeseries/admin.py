@@ -17,14 +17,11 @@ def enqueue_tasks(datasets: QuerySet, start_date: datetime, end_date: datetime):
     count = datasets.update(backfilled=False)
 
     for dataset in datasets:
-        repository = Repository.objects.filter(pk=dataset.repository_id).first()
-        if repository:
-            TaskService().backfill_repo(
-                repository,
-                start_date=start_date,
-                end_date=end_date,
-                dataset_names=[dataset.name],
-            )
+        TaskService().backfill_dataset(
+            dataset,
+            start_date=start_date,
+            end_date=end_date,
+        )
 
     return count
 
