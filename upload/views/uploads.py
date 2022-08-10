@@ -23,8 +23,8 @@ class UploadViews(ListCreateAPIView):
 
     def perform_create(self, serializer):
         repository = self.get_repo()
-        commit = self.get_commit()
-        report = self.get_report()
+        commit = self.get_commit(repository)
+        report = self.get_report(commit)
         archive_service = ArchiveService(repository)
         path = MinioEndpoints.raw.get_path(
             version="v4",
@@ -46,26 +46,34 @@ class UploadViews(ListCreateAPIView):
             repository = Repository.objects.get(name=repoid)
             return repository
         except Repository.DoesNotExist:
-            raise ValidationError(f"Repository {repoid} not found")
+            raise ValidationError(f"Repository not found", params=dict(repoid=repoid))
 
-    def get_commit(self) -> Commit:
+    def get_commit(self, repo: Repository) -> Commit:
         commit_sha = self.kwargs["commit_sha"]
-        repository = self.get_repo()
         try:
             commit = Commit.objects.get(
-                commitid=commit_sha, repository__repoid=repository.repoid
+                commitid=commit_sha, repository__repoid=repo.repoid
             )
             return commit
         except Commit.DoesNotExist:
-            raise ValidationError(f"Commit {commit_sha} not found")
+            raise ValidationError(
+                f"Commit SHA not found",
+                params=dict(repoid=repo.repoid, commit_sha=commit_sha),
+            )
 
-    def get_report(self) -> CommitReport:
+    def get_report(self, commit: Commit) -> CommitReport:
         report_id = self.kwargs["reportid"]
-        commit = self.get_commit()
         try:
             report = CommitReport.objects.get(
                 external_id__exact=report_id, commit__commitid=commit.commitid
             )
             return report
         except CommitReport.DoesNotExist:
-            raise ValidationError(f"Report {report_id} not found")
+            raise ValidationError(
+                f"Report not found",
+                params=dict(
+                    repoid=commit.repository.repoid,
+                    commit_sha=commit.commitid,
+                    reporid=report_id,
+                ),
+            )

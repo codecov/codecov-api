@@ -1,3 +1,5 @@
+import uuid
+
 import pytest
 from django.forms import ValidationError
 from django.urls import reverse
@@ -27,8 +29,9 @@ def test_get_repo(db):
 def test_get_repo_error(db):
     upload_views = UploadViews()
     upload_views.kwargs = dict(repo="repo_missing")
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError) as exp:
         upload_views.get_repo()
+    assert exp.match("Repository not found")
 
 
 def test_get_commit(db):
@@ -38,7 +41,7 @@ def test_get_commit(db):
     commit.save()
     upload_views = UploadViews()
     upload_views.kwargs = dict(repo=repository.name, commit_sha=commit.commitid)
-    recovered_commit = upload_views.get_commit()
+    recovered_commit = upload_views.get_commit(repository)
     assert recovered_commit == commit
 
 
@@ -47,8 +50,9 @@ def test_get_commit_error(db):
     repository.save()
     upload_views = UploadViews()
     upload_views.kwargs = dict(repo=repository.name, commit_sha="missing_commit")
-    with pytest.raises(ValidationError):
-        upload_views.get_commit()
+    with pytest.raises(ValidationError) as exp:
+        upload_views.get_commit(repository)
+    assert exp.match("Commit SHA not found")
 
 
 def test_get_report(db):
@@ -62,7 +66,7 @@ def test_get_report(db):
     upload_views.kwargs = dict(
         repo=repository.name, commit_sha=commit.commitid, reportid=report.external_id
     )
-    recovered_report = upload_views.get_report()
+    recovered_report = upload_views.get_report(commit)
     assert recovered_report == report
 
 
@@ -72,11 +76,13 @@ def test_get_report_error(db):
     repository.save()
     commit.save()
     upload_views = UploadViews()
+    report_uuid = uuid.uuid4()
     upload_views.kwargs = dict(
-        repo=repository.name, commit_sha=commit.commitid, reportid="missing-report"
+        repo=repository.name, commit_sha=commit.commitid, reportid=report_uuid
     )
-    with pytest.raises(ValidationError):
-        upload_views.get_report()
+    with pytest.raises(ValidationError) as exp:
+        upload_views.get_report(commit)
+    assert exp.match("Report not found")
 
 
 def test_uploads_post_empty(db, mocker, mock_redis):
