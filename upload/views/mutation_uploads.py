@@ -11,11 +11,15 @@ from reports.models import CommitReport
 from services.archive import ArchiveService, MinioEndpoints
 from services.task import TaskService
 from upload.serializers import MutationTestUploadSerializer
+from upload.views.uploads import UploadViews
 
 log = logging.getLogger(__name__)
 
 
-class MutationTestUploadView(ListCreateAPIView):
+# TODO: Eventually this will be changed for a Mixin or something like that,
+# I'm dpoing this just to avoid re-writing things
+# This class inherits from the common Upload views to re-use helper functions get_repo, get_commit and get_report
+class MutationTestUploadView(UploadViews):
     serializer_class = MutationTestUploadSerializer
     permission_classes = [
         # TODO: Add correct permissions
@@ -25,8 +29,9 @@ class MutationTestUploadView(ListCreateAPIView):
     # TODO: add authentication classes
 
     def perform_create(self, serializer: MutationTestUploadSerializer):
-        commit: Commit = self.get_commit()
-        repository: Repository = self.get_repo()
+        repository = self.get_repo()
+        commit = self.get_commit(repository)
+        report = self.get_report(commit)
 
         # TEMP - Only codecov repos can uplaod mutation testing reports for now
         # REVIEW: check how to make this verification
@@ -45,7 +50,7 @@ class MutationTestUploadView(ListCreateAPIView):
             reportid=serializer.validated_data["name"],
         )
         upload_url = archive_service.create_presigned_put(path)
-        instance = serializer.save(storage_path=path, report_id=self.kwargs["reportid"])
+        instance = serializer.save(storage_path=path, report_id=report.id)
 
         log.info(
             "Dispatching mutation test upload to worker (mutation testing upload)",
@@ -60,34 +65,3 @@ class MutationTestUploadView(ListCreateAPIView):
             repoid=repository.repoid, commitid=commit.commitid, upload_path=upload_url
         )
         return instance
-
-    def get_repo(self) -> Repository:
-        # TODO this is not final - how is getting the repo is still in discuss
-        repoid = self.kwargs["repo"]
-        try:
-            repository = Repository.objects.get(name=repoid)
-            return repository
-        except Repository.DoesNotExist:
-            raise ValidationError(f"Repository {repoid} not found")
-
-    def get_commit(self) -> Commit:
-        commit_sha = self.kwargs["commit_sha"]
-        repository = self.get_repo()
-        try:
-            commit = Commit.objects.get(
-                commitid=commit_sha, repository__repoid=repository.repoid
-            )
-            return commit
-        except Commit.DoesNotExist:
-            raise ValidationError(f"Commit {commit_sha} not found")
-
-    def get_report(self) -> CommitReport:
-        report_id = self.kwargs["reportid"]
-        commit = self.get_commit()
-        try:
-            report = CommitReport.objects.get(
-                external_id__exact=report_id, commit__commitid=commit.commitid
-            )
-            return report
-        except CommitReport.DoesNotExist:
-            raise ValidationError(f"Report {report_id} not found")
