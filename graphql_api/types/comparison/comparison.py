@@ -1,33 +1,27 @@
-from os import sync
-from typing import List
+from typing import List, Optional
 
 from ariadne import ObjectType
 from asgiref.sync import sync_to_async
 
-from compare.commands.compare.interactors.get_impacted_files import (
-    ImpactedFileFromArchive,
-)
 from compare.models import CommitComparison, FlagComparison
 from graphql_api.actions.flags import get_flag_comparisons
+from services.comparison import ComparisonReport, ImpactedFile
 
 comparison_bindable = ObjectType("Comparison")
 
 
 @comparison_bindable.field("impactedFiles")
-async def resolve_impacted_files(
-    comparison: CommitComparison, info
-) -> List[ImpactedFileFromArchive]:
-    command = info.context["executor"].get_command("compare")
-    return await command.get_impacted_files(comparison)
+@sync_to_async
+def resolve_impacted_files(comparison: CommitComparison, info) -> List[ImpactedFile]:
+    comparison_report = ComparisonReport(comparison)
+    return comparison_report.impacted_files()
 
 
 @comparison_bindable.field("impactedFile")
-async def resolve_impacted_file(
-    comparison: CommitComparison, info, path
-) -> List[ImpactedFileFromArchive]:
-    command = info.context["executor"].get_command("compare")
-    impacted_files = await command.get_impacted_files(comparison, path)
-    return impacted_files[0]
+@sync_to_async
+def resolve_impacted_file(comparison: CommitComparison, info, path) -> ImpactedFile:
+    comparison_report = ComparisonReport(comparison)
+    return comparison_report.impacted_file(path)
 
 
 @comparison_bindable.field("changeWithParent")

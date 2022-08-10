@@ -5,17 +5,19 @@ import json
 import logging
 import os
 from collections import Counter
+from dataclasses import dataclass
 
 import minio
 from asgiref.sync import async_to_sync
 from django.utils.functional import cached_property
 from shared.helpers.yaml import walk
+from shared.reports.types import ReportTotals
 from shared.utils.merge import LineType, line_type
 
 from compare.models import CommitComparison
 from core.models import Commit
 from services import ServiceException
-from services.archive import ReportService
+from services.archive import ArchiveService, ReportService
 from services.redis_configuration import get_redis_connection
 from services.repo_providers import RepoProviderService
 from services.task import TaskService
@@ -752,6 +754,90 @@ class FlagComparison(object):
             return None
         git_comparison = self.comparison.git_comparison
         return self.head_report.apply_diff(git_comparison["diff"])
+
+
+@dataclass
+class ImpactedFile:
+    base_name: str
+    head_name: str
+    base_coverage: ReportTotals
+    head_coverage: ReportTotals
+    patch_coverage: ReportTotals
+
+
+class ComparisonReport(object):
+    def __init__(self, comparison):
+        self.comparison = comparison
+
+    @cached_property
+    def files(self):
+        if not self.comparison.report_storage_path:
+            return []
+        report_data = self.get_comparison_data_from_archive(self.comparison)
+        return report_data.get("files", [])
+
+    def file(self, path):
+        for file in self.files:
+            if file["head_name"] == path:
+                return file
+
+    def impacted_file(self, path):
+        impacted_file = self.file(path)
+        return self.deserialize_file(impacted_file)
+
+    def impacted_files(self):
+        impacted_files = self.files
+        return [self.deserialize_file(file) for file in impacted_files]
+
+    def get_comparison_data_from_archive(self, comparison):
+        repository = comparison.compare_commit.repository
+        archive_service = ArchiveService(repository)
+        try:
+            data = archive_service.read_file(comparison.report_storage_path)
+            return json.loads(data)
+        # pylint: disable=W0702
+        except:
+            log.error(
+                "GetImpactedFiles - couldnt fetch data from storage", exc_info=True
+            )
+            return {}
+
+    def compute_patch_per_file(self, file):
+        added_diff_coverage = file.get("added_diff_coverage", [])
+        if not added_diff_coverage:
+            return None
+        patch_coverage = {"hits": 0, "misses": 0, "partials": 0}
+        for added_coverage in added_diff_coverage:
+            [_, type_coverage] = added_coverage
+            if type_coverage == "h":
+                patch_coverage["hits"] += 1
+            if type_coverage == "m":
+                patch_coverage["misses"] += 1
+            if type_coverage == "p":
+                patch_coverage["partials"] += 1
+        return patch_coverage
+
+    def deserialize_totals(self, file, key):
+        if not file.get(key):
+            return
+        # convert dict to ReportTotals and compute the coverage
+        totals = ReportTotals(**file[key])
+        nb_branches = totals.hits + totals.misses + totals.partials
+        totals.coverage = (100 * totals.hits / nb_branches) if nb_branches > 0 else None
+        file[key] = totals
+
+    def deserialize_file(self, file):
+        file["patch_coverage"] = self.compute_patch_per_file(file)
+        self.deserialize_totals(file, "base_coverage")
+        self.deserialize_totals(file, "head_coverage")
+        self.deserialize_totals(file, "patch_coverage")
+        return ImpactedFile(
+            head_name=file["head_name"],
+            base_name=file["base_name"],
+            head_coverage=file["head_coverage"],
+            base_coverage=file["base_coverage"],
+            patch_coverage=file["patch_coverage"],
+        )
 
 
 class PullRequestComparison(Comparison):
