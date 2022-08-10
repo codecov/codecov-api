@@ -33,6 +33,10 @@ def get_token_refresh_callback(user: Owner, service: Service) -> Callable[[Dict]
 
     @sync_to_async
     def callback(new_token: Dict) -> None:
+        log.info(
+            "Saving new token after refresh",
+            extra=dict(owner=user.username, ownerid=user.ownerid),
+        )
         string_to_save = encode_token(new_token)
         user.oauth_token = encryptor.encode(string_to_save).decode()
         user.save()

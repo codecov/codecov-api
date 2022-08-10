@@ -232,7 +232,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                 "node": {
                                     "name": "flag1",
                                     "percentCovered": 80.0,
-                                    "percentChange": 6.666666666666665,
+                                    "percentChange": 5.0,
                                     "measurements": [
                                         {
                                             "timestamp": "2022-06-20T00:00:00+00:00",
@@ -265,7 +265,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                 "node": {
                                     "name": "flag2",
                                     "percentCovered": 90.0,
-                                    "percentChange": 5.882352941176472,
+                                    "percentChange": 5.0,
                                     "measurements": [
                                         {
                                             "timestamp": "2022-06-20T00:00:00+00:00",
