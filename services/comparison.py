@@ -765,6 +765,13 @@ class ImpactedFile:
     patch_coverage: ReportTotals
 
 
+"""
+This class creates helper methods relevant to the report created for comparison between two commits.
+
+This class takes an existing comparison as the parameter and outputs logic relevant to any contents within it.
+"""
+
+
 class ComparisonReport(object):
     def __init__(self, comparison):
         self.comparison = comparison
@@ -773,7 +780,7 @@ class ComparisonReport(object):
     def files(self):
         if not self.comparison.report_storage_path:
             return []
-        report_data = self.get_comparison_data_from_archive(self.comparison)
+        report_data = self.get_comparison_data_from_archive()
         return report_data.get("files", [])
 
     def file(self, path):
@@ -789,18 +796,26 @@ class ComparisonReport(object):
         impacted_files = self.files
         return [self.deserialize_file(file) for file in impacted_files]
 
-    def get_comparison_data_from_archive(self, comparison):
-        repository = comparison.compare_commit.repository
+    """
+    Fetches contents of the report
+    """
+
+    def get_comparison_data_from_archive(self):
+        repository = self.comparison.compare_commit.repository
         archive_service = ArchiveService(repository)
         try:
-            data = archive_service.read_file(comparison.report_storage_path)
+            data = archive_service.read_file(self.comparison.report_storage_path)
             return json.loads(data)
         # pylint: disable=W0702
         except:
             log.error(
-                "GetImpactedFiles - couldnt fetch data from storage", exc_info=True
+                "ComparisonReport - couldnt fetch data from storage", exc_info=True
             )
             return {}
+
+    """
+    Aggregates hits, misses and partials correspondent to the diff
+    """
 
     def compute_patch_per_file(self, file):
         added_diff_coverage = file.get("added_diff_coverage", [])
@@ -825,6 +840,10 @@ class ComparisonReport(object):
         nb_branches = totals.hits + totals.misses + totals.partials
         totals.coverage = (100 * totals.hits / nb_branches) if nb_branches > 0 else None
         file[key] = totals
+
+    """
+    Extracts relevant data from the fiels to be exposed as an impacted file
+    """
 
     def deserialize_file(self, file):
         file["patch_coverage"] = self.compute_patch_per_file(file)
