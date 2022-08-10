@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock
+
 import pytest
 from django.forms import ValidationError
 from django.urls import reverse
@@ -6,6 +8,22 @@ from rest_framework.test import APIClient
 from core.tests.factories import CommitFactory, RepositoryFactory
 from reports.models import CommitReport
 from upload.views.uploads import CanDoCoverageUploadsPermission, UploadViews
+
+
+def test_upload_permission_class_pass(db, mocker):
+    request_mocked = MagicMock(auth=MagicMock())
+    request_mocked.auth.get_scopes.return_value = ["upload"]
+    permission = CanDoCoverageUploadsPermission()
+    assert permission.has_permission(request_mocked, MagicMock())
+    request_mocked.auth.get_scopes.assert_called_once()
+
+
+def test_upload_permission_class_fail(db, mocker):
+    request_mocked = MagicMock(auth=MagicMock())
+    request_mocked.auth.get_scopes.return_value = ["wrong_scope"]
+    permission = CanDoCoverageUploadsPermission()
+    assert not permission.has_permission(request_mocked, MagicMock())
+    request_mocked.auth.get_scopes.assert_called_once()
 
 
 def test_uploads_get_not_allowed(client, mocker):
