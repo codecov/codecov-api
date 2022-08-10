@@ -1362,9 +1362,12 @@ class ComparisonReportTest(TestCase):
         )
         self.comparison_without_storage = CommitComparisonFactory()
         self.comparison_report = ComparisonReport(self.comparison)
+        self.comparison_report_without_storage = ComparisonReport(
+            self.comparison_without_storage
+        )
 
     def test_empty_impacted_files(self):
-        impacted_files = self.comparison_report.impacted_files()
+        impacted_files = self.comparison_report_without_storage.impacted_files()
         assert impacted_files == []
 
     @patch("services.archive.ArchiveService.read_file")
