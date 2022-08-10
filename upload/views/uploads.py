@@ -42,11 +42,7 @@ class UploadViews(ListCreateAPIView):
 
     def activate_repo(self, repository):
         # Only update the fields if needed
-        if (
-            repository.activated
-            and repository.active
-            and not repository.deleted
-        ):
+        if repository.activated and repository.active and not repository.deleted:
             return
         repository.activated = True
         repository.active = True
