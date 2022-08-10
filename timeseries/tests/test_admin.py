@@ -47,8 +47,8 @@ class DatasetAdminTest(TestCase):
             res.content
         )
 
-    @patch("services.task.TaskService.backfill_repo")
-    def test_perform_backfill(self, backfill_repo):
+    @patch("services.task.TaskService.backfill_dataset")
+    def test_perform_backfill(self, backfill_dataset):
         res = self.client.post(
             reverse("admin:timeseries_dataset_changelist"),
             {
@@ -64,18 +64,16 @@ class DatasetAdminTest(TestCase):
         )
         assert res.status_code == 302
 
-        assert backfill_repo.call_count == 2
-        backfill_repo.assert_any_call(
-            self.repo1,
+        backfill_dataset.call_count == 2
+        backfill_dataset.assert_any_call(
+            self.dataset1,
             start_date=timezone.datetime(2000, 1, 1, tzinfo=timezone.utc),
             end_date=timezone.datetime(2022, 1, 1, tzinfo=timezone.utc),
-            dataset_names=[self.dataset1.name],
         )
-        backfill_repo.assert_any_call(
-            self.repo2,
+        backfill_dataset.assert_any_call(
+            self.dataset2,
             start_date=timezone.datetime(2000, 1, 1, tzinfo=timezone.utc),
             end_date=timezone.datetime(2022, 1, 1, tzinfo=timezone.utc),
-            dataset_names=[self.dataset2.name],
         )
 
         self.dataset1.refresh_from_db()

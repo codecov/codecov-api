@@ -6,6 +6,7 @@ from celery import Celery, chain, group, signature
 from shared import celery_config
 
 from core.models import Repository
+from timeseries.models import Dataset
 
 celery_app = Celery("tasks")
 celery_app.config_from_object("shared.celery_config:BaseCeleryConfig")
@@ -168,3 +169,27 @@ class TaskService(object):
             task_end_date = task_start_date
 
         group(signatures).apply_async()
+
+    def backfill_dataset(
+        self,
+        dataset: Dataset,
+        start_date: datetime,
+        end_date: datetime,
+    ):
+        log.info(
+            f"Triggering dataset backfill",
+            extra=dict(
+                dataset_id=dataset.pk,
+                start_date=start_date.isoformat(),
+                end_date=end_date.isoformat(),
+            ),
+        )
+
+        self._create_signature(
+            "app.tasks.timeseries.backfill_dataset",
+            kwargs=dict(
+                dataset_id=dataset.pk,
+                start_date=start_date.isoformat(),
+                end_date=end_date.isoformat(),
+            ),
+        ).apply_async()
