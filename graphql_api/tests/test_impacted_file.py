@@ -5,7 +5,7 @@ from django.test import TransactionTestCase
 from codecov_auth.tests.factories import OwnerFactory
 from compare.models import CommitComparison
 from compare.tests.factories import CommitComparisonFactory
-from core.tests.factories import CommitFactory, RepositoryFactory
+from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
 from services.comparison import ComparisonReport
 
 from .helper import GraphQLTestHelper
@@ -64,7 +64,42 @@ query ImpactedFile(
               percentCovered
             }
             segments {
-              header
+              hasUnintendedChanges
+            }
+          }
+        }
+      }
+    }
+  }
+}
+"""
+
+query_impacted_file_through_pull = """
+query ImpactedFile(
+    $org: String!
+    $repo: String!
+    $pull: Int!
+    $path: String!
+) {
+  owner(username: $org) {
+    repository(name: $repo) {
+      pull(id: $pull) {
+        compareWithBase {
+          state
+          impactedFile(path: $path) {
+            headName
+            baseName
+            baseCoverage {
+              percentCovered
+            }
+            headCoverage {
+              percentCovered
+            }
+            patchCoverage {
+              percentCovered
+            }
+            segments {
+              hasUnintendedChanges
             }
           }
         }
@@ -137,6 +172,16 @@ mock_data_from_archive = """
 """
 
 
+class MockSegment(object):
+    def __init__(self):
+        self.has_unintended_changes = True
+
+
+class MockFileComparison(object):
+    def __init__(self):
+        self.segments = [MockSegment()]
+
+
 class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
         self.org = OwnerFactory(username="codecov")
@@ -147,6 +192,13 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
             repository=self.repo,
             totals={"c": "12", "diff": [0, 0, 0, 0, 0, "14"]},
             parent_commit_id=self.parent_commit.commitid,
+        )
+        self.pull = PullFactory(
+            pullid=44,
+            repository=self.commit.repository,
+            head=self.commit.commitid,
+            base=self.parent_commit.commitid,
+            compared_to=self.parent_commit.commitid,
         )
         self.comparison = CommitComparisonFactory(
             base_commit=self.parent_commit,
@@ -223,6 +275,43 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                 "patchCoverage": {"percentCovered": 100.0},
                                 "segments": [],
                             }
+                        }
+                    }
+                }
+            }
+        }
+
+    @patch("services.comparison.Comparison.validate")
+    @patch("services.comparison.PullRequestComparison.get_file_comparison")
+    @patch("services.archive.ArchiveService.read_file")
+    def test_fetch_impacted_file_with_segments(
+        self, read_file, mock_get_file_comparison, mock_compare_validate
+    ):
+        read_file.return_value = mock_data_from_archive
+
+        mock_get_file_comparison.return_value = MockFileComparison()
+        mock_compare_validate.return_value = True
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "pull": self.pull.pullid,
+            "path": "fileB",
+        }
+        data = self.gql_request(query_impacted_file_through_pull, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "pull": {
+                        "compareWithBase": {
+                            "state": "processed",
+                            "impactedFile": {
+                                "headName": "fileB",
+                                "baseName": "fileB",
+                                "baseCoverage": {"percentCovered": 41.666666666666664},
+                                "headCoverage": {"percentCovered": 85.71428571428571},
+                                "patchCoverage": {"percentCovered": 100.0},
+                                "segments": [{"hasUnintendedChanges": True}],
+                            },
                         }
                     }
                 }
