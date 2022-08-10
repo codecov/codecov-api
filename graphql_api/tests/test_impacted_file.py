@@ -1,8 +1,9 @@
-from unittest.mock import patch
+from unittest.mock import PropertyMock, patch
 
 from django.test import TransactionTestCase
 
 from codecov_auth.tests.factories import OwnerFactory
+from compare.models import CommitComparison
 from compare.tests.factories import CommitComparisonFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
 from services.comparison import ComparisonReport
@@ -61,6 +62,9 @@ query ImpactedFile(
             }
             patchCoverage {
               percentCovered
+            }
+            segments {
+              header
             }
           }
         }
@@ -147,6 +151,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
         self.comparison = CommitComparisonFactory(
             base_commit=self.parent_commit,
             compare_commit=self.commit,
+            state=CommitComparison.CommitComparisonStates.PROCESSED,
             report_storage_path="v4/test.json",
         )
         self.comparison_report = ComparisonReport(self.comparison)
@@ -196,7 +201,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
         }
 
     @patch("services.archive.ArchiveService.read_file")
-    def test_fetch_impacted_file(self, read_file):
+    def test_fetch_impacted_file_without_segments(self, read_file):
         read_file.return_value = mock_data_from_archive
         variables = {
             "org": self.org.username,
@@ -216,6 +221,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                 "baseCoverage": {"percentCovered": 41.666666666666664},
                                 "headCoverage": {"percentCovered": 85.71428571428571},
                                 "patchCoverage": {"percentCovered": 100.0},
+                                "segments": [],
                             }
                         }
                     }

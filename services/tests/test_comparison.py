@@ -1335,8 +1335,8 @@ mock_data_from_archive = """
         },
         "added_diff_coverage": [
             [9,"h"],
-            [10,"h"],
-            [13,"h"],
+            [10,"m"],
+            [13,"p"],
             [14,"h"],
             [15,"h"],
             [16,"h"],
@@ -1349,7 +1349,6 @@ mock_data_from_archive = """
 
 class ComparisonReportTest(TestCase):
     def setUp(self):
-        print("here")
         self.user = OwnerFactory(username="codecov-user")
         self.parent_commit = CommitFactory()
         self.commit = CommitFactory(
@@ -1361,7 +1360,20 @@ class ComparisonReportTest(TestCase):
             compare_commit=self.commit,
             report_storage_path="v4/test.json",
         )
+        self.comparison_without_storage = CommitComparisonFactory()
         self.comparison_report = ComparisonReport(self.comparison)
+
+    def test_empty_impacted_files(self):
+        impacted_files = self.comparison_report.impacted_files()
+        assert impacted_files == []
+
+    @patch("services.archive.ArchiveService.read_file")
+    def test_impacted_files_error_when_failing_to_get_file_from_storage(
+        self, mock_read_file
+    ):
+        mock_read_file.side_effect = Exception()
+        impacted_files = self.comparison_report.impacted_files()
+        assert impacted_files == []
 
     @patch("services.archive.ArchiveService.read_file")
     def test_impacted_files(self, read_file):
@@ -1439,10 +1451,10 @@ class ComparisonReportTest(TestCase):
                 patch_coverage=ReportTotals(
                     files=0,
                     lines=0,
-                    hits=7,
-                    misses=0,
-                    partials=0,
-                    coverage=100.0,
+                    hits=5,
+                    misses=1,
+                    partials=1,
+                    coverage=71.42857142857143,
                     branches=0,
                     methods=0,
                     messages=0,
@@ -1494,10 +1506,10 @@ class ComparisonReportTest(TestCase):
             patch_coverage=ReportTotals(
                 files=0,
                 lines=0,
-                hits=7,
-                misses=0,
-                partials=0,
-                coverage=100.0,
+                hits=5,
+                misses=1,
+                partials=1,
+                coverage=71.42857142857143,
                 branches=0,
                 methods=0,
                 messages=0,

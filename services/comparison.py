@@ -773,9 +773,7 @@ class ComparisonReport(object):
     def files(self):
         if not self.comparison.report_storage_path:
             return []
-        print("here 1")
         report_data = self.get_comparison_data_from_archive(self.comparison)
-        print("here 2")
         return report_data.get("files", [])
 
     def file(self, path):
