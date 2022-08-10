@@ -182,8 +182,8 @@ class Dataset(models.Model):
     # indicates whether the backfill task has completed for this dataset
     backfilled = models.BooleanField(null=False, default=False)
 
-    created_at = DateTimeWithoutTZField(default=datetime.now)
-    updated_at = DateTimeWithoutTZField(default=datetime.now)
+    created_at = DateTimeWithoutTZField(default=datetime.now, null=True)
+    updated_at = DateTimeWithoutTZField(default=datetime.now, null=True)
 
     class Meta:
         indexes = [
