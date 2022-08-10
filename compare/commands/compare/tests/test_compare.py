@@ -1,5 +1,4 @@
 import asyncio
-from unittest.mock import patch
 
 from django.test import TransactionTestCase
 
