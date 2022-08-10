@@ -51,9 +51,8 @@ class GitlabLoginView(LoginMixin, StateMixin, View):
 
     @async_to_sync
     async def fetch_user_data(self, request, code):
-        redirect_uri = self.redirect_info["redirect_uri"]
         repo_service = self.repo_service_instance
-        user_dict = await repo_service.get_authenticated_user(code, redirect_uri)
+        user_dict = await repo_service.get_authenticated_user(code)
         user_dict["login"] = user_dict["username"]
         # Comply to torngit's token encoding
         user_dict["key"] = user_dict["access_token"]
