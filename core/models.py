@@ -308,7 +308,11 @@ class Pull(models.Model):
                 fields=["repository"],
                 name="pulls_repoid_state_open",
                 condition=models.Q(state=PullStates.OPEN.value),
-            )
+            ),
+            models.Index(
+                fields=["author", "updatestamp"],
+                name="pulls_author_updatestamp",
+            ),
         ]
 
     def save(self, *args, **kwargs):

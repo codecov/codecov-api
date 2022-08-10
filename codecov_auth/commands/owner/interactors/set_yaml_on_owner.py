@@ -33,7 +33,13 @@ class SetYamlOnOwnerInteractor(BaseInteractor):
 
     def convert_yaml_to_dict(self, yaml_input):
         yaml_safe = html.escape(yaml_input, quote=False)
-        yaml_dict = yaml.safe_load(yaml_safe)
+        try:
+            yaml_dict = yaml.safe_load(yaml_safe)
+        except yaml.scanner.ScannerError as e:
+            line = e.problem_mark.line
+            column = e.problem_mark.column
+            message = f"Syntax error at line {line+1}, column {column+1}: {e.problem}"
+            raise ValidationError(message)
         if not yaml_dict:
             return None
         try:

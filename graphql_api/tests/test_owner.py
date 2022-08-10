@@ -1,5 +1,5 @@
 import asyncio
-import datetime
+from hashlib import sha1
 from unittest.mock import patch
 
 from ariadne import graphql_sync
@@ -15,6 +15,7 @@ from .helper import GraphQLTestHelper, paginate_connection
 
 query_repositories = """{
     owner(username: "%s") {
+        hashOwnerid
         isCurrentUserPartOfOrg
         yaml
         repositories%s {
@@ -48,8 +49,11 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
     def test_fetching_repositories(self):
         query = query_repositories % (self.user.username, "", "")
         data = self.gql_request(query, user=self.user)
+        hash_ownerid = sha1(str(self.user.ownerid).encode())
+        hashOwnerid = hash_ownerid.hexdigest()
         assert data == {
             "owner": {
+                "hashOwnerid": hashOwnerid,
                 "isCurrentUserPartOfOrg": True,
                 "yaml": None,
                 "repositories": {
@@ -255,3 +259,10 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         query = query_current_user_is_admin % (owner.username)
         data = self.gql_request(query, user=user)
         assert data["owner"]["isAdmin"] is True
+
+    def test_hashOwnerid(self):
+        query = query_repositories % (self.user.username, "", "")
+        data = self.gql_request(query, user=self.user)
+        hash_ownerid = sha1(str(self.user.ownerid).encode())
+        hashOwnerid = hash_ownerid.hexdigest()
+        assert data["owner"]["hashOwnerid"] == hashOwnerid
