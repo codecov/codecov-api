@@ -68,9 +68,3 @@ class OwnerManager(Manager):
 
     def users_of(self, *args, **kwargs):
         return self.get_queryset().users_of(*args, **kwargs)
-
-    def annotate_activated_in(self, *args, **kwargs):
-        return self.get_queryset().annotate_activated_in(*args, **kwargs)
-
-    def annotate_is_admin_in(self, *args, **kwargs):
-        return self.get_queryset().annotate_is_admin_in(*args, **kwargs)

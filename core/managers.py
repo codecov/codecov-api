@@ -321,26 +321,5 @@ class RepositoryManager(Manager):
     def viewable_repos(self, *args, **kwargs):
         return self.get_queryset().viewable_repos(*args, **kwargs)
 
-    def exclude_uncovered(self, *args, **kwargs):
-        return self.get_queryset().exclude_uncovered(*args, **kwargs)
-
-    def with_recent_coverage(self, *args, **kwargs):
-        return self.get_queryset().with_recent_coverage(*args, **kwargs)
-
-    def with_latest_commit_totals_before(self, *args, **kwargs):
-        return self.get_queryset().with_latest_commit_totals_before(*args, **kwargs)
-
-    def with_latest_coverage_change(self, *args, **kwargs):
-        return self.get_queryset().with_latest_coverage_change(*args, **kwargs)
-
-    def get_aggregated_coverage(self, *args, **kwargs):
-        return self.get_queryset().get_aggregated_coverage(*args, **kwargs)
-
-    def with_cache_latest_commit_at(self, *args, **kwargs):
-        return self.get_queryset().with_cache_latest_commit_at(*args, **kwargs)
-
-    def with_oldest_commit_at(self, *args, **kwargs):
-        return self.get_queryset().with_oldest_commit_at(*args, **kwargs)
-
     def get_or_create_from_git_repo(self, *args, **kwargs):
         return self.get_queryset().get_or_create_from_git_repo(*args, **kwargs)
