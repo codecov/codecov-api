@@ -1,4 +1,4 @@
-from django.db.models import Exists, F, Func, Manager, OuterRef, Q, QuerySet, Subquery
+from django.db.models import Exists, Func, Manager, OuterRef, Q, QuerySet, Subquery
 
 from core.models import Pull
 
@@ -56,6 +56,12 @@ class OwnerQuerySet(QuerySet):
                     ),
                 )
             )
+        )
+
+    def annotate_last_pull_timestamp(self):
+        pulls = Pull.objects.filter(author=OuterRef("pk")).order_by("-updatestamp")
+        return self.annotate(
+            last_pull_timestamp=Subquery(pulls.values("updatestamp")[:1]),
         )
 
 

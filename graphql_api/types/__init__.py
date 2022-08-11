@@ -11,6 +11,7 @@ from .file import commit_file, file_bindable
 from .file_comparison import file_comparison, file_comparison_bindable
 from .flag import flag, flag_bindable
 from .flag_comparison import flag_comparison, flag_comparison_bindable
+from .impacted_file import impacted_file, impacted_file_bindable
 from .line_comparison import line_comparison, line_comparison_bindable
 from .me import me, me_bindable
 from .measurement import measurement, measurement_bindable
@@ -59,6 +60,7 @@ types = [
     upload,
     commit_file,
     profile,
+    impacted_file,
 ]
 
 bindables = [
@@ -86,6 +88,7 @@ bindables = [
     path_content_file_bindable,
     datetime_scalar,
     profile_bindable,
+    impacted_file_bindable,
     *mutation_resolvers,
     *enum_types.enum_types,
 ]
