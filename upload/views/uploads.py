@@ -17,6 +17,7 @@ log = logging.getLogger(__name__)
 
 class UploadViews(ListCreateAPIView):
     serializer_class = UploadSerializer
+    serializer_class = UploadSerializer
     permission_classes = [
         # TODO: implement the correct permissions
         AllowAny,

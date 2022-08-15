@@ -2,10 +2,11 @@ import logging
 from datetime import datetime, timedelta
 from typing import Iterable
 
-from celery import Celery, chain, signature
+from celery import Celery, chain, group, signature
 from shared import celery_config
 
 from core.models import Repository
+from timeseries.models import Dataset
 
 celery_app = Celery("tasks")
 celery_app.config_from_object("shared.celery_config:BaseCeleryConfig")
@@ -142,6 +143,8 @@ class TaskService(object):
         # most appropriate.
         delta = timedelta(days=10)
 
+        signatures = []
+
         task_end_date = end_date
         while task_end_date > start_date:
             task_start_date = task_end_date - delta
@@ -156,9 +159,37 @@ class TaskService(object):
             if dataset_names is not None:
                 kwargs["dataset_names"] = dataset_names
 
-            self._create_signature(
-                celery_config.timeseries_backfill_task_name,
-                kwargs=kwargs,
-            ).apply_async()
+            signatures.append(
+                self._create_signature(
+                    celery_config.timeseries_backfill_task_name,
+                    kwargs=kwargs,
+                )
+            )
 
             task_end_date = task_start_date
+
+        group(signatures).apply_async()
+
+    def backfill_dataset(
+        self,
+        dataset: Dataset,
+        start_date: datetime,
+        end_date: datetime,
+    ):
+        log.info(
+            f"Triggering dataset backfill",
+            extra=dict(
+                dataset_id=dataset.pk,
+                start_date=start_date.isoformat(),
+                end_date=end_date.isoformat(),
+            ),
+        )
+
+        self._create_signature(
+            "app.tasks.timeseries.backfill_dataset",
+            kwargs=dict(
+                dataset_id=dataset.pk,
+                start_date=start_date.isoformat(),
+                end_date=end_date.isoformat(),
+            ),
+        ).apply_async()

@@ -1,3 +1,4 @@
+from hashlib import sha1
 from typing import Iterable
 
 import yaml
@@ -88,3 +89,9 @@ def resolve_is_current_user_an_admin(owner, info):
     current_user = info.context["request"].user
     command = info.context["executor"].get_command("owner")
     return command.get_is_current_user_an_admin(owner, current_user)
+
+
+@owner_bindable.field("hashOwnerid")
+def resolve_hash_ownerid(owner, info):
+    hash_ownerid = sha1(str(owner.ownerid).encode())
+    return hash_ownerid.hexdigest()
