@@ -10,7 +10,7 @@ from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.comparison import ComparisonLoader
 from graphql_api.dataloader.owner import OwnerLoader
 from graphql_api.helpers.connection import queryset_to_connection
-from graphql_api.types.enums import OrderingDirection
+from graphql_api.types.enums import CommitErrorGeneralType, OrderingDirection
 from services.path import Dir, File, path_contents
 from services.profiling import CriticalFile, ProfilingSummary
 
@@ -146,4 +146,32 @@ def resolve_path_contents(
         path=path or "",
         filters=filters or {},
         commit_report=commit_report,
+    )
+
+
+@commit_bindable.field("yamlErrors")
+async def resolve_errors(commit, info, **kwargs):
+    command = info.context["executor"].get_command("commit")
+    queryset = await command.get_commit_errors(
+        commit, errorType=CommitErrorGeneralType.yaml_error.slug
+    )
+    return await queryset_to_connection(
+        queryset,
+        ordering=("updated_at",),
+        ordering_direction=OrderingDirection.ASC,
+        **kwargs
+    )
+
+
+@commit_bindable.field("botErrors")
+async def resolve_errors(commit, info, **kwargs):
+    command = info.context["executor"].get_command("commit")
+    queryset = await command.get_commit_errors(
+        commit, errorType=CommitErrorGeneralType.bot_error.slug
+    )
+    return await queryset_to_connection(
+        queryset,
+        ordering=("updated_at",),
+        ordering_direction=OrderingDirection.ASC,
+        **kwargs
     )

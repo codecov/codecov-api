@@ -76,3 +76,34 @@ class LoginProvider(enum.Enum):
     GITLAB_ENTERPRISE = "gitlab_enterprise"
     BITBUCKET = "bitbucket"
     BITBUCKET_SERVER = "bitbucket_server"
+
+
+class CommitErrorGeneralType(enum.Enum):
+    yaml_error = ("YAML_ERROR", "commit error of yaml type")
+    bot_error = ("BOT_ERROR", "commit error of bot type")
+
+    def __init__(self, slug, description):
+        self.description = description
+        self.slug = slug
+
+    @classmethod
+    def get_error_type_from_string(cls, error_type_str):
+        for el in cls:
+            if el.slug == error_type_str:
+                return el
+        return None
+
+
+class CommitErrorCode(enum.Enum):
+    invalid_yaml = ("invalid_yaml", CommitErrorGeneralType.yaml_error)
+    yaml_client_error = ("yaml_client_error", CommitErrorGeneralType.yaml_error)
+    yaml_unknown_error = ("yaml_unknown_error", CommitErrorGeneralType.yaml_error)
+    repo_bot_invalid = ("repo_bot_invalid", CommitErrorGeneralType.bot_error)
+
+    def __init__(self, db_string, error_type):
+        self.db_string = db_string
+        self.error_type = error_type
+
+    @classmethod
+    def get_codes_from_type(cls, error_type):
+        return [item for item in cls if item.error_type == error_type]
