@@ -21,15 +21,15 @@ class ActivateFlagsMeasurementsInteractor(BaseInteractor):
         if not settings.TIMESERIES_ENABLED:
             raise ValidationError("Timeseries storage not enabled")
 
-    def backfill(self, repository):
+    def backfill(self, dataset: Dataset):
         oldest_commit = (
-            Commit.objects.filter(repository_id=repository.pk)
+            Commit.objects.filter(repository_id=dataset.repository_id)
             .order_by("timestamp")
             .first()
         )
 
         newest_commit = (
-            Commit.objects.filter(repository_id=repository.pk)
+            Commit.objects.filter(repository_id=dataset.repository_id)
             .order_by("-timestamp")
             .first()
         )
@@ -41,11 +41,10 @@ class ActivateFlagsMeasurementsInteractor(BaseInteractor):
             end_date = newest_commit.timestamp.date() + timedelta(days=1)
             end_date = datetime.fromordinal(end_date.toordinal())
 
-            TaskService().backfill_repo(
-                repository,
+            TaskService().backfill_dataset(
+                dataset,
                 start_date=start_date,
                 end_date=end_date,
-                dataset_names=[MeasurementName.FLAG_COVERAGE.value],
             )
 
     @sync_to_async
@@ -64,6 +63,6 @@ class ActivateFlagsMeasurementsInteractor(BaseInteractor):
         )
 
         if created:
-            self.backfill(repo)
+            self.backfill(dataset)
 
         return dataset
