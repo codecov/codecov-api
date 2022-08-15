@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "core",
     "graphql_api",
     "internal_api",
+    "labelanalysis",
     "profiling",
     "public_api",
     "reports",
