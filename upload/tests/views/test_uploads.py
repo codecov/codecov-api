@@ -1,5 +1,5 @@
-from unittest.mock import patch
 import uuid
+from unittest.mock import patch
 
 import pytest
 from django.urls import reverse
@@ -35,6 +35,7 @@ def test_get_repo_error(mock_metrics, db):
         upload_views.get_repo()
     assert exp.match("Repository not found")
     mock_metrics.assert_called_once_with("uploads.rejected", 1)
+
 
 def test_get_commit(db):
     repository = RepositoryFactory(name="the_repo", author__username="codecov")
