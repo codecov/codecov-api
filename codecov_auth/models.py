@@ -19,11 +19,11 @@ from codecov_auth.constants import (
     GRAVATAR_BASE_URL,
 )
 from codecov_auth.helpers import get_gitlab_url
-from core.managers import RepositoryQuerySet
+from core.managers import RepositoryManager
 from core.models import DateTimeWithoutTZField, Repository
 from utils.config import get_config
 
-from .managers import OwnerQuerySet
+from .managers import OwnerManager
 
 # Large number to represent Infinity as float('int') isnt JSON serializable
 INFINITY = 99999999
@@ -123,9 +123,9 @@ class Owner(models.Model):
     onboarding_completed = models.BooleanField(default=False)
     is_superuser = models.BooleanField(null=True, default=False)
 
-    objects = OwnerQuerySet.as_manager()
+    objects = OwnerManager()
 
-    repository_set = RepositoryQuerySet.as_manager()
+    repository_set = RepositoryManager()
 
     def __str__(self):
         return f"Owner<{self.service}/{self.username}>"
