@@ -107,3 +107,13 @@ def test_backfill_dataset(mocker):
         app=celery_app,
     )
     signature.apply_async.assert_called_once_with()
+
+def test_update_commit_task(mocker):
+    signature_mock = mocker.patch("services.task.signature")
+    TaskService().update_commit(1, 2)
+    signature_mock.assert_called_with(
+        "app.tasks.commit_update.CommitUpdate",
+        args=None,
+        kwargs=dict(commitid=1, repoid=2),
+        app=celery_app,
+    )
