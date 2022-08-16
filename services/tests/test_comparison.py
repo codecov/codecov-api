@@ -7,18 +7,21 @@ import minio
 import pytest
 from django.test import TestCase
 from shared.reports.resources import ReportFile
-from shared.reports.types import LineSession, ReportLine
+from shared.reports.types import ReportTotals
 from shared.utils.merge import LineType
 
 from codecov_auth.tests.factories import OwnerFactory
+from compare.tests.factories import CommitComparisonFactory
 from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
 from services.archive import SerializableReport
 from services.comparison import (
     Comparison,
+    ComparisonReport,
     CreateChangeSummaryVisitor,
     CreateLineComparisonVisitor,
     FileComparison,
     FileComparisonTraverseManager,
+    ImpactedFile,
     LineComparison,
     MissingComparisonReport,
     PullRequestComparison,
@@ -1279,3 +1282,243 @@ class SegmentTests(TestCase):
         segments = file_comparison.segments
         assert len(segments) == 1
         assert segments[0].header == (1, 3, 0, 0)
+
+
+mock_data_from_archive = """
+{
+    "files": [{
+        "head_name": "fileA",
+        "base_name": "fileA",
+        "head_coverage": {
+            "hits": 12,
+            "misses": 1,
+            "partials": 1,
+            "branches": 3,
+            "sessions": 0,
+            "complexity": 0,
+            "complexity_total": 0,
+            "methods": 5
+        },
+        "base_coverage": {
+            "hits": 5,
+            "misses": 6,
+            "partials": 1,
+            "branches": 2,
+            "sessions": 0,
+            "complexity": 0,
+            "complexity_total": 0,
+            "methods": 4
+        }
+    },
+    {
+        "head_name": "fileB",
+        "base_name": "fileB",
+        "head_coverage": {
+            "hits": 12,
+            "misses": 1,
+            "partials": 1,
+            "branches": 3,
+            "sessions": 0,
+            "complexity": 0,
+            "complexity_total": 0,
+            "methods": 5
+        },
+        "base_coverage": {
+            "hits": 5,
+            "misses": 6,
+            "partials": 1,
+            "branches": 2,
+            "sessions": 0,
+            "complexity": 0,
+            "complexity_total": 0,
+            "methods": 4
+        },
+        "added_diff_coverage": [
+            [9,"h"],
+            [10,"m"],
+            [13,"p"],
+            [14,"h"],
+            [15,"h"],
+            [16,"h"],
+            [17,"h"]
+        ]
+    }]
+}
+"""
+
+
+class ComparisonReportTest(TestCase):
+    def setUp(self):
+        self.user = OwnerFactory(username="codecov-user")
+        self.parent_commit = CommitFactory()
+        self.commit = CommitFactory(
+            parent_commit_id=self.parent_commit.commitid,
+            repository=self.parent_commit.repository,
+        )
+        self.comparison = CommitComparisonFactory(
+            base_commit=self.parent_commit,
+            compare_commit=self.commit,
+            report_storage_path="v4/test.json",
+        )
+        self.comparison_without_storage = CommitComparisonFactory()
+        self.comparison_report = ComparisonReport(self.comparison)
+        self.comparison_report_without_storage = ComparisonReport(
+            self.comparison_without_storage
+        )
+
+    def test_empty_impacted_files(self):
+        impacted_files = self.comparison_report_without_storage.impacted_files()
+        assert impacted_files == []
+
+    @patch("services.archive.ArchiveService.read_file")
+    def test_impacted_files_error_when_failing_to_get_file_from_storage(
+        self, mock_read_file
+    ):
+        mock_read_file.side_effect = Exception()
+        impacted_files = self.comparison_report.impacted_files()
+        assert impacted_files == []
+
+    @patch("services.archive.ArchiveService.read_file")
+    def test_impacted_files(self, read_file):
+        read_file.return_value = mock_data_from_archive
+        impacted_files = self.comparison_report.impacted_files()
+        assert impacted_files == [
+            ImpactedFile(
+                base_name="fileA",
+                head_name="fileA",
+                base_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=5,
+                    misses=6,
+                    partials=1,
+                    coverage=41.666666666666664,
+                    branches=2,
+                    methods=4,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                head_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=12,
+                    misses=1,
+                    partials=1,
+                    coverage=85.71428571428571,
+                    branches=3,
+                    methods=5,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                patch_coverage=None,
+            ),
+            ImpactedFile(
+                base_name="fileB",
+                head_name="fileB",
+                base_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=5,
+                    misses=6,
+                    partials=1,
+                    coverage=41.666666666666664,
+                    branches=2,
+                    methods=4,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                head_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=12,
+                    misses=1,
+                    partials=1,
+                    coverage=85.71428571428571,
+                    branches=3,
+                    methods=5,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                patch_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=5,
+                    misses=1,
+                    partials=1,
+                    coverage=71.42857142857143,
+                    branches=0,
+                    methods=0,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+            ),
+        ]
+
+    @patch("services.archive.ArchiveService.read_file")
+    def test_impacted_file(self, read_file):
+        read_file.return_value = mock_data_from_archive
+        impacted_file = self.comparison_report.impacted_file("fileB")
+        assert impacted_file == ImpactedFile(
+            base_name="fileB",
+            head_name="fileB",
+            base_coverage=ReportTotals(
+                files=0,
+                lines=0,
+                hits=5,
+                misses=6,
+                partials=1,
+                coverage=41.666666666666664,
+                branches=2,
+                methods=4,
+                messages=0,
+                sessions=0,
+                complexity=0,
+                complexity_total=0,
+                diff=0,
+            ),
+            head_coverage=ReportTotals(
+                files=0,
+                lines=0,
+                hits=12,
+                misses=1,
+                partials=1,
+                coverage=85.71428571428571,
+                branches=3,
+                methods=5,
+                messages=0,
+                sessions=0,
+                complexity=0,
+                complexity_total=0,
+                diff=0,
+            ),
+            patch_coverage=ReportTotals(
+                files=0,
+                lines=0,
+                hits=5,
+                misses=1,
+                partials=1,
+                coverage=71.42857142857143,
+                branches=0,
+                methods=0,
+                messages=0,
+                sessions=0,
+                complexity=0,
+                complexity_total=0,
+                diff=0,
+            ),
+        )

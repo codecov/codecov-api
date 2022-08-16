@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.utils import timezone
@@ -5,7 +7,7 @@ from django.utils import timezone
 from codecov.commands.base import BaseInteractor
 from codecov.commands.exceptions import Unauthenticated, ValidationError
 from codecov_auth.models import Owner
-from core.models import Repository
+from core.models import Commit, Repository
 from services.task import TaskService
 from timeseries.models import Dataset, MeasurementName
 
@@ -19,14 +21,31 @@ class ActivateFlagsMeasurementsInteractor(BaseInteractor):
         if not settings.TIMESERIES_ENABLED:
             raise ValidationError("Timeseries storage not enabled")
 
-    def backfill(self, repository):
-        TaskService().backfill_repo(
-            repository,
-            # this date is a bit arbitrary - just picking something old enough such
-            # that it encompasses most (if not all) commit timestamps in the database
-            start_date=timezone.datetime(2000, 1, 1),
-            end_date=timezone.now(),
+    def backfill(self, dataset: Dataset):
+        oldest_commit = (
+            Commit.objects.filter(repository_id=dataset.repository_id)
+            .order_by("timestamp")
+            .first()
         )
+
+        newest_commit = (
+            Commit.objects.filter(repository_id=dataset.repository_id)
+            .order_by("-timestamp")
+            .first()
+        )
+
+        if oldest_commit and newest_commit:
+            # dates to span the entire range of commits
+            start_date = oldest_commit.timestamp.date()
+            start_date = datetime.fromordinal(start_date.toordinal())
+            end_date = newest_commit.timestamp.date() + timedelta(days=1)
+            end_date = datetime.fromordinal(end_date.toordinal())
+
+            TaskService().backfill_dataset(
+                dataset,
+                start_date=start_date,
+                end_date=end_date,
+            )
 
     @sync_to_async
     def execute(self, repo_name, owner_name):
@@ -44,6 +63,6 @@ class ActivateFlagsMeasurementsInteractor(BaseInteractor):
         )
 
         if created:
-            self.backfill(repo)
+            self.backfill(dataset)
 
         return dataset

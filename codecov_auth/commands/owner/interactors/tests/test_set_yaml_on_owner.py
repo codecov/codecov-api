@@ -31,6 +31,11 @@ toto:
   tata: titi
 """
 
+bad_yaml_syntax_error = """
+codecov:
+    bot: foo: bar
+"""
+
 
 class SetYamlOnOwnerInteractorTest(TransactionTestCase):
     def setUp(self):
@@ -92,4 +97,13 @@ class SetYamlOnOwnerInteractorTest(TransactionTestCase):
             owner_updated = await self.execute(
                 self.current_user, self.org.username, bad_yaml_wrong_keys
             )
-        assert str(e.value) == "Error at ['toto']: unknown field"
+
+    async def test_yaml_syntax_error(self):
+        with pytest.raises(ValidationError) as e:
+            await self.execute(
+                self.current_user, self.org.username, bad_yaml_syntax_error
+            )
+        assert (
+            str(e.value)
+            == "Syntax error at line 3, column 13: mapping values are not allowed here"
+        )

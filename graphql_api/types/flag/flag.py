@@ -37,7 +37,7 @@ def resolve_percent_change(flag: RepositoryFlag, info) -> float:
 
     measurements = info.context["flag_measurements"].get(flag.pk, [])
     if len(measurements) > 1:
-        return ((measurements[-1]["avg"] / measurements[0]["avg"]) - 1) * 100
+        return measurements[-1]["avg"] - measurements[0]["avg"]
 
 
 @flag_bindable.field("measurements")

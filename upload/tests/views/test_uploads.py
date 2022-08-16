@@ -1,10 +1,14 @@
+import uuid
+from unittest.mock import patch
+
 import pytest
-from django.forms import ValidationError
 from django.urls import reverse
+from rest_framework.exceptions import ValidationError
 from rest_framework.test import APIClient
 
 from core.tests.factories import CommitFactory, RepositoryFactory
 from reports.models import CommitReport
+from reports.tests.factories import UploadFactory
 from upload.views.uploads import UploadViews
 
 
@@ -24,11 +28,14 @@ def test_get_repo(db):
     assert recovered_repo == repository
 
 
-def test_get_repo_error(db):
+@patch("shared.metrics.metrics.incr")
+def test_get_repo_error(mock_metrics, db):
     upload_views = UploadViews()
     upload_views.kwargs = dict(repo="repo_missing")
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError) as exp:
         upload_views.get_repo()
+    assert exp.match("Repository not found")
+    mock_metrics.assert_called_once_with("uploads.rejected", 1)
 
 
 def test_get_commit(db):
@@ -38,17 +45,20 @@ def test_get_commit(db):
     commit.save()
     upload_views = UploadViews()
     upload_views.kwargs = dict(repo=repository.name, commit_sha=commit.commitid)
-    recovered_commit = upload_views.get_commit()
+    recovered_commit = upload_views.get_commit(repository)
     assert recovered_commit == commit
 
 
-def test_get_commit_error(db):
+@patch("shared.metrics.metrics.incr")
+def test_get_commit_error(mock_metrics, db):
     repository = RepositoryFactory(name="the_repo", author__username="codecov")
     repository.save()
     upload_views = UploadViews()
     upload_views.kwargs = dict(repo=repository.name, commit_sha="missing_commit")
-    with pytest.raises(ValidationError):
-        upload_views.get_commit()
+    with pytest.raises(ValidationError) as exp:
+        upload_views.get_commit(repository)
+    assert exp.match("Commit SHA not found")
+    mock_metrics.assert_called_once_with("uploads.rejected", 1)
 
 
 def test_get_report(db):
@@ -62,27 +72,35 @@ def test_get_report(db):
     upload_views.kwargs = dict(
         repo=repository.name, commit_sha=commit.commitid, reportid=report.external_id
     )
-    recovered_report = upload_views.get_report()
+    recovered_report = upload_views.get_report(commit)
     assert recovered_report == report
 
 
-def test_get_report_error(db):
+@patch("shared.metrics.metrics.incr")
+def test_get_report_error(mock_metrics, db):
     repository = RepositoryFactory(name="the_repo", author__username="codecov")
     commit = CommitFactory(repository=repository)
     repository.save()
     commit.save()
     upload_views = UploadViews()
+    report_uuid = uuid.uuid4()
     upload_views.kwargs = dict(
-        repo=repository.name, commit_sha=commit.commitid, reportid="missing-report"
+        repo=repository.name, commit_sha=commit.commitid, reportid=report_uuid
     )
-    with pytest.raises(ValidationError):
-        upload_views.get_report()
+    with pytest.raises(ValidationError) as exp:
+        upload_views.get_report(commit)
+        mock_metrics.assert_called_once_with("uploads.rejected", 1)
+    assert exp.match("Report not found")
 
 
-def test_uploads_post_empty(db, mocker, mock_redis):
+@patch("shared.metrics.metrics.incr")
+def test_uploads_post_empty(mock_metrics, db, mocker, mock_redis):
     presigned_put_mock = mocker.patch(
         "services.archive.StorageService.create_presigned_put",
         return_value="presigned put",
+    )
+    upload_task_mock = mocker.patch(
+        "upload.views.uploads.UploadViews.trigger_upload_task", return_value=True
     )
     repository = RepositoryFactory(name="the_repo", author__username="codecov")
     commit = CommitFactory(repository=repository)
@@ -110,7 +128,21 @@ def test_uploads_post_empty(db, mocker, mock_redis):
             ["external_id", "created_at", "raw_upload_location"],
         )
     )
+    mock_metrics.assert_called_once_with("uploads.accepted", 1)
     presigned_put_mock.assert_called()
+    upload_task_mock.assert_called()
+
+
+def test_trigger_upload_task(db, mocker):
+    upload_views = UploadViews()
+    repo = RepositoryFactory.create()
+    upload = UploadFactory.create()
+    commitid = "commit id"
+    mocked_redis = mocker.patch("upload.views.uploads.get_redis_connection")
+    mocked_dispatched_task = mocker.patch("upload.views.uploads.dispatch_upload_task")
+    upload_views.trigger_upload_task(repo, commitid, upload)
+    mocked_redis.assert_called()
+    mocked_dispatched_task.assert_called()
 
 
 def test_activate_repo(db):

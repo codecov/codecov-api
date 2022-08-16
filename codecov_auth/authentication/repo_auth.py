@@ -1,11 +1,13 @@
 from uuid import UUID
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 from rest_framework import authentication, exceptions
 
 from codecov_auth.authentication.types import RepositoryAsUser, RepositoryAuthInterface
 from codecov_auth.models import RepositoryToken
 from core.models import Repository
+from upload.helpers import get_global_tokens
 
 
 class LegacyTokenRepositoryAuth(RepositoryAuthInterface):
@@ -84,3 +86,43 @@ class RepositoryTokenAuthentication(authentication.TokenAuthentication):
             RepositoryAsUser(token.repository),
             TableTokenRepositoryAuth(token.repository, token),
         )
+
+
+class GlobalTokenAuthentication(authentication.TokenAuthentication):
+    def authenticate(self, request):
+        global_tokens = get_global_tokens()
+        token = self.get_token(request)
+        repoid = self.get_repoid(request)
+        owner = self.get_owner(request)
+        using_global_token = True if token in global_tokens else False
+        service = global_tokens[token] if using_global_token else None
+
+        if using_global_token:
+            try:
+                repository = Repository.objects.get(
+                    author__service=service,
+                    repoid=repoid,
+                    author__username=owner.username,
+                )
+            except ObjectDoesNotExist:
+                raise exceptions.AuthenticationFailed(
+                    "Could not find a repository, try using repo upload token"
+                )
+        else:
+            return None
+        return (
+            RepositoryAsUser(repository),
+            LegacyTokenRepositoryAuth(repository, {"token": token}),
+        )
+
+    def get_token(self, request):
+        # TODO
+        pass
+
+    def get_repoid(self, request):
+        # TODO
+        pass
+
+    def get_owner(self, request):
+        # TODO
+        pass
