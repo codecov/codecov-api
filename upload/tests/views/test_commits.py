@@ -8,6 +8,7 @@ from codecov_auth.tests.factories import OwnerFactory
 from core.models import Commit
 from core.tests.factories import CommitFactory, RepositoryFactory
 from upload.views.commits import CommitViews
+from services.task import TaskService
 
 
 def test_get_repo(db):
@@ -67,7 +68,8 @@ def test_commits_get(client, db):
     )
 
 
-def test_commit_post_empty(db, client):
+def test_commit_post_empty(db, client, mocker):
+    mocked_call = mocker.patch.object(TaskService, "update_commit")
     repository = RepositoryFactory.create()
     repository.save()
 
@@ -105,3 +107,4 @@ def test_commit_post_empty(db, client):
     }
     assert response.status_code == 201
     assert expected_response == response_json
+    mocked_call.assert_called_with(commitid="commit_sha", repoid=repository.repoid)
