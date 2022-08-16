@@ -1,9 +1,9 @@
 from unittest.mock import patch
-from uuid import uuid4
+import uuid
 
 import pytest
-from django.forms import ValidationError
 from django.urls import reverse
+from rest_framework.exceptions import ValidationError
 from rest_framework.test import APIClient
 
 from core.tests.factories import CommitFactory, RepositoryFactory
@@ -31,10 +31,10 @@ def test_get_repo(db):
 def test_get_repo_error(mock_metrics, db):
     upload_views = UploadViews()
     upload_views.kwargs = dict(repo="repo_missing")
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError) as exp:
         upload_views.get_repo()
+    assert exp.match("Repository not found")
     mock_metrics.assert_called_once_with("uploads.rejected", 1)
-
 
 def test_get_commit(db):
     repository = RepositoryFactory(name="the_repo", author__username="codecov")
@@ -43,7 +43,7 @@ def test_get_commit(db):
     commit.save()
     upload_views = UploadViews()
     upload_views.kwargs = dict(repo=repository.name, commit_sha=commit.commitid)
-    recovered_commit = upload_views.get_commit()
+    recovered_commit = upload_views.get_commit(repository)
     assert recovered_commit == commit
 
 
@@ -53,9 +53,9 @@ def test_get_commit_error(mock_metrics, db):
     repository.save()
     upload_views = UploadViews()
     upload_views.kwargs = dict(repo=repository.name, commit_sha="missing_commit")
-    with pytest.raises(ValidationError):
-        upload_views.get_commit()
-    mock_metrics.assert_called_once_with("uploads.rejected", 1)
+    with pytest.raises(ValidationError) as exp:
+        upload_views.get_commit(repository)
+    assert exp.match("Commit SHA not found")
 
 
 def test_get_report(db):
@@ -69,7 +69,7 @@ def test_get_report(db):
     upload_views.kwargs = dict(
         repo=repository.name, commit_sha=commit.commitid, reportid=report.external_id
     )
-    recovered_report = upload_views.get_report()
+    recovered_report = upload_views.get_report(commit)
     assert recovered_report == report
 
 
@@ -77,16 +77,17 @@ def test_get_report(db):
 def test_get_report_error(mock_metrics, db):
     repository = RepositoryFactory(name="the_repo", author__username="codecov")
     commit = CommitFactory(repository=repository)
-    wrong_reportid = str(uuid4())
     repository.save()
     commit.save()
     upload_views = UploadViews()
+    report_uuid = uuid.uuid4()
     upload_views.kwargs = dict(
-        repo=repository.name, commit_sha=commit.commitid, reportid=wrong_reportid
+        repo=repository.name, commit_sha=commit.commitid, reportid=report_uuid
     )
-    with pytest.raises(ValidationError):
-        upload_views.get_report()
+    with pytest.raises(ValidationError) as exp:
+        upload_views.get_report(commit)
         mock_metrics.assert_called_once_with("uploads.rejected", 1)
+    assert exp.match("Report not found")
 
 
 @patch("shared.metrics.metrics.incr")
