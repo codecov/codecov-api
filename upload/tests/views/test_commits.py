@@ -7,8 +7,8 @@ from billing.constants import BASIC_PLAN_NAME
 from codecov_auth.tests.factories import OwnerFactory
 from core.models import Commit
 from core.tests.factories import CommitFactory, RepositoryFactory
-from upload.views.commits import CommitViews
 from services.task import TaskService
+from upload.views.commits import CommitViews
 
 
 def test_get_repo(db):

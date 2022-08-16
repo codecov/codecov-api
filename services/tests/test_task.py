@@ -108,6 +108,7 @@ def test_backfill_dataset(mocker):
     )
     signature.apply_async.assert_called_once_with()
 
+
 def test_update_commit_task(mocker):
     signature_mock = mocker.patch("services.task.signature")
     TaskService().update_commit(1, 2)
