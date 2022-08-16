@@ -8,6 +8,7 @@ from utils.routers import OptionalTrailingSlashRouter, RetrieveUpdateDestroyRout
 from .branch.views import BranchViewSet
 from .commit.views import CommitsViewSet
 from .compare.views import CompareViewSet
+from .flag.views import FlagViewSet
 from .owner.views import OwnerViewSet, UserViewSet
 from .pull.views import PullViewSet
 from .repo.views import RepositoryViewSet
@@ -34,6 +35,8 @@ repository_artifacts_router.register(
 repository_artifacts_router.register(
     r"branches", BranchViewSet, basename="api-v2-branches"
 )
+repository_artifacts_router.register(r"flags", FlagViewSet, basename="api-v2-flags")
+
 
 compare_router = RetrieveUpdateDestroyRouter()
 compare_router.register(r"compare", CompareViewSet, basename="api-v2-compare")
