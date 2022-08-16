@@ -1,10 +1,11 @@
 import logging
 
-from django.forms import ValidationError
-from django.http import HttpRequest, HttpResponseNotAllowed, HttpResponseNotFound
+from django.http import HttpRequest, HttpResponseNotAllowed
 from django.utils import timezone
+from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListCreateAPIView
-from rest_framework.permissions import AllowAny, BasePermission
+from rest_framework.permissions import AllowAny
+from shared.metrics import metrics
 
 from codecov_auth.authentication.repo_auth import (
     GlobalTokenAuthentication,
@@ -31,8 +32,8 @@ class UploadViews(ListCreateAPIView):
 
     def perform_create(self, serializer):
         repository = self.get_repo()
-        commit = self.get_commit()
-        report = self.get_report()
+        commit = self.get_commit(repository)
+        report = self.get_report(commit)
         archive_service = ArchiveService(repository)
         path = MinioEndpoints.raw.get_path(
             version="v4",
@@ -42,6 +43,7 @@ class UploadViews(ListCreateAPIView):
             reportid=report.external_id,
         )
         instance = serializer.save(storage_path=path, report_id=report.id)
+        metrics.incr("uploads.accepted", 1)
         return instance
 
     def list(self, request: HttpRequest, repo: str, commit_sha: str, reportid: str):
@@ -54,26 +56,27 @@ class UploadViews(ListCreateAPIView):
             repository = Repository.objects.get(name=repoid)
             return repository
         except Repository.DoesNotExist:
-            raise ValidationError(f"Repository {repoid} not found")
+            metrics.incr("uploads.rejected", 1)
+            raise ValidationError(f"Repository not found")
 
-    def get_commit(self) -> Commit:
+    def get_commit(self, repo: Repository) -> Commit:
         commit_sha = self.kwargs["commit_sha"]
-        repository = self.get_repo()
         try:
             commit = Commit.objects.get(
-                commitid=commit_sha, repository__repoid=repository.repoid
+                commitid=commit_sha, repository__repoid=repo.repoid
             )
             return commit
         except Commit.DoesNotExist:
-            raise ValidationError(f"Commit {commit_sha} not found")
+            metrics.incr("uploads.rejected", 1)
+            raise ValidationError("Commit SHA not found")
 
-    def get_report(self) -> CommitReport:
+    def get_report(self, commit: Commit) -> CommitReport:
         report_id = self.kwargs["reportid"]
-        commit = self.get_commit()
         try:
             report = CommitReport.objects.get(
                 external_id__exact=report_id, commit__commitid=commit.commitid
             )
             return report
         except CommitReport.DoesNotExist:
-            raise ValidationError(f"Report {report_id} not found")
+            metrics.incr("uploads.rejected", 1)
+            raise ValidationError(f"Report not found")

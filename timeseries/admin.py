@@ -13,15 +13,12 @@ from services.task import TaskService
 from timeseries.models import Dataset
 
 
-@transaction.atomic
 def enqueue_tasks(datasets: QuerySet, start_date: datetime, end_date: datetime):
     count = datasets.update(backfilled=False)
-    repo_ids = list(datasets.values_list("repository_id", flat=True))
-    repositories = Repository.objects.filter(pk__in=repo_ids)
 
-    for repository in repositories:
-        TaskService().backfill_repo(
-            repository,
+    for dataset in datasets:
+        TaskService().backfill_dataset(
+            dataset,
             start_date=start_date,
             end_date=end_date,
         )
