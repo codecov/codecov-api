@@ -1,5 +1,5 @@
 import uuid
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from django.urls import reverse
@@ -9,10 +9,29 @@ from rest_framework.test import APIClient
 from core.tests.factories import CommitFactory, RepositoryFactory
 from reports.models import CommitReport
 from reports.tests.factories import UploadFactory
-from upload.views.uploads import UploadViews
+from upload.views.uploads import CanDoCoverageUploadsPermission, UploadViews
 
 
-def test_uploads_get_not_allowed(client, db):
+def test_upload_permission_class_pass(db, mocker):
+    request_mocked = MagicMock(auth=MagicMock())
+    request_mocked.auth.get_scopes.return_value = ["upload"]
+    permission = CanDoCoverageUploadsPermission()
+    assert permission.has_permission(request_mocked, MagicMock())
+    request_mocked.auth.get_scopes.assert_called_once()
+
+
+def test_upload_permission_class_fail(db, mocker):
+    request_mocked = MagicMock(auth=MagicMock())
+    request_mocked.auth.get_scopes.return_value = ["wrong_scope"]
+    permission = CanDoCoverageUploadsPermission()
+    assert not permission.has_permission(request_mocked, MagicMock())
+    request_mocked.auth.get_scopes.assert_called_once()
+
+
+def test_uploads_get_not_allowed(client, db, mocker):
+    mocker.patch.object(
+        CanDoCoverageUploadsPermission, "has_permission", return_value=True
+    )
     repository = RepositoryFactory(name="the-repo", author__username="codecov")
     owner = repository.author
     client = APIClient()
@@ -101,6 +120,10 @@ def test_get_report_error(mock_metrics, db):
 
 @patch("shared.metrics.metrics.incr")
 def test_uploads_post_empty(mock_metrics, db, mocker, mock_redis):
+    # TODO remove the mock object and test the flow with the permissions
+    mocker.patch.object(
+        CanDoCoverageUploadsPermission, "has_permission", return_value=True
+    )
     presigned_put_mock = mocker.patch(
         "services.archive.StorageService.create_presigned_put",
         return_value="presigned put",
