@@ -57,6 +57,7 @@ def test_get_commit_error(mock_metrics, db):
     with pytest.raises(ValidationError) as exp:
         upload_views.get_commit(repository)
     assert exp.match("Commit SHA not found")
+    mock_metrics.assert_called_once_with("uploads.rejected", 1)
 
 
 def test_get_report(db):
