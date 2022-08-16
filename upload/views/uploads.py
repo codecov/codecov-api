@@ -7,6 +7,10 @@ from rest_framework.generics import ListCreateAPIView
 from rest_framework.permissions import AllowAny
 from shared.metrics import metrics
 
+from codecov_auth.authentication.repo_auth import (
+    GlobalTokenAuthentication,
+    RepositoryLegacyTokenAuthentication,
+)
 from core.models import Commit, Repository
 from reports.models import CommitReport
 from services.archive import ArchiveService, MinioEndpoints
@@ -20,6 +24,10 @@ class UploadViews(ListCreateAPIView):
     permission_classes = [
         # TODO: implement the correct permissions
         AllowAny,
+    ]
+    authentication_classes = [
+        GlobalTokenAuthentication,
+        RepositoryLegacyTokenAuthentication,
     ]
 
     def perform_create(self, serializer):
