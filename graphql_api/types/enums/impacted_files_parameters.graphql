@@ -1,0 +1,7 @@
+"""
+Possible value for the impacted file list
+"""
+enum ImpactedFileParameter{
+    HEADNAME
+    CHANGECOVERAGE
+}

@@ -1,0 +1,9 @@
+
+input ImpactedFilesFilters {
+  ordering: ImpactedFilesOrdering
+}
+
+input ImpactedFilesOrdering {
+  direction: OrderingDirection
+  parameter: ImpactedFileParameter
+}
