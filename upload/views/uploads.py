@@ -4,7 +4,7 @@ from django.http import HttpRequest, HttpResponseNotAllowed
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListCreateAPIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, BasePermission
 from shared.metrics import metrics
 
 from codecov_auth.authentication.repo_auth import (
