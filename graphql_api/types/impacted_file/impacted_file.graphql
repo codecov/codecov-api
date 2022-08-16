@@ -1,0 +1,8 @@
+type ImpactedFile {
+  baseName: String
+  headName: String
+  baseCoverage: CoverageTotals
+  headCoverage: CoverageTotals
+  patchCoverage: CoverageTotals
+  segments: [SegmentComparison!]!
+}

@@ -1,6 +1,8 @@
 import logging
+from builtins import property
 
-from django.db.models import Q
+from attr import field
+from django.db.models import F, Q
 from django.shortcuts import get_object_or_404
 from django_filters import rest_framework as django_filters
 from rest_framework import filters, mixins, status, viewsets
@@ -9,6 +11,7 @@ from rest_framework.exceptions import NotFound, PermissionDenied, ValidationErro
 from rest_framework.response import Response
 
 from billing.constants import CURRENTLY_OFFERED_PLANS
+from billing.helpers import on_enterprise_plan
 from codecov_auth.models import Owner, Service
 from internal_api.mixins import OwnerPropertyMixin
 from internal_api.permissions import MemberOfOrgPermissions
@@ -116,6 +119,43 @@ class AccountDetailsViewSet(
         return Response(self.get_serializer(owner).data)
 
 
+class UsersOrderingFilter(filters.OrderingFilter):
+    def get_valid_fields(self, queryset, view, context=None):
+        fields = super().get_valid_fields(queryset, view, context=context or {})
+
+        if "last_pull_timestamp" not in queryset.query.annotations:
+            # queryset not always annotated with `last_pull_timestamp`
+            fields = [
+                (name, verbose_name)
+                for (name, verbose_name) in fields
+                if name != "last_pull_timestamp"
+            ]
+
+        return fields
+
+    def filter_queryset(self, request, queryset, view):
+        ordering = self.get_ordering(request, queryset, view)
+
+        if ordering:
+            ordering = [self._order_expression(order) for order in ordering]
+            return queryset.order_by(*ordering)
+
+        return queryset
+
+    def _order_expression(self, order):
+        """
+        Special cases for `last_pull_timestamp`:
+        - nulls first when ascending
+        - nulls last when descending
+        """
+        if order == "last_pull_timestamp":
+            return F("last_pull_timestamp").asc(nulls_first=True)
+        elif order == "-last_pull_timestamp":
+            return F("last_pull_timestamp").desc(nulls_last=True)
+        else:
+            return order
+
+
 class UserViewSet(
     viewsets.GenericViewSet,
     mixins.ListModelMixin,
@@ -125,12 +165,12 @@ class UserViewSet(
     serializer_class = UserSerializer
     filter_backends = (
         django_filters.DjangoFilterBackend,
-        filters.OrderingFilter,
+        UsersOrderingFilter,
         filters.SearchFilter,
     )
     filterset_class = UserFilters
     permission_classes = [MemberOfOrgPermissions]
-    ordering_fields = ("name", "username", "email")
+    ordering_fields = ("name", "username", "email", "last_pull_timestamp")
     lookup_field = "user_username_or_ownerid"
     search_fields = ["name", "username", "email"]
 
@@ -154,7 +194,11 @@ class UserViewSet(
         )
 
     def get_queryset(self):
-        return self._base_queryset()
+        qs = self._base_queryset()
+        if on_enterprise_plan(self.owner):
+            # pull ordering only available for enterprise
+            qs = qs.annotate_last_pull_timestamp()
+        return qs
 
 
 class PlanViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):

@@ -49,31 +49,21 @@ interval_deltas = {
 }
 
 
-def _interval_range(
-    delta: timedelta, after: datetime, before: datetime
-) -> Tuple[datetime, datetime]:
+def _aligned_start_date(delta: timedelta, date: datetime) -> datetime:
     """
-    Finds the start and end date in the requested time range.
-    TimescaleDB aligns time buckets starting on 2000-01-03 so this might not
-    necessarily be the same bounds of the requested range (after-before).
+    Finds the aligned start date for the given timedelta and date.
+    TimescaleDB aligns time buckets starting on 2000-01-03 so this function will
+    return the date of the start of the bin containing the given `date`.
+    The return value will be <= the given date.
     """
-
     # TimescaleDB aligns time buckets starting on 2000-01-03)
     aligning_date = datetime(2000, 1, 3, tzinfo=timezone.utc)
 
     # number of full intervals between aligning date and the requested `after` date
-    intervals_before = math.ceil((after - aligning_date) / delta)
+    intervals_before = math.floor((date - aligning_date) / delta)
 
-    # start of first interval in requested time range
-    start_date = aligning_date + (intervals_before * delta)
-
-    # number of full intervals within the requested time range
-    intervals_during = math.floor((before - start_date) / delta)
-
-    # start of last interval in requested time range
-    end_date = start_date + (intervals_during * delta)
-
-    return (start_date, end_date)
+    # date of time bucket that contains given start date
+    return aligning_date + (intervals_before * delta)
 
 
 def fill_empty_measurements(
@@ -91,7 +81,8 @@ def fill_empty_measurements(
     }
 
     delta = interval_deltas[interval]
-    start_date, end_date = _interval_range(delta, after, before)
+    start_date = _aligned_start_date(delta, after)
+    end_date = before
 
     intervals = []
 
@@ -121,6 +112,7 @@ def flag_measurements(
     after: datetime,
     before: datetime,
 ) -> Mapping[int, Iterable[dict]]:
+    delta = interval_deltas[interval]
     queryset = (
         MeasurementSummary.agg_by(interval)
         .filter(
@@ -128,7 +120,7 @@ def flag_measurements(
             owner_id=repository.author_id,
             repo_id=repository.pk,
             flag_id__in=flag_ids,
-            timestamp_bin__gte=after,
+            timestamp_bin__gte=_aligned_start_date(delta, after),
             timestamp_bin__lte=before,
         )
         .values("timestamp_bin", "owner_id", "repo_id", "flag_id")
