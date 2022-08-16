@@ -17,6 +17,7 @@ from services.archive import ArchiveService, MinioEndpoints
 from services.redis_configuration import get_redis_connection
 from upload.helpers import dispatch_upload_task
 from upload.serializers import UploadSerializer
+from upload.throttles import UploadsPerCommitThrottle, UploadsPerWindowThrottle
 
 log = logging.getLogger(__name__)
 
@@ -31,6 +32,7 @@ class UploadViews(ListCreateAPIView):
         GlobalTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
     ]
+    throttle_classes = [UploadsPerCommitThrottle, UploadsPerWindowThrottle]
 
     def perform_create(self, serializer):
         repository = self.get_repo()
