@@ -1,6 +1,7 @@
 type Comparison {
   state: String!
   error: ComparisonError
+  impactedFile(path: String!): ImpactedFile
   impactedFiles: [ImpactedFile]!
   patchTotals: CoverageTotals
   changeWithParent: Float
@@ -8,12 +9,4 @@ type Comparison {
   headTotals: CoverageTotals
   fileComparisons: [FileComparison!]
   flagComparisons: [FlagComparison]
-}
-
-type ImpactedFile {
-  baseName: String
-  headName: String
-  baseCoverage: CoverageTotals
-  headCoverage: CoverageTotals
-  patchCoverage: CoverageTotals
 }

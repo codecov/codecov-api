@@ -11,6 +11,7 @@ class FetchRepositoryInteractor(BaseInteractor):
             Repository.objects.viewable_repos(self.current_user)
             .filter(author=owner, name=name)
             .with_recent_coverage()
+            .with_oldest_commit_at()
             .select_related("author")
             .first()
         )

@@ -233,6 +233,19 @@ class RepositoryQuerySet(QuerySet):
             ),
         )
 
+    def with_oldest_commit_at(self):
+        """
+        Annotates the queryset with the oldest commit timestamp.
+        """
+        from core.models import Commit
+
+        commits = Commit.objects.filter(repository_id=OuterRef("pk")).order_by(
+            "timestamp"
+        )
+        return self.annotate(
+            oldest_commit_at=Subquery(commits.values("timestamp")[:1]),
+        )
+
     def get_or_create_from_git_repo(self, git_repo, owner):
         from codecov_auth.models import Owner
 
