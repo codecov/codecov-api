@@ -21,6 +21,7 @@ query Flags(
     $repo: String!
     $measurementsAfter: DateTime!
     $measurementsBefore: DateTime!
+    $measurementsInterval: MeasurementInterval!
 ) {
     owner(username: $org) {
         repository(name: $repo) {
@@ -40,8 +41,8 @@ fragment FlagFragment on Flag {
     percentCovered
     percentChange
     measurements(
-        interval: INTERVAL_1_DAY
-        after: $measurementsAfter,
+        interval: $measurementsInterval
+        after: $measurementsAfter
         before: $measurementsBefore
     ) {
         timestamp
@@ -61,6 +62,22 @@ query Repo(
         repository(name: $repo) {
             flagsMeasurementsActive
             flagsMeasurementsBackfilled
+            flags {
+                edges {
+                    node {
+                        measurements(
+                            interval: INTERVAL_1_DAY
+                            after: "2022-01-01",
+                            before: "2022-12-31",
+                        ) {
+                            timestamp
+                            avg
+                            min
+                            max
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -86,6 +103,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
             "repo": self.repo.name,
             "measurementsAfter": timezone.datetime(2022, 1, 1),
             "measurementsBefore": timezone.datetime(2022, 12, 31),
+            "measurementsInterval": "INTERVAL_1_DAY",
         }
         data = self.gql_request(query_flags, variables=variables)
         assert data == {
@@ -124,6 +142,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
             "repo": self.repo.name,
             "measurementsAfter": timezone.datetime(2022, 1, 1),
             "measurementsBefore": timezone.datetime(2022, 12, 31),
+            "measurementsInterval": "INTERVAL_1_DAY",
         }
         data = self.gql_request(query_flags, variables=variables)
         assert data == {
@@ -221,6 +240,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
             "repo": self.repo.name,
             "measurementsAfter": timezone.datetime(2022, 6, 20),
             "measurementsBefore": timezone.datetime(2022, 6, 23),
+            "measurementsInterval": "INTERVAL_1_DAY",
         }
         data = self.gql_request(query_flags, variables=variables)
         assert data == {
@@ -287,6 +307,110 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                         },
                                         {
                                             "timestamp": "2022-06-23T00:00:00+00:00",
+                                            "avg": None,
+                                            "min": None,
+                                            "max": None,
+                                        },
+                                    ],
+                                }
+                            },
+                        ]
+                    }
+                }
+            }
+        }
+
+    def test_fetch_flags_with_measurements_day_alignment_30day(self):
+        flag = RepositoryFlagFactory(repository=self.repo, flag_name="flag1")
+        MeasurementFactory(
+            name="flag_coverage",
+            owner_id=self.org.pk,
+            repo_id=self.repo.pk,
+            branch="main",
+            flag_id=flag.pk,
+            commit_sha=self.commit.pk,
+            timestamp="2021-04-09T00:00:00",
+            value=75.0,
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "measurementsAfter": "2021-04-10T00:00:00",  # this is in the middle of bin 1
+            "measurementsBefore": "2021-04-20T00:00:00",  # this is in the middle of bin 2
+            "measurementsInterval": "INTERVAL_30_DAY",
+        }
+        data = self.gql_request(query_flags, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "flags": {
+                        "edges": [
+                            {
+                                "node": {
+                                    "name": "flag1",
+                                    "percentCovered": 75,
+                                    "percentChange": None,
+                                    "measurements": [
+                                        {
+                                            "timestamp": "2021-03-13T00:00:00+00:00",
+                                            "avg": 75.0,
+                                            "min": 75.0,
+                                            "max": 75.0,
+                                        },
+                                        {
+                                            "timestamp": "2021-04-12T00:00:00+00:00",
+                                            "avg": None,
+                                            "min": None,
+                                            "max": None,
+                                        },
+                                    ],
+                                }
+                            },
+                        ]
+                    }
+                }
+            }
+        }
+
+    def test_fetch_flags_with_measurements_day_alignment_7day(self):
+        flag = RepositoryFlagFactory(repository=self.repo, flag_name="flag1")
+        MeasurementFactory(
+            name="flag_coverage",
+            owner_id=self.org.pk,
+            repo_id=self.repo.pk,
+            branch="main",
+            flag_id=flag.pk,
+            commit_sha=self.commit.pk,
+            timestamp="2021-04-09T00:00:00",
+            value=75.0,
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "measurementsAfter": "2021-04-7T00:00:00",  # this is in the middle of bin 1
+            "measurementsBefore": "2021-04-15T00:00:00",  # this is in the middle of bin 2
+            "measurementsInterval": "INTERVAL_7_DAY",
+        }
+        data = self.gql_request(query_flags, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "flags": {
+                        "edges": [
+                            {
+                                "node": {
+                                    "name": "flag1",
+                                    "percentCovered": 75,
+                                    "percentChange": None,
+                                    "measurements": [
+                                        {
+                                            "timestamp": "2021-04-05T00:00:00+00:00",
+                                            "avg": 75.0,
+                                            "min": 75.0,
+                                            "max": 75.0,
+                                        },
+                                        {
+                                            "timestamp": "2021-04-12T00:00:00+00:00",
                                             "avg": None,
                                             "min": None,
                                             "max": None,

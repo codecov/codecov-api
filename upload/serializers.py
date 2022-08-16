@@ -2,6 +2,35 @@ from rest_framework import serializers
 
 from codecov_auth.models import Owner
 from core.models import Commit, Repository
+from reports.models import ReportSession
+from services.archive import ArchiveService
+
+
+class UploadSerializer(serializers.ModelSerializer):
+    class Meta:
+        read_only_fields = (
+            "external_id",
+            "created_at",
+            "storage_path",
+            "raw_upload_location",
+            "state",
+            "provider",
+        )
+        fields = read_only_fields + (
+            "ci_url",
+            "upload_type",
+            "flags",
+            "env",
+            "name",
+        )
+        model = ReportSession
+
+    raw_upload_location = serializers.SerializerMethodField()
+
+    def get_raw_upload_location(self, obj: ReportSession):
+        repo = obj.report.commit.repository
+        archive_service = ArchiveService(repo)
+        return archive_service.create_presigned_put(obj.storage_path)
 
 
 class OwnerSerializer(serializers.ModelSerializer):
