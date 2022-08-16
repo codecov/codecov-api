@@ -1,14 +1,16 @@
+from datetime import datetime
 from unittest.mock import patch
 
 import pytest
 from django.conf import settings
 from django.test import TransactionTestCase, override_settings
 from django.utils import timezone
+from freezegun import freeze_time
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
 from reports.tests.factories import RepositoryFlagFactory
-from timeseries.models import MeasurementName
+from timeseries.models import Dataset, MeasurementName
 from timeseries.tests.factories import DatasetFactory, MeasurementFactory
 
 from .helper import GraphQLTestHelper
@@ -19,6 +21,7 @@ query Flags(
     $repo: String!
     $measurementsAfter: DateTime!
     $measurementsBefore: DateTime!
+    $measurementsInterval: MeasurementInterval!
 ) {
     owner(username: $org) {
         repository(name: $repo) {
@@ -38,8 +41,8 @@ fragment FlagFragment on Flag {
     percentCovered
     percentChange
     measurements(
-        interval: INTERVAL_1_DAY
-        after: $measurementsAfter,
+        interval: $measurementsInterval
+        after: $measurementsAfter
         before: $measurementsBefore
     ) {
         timestamp
@@ -59,6 +62,22 @@ query Repo(
         repository(name: $repo) {
             flagsMeasurementsActive
             flagsMeasurementsBackfilled
+            flags {
+                edges {
+                    node {
+                        measurements(
+                            interval: INTERVAL_1_DAY
+                            after: "2022-01-01",
+                            before: "2022-12-31",
+                        ) {
+                            timestamp
+                            avg
+                            min
+                            max
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -84,6 +103,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
             "repo": self.repo.name,
             "measurementsAfter": timezone.datetime(2022, 1, 1),
             "measurementsBefore": timezone.datetime(2022, 12, 31),
+            "measurementsInterval": "INTERVAL_1_DAY",
         }
         data = self.gql_request(query_flags, variables=variables)
         assert data == {
@@ -122,6 +142,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
             "repo": self.repo.name,
             "measurementsAfter": timezone.datetime(2022, 1, 1),
             "measurementsBefore": timezone.datetime(2022, 12, 31),
+            "measurementsInterval": "INTERVAL_1_DAY",
         }
         data = self.gql_request(query_flags, variables=variables)
         assert data == {
@@ -219,6 +240,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
             "repo": self.repo.name,
             "measurementsAfter": timezone.datetime(2022, 6, 20),
             "measurementsBefore": timezone.datetime(2022, 6, 23),
+            "measurementsInterval": "INTERVAL_1_DAY",
         }
         data = self.gql_request(query_flags, variables=variables)
         assert data == {
@@ -230,7 +252,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                 "node": {
                                     "name": "flag1",
                                     "percentCovered": 80.0,
-                                    "percentChange": 6.666666666666665,
+                                    "percentChange": 5.0,
                                     "measurements": [
                                         {
                                             "timestamp": "2022-06-20T00:00:00+00:00",
@@ -263,7 +285,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                 "node": {
                                     "name": "flag2",
                                     "percentCovered": 90.0,
-                                    "percentChange": 5.882352941176472,
+                                    "percentChange": 5.0,
                                     "measurements": [
                                         {
                                             "timestamp": "2022-06-20T00:00:00+00:00",
@@ -285,6 +307,110 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                         },
                                         {
                                             "timestamp": "2022-06-23T00:00:00+00:00",
+                                            "avg": None,
+                                            "min": None,
+                                            "max": None,
+                                        },
+                                    ],
+                                }
+                            },
+                        ]
+                    }
+                }
+            }
+        }
+
+    def test_fetch_flags_with_measurements_day_alignment_30day(self):
+        flag = RepositoryFlagFactory(repository=self.repo, flag_name="flag1")
+        MeasurementFactory(
+            name="flag_coverage",
+            owner_id=self.org.pk,
+            repo_id=self.repo.pk,
+            branch="main",
+            flag_id=flag.pk,
+            commit_sha=self.commit.pk,
+            timestamp="2021-04-09T00:00:00",
+            value=75.0,
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "measurementsAfter": "2021-04-10T00:00:00",  # this is in the middle of bin 1
+            "measurementsBefore": "2021-04-20T00:00:00",  # this is in the middle of bin 2
+            "measurementsInterval": "INTERVAL_30_DAY",
+        }
+        data = self.gql_request(query_flags, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "flags": {
+                        "edges": [
+                            {
+                                "node": {
+                                    "name": "flag1",
+                                    "percentCovered": 75,
+                                    "percentChange": None,
+                                    "measurements": [
+                                        {
+                                            "timestamp": "2021-03-13T00:00:00+00:00",
+                                            "avg": 75.0,
+                                            "min": 75.0,
+                                            "max": 75.0,
+                                        },
+                                        {
+                                            "timestamp": "2021-04-12T00:00:00+00:00",
+                                            "avg": None,
+                                            "min": None,
+                                            "max": None,
+                                        },
+                                    ],
+                                }
+                            },
+                        ]
+                    }
+                }
+            }
+        }
+
+    def test_fetch_flags_with_measurements_day_alignment_7day(self):
+        flag = RepositoryFlagFactory(repository=self.repo, flag_name="flag1")
+        MeasurementFactory(
+            name="flag_coverage",
+            owner_id=self.org.pk,
+            repo_id=self.repo.pk,
+            branch="main",
+            flag_id=flag.pk,
+            commit_sha=self.commit.pk,
+            timestamp="2021-04-09T00:00:00",
+            value=75.0,
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "measurementsAfter": "2021-04-7T00:00:00",  # this is in the middle of bin 1
+            "measurementsBefore": "2021-04-15T00:00:00",  # this is in the middle of bin 2
+            "measurementsInterval": "INTERVAL_7_DAY",
+        }
+        data = self.gql_request(query_flags, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "flags": {
+                        "edges": [
+                            {
+                                "node": {
+                                    "name": "flag1",
+                                    "percentCovered": 75,
+                                    "percentChange": None,
+                                    "measurements": [
+                                        {
+                                            "timestamp": "2021-04-05T00:00:00+00:00",
+                                            "avg": 75.0,
+                                            "min": 75.0,
+                                            "max": 75.0,
+                                        },
+                                        {
+                                            "timestamp": "2021-04-12T00:00:00+00:00",
                                             "avg": None,
                                             "min": None,
                                             "max": None,
@@ -527,7 +653,8 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
 
     def test_repository_flags_metadata_active(self):
         DatasetFactory(
-            name=MeasurementName.FLAG_COVERAGE.value, repository_id=self.repo.pk
+            name=MeasurementName.FLAG_COVERAGE.value,
+            repository_id=self.repo.pk,
         )
 
         data = self.gql_request(
@@ -537,11 +664,15 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
         assert data["owner"]["repository"]["flagsMeasurementsActive"] == True
         assert data["owner"]["repository"]["flagsMeasurementsBackfilled"] == False
 
-    def test_repository_flags_metadata_backfilled(self):
-        DatasetFactory(
+    @freeze_time("2022-01-01T01:00:01+0000")
+    def test_repository_flags_metadata_backfilled_true(self):
+        dataset = DatasetFactory(
             name=MeasurementName.FLAG_COVERAGE.value,
             repository_id=self.repo.pk,
-            backfilled=True,
+        )
+
+        Dataset.objects.filter(pk=dataset.pk).update(
+            created_at=datetime(2022, 1, 1, 0, 0, 0)
         )
 
         data = self.gql_request(
@@ -550,3 +681,21 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
         )
         assert data["owner"]["repository"]["flagsMeasurementsActive"] == True
         assert data["owner"]["repository"]["flagsMeasurementsBackfilled"] == True
+
+    @freeze_time("2022-01-01T00:59:59+0000")
+    def test_repository_flags_metadata_backfilled_false(self):
+        dataset = DatasetFactory(
+            name=MeasurementName.FLAG_COVERAGE.value,
+            repository_id=self.repo.pk,
+        )
+
+        Dataset.objects.filter(pk=dataset.pk).update(
+            created_at=datetime(2022, 1, 1, 0, 0, 0)
+        )
+
+        data = self.gql_request(
+            query_repo,
+            variables={"org": self.org.username, "repo": self.repo.name},
+        )
+        assert data["owner"]["repository"]["flagsMeasurementsActive"] == True
+        assert data["owner"]["repository"]["flagsMeasurementsBackfilled"] == False

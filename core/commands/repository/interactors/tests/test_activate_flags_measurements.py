@@ -1,3 +1,4 @@
+from datetime import datetime
 from unittest.mock import patch
 
 import pytest
@@ -10,8 +11,8 @@ from freezegun import freeze_time
 
 from codecov.commands.exceptions import Unauthenticated, ValidationError
 from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import RepositoryFactory
-from timeseries.models import Dataset, MeasurementName
+from core.tests.factories import CommitFactory, RepositoryFactory
+from timeseries.models import Dataset, Measurement, MeasurementName
 
 from ..activate_flags_measurements import ActivateFlagsMeasurementsInteractor
 
@@ -48,8 +49,8 @@ class ActivateFlagsMeasurementsInteractorTest(TransactionTestCase):
         with pytest.raises(ValidationError):
             self.execute(user=self.user)
 
-    @patch("services.task.TaskService.backfill_repo")
-    def test_creates_dataset(self, backfill_repo):
+    @patch("services.task.TaskService.backfill_dataset")
+    def test_creates_dataset(self, backfill_dataset):
         assert not Dataset.objects.filter(
             name=MeasurementName.FLAG_COVERAGE.value,
             repository_id=self.repo.pk,
@@ -62,12 +63,23 @@ class ActivateFlagsMeasurementsInteractorTest(TransactionTestCase):
             repository_id=self.repo.pk,
         ).exists()
 
-    @patch("services.task.TaskService.backfill_repo")
+    @patch("services.task.TaskService.backfill_dataset")
     @freeze_time("2022-01-01T00:00:00")
-    def test_triggers_task(self, backfill_repo):
+    def test_triggers_task(self, backfill_dataset):
+        CommitFactory(repository=self.repo, timestamp=datetime(2000, 1, 1, 1, 1, 1))
+        CommitFactory(repository=self.repo, timestamp=datetime(2021, 12, 31, 1, 1, 1))
         self.execute(user=self.user)
-        backfill_repo.assert_called_once_with(
-            self.repo,
+        dataset = Dataset.objects.filter(
+            name=MeasurementName.FLAG_COVERAGE.value,
+            repository_id=self.repo.pk,
+        ).first()
+        backfill_dataset.assert_called_once_with(
+            dataset,
             start_date=timezone.datetime(2000, 1, 1),
-            end_date=timezone.datetime(2022, 1, 1, tzinfo=timezone.utc),
+            end_date=timezone.datetime(2022, 1, 1),
         )
+
+    @patch("services.task.TaskService.backfill_dataset")
+    def test_no_commits(self, backfill_dataset):
+        self.execute(user=self.user)
+        assert backfill_dataset.call_count == 0
