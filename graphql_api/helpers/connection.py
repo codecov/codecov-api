@@ -58,8 +58,8 @@ class Connection:
     def end_cursor(self):
         return self.paginator.cursor(self.page[-1]) if len(self.page) > 0 else None
 
-    @cached_property
-    def page_info(self):
+    @sync_to_async
+    def page_info(self, *args, **kwargs):
         return {
             "has_next_page": self.page.has_next,
             "has_previous_page": self.page.has_previous,
