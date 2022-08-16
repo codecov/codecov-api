@@ -14,6 +14,8 @@ from codecov_auth.authentication.repo_auth import (
 from core.models import Commit, Repository
 from reports.models import CommitReport
 from services.archive import ArchiveService, MinioEndpoints
+from services.redis_configuration import get_redis_connection
+from upload.helpers import dispatch_upload_task
 from upload.serializers import UploadSerializer
 
 log = logging.getLogger(__name__)
@@ -43,11 +45,17 @@ class UploadViews(ListCreateAPIView):
             reportid=report.external_id,
         )
         instance = serializer.save(storage_path=path, report_id=report.id)
+        self.trigger_upload_task(repository, commit.commitid, instance)
         metrics.incr("uploads.accepted", 1)
         return instance
 
     def list(self, request: HttpRequest, repo: str, commit_sha: str, reportid: str):
         return HttpResponseNotAllowed(permitted_methods=["POST"])
+
+    def trigger_upload_task(self, repository, commit_sha, upload):
+        redis = get_redis_connection()
+        task_arguments = {"commit": commit_sha, "upload_pk": upload.id, "version": "v4"}
+        dispatch_upload_task(task_arguments, repository, redis)
 
     def get_repo(self) -> Repository:
         # TODO this is not final - how is getting the repo is still in discuss
