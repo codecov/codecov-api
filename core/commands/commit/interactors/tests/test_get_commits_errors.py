@@ -8,7 +8,7 @@ from graphql_api.types.enums import CommitErrorGeneralType
 from ..get_commit_errors import GetCommitErrorsInteractor
 
 
-class GGetCommitErrorsInteractorTest(TransactionTestCase):
+class GetCommitErrorsInteractorTest(TransactionTestCase):
     def setUp(self):
         self.owner = OwnerFactory()
         self.commit = CommitFactory()
