@@ -143,3 +143,19 @@ def test_trigger_upload_task(db, mocker):
     upload_views.trigger_upload_task(repo, commitid, upload)
     mocked_redis.assert_called()
     mocked_dispatched_task.assert_called()
+
+
+def test_activate_repo(db):
+    repo = RepositoryFactory(active=False, deleted=True, activated=False)
+    upload_views = UploadViews()
+    upload_views.activate_repo(repo)
+    assert repo.active
+    assert repo.activated
+    assert not repo.deleted
+
+
+def test_activate_already_activated_repo(db):
+    repo = RepositoryFactory(active=True, activated=True, deleted=False)
+    upload_views = UploadViews()
+    upload_views.activate_repo(repo)
+    assert repo.active
