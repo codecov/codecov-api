@@ -6,13 +6,16 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('codecov_auth', '0013_alter_owner_organizations'),
+        ("codecov_auth", "0013_alter_owner_organizations"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='repositorytoken',
-            name='token_type',
-            field=models.CharField(choices=[('upload', 'Upload'), ('profiling', 'Profiling')], max_length=50),
+            model_name="repositorytoken",
+            name="token_type",
+            field=models.CharField(
+                choices=[("upload", "Upload"), ("profiling", "Profiling")],
+                max_length=50,
+            ),
         ),
     ]
