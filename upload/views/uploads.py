@@ -5,6 +5,7 @@ from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListCreateAPIView
 from rest_framework.permissions import AllowAny
+from shared.metrics import metrics
 
 from core.models import Commit, Repository
 from reports.models import CommitReport
@@ -34,6 +35,7 @@ class UploadViews(ListCreateAPIView):
             reportid=report.external_id,
         )
         instance = serializer.save(storage_path=path, report_id=report.id)
+        metrics.incr("uploads.accepted", 1)
         return instance
 
     def list(self, request: HttpRequest, repo: str, commit_sha: str, reportid: str):
@@ -46,7 +48,8 @@ class UploadViews(ListCreateAPIView):
             repository = Repository.objects.get(name=repoid)
             return repository
         except Repository.DoesNotExist:
-            raise ValidationError(detail="Repository not found")
+            metrics.incr("uploads.rejected", 1)
+            raise ValidationError(f"Repository not found")
 
     def get_commit(self, repo: Repository) -> Commit:
         commit_sha = self.kwargs["commit_sha"]
@@ -56,9 +59,8 @@ class UploadViews(ListCreateAPIView):
             )
             return commit
         except Commit.DoesNotExist:
-            raise ValidationError(
-                detail="Commit SHA not found",
-            )
+            metrics.incr("uploads.rejected", 1)
+            raise ValidationError("Commit SHA not found")
 
     def get_report(self, commit: Commit) -> CommitReport:
         report_id = self.kwargs["reportid"]
@@ -68,6 +70,5 @@ class UploadViews(ListCreateAPIView):
             )
             return report
         except CommitReport.DoesNotExist:
-            raise ValidationError(
-                detail="Report not found",
-            )
+            metrics.incr("uploads.rejected", 1)
+            raise ValidationError(f"Report not found")

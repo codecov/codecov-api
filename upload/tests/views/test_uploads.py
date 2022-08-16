@@ -1,4 +1,5 @@
 import uuid
+from unittest.mock import patch
 
 import pytest
 from django.urls import reverse
@@ -26,12 +27,14 @@ def test_get_repo(db):
     assert recovered_repo == repository
 
 
-def test_get_repo_error(db):
+@patch("shared.metrics.metrics.incr")
+def test_get_repo_error(mock_metrics, db):
     upload_views = UploadViews()
     upload_views.kwargs = dict(repo="repo_missing")
     with pytest.raises(ValidationError) as exp:
         upload_views.get_repo()
     assert exp.match("Repository not found")
+    mock_metrics.assert_called_once_with("uploads.rejected", 1)
 
 
 def test_get_commit(db):
@@ -45,7 +48,8 @@ def test_get_commit(db):
     assert recovered_commit == commit
 
 
-def test_get_commit_error(db):
+@patch("shared.metrics.metrics.incr")
+def test_get_commit_error(mock_metrics, db):
     repository = RepositoryFactory(name="the_repo", author__username="codecov")
     repository.save()
     upload_views = UploadViews()
@@ -53,6 +57,7 @@ def test_get_commit_error(db):
     with pytest.raises(ValidationError) as exp:
         upload_views.get_commit(repository)
     assert exp.match("Commit SHA not found")
+    mock_metrics.assert_called_once_with("uploads.rejected", 1)
 
 
 def test_get_report(db):
@@ -70,7 +75,8 @@ def test_get_report(db):
     assert recovered_report == report
 
 
-def test_get_report_error(db):
+@patch("shared.metrics.metrics.incr")
+def test_get_report_error(mock_metrics, db):
     repository = RepositoryFactory(name="the_repo", author__username="codecov")
     commit = CommitFactory(repository=repository)
     repository.save()
@@ -82,10 +88,12 @@ def test_get_report_error(db):
     )
     with pytest.raises(ValidationError) as exp:
         upload_views.get_report(commit)
+        mock_metrics.assert_called_once_with("uploads.rejected", 1)
     assert exp.match("Report not found")
 
 
-def test_uploads_post_empty(db, mocker, mock_redis):
+@patch("shared.metrics.metrics.incr")
+def test_uploads_post_empty(mock_metrics, db, mocker, mock_redis):
     presigned_put_mock = mocker.patch(
         "services.archive.StorageService.create_presigned_put",
         return_value="presigned put",
@@ -116,4 +124,5 @@ def test_uploads_post_empty(db, mocker, mock_redis):
             ["external_id", "created_at", "raw_upload_location"],
         )
     )
+    mock_metrics.assert_called_once_with("uploads.accepted", 1)
     presigned_put_mock.assert_called()
