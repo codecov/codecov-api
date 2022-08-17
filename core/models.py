@@ -8,10 +8,11 @@ from django.db import models
 from django.forms import ValidationError
 from django.utils.functional import cached_property
 
+from codecov.models import BaseCodecovModel
 from services.archive import ReportService
 
 from .encoders import ReportJSONEncoder
-from .managers import RepositoryQuerySet
+from .managers import RepositoryManager
 
 
 class DateTimeWithoutTZField(models.DateTimeField):
@@ -127,7 +128,7 @@ class Repository(models.Model):
         ]
         verbose_name_plural = "Repositories"
 
-    objects = RepositoryQuerySet.as_manager()
+    objects = RepositoryManager()
 
     def __str__(self):
         return f"Repo<{self.author}/{self.name}>"
@@ -308,7 +309,11 @@ class Pull(models.Model):
                 fields=["repository"],
                 name="pulls_repoid_state_open",
                 condition=models.Q(state=PullStates.OPEN.value),
-            )
+            ),
+            models.Index(
+                fields=["author", "updatestamp"],
+                name="pulls_author_updatestamp",
+            ),
         ]
 
     def save(self, *args, **kwargs):
@@ -358,3 +363,13 @@ class CommitNotification(models.Model):
 
     class Meta:
         db_table = "commit_notifications"
+
+
+class CommitError(BaseCodecovModel):
+    commit = models.ForeignKey(
+        "Commit",
+        related_name="errors",
+        on_delete=models.CASCADE,
+    )
+    error_code = models.CharField(max_length=100)
+    error_params = models.JSONField(default=dict)

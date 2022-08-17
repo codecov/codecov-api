@@ -3,19 +3,20 @@ import copy
 import functools
 import json
 import logging
-import os
 from collections import Counter
+from dataclasses import dataclass
 
 import minio
 from asgiref.sync import async_to_sync
 from django.utils.functional import cached_property
 from shared.helpers.yaml import walk
+from shared.reports.types import ReportTotals
 from shared.utils.merge import LineType, line_type
 
 from compare.models import CommitComparison
 from core.models import Commit
 from services import ServiceException
-from services.archive import ReportService
+from services.archive import ArchiveService, ReportService
 from services.redis_configuration import get_redis_connection
 from services.repo_providers import RepoProviderService
 from services.task import TaskService
@@ -752,6 +753,161 @@ class FlagComparison(object):
             return None
         git_comparison = self.comparison.git_comparison
         return self.head_report.apply_diff(git_comparison["diff"])
+
+
+@dataclass
+class ImpactedFile:
+    base_name: str
+    head_name: str
+    base_coverage: ReportTotals
+    head_coverage: ReportTotals
+    patch_coverage: ReportTotals
+    change_coverage: float
+
+
+"""
+This class creates helper methods relevant to the report created for comparison between two commits.
+
+This class takes an existing comparison as the parameter and outputs logic relevant to any contents within it.
+"""
+
+
+class ComparisonReport(object):
+    def __init__(self, comparison):
+        self.comparison = comparison
+
+    @cached_property
+    def files(self):
+        if not self.comparison.report_storage_path:
+            return []
+        report_data = self.get_comparison_data_from_archive()
+        return report_data.get("files", [])
+
+    def file(self, path):
+        for file in self.files:
+            if file["head_name"] == path:
+                return file
+
+    def impacted_file(self, path):
+        impacted_file = self.file(path)
+        return self.deserialize_file(impacted_file)
+
+    def impacted_files(self, filters):
+        impacted_files = self.files
+        impacted_files = [self.deserialize_file(file) for file in impacted_files]
+        return self._apply_filters(impacted_files, filters)
+
+    def _apply_filters(self, impacted_files, filters):
+        filter_parameter = filters.get("ordering", {}).get("parameter")
+        filter_direction = filters.get("ordering", {}).get("direction")
+        if filter_parameter and filter_direction:
+            parameter_value = filter_parameter.value
+            direction_value = filter_direction.value
+            impacted_files = self.sort_impacted_files(
+                impacted_files, parameter_value, direction_value
+            )
+        return impacted_files
+
+    """
+    Sorts the impacted files by any provided parameter and slides items with None values to the end
+    """
+
+    def sort_impacted_files(self, impacted_files, parameter_value, direction_value):
+        # Separate impacted files with None values for the specified parameter value
+        files_with_coverage = []
+        files_without_coverage = []
+        for file in impacted_files:
+            if getattr(file, parameter_value):
+                files_with_coverage.append(file)
+            else:
+                files_without_coverage.append(file)
+
+        # Sort impacted_files list based on parameter value
+        is_reversed = direction_value == "descending"
+        files_with_coverage = sorted(
+            files_with_coverage,
+            key=lambda x: getattr(x, parameter_value),
+            reverse=is_reversed,
+        )
+
+        # Merge both lists together
+        return files_with_coverage + files_without_coverage
+
+    """
+    Fetches contents of the report
+    """
+
+    def get_comparison_data_from_archive(self):
+        repository = self.comparison.compare_commit.repository
+        archive_service = ArchiveService(repository)
+        try:
+            data = archive_service.read_file(self.comparison.report_storage_path)
+            return json.loads(data)
+        # pylint: disable=W0702
+        except:
+            log.error(
+                "ComparisonReport - couldnt fetch data from storage", exc_info=True
+            )
+            return {}
+
+    """
+    Aggregates hits, misses and partials correspondent to the diff
+    """
+
+    def compute_patch_per_file(self, file):
+        added_diff_coverage = file.get("added_diff_coverage", [])
+        if not added_diff_coverage:
+            return None
+        patch_coverage = {"hits": 0, "misses": 0, "partials": 0}
+        for added_coverage in added_diff_coverage:
+            [_, type_coverage] = added_coverage
+            if type_coverage == "h":
+                patch_coverage["hits"] += 1
+            if type_coverage == "m":
+                patch_coverage["misses"] += 1
+            if type_coverage == "p":
+                patch_coverage["partials"] += 1
+        return patch_coverage
+
+    def deserialize_totals(self, file, key):
+        if not file.get(key):
+            return
+        # convert dict to ReportTotals and compute the coverage
+        totals = ReportTotals(**file[key])
+        nb_branches = totals.hits + totals.misses + totals.partials
+        totals.coverage = (100 * totals.hits / nb_branches) if nb_branches > 0 else None
+        file[key] = totals
+
+    """
+    Extracts relevant data from the fiels to be exposed as an impacted file
+    """
+
+    def deserialize_file(self, file):
+        file["patch_coverage"] = self.compute_patch_per_file(file)
+        self.deserialize_totals(file, "base_coverage")
+        self.deserialize_totals(file, "head_coverage")
+        self.deserialize_totals(file, "patch_coverage")
+        change_coverage = self.calculate_change(
+            file["head_coverage"], file["base_coverage"]
+        )
+        return ImpactedFile(
+            head_name=file["head_name"],
+            base_name=file["base_name"],
+            head_coverage=file["head_coverage"],
+            base_coverage=file["base_coverage"],
+            patch_coverage=file["patch_coverage"],
+            change_coverage=change_coverage,
+        )
+
+    # TODO: I think this can be a function located elsewhere
+    def calculate_change(self, head_coverage, compared_to_coverage):
+        if head_coverage and compared_to_coverage:
+            return head_coverage.coverage - compared_to_coverage.coverage
+        # if not head_coverage:
+        #     # return there is no head coverage
+        # if not compared_to_coverage:
+        #     # return there is no base coverage
+        return None
 
 
 class PullRequestComparison(Comparison):

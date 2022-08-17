@@ -25,14 +25,16 @@ INSTALLED_APPS = [
     "corsheaders",
     "rest_framework",
     "billing",
-    "core",
     "codecov_auth",
-    "reports",
-    "internal_api",
-    "graphql_api",
     "compare",
+    "core",
+    "graphql_api",
+    "internal_api",
+    "labelanalysis",
     "profiling",
     "public_api",
+    "reports",
+    "staticanalysis",
     "timeseries",
 ]
 
@@ -311,5 +313,6 @@ CORS_ALLOWED_ORIGINS = []
 GRAPHQL_PLAYGROUND = False
 
 UPLOAD_THROTTLING_ENABLED = True
+MAX_UPLOAD_LIMIT = get_config("setup", "max_sessions", default=150)
 
 CANNY_SSO_PRIVATE_TOKEN = get_config("canny", "sso_private_token", default="")

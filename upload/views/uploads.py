@@ -1,25 +1,42 @@
 import logging
 
-from django.forms import ValidationError
-from django.http import HttpRequest, HttpResponseNotAllowed, HttpResponseNotFound
+from django.http import HttpRequest, HttpResponseNotAllowed
 from django.utils import timezone
+from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListCreateAPIView
 from rest_framework.permissions import AllowAny, BasePermission
+from shared.metrics import metrics
 
+from codecov_auth.authentication.repo_auth import (
+    GlobalTokenAuthentication,
+    RepositoryLegacyTokenAuthentication,
+)
 from core.models import Commit, Repository
 from reports.models import CommitReport
 from services.archive import ArchiveService, MinioEndpoints
+from services.redis_configuration import get_redis_connection
+from upload.helpers import dispatch_upload_task
 from upload.serializers import UploadSerializer
+from upload.throttles import UploadsPerCommitThrottle, UploadsPerWindowThrottle
 
 log = logging.getLogger(__name__)
+
+
+class CanDoCoverageUploadsPermission(BasePermission):
+    def has_permission(self, request, view):
+        return request.auth is not None and "upload" in request.auth.get_scopes()
 
 
 class UploadViews(ListCreateAPIView):
     serializer_class = UploadSerializer
     permission_classes = [
-        # TODO: implement the correct permissions
-        AllowAny,
+        CanDoCoverageUploadsPermission,
     ]
+    authentication_classes = [
+        GlobalTokenAuthentication,
+        RepositoryLegacyTokenAuthentication,
+    ]
+    throttle_classes = [UploadsPerCommitThrottle, UploadsPerWindowThrottle]
 
     def perform_create(self, serializer):
         repository = self.get_repo()
@@ -34,10 +51,27 @@ class UploadViews(ListCreateAPIView):
             reportid=report.external_id,
         )
         instance = serializer.save(storage_path=path, report_id=report.id)
+        self.trigger_upload_task(repository, commit.commitid, instance)
+        metrics.incr("uploads.accepted", 1)
+        self.activate_repo(repository)
         return instance
 
     def list(self, request: HttpRequest, repo: str, commit_sha: str, reportid: str):
         return HttpResponseNotAllowed(permitted_methods=["POST"])
+
+    def trigger_upload_task(self, repository, commit_sha, upload):
+        redis = get_redis_connection()
+        task_arguments = {"commit": commit_sha, "upload_pk": upload.id, "version": "v4"}
+        dispatch_upload_task(task_arguments, repository, redis)
+
+    def activate_repo(self, repository):
+        # Only update the fields if needed
+        if repository.activated and repository.active and not repository.deleted:
+            return
+        repository.activated = True
+        repository.active = True
+        repository.deleted = False
+        repository.save(update_fields=["activated", "active", "deleted", "updatestamp"])
 
     def get_repo(self) -> Repository:
         # TODO this is not final - how is getting the repo is still in discuss
@@ -46,7 +80,8 @@ class UploadViews(ListCreateAPIView):
             repository = Repository.objects.get(name=repoid)
             return repository
         except Repository.DoesNotExist:
-            raise ValidationError(f"Repository not found", params=dict(repoid=repoid))
+            metrics.incr("uploads.rejected", 1)
+            raise ValidationError(f"Repository not found")
 
     def get_commit(self, repo: Repository) -> Commit:
         commit_sha = self.kwargs["commit_sha"]
@@ -56,10 +91,8 @@ class UploadViews(ListCreateAPIView):
             )
             return commit
         except Commit.DoesNotExist:
-            raise ValidationError(
-                f"Commit SHA not found",
-                params=dict(repoid=repo.repoid, commit_sha=commit_sha),
-            )
+            metrics.incr("uploads.rejected", 1)
+            raise ValidationError("Commit SHA not found")
 
     def get_report(self, commit: Commit) -> CommitReport:
         report_id = self.kwargs["reportid"]
@@ -69,11 +102,5 @@ class UploadViews(ListCreateAPIView):
             )
             return report
         except CommitReport.DoesNotExist:
-            raise ValidationError(
-                f"Report not found",
-                params=dict(
-                    repoid=commit.repository.repoid,
-                    commit_sha=commit.commitid,
-                    reporid=report_id,
-                ),
-            )
+            metrics.incr("uploads.rejected", 1)
+            raise ValidationError(f"Report not found")

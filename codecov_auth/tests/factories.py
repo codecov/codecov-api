@@ -4,7 +4,13 @@ import factory
 from django.utils import timezone
 from factory.django import DjangoModelFactory
 
-from codecov_auth.models import Owner, RepositoryToken, Service, Session
+from codecov_auth.models import (
+    OrganizationLevelToken,
+    Owner,
+    RepositoryToken,
+    Service,
+    Session,
+)
 from utils.encryption import encryptor
 
 
@@ -39,6 +45,14 @@ class SessionFactory(DjangoModelFactory):
     lastseen = timezone.now()
     type = Session.SessionType.API.value
     token = factory.Faker("uuid4")
+
+
+class OrganizationLevelTokenFactory(DjangoModelFactory):
+    class Meta:
+        model = OrganizationLevelToken
+
+    owner = factory.SubFactory(OwnerFactory)
+    token = uuid4()
 
 
 class GetAdminProviderAdapter:

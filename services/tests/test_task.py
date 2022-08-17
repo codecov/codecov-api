@@ -1,10 +1,15 @@
 from datetime import datetime
+from operator import xor
+from unittest.mock import MagicMock
 
 import pytest
+from celery import Task
+from django.conf import settings
 from shared import celery_config
 
 from core.tests.factories import CommitFactory, RepositoryFactory
 from services.task import TaskService, celery_app
+from timeseries.tests.factories import DatasetFactory
 
 
 def test_refresh_task(mocker):
@@ -27,6 +32,8 @@ def test_compute_comparison_task(mocker):
 @pytest.mark.django_db
 def test_backfill_repo(mocker):
     signature_mock = mocker.patch("services.task.signature")
+    apply_async_mock = mocker.patch("celery.group.apply_async")
+
     repo = RepositoryFactory()
     TaskService().backfill_repo(
         repo,
@@ -70,22 +77,33 @@ def test_backfill_repo(mocker):
         app=celery_app,
     )
 
+    apply_async_mock.assert_called_once_with()
 
-@pytest.mark.django_db
-def test_mutation_upload(mocker):
+
+@pytest.mark.skipif(
+    not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
+)
+@pytest.mark.django_db(databases=["timeseries"])
+def test_backfill_dataset(mocker):
     signature_mock = mocker.patch("services.task.signature")
-    repo = RepositoryFactory()
-    commit = CommitFactory(repository=repo)
-    upload_path = "some_upload_path"
-    TaskService().mutation_test_upload(repo.repoid, commit.commitid, upload_path)
+    signature = MagicMock()
+    signature_mock.return_value = signature
+
+    dataset = DatasetFactory()
+    TaskService().backfill_dataset(
+        dataset,
+        start_date=datetime(2022, 1, 1),
+        end_date=datetime(2022, 8, 9),
+    )
+
     signature_mock.assert_called_with(
-        "app.tasks.mutation_test.upload",
+        "app.tasks.timeseries.backfill_dataset",
         args=None,
         kwargs=dict(
-            repoid=repo.repoid,
-            commitid=commit.commitid,
-            upload_path=upload_path,
-            debug=False,
+            dataset_id=dataset.pk,
+            start_date="2022-01-01T00:00:00",
+            end_date="2022-08-09T00:00:00",
         ),
         app=celery_app,
     )
+    signature.apply_async.assert_called_once_with()
