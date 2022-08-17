@@ -3,14 +3,17 @@ import logging
 import os
 import uuid
 from datetime import datetime
-from enum import Enum
 from hashlib import md5
 
 from django.contrib.postgres.fields import ArrayField, CITextField
 from django.db import models
 from django.forms import ValidationError
 
-from billing.constants import BASIC_PLAN_NAME, USER_PLAN_REPRESENTATIONS
+from billing.constants import (
+    BASIC_PLAN_NAME,
+    ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
+    USER_PLAN_REPRESENTATIONS,
+)
 from codecov.models import BaseCodecovModel
 from codecov_auth.constants import (
     AVATAR_GITHUB_BASE_URL,
@@ -421,6 +424,29 @@ class Owner(models.Model):
         self.plan_user_count = 5
         self.stripe_subscription_id = None
         self.save()
+
+
+class TokenTypeChoices(models.TextChoices):
+    UPLOAD = "upload"
+
+
+class OrganizationLevelToken(BaseCodecovModel):
+    owner = models.ForeignKey(
+        "Owner",
+        db_column="ownerid",
+        related_name="organization_tokens",
+        on_delete=models.CASCADE,
+    )
+    token = models.UUIDField(unique=True, default=uuid.uuid4)
+    valid_until = models.DateTimeField(blank=True, null=True)
+    token_type = models.CharField(max_length=50, choices=TokenTypeChoices.choices)
+
+    def save(self, *args, **kwargs):
+        if not self.owner.plan in ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS:
+            raise ValidationError(
+                "Organization-wide upload tokens are only available in enterprise-cloud plans."
+            )
+        super().save(*args, **kwargs)
 
 
 class OwnerProfile(BaseCodecovModel):
