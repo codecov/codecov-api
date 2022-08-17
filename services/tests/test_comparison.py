@@ -1956,7 +1956,8 @@ class ComparisonReportTest(TestCase):
                 ),
                 patch_coverage=None,
                 change_coverage=None,
-            ),ImpactedFile(
+            ),
+            ImpactedFile(
                 base_name="flag1/mafs.js",
                 head_name="flag1/mafs.js",
                 base_coverage=ReportTotals(
@@ -2013,7 +2014,80 @@ class ComparisonReportTest(TestCase):
             impacted_files, parameter_value, direction_value
         )
         print(sorted_files)
-        assert sorted_files == [ImpactedFile(base_name='flag1/mafs.js', head_name='flag1/mafs.js', base_coverage=ReportTotals(files=0, lines=0, hits=5, misses=6, partials=1, coverage=41.666666666666664, branches=2, methods=4, messages=0, sessions=0, complexity=0, complexity_total=0, diff=0), head_coverage=ReportTotals(files=0, lines=0, hits=12, misses=0, partials=0, coverage=100.0, branches=2, methods=4, messages=0, sessions=0, complexity=0, complexity_total=0, diff=0), patch_coverage=ReportTotals(files=0, lines=0, hits=7, misses=0, partials=0, coverage=100.0, branches=0, methods=0, messages=0, sessions=0, complexity=0, complexity_total=0, diff=0), change_coverage=58.333333333333336), ImpactedFile(base_name='flag2/words.js', head_name='flag2/words.js', base_coverage=None, head_coverage=ReportTotals(files=0, lines=0, hits=12, misses=1, partials=1, coverage=85.71428571428571, branches=3, methods=5, messages=0, sessions=0, complexity=0, complexity_total=0, diff=0), patch_coverage=None, change_coverage=None)]
+        assert sorted_files == [
+            ImpactedFile(
+                base_name="flag1/mafs.js",
+                head_name="flag1/mafs.js",
+                base_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=5,
+                    misses=6,
+                    partials=1,
+                    coverage=41.666666666666664,
+                    branches=2,
+                    methods=4,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                head_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=12,
+                    misses=0,
+                    partials=0,
+                    coverage=100.0,
+                    branches=2,
+                    methods=4,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                patch_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=7,
+                    misses=0,
+                    partials=0,
+                    coverage=100.0,
+                    branches=0,
+                    methods=0,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                change_coverage=58.333333333333336,
+            ),
+            ImpactedFile(
+                base_name="flag2/words.js",
+                head_name="flag2/words.js",
+                base_coverage=None,
+                head_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=12,
+                    misses=1,
+                    partials=1,
+                    coverage=85.71428571428571,
+                    branches=3,
+                    methods=5,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                patch_coverage=None,
+                change_coverage=None,
+            ),
+        ]
 
     def test_impacted_file_deserialize_file(self):
         file = {
