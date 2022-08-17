@@ -19,8 +19,8 @@ class OrderingDirection(enum.Enum):
 
 
 class ImpactedFileParameter(enum.Enum):
-    HEADNAME = "head_name"
-    CHANGECOVERAGE = "change_coverage"
+    HEAD_NAME = "head_name"
+    CHANGE_COVERAGE = "change_coverage"
 
 
 class CoverageLine(enum.Enum):

@@ -16,9 +16,7 @@ def resolve_impacted_files(
     comparison: CommitComparison, info, filters={}
 ) -> List[ImpactedFile]:
     comparison_report = ComparisonReport(comparison)
-    a = comparison_report.impacted_files(filters=filters)
-    print(a)
-    return a
+    return comparison_report.impacted_files(filters=filters)
 
 
 @comparison_bindable.field("impactedFile")

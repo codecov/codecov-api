@@ -1,7 +1,6 @@
 import asyncio
 import copy
 import functools
-import imp
 import json
 import logging
 from collections import Counter
@@ -815,25 +814,24 @@ class ComparisonReport(object):
 
     def sort_impacted_files(self, impacted_files, parameter_value, direction_value):
         # Separate impacted files with None values for the specified parameter value
-        helper_list = []
+        files_with_coverage = []
+        files_without_coverage = []
         for file in impacted_files:
             if getattr(file, parameter_value):
-                helper_list.append(file)
+                files_with_coverage.append(file)
+            else:
+                files_without_coverage.append(file)
 
         # Sort impacted_files list based on parameter value
-        is_reversed = True if direction_value == "descending" else False
-        helper_list = sorted(
-            helper_list,
+        is_reversed = direction_value == "descending"
+        files_with_coverage = sorted(
+            files_with_coverage,
             key=lambda x: getattr(x, parameter_value),
             reverse=is_reversed,
         )
 
-        # Merge lists together
-        for file in impacted_files:
-            if not getattr(file, parameter_value):
-                helper_list.append(file)
-
-        return helper_list
+        # Merge both lists together
+        return files_with_coverage + files_without_coverage
 
     """
     Fetches contents of the report
