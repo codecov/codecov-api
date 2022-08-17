@@ -795,6 +795,7 @@ class ComparisonReport(object):
 
     def impacted_files(self, filters):
         impacted_files = self.files
+        print(impacted_files)
         impacted_files = [self.deserialize_file(file) for file in impacted_files]
         return self._apply_filters(impacted_files, filters)
 
@@ -889,6 +890,7 @@ class ComparisonReport(object):
         self.deserialize_totals(file, "base_coverage")
         self.deserialize_totals(file, "head_coverage")
         self.deserialize_totals(file, "patch_coverage")
+        print("I'm hereee")
         change_coverage = self.calculate_change(
             file["head_coverage"], file["base_coverage"]
         )
@@ -903,6 +905,7 @@ class ComparisonReport(object):
 
     # TODO: I think this can be a function located elsewhere
     def calculate_change(self, head_coverage, compared_to_coverage):
+        print("im inside here!!")
         if head_coverage and compared_to_coverage:
             return head_coverage.coverage - compared_to_coverage.coverage
         # if not head_coverage:
