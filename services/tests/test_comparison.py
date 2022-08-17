@@ -1385,7 +1385,7 @@ class ComparisonReportTest(TestCase):
     ):
         mock_read_file.side_effect = Exception()
         filters = {}
-        impacted_files = self.comparison_report_without_storage.impacted_files(filters)
+        impacted_files = self.comparison_report.impacted_files(filters)
         assert impacted_files == []
 
     @patch("services.archive.ArchiveService.read_file")
