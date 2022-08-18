@@ -4,7 +4,7 @@ from django.http import HttpRequest, HttpResponseNotAllowed
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListCreateAPIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, BasePermission
 from shared.metrics import metrics
 
 from codecov_auth.authentication.repo_auth import (
@@ -22,11 +22,15 @@ from upload.throttles import UploadsPerCommitThrottle, UploadsPerWindowThrottle
 log = logging.getLogger(__name__)
 
 
+class CanDoCoverageUploadsPermission(BasePermission):
+    def has_permission(self, request, view):
+        return request.auth is not None and "upload" in request.auth.get_scopes()
+
+
 class UploadViews(ListCreateAPIView):
     serializer_class = UploadSerializer
     permission_classes = [
-        # TODO: implement the correct permissions
-        AllowAny,
+        CanDoCoverageUploadsPermission,
     ]
     authentication_classes = [
         GlobalTokenAuthentication,

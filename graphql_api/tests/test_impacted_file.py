@@ -32,6 +32,7 @@ query ImpactedFiles(
             patchCoverage {
               percentCovered
             }
+            changeCoverage
           }
         }
       }
@@ -233,6 +234,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                         "percentCovered": 85.71428571428571
                                     },
                                     "patchCoverage": None,
+                                    "changeCoverage": 44.047619047619044,
                                 },
                                 {
                                     "headName": "fileB",
@@ -244,6 +246,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                         "percentCovered": 85.71428571428571
                                     },
                                     "patchCoverage": {"percentCovered": 100.0},
+                                    "changeCoverage": 44.047619047619044,
                                 },
                             ]
                         }

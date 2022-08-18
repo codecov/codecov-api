@@ -18,6 +18,11 @@ class OrderingDirection(enum.Enum):
     DESC = "descending"
 
 
+class ImpactedFileParameter(enum.Enum):
+    HEAD_NAME = "head_name"
+    CHANGE_COVERAGE = "change_coverage"
+
+
 class CoverageLine(enum.Enum):
     H = "hit"
     M = "miss"

@@ -3,7 +3,6 @@ import copy
 import functools
 import json
 import logging
-import os
 from collections import Counter
 from dataclasses import dataclass
 
@@ -763,6 +762,7 @@ class ImpactedFile:
     base_coverage: ReportTotals
     head_coverage: ReportTotals
     patch_coverage: ReportTotals
+    change_coverage: float
 
 
 """
@@ -792,9 +792,46 @@ class ComparisonReport(object):
         impacted_file = self.file(path)
         return self.deserialize_file(impacted_file)
 
-    def impacted_files(self):
+    def impacted_files(self, filters):
         impacted_files = self.files
-        return [self.deserialize_file(file) for file in impacted_files]
+        impacted_files = [self.deserialize_file(file) for file in impacted_files]
+        return self._apply_filters(impacted_files, filters)
+
+    def _apply_filters(self, impacted_files, filters):
+        filter_parameter = filters.get("ordering", {}).get("parameter")
+        filter_direction = filters.get("ordering", {}).get("direction")
+        if filter_parameter and filter_direction:
+            parameter_value = filter_parameter.value
+            direction_value = filter_direction.value
+            impacted_files = self.sort_impacted_files(
+                impacted_files, parameter_value, direction_value
+            )
+        return impacted_files
+
+    """
+    Sorts the impacted files by any provided parameter and slides items with None values to the end
+    """
+
+    def sort_impacted_files(self, impacted_files, parameter_value, direction_value):
+        # Separate impacted files with None values for the specified parameter value
+        files_with_coverage = []
+        files_without_coverage = []
+        for file in impacted_files:
+            if getattr(file, parameter_value):
+                files_with_coverage.append(file)
+            else:
+                files_without_coverage.append(file)
+
+        # Sort impacted_files list based on parameter value
+        is_reversed = direction_value == "descending"
+        files_with_coverage = sorted(
+            files_with_coverage,
+            key=lambda x: getattr(x, parameter_value),
+            reverse=is_reversed,
+        )
+
+        # Merge both lists together
+        return files_with_coverage + files_without_coverage
 
     """
     Fetches contents of the report
@@ -850,13 +887,27 @@ class ComparisonReport(object):
         self.deserialize_totals(file, "base_coverage")
         self.deserialize_totals(file, "head_coverage")
         self.deserialize_totals(file, "patch_coverage")
+        change_coverage = self.calculate_change(
+            file["head_coverage"], file["base_coverage"]
+        )
         return ImpactedFile(
             head_name=file["head_name"],
             base_name=file["base_name"],
             head_coverage=file["head_coverage"],
             base_coverage=file["base_coverage"],
             patch_coverage=file["patch_coverage"],
+            change_coverage=change_coverage,
         )
+
+    # TODO: I think this can be a function located elsewhere
+    def calculate_change(self, head_coverage, compared_to_coverage):
+        if head_coverage and compared_to_coverage:
+            return head_coverage.coverage - compared_to_coverage.coverage
+        # if not head_coverage:
+        #     # return there is no head coverage
+        # if not compared_to_coverage:
+        #     # return there is no base coverage
+        return None
 
 
 class PullRequestComparison(Comparison):
