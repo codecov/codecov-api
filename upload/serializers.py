@@ -77,7 +77,7 @@ class CommitSerializer(serializers.ModelSerializer):
         )
 
 
-class CommitReportSeriaizer(serializers.ModelSerializer):
+class CommitReportSerializer(serializers.ModelSerializer):
     class Meta:
         model = CommitReport
         read_only_fields = (
