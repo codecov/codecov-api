@@ -2,6 +2,7 @@ from typing import List
 
 from ariadne import ObjectType
 from asgiref.sync import sync_to_async
+from shared.reports.types import ReportTotals
 
 from services.comparison import Segment
 
@@ -20,18 +21,23 @@ def resolve_base_name(impacted_file: ImpactedFile, info) -> str:
 
 
 @impacted_file_bindable.field("headCoverage")
-def resolve_head_coverage(impacted_file: ImpactedFile, info) -> float:
+def resolve_head_coverage(impacted_file: ImpactedFile, info) -> ReportTotals:
     return impacted_file.head_coverage
 
 
 @impacted_file_bindable.field("baseCoverage")
-def resolve_base_coverage(impacted_file: ImpactedFile, info) -> float:
+def resolve_base_coverage(impacted_file: ImpactedFile, info) -> ReportTotals:
     return impacted_file.base_coverage
 
 
 @impacted_file_bindable.field("patchCoverage")
-def resolve_patch_coverage(impacted_file: ImpactedFile, info) -> float:
+def resolve_patch_coverage(impacted_file: ImpactedFile, info) -> ReportTotals:
     return impacted_file.patch_coverage
+
+
+@impacted_file_bindable.field("changeCoverage")
+def resolve_change_coverage(impacted_file: ImpactedFile, info) -> float:
+    return impacted_file.change_coverage
 
 
 @impacted_file_bindable.field("segments")

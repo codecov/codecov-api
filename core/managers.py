@@ -7,6 +7,7 @@ from django.db.models import (
     DateTimeField,
     F,
     FloatField,
+    Manager,
     OuterRef,
     Q,
     QuerySet,
@@ -308,3 +309,17 @@ class RepositoryQuerySet(QuerySet):
             repo.save()
 
         return repo, created
+
+
+# We cannot use `QuerySet.as_manager()` since it relies on the `inspect` module and will
+# not play nicely with Cython (which we use for self-hosted):
+# https://cython.readthedocs.io/en/latest/src/userguide/limitations.html#inspect-support
+class RepositoryManager(Manager):
+    def get_queryset(self):
+        return RepositoryQuerySet(self.model, using=self._db)
+
+    def viewable_repos(self, *args, **kwargs):
+        return self.get_queryset().viewable_repos(*args, **kwargs)
+
+    def get_or_create_from_git_repo(self, *args, **kwargs):
+        return self.get_queryset().get_or_create_from_git_repo(*args, **kwargs)
