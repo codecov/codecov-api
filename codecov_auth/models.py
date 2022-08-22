@@ -114,7 +114,7 @@ class Owner(models.Model):
     yaml = models.JSONField(null=True)
     updatestamp = DateTimeWithoutTZField(default=datetime.now)
     organizations = ArrayField(models.IntegerField(null=True), null=True, blank=True)
-    admins = ArrayField(models.IntegerField(null=True), null=True)
+    admins = ArrayField(models.IntegerField(null=True), null=True, blank=True)
     integration_id = models.IntegerField(null=True, blank=True)
     permission = ArrayField(models.IntegerField(null=True), null=True)
     bot = models.ForeignKey(
