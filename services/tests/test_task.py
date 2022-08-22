@@ -29,6 +29,26 @@ def test_compute_comparison_task(mocker):
     )
 
 
+def test_mutatuion_test_task(mocker, db):
+    signature_mock = mocker.patch("services.task.signature")
+    repo = RepositoryFactory()
+    commit = CommitFactory(repository=repo)
+    TaskService().mutation_test_upload(
+        repoid=repo.repoid, commit_sha=commit.commitid, upload_path="/some/path"
+    )
+    signature_mock.assert_called_with(
+        "app.tasks.mutation_test.upload",
+        args=None,
+        kwargs=dict(
+            repoid=repo.repoid,
+            commitid=commit.commitid,
+            upload_path="/some/path",
+            debug=False,
+        ),
+        app=celery_app,
+    )
+
+
 @pytest.mark.django_db
 def test_backfill_repo(mocker):
     signature_mock = mocker.patch("services.task.signature")
