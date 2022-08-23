@@ -12,6 +12,7 @@ from ..regenerate_org_upload_token import RegenerateOrgUploadTokenInteractor
 class RegenerateOrgUploadTokenInteractorTest(TransactionTestCase):
     def setUp(self):
         self.owner = OwnerFactory(name="codecov", plan="users-enterprisem")
+        self.owner_no_token = OwnerFactory(name="random", plan="users-enterprisem")
         self.owner_free_plan = OwnerFactory(name="rula", plan="users-free")
         self.owner_with_no_token = OwnerFactory(name="no_token")
         self.upload_token = OrganizationLevelTokenFactory(
@@ -36,6 +37,10 @@ class RegenerateOrgUploadTokenInteractorTest(TransactionTestCase):
     async def test_when_validation_not_enterprise(self):
         with pytest.raises(ValidationError):
             await self.execute(user=self.random_user, owner=self.owner_free_plan.name)
+
+    def test_regenerate_org_upload_token_owner_no_token(self):
+        token = self.execute(user=self.owner_no_token, owner=self.owner_no_token.name)
+        assert token is not None
 
     def test_regenerate_org_upload_token(self):
         token = self.execute(user=self.owner, owner=self.owner.name)
