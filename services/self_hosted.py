@@ -79,7 +79,7 @@ def activate_owner(owner: Owner):
     cursor.execute(f"LOCK TABLE {Owner._meta.db_table} IN EXCLUSIVE MODE")
 
     if activated_owners().count() >= num_seats():
-        raise LicenseException("no more seats available")
+        raise LicenseException("No seats remaining. Please contact Codecov support or deactivate users.")
 
     Owner.objects.filter(pk__in=owner.organizations).update(
         plan_activated_users=Func(
