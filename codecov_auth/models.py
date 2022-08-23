@@ -3,14 +3,17 @@ import logging
 import os
 import uuid
 from datetime import datetime
-from enum import Enum
 from hashlib import md5
 
 from django.contrib.postgres.fields import ArrayField, CITextField
 from django.db import models
 from django.forms import ValidationError
 
-from billing.constants import BASIC_PLAN_NAME, USER_PLAN_REPRESENTATIONS
+from billing.constants import (
+    BASIC_PLAN_NAME,
+    ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
+    USER_PLAN_REPRESENTATIONS,
+)
 from codecov.models import BaseCodecovModel
 from codecov_auth.constants import (
     AVATAR_GITHUB_BASE_URL,
@@ -19,11 +22,11 @@ from codecov_auth.constants import (
     GRAVATAR_BASE_URL,
 )
 from codecov_auth.helpers import get_gitlab_url
-from core.managers import RepositoryQuerySet
+from core.managers import RepositoryManager
 from core.models import DateTimeWithoutTZField, Repository
 from utils.config import get_config
 
-from .managers import OwnerQuerySet
+from .managers import OwnerManager
 
 # Large number to represent Infinity as float('int') isnt JSON serializable
 INFINITY = 99999999
@@ -111,7 +114,7 @@ class Owner(models.Model):
     yaml = models.JSONField(null=True)
     updatestamp = DateTimeWithoutTZField(default=datetime.now)
     organizations = ArrayField(models.IntegerField(null=True), null=True, blank=True)
-    admins = ArrayField(models.IntegerField(null=True), null=True)
+    admins = ArrayField(models.IntegerField(null=True), null=True, blank=True)
     integration_id = models.IntegerField(null=True, blank=True)
     permission = ArrayField(models.IntegerField(null=True), null=True)
     bot = models.ForeignKey(
@@ -123,9 +126,9 @@ class Owner(models.Model):
     onboarding_completed = models.BooleanField(default=False)
     is_superuser = models.BooleanField(null=True, default=False)
 
-    objects = OwnerQuerySet.as_manager()
+    objects = OwnerManager()
 
-    repository_set = RepositoryQuerySet.as_manager()
+    repository_set = RepositoryManager()
 
     def __str__(self):
         return f"Owner<{self.service}/{self.username}>"
@@ -421,6 +424,29 @@ class Owner(models.Model):
         self.plan_user_count = 5
         self.stripe_subscription_id = None
         self.save()
+
+
+class TokenTypeChoices(models.TextChoices):
+    UPLOAD = "upload"
+
+
+class OrganizationLevelToken(BaseCodecovModel):
+    owner = models.ForeignKey(
+        "Owner",
+        db_column="ownerid",
+        related_name="organization_tokens",
+        on_delete=models.CASCADE,
+    )
+    token = models.UUIDField(unique=True, default=uuid.uuid4)
+    valid_until = models.DateTimeField(blank=True, null=True)
+    token_type = models.CharField(max_length=50, choices=TokenTypeChoices.choices)
+
+    def save(self, *args, **kwargs):
+        if not self.owner.plan in ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS:
+            raise ValidationError(
+                "Organization-wide upload tokens are only available in enterprise-cloud plans."
+            )
+        super().save(*args, **kwargs)
 
 
 class OwnerProfile(BaseCodecovModel):

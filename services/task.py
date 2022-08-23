@@ -199,3 +199,9 @@ class TaskService(object):
                 end_date=end_date.isoformat(),
             ),
         ).apply_async()
+
+    def update_commit(self, commitid, repoid):
+        self._create_signature(
+            "app.tasks.commit_update.CommitUpdate",
+            kwargs=dict(commitid=commitid, repoid=repoid),
+        ).apply_async()

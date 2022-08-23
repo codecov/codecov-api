@@ -1,5 +1,7 @@
+import uuid
 from unittest.mock import patch
 
+import pytest
 from django.forms import ValidationError
 from django.test import TransactionTestCase
 
@@ -11,7 +13,9 @@ from codecov_auth.models import (
     SERVICE_CODECOV_ENTERPRISE,
     SERVICE_GITHUB,
     SERVICE_GITHUB_ENTERPRISE,
+    OrganizationLevelToken,
     Service,
+    TokenTypeChoices,
 )
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
@@ -400,7 +404,9 @@ class TestOwnerModel(TransactionTestCase):
         self.owner.service = "gitlab"
         self.owner.save()
 
-        with self.assertNumQueries(3):
+        # The 4th query is from OrganizationLevelToken. There's a hook that rnus after Owner is saved
+        # To see if a org-wide token should be generated or deleted.
+        with self.assertNumQueries(4):
             assert self.owner.root_organization == root
 
         # cache the root organization id
@@ -465,3 +471,26 @@ class TestOwnerModel(TransactionTestCase):
         org.yaml = {"require_ci_to_pass": True}
         org.save()
         assert org.has_yaml is True
+
+
+class TestOrganizationLevelTokenModel(TransactionTestCase):
+    def test_token_is_created_when_saving_user_in_enterprise_plan(self):
+        owner = OwnerFactory(plan="users-enterprisey")
+        owner.save()
+        org_token = OrganizationLevelToken.objects.get(owner=owner)
+        assert org_token.token is not None
+        assert org_token.owner.ownerid == owner.ownerid
+        assert org_token.token_type == TokenTypeChoices.UPLOAD.value
+
+    def test_cant_save_org_token_for_org_not_in_valid_plan(self):
+        owner = OwnerFactory(plan="users-basic")
+        token = OrganizationLevelToken(owner=owner)
+        with pytest.raises(ValidationError):
+            token.save()
+
+    def test_token_is_deleted_when_changing_user_plan(self):
+        owner = OwnerFactory(plan="users-enterprisey")
+        assert OrganizationLevelToken.objects.filter(owner=owner).count() == 1
+        owner.plan = "users-basic"
+        owner.save()
+        assert OrganizationLevelToken.objects.filter(owner=owner).count() == 0
