@@ -21,6 +21,12 @@ class TaskService(object):
         """
         return signature(name, args=args, kwargs=kwargs, app=celery_app)
 
+    def schedule_task(self, task_name, *, kwargs, apply_async_kwargs):
+        return self._create_signature(
+            task_name,
+            kwargs=kwargs,
+        ).apply_async(**apply_async_kwargs)
+
     def compute_comparison(self, comparison_id):
         self._create_signature(
             celery_config.compute_comparison_task_name,

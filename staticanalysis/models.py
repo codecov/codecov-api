@@ -41,3 +41,8 @@ class StaticAnalysisSuiteFilepath(BaseCodecovModel):
         related_name="filepaths",
     )
     filepath = models.TextField()
+
+    @property
+    def file_hash(self):
+        # TODO: double check so serializer doesnt get N + 1 queries
+        return self.file_snapshot.file_hash
