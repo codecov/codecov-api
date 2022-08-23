@@ -24,6 +24,9 @@ class MinioEndpoints(Enum):
     profiling_upload = (
         "{version}/repos/{repo_hash}/profilinguploads/{profiling_version}/{location}"
     )
+    static_analysis_single_file = (
+        "{version}/repos/{repo_hash}/static_analysis/files/{location}"
+    )
 
     def get_path(self, **kwaargs):
         return self.value.format(**kwaargs)
