@@ -11,6 +11,7 @@ from .interactors.onboard_user import OnboardUserInteractor
 from .interactors.set_yaml_on_owner import SetYamlOnOwnerInteractor
 from .interactors.trigger_sync import TriggerSyncInteractor
 from .interactors.update_profile import UpdateProfileInteractor
+from .interactors.get_org_upload_token import GetOrgUploadToken
 
 
 class OwnerCommands(BaseCommand):
@@ -45,3 +46,6 @@ class OwnerCommands(BaseCommand):
         return self.get_interactor(GetIsCurrentUserAnAdminInteractor).execute(
             owner, current_user
         )
+
+    def get_org_upload_token(self, owner):
+        return self.get_interactor(GetOrgUploadToken).execute(owner)
