@@ -70,7 +70,7 @@ def activate_owner(owner: Owner):
     Activate the given owner in ALL orgs that the owner is a part of.
     """
     if not settings.IS_ENTERPRISE:
-        raise Exception("only callable in self-hosted environments")
+        raise Exception("activate_owner is only available in self-hosted environments")
 
     # Concurrent calls to this function could both pass the check below and then activate
     # owners beyond the available number of seats.
