@@ -7,11 +7,7 @@ from django.test import TransactionTestCase
 from freezegun import freeze_time
 
 from billing.constants import BASIC_PLAN_NAME
-from codecov_auth.tests.factories import (
-    GetAdminProviderAdapter,
-    OrganizationLevelTokenFactory,
-    OwnerFactory,
-)
+from codecov_auth.tests.factories import GetAdminProviderAdapter, OwnerFactory
 from core.tests.factories import CommitFactory, OwnerFactory, RepositoryFactory
 from reports.tests.factories import CommitReportFactory, UploadFactory
 
@@ -42,9 +38,7 @@ query_repositories = """{
 
 class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
-        self.user = OwnerFactory(
-            username="codecov-user", service="github", plan="users-enterprisem"
-        )
+        self.user = OwnerFactory(username="codecov-user", service="github")
         random_user = OwnerFactory(username="random-user", service="github")
         RepositoryFactory(author=self.user, active=True, private=True, name="a")
         RepositoryFactory(author=self.user, active=False, private=False, name="b")
