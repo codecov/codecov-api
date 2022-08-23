@@ -95,7 +95,7 @@ def deactivate_owner(owner: Owner):
     Deactivate the given owner across ALL orgs.
     """
     if not settings.IS_ENTERPRISE:
-        raise Exception("only callable in self-hosted environments")
+        raise Exception("deactivate_owner is only available in self-hosted environments")
 
     Owner.objects.filter(
         plan_activated_users__contains=Func(
