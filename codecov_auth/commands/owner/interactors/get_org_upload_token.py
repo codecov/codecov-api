@@ -9,4 +9,4 @@ class GetOrgUploadToken(BaseInteractor):
     def execute(self, owner):
         org_token = OrganizationLevelToken.objects.filter(owner=owner).first()
         if org_token:
-           return org_token.token
+            return org_token.token
