@@ -72,12 +72,6 @@ def activate_owner(owner: Owner):
     if not settings.IS_ENTERPRISE:
         raise Exception("activate_owner is only available in self-hosted environments")
 
-    # Concurrent calls to this function could both pass the check below and then activate
-    # owners beyond the available number of seats.
-    # Lock the table (still allowing selects) to prevent concurrent calls to the query below.
-    cursor = connection.cursor()
-    cursor.execute(f"LOCK TABLE {Owner._meta.db_table} IN EXCLUSIVE MODE")
-
     if activated_owners().count() >= license_seats():
         raise LicenseException(
             "No seats remaining. Please contact Codecov support or deactivate users."
