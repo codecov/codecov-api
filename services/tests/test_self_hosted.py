@@ -10,7 +10,7 @@ from services.self_hosted import (
     activated_owners,
     admin_owners,
     deactivate_owner,
-    num_seats,
+    license_seats,
 )
 
 
@@ -44,18 +44,18 @@ class SelfHostedTestCase(TestCase):
         assert list(owners) == [user1, user2, user3]
 
     @patch("services.self_hosted.get_current_license")
-    def test_num_seats(self, get_current_license):
+    def test_license_seats(self, get_current_license):
         get_current_license.return_value = LicenseInformation(number_allowed_users=123)
-        assert num_seats() == 123
+        assert license_seats() == 123
 
     @patch("services.self_hosted.get_current_license")
-    def test_num_seats_not_specified(self, get_current_license):
+    def test_license_seats_not_specified(self, get_current_license):
         get_current_license.return_value = LicenseInformation()
-        assert num_seats() == 0
+        assert license_seats() == 0
 
-    @patch("services.self_hosted.num_seats")
-    def test_activate_owner(self, num_seats):
-        num_seats.return_value = 100
+    @patch("services.self_hosted.license_seats")
+    def test_activate_owner(self, license_seats):
+        license_seats.return_value = 100
 
         other_owner = OwnerFactory()
         org1 = OwnerFactory(plan_activated_users=[other_owner.pk])
@@ -82,9 +82,9 @@ class SelfHostedTestCase(TestCase):
         org3.refresh_from_db()
         assert org3.plan_activated_users == [other_owner.pk]
 
-    @patch("services.self_hosted.num_seats")
-    def test_activate_owner_no_more_seats(self, num_seats):
-        num_seats.return_value = 1
+    @patch("services.self_hosted.license_seats")
+    def test_activate_owner_no_more_seats(self, license_seats):
+        license_seats.return_value = 1
 
         other_owner = OwnerFactory()
         org1 = OwnerFactory(plan_activated_users=[other_owner.pk])

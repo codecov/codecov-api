@@ -56,7 +56,7 @@ def activated_owners() -> QuerySet:
     return Owner.objects.filter(pk__in=owner_ids)
 
 
-def num_seats() -> int:
+def license_seats() -> int:
     """
     Max number of seats allowed by the current license.
     """
@@ -78,8 +78,10 @@ def activate_owner(owner: Owner):
     cursor = connection.cursor()
     cursor.execute(f"LOCK TABLE {Owner._meta.db_table} IN EXCLUSIVE MODE")
 
-    if activated_owners().count() >= num_seats():
-        raise LicenseException("No seats remaining. Please contact Codecov support or deactivate users.")
+    if activated_owners().count() >= license_seats():
+        raise LicenseException(
+            "No seats remaining. Please contact Codecov support or deactivate users."
+        )
 
     Owner.objects.filter(pk__in=owner.organizations).update(
         plan_activated_users=Func(
@@ -95,7 +97,9 @@ def deactivate_owner(owner: Owner):
     Deactivate the given owner across ALL orgs.
     """
     if not settings.IS_ENTERPRISE:
-        raise Exception("deactivate_owner is only available in self-hosted environments")
+        raise Exception(
+            "deactivate_owner is only available in self-hosted environments"
+        )
 
     Owner.objects.filter(
         plan_activated_users__contains=Func(
