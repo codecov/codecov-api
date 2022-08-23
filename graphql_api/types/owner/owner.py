@@ -98,6 +98,6 @@ def resolve_hash_ownerid(owner, info):
 
 
 @owner_bindable.field("orgUploadToken")
-async def resolve_org_upload_token(owner, info, **kwargs):
+def resolve_org_upload_token(owner, info, **kwargs):
     command = info.context["executor"].get_command("owner")
-    return await command.get_org_upload_token(owner)
+    return command.get_org_upload_token(owner)

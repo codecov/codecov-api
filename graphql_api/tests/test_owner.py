@@ -7,7 +7,11 @@ from django.test import TransactionTestCase
 from freezegun import freeze_time
 
 from billing.constants import BASIC_PLAN_NAME
-from codecov_auth.tests.factories import GetAdminProviderAdapter, OwnerFactory
+from codecov_auth.tests.factories import (
+    GetAdminProviderAdapter,
+    OrganizationLevelTokenFactory,
+    OwnerFactory,
+)
 from core.tests.factories import CommitFactory, OwnerFactory, RepositoryFactory
 from reports.tests.factories import CommitReportFactory, UploadFactory
 
@@ -15,6 +19,7 @@ from .helper import GraphQLTestHelper, paginate_connection
 
 query_repositories = """{
     owner(username: "%s") {
+        orgUploadToken
         hashOwnerid
         isCurrentUserPartOfOrg
         yaml
@@ -37,7 +42,9 @@ query_repositories = """{
 
 class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
-        self.user = OwnerFactory(username="codecov-user", service="github")
+        self.user = OwnerFactory(
+            username="codecov-user", service="github", plan="users-enterprisem"
+        )
         random_user = OwnerFactory(username="random-user", service="github")
         RepositoryFactory(author=self.user, active=True, private=True, name="a")
         RepositoryFactory(author=self.user, active=False, private=False, name="b")
@@ -53,6 +60,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         hashOwnerid = hash_ownerid.hexdigest()
         assert data == {
             "owner": {
+                "orgUploadToken": None,
                 "hashOwnerid": hashOwnerid,
                 "isCurrentUserPartOfOrg": True,
                 "yaml": None,
@@ -266,3 +274,10 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         hash_ownerid = sha1(str(self.user.ownerid).encode())
         hashOwnerid = hash_ownerid.hexdigest()
         assert data["owner"]["hashOwnerid"] == hashOwnerid
+
+    @patch("codecov_auth.commands.owner.owner.OwnerCommands.get_org_upload_token")
+    def test_get_org_upload_token(self, mocker):
+        mocker.return_value = "upload_token"
+        query = query_repositories % (self.user.username, "", "")
+        data = self.gql_request(query, user=self.user)
+        assert data["owner"]["orgUploadToken"] == "upload_token"
