@@ -38,11 +38,13 @@ class RegenerateOrgUploadTokenInteractorTest(TransactionTestCase):
         with pytest.raises(ValidationError):
             await self.execute(user=self.random_user, owner=self.owner_free_plan.name)
 
-    def test_regenerate_org_upload_token_owner_no_token(self):
-        token = self.execute(user=self.owner_no_token, owner=self.owner_no_token.name)
+    async def test_regenerate_org_upload_token_creates_new_token(self):
+        token = await self.execute(
+            user=self.owner_no_token, owner=self.owner_no_token.name
+        )
         assert token is not None
 
-    def test_regenerate_org_upload_token(self):
-        token = self.execute(user=self.owner, owner=self.owner.name)
+    async def test_regenerate_org_upload_token(self):
+        token = await self.execute(user=self.owner, owner=self.owner.name)
         assert token is not None
         assert token != self.upload_token.token
