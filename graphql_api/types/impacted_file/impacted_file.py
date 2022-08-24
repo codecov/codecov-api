@@ -10,6 +10,11 @@ impacted_file_bindable = ObjectType("ImpactedFile")
 from services.comparison import ImpactedFile
 
 
+@impacted_file_bindable.field("fileName")
+def resolve_file_name(impacted_file: ImpactedFile, info) -> str:
+    return impacted_file.file_name
+
+
 @impacted_file_bindable.field("headName")
 def resolve_head_name(impacted_file: ImpactedFile, info) -> str:
     return impacted_file.head_name
