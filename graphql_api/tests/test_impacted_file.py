@@ -239,6 +239,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                     "changeCoverage": 44.047619047619044,
                                 },
                                 {
+                                    "fileName": "fileB",
                                     "headName": "fileB",
                                     "baseName": "fileB",
                                     "baseCoverage": {
