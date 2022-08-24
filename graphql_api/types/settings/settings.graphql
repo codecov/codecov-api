@@ -1,0 +1,5 @@
+type Settings {
+  loginProviders: [LoginProvider!]!
+  seatsUsed: Int
+  seatsLimit: Int
+}

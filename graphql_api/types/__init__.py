@@ -28,6 +28,7 @@ from .query import query, query_bindable
 from .repository import repository, repository_bindable
 from .segment_comparison import segment_comparison, segment_comparison_bindable
 from .session import session, session_bindable
+from .settings import settings, settings_bindable
 from .upload import upload, upload_bindable, upload_error_bindable
 from .user import user, user_bindable
 
@@ -61,6 +62,7 @@ types = [
     commit_file,
     profile,
     impacted_file,
+    settings,
 ]
 
 bindables = [
@@ -89,6 +91,7 @@ bindables = [
     datetime_scalar,
     profile_bindable,
     impacted_file_bindable,
+    settings_bindable,
     *mutation_resolvers,
     *enum_types.enum_types,
 ]
