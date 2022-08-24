@@ -757,6 +757,7 @@ class FlagComparison(object):
 
 @dataclass
 class ImpactedFile:
+    file_name: str
     base_name: str
     head_name: str
     base_coverage: ReportTotals
@@ -890,7 +891,9 @@ class ComparisonReport(object):
         change_coverage = self.calculate_change(
             file["head_coverage"], file["base_coverage"]
         )
+        file_name = self.get_file_name_from_file_path(file["head_name"])
         return ImpactedFile(
+            file_name=file_name,
             head_name=file["head_name"],
             base_name=file["base_name"],
             head_coverage=file["head_coverage"],
@@ -908,6 +911,10 @@ class ComparisonReport(object):
         # if not compared_to_coverage:
         #     # return there is no base coverage
         return None
+
+    def get_file_name_from_file_path(self, file_path):
+        parts = file_path.split("/")
+        return parts[-1]
 
 
 class PullRequestComparison(Comparison):
