@@ -4,6 +4,7 @@ from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
 
 from codecov.commands.exceptions import Unauthenticated, ValidationError
+from codecov_auth.models import OrganizationLevelToken
 from codecov_auth.tests.factories import OrganizationLevelTokenFactory, OwnerFactory
 
 from ..regenerate_org_upload_token import RegenerateOrgUploadTokenInteractor
@@ -38,10 +39,16 @@ class RegenerateOrgUploadTokenInteractorTest(TransactionTestCase):
         with pytest.raises(ValidationError):
             await self.execute(user=self.random_user, owner=self.owner_free_plan.name)
 
-    async def test_regenerate_org_upload_token_creates_new_token(self):
-        token = await self.execute(
+    @pytest.mark.django_db
+    def test_regenerate_org_upload_token_creates_new_token(self):
+        token = async_to_sync(self.execute)(
             user=self.owner_no_token, owner=self.owner_no_token.name
         )
+        after_call_filter = OrganizationLevelToken.objects.filter(
+            owner=self.owner_no_token
+        ).first()
+
+        assert after_call_filter
         assert token is not None
 
     async def test_regenerate_org_upload_token(self):
