@@ -1,9 +1,8 @@
 import operator
 from functools import reduce
-from typing import Iterable
 
 from django.conf import settings
-from django.db import connection, transaction
+from django.db import transaction
 from django.db.models import F, Func, Q, QuerySet
 from shared.license import get_current_license
 
@@ -34,7 +33,17 @@ def admin_owners() -> QuerySet:
         if "service" in admin and "username" in admin
     ]
 
-    return Owner.objects.filter(reduce(operator.or_, filters))
+    if len(filters) == 0:
+        return Owner.objects.none()
+    else:
+        return Owner.objects.filter(reduce(operator.or_, filters))
+
+
+def is_admin_owner(owner: Owner) -> bool:
+    """
+    Returns true iff the given owner is an admin.
+    """
+    return admin_owners().filter(pk=owner.pk).exists()
 
 
 def activated_owners() -> QuerySet:
@@ -56,12 +65,30 @@ def activated_owners() -> QuerySet:
     return Owner.objects.filter(pk__in=owner_ids)
 
 
+def is_activated_owner(owner: Owner) -> bool:
+    """
+    Returns true iff the given owner is activated in this instance.
+    """
+    return activated_owners().filter(pk=owner.pk).exists()
+
+
 def license_seats() -> int:
     """
     Max number of seats allowed by the current license.
     """
     license = get_current_license()
     return license.number_allowed_users or 0
+
+
+def can_activate_owner(owner: Owner) -> bool:
+    """
+    Returns true iff there are available seats left for activation.
+    """
+    if is_activated_owner(owner):
+        # user is already activated in at least 1 org
+        return True
+    else:
+        return activated_owners().count() < license_seats()
 
 
 @transaction.atomic
@@ -72,7 +99,7 @@ def activate_owner(owner: Owner):
     if not settings.IS_ENTERPRISE:
         raise Exception("activate_owner is only available in self-hosted environments")
 
-    if activated_owners().count() >= license_seats():
+    if not can_activate_owner(owner):
         raise LicenseException(
             "No seats remaining. Please contact Codecov support or deactivate users."
         )
