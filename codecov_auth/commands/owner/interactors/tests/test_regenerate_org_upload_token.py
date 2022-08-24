@@ -39,16 +39,10 @@ class RegenerateOrgUploadTokenInteractorTest(TransactionTestCase):
         with pytest.raises(ValidationError):
             await self.execute(user=self.random_user, owner=self.owner_free_plan.name)
 
-    @pytest.mark.django_db
-    def test_regenerate_org_upload_token_creates_new_token(self):
-        token = async_to_sync(self.execute)(
+    async def test_regenerate_org_upload_token_creates_new_token(self):
+        token = await self.execute(
             user=self.owner_no_token, owner=self.owner_no_token.name
         )
-        after_call_filter = OrganizationLevelToken.objects.filter(
-            owner=self.owner_no_token
-        ).first()
-
-        assert after_call_filter
         assert token is not None
 
     async def test_regenerate_org_upload_token(self):
