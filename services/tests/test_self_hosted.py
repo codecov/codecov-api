@@ -12,8 +12,11 @@ from services.self_hosted import (
     admin_owners,
     can_activate_owner,
     deactivate_owner,
+    disable_autoactivation,
+    enable_autoactivation,
     is_activated_owner,
     is_admin_owner,
+    is_autoactivation_enabled,
     license_seats,
 )
 
@@ -176,6 +179,31 @@ class SelfHostedTestCase(TestCase):
         assert org2.plan_activated_users == []
         org3.refresh_from_db()
         assert org3.plan_activated_users == [owner2.pk]
+
+    def test_autoactivation(self):
+        owner1 = OwnerFactory(plan_auto_activate=False)
+        owner2 = OwnerFactory(plan_auto_activate=False)
+        assert is_autoactivation_enabled() == False
+
+        owner1.plan_auto_activate = True
+        owner1.save()
+        assert is_autoactivation_enabled() == True
+
+        owner2.plan_auto_activate = True
+        owner2.save()
+        assert is_autoactivation_enabled() == True
+
+    def test_enable_autoactivation(self):
+        owner = OwnerFactory(plan_auto_activate=False)
+        enable_autoactivation()
+        owner.refresh_from_db()
+        assert owner.plan_auto_activate == True
+
+    def test_disable_autoactivation(self):
+        owner = OwnerFactory(plan_auto_activate=True)
+        disable_autoactivation()
+        owner.refresh_from_db()
+        assert owner.plan_auto_activate == False
 
 
 @override_settings(IS_ENTERPRISE=False)
