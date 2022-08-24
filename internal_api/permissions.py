@@ -6,9 +6,9 @@ from rest_framework.permissions import SAFE_METHODS  # ['GET', 'HEAD', 'OPTIONS'
 from rest_framework.permissions import BasePermission
 
 from internal_api.repo.repository_accessors import RepoAccessors
+from services.activation import try_auto_activate
 from services.decorators import torngit_safe
 from services.repo_providers import get_generic_adapter_params, get_provider
-from services.segment import SegmentService
 
 log = logging.getLogger(__name__)
 
@@ -51,23 +51,7 @@ class RepositoryPermissionsService:
             return False
         if owner.plan_activated_users and user.ownerid in owner.plan_activated_users:
             return True
-        if owner.plan_auto_activate:
-            log.info(
-                f"Attemping to auto-activate user {user.ownerid} in {owner.ownerid}"
-            )
-            if owner.can_activate_user(user):
-                owner.activate_user(user)
-                SegmentService().account_activated_user(
-                    current_user_ownerid=user.ownerid,
-                    ownerid_to_activate=user.ownerid,
-                    org_ownerid=owner.ownerid,
-                    auto_activated=True,
-                )
-                return True
-            else:
-                log.info("Auto-activation failed -- not enough seats remaining")
-
-        return False
+        return try_auto_activate(owner, user)
 
 
 class RepositoryArtifactPermissions(BasePermission):

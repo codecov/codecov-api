@@ -181,6 +181,8 @@ class SelfHostedTestCase(TestCase):
         assert org3.plan_activated_users == [owner2.pk]
 
     def test_autoactivation(self):
+        disable_autoactivation()
+
         owner1 = OwnerFactory(plan_auto_activate=False)
         owner2 = OwnerFactory(plan_auto_activate=False)
         assert is_autoactivation_enabled() == False
