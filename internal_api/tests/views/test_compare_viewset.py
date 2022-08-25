@@ -78,6 +78,7 @@ class TestCompareViewSetRetrieve(APITestCase):
                             }
                         ],
                         "stats": {"removed": 40, "added": 0},
+                        "totals": ReportTotals.default_totals(),
                     }
                 }
             },
@@ -98,6 +99,7 @@ class TestCompareViewSetRetrieve(APITestCase):
             name=self.file_name, totals=[6, 6, 0, 0, 100, 0, 0, 0, 1, 0, 0, 0]
         )
         self.head_file._lines = [[1, "", [[1, 1, 0, 0, 0]], 0, 0]] * 6
+        self.head_file.totals.diff = ReportTotals.default_totals()
         self.head_report = MockSerializableReport()
         self.head_report.mocked_files = {self.file_name: self.head_file}
 
@@ -120,6 +122,7 @@ class TestCompareViewSetRetrieve(APITestCase):
                 "totals": {
                     "base": ReportTotalsSerializer(self.base_file.totals).data,
                     "head": ReportTotalsSerializer(self.head_file.totals).data,
+                    "patch": ReportTotalsSerializer(ReportTotals.default_totals()).data,
                 },
                 "has_diff": True,
                 "stats": {"added": 0, "removed": 40},
