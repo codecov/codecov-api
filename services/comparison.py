@@ -5,6 +5,7 @@ import json
 import logging
 from collections import Counter
 from dataclasses import dataclass
+from importlib.metadata import files
 
 import minio
 from asgiref.sync import async_to_sync
@@ -818,7 +819,7 @@ class ComparisonReport(object):
         files_with_coverage = []
         files_without_coverage = []
         for file in impacted_files:
-            if getattr(file, parameter_value):
+            if getattr(file, parameter_value) is not None:
                 files_with_coverage.append(file)
             else:
                 files_without_coverage.append(file)
