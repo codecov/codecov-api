@@ -5,7 +5,6 @@ import json
 import logging
 from collections import Counter
 from dataclasses import dataclass
-from importlib.metadata import files
 
 import minio
 from asgiref.sync import async_to_sync
