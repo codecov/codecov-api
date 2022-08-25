@@ -1,5 +1,4 @@
 from ariadne import ObjectType
-from asgiref.sync import sync_to_async
 
 from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.comparison import ComparisonLoader
@@ -41,6 +40,7 @@ def resolve_base(pull, info):
 
 @pull_bindable.field("compareWithBase")
 async def resolve_compare_with_base(pull, info, **kwargs):
+
     if not pull.compared_to or not pull.head:
         return None
 
