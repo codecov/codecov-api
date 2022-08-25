@@ -1424,6 +1424,7 @@ class ComparisonReportTest(TestCase):
         impacted_files = self.comparison_report.impacted_files(filters)
         assert impacted_files == [
             ImpactedFile(
+                file_name="fileA",
                 base_name="fileA",
                 head_name="fileA",
                 base_coverage=ReportTotals(
@@ -1460,6 +1461,7 @@ class ComparisonReportTest(TestCase):
                 change_coverage=41.666666666666664,
             ),
             ImpactedFile(
+                file_name="fileB",
                 base_name="fileB",
                 head_name="fileB",
                 base_coverage=ReportTotals(
@@ -1517,12 +1519,13 @@ class ComparisonReportTest(TestCase):
         filters = {
             "ordering": {
                 "direction": MockOrderValue("ascending"),
-                "parameter": MockOrderValue("head_name"),
+                "parameter": MockOrderValue("file_name"),
             }
         }
         impacted_files = self.comparison_report.impacted_files(filters)
         assert impacted_files == [
             ImpactedFile(
+                file_name="fileA",
                 base_name="fileA",
                 head_name="fileA",
                 base_coverage=ReportTotals(
@@ -1559,6 +1562,7 @@ class ComparisonReportTest(TestCase):
                 change_coverage=41.666666666666664,
             ),
             ImpactedFile(
+                file_name="fileB",
                 base_name="fileB",
                 head_name="fileB",
                 base_coverage=ReportTotals(
@@ -1616,12 +1620,13 @@ class ComparisonReportTest(TestCase):
         filters = {
             "ordering": {
                 "direction": MockOrderValue("descending"),
-                "parameter": MockOrderValue("head_name"),
+                "parameter": MockOrderValue("file_name"),
             }
         }
         impacted_files = self.comparison_report.impacted_files(filters)
         assert impacted_files == [
             ImpactedFile(
+                file_name="fileB",
                 base_name="fileB",
                 head_name="fileB",
                 base_coverage=ReportTotals(
@@ -1672,6 +1677,7 @@ class ComparisonReportTest(TestCase):
                 change_coverage=44.047619047619044,
             ),
             ImpactedFile(
+                file_name="fileA",
                 base_name="fileA",
                 head_name="fileA",
                 base_coverage=ReportTotals(
@@ -1721,6 +1727,7 @@ class ComparisonReportTest(TestCase):
         impacted_files = self.comparison_report.impacted_files(filters)
         assert impacted_files == [
             ImpactedFile(
+                file_name="fileA",
                 base_name="fileA",
                 head_name="fileA",
                 base_coverage=ReportTotals(
@@ -1757,6 +1764,7 @@ class ComparisonReportTest(TestCase):
                 change_coverage=41.666666666666664,
             ),
             ImpactedFile(
+                file_name="fileB",
                 base_name="fileB",
                 head_name="fileB",
                 base_coverage=ReportTotals(
@@ -1820,6 +1828,7 @@ class ComparisonReportTest(TestCase):
         impacted_files = self.comparison_report.impacted_files(filters)
         assert impacted_files == [
             ImpactedFile(
+                file_name="fileB",
                 base_name="fileB",
                 head_name="fileB",
                 base_coverage=ReportTotals(
@@ -1870,6 +1879,7 @@ class ComparisonReportTest(TestCase):
                 change_coverage=44.047619047619044,
             ),
             ImpactedFile(
+                file_name="fileA",
                 base_name="fileA",
                 head_name="fileA",
                 base_coverage=ReportTotals(
@@ -1912,6 +1922,7 @@ class ComparisonReportTest(TestCase):
         read_file.return_value = mock_data_from_archive
         impacted_file = self.comparison_report.impacted_file("fileB")
         assert impacted_file == ImpactedFile(
+            file_name="fileB",
             base_name="fileB",
             head_name="fileB",
             base_coverage=ReportTotals(
@@ -1965,6 +1976,7 @@ class ComparisonReportTest(TestCase):
     def test_impacted_file_sort_function(self):
         impacted_files = [
             ImpactedFile(
+                file_name="words.js",
                 base_name="flag2/words.js",
                 head_name="flag2/words.js",
                 base_coverage=None,
@@ -1987,6 +1999,7 @@ class ComparisonReportTest(TestCase):
                 change_coverage=None,
             ),
             ImpactedFile(
+                file_name="mafs.js",
                 base_name="flag1/mafs.js",
                 head_name="flag1/mafs.js",
                 base_coverage=ReportTotals(
@@ -2045,6 +2058,7 @@ class ComparisonReportTest(TestCase):
         print(sorted_files)
         assert sorted_files == [
             ImpactedFile(
+                file_name="mafs.js",
                 base_name="flag1/mafs.js",
                 head_name="flag1/mafs.js",
                 base_coverage=ReportTotals(
@@ -2095,6 +2109,7 @@ class ComparisonReportTest(TestCase):
                 change_coverage=58.333333333333336,
             ),
             ImpactedFile(
+                file_name="words.js",
                 base_name="flag2/words.js",
                 head_name="flag2/words.js",
                 base_coverage=None,
@@ -2158,6 +2173,7 @@ class ComparisonReportTest(TestCase):
         }
         deserialized_file = self.comparison_report.deserialize_file(file)
         assert deserialized_file == ImpactedFile(
+            file_name="words.js",
             base_name="flag2/words.js",
             head_name="flag2/words.js",
             base_coverage=None,

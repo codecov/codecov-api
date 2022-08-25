@@ -2,7 +2,6 @@ from datetime import datetime
 from unittest.mock import patch
 
 from django.test import RequestFactory, override_settings
-from django.urls import include, path
 from rest_framework.reverse import reverse
 from shared.license import LicenseInformation
 
@@ -17,7 +16,7 @@ class LicenseViewTest(InternalAPITest):
         self.client.force_login(user=self.user)
 
     @patch("internal_api.license.views.get_current_license")
-    def test_licnese_view(self, mocked_license):
+    def test_license_view(self, mocked_license):
         mocked_license.return_value = LicenseInformation(
             is_valid=True,
             message=None,
@@ -47,7 +46,7 @@ class LicenseViewTest(InternalAPITest):
 
     @override_settings(ROOT_URLCONF="internal_api.enterprise_urls")
     @patch("internal_api.license.views.get_current_license")
-    def test_licnese_url(self, mocked_license):
+    def test_license_url(self, mocked_license):
         mocked_license.return_value = LicenseInformation(
             is_valid=True,
             message=None,
