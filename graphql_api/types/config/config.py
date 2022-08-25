@@ -5,10 +5,10 @@ from django.conf import settings
 import services.self_hosted as self_hosted
 from graphql_api.types.enums.enums import LoginProvider
 
-settings_bindable = ObjectType("Settings")
+config_bindable = ObjectType("Config")
 
 
-@settings_bindable.field("loginProviders")
+@config_bindable.field("loginProviders")
 def resolve_login_providers(_, info):
     login_providers = []
     if settings.GITHUB_CLIENT_ID:
@@ -32,7 +32,7 @@ def resolve_login_providers(_, info):
     return login_providers
 
 
-@settings_bindable.field("seatsUsed")
+@config_bindable.field("seatsUsed")
 @sync_to_async
 def resolve_seats_used(_, info):
     if not settings.IS_ENTERPRISE:
@@ -41,7 +41,7 @@ def resolve_seats_used(_, info):
     return self_hosted.activated_owners().count()
 
 
-@settings_bindable.field("seatsLimit")
+@config_bindable.field("seatsLimit")
 @sync_to_async
 def resolve_seats_limit(_, info):
     if not settings.IS_ENTERPRISE:

@@ -47,7 +47,7 @@ def resolve_login_providers(_, info):
     return login_providers
 
 
-@query_bindable.field("settings")
-def resolve_settings(_, info):
+@query_bindable.field("config")
+def resolve_config(_, info):
     # we have to return something here just to allow access to the child resolvers
     return object()
