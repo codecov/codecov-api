@@ -1,4 +1,4 @@
-union RegenerateOrgUploadTokenError = UnauthenticatedError | ValidationError
+union RegenerateOrgUploadTokenError = UnauthenticatedError | ValidationError | UnauthorizedError
 
 type RegenerateOrgUploadTokenPayload {
     orgUploadToken: String

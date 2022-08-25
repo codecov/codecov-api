@@ -1,8 +1,6 @@
-from uuid import uuid4
-
 from django.test import TransactionTestCase
 
-from codecov_auth.tests.factories import OrganizationLevelTokenFactory, OwnerFactory
+from codecov_auth.tests.factories import OwnerFactory
 from graphql_api.tests.helper import GraphQLTestHelper
 
 query = """
@@ -22,21 +20,20 @@ class RegenerateOrgUploadToken(GraphQLTestHelper, TransactionTestCase):
         self.owner = OwnerFactory(
             name="codecov", plan="users-enterprisem", service="github"
         )
-        OrganizationLevelTokenFactory(owner=self.owner)
 
-    def test_when_unauthenticated(self):
+    def test_when_unauthenticated_error(self):
         data = self.gql_request(query, variables={"input": {"owner": "codecov"}})
         assert (
             data["regenerateOrgUploadToken"]["error"]["__typename"]
             == "UnauthenticatedError"
         )
 
-    def test_when_validation(self):
-        owner = OwnerFactory(plan="users-enterprisem")
+    def test_when_validation_error(self):
+        owner = OwnerFactory(name="rula")
         data = self.gql_request(
             query,
             user=owner,
-            variables={"input": {"owner": "rula"}},
+            variables={"input": {"owner": "random"}},
         )
         assert (
             data["regenerateOrgUploadToken"]["error"]["__typename"] == "ValidationError"
@@ -50,4 +47,3 @@ class RegenerateOrgUploadToken(GraphQLTestHelper, TransactionTestCase):
         )
         newToken = data["regenerateOrgUploadToken"]["orgUploadToken"]
         assert newToken
-        assert newToken != "random"
