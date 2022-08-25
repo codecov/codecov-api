@@ -51,34 +51,30 @@ compare_router.register(r"compare", CompareViewSet, basename="compare")
 
 urlpatterns = []
 
-if not settings.IS_ENTERPRISE:
-    urlpatterns += [
-        path("charts/", include("internal_api.chart.urls")),
-        path("", include(plans_router.urls)),
-        path("<str:service>/", include(owners_router.urls)),
-        path(
-            "<str:service>/<str:owner_username>/", include(owner_artifacts_router.urls)
-        ),
-        path(
-            "<str:service>/<str:owner_username>/", include(account_details_router.urls)
-        ),
-        path("<str:service>/<str:owner_username>/", include(repository_router.urls)),
-        path(
-            "<str:service>/<str:owner_username>/<str:repo_name>/",
-            include(repository_artifacts_router.urls),
-        ),
-        path(
-            "<str:service>/<str:owner_username>/repos/<str:repo_name>/",
-            include(repository_artifacts_router.urls),
-        ),
-        path(
-            "<str:service>/<str:owner_username>/<str:repo_name>/",
-            include(compare_router.urls),
-        ),
-        path(
-            "<str:service>/<str:owner_username>/repos/<str:repo_name>/",
-            include(compare_router.urls),
-        ),
-    ]
-else:
+if settings.IS_ENTERPRISE:
     urlpatterns += enterprise_urlpatterns
+
+urlpatterns += [
+    path("charts/", include("internal_api.chart.urls")),
+    path("", include(plans_router.urls)),
+    path("<str:service>/", include(owners_router.urls)),
+    path("<str:service>/<str:owner_username>/", include(owner_artifacts_router.urls)),
+    path("<str:service>/<str:owner_username>/", include(account_details_router.urls)),
+    path("<str:service>/<str:owner_username>/", include(repository_router.urls)),
+    path(
+        "<str:service>/<str:owner_username>/<str:repo_name>/",
+        include(repository_artifacts_router.urls),
+    ),
+    path(
+        "<str:service>/<str:owner_username>/repos/<str:repo_name>/",
+        include(repository_artifacts_router.urls),
+    ),
+    path(
+        "<str:service>/<str:owner_username>/<str:repo_name>/",
+        include(compare_router.urls),
+    ),
+    path(
+        "<str:service>/<str:owner_username>/repos/<str:repo_name>/",
+        include(compare_router.urls),
+    ),
+]
