@@ -6,6 +6,7 @@ from internal_api.commit.serializers import CommitSerializer, ReportTotalsSerial
 class TotalsComparisonSerializer(serializers.Serializer):
     base = ReportTotalsSerializer()
     head = ReportTotalsSerializer()
+    patch = ReportTotalsSerializer(source="diff")
 
 
 class LineComparisonSerializer(serializers.Serializer):

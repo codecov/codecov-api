@@ -11,8 +11,6 @@ self_hosted_router = OptionalTrailingSlashRouter()
 self_hosted_router.register(r"users", UserViewSet, basename="selfhosted-users")
 
 urlpatterns = [
-    path("charts/", include("internal_api.chart.urls")),
     path("license/", include("internal_api.license.urls")),
-    path("self_hosted/", include(self_hosted_router.urls)),
-    path("<str:service>/<str:owner_username>/", include(repository_router.urls)),
+    path("", include(self_hosted_router.urls)),
 ]

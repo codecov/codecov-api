@@ -1,4 +1,5 @@
 type ImpactedFile {
+  fileName: String
   baseName: String
   headName: String
   baseCoverage: CoverageTotals

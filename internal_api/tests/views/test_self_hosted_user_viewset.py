@@ -18,11 +18,11 @@ class UserViewsetCloudTestCase(TestCase):
     # make sure these routes are not available in cloud environments
 
     def test_list_users(self):
-        res = self.client.get("/internal_api/self_hosted/users/")
+        res = self.client.get("/internal_api/users/")
         assert res.status_code == 404
 
     def test_user_detail(self):
-        res = self.client.get(f"/internal_api/self_hosted/users/{self.user.pk}/")
+        res = self.client.get(f"/internal_api/users/{self.user.pk}/")
         assert res.status_code == 404
 
     def test_user_update(self):
@@ -34,12 +34,12 @@ class UserViewsetCloudTestCase(TestCase):
         assert res.status_code == 404
 
     def test_current_user(self):
-        res = self.client.get("/internal_api/self_hosted/users/current/")
+        res = self.client.get("/internal_api/users/current/")
         assert res.status_code == 404
 
     def test_current_update(self):
         res = self.client.patch(
-            "/internal_api/self_hosted/users/current/",
+            "/internal_api/users/current/",
             data={"activated": True},
             format="json",
         )

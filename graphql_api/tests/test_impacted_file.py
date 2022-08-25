@@ -21,6 +21,7 @@ query ImpactedFiles(
       commit(id: $commit) {
         compareWithParent {
           impactedFiles {
+            fileName
             headName
             baseName
             baseCoverage {
@@ -225,6 +226,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                         "compareWithParent": {
                             "impactedFiles": [
                                 {
+                                    "fileName": "fileA",
                                     "headName": "fileA",
                                     "baseName": "fileA",
                                     "baseCoverage": {
@@ -237,6 +239,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                     "changeCoverage": 44.047619047619044,
                                 },
                                 {
+                                    "fileName": "fileB",
                                     "headName": "fileB",
                                     "baseName": "fileB",
                                     "baseCoverage": {
