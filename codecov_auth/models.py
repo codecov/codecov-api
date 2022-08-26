@@ -439,7 +439,9 @@ class OrganizationLevelToken(BaseCodecovModel):
     )
     token = models.UUIDField(unique=True, default=uuid.uuid4)
     valid_until = models.DateTimeField(blank=True, null=True)
-    token_type = models.CharField(max_length=50, choices=TokenTypeChoices.choices)
+    token_type = models.CharField(
+        max_length=50, choices=TokenTypeChoices.choices, default=TokenTypeChoices.UPLOAD
+    )
 
     def save(self, *args, **kwargs):
         if not self.owner.plan in ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS:
