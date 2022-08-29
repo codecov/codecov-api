@@ -1,13 +1,21 @@
+from typing import Optional
+
 from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.admin.models import LogEntry
 from django.db.models.fields import BLANK_CHOICE_DASH
 from django.forms import Select
+from django.http import HttpRequest
 from django.shortcuts import redirect
+from django.utils.html import format_html
 
-from billing.constants import USER_PLAN_REPRESENTATIONS
+from billing.constants import (
+    ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
+    USER_PLAN_REPRESENTATIONS,
+)
 from codecov.admin import AdminMixin
-from codecov_auth.models import Owner
+from codecov_auth.models import OrganizationLevelToken, Owner
+from codecov_auth.services.org_level_token_service import OrgLevelTokenService
 from services.task import TaskService
 from utils.services import get_short_service_name
 
@@ -35,6 +43,38 @@ def impersonate_owner(self, request, queryset):
 impersonate_owner.short_description = "Impersonate the selected user"
 
 
+class OrgUploadTokenInline(admin.TabularInline):
+    model = OrganizationLevelToken
+    readonly_fields = ["token", "refresh"]
+    fields = ["token", "valid_until", "token_type", "refresh"]
+    extra = 0
+    max_num = 1
+    verbose_name = (
+        "Organization Level Token (only available for enterprise-cloud plans)"
+    )
+
+    def refresh(self, obj: OrganizationLevelToken):
+        # 0 in this case refers to the 0th index of the inline
+        # But there can only ever be 1 token per org, so it's fine to use that.
+        return format_html(
+            f'<input type="checkbox" name="organization_tokens-0-REFRESH" id="id_organization_tokens-0-REFRESH">'
+        )
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_staff
+
+    def has_add_permission(self, request: HttpRequest, obj: Optional[Owner]) -> bool:
+        has_token = OrganizationLevelToken.objects.filter(owner=obj).count() > 0
+        return (
+            obj.plan in ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS
+            and (not has_token)
+            and request.user.is_staff
+        )
+
+
 @admin.register(Owner)
 class OwnerAdmin(AdminMixin, admin.ModelAdmin):
     exclude = ("oauth_token",)
@@ -43,6 +83,7 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
     search_fields = ("username__iexact",)
     actions = [impersonate_owner]
     autocomplete_fields = ("bot",)
+    inlines = [OrgUploadTokenInline]
 
     readonly_fields = (
         "ownerid",
@@ -125,6 +166,16 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
 
         deleted_objects = ()
         return deleted_objects, model_count, perms_needed, protected
+
+    def save_related(self, request: HttpRequest, form, formsets, change: bool) -> None:
+        if formsets:
+            token_formset = formsets[0]
+            token_id = token_formset.data.get("organization_tokens-0-id")
+            token_refresh = token_formset.data.get("organization_tokens-0-REFRESH")
+            # token_id only exists if the token already exists (edit operation)
+            if token_formset.is_valid() and token_id and token_refresh:
+                OrgLevelTokenService.refresh_token(token_id)
+        return super().save_related(request, form, formsets, change)
 
 
 @admin.register(LogEntry)

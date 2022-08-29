@@ -402,6 +402,19 @@ class FileComparisonTests(TestCase):
         assert self.file_comparison.totals == {
             "base": self.file_comparison.base_file.totals,
             "head": self.file_comparison.head_file.totals,
+            "diff": None,
+        }
+
+    def test_totals_shows_totals_for_base_head_and_diff(self):
+        diff_totals = ReportTotals.default_totals()
+        self.file_comparison.diff_data = {
+            "totals": diff_totals,
+        }
+
+        assert self.file_comparison.totals == {
+            "base": self.file_comparison.base_file.totals,
+            "head": self.file_comparison.head_file.totals,
+            "diff": diff_totals,
         }
 
     def test_totals_base_is_none_if_missing_basefile(self):
@@ -409,6 +422,7 @@ class FileComparisonTests(TestCase):
         assert self.file_comparison.totals == {
             "base": None,
             "head": self.file_comparison.head_file.totals,
+            "diff": None,
         }
 
     def test_totals_head_is_none_if_missing_headfile(self):
@@ -416,6 +430,7 @@ class FileComparisonTests(TestCase):
         assert self.file_comparison.totals == {
             "base": self.file_comparison.base_file.totals,
             "head": None,
+            "diff": None,
         }
 
     def test_totals_includes_diff_totals_if_diff(self):
@@ -778,7 +793,7 @@ class ComparisonTests(TestCase):
         assert self.comparison.totals["head"] == head_report_mock.return_value.totals
         assert self.comparison.totals["base"] is None
 
-    def test_totals_returns_head_totals_if_exists(
+    def test_totals_returns_base_totals_if_exists(
         self, base_report_mock, head_report_mock, git_comparison_mock
     ):
         head_report_mock.return_value = None
@@ -786,6 +801,20 @@ class ComparisonTests(TestCase):
 
         assert self.comparison.totals["base"] == base_report_mock.return_value.totals
         assert self.comparison.totals["head"] is None
+
+    def test_totals_returns_diff_totals_if_exists(
+        self, base_report_mock, head_report_mock, git_comparison_mock
+    ):
+        head_report = SerializableReport()
+        head_report_mock.return_value = head_report
+        base_report_mock.return_value = None
+
+        diff_totals = ReportTotals.default_totals()
+        git_comparison_mock.return_value = {"diff": {"totals": diff_totals}}
+
+        assert self.comparison.totals["base"] is None
+        assert self.comparison.totals["head"] == head_report.totals
+        assert self.comparison.totals["diff"] is diff_totals
 
 
 class PullRequestComparisonTests(TestCase):

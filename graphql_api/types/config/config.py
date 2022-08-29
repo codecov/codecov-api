@@ -1,29 +1,14 @@
 from ariadne import ObjectType
+from asgiref.sync import sync_to_async
 from django.conf import settings
 
-from graphql_api.actions.owner import get_owner
-from graphql_api.helpers.ariadne import ariadne_load_local_graphql
+import services.self_hosted as self_hosted
 from graphql_api.types.enums.enums import LoginProvider
 
-query = ariadne_load_local_graphql(__file__, "query.graphql")
-query_bindable = ObjectType("Query")
+config_bindable = ObjectType("Config")
 
 
-@query_bindable.field("me")
-def resolve_me(_, info):
-    user = info.context["request"].user
-    if not user.is_authenticated:
-        return None
-    return user
-
-
-@query_bindable.field("owner")
-def resolve_owner(_, info, username):
-    service = info.context["service"]
-    return get_owner(service, username)
-
-
-@query_bindable.field("loginProviders")
+@config_bindable.field("loginProviders")
 def resolve_login_providers(_, info):
     login_providers = []
     if settings.GITHUB_CLIENT_ID:
@@ -47,7 +32,19 @@ def resolve_login_providers(_, info):
     return login_providers
 
 
-@query_bindable.field("config")
-def resolve_config(_, info):
-    # we have to return something here just to allow access to the child resolvers
-    return object()
+@config_bindable.field("seatsUsed")
+@sync_to_async
+def resolve_seats_used(_, info):
+    if not settings.IS_ENTERPRISE:
+        return None
+
+    return self_hosted.activated_owners().count()
+
+
+@config_bindable.field("seatsLimit")
+@sync_to_async
+def resolve_seats_limit(_, info):
+    if not settings.IS_ENTERPRISE:
+        return None
+
+    return self_hosted.license_seats()
