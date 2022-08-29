@@ -92,7 +92,7 @@ def test_commit_report_serializer(transactional_db, mocker):
     report = CommitReportFactory.create()
     serializer = CommitReportSerializer(report)
     expected_data = {
-        "commit_id": report.commit.id,
+        "commit_sha": report.commit.commitid,
         "external_id": str(report.external_id),
         "created_at": report.created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
     }

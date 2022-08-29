@@ -78,11 +78,13 @@ class CommitSerializer(serializers.ModelSerializer):
 
 
 class CommitReportSerializer(serializers.ModelSerializer):
+    commit_sha = serializers.CharField(source="commit.commitid")
+
     class Meta:
         model = CommitReport
         read_only_fields = (
             "external_id",
             "created_at",
-            "commit_id",
+            "commit_sha",
         )
         fields = read_only_fields
