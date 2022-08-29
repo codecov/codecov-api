@@ -812,49 +812,49 @@ class ComparisonReport(object):
         return self._apply_filters(impacted_files, filters)
 
     def _apply_filters(self, impacted_files, filters):
-        filter_parameter = filters.get("ordering", {}).get("parameter")
-        filter_direction = filters.get("ordering", {}).get("direction")
-        if filter_parameter and filter_direction:
-            parameter_value = filter_parameter.value
-            direction_value = filter_direction.value
+        parameter = filters.get("ordering", {}).get("parameter")
+        direction = filters.get("ordering", {}).get("direction")
+        if parameter and direction:
             impacted_files = self.sort_impacted_files(
-                impacted_files, parameter_value, direction_value
+                impacted_files, parameter, direction
             )
         return impacted_files
 
-    def get_attribute(self, impacted_file: ImpactedFile, param: ImpactedFileParameter):
-        if param == ImpactedFileParameter.FILE_NAME.value:
+    def get_attribute(
+        self, impacted_file: ImpactedFile, parameter: ImpactedFileParameter
+    ):
+        if parameter == ImpactedFileParameter.FILE_NAME:
             return impacted_file.file_name
-        elif param == ImpactedFileParameter.CHANGE_COVERAGE.value:
+        elif parameter == ImpactedFileParameter.CHANGE_COVERAGE:
             return impacted_file.change_coverage
-        elif param == ImpactedFileParameter.HEAD_COVERAGE.value:
+        elif parameter == ImpactedFileParameter.HEAD_COVERAGE:
             if impacted_file.head_coverage is not None:
                 return impacted_file.head_coverage.coverage
-        elif param == ImpactedFileParameter.PATCH_COVERAGE.value:
+        elif parameter == ImpactedFileParameter.PATCH_COVERAGE:
             if impacted_file.patch_coverage is not None:
                 return impacted_file.patch_coverage.coverage
         else:
-            raise ValueError(f"invalid impacted file parameter: {param}")
+            raise ValueError(f"invalid impacted file parameter: {parameter}")
 
     """
     Sorts the impacted files by any provided parameter and slides items with None values to the end
     """
 
-    def sort_impacted_files(self, impacted_files, parameter_value, direction_value):
+    def sort_impacted_files(self, impacted_files, parameter, direction):
         # Separate impacted files with None values for the specified parameter value
         files_with_coverage = []
         files_without_coverage = []
         for file in impacted_files:
-            if self.get_attribute(file, parameter_value) is not None:
+            if self.get_attribute(file, parameter) is not None:
                 files_with_coverage.append(file)
             else:
                 files_without_coverage.append(file)
 
         # Sort impacted_files list based on parameter value
-        is_reversed = direction_value == "descending"
+        is_reversed = direction.value == "descending"
         files_with_coverage = sorted(
             files_with_coverage,
-            key=lambda x: self.get_attribute(x, parameter_value),
+            key=lambda x: self.get_attribute(x, parameter),
             reverse=is_reversed,
         )
 

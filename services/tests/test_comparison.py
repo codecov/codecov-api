@@ -1,7 +1,8 @@
 import asyncio
+import enum
 import json
 from collections import Counter
-from unittest.mock import MagicMock, PropertyMock, patch
+from unittest.mock import PropertyMock, patch
 
 import minio
 import pytest
@@ -22,6 +23,7 @@ from services.comparison import (
     FileComparison,
     FileComparisonTraverseManager,
     ImpactedFile,
+    ImpactedFileParameter,
     LineComparison,
     MissingComparisonReport,
     PullRequestComparison,
@@ -45,6 +47,11 @@ class MockOrderValue(object):
 
     def __getitem__(self, key):
         return getattr(self, key)
+
+
+class OrderingDirection(enum.Enum):
+    ASC = "ascending"
+    DESC = "descending"
 
 
 class LineNumberCollector:
@@ -1518,8 +1525,8 @@ class ComparisonReportTest(TestCase):
         read_file.return_value = mock_data_from_archive
         filters = {
             "ordering": {
-                "direction": MockOrderValue("ascending"),
-                "parameter": MockOrderValue("file_name"),
+                "direction": OrderingDirection.ASC,
+                "parameter": ImpactedFileParameter.FILE_NAME,
             }
         }
         impacted_files = self.comparison_report.impacted_files(filters)
@@ -1619,8 +1626,8 @@ class ComparisonReportTest(TestCase):
         read_file.return_value = mock_data_from_archive
         filters = {
             "ordering": {
-                "direction": MockOrderValue("descending"),
-                "parameter": MockOrderValue("file_name"),
+                "direction": OrderingDirection.DESC,
+                "parameter": ImpactedFileParameter.FILE_NAME,
             }
         }
         impacted_files = self.comparison_report.impacted_files(filters)
@@ -1720,8 +1727,8 @@ class ComparisonReportTest(TestCase):
         read_file.return_value = mock_data_from_archive
         filters = {
             "ordering": {
-                "direction": MockOrderValue("descending"),
-                "parameter": MockOrderValue("head_coverage"),
+                "direction": OrderingDirection.DESC,
+                "parameter": ImpactedFileParameter.HEAD_COVERAGE,
             }
         }
         impacted_files = self.comparison_report.impacted_files(filters)
@@ -1821,8 +1828,8 @@ class ComparisonReportTest(TestCase):
         read_file.return_value = mock_data_from_archive
         filters = {
             "ordering": {
-                "direction": MockOrderValue("ascending"),
-                "parameter": MockOrderValue("head_coverage"),
+                "direction": OrderingDirection.ASC,
+                "parameter": ImpactedFileParameter.HEAD_COVERAGE,
             }
         }
         impacted_files = self.comparison_report.impacted_files(filters)
@@ -1922,8 +1929,8 @@ class ComparisonReportTest(TestCase):
         read_file.return_value = mock_data_from_archive
         filters = {
             "ordering": {
-                "direction": MockOrderValue("ascending"),
-                "parameter": MockOrderValue("patch_coverage"),
+                "direction": OrderingDirection.ASC,
+                "parameter": ImpactedFileParameter.PATCH_COVERAGE,
             }
         }
         impacted_files = self.comparison_report.impacted_files(filters)
@@ -2023,8 +2030,8 @@ class ComparisonReportTest(TestCase):
         read_file.return_value = mock_data_from_archive
         filters = {
             "ordering": {
-                "direction": MockOrderValue("descending"),
-                "parameter": MockOrderValue("patch_coverage"),
+                "direction": OrderingDirection.DESC,
+                "parameter": ImpactedFileParameter.PATCH_COVERAGE,
             }
         }
         impacted_files = self.comparison_report.impacted_files(filters)
@@ -2124,8 +2131,8 @@ class ComparisonReportTest(TestCase):
         read_file.return_value = mock_data_from_archive
         filters = {
             "ordering": {
-                "direction": MockOrderValue("ascending"),
-                "parameter": MockOrderValue("change_coverage"),
+                "direction": OrderingDirection.ASC,
+                "parameter": ImpactedFileParameter.CHANGE_COVERAGE,
             }
         }
         impacted_files = self.comparison_report.impacted_files(filters)
@@ -2225,8 +2232,8 @@ class ComparisonReportTest(TestCase):
         read_file.return_value = mock_data_from_archive
         filters = {
             "ordering": {
-                "direction": MockOrderValue("descending"),
-                "parameter": MockOrderValue("change_coverage"),
+                "direction": OrderingDirection.DESC,
+                "parameter": ImpactedFileParameter.CHANGE_COVERAGE,
             }
         }
         impacted_files = self.comparison_report.impacted_files(filters)
@@ -2505,10 +2512,10 @@ class ComparisonReportTest(TestCase):
                 change_coverage=0,
             ),
         ]
-        parameter_value = "change_coverage"
-        direction_value = "descending"
+        parameter = ImpactedFileParameter.CHANGE_COVERAGE
+        direction = OrderingDirection.DESC
         sorted_files = self.comparison_report.sort_impacted_files(
-            impacted_files, parameter_value, direction_value
+            impacted_files, parameter, direction
         )
         assert sorted_files == [
             ImpactedFile(
@@ -2637,6 +2644,15 @@ class ComparisonReportTest(TestCase):
                 change_coverage=None,
             ),
         ]
+
+    def test_impacted_file_sort_function_error(self):
+        impacted_files = []
+        parameter = "something else"
+        direction = OrderingDirection.DESC
+        sorted_files = self.comparison_report.sort_impacted_files(
+            impacted_files, parameter, direction
+        )
+        assert sorted_files == []
 
     def test_impacted_file_deserialize_file(self):
         file = {
