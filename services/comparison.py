@@ -521,11 +521,15 @@ class FileComparison:
         # Here we pass this along to the frontend by assigning the diff totals
         # to the head_totals' 'diff' attribute. It is absolutely worth considering
         # modifying the behavior of shared.reports to implement something similar.
+        diff_totals = None
         if head_totals and self.diff_data:
-            head_totals.diff = self.diff_data.get("totals", 0)
+            diff_totals = self.diff_data.get("totals")
+            head_totals.diff = diff_totals or 0
+
         return {
             "base": self.base_file.totals if self.base_file is not None else None,
             "head": head_totals,
+            "diff": diff_totals,
         }
 
     @property
@@ -672,6 +676,7 @@ class Comparison(object):
         return {
             "base": self.base_report.totals if self.base_report is not None else None,
             "head": self.head_report.totals if self.head_report is not None else None,
+            "diff": self.git_comparison["diff"].get("totals"),
         }
 
     @property
@@ -757,6 +762,7 @@ class FlagComparison(object):
 
 @dataclass
 class ImpactedFile:
+    file_name: str
     base_name: str
     head_name: str
     base_coverage: ReportTotals
@@ -817,7 +823,7 @@ class ComparisonReport(object):
         files_with_coverage = []
         files_without_coverage = []
         for file in impacted_files:
-            if getattr(file, parameter_value):
+            if getattr(file, parameter_value) is not None:
                 files_with_coverage.append(file)
             else:
                 files_without_coverage.append(file)
@@ -890,7 +896,9 @@ class ComparisonReport(object):
         change_coverage = self.calculate_change(
             file["head_coverage"], file["base_coverage"]
         )
+        file_name = self.get_file_name_from_file_path(file["head_name"])
         return ImpactedFile(
+            file_name=file_name,
             head_name=file["head_name"],
             base_name=file["base_name"],
             head_coverage=file["head_coverage"],
@@ -908,6 +916,10 @@ class ComparisonReport(object):
         # if not compared_to_coverage:
         #     # return there is no base coverage
         return None
+
+    def get_file_name_from_file_path(self, file_path):
+        parts = file_path.split("/")
+        return parts[-1]
 
 
 class PullRequestComparison(Comparison):
