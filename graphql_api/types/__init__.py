@@ -5,6 +5,7 @@ from ..helpers.ariadne import ariadne_load_local_graphql
 from .branch import branch, branch_bindable
 from .commit import commit, commit_bindable
 from .comparison import comparison, comparison_bindable
+from .config import config, config_bindable
 from .coverage_totals import coverage_totals, coverage_totals_bindable
 from .enums import enum_types, enums
 from .file import commit_file, file_bindable
@@ -61,6 +62,7 @@ types = [
     commit_file,
     profile,
     impacted_file,
+    config,
 ]
 
 bindables = [
@@ -89,6 +91,7 @@ bindables = [
     datetime_scalar,
     profile_bindable,
     impacted_file_bindable,
+    config_bindable,
     *mutation_resolvers,
     *enum_types.enum_types,
 ]
