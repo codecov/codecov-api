@@ -10,7 +10,7 @@ from codecov_auth.models import Owner
 
 from .filters import UserFilters
 from .permissions import AdminPermissions
-from .serializers import UserSerializer
+from .serializers import SettingsSerializer, UserSerializer
 
 
 class UserViewSet(
@@ -53,3 +53,31 @@ class UserViewSet(
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+
+class SettingsViewSet(
+    viewsets.GenericViewSet,
+    mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin,
+):
+    serializer_class = SettingsSerializer
+    permission_classes = [AdminPermissions]
+
+    def retrieve(self, request, *args, **kwargs):
+        serializer = self.get_serializer(self._get_settings())
+        return Response(serializer.data)
+
+    def update(self, request, *args, **kwargs):
+        serializer = self.get_serializer(
+            self._get_settings(), data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    def _get_settings(self):
+        return {
+            "plan_auto_activate": self_hosted.is_autoactivation_enabled(),
+            "seats_used": self_hosted.activated_owners().count(),
+            "seats_limit": self_hosted.license_seats(),
+        }

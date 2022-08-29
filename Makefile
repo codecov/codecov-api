@@ -15,6 +15,7 @@ build:
 	$(MAKE) build.local
 
 build.enterprise:
+	$(MAKE) build
 	docker build -f Dockerfile.enterprise . -t codecov/enterprise-api:${release_version} \
 		--label "org.label-schema.build-date"="$(build_date)" \
 		--label "org.label-schema.name"="Self-Hosted API" \
@@ -38,7 +39,6 @@ run.enterprise:
 	docker-compose -f docker-compose-enterprise.yml up -d
 
 enterprise:
-	$(MAKE) build
 	$(MAKE) build.enterprise
 	$(MAKE) run.enterprise
 

@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from rest_framework.exceptions import APIException
 from rest_framework.test import APIRequestFactory
 
@@ -124,6 +124,21 @@ class TestRepositoryPermissionsService(TestCase):
         owner = OwnerFactory(
             plan="users-inappy", plan_auto_activate=True, plan_user_count=1
         )
+        user.organizations = [owner.ownerid]
+        user.save()
+
+        assert self.permissions_service.user_is_activated(user, owner) is True
+
+        owner.refresh_from_db()
+        assert user.ownerid in owner.plan_activated_users
+
+    @patch("services.self_hosted.license_seats")
+    @override_settings(IS_ENTERPRISE=True)
+    def test_user_is_activated_when_self_hosted(self, license_seats):
+        license_seats.return_value = 5
+
+        user = OwnerFactory()
+        owner = OwnerFactory(plan_auto_activate=True)
         user.organizations = [owner.ownerid]
         user.save()
 

@@ -9,6 +9,7 @@ from .interactors.get_org_upload_token import GetOrgUploadToken
 from .interactors.get_uploads_number_per_user import GetUploadsNumberPerUserInteractor
 from .interactors.is_syncing import IsSyncingInteractor
 from .interactors.onboard_user import OnboardUserInteractor
+from .interactors.regenerate_org_upload_token import RegenerateOrgUploadTokenInteractor
 from .interactors.set_yaml_on_owner import SetYamlOnOwnerInteractor
 from .interactors.trigger_sync import TriggerSyncInteractor
 from .interactors.update_profile import UpdateProfileInteractor
@@ -49,3 +50,6 @@ class OwnerCommands(BaseCommand):
 
     def get_org_upload_token(self, owner):
         return self.get_interactor(GetOrgUploadToken).execute(owner)
+
+    def regenerate_org_upload_token(self, owner):
+        return self.get_interactor(RegenerateOrgUploadTokenInteractor).execute(owner)
