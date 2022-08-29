@@ -823,7 +823,7 @@ class ComparisonReport(object):
         files_with_coverage = []
         files_without_coverage = []
         for file in impacted_files:
-            if getattr(file, parameter_value):
+            if getattr(file, parameter_value) is not None:
                 files_with_coverage.append(file)
             else:
                 files_without_coverage.append(file)

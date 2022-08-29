@@ -75,3 +75,11 @@ class OwnerCommandsTest(TransactionTestCase):
         owner = {}
         self.command.get_org_upload_token(owner)
         interactor_mock.assert_called_once_with(owner)
+
+    @patch(
+        "codecov_auth.commands.owner.owner.RegenerateOrgUploadTokenInteractor.execute"
+    )
+    def test_regenerate_org_upload_token_delegate_to_interactor(self, interactor_mock):
+        owner = {}
+        self.command.regenerate_org_upload_token(owner)
+        interactor_mock.assert_called_once_with(owner)
