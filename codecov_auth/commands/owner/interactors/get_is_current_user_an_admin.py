@@ -1,5 +1,7 @@
 from asgiref.sync import async_to_sync, sync_to_async
+from django.conf import settings
 
+import services.self_hosted as self_hosted
 from codecov.commands.base import BaseInteractor
 from services.decorators import torngit_safe
 from services.repo_providers import get_generic_adapter_params, get_provider
@@ -30,19 +32,22 @@ def _is_admin_on_provider(owner, current_user):
 class GetIsCurrentUserAnAdminInteractor(BaseInteractor):
     @sync_to_async
     def execute(self, owner, current_user):
-        admins = owner.admins
-        if not hasattr(current_user, "ownerid"):
-            return False
-        if owner.ownerid == current_user.ownerid:
-            return True
+        if settings.IS_ENTERPRISE:
+            return self_hosted.is_admin_owner(current_user)
         else:
-            try:
-                isAdmin = async_to_sync(_is_admin_on_provider)(owner, current_user)
-                if isAdmin:
-                    # save admin provider in admins list
-                    owner.admins.append(current_user.ownerid)
-                    owner.save()
-                return isAdmin or (current_user.ownerid in admins)
-            except Exception as error:
-                print("Error Calling Admin Provider " + repr(error))
+            admins = owner.admins
+            if not hasattr(current_user, "ownerid"):
                 return False
+            if owner.ownerid == current_user.ownerid:
+                return True
+            else:
+                try:
+                    isAdmin = async_to_sync(_is_admin_on_provider)(owner, current_user)
+                    if isAdmin:
+                        # save admin provider in admins list
+                        owner.admins.append(current_user.ownerid)
+                        owner.save()
+                    return isAdmin or (current_user.ownerid in admins)
+                except Exception as error:
+                    print("Error Calling Admin Provider " + repr(error))
+                    return False

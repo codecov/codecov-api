@@ -24,6 +24,9 @@ class MinioEndpoints(Enum):
     profiling_upload = (
         "{version}/repos/{repo_hash}/profilinguploads/{profiling_version}/{location}"
     )
+    static_analysis_single_file = (
+        "{version}/repos/{repo_hash}/static_analysis/files/{location}"
+    )
     mutation_testing_upload = (
         "{version}/raw/mutation/{date}/{repo_hash}/{commit_sha}/{reportid}.txt"
     )

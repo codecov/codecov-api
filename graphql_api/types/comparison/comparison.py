@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 
 from ariadne import ObjectType
 from asgiref.sync import sync_to_async

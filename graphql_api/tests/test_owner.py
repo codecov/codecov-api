@@ -15,6 +15,7 @@ from .helper import GraphQLTestHelper, paginate_connection
 
 query_repositories = """{
     owner(username: "%s") {
+        orgUploadToken
         hashOwnerid
         isCurrentUserPartOfOrg
         yaml
@@ -53,6 +54,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         hashOwnerid = hash_ownerid.hexdigest()
         assert data == {
             "owner": {
+                "orgUploadToken": None,
                 "hashOwnerid": hashOwnerid,
                 "isCurrentUserPartOfOrg": True,
                 "yaml": None,
@@ -266,3 +268,10 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         hash_ownerid = sha1(str(self.user.ownerid).encode())
         hashOwnerid = hash_ownerid.hexdigest()
         assert data["owner"]["hashOwnerid"] == hashOwnerid
+
+    @patch("codecov_auth.commands.owner.owner.OwnerCommands.get_org_upload_token")
+    def test_get_org_upload_token(self, mocker):
+        mocker.return_value = "upload_token"
+        query = query_repositories % (self.user.username, "", "")
+        data = self.gql_request(query, user=self.user)
+        assert data["owner"]["orgUploadToken"] == "upload_token"

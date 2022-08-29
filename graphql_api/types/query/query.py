@@ -45,3 +45,9 @@ def resolve_login_providers(_, info):
         login_providers.append(LoginProvider("bitbucket_server"))
 
     return login_providers
+
+
+@query_bindable.field("config")
+def resolve_config(_, info):
+    # we have to return something here just to allow access to the child resolvers
+    return object()
