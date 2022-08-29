@@ -3,13 +3,17 @@ from unittest.mock import patch
 from django.test import TestCase, override_settings
 from shared.license import LicenseInformation
 
+from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
 from services.self_hosted import (
     LicenseException,
     activate_owner,
     activated_owners,
     admin_owners,
+    can_activate_owner,
     deactivate_owner,
+    is_activated_owner,
+    is_admin_owner,
     license_seats,
 )
 
@@ -32,6 +36,26 @@ class SelfHostedTestCase(TestCase):
 
         get_config.assert_called_once_with("setup", "admins", default=[])
 
+    def test_admin_owners_empty(self):
+        owner1 = OwnerFactory(service="github", username="foo")
+        owner2 = OwnerFactory(service="github", username="bar")
+        owner3 = OwnerFactory(service="gitlab", username="foo")
+
+        owners = admin_owners()
+        assert list(owners) == []
+
+    @patch("services.self_hosted.admin_owners")
+    def test_is_admin_owner(self, admin_owners):
+        owner1 = OwnerFactory(service="github", username="foo")
+        owner2 = OwnerFactory(service="github", username="bar")
+        owner3 = OwnerFactory(service="gitlab", username="foo")
+
+        admin_owners.return_value = Owner.objects.filter(pk__in=[owner1.pk, owner2.pk])
+
+        assert is_admin_owner(owner1) == True
+        assert is_admin_owner(owner2) == True
+        assert is_admin_owner(owner3) == False
+
     def test_activated_owners(self):
         user1 = OwnerFactory()
         user2 = OwnerFactory()
@@ -43,6 +67,20 @@ class SelfHostedTestCase(TestCase):
         owners = activated_owners()
         assert list(owners) == [user1, user2, user3]
 
+    @patch("services.self_hosted.activated_owners")
+    def test_is_activated_owner(self, activated_owners):
+        owner1 = OwnerFactory(service="github", username="foo")
+        owner2 = OwnerFactory(service="github", username="bar")
+        owner3 = OwnerFactory(service="gitlab", username="foo")
+
+        activated_owners.return_value = Owner.objects.filter(
+            pk__in=[owner1.pk, owner2.pk]
+        )
+
+        assert is_activated_owner(owner1) == True
+        assert is_activated_owner(owner2) == True
+        assert is_activated_owner(owner3) == False
+
     @patch("services.self_hosted.get_current_license")
     def test_license_seats(self, get_current_license):
         get_current_license.return_value = LicenseInformation(number_allowed_users=123)
@@ -53,9 +91,32 @@ class SelfHostedTestCase(TestCase):
         get_current_license.return_value = LicenseInformation()
         assert license_seats() == 0
 
+    @patch("services.self_hosted.activated_owners")
     @patch("services.self_hosted.license_seats")
-    def test_activate_owner(self, license_seats):
-        license_seats.return_value = 100
+    def test_can_activate_owner(self, license_seats, activated_owners):
+        license_seats.return_value = 1
+
+        owner1 = OwnerFactory(service="github", username="foo")
+        owner2 = OwnerFactory(service="github", username="bar")
+        owner3 = OwnerFactory(service="gitlab", username="foo")
+
+        activated_owners.return_value = Owner.objects.filter(
+            pk__in=[owner1.pk, owner2.pk]
+        )
+
+        assert can_activate_owner(owner1) == True
+        assert can_activate_owner(owner2) == True
+        assert can_activate_owner(owner3) == False
+
+        license_seats.return_value = 5
+
+        assert can_activate_owner(owner1) == True
+        assert can_activate_owner(owner2) == True
+        assert can_activate_owner(owner3) == True
+
+    @patch("services.self_hosted.can_activate_owner")
+    def test_activate_owner(self, can_activate_owner):
+        can_activate_owner.return_value = True
 
         other_owner = OwnerFactory()
         org1 = OwnerFactory(plan_activated_users=[other_owner.pk])
@@ -82,9 +143,9 @@ class SelfHostedTestCase(TestCase):
         org3.refresh_from_db()
         assert org3.plan_activated_users == [other_owner.pk]
 
-    @patch("services.self_hosted.license_seats")
-    def test_activate_owner_no_more_seats(self, license_seats):
-        license_seats.return_value = 1
+    @patch("services.self_hosted.can_activate_owner")
+    def test_activate_owner_cannot_activate(self, can_activate_owner):
+        can_activate_owner.return_value = False
 
         other_owner = OwnerFactory()
         org1 = OwnerFactory(plan_activated_users=[other_owner.pk])
