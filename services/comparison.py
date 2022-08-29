@@ -5,6 +5,7 @@ import json
 import logging
 from collections import Counter
 from dataclasses import dataclass
+from operator import attrgetter
 
 import minio
 from asgiref.sync import async_to_sync
@@ -521,11 +522,15 @@ class FileComparison:
         # Here we pass this along to the frontend by assigning the diff totals
         # to the head_totals' 'diff' attribute. It is absolutely worth considering
         # modifying the behavior of shared.reports to implement something similar.
+        diff_totals = None
         if head_totals and self.diff_data:
-            head_totals.diff = self.diff_data.get("totals", 0)
+            diff_totals = self.diff_data.get("totals")
+            head_totals.diff = diff_totals or 0
+
         return {
             "base": self.base_file.totals if self.base_file is not None else None,
             "head": head_totals,
+            "diff": diff_totals,
         }
 
     @property
@@ -672,6 +677,7 @@ class Comparison(object):
         return {
             "base": self.base_report.totals if self.base_report is not None else None,
             "head": self.head_report.totals if self.head_report is not None else None,
+            "diff": self.git_comparison["diff"].get("totals"),
         }
 
     @property
@@ -810,6 +816,26 @@ class ComparisonReport(object):
         return impacted_files
 
     """
+    Maps filter keys to their respective lookup; mapping done mainly for head_coverage and patch_coverage variables
+    """
+
+    def map_parameter_value(self, parameter):
+        mapping = dict(
+            file_name="file_name",
+            change_coverage="change_coverage",
+            head_coverage="head_coverage.coverage",
+            patch_coverage="patch_coverage.coverage",
+        )
+        return mapping[parameter]
+
+    def get_attribute(self, obj, parameter_value):
+        parent_key = getattr(obj, parameter_value)
+        if parent_key is not None:
+            parameter_value = self.map_parameter_value(parameter_value)
+            return attrgetter(parameter_value)(obj)
+        return None
+
+    """
     Sorts the impacted files by any provided parameter and slides items with None values to the end
     """
 
@@ -818,7 +844,8 @@ class ComparisonReport(object):
         files_with_coverage = []
         files_without_coverage = []
         for file in impacted_files:
-            if getattr(file, parameter_value) is not None:
+            self.get_attribute(file, parameter_value)
+            if self.get_attribute(file, parameter_value) is not None:
                 files_with_coverage.append(file)
             else:
                 files_without_coverage.append(file)
@@ -827,7 +854,7 @@ class ComparisonReport(object):
         is_reversed = direction_value == "descending"
         files_with_coverage = sorted(
             files_with_coverage,
-            key=lambda x: getattr(x, parameter_value),
+            key=lambda x: self.get_attribute(x, parameter_value),
             reverse=is_reversed,
         )
 
@@ -905,7 +932,7 @@ class ComparisonReport(object):
     # TODO: I think this can be a function located elsewhere
     def calculate_change(self, head_coverage, compared_to_coverage):
         if head_coverage and compared_to_coverage:
-            return head_coverage.coverage - compared_to_coverage.coverage
+            return float(head_coverage.coverage - compared_to_coverage.coverage)
         # if not head_coverage:
         #     # return there is no head coverage
         # if not compared_to_coverage:
