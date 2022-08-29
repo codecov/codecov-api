@@ -135,3 +135,30 @@ def deactivate_owner(owner: Owner):
             template="%(function)s(plan_activated_users, %(expressions)s)",
         )
     )
+
+
+def enable_autoactivation():
+    """
+    Enable auto-activation for the entire instance.
+
+    There's no good place to store this instance-wide so we're just saving this
+    for all owners.
+    """
+    Owner.objects.all().update(plan_auto_activate=True)
+
+
+def disable_autoactivation():
+    """
+    Disable auto-activation for the entire instance.
+
+    There's no good place to store this instance-wide so we're just saving this
+    for all owners.
+    """
+    Owner.objects.all().update(plan_auto_activate=False)
+
+
+def is_autoactivation_enabled():
+    """
+    Returns true if ANY org has auto-activation enabled.
+    """
+    return Owner.objects.filter(plan_auto_activate=True).exists()
