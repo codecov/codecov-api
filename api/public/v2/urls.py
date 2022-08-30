@@ -9,13 +9,14 @@ from .branch.views import BranchViewSet
 from .commit.views import CommitsViewSet
 from .compare.views import CompareViewSet
 from .coverage.views import CoverageViewSet
+from .flag.views import FlagViewSet
 from .owner.views import OwnerViewSet, UserViewSet
 from .pull.views import PullViewSet
 from .repo.views import RepositoryViewSet
+from .report.views import ReportViewSet
 
 urls.handler404 = not_found
 urls.handler500 = server_error
-
 
 owners_router = OptionalTrailingSlashRouter()
 owners_router.register(r"", OwnerViewSet, basename="api-v2-owners")
@@ -34,12 +35,16 @@ repository_artifacts_router.register(
 repository_artifacts_router.register(
     r"branches", BranchViewSet, basename="api-v2-branches"
 )
+repository_artifacts_router.register(r"flags", FlagViewSet, basename="api-v2-flags")
 
 compare_router = RetrieveUpdateDestroyRouter()
 compare_router.register(r"compare", CompareViewSet, basename="api-v2-compare")
 
 coverage_router = OptionalTrailingSlashRouter()
 coverage_router.register(r"coverage", CoverageViewSet, basename="api-v2-coverage")
+
+report_router = RetrieveUpdateDestroyRouter()
+report_router.register(r"report", ReportViewSet, basename="report")
 
 service_prefix = "<str:service>/"
 owner_prefix = "<str:service>/<str:owner_username>/"
@@ -54,6 +59,7 @@ urlpatterns = [
     path(owner_prefix, include(repository_router.urls)),
     path(repo_prefix, include(repository_artifacts_router.urls)),
     path(repo_prefix, include(compare_router.urls)),
+    path(repo_prefix, include(report_router.urls)),
 ]
 
 if settings.TIMESERIES_ENABLED:

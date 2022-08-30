@@ -75,8 +75,8 @@ class ReportFileSerializer(serializers.Serializer):
 
 
 class ReportSerializer(serializers.Serializer):
-    files = serializers.SerializerMethodField()
     totals = ReportTotalsSerializer()
+    files = serializers.SerializerMethodField()
 
     def get_files(self, report: Report):
         return [ReportFileSerializer(report.get(file)).data for file in report.files]
