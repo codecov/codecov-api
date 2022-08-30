@@ -16,9 +16,10 @@ class PullViewSetMixin(
     filterset_fields = ["state"]
     ordering_fields = ("pullid",)
     permission_classes = [RepositoryArtifactPermissions]
+    lookup_field = "pullid"
 
     def get_object(self):
-        pullid = self.kwargs.get("pk")
+        pullid = self.kwargs.get("pullid")
         return get_object_or_404(self.get_queryset(), pullid=pullid)
 
     def get_queryset(self):

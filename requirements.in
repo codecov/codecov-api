@@ -10,6 +10,7 @@ django-cors-headers
 django-dynamic-fixture
 django-filter
 djangorestframework
+drf-spectacular
 elastic-apm
 factory-boy
 fakeredis

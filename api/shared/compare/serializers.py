@@ -1,7 +1,10 @@
+from typing import List
+
 from rest_framework import serializers
 
 from api.internal.commit.serializers import CommitSerializer
 from api.shared.commit.serializers import ReportTotalsSerializer
+from core.models import Commit
 
 
 class TotalsComparisonSerializer(serializers.Serializer):
@@ -39,7 +42,7 @@ class ComparisonSerializer(serializers.Serializer):
     untracked = serializers.SerializerMethodField()
     has_unmerged_base_commits = serializers.BooleanField()
 
-    def get_untracked(self, comparison):
+    def get_untracked(self, comparison) -> List[str]:
         return [
             f
             for f, _ in comparison.git_comparison["diff"]["files"].items()
@@ -47,7 +50,7 @@ class ComparisonSerializer(serializers.Serializer):
             and f not in comparison.head_report
         ]
 
-    def get_diff(self, comparison):
+    def get_diff(self, comparison) -> dict:
         return {"git_commits": comparison.git_commits}
 
 

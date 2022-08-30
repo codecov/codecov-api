@@ -18,17 +18,17 @@ class CommitTotalsSerializer(serializers.Serializer):
     complexity_ratio = serializers.SerializerMethodField()
     diff = serializers.SerializerMethodField()
 
-    def get_coverage(self, totals):
+    def get_coverage(self, totals) -> float:
         return round(float(totals["c"]), 2)
 
-    def get_complexity_ratio(self, totals):
+    def get_complexity_ratio(self, totals) -> float:
         return (
             round((totals["C"] / totals["N"]) * 100, 2)
             if totals["C"] and totals["N"]
             else 0
         )
 
-    def get_diff(self, totals):
+    def get_diff(self, totals) -> list:
         if "diff" in totals:
             return totals["diff"]
 
@@ -49,12 +49,12 @@ class ReportTotalsSerializer(serializers.Serializer):
     complexity_ratio = serializers.SerializerMethodField()
     diff = serializers.JSONField()
 
-    def get_coverage(self, totals):
+    def get_coverage(self, totals) -> float:
         if totals.coverage is not None:
             return round(float(totals.coverage), 2)
         return 0
 
-    def get_complexity_ratio(self, totals):
+    def get_complexity_ratio(self, totals) -> float:
         return (
             round((totals.complexity / totals.complexity_total) * 100, 2)
             if totals.complexity and totals.complexity_total
@@ -63,11 +63,13 @@ class ReportTotalsSerializer(serializers.Serializer):
 
 
 class ReportFileSerializer(serializers.Serializer):
-    name = serializers.CharField()
-    totals = ReportTotalsSerializer()
-    line_coverage = serializers.SerializerMethodField()
+    name = serializers.CharField(label="file path")
+    totals = ReportTotalsSerializer(label="coverage totals")
+    line_coverage = serializers.SerializerMethodField(
+        label="line-by-line coverage values"
+    )
 
-    def get_line_coverage(self, report_file: ReportFile):
+    def get_line_coverage(self, report_file: ReportFile) -> list:
         return [
             (ln, line_type(report_line.coverage))
             for ln, report_line in report_file.lines
@@ -75,8 +77,8 @@ class ReportFileSerializer(serializers.Serializer):
 
 
 class ReportSerializer(serializers.Serializer):
-    totals = ReportTotalsSerializer()
-    files = serializers.SerializerMethodField()
+    totals = ReportTotalsSerializer(label="coverage totals")
+    files = serializers.SerializerMethodField(label="file specific coverage totals")
 
-    def get_files(self, report: Report):
+    def get_files(self, report: Report) -> ReportFileSerializer:
         return [ReportFileSerializer(report.get(file)).data for file in report.files]
