@@ -3,7 +3,6 @@ scalar DateTime
 type Query {
   me: Me
   owner(username: String!): Owner
-  loginProviders: [LoginProvider!]! @deprecated(reason: "Use `config.loginProviders`")
   config: Config!
 }
 
