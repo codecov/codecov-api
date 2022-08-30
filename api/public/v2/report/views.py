@@ -28,6 +28,10 @@ class ReportViewSet(
             paths = [file for file in report.files if file.startswith(path)]
             report = report.filter(paths=paths)
 
+        flag = self.request.query_params.get("flag", None)
+        if flag:
+            report = report.filter(flags=[flag])
+
         return report
 
     def retrieve(self, request, *args, **kwargs):

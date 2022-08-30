@@ -1,4 +1,5 @@
-from unittest.mock import patch
+from unittest.mock import call, patch
+from urllib.parse import urlencode
 
 from django.test import TestCase
 from rest_framework.reverse import reverse
@@ -30,6 +31,32 @@ def sample_report():
     report.append(first_file)
     report.append(second_file)
     report.add_session(Session(flags=["flag1", "flag2"]))
+    return report
+
+
+def flags_report():
+    report = Report()
+    session_a_id, _ = report.add_session(Session(flags=["flag-a"]))
+    session_b_id, _ = report.add_session(Session(flags=["flag-b"]))
+
+    file_a = ReportFile("foo/file1.py")
+    file_a.append(1, ReportLine.create(coverage=1, sessions=[[session_a_id, 1]]))
+    file_a.append(2, ReportLine.create(coverage=0, sessions=[[session_a_id, 0]]))
+    file_a.append(3, ReportLine.create(coverage=1, sessions=[[session_a_id, 1]]))
+    file_a.append(5, ReportLine.create(coverage=1, sessions=[[session_a_id, 1]]))
+    file_a.append(6, ReportLine.create(coverage=0, sessions=[[session_a_id, 0]]))
+    file_a.append(8, ReportLine.create(coverage=1, sessions=[[session_a_id, 1]]))
+    file_a.append(9, ReportLine.create(coverage=1, sessions=[[session_a_id, 1]]))
+    file_a.append(10, ReportLine.create(coverage=0, sessions=[[session_a_id, 0]]))
+    report.append(file_a)
+
+    file_b = ReportFile("bar/file2.py")
+    file_b.append(12, ReportLine.create(coverage=1, sessions=[[session_b_id, 1]]))
+    file_b.append(
+        51, ReportLine.create(coverage="1/2", type="b", sessions=[[session_b_id, 2]])
+    )
+    report.append(file_b)
+
     return report
 
 
@@ -71,15 +98,9 @@ class ReportViewSetTestCase(TestCase):
                 "repo_name": self.repo.name,
             },
         )
-        if "sha" in params:
-            sha = params["sha"]
-            url += f"?sha={sha}"
-        elif "branch" in params:
-            branch = params["branch"]
-            url += f"?branch={branch}"
-        elif "path" in params:
-            path = params["path"]
-            url += f"?path={path}"
+
+        qs = urlencode(params)
+        url = f"{url}?{qs}"
         return self.client.get(url)
 
     @patch("services.archive.ReportService.build_report_from_commit")
@@ -368,3 +389,149 @@ class ReportViewSetTestCase(TestCase):
         }
 
         build_report_from_commit.assert_called_once_with(self.commit1)
+
+    @patch("services.archive.ReportService.build_report_from_commit")
+    def test_report_flag(self, build_report_from_commit, get_repo_permissions):
+        get_repo_permissions.return_value = (True, True)
+        build_report_from_commit.return_value = flags_report()
+
+        res = self._request_report(flag="flag-a")
+        assert res.status_code == 200
+        assert res.json() == {
+            "totals": {
+                "files": 1,
+                "lines": 8,
+                "hits": 5,
+                "misses": 3,
+                "partials": 0,
+                "coverage": 62.5,
+                "branches": 0,
+                "methods": 0,
+                "messages": 0,
+                "sessions": 1,
+                "complexity": 0.0,
+                "complexity_total": 0.0,
+                "complexity_ratio": 0,
+                "diff": 0,
+            },
+            "files": [
+                {
+                    "name": "foo/file1.py",
+                    "totals": {
+                        "files": 0,
+                        "lines": 8,
+                        "hits": 5,
+                        "misses": 3,
+                        "partials": 0,
+                        "coverage": 62.5,
+                        "branches": 0,
+                        "methods": 0,
+                        "messages": 0,
+                        "sessions": 0,
+                        "complexity": 0.0,
+                        "complexity_total": 0.0,
+                        "complexity_ratio": 0,
+                        "diff": 0,
+                    },
+                    "line_coverage": [
+                        [1, 0],
+                        [2, 1],
+                        [3, 0],
+                        [5, 0],
+                        [6, 1],
+                        [8, 0],
+                        [9, 0],
+                        [10, 1],
+                    ],
+                },
+                {
+                    "name": "bar/file2.py",
+                    "totals": {
+                        "files": 0,
+                        "lines": 0,
+                        "hits": 0,
+                        "misses": 0,
+                        "partials": 0,
+                        "coverage": 0,
+                        "branches": 0,
+                        "methods": 0,
+                        "messages": 0,
+                        "sessions": 0,
+                        "complexity": 0.0,
+                        "complexity_total": 0.0,
+                        "complexity_ratio": 0,
+                        "diff": 0,
+                    },
+                    "line_coverage": [],
+                },
+            ],
+        }
+
+        build_report_from_commit.assert_called_once_with(self.commit1)
+
+        res = self._request_report(flag="flag-b")
+        assert res.status_code == 200
+        assert res.json() == {
+            "totals": {
+                "files": 1,
+                "lines": 2,
+                "hits": 2,
+                "misses": 0,
+                "partials": 0,
+                "coverage": 100.0,
+                "branches": 1,
+                "methods": 0,
+                "messages": 0,
+                "sessions": 1,
+                "complexity": 0.0,
+                "complexity_total": 0.0,
+                "complexity_ratio": 0,
+                "diff": 0,
+            },
+            "files": [
+                {
+                    "name": "foo/file1.py",
+                    "totals": {
+                        "files": 0,
+                        "lines": 0,
+                        "hits": 0,
+                        "misses": 0,
+                        "partials": 0,
+                        "coverage": 0,
+                        "branches": 0,
+                        "methods": 0,
+                        "messages": 0,
+                        "sessions": 0,
+                        "complexity": 0.0,
+                        "complexity_total": 0.0,
+                        "complexity_ratio": 0,
+                        "diff": 0,
+                    },
+                    "line_coverage": [],
+                },
+                {
+                    "name": "bar/file2.py",
+                    "totals": {
+                        "files": 0,
+                        "lines": 2,
+                        "hits": 2,
+                        "misses": 0,
+                        "partials": 0,
+                        "coverage": 100.0,
+                        "branches": 1,
+                        "methods": 0,
+                        "messages": 0,
+                        "sessions": 0,
+                        "complexity": 0.0,
+                        "complexity_total": 0.0,
+                        "complexity_ratio": 0,
+                        "diff": 0,
+                    },
+                    "line_coverage": [[12, 0], [51, 0]],
+                },
+            ],
+        }
+
+        build_report_from_commit.assert_has_calls(
+            [call(self.commit1), call(self.commit1)]
+        )
