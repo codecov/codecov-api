@@ -151,6 +151,61 @@ class RepoCommitListTestCase(TestCase):
             ],
         }
 
+    def test_commit_list_null_coverage(self, get_repo_permissions):
+        get_repo_permissions.return_value = (True, True)
+
+        self.commit.totals["c"] = None
+        self.commit.save()
+
+        self.client.force_login(user=self.user)
+        response = self.client.get(
+            reverse(
+                "api-v2-commits-list",
+                kwargs={
+                    "service": self.org.service,
+                    "owner_username": self.org.username,
+                    "repo_name": self.repo.name,
+                },
+            )
+        )
+        assert response.status_code == 200
+        assert response.json() == {
+            "count": 1,
+            "total_pages": 1,
+            "next": None,
+            "previous": None,
+            "results": [
+                {
+                    "commitid": self.commit.commitid,
+                    "message": self.commit.message,
+                    "timestamp": self.commit.timestamp.isoformat() + "Z",
+                    "ci_passed": True,
+                    "author": {
+                        "service": "github",
+                        "username": "codecov",
+                        "name": self.org.name,
+                    },
+                    "branch": "master",
+                    "totals": {
+                        "files": 3,
+                        "lines": 24,
+                        "hits": 19,
+                        "misses": 5,
+                        "partials": 0,
+                        "coverage": None,
+                        "branches": 0,
+                        "methods": 0,
+                        "sessions": 2,
+                        "complexity": 2.0,
+                        "complexity_total": 5.0,
+                        "complexity_ratio": 40.0,
+                        "diff": 0,
+                    },
+                    "state": "complete",
+                }
+            ],
+        }
+
 
 @patch("api.shared.repo.repository_accessors.RepoAccessors.get_repo_permissions")
 class RepoCommitDetailTestCase(TestCase):
