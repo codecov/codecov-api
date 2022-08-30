@@ -11,6 +11,7 @@ from .compare.views import CompareViewSet
 from .owner.views import OwnerViewSet, UserViewSet
 from .pull.views import PullViewSet
 from .repo.views import RepositoryViewSet
+from .report.views import ReportViewSet
 
 urls.handler404 = not_found
 urls.handler500 = server_error
@@ -37,6 +38,9 @@ repository_artifacts_router.register(
 compare_router = RetrieveUpdateDestroyRouter()
 compare_router.register(r"compare", CompareViewSet, basename="api-v2-compare")
 
+report_router = RetrieveUpdateDestroyRouter()
+report_router.register(r"report", ReportViewSet, basename="report")
+
 service_prefix = "<str:service>/"
 owner_prefix = "<str:service>/<str:owner_username>/"
 repo_prefix = "<str:service>/<str:owner_username>/repos/<str:repo_name>/"
@@ -47,4 +51,5 @@ urlpatterns = [
     path(owner_prefix, include(repository_router.urls)),
     path(repo_prefix, include(repository_artifacts_router.urls)),
     path(repo_prefix, include(compare_router.urls)),
+    path(repo_prefix, include(report_router.urls)),
 ]
