@@ -1,9 +1,8 @@
 from rest_framework import serializers
 
+from api.internal.owner.serializers import OwnerSerializer
 from api.shared.commit.serializers import CommitTotalsSerializer
 from core.models import Pull
-
-from ..owner.serializers import OwnerSerializer
 
 
 class PullSerializer(serializers.ModelSerializer):

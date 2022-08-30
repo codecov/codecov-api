@@ -8,7 +8,6 @@ from api.shared.mixins import OwnerPropertyMixin
 from api.shared.permissions import MemberOfOrgPermissions
 from codecov_auth.models import Owner, Service
 
-from ..mixins import OwnerPropertyMixin
 from .filters import UserFilters
 
 

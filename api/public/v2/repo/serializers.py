@@ -1,8 +1,7 @@
 from rest_framework import serializers
 
+from api.public.v2.owner.serializers import OwnerSerializer
 from core.models import Repository
-
-from ..owner.serializers import OwnerSerializer
 
 
 class RepoSerializer(serializers.ModelSerializer):

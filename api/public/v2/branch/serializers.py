@@ -1,8 +1,7 @@
 from rest_framework import serializers
 
+from api.public.v2.commit.serializers import CommitDetailSerializer
 from core.models import Branch, Commit
-
-from ..commit.serializers import CommitDetailSerializer
 
 
 class BranchSerializer(serializers.ModelSerializer):

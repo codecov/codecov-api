@@ -1,8 +1,7 @@
+from api.public.v2.commit.serializers import CommitSerializer
 from api.shared.compare.serializers import (
     ComparisonSerializer as BaseComparisonSerializer,
 )
-
-from ..commit.serializers import CommitSerializer
 
 
 class ComparisonSerializer(BaseComparisonSerializer):

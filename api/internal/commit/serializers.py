@@ -3,10 +3,9 @@ import logging
 from rest_framework import serializers
 from shared.reports.types import TOTALS_MAP
 
+from api.internal.owner.serializers import OwnerSerializer
 from api.shared.commit.serializers import CommitTotalsSerializer
 from core.models import Commit
-
-from ..owner.serializers import OwnerSerializer
 
 log = logging.getLogger(__name__)
 
