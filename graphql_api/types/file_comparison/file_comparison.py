@@ -100,3 +100,5 @@ def resolve_is_critical_file(file_comparison: FileComparison, info) -> bool:
         critical_filenames = info.context["critical_filenames"]
 
         return base_name in critical_filenames or head_name in critical_filenames
+
+    return False

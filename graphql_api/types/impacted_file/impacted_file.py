@@ -99,5 +99,3 @@ def resolve_is_critical_file(impacted_file: ImpactedFile, info) -> bool:
         critical_filenames = info.context["critical_filenames"]
 
         return base_name in critical_filenames or head_name in critical_filenames
-
-    return False
