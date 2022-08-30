@@ -17,7 +17,6 @@ from services.decorators import stripe_safe
 from services.segment import SegmentService
 from services.task import TaskService
 
-from .filters import UserFilters
 from .serializers import (
     AccountDetailsSerializer,
     OwnerSerializer,
