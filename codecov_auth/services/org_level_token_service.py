@@ -1,4 +1,6 @@
 import logging
+import uuid
+from secrets import token_bytes
 
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
@@ -28,10 +30,28 @@ class OrgLevelTokenService(object):
             raise ValidationError(
                 "Organization-wide upload tokens are only available in enterprise-cloud plans."
             )
-        token, created = OrganizationLevelToken.objects.get_or_create(
-            owner=org, token_type=TokenTypeChoices.UPLOAD
-        )
+        token, created = OrganizationLevelToken.objects.get_or_create(owner=org)
+        if created:
+            log.info(
+                "New OrgLevelToken created",
+                extra=dict(
+                    ownerid=org.ownerid,
+                    valid_until=token.valid_until,
+                    token_type=token.token_type,
+                ),
+            )
         return token
+
+    @classmethod
+    def refresh_token(cls, tokenid: int):
+        try:
+            token = OrganizationLevelToken.objects.get(id=tokenid)
+            token.token = uuid.uuid4()
+            token.save()
+        except OrganizationLevelToken.DoesNotExist:
+            raise ValidationError(
+                "Token to refresh was not found", params=dict(tokenid=tokenid)
+            )
 
     @classmethod
     def delete_org_token_if_exists(cls, org: Owner):
@@ -49,7 +69,5 @@ def manage_org_tokens_if_owner_plan_changed(sender, instance: Owner, **kwargs):
     Manages OrganizationLevelToken according to Owner plan, either creating or deleting them as necessary
     """
     owner_can_have_org_token = OrgLevelTokenService.org_can_have_upload_token(instance)
-    if owner_can_have_org_token:
-        OrgLevelTokenService.get_or_create_org_token(instance)
-    else:
+    if not owner_can_have_org_token:
         OrgLevelTokenService.delete_org_token_if_exists(instance)

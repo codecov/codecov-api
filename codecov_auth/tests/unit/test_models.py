@@ -17,7 +17,7 @@ from codecov_auth.models import (
     Service,
     TokenTypeChoices,
 )
-from codecov_auth.tests.factories import OwnerFactory
+from codecov_auth.tests.factories import OrganizationLevelTokenFactory, OwnerFactory
 from core.tests.factories import RepositoryFactory
 
 
@@ -474,22 +474,18 @@ class TestOwnerModel(TransactionTestCase):
 
 
 class TestOrganizationLevelTokenModel(TransactionTestCase):
-    def test_token_is_created_when_saving_user_in_enterprise_plan(self):
-        owner = OwnerFactory(plan="users-enterprisey")
-        owner.save()
-        org_token = OrganizationLevelToken.objects.get(owner=owner)
-        assert org_token.token is not None
-        assert org_token.owner.ownerid == owner.ownerid
-        assert org_token.token_type == TokenTypeChoices.UPLOAD.value
-
     def test_cant_save_org_token_for_org_not_in_valid_plan(self):
         owner = OwnerFactory(plan="users-basic")
+        owner.save()
         token = OrganizationLevelToken(owner=owner)
         with pytest.raises(ValidationError):
             token.save()
 
     def test_token_is_deleted_when_changing_user_plan(self):
-        owner = OwnerFactory(plan="users-enterprisey")
+        owner = OwnerFactory(plan="users-enterprisem")
+        org_token = OrganizationLevelTokenFactory(owner=owner)
+        owner.save()
+        org_token.save()
         assert OrganizationLevelToken.objects.filter(owner=owner).count() == 1
         owner.plan = "users-basic"
         owner.save()

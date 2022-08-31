@@ -1,12 +1,12 @@
 from ariadne import EnumType
 
+from services.comparison import ImpactedFileParameter
 from timeseries.models import Interval as MeasurementInterval
 
 from .enums import (
     ComparisonError,
     CoverageLine,
     GoalOnboarding,
-    ImpactedFileParameter,
     LoginProvider,
     OrderingDirection,
     OrderingParameter,

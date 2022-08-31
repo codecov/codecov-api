@@ -1,5 +1,6 @@
 import asyncio
 import copy
+import enum
 import functools
 import json
 import logging
@@ -521,11 +522,15 @@ class FileComparison:
         # Here we pass this along to the frontend by assigning the diff totals
         # to the head_totals' 'diff' attribute. It is absolutely worth considering
         # modifying the behavior of shared.reports to implement something similar.
+        diff_totals = None
         if head_totals and self.diff_data:
-            head_totals.diff = self.diff_data.get("totals", 0)
+            diff_totals = self.diff_data.get("totals")
+            head_totals.diff = diff_totals or 0
+
         return {
             "base": self.base_file.totals if self.base_file is not None else None,
             "head": head_totals,
+            "diff": diff_totals,
         }
 
     @property
@@ -672,6 +677,7 @@ class Comparison(object):
         return {
             "base": self.base_report.totals if self.base_report is not None else None,
             "head": self.head_report.totals if self.head_report is not None else None,
+            "diff": self.git_comparison["diff"].get("totals"),
         }
 
     @property
@@ -757,12 +763,20 @@ class FlagComparison(object):
 
 @dataclass
 class ImpactedFile:
+    file_name: str
     base_name: str
     head_name: str
     base_coverage: ReportTotals
     head_coverage: ReportTotals
     patch_coverage: ReportTotals
     change_coverage: float
+
+
+class ImpactedFileParameter(enum.Enum):
+    FILE_NAME = "file_name"
+    CHANGE_COVERAGE = "change_coverage"
+    HEAD_COVERAGE = "head_coverage"
+    PATCH_COVERAGE = "patch_coverage"
 
 
 """
@@ -798,35 +812,49 @@ class ComparisonReport(object):
         return self._apply_filters(impacted_files, filters)
 
     def _apply_filters(self, impacted_files, filters):
-        filter_parameter = filters.get("ordering", {}).get("parameter")
-        filter_direction = filters.get("ordering", {}).get("direction")
-        if filter_parameter and filter_direction:
-            parameter_value = filter_parameter.value
-            direction_value = filter_direction.value
+        parameter = filters.get("ordering", {}).get("parameter")
+        direction = filters.get("ordering", {}).get("direction")
+        if parameter and direction:
             impacted_files = self.sort_impacted_files(
-                impacted_files, parameter_value, direction_value
+                impacted_files, parameter, direction
             )
         return impacted_files
+
+    def get_attribute(
+        self, impacted_file: ImpactedFile, parameter: ImpactedFileParameter
+    ):
+        if parameter == ImpactedFileParameter.FILE_NAME:
+            return impacted_file.file_name
+        elif parameter == ImpactedFileParameter.CHANGE_COVERAGE:
+            return impacted_file.change_coverage
+        elif parameter == ImpactedFileParameter.HEAD_COVERAGE:
+            if impacted_file.head_coverage is not None:
+                return impacted_file.head_coverage.coverage
+        elif parameter == ImpactedFileParameter.PATCH_COVERAGE:
+            if impacted_file.patch_coverage is not None:
+                return impacted_file.patch_coverage.coverage
+        else:
+            raise ValueError(f"invalid impacted file parameter: {parameter}")
 
     """
     Sorts the impacted files by any provided parameter and slides items with None values to the end
     """
 
-    def sort_impacted_files(self, impacted_files, parameter_value, direction_value):
+    def sort_impacted_files(self, impacted_files, parameter, direction):
         # Separate impacted files with None values for the specified parameter value
         files_with_coverage = []
         files_without_coverage = []
         for file in impacted_files:
-            if getattr(file, parameter_value):
+            if self.get_attribute(file, parameter) is not None:
                 files_with_coverage.append(file)
             else:
                 files_without_coverage.append(file)
 
         # Sort impacted_files list based on parameter value
-        is_reversed = direction_value == "descending"
+        is_reversed = direction.value == "descending"
         files_with_coverage = sorted(
             files_with_coverage,
-            key=lambda x: getattr(x, parameter_value),
+            key=lambda x: self.get_attribute(x, parameter),
             reverse=is_reversed,
         )
 
@@ -890,7 +918,9 @@ class ComparisonReport(object):
         change_coverage = self.calculate_change(
             file["head_coverage"], file["base_coverage"]
         )
+        file_name = self.get_file_name_from_file_path(file["head_name"])
         return ImpactedFile(
+            file_name=file_name,
             head_name=file["head_name"],
             base_name=file["base_name"],
             head_coverage=file["head_coverage"],
@@ -902,12 +932,16 @@ class ComparisonReport(object):
     # TODO: I think this can be a function located elsewhere
     def calculate_change(self, head_coverage, compared_to_coverage):
         if head_coverage and compared_to_coverage:
-            return head_coverage.coverage - compared_to_coverage.coverage
+            return float(head_coverage.coverage - compared_to_coverage.coverage)
         # if not head_coverage:
         #     # return there is no head coverage
         # if not compared_to_coverage:
         #     # return there is no base coverage
         return None
+
+    def get_file_name_from_file_path(self, file_path):
+        parts = file_path.split("/")
+        return parts[-1]
 
 
 class PullRequestComparison(Comparison):

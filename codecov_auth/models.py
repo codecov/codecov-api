@@ -114,7 +114,7 @@ class Owner(models.Model):
     yaml = models.JSONField(null=True)
     updatestamp = DateTimeWithoutTZField(default=datetime.now)
     organizations = ArrayField(models.IntegerField(null=True), null=True, blank=True)
-    admins = ArrayField(models.IntegerField(null=True), null=True)
+    admins = ArrayField(models.IntegerField(null=True), null=True, blank=True)
     integration_id = models.IntegerField(null=True, blank=True)
     permission = ArrayField(models.IntegerField(null=True), null=True)
     bot = models.ForeignKey(
@@ -439,7 +439,9 @@ class OrganizationLevelToken(BaseCodecovModel):
     )
     token = models.UUIDField(unique=True, default=uuid.uuid4)
     valid_until = models.DateTimeField(blank=True, null=True)
-    token_type = models.CharField(max_length=50, choices=TokenTypeChoices.choices)
+    token_type = models.CharField(
+        max_length=50, choices=TokenTypeChoices.choices, default=TokenTypeChoices.UPLOAD
+    )
 
     def save(self, *args, **kwargs):
         if not self.owner.plan in ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS:
