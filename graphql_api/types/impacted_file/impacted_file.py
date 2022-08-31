@@ -33,31 +33,31 @@ def resolve_is_new_file(impacted_file: ImpactedFile, info) -> bool:
 
 
 @impacted_file_bindable.field("isRenamedFile")
-def resolve_is_new_file(impacted_file: ImpactedFile, info) -> bool:
+def resolve_is_renamed_file(impacted_file: ImpactedFile, info) -> bool:
     base_name = impacted_file.base_name
     head_name = impacted_file.head_name
     return base_name is not None and head_name is not None and base_name != head_name
 
 
 @impacted_file_bindable.field("isDeletedFile")
-def resolve_is_new_file(impacted_file: ImpactedFile, info) -> bool:
+def resolve_is_deleted_file(impacted_file: ImpactedFile, info) -> bool:
     base_name = impacted_file.base_name
     head_name = impacted_file.head_name
     return base_name is not None and head_name is None
 
 
 @impacted_file_bindable.field("headTotals")
-def resolve_head_coverage(impacted_file: ImpactedFile, info) -> ReportTotals:
+def resolve_head_totals(impacted_file: ImpactedFile, info) -> ReportTotals:
     return impacted_file.head_coverage
 
 
 @impacted_file_bindable.field("baseTotals")
-def resolve_base_coverage(impacted_file: ImpactedFile, info) -> ReportTotals:
+def resolve_base_totals(impacted_file: ImpactedFile, info) -> ReportTotals:
     return impacted_file.base_coverage
 
 
 @impacted_file_bindable.field("patchTotals")
-def resolve_patch_coverage(impacted_file: ImpactedFile, info) -> ReportTotals:
+def resolve_patch_totals(impacted_file: ImpactedFile, info) -> ReportTotals:
     return impacted_file.patch_coverage
 
 
