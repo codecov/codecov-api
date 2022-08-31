@@ -2,13 +2,9 @@ type ImpactedFile {
   fileName: String
   baseName: String
   headName: String
-  isNewFile: Boolean!
-  isRenamedFile: Boolean!
-  isDeletedFile: Boolean!
-  isCriticalFile: Boolean!
-  baseTotals: CoverageTotals
-  headTotals: CoverageTotals
-  patchTotals: CoverageTotals
+  baseCoverage: CoverageTotals
+  headCoverage: CoverageTotals
+  patchCoverage: CoverageTotals
   changeCoverage: Float
   segments: [SegmentComparison!]!
 }

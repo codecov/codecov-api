@@ -24,17 +24,13 @@ query ImpactedFiles(
             fileName
             headName
             baseName
-            isNewFile
-            isRenamedFile
-            isDeletedFile
-            isCriticalFile
-            baseTotals {
+            baseCoverage {
               percentCovered
             }
-            headTotals {
+            headCoverage {
               percentCovered
             }
-            patchTotals {
+            patchCoverage {
               percentCovered
             }
             changeCoverage
@@ -60,13 +56,13 @@ query ImpactedFile(
           impactedFile(path: $path) {
             headName
             baseName
-            baseTotals {
+            baseCoverage {
               percentCovered
             }
-            headTotals {
+            headCoverage {
               percentCovered
             }
-            patchTotals {
+            patchCoverage {
               percentCovered
             }
             segments {
@@ -95,13 +91,13 @@ query ImpactedFile(
           impactedFile(path: $path) {
             headName
             baseName
-            baseTotals {
+            baseCoverage {
               percentCovered
             }
-            headTotals {
+            headCoverage {
               percentCovered
             }
-            patchTotals {
+            patchCoverage {
               percentCovered
             }
             segments {
@@ -233,30 +229,26 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                     "fileName": "fileA",
                                     "headName": "fileA",
                                     "baseName": "fileA",
-                                    "isNewFile": False,
-                                    "isRenamedFile": False,
-                                    "isDeletedFile": False,
-                                    "isCriticalFile": False,
-                                    "baseTotals": {
+                                    "baseCoverage": {
                                         "percentCovered": 41.666666666666664
                                     },
-                                    "headTotals": {"percentCovered": 85.71428571428571},
-                                    "patchTotals": None,
+                                    "headCoverage": {
+                                        "percentCovered": 85.71428571428571
+                                    },
+                                    "patchCoverage": None,
                                     "changeCoverage": 44.047619047619044,
                                 },
                                 {
                                     "fileName": "fileB",
                                     "headName": "fileB",
                                     "baseName": "fileB",
-                                    "isNewFile": False,
-                                    "isRenamedFile": False,
-                                    "isDeletedFile": False,
-                                    "isCriticalFile": False,
-                                    "baseTotals": {
+                                    "baseCoverage": {
                                         "percentCovered": 41.666666666666664
                                     },
-                                    "headTotals": {"percentCovered": 85.71428571428571},
-                                    "patchTotals": {"percentCovered": 100.0},
+                                    "headCoverage": {
+                                        "percentCovered": 85.71428571428571
+                                    },
+                                    "patchCoverage": {"percentCovered": 100.0},
                                     "changeCoverage": 44.047619047619044,
                                 },
                             ]
@@ -284,9 +276,9 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                             "impactedFile": {
                                 "headName": "fileB",
                                 "baseName": "fileB",
-                                "baseTotals": {"percentCovered": 41.666666666666664},
-                                "headTotals": {"percentCovered": 85.71428571428571},
-                                "patchTotals": {"percentCovered": 100.0},
+                                "baseCoverage": {"percentCovered": 41.666666666666664},
+                                "headCoverage": {"percentCovered": 85.71428571428571},
+                                "patchCoverage": {"percentCovered": 100.0},
                                 "segments": [],
                             }
                         }
@@ -321,9 +313,9 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                             "impactedFile": {
                                 "headName": "fileB",
                                 "baseName": "fileB",
-                                "baseTotals": {"percentCovered": 41.666666666666664},
-                                "headTotals": {"percentCovered": 85.71428571428571},
-                                "patchTotals": {"percentCovered": 100.0},
+                                "baseCoverage": {"percentCovered": 41.666666666666664},
+                                "headCoverage": {"percentCovered": 85.71428571428571},
+                                "patchCoverage": {"percentCovered": 100.0},
                                 "segments": [{"hasUnintendedChanges": True}],
                             },
                         }
