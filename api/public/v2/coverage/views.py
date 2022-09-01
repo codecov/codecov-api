@@ -5,6 +5,7 @@ from rest_framework.exceptions import APIException
 from api.shared.mixins import RepoPropertyMixin
 from api.shared.permissions import RepositoryArtifactPermissions
 from reports.models import RepositoryFlag
+from timeseries.helpers import aggregate_measurements
 from timeseries.models import Interval, MeasurementName, MeasurementSummary
 
 from .filters import MeasurementFilters
@@ -49,14 +50,8 @@ class CoverageViewSet(
                 return queryset.none()
             queryset = queryset.filter(flag_id=flag.pk)
 
-        return (
-            queryset.values("timestamp_bin", "owner_id", "repo_id", "flag_id")
-            .annotate(
-                value_avg=Avg("value_avg"),
-                value_min=Min("value_min"),
-                value_max=Max("value_max"),
-            )
-            .order_by("timestamp_bin")
+        return aggregate_measurements(
+            queryset, ["timestamp_bin", "owner_id", "repo_id", "flag_id"]
         )
 
     def get_measurement_interval(self) -> Interval:

@@ -25,6 +25,7 @@ type Repository {
   bot: Owner
   flagsMeasurementsActive: Boolean!
   flagsMeasurementsBackfilled: Boolean!
+  measurements(interval: MeasurementInterval!, after: DateTime!, before: DateTime!): [Measurement!]!
 }
 
 type PullConnection {
