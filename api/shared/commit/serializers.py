@@ -19,7 +19,10 @@ class CommitTotalsSerializer(serializers.Serializer):
     diff = serializers.SerializerMethodField()
 
     def get_coverage(self, totals):
-        return round(float(totals["c"]), 2)
+        if totals.get("c") is None:
+            return None
+        else:
+            return round(float(totals["c"]), 2)
 
     def get_complexity_ratio(self, totals):
         return (
