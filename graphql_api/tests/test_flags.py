@@ -618,6 +618,79 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
+    def test_fetch_flags_pagination(self):
+        query = """
+            query Flags(
+                $org: String!
+                $repo: String!
+                $after: String
+            ) {
+                owner(username: $org) {
+                    repository(name: $repo) {
+                        flags(after: $after) {
+                            edges {
+                                node {
+                                    name
+                                }
+                                cursor
+                            }
+                        }
+                    }
+                }
+            }
+        """
+        RepositoryFlagFactory(repository=self.repo, flag_name="flag1")
+        RepositoryFlagFactory(repository=self.repo, flag_name="flag2")
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+        }
+        data = self.gql_request(query, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "flags": {
+                        "edges": [
+                            {
+                                "node": {
+                                    "name": "flag1",
+                                },
+                                "cursor": "ZmxhZzE=",
+                            },
+                            {
+                                "node": {
+                                    "name": "flag2",
+                                },
+                                "cursor": "ZmxhZzI=",
+                            },
+                        ]
+                    }
+                }
+            }
+        }
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "after": "ZmxhZzE=",
+        }
+        data = self.gql_request(query, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "flags": {
+                        "edges": [
+                            {
+                                "node": {
+                                    "name": "flag2",
+                                },
+                                "cursor": "ZmxhZzI=",
+                            },
+                        ]
+                    }
+                }
+            }
+        }
+
     @patch("timeseries.models.MeasurementSummary.agg_by")
     def test_fetch_flags_empty_lookahead(self, agg_by):
         query = """
