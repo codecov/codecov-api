@@ -3,7 +3,11 @@ from rest_framework.exceptions import ErrorDetail
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
 from reports.tests.factories import CommitReportFactory, UploadFactory
-from upload.serializers import CommitSerializer, UploadSerializer
+from upload.serializers import (
+    CommitReportSerializer,
+    CommitSerializer,
+    UploadSerializer,
+)
 
 
 def get_fake_upload():
@@ -82,3 +86,14 @@ def test_valid_update_data(transactional_db, mocker):
     assert commit.pullid == "20"
     assert commit.commitid == "abc"
     assert commit == res
+
+
+def test_commit_report_serializer(transactional_db, mocker):
+    report = CommitReportFactory.create()
+    serializer = CommitReportSerializer(report)
+    expected_data = {
+        "commit_sha": report.commit.commitid,
+        "external_id": str(report.external_id),
+        "created_at": report.created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+    }
+    assert serializer.data == expected_data

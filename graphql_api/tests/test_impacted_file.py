@@ -24,6 +24,10 @@ query ImpactedFiles(
             fileName
             headName
             baseName
+            isNewFile
+            isRenamedFile
+            isDeletedFile
+            isCriticalFile
             baseCoverage {
               percentCovered
             }
@@ -229,6 +233,10 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                     "fileName": "fileA",
                                     "headName": "fileA",
                                     "baseName": "fileA",
+                                    "isNewFile": False,
+                                    "isRenamedFile": False,
+                                    "isDeletedFile": False,
+                                    "isCriticalFile": False,
                                     "baseCoverage": {
                                         "percentCovered": 41.666666666666664
                                     },
@@ -242,6 +250,10 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                     "fileName": "fileB",
                                     "headName": "fileB",
                                     "baseName": "fileB",
+                                    "isNewFile": False,
+                                    "isRenamedFile": False,
+                                    "isDeletedFile": False,
+                                    "isCriticalFile": False,
                                     "baseCoverage": {
                                         "percentCovered": 41.666666666666664
                                     },
