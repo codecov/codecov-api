@@ -1,5 +1,6 @@
 from ariadne import EnumType
 
+from services.comparison import ImpactedFileParameter
 from timeseries.models import Interval as MeasurementInterval
 
 from .enums import (
@@ -31,4 +32,5 @@ enum_types = [
     EnumType("UploadErrorEnum", UploadErrorEnum),
     EnumType("MeasurementInterval", MeasurementInterval),
     EnumType("LoginProvider", LoginProvider),
+    EnumType("ImpactedFileParameter", ImpactedFileParameter),
 ]

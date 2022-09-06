@@ -23,25 +23,7 @@ def resolve_owner(_, info, username):
     return get_owner(service, username)
 
 
-@query_bindable.field("loginProviders")
-def resolve_login_providers(_, info):
-    login_providers = []
-    if settings.GITHUB_CLIENT_ID:
-        login_providers.append(LoginProvider("github"))
-
-    if settings.GITHUB_ENTERPRISE_CLIENT_ID:
-        login_providers.append(LoginProvider("github_enterprise"))
-
-    if settings.GITLAB_CLIENT_ID:
-        login_providers.append(LoginProvider("gitlab"))
-
-    if settings.GITLAB_ENTERPRISE_CLIENT_ID:
-        login_providers.append(LoginProvider("gitlab_enterprise"))
-
-    if settings.BITBUCKET_CLIENT_ID:
-        login_providers.append(LoginProvider("bitbucket"))
-
-    if settings.BITBUCKET_SERVER_CLIENT_ID:
-        login_providers.append(LoginProvider("bitbucket_server"))
-
-    return login_providers
+@query_bindable.field("config")
+def resolve_config(_, info):
+    # we have to return something here just to allow access to the child resolvers
+    return object()

@@ -10,10 +10,10 @@ from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from shared.reports.resources import Report
 
+from api.shared.mixins import RepoPropertyMixin
 from codecov_auth.models import Owner
 from core.models import Branch, Pull, Repository
 from graphs.settings import settings
-from internal_api.mixins import RepoPropertyMixin
 
 from .helpers.badge import format_coverage_precision, get_badge
 from .helpers.graphs import icicle, sunburst, tree

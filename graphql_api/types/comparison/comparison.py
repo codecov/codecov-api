@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 
 from ariadne import ObjectType
 from asgiref.sync import sync_to_async
@@ -12,9 +12,11 @@ comparison_bindable = ObjectType("Comparison")
 
 @comparison_bindable.field("impactedFiles")
 @sync_to_async
-def resolve_impacted_files(comparison: CommitComparison, info) -> List[ImpactedFile]:
+def resolve_impacted_files(
+    comparison: CommitComparison, info, filters={}
+) -> List[ImpactedFile]:
     comparison_report = ComparisonReport(comparison)
-    return comparison_report.impacted_files()
+    return comparison_report.impacted_files(filters=filters)
 
 
 @comparison_bindable.field("impactedFile")

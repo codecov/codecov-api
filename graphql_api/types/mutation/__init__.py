@@ -5,6 +5,7 @@ from .create_api_token import gql_create_api_token
 from .delete_session import gql_delete_session
 from .mutation import mutation_resolvers
 from .onboard_user import gql_onboard_user
+from .regenerate_org_upload_token import gql_regenerate_org_upload_token
 from .regenerate_profiling_token import gql_regenerate_profling_token
 from .set_yaml_on_owner import gql_set_yaml_on_owner
 from .sync_with_git_provider import gql_sync_with_git_provider
@@ -19,3 +20,4 @@ mutation = mutation + gql_update_profile
 mutation = mutation + gql_onboard_user
 mutation = mutation + gql_regenerate_profling_token
 mutation = mutation + gql_activate_flags_measurements
+mutation = mutation + gql_regenerate_org_upload_token
