@@ -2,7 +2,6 @@ from .enums import (
     ComparisonError,
     CoverageLine,
     GoalOnboarding,
-    ImpactedFileParameter,
     LoginProvider,
     OrderingDirection,
     OrderingParameter,

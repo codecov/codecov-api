@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import pytest
 from asgiref.sync import async_to_sync
-from django.test import TransactionTestCase
+from django.test import TransactionTestCase, override_settings
 
 from codecov_auth.tests.factories import GetAdminProviderAdapter, OwnerFactory
 
@@ -92,3 +92,21 @@ class GetIsCurrentUserAnAdminInteractorTest(TransactionTestCase):
         )(owner, current_user)
         assert current_user.ownerid not in owner.admins
         assert isAdmin == False
+
+    @patch("services.self_hosted.is_admin_owner")
+    @override_settings(IS_ENTERPRISE=True)
+    def test_is_admin_self_hosted(self, is_admin_owner):
+        current_user = OwnerFactory(ownerid=3)
+        owner = OwnerFactory(ownerid=4)
+
+        is_admin_owner.return_value = False
+        is_admin = async_to_sync(
+            GetIsCurrentUserAnAdminInteractor(owner, current_user).execute
+        )(owner, current_user)
+        assert is_admin == False
+
+        is_admin_owner.return_value = True
+        is_admin = async_to_sync(
+            GetIsCurrentUserAnAdminInteractor(owner, current_user).execute
+        )(owner, current_user)
+        assert is_admin == True

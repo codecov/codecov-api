@@ -81,8 +81,8 @@ def queryset_to_connection_sync(
     """
     A method to take a queryset and return it in paginated order based on the cursor pattern.
     """
-    if not first and not after:
-        first = 100
+    if not first and not last:
+        first = 25
 
     ordering = tuple(field_order(field, ordering_direction) for field in ordering)
     paginator = CursorPaginator(queryset, ordering=ordering)
