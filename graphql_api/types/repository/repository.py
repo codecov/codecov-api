@@ -260,9 +260,6 @@ def resolve_flags_measurements_backfilled(repository: Repository, info) -> bool:
 def resolve_measurements(
     repository: Repository, info, interval: Interval, after: datetime, before: datetime
 ) -> Iterable[MeasurementSummary]:
-    if not settings.TIMESERIES_ENABLED:
-        return []
-
     return list(
         timeseries_helpers.repository_coverage_measurements_with_fallback(
             repository, interval, after, before

@@ -2,6 +2,7 @@ import math
 from datetime import datetime, timedelta
 from typing import Iterable
 
+from django.conf import settings
 from django.contrib.postgres.fields.jsonb import KeyTextTransform
 from django.db import connections
 from django.db.models import Avg, F, FloatField, Max, Min, QuerySet, Sum
@@ -308,7 +309,7 @@ def repository_coverage_measurements_with_fallback(
         repository_id=repository.pk,
     ).first()
 
-    if dataset and dataset.is_backfilled():
+    if settings.TIMESERIES_ENABLED and dataset and dataset.is_backfilled():
         # timeseries data is ready
         return repository_coverage_measurements(
             repository,
@@ -318,7 +319,7 @@ def repository_coverage_measurements_with_fallback(
             branch=branch,
         )
     else:
-        if not dataset:
+        if settings.TIMESERIES_ENABLED and not dataset:
             # we need to backfill
             dataset = Dataset.objects.create(
                 name=MeasurementName.COVERAGE.value,
@@ -326,7 +327,7 @@ def repository_coverage_measurements_with_fallback(
             )
             trigger_backfill(dataset)
 
-        # we're still backfilling
+        # we're still backfilling or timeseries is disabled
         return repository_coverage_fallback_query(
             repository,
             interval,
