@@ -8,7 +8,7 @@ from utils.routers import OptionalTrailingSlashRouter, RetrieveUpdateDestroyRout
 from .branch.views import BranchViewSet
 from .commit.views import CommitsViewSet
 from .compare.views import CompareViewSet
-from .coverage.views import CoverageViewSet
+from .coverage.views import CoverageViewSet, FlagCoverageViewSet
 from .flag.views import FlagViewSet
 from .owner.views import OwnerViewSet, UserViewSet
 from .pull.views import PullViewSet
@@ -43,6 +43,11 @@ compare_router.register(r"compare", CompareViewSet, basename="api-v2-compare")
 coverage_router = OptionalTrailingSlashRouter()
 coverage_router.register(r"coverage", CoverageViewSet, basename="api-v2-coverage")
 
+flag_coverage_router = OptionalTrailingSlashRouter()
+flag_coverage_router.register(
+    r"coverage", FlagCoverageViewSet, basename="api-v2-flag-coverage"
+)
+
 report_router = RetrieveUpdateDestroyRouter()
 report_router.register(r"report", ReportViewSet, basename="report")
 
@@ -65,5 +70,5 @@ urlpatterns = [
 if settings.TIMESERIES_ENABLED:
     urlpatterns += [
         path(repo_prefix, include(coverage_router.urls)),
-        path(flag_prefix, include(coverage_router.urls)),
+        path(flag_prefix, include(flag_coverage_router.urls)),
     ]
