@@ -38,6 +38,7 @@ def resolve_base(pull, info):
     return CommitLoader.loader(info, pull.repository_id).load(pull.compared_to)
 
 
+@pull_bindable.field("compareWithBaseTemp")
 @pull_bindable.field("compareWithBase")
 async def resolve_compare_with_base(pull, info, **kwargs):
 

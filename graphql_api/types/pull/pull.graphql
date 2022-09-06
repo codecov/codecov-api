@@ -7,5 +7,6 @@ type Pull {
   head: Commit
   comparedTo: Commit
   compareWithBase: Comparison
+  compareWithBaseTemp: Comparison
   commits(first: Int, after: String, last: Int, before: String): CommitConnection
 }
