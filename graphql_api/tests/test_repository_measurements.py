@@ -69,5 +69,19 @@ class TestMeasurement(TransactionTestCase, GraphQLTestHelper):
     def test_measurements_timeseries_not_enabled(
         self, repository_coverage_measurements_with_fallback
     ):
-        assert self._request() == []
-        assert not repository_coverage_measurements_with_fallback.called
+        repository_coverage_measurements_with_fallback.return_value = [
+            {"timestamp_bin": datetime(2022, 1, 1), "min": 1, "max": 2, "avg": 1.5},
+            {"timestamp_bin": datetime(2022, 1, 2), "min": 3, "max": 4, "avg": 3.5},
+        ]
+
+        assert self._request() == [
+            {"timestamp": "2022-01-01T00:00:00", "min": 1.0, "max": 2.0, "avg": 1.5},
+            {"timestamp": "2022-01-02T00:00:00", "min": 3.0, "max": 4.0, "avg": 3.5},
+        ]
+
+        repository_coverage_measurements_with_fallback.assert_called_once_with(
+            self.repo,
+            Interval.INTERVAL_1_DAY,
+            datetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+            datetime(2022, 2, 1, 0, 0, 0, tzinfo=timezone.utc),
+        )
