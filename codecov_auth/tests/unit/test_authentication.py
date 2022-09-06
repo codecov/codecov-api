@@ -7,12 +7,14 @@ from django.urls import ResolverMatch
 from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
 from rest_framework.request import Request
 from rest_framework.reverse import reverse
-from rest_framework.test import APIRequestFactory
+from rest_framework.test import APIClient, APIRequestFactory
 
 from codecov_auth.authentication import (
+    CodecovBearerTokenAuthentication,
     CodecovSessionAuthentication,
     CodecovTokenAuthentication,
 )
+from codecov_auth.models import Session
 from codecov_auth.tests.factories import OwnerFactory, SessionFactory
 from utils.test_utils import BaseTestCase
 
@@ -219,3 +221,51 @@ class CodecovSessionAuthenticationTests(TestCase):
         user, token = result
         assert user == session.owner
         assert token == session
+
+
+class CodecovBearerTokenAuthenticationTests(TestCase):
+    def test_bearer_token_auth(self):
+        session = SessionFactory.create()
+
+        request_factory = APIRequestFactory()
+        request = request_factory.get("", HTTP_AUTHORIZATION=f"Bearer {session.token}")
+
+        authenticator = CodecovBearerTokenAuthentication()
+        result = authenticator.authenticate(request)
+        assert result == (session.owner, session)
+
+    def test_bearer_token_auth_invalid_token(self):
+        request_factory = APIRequestFactory()
+        request = request_factory.get(
+            "", HTTP_AUTHORIZATION=f"Bearer 8f9bc6cb-fd14-43bc-bbb5-be1e7c948f34"
+        )
+
+        authenticator = CodecovBearerTokenAuthentication()
+        with pytest.raises(AuthenticationFailed):
+            authenticator.authenticate(request)
+
+    def test_bearer_token_auth_invalid_token_type(self):
+        session = SessionFactory.create(type=Session.SessionType.LOGIN)
+
+        request_factory = APIRequestFactory()
+        request = request_factory.get("", HTTP_AUTHORIZATION=f"Bearer {session.token}")
+
+        authenticator = CodecovBearerTokenAuthentication()
+        with pytest.raises(AuthenticationFailed):
+            authenticator.authenticate(request)
+
+    def test_bearer_token_auth_malformed_header(self):
+        request_factory = APIRequestFactory()
+        request = request_factory.get("", HTTP_AUTHORIZATION="wrong")
+
+        authenticator = CodecovBearerTokenAuthentication()
+        result = authenticator.authenticate(request)
+        assert result is None
+
+    def test_bearer_token_auth_no_authorization_header(self):
+        request_factory = APIRequestFactory()
+        request = request_factory.get("")
+
+        authenticator = CodecovBearerTokenAuthentication()
+        result = authenticator.authenticate(request)
+        assert result is None

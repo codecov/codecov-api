@@ -1,7 +1,8 @@
 import asyncio
+import enum
 import json
 from collections import Counter
-from unittest.mock import MagicMock, PropertyMock, patch
+from unittest.mock import PropertyMock, patch
 
 import minio
 import pytest
@@ -22,6 +23,7 @@ from services.comparison import (
     FileComparison,
     FileComparisonTraverseManager,
     ImpactedFile,
+    ImpactedFileParameter,
     LineComparison,
     MissingComparisonReport,
     PullRequestComparison,
@@ -45,6 +47,11 @@ class MockOrderValue(object):
 
     def __getitem__(self, key):
         return getattr(self, key)
+
+
+class OrderingDirection(enum.Enum):
+    ASC = "ascending"
+    DESC = "descending"
 
 
 class LineNumberCollector:
@@ -706,7 +713,7 @@ class ComparisonTests(TestCase):
         head_report_mock,
         git_comparison_mock,
     ):
-        from internal_api.tests.views.test_compare_viewset import (
+        from api.internal.tests.views.test_compare_viewset import (
             MockedComparisonAdapter,
         )
 
@@ -733,7 +740,7 @@ class ComparisonTests(TestCase):
         head_report_mock,
         git_comparison_mock,
     ):
-        from internal_api.tests.views.test_compare_viewset import (
+        from api.internal.tests.views.test_compare_viewset import (
             MockedComparisonAdapter,
         )
 
@@ -1518,8 +1525,8 @@ class ComparisonReportTest(TestCase):
         read_file.return_value = mock_data_from_archive
         filters = {
             "ordering": {
-                "direction": MockOrderValue("ascending"),
-                "parameter": MockOrderValue("file_name"),
+                "direction": OrderingDirection.ASC,
+                "parameter": ImpactedFileParameter.FILE_NAME,
             }
         }
         impacted_files = self.comparison_report.impacted_files(filters)
@@ -1619,8 +1626,412 @@ class ComparisonReportTest(TestCase):
         read_file.return_value = mock_data_from_archive
         filters = {
             "ordering": {
-                "direction": MockOrderValue("descending"),
-                "parameter": MockOrderValue("file_name"),
+                "direction": OrderingDirection.DESC,
+                "parameter": ImpactedFileParameter.FILE_NAME,
+            }
+        }
+        impacted_files = self.comparison_report.impacted_files(filters)
+        assert impacted_files == [
+            ImpactedFile(
+                file_name="fileB",
+                base_name="fileB",
+                head_name="fileB",
+                base_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=5,
+                    misses=6,
+                    partials=1,
+                    coverage=41.666666666666664,
+                    branches=2,
+                    methods=4,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                head_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=12,
+                    misses=1,
+                    partials=1,
+                    coverage=85.71428571428571,
+                    branches=3,
+                    methods=5,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                patch_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=5,
+                    misses=1,
+                    partials=1,
+                    coverage=71.42857142857143,
+                    branches=0,
+                    methods=0,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                change_coverage=44.047619047619044,
+            ),
+            ImpactedFile(
+                file_name="fileA",
+                base_name="fileA",
+                head_name="fileA",
+                base_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=5,
+                    misses=6,
+                    partials=1,
+                    coverage=41.666666666666664,
+                    branches=2,
+                    methods=4,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                head_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=10,
+                    misses=1,
+                    partials=1,
+                    coverage=83.33333333333333,
+                    branches=3,
+                    methods=5,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                patch_coverage=None,
+                change_coverage=41.666666666666664,
+            ),
+        ]
+
+    @patch("services.archive.ArchiveService.read_file")
+    def test_impacted_files_filtered_by_head_coverage_descending(self, read_file):
+        read_file.return_value = mock_data_from_archive
+        filters = {
+            "ordering": {
+                "direction": OrderingDirection.DESC,
+                "parameter": ImpactedFileParameter.HEAD_COVERAGE,
+            }
+        }
+        impacted_files = self.comparison_report.impacted_files(filters)
+        assert impacted_files == [
+            ImpactedFile(
+                file_name="fileB",
+                base_name="fileB",
+                head_name="fileB",
+                base_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=5,
+                    misses=6,
+                    partials=1,
+                    coverage=41.666666666666664,
+                    branches=2,
+                    methods=4,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                head_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=12,
+                    misses=1,
+                    partials=1,
+                    coverage=85.71428571428571,
+                    branches=3,
+                    methods=5,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                patch_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=5,
+                    misses=1,
+                    partials=1,
+                    coverage=71.42857142857143,
+                    branches=0,
+                    methods=0,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                change_coverage=44.047619047619044,
+            ),
+            ImpactedFile(
+                file_name="fileA",
+                base_name="fileA",
+                head_name="fileA",
+                base_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=5,
+                    misses=6,
+                    partials=1,
+                    coverage=41.666666666666664,
+                    branches=2,
+                    methods=4,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                head_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=10,
+                    misses=1,
+                    partials=1,
+                    coverage=83.33333333333333,
+                    branches=3,
+                    methods=5,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                patch_coverage=None,
+                change_coverage=41.666666666666664,
+            ),
+        ]
+
+    @patch("services.archive.ArchiveService.read_file")
+    def test_impacted_files_filtered_by_head_coverage_ascending(self, read_file):
+        read_file.return_value = mock_data_from_archive
+        filters = {
+            "ordering": {
+                "direction": OrderingDirection.ASC,
+                "parameter": ImpactedFileParameter.HEAD_COVERAGE,
+            }
+        }
+        impacted_files = self.comparison_report.impacted_files(filters)
+        assert impacted_files == [
+            ImpactedFile(
+                file_name="fileA",
+                base_name="fileA",
+                head_name="fileA",
+                base_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=5,
+                    misses=6,
+                    partials=1,
+                    coverage=41.666666666666664,
+                    branches=2,
+                    methods=4,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                head_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=10,
+                    misses=1,
+                    partials=1,
+                    coverage=83.33333333333333,
+                    branches=3,
+                    methods=5,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                patch_coverage=None,
+                change_coverage=41.666666666666664,
+            ),
+            ImpactedFile(
+                file_name="fileB",
+                base_name="fileB",
+                head_name="fileB",
+                base_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=5,
+                    misses=6,
+                    partials=1,
+                    coverage=41.666666666666664,
+                    branches=2,
+                    methods=4,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                head_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=12,
+                    misses=1,
+                    partials=1,
+                    coverage=85.71428571428571,
+                    branches=3,
+                    methods=5,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                patch_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=5,
+                    misses=1,
+                    partials=1,
+                    coverage=71.42857142857143,
+                    branches=0,
+                    methods=0,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                change_coverage=44.047619047619044,
+            ),
+        ]
+
+    @patch("services.archive.ArchiveService.read_file")
+    def test_impacted_files_filtered_by_patch_coverage_ascending(self, read_file):
+        read_file.return_value = mock_data_from_archive
+        filters = {
+            "ordering": {
+                "direction": OrderingDirection.ASC,
+                "parameter": ImpactedFileParameter.PATCH_COVERAGE,
+            }
+        }
+        impacted_files = self.comparison_report.impacted_files(filters)
+        assert impacted_files == [
+            ImpactedFile(
+                file_name="fileB",
+                base_name="fileB",
+                head_name="fileB",
+                base_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=5,
+                    misses=6,
+                    partials=1,
+                    coverage=41.666666666666664,
+                    branches=2,
+                    methods=4,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                head_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=12,
+                    misses=1,
+                    partials=1,
+                    coverage=85.71428571428571,
+                    branches=3,
+                    methods=5,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                patch_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=5,
+                    misses=1,
+                    partials=1,
+                    coverage=71.42857142857143,
+                    branches=0,
+                    methods=0,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                change_coverage=44.047619047619044,
+            ),
+            ImpactedFile(
+                file_name="fileA",
+                base_name="fileA",
+                head_name="fileA",
+                base_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=5,
+                    misses=6,
+                    partials=1,
+                    coverage=41.666666666666664,
+                    branches=2,
+                    methods=4,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                head_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=10,
+                    misses=1,
+                    partials=1,
+                    coverage=83.33333333333333,
+                    branches=3,
+                    methods=5,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                patch_coverage=None,
+                change_coverage=41.666666666666664,
+            ),
+        ]
+
+    @patch("services.archive.ArchiveService.read_file")
+    def test_impacted_files_filtered_by_patch_coverage_descending(self, read_file):
+        read_file.return_value = mock_data_from_archive
+        filters = {
+            "ordering": {
+                "direction": OrderingDirection.DESC,
+                "parameter": ImpactedFileParameter.PATCH_COVERAGE,
             }
         }
         impacted_files = self.comparison_report.impacted_files(filters)
@@ -1720,8 +2131,8 @@ class ComparisonReportTest(TestCase):
         read_file.return_value = mock_data_from_archive
         filters = {
             "ordering": {
-                "direction": MockOrderValue("ascending"),
-                "parameter": MockOrderValue("change_coverage"),
+                "direction": OrderingDirection.ASC,
+                "parameter": ImpactedFileParameter.CHANGE_COVERAGE,
             }
         }
         impacted_files = self.comparison_report.impacted_files(filters)
@@ -1821,8 +2232,8 @@ class ComparisonReportTest(TestCase):
         read_file.return_value = mock_data_from_archive
         filters = {
             "ordering": {
-                "direction": MockOrderValue("descending"),
-                "parameter": MockOrderValue("change_coverage"),
+                "direction": OrderingDirection.DESC,
+                "parameter": ImpactedFileParameter.CHANGE_COVERAGE,
             }
         }
         impacted_files = self.comparison_report.impacted_files(filters)
@@ -2101,10 +2512,10 @@ class ComparisonReportTest(TestCase):
                 change_coverage=0,
             ),
         ]
-        parameter_value = "change_coverage"
-        direction_value = "descending"
+        parameter = ImpactedFileParameter.CHANGE_COVERAGE
+        direction = OrderingDirection.DESC
         sorted_files = self.comparison_report.sort_impacted_files(
-            impacted_files, parameter_value, direction_value
+            impacted_files, parameter, direction
         )
         assert sorted_files == [
             ImpactedFile(
@@ -2233,6 +2644,70 @@ class ComparisonReportTest(TestCase):
                 change_coverage=None,
             ),
         ]
+
+    def test_impacted_file_sort_function_error(self):
+        impacted_files = [
+            ImpactedFile(
+                file_name="mafs.js",
+                base_name="flag1/mafs.js",
+                head_name="flag1/mafs.js",
+                base_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=5,
+                    misses=6,
+                    partials=1,
+                    coverage=100,
+                    branches=2,
+                    methods=4,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                head_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=12,
+                    misses=0,
+                    partials=0,
+                    coverage=100.0,
+                    branches=2,
+                    methods=4,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                patch_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=7,
+                    misses=0,
+                    partials=0,
+                    coverage=100.0,
+                    branches=0,
+                    methods=0,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                change_coverage=0,
+            ),
+        ]
+        parameter = "something else"
+        direction = OrderingDirection.DESC
+        with self.assertRaises(ValueError) as ctx:
+            self.comparison_report.sort_impacted_files(
+                impacted_files, parameter, direction
+            )
+        self.assertEqual(
+            "invalid impacted file parameter: something else", str(ctx.exception)
+        )
 
     def test_impacted_file_deserialize_file(self):
         file = {
