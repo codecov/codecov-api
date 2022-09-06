@@ -145,7 +145,11 @@ def aggregate_measurements(
 
 
 def repository_coverage_measurements(
-    repository: Repository, interval: Interval, start_date: datetime, end_date: datetime
+    repository: Repository,
+    interval: Interval,
+    start_date: datetime,
+    end_date: datetime,
+    branch: str = None,
 ):
     """
     Returns the COVERAGE measurements for the given repository.
@@ -154,7 +158,7 @@ def repository_coverage_measurements(
         name=MeasurementName.COVERAGE.value,
         owner_id=repository.author_id,
         repo_id=repository.pk,
-        branch=repository.branch,
+        branch=branch or repository.branch,
         timestamp_bin__gte=start_date,
         timestamp_bin__lte=end_date,
     )
@@ -251,7 +255,11 @@ def fill_sparse_measurements(
 
 
 def repository_coverage_fallback_query(
-    repository: Repository, interval: Interval, start_date: datetime, end_date: datetime
+    repository: Repository,
+    interval: Interval,
+    start_date: datetime,
+    end_date: datetime,
+    branch: str = None,
 ):
     """
     Query for repository coverage timeseries directly from the database
@@ -266,7 +274,7 @@ def repository_coverage_fallback_query(
         repository.commits.filter(
             timestamp__gte=start_date,
             timestamp__lte=end_date,
-            branch=repository.branch,
+            branch=branch or repository.branch,
         )
         .annotate(
             timestamp_bin=Trunc("timestamp", intervals[interval]),
@@ -284,7 +292,11 @@ def repository_coverage_fallback_query(
 
 
 def repository_coverage_measurements_with_fallback(
-    repository: Repository, interval: Interval, start_date: datetime, end_date: datetime
+    repository: Repository,
+    interval: Interval,
+    start_date: datetime,
+    end_date: datetime,
+    branch: str = None,
 ):
     """
     Tries to return repository coverage measurements from Timescale.
@@ -298,14 +310,13 @@ def repository_coverage_measurements_with_fallback(
 
     if dataset and dataset.is_backfilled():
         # timeseries data is ready
-        measurements = repository_coverage_measurements(
+        return repository_coverage_measurements(
             repository,
             interval,
             start_date,
             end_date,
+            branch=branch,
         )
-
-        return list(measurements)
     else:
         if not dataset:
             # we need to backfill
@@ -316,18 +327,10 @@ def repository_coverage_measurements_with_fallback(
             trigger_backfill(dataset)
 
         # we're still backfilling
-        data = repository_coverage_fallback_query(
+        return repository_coverage_fallback_query(
             repository,
             interval,
-            start_date,
-            end_date,
+            start_date=start_date,
+            end_date=end_date,
+            branch=branch,
         )
-        return [
-            {
-                "timestamp_bin": item["timestamp_bin"],
-                "avg": float(item["avg"]),
-                "min": float(item["min"]),
-                "max": float(item["max"]),
-            }
-            for item in data
-        ]

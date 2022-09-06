@@ -263,6 +263,8 @@ def resolve_measurements(
     if not settings.TIMESERIES_ENABLED:
         return []
 
-    return timeseries_helpers.repository_coverage_measurements_with_fallback(
-        repository, interval, after, before
+    return list(
+        timeseries_helpers.repository_coverage_measurements_with_fallback(
+            repository, interval, after, before
+        )
     )

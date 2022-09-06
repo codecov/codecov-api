@@ -8,7 +8,7 @@ from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
 from reports.tests.factories import RepositoryFlagFactory
 from timeseries.models import MeasurementName
-from timeseries.tests.factories import MeasurementFactory
+from timeseries.tests.factories import DatasetFactory, MeasurementFactory
 
 
 @pytest.mark.skipif(
@@ -28,8 +28,15 @@ class CoverageViewSetTestCase(TestCase):
             permission=[self.repo.repoid],
         )
 
-    def test_repo_coverage(self, get_repo_permissions):
+    @patch("timeseries.models.Dataset.is_backfilled")
+    def test_repo_coverage(self, get_repo_permissions, is_backfilled):
         get_repo_permissions.return_value = (True, True)
+        is_backfilled.return_value = True
+
+        DatasetFactory(
+            repository_id=self.repo.pk,
+            name=MeasurementName.COVERAGE.value,
+        )
 
         MeasurementFactory(
             name=MeasurementName.COVERAGE.value,
@@ -90,15 +97,22 @@ class CoverageViewSetTestCase(TestCase):
             "total_pages": 1,
         }
 
-    def test_repo_coverage_branch(self, get_repo_permissions):
+    @patch("timeseries.models.Dataset.is_backfilled")
+    def test_repo_coverage_branch(self, get_repo_permissions, is_backfilled):
         get_repo_permissions.return_value = (True, True)
+        is_backfilled.return_value = True
+
+        DatasetFactory(
+            repository_id=self.repo.pk,
+            name=MeasurementName.COVERAGE.value,
+        )
 
         MeasurementFactory(
             name=MeasurementName.COVERAGE.value,
             timestamp="2022-08-18T00:12:00",
             owner_id=self.org.pk,
             repo_id=self.repo.pk,
-            branch="master",
+            branch="other",
             value=80.0,
         )
         MeasurementFactory(
@@ -106,7 +120,7 @@ class CoverageViewSetTestCase(TestCase):
             timestamp="2022-08-18T00:13:00",
             owner_id=self.org.pk,
             repo_id=self.repo.pk,
-            branch="other",
+            branch="master",
             value=90.0,
         )
         MeasurementFactory(
@@ -114,7 +128,7 @@ class CoverageViewSetTestCase(TestCase):
             timestamp="2022-08-19T00:01:00",
             owner_id=self.org.pk,
             repo_id=self.repo.pk,
-            branch="master",
+            branch="other",
             value=100.0,
         )
         MeasurementFactory(
@@ -122,13 +136,13 @@ class CoverageViewSetTestCase(TestCase):
             timestamp="2022-08-18T00:12:00",
             owner_id=self.org.pk,
             repo_id=9999,
-            branch="master",
+            branch="other",
             value=10.0,
         )
 
         self.client.force_login(user=self.user)
         response = self.client.get(
-            f"/api/v2/github/codecov/repos/{self.repo.name}/coverage?interval=1d&start_date=2022-08-18&end_date=2022-08-19&branch=master"
+            f"/api/v2/github/codecov/repos/{self.repo.name}/coverage?interval=1d&start_date=2022-08-18&end_date=2022-08-19&branch=other"
         )
         assert response.status_code == 200
         assert response.json() == {
