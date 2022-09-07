@@ -102,21 +102,23 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         query = """
             pullId
             compareWithBase {
-                baseTotals {
-                    percentCovered
-                    fileCount
-                    lineCount
-                    hitsCount
-                    missesCount
-                    partialsCount
-                }
-                headTotals {
-                    percentCovered
-                    fileCount
-                    lineCount
-                    hitsCount
-                    missesCount
-                    partialsCount
+                ... on Comparison {
+                    baseTotals {
+                        percentCovered
+                        fileCount
+                        lineCount
+                        hitsCount
+                        missesCount
+                        partialsCount
+                    }
+                    headTotals {
+                        percentCovered
+                        fileCount
+                        lineCount
+                        hitsCount
+                        missesCount
+                        partialsCount
+                    }
                 }
             }
         """
@@ -142,13 +144,15 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         # Just running this w/ the commit_comparison in setup will yield nothing
         query = """
             compareWithBase {
-                flagComparisons {
-                    name
-                    patchTotals {
-                        percentCovered
-                    }
-                    headTotals {
-                        percentCovered
+                ... on Comparison {
+                    flagComparisons {
+                        name
+                        patchTotals {
+                            percentCovered
+                        }
+                        headTotals {
+                            percentCovered
+                        }
                     }
                 }
             }
@@ -178,16 +182,18 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         )
         query = """
             compareWithBase {
-                flagComparisons {
-                    name
-                    patchTotals {
-                        percentCovered
-                    }
-                    headTotals {
-                        percentCovered
-                    }
-                    baseTotals {
-                        percentCovered
+                ... on Comparison {
+                    flagComparisons {
+                        name
+                        patchTotals {
+                            percentCovered
+                        }
+                        headTotals {
+                            percentCovered
+                        }
+                        baseTotals {
+                            percentCovered
+                        }
                     }
                 }
             }
@@ -282,37 +288,39 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         query = """
             pullId
             compareWithBase {
-                fileComparisons {
-                    baseName
-                    headName
-                    isNewFile
-                    isRenamedFile
-                    isDeletedFile
-                    hasDiff
-                    hasChanges
-                    baseTotals {
-                        percentCovered
-                        fileCount
-                        lineCount
-                        hitsCount
-                        missesCount
-                        partialsCount
-                    }
-                    headTotals {
-                        percentCovered
-                        fileCount
-                        lineCount
-                        hitsCount
-                        missesCount
-                        partialsCount
-                    }
-                    patchTotals {
-                        percentCovered
-                        fileCount
-                        lineCount
-                        hitsCount
-                        missesCount
-                        partialsCount
+                ... on Comparison {
+                    fileComparisons {
+                        baseName
+                        headName
+                        isNewFile
+                        isRenamedFile
+                        isDeletedFile
+                        hasDiff
+                        hasChanges
+                        baseTotals {
+                            percentCovered
+                            fileCount
+                            lineCount
+                            hitsCount
+                            missesCount
+                            partialsCount
+                        }
+                        headTotals {
+                            percentCovered
+                            fileCount
+                            lineCount
+                            hitsCount
+                            missesCount
+                            partialsCount
+                        }
+                        patchTotals {
+                            percentCovered
+                            fileCount
+                            lineCount
+                            hitsCount
+                            missesCount
+                            partialsCount
+                        }
                     }
                 }
             }
@@ -415,10 +423,12 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         query = """
             pullId
             compareWithBase {
-                fileComparisons {
-                    baseName
-                    headName
-                    isCriticalFile
+                ... on Comparison {
+                    fileComparisons {
+                        baseName
+                        headName
+                        isCriticalFile
+                    }
                 }
             }
         """
@@ -475,10 +485,12 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                     pull (id: %s) {
                                         pullId
                                         compareWithBase {
-                                            fileComparisons {
-                                                baseName
-                                                headName
-                                                isCriticalFile
+                                            ... on Comparison {
+                                                fileComparisons {
+                                                    baseName
+                                                    headName
+                                                    isCriticalFile
+                                                }
                                             }
                                         }
                                     }
@@ -599,16 +611,18 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         query = """
             pullId
             compareWithBase {
-                fileComparisons {
-                    segments {
-                        header
-                        hasUnintendedChanges
-                        lines {
-                            baseNumber
-                            headNumber
-                            baseCoverage
-                            headCoverage
-                            content
+                ... on Comparison {
+                    fileComparisons {
+                        segments {
+                            header
+                            hasUnintendedChanges
+                            lines {
+                                baseNumber
+                                headNumber
+                                baseCoverage
+                                headCoverage
+                                content
+                            }
                         }
                     }
                 }
@@ -709,16 +723,18 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         query = """
             pullId
             compareWithBase {
-                fileComparisons {
-                    segments {
-                        header
-                        hasUnintendedChanges
-                        lines {
-                            baseNumber
-                            headNumber
-                            baseCoverage
-                            headCoverage
-                            content
+                ... on Comparison {
+                    fileComparisons {
+                        segments {
+                            header
+                            hasUnintendedChanges
+                            lines {
+                                baseNumber
+                                headNumber
+                                baseCoverage
+                                headCoverage
+                                content
+                            }
                         }
                     }
                 }
@@ -758,16 +774,18 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         query = """
             pullId
             compareWithBase {
-                state
-                baseTotals {
-                    percentCovered
-                }
-                headTotals {
-                    percentCovered
-                }
-                fileComparisons {
-                    baseName
-                    headName
+                ... on Comparison {
+                    state
+                    baseTotals {
+                        percentCovered
+                    }
+                    headTotals {
+                        percentCovered
+                    }
+                    fileComparisons {
+                        baseName
+                        headName
+                    }
                 }
             }
         """
@@ -790,7 +808,9 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         query = """
             pullId
             compareWithBase {
-                state
+                ... on Comparison {
+                    state
+                }
             }
         """
 
@@ -806,9 +826,11 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         query = """
             pullId
             compareWithBase {
-                state
-                fileComparisons {
-                    headName
+                ... on Comparison {
+                    state
+                    fileComparisons {
+                        headName
+                    }
                 }
             }
         """
@@ -835,9 +857,11 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         query = """
             pullId
             compareWithBase {
-                state
-                fileComparisons {
-                    headName
+                ... on Comparison {
+                    state
+                    fileComparisons {
+                        headName
+                    }
                 }
             }
         """
@@ -856,33 +880,106 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             is None
         )
 
-    def test_pull_comparison_missing_commit(self):
+    def test_pull_comparison_missing_comparison(self):
         self.head_commit.delete()
         self.commit_comparison.delete()
 
         query = """
             pullId
             compareWithBase {
-                state
+                __typename
             }
         """
 
         res = self._request(query)
-        assert res == {"pullId": self.pull.pullid, "compareWithBase": None}
+        assert res == {
+            "pullId": self.pull.pullid,
+            "compareWithBase": {"__typename": "MissingComparison"},
+        }
 
-    def test_pull_comparison_missing_sha(self):
+    def test_pull_comparison_missing_base_sha(self):
         self.pull.compared_to = None
         self.pull.save()
 
         query = """
             pullId
             compareWithBase {
-                state
+                __typename
+                ... on ResolverError {
+                    message
+                }
             }
         """
 
         res = self._request(query)
-        assert res == {"pullId": self.pull.pullid, "compareWithBase": None}
+        assert res == {
+            "pullId": self.pull.pullid,
+            "compareWithBase": {
+                "__typename": "InvalidComparison",
+                "message": "Invalid base commit",
+            },
+        }
+
+    def test_pull_comparison_missing_head_sha(self):
+        self.pull.head = None
+        self.pull.save()
+
+        query = """
+            pullId
+            compareWithBase {
+                __typename
+                ... on ResolverError {
+                    message
+                }
+            }
+        """
+
+        res = self._request(query)
+        assert res == {
+            "pullId": self.pull.pullid,
+            "compareWithBase": {
+                "__typename": "InvalidComparison",
+                "message": "Invalid head commit",
+            },
+        }
+
+    def test_pull_comparison_missing_base_report(self):
+        self.commit_comparison.error = "missing_base_report"
+        self.commit_comparison.save()
+
+        query = """
+            pullId
+            compareWithBase {
+                __typename
+            }
+        """
+
+        res = self._request(query)
+        assert res == {
+            "pullId": self.pull.pullid,
+            "compareWithBase": {
+                "__typename": "MissingBaseReport",
+            },
+        }
+
+    def test_pull_comparison_missing_head_report(self):
+        self.commit_comparison.error = "missing_head_report"
+        self.commit_comparison.save()
+
+        query = """
+            pullId
+            compareWithBase {
+                __typename
+            }
+        """
+
+        res = self._request(query)
+        assert res == {
+            "pullId": self.pull.pullid,
+            "compareWithBase": {
+                "__typename": "MissingHeadReport",
+            },
+        }
 
     @patch("services.comparison.TaskService.compute_comparison")
     @patch("compare.models.CommitComparison.needs_recalculation", callable=PropertyMock)
@@ -894,7 +991,9 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         query = """
             pullId
             compareWithBase {
-                state
+                ... on Comparison {
+                    state
+                }
             }
         """
 
