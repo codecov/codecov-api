@@ -47,3 +47,35 @@ class OwnerViewSetTests(APITestCase):
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert response.data == {"detail": "Service not found: not-real"}
+
+
+class UserViewSetTests(APITestCase):
+    def _list(self, kwargs):
+        return self.client.get(reverse("api-v2-users-list", kwargs=kwargs))
+
+    def setUp(self):
+        self.org = OwnerFactory(service="github")
+        self.user = OwnerFactory(service="github", organizations=[self.org.pk])
+        self.client.force_authenticate(user=self.user)
+
+    def test_list(self):
+        response = self._list(
+            kwargs={"service": self.org.service, "owner_username": self.org.username}
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "count": 1,
+            "next": None,
+            "previous": None,
+            "results": [
+                {
+                    "service": "github",
+                    "username": self.user.username,
+                    "name": self.user.name,
+                    "activated": False,
+                    "is_admin": False,
+                    "email": self.user.email,
+                }
+            ],
+            "total_pages": 1,
+        }
