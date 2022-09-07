@@ -361,7 +361,7 @@ class RepoPullDetail(InternalAPITest):
                     "service": author.service,
                     "owner_username": author.username,
                     "repo_name": repo.name,
-                    "pk": pull.pullid,
+                    "pullid": pull.pullid,
                 },
             )
         )

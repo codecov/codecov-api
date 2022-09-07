@@ -74,7 +74,7 @@ class PullViewsetTests(InternalAPITest):
                     "service": self.org.service,
                     "owner_username": self.org.username,
                     "repo_name": self.repo.name,
-                    "pk": self.pulls[0].pullid,
+                    "pullid": self.pulls[0].pullid,
                 },
             )
         )

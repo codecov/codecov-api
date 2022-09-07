@@ -5,8 +5,8 @@ from core.models import Branch, Commit
 
 
 class BranchSerializer(serializers.ModelSerializer):
-    name = serializers.CharField()
-    updatestamp = serializers.DateTimeField()
+    name = serializers.CharField(label="branch name")
+    updatestamp = serializers.DateTimeField(label="last updated timestamp")
 
     class Meta:
         model = Branch
@@ -14,9 +14,11 @@ class BranchSerializer(serializers.ModelSerializer):
 
 
 class BranchDetailSerializer(BranchSerializer):
-    head_commit = serializers.SerializerMethodField()
+    head_commit = serializers.SerializerMethodField(
+        label="branch's current head commit"
+    )
 
-    def get_head_commit(self, branch: Branch):
+    def get_head_commit(self, branch: Branch) -> CommitDetailSerializer:
         commit = (
             Commit.objects.filter(
                 repository_id=branch.repository_id, commitid=branch.head
