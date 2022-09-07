@@ -23,6 +23,7 @@ type Repository {
   graphToken: String
   yaml: String
   bot: Owner
+  flagsCount: Int!
   flagsMeasurementsActive: Boolean!
   flagsMeasurementsBackfilled: Boolean!
 }
