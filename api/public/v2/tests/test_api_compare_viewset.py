@@ -186,6 +186,22 @@ class TestCompareViewSetRetrieve(APITestCase):
             content_type="application/json",
         )
 
+    def _get_flag_comparison(self, kwargs=None, query_params=None):
+        if kwargs is None:
+            kwargs = {
+                "service": self.org.service,
+                "owner_username": self.org.username,
+                "repo_name": self.repo.name,
+            }
+        if query_params is None:
+            query_params = {"base": self.base.commitid, "head": self.head.commitid}
+
+        return self.client.get(
+            reverse("api-v2-compare-flags", kwargs=kwargs),
+            data=query_params,
+            content_type="application/json",
+        )
+
     def test_can_return_public_repo_comparison_with_not_authenticated(
         self, adapter_mock, base_report_mock, head_report_mock
     ):
@@ -509,3 +525,11 @@ class TestCompareViewSetRetrieve(APITestCase):
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_flags_comparison(self, adapter_mock, base_report_mock, head_report_mock):
+        adapter_mock.return_value = self.mocked_compare_adapter
+        base_report_mock.return_value = self.base_report
+        head_report_mock.return_value = self.head_report
+
+        res = self._get_flag_comparison()
+        assert res.status_code == 200

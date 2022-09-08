@@ -27,7 +27,9 @@ asgiref==3.3.4
 astroid==2.6.6
     # via pylint
 attrs==20.3.0
-    # via pytest
+    # via
+    #   jsonschema
+    #   pytest
 backoff==1.6.0
     # via analytics-python
 billiard==3.6.4.0
@@ -102,6 +104,7 @@ django==3.2.12
     #   django-cors-headers
     #   django-filter
     #   djangorestframework
+    #   drf-spectacular
 django-cors-headers==3.7.0
     # via -r requirements.in
 django-cursor-pagination @ https://github.com/photocrowd/django-cursor-pagination/archive/f560902696b0c8509e4d95c10ba0d62700181d84.tar.gz
@@ -111,6 +114,10 @@ django-dynamic-fixture==3.1.1
 django-filter==2.4.0
     # via -r requirements.in
 djangorestframework==3.12.2
+    # via
+    #   -r requirements.in
+    #   drf-spectacular
+drf-spectacular==0.23.1
     # via -r requirements.in
 ecdsa==0.16.0
     # via tlslite-ng
@@ -162,6 +169,8 @@ idna==2.8
     #   requests
     #   rfc3986
     #   yarl
+inflection==0.5.1
+    # via drf-spectacular
 iniconfig==1.1.1
     # via pytest
 intervaltree==3.1.0
@@ -172,6 +181,8 @@ jmespath==0.10.0
     # via
     #   boto3
     #   botocore
+jsonschema==4.14.0
+    # via drf-spectacular
 kombu==5.2.4
     # via celery
 lazy-object-proxy==1.6.0
@@ -262,6 +273,8 @@ pyparsing==2.4.7
     # via
     #   httplib2
     #   packaging
+pyrsistent==0.18.1
+    # via jsonschema
 pytest==6.2.5
     # via
     #   -r requirements.in
@@ -299,6 +312,7 @@ pytz==2022.1
 pyyaml==6.0
     # via
     #   codecov-cli
+    #   drf-spectacular
     #   pre-commit
     #   vcrpy
 redis==3.5.3
@@ -376,6 +390,8 @@ toml==0.10.2
     #   pytest-cov
 typing-extensions==3.7.4.3
     # via ariadne
+uritemplate==4.1.1
+    # via drf-spectacular
 urllib3==1.26.7
     # via
     #   botocore
