@@ -1,7 +1,12 @@
 from ariadne import ObjectType, convert_kwargs_to_snake_case
 from asgiref.sync import async_to_sync
 
-from graphql_api.actions.owner import get_owner_sessions, search_my_owners
+from codecov_auth.models import Owner
+from graphql_api.actions.owner import (
+    get_owner_sessions,
+    get_user_tokens,
+    search_my_owners,
+)
 from graphql_api.actions.repository import search_repos
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
 from graphql_api.helpers.connection import (
@@ -14,6 +19,7 @@ me = ariadne_load_local_graphql(__file__, "me.graphql")
 me = me + build_connection_graphql("ViewableRepositoryConnection", "Repository")
 me = me + build_connection_graphql("MyOrganizationConnection", "Owner")
 me = me + build_connection_graphql("SessionConnection", "Session")
+me = me + build_connection_graphql("UserTokenConnection", "UserToken")
 me_bindable = ObjectType("Me")
 
 
@@ -63,6 +69,17 @@ def resolve_sessions(current_user, _, **kwargs):
     return queryset_to_connection(
         queryset,
         ordering=("sessionid",),
+        ordering_direction=OrderingDirection.DESC,
+        **kwargs,
+    )
+
+
+@me_bindable.field("tokens")
+def resolve_sessions(current_user, _, **kwargs):
+    queryset = get_user_tokens(current_user)
+    return queryset_to_connection(
+        queryset,
+        ordering=("created_at",),
         ordering_direction=OrderingDirection.DESC,
         **kwargs,
     )

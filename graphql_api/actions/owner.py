@@ -1,6 +1,6 @@
 from asgiref.sync import sync_to_async
 
-from codecov_auth.models import Owner, Session
+from codecov_auth.models import Owner
 from utils.services import get_long_service_name
 
 
@@ -21,3 +21,7 @@ def get_owner(service, username):
 
 def get_owner_sessions(current_user):
     return current_user.session_set.all()
+
+
+def get_user_tokens(user: Owner):
+    return user.user_tokens.all()
