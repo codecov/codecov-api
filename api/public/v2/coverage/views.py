@@ -1,8 +1,10 @@
 from datetime import datetime
 
+from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, viewsets
 from rest_framework.exceptions import APIException
 
+from api.public.v2.schema import repo_parameters
 from api.shared.mixins import RepoPropertyMixin
 from api.shared.permissions import RepositoryArtifactPermissions
 from reports.models import RepositoryFlag
@@ -10,7 +12,12 @@ from timeseries.helpers import (
     aggregate_measurements,
     repository_coverage_measurements_with_fallback,
 )
-from timeseries.models import Interval, MeasurementName, MeasurementSummary
+from timeseries.models import (
+    Interval,
+    MeasurementName,
+    MeasurementSummary,
+    MeasurementSummary1Day,
+)
 
 from .filters import MeasurementFilters
 from .serializers import MeasurementSerializer
@@ -29,14 +36,18 @@ intervals = {
 }
 
 
+@extend_schema(parameters=repo_parameters, tags=["Coverage"])
 class CoverageViewSet(
     viewsets.GenericViewSet,
     mixins.ListModelMixin,
     RepoPropertyMixin,
 ):
     permission_classes = [RepositoryArtifactPermissions]
-    filterset_class = MeasurementFilters
     serializer_class = MeasurementSerializer
+    filterset_class = MeasurementFilters
+
+    # this is here so that drf-spectacular can introspect the model filters
+    queryset = MeasurementSummary1Day.objects.none()
 
     def get_queryset(self):
         return repository_coverage_measurements_with_fallback(
@@ -56,7 +67,21 @@ class CoverageViewSet(
 
         return intervals[interval_name]
 
+    @extend_schema(summary="Coverage trend")
+    def list(self, request, *args, **kwargs):
+        """
+        Returns a paginated list of timeseries measurements aggregated by the specified
+        `interval`.
 
+        Optionally filterable by:
+        * `branch`
+        * `start_date`
+        * `end_date`
+        """
+        return super().list(request, *args, **kwargs)
+
+
+@extend_schema(parameters=repo_parameters, tags=["Flags"])
 class FlagCoverageViewSet(CoverageViewSet):
     def get_queryset(self):
         queryset = MeasurementSummary.agg_by(self.get_measurement_interval())

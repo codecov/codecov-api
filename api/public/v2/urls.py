@@ -1,5 +1,6 @@
 from django.conf import settings, urls
 from django.urls import include, path
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView
 from rest_framework.exceptions import server_error
 
 from api.shared.error_views import not_found
@@ -59,6 +60,12 @@ flag_prefix = (
 )
 
 urlpatterns = [
+    path(r"schema/", SpectacularAPIView.as_view(), name="api-v2-schema"),
+    path(
+        r"docs/",
+        SpectacularRedocView.as_view(url_name="api-v2-schema"),
+        name="api-v2-docs",
+    ),
     path(service_prefix, include(owners_router.urls)),
     path(owner_prefix, include(owner_artifacts_router.urls)),
     path(owner_prefix, include(repository_router.urls)),
@@ -70,5 +77,6 @@ urlpatterns = [
 
 if settings.TIMESERIES_ENABLED:
     urlpatterns += [
+        path(repo_prefix, include(coverage_router.urls)),
         path(flag_prefix, include(flag_coverage_router.urls)),
     ]
