@@ -227,7 +227,8 @@ def fill_sparse_measurements(
     Those placeholder entries will have empty measurement values.
     """
     by_timestamp = {
-        measurement["timestamp_bin"]: measurement for measurement in measurements
+        measurement["timestamp_bin"].replace(tzinfo=timezone.utc): measurement
+        for measurement in measurements
     }
 
     delta = interval_deltas[interval]
@@ -278,7 +279,7 @@ def repository_coverage_fallback_query(
             branch=branch or repository.branch,
         )
         .annotate(
-            timestamp_bin=Trunc("timestamp", intervals[interval]),
+            timestamp_bin=Trunc("timestamp", intervals[interval], tzinfo=timezone.utc),
             coverage=Cast(KeyTextTransform("c", "totals"), output_field=FloatField()),
         )
         .filter(coverage__isnull=False)

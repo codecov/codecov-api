@@ -19,6 +19,7 @@ from graphql_api.helpers.connection import (
 from graphql_api.helpers.lookahead import lookahead
 from graphql_api.types.enums import OrderingDirection
 from services.profiling import CriticalFile, ProfilingSummary
+from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Dataset, Interval, MeasurementName, MeasurementSummary
 
 repository_bindable = ObjectType("Repository")
@@ -254,8 +255,11 @@ def resolve_flags_measurements_backfilled(repository: Repository, info) -> bool:
 def resolve_measurements(
     repository: Repository, info, interval: Interval, after: datetime, before: datetime
 ) -> Iterable[MeasurementSummary]:
-    return list(
+    return fill_sparse_measurements(
         timeseries_helpers.repository_coverage_measurements_with_fallback(
             repository, interval, after, before
-        )
+        ),
+        interval,
+        after,
+        before,
     )
