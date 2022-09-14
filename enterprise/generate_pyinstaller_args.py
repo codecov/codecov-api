@@ -98,7 +98,7 @@ def main():
         "gunicorn.instrument.statsd",
         "drf_spectacular",
         "drf_spectacular.generators",
-        "drf_spectacular.contrib"
+        "drf_spectacular.contrib",
     }
 
     base = celery.__file__.rsplit("/", 1)[0]
