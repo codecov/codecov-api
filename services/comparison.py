@@ -672,6 +672,26 @@ class Comparison(object):
         report.apply_diff(self.git_comparison["diff"])
         return report
 
+    def has_different_number_of_head_and_base_sessions(self):
+        self.validate()
+        head_sessions = self.head_report.sessions
+        base_sessions = self.base_report.sessions
+        # We're treating this case as false since considering CFF's complicates the logic
+        if self._has_cff_sessions(head_sessions) or self._has_cff_sessions(
+            base_sessions
+        ):
+            return False
+        return len(head_sessions) != len(base_sessions)
+
+    # I feel this method should belong to the API Report class, but we're thinking of getting rid of that class soon
+    # In truth, this should be in the shared.Report class
+    def _has_cff_sessions(self, sessions) -> bool:
+        for session in sessions.values():
+            if session.session_type.value == "carriedforward":
+                return True
+
+        return False
+
     @property
     def totals(self):
         return {
