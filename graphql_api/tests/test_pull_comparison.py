@@ -214,7 +214,8 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         }
 
     @patch(
-        "services.comparison.Comparison.has_different_number_of_head_and_base_sessions", new_callable=PropertyMock
+        "services.comparison.Comparison.has_different_number_of_head_and_base_sessions",
+        new_callable=PropertyMock,
     )
     def test_compare_with_base_has_different_number_of_reports_on_head_and_base(
         self, mock_has_different_number_of_head_and_base_sessions
