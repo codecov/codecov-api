@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django_filters",
+    "drf_spectacular",
     "ariadne_django",
     "corsheaders",
     "rest_framework",
@@ -176,8 +177,19 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "api.shared.pagination.StandardPageNumberPagination",
     "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
     "PAGE_SIZE": 20,
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
+# API auto-documentation settings
+# https://drf-spectacular.readthedocs.io/en/latest/settings.html
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Codecov API",
+    "DESCRIPTION": "Public Codecov API",
+    "VERSION": "2.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SERVE_URLCONF": "api.public.v2.urls",
+    "SERVERS": [{"url": "/api/v2"}],
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/2.1/topics/i18n/

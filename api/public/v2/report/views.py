@@ -1,11 +1,44 @@
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, viewsets
 from rest_framework.response import Response
 
 from api.public.v2.commit.serializers import ReportSerializer
+from api.public.v2.schema import repo_parameters
 from api.shared.mixins import RepoPropertyMixin
 from api.shared.permissions import RepositoryArtifactPermissions
 
 
+@extend_schema(
+    parameters=repo_parameters
+    + [
+        OpenApiParameter(
+            "sha",
+            OpenApiTypes.STR,
+            OpenApiParameter.QUERY,
+            description="commit SHA for which to return report",
+        ),
+        OpenApiParameter(
+            "branch",
+            OpenApiTypes.STR,
+            OpenApiParameter.QUERY,
+            description="branch name for which to return report (of head commit)",
+        ),
+        OpenApiParameter(
+            "path",
+            OpenApiTypes.STR,
+            OpenApiParameter.QUERY,
+            description="filter report to only include file paths starting with this value",
+        ),
+        OpenApiParameter(
+            "flag",
+            OpenApiTypes.STR,
+            OpenApiParameter.QUERY,
+            description="filter report to only include info pertaining to given flag name",
+        ),
+    ],
+    tags=["Coverage"],
+)
 class ReportViewSet(
     viewsets.GenericViewSet, mixins.RetrieveModelMixin, RepoPropertyMixin
 ):
@@ -34,7 +67,19 @@ class ReportViewSet(
 
         return report
 
+    @extend_schema(summary="Commit coverage report")
     def retrieve(self, request, *args, **kwargs):
+        """
+        Returns the coverage report for a given commit.
+
+        By default that commit is the head of the default branch but can also be specified explictily by:
+        * `sha` - return report for the commit with the given SHA
+        * `branch` - return report for the head commit of the branch with the given name
+
+        The report can be optionally filtered by specifying:
+        * `path` - only show report info for pathnames that start with this value
+        * `flag` - only show report info that applies to the specified flag name
+        """
         report = self.get_object()
         serializer = self.get_serializer(report)
         return Response(serializer.data)

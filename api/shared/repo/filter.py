@@ -25,10 +25,19 @@ class StringListFilter(django_filters.Filter):
 class RepositoryFilters(django_filters.FilterSet):
     """Filter for active repositories"""
 
-    active = BooleanFilter(field_name="active", method="filter_active")
+    active = BooleanFilter(
+        field_name="active",
+        method="filter_active",
+        label="whether the repository has received an upload",
+    )
 
     """Filter for getting multiple repositories by name"""
-    names = StringListFilter(query_param="names", field_name="name", lookup_expr="in")
+    names = StringListFilter(
+        query_param="names",
+        field_name="name",
+        lookup_expr="in",
+        label="list of repository names",
+    )
 
     def filter_active(self, queryset, name, value):
         # The database currently stores 't' instead of 'true' for active repos, and nothing for inactive

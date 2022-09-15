@@ -13,6 +13,7 @@ class BranchViewSetMixin(viewsets.GenericViewSet, RepoPropertyMixin):
     filterset_class = BranchFilters
     ordering_fields = ("updatestamp", "name")
     permission_classes = [RepositoryArtifactPermissions]
+    lookup_field = "name"
 
     def get_queryset(self):
         return self.repo.branches.order_by(F("updatestamp").desc(nulls_last=True))
