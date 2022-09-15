@@ -199,3 +199,38 @@ class TestReportPaths(TestCase):
                 ],
             ),
         ]
+
+
+class TestReportPathsNested(TestCase):
+    def setUp(self):
+        files = {
+            "dir/file1.py": file_data1,
+            "dir/subdir/file2.py": file_data2,
+            "dir/subdir/dir1/file3.py": file_data3,
+            "dir/subdir/dir2/file3.py": file_data3,
+        }
+        self.report = SerializableReport(files=files)
+
+    def test_single_directory(self):
+        report_paths = ReportPaths(self.report, path="dir")
+        assert report_paths.single_directory() == [
+            File(full_path="dir/file1.py", totals=totals1),
+            Dir(
+                full_path="dir/subdir",
+                children=[
+                    File(full_path="dir/subdir/file2.py", totals=totals2),
+                    Dir(
+                        full_path="dir/subdir/dir1",
+                        children=[
+                            File(full_path="dir/subdir/dir1/file3.py", totals=totals3),
+                        ],
+                    ),
+                    Dir(
+                        full_path="dir/subdir/dir2",
+                        children=[
+                            File(full_path="dir/subdir/dir2/file3.py", totals=totals3),
+                        ],
+                    ),
+                ],
+            ),
+        ]

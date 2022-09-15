@@ -1,5 +1,6 @@
+from collections import defaultdict
 from dataclasses import dataclass
-from itertools import groupby
+from functools import cached_property
 from typing import Iterable, List, Union
 
 from shared.reports.resources import Report
@@ -59,7 +60,7 @@ class Dir(PathNode):
     full_path: str
     children: List[PathNode]
 
-    @property
+    @cached_property
     def totals(self):
         # A dir's totals are sum of its children's totals
         totals = ReportTotals.default_totals()
@@ -86,6 +87,11 @@ class PrefixedPath:
             return self.full_path
         else:
             return self.full_path.replace(f"{self.prefix}/", "", 1)
+
+    @property
+    def is_file(self):
+        parts = self.relative_path.split("/")
+        return len(parts) == 1
 
     @property
     def basename(self):
@@ -133,37 +139,37 @@ class ReportPaths:
         """
         Return a single directory (specified by `path`) of mixed file/directory results.
         """
-        grouped = groupby(self.paths, key=lambda path: path.basename)
-        results = []
-
-        for basename, paths in grouped:
-            paths = list(paths)
-            if len(paths) == 1:
-                path = paths[0]
-                results.append(
-                    File(
-                        full_path=path.full_path,
-                        totals=self._totals(path),
-                    )
-                )
-            else:
-                results.append(
-                    Dir(
-                        full_path=basename,
-                        children=[
-                            File(
-                                full_path=path.full_path,
-                                totals=self._totals(path),
-                            )
-                            for path in paths
-                        ],
-                    )
-                )
-
-        return results
+        return self._single_directory_recursive(self.paths)
 
     def _totals(self, path: PrefixedPath) -> ReportTotals:
         """
         Returns the report totals for a given prefixed path.
         """
         return self.report.get(path.full_path).totals
+
+    def _single_directory_recursive(
+        self, paths: Iterable[PrefixedPath]
+    ) -> Iterable[Union[File, Dir]]:
+        grouped = defaultdict(list)
+        for path in paths:
+            grouped[path.basename].append(path)
+
+        results = []
+
+        for basename, paths in grouped.items():
+            paths = list(paths)
+            if len(paths) == 1 and paths[0].is_file:
+                path = paths[0]
+                results.append(
+                    File(full_path=path.full_path, totals=self._totals(path))
+                )
+            else:
+                children = self._single_directory_recursive(
+                    [
+                        PrefixedPath(full_path=path.full_path, prefix=basename)
+                        for path in paths
+                    ]
+                )
+                results.append(Dir(full_path=basename, children=children))
+
+        return results
