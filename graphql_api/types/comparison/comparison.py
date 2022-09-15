@@ -88,4 +88,4 @@ def resolve_has_different_number_of_head_and_base_reports(
         return False
 
     comparison: PullRequestComparison = info.context["comparison"]
-    return comparison.has_different_number_of_head_and_base_sessions()
+    return comparison.has_different_number_of_head_and_base_sessions

@@ -672,6 +672,7 @@ class Comparison(object):
         report.apply_diff(self.git_comparison["diff"])
         return report
 
+    @cached_property
     def has_different_number_of_head_and_base_sessions(self):
         self.validate()
         head_sessions = self.head_report.sessions
