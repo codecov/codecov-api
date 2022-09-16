@@ -208,6 +208,8 @@ class TestReportPathsNested(TestCase):
             "dir/subdir/file2.py": file_data2,
             "dir/subdir/dir1/file3.py": file_data3,
             "dir/subdir/dir2/file3.py": file_data3,
+            "src/ui/A/A.js": file_data3,
+            "src/ui/Avatar/A.js": file_data3,
         }
         self.report = SerializableReport(files=files)
 
@@ -233,4 +235,9 @@ class TestReportPathsNested(TestCase):
                     ),
                 ],
             ),
+        ]
+
+        report_paths = ReportPaths(self.report, path="src/ui/A")
+        assert report_paths.single_directory() == [
+            File(full_path="src/ui/A/A.js", totals=totals3),
         ]

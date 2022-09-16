@@ -106,6 +106,12 @@ class PrefixedPath:
             return name
 
 
+def is_subpath(full_path: str, subpath: str):
+    if not subpath:
+        return True
+    return full_path.startswith(f"{subpath}/") or full_path == subpath
+
+
 class ReportPaths:
     """
     Contains methods for getting path information out of a single report.
@@ -118,7 +124,7 @@ class ReportPaths:
         self.paths = [
             PrefixedPath(full_path=full_path, prefix=self.prefix)
             for full_path in report.files
-            if full_path.startswith(self.prefix)
+            if is_subpath(full_path, self.prefix)
         ]
 
         if search_term:
