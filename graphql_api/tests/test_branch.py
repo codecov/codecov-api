@@ -91,16 +91,35 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
         )
 
     def test_fetch_branch(self):
-        query = query_branch % "name, head { commitid }"
+        query = query_branch % "name, headSha, head { commitid }"
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
             "branch": self.branch.name,
         }
         data = self.gql_request(query, variables=variables)
-        branch = data["owner"]["repository"]["branch"]
-        assert branch["name"] == self.branch.name
-        assert branch["head"]["commitid"] == self.head.commitid
+        assert data["owner"]["repository"]["branch"] == {
+            "name": self.branch.name,
+            "headSha": self.head.commitid,
+            "head": {
+                "commitid": self.head.commitid,
+            },
+        }
+
+    def test_fetch_branch_missing_commit(self):
+        self.head.delete()
+        query = query_branch % "name, headSha, head { commitid }"
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "branch": self.branch.name,
+        }
+        data = self.gql_request(query, variables=variables)
+        assert data["owner"]["repository"]["branch"] == {
+            "name": self.branch.name,
+            "headSha": self.branch.head,
+            "head": None,
+        }
 
     def test_fetch_branches(self):
         query_branches = """{
