@@ -4,4 +4,8 @@ Possible value for the search values for a path tree of a pull request
 enum OrderingParameter{
     NAME
     COVERAGE
+    HITS
+    MISSES
+    PARTIALS
+    LINES
 }
