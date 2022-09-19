@@ -38,7 +38,7 @@ class PathNode:
         if self.lines > 0:
             return float(self.hits / self.lines) * 100
         else:
-            return 0
+            return 0.0
 
 
 @dataclass
