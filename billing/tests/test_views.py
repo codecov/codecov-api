@@ -259,8 +259,7 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.owner.stripe_subscription_id == None
         assert self.owner.stripe_customer_id == None
 
-    @patch("services.billing.StripeService.update_payment_method")
-    def test_customer_subscription_created_sets_plan_info(self, upm_mock):
+    def test_customer_subscription_created_sets_plan_info(self):
         self.owner.stripe_subscription_id = None
         self.owner.stripe_customer_id = None
         self.owner.save()
@@ -270,7 +269,7 @@ class StripeWebhookHandlerTests(APITestCase):
         plan_name = "users-pr-inappy"
         quantity = 20
 
-        response = self._send_event(
+        self._send_event(
             payload={
                 "type": "customer.subscription.created",
                 "data": {
@@ -280,7 +279,6 @@ class StripeWebhookHandlerTests(APITestCase):
                         "plan": {"id": "fieown4", "name": plan_name},
                         "metadata": {"obo_organization": self.owner.ownerid},
                         "quantity": quantity,
-                        "default_payment_method": "pm_abc",
                         "status": "active",
                     }
                 },
@@ -293,7 +291,6 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.owner.plan_user_count == quantity
         assert self.owner.plan_auto_activate is True
         assert self.owner.plan == plan_name
-        upm_mock.assert_called_once_with(self.owner, "pm_abc")
 
     @patch("services.billing.StripeService.update_payment_method")
     @patch("services.segment.SegmentService.trial_started")
@@ -335,13 +332,16 @@ class StripeWebhookHandlerTests(APITestCase):
             },
         )
 
-    def test_customer_subscription_updated_does_nothing_if_not_paid_user_plan(self):
+    @patch("services.billing.StripeService.update_payment_method")
+    def test_customer_subscription_updated_doesnt_change_subscription_if_not_paid_user_plan(
+        self, upm_mock
+    ):
         self.owner.plan = None
         self.owner.plan_user_count = 0
         self.owner.plan_auto_activate = False
         self.owner.save()
 
-        response = self._send_event(
+        self._send_event(
             payload={
                 "type": "customer.subscription.updated",
                 "data": {
@@ -353,6 +353,7 @@ class StripeWebhookHandlerTests(APITestCase):
                         "quantity": 20,
                         "status": "active",
                         "schedule": None,
+                        "default_payment_method": "pm_1LhiRsGlVGuVgOrkQguJXdeV",
                     }
                 },
             }
@@ -362,8 +363,12 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.owner.plan == None
         assert self.owner.plan_user_count == 0
         assert self.owner.plan_auto_activate == False
+        upm_mock.assert_called_once_with(self.owner, "pm_1LhiRsGlVGuVgOrkQguJXdeV")
 
-    def test_customer_subscription_updated_does_nothing_if_there_is_a_schedule(self):
+    @patch("services.billing.StripeService.update_payment_method")
+    def test_customer_subscription_updated_doesnt_change_subscription_if_there_is_a_schedule(
+        self, upm_mock
+    ):
         self.owner.plan = "users-pr-inappy"
         self.owner.plan_user_count = 10
         self.owner.plan_auto_activate = False
@@ -381,6 +386,7 @@ class StripeWebhookHandlerTests(APITestCase):
                         "quantity": 20,
                         "status": "active",
                         "schedule": "sub_sched_1K8xfkGlVGuVgOrkxvroyZdH",
+                        "default_payment_method": "pm_1LhiRsGlVGuVgOrkQguJXdeV",
                     }
                 },
             }
@@ -390,10 +396,12 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.owner.plan == "users-pr-inappy"
         assert self.owner.plan_user_count == 10
         assert self.owner.plan_auto_activate == False
+        upm_mock.assert_called_once_with(self.owner, "pm_1LhiRsGlVGuVgOrkQguJXdeV")
 
+    @patch("services.billing.StripeService.update_payment_method")
     @patch("codecov_auth.models.Owner.set_basic_plan")
     def test_customer_subscription_updated_sets_free_and_deactivates_all_repos_if_incomplete_expired(
-        self, set_basic_plan_mock
+        self, set_basic_plan_mock, upm_mock
     ):
         self.owner.plan = "users-pr-inappy"
         self.owner.plan_user_count = 10
@@ -417,6 +425,7 @@ class StripeWebhookHandlerTests(APITestCase):
                         "quantity": 20,
                         "status": "incomplete_expired",
                         "schedule": None,
+                        "default_payment_method": "pm_1LhiRsGlVGuVgOrkQguJXdeV",
                     }
                 },
             }
@@ -427,8 +436,10 @@ class StripeWebhookHandlerTests(APITestCase):
         assert (
             self.owner.repository_set.filter(active=True, activated=True).count() == 0
         )
+        upm_mock.assert_called_once_with(self.owner, "pm_1LhiRsGlVGuVgOrkQguJXdeV")
 
-    def test_customer_subscription_updated_sets_fields_on_success(self):
+    @patch("services.billing.StripeService.update_payment_method")
+    def test_customer_subscription_updated_sets_fields_on_success(self, upm_mock):
         self.owner.plan = "users-free"
         self.owner.plan_user_count = 5
         self.owner.plan_auto_activate = False
@@ -448,6 +459,7 @@ class StripeWebhookHandlerTests(APITestCase):
                         "quantity": quantity,
                         "status": "active",
                         "schedule": None,
+                        "default_payment_method": "pm_1LhiRsGlVGuVgOrkQguJXdeV",
                     }
                 },
             }
@@ -457,10 +469,12 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.owner.plan == plan_name
         assert self.owner.plan_user_count == quantity
         assert self.owner.plan_auto_activate == True
+        upm_mock.assert_called_once_with(self.owner, "pm_1LhiRsGlVGuVgOrkQguJXdeV")
 
+    @patch("services.billing.StripeService.update_payment_method")
     @patch("services.segment.SegmentService.trial_ended")
     def test_customer_subscription_updated_triggers_segment_event_on_trial_end(
-        self, trial_ended_mock
+        self, trial_ended_mock, upm_mock
     ):
         trial_start, trial_end = "ts", "te"
         response = self._send_event(
@@ -477,6 +491,7 @@ class StripeWebhookHandlerTests(APITestCase):
                         "schedule": None,
                         "trial_start": trial_start,
                         "trial_end": trial_end,
+                        "default_payment_method": "pm_1LhiRsGlVGuVgOrkQguJXdeV",
                     },
                     "previous_attributes": {"status": "trialing"},
                 },
@@ -492,6 +507,7 @@ class StripeWebhookHandlerTests(APITestCase):
                 "trial_start_date": trial_start,
             },
         )
+        upm_mock.assert_called_once_with(self.owner, "pm_1LhiRsGlVGuVgOrkQguJXdeV")
 
     @patch("services.billing.stripe.Subscription.retrieve")
     def test_subscription_schedule_released_updates_owner_with_existing_subscription(

@@ -1,5 +1,4 @@
 from .enums import (
-    ComparisonError,
     CoverageLine,
     GoalOnboarding,
     LoginProvider,

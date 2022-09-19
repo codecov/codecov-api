@@ -7,7 +7,7 @@ from urllib.parse import urlencode
 import pytest
 import requests
 from ddf import G
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.exceptions import NotFound, ValidationError
@@ -977,6 +977,7 @@ class UploadHandlerRouteTest(APITestCase):
     @patch("upload.views.legacy.uuid4")
     @patch("upload.views.legacy.dispatch_upload_task")
     @patch("services.repo_providers.RepoProviderService.get_adapter")
+    @override_settings(CODECOV_DASHBOARD_URL="https://app.codecov.io")
     def test_successful_upload_v2(
         self,
         mock_repo_provider_service,
@@ -1045,7 +1046,7 @@ class UploadHandlerRouteTest(APITestCase):
         assert result["id"] == "dec1f00b-1883-40d0-afd6-6dcb876510be"
         assert (
             result["url"]
-            == "https://codecov.io/github/codecovtest/upload-test-repo/commit/b521e55aef79b101f48e2544837ca99a7fa3bf6b"
+            == "https://app.codecov.io/github/codecovtest/upload-test-repo/commit/b521e55aef79b101f48e2544837ca99a7fa3bf6b"
         )
 
     @patch("shared.metrics.metrics.incr")
@@ -1053,6 +1054,7 @@ class UploadHandlerRouteTest(APITestCase):
     @patch("upload.views.legacy.uuid4")
     @patch("upload.views.legacy.dispatch_upload_task")
     @patch("services.repo_providers.RepoProviderService.get_adapter")
+    @override_settings(CODECOV_DASHBOARD_URL="https://app.codecov.io")
     def test_successful_upload_v2_slash(
         self,
         mock_repo_provider_service,
@@ -1121,7 +1123,7 @@ class UploadHandlerRouteTest(APITestCase):
         assert result["id"] == "dec1f00b-1883-40d0-afd6-6dcb876510be"
         assert (
             result["url"]
-            == "https://codecov.io/github/codecovtest/upload-test-repo/commit/b521e55aef79b101f48e2544837ca99a7fa3bf6b"
+            == "https://app.codecov.io/github/codecovtest/upload-test-repo/commit/b521e55aef79b101f48e2544837ca99a7fa3bf6b"
         )
 
     @patch("services.storage.MINIO_CLIENT.presigned_put_object")

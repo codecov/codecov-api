@@ -1,11 +1,31 @@
+import enum
+from dataclasses import dataclass
 from typing import List
 
-from ariadne import ObjectType
+from ariadne import ObjectType, UnionType
 from asgiref.sync import sync_to_async
 
 from compare.models import CommitComparison, FlagComparison
 from graphql_api.actions.flags import get_flag_comparisons
 from services.comparison import ComparisonReport, ImpactedFile, PullRequestComparison
+
+
+@dataclass
+class InvalidComparison:
+    message: str
+
+
+class MissingComparison:
+    message = "Missing comparison"
+
+
+class MissingBaseReport:
+    message = "Missing base report"
+
+
+class MissingHeadReport:
+    message = "Missing head report"
+
 
 comparison_bindable = ObjectType("Comparison")
 
@@ -70,7 +90,6 @@ def resolve_head_totals(comparison, info):
 def resolve_flag_comparisons(comparison, info) -> List[FlagComparison]:
     return list(get_flag_comparisons(comparison))
 
-
 """
     Resolver to return if the head and base of a pull request have
     different number of reports on the head and base. This implementation
@@ -89,3 +108,20 @@ def resolve_has_different_number_of_head_and_base_reports(
 
     comparison: PullRequestComparison = info.context["comparison"]
     return comparison.has_different_number_of_head_and_base_sessions
+
+
+comparison_result_bindable = UnionType("ComparisonResult")
+
+
+@comparison_result_bindable.type_resolver
+def resolve_comparison_result_type(obj, *_):
+    if isinstance(obj, CommitComparison):
+        return "Comparison"
+    elif isinstance(obj, InvalidComparison):
+        return "InvalidComparison"
+    elif isinstance(obj, MissingComparison):
+        return "MissingComparison"
+    elif isinstance(obj, MissingBaseReport):
+        return "MissingBaseReport"
+    elif isinstance(obj, MissingHeadReport):
+        return "MissingHeadReport"
