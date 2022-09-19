@@ -8,6 +8,7 @@ type Comparison {
   headTotals: CoverageTotals
   fileComparisons: [FileComparison!]
   flagComparisons: [FlagComparison]
+  hasDifferentNumberOfHeadAndBaseReports: Boolean!
 }
 
 type InvalidComparison implements ResolverError {
