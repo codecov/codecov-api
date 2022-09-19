@@ -1,4 +1,8 @@
+import logging
+
 from django.db.backends.postgresql.base import DatabaseWrapper as PostgresWrapper
+
+log = logging.getLogger(__name__)
 
 
 class DatabaseWrapper(PostgresWrapper):
@@ -10,6 +14,7 @@ class DatabaseWrapper(PostgresWrapper):
         """
         if self.connection:
             if not self.is_usable():
+                log.warning("closing unusable database connection")
                 self.connection.close()
                 self.connection = None
         return super(DatabaseWrapper, self)._cursor(*args, **kwargs)
