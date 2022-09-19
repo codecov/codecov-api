@@ -220,6 +220,29 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         }
 
     @patch(
+        "services.comparison.Comparison.has_different_number_of_head_and_base_sessions",
+        new_callable=PropertyMock,
+    )
+    def test_compare_with_base_has_different_number_of_reports_on_head_and_base(
+        self, mock_has_different_number_of_head_and_base_sessions
+    ):
+        mock_has_different_number_of_head_and_base_sessions.return_value = True
+        query = """
+            compareWithBase {
+                ... on Comparison {
+                    hasDifferentNumberOfHeadAndBaseReports
+                }
+            }
+        """
+
+        res = self._request(query)
+        print("hereee")
+        print(res)
+        assert res == {
+            "compareWithBase": {"hasDifferentNumberOfHeadAndBaseReports": True}
+        }
+
+    @patch(
         "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
     )
     @patch(
