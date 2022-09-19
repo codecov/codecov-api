@@ -4,6 +4,10 @@ import enum
 class OrderingParameter(enum.Enum):
     NAME = "name"
     COVERAGE = "coverage"
+    HITS = "hits"
+    MISSES = "misses"
+    PARTIALS = "partials"
+    LINES = "lines"
 
 
 class RepositoryOrdering(enum.Enum):
