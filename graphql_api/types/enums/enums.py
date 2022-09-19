@@ -24,11 +24,6 @@ class CoverageLine(enum.Enum):
     P = "partial"
 
 
-class ComparisonError(enum.Enum):
-    MISSING_BASE_REPORT = "missing_base_report"
-    MISSING_HEAD_REPORT = "missing_head_report"
-
-
 class TypeProjectOnboarding(enum.Enum):
     PERSONAL = "PERSONAL"
     YOUR_ORG = "YOUR_ORG"
