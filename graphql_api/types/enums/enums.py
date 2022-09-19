@@ -10,6 +10,11 @@ class OrderingParameter(enum.Enum):
     LINES = "lines"
 
 
+class DisplayType(enum.Enum):
+    LIST = "list"
+    TREE = "tree"
+
+
 class RepositoryOrdering(enum.Enum):
     COMMIT_DATE = "latest_commit_at"
     COVERAGE = "coverage"

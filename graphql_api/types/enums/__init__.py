@@ -1,5 +1,6 @@
 from .enums import (
     CoverageLine,
+    DisplayType,
     GoalOnboarding,
     LoginProvider,
     OrderingDirection,

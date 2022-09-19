@@ -9,3 +9,8 @@ enum OrderingParameter{
     PARTIALS
     LINES
 }
+
+enum DisplayType{
+    LIST
+    TREE
+}

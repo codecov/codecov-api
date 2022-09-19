@@ -5,6 +5,7 @@ from timeseries.models import Interval as MeasurementInterval
 
 from .enums import (
     CoverageLine,
+    DisplayType,
     GoalOnboarding,
     LoginProvider,
     OrderingDirection,
@@ -23,6 +24,8 @@ enum_types = [
     EnumType("CoverageLine", CoverageLine),
     EnumType("TypeProjectOnboarding", TypeProjectOnboarding),
     EnumType("GoalOnboarding", GoalOnboarding),
+    EnumType("OrderingParameter", OrderingParameter),
+    EnumType("DisplayType", DisplayType),
     EnumType("OrderingParameter", OrderingParameter),
     EnumType("PullRequestState", PullRequestState),
     EnumType("UploadState", UploadState),
