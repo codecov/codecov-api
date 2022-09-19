@@ -90,6 +90,7 @@ def resolve_head_totals(comparison, info):
 def resolve_flag_comparisons(comparison, info) -> List[FlagComparison]:
     return list(get_flag_comparisons(comparison))
 
+
 """
     Resolver to return if the head and base of a pull request have
     different number of reports on the head and base. This implementation
