@@ -140,7 +140,9 @@ DATABASES = {
 
 if TIMESERIES_ENABLED:
     DATABASES["timeseries"] = {
-        "ENGINE": "django.db.backends.postgresql",
+        # this wraps `django.db.backends.postgresql`
+        # (see `codecov/db/base.py`)
+        "ENGINE": "codecov.db",
         "NAME": TIMESERIES_DATABASE_NAME,
         "USER": TIMESERIES_DATABASE_USER,
         "PASSWORD": TIMESERIES_DATABASE_PASSWORD,
