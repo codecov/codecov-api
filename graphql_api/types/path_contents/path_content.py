@@ -18,25 +18,43 @@ def resolve_path_content_type(obj, *_):
 
 
 @path_content_bindable.field("name")
-def resolve_name(data: Union[File, Dir], info) -> str:
-    return data.name
+def resolve_name(item: Union[File, Dir], info) -> str:
+    return item.name
 
 
 @path_content_bindable.field("path")
-def resolve_file_path(data: Union[File, Dir], info) -> str:
-    if data.kind == "file":
-        return data.full_path
-    return None
+def resolve_file_path(item: Union[File, Dir], info) -> str:
+    return item.full_path
+
+
+@path_content_bindable.field("hits")
+def resolve_hits(item: Union[File, Dir], info) -> str:
+    return item.hits
+
+
+@path_content_bindable.field("misses")
+def resolve_misses(item: Union[File, Dir], info) -> str:
+    return item.misses
+
+
+@path_content_bindable.field("partials")
+def resolve_partials(item: Union[File, Dir], info) -> str:
+    return item.partials
+
+
+@path_content_bindable.field("lines")
+def resolve_lines(item: Union[File, Dir], info) -> str:
+    return item.lines
 
 
 @path_content_bindable.field("percentCovered")
-def resolve_percent_covered(data: Union[File, Dir], info) -> float:
-    return data.coverage
+def resolve_percent_covered(item: Union[File, Dir], info) -> float:
+    return item.coverage
 
 
 @path_content_file_bindable.field("isCriticalFile")
-def resolve_is_critical_file(data: File, info) -> bool:
-    if "critical_filenames" in info.context:
-        return data.full_path in info.context["critical_filenames"]
+def resolve_is_critical_file(item: Union[File, Dir], info) -> bool:
+    if isinstance(item, File) and "critical_filenames" in info.context:
+        return item.full_path in info.context["critical_filenames"]
 
     return False
