@@ -91,21 +91,23 @@ query ImpactedFile(
     repository(name: $repo) {
       pull(id: $pull) {
         compareWithBase {
-          state
-          impactedFile(path: $path) {
-            headName
-            baseName
-            baseCoverage {
-              percentCovered
-            }
-            headCoverage {
-              percentCovered
-            }
-            patchCoverage {
-              percentCovered
-            }
-            segments {
-              hasUnintendedChanges
+          ... on Comparison {
+            state
+            impactedFile(path: $path) {
+              headName
+              baseName
+              baseCoverage {
+                percentCovered
+              }
+              headCoverage {
+                percentCovered
+              }
+              patchCoverage {
+                percentCovered
+              }
+              segments {
+                hasUnintendedChanges
+              }
             }
           }
         }

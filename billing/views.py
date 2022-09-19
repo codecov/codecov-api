@@ -221,19 +221,13 @@ class StripeWebhookHandler(APIView):
                 ownerid=subscription.metadata.obo_organization,
             ),
         )
-
         owner = Owner.objects.get(ownerid=subscription.metadata.obo_organization)
-
         owner.plan = subscription.plan.name
         owner.plan_user_count = subscription.quantity
         owner.stripe_subscription_id = subscription.id
         owner.stripe_customer_id = subscription.customer
 
         owner.save()
-
-        # Properly attach the payment method on the customer
-        billing = BillingService(requesting_user=owner)
-        billing.update_payment_method(owner, subscription.default_payment_method)
 
         if subscription.status == "trialing":
             self.segment_service.trial_started(
@@ -253,6 +247,14 @@ class StripeWebhookHandler(APIView):
             stripe_subscription_id=subscription.id,
             stripe_customer_id=subscription.customer,
         )
+
+        # Properly attach the payment method on the customer
+        # This hook will be called after a checkout session completes, updating the subscription created
+        # with it
+        default_payment_method = subscription.default_payment_method
+        if default_payment_method:
+            billing = BillingService(requesting_user=owner)
+            billing.update_payment_method(owner, default_payment_method)
 
         subscription_schedule_id = subscription.schedule
 

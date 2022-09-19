@@ -25,6 +25,7 @@ query Flags(
 ) {
     owner(username: $org) {
         repository(name: $repo) {
+            flagsCount
             flags {
                 edges {
                     node {
@@ -60,6 +61,7 @@ query Repo(
 ) {
     owner(username: $org) {
         repository(name: $repo) {
+            flagsCount
             flagsMeasurementsActive
             flagsMeasurementsBackfilled
             flags {
@@ -109,6 +111,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
         assert data == {
             "owner": {
                 "repository": {
+                    "flagsCount": 2,
                     "flags": {
                         "edges": [
                             {
@@ -128,7 +131,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                 }
                             },
                         ]
-                    }
+                    },
                 }
             }
         }
@@ -148,6 +151,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
         assert data == {
             "owner": {
                 "repository": {
+                    "flagsCount": 2,
                     "flags": {
                         "edges": [
                             {
@@ -167,7 +171,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                 }
                             },
                         ]
-                    }
+                    },
                 }
             }
         }
@@ -246,6 +250,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
         assert data == {
             "owner": {
                 "repository": {
+                    "flagsCount": 2,
                     "flags": {
                         "edges": [
                             {
@@ -315,7 +320,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                 }
                             },
                         ]
-                    }
+                    },
                 }
             }
         }
@@ -343,6 +348,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
         assert data == {
             "owner": {
                 "repository": {
+                    "flagsCount": 1,
                     "flags": {
                         "edges": [
                             {
@@ -367,7 +373,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                 }
                             },
                         ]
-                    }
+                    },
                 }
             }
         }
@@ -395,6 +401,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
         assert data == {
             "owner": {
                 "repository": {
+                    "flagsCount": 1,
                     "flags": {
                         "edges": [
                             {
@@ -419,7 +426,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                 }
                             },
                         ]
-                    }
+                    },
                 }
             }
         }

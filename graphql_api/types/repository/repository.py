@@ -221,6 +221,12 @@ def resolve_flags(
     return connection
 
 
+@repository_bindable.field("flagsCount")
+@sync_to_async
+def resolve_flags_count(repository: Repository, info) -> int:
+    return repository.flags.count()
+
+
 @repository_bindable.field("flagsMeasurementsActive")
 @sync_to_async
 def resolve_flags_measurements_active(repository: Repository, info) -> bool:

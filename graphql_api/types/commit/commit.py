@@ -1,17 +1,17 @@
-import string
 from typing import List, Union
 
 import yaml
-from ariadne import ObjectType
+from ariadne import ObjectType, convert_kwargs_to_snake_case
 from asgiref.sync import sync_to_async
 
 from core.models import Commit
+from graphql_api.actions.path_contents import sort_path_contents
 from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.comparison import ComparisonLoader
 from graphql_api.dataloader.owner import OwnerLoader
 from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.enums import OrderingDirection
-from services.path import Dir, File, path_contents
+from services.path import Dir, File, ReportPaths
 from services.profiling import CriticalFile, ProfilingSummary
 
 commit_bindable = ObjectType("Commit")
@@ -114,9 +114,10 @@ def resolve_critical_files(commit: Commit, info, **kwargs) -> List[CriticalFile]
 
 
 @commit_bindable.field("pathContents")
+@convert_kwargs_to_snake_case
 @sync_to_async
 def resolve_path_contents(
-    head_commit: Commit, info, path: string = None, filters=None
+    head_commit: Commit, info, path: str = None, filters=None
 ) -> List[Union[File, Dir]]:
     """
     The file directory tree is a list of all the files and directories
@@ -128,7 +129,6 @@ def resolve_path_contents(
     commit_report = head_commit.full_report
     if not commit_report:
         raise Exception("No reports found in the head commit")
-    report_files = commit_report.files
 
     if "profiling_summary" in info.context:
         if "critical_filenames" not in info.context:
@@ -141,9 +141,15 @@ def resolve_path_contents(
                 ]
             )
 
-    return path_contents(
-        report_files=report_files,
-        path=path or "",
-        filters=filters or {},
-        commit_report=commit_report,
+    search_value = filters.get("search_value")
+    report_paths = ReportPaths(
+        report=commit_report,
+        path=path,
+        search_term=search_value,
     )
+
+    if search_value:
+        items = report_paths.full_filelist()
+    else:
+        items = report_paths.single_directory()
+    return sort_path_contents(items, filters)

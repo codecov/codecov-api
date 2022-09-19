@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from unittest.mock import PropertyMock, patch
 
 from django.test import TransactionTestCase, override_settings
+from shared.reports.types import ReportTotals
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import BranchFactory, CommitFactory, RepositoryFactory
@@ -31,6 +32,10 @@ query_files = """
               __typename
               name
               path
+              hits
+              misses
+              partials
+              lines
               percentCovered
               ... on PathContentFile {
                 isCriticalFile
@@ -53,7 +58,9 @@ class MockCoverage(object):
 
 class MockTotals(object):
     def __init__(self):
-        self.totals = MockCoverage(83, 8, 10)
+        self.totals = ReportTotals.default_totals()
+        self.totals.hits = 8
+        self.totals.lines = 10
 
 
 class MockReport(object):
@@ -91,16 +98,35 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
         )
 
     def test_fetch_branch(self):
-        query = query_branch % "name, head { commitid }"
+        query = query_branch % "name, headSha, head { commitid }"
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
             "branch": self.branch.name,
         }
         data = self.gql_request(query, variables=variables)
-        branch = data["owner"]["repository"]["branch"]
-        assert branch["name"] == self.branch.name
-        assert branch["head"]["commitid"] == self.head.commitid
+        assert data["owner"]["repository"]["branch"] == {
+            "name": self.branch.name,
+            "headSha": self.head.commitid,
+            "head": {
+                "commitid": self.head.commitid,
+            },
+        }
+
+    def test_fetch_branch_missing_commit(self):
+        self.head.delete()
+        query = query_branch % "name, headSha, head { commitid }"
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "branch": self.branch.name,
+        }
+        data = self.gql_request(query, variables=variables)
+        assert data["owner"]["repository"]["branch"] == {
+            "name": self.branch.name,
+            "headSha": self.branch.head,
+            "head": None,
+        }
 
     def test_fetch_branches(self):
         query_branches = """{
@@ -159,38 +185,55 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
             "repo": self.repo.name,
             "branch": self.branch.name,
             "path": "",
-            "filters": {},
+            "filters": {
+                "ordering": {
+                    "direction": "DESC",
+                    "parameter": "NAME",
+                }
+            },
         }
         report_mock.return_value = MockReport()
         critical_files.return_value = [CriticalFile("fileA.py")]
 
         data = self.gql_request(query_files, variables=variables)
 
-        expected_data = {
+        assert data == {
             "owner": {
                 "repository": {
                     "branch": {
                         "head": {
                             "pathContents": [
                                 {
-                                    "__typename": "PathContentFile",
-                                    "name": "fileA.py",
-                                    "path": "fileA.py",
-                                    "percentCovered": 83.0,
-                                    "isCriticalFile": True,
+                                    "__typename": "PathContentDir",
+                                    "name": "folder",
+                                    "path": "folder",
+                                    "hits": 24,
+                                    "misses": 0,
+                                    "partials": 0,
+                                    "lines": 30,
+                                    "percentCovered": 80.0,
                                 },
                                 {
                                     "__typename": "PathContentFile",
                                     "name": "fileB.py",
                                     "path": "fileB.py",
-                                    "percentCovered": 83.0,
+                                    "hits": 8,
+                                    "misses": 0,
+                                    "partials": 0,
+                                    "lines": 10,
+                                    "percentCovered": 80.0,
                                     "isCriticalFile": False,
                                 },
                                 {
-                                    "__typename": "PathContentDir",
-                                    "name": "folder",
-                                    "path": None,
+                                    "__typename": "PathContentFile",
+                                    "name": "fileA.py",
+                                    "path": "fileA.py",
+                                    "hits": 8,
+                                    "misses": 0,
+                                    "partials": 0,
+                                    "lines": 10,
                                     "percentCovered": 80.0,
+                                    "isCriticalFile": True,
                                 },
                             ]
                         }
@@ -198,8 +241,6 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                 }
             }
         }
-
-        assert expected_data == data
 
     @patch(
         "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
@@ -213,14 +254,19 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
             "repo": self.repo.name,
             "branch": self.branch.name,
             "path": "folder",
-            "filters": {},
+            "filters": {
+                "ordering": {
+                    "direction": "ASC",
+                    "parameter": "HITS",
+                }
+            },
         }
         report_mock.return_value = MockReport()
         critical_files.return_value = [CriticalFile("folder/fileB.py")]
 
         data = self.gql_request(query_files, variables=variables)
 
-        expected_data = {
+        assert data == {
             "owner": {
                 "repository": {
                     "branch": {
@@ -230,13 +276,21 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                     "__typename": "PathContentFile",
                                     "name": "fileB.py",
                                     "path": "folder/fileB.py",
-                                    "percentCovered": 83.0,
+                                    "hits": 8,
+                                    "misses": 0,
+                                    "partials": 0,
+                                    "lines": 10,
+                                    "percentCovered": 80.0,
                                     "isCriticalFile": True,
                                 },
                                 {
                                     "__typename": "PathContentDir",
                                     "name": "subfolder",
-                                    "path": None,
+                                    "path": "folder/subfolder",
+                                    "hits": 16,
+                                    "misses": 0,
+                                    "partials": 0,
+                                    "lines": 20,
                                     "percentCovered": 80.0,
                                 },
                             ]
@@ -246,4 +300,58 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
-        assert expected_data == data
+    @patch(
+        "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
+    )
+    @patch("core.models.ReportService.build_report_from_commit")
+    def test_fetch_path_contents_with_files_and_search_value(
+        self, report_mock, critical_files
+    ):
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "branch": self.branch.name,
+            "path": "",
+            "filters": {
+                "searchValue": "fileB",
+            },
+        }
+        report_mock.return_value = MockReport()
+        critical_files.return_value = [CriticalFile("folder/fileB.py")]
+
+        data = self.gql_request(query_files, variables=variables)
+
+        assert data == {
+            "owner": {
+                "repository": {
+                    "branch": {
+                        "head": {
+                            "pathContents": [
+                                {
+                                    "__typename": "PathContentFile",
+                                    "name": "fileB.py",
+                                    "path": "fileB.py",
+                                    "hits": 8,
+                                    "misses": 0,
+                                    "partials": 0,
+                                    "lines": 10,
+                                    "percentCovered": 80.0,
+                                    "isCriticalFile": False,
+                                },
+                                {
+                                    "__typename": "PathContentFile",
+                                    "name": "fileB.py",
+                                    "path": "folder/fileB.py",
+                                    "hits": 8,
+                                    "misses": 0,
+                                    "partials": 0,
+                                    "lines": 10,
+                                    "percentCovered": 80.0,
+                                    "isCriticalFile": True,
+                                },
+                            ]
+                        }
+                    }
+                }
+            }
+        }

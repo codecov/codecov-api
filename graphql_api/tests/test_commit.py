@@ -524,6 +524,25 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         commit = data["owner"]["repository"]["commit"]
         assert commit["compareWithParent"]["changeWithParent"] == 56.89
 
+    def test_has_different_number_of_head_and_base_reports_without_PR_comparison(self):
+        query = (
+            query_commit
+            % "compareWithParent { hasDifferentNumberOfHeadAndBaseReports }"
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        assert (
+            commit["compareWithParent"]["hasDifferentNumberOfHeadAndBaseReports"]
+            == False
+        )
+
     @patch(
         "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
     )
