@@ -229,11 +229,15 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         mock_has_different_number_of_head_and_base_sessions.return_value = True
         query = """
             compareWithBase {
-                hasDifferentNumberOfHeadAndBaseReports
+                ... on Comparison {
+                    hasDifferentNumberOfHeadAndBaseReports
+                }
             }
         """
 
         res = self._request(query)
+        print("hereee")
+        print(res)
         assert res == {
             "compareWithBase": {"hasDifferentNumberOfHeadAndBaseReports": True}
         }
