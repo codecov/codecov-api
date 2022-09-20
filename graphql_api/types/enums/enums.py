@@ -79,11 +79,10 @@ class LoginProvider(enum.Enum):
 
 
 class CommitErrorGeneralType(enum.Enum):
-    yaml_error = ("YAML_ERROR", "commit error of yaml type")
-    bot_error = ("BOT_ERROR", "commit error of bot type")
+    yaml_error = "YAML_ERROR"
+    bot_error = "BOT_ERROR"
 
-    def __init__(self, slug, description):
-        self.description = description
+    def __init__(self, slug):
         self.slug = slug
 
     @classmethod

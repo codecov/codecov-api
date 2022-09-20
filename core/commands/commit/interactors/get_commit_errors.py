@@ -14,5 +14,5 @@ def errors_by_type(commit, error_type_str):
 
 class GetCommitErrorsInteractor(BaseInteractor):
     @sync_to_async
-    def execute(self, commit, errorType):
-        return errors_by_type(commit, error_type_str=errorType)
+    def execute(self, commit, error_type):
+        return errors_by_type(commit, error_type_str=error_type)

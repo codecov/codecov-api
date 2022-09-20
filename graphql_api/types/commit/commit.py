@@ -149,29 +149,14 @@ def resolve_path_contents(
     )
 
 
-@commit_bindable.field("yamlErrors")
-async def resolve_errors(commit, info, **kwargs):
+@commit_bindable.field("errors")
+async def resolve_errors(commit, info, errorType):
     command = info.context["executor"].get_command("commit")
     queryset = await command.get_commit_errors(
-        commit, errorType=CommitErrorGeneralType.yaml_error.slug
+        commit, error_type=errorType
     )
     return await queryset_to_connection(
         queryset,
         ordering=("updated_at",),
         ordering_direction=OrderingDirection.ASC,
-        **kwargs
-    )
-
-
-@commit_bindable.field("botErrors")
-async def resolve_errors(commit, info, **kwargs):
-    command = info.context["executor"].get_command("commit")
-    queryset = await command.get_commit_errors(
-        commit, errorType=CommitErrorGeneralType.bot_error.slug
-    )
-    return await queryset_to_connection(
-        queryset,
-        ordering=("updated_at",),
-        ordering_direction=OrderingDirection.ASC,
-        **kwargs
     )

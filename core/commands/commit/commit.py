@@ -28,5 +28,5 @@ class CommitCommands(BaseCommand):
     def get_uploads_of_commit(self, commit):
         return self.get_interactor(GetUploadsOfCommitInteractor).execute(commit)
 
-    def get_commit_errors(self, commit, errorType):
-        return self.get_interactor(GetCommitErrorsInteractor).execute(commit, errorType)
+    def get_commit_errors(self, commit, error_type):
+        return self.get_interactor(GetCommitErrorsInteractor).execute(commit, error_type)

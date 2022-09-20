@@ -16,38 +16,22 @@ type Commit {
   uploads(first: Int, after: String, last: Int, before: String): UploadConnection
   criticalFiles: [CriticalFile!]!
   pathContents(path: String, filters: PathContentsFilters): [PathContent!]!
-  yamlErrors: YamlErrorsConnection
-  botErrors: BotErrorsConnection
+  errors(errorType: CommitErrorType!): CommitErrorsConnection!
 }
 
-type YamlErrorsConnection {
-  edges: [YamlErrorEdge]
+type CommitErrorsConnection {
+  edges: [CommitErrorEdge]
   totalCount: Int!
   pageInfo: PageInfo!
 }
 
-type YamlErrorEdge {
+type CommitErrorEdge {
   cursor: String!
-  node: YamlError!
+  node: CommitError!
 }
 
-type YamlError{
-  errorCode: String
-}
-
-type BotErrorsConnection {
-  edges: [BotErrorEdge]
-  totalCount: Int!
-  pageInfo: PageInfo!
-}
-
-type BotErrorEdge {
-  cursor: String!
-  node: BotError!
-}
-
-type BotError{
-  errorCode: String
+type CommitError{
+  errorCode: CommitErrorCode!
 }
 
 type UploadConnection {

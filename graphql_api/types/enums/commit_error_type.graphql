@@ -1,0 +1,4 @@
+enum CommitErrorType {
+    YAML_ERROR
+    BOT_ERROR
+}
