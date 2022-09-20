@@ -569,7 +569,10 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
     def test_commit_yaml_errors(self):
         CommitErrorFactory(commit=self.commit, error_code="invalid_yaml")
         CommitErrorFactory(commit=self.commit, error_code="yaml_client_error")
-        query = query_commit % "errors(errorType: YAML_ERROR) { edges { node { errorCode } } }"
+        query = (
+            query_commit
+            % "errors(errorType: YAML_ERROR) { edges { node { errorCode } } }"
+        )
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
@@ -586,7 +589,10 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
     def test_commit_bot_errors(self):
         CommitErrorFactory(commit=self.commit, error_code="repo_bot_invalid")
         CommitErrorFactory(commit=self.commit, error_code="repo_bot_invalid")
-        query = query_commit % "errors(errorType: BOT_ERROR) { edges { node { errorCode } } }"
+        query = (
+            query_commit
+            % "errors(errorType: BOT_ERROR) { edges { node { errorCode } } }"
+        )
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,

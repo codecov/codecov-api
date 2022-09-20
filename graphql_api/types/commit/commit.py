@@ -158,9 +158,7 @@ def resolve_path_contents(
 @commit_bindable.field("errors")
 async def resolve_errors(commit, info, errorType):
     command = info.context["executor"].get_command("commit")
-    queryset = await command.get_commit_errors(
-        commit, error_type=errorType
-    )
+    queryset = await command.get_commit_errors(commit, error_type=errorType)
     return await queryset_to_connection(
         queryset,
         ordering=("updated_at",),
