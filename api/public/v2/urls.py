@@ -72,6 +72,7 @@ urlpatterns = [
     path(repo_prefix, include(repository_artifacts_router.urls)),
     path(repo_prefix, include(compare_router.urls)),
     path(repo_prefix, include(report_router.urls)),
+    path(repo_prefix, include(coverage_router.urls)),
 ]
 
 if settings.TIMESERIES_ENABLED:

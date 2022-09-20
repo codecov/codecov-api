@@ -1,4 +1,5 @@
-from django.db.models import Avg, Max, Min
+from datetime import datetime
+
 from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, viewsets
 from rest_framework.exceptions import APIException
@@ -7,6 +8,10 @@ from api.public.v2.schema import repo_parameters
 from api.shared.mixins import RepoPropertyMixin
 from api.shared.permissions import RepositoryArtifactPermissions
 from reports.models import RepositoryFlag
+from timeseries.helpers import (
+    aggregate_measurements,
+    repository_coverage_measurements_with_fallback,
+)
 from timeseries.models import (
     Interval,
     MeasurementName,
@@ -45,29 +50,14 @@ class CoverageViewSet(
     queryset = MeasurementSummary1Day.objects.none()
 
     def get_queryset(self):
-        queryset = MeasurementSummary.agg_by(self.get_measurement_interval()).filter(
-            owner_id=self.repo.author_id,
-            repo_id=self.repo.pk,
-            name=self.get_measurement_name().value,
-        )
-
-        if self.get_measurement_name() == MeasurementName.FLAG_COVERAGE:
-            flag = RepositoryFlag.objects.filter(
-                repository_id=self.repo.pk,
-                flag_name=self.kwargs["flag_name"],
-            ).first()
-            if not flag:
-                return queryset.none()
-            queryset = queryset.filter(flag_id=flag.pk)
-
-        return (
-            queryset.values("timestamp_bin", "owner_id", "repo_id", "flag_id")
-            .annotate(
-                value_avg=Avg("value_avg"),
-                value_min=Min("value_min"),
-                value_max=Max("value_max"),
-            )
-            .order_by("timestamp_bin")
+        return repository_coverage_measurements_with_fallback(
+            self.repo,
+            self.get_measurement_interval(),
+            start_date=self.request.query_params.get(
+                "start_date", datetime(2000, 1, 1)
+            ),
+            end_date=self.request.query_params.get("end_date", datetime.now()),
+            branch=self.request.query_params.get("branch"),
         )
 
     def get_measurement_interval(self) -> Interval:
@@ -76,9 +66,6 @@ class CoverageViewSet(
             raise InvalidInterval()
 
         return intervals[interval_name]
-
-    def get_measurement_name(self) -> MeasurementName:
-        return MeasurementName.COVERAGE
 
     @extend_schema(summary="Coverage trend")
     def list(self, request, *args, **kwargs):
@@ -96,9 +83,23 @@ class CoverageViewSet(
 
 @extend_schema(parameters=repo_parameters, tags=["Flags"])
 class FlagCoverageViewSet(CoverageViewSet):
-    def get_measurement_name(self) -> MeasurementName:
-        return MeasurementName.FLAG_COVERAGE
+    def get_queryset(self):
+        queryset = MeasurementSummary.agg_by(self.get_measurement_interval())
 
-    @extend_schema(summary="Flag coverage trend")
-    def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
+        flag = RepositoryFlag.objects.filter(
+            repository_id=self.repo.pk,
+            flag_name=self.kwargs["flag_name"],
+        ).first()
+        if not flag:
+            return queryset.none()
+
+        queryset = queryset.filter(
+            name=MeasurementName.FLAG_COVERAGE.value,
+            owner_id=self.repo.author_id,
+            repo_id=self.repo.pk,
+            flag_id=flag.pk,
+        )
+
+        return aggregate_measurements(
+            queryset, ["timestamp_bin", "owner_id", "repo_id", "flag_id"]
+        )
