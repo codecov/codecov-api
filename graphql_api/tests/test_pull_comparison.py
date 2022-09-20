@@ -236,8 +236,6 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         """
 
         res = self._request(query)
-        print("hereee")
-        print(res)
         assert res == {
             "compareWithBase": {"hasDifferentNumberOfHeadAndBaseReports": True}
         }
