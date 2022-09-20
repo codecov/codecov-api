@@ -30,6 +30,7 @@ class GetUploadPresignedUrlInteractor(BaseInteractor):
                 commit_sha=download_url_parts["commitid"],
                 filename=download_url_parts["file_name"],
                 date_string=download_url_parts["date_string"],
+                expires=300,
             )
 
         except minio.error.NoSuchKey as e:

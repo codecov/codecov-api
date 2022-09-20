@@ -12,7 +12,7 @@ from codecov.models import BaseCodecovModel
 from services.archive import ReportService
 
 from .encoders import ReportJSONEncoder
-from .managers import RepositoryQuerySet
+from .managers import RepositoryManager
 
 
 class DateTimeWithoutTZField(models.DateTimeField):
@@ -128,7 +128,7 @@ class Repository(models.Model):
         ]
         verbose_name_plural = "Repositories"
 
-    objects = RepositoryQuerySet.as_manager()
+    objects = RepositoryManager()
 
     def __str__(self):
         return f"Repo<{self.author}/{self.name}>"

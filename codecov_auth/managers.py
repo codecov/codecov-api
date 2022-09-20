@@ -1,4 +1,4 @@
-from django.db.models import Exists, Func, OuterRef, Q, QuerySet, Subquery
+from django.db.models import Exists, Func, Manager, OuterRef, Q, QuerySet, Subquery
 
 from core.models import Pull
 
@@ -63,3 +63,14 @@ class OwnerQuerySet(QuerySet):
         return self.annotate(
             last_pull_timestamp=Subquery(pulls.values("updatestamp")[:1]),
         )
+
+
+# We cannot use `QuerySet.as_manager()` since it relies on the `inspect` module and will
+# not play nicely with Cython (which we use for self-hosted):
+# https://cython.readthedocs.io/en/latest/src/userguide/limitations.html#inspect-support
+class OwnerManager(Manager):
+    def get_queryset(self):
+        return OwnerQuerySet(self.model, using=self._db)
+
+    def users_of(self, *args, **kwargs):
+        return self.get_queryset().users_of(*args, **kwargs)

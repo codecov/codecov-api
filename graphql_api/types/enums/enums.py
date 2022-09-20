@@ -4,6 +4,10 @@ import enum
 class OrderingParameter(enum.Enum):
     NAME = "name"
     COVERAGE = "coverage"
+    HITS = "hits"
+    MISSES = "misses"
+    PARTIALS = "partials"
+    LINES = "lines"
 
 
 class RepositoryOrdering(enum.Enum):
@@ -22,11 +26,6 @@ class CoverageLine(enum.Enum):
     H = "hit"
     M = "miss"
     P = "partial"
-
-
-class ComparisonError(enum.Enum):
-    MISSING_BASE_REPORT = "missing_base_report"
-    MISSING_HEAD_REPORT = "missing_head_report"
 
 
 class TypeProjectOnboarding(enum.Enum):

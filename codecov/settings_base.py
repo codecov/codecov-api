@@ -21,18 +21,21 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django_filters",
+    "drf_spectacular",
     "ariadne_django",
     "corsheaders",
     "rest_framework",
     "billing",
-    "core",
     "codecov_auth",
-    "reports",
-    "internal_api",
-    "graphql_api",
+    "api",
     "compare",
+    "core",
+    "graphql_api",
+    "labelanalysis",
     "profiling",
-    "public_api",
+    "reports",
+    "staticanalysis",
     "timeseries",
 ]
 
@@ -137,7 +140,9 @@ DATABASES = {
 
 if TIMESERIES_ENABLED:
     DATABASES["timeseries"] = {
-        "ENGINE": "django.db.backends.postgresql",
+        # this wraps `django.db.backends.postgresql`
+        # (see `codecov/db/base.py`)
+        "ENGINE": "codecov.db",
         "NAME": TIMESERIES_DATABASE_NAME,
         "USER": TIMESERIES_DATABASE_USER,
         "PASSWORD": TIMESERIES_DATABASE_PASSWORD,
@@ -167,14 +172,26 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "codecov_auth.authentication.CodecovTokenAuthentication",
+        "codecov_auth.authentication.CodecovBearerTokenAuthentication",
         "rest_framework.authentication.BasicAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ),
-    "DEFAULT_PAGINATION_CLASS": "internal_api.pagination.StandardPageNumberPagination",
+    "DEFAULT_PAGINATION_CLASS": "api.shared.pagination.StandardPageNumberPagination",
     "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
     "PAGE_SIZE": 20,
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
+# API auto-documentation settings
+# https://drf-spectacular.readthedocs.io/en/latest/settings.html
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Codecov API",
+    "DESCRIPTION": "Public Codecov API",
+    "VERSION": "2.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SERVE_URLCONF": "api.public.v2.urls",
+    "SERVERS": [{"url": "/api/v2"}],
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/2.1/topics/i18n/
@@ -311,5 +328,6 @@ CORS_ALLOWED_ORIGINS = []
 GRAPHQL_PLAYGROUND = False
 
 UPLOAD_THROTTLING_ENABLED = True
+MAX_UPLOAD_LIMIT = get_config("setup", "max_sessions", default=150)
 
 CANNY_SSO_PRIVATE_TOKEN = get_config("canny", "sso_private_token", default="")

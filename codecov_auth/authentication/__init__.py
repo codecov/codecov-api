@@ -15,6 +15,10 @@ from utils.services import get_long_service_name
 log = logging.getLogger(__name__)
 
 
+def get_session(token: str) -> Session:
+    return Session.objects.select_related("owner", "owner__profile").get(token=token)
+
+
 class CodecovAuthMixin:
     def update_session(self, request, session):
         session.lastseen = timezone.now()
@@ -28,9 +32,7 @@ class CodecovAuthMixin:
 
     def get_user_and_session(self, token, request):
         try:
-            session = Session.objects.select_related("owner", "owner__profile").get(
-                token=token
-            )
+            session = get_session(token)
         except Session.DoesNotExist:
             raise exceptions.AuthenticationFailed("No such user")
         if (
@@ -167,3 +169,30 @@ class CodecovSessionAuthentication(
 
         token = self.decode_token_from_cookie(encoded_cookie)
         return self.get_user_and_session(token, request)
+
+
+class CodecovBearerTokenAuthentication(
+    CodecovAuthMixin, authentication.TokenAuthentication
+):
+    keyword = "Bearer"
+
+    def authenticate_header(self, request):
+        return 'Bearer realm="api"'
+
+    def authenticate(self, request):
+        res = super().authenticate(request)
+        if res is None:
+            return None
+
+        owner, session = res
+        self.update_session(request, session)
+        return (owner, session)
+
+    def authenticate_credentials(self, token):
+        try:
+            session = get_session(token)
+            if session.type != Session.SessionType.API:
+                raise exceptions.AuthenticationFailed("Invalid token")
+            return (session.owner, session)
+        except Session.DoesNotExist:
+            raise exceptions.AuthenticationFailed("Invalid token")

@@ -1,549 +1,243 @@
-import enum
-
 from django.test import TestCase
+from shared.reports.types import ReportTotals
 
 from services.archive import SerializableReport
-from services.path import (
-    Dir,
-    File,
-    FilteredFilePath,
-    _build_path_list,
-    _build_search_list,
-    _filter_files_by_path,
-    _filtered_files_by_search,
-    path_contents,
-    path_list,
-    search_list,
-)
+from services.path import Dir, File, PrefixedPath, ReportPaths
 
-# Pulled from core.tests.factories.CommitFactory files.
-# Contents don't actually matter, it's just for providing a format
-# compatible with what SerializableReport expects. Used in
-# ComparisonTests.
-file_data = [
+# mock data
+
+file_data1 = [
     2,
     [0, 10, 8, 2, 0, "80.00000", 0, 0, 0, 0, 0, 0, 0],
     [[0, 10, 8, 2, 0, "80.00000", 0, 0, 0, 0, 0, 0, 0]],
     [0, 2, 1, 1, 0, "50.00000", 0, 0, 0, 0, 0, 0, 0],
 ]
 
-# I wrote this one to have different data per file
-#  so the totals aren't super obivous
 file_data2 = [
+    2,
+    [0, 10, 8, 2, 0, "80.00000", 0, 0, 0, 0, 0, 0, 0],
+    [[0, 10, 8, 2, 0, "80.00000", 0, 0, 0, 0, 0, 0, 0]],
+    [0, 2, 1, 1, 0, "50.00000", 0, 0, 0, 0, 0, 0, 0],
+]
+
+file_data3 = [
     2,
     [0, 10, 3, 2, 0, "30.00000", 0, 0, 0, 0, 0, 0, 0],
     [[0, 10, 3, 2, 0, "30.00000", 0, 0, 0, 0, 0, 0, 0]],
     [0, 2, 1, 1, 0, "50.00000", 0, 0, 0, 0, 0, 0, 0],
 ]
 
+totals1 = ReportTotals(
+    files=0,
+    lines=10,
+    hits=8,
+    misses=2,
+    partials=0,
+    coverage="80.00000",
+    branches=0,
+    methods=0,
+    messages=0,
+    sessions=0,
+    complexity=0,
+    complexity_total=0,
+    diff=0,
+)
 
-class MockOrderValue(object):
-    def __init__(self, value):
-        self.value = value
+totals2 = ReportTotals(
+    files=0,
+    lines=10,
+    hits=8,
+    misses=2,
+    partials=0,
+    coverage="80.00000",
+    branches=0,
+    methods=0,
+    messages=0,
+    sessions=0,
+    complexity=0,
+    complexity_total=0,
+    diff=0,
+)
 
-    def __getitem__(self, key):
-        return getattr(self, key)
+totals3 = ReportTotals(
+    files=0,
+    lines=10,
+    hits=3,
+    misses=2,
+    partials=0,
+    coverage="30.00000",
+    branches=0,
+    methods=0,
+    messages=0,
+    sessions=0,
+    complexity=0,
+    complexity_total=0,
+    diff=0,
+)
+
+# tests
 
 
-class TestPath(TestCase):
-    def test_path_contents_without_filters_or_path(self):
+class TestPathNode(TestCase):
+    def setUp(self):
+        self.dir = Dir(
+            full_path="dir/subdir",
+            children=[
+                File(full_path="dir/subdir/file2.py", totals=totals1),
+                File(full_path="dir/subdir/file3.py", totals=totals1),
+            ],
+        )
+
+    def test_lines(self):
+        # 2 files, 10 lins each
+        assert self.dir.lines == 20
+
+    def test_hits(self):
+        # 2 files, 8 hits each
+        assert self.dir.hits == 16
+
+    def test_misses(self):
+        # 2 files, 2 misses each
+        assert self.dir.misses == 4
+
+    def test_partials(self):
+        assert self.dir.partials == 0
+
+    def test_coverage(self):
+        assert self.dir.coverage == 80.0
+
+        file = File(full_path="file1.py", totals=ReportTotals.default_totals())
+        assert file.coverage == 0
+
+    def test_name(self):
+        assert self.dir.name == "subdir"
+
+
+class TestPrefixedPath(TestCase):
+    def test_relative_path(self):
+        path = PrefixedPath("dir/file1.py", "")
+        assert path.relative_path == "dir/file1.py"
+
+        path = PrefixedPath("dir/file1.py", "dir")
+        assert path.relative_path == "file1.py"
+
+    def test_basename(self):
+        path = PrefixedPath("dir/file1.py", "")
+        assert path.basename == "dir"
+
+        path = PrefixedPath("file1.py", "")
+        assert path.basename == "file1.py"
+
+        path = PrefixedPath("dir/subdir/file1.py", "dir")
+        assert path.basename == "dir/subdir"
+
+        path = PrefixedPath("dir/subdir/file1.py", "dir/subdir")
+        assert path.basename == "dir/subdir/file1.py"
+
+
+class TestReportPaths(TestCase):
+    def setUp(self):
         files = {
-            "rand/path/file1.py": file_data,
-            "rand/path/file2.py": file_data,
-            "weird/poth/file3.py": file_data,
+            "dir/file1.py": file_data1,
+            "dir/subdir/file2.py": file_data2,
+            "dir/subdir/file3.py": file_data3,
         }
-        commit_report = SerializableReport(files=files)
-        files_list = [f for f in files.keys()]
-        path = ""
-        filters = {}
-        tree = path_contents(files_list, path, filters, commit_report)
+        self.report = SerializableReport(files=files)
 
-        expected_result = [
+    def test_default_paths(self):
+        report_paths = ReportPaths(self.report)
+        assert report_paths.paths == [
+            PrefixedPath("dir/file1.py", ""),
+            PrefixedPath("dir/subdir/file2.py", ""),
+            PrefixedPath("dir/subdir/file3.py", ""),
+        ]
+
+    def test_prefix_paths(self):
+        report_paths = ReportPaths(self.report, path="dir")
+        assert report_paths.paths == [
+            PrefixedPath("dir/file1.py", "dir"),
+            PrefixedPath("dir/subdir/file2.py", "dir"),
+            PrefixedPath("dir/subdir/file3.py", "dir"),
+        ]
+
+        report_paths = ReportPaths(self.report, path="dir/subdir")
+        assert report_paths.paths == [
+            PrefixedPath("dir/subdir/file2.py", "dir/subdir"),
+            PrefixedPath("dir/subdir/file3.py", "dir/subdir"),
+        ]
+
+    def test_search_paths(self):
+        report_paths = ReportPaths(self.report, search_term="file")
+        assert report_paths.paths == [
+            PrefixedPath("dir/file1.py", ""),
+            PrefixedPath("dir/subdir/file2.py", ""),
+            PrefixedPath("dir/subdir/file3.py", ""),
+        ]
+
+        report_paths = ReportPaths(self.report, search_term="ile2")
+        assert report_paths.paths == [
+            PrefixedPath("dir/subdir/file2.py", ""),
+        ]
+
+    def test_full_filelist(self):
+        report_paths = ReportPaths(self.report)
+        assert report_paths.full_filelist() == [
+            File(full_path="dir/file1.py", totals=totals1),
+            File(full_path="dir/subdir/file2.py", totals=totals2),
+            File(full_path="dir/subdir/file3.py", totals=totals3),
+        ]
+
+    def test_single_directory(self):
+        report_paths = ReportPaths(self.report, path="dir")
+        assert report_paths.single_directory() == [
+            File(full_path="dir/file1.py", totals=totals1),
             Dir(
-                kind="dir",
-                name="rand",
-                hits=16,
-                lines=20,
-                coverage=80.0,
+                full_path="dir/subdir",
                 children=[
-                    Dir(
-                        kind="dir",
-                        name="path",
-                        hits=16,
-                        lines=20,
-                        coverage=80.0,
-                        children=[
-                            File(
-                                kind="file",
-                                name="file1.py",
-                                hits=8,
-                                lines=10,
-                                coverage=80.0,
-                                full_path="rand/path/file1.py",
-                            ),
-                            File(
-                                kind="file",
-                                name="file2.py",
-                                hits=8,
-                                lines=10,
-                                coverage=80.0,
-                                full_path="rand/path/file2.py",
-                            ),
-                        ],
-                    )
+                    File(full_path="dir/subdir/file2.py", totals=totals2),
+                    File(full_path="dir/subdir/file3.py", totals=totals3),
                 ],
             ),
+        ]
+
+
+class TestReportPathsNested(TestCase):
+    def setUp(self):
+        files = {
+            "dir/file1.py": file_data1,
+            "dir/subdir/file2.py": file_data2,
+            "dir/subdir/dir1/file3.py": file_data3,
+            "dir/subdir/dir2/file3.py": file_data3,
+            "src/ui/A/A.js": file_data3,
+            "src/ui/Avatar/A.js": file_data3,
+        }
+        self.report = SerializableReport(files=files)
+
+    def test_single_directory(self):
+        report_paths = ReportPaths(self.report, path="dir")
+        assert report_paths.single_directory() == [
+            File(full_path="dir/file1.py", totals=totals1),
             Dir(
-                kind="dir",
-                name="weird",
-                hits=8,
-                lines=10,
-                coverage=80.0,
+                full_path="dir/subdir",
                 children=[
+                    File(full_path="dir/subdir/file2.py", totals=totals2),
                     Dir(
-                        kind="dir",
-                        name="poth",
-                        hits=8,
-                        lines=10,
-                        coverage=80.0,
+                        full_path="dir/subdir/dir1",
                         children=[
-                            File(
-                                kind="file",
-                                name="file3.py",
-                                hits=8,
-                                lines=10,
-                                coverage=80.0,
-                                full_path="weird/poth/file3.py",
-                            )
+                            File(full_path="dir/subdir/dir1/file3.py", totals=totals3),
                         ],
-                    )
-                ],
-            ),
-        ]
-        assert tree == expected_result
-
-    def test_path_contents_with_search_value(self):
-        files = {
-            "rand/path/file1.py": file_data,
-            "rand/path/file2.py": file_data,
-            "weird/poth/file3.py": file_data,
-        }
-        commit_report = SerializableReport(files=files)
-        files_list = [f for f in files.keys()]
-        path = ""
-        filters = {"searchValue": "rand"}
-        tree = path_contents(files_list, path, filters, commit_report)
-
-        expected_result = [
-            File(
-                kind="file",
-                name="file1.py",
-                hits=8,
-                lines=10,
-                coverage=80.0,
-                full_path="rand/path/file1.py",
-            ),
-            File(
-                kind="file",
-                name="file2.py",
-                hits=8,
-                lines=10,
-                coverage=80.0,
-                full_path="rand/path/file2.py",
-            ),
-        ]
-        assert tree == expected_result
-
-    def test_path_contents_with_ascending_name(self):
-        files = {"aaa.py": file_data, "zzz.py": file_data}
-        commit_report = SerializableReport(files=files)
-        files_list = [f for f in files.keys()]
-        path = ""
-        filters = {
-            "ordering": {
-                "direction": MockOrderValue("ascending"),
-                "parameter": MockOrderValue("name"),
-            }
-        }
-        tree = path_contents(files_list, path, filters, commit_report)
-        expected_result = [
-            File(
-                kind="file",
-                name="aaa.py",
-                hits=8,
-                lines=10,
-                coverage=80.0,
-                full_path="aaa.py",
-            ),
-            File(
-                kind="file",
-                name="zzz.py",
-                hits=8,
-                lines=10,
-                coverage=80.0,
-                full_path="zzz.py",
-            ),
-        ]
-        assert tree == expected_result
-
-    def test_path_contents_with_descending_name(self):
-        files = {"aaa.py": file_data, "zzz.py": file_data}
-        commit_report = SerializableReport(files=files)
-        files_list = [f for f in files.keys()]
-        path = ""
-        filters = {
-            "ordering": {
-                "direction": MockOrderValue("descending"),
-                "parameter": MockOrderValue("name"),
-            }
-        }
-        tree = path_contents(files_list, path, filters, commit_report)
-        expected_result = [
-            File(
-                kind="file",
-                name="zzz.py",
-                hits=8,
-                lines=10,
-                coverage=80.0,
-                full_path="zzz.py",
-            ),
-            File(
-                kind="file",
-                name="aaa.py",
-                hits=8,
-                lines=10,
-                coverage=80.0,
-                full_path="aaa.py",
-            ),
-        ]
-        assert tree == expected_result
-
-    def test_path_contents_with_descending_coverage(self):
-        files = {"aaa.py": file_data, "zzz.py": file_data2}
-        commit_report = SerializableReport(files=files)
-        files_list = [f for f in files.keys()]
-        path = ""
-        filters = {
-            "ordering": {
-                "direction": MockOrderValue("descending"),
-                "parameter": MockOrderValue("coverage"),
-            }
-        }
-        tree = path_contents(files_list, path, filters, commit_report)
-        expected_result = [
-            File(
-                kind="file",
-                name="aaa.py",
-                hits=8,
-                lines=10,
-                coverage=80.0,
-                full_path="aaa.py",
-            ),
-            File(
-                kind="file",
-                name="zzz.py",
-                hits=3,
-                lines=10,
-                coverage=30.0,
-                full_path="zzz.py",
-            ),
-        ]
-        assert tree == expected_result
-
-    def test_path_tree_with_path(self):
-        files = {"folder/file.py": file_data}
-        files_list = [f for f in files.keys()]
-        path = "folder"
-        commit_report = SerializableReport(files=files)
-        tree = path_list(files_list, path, commit_report)
-
-        expected_result = [
-            File(
-                kind="file",
-                name="file.py",
-                hits=8,
-                lines=10,
-                coverage=80.00000,
-                full_path="folder/file.py",
-            )
-        ]
-        assert tree == expected_result
-
-    def test_search_tree_with_search_value(self):
-        files = {
-            "rand/path/file1.py": file_data,
-            "rand/path/file2.py": file_data,
-            "weird/poth/file3.py": file_data,
-        }
-        files_list = [f for f in files.keys()]
-        search = "rand"
-        commit_report = SerializableReport(files=files)
-        tree = search_list(files_list, search, commit_report)
-
-        expected_result = [
-            File(
-                kind="file",
-                name="file1.py",
-                hits=8,
-                lines=10,
-                coverage=80.0,
-                full_path="rand/path/file1.py",
-            ),
-            File(
-                kind="file",
-                name="file2.py",
-                hits=8,
-                lines=10,
-                coverage=80.0,
-                full_path="rand/path/file2.py",
-            ),
-        ]
-        assert tree == expected_result
-
-    def test_build_path_list_with_one_path(self):
-        files = {"file.py": file_data}
-        commit_report = SerializableReport(files=files)
-        paths = [FilteredFilePath(full_path="file.py", stripped_path="file.py")]
-        tree = _build_path_list(paths, commit_report)
-
-        expected_result = [
-            File(
-                kind="file",
-                name="file.py",
-                hits=8,
-                lines=10,
-                coverage=80.00000,
-                full_path="file.py",
-            )
-        ]
-        assert tree == expected_result
-
-    def test_build_path_list_with_one_stripped_path(self):
-        files = {"folder/file.py": file_data}
-        commit_report = SerializableReport(files=files)
-        paths = [FilteredFilePath(full_path="folder/file.py", stripped_path="file.py")]
-        tree = _build_path_list(paths, commit_report)
-
-        expected_result = [
-            File(
-                kind="file",
-                name="file.py",
-                hits=8,
-                lines=10,
-                coverage=80.00000,
-                full_path="folder/file.py",
-            )
-        ]
-        assert tree == expected_result
-
-    def test_build_path_list_with_many_paths(self):
-        files = {"file1.py": file_data, "file2.py": file_data, "file3.py": file_data}
-        commit_report = SerializableReport(files=files)
-        paths = [
-            FilteredFilePath(full_path=path, stripped_path=path)
-            for path in files.keys()
-        ]
-        tree = _build_path_list(paths, commit_report)
-
-        expected_result = [
-            File(
-                kind="file",
-                name="file1.py",
-                hits=8,
-                lines=10,
-                coverage=80.00000,
-                full_path="file1.py",
-            ),
-            File(
-                kind="file",
-                name="file2.py",
-                hits=8,
-                lines=10,
-                coverage=80.00000,
-                full_path="file2.py",
-            ),
-            File(
-                kind="file",
-                name="file3.py",
-                hits=8,
-                lines=10,
-                coverage=80.00000,
-                full_path="file3.py",
-            ),
-        ]
-        assert tree == expected_result
-
-    def test_build_path_list_with_many_nested_paths(self):
-        files = {
-            "fileA.py": file_data,
-            "folder/fileB.py": file_data2,
-            "folder/subfolder/fileC.py": file_data,
-            "folder/subfolder/fileD.py": file_data2,
-        }
-        commit_report = SerializableReport(files=files)
-        paths = [
-            FilteredFilePath(full_path=path, stripped_path=path)
-            for path in files.keys()
-        ]
-        tree = _build_path_list(paths, commit_report)
-
-        expected_result = [
-            File(
-                kind="file",
-                name="fileA.py",
-                hits=8,
-                lines=10,
-                coverage=80.00000,
-                full_path="fileA.py",
-            ),
-            Dir(
-                kind="dir",
-                name="folder",
-                hits=14,
-                lines=30,
-                coverage=46.666666666666664,
-                children=[
-                    File(
-                        kind="file",
-                        name="fileB.py",
-                        hits=3,
-                        lines=10,
-                        coverage=30.00000,
-                        full_path="folder/fileB.py",
                     ),
                     Dir(
-                        kind="dir",
-                        name="subfolder",
-                        hits=11,
-                        lines=20,
-                        coverage=55.00000000000001,
+                        full_path="dir/subdir/dir2",
                         children=[
-                            File(
-                                kind="file",
-                                name="fileC.py",
-                                hits=8,
-                                lines=10,
-                                coverage=80.00000,
-                                full_path="folder/subfolder/fileC.py",
-                            ),
-                            File(
-                                kind="file",
-                                name="fileD.py",
-                                hits=3,
-                                lines=10,
-                                coverage=30.00000,
-                                full_path="folder/subfolder/fileD.py",
-                            ),
+                            File(full_path="dir/subdir/dir2/file3.py", totals=totals3),
                         ],
                     ),
                 ],
             ),
         ]
-        assert tree == expected_result
 
-    def test_build_search_list(self):
-        files = {
-            "rand/path/file1.py": file_data,
-            "rand/path/file2.py": file_data,
-            "rand/path/file3.py": file_data,
-        }
-        commit_report = SerializableReport(files=files)
-        paths = [path for path in files.keys()]
-        tree = _build_search_list(paths, commit_report)
-
-        expected_result = [
-            File(
-                kind="file",
-                name="file1.py",
-                hits=8,
-                lines=10,
-                coverage=80.0,
-                full_path="rand/path/file1.py",
-            ),
-            File(
-                kind="file",
-                name="file2.py",
-                hits=8,
-                lines=10,
-                coverage=80.0,
-                full_path="rand/path/file2.py",
-            ),
-            File(
-                kind="file",
-                name="file3.py",
-                hits=8,
-                lines=10,
-                coverage=80.0,
-                full_path="rand/path/file3.py",
-            ),
+        report_paths = ReportPaths(self.report, path="src/ui/A")
+        assert report_paths.single_directory() == [
+            File(full_path="src/ui/A/A.js", totals=totals3),
         ]
-        assert tree == expected_result
-
-    def test_filter_files_by_empty_path_prefix(self):
-        file_list = [
-            "fileA.py",
-            "folder/fileB.py",
-            "folder/subfolder/fileC.py",
-            "folder/subfolder/fileD.py",
-        ]
-        path_prefix = ""
-
-        filtered_file_paths = _filter_files_by_path(file_list, path_prefix)
-
-        expected_result = [
-            FilteredFilePath(full_path="fileA.py", stripped_path="fileA.py"),
-            FilteredFilePath(
-                full_path="folder/fileB.py", stripped_path="folder/fileB.py"
-            ),
-            FilteredFilePath(
-                full_path="folder/subfolder/fileC.py",
-                stripped_path="folder/subfolder/fileC.py",
-            ),
-            FilteredFilePath(
-                full_path="folder/subfolder/fileD.py",
-                stripped_path="folder/subfolder/fileD.py",
-            ),
-        ]
-
-        assert filtered_file_paths == expected_result
-
-    def test_filter_files_by_non_empty_path_prefix(self):
-        file_list = [
-            "fileA.py",
-            "folder/fileB.py",
-            "folder/subfolder/fileC.py",
-            "folder/subfolder/fileD.py",
-        ]
-        path_prefix = "folder/subfolder"
-
-        filtered_file_paths = _filter_files_by_path(file_list, path_prefix)
-
-        expected_result = [
-            FilteredFilePath(
-                full_path="folder/subfolder/fileC.py", stripped_path="fileC.py"
-            ),
-            FilteredFilePath(
-                full_path="folder/subfolder/fileD.py", stripped_path="fileD.py"
-            ),
-        ]
-
-        assert filtered_file_paths == expected_result
-
-    def test_filter_files_by_search(self):
-        file_list = [
-            "fileA.py",
-            "folder/fileB.py",
-            "folder/subfolder/fileC.py",
-            "folder/subfolder/fileD.py",
-        ]
-        search_value = "old"
-
-        filtered_file_paths = _filtered_files_by_search(file_list, search_value)
-
-        expected_result = [
-            "folder/fileB.py",
-            "folder/subfolder/fileC.py",
-            "folder/subfolder/fileD.py",
-        ]
-
-        assert filtered_file_paths == expected_result

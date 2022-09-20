@@ -1,13 +1,9 @@
 from hashlib import sha1
-from typing import Iterable
 
 import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
-from django.conf import settings
 
 from codecov_auth.helpers import current_user_part_of_org
-from codecov_auth.models import Owner
-from graphql_api.actions.measurement import measurement_queryset
 from graphql_api.actions.repository import list_repository_for_owner
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
 from graphql_api.helpers.connection import (
@@ -16,7 +12,6 @@ from graphql_api.helpers.connection import (
 )
 from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
 from services.profiling import ProfilingSummary
-from timeseries.models import Interval
 
 owner = ariadne_load_local_graphql(__file__, "owner.graphql")
 owner = owner + build_connection_graphql("RepositoryConnection", "Repository")
@@ -38,18 +33,6 @@ def resolve_repositories(
     return queryset_to_connection(
         queryset, ordering=(ordering,), ordering_direction=ordering_direction, **kwargs
     )
-
-
-@owner_bindable.field("measurements")
-@convert_kwargs_to_snake_case
-def resolve_measurements(
-    owner: Owner, info, name: str, interval: Interval, filters: Iterable
-):
-    if not settings.TIMESERIES_ENABLED:
-        return [[] for filter in filters]
-
-    current_user = info.context["request"].user
-    return measurement_queryset(current_user, owner, name, interval, filters)
 
 
 @owner_bindable.field("isCurrentUserPartOfOrg")
@@ -95,3 +78,9 @@ def resolve_is_current_user_an_admin(owner, info):
 def resolve_hash_ownerid(owner, info):
     hash_ownerid = sha1(str(owner.ownerid).encode())
     return hash_ownerid.hexdigest()
+
+
+@owner_bindable.field("orgUploadToken")
+def resolve_org_upload_token(owner, info, **kwargs):
+    command = info.context["executor"].get_command("owner")
+    return command.get_org_upload_token(owner)

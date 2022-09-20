@@ -3,10 +3,11 @@ from datetime import datetime, timezone
 import pytest
 from django.conf import settings
 from django.test import TestCase
+from freezegun import freeze_time
 
-from timeseries.models import Interval, MeasurementSummary
+from timeseries.models import Dataset, Interval, MeasurementName, MeasurementSummary
 
-from .factories import MeasurementFactory
+from .factories import DatasetFactory, MeasurementFactory
 
 
 @pytest.mark.skipif(
@@ -92,3 +93,40 @@ class MeasurementTests(TestCase):
     def test_measurement_agg_invalid(self):
         with self.assertRaises(ValueError):
             MeasurementSummary.agg_by("invalid").all()
+
+
+@pytest.mark.skipif(
+    not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
+)
+class DatasetTests(TestCase):
+    databases = {"timeseries"}
+
+    @freeze_time("2022-01-01T01:00:01+0000")
+    def test_is_backfilled_true(self):
+        dataset = DatasetFactory()
+
+        Dataset.objects.filter(pk=dataset.pk).update(
+            created_at=datetime(2022, 1, 1, 0, 0, 0)
+        )
+
+        dataset.refresh_from_db()
+        assert dataset.is_backfilled() == True
+
+    @freeze_time("2022-01-01T00:59:59+0000")
+    def test_is_backfilled_false(self):
+        dataset = DatasetFactory()
+
+        Dataset.objects.filter(pk=dataset.pk).update(
+            created_at=datetime(2022, 1, 1, 0, 0, 0)
+        )
+
+        dataset.refresh_from_db()
+        assert dataset.is_backfilled() == False
+
+    def test_is_backfilled_no_created_at(self):
+        dataset = DatasetFactory()
+
+        Dataset.objects.filter(pk=dataset.pk).update(created_at=None)
+
+        dataset.refresh_from_db()
+        assert dataset.is_backfilled() == False

@@ -21,6 +21,12 @@ class TaskService(object):
         """
         return signature(name, args=args, kwargs=kwargs, app=celery_app)
 
+    def schedule_task(self, task_name, *, kwargs, apply_async_kwargs):
+        return self._create_signature(
+            task_name,
+            kwargs=kwargs,
+        ).apply_async(**apply_async_kwargs)
+
     def compute_comparison(self, comparison_id):
         self._create_signature(
             celery_config.compute_comparison_task_name,
@@ -192,4 +198,10 @@ class TaskService(object):
                 start_date=start_date.isoformat(),
                 end_date=end_date.isoformat(),
             ),
+        ).apply_async()
+
+    def update_commit(self, commitid, repoid):
+        self._create_signature(
+            "app.tasks.commit_update.CommitUpdate",
+            kwargs=dict(commitid=commitid, repoid=repoid),
         ).apply_async()

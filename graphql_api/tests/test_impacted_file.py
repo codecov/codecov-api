@@ -21,8 +21,13 @@ query ImpactedFiles(
       commit(id: $commit) {
         compareWithParent {
           impactedFiles {
+            fileName
             headName
             baseName
+            isNewFile
+            isRenamedFile
+            isDeletedFile
+            isCriticalFile
             baseCoverage {
               percentCovered
             }
@@ -32,6 +37,7 @@ query ImpactedFiles(
             patchCoverage {
               percentCovered
             }
+            changeCoverage
           }
         }
       }
@@ -85,21 +91,23 @@ query ImpactedFile(
     repository(name: $repo) {
       pull(id: $pull) {
         compareWithBase {
-          state
-          impactedFile(path: $path) {
-            headName
-            baseName
-            baseCoverage {
-              percentCovered
-            }
-            headCoverage {
-              percentCovered
-            }
-            patchCoverage {
-              percentCovered
-            }
-            segments {
-              hasUnintendedChanges
+          ... on Comparison {
+            state
+            impactedFile(path: $path) {
+              headName
+              baseName
+              baseCoverage {
+                percentCovered
+              }
+              headCoverage {
+                percentCovered
+              }
+              patchCoverage {
+                percentCovered
+              }
+              segments {
+                hasUnintendedChanges
+              }
             }
           }
         }
@@ -224,8 +232,13 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                         "compareWithParent": {
                             "impactedFiles": [
                                 {
+                                    "fileName": "fileA",
                                     "headName": "fileA",
                                     "baseName": "fileA",
+                                    "isNewFile": False,
+                                    "isRenamedFile": False,
+                                    "isDeletedFile": False,
+                                    "isCriticalFile": False,
                                     "baseCoverage": {
                                         "percentCovered": 41.666666666666664
                                     },
@@ -233,10 +246,16 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                         "percentCovered": 85.71428571428571
                                     },
                                     "patchCoverage": None,
+                                    "changeCoverage": 44.047619047619044,
                                 },
                                 {
+                                    "fileName": "fileB",
                                     "headName": "fileB",
                                     "baseName": "fileB",
+                                    "isNewFile": False,
+                                    "isRenamedFile": False,
+                                    "isDeletedFile": False,
+                                    "isCriticalFile": False,
                                     "baseCoverage": {
                                         "percentCovered": 41.666666666666664
                                     },
@@ -244,6 +263,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                         "percentCovered": 85.71428571428571
                                     },
                                     "patchCoverage": {"percentCovered": 100.0},
+                                    "changeCoverage": 44.047619047619044,
                                 },
                             ]
                         }
