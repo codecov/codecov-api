@@ -10,7 +10,7 @@ class OrderingParameter(enum.Enum):
     LINES = "lines"
 
 
-class DisplayType(enum.Enum):
+class PathContentDisplayType(enum.Enum):
     LIST = "list"
     TREE = "tree"
 

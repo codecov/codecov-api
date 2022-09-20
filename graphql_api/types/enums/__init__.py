@@ -1,10 +1,10 @@
 from .enums import (
     CoverageLine,
-    DisplayType,
     GoalOnboarding,
     LoginProvider,
     OrderingDirection,
     OrderingParameter,
+    PathContentDisplayType,
     PullRequestState,
     RepositoryOrdering,
     TypeProjectOnboarding,

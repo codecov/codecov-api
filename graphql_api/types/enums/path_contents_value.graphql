@@ -10,7 +10,7 @@ enum OrderingParameter{
     LINES
 }
 
-enum DisplayType{
+enum PathContentDisplayType{
     LIST
     TREE
 }

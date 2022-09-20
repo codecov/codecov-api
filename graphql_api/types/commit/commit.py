@@ -11,7 +11,7 @@ from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.comparison import ComparisonLoader
 from graphql_api.dataloader.owner import OwnerLoader
 from graphql_api.helpers.connection import queryset_to_connection
-from graphql_api.types.enums import DisplayType, OrderingDirection
+from graphql_api.types.enums import OrderingDirection, PathContentDisplayType
 from services.path import Dir, File, ReportPaths
 from services.profiling import CriticalFile, ProfilingSummary
 
@@ -151,7 +151,7 @@ def resolve_path_contents(
         search_term=search_value,
     )
 
-    if search_value or display_type == DisplayType.LIST:
+    if search_value or display_type == PathContentDisplayType.LIST:
         items = report_paths.full_filelist()
     else:
         items = report_paths.single_directory()
