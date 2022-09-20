@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import List, Mapping
+from typing import Iterable, List, Mapping
 
 import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
@@ -7,6 +7,7 @@ from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.forms.utils import from_current_timezone
 
+import timeseries.helpers as timeseries_helpers
 from core.models import Repository
 from graphql_api.actions.flags import flag_measurements, flags_for_repo
 from graphql_api.dataloader.commit import CommitLoader
@@ -248,10 +249,20 @@ def resolve_flags_measurements_backfilled(repository: Repository, info) -> bool:
         repository_id=repository.pk,
     ).first()
 
-    if not dataset or not dataset.created_at:
+    if not dataset:
         return False
 
-    # returns `False` for an hour after creation
-    # TODO: this should eventually read `dataset.backfilled` which will
-    # be updated via the worker
-    return datetime.now() > dataset.created_at + timedelta(hours=1)
+    return dataset.is_backfilled()
+
+
+@repository_bindable.field("measurements")
+@sync_to_async
+def resolve_measurements(
+    repository: Repository, info, interval: Interval, after: datetime, before: datetime
+) -> Iterable[MeasurementSummary]:
+    if not settings.TIMESERIES_ENABLED:
+        return []
+
+    return timeseries_helpers.repository_coverage_measurements_with_fallback(
+        repository, interval, after, before
+    )
