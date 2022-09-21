@@ -81,16 +81,6 @@ class CommitErrorGeneralType(enum.Enum):
     yaml_error = "YAML_ERROR"
     bot_error = "BOT_ERROR"
 
-    def __init__(self, slug):
-        self.slug = slug
-
-    @classmethod
-    def get_error_type_from_string(cls, error_type_str):
-        for el in cls:
-            if el.slug == error_type_str:
-                return el
-        return None
-
 
 class CommitErrorCode(enum.Enum):
     invalid_yaml = ("invalid_yaml", CommitErrorGeneralType.yaml_error)
