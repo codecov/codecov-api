@@ -1,4 +1,6 @@
 from .enums import (
+    CommitErrorCode,
+    CommitErrorGeneralType,
     CoverageLine,
     GoalOnboarding,
     LoginProvider,

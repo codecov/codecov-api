@@ -8,8 +8,7 @@ from shared.reports.types import LineSession
 
 from codecov_auth.tests.factories import OwnerFactory
 from compare.tests.factories import CommitComparisonFactory
-from core.models import Commit
-from core.tests.factories import CommitFactory, RepositoryFactory
+from core.tests.factories import CommitErrorFactory, CommitFactory, RepositoryFactory
 from graphql_api.types.enums import UploadErrorEnum, UploadState
 from graphql_api.types.enums.enums import UploadType
 from reports.tests.factories import (
@@ -565,4 +564,44 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             {"name": "one"},
             {"name": "two"},
             {"name": "three"},
+        ]
+
+    def test_commit_yaml_errors(self):
+        CommitErrorFactory(commit=self.commit, error_code="invalid_yaml")
+        CommitErrorFactory(commit=self.commit, error_code="yaml_client_error")
+        query = (
+            query_commit
+            % "errors(errorType: YAML_ERROR) { edges { node { errorCode } } }"
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        errors = paginate_connection(commit["errors"])
+        assert errors == [
+            {"errorCode": "invalid_yaml"},
+            {"errorCode": "yaml_client_error"},
+        ]
+
+    def test_commit_bot_errors(self):
+        CommitErrorFactory(commit=self.commit, error_code="repo_bot_invalid")
+        CommitErrorFactory(commit=self.commit, error_code="repo_bot_invalid")
+        query = (
+            query_commit
+            % "errors(errorType: BOT_ERROR) { edges { node { errorCode } } }"
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        errors = paginate_connection(commit["errors"])
+        assert errors == [
+            {"errorCode": "repo_bot_invalid"},
+            {"errorCode": "repo_bot_invalid"},
         ]
