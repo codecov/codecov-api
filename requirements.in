@@ -5,7 +5,7 @@ ariadne_django
 celery[redis]
 cerberus
 ddtrace
-Django
+Django==3.2.13
 django-cors-headers
 django-dynamic-fixture
 django-filter
