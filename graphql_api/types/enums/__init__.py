@@ -6,6 +6,7 @@ from .enums import (
     LoginProvider,
     OrderingDirection,
     OrderingParameter,
+    PathContentDisplayType,
     PullRequestState,
     RepositoryOrdering,
     TypeProjectOnboarding,
