@@ -75,7 +75,7 @@ def resolve_sessions(current_user, _, **kwargs):
 
 
 @me_bindable.field("tokens")
-def resolve_sessions(current_user, _, **kwargs):
+def resolve_tokens(current_user, _, **kwargs):
     queryset = get_user_tokens(current_user)
     return queryset_to_connection(
         queryset,

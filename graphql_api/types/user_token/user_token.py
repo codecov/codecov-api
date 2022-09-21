@@ -6,17 +6,17 @@ user_token_bindable = ObjectType("UserToken")
 
 
 @user_token_bindable.field("id")
-def resolve_token(user_token: UserToken, info):
+def resolve_id(user_token: UserToken, info):
     return user_token.external_id
 
 
 @user_token_bindable.field("type")
-def resolve_token(user_token: UserToken, info):
+def resolve_type(user_token: UserToken, info):
     return user_token.token_type
 
 
 @user_token_bindable.field("lastFour")
-def resolve_token(user_token: UserToken, info):
+def resolve_last_four(user_token: UserToken, info):
     return str(user_token.token)[-4:]
 
 
