@@ -1,0 +1,6 @@
+enum CommitErrorCode {
+    repo_bot_invalid
+    invalid_yaml
+    yaml_client_error
+    yaml_unknown_error
+}
