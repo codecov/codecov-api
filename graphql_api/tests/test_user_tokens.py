@@ -15,6 +15,7 @@ query {
           name
           type
           lastFour
+          expiration
         }
       }
     }
@@ -40,11 +41,13 @@ class UserTokensTestCase(GraphQLTestHelper, TransactionTestCase):
                 "name": "token2",
                 "type": "api",
                 "lastFour": str(self.token2.token)[-4:],
+                "expiration": None,
             },
             {
                 "id": str(self.token1.external_id),
                 "name": "token1",
                 "type": "api",
                 "lastFour": str(self.token1.token)[-4:],
+                "expiration": None,
             },
         ]
