@@ -34,7 +34,7 @@ class GetCommitErrorsInteractorTest(TransactionTestCase):
         errors = async_to_sync(self.execute)(
             user=self.owner,
             commit=self.commit,
-            error_type=CommitErrorGeneralType.yaml_error.slug,
+            error_type=CommitErrorGeneralType.yaml_error.value,
         )
         assert len(errors) is 2
 
@@ -42,6 +42,6 @@ class GetCommitErrorsInteractorTest(TransactionTestCase):
         errors = async_to_sync(self.execute)(
             user=self.owner,
             commit=self.commit,
-            error_type=CommitErrorGeneralType.bot_error.slug,
+            error_type=CommitErrorGeneralType.bot_error.value,
         )
         assert len(errors) is 1
