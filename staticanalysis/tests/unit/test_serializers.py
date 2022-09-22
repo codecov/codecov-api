@@ -51,7 +51,7 @@ def test_commit_from_sha_serializer_field_to_internal_value(mocker, db):
 
 def test_filepath_field(db, mocker):
     sasfs = StaticAnalysisSingleFileSnapshotFactory.create(
-        state_id=StaticAnalysisSingleFileSnapshotState.valid.value
+        state_id=StaticAnalysisSingleFileSnapshotState.VALID.db_id
     )
     sasfs.save()
     fp = StaticAnalysisSuiteFilepathFactory.create(
@@ -69,7 +69,7 @@ def test_filepath_field(db, mocker):
         "file_hash": sasfs.file_hash,
         "filepath": "ohoooo",
         "raw_upload_location": "some_url_stuff",
-        "state": "valid",
+        "state": "VALID",
     }
 
 
@@ -170,7 +170,7 @@ class TestStaticAnalysisSuiteSerializer(object):
         )
         assert (
             first_filepath.file_snapshot.state_id
-            == StaticAnalysisSingleFileSnapshotState.created.value
+            == StaticAnalysisSingleFileSnapshotState.CREATED.db_id
         )
 
     def test_create_some_data_previously_exists(self, mocker, db):
@@ -180,38 +180,38 @@ class TestStaticAnalysisSuiteSerializer(object):
         first_repo_first_snapshot = StaticAnalysisSingleFileSnapshotFactory.create(
             file_hash=UUID("c8c23bea-c383-4abf-8a7e-6b9cadbeb5b2"),
             repository=first_repository,
-            state_id=StaticAnalysisSingleFileSnapshotState.valid.value,
+            state_id=StaticAnalysisSingleFileSnapshotState.VALID.db_id,
             content_location="first_repo_first_snapshot",
         )
         second_repo_first_snapshot = StaticAnalysisSingleFileSnapshotFactory.create(
             file_hash=UUID("c8c23bea-c383-4abf-8a7e-6b9cadbeb5b2"),
             repository=second_repository,
-            state_id=StaticAnalysisSingleFileSnapshotState.valid.value,
+            state_id=StaticAnalysisSingleFileSnapshotState.VALID.db_id,
             content_location="second_repo_first_snapshot",
         )
         second_repo_second_snapshot = StaticAnalysisSingleFileSnapshotFactory.create(
             file_hash=UUID("3998813e-60db-4686-be84-1a0efa7d9b9f"),
             repository=second_repository,
-            state_id=StaticAnalysisSingleFileSnapshotState.valid.value,
+            state_id=StaticAnalysisSingleFileSnapshotState.VALID.db_id,
             content_location="second_repo_second_snapshot",
         )
         first_repo_separate_snapshot = StaticAnalysisSingleFileSnapshotFactory.create(
             file_hash=uuid4(),
             repository=first_repository,
-            state_id=StaticAnalysisSingleFileSnapshotState.valid.value,
+            state_id=StaticAnalysisSingleFileSnapshotState.VALID.db_id,
             content_location="first_repo_separate_snapshot",
         )
         second_repo_separate_snapshot = StaticAnalysisSingleFileSnapshotFactory.create(
             file_hash=uuid4(),
             repository=second_repository,
-            state_id=StaticAnalysisSingleFileSnapshotState.valid.value,
+            state_id=StaticAnalysisSingleFileSnapshotState.VALID.db_id,
             content_location="second_repo_separate_snapshot",
         )
         first_repo_exists_but_not_valid_yet = (
             StaticAnalysisSingleFileSnapshotFactory.create(
                 file_hash=UUID("31803149-8bd7-4c2b-9a80-71f259360c72"),
                 repository=first_repository,
-                state_id=StaticAnalysisSingleFileSnapshotState.created.value,
+                state_id=StaticAnalysisSingleFileSnapshotState.CREATED.db_id,
                 content_location="first_repo_exists_but_not_valid_yet",
             )
         )
@@ -272,7 +272,7 @@ class TestStaticAnalysisSuiteSerializer(object):
         )
         assert (
             first_filepath.file_snapshot.state_id
-            == StaticAnalysisSingleFileSnapshotState.created.value
+            == StaticAnalysisSingleFileSnapshotState.CREATED.db_id
         )
         # second one
         assert isinstance(second_filepath, StaticAnalysisSuiteFilepath)
@@ -290,7 +290,7 @@ class TestStaticAnalysisSuiteSerializer(object):
         )
         assert (
             second_filepath.file_snapshot.state_id
-            == StaticAnalysisSingleFileSnapshotState.created.value
+            == StaticAnalysisSingleFileSnapshotState.CREATED.db_id
         )
         # third one
         assert isinstance(third_filepath, StaticAnalysisSuiteFilepath)
@@ -307,7 +307,7 @@ class TestStaticAnalysisSuiteSerializer(object):
         )
         assert (
             third_filepath.file_snapshot.state_id
-            == StaticAnalysisSingleFileSnapshotState.created.value
+            == StaticAnalysisSingleFileSnapshotState.CREATED.db_id
         )
         # fourth one
         assert isinstance(fourth_filepath, StaticAnalysisSuiteFilepath)
@@ -325,5 +325,5 @@ class TestStaticAnalysisSuiteSerializer(object):
         )
         assert (
             fourth_filepath.file_snapshot.state_id
-            == StaticAnalysisSingleFileSnapshotState.valid.value
+            == StaticAnalysisSingleFileSnapshotState.VALID.db_id
         )

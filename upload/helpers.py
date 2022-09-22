@@ -455,7 +455,7 @@ def validate_upload(upload_params, repository, redis):
         )
         new_session_count = ReportSession.objects.filter(
             ~Q(state="error"),
-            ~Q(upload_type=UploadType.carryforwarded.name),
+            ~Q(upload_type=UploadType.CARRIEDFORWARD.db_name),
             report__commit=commit,
         ).count()
         session_count = (commit.totals.get("s") if commit.totals else 0) or 0

@@ -57,7 +57,7 @@ def _dict_to_suite_filepath(
             file_hash=file_dict["file_hash"],
             repository=repository,
             defaults=dict(
-                state_id=StaticAnalysisSingleFileSnapshotState.created.value,
+                state_id=StaticAnalysisSingleFileSnapshotState.CREATED.db_id,
                 content_location=path,
             ),
         )
