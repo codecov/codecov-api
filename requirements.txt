@@ -97,7 +97,7 @@ deprecated==1.2.12
     # via opentelemetry-api
 distlib==0.3.1
     # via virtualenv
-django==4.1.1
+django==3.2.13
     # via
     #   -r requirements.in
     #   ariadne-django
@@ -306,6 +306,7 @@ pytz==2022.1
     # via
     #   -r requirements.in
     #   celery
+    #   django
     #   google-api-core
     #   minio
 pyyaml==6.0
