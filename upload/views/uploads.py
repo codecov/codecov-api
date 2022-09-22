@@ -56,7 +56,7 @@ class UploadViews(ListCreateAPIView):
         self.activate_repo(repository)
         return instance
 
-    def list(self, request: HttpRequest, repo: str, commit_sha: str, reportid: str):
+    def list(self, request: HttpRequest, repo: str, commit_sha: str, report_code: str):
         return HttpResponseNotAllowed(permitted_methods=["POST"])
 
     def trigger_upload_task(self, repository, commit_sha, upload):
@@ -75,7 +75,7 @@ class UploadViews(ListCreateAPIView):
 
     def get_repo(self) -> Repository:
         # TODO this is not final - how is getting the repo is still in discuss
-        repoid = self.kwargs["repo"]
+        repoid = self.kwargs.get("repo")
         try:
             repository = Repository.objects.get(name=repoid)
             return repository
@@ -84,7 +84,7 @@ class UploadViews(ListCreateAPIView):
             raise ValidationError(f"Repository not found")
 
     def get_commit(self, repo: Repository) -> Commit:
-        commit_sha = self.kwargs["commit_sha"]
+        commit_sha = self.kwargs.get("commit_sha")
         try:
             commit = Commit.objects.get(
                 commitid=commit_sha, repository__repoid=repo.repoid
@@ -95,10 +95,10 @@ class UploadViews(ListCreateAPIView):
             raise ValidationError("Commit SHA not found")
 
     def get_report(self, commit: Commit) -> CommitReport:
-        report_id = self.kwargs["reportid"]
+        report_code = self.kwargs.get("report_code")
         try:
             report = CommitReport.objects.get(
-                external_id__exact=report_id, commit__commitid=commit.commitid
+                code=report_code, commit__commitid=commit.commitid
             )
             return report
         except CommitReport.DoesNotExist:
