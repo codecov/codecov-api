@@ -32,34 +32,42 @@ def test_uploads_get_not_allowed(client, db, mocker):
     mocker.patch.object(
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
     )
-    repository = RepositoryFactory(name="the-repo", author__username="codecov")
+    repository = RepositoryFactory(
+        name="the-repo", author__username="codecov", author__service="github"
+    )
     owner = repository.author
     client = APIClient()
     client.force_authenticate(user=owner)
     url = reverse(
-        "new_upload.uploads", args=[repository.name, "commit-sha", "report-id"]
+        "new_upload.uploads",
+        args=["github", "codecov::::the-repo", "commit-sha", "report-id"],
     )
-    assert url == "/upload/the-repo/commits/commit-sha/reports/report-id/uploads"
+    assert (
+        url
+        == "/upload/github/codecov::::the-repo/commits/commit-sha/reports/report-id/uploads"
+    )
     res = client.get(url)
     assert res.status_code == 405
 
 
 def test_get_repo(db):
-    repository = RepositoryFactory(name="the_repo", author__username="codecov")
+    repository = RepositoryFactory(
+        name="the_repo", author__username="codecov", author__service="github"
+    )
     repository.save()
     upload_views = UploadViews()
-    upload_views.kwargs = dict(repo=repository.name)
+    upload_views.kwargs = dict(repo="codecov::::the_repo", service="github")
     recovered_repo = upload_views.get_repo()
     assert recovered_repo == repository
 
 
 @patch("shared.metrics.metrics.incr")
-def test_get_repo_error(mock_metrics, db):
+def test_get_repo_with_invalid_service(mock_metrics, db):
     upload_views = UploadViews()
-    upload_views.kwargs = dict(repo="repo_missing")
+    upload_views.kwargs = dict(repo="repo", service="wrong service")
     with pytest.raises(ValidationError) as exp:
         upload_views.get_repo()
-    assert exp.match("Repository not found")
+    assert exp.match("Service not found: wrong service")
     mock_metrics.assert_called_once_with("uploads.rejected", 1)
 
 
@@ -131,7 +139,10 @@ def test_uploads_post_empty(mock_metrics, db, mocker, mock_redis):
     upload_task_mock = mocker.patch(
         "upload.views.uploads.UploadViews.trigger_upload_task", return_value=True
     )
-    repository = RepositoryFactory(name="the_repo", author__username="codecov")
+
+    repository = RepositoryFactory(
+        name="the_repo", author__username="codecov", author__service="github"
+    )
     commit = CommitFactory(repository=repository)
     commit_report = CommitReport.objects.create(commit=commit)
     repository.save()
@@ -142,7 +153,12 @@ def test_uploads_post_empty(mock_metrics, db, mocker, mock_redis):
     client.force_authenticate(user=owner)
     url = reverse(
         "new_upload.uploads",
-        args=[repository.name, commit.commitid, commit_report.external_id],
+        args=[
+            "github",
+            "codecov::::the_repo",
+            commit.commitid,
+            commit_report.external_id,
+        ],
     )
     response = client.post(
         url,
