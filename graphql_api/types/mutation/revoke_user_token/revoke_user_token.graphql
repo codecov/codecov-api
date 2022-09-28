@@ -1,0 +1,5 @@
+union RevokeUserTokenError = UnauthenticatedError
+
+type RevokeUserTokenPayload {
+    error: RevokeUserTokenError
+}
