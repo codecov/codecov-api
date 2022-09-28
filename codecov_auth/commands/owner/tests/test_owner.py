@@ -24,6 +24,18 @@ class OwnerCommandsTest(TransactionTestCase):
         self.command.delete_session(sessionid)
         interactor_mock.assert_called_once_with(sessionid)
 
+    @patch("codecov_auth.commands.owner.owner.CreateUserTokenInteractor.execute")
+    def test_create_user_token_delegate_to_interactor(self, interactor_mock):
+        name = "new api token"
+        self.command.create_user_token(name)
+        interactor_mock.assert_called_once_with(name, None)
+
+    @patch("codecov_auth.commands.owner.owner.RevokeUserTokenInteractor.execute")
+    def test_revoke_user_token_delegate_to_interactor(self, interactor_mock):
+        tokenid = 123
+        self.command.revoke_user_token(tokenid)
+        interactor_mock.assert_called_once_with(tokenid)
+
     @patch("codecov_auth.commands.owner.owner.SetYamlOnOwnerInteractor.execute")
     def test_set_yaml_on_owner_delegate_to_interactor(self, interactor_mock):
         username = "codecov"
