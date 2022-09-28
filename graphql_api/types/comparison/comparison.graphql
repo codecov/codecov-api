@@ -1,6 +1,5 @@
 type Comparison {
   state: String!
-  error: ComparisonError
   impactedFile(path: String!): ImpactedFile
   impactedFiles(filters: ImpactedFilesFilters): [ImpactedFile]!
   patchTotals: CoverageTotals
@@ -9,4 +8,23 @@ type Comparison {
   headTotals: CoverageTotals
   fileComparisons: [FileComparison!]
   flagComparisons: [FlagComparison]
+  hasDifferentNumberOfHeadAndBaseReports: Boolean!
 }
+
+type InvalidComparison implements ResolverError {
+  message: String!
+}
+
+type MissingComparison implements ResolverError {
+  message: String!
+}
+
+type MissingBaseReport implements ResolverError {
+  message: String!
+}
+
+type MissingHeadReport implements ResolverError {
+  message: String!
+}
+
+union ComparisonResult = Comparison | InvalidComparison | MissingComparison | MissingBaseReport | MissingHeadReport

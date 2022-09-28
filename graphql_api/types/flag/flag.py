@@ -2,8 +2,8 @@ from typing import Iterable
 
 from ariadne import ObjectType
 
-from graphql_api.actions.flags import fill_empty_measurements
 from reports.models import RepositoryFlag
+from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Interval, MeasurementSummary
 
 flag_bindable = ObjectType("Flag")
@@ -47,4 +47,4 @@ def resolve_measurements(
     measurements = info.context["flag_measurements"].get(flag.pk, [])
     if len(measurements) == 0:
         return []
-    return fill_empty_measurements(measurements, interval, after, before)
+    return fill_sparse_measurements(measurements, interval, after, before)

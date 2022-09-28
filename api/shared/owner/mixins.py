@@ -12,7 +12,7 @@ from .filters import UserFilters
 
 
 class OwnerViewSetMixin(viewsets.GenericViewSet):
-    lookup_field = "username"
+    lookup_field = "owner_username"
     lookup_value_regex = "[^/]+"
 
     def get_queryset(self):
@@ -26,7 +26,7 @@ class OwnerViewSetMixin(viewsets.GenericViewSet):
     def get_object(self):
         return get_object_or_404(
             self.get_queryset(),
-            username=self.kwargs.get("username"),
+            username=self.kwargs.get("owner_username"),
             service=self.kwargs.get("service"),
         )
 

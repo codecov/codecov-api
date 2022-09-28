@@ -25,6 +25,7 @@ query Flags(
 ) {
     owner(username: $org) {
         repository(name: $repo) {
+            flagsCount
             flags {
                 edges {
                     node {
@@ -60,6 +61,7 @@ query Repo(
 ) {
     owner(username: $org) {
         repository(name: $repo) {
+            flagsCount
             flagsMeasurementsActive
             flagsMeasurementsBackfilled
             flags {
@@ -109,6 +111,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
         assert data == {
             "owner": {
                 "repository": {
+                    "flagsCount": 2,
                     "flags": {
                         "edges": [
                             {
@@ -128,7 +131,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                 }
                             },
                         ]
-                    }
+                    },
                 }
             }
         }
@@ -148,6 +151,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
         assert data == {
             "owner": {
                 "repository": {
+                    "flagsCount": 2,
                     "flags": {
                         "edges": [
                             {
@@ -167,7 +171,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                 }
                             },
                         ]
-                    }
+                    },
                 }
             }
         }
@@ -246,6 +250,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
         assert data == {
             "owner": {
                 "repository": {
+                    "flagsCount": 2,
                     "flags": {
                         "edges": [
                             {
@@ -315,7 +320,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                 }
                             },
                         ]
-                    }
+                    },
                 }
             }
         }
@@ -343,6 +348,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
         assert data == {
             "owner": {
                 "repository": {
+                    "flagsCount": 1,
                     "flags": {
                         "edges": [
                             {
@@ -367,7 +373,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                 }
                             },
                         ]
-                    }
+                    },
                 }
             }
         }
@@ -395,6 +401,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
         assert data == {
             "owner": {
                 "repository": {
+                    "flagsCount": 1,
                     "flags": {
                         "edges": [
                             {
@@ -419,7 +426,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
                                 }
                             },
                         ]
-                    }
+                    },
                 }
             }
         }
@@ -737,15 +744,13 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
         assert data["owner"]["repository"]["flagsMeasurementsActive"] == True
         assert data["owner"]["repository"]["flagsMeasurementsBackfilled"] == False
 
-    @freeze_time("2022-01-01T01:00:01+0000")
-    def test_repository_flags_metadata_backfilled_true(self):
-        dataset = DatasetFactory(
+    @patch("timeseries.models.Dataset.is_backfilled")
+    def test_repository_flags_metadata_backfilled_true(self, is_backfilled):
+        is_backfilled.return_value = True
+
+        DatasetFactory(
             name=MeasurementName.FLAG_COVERAGE.value,
             repository_id=self.repo.pk,
-        )
-
-        Dataset.objects.filter(pk=dataset.pk).update(
-            created_at=datetime(2022, 1, 1, 0, 0, 0)
         )
 
         data = self.gql_request(
@@ -754,21 +759,3 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
         )
         assert data["owner"]["repository"]["flagsMeasurementsActive"] == True
         assert data["owner"]["repository"]["flagsMeasurementsBackfilled"] == True
-
-    @freeze_time("2022-01-01T00:59:59+0000")
-    def test_repository_flags_metadata_backfilled_false(self):
-        dataset = DatasetFactory(
-            name=MeasurementName.FLAG_COVERAGE.value,
-            repository_id=self.repo.pk,
-        )
-
-        Dataset.objects.filter(pk=dataset.pk).update(
-            created_at=datetime(2022, 1, 1, 0, 0, 0)
-        )
-
-        data = self.gql_request(
-            query_repo,
-            variables={"org": self.org.username, "repo": self.repo.name},
-        )
-        assert data["owner"]["repository"]["flagsMeasurementsActive"] == True
-        assert data["owner"]["repository"]["flagsMeasurementsBackfilled"] == False

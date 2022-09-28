@@ -56,7 +56,7 @@ class BranchViewsetTests(InternalAPITest):
                     "service": self.org.service,
                     "owner_username": self.org.username,
                     "repo_name": self.repo.name,
-                    "pk": self.branches[0].name,
+                    "name": self.branches[0].name,
                 },
             )
         )

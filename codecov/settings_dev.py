@@ -12,7 +12,7 @@ WEBHOOK_URL = ""  # NGROK TUNNEL HERE
 
 
 STRIPE_API_KEY = "sk_test_testurtke3v89d4udnesfxh413qnioseSuuwkdBMDvk4ZLesyoD4sSUoG4XDkPXsjN9MzRPaeylnqbgIOhnFI9Urg00BTUxkOh1"
-STRIPE_ENDPOINT_SECRET = "whsec_test9qhqqzmp6d4n51fl8vtj3w0bomno"
+STRIPE_ENDPOINT_SECRET = "whsec_testv00ijzofmsvxcktfmna1duw9pn8b"
 STRIPE_PLAN_IDS = {
     "users-pr-inappm": "plan_H6P3KZXwmAbqPS",
     "users-pr-inappy": "plan_H6P16wij3lUuxg",

@@ -4,7 +4,7 @@ from ariadne_django.scalars import datetime_scalar
 from ..helpers.ariadne import ariadne_load_local_graphql
 from .branch import branch, branch_bindable
 from .commit import commit, commit_bindable
-from .comparison import comparison, comparison_bindable
+from .comparison import comparison, comparison_bindable, comparison_result_bindable
 from .config import config, config_bindable
 from .coverage_totals import coverage_totals, coverage_totals_bindable
 from .enums import enum_types, enums
@@ -73,6 +73,7 @@ bindables = [
     branch_bindable,
     commit_bindable,
     comparison_bindable,
+    comparison_result_bindable,
     file_comparison_bindable,
     flag_bindable,
     flag_comparison_bindable,

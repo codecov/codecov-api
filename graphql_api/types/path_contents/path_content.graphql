@@ -1,12 +1,20 @@
 interface PathContent {
     name: String!
     path: String
+    hits: Int!
+    misses: Int!
+    partials: Int!
+    lines: Int!
     percentCovered: Float!
 }
 
 type PathContentFile implements PathContent  {
     name: String!
     path: String
+    hits: Int!
+    misses: Int!
+    partials: Int!
+    lines: Int!
     percentCovered: Float!
     isCriticalFile: Boolean!
 }
@@ -14,5 +22,9 @@ type PathContentFile implements PathContent  {
 type PathContentDir implements PathContent {
     name: String!
     path: String
+    hits: Int!
+    misses: Int!
+    partials: Int!
+    lines: Int!
     percentCovered: Float!
 }
