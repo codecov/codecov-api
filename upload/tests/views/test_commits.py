@@ -12,29 +12,46 @@ from upload.views.commits import CommitViews
 
 
 def test_get_repo(db):
-    repository = RepositoryFactory(name="the_repo", author__username="codecov")
+    repository = RepositoryFactory(
+        name="the_repo", author__username="codecov", author__service="github"
+    )
     repository.save()
     upload_views = CommitViews()
-    upload_views.kwargs = dict(repo=repository.name)
+    upload_views.kwargs = dict(repo="codecov::::the_repo", service="github")
     recovered_repo = upload_views.get_repo()
     assert recovered_repo == repository
 
 
-def test_get_repo_error(db):
+def test_get_repo_with_invalid_service():
     upload_views = CommitViews()
-    upload_views.kwargs = dict(repo="repo_missing")
-    with pytest.raises(ValidationError):
+    upload_views.kwargs = dict(repo="repo", service="wrong service")
+    with pytest.raises(ValidationError) as exp:
         upload_views.get_repo()
+    assert exp.match("Service not found: wrong service")
+
+
+def test_get_repo_not_found(db):
+    # Making sure that owner has different repos and getting none when the name of the repo isn't correct
+    repository = RepositoryFactory(
+        name="the_repo", author__username="codecov", author__service="github"
+    )
+    upload_views = CommitViews()
+    upload_views.kwargs = dict(repo="codecov::::wrong-repo-name", service="github")
+    with pytest.raises(ValidationError) as exp:
+        upload_views.get_repo()
+    assert exp.match("Repository not found")
 
 
 def test_get_queryset(db):
-    target_repo = RepositoryFactory(name="the_repo", author__username="codecov")
+    target_repo = RepositoryFactory(
+        name="the_repo", author__username="codecov", author__service="github"
+    )
     random_repo = RepositoryFactory()
     target_commit_1 = CommitFactory(repository=target_repo)
     target_commit_2 = CommitFactory(repository=target_repo)
     random_commit = CommitFactory(repository=random_repo)
     upload_views = CommitViews()
-    upload_views.kwargs = dict(repo=target_repo.name)
+    upload_views.kwargs = dict(repo="codecov::::the_repo", service="github")
     recovered_commits = upload_views.get_queryset()
     assert target_commit_1 in recovered_commits
     assert target_commit_2 in recovered_commits
@@ -48,8 +65,9 @@ def test_commits_get(client, db):
     # Some other commit in the DB that doens't belong to repo
     # It should not be returned in the response
     CommitFactory()
-    url = reverse("new_upload.commits", args=[repo.name])
-    assert url == f"/upload/{repo.name}/commits"
+    repo_slug = f"{repo.author.username}::::{repo.name}"
+    url = reverse("new_upload.commits", args=[repo.author.service, repo_slug])
+    assert url == f"/upload/{repo.author.service}/{repo_slug}/commits"
     res = client.get(url)
     assert res.status_code == 200
     content = res.json()
@@ -76,9 +94,10 @@ def test_commit_post_empty(db, client, mocker):
     owner = OwnerFactory(plan=BASIC_PLAN_NAME)
     client = APIClient()
     client.force_authenticate(user=owner)
+    repo_slug = f"{repository.author.username}::::{repository.name}"
     url = reverse(
         "new_upload.commits",
-        args=[repository.name],
+        args=[repository.author.service, repo_slug],
     )
     response = client.post(
         url,

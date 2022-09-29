@@ -23,7 +23,11 @@ urlpatterns = [
         ReportViews.as_view(),
         name="new_upload.reports",
     ),
-    path("<str:repo>/commits", CommitViews.as_view(), name="new_upload.commits"),
+    path(
+        "<str:service>/<str:repo>/commits",
+        CommitViews.as_view(),
+        name="new_upload.commits",
+    ),
     # This was getting in the way of the new endpoints, so I moved to the end
     re_path("(?P<version>\w+)/?", UploadHandler.as_view(), name="upload-handler"),
 ]
