@@ -19,7 +19,7 @@ urlpatterns = [
         name="new_upload.uploads",
     ),
     path(
-        "<str:repo>/commits/<str:commit_sha>/reports",
+        "<str:service>/<str:repo>/commits/<str:commit_sha>/reports",
         ReportViews.as_view(),
         name="new_upload.reports",
     ),
