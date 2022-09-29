@@ -19,8 +19,8 @@ def get_owner(service, username):
     return Owner.objects.filter(username=username, service=long_service).first()
 
 
-def get_owner_sessions(current_user):
-    return current_user.session_set.all()
+def get_owner_login_sessions(current_user):
+    return current_user.session_set.filter(type="login").all()
 
 
 def get_user_tokens(user: Owner):
