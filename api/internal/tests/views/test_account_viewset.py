@@ -195,7 +195,6 @@ class AccountViewSetTests(APITestCase):
             kwargs={"service": owner.service, "owner_username": owner.username}
         )
         assert response.status_code == status.HTTP_200_OK
-        print(response.data)
         assert response.data == {
             "activated_user_count": 0,
             "root_organization": None,
