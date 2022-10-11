@@ -60,3 +60,8 @@ def resolve_ci_url(upload, info):
 def resolve_download_url(upload, info):
     command = info.context["executor"].get_command("upload")
     return command.get_upload_presigned_url(upload)
+
+
+@upload_bindable.field("name")
+def resolve_name(upload, info):
+    return upload.name
