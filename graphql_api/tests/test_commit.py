@@ -627,3 +627,24 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 "name": "First Upload",
             }
         ]
+
+    def test_fetch_upload_name_is_none(self):
+        UploadFactory(
+            report=self.report,
+            job_code=123,
+            build_code=456,
+        )
+        query = query_commit % "uploads { edges { node { name } } }"
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        uploads = paginate_connection(commit["uploads"])
+        assert uploads == [
+            {
+                "name": None,
+            }
+        ]
