@@ -13,6 +13,7 @@ from services.comparison import ComparisonReport, ImpactedFile, PullRequestCompa
 class MissingBaseCommit:
     message = "Invalid base commit"
 
+
 class MissingHeadCommit:
     message = "Invalid head commit"
 

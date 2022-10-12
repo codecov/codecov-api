@@ -10,9 +10,9 @@ from graphql_api.dataloader.owner import OwnerLoader
 from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.comparison.comparison import (
     MissingBaseCommit,
-    MissingHeadCommit,
     MissingBaseReport,
     MissingComparison,
+    MissingHeadCommit,
     MissingHeadReport,
 )
 from graphql_api.types.enums import OrderingDirection, PullRequestState
