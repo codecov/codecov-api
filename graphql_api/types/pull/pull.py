@@ -9,7 +9,8 @@ from graphql_api.dataloader.comparison import ComparisonLoader
 from graphql_api.dataloader.owner import OwnerLoader
 from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.comparison.comparison import (
-    InvalidComparison,
+    MissingBaseCommit,
+    MissingHeadCommit,
     MissingBaseReport,
     MissingComparison,
     MissingHeadReport,
@@ -68,9 +69,9 @@ async def resolve_compare_with_base(pull, info, **kwargs):
 @pull_bindable.field("compareWithBase")
 async def resolve_compare_with_base(pull, info, **kwargs):
     if not pull.compared_to:
-        return InvalidComparison("Invalid base commit")
+        return MissingBaseCommit()
     if not pull.head:
-        return InvalidComparison("Invalid head commit")
+        return MissingHeadCommit()
 
     comparison_loader = ComparisonLoader.loader(info, pull.repository_id)
     commit_comparison = await comparison_loader.load((pull.compared_to, pull.head))
