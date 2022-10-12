@@ -10,9 +10,12 @@ from graphql_api.actions.flags import get_flag_comparisons
 from services.comparison import ComparisonReport, ImpactedFile, PullRequestComparison
 
 
-@dataclass
-class InvalidComparison:
-    message: str
+class MissingBaseCommit:
+    message = "Invalid base commit"
+
+
+class MissingHeadCommit:
+    message = "Invalid head commit"
 
 
 class MissingComparison:
@@ -118,8 +121,10 @@ comparison_result_bindable = UnionType("ComparisonResult")
 def resolve_comparison_result_type(obj, *_):
     if isinstance(obj, CommitComparison):
         return "Comparison"
-    elif isinstance(obj, InvalidComparison):
-        return "InvalidComparison"
+    elif isinstance(obj, MissingBaseCommit):
+        return "MissingBaseCommit"
+    elif isinstance(obj, MissingHeadCommit):
+        return "MissingHeadCommit"
     elif isinstance(obj, MissingComparison):
         return "MissingComparison"
     elif isinstance(obj, MissingBaseReport):
