@@ -78,10 +78,11 @@ async def resolve_yaml(commit, info):
 
 
 @commit_bindable.field("uploads")
-async def resolve_list_uploads(commit, info, first=None, **kwargs):
+async def resolve_list_uploads(commit, info, **kwargs):
     command = info.context["executor"].get_command("commit")
     queryset = await command.get_uploads_of_commit(commit)
-    if not first:  # temp to override kwargs -> return all uploads
+
+    if not kwargs:  # temp to override kwargs -> return all current uploads
         kwargs["first"] = await command.get_uploads_number(commit)
     return await queryset_to_connection(
         queryset, ordering=("id",), ordering_direction=OrderingDirection.ASC, **kwargs
