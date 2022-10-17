@@ -78,9 +78,11 @@ async def resolve_yaml(commit, info):
 
 
 @commit_bindable.field("uploads")
-async def resolve_list_uploads(commit, info, **kwargs):
+async def resolve_list_uploads(commit, info, first=None, **kwargs):
     command = info.context["executor"].get_command("commit")
     queryset = await command.get_uploads_of_commit(commit)
+    if not first:  # temp to override kwargs -> return all uploads
+        kwargs["first"] = await command.get_uploads_number(commit)
     return await queryset_to_connection(
         queryset, ordering=("id",), ordering_direction=OrderingDirection.ASC, **kwargs
     )
@@ -167,3 +169,9 @@ async def resolve_errors(commit, info, errorType):
         ordering=("updated_at",),
         ordering_direction=OrderingDirection.ASC,
     )
+
+
+@commit_bindable.field("totalUploads")
+async def resolve_total_uploads(commit, info):
+    command = info.context["executor"].get_command("commit")
+    return await command.get_uploads_number(commit)
