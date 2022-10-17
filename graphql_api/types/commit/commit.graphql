@@ -22,7 +22,7 @@ type Commit {
   criticalFiles: [CriticalFile!]!
   pathContents(path: String, filters: PathContentsFilters): [PathContent!]!
   errors(errorType: CommitErrorType!): CommitErrorsConnection!
-  totalUploads: Int
+  totalUploads: Int!
 }
 
 type CommitErrorsConnection {
