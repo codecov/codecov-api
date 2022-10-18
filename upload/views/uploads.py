@@ -9,8 +9,10 @@ from shared.metrics import metrics
 
 from codecov_auth.authentication.repo_auth import (
     GlobalTokenAuthentication,
+    OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
 )
+from codecov_auth.models import OrganizationLevelToken
 from core.models import Commit, Repository
 from reports.models import CommitReport
 from services.archive import ArchiveService, MinioEndpoints
@@ -24,7 +26,12 @@ log = logging.getLogger(__name__)
 
 class CanDoCoverageUploadsPermission(BasePermission):
     def has_permission(self, request, view):
-        return request.auth is not None and "upload" in request.auth.get_scopes()
+        repository = view.get_repo()
+        return (
+            request.auth is not None
+            and "upload" in request.auth.get_scopes()
+            and request.auth.allows_repo(repository)
+        )
 
 
 class UploadViews(ListCreateAPIView):
@@ -34,6 +41,7 @@ class UploadViews(ListCreateAPIView):
     ]
     authentication_classes = [
         GlobalTokenAuthentication,
+        OrgLevelTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
     ]
     throttle_classes = [UploadsPerCommitThrottle, UploadsPerWindowThrottle]
