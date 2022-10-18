@@ -8,4 +8,4 @@ class GetUploadsNumberInteractor(BaseInteractor):
     def execute(self, commit):
         if not commit.commitreport:
             return 0
-        return len(commit.commitreport.sessions.prefetch_related("flags").all())
+        return len(commit.commitreport.sessions.all())
