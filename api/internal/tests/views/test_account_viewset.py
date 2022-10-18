@@ -458,7 +458,7 @@ class AccountViewSetTests(APITestCase):
         assert response.data["plan"] == {
             "marketing_name": "Pro Team",
             "value": "users-inappy",
-            "billing_rate": "annual",
+            "billing_rate": "annually",
             "base_unit_price": 10,
             "benefits": [
                 "Configurable # of users",
