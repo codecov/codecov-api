@@ -58,7 +58,11 @@ class UploadViews(ListCreateAPIView):
             commit_sha=commit.commitid,
             reportid=report.external_id,
         )
-        instance = serializer.save(storage_path=path, report_id=report.id)
+        instance = serializer.save(
+            storage_path=path,
+            report_id=report.id,
+            upload_extras={"format_version": "v1"},
+        )
         self.trigger_upload_task(repository, commit.commitid, instance)
         metrics.incr("uploads.accepted", 1)
         self.activate_repo(repository)
