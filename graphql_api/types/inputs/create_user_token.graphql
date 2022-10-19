@@ -1,0 +1,4 @@
+input CreateUserTokenInput {
+  name: String!
+  tokenType: String
+}

@@ -18,7 +18,7 @@ class OwnerViewSetTests(APITestCase):
     def test_retrieve_returns_owner_with_username(self):
         owner = OwnerFactory()
         response = self._retrieve(
-            kwargs={"service": owner.service, "username": owner.username}
+            kwargs={"service": owner.service, "owner_username": owner.username}
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == {
@@ -34,7 +34,7 @@ class OwnerViewSetTests(APITestCase):
     def test_retrieve_returns_owner_with_period_username(self):
         owner = OwnerFactory(username="codecov.test")
         response = self._retrieve(
-            kwargs={"service": owner.service, "username": owner.username}
+            kwargs={"service": owner.service, "owner_username": owner.username}
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == {
@@ -48,13 +48,13 @@ class OwnerViewSetTests(APITestCase):
         }
 
     def test_retrieve_returns_404_if_no_matching_username(self):
-        response = self._retrieve(kwargs={"service": "github", "username": "fff"})
+        response = self._retrieve(kwargs={"service": "github", "owner_username": "fff"})
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert response.data == {"detail": "Not found."}
 
     def test_retrieve_owner_unknown_service_returns_404(self):
         response = self._retrieve(
-            kwargs={"service": "not-real", "username": "anything"}
+            kwargs={"service": "not-real", "owner_username": "anything"}
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert response.data == {"detail": "Service not found: not-real"}

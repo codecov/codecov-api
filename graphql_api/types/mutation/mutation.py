@@ -5,6 +5,7 @@ from .activate_flags_measurements import (
     resolve_activate_flags_measurements,
 )
 from .create_api_token import error_create_api_token, resolve_create_api_token
+from .create_user_token import error_create_user_token, resolve_create_user_token
 from .delete_session import error_delete_session, resolve_delete_session
 from .onboard_user import error_onboard_user, resolve_onboard_user
 from .regenerate_org_upload_token import (
@@ -15,6 +16,7 @@ from .regenerate_profiling_token import (
     error_generate_profiling_token,
     resolve_regenerate_profling_token,
 )
+from .revoke_user_token import error_revoke_user_token, resolve_revoke_user_token
 from .set_yaml_on_owner import error_set_yaml_error, resolve_set_yaml_on_owner
 from .sync_with_git_provider import (
     error_sync_with_git_provider,
@@ -26,6 +28,8 @@ mutation_bindable = MutationType()
 
 # Here, bind the resolvers from each subfolder to the Mutation type
 mutation_bindable.field("createApiToken")(resolve_create_api_token)
+mutation_bindable.field("createUserToken")(resolve_create_user_token)
+mutation_bindable.field("revokeUserToken")(resolve_revoke_user_token)
 mutation_bindable.field("setYamlOnOwner")(resolve_set_yaml_on_owner)
 mutation_bindable.field("syncWithGitProvider")(resolve_sync_with_git_provider)
 mutation_bindable.field("deleteSession")(resolve_delete_session)
@@ -40,6 +44,8 @@ mutation_bindable.field("regenerateOrgUploadToken")(resolve_regenerate_org_uploa
 mutation_resolvers = [
     mutation_bindable,
     error_create_api_token,
+    error_create_user_token,
+    error_revoke_user_token,
     error_set_yaml_error,
     error_sync_with_git_provider,
     error_delete_session,

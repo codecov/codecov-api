@@ -1,4 +1,3 @@
-
 type Upload {
   state: UploadState!
   provider: String
@@ -11,6 +10,7 @@ type Upload {
   jobCode: String
   buildCode: String
   errors: UploadErrorsConnection
+  name: String
 }
 
 type UploadErrorsConnection {
@@ -24,6 +24,6 @@ type UploadErrorsEdge {
   node: UploadError!
 }
 
-type UploadError{
+type UploadError {
   errorCode: UploadErrorEnum
 }

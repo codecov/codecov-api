@@ -4,12 +4,12 @@ from services.comparison import ImpactedFileParameter
 from timeseries.models import Interval as MeasurementInterval
 
 from .enums import (
-    ComparisonError,
     CoverageLine,
     GoalOnboarding,
     LoginProvider,
     OrderingDirection,
     OrderingParameter,
+    PathContentDisplayType,
     PullRequestState,
     RepositoryOrdering,
     TypeProjectOnboarding,
@@ -22,7 +22,7 @@ enum_types = [
     EnumType("RepositoryOrdering", RepositoryOrdering),
     EnumType("OrderingDirection", OrderingDirection),
     EnumType("CoverageLine", CoverageLine),
-    EnumType("ComparisonError", ComparisonError),
+    EnumType("PathContentDisplayType", PathContentDisplayType),
     EnumType("TypeProjectOnboarding", TypeProjectOnboarding),
     EnumType("GoalOnboarding", GoalOnboarding),
     EnumType("OrderingParameter", OrderingParameter),

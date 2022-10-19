@@ -1,9 +1,4 @@
-from django.db.models import FloatField
-from django.db.models.fields.json import KeyTextTransform
-from django.db.models.functions import Cast
-
 from core.models import Repository
-from graphql_api.types.enums import RepositoryOrdering
 
 
 def apply_filters_to_queryset(queryset, filters):

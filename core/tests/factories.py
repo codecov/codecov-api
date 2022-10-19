@@ -164,3 +164,11 @@ class RepositoryTokenFactory(DjangoModelFactory):
 
     class Meta:
         model = RepositoryToken
+
+
+class CommitErrorFactory(DjangoModelFactory):
+    class Meta:
+        model = models.CommitError
+
+    commit = factory.SubFactory(CommitFactory)
+    error_code = factory.Faker("")

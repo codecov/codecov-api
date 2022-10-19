@@ -329,7 +329,7 @@ class StripeService(AbstractPaymentService):
 
     def _get_success_and_cancel_url(self, owner):
         short_services = {"github": "gh", "bitbucket": "bb", "gitlab": "gl"}
-        base_path = f"/account/{short_services[owner.service]}/{owner.username}/billing"
+        base_path = f"/plan/{short_services[owner.service]}/{owner.username}"
         success_url = f"{settings.CODECOV_DASHBOARD_URL}{base_path}?success"
         cancel_url = f"{settings.CODECOV_DASHBOARD_URL}{base_path}?cancel"
         return success_url, cancel_url

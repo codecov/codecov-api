@@ -35,7 +35,6 @@ class RepoViewsetTests(InternalAPITest):
             "previous": None,
             "results": [
                 {
-                    "repoid": self.repo.pk,
                     "name": self.repo.name,
                     "private": True,
                     "updatestamp": "2022-01-01T00:00:00Z",
@@ -69,7 +68,6 @@ class RepoViewsetTests(InternalAPITest):
         )
         assert res.status_code == 200
         assert res.json() == {
-            "repoid": self.repo.pk,
             "name": self.repo.name,
             "private": True,
             "updatestamp": "2022-01-01T00:00:00Z",

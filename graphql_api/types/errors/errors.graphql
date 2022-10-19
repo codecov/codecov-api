@@ -1,16 +1,19 @@
-
-type UnauthenticatedError {
+interface ResolverError {
   message: String!
 }
 
-type UnauthorizedError {
+type UnauthenticatedError implements ResolverError {
   message: String!
 }
 
-type NotFoundError {
+type UnauthorizedError implements ResolverError {
   message: String!
 }
 
-type ValidationError {
+type NotFoundError implements ResolverError {
+  message: String!
+}
+
+type ValidationError implements ResolverError {
   message: String!
 }

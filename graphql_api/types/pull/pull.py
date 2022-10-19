@@ -1,11 +1,21 @@
+from dataclasses import dataclass
+
 from ariadne import ObjectType
 
+from codecov.commands.exceptions import NotFound
+from compare.models import CommitComparison
 from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.comparison import ComparisonLoader
 from graphql_api.dataloader.owner import OwnerLoader
 from graphql_api.helpers.connection import queryset_to_connection
-from graphql_api.types.enums import OrderingDirection
-from graphql_api.types.enums.enums import PullRequestState
+from graphql_api.types.comparison.comparison import (
+    MissingBaseCommit,
+    MissingBaseReport,
+    MissingComparison,
+    MissingHeadCommit,
+    MissingHeadReport,
+)
+from graphql_api.types.enums import OrderingDirection, PullRequestState
 from services.comparison import PullRequestComparison
 
 pull_bindable = ObjectType("Pull")
@@ -38,14 +48,48 @@ def resolve_base(pull, info):
     return CommitLoader.loader(info, pull.repository_id).load(pull.compared_to)
 
 
-@pull_bindable.field("compareWithBase")
+@pull_bindable.field("compareWithBaseTemp")
 async def resolve_compare_with_base(pull, info, **kwargs):
-
     if not pull.compared_to or not pull.head:
         return None
 
     comparison_loader = ComparisonLoader.loader(info, pull.repository_id)
     commit_comparison = await comparison_loader.load((pull.compared_to, pull.head))
+
+    if commit_comparison and commit_comparison.is_processed:
+        user = info.context["request"].user
+        comparison = PullRequestComparison(user, pull)
+
+        # store the comparison in the context - to be used in the `Comparison` resolvers
+        info.context["comparison"] = comparison
+
+    return commit_comparison
+
+
+@pull_bindable.field("compareWithBase")
+async def resolve_compare_with_base(pull, info, **kwargs):
+    if not pull.compared_to:
+        return MissingBaseCommit()
+    if not pull.head:
+        return MissingHeadCommit()
+
+    comparison_loader = ComparisonLoader.loader(info, pull.repository_id)
+    commit_comparison = await comparison_loader.load((pull.compared_to, pull.head))
+
+    if not commit_comparison:
+        return MissingComparison()
+
+    if (
+        commit_comparison.error
+        == CommitComparison.CommitComparisonErrors.MISSING_BASE_REPORT.value
+    ):
+        return MissingBaseReport()
+
+    if (
+        commit_comparison.error
+        == CommitComparison.CommitComparisonErrors.MISSING_HEAD_REPORT.value
+    ):
+        return MissingHeadReport()
 
     if commit_comparison and commit_comparison.is_processed:
         user = info.context["request"].user

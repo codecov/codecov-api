@@ -1,6 +1,4 @@
-import asyncio
-
-from asgiref.sync import sync_to_async
+from asgiref.sync import async_to_sync, sync_to_async
 from shared.yaml import UserYaml, fetch_current_yaml_from_provider_via_reference
 from shared.yaml.validation import validate_yaml
 from yaml import safe_load
@@ -10,14 +8,14 @@ from services.repo_providers import RepoProviderService
 
 
 class GetFinalYamlInteractor(BaseInteractor):
-    async def get_yaml_from_service(self, commit):
+    def get_yaml_from_service(self, commit):
         try:
             repository_service = RepoProviderService().get_adapter(
                 user=self.current_user, repo=commit.repository
             )
-            yaml_on_repo = await fetch_current_yaml_from_provider_via_reference(
-                commit.commitid, repository_service
-            )
+            yaml_on_repo = async_to_sync(
+                fetch_current_yaml_from_provider_via_reference
+            )(commit.commitid, repository_service)
             yaml_dict = safe_load(yaml_on_repo)
             return validate_yaml(yaml_dict, show_secrets_for=None)
         except:
@@ -28,22 +26,9 @@ class GetFinalYamlInteractor(BaseInteractor):
             return None
 
     @sync_to_async
-    def owner_yaml(self, commit):
-        return commit.repository.author.yaml
-
-    @sync_to_async
-    def repo_yaml(self, commit):
-        return commit.repository.yaml
-
-    async def execute(self, commit):
-        owner_yaml, repo_yaml, commit_yaml = await asyncio.gather(
-            self.owner_yaml(commit),
-            self.repo_yaml(commit),
-            self.get_yaml_from_service(commit),
-        )
-
+    def execute(self, commit):
         return UserYaml.get_final_yaml(
-            owner_yaml=owner_yaml,
-            repo_yaml=repo_yaml,
-            commit_yaml=commit_yaml,
+            owner_yaml=commit.repository.author.yaml,
+            repo_yaml=commit.repository.yaml,
+            commit_yaml=self.get_yaml_from_service(commit),
         ).to_dict()

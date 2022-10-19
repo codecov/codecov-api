@@ -1,10 +1,12 @@
 from .enums import (
-    ComparisonError,
+    CommitErrorCode,
+    CommitErrorGeneralType,
     CoverageLine,
     GoalOnboarding,
     LoginProvider,
     OrderingDirection,
     OrderingParameter,
+    PathContentDisplayType,
     PullRequestState,
     RepositoryOrdering,
     TypeProjectOnboarding,

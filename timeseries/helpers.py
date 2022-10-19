@@ -1,11 +1,31 @@
-from datetime import datetime
+import math
+from datetime import datetime, timedelta
+from typing import Iterable
 
+from django.conf import settings
+from django.contrib.postgres.fields.jsonb import KeyTextTransform
 from django.db import connections
+from django.db.models import Avg, F, FloatField, Max, Min, QuerySet, Sum
+from django.db.models.functions import Cast, Trunc
+from django.utils import timezone
 
 from core.models import Commit, Repository
 from reports.models import RepositoryFlag
 from services.archive import ReportService
-from timeseries.models import Dataset, Measurement, MeasurementName
+from services.task import TaskService
+from timeseries.models import (
+    Dataset,
+    Interval,
+    Measurement,
+    MeasurementName,
+    MeasurementSummary,
+)
+
+interval_deltas = {
+    Interval.INTERVAL_1_DAY: timedelta(days=1),
+    Interval.INTERVAL_7_DAY: timedelta(days=7),
+    Interval.INTERVAL_30_DAY: timedelta(days=30),
+}
 
 
 def save_commit_measurements(commit: Commit) -> None:
@@ -99,3 +119,220 @@ def refresh_measurement_summaries(start_date: datetime, end_date: datetime) -> N
         for cagg in continuous_aggregates:
             sql = f"CALL refresh_continuous_aggregate('{cagg}', '{start_date.isoformat()}', '{end_date.isoformat()}')"
             cursor.execute(sql)
+
+
+def aggregate_measurements(
+    queryset: QuerySet, group_by: Iterable[str] = None
+) -> QuerySet:
+    """
+    The given queryset is a set of measurement summaries.  These are already
+    pre-aggregated by (timestamp, owner_id, repo_id, flag_id, branch) via TimescaleDB's
+    continuous aggregates.  If we want to further aggregate over any of those columns
+    then we need to perform additional aggregation in SQL.  That is what this function
+    does to the given queryset.
+    """
+    if not group_by:
+        group_by = ["timestamp_bin"]
+
+    return (
+        queryset.values(*group_by)
+        .annotate(
+            min=Min("value_min"),
+            max=Max("value_max"),
+            avg=(Sum(F("value_avg") * F("value_count")) / Sum("value_count")),
+        )
+        .order_by("timestamp_bin")
+    )
+
+
+def repository_coverage_measurements(
+    repository: Repository,
+    interval: Interval,
+    start_date: datetime,
+    end_date: datetime,
+    branch: str = None,
+):
+    """
+    Returns the COVERAGE measurements for the given repository.
+    """
+    queryset = MeasurementSummary.agg_by(interval).filter(
+        name=MeasurementName.COVERAGE.value,
+        owner_id=repository.author_id,
+        repo_id=repository.pk,
+        branch=branch or repository.branch,
+        timestamp_bin__gte=start_date,
+        timestamp_bin__lte=end_date,
+    )
+    return aggregate_measurements(queryset)
+
+
+def trigger_backfill(dataset: Dataset):
+    """
+    Triggers a backfill for the full timespan of the dataset's repo's commits.
+    """
+    oldest_commit = (
+        Commit.objects.filter(repository_id=dataset.repository_id)
+        .order_by("timestamp")
+        .first()
+    )
+
+    newest_commit = (
+        Commit.objects.filter(repository_id=dataset.repository_id)
+        .order_by("-timestamp")
+        .first()
+    )
+
+    if oldest_commit and newest_commit:
+        # dates to span the entire range of commits
+        start_date = oldest_commit.timestamp.date()
+        start_date = datetime.fromordinal(start_date.toordinal())
+        end_date = newest_commit.timestamp.date() + timedelta(days=1)
+        end_date = datetime.fromordinal(end_date.toordinal())
+
+        TaskService().backfill_dataset(
+            dataset,
+            start_date=start_date,
+            end_date=end_date,
+        )
+
+
+def aligned_start_date(interval: Interval, date: datetime) -> datetime:
+    """
+    Finds the aligned start date for the given timedelta and date.
+    TimescaleDB aligns time buckets starting on 2000-01-03 so this function will
+    return the date of the start of the bin containing the given `date`.
+    The return value will be <= the given date.
+    """
+    delta = interval_deltas[interval]
+
+    # TimescaleDB aligns time buckets starting on 2000-01-03)
+    aligning_date = datetime(2000, 1, 3, tzinfo=timezone.utc)
+
+    # number of full intervals between aligning date and the requested `after` date
+    intervals_before = math.floor((date - aligning_date) / delta)
+
+    # date of time bucket that contains given start date
+    return aligning_date + (intervals_before * delta)
+
+
+def fill_sparse_measurements(
+    measurements: Iterable[dict],
+    interval: Interval,
+    start_date: datetime,
+    end_date: datetime,
+) -> Iterable[dict]:
+    """
+    Fill in sparse array of measurements with values such that we
+    have an entry for every interval within the requested time range.
+    Those placeholder entries will have empty measurement values.
+    """
+    by_timestamp = {
+        measurement["timestamp_bin"].replace(tzinfo=timezone.utc): measurement
+        for measurement in measurements
+    }
+
+    delta = interval_deltas[interval]
+    start_date = aligned_start_date(interval, start_date)
+
+    intervals = []
+
+    current_date = start_date
+    while current_date <= end_date:
+        if current_date in by_timestamp:
+            intervals.append(by_timestamp[current_date])
+        else:
+            # interval not found
+            intervals.append(
+                {
+                    "timestamp_bin": current_date,
+                    "avg": None,
+                    "min": None,
+                    "max": None,
+                }
+            )
+
+        current_date += delta
+
+    return intervals
+
+
+def repository_coverage_fallback_query(
+    repository: Repository,
+    interval: Interval,
+    start_date: datetime,
+    end_date: datetime,
+    branch: str = None,
+):
+    """
+    Query for repository coverage timeseries directly from the database
+    """
+    intervals = {
+        Interval.INTERVAL_1_DAY: "day",
+        Interval.INTERVAL_7_DAY: "week",
+        Interval.INTERVAL_30_DAY: "month",
+    }
+
+    return (
+        repository.commits.filter(
+            timestamp__gte=start_date,
+            timestamp__lte=end_date,
+            branch=branch or repository.branch,
+        )
+        .annotate(
+            timestamp_bin=Trunc("timestamp", intervals[interval], tzinfo=timezone.utc),
+            coverage=Cast(KeyTextTransform("c", "totals"), output_field=FloatField()),
+        )
+        .filter(coverage__isnull=False)
+        .values("timestamp_bin")
+        .annotate(
+            min=Min("coverage"),
+            max=Max("coverage"),
+            avg=Avg("coverage"),
+        )
+        .order_by("timestamp_bin")
+    )
+
+
+def repository_coverage_measurements_with_fallback(
+    repository: Repository,
+    interval: Interval,
+    start_date: datetime,
+    end_date: datetime,
+    branch: str = None,
+):
+    """
+    Tries to return repository coverage measurements from Timescale.
+    If those are not available then we trigger a backfill and return computed results
+    directly from the primary database (much slower to query).
+    """
+    dataset = Dataset.objects.filter(
+        name=MeasurementName.COVERAGE.value,
+        repository_id=repository.pk,
+    ).first()
+
+    if settings.TIMESERIES_ENABLED and dataset and dataset.is_backfilled():
+        # timeseries data is ready
+        return repository_coverage_measurements(
+            repository,
+            interval,
+            start_date,
+            end_date,
+            branch=branch,
+        )
+    else:
+        if settings.TIMESERIES_ENABLED and not dataset:
+            # we need to backfill
+            dataset = Dataset.objects.create(
+                name=MeasurementName.COVERAGE.value,
+                repository_id=repository.pk,
+            )
+            trigger_backfill(dataset)
+
+        # we're still backfilling or timeseries is disabled
+        return repository_coverage_fallback_query(
+            repository,
+            interval,
+            start_date=start_date,
+            end_date=end_date,
+            branch=branch,
+        )
