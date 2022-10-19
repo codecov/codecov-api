@@ -6,6 +6,9 @@ from django.urls import reverse
 from rest_framework.exceptions import ValidationError
 from rest_framework.test import APIClient
 
+from codecov_auth.authentication.repo_auth import OrgLevelTokenRepositoryAuth
+from codecov_auth.services.org_level_token_service import OrgLevelTokenService
+from codecov_auth.tests.factories import OrganizationLevelTokenFactory, OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
 from reports.models import CommitReport
 from reports.tests.factories import UploadFactory
@@ -20,12 +23,42 @@ def test_upload_permission_class_pass(db, mocker):
     request_mocked.auth.get_scopes.assert_called_once()
 
 
+def test_upload_permission_orglevel_token(db, mocker):
+    owner = OwnerFactory(plan="users-enterprisem")
+    owner.save()
+    repo = RepositoryFactory(author=owner)
+    repo.save()
+    token = OrgLevelTokenService.get_or_create_org_token(owner)
+
+    request_mocked = MagicMock(auth=OrgLevelTokenRepositoryAuth(token))
+    mocked_view = MagicMock()
+    mocked_view.get_repo = MagicMock(return_value=repo)
+    permission = CanDoCoverageUploadsPermission()
+    assert permission.has_permission(request_mocked, mocked_view)
+    mocked_view.get_repo.assert_called_once()
+
+
 def test_upload_permission_class_fail(db, mocker):
     request_mocked = MagicMock(auth=MagicMock())
     request_mocked.auth.get_scopes.return_value = ["wrong_scope"]
     permission = CanDoCoverageUploadsPermission()
     assert not permission.has_permission(request_mocked, MagicMock())
     request_mocked.auth.get_scopes.assert_called_once()
+
+
+def test_upload_permission_orglevel_fail(db, mocker):
+    owner = OwnerFactory(plan="users-enterprisem")
+    owner.save()
+    repo = RepositoryFactory()  # Not the same owner of the token
+    repo.save()
+    token = OrgLevelTokenService.get_or_create_org_token(owner)
+
+    request_mocked = MagicMock(auth=OrgLevelTokenRepositoryAuth(token))
+    mocked_view = MagicMock()
+    mocked_view.get_repo = MagicMock(return_value=repo)
+    permission = CanDoCoverageUploadsPermission()
+    assert not permission.has_permission(request_mocked, mocked_view)
+    mocked_view.get_repo.assert_called_once()
 
 
 def test_uploads_get_not_allowed(client, db, mocker):
