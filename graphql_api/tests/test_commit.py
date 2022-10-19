@@ -648,3 +648,55 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 "name": None,
             }
         ]
+
+    def test_fetch_uploads_number(self):
+        for i in range(25):
+            UploadFactory(
+                report=self.report,
+                job_code=123,
+                build_code=456,
+            )
+        query = query_commit % "totalUploads"
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        assert data["owner"]["repository"]["commit"]["totalUploads"] == 25
+
+    def test_fetch_all_uploads_is_the_default(self):
+        for i in range(100):
+            UploadFactory(
+                report=self.report,
+                job_code=123,
+                build_code=456,
+            )
+        query = query_commit % "uploads { edges { node { state } } }"
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        assert len(data["owner"]["repository"]["commit"]["uploads"]["edges"]) == 100
+
+    def test_fetch_paginated_uploads(self):
+        for i in range(99):
+            UploadFactory(
+                report=self.report,
+                job_code=123,
+                build_code=456,
+            )
+        query = (
+            query_commit
+            % "totalUploads, uploads(first: 25) { edges { node { state } } }"
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        assert (data["owner"]["repository"]["commit"]["totalUploads"]) == 99
+        assert len(data["owner"]["repository"]["commit"]["uploads"]["edges"]) == 25
