@@ -10,7 +10,7 @@ from codecov_auth.authentication.repo_auth import OrgLevelTokenRepositoryAuth
 from codecov_auth.services.org_level_token_service import OrgLevelTokenService
 from codecov_auth.tests.factories import OrganizationLevelTokenFactory, OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
-from reports.models import CommitReport
+from reports.models import CommitReport, ReportSession
 from reports.tests.factories import UploadFactory
 from upload.views.uploads import CanDoCoverageUploadsPermission, UploadViews
 
@@ -152,7 +152,7 @@ def test_get_report_error(mock_metrics, db):
 
 
 @patch("shared.metrics.metrics.incr")
-def test_uploads_post_empty(mock_metrics, db, mocker, mock_redis):
+def test_uploads_post(mock_metrics, db, mocker, mock_redis):
     # TODO remove the mock object and test the flow with the permissions
     mocker.patch.object(
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
@@ -166,7 +166,7 @@ def test_uploads_post_empty(mock_metrics, db, mocker, mock_redis):
     )
     repository = RepositoryFactory(name="the_repo", author__username="codecov")
     commit = CommitFactory(repository=repository)
-    commit_report = CommitReport.objects.create(commit=commit)
+    commit_report = CommitReport.objects.create(commit=commit, id="12345")
     repository.save()
     commit_report.save()
 
@@ -190,6 +190,9 @@ def test_uploads_post_empty(mock_metrics, db, mocker, mock_redis):
             ["external_id", "created_at", "raw_upload_location"],
         )
     )
+    assert ReportSession.objects.filter(
+        report_id=commit_report.id, upload_extras={"format_version": "v1"}
+    ).exists()
     mock_metrics.assert_called_once_with("uploads.accepted", 1)
     presigned_put_mock.assert_called()
     upload_task_mock.assert_called()
