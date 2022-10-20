@@ -104,6 +104,16 @@ def test_get_repo_with_invalid_service(mock_metrics, db):
     mock_metrics.assert_called_once_with("uploads.rejected", 1)
 
 
+@patch("shared.metrics.metrics.incr")
+def test_get_repo_not_found(mock_metrics, db):
+    upload_views = UploadViews()
+    upload_views.kwargs = dict(repo="repo", service="github")
+    with pytest.raises(ValidationError) as exp:
+        upload_views.get_repo()
+    assert exp.match("Repository not found")
+    mock_metrics.assert_called_once_with("uploads.rejected", 1)
+
+
 def test_get_commit(db):
     repository = RepositoryFactory(name="the_repo", author__username="codecov")
     commit = CommitFactory(repository=repository)
