@@ -85,13 +85,13 @@ class UploadViews(ListCreateAPIView):
     def get_repo(self) -> Repository:
         service = self.kwargs.get("service")
         try:
-            Service(service)
+            service_enum = Service(service)
         except ValueError:
             metrics.incr("uploads.rejected", 1)
             raise ValidationError(f"Service not found: {service}")
 
         repo_slug = self.kwargs.get("repo")
-        repository = get_repository_from_string(Service(service), repo_slug)
+        repository = get_repository_from_string(service_enum, repo_slug)
 
         if not repository:
             metrics.incr("uploads.rejected", 1)
