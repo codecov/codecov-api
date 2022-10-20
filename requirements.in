@@ -26,8 +26,6 @@ opentracing
 pre-commit
 psycopg2
 PyJWT
-pylint
-pylint-django
 pytest
 pytest-cov
 pytest-django

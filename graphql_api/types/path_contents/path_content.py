@@ -28,22 +28,22 @@ def resolve_file_path(item: Union[File, Dir], info) -> str:
 
 
 @path_content_bindable.field("hits")
-def resolve_hits(item: Union[File, Dir], info) -> str:
+def resolve_hits(item: Union[File, Dir], info) -> int:
     return item.hits
 
 
 @path_content_bindable.field("misses")
-def resolve_misses(item: Union[File, Dir], info) -> str:
+def resolve_misses(item: Union[File, Dir], info) -> int:
     return item.misses
 
 
 @path_content_bindable.field("partials")
-def resolve_partials(item: Union[File, Dir], info) -> str:
+def resolve_partials(item: Union[File, Dir], info) -> int:
     return item.partials
 
 
 @path_content_bindable.field("lines")
-def resolve_lines(item: Union[File, Dir], info) -> str:
+def resolve_lines(item: Union[File, Dir], info) -> int:
     return item.lines
 
 
