@@ -41,7 +41,7 @@ class UserViewSetMixin(
     )
     filterset_class = UserFilters
     permission_classes = [MemberOfOrgPermissions]
-    ordering_fields = ("name", "username", "email", "last_pull_timestamp")
+    ordering_fields = ("name", "username", "email", "last_pull_timestamp", "activated")
     lookup_field = "user_username_or_ownerid"
     search_fields = ["name", "username", "email"]
 
