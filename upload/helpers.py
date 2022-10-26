@@ -14,7 +14,7 @@ from rest_framework.exceptions import NotFound, Throttled, ValidationError
 from shared.reports.enums import UploadType
 from shared.torngit.exceptions import TorngitClientError, TorngitObjectNotFoundError
 
-from billing.constants import USER_PLAN_REPRESENTATIONS
+from billing.constants import ENTERPRISE_CLOUD_PLAN_NAMES, USER_PLAN_REPRESENTATIONS
 from codecov_auth.models import Owner
 from core.models import Commit, Repository
 from reports.models import ReportSession
@@ -599,11 +599,28 @@ def dispatch_upload_task(task_arguments, repository, redis):
         timezone.now().timestamp(),
     )
 
-    # Send task to worker
-    TaskService().upload(
-        repoid=repository.repoid,
-        commitid=task_arguments.get("commit"),
-        countdown=max(
-            countdown, int(get_config("setup", "upload_processing_delay") or 0)
-        ),
-    )
+    owner = repository.author
+    owner_plan = owner.plan
+
+    if owner_plan in ENTERPRISE_CLOUD_PLAN_NAMES:
+        log.info(
+            "Uploading on priority queue for enterprise cloud user",
+            extra=dict(repoid=repository.repoid, owner=owner.ownerid),
+        )
+        TaskService().priority_upload(
+            repoid=repository.repoid,
+            ownerid=owner.ownerid,
+            commitid=task_arguments.get("commit"),
+            countdown=max(
+                countdown, int(get_config("setup", "upload_processing_delay") or 0)
+            ),
+        )
+    else:
+        # Send task to worker
+        TaskService().upload(
+            repoid=repository.repoid,
+            commitid=task_arguments.get("commit"),
+            countdown=max(
+                countdown, int(get_config("setup", "upload_processing_delay") or 0)
+            ),
+        )

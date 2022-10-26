@@ -56,6 +56,24 @@ class TaskService(object):
             ),
         ).apply_async()
 
+    def priority_upload(
+        self, repoid, commitid, ownerid, countdown=0, debug=False, rebuild=False
+    ):
+        queue = "enterprise_uploads"
+        # TODO: add logic with "whitelisted" owner ids and append the owner's id or name to the queue name
+        # if ownerid in high_priority_accounts:
+        #     queue += ownerid
+        self._create_signature(
+            "app.tasks.upload.Upload",
+            kwargs=dict(
+                repoid=repoid,
+                commitid=commitid,
+                ownerid=ownerid,
+                debug=debug,
+                rebuild=rebuild,
+            ),
+        ).apply_async(countdown=countdown, queue=queue)
+
     def upload(self, repoid, commitid, countdown=0, debug=False, rebuild=False):
         self._create_signature(
             "app.tasks.upload.Upload",
