@@ -900,6 +900,31 @@ class UploadHandlerHelpersTest(TestCase):
             repoid=repo.repoid, commitid=task_arguments.get("commit"), countdown=4
         )
 
+    @patch("services.task.TaskService.priority_upload")
+    def test_dispatch_upload_task_with_priority_upload(
+        self, mock_task_service_priority_upload
+    ):
+        owner = G(Owner, plan="users-enterprisey")
+        repo = G(Repository, author=owner)
+        task_arguments = {"commit": "commit456", "version": "v4"}
+
+        expected_key = f"uploads/{repo.repoid}/commit456"
+
+        redis = MockRedis(
+            expected_task_key=expected_key,
+            expected_task_arguments=task_arguments,
+            expected_expire_time=86400,
+        )
+
+        dispatch_upload_task(task_arguments, repo, redis)
+        assert mock_task_service_priority_upload.called
+        mock_task_service_priority_upload.assert_called_with(
+            repoid=repo.repoid,
+            ownerid=repo.author.ownerid,
+            commitid=task_arguments.get("commit"),
+            countdown=4,
+        )
+
 
 class UploadHandlerRouteTest(APITestCase):
     # Wrap client calls

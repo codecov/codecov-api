@@ -118,3 +118,14 @@ def test_update_commit_task(mocker):
         kwargs=dict(commitid=1, repoid=2),
         app=celery_app,
     )
+
+
+def test_priority_upload_task(mocker):
+    signature_mock = mocker.patch("services.task.signature")
+    TaskService().priority_upload(repoid=1, commitid=2, ownerid=3)
+    signature_mock.assert_called_with(
+        "app.tasks.upload.Upload",
+        args=None,
+        kwargs=dict(commitid=2, repoid=1, ownerid=3, debug=False, rebuild=False),
+        app=celery_app,
+    )
