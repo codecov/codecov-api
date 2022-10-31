@@ -73,6 +73,10 @@ class StripeInvoiceSerializer(serializers.Serializer):
     line_items = StripeLineItemSerializer(many=True, source="lines.data")
 
 
+class StripeCustomerSerializer(serializers.Serializer):
+    id = serializers.CharField()
+
+
 class StripeCardSerializer(serializers.Serializer):
     brand = serializers.CharField()
     exp_month = serializers.IntegerField()
@@ -139,6 +143,7 @@ class SubscriptionDetailSerializer(serializers.Serializer):
     )
     cancel_at_period_end = serializers.BooleanField()
     current_period_end = serializers.IntegerField()
+    customer = StripeCustomerSerializer()
 
 
 class StripeScheduledPhaseSerializer(serializers.Serializer):

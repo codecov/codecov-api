@@ -1,9 +1,7 @@
 from ariadne import ObjectType, convert_kwargs_to_snake_case
-from asgiref.sync import async_to_sync
 
-from codecov_auth.models import Owner
 from graphql_api.actions.owner import (
-    get_owner_sessions,
+    get_owner_login_sessions,
     get_user_tokens,
     search_my_owners,
 )
@@ -65,7 +63,7 @@ def resolve_my_organizations(current_user, _, filters=None, **kwargs):
 
 @me_bindable.field("sessions")
 def resolve_sessions(current_user, _, **kwargs):
-    queryset = get_owner_sessions(current_user)
+    queryset = get_owner_login_sessions(current_user)
     return queryset_to_connection(
         queryset,
         ordering=("sessionid",),

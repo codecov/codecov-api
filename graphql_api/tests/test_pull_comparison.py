@@ -936,7 +936,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         assert res == {
             "pullId": self.pull.pullid,
             "compareWithBase": {
-                "__typename": "InvalidComparison",
+                "__typename": "MissingBaseCommit",
                 "message": "Invalid base commit",
             },
         }
@@ -959,7 +959,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         assert res == {
             "pullId": self.pull.pullid,
             "compareWithBase": {
-                "__typename": "InvalidComparison",
+                "__typename": "MissingHeadCommit",
                 "message": "Invalid head commit",
             },
         }
