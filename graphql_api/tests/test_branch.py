@@ -355,3 +355,89 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                 }
             }
         }
+
+    @patch("core.models.ReportService.build_report_from_commit")
+    def test_fetch_path_contents_with_files_and_list_display_type(self, report_mock):
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "branch": self.branch.name,
+            "path": "",
+            "filters": {
+                "displayType": "LIST",
+            },
+        }
+        report_mock.return_value = MockReport()
+
+        data = self.gql_request(query_files, variables=variables)
+
+        assert data == {
+            "owner": {
+                "repository": {
+                    "branch": {
+                        "head": {
+                            "pathContents": [
+                                {
+                                    "__typename": "PathContentFile",
+                                    "name": "fileA.py",
+                                    "path": "fileA.py",
+                                    "hits": 8,
+                                    "misses": 0,
+                                    "partials": 0,
+                                    "lines": 10,
+                                    "percentCovered": 80.0,
+                                    "isCriticalFile": False,
+                                },
+                                {
+                                    "__typename": "PathContentFile",
+                                    "name": "fileB.py",
+                                    "path": "fileB.py",
+                                    "hits": 8,
+                                    "misses": 0,
+                                    "partials": 0,
+                                    "lines": 10,
+                                    "percentCovered": 80.0,
+                                    "isCriticalFile": False,
+                                },
+                                {
+                                    "__typename": "PathContentFile",
+                                    "name": "fileB.py",
+                                    "path": "folder/fileB.py",
+                                    "hits": 8,
+                                    "misses": 0,
+                                    "partials": 0,
+                                    "lines": 10,
+                                    "percentCovered": 80.0,
+                                    "isCriticalFile": False,
+                                },
+                                {
+                                    "__typename": "PathContentFile",
+                                    "name": "fileC.py",
+                                    "path": "folder/subfolder/fileC.py",
+                                    "hits": 8,
+                                    "misses": 0,
+                                    "partials": 0,
+                                    "lines": 10,
+                                    "percentCovered": 80.0,
+                                    "isCriticalFile": False,
+                                },
+                                {
+                                    "__typename": "PathContentFile",
+                                    "name": "fileD.py",
+                                    "path": "folder/subfolder/fileD.py",
+                                    "hits": 8,
+                                    "misses": 0,
+                                    "partials": 0,
+                                    "lines": 10,
+                                    "percentCovered": 80.0,
+                                    "isCriticalFile": False,
+                                },
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+        assert len(
+            data["owner"]["repository"]["branch"]["head"]["pathContents"]
+        ) == len(report_mock.return_value.files)

@@ -1,9 +1,12 @@
 from .enums import (
+    CommitErrorCode,
+    CommitErrorGeneralType,
     CoverageLine,
     GoalOnboarding,
     LoginProvider,
     OrderingDirection,
     OrderingParameter,
+    PathContentDisplayType,
     PullRequestState,
     RepositoryOrdering,
     TypeProjectOnboarding,

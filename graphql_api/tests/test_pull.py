@@ -117,7 +117,7 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "head": {"totals": None},
             "comparedTo": None,
             "compareWithBase": {
-                "__typename": "InvalidComparison",
+                "__typename": "MissingBaseCommit",
             },
         }
 
@@ -140,7 +140,7 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "head": None,
             "comparedTo": None,
             "compareWithBase": {
-                "__typename": "InvalidComparison",
+                "__typename": "MissingBaseCommit",
             },
         }
 
@@ -162,7 +162,7 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "head": None,
             "comparedTo": None,
             "compareWithBase": {
-                "__typename": "InvalidComparison",
+                "__typename": "MissingHeadCommit",
             },
         }
 

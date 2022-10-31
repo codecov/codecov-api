@@ -30,14 +30,6 @@ class CommitReport(BaseCodecovModel):
     )
     code = models.CharField(null=True, max_length=100)
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["commit_id", "code"],
-                name="unique_commit_id_code",
-            )
-        ]
-
 
 class ReportDetails(BaseCodecovModel):
     report = models.OneToOneField(CommitReport, on_delete=models.CASCADE)

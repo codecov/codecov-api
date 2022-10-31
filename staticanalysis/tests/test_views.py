@@ -50,13 +50,13 @@ def test_simple_static_analysis_call_no_uploads_yet(db, mocker):
             "filepath": "banana.cpp",
             "file_hash": str(second_uuid),
             "raw_upload_location": "banana.txt",
-            "state": "created",
+            "state": "CREATED",
         },
         {
             "filepath": "path/to/a.py",
             "file_hash": str(some_uuid),
             "raw_upload_location": "banana.txt",
-            "state": "created",
+            "state": "CREATED",
         },
     ]
     # Now asserting the remaining of the response

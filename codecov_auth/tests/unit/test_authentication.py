@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from uuid import uuid4
 
 import pytest
@@ -10,12 +11,11 @@ from rest_framework.reverse import reverse
 from rest_framework.test import APIClient, APIRequestFactory
 
 from codecov_auth.authentication import (
-    CodecovBearerTokenAuthentication,
     CodecovSessionAuthentication,
     CodecovTokenAuthentication,
+    UserTokenAuthentication,
 )
-from codecov_auth.models import Session
-from codecov_auth.tests.factories import OwnerFactory, SessionFactory
+from codecov_auth.tests.factories import OwnerFactory, SessionFactory, UserTokenFactory
 from utils.test_utils import BaseTestCase
 
 # Using the standard RequestFactory API to create a form POST request
@@ -223,16 +223,18 @@ class CodecovSessionAuthenticationTests(TestCase):
         assert token == session
 
 
-class CodecovBearerTokenAuthenticationTests(TestCase):
+class UserTokenAuthenticationTests(TestCase):
     def test_bearer_token_auth(self):
-        session = SessionFactory.create()
+        user_token = UserTokenFactory()
 
         request_factory = APIRequestFactory()
-        request = request_factory.get("", HTTP_AUTHORIZATION=f"Bearer {session.token}")
+        request = request_factory.get(
+            "", HTTP_AUTHORIZATION=f"Bearer {user_token.token}"
+        )
 
-        authenticator = CodecovBearerTokenAuthentication()
+        authenticator = UserTokenAuthentication()
         result = authenticator.authenticate(request)
-        assert result == (session.owner, session)
+        assert result == (user_token.owner, user_token)
 
     def test_bearer_token_auth_invalid_token(self):
         request_factory = APIRequestFactory()
@@ -240,17 +242,19 @@ class CodecovBearerTokenAuthenticationTests(TestCase):
             "", HTTP_AUTHORIZATION=f"Bearer 8f9bc6cb-fd14-43bc-bbb5-be1e7c948f34"
         )
 
-        authenticator = CodecovBearerTokenAuthentication()
+        authenticator = UserTokenAuthentication()
         with pytest.raises(AuthenticationFailed):
             authenticator.authenticate(request)
 
-    def test_bearer_token_auth_invalid_token_type(self):
-        session = SessionFactory.create(type=Session.SessionType.LOGIN)
+    def test_bearer_token_auth_expired_token(self):
+        user_token = UserTokenFactory(valid_until=datetime.now() - timedelta(seconds=1))
 
         request_factory = APIRequestFactory()
-        request = request_factory.get("", HTTP_AUTHORIZATION=f"Bearer {session.token}")
+        request = request_factory.get(
+            "", HTTP_AUTHORIZATION=f"Bearer {user_token.token}"
+        )
 
-        authenticator = CodecovBearerTokenAuthentication()
+        authenticator = UserTokenAuthentication()
         with pytest.raises(AuthenticationFailed):
             authenticator.authenticate(request)
 
@@ -258,7 +262,7 @@ class CodecovBearerTokenAuthenticationTests(TestCase):
         request_factory = APIRequestFactory()
         request = request_factory.get("", HTTP_AUTHORIZATION="wrong")
 
-        authenticator = CodecovBearerTokenAuthentication()
+        authenticator = UserTokenAuthentication()
         result = authenticator.authenticate(request)
         assert result is None
 
@@ -266,6 +270,6 @@ class CodecovBearerTokenAuthenticationTests(TestCase):
         request_factory = APIRequestFactory()
         request = request_factory.get("")
 
-        authenticator = CodecovBearerTokenAuthentication()
+        authenticator = UserTokenAuthentication()
         result = authenticator.authenticate(request)
         assert result is None

@@ -23,7 +23,8 @@ class MockSubscription(object):
         self.customer = {
             "invoice_settings": {
                 "default_payment_method": subscription_params["default_payment_method"]
-            }
+            },
+            "id": "cus_LK&*Hli8YLIO",
         }
         self.schedule = subscription_params["schedule_id"]
 
@@ -217,6 +218,7 @@ class AccountViewSetTests(APITestCase):
                 "default_payment_method": None,
                 "cancel_at_period_end": False,
                 "current_period_end": 1633512445,
+                "customer": {"id": "cus_LK&*Hli8YLIO"},
             },
             "checkout_session_id": None,
             "name": owner.name,
@@ -306,6 +308,7 @@ class AccountViewSetTests(APITestCase):
                 "default_payment_method": None,
                 "cancel_at_period_end": False,
                 "current_period_end": 1633512445,
+                "customer": {"id": "cus_LK&*Hli8YLIO"},
             },
             "checkout_session_id": None,
             "name": owner.name,
@@ -335,15 +338,8 @@ class AccountViewSetTests(APITestCase):
             "latest_invoice": None,
             "schedule_id": None,
         }
-        # json.load(subscription_params["file"])["data"][0]
 
         mock_retrieve_subscription.return_value = MockSubscription(subscription_params)
-        schedule_params = {
-            "id": 123,
-            "start_date": 123689126736,
-            "stripe_plan_id": "plan_H6P3KZXwmAbqPS",
-            "quantity": 6,
-        }
 
         response = self._retrieve(
             kwargs={"service": owner.service, "owner_username": owner.username}
@@ -372,6 +368,7 @@ class AccountViewSetTests(APITestCase):
                 "default_payment_method": None,
                 "cancel_at_period_end": False,
                 "current_period_end": 1633512445,
+                "customer": {"id": "cus_LK&*Hli8YLIO"},
             },
             "checkout_session_id": None,
             "name": owner.name,
@@ -461,7 +458,7 @@ class AccountViewSetTests(APITestCase):
         assert response.data["plan"] == {
             "marketing_name": "Pro Team",
             "value": "users-inappy",
-            "billing_rate": "annual",
+            "billing_rate": "annually",
             "base_unit_price": 10,
             "benefits": [
                 "Configurable # of users",
@@ -529,6 +526,7 @@ class AccountViewSetTests(APITestCase):
                     "last4": "abcd",
                 }
             },
+            "customer": {"id": "cus_LK&*Hli8YLIO"},
         }
 
     @patch("services.billing.stripe.Subscription.retrieve")
