@@ -1,3 +1,4 @@
+from dis import dis
 from typing import List, Union
 
 import yaml
@@ -10,7 +11,7 @@ from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.comparison import ComparisonLoader
 from graphql_api.dataloader.owner import OwnerLoader
 from graphql_api.helpers.connection import queryset_to_connection
-from graphql_api.types.enums import OrderingDirection
+from graphql_api.types.enums import OrderingDirection, PathContentDisplayType
 from services.path import Dir, File, ReportPaths
 from services.profiling import CriticalFile, ProfilingSummary
 
@@ -76,10 +77,18 @@ async def resolve_yaml(commit, info):
     return yaml.dump(final_yaml)
 
 
+@sync_to_async
+def get_uploads_number(queryset):
+    return len(queryset)
+
+
 @commit_bindable.field("uploads")
 async def resolve_list_uploads(commit, info, **kwargs):
     command = info.context["executor"].get_command("commit")
     queryset = await command.get_uploads_of_commit(commit)
+
+    if not kwargs:  # temp to override kwargs -> return all current uploads
+        kwargs["first"] = await get_uploads_number(queryset)
     return await queryset_to_connection(
         queryset, ordering=("id",), ordering_direction=OrderingDirection.ASC, **kwargs
     )
@@ -142,14 +151,33 @@ def resolve_path_contents(
             )
 
     search_value = filters.get("search_value")
+    display_type = filters.get("display_type")
+
     report_paths = ReportPaths(
         report=commit_report,
         path=path,
         search_term=search_value,
     )
 
-    if search_value:
+    if search_value or display_type == PathContentDisplayType.LIST:
         items = report_paths.full_filelist()
     else:
         items = report_paths.single_directory()
     return sort_path_contents(items, filters)
+
+
+@commit_bindable.field("errors")
+async def resolve_errors(commit, info, errorType):
+    command = info.context["executor"].get_command("commit")
+    queryset = await command.get_commit_errors(commit, error_type=errorType)
+    return await queryset_to_connection(
+        queryset,
+        ordering=("updated_at",),
+        ordering_direction=OrderingDirection.ASC,
+    )
+
+
+@commit_bindable.field("totalUploads")
+async def resolve_total_uploads(commit, info):
+    command = info.context["executor"].get_command("commit")
+    return await command.get_uploads_number(commit)

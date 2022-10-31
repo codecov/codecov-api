@@ -52,7 +52,7 @@ class PlansViewSetTests(APITestCase):
             {
                 "marketing_name": "Pro Team",
                 "value": "users-pr-inappy",
-                "billing_rate": "annual",
+                "billing_rate": "annually",
                 "base_unit_price": 10,
                 "benefits": [
                     "Configurable # of users",

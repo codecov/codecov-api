@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import Enum
 
 import django.db.models as models
@@ -203,3 +203,13 @@ class Dataset(models.Model):
                 name="name_repository_id_unique",
             ),
         ]
+
+    def is_backfilled(self):
+        """
+        Returns `False` for an hour after creation.
+
+        TODO: this should eventually read `self.backfilled` which will be updated via the worker
+        """
+        if not self.created_at:
+            return False
+        return datetime.now() > self.created_at + timedelta(hours=1)

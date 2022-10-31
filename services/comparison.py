@@ -892,7 +892,6 @@ class ComparisonReport(object):
         try:
             data = archive_service.read_file(self.comparison.report_storage_path)
             return json.loads(data)
-        # pylint: disable=W0702
         except:
             log.error(
                 "ComparisonReport - couldnt fetch data from storage", exc_info=True

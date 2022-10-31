@@ -140,7 +140,9 @@ DATABASES = {
 
 if TIMESERIES_ENABLED:
     DATABASES["timeseries"] = {
-        "ENGINE": "django.db.backends.postgresql",
+        # this wraps `django.db.backends.postgresql`
+        # (see `codecov/db/base.py`)
+        "ENGINE": "codecov.db",
         "NAME": TIMESERIES_DATABASE_NAME,
         "USER": TIMESERIES_DATABASE_USER,
         "PASSWORD": TIMESERIES_DATABASE_PASSWORD,
@@ -170,7 +172,7 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "codecov_auth.authentication.CodecovTokenAuthentication",
-        "codecov_auth.authentication.CodecovBearerTokenAuthentication",
+        "codecov_auth.authentication.UserTokenAuthentication",
         "rest_framework.authentication.BasicAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ),

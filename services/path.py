@@ -117,7 +117,9 @@ class ReportPaths:
     Contains methods for getting path information out of a single report.
     """
 
-    def __init__(self, report: Report, path: str = None, search_term: str = None):
+    def __init__(
+        self, report: Report, path: PrefixedPath = None, search_term: str = None
+    ):
         self.report = report
         self.prefix = path or ""
 

@@ -1,5 +1,6 @@
 input PathContentsFilters {
   searchValue: String
+  displayType: PathContentDisplayType
   ordering: PathContentsOrdering
 }
 

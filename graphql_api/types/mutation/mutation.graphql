@@ -1,5 +1,7 @@
 type Mutation {
   createApiToken(input: CreateApiTokenInput!): CreateApiTokenPayload
+  createUserToken(input: CreateUserTokenInput!): CreateUserTokenPayload
+  revokeUserToken(input: RevokeUserTokenInput!): RevokeUserTokenPayload
   setYamlOnOwner(input: SetYamlOnOwnerInput!): SetYamlOnOwnerPayload
   syncWithGitProvider: SyncWithGitProviderPayload
   updateProfile(input: UpdateProfileInput!): UpdateProfilePayload
