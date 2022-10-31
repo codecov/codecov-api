@@ -6,11 +6,12 @@ type Me {
   user: User!
   owner: Owner!
   sessions(first: Int, after: String, last: Int, before: String): SessionConnection!
+  tokens(first: Int, after: String, last: Int, before: String): UserTokenConnection!
   viewableRepositories(filters: RepositorySetFilters, ordering: RepositoryOrdering, orderingDirection: OrderingDirection, first: Int, after: String, last: Int, before: String): ViewableRepositoryConnection!
   myOrganizations(filters: OrganizationSetFilters, first: Int, after: String, last: Int, before: String): MyOrganizationConnection!
   isSyncingWithGitProvider: Boolean!
   trackingMetadata: trackingMetadata! # temporary solution to expose the user metadata
-  privateAccess: Boolean,
+  privateAccess: Boolean
 }
 
 # Temporary type to gather the different attributes for tracking until we have

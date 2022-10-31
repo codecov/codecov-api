@@ -1,9 +1,9 @@
 import json
+import re
 from datetime import datetime
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import minio
-import pytest
 from django.test import TestCase
 from shared.profiling import ProfilingSummaryDataAnalyzer
 
@@ -149,7 +149,7 @@ class ProfilingSummaryTests(TestCase):
         )
 
         filenames = [cf.name for cf in self.service.critical_files]
-        assert filenames == ["app.py", "handlers.py"]
+        assert sorted(filenames) == ["app.py", "handlers.py"]
 
     @patch("services.profiling.ProfilingSummary.summary_data")
     @patch("services.profiling.ProfilingSummary.latest_profiling_commit")
@@ -175,3 +175,226 @@ class ProfilingSummaryTests(TestCase):
         summary_data.return_value = None
 
         assert self.service.critical_files == []
+
+    def test_critical_files_from_yaml_no_profilingcommit_no_commitsha(self):
+        critical_files_from_yaml = self.service._get_critical_files_from_yaml()
+        assert critical_files_from_yaml == []
+
+    @patch("services.profiling.UserYaml.get_final_yaml")
+    @patch("services.profiling.ProfilingSummary.summary_data")
+    @patch("services.profiling.ProfilingSummary.latest_profiling_commit")
+    def test_critical_files_from_yaml_no_paths(
+        self, latest_profiling_commit, summary_data, mocked_useryaml
+    ):
+        profiling_commit = ProfilingCommitFactory(
+            repository=self.repo,
+            last_summarized_at=datetime.now(),
+            commit_sha="random_sha_thats_irrelevant_for_this_test",
+        )
+        latest_profiling_commit.return_value = profiling_commit
+        summary_data.return_value = None
+        mocked_useryaml.return_value = dict()
+        critical_files_from_yaml = self.service._get_critical_files_from_yaml(
+            profiling_commit
+        )
+        assert critical_files_from_yaml == []
+        mocked_useryaml.assert_called_with(
+            owner_yaml=self.repo.author.yaml,
+            repo_yaml=self.repo.yaml,
+            ownerid=self.repo.author.ownerid,
+        )
+
+    @patch("services.profiling.ReportService.build_report_from_commit")
+    @patch("services.profiling.UserYaml.get_final_yaml")
+    @patch("services.profiling.ProfilingSummary.summary_data")
+    @patch("services.profiling.ProfilingSummary.latest_profiling_commit")
+    def test_critical_files_from_yaml_no_report(
+        self,
+        latest_profiling_commit,
+        summary_data,
+        mocked_useryaml,
+        mocked_reportservice,
+    ):
+        commit = CommitFactory(repository=self.repo)
+        commit.save()
+        profiling_commit = ProfilingCommitFactory(
+            repository=self.repo,
+            last_summarized_at=datetime.now(),
+            commit_sha=commit.commitid,
+        )
+        latest_profiling_commit.return_value = profiling_commit
+        summary_data.return_value = None
+        mocked_useryaml.return_value = dict(
+            profiling=dict(critical_files_paths=["batata.txt", "a.py"])
+        )
+        mocked_reportservice.return_value = None
+        critical_files_from_yaml = self.service._get_critical_files_from_yaml(
+            profiling_commit
+        )
+        assert critical_files_from_yaml == []
+        mocked_useryaml.assert_called_with(
+            owner_yaml=self.repo.author.yaml,
+            repo_yaml=self.repo.yaml,
+            ownerid=self.repo.author.ownerid,
+        )
+        mocked_reportservice.assert_called()
+
+    @patch("services.profiling.ReportService.build_report_from_commit")
+    @patch("services.profiling.UserYaml.get_final_yaml")
+    @patch("services.profiling.ProfilingSummary.summary_data")
+    @patch("services.profiling.ProfilingSummary.latest_profiling_commit")
+    def test_critical_files_from_yaml_return_files(
+        self,
+        latest_profiling_commit,
+        summary_data,
+        mocked_useryaml,
+        mocked_reportservice,
+    ):
+        commit = CommitFactory(repository=self.repo)
+        commit.save()
+        profiling_commit = ProfilingCommitFactory(
+            repository=self.repo,
+            last_summarized_at=datetime.now(),
+            commit_sha=commit.commitid,
+        )
+        latest_profiling_commit.return_value = profiling_commit
+        summary_data.return_value = None
+        mocked_useryaml.return_value = dict(
+            profiling=dict(critical_files_paths=["batata.txt", "src/critical"])
+        )
+        mock_report = MagicMock()
+        mock_report.files = [
+            "some_file.txt",
+            "batata.txt",
+            "src/critical/very_important.json",
+        ]
+        mocked_reportservice.return_value = mock_report
+
+        critical_files_from_yaml = self.service._get_critical_files_from_yaml(
+            profiling_commit
+        )
+        assert critical_files_from_yaml == [
+            "batata.txt",
+            "src/critical/very_important.json",
+        ]
+        mocked_useryaml.assert_called_with(
+            owner_yaml=self.repo.author.yaml,
+            repo_yaml=self.repo.yaml,
+            ownerid=self.repo.author.ownerid,
+        )
+        mocked_reportservice.assert_called()
+
+    @patch("services.profiling.ReportService.build_report_from_commit")
+    @patch("services.profiling.UserYaml.get_final_yaml")
+    @patch("services.profiling.ProfilingSummary.summary_data")
+    @patch("services.profiling.ProfilingSummary.latest_profiling_commit")
+    def test_critical_files_from_yaml_return_files_no_profiling_commit(
+        self,
+        latest_profiling_commit,
+        summary_data,
+        mocked_useryaml,
+        mocked_reportservice,
+    ):
+        commit = CommitFactory(repository=self.repo)
+        commit.save()
+        self.service.commit_sha = commit.commitid
+        latest_profiling_commit.return_value = None
+        mocked_useryaml.return_value = dict(
+            profiling=dict(critical_files_paths=["batata.txt", "src/critical"])
+        )
+        mock_report = MagicMock()
+        mock_report.files = [
+            "some_file.txt",
+            "batata.txt",
+            "src/critical/very_important.json",
+        ]
+        mocked_reportservice.return_value = mock_report
+
+        critical_files_from_yaml = self.service._get_critical_files_from_yaml()
+        assert critical_files_from_yaml == [
+            "batata.txt",
+            "src/critical/very_important.json",
+        ]
+        mocked_useryaml.assert_called()
+        mocked_reportservice.assert_called()
+
+    @patch("services.profiling.ReportService.build_report_from_commit")
+    @patch("services.profiling.UserYaml.get_final_yaml")
+    @patch("services.profiling.ProfilingSummary.summary_data")
+    @patch("services.profiling.ProfilingSummary.latest_profiling_commit")
+    def test_critical_files_from_yaml_and_profiling(
+        self,
+        latest_profiling_commit,
+        summary_data,
+        mocked_useryaml,
+        mocked_reportservice,
+    ):
+        commit = CommitFactory(repository=self.repo)
+        commit.save()
+        profiling_commit = ProfilingCommitFactory(
+            repository=self.repo,
+            last_summarized_at=datetime.now(),
+            commit_sha=commit.commitid,
+        )
+        latest_profiling_commit.return_value = profiling_commit
+        summary_data.return_value = ProfilingSummaryDataAnalyzer(
+            json.loads(test_summary)
+        )
+        mocked_useryaml.return_value = dict(
+            profiling=dict(
+                critical_files_paths=["batata.txt", "src/critical", "app.py"]
+            )
+        )
+        mock_report = MagicMock()
+        mock_report.files = [
+            "some_file.txt",
+            "batata.txt",
+            "src/critical/very_important.json",
+            "app.py",
+        ]
+        mocked_reportservice.return_value = mock_report
+
+        filenames = [cf.name for cf in self.service.critical_files]
+        assert sorted(filenames) == [
+            "app.py",
+            "batata.txt",
+            "handlers.py",
+            "src/critical/very_important.json",
+        ]
+
+    @patch("services.profiling.ReportService.build_report_from_commit")
+    @patch("services.profiling.UserYaml.get_final_yaml")
+    @patch("services.profiling.ProfilingSummary.summary_data")
+    @patch("services.profiling.ProfilingSummary.latest_profiling_commit")
+    def test_critical_files_no_profiling(
+        self,
+        latest_profiling_commit,
+        summary_data,
+        mocked_useryaml,
+        mocked_reportservice,
+    ):
+        commit = CommitFactory(repository=self.repo)
+        commit.save()
+        self.service.commit_sha = commit.commitid
+        latest_profiling_commit.return_value = None
+        mocked_useryaml.return_value = dict(
+            profiling=dict(
+                critical_files_paths=["batata.txt", "src/critical", "app.py"]
+            )
+        )
+        mock_report = MagicMock()
+        mock_report.files = [
+            "some_file.txt",
+            "batata.txt",
+            "src/critical/very_important.json",
+            "app.py",
+        ]
+        mocked_reportservice.return_value = mock_report
+
+        filenames = [cf.name for cf in self.service.critical_files]
+        assert sorted(filenames) == [
+            "app.py",
+            "batata.txt",
+            "src/critical/very_important.json",
+        ]
+        summary_data.assert_not_called()

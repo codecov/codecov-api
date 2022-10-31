@@ -61,7 +61,6 @@ class RepositoryAdmin(AdminMixin, admin.ModelAdmin):
         "active",
         "language",
         "fork",
-        "branch",
         "upload_token",
         "yaml",
         "cache",
@@ -70,7 +69,7 @@ class RepositoryAdmin(AdminMixin, admin.ModelAdmin):
         "activated",
         "deleted",
     )
-    fields = readonly_fields + ("bot", "using_integration")
+    fields = readonly_fields + ("bot", "using_integration", "branch")
 
     def has_delete_permission(self, request, obj=None):
         return False

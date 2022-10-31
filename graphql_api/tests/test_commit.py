@@ -8,8 +8,7 @@ from shared.reports.types import LineSession
 
 from codecov_auth.tests.factories import OwnerFactory
 from compare.tests.factories import CommitComparisonFactory
-from core.models import Commit
-from core.tests.factories import CommitFactory, RepositoryFactory
+from core.tests.factories import CommitErrorFactory, CommitFactory, RepositoryFactory
 from graphql_api.types.enums import UploadErrorEnum, UploadState
 from graphql_api.types.enums.enums import UploadType
 from reports.tests.factories import (
@@ -566,3 +565,138 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             {"name": "two"},
             {"name": "three"},
         ]
+
+    def test_commit_yaml_errors(self):
+        CommitErrorFactory(commit=self.commit, error_code="invalid_yaml")
+        CommitErrorFactory(commit=self.commit, error_code="yaml_client_error")
+        query = (
+            query_commit
+            % "errors(errorType: YAML_ERROR) { edges { node { errorCode } } }"
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        errors = paginate_connection(commit["errors"])
+        assert errors == [
+            {"errorCode": "invalid_yaml"},
+            {"errorCode": "yaml_client_error"},
+        ]
+
+    def test_commit_bot_errors(self):
+        CommitErrorFactory(commit=self.commit, error_code="repo_bot_invalid")
+        CommitErrorFactory(commit=self.commit, error_code="repo_bot_invalid")
+        query = (
+            query_commit
+            % "errors(errorType: BOT_ERROR) { edges { node { errorCode } } }"
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        errors = paginate_connection(commit["errors"])
+        assert errors == [
+            {"errorCode": "repo_bot_invalid"},
+            {"errorCode": "repo_bot_invalid"},
+        ]
+
+    def test_fetch_upload_name(self):
+        UploadFactory(
+            name="First Upload",
+            report=self.report,
+            job_code=123,
+            build_code=456,
+        )
+        query = query_commit % "uploads { edges { node { name } } }"
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        uploads = paginate_connection(commit["uploads"])
+        assert uploads == [
+            {
+                "name": "First Upload",
+            }
+        ]
+
+    def test_fetch_upload_name_is_none(self):
+        UploadFactory(
+            report=self.report,
+            job_code=123,
+            build_code=456,
+        )
+        query = query_commit % "uploads { edges { node { name } } }"
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        uploads = paginate_connection(commit["uploads"])
+        assert uploads == [
+            {
+                "name": None,
+            }
+        ]
+
+    def test_fetch_uploads_number(self):
+        for i in range(25):
+            UploadFactory(
+                report=self.report,
+                job_code=123,
+                build_code=456,
+            )
+        query = query_commit % "totalUploads"
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        assert data["owner"]["repository"]["commit"]["totalUploads"] == 25
+
+    def test_fetch_all_uploads_is_the_default(self):
+        for i in range(100):
+            UploadFactory(
+                report=self.report,
+                job_code=123,
+                build_code=456,
+            )
+        query = query_commit % "uploads { edges { node { state } } }"
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        assert len(data["owner"]["repository"]["commit"]["uploads"]["edges"]) == 100
+
+    def test_fetch_paginated_uploads(self):
+        for i in range(99):
+            UploadFactory(
+                report=self.report,
+                job_code=123,
+                build_code=456,
+            )
+        query = (
+            query_commit
+            % "totalUploads, uploads(first: 25) { edges { node { state } } }"
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        assert (data["owner"]["repository"]["commit"]["totalUploads"]) == 99
+        assert len(data["owner"]["repository"]["commit"]["uploads"]["edges"]) == 25

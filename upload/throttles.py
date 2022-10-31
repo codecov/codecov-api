@@ -25,7 +25,7 @@ class UploadsPerCommitThrottle(BaseThrottle):
             commit = Commit.objects.get(commitid=commit_id, repository=repository)
             new_session_count = ReportSession.objects.filter(
                 ~Q(state="error"),
-                ~Q(upload_type=UploadType.carryforwarded.name),
+                ~Q(upload_type=UploadType.CARRIEDFORWARD.db_name),
                 report__commit=commit,
             ).count()
             current_upload_limit = settings.MAX_UPLOAD_LIMIT
