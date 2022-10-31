@@ -1,8 +1,14 @@
 import logging
 import re
 
-from django.http import HttpRequest, HttpResponseNotAllowed, HttpResponseNotFound
-from rest_framework.generics import ListCreateAPIView
+from django.http import (
+    HttpRequest,
+    HttpResponse,
+    HttpResponseNotAllowed,
+    HttpResponseNotFound,
+)
+from rest_framework import status
+from rest_framework.generics import CreateAPIView, ListCreateAPIView
 from rest_framework.permissions import AllowAny
 
 from upload.serializers import CommitReportSerializer
@@ -25,3 +31,20 @@ class ReportViews(ListCreateAPIView):
 
     def list(self, request: HttpRequest, repo: str, commit_sha: str):
         return HttpResponseNotAllowed(permitted_methods=["POST"])
+
+
+class ReportResultsView(CreateAPIView):
+    # TODO add correct permission classes
+    permission_classes = [AllowAny]
+
+    def create(
+        self,
+        request: HttpRequest,
+        service: str,
+        repo: str,
+        commit_sha: str,
+        report_code: str,
+    ):
+        return HttpResponse(
+            status=status.HTTP_200_OK,
+        )
