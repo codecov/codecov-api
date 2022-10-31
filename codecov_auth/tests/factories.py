@@ -10,6 +10,8 @@ from codecov_auth.models import (
     RepositoryToken,
     Service,
     Session,
+    TokenTypeChoices,
+    UserToken,
 )
 from utils.encryption import encryptor
 
@@ -53,6 +55,7 @@ class OrganizationLevelTokenFactory(DjangoModelFactory):
 
     owner = factory.SubFactory(OwnerFactory)
     token = uuid4()
+    token_type = TokenTypeChoices.UPLOAD
 
 
 class GetAdminProviderAdapter:
@@ -63,3 +66,11 @@ class GetAdminProviderAdapter:
     async def get_is_admin(self, user):
         self.last_call_args = user
         return self.result
+
+
+class UserTokenFactory(DjangoModelFactory):
+    class Meta:
+        model = UserToken
+
+    owner = factory.SubFactory(OwnerFactory)
+    token = factory.LazyAttribute(lambda _: uuid4())

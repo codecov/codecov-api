@@ -24,8 +24,6 @@ asgiref==3.3.4
     # via
     #   django
     #   opentelemetry-util-http
-astroid==2.6.6
-    # via pylint
 attrs==20.3.0
     # via
     #   jsonschema
@@ -175,8 +173,6 @@ iniconfig==1.1.1
     # via pytest
 intervaltree==3.1.0
     # via ddtrace
-isort==5.9.3
-    # via pylint
 jmespath==0.10.0
     # via
     #   boto3
@@ -185,10 +181,6 @@ jsonschema==4.14.0
     # via drf-spectacular
 kombu==5.2.4
     # via celery
-lazy-object-proxy==1.6.0
-    # via astroid
-mccabe==0.6.1
-    # via pylint
 minio==6.0.2
     # via
     #   -r requirements.in
@@ -260,15 +252,6 @@ pycparser==2.20
     # via cffi
 pyjwt==2.4.0
     # via -r requirements.in
-pylint==2.9.6
-    # via
-    #   -r requirements.in
-    #   pylint-django
-    #   pylint-plugin-utils
-pylint-django==2.4.4
-    # via -r requirements.in
-pylint-plugin-utils==0.6
-    # via pylint-django
 pyparsing==2.4.7
     # via
     #   httplib2
@@ -385,7 +368,6 @@ tlslite-ng==0.8.0-alpha39
 toml==0.10.2
     # via
     #   pre-commit
-    #   pylint
     #   pytest
     #   pytest-cov
 typing-extensions==3.7.4.3
@@ -414,7 +396,6 @@ whitenoise==5.2.0
     # via -r requirements.in
 wrapt==1.12.1
     # via
-    #   astroid
     #   deprecated
     #   opentelemetry-instrumentation
     #   vcrpy

@@ -2,6 +2,7 @@ from codecov.commands.base import BaseCommand
 from codecov_auth.models import Owner, Session
 
 from .interactors.create_api_token import CreateApiTokenInteractor
+from .interactors.create_user_token import CreateUserTokenInteractor
 from .interactors.delete_session import DeleteSessionInteractor
 from .interactors.fetch_owner import FetchOwnerInteractor
 from .interactors.get_is_current_user_an_admin import GetIsCurrentUserAnAdminInteractor
@@ -10,6 +11,7 @@ from .interactors.get_uploads_number_per_user import GetUploadsNumberPerUserInte
 from .interactors.is_syncing import IsSyncingInteractor
 from .interactors.onboard_user import OnboardUserInteractor
 from .interactors.regenerate_org_upload_token import RegenerateOrgUploadTokenInteractor
+from .interactors.revoke_user_token import RevokeUserTokenInteractor
 from .interactors.set_yaml_on_owner import SetYamlOnOwnerInteractor
 from .interactors.trigger_sync import TriggerSyncInteractor
 from .interactors.update_profile import UpdateProfileInteractor
@@ -21,6 +23,12 @@ class OwnerCommands(BaseCommand):
 
     def delete_session(self, sessionid):
         return self.get_interactor(DeleteSessionInteractor).execute(sessionid)
+
+    def create_user_token(self, name, token_type=None):
+        return self.get_interactor(CreateUserTokenInteractor).execute(name, token_type)
+
+    def revoke_user_token(self, tokenid):
+        return self.get_interactor(RevokeUserTokenInteractor).execute(tokenid)
 
     def set_yaml_on_owner(self, username, yaml):
         return self.get_interactor(SetYamlOnOwnerInteractor).execute(username, yaml)
