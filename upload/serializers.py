@@ -87,4 +87,4 @@ class CommitReportSerializer(serializers.ModelSerializer):
             "created_at",
             "commit_sha",
         )
-        fields = read_only_fields
+        fields = read_only_fields + ("code",)

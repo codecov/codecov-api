@@ -2,7 +2,7 @@ from django.urls import path, re_path
 
 from upload.views.commits import CommitViews
 from upload.views.legacy import UploadDownloadHandler, UploadHandler
-from upload.views.reports import ReportViews
+from upload.views.reports import ReportResultsView, ReportViews
 from upload.views.uploads import UploadViews
 
 urlpatterns = [
@@ -14,9 +14,14 @@ urlpatterns = [
     ),
     # Empty routes that will become the new upload endpoint eventually
     path(
-        "<str:repo>/commits/<str:commit_sha>/reports/<str:reportid>/uploads",
+        "<str:service>/<str:repo>/commits/<str:commit_sha>/reports/<str:reportid>/uploads",
         UploadViews.as_view(),
         name="new_upload.uploads",
+    ),
+    path(
+        "<str:service>/<str:repo>/commits/<str:commit_sha>/reports/<report_code>/results",
+        ReportResultsView.as_view(),
+        name="new_upload.reports_results",
     ),
     path(
         "<str:repo>/commits/<str:commit_sha>/reports",
