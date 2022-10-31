@@ -12,7 +12,7 @@ from codecov_auth.authentication.repo_auth import (
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
 )
-from codecov_auth.models import OrganizationLevelToken
+from codecov_auth.models import OrganizationLevelToken, Service
 from core.models import Commit, Repository
 from reports.models import CommitReport
 from services.archive import ArchiveService, MinioEndpoints
@@ -20,6 +20,7 @@ from services.redis_configuration import get_redis_connection
 from upload.helpers import dispatch_upload_task
 from upload.serializers import UploadSerializer
 from upload.throttles import UploadsPerCommitThrottle, UploadsPerWindowThrottle
+from upload.views.helpers import get_repository_from_string
 
 log = logging.getLogger(__name__)
 
@@ -68,7 +69,14 @@ class UploadViews(ListCreateAPIView):
         self.activate_repo(repository)
         return instance
 
-    def list(self, request: HttpRequest, repo: str, commit_sha: str, reportid: str):
+    def list(
+        self,
+        request: HttpRequest,
+        service: str,
+        repo: str,
+        commit_sha: str,
+        reportid: str,
+    ):
         return HttpResponseNotAllowed(permitted_methods=["POST"])
 
     def trigger_upload_task(self, repository, commit_sha, upload):
@@ -86,14 +94,20 @@ class UploadViews(ListCreateAPIView):
         repository.save(update_fields=["activated", "active", "deleted", "updatestamp"])
 
     def get_repo(self) -> Repository:
-        # TODO this is not final - how is getting the repo is still in discuss
-        repoid = self.kwargs["repo"]
+        service = self.kwargs.get("service")
         try:
-            repository = Repository.objects.get(name=repoid)
-            return repository
-        except Repository.DoesNotExist:
+            service_enum = Service(service)
+        except ValueError:
+            metrics.incr("uploads.rejected", 1)
+            raise ValidationError(f"Service not found: {service}")
+
+        repo_slug = self.kwargs.get("repo")
+        repository = get_repository_from_string(service_enum, repo_slug)
+
+        if not repository:
             metrics.incr("uploads.rejected", 1)
             raise ValidationError(f"Repository not found")
+        return repository
 
     def get_commit(self, repo: Repository) -> Commit:
         commit_sha = self.kwargs["commit_sha"]
