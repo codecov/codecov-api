@@ -3,7 +3,7 @@ from ariadne_django.scalars import datetime_scalar
 
 from ..helpers.ariadne import ariadne_load_local_graphql
 from .branch import branch, branch_bindable
-from .commit import commit, commit_bindable
+from .commit import commit, commit_bindable, path_contents_result_bindable
 from .comparison import comparison, comparison_bindable, comparison_result_bindable
 from .config import config, config_bindable
 from .coverage_totals import coverage_totals, coverage_totals_bindable
@@ -98,4 +98,5 @@ bindables = [
     user_token_bindable,
     *mutation_resolvers,
     *enum_types.enum_types,
+    path_contents_result_bindable,
 ]

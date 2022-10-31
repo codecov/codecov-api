@@ -1,8 +1,7 @@
-from dis import dis
 from typing import List, Union
 
 import yaml
-from ariadne import ObjectType, convert_kwargs_to_snake_case
+from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
 from asgiref.sync import sync_to_async
 
 from core.models import Commit
@@ -20,6 +19,10 @@ commit_bindable = ObjectType("Commit")
 commit_bindable.set_alias("createdAt", "timestamp")
 commit_bindable.set_alias("pullId", "pullid")
 commit_bindable.set_alias("branchName", "branch")
+
+
+class MissingHeadReport:  # we are using this interface in comparison -> move to a shared file
+    message = "Missing head report"
 
 
 @commit_bindable.field("coverageFile")
@@ -125,9 +128,7 @@ def resolve_critical_files(commit: Commit, info, **kwargs) -> List[CriticalFile]
 @commit_bindable.field("pathContents")
 @convert_kwargs_to_snake_case
 @sync_to_async
-def resolve_path_contents(
-    head_commit: Commit, info, path: str = None, filters=None
-) -> List[Union[File, Dir]]:
+def resolve_path_contents(head_commit: Commit, info, path: str = None, filters=None):
     """
     The file directory tree is a list of all the files and directories
     extracted from the commit report of the latest, head commit.
@@ -137,7 +138,7 @@ def resolve_path_contents(
     # TODO: Might need to add reports here filtered by flags in the future
     commit_report = head_commit.full_report
     if not commit_report:
-        raise Exception("No reports found in the head commit")
+        return MissingHeadReport()
 
     if "profiling_summary" in info.context:
         if "critical_filenames" not in info.context:
@@ -163,7 +164,7 @@ def resolve_path_contents(
         items = report_paths.full_filelist()
     else:
         items = report_paths.single_directory()
-    return sort_path_contents(items, filters)
+    return {"path_content_list": sort_path_contents(items, filters)}
 
 
 @commit_bindable.field("errors")
@@ -181,3 +182,14 @@ async def resolve_errors(commit, info, errorType):
 async def resolve_total_uploads(commit, info):
     command = info.context["executor"].get_command("commit")
     return await command.get_uploads_number(commit)
+
+
+def resolve_path_contents_result_type(res, *_):
+    if isinstance(res, MissingHeadReport):
+        return "MissingHeadReport"
+    if isinstance(res, type({"path_content_list": List[Union[File, Dir]]})):
+        return "PathContents"
+
+
+path_contents_result_bindable = UnionType("PathContentsResult")
+path_contents_result_bindable.type_resolver(resolve_path_contents_result_type)
