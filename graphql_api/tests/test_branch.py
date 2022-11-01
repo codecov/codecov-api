@@ -30,7 +30,7 @@ query_files = """
           head {
             pathContents (path: $path, filters: $filters) {
                 ... on PathContents {
-                        pathContentList {
+                        results {
                         __typename
                         name
                         path
@@ -217,7 +217,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                     "branch": {
                         "head": {
                             "pathContents": {
-                                "pathContentList": [
+                                "results": [
                                     {
                                         "__typename": "PathContentDir",
                                         "name": "folder",
@@ -288,7 +288,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                     "branch": {
                         "head": {
                             "pathContents": {
-                                "pathContentList": [
+                                "results": [
                                     {
                                         "__typename": "PathContentFile",
                                         "name": "fileB.py",
@@ -345,7 +345,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                     "branch": {
                         "head": {
                             "pathContents": {
-                                "pathContentList": [
+                                "results": [
                                     {
                                         "__typename": "PathContentFile",
                                         "name": "fileB.py",
@@ -397,7 +397,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                     "branch": {
                         "head": {
                             "pathContents": {
-                                "pathContentList": [
+                                "results": [
                                     {
                                         "__typename": "PathContentFile",
                                         "name": "fileA.py",
@@ -461,7 +461,5 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
             }
         }
         assert len(
-            data["owner"]["repository"]["branch"]["head"]["pathContents"][
-                "pathContentList"
-            ]
+            data["owner"]["repository"]["branch"]["head"]["pathContents"]["results"]
         ) == len(report_mock.return_value.files)

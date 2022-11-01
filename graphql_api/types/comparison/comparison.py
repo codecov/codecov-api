@@ -7,28 +7,14 @@ from asgiref.sync import sync_to_async
 
 from compare.models import CommitComparison, FlagComparison
 from graphql_api.actions.flags import get_flag_comparisons
+from graphql_api.types.errors import (
+    MissingBaseCommit,
+    MissingBaseReport,
+    MissingComparison,
+    MissingHeadCommit,
+    MissingHeadReport,
+)
 from services.comparison import ComparisonReport, ImpactedFile, PullRequestComparison
-
-
-class MissingBaseCommit:
-    message = "Invalid base commit"
-
-
-class MissingHeadCommit:
-    message = "Invalid head commit"
-
-
-class MissingComparison:
-    message = "Missing comparison"
-
-
-class MissingBaseReport:
-    message = "Missing base report"
-
-
-class MissingHeadReport:
-    message = "Missing head report"
-
 
 comparison_bindable = ObjectType("Comparison")
 

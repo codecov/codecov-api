@@ -11,7 +11,8 @@ from graphql_api.dataloader.comparison import ComparisonLoader
 from graphql_api.dataloader.owner import OwnerLoader
 from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.enums import OrderingDirection, PathContentDisplayType
-from services.path import Dir, File, ReportPaths
+from graphql_api.types.errors import MissingHeadReport
+from services.path import ReportPaths
 from services.profiling import CriticalFile, ProfilingSummary
 
 commit_bindable = ObjectType("Commit")
@@ -19,10 +20,6 @@ commit_bindable = ObjectType("Commit")
 commit_bindable.set_alias("createdAt", "timestamp")
 commit_bindable.set_alias("pullId", "pullid")
 commit_bindable.set_alias("branchName", "branch")
-
-
-class MissingHeadReport:  # we are using this interface in comparison -> move to a shared file
-    message = "Missing head report"
 
 
 @commit_bindable.field("coverageFile")
@@ -164,7 +161,7 @@ def resolve_path_contents(head_commit: Commit, info, path: str = None, filters=N
         items = report_paths.full_filelist()
     else:
         items = report_paths.single_directory()
-    return {"path_content_list": sort_path_contents(items, filters)}
+    return {"results": sort_path_contents(items, filters)}
 
 
 @commit_bindable.field("errors")
@@ -182,14 +179,3 @@ async def resolve_errors(commit, info, errorType):
 async def resolve_total_uploads(commit, info):
     command = info.context["executor"].get_command("commit")
     return await command.get_uploads_number(commit)
-
-
-def resolve_path_contents_result_type(res, *_):
-    if isinstance(res, MissingHeadReport):
-        return "MissingHeadReport"
-    if isinstance(res, type({"path_content_list": List[Union[File, Dir]]})):
-        return "PathContents"
-
-
-path_contents_result_bindable = UnionType("PathContentsResult")
-path_contents_result_bindable.type_resolver(resolve_path_contents_result_type)

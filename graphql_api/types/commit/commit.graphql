@@ -51,8 +51,3 @@ type UploadEdge {
   node: Upload!
 }
 
-type PathContents {
-  pathContentList: [PathContent!]!
-}
-
-union PathContentsResult = PathContents | MissingHeadReport

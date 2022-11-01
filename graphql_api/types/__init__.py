@@ -3,7 +3,7 @@ from ariadne_django.scalars import datetime_scalar
 
 from ..helpers.ariadne import ariadne_load_local_graphql
 from .branch import branch, branch_bindable
-from .commit import commit, commit_bindable, path_contents_result_bindable
+from .commit import commit, commit_bindable
 from .comparison import comparison, comparison_bindable, comparison_result_bindable
 from .config import config, config_bindable
 from .coverage_totals import coverage_totals, coverage_totals_bindable
@@ -22,6 +22,7 @@ from .path_contents import (
     path_content,
     path_content_bindable,
     path_content_file_bindable,
+    path_contents_result_bindable,
 )
 from .profile import profile, profile_bindable
 from .pull import pull, pull_bindable
