@@ -7,6 +7,7 @@ from uuid import uuid4
 
 import minio
 from asgiref.sync import sync_to_async
+from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.http import Http404, HttpResponse, HttpResponseServerError
 from django.utils import timezone
@@ -168,7 +169,7 @@ class UploadHandler(APIView):
         redis_key = None  # populated later for v2 uploads when storing report in Redis
 
         # Get the url where the commit details can be found on the Codecov site, we'll return this in the response
-        destination_url = f"{get_config('setup', 'codecov_url', default='https://codecov.io')}/{owner.service}/{owner.username}/{repository.name}/commit/{commitid}"
+        destination_url = f"{settings.CODECOV_DASHBOARD_URL}/{owner.service}/{owner.username}/{repository.name}/commit/{commitid}"
 
         # v2 - store request body in redis
         if version == "v2":

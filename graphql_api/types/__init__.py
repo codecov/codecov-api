@@ -4,7 +4,7 @@ from ariadne_django.scalars import datetime_scalar
 from ..helpers.ariadne import ariadne_load_local_graphql
 from .branch import branch, branch_bindable
 from .commit import commit, commit_bindable
-from .comparison import comparison, comparison_bindable
+from .comparison import comparison, comparison_bindable, comparison_result_bindable
 from .config import config, config_bindable
 from .coverage_totals import coverage_totals, coverage_totals_bindable
 from .enums import enum_types, enums
@@ -31,6 +31,7 @@ from .segment_comparison import segment_comparison, segment_comparison_bindable
 from .session import session, session_bindable
 from .upload import upload, upload_bindable, upload_error_bindable
 from .user import user, user_bindable
+from .user_token import user_token, user_token_bindable
 
 inputs = ariadne_load_local_graphql(__file__, "./inputs")
 enums = ariadne_load_local_graphql(__file__, "./enums")
@@ -63,6 +64,7 @@ types = [
     profile,
     impacted_file,
     config,
+    user_token,
 ]
 
 bindables = [
@@ -71,6 +73,7 @@ bindables = [
     branch_bindable,
     commit_bindable,
     comparison_bindable,
+    comparison_result_bindable,
     file_comparison_bindable,
     flag_bindable,
     flag_comparison_bindable,
@@ -92,6 +95,7 @@ bindables = [
     profile_bindable,
     impacted_file_bindable,
     config_bindable,
+    user_token_bindable,
     *mutation_resolvers,
     *enum_types.enum_types,
 ]

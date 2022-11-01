@@ -47,8 +47,11 @@ default_pull_request_detail_query = """
         commitid
     }
     compareWithBase {
-        patchTotals {
-            coverage
+        __typename
+        ... on Comparison {
+            patchTotals {
+                coverage
+            }
         }
     }
 """
@@ -113,7 +116,9 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "author": {"username": "test-pull-user"},
             "head": {"totals": None},
             "comparedTo": None,
-            "compareWithBase": None,
+            "compareWithBase": {
+                "__typename": "MissingBaseCommit",
+            },
         }
 
     @freeze_time("2021-02-02")
@@ -134,7 +139,9 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "author": None,
             "head": None,
             "comparedTo": None,
-            "compareWithBase": None,
+            "compareWithBase": {
+                "__typename": "MissingBaseCommit",
+            },
         }
 
     @freeze_time("2021-02-02")
@@ -154,7 +161,9 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "author": {"username": "test-pull-user"},
             "head": None,
             "comparedTo": None,
-            "compareWithBase": None,
+            "compareWithBase": {
+                "__typename": "MissingHeadCommit",
+            },
         }
 
     @freeze_time("2021-02-02")
@@ -178,7 +187,9 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "author": {"username": "test-pull-user"},
             "head": None,
             "comparedTo": None,
-            "compareWithBase": None,
+            "compareWithBase": {
+                "__typename": "MissingComparison",
+            },
         }
 
     @freeze_time("2021-02-02")
@@ -217,7 +228,10 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "author": {"username": "test-pull-user"},
             "head": {"totals": {"coverage": 78.38}},
             "comparedTo": {"commitid": "9asd78fa7as8d8fa97s8d7fgagsd8fa9asd8f77s"},
-            "compareWithBase": {"patchTotals": {"coverage": 87.39}},
+            "compareWithBase": {
+                "__typename": "Comparison",
+                "patchTotals": {"coverage": 87.39},
+            },
         }
 
     @freeze_time("2021-02-02")

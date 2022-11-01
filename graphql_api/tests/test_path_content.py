@@ -1,4 +1,5 @@
 from graphql import GraphQLResolveInfo
+from shared.reports.types import ReportTotals
 
 from services.path import Dir, File
 
@@ -15,64 +16,42 @@ class MockContext(object):
 
 class TestResolvePathContent:
     def test_returns_path_content_file(self):
-        file = File(
-            kind="kind",
-            name="name",
-            hits=1,
-            lines=1,
-            coverage=1.1,
-            full_path="full path",
-        )
+        file = File(full_path="file.py", totals=ReportTotals.default_totals())
 
         type = resolve_path_content_type(file)
-
         assert type == "PathContentFile"
 
     def test_returns_path_content_dir(self):
-        dir = Dir(kind="kind", name="name", hits=1, lines=1, coverage=1.1, children=[])
+        dir = Dir(full_path="foo/bar", children=[])
 
         type = resolve_path_content_type(dir)
-
         assert type == "PathContentDir"
 
     def test_returns_none(self):
         type = resolve_path_content_type("string")
-
         assert type == None
 
 
 class TestIsCriticalFile:
     def test_is_critical_file_returns_true(self):
-        file = File(
-            kind="kind", name="name", hits=1, lines=1, coverage=1.1, full_path="file.py"
-        )
-
+        file = File(full_path="file.py", totals=ReportTotals.default_totals())
         info = MockContext(context={})
         info.context["critical_filenames"] = ["file.py"]
 
         data = resolve_is_critical_file(file, info)
-
         assert data == True
 
     def test_is_critical_file_returns_false(self):
-        file = File(
-            kind="kind", name="name", hits=1, lines=1, coverage=1.1, full_path="file.py"
-        )
-
+        file = File(full_path="file.py", totals=ReportTotals.default_totals())
         info = MockContext(context={})
         info.context["critical_filenames"] = []
 
         data = resolve_is_critical_file(file, info)
-
         assert data == False
 
     def test_is_critical_file_no_critical_filenames(self):
-        file = File(
-            kind="kind", name="name", hits=1, lines=1, coverage=1.1, full_path="file.py"
-        )
-
+        file = File(full_path="file.py", totals=ReportTotals.default_totals())
         info = MockContext(context={})
 
         data = resolve_is_critical_file(file, info)
-
         assert data == False

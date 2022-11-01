@@ -23,8 +23,10 @@ type Repository {
   graphToken: String
   yaml: String
   bot: Owner
+  flagsCount: Int!
   flagsMeasurementsActive: Boolean!
   flagsMeasurementsBackfilled: Boolean!
+  measurements(interval: MeasurementInterval!, after: DateTime!, before: DateTime!): [Measurement!]!
 }
 
 type PullConnection {

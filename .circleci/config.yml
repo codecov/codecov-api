@@ -141,14 +141,6 @@ jobs:
           apk add git
           chmod +x codecov-alpine
           ./codecov-alpine -R . --url https://stage-web.codecov.dev -t $CODECOV_STAGING_TOKEN -F unit
-  pylint-django:
-    executor: codecov-api
-    steps:
-    - attach_workspace:
-        at: .
-    - run:
-        name: Running pylint-django
-        command: make lint.ci
   portable:
     executor: codecov-deploy
     steps:
@@ -248,10 +240,6 @@ workflows:
           filters:
             tags:
               only: /.*/
-      - pylint-django:
-          context: "circleci google deploy context" 
-          requires:
-            - build
       - build-enterprise:
           context: "circleci google deploy context"
           requires:

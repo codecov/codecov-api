@@ -42,3 +42,13 @@ class CommitCommandsTest(TransactionTestCase):
     def test_get_file_content_delegate_to_interactor(self, interactor_mock):
         self.command.get_file_content(self.commit, "path/to/file")
         interactor_mock.assert_called_once_with(self.commit, "path/to/file")
+
+    @patch("core.commands.commit.commit.GetCommitErrorsInteractor.execute")
+    def test_get_commit_errors_delegate_to_interactor(self, interactor_mock):
+        self.command.get_commit_errors(self.commit, "YAML_ERROR")
+        interactor_mock.assert_called_once_with(self.commit, "YAML_ERROR")
+
+    @patch("core.commands.commit.commit.GetUploadsNumberInteractor.execute")
+    def test_get_uploads_number_delegate_to_interactor(self, interactor_mock):
+        self.command.get_uploads_number(self.commit)
+        interactor_mock.assert_called_once_with(self.commit)

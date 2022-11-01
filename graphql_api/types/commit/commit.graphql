@@ -13,9 +13,31 @@ type Commit {
   flagNames: [String]
   coverageFile(path: String!, flags: [String]): File
   compareWithParent: Comparison
-  uploads(first: Int, after: String, last: Int, before: String): UploadConnection
+  uploads(
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): UploadConnection
   criticalFiles: [CriticalFile!]!
   pathContents(path: String, filters: PathContentsFilters): [PathContent!]!
+  errors(errorType: CommitErrorType!): CommitErrorsConnection!
+  totalUploads: Int!
+}
+
+type CommitErrorsConnection {
+  edges: [CommitErrorEdge]
+  totalCount: Int!
+  pageInfo: PageInfo!
+}
+
+type CommitErrorEdge {
+  cursor: String!
+  node: CommitError!
+}
+
+type CommitError {
+  errorCode: CommitErrorCode!
 }
 
 type UploadConnection {
