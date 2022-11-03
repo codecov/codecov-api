@@ -8,7 +8,7 @@ class FetchRepoBranchesInteractor(BaseInteractor):
         filters = filters or {}
         search_value = filters.get("search_value")
         if search_value:
-            queryset = queryset.filter(name__contains=search_value)
+            queryset = queryset.filter(name__icontains=search_value)
         return queryset
 
     @sync_to_async
