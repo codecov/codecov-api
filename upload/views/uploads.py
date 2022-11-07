@@ -124,7 +124,9 @@ class UploadViews(ListCreateAPIView):
         report_code = self.kwargs.get("report_code")
         try:
             report = CommitReport.objects.get(
-                code=report_code, commit__commitid=commit.commitid
+                code=report_code,
+                commit__commitid=commit.commitid,
+                commit__repository__repoid=commit.repository.repoid,
             )
             return report
         except CommitReport.DoesNotExist:
