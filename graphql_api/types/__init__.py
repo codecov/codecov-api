@@ -22,6 +22,7 @@ from .path_contents import (
     path_content,
     path_content_bindable,
     path_content_file_bindable,
+    path_contents_result_bindable,
 )
 from .profile import profile, profile_bindable
 from .pull import pull, pull_bindable
@@ -98,4 +99,5 @@ bindables = [
     user_token_bindable,
     *mutation_resolvers,
     *enum_types.enum_types,
+    path_contents_result_bindable,
 ]
