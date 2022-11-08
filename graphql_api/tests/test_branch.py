@@ -29,17 +29,24 @@ query_files = """
         branch(name: $branch) {
           head {
             pathContents (path: $path, filters: $filters) {
-              __typename
-              name
-              path
-              hits
-              misses
-              partials
-              lines
-              percentCovered
-              ... on PathContentFile {
-                isCriticalFile
-              }
+                ... on PathContents {
+                        results {
+                        __typename
+                        name
+                        path
+                        hits
+                        misses
+                        partials
+                        lines
+                        percentCovered
+                        ... on PathContentFile {
+                            isCriticalFile
+                        }  
+                    }
+                }
+                ... on MissingHeadReport {
+                    message
+                }
             }
           }
         }
@@ -155,6 +162,31 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
             {"node": {"name": "master"}},
         ]
 
+    def test_fetch_branches_with_filters(self):
+        query_branches = """{
+            owner(username: "%s") {
+                repository(name: "%s") {
+                    branches (filters: {searchValue: "%s"}){
+                        edges{
+                            node{
+                                name
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        """
+        variables = {"org": self.org.username, "repo": self.repo.name}
+        query = query_branches % (self.org.username, self.repo.name, "test2")
+        data = self.gql_request(query, variables=variables)
+        branches = data["owner"]["repository"]["branches"]["edges"]
+        assert type(branches) == list
+        assert len(branches) == 1
+        assert branches == [
+            {"node": {"name": "test2"}},
+        ]
+
     @override_settings(DEBUG=True)
     def test_fetch_path_contents_with_no_report(self):
         commit_without_report = CommitFactory(repository=self.repo, report=None)
@@ -171,9 +203,17 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
             "path": "",
             "filters": {},
         }
-        res = self.gql_request(query_files, variables=variables, with_errors=True)
-        assert res["errors"] is not None
-        assert res["errors"][0]["message"] == "No reports found in the head commit"
+        data = self.gql_request(query_files, variables=variables)
+        print(data)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "branch": {
+                        "head": {"pathContents": {"message": "Missing head report"}}
+                    }
+                }
+            }
+        }
 
     @patch(
         "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
@@ -196,46 +236,47 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
         critical_files.return_value = [CriticalFile("fileA.py")]
 
         data = self.gql_request(query_files, variables=variables)
-
         assert data == {
             "owner": {
                 "repository": {
                     "branch": {
                         "head": {
-                            "pathContents": [
-                                {
-                                    "__typename": "PathContentDir",
-                                    "name": "folder",
-                                    "path": "folder",
-                                    "hits": 24,
-                                    "misses": 0,
-                                    "partials": 0,
-                                    "lines": 30,
-                                    "percentCovered": 80.0,
-                                },
-                                {
-                                    "__typename": "PathContentFile",
-                                    "name": "fileB.py",
-                                    "path": "fileB.py",
-                                    "hits": 8,
-                                    "misses": 0,
-                                    "partials": 0,
-                                    "lines": 10,
-                                    "percentCovered": 80.0,
-                                    "isCriticalFile": False,
-                                },
-                                {
-                                    "__typename": "PathContentFile",
-                                    "name": "fileA.py",
-                                    "path": "fileA.py",
-                                    "hits": 8,
-                                    "misses": 0,
-                                    "partials": 0,
-                                    "lines": 10,
-                                    "percentCovered": 80.0,
-                                    "isCriticalFile": True,
-                                },
-                            ]
+                            "pathContents": {
+                                "results": [
+                                    {
+                                        "__typename": "PathContentDir",
+                                        "name": "folder",
+                                        "path": "folder",
+                                        "hits": 24,
+                                        "misses": 0,
+                                        "partials": 0,
+                                        "lines": 30,
+                                        "percentCovered": 80.0,
+                                    },
+                                    {
+                                        "__typename": "PathContentFile",
+                                        "name": "fileB.py",
+                                        "path": "fileB.py",
+                                        "hits": 8,
+                                        "misses": 0,
+                                        "partials": 0,
+                                        "lines": 10,
+                                        "percentCovered": 80.0,
+                                        "isCriticalFile": False,
+                                    },
+                                    {
+                                        "__typename": "PathContentFile",
+                                        "name": "fileA.py",
+                                        "path": "fileA.py",
+                                        "hits": 8,
+                                        "misses": 0,
+                                        "partials": 0,
+                                        "lines": 10,
+                                        "percentCovered": 80.0,
+                                        "isCriticalFile": True,
+                                    },
+                                ]
+                            }
                         }
                     }
                 }
@@ -271,29 +312,31 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                 "repository": {
                     "branch": {
                         "head": {
-                            "pathContents": [
-                                {
-                                    "__typename": "PathContentFile",
-                                    "name": "fileB.py",
-                                    "path": "folder/fileB.py",
-                                    "hits": 8,
-                                    "misses": 0,
-                                    "partials": 0,
-                                    "lines": 10,
-                                    "percentCovered": 80.0,
-                                    "isCriticalFile": True,
-                                },
-                                {
-                                    "__typename": "PathContentDir",
-                                    "name": "subfolder",
-                                    "path": "folder/subfolder",
-                                    "hits": 16,
-                                    "misses": 0,
-                                    "partials": 0,
-                                    "lines": 20,
-                                    "percentCovered": 80.0,
-                                },
-                            ]
+                            "pathContents": {
+                                "results": [
+                                    {
+                                        "__typename": "PathContentFile",
+                                        "name": "fileB.py",
+                                        "path": "folder/fileB.py",
+                                        "hits": 8,
+                                        "misses": 0,
+                                        "partials": 0,
+                                        "lines": 10,
+                                        "percentCovered": 80.0,
+                                        "isCriticalFile": True,
+                                    },
+                                    {
+                                        "__typename": "PathContentDir",
+                                        "name": "subfolder",
+                                        "path": "folder/subfolder",
+                                        "hits": 16,
+                                        "misses": 0,
+                                        "partials": 0,
+                                        "lines": 20,
+                                        "percentCovered": 80.0,
+                                    },
+                                ]
+                            }
                         }
                     }
                 }
@@ -326,30 +369,32 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                 "repository": {
                     "branch": {
                         "head": {
-                            "pathContents": [
-                                {
-                                    "__typename": "PathContentFile",
-                                    "name": "fileB.py",
-                                    "path": "fileB.py",
-                                    "hits": 8,
-                                    "misses": 0,
-                                    "partials": 0,
-                                    "lines": 10,
-                                    "percentCovered": 80.0,
-                                    "isCriticalFile": False,
-                                },
-                                {
-                                    "__typename": "PathContentFile",
-                                    "name": "fileB.py",
-                                    "path": "folder/fileB.py",
-                                    "hits": 8,
-                                    "misses": 0,
-                                    "partials": 0,
-                                    "lines": 10,
-                                    "percentCovered": 80.0,
-                                    "isCriticalFile": True,
-                                },
-                            ]
+                            "pathContents": {
+                                "results": [
+                                    {
+                                        "__typename": "PathContentFile",
+                                        "name": "fileB.py",
+                                        "path": "fileB.py",
+                                        "hits": 8,
+                                        "misses": 0,
+                                        "partials": 0,
+                                        "lines": 10,
+                                        "percentCovered": 80.0,
+                                        "isCriticalFile": False,
+                                    },
+                                    {
+                                        "__typename": "PathContentFile",
+                                        "name": "fileB.py",
+                                        "path": "folder/fileB.py",
+                                        "hits": 8,
+                                        "misses": 0,
+                                        "partials": 0,
+                                        "lines": 10,
+                                        "percentCovered": 80.0,
+                                        "isCriticalFile": True,
+                                    },
+                                ]
+                            }
                         }
                     }
                 }
@@ -376,68 +421,70 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                 "repository": {
                     "branch": {
                         "head": {
-                            "pathContents": [
-                                {
-                                    "__typename": "PathContentFile",
-                                    "name": "fileA.py",
-                                    "path": "fileA.py",
-                                    "hits": 8,
-                                    "misses": 0,
-                                    "partials": 0,
-                                    "lines": 10,
-                                    "percentCovered": 80.0,
-                                    "isCriticalFile": False,
-                                },
-                                {
-                                    "__typename": "PathContentFile",
-                                    "name": "fileB.py",
-                                    "path": "fileB.py",
-                                    "hits": 8,
-                                    "misses": 0,
-                                    "partials": 0,
-                                    "lines": 10,
-                                    "percentCovered": 80.0,
-                                    "isCriticalFile": False,
-                                },
-                                {
-                                    "__typename": "PathContentFile",
-                                    "name": "fileB.py",
-                                    "path": "folder/fileB.py",
-                                    "hits": 8,
-                                    "misses": 0,
-                                    "partials": 0,
-                                    "lines": 10,
-                                    "percentCovered": 80.0,
-                                    "isCriticalFile": False,
-                                },
-                                {
-                                    "__typename": "PathContentFile",
-                                    "name": "fileC.py",
-                                    "path": "folder/subfolder/fileC.py",
-                                    "hits": 8,
-                                    "misses": 0,
-                                    "partials": 0,
-                                    "lines": 10,
-                                    "percentCovered": 80.0,
-                                    "isCriticalFile": False,
-                                },
-                                {
-                                    "__typename": "PathContentFile",
-                                    "name": "fileD.py",
-                                    "path": "folder/subfolder/fileD.py",
-                                    "hits": 8,
-                                    "misses": 0,
-                                    "partials": 0,
-                                    "lines": 10,
-                                    "percentCovered": 80.0,
-                                    "isCriticalFile": False,
-                                },
-                            ]
+                            "pathContents": {
+                                "results": [
+                                    {
+                                        "__typename": "PathContentFile",
+                                        "name": "fileA.py",
+                                        "path": "fileA.py",
+                                        "hits": 8,
+                                        "misses": 0,
+                                        "partials": 0,
+                                        "lines": 10,
+                                        "percentCovered": 80.0,
+                                        "isCriticalFile": False,
+                                    },
+                                    {
+                                        "__typename": "PathContentFile",
+                                        "name": "fileB.py",
+                                        "path": "fileB.py",
+                                        "hits": 8,
+                                        "misses": 0,
+                                        "partials": 0,
+                                        "lines": 10,
+                                        "percentCovered": 80.0,
+                                        "isCriticalFile": False,
+                                    },
+                                    {
+                                        "__typename": "PathContentFile",
+                                        "name": "fileB.py",
+                                        "path": "folder/fileB.py",
+                                        "hits": 8,
+                                        "misses": 0,
+                                        "partials": 0,
+                                        "lines": 10,
+                                        "percentCovered": 80.0,
+                                        "isCriticalFile": False,
+                                    },
+                                    {
+                                        "__typename": "PathContentFile",
+                                        "name": "fileC.py",
+                                        "path": "folder/subfolder/fileC.py",
+                                        "hits": 8,
+                                        "misses": 0,
+                                        "partials": 0,
+                                        "lines": 10,
+                                        "percentCovered": 80.0,
+                                        "isCriticalFile": False,
+                                    },
+                                    {
+                                        "__typename": "PathContentFile",
+                                        "name": "fileD.py",
+                                        "path": "folder/subfolder/fileD.py",
+                                        "hits": 8,
+                                        "misses": 0,
+                                        "partials": 0,
+                                        "lines": 10,
+                                        "percentCovered": 80.0,
+                                        "isCriticalFile": False,
+                                    },
+                                ]
+                            }
                         }
                     }
                 }
             }
         }
         assert len(
-            data["owner"]["repository"]["branch"]["head"]["pathContents"]
+            data["owner"]["repository"]["branch"]["head"]["pathContents"]["results"]
         ) == len(report_mock.return_value.files)
