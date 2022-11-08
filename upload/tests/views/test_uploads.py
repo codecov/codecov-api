@@ -73,11 +73,11 @@ def test_uploads_get_not_allowed(client, db, mocker):
     client.force_authenticate(user=owner)
     url = reverse(
         "new_upload.uploads",
-        args=["github", "codecov::::the-repo", "commit-sha", "report-id"],
+        args=["github", "codecov::::the-repo", "commit-sha", "report-code"],
     )
     assert (
         url
-        == "/upload/github/codecov::::the-repo/commits/commit-sha/reports/report-id/uploads"
+        == "/upload/github/codecov::::the-repo/commits/commit-sha/reports/report-code/uploads"
     )
     res = client.get(url)
     assert res.status_code == 405
@@ -146,7 +146,7 @@ def test_get_report(db):
     report.save()
     upload_views = UploadViews()
     upload_views.kwargs = dict(
-        repo=repository.name, commit_sha=commit.commitid, reportid=report.external_id
+        repo=repository.name, commit_sha=commit.commitid, report_code=report.code
     )
     recovered_report = upload_views.get_report(commit)
     assert recovered_report == report
@@ -159,9 +159,8 @@ def test_get_report_error(mock_metrics, db):
     repository.save()
     commit.save()
     upload_views = UploadViews()
-    report_uuid = uuid.uuid4()
     upload_views.kwargs = dict(
-        repo=repository.name, commit_sha=commit.commitid, reportid=report_uuid
+        repo=repository.name, commit_sha=commit.commitid, report_code="random_code"
     )
     with pytest.raises(ValidationError) as exp:
         upload_views.get_report(commit)
@@ -187,7 +186,7 @@ def test_uploads_post(mock_metrics, db, mocker, mock_redis):
         name="the_repo", author__username="codecov", author__service="github"
     )
     commit = CommitFactory(repository=repository)
-    commit_report = CommitReport.objects.create(commit=commit, id="12345")
+    commit_report = CommitReport.objects.create(commit=commit, code="code")
     repository.save()
     commit_report.save()
 
@@ -200,7 +199,7 @@ def test_uploads_post(mock_metrics, db, mocker, mock_redis):
             "github",
             "codecov::::the_repo",
             commit.commitid,
-            commit_report.external_id,
+            commit_report.code,
         ],
     )
     response = client.post(

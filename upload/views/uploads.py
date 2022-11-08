@@ -75,7 +75,7 @@ class UploadViews(ListCreateAPIView):
         service: str,
         repo: str,
         commit_sha: str,
-        reportid: str,
+        report_code: str,
     ):
         return HttpResponseNotAllowed(permitted_methods=["POST"])
 
@@ -110,7 +110,7 @@ class UploadViews(ListCreateAPIView):
         return repository
 
     def get_commit(self, repo: Repository) -> Commit:
-        commit_sha = self.kwargs["commit_sha"]
+        commit_sha = self.kwargs.get("commit_sha")
         try:
             commit = Commit.objects.get(
                 commitid=commit_sha, repository__repoid=repo.repoid
@@ -121,11 +121,9 @@ class UploadViews(ListCreateAPIView):
             raise ValidationError("Commit SHA not found")
 
     def get_report(self, commit: Commit) -> CommitReport:
-        report_id = self.kwargs["reportid"]
+        report_code = self.kwargs.get("report_code")
         try:
-            report = CommitReport.objects.get(
-                external_id__exact=report_id, commit__commitid=commit.commitid
-            )
+            report = CommitReport.objects.get(code=report_code, commit=commit)
             return report
         except CommitReport.DoesNotExist:
             metrics.incr("uploads.rejected", 1)
