@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from django.urls import reverse
 from rest_framework.test import APIClient
 
@@ -97,3 +99,18 @@ def test_simple_label_analysis_only_get(db, mocker):
     )
     assert response.status_code == 200
     assert response.json() == expected_response_json
+
+
+def test_simple_label_analysis_get_does_not_exist(db, mocker):
+    token = RepositoryTokenFactory.create(
+        repository__active=True, token_type="static_analysis"
+    )
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION="repotoken " + token.key)
+    get_url = reverse("view_label_analysis", kwargs=dict(external_id=uuid4()))
+    response = client.get(
+        get_url,
+        format="json",
+    )
+    assert response.status_code == 404
+    assert response.json() == {"detail": "No such Label Analysis exists"}
