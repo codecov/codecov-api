@@ -118,9 +118,9 @@ async def resolve_commits(repository, info, filters=None, **kwargs):
 
 @repository_bindable.field("branches")
 @convert_kwargs_to_snake_case
-async def resolve_branches(repository, info, **kwargs):
+async def resolve_branches(repository, info, filters=None, **kwargs):
     command = info.context["executor"].get_command("branch")
-    queryset = await command.fetch_branches(repository)
+    queryset = await command.fetch_branches(repository, filters)
     return await queryset_to_connection(
         queryset,
         ordering=("updatestamp",),

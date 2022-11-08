@@ -20,7 +20,7 @@ type Commit {
     before: String
   ): UploadConnection
   criticalFiles: [CriticalFile!]!
-  pathContents(path: String, filters: PathContentsFilters): [PathContent!]!
+  pathContents(path: String, filters: PathContentsFilters): PathContentsResult
   errors(errorType: CommitErrorType!): CommitErrorsConnection!
   totalUploads: Int!
 }
@@ -50,3 +50,4 @@ type UploadEdge {
   cursor: String!
   node: Upload!
 }
+

@@ -10,5 +10,7 @@ class BranchCommands(BaseCommand):
             repository, branch_name
         )
 
-    def fetch_branches(self, repository):
-        return self.get_interactor(FetchRepoBranchesInteractor).execute(repository)
+    def fetch_branches(self, repository, filters):
+        return self.get_interactor(FetchRepoBranchesInteractor).execute(
+            repository, filters
+        )
