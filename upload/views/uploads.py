@@ -123,11 +123,7 @@ class UploadViews(ListCreateAPIView):
     def get_report(self, commit: Commit) -> CommitReport:
         report_code = self.kwargs.get("report_code")
         try:
-            report = CommitReport.objects.get(
-                code=report_code,
-                commit__commitid=commit.commitid,
-                commit__repository__repoid=commit.repository.repoid,
-            )
+            report = CommitReport.objects.get(code=report_code, commit=commit)
             return report
         except CommitReport.DoesNotExist:
             metrics.incr("uploads.rejected", 1)
