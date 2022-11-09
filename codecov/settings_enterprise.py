@@ -22,7 +22,9 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticatedOrReadOnly",
     ),
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "codecov_auth.authentication.CodecovSessionAuthentication",
+        "codecov_auth.authentication.CodecovTokenAuthentication",
+        "rest_framework.authentication.BasicAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
     ),
     "DEFAULT_PAGINATION_CLASS": "api.shared.pagination.StandardPageNumberPagination",
     "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
@@ -64,7 +66,7 @@ GITLAB_REDIRECT_URI = get_config(
 GITLAB_ENTERPRISE_REDIRECT_URI = get_config(
     "gitlab_enterprise",
     "redirect_uri",
-    default=f"{CODECOV_URL}/login/gitlab_enterprise",
+    default=f"{CODECOV_URL}/login/gle",
 )
 
 CODECOV_DASHBOARD_URL = get_config(

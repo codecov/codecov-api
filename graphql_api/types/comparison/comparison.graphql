@@ -11,7 +11,11 @@ type Comparison {
   hasDifferentNumberOfHeadAndBaseReports: Boolean!
 }
 
-type InvalidComparison implements ResolverError {
+type MissingBaseCommit implements ResolverError {
+  message: String!
+}
+
+type MissingHeadCommit implements ResolverError {
   message: String!
 }
 
@@ -27,4 +31,10 @@ type MissingHeadReport implements ResolverError {
   message: String!
 }
 
-union ComparisonResult = Comparison | InvalidComparison | MissingComparison | MissingBaseReport | MissingHeadReport
+union ComparisonResult =
+    Comparison
+  | MissingBaseCommit
+  | MissingHeadCommit
+  | MissingComparison
+  | MissingBaseReport
+  | MissingHeadReport

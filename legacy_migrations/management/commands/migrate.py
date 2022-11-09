@@ -71,7 +71,10 @@ class Command(MigrateCommand):
             return MockLock()
 
         redis_connection = get_redis_connection()
-        lock = redis_lock.Lock(redis_connection, MIGRATION_LOCK_NAME)
+        lock = redis_lock.Lock(
+            redis_connection, MIGRATION_LOCK_NAME, expire=180, auto_renewal=True
+        )
+        log.info("Trying to acquire migrations lock...")
         acquired = lock.acquire(timeout=180)
 
         if not acquired:

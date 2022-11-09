@@ -297,6 +297,34 @@ class UserViewSetTests(APITestCase):
 
         assert [r["email"] for r in response.data["results"]] == ["d", "c", "b", "a"]
 
+    def test_list_can_order_by_activated(self):
+        self.users[0].activated = False
+        self.users[0].save()
+        self.users[1].activated = True
+        self.users[1].save()
+        self.users[2].activated = False
+        self.users[2].save()
+        self.users[3].activated = False
+        self.users[3].save()
+
+        response = self._list(query_params={"ordering": "activated"})
+
+        assert [r["activated"] for r in response.data["results"]] == [
+            False,
+            False,
+            False,
+            True,
+        ]
+
+        response = self._list(query_params={"ordering": "-activated"})
+
+        assert [r["activated"] for r in response.data["results"]] == [
+            True,
+            False,
+            False,
+            False,
+        ]
+
     @patch("api.internal.owner.views.on_enterprise_plan")
     def test_list_can_order_by_last_pull_timestamp(self, on_enterprise_plan):
         on_enterprise_plan.return_value = True

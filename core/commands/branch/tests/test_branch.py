@@ -22,5 +22,6 @@ class BranchCommandsTest(TransactionTestCase):
 
     @patch("core.commands.branch.branch.FetchRepoBranchesInteractor.execute")
     def test_fetch_branches_delegate_to_interactor(self, interactor_mock):
-        self.command.fetch_branches(self.repository)
-        interactor_mock.assert_called_once_with(self.repository)
+        filters = {}
+        self.command.fetch_branches(self.repository, filters)
+        interactor_mock.assert_called_once_with(self.repository, filters)

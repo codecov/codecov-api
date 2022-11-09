@@ -1,24 +1,31 @@
 import logging
 
 from django.forms import ValidationError
-from django.http import HttpRequest, HttpResponseNotAllowed
 from rest_framework.generics import ListCreateAPIView
-from rest_framework.permissions import AllowAny
 
 from codecov_auth.models import Service
 from core.models import Commit, Repository
 from services.task import TaskService
 from upload.serializers import CommitSerializer
 from upload.views.helpers import get_repository_from_string
+from codecov_auth.authentication.repo_auth import (
+    GlobalTokenAuthentication,
+    RepositoryLegacyTokenAuthentication,
+)
+from core.models import Commit, Repository
+from services.task import TaskService
+from upload.serializers import CommitSerializer
+from upload.views.uploads import CanDoCoverageUploadsPermission
 
 log = logging.getLogger(__name__)
 
 
 class CommitViews(ListCreateAPIView):
     serializer_class = CommitSerializer
-    permission_classes = [
-        # TODO: change to the correct permission class when implemented
-        AllowAny,
+    permission_classes = [CanDoCoverageUploadsPermission]
+    authentication_classes = [
+        GlobalTokenAuthentication,
+        RepositoryLegacyTokenAuthentication,
     ]
 
     def get_queryset(self):

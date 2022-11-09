@@ -3,8 +3,6 @@ from django.forms import ValidationError
 from django.urls import reverse
 from rest_framework.test import APIClient
 
-from billing.constants import BASIC_PLAN_NAME
-from codecov_auth.tests.factories import OwnerFactory
 from core.models import Commit
 from core.tests.factories import CommitFactory, RepositoryFactory
 from services.task import TaskService
@@ -68,7 +66,9 @@ def test_commits_get(client, db):
     repo_slug = f"{repo.author.username}::::{repo.name}"
     url = reverse("new_upload.commits", args=[repo.author.service, repo_slug])
     assert url == f"/upload/{repo.author.service}/{repo_slug}/commits"
-    res = client.get(url)
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION="token " + repo.upload_token)
+    res = client.get(url, format="json")
     assert res.status_code == 200
     content = res.json()
     assert content.get("count") == 2
@@ -89,11 +89,9 @@ def test_commits_get(client, db):
 def test_commit_post_empty(db, client, mocker):
     mocked_call = mocker.patch.object(TaskService, "update_commit")
     repository = RepositoryFactory.create()
-    repository.save()
 
-    owner = OwnerFactory(plan=BASIC_PLAN_NAME)
     client = APIClient()
-    client.force_authenticate(user=owner)
+    client.credentials(HTTP_AUTHORIZATION="token " + repository.upload_token)
     repo_slug = f"{repository.author.username}::::{repository.name}"
     url = reverse(
         "new_upload.commits",
