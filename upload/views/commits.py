@@ -7,9 +7,11 @@ from codecov_auth.authentication.repo_auth import (
     GlobalTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
 )
+from codecov_auth.models import Service
 from core.models import Commit, Repository
 from services.task import TaskService
 from upload.serializers import CommitSerializer
+from upload.views.helpers import get_repository_from_string
 from upload.views.uploads import CanDoCoverageUploadsPermission
 
 log = logging.getLogger(__name__)
@@ -38,11 +40,15 @@ class CommitViews(ListCreateAPIView):
         return commit
 
     def get_repo(self) -> Repository:
-        # TODO this is not final - how is getting the repo is still in discuss
-        repoid = self.kwargs.get("repo")
+        service = self.kwargs.get("service")
         try:
-            # TODO fix this: this might return multiple repos
-            repository = Repository.objects.get(name=repoid)
-            return repository
-        except Repository.DoesNotExist:
-            raise ValidationError(f"Repository {repoid} not found")
+            Service(service)
+        except ValueError:
+            raise ValidationError(f"Service not found: {service}")
+
+        repo_slug = self.kwargs.get("repo")
+        repository = get_repository_from_string(Service(service), repo_slug)
+
+        if not repository:
+            raise ValidationError(f"Repository not found")
+        return repository
