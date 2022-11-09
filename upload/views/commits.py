@@ -3,18 +3,15 @@ import logging
 from django.forms import ValidationError
 from rest_framework.generics import ListCreateAPIView
 
+from codecov_auth.authentication.repo_auth import (
+    GlobalTokenAuthentication,
+    RepositoryLegacyTokenAuthentication,
+)
 from codecov_auth.models import Service
 from core.models import Commit, Repository
 from services.task import TaskService
 from upload.serializers import CommitSerializer
 from upload.views.helpers import get_repository_from_string
-from codecov_auth.authentication.repo_auth import (
-    GlobalTokenAuthentication,
-    RepositoryLegacyTokenAuthentication,
-)
-from core.models import Commit, Repository
-from services.task import TaskService
-from upload.serializers import CommitSerializer
 from upload.views.uploads import CanDoCoverageUploadsPermission
 
 log = logging.getLogger(__name__)
