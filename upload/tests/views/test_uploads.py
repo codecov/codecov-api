@@ -6,8 +6,11 @@ from django.urls import reverse
 from rest_framework.exceptions import ValidationError
 from rest_framework.test import APIClient
 
+from codecov_auth.authentication.repo_auth import OrgLevelTokenRepositoryAuth
+from codecov_auth.services.org_level_token_service import OrgLevelTokenService
+from codecov_auth.tests.factories import OrganizationLevelTokenFactory, OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
-from reports.models import CommitReport
+from reports.models import CommitReport, ReportSession
 from reports.tests.factories import UploadFactory
 from upload.views.uploads import CanDoCoverageUploadsPermission, UploadViews
 
@@ -20,6 +23,21 @@ def test_upload_permission_class_pass(db, mocker):
     request_mocked.auth.get_scopes.assert_called_once()
 
 
+def test_upload_permission_orglevel_token(db, mocker):
+    owner = OwnerFactory(plan="users-enterprisem")
+    owner.save()
+    repo = RepositoryFactory(author=owner)
+    repo.save()
+    token = OrgLevelTokenService.get_or_create_org_token(owner)
+
+    request_mocked = MagicMock(auth=OrgLevelTokenRepositoryAuth(token))
+    mocked_view = MagicMock()
+    mocked_view.get_repo = MagicMock(return_value=repo)
+    permission = CanDoCoverageUploadsPermission()
+    assert permission.has_permission(request_mocked, mocked_view)
+    mocked_view.get_repo.assert_called_once()
+
+
 def test_upload_permission_class_fail(db, mocker):
     request_mocked = MagicMock(auth=MagicMock())
     request_mocked.auth.get_scopes.return_value = ["wrong_scope"]
@@ -28,35 +46,68 @@ def test_upload_permission_class_fail(db, mocker):
     request_mocked.auth.get_scopes.assert_called_once()
 
 
+def test_upload_permission_orglevel_fail(db, mocker):
+    owner = OwnerFactory(plan="users-enterprisem")
+    owner.save()
+    repo = RepositoryFactory()  # Not the same owner of the token
+    repo.save()
+    token = OrgLevelTokenService.get_or_create_org_token(owner)
+
+    request_mocked = MagicMock(auth=OrgLevelTokenRepositoryAuth(token))
+    mocked_view = MagicMock()
+    mocked_view.get_repo = MagicMock(return_value=repo)
+    permission = CanDoCoverageUploadsPermission()
+    assert not permission.has_permission(request_mocked, mocked_view)
+    mocked_view.get_repo.assert_called_once()
+
+
 def test_uploads_get_not_allowed(client, db, mocker):
     mocker.patch.object(
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
     )
-    repository = RepositoryFactory(name="the-repo", author__username="codecov")
+    repository = RepositoryFactory(
+        name="the-repo", author__username="codecov", author__service="github"
+    )
     owner = repository.author
     client = APIClient()
     client.force_authenticate(user=owner)
     url = reverse(
-        "new_upload.uploads", args=[repository.name, "commit-sha", "report-id"]
+        "new_upload.uploads",
+        args=["github", "codecov::::the-repo", "commit-sha", "report-code"],
     )
-    assert url == "/upload/the-repo/commits/commit-sha/reports/report-id/uploads"
+    assert (
+        url
+        == "/upload/github/codecov::::the-repo/commits/commit-sha/reports/report-code/uploads"
+    )
     res = client.get(url)
     assert res.status_code == 405
 
 
 def test_get_repo(db):
-    repository = RepositoryFactory(name="the_repo", author__username="codecov")
+    repository = RepositoryFactory(
+        name="the_repo", author__username="codecov", author__service="github"
+    )
     repository.save()
     upload_views = UploadViews()
-    upload_views.kwargs = dict(repo=repository.name)
+    upload_views.kwargs = dict(repo="codecov::::the_repo", service="github")
     recovered_repo = upload_views.get_repo()
     assert recovered_repo == repository
 
 
 @patch("shared.metrics.metrics.incr")
-def test_get_repo_error(mock_metrics, db):
+def test_get_repo_with_invalid_service(mock_metrics, db):
     upload_views = UploadViews()
-    upload_views.kwargs = dict(repo="repo_missing")
+    upload_views.kwargs = dict(repo="repo", service="wrong service")
+    with pytest.raises(ValidationError) as exp:
+        upload_views.get_repo()
+    assert exp.match("Service not found: wrong service")
+    mock_metrics.assert_called_once_with("uploads.rejected", 1)
+
+
+@patch("shared.metrics.metrics.incr")
+def test_get_repo_not_found(mock_metrics, db):
+    upload_views = UploadViews()
+    upload_views.kwargs = dict(repo="repo", service="github")
     with pytest.raises(ValidationError) as exp:
         upload_views.get_repo()
     assert exp.match("Repository not found")
@@ -95,7 +146,7 @@ def test_get_report(db):
     report.save()
     upload_views = UploadViews()
     upload_views.kwargs = dict(
-        repo=repository.name, commit_sha=commit.commitid, reportid=report.external_id
+        repo=repository.name, commit_sha=commit.commitid, report_code=report.code
     )
     recovered_report = upload_views.get_report(commit)
     assert recovered_report == report
@@ -108,9 +159,8 @@ def test_get_report_error(mock_metrics, db):
     repository.save()
     commit.save()
     upload_views = UploadViews()
-    report_uuid = uuid.uuid4()
     upload_views.kwargs = dict(
-        repo=repository.name, commit_sha=commit.commitid, reportid=report_uuid
+        repo=repository.name, commit_sha=commit.commitid, report_code="random_code"
     )
     with pytest.raises(ValidationError) as exp:
         upload_views.get_report(commit)
@@ -119,7 +169,7 @@ def test_get_report_error(mock_metrics, db):
 
 
 @patch("shared.metrics.metrics.incr")
-def test_uploads_post_empty(mock_metrics, db, mocker, mock_redis):
+def test_uploads_post(mock_metrics, db, mocker, mock_redis):
     # TODO remove the mock object and test the flow with the permissions
     mocker.patch.object(
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
@@ -131,9 +181,12 @@ def test_uploads_post_empty(mock_metrics, db, mocker, mock_redis):
     upload_task_mock = mocker.patch(
         "upload.views.uploads.UploadViews.trigger_upload_task", return_value=True
     )
-    repository = RepositoryFactory(name="the_repo", author__username="codecov")
+
+    repository = RepositoryFactory(
+        name="the_repo", author__username="codecov", author__service="github"
+    )
     commit = CommitFactory(repository=repository)
-    commit_report = CommitReport.objects.create(commit=commit)
+    commit_report = CommitReport.objects.create(commit=commit, code="code")
     repository.save()
     commit_report.save()
 
@@ -142,7 +195,12 @@ def test_uploads_post_empty(mock_metrics, db, mocker, mock_redis):
     client.force_authenticate(user=owner)
     url = reverse(
         "new_upload.uploads",
-        args=[repository.name, commit.commitid, commit_report.external_id],
+        args=[
+            "github",
+            "codecov::::the_repo",
+            commit.commitid,
+            commit_report.code,
+        ],
     )
     response = client.post(
         url,
@@ -157,6 +215,9 @@ def test_uploads_post_empty(mock_metrics, db, mocker, mock_redis):
             ["external_id", "created_at", "raw_upload_location"],
         )
     )
+    assert ReportSession.objects.filter(
+        report_id=commit_report.id, upload_extras={"format_version": "v1"}
+    ).exists()
     mock_metrics.assert_called_once_with("uploads.accepted", 1)
     presigned_put_mock.assert_called()
     upload_task_mock.assert_called()

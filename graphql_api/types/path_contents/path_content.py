@@ -1,7 +1,8 @@
-from typing import Union
+from typing import List, Union
 
-from ariadne import InterfaceType, ObjectType
+from ariadne import InterfaceType, ObjectType, UnionType
 
+from graphql_api.types.errors import MissingHeadReport
 from services.path import Dir, File
 
 path_content_bindable = InterfaceType("PathContent")
@@ -28,22 +29,22 @@ def resolve_file_path(item: Union[File, Dir], info) -> str:
 
 
 @path_content_bindable.field("hits")
-def resolve_hits(item: Union[File, Dir], info) -> str:
+def resolve_hits(item: Union[File, Dir], info) -> int:
     return item.hits
 
 
 @path_content_bindable.field("misses")
-def resolve_misses(item: Union[File, Dir], info) -> str:
+def resolve_misses(item: Union[File, Dir], info) -> int:
     return item.misses
 
 
 @path_content_bindable.field("partials")
-def resolve_partials(item: Union[File, Dir], info) -> str:
+def resolve_partials(item: Union[File, Dir], info) -> int:
     return item.partials
 
 
 @path_content_bindable.field("lines")
-def resolve_lines(item: Union[File, Dir], info) -> str:
+def resolve_lines(item: Union[File, Dir], info) -> int:
     return item.lines
 
 
@@ -58,3 +59,14 @@ def resolve_is_critical_file(item: Union[File, Dir], info) -> bool:
         return item.full_path in info.context["critical_filenames"]
 
     return False
+
+
+path_contents_result_bindable = UnionType("PathContentsResult")
+
+
+@path_contents_result_bindable.type_resolver
+def resolve_path_contents_result_type(res, *_):
+    if isinstance(res, MissingHeadReport):
+        return "MissingHeadReport"
+    if isinstance(res, type({"results": List[Union[File, Dir]]})):
+        return "PathContents"

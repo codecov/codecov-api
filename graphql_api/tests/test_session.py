@@ -28,12 +28,18 @@ query MySession {
 class SessionTestCase(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
         self.user = OwnerFactory(username="codecov-user")
+        self.session = SessionFactory(
+            owner=self.user,
+            type="login",
+            name="test-123",
+            lastseen="2021-01-01T00:00:00+00:00",
+        )
 
     @freeze_time("2021-01-01")
     def test_fetching_session(self):
         data = self.gql_request(query, user=self.user)
         sessions = paginate_connection(data["me"]["sessions"])
-        current_session = self.user.session_set.first()
+        current_session = self.user.session_set.filter(type="login").first()
         assert sessions == [
             {
                 "name": current_session.name,
