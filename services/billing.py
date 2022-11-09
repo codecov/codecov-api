@@ -38,7 +38,7 @@ class AbstractPaymentService(ABC):
         pass
 
     @abstractmethod
-    def list_invoices(self, owner, limit=10):
+    def list_invoices_no_drafts(self, owner, limit=10):
         pass
 
     @abstractmethod
@@ -102,15 +102,20 @@ class StripeService(AbstractPaymentService):
             return None
         return invoice
 
+    def filter_draft_invoices(self, invoice):
+        if invoice["status"] and invoice["status"] != "draft":
+            return invoice
+
     @_log_stripe_error
-    def list_invoices(self, owner, limit=10):
+    def list_invoices_no_drafts(self, owner, limit=10):
         log.info(f"Fetching invoices from Stripe for ownerid {owner.ownerid}")
         if owner.stripe_customer_id is None:
             log.info("stripe_customer_id is None, not fetching invoices")
             return []
-        return stripe.Invoice.list(customer=owner.stripe_customer_id, limit=limit)[
+        invoices = stripe.Invoice.list(customer=owner.stripe_customer_id, limit=limit)[
             "data"
         ]
+        return filter(self.filter_draft_invoices, invoices)
 
     @_log_stripe_error
     def delete_subscription(self, owner):
@@ -404,8 +409,8 @@ class BillingService:
     def get_invoice(self, owner, invoice_id):
         return self.payment_service.get_invoice(owner, invoice_id)
 
-    def list_invoices(self, owner, limit=10):
-        return self.payment_service.list_invoices(owner, limit)
+    def list_invoices_no_drafts(self, owner, limit=10):
+        return self.payment_service.list_invoices_no_drafts(owner, limit)
 
     def update_plan(self, owner, desired_plan):
         """

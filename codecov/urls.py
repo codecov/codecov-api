@@ -27,4 +27,5 @@ if not settings.IS_ENTERPRISE:
         path(f"{settings.DJANGO_ADMIN_URL}/", admin.site.urls),
         re_path(r"^redirect_app", views.redirect_app),
         path("staticanalysis/", include("staticanalysis.urls")),
+        path("labels/", include("labelanalysis.urls")),
     ]

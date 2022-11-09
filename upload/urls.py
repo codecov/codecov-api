@@ -14,7 +14,7 @@ urlpatterns = [
     ),
     # Empty routes that will become the new upload endpoint eventually
     path(
-        "<str:service>/<str:repo>/commits/<str:commit_sha>/reports/<str:reportid>/uploads",
+        "<str:service>/<str:repo>/commits/<str:commit_sha>/reports/<str:report_code>/uploads",
         UploadViews.as_view(),
         name="new_upload.uploads",
     ),
@@ -24,11 +24,15 @@ urlpatterns = [
         name="new_upload.reports_results",
     ),
     path(
-        "<str:repo>/commits/<str:commit_sha>/reports",
+        "<str:service>/<str:repo>/commits/<str:commit_sha>/reports",
         ReportViews.as_view(),
         name="new_upload.reports",
     ),
-    path("<str:repo>/commits", CommitViews.as_view(), name="new_upload.commits"),
+    path(
+        "<str:service>/<str:repo>/commits",
+        CommitViews.as_view(),
+        name="new_upload.commits",
+    ),
     # This was getting in the way of the new endpoints, so I moved to the end
     re_path("(?P<version>\w+)/?", UploadHandler.as_view(), name="upload-handler"),
 ]
