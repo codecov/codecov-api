@@ -204,8 +204,8 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         commit = data["owner"]["repository"]["commit"]
         builds = paginate_connection(commit["uploads"])
         assert builds == [
-            {"provider": session_one.provider},
             {"provider": session_two.provider},
+            {"provider": session_one.provider},
         ]
 
     def test_fetch_commit_uploads_state(self):
@@ -243,22 +243,22 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         uploads = paginate_connection(commit["uploads"])
 
         assert uploads == [
-            {"state": UploadState.PROCESSED.name},
-            {"state": UploadState.ERROR.name},
-            {"state": UploadState.COMPLETE.name},
             {"state": UploadState.UPLOADED.name},
+            {"state": UploadState.COMPLETE.name},
+            {"state": UploadState.ERROR.name},
+            {"state": UploadState.PROCESSED.name},
         ]
 
     def test_fetch_commit_uploads_type(self):
         session_one = UploadFactory(
             report=self.report,
             provider="circleci",
-            upload_type=UploadType.UPLOADED.value,
+            upload_type=UploadType.CARRIEDFORWARD.value,
         )
         session_two = UploadFactory(
             report=self.report,
             provider="travisci",
-            upload_type=UploadType.CARRIEDFORWARD.value,
+            upload_type=UploadType.UPLOADED.value,
         )
         query = (
             query_commit
