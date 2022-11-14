@@ -1,9 +1,10 @@
 """
 Possible value for the impacted file list
 """
-enum ImpactedFileParameter{
-    FILE_NAME
-    CHANGE_COVERAGE
-    HEAD_COVERAGE
-    PATCH_COVERAGE
+enum ImpactedFileParameter {
+  FILE_NAME
+  CHANGE_COVERAGE
+  HEAD_COVERAGE
+  HEAD_COVERAGE_MISSES
+  PATCH_COVERAGE
 }
