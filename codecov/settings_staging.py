@@ -30,8 +30,8 @@ if elastic_apm_enabled:
     INSTALLED_APPS += ["elasticapm.contrib.django"]
     MIDDLEWARE += ["elasticapm.contrib.django.middleware.TracingMiddleware"]
     ELASTIC_APM = {
-        "TRANSACTION_IGNORE_URLS": ['/webhooks/*', '/health*'],
-        "TRANSACTION_SAMPLE_RATE": os.environ.get("ELASTIC_APM_SAMPLE_RATE", "1")
+        "TRANSACTION_IGNORE_URLS": ["/webhooks/*", "/health*"],
+        "TRANSACTION_SAMPLE_RATE": os.environ.get("ELASTIC_APM_SAMPLE_RATE", "1"),
     }
 else:
     INSTALLED_APPS += ["ddtrace.contrib.django"]
