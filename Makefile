@@ -7,6 +7,9 @@ epoch := $(shell date +"%s")
 build.local:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile . -t codecov/api:latest --ssh default
 
+build.enterprise.local:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.local-enterprise . -t codecov/enterprise-api:latest-stable --ssh default
+
 build.base:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.requirements . -t codecov/baseapi:latest --ssh default
 
