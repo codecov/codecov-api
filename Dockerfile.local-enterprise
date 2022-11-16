@@ -1,0 +1,12 @@
+FROM            codecov/baseapi
+
+EXPOSE          8000
+
+COPY            . /app
+
+WORKDIR         /app
+
+RUN             python manage.py collectstatic --no-input
+ENV         DJANGO_SETTINGS_MODULE "codecov.settings_enterprise"
+ENV         RUN_ENV=enterprise
+ENTRYPOINT ["./dev.sh"]
