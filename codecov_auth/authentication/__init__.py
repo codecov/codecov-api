@@ -8,7 +8,7 @@ from django.utils import timezone
 from rest_framework import authentication, exceptions
 
 from codecov_auth.helpers import decode_token_from_cookie
-from codecov_auth.models import Owner, Session
+from codecov_auth.models import Owner, Session, UserToken
 from utils.config import get_config
 from utils.services import get_long_service_name
 
@@ -171,28 +171,16 @@ class CodecovSessionAuthentication(
         return self.get_user_and_session(token, request)
 
 
-class CodecovBearerTokenAuthentication(
-    CodecovAuthMixin, authentication.TokenAuthentication
-):
+class UserTokenAuthentication(authentication.TokenAuthentication):
     keyword = "Bearer"
 
-    def authenticate_header(self, request):
-        return 'Bearer realm="api"'
-
-    def authenticate(self, request):
-        res = super().authenticate(request)
-        if res is None:
-            return None
-
-        owner, session = res
-        self.update_session(request, session)
-        return (owner, session)
-
-    def authenticate_credentials(self, token):
+    def authenticate_credentials(self, key):
         try:
-            session = get_session(token)
-            if session.type != Session.SessionType.API:
-                raise exceptions.AuthenticationFailed("Invalid token")
-            return (session.owner, session)
-        except Session.DoesNotExist:
-            raise exceptions.AuthenticationFailed("Invalid token")
+            token = UserToken.objects.select_related("owner").get(token=key)
+        except UserToken.DoesNotExist:
+            raise exceptions.AuthenticationFailed("Invalid token.")
+
+        if token.valid_until is not None and token.valid_until <= timezone.now():
+            raise exceptions.AuthenticationFailed("Invalid token.")
+
+        return (token.owner, token)  # TODO: might want to return some other object here

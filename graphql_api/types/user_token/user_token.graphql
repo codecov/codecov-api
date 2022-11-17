@@ -1,0 +1,7 @@
+type UserToken {
+    id: String!
+    name: String!
+    type: String!
+    lastFour: String!
+    expiration: DateTime
+}

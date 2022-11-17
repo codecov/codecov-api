@@ -172,7 +172,7 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "codecov_auth.authentication.CodecovTokenAuthentication",
-        "codecov_auth.authentication.CodecovBearerTokenAuthentication",
+        "codecov_auth.authentication.UserTokenAuthentication",
         "rest_framework.authentication.BasicAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ),

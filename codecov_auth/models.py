@@ -519,3 +519,21 @@ class RepositoryToken(BaseCodecovModel):
     @classmethod
     def generate_key(cls):
         return _generate_key()
+
+
+class UserToken(BaseCodecovModel):
+    class TokenType(models.TextChoices):
+        API = "api"
+
+    name = models.CharField(max_length=100, null=False, blank=False)
+    owner = models.ForeignKey(
+        "Owner",
+        db_column="ownerid",
+        related_name="user_tokens",
+        on_delete=models.CASCADE,
+    )
+    token = models.UUIDField(unique=True, default=uuid.uuid4)
+    valid_until = models.DateTimeField(blank=True, null=True)
+    token_type = models.CharField(
+        max_length=50, choices=TokenType.choices, default=TokenType.API
+    )

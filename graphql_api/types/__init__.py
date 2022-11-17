@@ -22,6 +22,7 @@ from .path_contents import (
     path_content,
     path_content_bindable,
     path_content_file_bindable,
+    path_contents_result_bindable,
 )
 from .profile import profile, profile_bindable
 from .pull import pull, pull_bindable
@@ -31,6 +32,7 @@ from .segment_comparison import segment_comparison, segment_comparison_bindable
 from .session import session, session_bindable
 from .upload import upload, upload_bindable, upload_error_bindable
 from .user import user, user_bindable
+from .user_token import user_token, user_token_bindable
 
 inputs = ariadne_load_local_graphql(__file__, "./inputs")
 enums = ariadne_load_local_graphql(__file__, "./enums")
@@ -63,6 +65,7 @@ types = [
     profile,
     impacted_file,
     config,
+    user_token,
 ]
 
 bindables = [
@@ -93,6 +96,8 @@ bindables = [
     profile_bindable,
     impacted_file_bindable,
     config_bindable,
+    user_token_bindable,
     *mutation_resolvers,
     *enum_types.enum_types,
+    path_contents_result_bindable,
 ]

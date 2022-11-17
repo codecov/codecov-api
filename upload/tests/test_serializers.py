@@ -95,5 +95,6 @@ def test_commit_report_serializer(transactional_db, mocker):
         "commit_sha": report.commit.commitid,
         "external_id": str(report.external_id),
         "created_at": report.created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+        "code": report.code,
     }
     assert serializer.data == expected_data

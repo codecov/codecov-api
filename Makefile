@@ -7,6 +7,9 @@ epoch := $(shell date +"%s")
 build.local:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile . -t codecov/api:latest --ssh default
 
+build.enterprise.local:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.local-enterprise . -t codecov/enterprise-api:latest-stable --ssh default
+
 build.base:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.requirements . -t codecov/baseapi:latest --ssh default
 
@@ -57,11 +60,7 @@ test.unit:
 test.integration:
 	python -m pytest --cov=./ -m "integration" --cov-report=xml:integration.coverage.xml
 
-lint.ci:
-	pylint --load-plugins pylint_django --django-settings-module=codecov.settings_dev compare
-
 lint:
-	pylint --load-plugins pylint_django --django-settings-module=codecov.settings_dev compare
 	pip3 install black==22.3.0 isort
 	black .
 	isort --profile black .

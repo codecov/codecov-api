@@ -22,14 +22,17 @@ class FetchRepoBranchesInteractorTest(TransactionTestCase):
             BranchFactory(repository=self.repo, head=self.head.commitid, name="test2"),
         ]
 
-    def execute(self, user, *args):
+    def execute(self, user, repository, filters):
         service = user.service if user else "github"
         current_user = user
-        return FetchRepoBranchesInteractor(current_user, service).execute(*args)
+        return FetchRepoBranchesInteractor(current_user, service).execute(
+            repository, filters
+        )
 
     def test_fetch_branches(self):
         repository = self.repo
-        branches = async_to_sync(self.execute)(None, repository)
+        filters = {}
+        branches = async_to_sync(self.execute)(None, repository, filters)
         assert any(branch.name == "master" for branch in branches)
         assert any(branch.name == "test1" for branch in branches)
         assert any(branch.name == "test2" for branch in branches)
