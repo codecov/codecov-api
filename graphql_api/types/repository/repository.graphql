@@ -13,10 +13,36 @@ type Repository {
   branch(name: String): Branch
   commit(id: String!): Commit
   pull(id: Int!): Pull
-  pulls(filters: PullsSetFilters, orderingDirection: OrderingDirection, first: Int, after: String, last: Int, before: String): PullConnection
-  commits(filters: CommitsSetFilters, first: Int, after: String, last: Int, before: String): CommitConnection
-  branches( first: Int, after: String, last: Int, before: String): BranchConnection
-  flags(filters: FlagSetFilters, orderingDirection: OrderingDirection, first: Int, after: String, last: Int, before: String): FlagConnection!
+  pulls(
+    filters: PullsSetFilters
+    orderingDirection: OrderingDirection
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): PullConnection
+  commits(
+    filters: CommitsSetFilters
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): CommitConnection
+  branches(
+    filters: BranchesSetFilters
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): BranchConnection
+  flags(
+    filters: FlagSetFilters
+    orderingDirection: OrderingDirection
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): FlagConnection!
   defaultBranch: String
   profilingToken: String
   criticalFiles: [CriticalFile!]!
@@ -26,7 +52,11 @@ type Repository {
   flagsCount: Int!
   flagsMeasurementsActive: Boolean!
   flagsMeasurementsBackfilled: Boolean!
-  measurements(interval: MeasurementInterval!, after: DateTime!, before: DateTime!): [Measurement!]!
+  measurements(
+    interval: MeasurementInterval!
+    after: DateTime!
+    before: DateTime!
+  ): [Measurement!]!
 }
 
 type PullConnection {

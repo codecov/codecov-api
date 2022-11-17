@@ -162,6 +162,31 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
             {"node": {"name": "master"}},
         ]
 
+    def test_fetch_branches_with_filters(self):
+        query_branches = """{
+            owner(username: "%s") {
+                repository(name: "%s") {
+                    branches (filters: {searchValue: "%s"}){
+                        edges{
+                            node{
+                                name
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        """
+        variables = {"org": self.org.username, "repo": self.repo.name}
+        query = query_branches % (self.org.username, self.repo.name, "test2")
+        data = self.gql_request(query, variables=variables)
+        branches = data["owner"]["repository"]["branches"]["edges"]
+        assert type(branches) == list
+        assert len(branches) == 1
+        assert branches == [
+            {"node": {"name": "test2"}},
+        ]
+
     @override_settings(DEBUG=True)
     def test_fetch_path_contents_with_no_report(self):
         commit_without_report = CommitFactory(repository=self.repo, report=None)

@@ -28,6 +28,7 @@ class CommitReport(BaseCodecovModel):
     commit = models.ForeignKey(
         "core.Commit", related_name="reports", on_delete=models.CASCADE
     )
+    code = models.CharField(null=True, max_length=100)
 
 
 class ReportDetails(BaseCodecovModel):
