@@ -102,6 +102,8 @@ class ArchiveService(object):
         self.region = get_config("services", "minio", "region", default="us-east-1")
         self.enterprise = bool(get_config("setup", "enterprise_license"))
 
+        # Set TTL from config and default to existing value
+        self.ttl = get_config("services", "minio", "ttl", default=self.ttl)
         self.storage = StorageService()
         self.storage_hash = self.get_archive_hash(repository)
 
