@@ -36,8 +36,6 @@ def sort_path_contents(
     if filter_parameter and filter_direction:
         parameter_value = filter_parameter.value
         direction_value = filter_direction.value
-        for item in items:
-            print(getattr(item, "full_path"))
         items = sorted(
             items,
             key=lambda item: getattr(item, parameter_value),
