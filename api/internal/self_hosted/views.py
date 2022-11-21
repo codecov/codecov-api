@@ -30,9 +30,16 @@ class UserViewSet(
     search_fields = ["name", "username", "email"]
 
     def get_queryset(self):
-        return Owner.objects.all().annotate(
-            is_admin=Exists(self_hosted.admin_owners().filter(pk=OuterRef("pk"))),
-            activated=Exists(self_hosted.activated_owners().filter(pk=OuterRef("pk"))),
+        return (
+            Owner.objects.filter(oauth_token__isnull=False)
+            .filter(organizations__isnull=False)
+            .all()
+            .annotate(
+                is_admin=Exists(self_hosted.admin_owners().filter(pk=OuterRef("pk"))),
+                activated=Exists(
+                    self_hosted.activated_owners().filter(pk=OuterRef("pk"))
+                ),
+            )
         )
 
     @action(
