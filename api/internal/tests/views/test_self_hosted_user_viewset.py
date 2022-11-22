@@ -21,7 +21,8 @@ class UserViewsetUnauthenticatedTestCase(TestCase):
 class UserViewsetTestCase(TestCase):
     def setUp(self):
         self.client = APIClient()
-        self.user = OwnerFactory()
+        self.owner = OwnerFactory()
+        self.user = OwnerFactory(organizations=[self.owner.ownerid])
         self.client.force_authenticate(user=self.user)
 
 
@@ -85,8 +86,29 @@ class UserViewsetAdminTestCase(UserViewsetTestCase):
     def test_list_users(self, admin_owners):
         admin_owners.return_value = Owner.objects.filter(pk__in=[self.user.pk])
 
+        other_owner = OwnerFactory()
+        other_other_owner = OwnerFactory(
+            oauth_token=None, organizations=[self.owner.ownerid]
+        )
+
         res = self.client.get(reverse("selfhosted-users-list"))
         assert res.status_code == 200
+        assert res.json() == {
+            "count": 1,
+            "next": None,
+            "previous": None,
+            "results": [
+                {
+                    "ownerid": self.user.pk,
+                    "username": self.user.username,
+                    "email": self.user.email,
+                    "name": self.user.name,
+                    "is_admin": True,
+                    "activated": False,
+                },
+            ],
+            "total_pages": 1,
+        }
 
     @patch("services.self_hosted.admin_owners")
     def test_list_users_filter_admin(self, admin_owners):
@@ -118,7 +140,7 @@ class UserViewsetAdminTestCase(UserViewsetTestCase):
     def test_list_users_filter_activated(self, admin_owners, activated_owners):
         admin_owners.return_value = Owner.objects.filter(pk__in=[self.user.pk])
 
-        other_owner = OwnerFactory()
+        other_owner = OwnerFactory(organizations=[self.owner.ownerid])
         activated_owners.return_value = Owner.objects.filter(pk__in=[other_owner.pk])
 
         res = self.client.get(reverse("selfhosted-users-list"), {"activated": True})
@@ -144,7 +166,9 @@ class UserViewsetAdminTestCase(UserViewsetTestCase):
     def test_list_users_search(self, admin_owners):
         admin_owners.return_value = Owner.objects.filter(pk__in=[self.user.pk])
 
-        other_owner = OwnerFactory(username="foobar")
+        other_owner = OwnerFactory(
+            username="foobar", organizations=[self.owner.ownerid]
+        )
 
         res = self.client.get(reverse("selfhosted-users-list"), {"search": "foo"})
         assert res.status_code == 200
@@ -169,7 +193,7 @@ class UserViewsetAdminTestCase(UserViewsetTestCase):
     def test_detail(self, admin_owners):
         admin_owners.return_value = Owner.objects.filter(pk__in=[self.user.pk])
 
-        other_owner = OwnerFactory()
+        other_owner = OwnerFactory(organizations=[self.owner.ownerid])
 
         res = self.client.get(
             reverse("selfhosted-users-detail", kwargs={"pk": other_owner.pk})

@@ -46,14 +46,23 @@ build:
 
 # CIRCLECI
 # job: enterprise
-# pulls intermediate dependencies image and adds app code. Cythonize and pyinstall.
+# pulls intermediate dependencies image and adds app code. Cythonize and pyinstall (no dependencies).
 build-enterprise:
 	docker pull ${GCR_REPO}:${REQUIREMENTS_TAG}
-	docker pull ${ENTERPRISE_GCR_REPO}:latest
 	docker build \
 		-f Dockerfile.circle-enterprise . \
-		-t ${ENTERPRISE_GCR_REPO}:latest \
+		-t ${ENTERPRISE_GCR_REPO}:latest_no_dependencies \
 		--build-arg REQUIREMENTS_IMAGE=${GCR_REPO}:${REQUIREMENTS_TAG} \
+		--squash
+
+# CIRCLECI
+# job: enterprise-runtime
+# pulls enterprise dependencies without dependencies and add them
+build-enterprise-runtime:
+	docker build \
+		-f Dockerfile.enterprise_runtime . \
+		-t ${ENTERPRISE_GCR_REPO}:latest \
+		--build-arg CODECOV_ENTERPRISE_RELEASE=${ENTERPRISE_GCR_REPO}:latest_no_dependencies \
 		--squash
 
 # CIRCLECI
@@ -80,6 +89,7 @@ push:
 # job: enterprise
 # used to push latest image tag after a successful test
 push-enterprise:
+	docker push ${ENTERPRISE_GCR_REPO}:latest_no_dependencies
 	docker push ${ENTERPRISE_GCR_REPO}:latest
 
 # CIRCLECI
@@ -95,8 +105,11 @@ tag:
 # tags latest image with git tag
 tag-enterprise:
 	docker pull ${ENTERPRISE_GCR_REPO}:latest
+	docker pull ${ENTERPRISE_GCR_REPO}:latest_no_dependencies
 	docker tag ${ENTERPRISE_GCR_REPO}:latest ${ENTERPRISE_GCR_REPO}:${VERSION}
+	docker tag ${ENTERPRISE_GCR_REPO}:latest_no_dependencies ${ENTERPRISE_GCR_REPO}:${VERSION}_no_dependencies
 	docker push ${ENTERPRISE_GCR_REPO}:${VERSION}
+	docker push ${ENTERPRISE_GCR_REPO}:${VERSION}_no_dependencies
 
 save:
 	docker save -o app.tar ${GCR_REPO}:${VERSION}
@@ -123,20 +136,30 @@ production:
 # deploys tagged version of the private enterprise-api
 enterprise:
 	docker pull ${ENTERPRISE_GCR_REPO}:${VERSION}
+	docker pull ${ENTERPRISE_GCR_REPO}:${VERSION}_no_dependencies
 	docker tag ${ENTERPRISE_GCR_REPO}:${VERSION} ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION}
 	docker tag ${ENTERPRISE_GCR_REPO}:${VERSION} codecov/api-private:${SEMANTIC_VERSION}-${VERSION}
+	docker tag ${ENTERPRISE_GCR_REPO}:${VERSION}_no_dependencies ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION}_no_dependencies
+	docker tag ${ENTERPRISE_GCR_REPO}:${VERSION}_no_dependencies codecov/api-private:${SEMANTIC_VERSION}-${VERSION}_no_dependencies
 	docker push ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION}
 	docker push codecov/api-private:${SEMANTIC_VERSION}-${VERSION}
+	docker push ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION}_no_dependencies
+	docker push codecov/api-private:${SEMANTIC_VERSION}-${VERSION}_no_dependencies
 
 # CIRCLECI
 # job: enterprise-release
 # deploys tagged version of the public enterprise-api
 release-enterprise:
 	docker pull ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION}
+	docker pull ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION}_no_dependencies
 	docker tag ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION} codecov/enterprise-api:${SEMANTIC_VERSION}
 	docker tag ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION} codecov/enterprise-api:latest-stable
+	docker tag ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION}_no_dependencies codecov/enterprise-api:${SEMANTIC_VERSION}_no_dependencies
+	docker tag ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION}_no_dependencies codecov/enterprise-api:latest-stable_no_dependencies
 	docker push codecov/enterprise-api:${SEMANTIC_VERSION}
 	docker push codecov/enterprise-api:latest-stable
+	docker push codecov/enterprise-api:${SEMANTIC_VERSION}_no_dependencies
+	docker push codecov/enterprise-api:latest-stable_no_dependencies
 
 dive:
 	docker load -i app.tar
