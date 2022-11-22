@@ -91,9 +91,6 @@ async def resolve_compare_with_base(pull, info, **kwargs):
     ):
         return MissingHeadReport()
 
-    if commit_comparison.state == CommitComparison.CommitComparisonStates.ERROR:
-        return MissingComparison()
-
     if commit_comparison and commit_comparison.is_processed:
         user = info.context["request"].user
         comparison = PullRequestComparison(user, pull)
