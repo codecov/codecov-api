@@ -59,7 +59,6 @@ build-enterprise:
 # job: enterprise-runtime
 # pulls enterprise dependencies without dependencies and add them
 build-enterprise-runtime:
-	docker pull ${ENTERPRISE_GCR_REPO}:latest_no_dependencies
 	docker build \
 		-f Dockerfile.enterprise_runtime . \
 		-t ${ENTERPRISE_GCR_REPO}:latest \
