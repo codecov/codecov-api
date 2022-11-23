@@ -48,3 +48,9 @@ def resolve_seats_limit(_, info):
         return None
 
     return self_hosted.license_seats()
+
+
+@config_bindable.field("isTimescaleEnabled")
+@sync_to_async
+def resolve_is_timescale_enabled(_, info):
+    return settings.TIMESERIES_ENABLED

@@ -66,3 +66,14 @@ class TestConfigType(GraphQLTestHelper, TestCase):
                 "seatsLimit": 123,
             },
         }
+
+    @override_settings(
+        TIMESERIES_ENABLED=True,
+    )
+    def test_seats_limit_self_hosted(self):
+        data = self.gql_request("query { config { isTimescaleEnabled }}")
+        assert data == {
+            "config": {
+                "isTimescaleEnabled": True,
+            },
+        }
