@@ -1,4 +1,6 @@
+import json
 import logging
+import socket
 from asyncio import iscoroutine
 from contextlib import suppress
 
@@ -39,6 +41,22 @@ class AsyncGraphqlView(GraphQLAsyncView):
         return HttpResponseNotAllowed(["POST"])
 
     async def post(self, request, *args, **kwargs):
+        # get request body information
+        req_body = json.loads(request.body.decode("utf-8")) if request.body else {}
+
+        # clean up graphql query to remove new lines and extra spaces
+        req_body["query"] = req_body["query"].replace("\n", " ")
+        req_body["query"] = req_body["query"].replace("  ", "").strip()
+
+        # put everything together for log
+        log_data = {
+            "server_hostname": socket.gethostname(),
+            "request_method": request.method,
+            "request_path": request.get_full_path(),
+            "request_body": req_body,
+        }
+        log.info("GraphQL Request", extra=log_data)
+
         request.user = await get_user(request) or AnonymousUser()
         return await super().post(request, *args, **kwargs)
 
