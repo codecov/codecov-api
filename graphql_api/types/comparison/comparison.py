@@ -48,7 +48,6 @@ def resolve_file_comparisons(comparison, info):
         return None
 
     comparison = info.context["comparison"]
-    comparison.validate()
     return [file for file in comparison.files if file.has_diff or file.has_changes]
 
 
@@ -61,7 +60,6 @@ def resolve_base_totals(comparison, info):
         return None
 
     comparison = info.context["comparison"]
-    comparison.validate()
     return comparison.totals["base"]
 
 
@@ -72,7 +70,6 @@ def resolve_head_totals(comparison, info):
         return None
 
     comparison = info.context["comparison"]
-    comparison.validate()
     return comparison.totals["head"]
 
 
