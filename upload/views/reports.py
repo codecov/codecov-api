@@ -10,7 +10,8 @@ from codecov_auth.authentication.repo_auth import (
     RepositoryLegacyTokenAuthentication,
 )
 from codecov_auth.models import Service
-from core.models import Repository
+from core.models import Commit, Repository
+from reports.models import CommitReport
 from upload.serializers import CommitReportSerializer, ReportResultsSerializer
 from upload.views.helpers import get_repository_from_string
 from upload.views.uploads import CanDoCoverageUploadsPermission
@@ -43,6 +44,15 @@ class ReportResultsView(CreateAPIView):
         RepositoryLegacyTokenAuthentication,
     ]
 
+    def perform_create(self, serializer):
+        repository = self.get_repo()
+        commit = self.get_commit(repository)
+        report = self.get_report(commit)
+        instance = serializer.save(
+            report=report,
+        )
+        return instance
+
     def get_repo(self) -> Repository:
         service = self.kwargs.get("service")
         try:
@@ -56,3 +66,21 @@ class ReportResultsView(CreateAPIView):
         if not repository:
             raise ValidationError(f"Repository not found")
         return repository
+
+    def get_report(self, commit: Commit) -> CommitReport:
+        report_code = self.kwargs.get("report_code")
+        try:
+            report = CommitReport.objects.get(code=report_code, commit=commit)
+            return report
+        except CommitReport.DoesNotExist:
+            raise ValidationError(f"Report not found")
+
+    def get_commit(self, repo: Repository) -> Commit:
+        commit_sha = self.kwargs.get("commit_sha")
+        try:
+            commit = Commit.objects.get(
+                commitid=commit_sha, repository__repoid=repo.repoid
+            )
+            return commit
+        except Commit.DoesNotExist:
+            raise ValidationError("Commit SHA not found")
