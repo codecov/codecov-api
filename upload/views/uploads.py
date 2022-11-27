@@ -12,7 +12,6 @@ from codecov_auth.authentication.repo_auth import (
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
 )
-from codecov_auth.models import OrganizationLevelToken, Service
 from core.models import Commit, Repository
 from reports.models import CommitReport
 from services.archive import ArchiveService, MinioEndpoints
@@ -20,7 +19,7 @@ from services.redis_configuration import get_redis_connection
 from upload.helpers import dispatch_upload_task
 from upload.serializers import UploadSerializer
 from upload.throttles import UploadsPerCommitThrottle, UploadsPerWindowThrottle
-from upload.views.helpers import get_repository_from_string
+from upload.views.generic import GenericGet
 
 log = logging.getLogger(__name__)
 
@@ -35,7 +34,7 @@ class CanDoCoverageUploadsPermission(BasePermission):
         )
 
 
-class UploadViews(ListCreateAPIView):
+class UploadViews(ListCreateAPIView, GenericGet):
     serializer_class = UploadSerializer
     permission_classes = [
         CanDoCoverageUploadsPermission,
@@ -94,37 +93,25 @@ class UploadViews(ListCreateAPIView):
         repository.save(update_fields=["activated", "active", "deleted", "updatestamp"])
 
     def get_repo(self) -> Repository:
-        service = self.kwargs.get("service")
         try:
-            service_enum = Service(service)
-        except ValueError:
+            repo = super().get_repo()
+            return repo
+        except ValidationError as exception:
             metrics.incr("uploads.rejected", 1)
-            raise ValidationError(f"Service not found: {service}")
-
-        repo_slug = self.kwargs.get("repo")
-        repository = get_repository_from_string(service_enum, repo_slug)
-
-        if not repository:
-            metrics.incr("uploads.rejected", 1)
-            raise ValidationError(f"Repository not found")
-        return repository
+            raise exception
 
     def get_commit(self, repo: Repository) -> Commit:
-        commit_sha = self.kwargs.get("commit_sha")
         try:
-            commit = Commit.objects.get(
-                commitid=commit_sha, repository__repoid=repo.repoid
-            )
+            commit = super().get_commit(repo)
             return commit
-        except Commit.DoesNotExist:
+        except ValidationError as excpetion:
             metrics.incr("uploads.rejected", 1)
-            raise ValidationError("Commit SHA not found")
+            raise excpetion
 
     def get_report(self, commit: Commit) -> CommitReport:
-        report_code = self.kwargs.get("report_code")
         try:
-            report = CommitReport.objects.get(code=report_code, commit=commit)
+            report = super().get_report(commit)
             return report
-        except CommitReport.DoesNotExist:
+        except ValidationError as exception:
             metrics.incr("uploads.rejected", 1)
-            raise ValidationError(f"Report not found")
+            raise exception
