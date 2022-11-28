@@ -9,13 +9,13 @@ from codecov_auth.authentication.repo_auth import (
 from core.models import Commit
 from services.task import TaskService
 from upload.serializers import CommitSerializer
-from upload.views.generic import GenericGet
+from upload.views.base import GetterMixin
 from upload.views.uploads import CanDoCoverageUploadsPermission
 
 log = logging.getLogger(__name__)
 
 
-class CommitViews(ListCreateAPIView, GenericGet):
+class CommitViews(ListCreateAPIView, GetterMixin):
     serializer_class = CommitSerializer
     permission_classes = [CanDoCoverageUploadsPermission]
     authentication_classes = [

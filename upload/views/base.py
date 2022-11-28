@@ -1,12 +1,12 @@
 from rest_framework.exceptions import ValidationError
 
-from codecov_auth.models import OrganizationLevelToken, Service
+from codecov_auth.models import Service
 from core.models import Commit, Repository
 from reports.models import CommitReport
 from upload.views.helpers import get_repository_from_string
 
 
-class GenericGet:
+class GetterMixin:
     def get_repo(self) -> Repository:
         service = self.kwargs.get("service")
         try:

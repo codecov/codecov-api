@@ -9,7 +9,7 @@ from codecov_auth.authentication.repo_auth import (
     RepositoryLegacyTokenAuthentication,
 )
 from upload.serializers import CommitReportSerializer, ReportResultsSerializer
-from upload.views.generic import GenericGet
+from upload.views.base import GetterMixin
 from upload.views.uploads import CanDoCoverageUploadsPermission
 
 log = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ class ReportViews(ListCreateAPIView):
         return HttpResponseNotAllowed(permitted_methods=["POST"])
 
 
-class ReportResultsView(CreateAPIView, GenericGet):
+class ReportResultsView(CreateAPIView, GetterMixin):
     serializer_class = ReportResultsSerializer
     permission_classes = [CanDoCoverageUploadsPermission]
     authentication_classes = [

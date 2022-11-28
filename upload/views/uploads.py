@@ -4,7 +4,7 @@ from django.http import HttpRequest, HttpResponseNotAllowed
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListCreateAPIView
-from rest_framework.permissions import AllowAny, BasePermission
+from rest_framework.permissions import BasePermission
 from shared.metrics import metrics
 
 from codecov_auth.authentication.repo_auth import (
@@ -19,7 +19,7 @@ from services.redis_configuration import get_redis_connection
 from upload.helpers import dispatch_upload_task
 from upload.serializers import UploadSerializer
 from upload.throttles import UploadsPerCommitThrottle, UploadsPerWindowThrottle
-from upload.views.generic import GenericGet
+from upload.views.base import GetterMixin
 
 log = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ class CanDoCoverageUploadsPermission(BasePermission):
         )
 
 
-class UploadViews(ListCreateAPIView, GenericGet):
+class UploadViews(ListCreateAPIView, GetterMixin):
     serializer_class = UploadSerializer
     permission_classes = [
         CanDoCoverageUploadsPermission,
