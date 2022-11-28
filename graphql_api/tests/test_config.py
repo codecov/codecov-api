@@ -77,3 +77,36 @@ class TestConfigType(GraphQLTestHelper, TestCase):
                 "isTimescaleEnabled": True,
             },
         }
+
+    @override_settings(
+        TIMESERIES_ENABLED=False,
+    )
+    def test_timeseries_enabled_is_false(self):
+        data = self.gql_request("query { config { isTimescaleEnabled }}")
+        assert data == {
+            "config": {
+                "isTimescaleEnabled": False,
+            },
+        }
+
+    @override_settings(
+        TIMESERIES_ENABLED="true",
+    )
+    def test_timeseries_enabled_is_true_string(self):
+        data = self.gql_request("query { config { isTimescaleEnabled }}")
+        assert data == {
+            "config": {
+                "isTimescaleEnabled": True,
+            },
+        }
+
+    @override_settings(
+        TIMESERIES_ENABLED="false",
+    )
+    def test_timeseries_enabled_is_false_string(self):
+        data = self.gql_request("query { config { isTimescaleEnabled }}")
+        assert data == {
+            "config": {
+                "isTimescaleEnabled": False,
+            },
+        }
