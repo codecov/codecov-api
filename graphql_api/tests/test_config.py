@@ -111,11 +111,8 @@ class TestConfigType(GraphQLTestHelper, TestCase):
             },
         }
 
-    @override_settings(
-        IS_ENTERPRISE="true",
-        ADMINS_LIST=[]
-    )
-    def test_timeseries_enabled_is_false_string(self):
+    @override_settings(IS_ENTERPRISE="true", ADMINS_LIST=[])
+    def test_has_admins_empty_admins_list(self):
         data = self.gql_request("query { config { hasAdmins }}")
         assert data == {
             "config": {
@@ -123,10 +120,8 @@ class TestConfigType(GraphQLTestHelper, TestCase):
             },
         }
 
-    @override_settings(
-        IS_ENTERPRISE="false"
-    )
-    def test_timeseries_enabled_is_false_string(self):
+    @override_settings(IS_ENTERPRISE="false")
+    def test_has_admins_enterprise_is_false(self):
         data = self.gql_request("query { config { hasAdmins }}")
         assert data == {
             "config": {
@@ -135,13 +130,12 @@ class TestConfigType(GraphQLTestHelper, TestCase):
         }
 
     @override_settings(
-        IS_ENTERPRISE="true",
-        ADMINS_LIST=[{"service":"github", "username":"Imogen"}]
+        IS_ENTERPRISE="true", ADMINS_LIST=[{"service": "github", "username": "Imogen"}]
     )
-    def test_timeseries_enabled_is_false_string(self):
+    def test_has_admins_with_enterprise_and_admins(self):
         data = self.gql_request("query { config { hasAdmins }}")
         assert data == {
             "config": {
-                "hasAdmins": False,
+                "hasAdmins": True,
             },
         }

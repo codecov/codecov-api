@@ -60,6 +60,7 @@ def resolve_is_timescale_enabled(_, info):
 
     return settings.TIMESERIES_ENABLED
 
+
 @config_bindable.field("hasAdmins")
 def resolve_has_admins(_, info):
     if not settings.IS_ENTERPRISE:
