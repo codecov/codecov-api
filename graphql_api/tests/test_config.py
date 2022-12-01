@@ -110,3 +110,38 @@ class TestConfigType(GraphQLTestHelper, TestCase):
                 "isTimescaleEnabled": False,
             },
         }
+
+    @override_settings(
+        IS_ENTERPRISE="true",
+        ADMINS_LIST=[]
+    )
+    def test_timeseries_enabled_is_false_string(self):
+        data = self.gql_request("query { config { hasAdmins }}")
+        assert data == {
+            "config": {
+                "hasAdmins": False,
+            },
+        }
+
+    @override_settings(
+        IS_ENTERPRISE="false"
+    )
+    def test_timeseries_enabled_is_false_string(self):
+        data = self.gql_request("query { config { hasAdmins }}")
+        assert data == {
+            "config": {
+                "hasAdmins": None,
+            },
+        }
+
+    @override_settings(
+        IS_ENTERPRISE="true",
+        ADMINS_LIST=[{"service":"github", "username":"Imogen"}]
+    )
+    def test_timeseries_enabled_is_false_string(self):
+        data = self.gql_request("query { config { hasAdmins }}")
+        assert data == {
+            "config": {
+                "hasAdmins": False,
+            },
+        }
