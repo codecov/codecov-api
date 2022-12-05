@@ -13,17 +13,6 @@ ALLOWED_HOSTS = get_config(
 if THIS_POD_IP:
     ALLOWED_HOSTS.append(THIS_POD_IP)
 
-elastic_apm_enabled = bool(os.environ.get("ELASTIC_APM_ENABLED"))
-if elastic_apm_enabled:
-    INSTALLED_APPS += ["elasticapm.contrib.django"]
-    MIDDLEWARE += ["elasticapm.contrib.django.middleware.TracingMiddleware"]
-    ELASTIC_APM = {
-        "TRANSACTION_IGNORE_URLS": ["/webhooks/*", "/health*"],
-        "TRANSACTION_SAMPLE_RATE": os.environ.get("ELASTIC_APM_SAMPLE_RATE", ".1"),
-    }
-else:
-    INSTALLED_APPS += ["ddtrace.contrib.django"]
-
 WEBHOOK_URL = get_config("setup", "webhook_url", default="https://codecov.io")
 
 
@@ -39,6 +28,7 @@ sentry_sdk.init(
     dsn=os.environ.get("SERVICES__SENTRY__SERVER_DSN", None),
     integrations=[DjangoIntegration()],
     environment="PRODUCTION",
+    traces_sample_rate=os.environ.get("SERVICES__SENTRY__SAMPLE_RATE", 0.1),
 )
 
 CORS_ALLOW_CREDENTIALS = True
