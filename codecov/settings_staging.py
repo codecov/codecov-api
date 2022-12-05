@@ -25,7 +25,6 @@ STRIPE_PLAN_IDS = {
     "users-pr-inappm": "plan_H6P3KZXwmAbqPS",
     "users-pr-inappy": "plan_H6P16wij3lUuxg",
 }
-elastic_apm_enabled = bool(os.environ.get("ELASTIC_APM_ENABLED"))
 
 sentry_sdk.init(
     dsn=os.environ.get("SERVICES__SENTRY__SERVER_DSN", None),
