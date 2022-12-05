@@ -26,20 +26,12 @@ STRIPE_PLAN_IDS = {
     "users-pr-inappy": "plan_H6P16wij3lUuxg",
 }
 elastic_apm_enabled = bool(os.environ.get("ELASTIC_APM_ENABLED"))
-if elastic_apm_enabled:
-    INSTALLED_APPS += ["elasticapm.contrib.django"]
-    MIDDLEWARE += ["elasticapm.contrib.django.middleware.TracingMiddleware"]
-    ELASTIC_APM = {
-        "TRANSACTION_IGNORE_URLS": ["/webhooks/*", "/health*"],
-        "TRANSACTION_SAMPLE_RATE": os.environ.get("ELASTIC_APM_SAMPLE_RATE", "1"),
-    }
-else:
-    INSTALLED_APPS += ["ddtrace.contrib.django"]
 
 sentry_sdk.init(
     dsn=os.environ.get("SERVICES__SENTRY__SERVER_DSN", None),
     integrations=[DjangoIntegration()],
     environment="STAGING",
+    traces_sample_rate=os.environ.get("SERVICES__SENTRY__SAMPLE_RATE", 1),
 )
 
 CORS_ALLOWED_ORIGIN_REGEXES = [
