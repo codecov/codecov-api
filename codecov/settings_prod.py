@@ -28,7 +28,7 @@ sentry_sdk.init(
     dsn=os.environ.get("SERVICES__SENTRY__SERVER_DSN", None),
     integrations=[DjangoIntegration()],
     environment="PRODUCTION",
-    traces_sample_rate=os.environ.get("SERVICES__SENTRY__SAMPLE_RATE", .1),
+    traces_sample_rate=os.environ.get("SERVICES__SENTRY__SAMPLE_RATE", 0.1),
 )
 
 CORS_ALLOW_CREDENTIALS = True
