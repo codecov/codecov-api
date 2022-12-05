@@ -7,6 +7,7 @@ from django.conf import settings
 from billing.constants import (
     ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
     FREE_PLAN_REPRESENTATIONS,
+    INVOICE_STATUSES_NOT_TO_SHOW,
     PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
     USER_PLAN_REPRESENTATIONS,
 )
@@ -38,7 +39,7 @@ class AbstractPaymentService(ABC):
         pass
 
     @abstractmethod
-    def list_invoices_no_drafts(self, owner, limit=10):
+    def list_invoices_filtered_by_status_and_total(self, owner, limit=10):
         pass
 
     @abstractmethod
@@ -102,12 +103,16 @@ class StripeService(AbstractPaymentService):
             return None
         return invoice
 
-    def filter_draft_invoices(self, invoice):
-        if invoice["status"] and invoice["status"] != "draft":
+    def filter_invoices_by_status(self, invoice):
+        if invoice["status"] and invoice["status"] not in INVOICE_STATUSES_NOT_TO_SHOW:
+            return invoice
+
+    def filter_invoices_by_total(self, invoice):
+        if invoice["total"] and invoice["total"] != 0:
             return invoice
 
     @_log_stripe_error
-    def list_invoices_no_drafts(self, owner, limit=10):
+    def list_invoices_filtered_by_status_and_total(self, owner, limit=10):
         log.info(f"Fetching invoices from Stripe for ownerid {owner.ownerid}")
         if owner.stripe_customer_id is None:
             log.info("stripe_customer_id is None, not fetching invoices")
@@ -115,7 +120,12 @@ class StripeService(AbstractPaymentService):
         invoices = stripe.Invoice.list(customer=owner.stripe_customer_id, limit=limit)[
             "data"
         ]
-        return filter(self.filter_draft_invoices, invoices)
+        invoices_filtered_by_status = filter(self.filter_invoices_by_status, invoices)
+        invoices_filtered_by_status_and_total = filter(
+            self.filter_invoices_by_total, invoices_filtered_by_status
+        )
+
+        return invoices_filtered_by_status_and_total
 
     @_log_stripe_error
     def delete_subscription(self, owner):
@@ -409,8 +419,10 @@ class BillingService:
     def get_invoice(self, owner, invoice_id):
         return self.payment_service.get_invoice(owner, invoice_id)
 
-    def list_invoices_no_drafts(self, owner, limit=10):
-        return self.payment_service.list_invoices_no_drafts(owner, limit)
+    def list_invoices_filtered_by_status_and_total(self, owner, limit=10):
+        return self.payment_service.list_invoices_filtered_by_status_and_total(
+            owner, limit
+        )
 
     def update_plan(self, owner, desired_plan):
         """

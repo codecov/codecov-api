@@ -44,7 +44,7 @@ class InvoiceViewSet(
     def get_queryset(self):
         return BillingService(
             requesting_user=self.request.user
-        ).list_invoices_no_drafts(self.owner, 100)
+        ).list_invoices_filtered_by_status_and_total(self.owner, 100)
 
     def get_object(self):
         invoice_id = self.kwargs.get("pk")

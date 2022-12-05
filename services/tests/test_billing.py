@@ -117,21 +117,21 @@ class StripeServiceTests(TestCase):
         )
 
     @patch("services.billing.stripe.Invoice.list")
-    def test_list_invoices_no_drafts_calls_stripe_invoice_list_with_customer_stripe_id(
+    def test_list_invoices_filtered_by_status_and_total_calls_stripe_invoice_list_with_customer_stripe_id(
         self, invoice_list_mock
     ):
         owner = OwnerFactory(stripe_customer_id=-1)
-        self.stripe.list_invoices_no_drafts(owner)
+        self.stripe.list_invoices_filtered_by_status_and_total(owner)
         invoice_list_mock.assert_called_once_with(
             customer=owner.stripe_customer_id, limit=10
         )
 
     @patch("stripe.Invoice.list")
-    def test_list_invoices_no_drafts_returns_emptylist_if_stripe_customer_id_is_None(
+    def test_list_invoices_filtered_by_status_and_total_returns_emptylist_if_stripe_customer_id_is_None(
         self, invoice_list_mock
     ):
         owner = OwnerFactory()
-        invoices = self.stripe.list_invoices_no_drafts(owner)
+        invoices = self.stripe.list_invoices_filtered_by_status_and_total(owner)
 
         invoice_list_mock.assert_not_called()
         assert invoices == []
@@ -961,7 +961,7 @@ class StripeServiceTests(TestCase):
 
 
 class MockPaymentService(AbstractPaymentService):
-    def list_invoices_no_drafts(self, owner, limit=10):
+    def list_invoices_filtered_by_status_and_total(self, owner, limit=10):
         return f"{owner.ownerid} {limit}"
 
     def get_invoice(self, owner, id):
@@ -995,13 +995,13 @@ class BillingServiceTests(TestCase):
             StripeService,
         )
 
-    def test_list_invoices_no_drafts_calls_payment_service_list_invoices_no_drafts_with_limit(
+    def test_list_invoices_filtered_by_status_and_total_calls_payment_service_list_invoices_filtered_by_status_and_total_with_limit(
         self,
     ):
         owner = OwnerFactory()
-        assert self.billing_service.list_invoices_no_drafts(
+        assert self.billing_service.list_invoices_filtered_by_status_and_total(
             owner
-        ) == self.mock_payment_service.list_invoices_no_drafts(owner)
+        ) == self.mock_payment_service.list_invoices_filtered_by_status_and_total(owner)
 
     @patch("services.tests.test_billing.MockPaymentService.delete_subscription")
     def test_update_plan_to_users_basic_deletes_subscription_if_user_has_stripe_subscription(
