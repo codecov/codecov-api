@@ -1,6 +1,7 @@
 import os
 
 import sentry_sdk
+from sentry_sdk.integrations.celery import CeleryIntegration
 from sentry_sdk.integrations.django import DjangoIntegration
 
 from .settings_base import *
@@ -26,7 +27,7 @@ STRIPE_PLAN_IDS = {
 
 sentry_sdk.init(
     dsn=os.environ.get("SERVICES__SENTRY__SERVER_DSN", None),
-    integrations=[DjangoIntegration()],
+    integrations=[DjangoIntegration(), CeleryIntegration()],
     environment="PRODUCTION",
     traces_sample_rate=os.environ.get("SERVICES__SENTRY__SAMPLE_RATE", 0.1),
 )
