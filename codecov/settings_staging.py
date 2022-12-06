@@ -1,7 +1,6 @@
 import os
 
 import sentry_sdk
-from sentry_sdk.integrations.celery import CeleryIntegration
 from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.httpx import HttpxIntegration
 from sentry_sdk.integrations.redis import RedisIntegration
@@ -28,17 +27,17 @@ STRIPE_PLAN_IDS = {
     "users-pr-inappm": "plan_H6P3KZXwmAbqPS",
     "users-pr-inappy": "plan_H6P16wij3lUuxg",
 }
-
+SENTRY_ENV = "STAGING"
+SENTRY_SAMPLE_RATE = float(os.environ.get("SERVICES__SENTRY__SAMPLE_RATE", 1))
 sentry_sdk.init(
     dsn=os.environ.get("SERVICES__SENTRY__SERVER_DSN", None),
     integrations=[
         DjangoIntegration(),
-        CeleryIntegration(),
         RedisIntegration(),
         HttpxIntegration(),
     ],
-    environment="STAGING",
-    traces_sample_rate=float(os.environ.get("SERVICES__SENTRY__SAMPLE_RATE", 1)),
+    environment=SENTRY_ENV,
+    traces_sample_rate=SENTRY_SAMPLE_RATE,
     _experiments={
         "profiles_sample_rate": float(
             os.environ.get("SERVICES__SENTRY__PROFILE_SAMPLE_RATE", 1.0)

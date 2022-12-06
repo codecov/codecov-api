@@ -1,8 +1,12 @@
 import logging
+import os
 from datetime import datetime, timedelta
 from typing import Iterable
 
-from celery import Celery, chain, group, signature
+import sentry_sdk
+from celery import Celery, chain, group, signals, signature
+from django.conf import settings
+from sentry_sdk.integrations.celery import CeleryIntegration
 from shared import celery_config
 
 from core.models import Repository
@@ -12,6 +16,19 @@ celery_app = Celery("tasks")
 celery_app.config_from_object("shared.celery_config:BaseCeleryConfig")
 
 log = logging.getLogger(__name__)
+
+
+@signals.celeryd_init.connect
+def init_sentry(**_kwargs):
+    if settings.SENTRY_ENV:
+        sentry_sdk.init(
+            dsn=os.environ.get("SERVICES__SENTRY__SERVER_DSN", None),
+            integrations=[
+                CeleryIntegration(),
+            ],
+            environment=settings.SENTRY_ENV,
+            traces_sample_rate=settings.SENTRY_SAMPLE_RATE,
+        )
 
 
 class TaskService(object):

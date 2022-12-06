@@ -26,7 +26,8 @@ STRIPE_PLAN_IDS = {
     "users-pr-inappy": "price_1Gv2COGlVGuVgOrkuOYVLIj7",
 }
 
-
+SENTRY_ENV = "PRODUCTION"
+SENTRY_SAMPLE_RATE = float(os.environ.get("SERVICES__SENTRY__SAMPLE_RATE", 0.1))
 sentry_sdk.init(
     dsn=os.environ.get("SERVICES__SENTRY__SERVER_DSN", None),
     integrations=[
@@ -35,8 +36,8 @@ sentry_sdk.init(
         RedisIntegration(),
         HttpxIntegration(),
     ],
-    environment="PRODUCTION",
-    traces_sample_rate=float(os.environ.get("SERVICES__SENTRY__SAMPLE_RATE", 0.1)),
+    environment=SENTRY_ENV,
+    traces_sample_rate=SENTRY_SAMPLE_RATE,
     _experiments={
         "profiles_sample_rate": float(
             os.environ.get("SERVICES__SENTRY__PROFILE_SAMPLE_RATE", 0.01)
