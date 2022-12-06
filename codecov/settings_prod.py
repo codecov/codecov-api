@@ -3,6 +3,8 @@ import os
 import sentry_sdk
 from sentry_sdk.integrations.celery import CeleryIntegration
 from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.httpx import HttpxIntegration
+from sentry_sdk.integrations.redis import RedisIntegration
 
 from .settings_base import *
 
@@ -27,11 +29,21 @@ STRIPE_PLAN_IDS = {
 
 sentry_sdk.init(
     dsn=os.environ.get("SERVICES__SENTRY__SERVER_DSN", None),
-    integrations=[DjangoIntegration(), CeleryIntegration()],
+    integrations=[
+        DjangoIntegration(),
+        CeleryIntegration(),
+        RedisIntegration(),
+        HttpxIntegration(),
+    ],
     environment="PRODUCTION",
-    traces_sample_rate=os.environ.get("SERVICES__SENTRY__SAMPLE_RATE", 0.1),
+    traces_sample_rate=float(os.environ.get("SERVICES__SENTRY__SAMPLE_RATE", 0.1)),
+    _experiments={
+        "profiles_sample_rate": float(
+            os.environ.get("SERVICES__SENTRY__PROFILE_SAMPLE_RATE", 0.01)
+        ),
+    },
 )
-
+CORS_ALLOW_HEADERS += ["sentry-trace", "baggage"]
 CORS_ALLOW_CREDENTIALS = True
 CODECOV_URL = get_config("setup", "codecov_url", default="https://codecov.io")
 CODECOV_DASHBOARD_URL = get_config(
