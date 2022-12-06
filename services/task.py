@@ -6,6 +6,7 @@ from typing import Iterable
 import celery
 import sentry_sdk
 from celery import Celery, chain, group, signals, signature
+from celery.canvas import Signature
 from django.conf import settings
 from sentry_sdk.integrations.celery import _wrap_apply_async
 from shared import celery_config
@@ -27,7 +28,7 @@ if settings.SENTRY_ENV:
     celery.canvas._chord.apply_async = _wrap_apply_async(
         celery.canvas._chord.apply_async
     )
-    signature.apply_async = _wrap_apply_async(signature.apply_async)
+    Signature.apply_async = _wrap_apply_async(Signature.apply_async)
 
 
 class TaskService(object):
