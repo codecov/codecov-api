@@ -96,6 +96,7 @@ jobs:
         command: |-
           make -f Makefile.circle build-requirements
           make -f Makefile.circle build-enterprise VERSION=$CIRCLE_TAG
+          make -f Makefile.circle build-enterprise-runtime VERSION=$CIRCLE_TAG
           make -f Makefile.circle push-enterprise
           make -f Makefile.circle tag-enterprise
   test:
