@@ -901,6 +901,23 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             is None
         )
 
+    def test_pull_comparison_missing_when_commit_comparison_state_is_errored(self):
+        self.commit_comparison.state = CommitComparison.CommitComparisonStates.ERROR
+        self.commit_comparison.save()
+
+        query = """
+            pullId
+            compareWithBase {
+                __typename
+            }
+        """
+
+        res = self._request(query)
+        assert res == {
+            "pullId": self.pull.pullid,
+            "compareWithBase": {"__typename": "MissingComparison"},
+        }
+
     def test_pull_comparison_missing_comparison(self):
         self.head_commit.delete()
         self.commit_comparison.delete()
@@ -999,6 +1016,56 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             "pullId": self.pull.pullid,
             "compareWithBase": {
                 "__typename": "MissingHeadReport",
+            },
+        }
+
+    def test_pull_comparison_missing_head_report_with_successful_commit_comparison(
+        self,
+    ):
+        self.commit_comparison.error = None
+        self.commit_comparison.save()
+
+        self.head_report.side_effect = comparison.MissingComparisonReport(
+            "Missing head report"
+        )
+
+        query = """
+            pullId
+            compareWithBase {
+                __typename
+            }
+        """
+
+        res = self._request(query)
+        assert res == {
+            "pullId": self.pull.pullid,
+            "compareWithBase": {
+                "__typename": "MissingHeadReport",
+            },
+        }
+
+    def test_pull_comparison_missing_base_report_with_successful_commit_comparison(
+        self,
+    ):
+        self.commit_comparison.error = None
+        self.commit_comparison.save()
+
+        self.head_report.side_effect = comparison.MissingComparisonReport(
+            "Missing base report"
+        )
+
+        query = """
+            pullId
+            compareWithBase {
+                __typename
+            }
+        """
+
+        res = self._request(query)
+        assert res == {
+            "pullId": self.pull.pullid,
+            "compareWithBase": {
+                "__typename": "MissingBaseReport",
             },
         }
 
