@@ -7,8 +7,8 @@ from django.conf import settings
 from billing.constants import (
     ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
     FREE_PLAN_REPRESENTATIONS,
-    INVOICE_STATUSES_NOT_TO_SHOW,
     PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
+    REMOVED_INVOICE_STATUSES,
     USER_PLAN_REPRESENTATIONS,
 )
 from codecov_auth.models import Owner
@@ -39,7 +39,7 @@ class AbstractPaymentService(ABC):
         pass
 
     @abstractmethod
-    def list_invoices_filtered_by_status_and_total(self, owner, limit=10):
+    def list_filtered_invoices(self, owner, limit=10):
         pass
 
     @abstractmethod
@@ -104,7 +104,7 @@ class StripeService(AbstractPaymentService):
         return invoice
 
     def filter_invoices_by_status(self, invoice):
-        if invoice["status"] and invoice["status"] not in INVOICE_STATUSES_NOT_TO_SHOW:
+        if invoice["status"] and invoice["status"] not in REMOVED_INVOICE_STATUSES:
             return invoice
 
     def filter_invoices_by_total(self, invoice):
@@ -112,7 +112,7 @@ class StripeService(AbstractPaymentService):
             return invoice
 
     @_log_stripe_error
-    def list_invoices_filtered_by_status_and_total(self, owner, limit=10):
+    def list_filtered_invoices(self, owner, limit=10):
         log.info(f"Fetching invoices from Stripe for ownerid {owner.ownerid}")
         if owner.stripe_customer_id is None:
             log.info("stripe_customer_id is None, not fetching invoices")
@@ -419,10 +419,8 @@ class BillingService:
     def get_invoice(self, owner, invoice_id):
         return self.payment_service.get_invoice(owner, invoice_id)
 
-    def list_invoices_filtered_by_status_and_total(self, owner, limit=10):
-        return self.payment_service.list_invoices_filtered_by_status_and_total(
-            owner, limit
-        )
+    def list_filtered_invoices(self, owner, limit=10):
+        return self.payment_service.list_filtered_invoices(owner, limit)
 
     def update_plan(self, owner, desired_plan):
         """
