@@ -503,6 +503,7 @@ class RepositoryToken(BaseCodecovModel):
     class TokenType(models.TextChoices):
         UPLOAD = "upload"
         PROFILING = "profiling"
+        STATIC_ANALYSIS = "static_analysis"
 
     repository = models.ForeignKey(
         "core.Repository",
