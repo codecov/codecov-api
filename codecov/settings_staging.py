@@ -29,7 +29,7 @@ STRIPE_PLAN_IDS = {
     "users-pr-inappy": "plan_H6P16wij3lUuxg",
 }
 
-SENTRY_ENV = "STAGING"
+SENTRY_ENV = "staging"
 SENTRY_SAMPLE_RATE = float(os.environ.get("SERVICES__SENTRY__SAMPLE_RATE", 1))
 
 sentry_sdk.init(
