@@ -31,6 +31,17 @@ class CommitReport(BaseCodecovModel):
     code = models.CharField(null=True, max_length=100)
 
 
+class ReportResults(BaseCodecovModel):
+    class ReportResultsStates(models.TextChoices):
+        CREATED = "created"
+        READY = "ready"
+
+    report = models.OneToOneField(CommitReport, on_delete=models.CASCADE)
+    state = models.TextField(null=True, choices=ReportResultsStates.choices)
+    completed_at = models.DateTimeField(null=True)
+    result = models.JSONField(default=dict)
+
+
 class ReportDetails(BaseCodecovModel):
     report = models.OneToOneField(CommitReport, on_delete=models.CASCADE)
     files_array = ArrayField(models.JSONField())
