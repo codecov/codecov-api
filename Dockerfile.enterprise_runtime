@@ -7,11 +7,6 @@ FROM $CODECOV_ENTERPRISE_RELEASE as release
 
 FROM            python:3.9.14-alpine3.16
 
-RUN             apk update \
-                apk add --upgrade --no-cache apk-tools && \
-                apk add --update --no-cache openssh && \
-                pip install --upgrade pip
-
 RUN         addgroup -S application && adduser -S codecov -G application
 
 ARG         RELEASE_VERSION
@@ -20,15 +15,20 @@ ENV         DJANGO_SETTINGS_MODULE "codecov.settings_enterprise"
 ENV         CODECOV_API_PORT=8000
 
 WORKDIR     /home
-COPY --from=release /home /home
+COPY        --from=release /home /home
 
 ARG         EXTERNAL_DEPS_FOLDER=./external_deps
 
-RUN mkdir $EXTERNAL_DEPS_FOLDER
-RUN pip install --target $EXTERNAL_DEPS_FOLDER psycopg2-binary tlslite-ng
-RUN chown codecov:application $EXTERNAL_DEPS_FOLDER
+RUN         mkdir $EXTERNAL_DEPS_FOLDER
+RUN         pip install --target $EXTERNAL_DEPS_FOLDER psycopg2-binary tlslite-ng
+RUN         chown codecov:application $EXTERNAL_DEPS_FOLDER
 
-
+# Remove (crudelly) python installation
+RUN         rm /usr/local/bin/* && \
+            rm -r /usr/local/include/python3.9 && \
+            rm -r /usr/local/lib/python3.9 && \
+            rm /usr/local/lib/pkgconfig/python* && \
+            rm /usr/local/lib/libpython3*
 
 USER        codecov
 
