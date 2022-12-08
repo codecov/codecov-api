@@ -182,7 +182,6 @@ jobs:
       - run:
           name: Dive enterprise image
           command: |
-            make -f Makefile.circle dive-enterprise
             make -f Makefile.circle deep-dive
   staging:
     executor: codecov-deploy
