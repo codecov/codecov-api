@@ -1,9 +1,7 @@
-from dataclasses import dataclass
-
 from ariadne import ObjectType
 
-from codecov.commands.exceptions import NotFound
 from compare.models import CommitComparison
+from graphql_api.actions.comparison import validate_comparison
 from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.comparison import ComparisonLoader
 from graphql_api.dataloader.owner import OwnerLoader
@@ -16,7 +14,7 @@ from graphql_api.types.comparison.comparison import (
     MissingHeadReport,
 )
 from graphql_api.types.enums import OrderingDirection, PullRequestState
-from services.comparison import PullRequestComparison
+from services.comparison import MissingComparisonReport, PullRequestComparison
 
 pull_bindable = ObjectType("Pull")
 
@@ -98,6 +96,16 @@ async def resolve_compare_with_base(pull, info, **kwargs):
         user = info.context["request"].user
         comparison = PullRequestComparison(user, pull)
 
+        # Preemptively validate the comparison object before storing it in context as a commit_comparison can
+        # be successful but still have errors w/ the head+base report
+        try:
+            await validate_comparison(comparison)
+        except MissingComparisonReport as e:
+            (error_message) = str(e)
+            if error_message == "Missing head report":
+                return MissingHeadReport()
+            if error_message == "Missing base report":
+                return MissingBaseReport()
         # store the comparison in the context - to be used in the `Comparison` resolvers
         info.context["comparison"] = comparison
 
