@@ -1,5 +1,8 @@
 from django.conf import settings
+import logging
 
+
+log = logging.getLogger(__name__)
 
 class DatabaseRouter:
     """
@@ -26,6 +29,7 @@ class DatabaseRouter:
 
     def allow_migrate(self, db, app_label, model_name=None, **hints):
         if db == "timeseries" and not settings.TIMESERIES_ENABLED:
+            log.warning("Skipping timeseries migration")
             return False
 
         return db == self.databases.get(app_label, "default")
