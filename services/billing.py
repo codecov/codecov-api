@@ -124,8 +124,7 @@ class StripeService(AbstractPaymentService):
         invoices_filtered_by_status_and_total = filter(
             self.filter_invoices_by_total, invoices_filtered_by_status
         )
-
-        return invoices_filtered_by_status_and_total
+        return list(invoices_filtered_by_status_and_total)
 
     @_log_stripe_error
     def delete_subscription(self, owner):

@@ -249,9 +249,8 @@ class StripeServiceTests(TestCase):
         invoice_list_mock.return_value = stripe_invoice_response
         owner = OwnerFactory(stripe_customer_id=-1)
         invoices = self.stripe.list_filtered_invoices(owner)
-        invoices_list = list(invoices)
-        assert invoices_list == expected_invoices
-        assert len(invoices_list) == 1
+        assert invoices == expected_invoices
+        assert len(invoices) == 1
 
     @patch("stripe.Invoice.list")
     def test_list_filtered_invoices_returns_emptylist_if_stripe_customer_id_is_None(
