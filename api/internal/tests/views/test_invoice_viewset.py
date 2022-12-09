@@ -55,12 +55,12 @@ class InvoiceViewSetTests(APITestCase):
         return self.client.get(reverse("invoices-detail", kwargs=kwargs))
 
     @patch("services.billing.stripe.Invoice.list")
-    def test_invoices_returns_100_recent_invoices(self, mock_list_invoices_no_drafts):
+    def test_invoices_returns_100_recent_invoices(self, mock_list_filtered_invoices):
         with open("./services/tests/samples/stripe_invoice.json") as f:
             stripe_invoice_response = json.load(f)
         # make it so there's 100 invoices, which is the max stripe returns
         stripe_invoice_response["data"] = stripe_invoice_response["data"] * 100
-        mock_list_invoices_no_drafts.return_value = stripe_invoice_response
+        mock_list_filtered_invoices.return_value = stripe_invoice_response
         expected_invoices = [self.expected_invoice] * 100
 
         response = self._list(
