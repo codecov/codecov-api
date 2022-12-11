@@ -33,6 +33,8 @@ class GetterMixin:
 
     def get_report(self, commit: Commit) -> CommitReport:
         report_code = self.kwargs.get("report_code")
+        if report_code == "default":
+            report_code = None
         try:
             report = CommitReport.objects.get(code=report_code, commit=commit)
             return report

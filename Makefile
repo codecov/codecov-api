@@ -7,6 +7,9 @@ epoch := $(shell date +"%s")
 build.local:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile . -t codecov/api:latest --ssh default
 
+build.enterprise.local:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.local-enterprise . -t codecov/enterprise-api:latest-stable --ssh default
+
 build.base:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.requirements . -t codecov/baseapi:latest --ssh default
 
@@ -14,11 +17,23 @@ build:
 	$(MAKE) build.base
 	$(MAKE) build.local
 
+build.enterprise_runtime:
+	# $(MAKE) build.enterprise
+	docker build -f Dockerfile.enterprise_runtime . -t codecov/api-enterprise-runtime:${release_version} \
+		--build-arg CODECOV_ENTERPRISE_RELEASE=codecov/enterprise-api:${release_version} \
+		--build-arg RELEASE_VERSION=${release_version} \
+		--label "org.label-schema.build-date"="$(build_date)" \
+		--label "org.label-schema.name"="Self-Hosted API" \
+		--label "org.label-schema.vendor"="Codecov" \
+		--label "org.label-schema.version"="${release_version}" \
+		--squash
+	docker tag codecov/api-enterprise-runtime:${release_version} codecov/api-enterprise-runtime:latest-stable
+
 build.enterprise:
 	$(MAKE) build
 	docker build -f Dockerfile.enterprise . -t codecov/enterprise-api:${release_version} \
 		--label "org.label-schema.build-date"="$(build_date)" \
-		--label "org.label-schema.name"="Self-Hosted API" \
+		--label "org.label-schema.name"="Self-Hosted API (no dependencies)" \
 		--label "org.label-schema.vendor"="Codecov" \
 		--label "org.label-schema.version"="${release_version}" \
 		--squash
