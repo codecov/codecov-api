@@ -1,13 +1,28 @@
 #!/bin/sh
 
-# starts the development server using gunicorn
-# NEVER run production with the --reload option command
-echo "Starting gunicorn in dev mode"
-export PYTHONWARNINGS=always
-suffix=""
-if [[ "$STATSD_HOST" ]]; then
-  suffix="--statsd-host ${STATSD_HOST}:${STATSD_PORT}"
+# Starts the enterprise gunicorn server (no --reload)
+echo "Starting api"
+
+if [[ "$CODECOV_WRAPPER" ]]; then
+SUB="$CODECOV_WRAPPER"
+else
+SUB=""
 fi
-gunicorn codecov.wsgi:application --reload --bind 0.0.0.0:8000 --access-logfile '-' $suffix
-
-
+if [[ "$CODECOV_WRAPPER_POST" ]]; then
+POST="$CODECOV_WRAPPER_POST"
+else
+POST=""
+fi
+if [[ "$1" = "api" || -z "$1" ]];
+then
+  # Migrate
+  /home/api migrate
+  # Start api
+  ${SUB}/home/api run${POST}
+elif [[ "$1" = "rti" ]];
+then
+  # Start api
+  ${SUB}/home/api run${POST}
+else
+  exec "$@"
+fi
