@@ -1,3 +1,4 @@
+import json
 from unittest.mock import patch
 
 from django.conf import settings
@@ -10,6 +11,121 @@ from codecov_auth.tests.factories import OwnerFactory
 from services.billing import AbstractPaymentService, BillingService, StripeService
 
 SCHEDULE_RELEASE_OFFSET = 10
+
+expected_invoices = [
+    {
+        "id": "in_19yTU92eZvKYlo2C7uDjvu6v",
+        "object": "invoice",
+        "account_country": "US",
+        "account_name": "Stripe.com",
+        "amount_due": 999,
+        "amount_paid": 999,
+        "amount_remaining": 0,
+        "application_fee_amount": None,
+        "attempt_count": 1,
+        "attempted": True,
+        "auto_advance": False,
+        "billing_reason": None,
+        "charge": "ch_19yUQN2eZvKYlo2CQf7aWpSX",
+        "collection_method": "charge_automatically",
+        "created": 1489789429,
+        "currency": "usd",
+        "custom_fields": None,
+        "customer": "cus_HF6p8Zx7JdRS7A",
+        "customer_address": "6639 Boulevard Dr, Westwood FL 34202 USA",
+        "customer_email": "olivia.williams.03@example.com",
+        "customer_name": "Peer Company",
+        "customer_phone": None,
+        "customer_shipping": None,
+        "customer_tax_exempt": "none",
+        "customer_tax_ids": [],
+        "default_payment_method": None,
+        "default_source": None,
+        "default_tax_rates": [],
+        "description": None,
+        "discount": None,
+        "due_date": None,
+        "ending_balance": 0,
+        "footer": None,
+        "hosted_invoice_url": "https://pay.stripe.com/invoice/acct_1032D82eZvKYlo2C/invst_a7KV10HpLw2QxrihgVyuOkOjMZ",
+        "invoice_pdf": "https://pay.stripe.com/invoice/acct_1032D82eZvKYlo2C/invst_a7KV10HpLw2QxrihgVyuOkOjMZ/pdf",
+        "lines": {
+            "data": [
+                {
+                    "id": "il_tmp_06bab3ae5b3624",
+                    "object": "line_item",
+                    "amount": 120,
+                    "currency": "usd",
+                    "description": "(10) users-inappm",
+                    "discountable": True,
+                    "livemode": False,
+                    "metadata": {},
+                    "period": {"end": 1521326190, "start": 1518906990},
+                    "plan": {
+                        "id": "ivory-freelance-040",
+                        "name": "users-inappm",
+                        "object": "plan",
+                        "active": True,
+                        "aggregate_usage": None,
+                        "amount": 999,
+                        "amount_decimal": "999",
+                        "billing_scheme": "per_unit",
+                        "created": 1466202980,
+                        "currency": "usd",
+                        "interval": "month",
+                        "interval_count": 1,
+                        "livemode": False,
+                        "metadata": {},
+                        "nickname": None,
+                        "product": "prod_BUthVRQ7KdFfa7",
+                        "tiers": None,
+                        "tiers_mode": None,
+                        "transform_usage": None,
+                        "trial_period_days": None,
+                        "usage_type": "licensed",
+                    },
+                    "proration": False,
+                    "quantity": 1,
+                    "subscription": "sub_8epEF0PuRhmltU",
+                    "subscription_item": "si_18NVZi2eZvKYlo2CUtBNGL9x",
+                    "tax_amounts": [],
+                    "tax_rates": [],
+                    "type": "subscription",
+                }
+            ],
+            "has_more": False,
+            "object": "list",
+            "url": "/v1/invoices/in_19yTU92eZvKYlo2C7uDjvu6v/lines",
+        },
+        "livemode": False,
+        "metadata": {"order_id": "6735"},
+        "next_payment_attempt": None,
+        "number": "EF0A41E-0001",
+        "paid": True,
+        "payment_intent": None,
+        "period_end": 1489789420,
+        "period_start": 1487370220,
+        "post_payment_credit_notes_amount": 0,
+        "pre_payment_credit_notes_amount": 0,
+        "receipt_number": "2277-9887",
+        "starting_balance": 0,
+        "statement_descriptor": None,
+        "status": "paid",
+        "status_transitions": {
+            "finalized_at": 1489793039,
+            "marked_uncollectible_at": None,
+            "paid_at": 1489793039,
+            "voided_at": None,
+        },
+        "subscription": "sub_9lNL2lSXI8nYEQ",
+        "subtotal": 999,
+        "tax": None,
+        "tax_percent": None,
+        "total": 999,
+        "total_tax_amounts": [],
+        "webhooks_delivered_at": 1489789437,
+    }
+]
 
 
 class MockSubscription(object):
@@ -117,21 +233,31 @@ class StripeServiceTests(TestCase):
         )
 
     @patch("services.billing.stripe.Invoice.list")
-    def test_list_invoices_calls_stripe_invoice_list_with_customer_stripe_id(
+    def test_list_filtered_invoices_calls_stripe_invoice_list_with_customer_stripe_id(
         self, invoice_list_mock
     ):
         owner = OwnerFactory(stripe_customer_id=-1)
-        self.stripe.list_invoices(owner)
+        self.stripe.list_filtered_invoices(owner)
         invoice_list_mock.assert_called_once_with(
             customer=owner.stripe_customer_id, limit=10
         )
 
+    @patch("services.billing.stripe.Invoice.list")
+    def test_list_filtered_invoices_returns_expected_invoices(self, invoice_list_mock):
+        with open("./services/tests/samples/stripe_invoice.json") as f:
+            stripe_invoice_response = json.load(f)
+        invoice_list_mock.return_value = stripe_invoice_response
+        owner = OwnerFactory(stripe_customer_id=-1)
+        invoices = self.stripe.list_filtered_invoices(owner)
+        assert invoices == expected_invoices
+        assert len(invoices) == 1
+
     @patch("stripe.Invoice.list")
-    def test_list_invoices_returns_emptylist_if_stripe_customer_id_is_None(
+    def test_list_filtered_invoices_returns_emptylist_if_stripe_customer_id_is_None(
         self, invoice_list_mock
     ):
         owner = OwnerFactory()
-        invoices = self.stripe.list_invoices(owner)
+        invoices = self.stripe.list_filtered_invoices(owner)
 
         invoice_list_mock.assert_not_called()
         assert invoices == []
@@ -961,7 +1087,7 @@ class StripeServiceTests(TestCase):
 
 
 class MockPaymentService(AbstractPaymentService):
-    def list_invoices(self, owner, limit=10):
+    def list_filtered_invoices(self, owner, limit=10):
         return f"{owner.ownerid} {limit}"
 
     def get_invoice(self, owner, id):
@@ -995,11 +1121,13 @@ class BillingServiceTests(TestCase):
             StripeService,
         )
 
-    def test_list_invoices_calls_payment_service_list_invoices_with_limit(self):
+    def test_list_filtered_invoices_calls_payment_service_list_filtered_invoices_with_limit(
+        self,
+    ):
         owner = OwnerFactory()
-        assert self.billing_service.list_invoices(
+        assert self.billing_service.list_filtered_invoices(
             owner
-        ) == self.mock_payment_service.list_invoices(owner)
+        ) == self.mock_payment_service.list_filtered_invoices(owner)
 
     @patch("services.tests.test_billing.MockPaymentService.delete_subscription")
     def test_update_plan_to_users_basic_deletes_subscription_if_user_has_stripe_subscription(

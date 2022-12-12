@@ -42,7 +42,7 @@ class InvoiceViewSet(
     pagination_class = None
 
     def get_queryset(self):
-        return BillingService(requesting_user=self.request.user).list_invoices(
+        return BillingService(requesting_user=self.request.user).list_filtered_invoices(
             self.owner, 100
         )
 

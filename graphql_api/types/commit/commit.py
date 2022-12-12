@@ -1,8 +1,7 @@
-from dis import dis
 from typing import List, Union
 
 import yaml
-from ariadne import ObjectType, convert_kwargs_to_snake_case
+from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
 from asgiref.sync import sync_to_async
 
 from core.models import Commit
@@ -12,7 +11,8 @@ from graphql_api.dataloader.comparison import ComparisonLoader
 from graphql_api.dataloader.owner import OwnerLoader
 from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.enums import OrderingDirection, PathContentDisplayType
-from services.path import Dir, File, ReportPaths
+from graphql_api.types.errors import MissingHeadReport
+from services.path import ReportPaths
 from services.profiling import CriticalFile, ProfilingSummary
 
 commit_bindable = ObjectType("Commit")
@@ -125,9 +125,7 @@ def resolve_critical_files(commit: Commit, info, **kwargs) -> List[CriticalFile]
 @commit_bindable.field("pathContents")
 @convert_kwargs_to_snake_case
 @sync_to_async
-def resolve_path_contents(
-    head_commit: Commit, info, path: str = None, filters=None
-) -> List[Union[File, Dir]]:
+def resolve_path_contents(head_commit: Commit, info, path: str = None, filters=None):
     """
     The file directory tree is a list of all the files and directories
     extracted from the commit report of the latest, head commit.
@@ -137,7 +135,7 @@ def resolve_path_contents(
     # TODO: Might need to add reports here filtered by flags in the future
     commit_report = head_commit.full_report
     if not commit_report:
-        raise Exception("No reports found in the head commit")
+        return MissingHeadReport()
 
     if "profiling_summary" in info.context:
         if "critical_filenames" not in info.context:
@@ -163,7 +161,7 @@ def resolve_path_contents(
         items = report_paths.full_filelist()
     else:
         items = report_paths.single_directory()
-    return sort_path_contents(items, filters)
+    return {"results": sort_path_contents(items, filters)}
 
 
 @commit_bindable.field("errors")

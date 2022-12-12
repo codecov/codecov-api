@@ -8,6 +8,7 @@ from billing.constants import (
     ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
     FREE_PLAN_REPRESENTATIONS,
     PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
+    REMOVED_INVOICE_STATUSES,
     USER_PLAN_REPRESENTATIONS,
 )
 from codecov_auth.models import Owner
@@ -38,7 +39,7 @@ class AbstractPaymentService(ABC):
         pass
 
     @abstractmethod
-    def list_invoices(self, owner, limit=10):
+    def list_filtered_invoices(self, owner, limit=10):
         pass
 
     @abstractmethod
@@ -102,15 +103,28 @@ class StripeService(AbstractPaymentService):
             return None
         return invoice
 
+    def filter_invoices_by_status(self, invoice):
+        if invoice["status"] and invoice["status"] not in REMOVED_INVOICE_STATUSES:
+            return invoice
+
+    def filter_invoices_by_total(self, invoice):
+        if invoice["total"] and invoice["total"] != 0:
+            return invoice
+
     @_log_stripe_error
-    def list_invoices(self, owner, limit=10):
+    def list_filtered_invoices(self, owner, limit=10):
         log.info(f"Fetching invoices from Stripe for ownerid {owner.ownerid}")
         if owner.stripe_customer_id is None:
             log.info("stripe_customer_id is None, not fetching invoices")
             return []
-        return stripe.Invoice.list(customer=owner.stripe_customer_id, limit=limit)[
+        invoices = stripe.Invoice.list(customer=owner.stripe_customer_id, limit=limit)[
             "data"
         ]
+        invoices_filtered_by_status = filter(self.filter_invoices_by_status, invoices)
+        invoices_filtered_by_status_and_total = filter(
+            self.filter_invoices_by_total, invoices_filtered_by_status
+        )
+        return list(invoices_filtered_by_status_and_total)
 
     @_log_stripe_error
     def delete_subscription(self, owner):
@@ -404,8 +418,8 @@ class BillingService:
     def get_invoice(self, owner, invoice_id):
         return self.payment_service.get_invoice(owner, invoice_id)
 
-    def list_invoices(self, owner, limit=10):
-        return self.payment_service.list_invoices(owner, limit)
+    def list_filtered_invoices(self, owner, limit=10):
+        return self.payment_service.list_filtered_invoices(owner, limit)
 
     def update_plan(self, owner, desired_plan):
         """

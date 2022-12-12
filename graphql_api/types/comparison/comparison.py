@@ -7,28 +7,14 @@ from asgiref.sync import sync_to_async
 
 from compare.models import CommitComparison, FlagComparison
 from graphql_api.actions.flags import get_flag_comparisons
+from graphql_api.types.errors import (
+    MissingBaseCommit,
+    MissingBaseReport,
+    MissingComparison,
+    MissingHeadCommit,
+    MissingHeadReport,
+)
 from services.comparison import ComparisonReport, ImpactedFile, PullRequestComparison
-
-
-class MissingBaseCommit:
-    message = "Invalid base commit"
-
-
-class MissingHeadCommit:
-    message = "Invalid head commit"
-
-
-class MissingComparison:
-    message = "Missing comparison"
-
-
-class MissingBaseReport:
-    message = "Missing base report"
-
-
-class MissingHeadReport:
-    message = "Missing head report"
-
 
 comparison_bindable = ObjectType("Comparison")
 
@@ -66,6 +52,8 @@ def resolve_file_comparisons(comparison, info):
     return [file for file in comparison.files if file.has_diff or file.has_changes]
 
 
+# TODO: get rid of validate here, headTotals and hasDifferentNumberOfHeadAndBaseReports as there is a
+# validate call a resolver above
 @comparison_bindable.field("baseTotals")
 @sync_to_async
 def resolve_base_totals(comparison, info):

@@ -1,7 +1,10 @@
 import os
 
 import sentry_sdk
+from sentry_sdk.integrations.celery import CeleryIntegration
 from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.httpx import HttpxIntegration
+from sentry_sdk.integrations.redis import RedisIntegration
 
 from .settings_base import *
 
@@ -13,13 +16,6 @@ ALLOWED_HOSTS = get_config(
 if THIS_POD_IP:
     ALLOWED_HOSTS.append(THIS_POD_IP)
 
-elastic_apm_enabled = bool(os.environ.get("ELASTIC_APM_ENABLED"))
-if elastic_apm_enabled:
-    INSTALLED_APPS += ["elasticapm.contrib.django"]
-    MIDDLEWARE += ["elasticapm.contrib.django.middleware.TracingMiddleware"]
-else:
-    INSTALLED_APPS += ["ddtrace.contrib.django"]
-
 WEBHOOK_URL = get_config("setup", "webhook_url", default="https://codecov.io")
 
 
@@ -30,13 +26,25 @@ STRIPE_PLAN_IDS = {
     "users-pr-inappy": "price_1Gv2COGlVGuVgOrkuOYVLIj7",
 }
 
-
+SENTRY_ENV = "production"
+SENTRY_SAMPLE_RATE = float(os.environ.get("SERVICES__SENTRY__SAMPLE_RATE", 0.1))
 sentry_sdk.init(
     dsn=os.environ.get("SERVICES__SENTRY__SERVER_DSN", None),
-    integrations=[DjangoIntegration()],
-    environment="PRODUCTION",
+    integrations=[
+        DjangoIntegration(),
+        CeleryIntegration(),
+        RedisIntegration(),
+        HttpxIntegration(),
+    ],
+    environment=SENTRY_ENV,
+    traces_sample_rate=SENTRY_SAMPLE_RATE,
+    _experiments={
+        "profiles_sample_rate": float(
+            os.environ.get("SERVICES__SENTRY__PROFILE_SAMPLE_RATE", 0.01)
+        ),
+    },
 )
-
+CORS_ALLOW_HEADERS += ["sentry-trace", "baggage"]
 CORS_ALLOW_CREDENTIALS = True
 CODECOV_URL = get_config("setup", "codecov_url", default="https://codecov.io")
 CODECOV_DASHBOARD_URL = get_config(

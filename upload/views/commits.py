@@ -1,21 +1,21 @@
 import logging
 
-from django.forms import ValidationError
 from rest_framework.generics import ListCreateAPIView
 
 from codecov_auth.authentication.repo_auth import (
     GlobalTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
 )
-from core.models import Commit, Repository
+from core.models import Commit
 from services.task import TaskService
 from upload.serializers import CommitSerializer
+from upload.views.base import GetterMixin
 from upload.views.uploads import CanDoCoverageUploadsPermission
 
 log = logging.getLogger(__name__)
 
 
-class CommitViews(ListCreateAPIView):
+class CommitViews(ListCreateAPIView, GetterMixin):
     serializer_class = CommitSerializer
     permission_classes = [CanDoCoverageUploadsPermission]
     authentication_classes = [
@@ -36,13 +36,3 @@ class CommitViews(ListCreateAPIView):
             commitid=commit.commitid, repoid=commit.repository.repoid
         )
         return commit
-
-    def get_repo(self) -> Repository:
-        # TODO this is not final - how is getting the repo is still in discuss
-        repoid = self.kwargs.get("repo")
-        try:
-            # TODO fix this: this might return multiple repos
-            repository = Repository.objects.get(name=repoid)
-            return repository
-        except Repository.DoesNotExist:
-            raise ValidationError(f"Repository {repoid} not found")
