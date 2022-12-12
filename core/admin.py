@@ -5,7 +5,7 @@ from django.utils.functional import cached_property
 
 from codecov.admin import AdminMixin
 from codecov_auth.models import RepositoryToken
-from core.models import Repository
+from core.models import Pull, Repository
 
 
 class RepositoryTokenInline(admin.TabularInline):
@@ -70,6 +70,36 @@ class RepositoryAdmin(AdminMixin, admin.ModelAdmin):
         "deleted",
     )
     fields = readonly_fields + ("bot", "using_integration", "branch")
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def has_add_permission(self, _, obj=None):
+        return False
+
+
+@admin.register(Pull)
+class PullsAdmin(AdminMixin, admin.ModelAdmin):
+    list_display = ("pullid", "repository", "author")
+    show_full_result_count = False
+
+    readonly_fields = (
+        "repository",
+        "id",
+        "pullid",
+        "issueid",
+        "title",
+        "base",
+        "head",
+        "user_provided_base_sha",
+        "compared_to",
+        "commentid",
+        "author",
+        "updatestamp",
+        "diff",
+        "flare",
+    )
+    fields = readonly_fields + ("state",)
 
     def has_delete_permission(self, request, obj=None):
         return False
