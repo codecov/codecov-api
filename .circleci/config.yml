@@ -2,7 +2,7 @@ version: 2.1
 executors:
   codecov-deploy:
     docker:
-    - image: gcr.io/genuine-polymer-165712/codecov-deploy:latest
+    - image: us-docker.pkg.dev/genuine-polymer-165712/codecov-devops/codecov-deploy:latest
       user: root
       auth:
         username: _json_key
@@ -10,7 +10,7 @@ executors:
     working_directory: /work
   codecov-api:
     docker:
-    - image: gcr.io/genuine-polymer-165712/codecov-api:latest
+    - image: us-docker.pkg.dev/genuine-polymer-165712/codecov-devops/codecov-deploy:latest
       user: root
       auth:
         username: _json_key
