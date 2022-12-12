@@ -25,7 +25,7 @@ class GetterMixin:
         if not repository:
             log.info(
                 "Repository not found",
-                extra=dict(repo_slug=repo_slug, repo=repository.name),
+                extra=dict(repo_slug=repo_slug),
             )
             raise ValidationError(f"Repository not found")
         return repository
