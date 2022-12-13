@@ -9,6 +9,7 @@ from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
 from graphql_api.types.enums import UploadErrorEnum
 from reports import models
+from reports.models import ReportResults
 
 
 class CommitReportFactory(DjangoModelFactory):
@@ -67,5 +68,18 @@ class UploadErrorFactory(DjangoModelFactory):
             UploadErrorEnum.FILE_NOT_IN_STORAGE,
             UploadErrorEnum.REPORT_EMPTY,
             UploadErrorEnum.REPORT_EXPIRED,
+        ]
+    )
+
+
+class ReportResultsFactory(DjangoModelFactory):
+    class Meta:
+        model = ReportResults
+
+    report = factory.SubFactory(CommitReportFactory)
+    state = factory.Iterator(
+        [
+            ReportResults.ReportResultsStates.CREATED,
+            ReportResults.ReportResultsStates.READY,
         ]
     )

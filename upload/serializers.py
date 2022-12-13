@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from codecov_auth.models import Owner
 from core.models import Commit, Repository
-from reports.models import CommitReport, ReportSession
+from reports.models import CommitReport, ReportResults, ReportSession
 from services.archive import ArchiveService
 
 
@@ -88,3 +88,18 @@ class CommitReportSerializer(serializers.ModelSerializer):
             "commit_sha",
         )
         fields = read_only_fields + ("code",)
+
+
+class ReportResultsSerializer(serializers.ModelSerializer):
+    report = CommitReportSerializer(read_only=True)
+
+    class Meta:
+        model = ReportResults
+        read_only_fields = (
+            "external_id",
+            "report",
+            "state",
+            "result",
+            "completed_at",
+        )
+        fields = read_only_fields

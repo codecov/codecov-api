@@ -1,6 +1,6 @@
 import pytest
-from django.forms import ValidationError
 from django.urls import reverse
+from rest_framework.exceptions import ValidationError
 from rest_framework.test import APIClient
 
 from core.models import Commit

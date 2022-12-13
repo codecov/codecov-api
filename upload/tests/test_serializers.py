@@ -2,10 +2,15 @@ from rest_framework.exceptions import ErrorDetail
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
-from reports.tests.factories import CommitReportFactory, UploadFactory
+from reports.tests.factories import (
+    CommitReportFactory,
+    ReportResultsFactory,
+    UploadFactory,
+)
 from upload.serializers import (
     CommitReportSerializer,
     CommitSerializer,
+    ReportResultsSerializer,
     UploadSerializer,
 )
 
@@ -96,5 +101,25 @@ def test_commit_report_serializer(transactional_db, mocker):
         "external_id": str(report.external_id),
         "created_at": report.created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
         "code": report.code,
+    }
+    assert serializer.data == expected_data
+
+
+def test_report_results_serializer(transactional_db, mocker):
+    report_result = ReportResultsFactory.create()
+    serializer = ReportResultsSerializer(report_result)
+    expected_data = {
+        "external_id": str(report_result.external_id),
+        "report": {
+            "external_id": str(report_result.report.external_id),
+            "created_at": report_result.report.created_at.strftime(
+                "%Y-%m-%dT%H:%M:%S.%fZ"
+            ),
+            "commit_sha": report_result.report.commit.commitid,
+            "code": report_result.report.code,
+        },
+        "state": report_result.state,
+        "result": report_result.result,
+        "completed_at": report_result.completed_at,
     }
     assert serializer.data == expected_data
