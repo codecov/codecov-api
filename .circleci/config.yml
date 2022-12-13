@@ -10,7 +10,7 @@ executors:
     working_directory: /work
   codecov-api:
     docker:
-    - image: us-docker.pkg.dev/genuine-polymer-165712/codecov-devops/codecov-deploy:latest
+    - image: gcr.io/genuine-polymer-165712/codecov-api:latest
       user: root
       auth:
         username: _json_key
