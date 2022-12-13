@@ -186,6 +186,10 @@ jobs:
             make -f Makefile.circle deep-dive
   staging:
     executor: codecov-deploy
+    environment:
+      SENTRY_ORG: codecov
+      SENTRY_PROJECT: api
+      SENTRY_ENVIRONMENT: staging
     steps:
     - attach_workspace:
         at: .
@@ -197,6 +201,16 @@ jobs:
         name: docker build, tag, and upload to staging
         command: |
           make -f Makefile.circle staging
+    - run:
+        name: Create release and notify Sentry of deploy
+        command: |
+          curl -sL https://sentry.io/get-cli/ | bash
+          export SENTRY_RELEASE=$(sentry-cli releases propose-version)
+          sentry-cli releases new -p $SENTRY_PROJECT $SENTRY_RELEASE
+          sentry-cli releases set-commits $SENTRY_RELEASE --auto
+          sentry-cli releases files $SENTRY_RELEASE upload-sourcemaps path-to-sourcemaps-if-applicable
+          sentry-cli releases finalize $SENTRY_RELEASE
+          sentry-cli releases deploys $SENTRY_RELEASE new -e $SENTRY_ENVIRONMENT  
   production:
     executor: codecov-deploy
     steps:
