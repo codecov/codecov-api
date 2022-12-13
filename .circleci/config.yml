@@ -24,6 +24,7 @@ executors:
         POSTGRES_PASSWORD: password
     working_directory: /api
 
+
 gcloud_auth: &gcloud_auth
   name: Copy gcloud auth for docker push
   command: |-
