@@ -18,7 +18,6 @@ STRIPE_PLAN_IDS = {
     "users-pr-inappy": "plan_H6P16wij3lUuxg",
 }
 
-CORS_ALLOWED_ORIGINS = ["http://localhost:9000", "http://localhost"]
 CORS_ALLOW_CREDENTIALS = True
 CODECOV_URL = "localhost"
 

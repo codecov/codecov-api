@@ -9,6 +9,7 @@ import minio
 from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
+from django.core.exceptions import MultipleObjectsReturned
 from django.http import Http404, HttpResponse, HttpResponseServerError
 from django.utils import timezone
 from django.utils.decorators import classonlymethod
@@ -120,6 +121,11 @@ class UploadHandler(APIView):
         except ValidationError as e:
             response.status_code = status.HTTP_400_BAD_REQUEST
             response.content = "Could not determine repo and owner"
+            metrics.incr("uploads.rejected", 1)
+            return response
+        except MultipleObjectsReturned as e:
+            response.status_code = status.HTTP_400_BAD_REQUEST
+            response.content = "Found too many repos"
             metrics.incr("uploads.rejected", 1)
             return response
 

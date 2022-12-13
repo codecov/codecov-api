@@ -52,6 +52,8 @@ def resolve_file_comparisons(comparison, info):
     return [file for file in comparison.files if file.has_diff or file.has_changes]
 
 
+# TODO: get rid of validate here, headTotals and hasDifferentNumberOfHeadAndBaseReports as there is a
+# validate call a resolver above
 @comparison_bindable.field("baseTotals")
 @sync_to_async
 def resolve_base_totals(comparison, info):

@@ -109,6 +109,12 @@ def main():
         "drf_spectacular.contrib.django_filters",
         "drf_spectacular.contrib.rest_framework_recursive",
         "drf_spectacular.contrib.rest_framework_gis",
+        # Imports for bitbucket_server
+        "asyncore",
+        "imaplib",
+        "poplib",
+        "smtplib",
+        "xmlrpc.server",
     }
 
     base = celery.__file__.rsplit("/", 1)[0]

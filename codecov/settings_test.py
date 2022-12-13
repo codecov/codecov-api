@@ -1,6 +1,6 @@
 from .settings_base import *
 
-DEBUG = True
+DEBUG = False
 ALLOWED_HOSTS = ["localhost"]
 WEBHOOK_URL = ""  # NGROK TUNNEL HERE
 STRIPE_API_KEY = ""
