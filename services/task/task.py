@@ -12,6 +12,7 @@ from sentry_sdk.integrations.celery import _wrap_apply_async
 from shared import celery_config
 
 from core.models import Repository
+from services.task.task_router import route_task
 from timeseries.models import Dataset
 
 celery_app = Celery("tasks")
@@ -36,7 +37,11 @@ class TaskService(object):
         """
         Create Celery signature
         """
-        return signature(name, args=args, kwargs=kwargs, app=celery_app)
+        queue_in_dict = route_task(name, args=args, kwargs=kwargs, options={})
+        queue_name = queue_in_dict["queue"]
+        return signature(
+            name, args=args, kwargs=kwargs, app=celery_app, queue=queue_name
+        )
 
     def schedule_task(self, task_name, *, kwargs, apply_async_kwargs):
         return self._create_signature(
