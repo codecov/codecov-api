@@ -205,7 +205,7 @@ jobs:
         name: Create release and notify Sentry of deploy
         command: |
           curl -sL https://sentry.io/get-cli/ | bash
-          export SENTRY_RELEASE=$(sentry-cli releases propose-version)
+          export SENTRY_RELEASE=$SENTRY_ENVIRONMENT-release-$(git rev-parse --short=7 HEAD)
           sentry-cli releases new -p $SENTRY_PROJECT $SENTRY_RELEASE
           sentry-cli releases set-commits $SENTRY_RELEASE --auto
           sentry-cli releases files $SENTRY_RELEASE upload-sourcemaps path-to-sourcemaps-if-applicable
