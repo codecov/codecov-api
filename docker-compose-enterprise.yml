@@ -21,7 +21,7 @@ services:
       - RUN_ENV=DEV
   postgres:
     hostname: postgres
-    image: postgres:9.6-alpine
+    image: postgres:14-alpine3.16
     volumes:
       - postgres-volume:/var/lib/postgresql/data
     networks:
@@ -33,7 +33,7 @@ services:
       - POSTGRES_PASSWORD=postgres
   redis:
     hostname: redis
-    image: redis:4.0-alpine
+    image: redis:6.2.4-alpine
     volumes:
       - redis-volume:/data
     networks:
