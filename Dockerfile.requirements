@@ -32,7 +32,7 @@ RUN             --mount=type=ssh pip wheel -r /requirements.txt
 
 
 # RUNTIME STAGE - Copy packages from build stage and install runtime dependencies
-FROM            python:3.9.14-alpine3.16
+FROM            3.9.16-alpine3.17
 
 RUN             apk -U upgrade binutils busybox expat libretls && \
                 apk add --no-cache postgresql-libs && \
