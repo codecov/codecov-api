@@ -2,7 +2,7 @@
 # temp comment
 
 # BUILD STAGE - Download dependencies from GitHub that require SSH access
-FROM            python:3.9.14-alpine3.16 as build
+FROM            python:3.9.16-alpine3.17 as build
 
 RUN             apk update \
                 && apk add --update --no-cache \
