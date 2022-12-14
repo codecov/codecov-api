@@ -391,6 +391,20 @@ class ReportViewSetTestCase(TestCase):
         build_report_from_commit.assert_called_once_with(self.commit1)
 
     @patch("services.archive.ReportService.build_report_from_commit")
+    def test_report_invalid_path(self, build_report_from_commit, get_repo_permissions):
+        get_repo_permissions.return_value = (True, True)
+        build_report_from_commit.return_value = sample_report()
+        path = "random-path-that-doesnt-exist-1234"
+
+        res = self._request_report(path=path)
+        assert res.status_code == 404
+        assert res.json() == {
+            "detail": f"The file path '{path}' does not exist. Please provide an existing file path."
+        }
+
+        build_report_from_commit.assert_called_once_with(self.commit1)
+
+    @patch("services.archive.ReportService.build_report_from_commit")
     def test_report_flag(self, build_report_from_commit, get_repo_permissions):
         get_repo_permissions.return_value = (True, True)
         build_report_from_commit.return_value = flags_report()

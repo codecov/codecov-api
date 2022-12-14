@@ -1,11 +1,18 @@
 import logging
+import os
 from datetime import datetime, timedelta
 from typing import Iterable
 
-from celery import Celery, chain, group, signature
+import celery
+import sentry_sdk
+from celery import Celery, chain, group, signals, signature
+from celery.canvas import Signature
+from django.conf import settings
+from sentry_sdk.integrations.celery import _wrap_apply_async
 from shared import celery_config
 
 from core.models import Repository
+from services.task.task_router import route_task
 from timeseries.models import Dataset
 
 celery_app = Celery("tasks")
@@ -13,13 +20,28 @@ celery_app.config_from_object("shared.celery_config:BaseCeleryConfig")
 
 log = logging.getLogger(__name__)
 
+if settings.SENTRY_ENV:
+    celery.group.apply_async = _wrap_apply_async(celery.group.apply_async)
+    celery.chunks.apply_async = _wrap_apply_async(celery.chunks.apply_async)
+    celery.canvas._chain.apply_async = _wrap_apply_async(
+        celery.canvas._chain.apply_async
+    )
+    celery.canvas._chord.apply_async = _wrap_apply_async(
+        celery.canvas._chord.apply_async
+    )
+    Signature.apply_async = _wrap_apply_async(Signature.apply_async)
+
 
 class TaskService(object):
     def _create_signature(self, name, args=None, kwargs=None):
         """
         Create Celery signature
         """
-        return signature(name, args=args, kwargs=kwargs, app=celery_app)
+        queue_in_dict = route_task(name, args=args, kwargs=kwargs, options={})
+        queue_name = queue_in_dict["queue"]
+        return signature(
+            name, args=args, kwargs=kwargs, app=celery_app, queue=queue_name
+        )
 
     def schedule_task(self, task_name, *, kwargs, apply_async_kwargs):
         return self._create_signature(

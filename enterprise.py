@@ -4,7 +4,7 @@ import sys
 from django.core.wsgi import get_wsgi_application
 from gunicorn.app.base import Application
 
-from utils.config import get_settings_module
+from utils.config import get_config, get_settings_module
 
 
 class StandaloneApplication(Application):
@@ -27,6 +27,11 @@ class StandaloneApplication(Application):
 
 
 if __name__ == "__main__":
+    external_deps_folder = get_config(
+        "services", "external_dependencies_folder", default="./external_deps"
+    )
+    print(f"External dependencies folder configured to {external_deps_folder}")
+    sys.path.append(external_deps_folder)
 
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", get_settings_module())
     if len(sys.argv) > 1 and sys.argv[1] != "run":

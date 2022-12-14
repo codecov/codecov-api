@@ -1,3 +1,5 @@
+from distutils.util import strtobool
+
 from ariadne import ObjectType
 from asgiref.sync import sync_to_async
 from django.conf import settings
@@ -48,3 +50,12 @@ def resolve_seats_limit(_, info):
         return None
 
     return self_hosted.license_seats()
+
+
+@config_bindable.field("isTimescaleEnabled")
+@sync_to_async
+def resolve_is_timescale_enabled(_, info):
+    if isinstance(settings.TIMESERIES_ENABLED, str):
+        return bool(strtobool(settings.TIMESERIES_ENABLED))
+
+    return settings.TIMESERIES_ENABLED

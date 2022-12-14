@@ -1,6 +1,7 @@
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, viewsets
+from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 
 from api.public.v2.commit.serializers import ReportSerializer
@@ -59,6 +60,11 @@ class ReportViewSet(
         path = self.request.query_params.get("path", None)
         if path:
             paths = [file for file in report.files if file.startswith(path)]
+            if not paths:
+                raise NotFound(
+                    f"The file path '{path}' does not exist. Please provide an existing file path.",
+                    404,
+                )
             report = report.filter(paths=paths)
 
         flag = self.request.query_params.get("flag", None)
@@ -80,6 +86,11 @@ class ReportViewSet(
         * `path` - only show report info for pathnames that start with this value
         * `flag` - only show report info that applies to the specified flag name
         """
-        report = self.get_object()
+        try:
+            report = self.get_object()
+        except NotFound as inst:
+            (detail, code) = inst.args
+            raise NotFound(detail)
+
         serializer = self.get_serializer(report)
         return Response(serializer.data)

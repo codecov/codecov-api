@@ -2,7 +2,7 @@ version: 2.1
 executors:
   codecov-deploy:
     docker:
-    - image: gcr.io/genuine-polymer-165712/codecov-deploy:latest
+    - image: us-docker.pkg.dev/genuine-polymer-165712/codecov-devops/codecov-deploy:latest
       user: root
       auth:
         username: _json_key
@@ -23,6 +23,7 @@ executors:
         POSTGRES_HOST_AUTH_METHOD: trust
         POSTGRES_PASSWORD: password
     working_directory: /api
+
 
 gcloud_auth: &gcloud_auth
   name: Copy gcloud auth for docker push
@@ -96,6 +97,7 @@ jobs:
         command: |-
           make -f Makefile.circle build-requirements
           make -f Makefile.circle build-enterprise VERSION=$CIRCLE_TAG
+          make -f Makefile.circle build-enterprise-runtime VERSION=$CIRCLE_TAG
           make -f Makefile.circle push-enterprise
           make -f Makefile.circle tag-enterprise
   test:
@@ -141,6 +143,12 @@ jobs:
           apk add git
           chmod +x codecov-alpine
           ./codecov-alpine -R . --url https://stage-web.codecov.dev -t $CODECOV_STAGING_TOKEN -F unit
+    - run:
+        name: codecov-v5
+        command: |
+          apk add git
+          chmod +x codecov-alpine
+          ./codecov-alpine -R . --url https://v5-qa.codecov.dev -t $CODECOV_V5_TOKEN -F unit
   portable:
     executor: codecov-deploy
     steps:
@@ -179,6 +187,10 @@ jobs:
             make -f Makefile.circle deep-dive
   staging:
     executor: codecov-deploy
+    environment:
+      SENTRY_ORG: codecov
+      SENTRY_PROJECT: api
+      SENTRY_ENVIRONMENT: staging
     steps:
     - attach_workspace:
         at: .
@@ -190,8 +202,21 @@ jobs:
         name: docker build, tag, and upload to staging
         command: |
           make -f Makefile.circle staging
+    - run:
+        name: Create release and notify Sentry of deploy
+        command: |
+          curl -sL https://sentry.io/get-cli/ | bash
+          export SENTRY_RELEASE=$SENTRY_ENVIRONMENT-release-$(git rev-parse --short=7 HEAD)
+          sentry-cli releases new -p $SENTRY_PROJECT $SENTRY_RELEASE
+          sentry-cli releases set-commits $SENTRY_RELEASE --auto
+          sentry-cli releases finalize $SENTRY_RELEASE
+          sentry-cli releases deploys $SENTRY_RELEASE new -e $SENTRY_ENVIRONMENT  
   production:
     executor: codecov-deploy
+    environment:
+      SENTRY_ORG: codecov
+      SENTRY_PROJECT: api
+      SENTRY_ENVIRONMENT: production
     steps:
     - attach_workspace:
         at: .
@@ -203,6 +228,15 @@ jobs:
         name: docker build, tag, and upload to production
         command: |
           make -f Makefile.circle production
+    - run:
+        name: Create release and notify Sentry of deploy
+        command: |
+          curl -sL https://sentry.io/get-cli/ | bash
+          export SENTRY_RELEASE=$SENTRY_ENVIRONMENT-release-$(git rev-parse --short=7 HEAD)
+          sentry-cli releases new -p $SENTRY_PROJECT $SENTRY_RELEASE
+          sentry-cli releases set-commits $SENTRY_RELEASE --auto
+          sentry-cli releases finalize $SENTRY_RELEASE
+          sentry-cli releases deploys $SENTRY_RELEASE new -e $SENTRY_ENVIRONMENT  
   enterprise:
     executor: codecov-deploy
     steps:

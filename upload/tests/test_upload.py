@@ -7,6 +7,7 @@ from urllib.parse import urlencode
 import pytest
 import requests
 from ddf import G
+from django.core.exceptions import MultipleObjectsReturned
 from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework import status
@@ -1126,6 +1127,114 @@ class UploadHandlerRouteTest(APITestCase):
             == "https://app.codecov.io/github/codecovtest/upload-test-repo/commit/b521e55aef79b101f48e2544837ca99a7fa3bf6b"
         )
 
+    @patch("shared.metrics.metrics.incr")
+    @patch("upload.views.legacy.get_redis_connection")
+    @patch("upload.views.legacy.uuid4")
+    @patch("upload.views.legacy.determine_repo_for_upload")
+    @patch("services.repo_providers.RepoProviderService.get_adapter")
+    @override_settings(CODECOV_DASHBOARD_URL="https://app.codecov.io")
+    def test_repo_validation_error_v2(
+        self,
+        mock_repo_provider_service,
+        mock_determine_repo_for_upload,
+        mock_uuid4,
+        mock_get_redis,
+        mock_metrics,
+    ):
+        class MockRepoProviderAdapter:
+            async def get_commit(self, commit, token):
+                return {"message": "This is not a merge commit"}
+
+        mock_get_redis.return_value = MockRedis()
+        mock_repo_provider_service.return_value = MockRepoProviderAdapter()
+        mock_uuid4.return_value = (
+            "dec1f00b-1883-40d0-afd6-6dcb876510be"  # this will be the reportid
+        )
+        mock_determine_repo_for_upload.side_effect = ValidationError(
+            "Unable to determine repo and owner"
+        )
+
+        query_params = {
+            "commit": "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
+            "token": "test27s4f3uz3ha9pi0foipg5bqojtrmbt67",
+            "pr": "456",
+            "branch": "",
+            "flags": "",
+            "build_url": "",
+        }
+
+        response = self._post_slash(
+            kwargs={"version": "v2"}, query=query_params, data="coverage report"
+        )
+
+        assert response.status_code == 400
+        mock_metrics.assert_called_once_with("uploads.rejected", 1)
+
+        headers = response.headers
+
+        assert headers["access-control-allow-origin"] == "*"
+        assert (
+            headers["access-control-allow-headers"]
+            == "Origin, Content-Type, Accept, X-User-Agent"
+        )
+        assert headers["content-type"] != "text/plain"
+
+        assert response.content == b"Could not determine repo and owner"
+
+    @patch("shared.metrics.metrics.incr")
+    @patch("upload.views.legacy.get_redis_connection")
+    @patch("upload.views.legacy.uuid4")
+    @patch("upload.views.legacy.determine_repo_for_upload")
+    @patch("services.repo_providers.RepoProviderService.get_adapter")
+    @override_settings(CODECOV_DASHBOARD_URL="https://app.codecov.io")
+    def test_too_many_repos_found_v2(
+        self,
+        mock_repo_provider_service,
+        mock_determine_repo_for_upload,
+        mock_uuid4,
+        mock_get_redis,
+        mock_metrics,
+    ):
+        class MockRepoProviderAdapter:
+            async def get_commit(self, commit, token):
+                return {"message": "This is not a merge commit"}
+
+        mock_get_redis.return_value = MockRedis()
+        mock_repo_provider_service.return_value = MockRepoProviderAdapter()
+        mock_uuid4.return_value = (
+            "dec1f00b-1883-40d0-afd6-6dcb876510be"  # this will be the reportid
+        )
+        mock_determine_repo_for_upload.side_effect = MultipleObjectsReturned(
+            "Found too many repos"
+        )
+
+        query_params = {
+            "commit": "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
+            "token": "test27s4f3uz3ha9pi0foipg5bqojtrmbt67",
+            "pr": "456",
+            "branch": "",
+            "flags": "",
+            "build_url": "",
+        }
+
+        response = self._post_slash(
+            kwargs={"version": "v2"}, query=query_params, data="coverage report"
+        )
+
+        assert response.status_code == 400
+        mock_metrics.assert_called_once_with("uploads.rejected", 1)
+
+        headers = response.headers
+
+        assert headers["access-control-allow-origin"] == "*"
+        assert (
+            headers["access-control-allow-headers"]
+            == "Origin, Content-Type, Accept, X-User-Agent"
+        )
+        assert headers["content-type"] != "text/plain"
+
+        assert response.content == b"Found too many repos"
+
     @patch("services.storage.MINIO_CLIENT.presigned_put_object")
     @patch("services.archive.ArchiveService.get_archive_hash")
     @patch("upload.views.legacy.get_redis_connection")
@@ -1227,6 +1336,142 @@ class UploadHandlerRouteTest(APITestCase):
         )
 
         assert response.status_code == 200
+
+    @patch("services.storage.MINIO_CLIENT.presigned_put_object")
+    @patch("services.archive.ArchiveService.get_archive_hash")
+    @patch("upload.views.legacy.get_redis_connection")
+    @patch("upload.views.legacy.uuid4")
+    @patch("upload.views.legacy.dispatch_upload_task")
+    @patch("services.repo_providers.RepoProviderService.get_adapter")
+    @patch("upload.views.legacy.determine_repo_for_upload")
+    def test_repo_validation_error_v4(
+        self,
+        mock_determine_repo_for_upload,
+        mock_repo_provider_service,
+        mock_dispatch_upload,
+        mock_uuid4,
+        mock_get_redis,
+        mock_hash,
+        mock_storage_put,
+    ):
+
+        mock_determine_repo_for_upload.side_effect = ValidationError(
+            "Unable to determine repo and owner"
+        )
+
+        class MockRepoProviderAdapter:
+            async def get_commit(self, commit, token):
+                return {"message": "This is not a merge commit"}
+
+        path = "/".join(
+            (
+                "v4/raw",
+                timezone.now().strftime("%Y-%m-%d"),
+                "awawaw",
+                "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
+            )
+        )
+
+        mock_storage_put.return_value = path + "?AWS=PARAMS"
+        mock_get_redis.return_value = MockRedis()
+        mock_repo_provider_service.return_value = MockRepoProviderAdapter()
+        mock_uuid4.return_value = (
+            "dec1f00b-1883-40d0-afd6-6dcb876510be"  # this will be the reportid
+        )
+        mock_hash.return_value = "awawaw"
+        query_params = {
+            "commit": "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
+            "token": "test27s4f3uz3ha9pi0foipg5bqojtrmbt67",
+            "pr": "456",
+            "branch": "",
+            "flags": "",
+            "build_url": "",
+        }
+
+        response = self._post(
+            kwargs={"version": "v4"}, query=query_params, data="coverage report"
+        )
+
+        assert response.status_code == 400
+
+        headers = response.headers
+
+        assert headers["access-control-allow-origin"] == "*"
+        assert (
+            headers["access-control-allow-headers"]
+            == "Origin, Content-Type, Accept, X-User-Agent"
+        )
+        assert headers["content-type"] != "text/plain"
+
+        assert response.content == b"Could not determine repo and owner"
+
+    @patch("services.storage.MINIO_CLIENT.presigned_put_object")
+    @patch("services.archive.ArchiveService.get_archive_hash")
+    @patch("upload.views.legacy.get_redis_connection")
+    @patch("upload.views.legacy.uuid4")
+    @patch("upload.views.legacy.dispatch_upload_task")
+    @patch("services.repo_providers.RepoProviderService.get_adapter")
+    @patch("upload.views.legacy.determine_repo_for_upload")
+    def test_too_many_repos_found_v4(
+        self,
+        mock_determine_repo_for_upload,
+        mock_repo_provider_service,
+        mock_dispatch_upload,
+        mock_uuid4,
+        mock_get_redis,
+        mock_hash,
+        mock_storage_put,
+    ):
+
+        mock_determine_repo_for_upload.side_effect = MultipleObjectsReturned(
+            "Found too many repos"
+        )
+
+        class MockRepoProviderAdapter:
+            async def get_commit(self, commit, token):
+                return {"message": "This is not a merge commit"}
+
+        path = "/".join(
+            (
+                "v4/raw",
+                timezone.now().strftime("%Y-%m-%d"),
+                "awawaw",
+                "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
+            )
+        )
+
+        mock_storage_put.return_value = path + "?AWS=PARAMS"
+        mock_get_redis.return_value = MockRedis()
+        mock_repo_provider_service.return_value = MockRepoProviderAdapter()
+        mock_uuid4.return_value = (
+            "dec1f00b-1883-40d0-afd6-6dcb876510be"  # this will be the reportid
+        )
+        mock_hash.return_value = "awawaw"
+        query_params = {
+            "commit": "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
+            "token": "test27s4f3uz3ha9pi0foipg5bqojtrmbt67",
+            "pr": "456",
+            "branch": "",
+            "flags": "",
+            "build_url": "",
+        }
+
+        response = self._post(
+            kwargs={"version": "v4"}, query=query_params, data="coverage report"
+        )
+
+        assert response.status_code == 400
+
+        headers = response.headers
+
+        assert headers["access-control-allow-origin"] == "*"
+        assert (
+            headers["access-control-allow-headers"]
+            == "Origin, Content-Type, Accept, X-User-Agent"
+        )
+        assert headers["content-type"] != "text/plain"
+
+        assert response.content == b"Found too many repos"
 
 
 class UploadHandlerTravisTokenlessTest(TestCase):

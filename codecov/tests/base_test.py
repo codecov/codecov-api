@@ -11,7 +11,7 @@ class InternalAPITest(TestCase):
         # internal apis are behind a debug flag currently
         # and django/pytest set DEBUG to false by default
         # https://docs.djangoproject.com/en/dev/topics/testing/overview/#other-test-conditions
-        settings.DEBUG = True
+        settings.DEBUG = False
 
     @staticmethod
     def json_content(response):

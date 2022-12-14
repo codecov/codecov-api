@@ -152,6 +152,21 @@ def test_get_report(db):
     assert recovered_report == report
 
 
+def test_get_default_report(db):
+    repository = RepositoryFactory(name="the_repo", author__username="codecov")
+    commit = CommitFactory(repository=repository)
+    report = CommitReport(commit=commit)
+    repository.save()
+    commit.save()
+    report.save()
+    upload_views = UploadViews()
+    upload_views.kwargs = dict(
+        repo=repository.name, commit_sha=commit.commitid, report_code="default"
+    )
+    recovered_report = upload_views.get_report(commit)
+    assert recovered_report == report
+
+
 @patch("shared.metrics.metrics.incr")
 def test_get_report_error(mock_metrics, db):
     repository = RepositoryFactory(name="the_repo", author__username="codecov")
