@@ -71,6 +71,9 @@ class StripeInvoiceSerializer(serializers.Serializer):
     subtotal = serializers.FloatField()
     invoice_pdf = serializers.CharField()
     line_items = StripeLineItemSerializer(many=True, source="lines.data")
+    footer = serializers.CharField()
+    customer_email = serializers.CharField()
+    customer_shipping = serializers.CharField()
 
 
 class StripeCustomerSerializer(serializers.Serializer):
