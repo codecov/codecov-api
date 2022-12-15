@@ -17,13 +17,13 @@ class GetterMixin:
         try:
             service_enum = Service(service)
         except ValueError:
-            log.info(f"Service not found: {service}", extra=dict(repo_slug=repo_slug))
+            log.warning(f"Service not found: {service}", extra=dict(repo_slug=repo_slug))
             raise ValidationError(f"Service not found: {service}")
 
         repository = get_repository_from_string(service_enum, repo_slug)
 
         if not repository:
-            log.info(
+            log.warning(
                 "Repository not found",
                 extra=dict(repo_slug=repo_slug),
             )
@@ -38,7 +38,7 @@ class GetterMixin:
             )
             return commit
         except Commit.DoesNotExist:
-            log.info(
+            log.warning(
                 "Commit SHA not found",
                 extra=dict(repo=repo.name, commit_sha=commit_sha),
             )
@@ -52,7 +52,7 @@ class GetterMixin:
             report = CommitReport.objects.get(code=report_code, commit=commit)
             return report
         except CommitReport.DoesNotExist:
-            log.info(
+            log.warning(
                 "Report not found",
                 extra=dict(commit_sha=commit.commitid, report_code=report_code),
             )
