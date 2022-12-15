@@ -3068,9 +3068,7 @@ class ComparisonReportTest(TestCase):
         ]
 
     @patch("services.archive.ArchiveService.read_file")
-    def test_impacted_files_filtered_by_head_coverage_misses_ascending(
-        self, read_file
-    ):
+    def test_impacted_files_filtered_by_head_coverage_misses_ascending(self, read_file):
         read_file.return_value = mock_data_from_archive
         filters = {
             "ordering": {
