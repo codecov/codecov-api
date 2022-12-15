@@ -1377,7 +1377,7 @@ mock_data_from_archive = """
         "base_name": "fileA",
         "head_coverage": {
             "hits": 10,
-            "misses": 1,
+            "misses": 2,
             "partials": 1,
             "branches": 3,
             "sessions": 0,
@@ -1505,7 +1505,7 @@ class ComparisonReportTest(TestCase):
                     files=0,
                     lines=0,
                     hits=10,
-                    misses=1,
+                    misses=2,
                     partials=1,
                     coverage=83.33333333333333,
                     branches=3,
@@ -1620,7 +1620,7 @@ class ComparisonReportTest(TestCase):
                     files=0,
                     lines=0,
                     hits=10,
-                    misses=1,
+                    misses=2,
                     partials=1,
                     coverage=83.33333333333333,
                     branches=3,
@@ -1786,7 +1786,7 @@ class ComparisonReportTest(TestCase):
                     files=0,
                     lines=0,
                     hits=10,
-                    misses=1,
+                    misses=2,
                     partials=1,
                     coverage=83.33333333333333,
                     branches=3,
@@ -1901,7 +1901,7 @@ class ComparisonReportTest(TestCase):
                     files=0,
                     lines=0,
                     hits=10,
-                    misses=1,
+                    misses=2,
                     partials=1,
                     coverage=83.33333333333333,
                     branches=3,
@@ -1965,7 +1965,7 @@ class ComparisonReportTest(TestCase):
                     files=0,
                     lines=0,
                     hits=10,
-                    misses=1,
+                    misses=2,
                     partials=1,
                     coverage=83.33333333333333,
                     branches=3,
@@ -2080,7 +2080,7 @@ class ComparisonReportTest(TestCase):
                     files=0,
                     lines=0,
                     hits=10,
-                    misses=1,
+                    misses=2,
                     partials=1,
                     coverage=83.33333333333333,
                     branches=3,
@@ -2246,7 +2246,7 @@ class ComparisonReportTest(TestCase):
                     files=0,
                     lines=0,
                     hits=10,
-                    misses=1,
+                    misses=2,
                     partials=1,
                     coverage=83.33333333333333,
                     branches=3,
@@ -2310,7 +2310,7 @@ class ComparisonReportTest(TestCase):
                     files=0,
                     lines=0,
                     hits=10,
-                    misses=1,
+                    misses=2,
                     partials=1,
                     coverage=83.33333333333333,
                     branches=3,
@@ -2476,7 +2476,7 @@ class ComparisonReportTest(TestCase):
                     files=0,
                     lines=0,
                     hits=10,
-                    misses=1,
+                    misses=2,
                     partials=1,
                     coverage=83.33333333333333,
                     branches=3,
@@ -2986,7 +2986,7 @@ class ComparisonReportTest(TestCase):
                     files=0,
                     lines=0,
                     hits=10,
-                    misses=5,
+                    misses=2,
                     partials=1,
                     coverage=83.33333333333333,
                     branches=3,
@@ -3068,7 +3068,9 @@ class ComparisonReportTest(TestCase):
         ]
 
     @patch("services.archive.ArchiveService.read_file")
-    def test_impacted_files_filtered_by_head_coverage_misses_ascending(self, read_file):
+    def test_impacted_files_filtered_by_head_coverage_misses_ascending(
+        self, read_file
+    ):
         read_file.return_value = mock_data_from_archive
         filters = {
             "ordering": {
@@ -3152,7 +3154,7 @@ class ComparisonReportTest(TestCase):
                     files=0,
                     lines=0,
                     hits=10,
-                    misses=5,
+                    misses=2,
                     partials=1,
                     coverage=83.33333333333333,
                     branches=3,
