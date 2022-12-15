@@ -17,7 +17,9 @@ class GetterMixin:
         try:
             service_enum = Service(service)
         except ValueError:
-            log.warning(f"Service not found: {service}", extra=dict(repo_slug=repo_slug))
+            log.warning(
+                f"Service not found: {service}", extra=dict(repo_slug=repo_slug)
+            )
             raise ValidationError(f"Service not found: {service}")
 
         repository = get_repository_from_string(service_enum, repo_slug)
