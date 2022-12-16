@@ -791,6 +791,7 @@ class ImpactedFile:
     head_coverage: ReportTotals
     patch_coverage: ReportTotals
     change_coverage: float
+    misses_in_comparison: int
 
 
 class ImpactedFileParameter(enum.Enum):
@@ -798,6 +799,7 @@ class ImpactedFileParameter(enum.Enum):
     CHANGE_COVERAGE = "change_coverage"
     HEAD_COVERAGE = "head_coverage"
     HEAD_COVERAGE_MISSES = "head_coverage_misses"
+    # MISSES_IN_COMPARISON = "misses_in_comparison"
     PATCH_COVERAGE = "patch_coverage"
 
 
@@ -930,6 +932,16 @@ class ComparisonReport(object):
         totals.coverage = (100 * totals.hits / nb_branches) if nb_branches > 0 else None
         file[key] = totals
 
+    def _reduce_unexpected_lines(self, acc, current_line_changes):
+        [line_in_base, line_in_head] = current_line_changes
+        [line_number, line_coverage_value] = line_in_head
+        return acc+1 if line_coverage_value == "m" else acc
+
+    def calculate_missed_lines_from_unexpected_line_changes(self, unexpected_lines):
+        if not unexpected_lines:
+            return 0
+        return functools.reduce(self._reduce_unexpected_lines, unexpected_lines, 0)
+
     """
     Extracts relevant data from the fiels to be exposed as an impacted file
     """
@@ -943,6 +955,8 @@ class ComparisonReport(object):
             file["head_coverage"], file["base_coverage"]
         )
         file_name = self.get_file_name_from_file_path(file["head_name"])
+        unexpected_line_changes = file["unexpected_line_changes"]
+        misses_in_comparison = self.calculate_missed_lines_from_unexpected_line_changes(unexpected_line_changes)
         return ImpactedFile(
             file_name=file_name,
             head_name=file["head_name"],
@@ -951,6 +965,7 @@ class ComparisonReport(object):
             base_coverage=file["base_coverage"],
             patch_coverage=file["patch_coverage"],
             change_coverage=change_coverage,
+            misses_in_comparison=misses_in_comparison
         )
 
     # TODO: I think this can be a function located elsewhere
