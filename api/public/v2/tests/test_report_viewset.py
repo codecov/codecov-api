@@ -273,7 +273,7 @@ class ReportViewSetTestCase(TestCase):
         res = self._request_report(sha=sha)
         assert res.status_code == 404
         assert res.json() == {
-            "detail": f"The commit {sha} in not in our records. Please specify valid commit."
+            "detail": f"The commit {sha} is not in our records. Please specify valid commit."
         }
 
     @patch("services.archive.ReportService.build_report_from_commit")

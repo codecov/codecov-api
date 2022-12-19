@@ -61,7 +61,7 @@ class ReportViewSet(
         commit = self.repo.commits.filter(commitid=commit_sha).first()
         if commit is None:
             raise NotFound(
-                f"The commit {commit_sha} in not in our records. Please specify valid commit.",
+                f"The commit {commit_sha} is not in our records. Please specify valid commit.",
                 404,
             )
 
