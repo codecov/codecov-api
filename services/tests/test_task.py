@@ -13,25 +13,42 @@ from timeseries.tests.factories import DatasetFactory
 
 
 def test_refresh_task(mocker):
-    chain_mock = mocker.patch("services.task.chain")
+    chain_mock = mocker.patch("services.task.task.chain")
+    mock_route_task = mocker.patch(
+        "services.task.task.route_task", return_value={"queue": "my_queue"}
+    )
     TaskService().refresh(5, "codecov")
     chain_mock.assert_called()
+    mock_route_task.assert_called()
 
 
 def test_compute_comparison_task(mocker):
-    signature_mock = mocker.patch("services.task.signature")
+    signature_mock = mocker.patch("services.task.task.signature")
+    mock_route_task = mocker.patch(
+        "services.task.task.route_task", return_value={"queue": "my_queue"}
+    )
     TaskService().compute_comparison(5)
+    mock_route_task.assert_called_with(
+        celery_config.compute_comparison_task_name,
+        args=None,
+        kwargs=dict(comparison_id=5),
+        options={},
+    )
     signature_mock.assert_called_with(
         celery_config.compute_comparison_task_name,
         args=None,
         kwargs=dict(comparison_id=5),
         app=celery_app,
+        queue="my_queue",
     )
 
 
 @pytest.mark.django_db
 def test_backfill_repo(mocker):
-    signature_mock = mocker.patch("services.task.signature")
+    signature_mock = mocker.patch("services.task.task.signature")
+    mock_route_task = mocker.patch(
+        "services.task.task.route_task", return_value={"queue": "celery"}
+    )
     apply_async_mock = mocker.patch("celery.group.apply_async")
 
     repo = RepositoryFactory()
@@ -43,8 +60,21 @@ def test_backfill_repo(mocker):
     )
 
     assert signature_mock.call_count == 3
+    assert mock_route_task.call_count == 3
+    mock_route_task.assert_any_call(
+        celery_config.timeseries_backfill_task_name,
+        args=None,
+        kwargs=dict(
+            repoid=repo.pk,
+            start_date="2022-01-15T00:00:00",
+            end_date="2022-01-25T00:00:00",
+            dataset_names=["testing"],
+        ),
+        options={},
+    )
+
     signature_mock.assert_any_call(
-        "app.tasks.timeseries.backfill",
+        celery_config.timeseries_backfill_task_name,
         args=None,
         kwargs=dict(
             repoid=repo.pk,
@@ -53,9 +83,10 @@ def test_backfill_repo(mocker):
             dataset_names=["testing"],
         ),
         app=celery_app,
+        queue="celery",
     )
     signature_mock.assert_any_call(
-        "app.tasks.timeseries.backfill",
+        celery_config.timeseries_backfill_task_name,
         args=None,
         kwargs=dict(
             repoid=repo.pk,
@@ -64,9 +95,10 @@ def test_backfill_repo(mocker):
             dataset_names=["testing"],
         ),
         app=celery_app,
+        queue="celery",
     )
     signature_mock.assert_any_call(
-        "app.tasks.timeseries.backfill",
+        celery_config.timeseries_backfill_task_name,
         args=None,
         kwargs=dict(
             repoid=repo.pk,
@@ -75,6 +107,7 @@ def test_backfill_repo(mocker):
             dataset_names=["testing"],
         ),
         app=celery_app,
+        queue="celery",
     )
 
     apply_async_mock.assert_called_once_with()
@@ -85,7 +118,10 @@ def test_backfill_repo(mocker):
 )
 @pytest.mark.django_db(databases=["timeseries"])
 def test_backfill_dataset(mocker):
-    signature_mock = mocker.patch("services.task.signature")
+    signature_mock = mocker.patch("services.task.task.signature")
+    mock_route_task = mocker.patch(
+        "services.task.task.route_task", return_value={"queue": "celery"}
+    )
     signature = MagicMock()
     signature_mock.return_value = signature
 
@@ -105,16 +141,27 @@ def test_backfill_dataset(mocker):
             end_date="2022-08-09T00:00:00",
         ),
         app=celery_app,
+        queue="celery",
     )
     signature.apply_async.assert_called_once_with()
 
 
 def test_update_commit_task(mocker):
-    signature_mock = mocker.patch("services.task.signature")
+    signature_mock = mocker.patch("services.task.task.signature")
+    mock_route_task = mocker.patch(
+        "services.task.task.route_task", return_value={"queue": "celery"}
+    )
     TaskService().update_commit(1, 2)
+    mock_route_task.assert_called_with(
+        celery_config.commit_update_task_name,
+        args=None,
+        kwargs=dict(commitid=1, repoid=2),
+        options={},
+    )
     signature_mock.assert_called_with(
-        "app.tasks.commit_update.CommitUpdate",
+        celery_config.commit_update_task_name,
         args=None,
         kwargs=dict(commitid=1, repoid=2),
         app=celery_app,
+        queue="celery",
     )

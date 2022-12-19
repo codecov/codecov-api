@@ -102,6 +102,9 @@ class AccountViewSetTests(APITestCase):
                     "period": {"end": 1521326190, "start": 1518906990},
                 }
             ],
+            "footer": None,
+            "customer_email": "olivia.williams.03@example.com",
+            "customer_shipping": None,
         }
 
         self.client.force_login(user=self.user)

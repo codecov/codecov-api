@@ -70,7 +70,7 @@ RUN chown codecov:application /home/enterprise.sh && \
     chmod +x /home/enterprise.sh && \
     chown codecov:application /home/api
 
-FROM alpine:3.14
+FROM alpine:3.16
 
 RUN         addgroup -S application && adduser -S codecov -G application && rm -rf /home/codecov
 USER        codecov

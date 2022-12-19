@@ -11,4 +11,4 @@ fi
 if [[ "$RUN_ENV" == "enterprise" ]]; then
   python manage.py migrate
 fi
-gunicorn codecov.wsgi:application --reload --bind 0.0.0.0:8000 --access-logfile '-' $suffix
+gunicorn codecov.wsgi:application --reload --bind 0.0.0.0:8000 --access-logfile '-' --timeout "${GUNICORN_TIMEOUT:-600}" $suffix

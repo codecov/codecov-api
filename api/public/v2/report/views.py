@@ -1,6 +1,7 @@
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, viewsets
+from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 
 from api.public.v2.commit.serializers import ReportSerializer
@@ -50,15 +51,30 @@ class ReportViewSet(
         if not commit_sha:
             branch_name = self.request.query_params.get("branch", self.repo.branch)
             branch = self.repo.branches.filter(name=branch_name).first()
+            if branch is None:
+                raise NotFound(
+                    f"The branch '{branch_name}' in not in our records. Please provide a valid branch name.",
+                    404,
+                )
             commit_sha = branch.head
 
         commit = self.repo.commits.filter(commitid=commit_sha).first()
+        if commit is None:
+            raise NotFound(
+                f"The commit {commit_sha} is not in our records. Please specify valid commit.",
+                404,
+            )
 
         report = commit.full_report
 
         path = self.request.query_params.get("path", None)
         if path:
             paths = [file for file in report.files if file.startswith(path)]
+            if not paths:
+                raise NotFound(
+                    f"The file path '{path}' does not exist. Please provide an existing file path.",
+                    404,
+                )
             report = report.filter(paths=paths)
 
         flag = self.request.query_params.get("flag", None)
@@ -80,6 +96,11 @@ class ReportViewSet(
         * `path` - only show report info for pathnames that start with this value
         * `flag` - only show report info that applies to the specified flag name
         """
-        report = self.get_object()
+        try:
+            report = self.get_object()
+        except NotFound as inst:
+            (detail, code) = inst.args
+            raise NotFound(detail)
+
         serializer = self.get_serializer(report)
         return Response(serializer.data)
