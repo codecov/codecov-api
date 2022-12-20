@@ -64,9 +64,9 @@ class RepositoryArtifactPermissions(BasePermission):
 
     permissions_service = RepositoryPermissionsService()
     message = (
-        f"Permission denied: some possbile reasons for this are (1) the "
-        f"user doesn't have permission to view the specific resource; "
-        f"or (2) the organization has a per-user plan, and the user is "
+        f"Permission denied: some possible reasons for this are (1) the "
+        f"user doesn't have permission to view the specific resource, "
+        f"(2) the organization has a per-user plan or (3) the user is "
         f"trying to view a private repo but is not activated."
     )
 
