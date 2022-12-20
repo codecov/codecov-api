@@ -61,7 +61,7 @@ def flags_report():
     return report
 
 
-permission_error_message = "Permission denied: some possbile reasons for this are (1) the user doesn't have permission to view the specific resource; or (2) the organization has a per-user plan, and the user is trying to view a private repo but is not activated."
+permission_error_message = "Permission denied: some possible reasons for this are (1) the user doesn't have permission to view the specific resource, (2) the organization has a per-user plan or (3) the user is trying to view a private repo but is not activated."
 
 
 @patch("api.shared.repo.repository_accessors.RepoAccessors.get_repo_permissions")
