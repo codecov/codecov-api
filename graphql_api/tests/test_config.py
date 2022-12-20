@@ -111,7 +111,7 @@ class TestConfigType(GraphQLTestHelper, TestCase):
             },
         }
 
-    @override_settings(IS_ENTERPRISE="true", ADMINS_LIST=[])
+    @override_settings(IS_ENTERPRISE=True, ADMINS_LIST=[])
     def test_has_admins_empty_admins_list(self):
         data = self.gql_request("query { config { hasAdmins }}")
         assert data == {
@@ -120,7 +120,7 @@ class TestConfigType(GraphQLTestHelper, TestCase):
             },
         }
 
-    @override_settings(IS_ENTERPRISE="false")
+    @override_settings(IS_ENTERPRISE=False)
     def test_has_admins_enterprise_is_false(self):
         data = self.gql_request("query { config { hasAdmins }}")
         assert data == {
@@ -130,7 +130,7 @@ class TestConfigType(GraphQLTestHelper, TestCase):
         }
 
     @override_settings(
-        IS_ENTERPRISE="true", ADMINS_LIST=[{"service": "github", "username": "Imogen"}]
+        IS_ENTERPRISE=True, ADMINS_LIST=[{"service": "github", "username": "Imogen"}]
     )
     def test_has_admins_with_enterprise_and_admins(self):
         data = self.gql_request("query { config { hasAdmins }}")
