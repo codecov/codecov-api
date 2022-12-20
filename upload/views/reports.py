@@ -2,7 +2,7 @@ import logging
 
 from django.http import HttpRequest, HttpResponseNotAllowed, HttpResponseNotFound
 from rest_framework.exceptions import ValidationError
-from rest_framework.generics import CreateAPIView, ListCreateAPIView
+from rest_framework.generics import CreateAPIView, ListCreateAPIView, RetrieveAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
@@ -36,7 +36,8 @@ class ReportViews(ListCreateAPIView):
 
 
 class ReportResultsView(
-    ListCreateAPIView,
+    CreateAPIView,
+    RetrieveAPIView,
     GetterMixin,
 ):
     serializer_class = ReportResultsSerializer
@@ -55,7 +56,7 @@ class ReportResultsView(
         )
         return instance
 
-    def get(self, request, *args, **kwargs):
+    def get_object(self):
         repository = self.get_repo()
         commit = self.get_commit(repository)
         report = self.get_report(commit)
@@ -70,5 +71,4 @@ class ReportResultsView(
                 ),
             )
             raise ValidationError(f"Report Results not found")
-        serializer = self.get_serializer(report_results)
-        return Response(serializer.data)
+        return report_results
