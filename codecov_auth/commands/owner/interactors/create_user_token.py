@@ -1,7 +1,7 @@
 from asgiref.sync import sync_to_async
 
 from codecov.commands.base import BaseInteractor
-from codecov.commands.exceptions import Unauthenticated, ValidationError
+from codecov.commands.exceptions import Unauthenticated, Unauthorized, ValidationError
 from codecov_auth.models import UserToken
 
 
@@ -13,6 +13,8 @@ class CreateUserTokenInteractor(BaseInteractor):
             raise ValidationError("name cant be empty")
         if token_type not in UserToken.TokenType.values:
             raise ValidationError(f"invalid token type: {token_type}")
+        if token_type == UserToken.TokenType.G_API:
+            raise Unauthorized()
 
     def create_token(self, name: str, token_type: str) -> UserToken:
         return UserToken.objects.create(

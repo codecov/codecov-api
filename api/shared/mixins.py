@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils.functional import cached_property
@@ -6,7 +7,7 @@ from api.shared.serializers import (
     CommitRefQueryParamSerializer,
     PullIDQueryParamSerializer,
 )
-from codecov_auth.models import Owner, Service
+from codecov_auth.models import Owner, Service, UserToken
 from core.models import Repository
 from utils.services import get_long_service_name
 
@@ -59,3 +60,15 @@ class CompareSlugMixin(RepoPropertyMixin):
         serializer.is_valid(raise_exception=True)
         validated_data = serializer.validated_data
         return validated_data
+
+
+class GlobalPermissionsMixin:
+    def has_global_permissions(self, request):
+        user_is_authenticated = request.user.is_authenticated
+        user_token = request.auth.token
+        user_token_type = request.auth.token_type
+        return (
+            user_is_authenticated
+            and user_token_type == UserToken.TokenType.G_API
+            and user_token in settings.GLOBAL_API_TOKENS_LIST
+        )

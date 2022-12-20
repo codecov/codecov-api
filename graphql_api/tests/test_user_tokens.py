@@ -1,7 +1,6 @@
 from django.test import TransactionTestCase
-from freezegun import freeze_time
 
-from codecov_auth.tests.factories import OwnerFactory, SessionFactory, UserTokenFactory
+from codecov_auth.tests.factories import OwnerFactory, UserTokenFactory
 
 from .helper import GraphQLTestHelper, paginate_connection
 
@@ -31,6 +30,9 @@ class UserTokensTestCase(GraphQLTestHelper, TransactionTestCase):
         self.token1 = UserTokenFactory(owner=self.user, name="token1")
         self.token2 = UserTokenFactory(owner=self.user, name="token2")
         self.token3 = UserTokenFactory(name="token3")
+        self.token4 = UserTokenFactory(
+            owner=self.user, name="token4", token_type="g_api"
+        )
 
     def test_user_tokens(self):
         data = self.gql_request(query, user=self.user)

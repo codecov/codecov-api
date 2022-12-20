@@ -2,7 +2,7 @@ import pytest
 from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
 
-from codecov.commands.exceptions import Unauthenticated, ValidationError
+from codecov.commands.exceptions import Unauthenticated, Unauthorized, ValidationError
 from codecov_auth.models import UserToken
 from codecov_auth.tests.factories import OwnerFactory
 
@@ -25,6 +25,12 @@ class CreateUserTokenInteractorTest(TransactionTestCase):
         with pytest.raises(ValidationError):
             await CreateUserTokenInteractor(self.user, "github").execute(
                 "name", "wrong"
+            )
+
+    async def test_unauthorized_global_token(self):
+        with pytest.raises(Unauthorized):
+            await CreateUserTokenInteractor(self.user, "github").execute(
+                "name", "g_api"
             )
 
     async def test_create_token(self):
