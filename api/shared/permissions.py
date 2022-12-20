@@ -5,6 +5,7 @@ from django.http import Http404
 from rest_framework.permissions import SAFE_METHODS  # ['GET', 'HEAD', 'OPTIONS']
 from rest_framework.permissions import BasePermission
 
+from api.shared.mixins import GlobalPermissionsMixin
 from api.shared.repo.repository_accessors import RepoAccessors
 from services.activation import try_auto_activate
 from services.decorators import torngit_safe
@@ -81,13 +82,27 @@ class RepositoryArtifactPermissions(BasePermission):
             request.method in SAFE_METHODS
             and self.permissions_service.has_read_permissions(request.user, view.repo)
         )
-
         if has_read_permissions and user_activated_permissions:
             return True
         if has_read_permissions and not user_activated_permissions:
             # user that can access the repo; but are not activated
             return False
         raise Http404()
+
+
+class GlobalRepositoryArtifactPermissions(
+    RepositoryArtifactPermissions, GlobalPermissionsMixin
+):
+    def has_permission(self, request, view):
+        return super().has_permission(request, view) or self._has_permission(
+            request, view
+        )
+
+    def _has_permission(self, request, view):
+        has_global_permissions = self.has_global_permissions(request)
+        return (
+            True if request.method in SAFE_METHODS and has_global_permissions else False
+        )
 
 
 class ChartPermissions(BasePermission):

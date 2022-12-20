@@ -204,7 +204,6 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
             "filters": {},
         }
         data = self.gql_request(query_files, variables=variables)
-        print(data)
         assert data == {
             "owner": {
                 "repository": {

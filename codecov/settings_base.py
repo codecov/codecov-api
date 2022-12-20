@@ -306,6 +306,7 @@ SEGMENT_ENABLED = get_config("setup", "segment", "enabled", default=False) and n
 )
 SENTRY_ENV = False
 SENTRY_SAMPLE_RATE = 1.0
+GLOBAL_API_TOKENS_LIST = get_config("setup", "global_api_tokens", default=[])
 CORS_ALLOW_HEADERS = list(default_headers) + ["token-type"]
 
 SKIP_RISKY_MIGRATION_STEPS = get_config("migrations", "skip_risky_steps", default=False)

@@ -6,7 +6,8 @@ from rest_framework.reverse import reverse
 from shared.reports.resources import Report, ReportFile, ReportLine
 from shared.utils.sessions import Session
 
-from codecov_auth.tests.factories import OwnerFactory
+from codecov_auth.models import UserToken
+from codecov_auth.tests.factories import OwnerFactory, UserTokenFactory
 from core.tests.factories import BranchFactory, CommitFactory, RepositoryFactory
 
 
@@ -60,6 +61,9 @@ def flags_report():
     return report
 
 
+permission_error_message = "Permission denied: some possbile reasons for this are (1) the user doesn't have permission to view the specific resource; or (2) the organization has a per-user plan, and the user is trying to view a private repo but is not activated."
+
+
 @patch("api.shared.repo.repository_accessors.RepoAccessors.get_repo_permissions")
 class ReportViewSetTestCase(TestCase):
     def setUp(self):
@@ -89,7 +93,7 @@ class ReportViewSetTestCase(TestCase):
         self.branch.head = self.commit3.commitid
         self.branch.save()
 
-    def _request_report(self, **params):
+    def _request_report(self, user_token=None, **params):
         self.client.force_login(user=self.user)
         url = reverse(
             "report-detail",
@@ -102,7 +106,11 @@ class ReportViewSetTestCase(TestCase):
 
         qs = urlencode(params)
         url = f"{url}?{qs}"
-        return self.client.get(url)
+        return (
+            self.client.get(url, HTTP_AUTHORIZATION=f"Bearer {user_token.token}")
+            if user_token
+            else self.client.get(url)
+        )
 
     @patch("services.archive.ReportService.build_report_from_commit")
     def test_report(self, build_report_from_commit, get_repo_permissions):
@@ -578,3 +586,118 @@ class ReportViewSetTestCase(TestCase):
         build_report_from_commit.assert_has_calls(
             [call(self.commit1), call(self.commit1)]
         )
+
+    @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
+    def test_report_no_global_permission_wrong_token_type(
+        self, repository_artifact_permisssions_has_permission, _
+    ):
+        repository_artifact_permisssions_has_permission.return_value = False
+        user_token = UserTokenFactory(
+            owner=self.user, token_type=UserToken.TokenType.API
+        )
+
+        res = self._request_report(user_token)
+        assert res.status_code == 403
+        assert res.data["detail"] == permission_error_message
+
+    @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
+    def test_report_no_global_permission_token_not_in_global_api_token_list(
+        self, repository_artifact_permisssions_has_permission, _
+    ):
+        repository_artifact_permisssions_has_permission.return_value = False
+        user_token = UserTokenFactory(
+            owner=self.user, token_type=UserToken.TokenType.G_API
+        )
+        with self.settings(GLOBAL_API_TOKENS_LIST=[92983267842786937869429873]):
+            res = self._request_report(user_token)
+            assert res.status_code == 403
+            assert res.data["detail"] == permission_error_message
+
+    @patch("services.archive.ReportService.build_report_from_commit")
+    @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
+    def test_report_global_permission_success(
+        self,
+        repository_artifact_permisssions_has_permission,
+        build_report_from_commit,
+        _,
+    ):
+        repository_artifact_permisssions_has_permission.return_value = False
+        user_token = UserTokenFactory(
+            owner=self.user, token_type=UserToken.TokenType.G_API
+        )
+        with self.settings(GLOBAL_API_TOKENS_LIST=[user_token.token]):
+            build_report_from_commit.return_value = sample_report()
+
+            res = self._request_report(user_token)
+            assert res.status_code == 200
+            assert res.json() == {
+                "totals": {
+                    "files": 2,
+                    "lines": 10,
+                    "hits": 6,
+                    "misses": 3,
+                    "partials": 1,
+                    "coverage": 60.0,
+                    "branches": 1,
+                    "methods": 0,
+                    "messages": 0,
+                    "sessions": 1,
+                    "complexity": 10.0,
+                    "complexity_total": 2.0,
+                    "complexity_ratio": 500.0,
+                    "diff": 0,
+                },
+                "files": [
+                    {
+                        "name": "foo/file1.py",
+                        "totals": {
+                            "files": 0,
+                            "lines": 8,
+                            "hits": 5,
+                            "misses": 3,
+                            "partials": 0,
+                            "coverage": 62.5,
+                            "branches": 0,
+                            "methods": 0,
+                            "messages": 0,
+                            "sessions": 0,
+                            "complexity": 10.0,
+                            "complexity_total": 2.0,
+                            "complexity_ratio": 500.0,
+                            "diff": 0,
+                        },
+                        "line_coverage": [
+                            [1, 0],
+                            [2, 1],
+                            [3, 0],
+                            [5, 0],
+                            [6, 1],
+                            [8, 0],
+                            [9, 0],
+                            [10, 1],
+                        ],
+                    },
+                    {
+                        "name": "bar/file2.py",
+                        "totals": {
+                            "files": 0,
+                            "lines": 2,
+                            "hits": 1,
+                            "misses": 0,
+                            "partials": 1,
+                            "coverage": 50.0,
+                            "branches": 1,
+                            "methods": 0,
+                            "messages": 0,
+                            "sessions": 0,
+                            "complexity": 0.0,
+                            "complexity_total": 0.0,
+                            "complexity_ratio": 0,
+                            "diff": 0,
+                        },
+                        "line_coverage": [[12, 0], [51, 2]],
+                    },
+                ],
+            }
+
+            build_report_from_commit.assert_called_once_with(self.commit1)
