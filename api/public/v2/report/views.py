@@ -4,10 +4,11 @@ from rest_framework import mixins, viewsets
 from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 
-from api.public.v2.commit.serializers import ReportSerializer
+from api.public.v2.report.serializers import CoverageReportSerializer
 from api.public.v2.schema import repo_parameters
 from api.shared.mixins import RepoPropertyMixin
 from api.shared.permissions import RepositoryArtifactPermissions
+from services.path import calculate_commit_file_url
 
 
 @extend_schema(
@@ -43,7 +44,7 @@ from api.shared.permissions import RepositoryArtifactPermissions
 class ReportViewSet(
     viewsets.GenericViewSet, mixins.RetrieveModelMixin, RepoPropertyMixin
 ):
-    serializer_class = ReportSerializer
+    serializer_class = CoverageReportSerializer
     permission_classes = [RepositoryArtifactPermissions]
 
     def get_object(self):
@@ -80,6 +81,17 @@ class ReportViewSet(
         flag = self.request.query_params.get("flag", None)
         if flag:
             report = report.filter(flags=[flag])
+
+        # Add commit url to report object
+        service, owner, repo = (
+            self.kwargs["service"],
+            self.kwargs["owner_username"],
+            self.kwargs["repo_name"],
+        )
+        commit_file_url = calculate_commit_file_url(
+            path=path, service=service, owner=owner, repo=repo, commit_sha=commit_sha
+        )
+        setattr(report, "commit_file_url", commit_file_url)
 
         return report
 

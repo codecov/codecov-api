@@ -1,8 +1,10 @@
+import re
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import cached_property
-from typing import Iterable, List, Union
+from typing import Iterable, List, Optional, Union
 
+from django.conf import settings
 from shared.reports.resources import Report
 from shared.reports.types import ReportTotals
 
@@ -110,6 +112,27 @@ def is_subpath(full_path: str, subpath: str):
     if not subpath:
         return True
     return full_path.startswith(f"{subpath}/") or full_path == subpath
+
+
+# Regex that separates string into 2 groups, taken from https://stackoverflow.com/a/33021907
+def calculate_path_file_and_dir_groups(path: str) -> tuple[str, str]:
+    result = re.search(r"((?:[^/]*/)*)(.*)", path)
+    return result.groups()
+
+
+def is_file(path) -> bool:
+    (path, filename) = calculate_path_file_and_dir_groups(path=path)
+    return True if "." in filename and filename[0] != "." else False
+
+
+def calculate_commit_file_url(
+    path: Optional[str], service: str, owner: str, repo: str, commit_sha: str
+) -> str:
+    if path is None:
+        path = ""
+    is_path_a_file = is_file(path=path)
+    commit_path = f"blob/{path}" if is_path_a_file else f"tree/{path}"
+    return f"{settings.CODECOV_DASHBOARD_URL}/{service}/{owner}/{repo}/commit/{commit_sha}/{commit_path}"
 
 
 class ReportPaths:

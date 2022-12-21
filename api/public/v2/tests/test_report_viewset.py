@@ -1,6 +1,7 @@
 from unittest.mock import call, patch
 from urllib.parse import urlencode
 
+from django.conf import settings
 from django.test import TestCase
 from rest_framework.reverse import reverse
 from shared.reports.resources import Report, ReportFile, ReportLine
@@ -63,8 +64,11 @@ def flags_report():
 @patch("api.shared.repo.repository_accessors.RepoAccessors.get_repo_permissions")
 class ReportViewSetTestCase(TestCase):
     def setUp(self):
-        self.org = OwnerFactory(username="codecov", service="github")
-        self.repo = RepositoryFactory(author=self.org, name="test-repo", active=True)
+        self.service = "github"
+        self.username = "codecov"
+        self.repo_name = "test-repo"
+        self.org = OwnerFactory(username=self.username, service=self.service)
+        self.repo = RepositoryFactory(author=self.org, name=self.repo_name, active=True)
         self.user = OwnerFactory(
             username="codecov-user",
             service="github",
@@ -179,6 +183,7 @@ class ReportViewSetTestCase(TestCase):
                     "line_coverage": [[12, 0], [51, 2]],
                 },
             ],
+            "commit_file_url": f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.username}/{self.repo_name}/commit/{self.commit1.commitid}/tree/",
         }
 
         build_report_from_commit.assert_called_once_with(self.commit1)
@@ -258,6 +263,7 @@ class ReportViewSetTestCase(TestCase):
                     "line_coverage": [[12, 0], [51, 2]],
                 },
             ],
+            "commit_file_url": f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.username}/{self.repo_name}/commit/{self.commit2.commitid}/tree/",
         }
 
         build_report_from_commit.assert_called_once_with(self.commit2)
@@ -351,6 +357,7 @@ class ReportViewSetTestCase(TestCase):
                     "line_coverage": [[12, 0], [51, 2]],
                 },
             ],
+            "commit_file_url": f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.username}/{self.repo_name}/commit/{self.commit3.commitid}/tree/",
         }
 
         build_report_from_commit.assert_called_once_with(self.commit3)
@@ -415,6 +422,7 @@ class ReportViewSetTestCase(TestCase):
                     "line_coverage": [[12, 0], [51, 2]],
                 }
             ],
+            "commit_file_url": f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.username}/{self.repo_name}/commit/{self.commit1.commitid}/tree/bar",
         }
 
         build_report_from_commit.assert_called_once_with(self.commit1)
@@ -508,6 +516,7 @@ class ReportViewSetTestCase(TestCase):
                     "line_coverage": [],
                 },
             ],
+            "commit_file_url": f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.username}/{self.repo_name}/commit/{self.commit1.commitid}/tree/",
         }
 
         build_report_from_commit.assert_called_once_with(self.commit1)
@@ -573,6 +582,7 @@ class ReportViewSetTestCase(TestCase):
                     "line_coverage": [[12, 0], [51, 0]],
                 },
             ],
+            "commit_file_url": f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.username}/{self.repo_name}/commit/{self.commit1.commitid}/tree/",
         }
 
         build_report_from_commit.assert_has_calls(
