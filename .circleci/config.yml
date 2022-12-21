@@ -113,6 +113,7 @@ jobs:
           apk update
           apk add curl
           apk add git
+          apk upgrade
     - run:
         name: verify postgres is up
         command: |
