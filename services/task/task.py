@@ -8,8 +8,8 @@ import sentry_sdk
 from celery import Celery, chain, group, signals, signature
 from celery.canvas import Signature
 from django.conf import settings
-from sentry_sdk.integrations.celery import _wrap_apply_async
 from sentry_sdk import set_tag
+from sentry_sdk.integrations.celery import _wrap_apply_async
 from shared import celery_config
 
 from core.models import Repository
