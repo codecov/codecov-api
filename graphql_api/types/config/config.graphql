@@ -3,4 +3,5 @@ type Config {
   seatsUsed: Int
   seatsLimit: Int
   isTimescaleEnabled: Boolean!
+  hasAdmins: Boolean
 }
