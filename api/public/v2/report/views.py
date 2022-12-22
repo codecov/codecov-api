@@ -8,10 +8,10 @@ from rest_framework.response import Response
 from api.public.v2.commit.serializers import ReportSerializer
 from api.public.v2.schema import repo_parameters
 from api.shared.mixins import RepoPropertyMixin
-from api.shared.permissions import GlobalTokenPermissions, RepositoryArtifactPermissions
+from api.shared.permissions import RepositoryArtifactPermissions, SuperTokenPermissions
 from codecov_auth.authentication import (
     CodecovTokenAuthentication,
-    GlobalTokenAuthentication,
+    SuperTokenAuthentication,
     UserTokenAuthentication,
 )
 
@@ -51,13 +51,13 @@ class ReportViewSet(
 ):
     serializer_class = ReportSerializer
     authentication_classes = [
-        GlobalTokenAuthentication,
+        SuperTokenAuthentication,
         CodecovTokenAuthentication,
         UserTokenAuthentication,
         BasicAuthentication,
         SessionAuthentication,
     ]
-    permission_classes = [GlobalTokenPermissions | RepositoryArtifactPermissions]
+    permission_classes = [SuperTokenPermissions | RepositoryArtifactPermissions]
 
     def get_object(self):
         commit_sha = self.request.query_params.get("sha")

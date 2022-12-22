@@ -25,13 +25,13 @@ class RepositoryAuthInterface(object):
         raise NotImplementedError()
 
 
-class GlobalUser(object):
+class SuperUser(object):
     id = None
     pk = None
     is_staff = False
     is_active = False
     is_superuser = False
-    is_global_user = True
+    is_super_user = True
     _groups = EmptyManager(Group)
     _user_permissions = EmptyManager(Permission)
 
@@ -67,5 +67,8 @@ class GlobalUser(object):
         return False
 
 
-class GlobalToken(object):
-    is_global_token = True
+class SuperToken(object):
+    def __init__(self, token=None):
+        self.token = token
+
+    is_super_token = True

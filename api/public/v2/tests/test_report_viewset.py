@@ -605,14 +605,14 @@ class ReportViewSetTestCase(TestCase):
         )
 
     @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
-    @patch("api.shared.permissions.GlobalTokenPermissions.has_permission")
+    @patch("api.shared.permissions.SuperTokenPermissions.has_permission")
     def test_no_report_if_unauthenticated_token_request(
         self,
-        global_token_permissions_has_permission,
+        super_token_permissions_has_permission,
         repository_artifact_permisssions_has_permission,
         _,
     ):
-        global_token_permissions_has_permission.return_value = False
+        super_token_permissions_has_permission.return_value = False
         repository_artifact_permisssions_has_permission.return_value = False
 
         res = self._request_report()
@@ -621,9 +621,9 @@ class ReportViewSetTestCase(TestCase):
             res.data["detail"] == "You do not have permission to perform this action."
         )
 
-    @override_settings(GLOBAL_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
+    @override_settings(SUPER_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
     @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
-    def test_no_report_if_not_global_token_nor_user_token(
+    def test_no_report_if_not_super_token_nor_user_token(
         self, repository_artifact_permisssions_has_permission, _
     ):
         repository_artifact_permisssions_has_permission.return_value = False
@@ -631,9 +631,9 @@ class ReportViewSetTestCase(TestCase):
         assert res.status_code == 401
         assert res.data["detail"] == "Invalid token."
 
-    @override_settings(GLOBAL_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
+    @override_settings(SUPER_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
     @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
-    def test_no_report_if_global_token_but_no_GET_request(
+    def test_no_report_if_super_token_but_no_GET_request(
         self, repository_artifact_permisssions_has_permission, _
     ):
         repository_artifact_permisssions_has_permission.return_value = False
@@ -643,9 +643,9 @@ class ReportViewSetTestCase(TestCase):
             res.data["detail"] == "You do not have permission to perform this action."
         )
 
-    @override_settings(GLOBAL_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
+    @override_settings(SUPER_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
     @patch("services.archive.ReportService.build_report_from_commit")
-    def test_report_global_token_permission_success(
+    def test_report_super_token_permission_success(
         self,
         build_report_from_commit,
         _,
@@ -725,10 +725,10 @@ class ReportViewSetTestCase(TestCase):
 
         build_report_from_commit.assert_called_once_with(self.commit1)
 
-    @override_settings(GLOBAL_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
+    @override_settings(SUPER_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
     @patch("api.shared.permissions.RepositoryPermissionsService.user_is_activated")
     @patch("services.archive.ReportService.build_report_from_commit")
-    def test_report_success_if_token_is_not_global_but_is_user_token(
+    def test_report_success_if_token_is_not_super_but_is_user_token(
         self, build_report_from_commit, mock_is_user_activated, get_repo_permissions
     ):
         build_report_from_commit.return_value = sample_report()

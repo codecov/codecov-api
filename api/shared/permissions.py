@@ -5,7 +5,7 @@ from django.http import Http404
 from rest_framework.permissions import SAFE_METHODS  # ['GET', 'HEAD', 'OPTIONS']
 from rest_framework.permissions import BasePermission
 
-from api.shared.mixins import GlobalPermissionsMixin
+from api.shared.mixins import SuperPermissionsMixin
 from api.shared.repo.repository_accessors import RepoAccessors
 from services.activation import try_auto_activate
 from services.decorators import torngit_safe
@@ -90,9 +90,9 @@ class RepositoryArtifactPermissions(BasePermission):
         raise Http404()
 
 
-class GlobalTokenPermissions(BasePermission, GlobalPermissionsMixin):
+class SuperTokenPermissions(BasePermission, SuperPermissionsMixin):
     def has_permission(self, request, view):
-        return self.has_global_token_permissions(request)
+        return self.has_super_token_permissions(request)
 
 
 class ChartPermissions(BasePermission):
