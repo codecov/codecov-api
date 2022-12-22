@@ -1,7 +1,10 @@
+import os
+
 from django.conf import settings
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils.functional import cached_property
+from rest_framework.permissions import SAFE_METHODS  # ['GET', 'HEAD', 'OPTIONS']
 
 from api.shared.serializers import (
     CommitRefQueryParamSerializer,
@@ -63,12 +66,18 @@ class CompareSlugMixin(RepoPropertyMixin):
 
 
 class GlobalPermissionsMixin:
-    def has_global_permissions(self, request):
-        user_is_authenticated = request.user.is_authenticated
+    def has_global_token_permissions(self, request):
+        if (
+            request.auth is None
+            or not request.user.is_authenticated
+            or request.method not in SAFE_METHODS
+        ):
+            return False
         user_token = request.auth.token
+        if user_token == None:
+            return False
         user_token_type = request.auth.token_type
         return (
-            user_is_authenticated
-            and user_token_type == UserToken.TokenType.G_API
+            user_token_type == UserToken.TokenType.G_API
             and user_token in settings.GLOBAL_API_TOKENS_LIST
         )

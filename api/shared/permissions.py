@@ -90,19 +90,9 @@ class RepositoryArtifactPermissions(BasePermission):
         raise Http404()
 
 
-class GlobalRepositoryArtifactPermissions(
-    RepositoryArtifactPermissions, GlobalPermissionsMixin
-):
+class GlobalTokenPermissions(BasePermission, GlobalPermissionsMixin):
     def has_permission(self, request, view):
-        return super().has_permission(request, view) or self._has_permission(
-            request, view
-        )
-
-    def _has_permission(self, request, view):
-        has_global_permissions = self.has_global_permissions(request)
-        return (
-            True if request.method in SAFE_METHODS and has_global_permissions else False
-        )
+        return self.has_global_token_permissions(request)
 
 
 class ChartPermissions(BasePermission):

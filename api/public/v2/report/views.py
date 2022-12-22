@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from api.public.v2.commit.serializers import ReportSerializer
 from api.public.v2.schema import repo_parameters
 from api.shared.mixins import RepoPropertyMixin
-from api.shared.permissions import GlobalRepositoryArtifactPermissions
+from api.shared.permissions import GlobalTokenPermissions, RepositoryArtifactPermissions
 
 
 @extend_schema(
@@ -44,7 +44,7 @@ class ReportViewSet(
     viewsets.GenericViewSet, mixins.RetrieveModelMixin, RepoPropertyMixin
 ):
     serializer_class = ReportSerializer
-    permission_classes = [GlobalRepositoryArtifactPermissions]
+    permission_classes = [RepositoryArtifactPermissions | GlobalTokenPermissions]
 
     def get_object(self):
         commit_sha = self.request.query_params.get("sha")

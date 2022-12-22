@@ -11,10 +11,11 @@ class CreateUserTokenInteractor(BaseInteractor):
             raise Unauthenticated()
         if len(name) == 0:
             raise ValidationError("name cant be empty")
-        if token_type not in UserToken.TokenType.values:
+        if (
+            token_type not in UserToken.TokenType.values
+            or token_type == UserToken.TokenType.G_API
+        ):
             raise ValidationError(f"invalid token type: {token_type}")
-        if token_type == UserToken.TokenType.G_API:
-            raise Unauthorized()
 
     def create_token(self, name: str, token_type: str) -> UserToken:
         return UserToken.objects.create(

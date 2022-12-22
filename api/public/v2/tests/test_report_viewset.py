@@ -61,7 +61,7 @@ def flags_report():
     return report
 
 
-permission_error_message = "Permission denied: some possible reasons for this are (1) the user doesn't have permission to view the specific resource, (2) the organization has a per-user plan or (3) the user is trying to view a private repo but is not activated."
+permission_error_message = "You do not have permission to perform this action."
 
 
 @patch("api.shared.repo.repository_accessors.RepoAccessors.get_repo_permissions")
@@ -588,7 +588,17 @@ class ReportViewSetTestCase(TestCase):
         )
 
     @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
-    def test_report_no_global_permission_wrong_token_type(
+    def test_report_no_global_token_permission_unauthenticated_request(
+        self, repository_artifact_permisssions_has_permission, _
+    ):
+        repository_artifact_permisssions_has_permission.return_value = False
+
+        res = self._request_report()
+        assert res.status_code == 403
+        assert res.data["detail"] == permission_error_message
+
+    @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
+    def test_report_no_global_token_permission_wrong_token_type(
         self, repository_artifact_permisssions_has_permission, _
     ):
         repository_artifact_permisssions_has_permission.return_value = False
@@ -601,7 +611,7 @@ class ReportViewSetTestCase(TestCase):
         assert res.data["detail"] == permission_error_message
 
     @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
-    def test_report_no_global_permission_token_not_in_global_api_token_list(
+    def test_report_no_global_token_permission_token_not_in_global_api_token_list(
         self, repository_artifact_permisssions_has_permission, _
     ):
         repository_artifact_permisssions_has_permission.return_value = False
@@ -615,7 +625,7 @@ class ReportViewSetTestCase(TestCase):
 
     @patch("services.archive.ReportService.build_report_from_commit")
     @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
-    def test_report_global_permission_success(
+    def test_report_global_token_permission_success(
         self,
         repository_artifact_permisssions_has_permission,
         build_report_from_commit,
