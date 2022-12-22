@@ -24,4 +24,4 @@ def get_owner_login_sessions(current_user):
 
 
 def get_user_tokens(user: Owner):
-    return user.user_tokens.exclude(token_type=UserToken.TokenType.G_API).all()
+    return user.user_tokens.all()

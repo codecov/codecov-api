@@ -525,7 +525,6 @@ class RepositoryToken(BaseCodecovModel):
 class UserToken(BaseCodecovModel):
     class TokenType(models.TextChoices):
         API = "api"
-        G_API = "g_api"
 
     name = models.CharField(max_length=100, null=False, blank=False)
     owner = models.ForeignKey(

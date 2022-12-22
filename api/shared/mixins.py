@@ -1,6 +1,5 @@
 import os
 
-from django.conf import settings
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils.functional import cached_property
@@ -10,6 +9,7 @@ from api.shared.serializers import (
     CommitRefQueryParamSerializer,
     PullIDQueryParamSerializer,
 )
+from codecov_auth.authentication import GlobalToken, GlobalUser
 from codecov_auth.models import Owner, Service, UserToken
 from core.models import Repository
 from utils.services import get_long_service_name
@@ -67,17 +67,13 @@ class CompareSlugMixin(RepoPropertyMixin):
 
 class GlobalPermissionsMixin:
     def has_global_token_permissions(self, request):
-        if (
-            request.auth is None
-            or not request.user.is_authenticated
-            or request.method not in SAFE_METHODS
+        if request.method not in SAFE_METHODS:
+            return False
+        user = request.user
+        auth = request.auth
+
+        if not isinstance(request.user, GlobalUser) or not isinstance(
+            request.auth, GlobalToken
         ):
             return False
-        user_token = str(request.auth.token)
-        if user_token == None:
-            return False
-        user_token_type = request.auth.token_type
-        return (
-            user_token_type == UserToken.TokenType.G_API
-            and user_token in os.environ.get("GLOBAL_API_TOKEN")
-        )
+        return user.is_global_user and auth.is_global_token

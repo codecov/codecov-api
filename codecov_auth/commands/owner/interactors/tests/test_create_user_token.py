@@ -27,12 +27,6 @@ class CreateUserTokenInteractorTest(TransactionTestCase):
                 "name", "wrong"
             )
 
-    async def test_invalid_global_token(self):
-        with pytest.raises(ValidationError):
-            await CreateUserTokenInteractor(self.user, "github").execute(
-                "name", "g_api"
-            )
-
     async def test_create_token(self):
         user_token = await CreateUserTokenInteractor(self.user, "github").execute(
             "name"

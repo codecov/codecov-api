@@ -1,9 +1,8 @@
 import os
-import uuid
 from unittest.mock import call, patch
 from urllib.parse import urlencode
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from rest_framework.reverse import reverse
 from shared.reports.resources import Report, ReportFile, ReportLine
 from shared.utils.sessions import Session
@@ -109,7 +108,7 @@ class ReportViewSetTestCase(TestCase):
         qs = urlencode(params)
         url = f"{url}?{qs}"
         return (
-            self.client.get(url, HTTP_AUTHORIZATION=f"Bearer {user_token.token}")
+            self.client.get(url, HTTP_AUTHORIZATION=f"Bearer {user_token}")
             if user_token
             else self.client.get(url)
         )
@@ -590,71 +589,125 @@ class ReportViewSetTestCase(TestCase):
         )
 
     @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
-    def test_report_no_global_token_permission_unauthenticated_request(
-        self, repository_artifact_permisssions_has_permission, _
+    @patch("api.shared.permissions.GlobalTokenPermissions.has_permission")
+    def test_no_report_if_unauthenticated_token_request(
+        self,
+        global_token_permissions_has_permission,
+        repository_artifact_permisssions_has_permission,
+        _,
     ):
+        global_token_permissions_has_permission.return_value = False
         repository_artifact_permisssions_has_permission.return_value = False
 
         res = self._request_report()
         assert res.status_code == 403
         assert res.data["detail"] == permission_error_message
 
+    @override_settings(GLOBAL_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
     @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
-    def test_report_no_global_token_permission_wrong_token_type(
+    def test_report_no_global_token_permission_if_token_is_not_global_nor_user_token(
         self, repository_artifact_permisssions_has_permission, _
     ):
         repository_artifact_permisssions_has_permission.return_value = False
-        user_token = UserTokenFactory(
-            owner=self.user, token_type=UserToken.TokenType.API
-        )
+        res = self._request_report("73c8d301-2e0b-42c0-9ace-95eef6b68e86")
+        assert res.status_code == 401
+        assert res.data["detail"] == "Invalid token."
 
-        res = self._request_report(user_token)
-        assert res.status_code == 403
-        assert res.data["detail"] == permission_error_message
-
-    @patch.dict(
-        os.environ,
-        {"GLOBAL_API_TOKEN": "testaxs3o76rdcdpfzexuccx3uatui2nw73r"},
-        clear=True,
-    )
-    @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
-    def test_report_no_global_token_permission_token_is_not_global_token(
-        self, repository_artifact_permisssions_has_permission, _
-    ):
-        repository_artifact_permisssions_has_permission.return_value = False
-        user_token = UserTokenFactory(
-            owner=self.user,
-            token_type=UserToken.TokenType.G_API,
-            token="testtht6ge4mk2v1yzh0pp6twx4xxfvan2kg",
-        )
-
-        res = self._request_report(user_token)
-        assert res.status_code == 403
-        assert res.data["detail"] == permission_error_message
-
-    @patch.dict(
-        os.environ,
-        {"GLOBAL_API_TOKEN": "testaxs3o76rdcdpfzexuccx3uatui2nw73r"},
-        clear=True,
-    )
+    @override_settings(GLOBAL_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
     @patch("services.archive.ReportService.build_report_from_commit")
-    @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
     def test_report_global_token_permission_success(
         self,
-        repository_artifact_permisssions_has_permission,
         build_report_from_commit,
         _,
     ):
-        repository_artifact_permisssions_has_permission.return_value = False
+        build_report_from_commit.return_value = sample_report()
+        res = self._request_report("testaxs3o76rdcdpfzexuccx3uatui2nw73r")
+        assert res.status_code == 200
+        assert res.json() == {
+            "totals": {
+                "files": 2,
+                "lines": 10,
+                "hits": 6,
+                "misses": 3,
+                "partials": 1,
+                "coverage": 60.0,
+                "branches": 1,
+                "methods": 0,
+                "messages": 0,
+                "sessions": 1,
+                "complexity": 10.0,
+                "complexity_total": 2.0,
+                "complexity_ratio": 500.0,
+                "diff": 0,
+            },
+            "files": [
+                {
+                    "name": "foo/file1.py",
+                    "totals": {
+                        "files": 0,
+                        "lines": 8,
+                        "hits": 5,
+                        "misses": 3,
+                        "partials": 0,
+                        "coverage": 62.5,
+                        "branches": 0,
+                        "methods": 0,
+                        "messages": 0,
+                        "sessions": 0,
+                        "complexity": 10.0,
+                        "complexity_total": 2.0,
+                        "complexity_ratio": 500.0,
+                        "diff": 0,
+                    },
+                    "line_coverage": [
+                        [1, 0],
+                        [2, 1],
+                        [3, 0],
+                        [5, 0],
+                        [6, 1],
+                        [8, 0],
+                        [9, 0],
+                        [10, 1],
+                    ],
+                },
+                {
+                    "name": "bar/file2.py",
+                    "totals": {
+                        "files": 0,
+                        "lines": 2,
+                        "hits": 1,
+                        "misses": 0,
+                        "partials": 1,
+                        "coverage": 50.0,
+                        "branches": 1,
+                        "methods": 0,
+                        "messages": 0,
+                        "sessions": 0,
+                        "complexity": 0.0,
+                        "complexity_total": 0.0,
+                        "complexity_ratio": 0,
+                        "diff": 0,
+                    },
+                    "line_coverage": [[12, 0], [51, 2]],
+                },
+            ],
+        }
+
+        build_report_from_commit.assert_called_once_with(self.commit1)
+
+    @override_settings(GLOBAL_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
+    @patch("api.shared.permissions.RepositoryPermissionsService.user_is_activated")
+    @patch("services.archive.ReportService.build_report_from_commit")
+    def test_report_success_if_token_is_not_global_but_is_user_token(
+        self, build_report_from_commit, mock_is_user_activated, get_repo_permissions
+    ):
+        build_report_from_commit.return_value = sample_report()
+        mock_is_user_activated.return_value = True
+        get_repo_permissions.return_value = (True, True)
         user_token = UserTokenFactory(
             owner=self.user,
-            token_type=UserToken.TokenType.G_API,
-            token="testaxs3o76rdcdpfzexuccx3uatui2nw73r",
         )
-
-        build_report_from_commit.return_value = sample_report()
-
-        res = self._request_report(user_token)
+        res = self._request_report(user_token.token)
         assert res.status_code == 200
         assert res.json() == {
             "totals": {

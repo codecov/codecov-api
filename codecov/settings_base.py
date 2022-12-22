@@ -254,6 +254,7 @@ COOKIES_DOMAIN = get_config("setup", "http", "cookies_domain", default=".codecov
 SESSION_COOKIE_DOMAIN = get_config(
     "setup", "http", "cookies_domain", default=".codecov.io"
 )
+GLOBAL_API_TOKEN = os.getenv("GLOBAL_API_TOKEN")
 
 CIRCLECI_TOKEN = get_config("circleci", "token")
 

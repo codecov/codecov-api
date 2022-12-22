@@ -3,18 +3,19 @@ from uuid import uuid4
 
 import pytest
 import rest_framework
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import ResolverMatch
 from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
 from rest_framework.request import Request
-from rest_framework.reverse import reverse
-from rest_framework.test import APIClient, APIRequestFactory
+from rest_framework.test import APIRequestFactory
 
 from codecov_auth.authentication import (
     CodecovSessionAuthentication,
     CodecovTokenAuthentication,
+    GlobalTokenAuthentication,
     UserTokenAuthentication,
 )
+from codecov_auth.authentication.types import GlobalToken, GlobalUser
 from codecov_auth.tests.factories import OwnerFactory, SessionFactory, UserTokenFactory
 from utils.test_utils import BaseTestCase
 
@@ -273,3 +274,27 @@ class UserTokenAuthenticationTests(TestCase):
         authenticator = UserTokenAuthentication()
         result = authenticator.authenticate(request)
         assert result is None
+
+
+class GlobalTokenAuthenticationTests(TestCase):
+    @override_settings(GLOBAL_API_TOKEN="17603a9e-0463-45e1-883e-d649fccf4ae8")
+    def test_bearer_token_auth_if_token_is_global_token(self):
+        global_token = "17603a9e-0463-45e1-883e-d649fccf4ae8"
+
+        request_factory = APIRequestFactory()
+        request = request_factory.get("", HTTP_AUTHORIZATION=f"Bearer {global_token}")
+
+        authenticator = GlobalTokenAuthentication()
+        result = authenticator.authenticate(request)
+        assert isinstance(result[0], GlobalUser)
+        assert isinstance(result[1], GlobalToken)
+
+    @override_settings(GLOBAL_API_TOKEN="17603a9e-0463-45e1-883e-d649fccf4ae8")
+    def test_bearer_token_auth_invalid_global_token(self):
+        global_token = "0ae68e58-79f8-4341-9531-55aada05a251"
+        request_factory = APIRequestFactory()
+        request = request_factory.get("", HTTP_AUTHORIZATION=f"Bearer {global_token}")
+
+        authenticator = GlobalTokenAuthentication()
+        result = authenticator.authenticate(request)
+        assert result == None

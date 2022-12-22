@@ -1,12 +1,12 @@
-import hashlib
-import hmac
 import logging
-from base64 import b64decode
+import os
 
+from django.conf import settings
 from django.contrib.auth.backends import BaseBackend
 from django.utils import timezone
 from rest_framework import authentication, exceptions
 
+from codecov_auth.authentication.types import GlobalToken, GlobalUser
 from codecov_auth.helpers import decode_token_from_cookie
 from codecov_auth.models import Owner, Session, UserToken
 from utils.config import get_config
@@ -178,9 +178,20 @@ class UserTokenAuthentication(authentication.TokenAuthentication):
         try:
             token = UserToken.objects.select_related("owner").get(token=key)
         except UserToken.DoesNotExist:
+
             raise exceptions.AuthenticationFailed("Invalid token.")
 
         if token.valid_until is not None and token.valid_until <= timezone.now():
+
             raise exceptions.AuthenticationFailed("Invalid token.")
 
         return (token.owner, token)  # TODO: might want to return some other object here
+
+
+class GlobalTokenAuthentication(authentication.TokenAuthentication):
+    keyword = "Bearer"
+
+    def authenticate_credentials(self, key):
+        if key == settings.GLOBAL_API_TOKEN:
+            return (GlobalUser(), GlobalToken())
+        return None
