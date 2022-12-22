@@ -1,3 +1,5 @@
+import os
+import uuid
 from unittest.mock import call, patch
 from urllib.parse import urlencode
 
@@ -610,19 +612,31 @@ class ReportViewSetTestCase(TestCase):
         assert res.status_code == 403
         assert res.data["detail"] == permission_error_message
 
+    @patch.dict(
+        os.environ,
+        {"GLOBAL_API_TOKEN": "testaxs3o76rdcdpfzexuccx3uatui2nw73r"},
+        clear=True,
+    )
     @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
-    def test_report_no_global_token_permission_token_not_in_global_api_token_list(
+    def test_report_no_global_token_permission_token_is_not_global_token(
         self, repository_artifact_permisssions_has_permission, _
     ):
         repository_artifact_permisssions_has_permission.return_value = False
         user_token = UserTokenFactory(
-            owner=self.user, token_type=UserToken.TokenType.G_API
+            owner=self.user,
+            token_type=UserToken.TokenType.G_API,
+            token="testtht6ge4mk2v1yzh0pp6twx4xxfvan2kg",
         )
-        with self.settings(GLOBAL_API_TOKENS_LIST=[92983267842786937869429873]):
-            res = self._request_report(user_token)
-            assert res.status_code == 403
-            assert res.data["detail"] == permission_error_message
 
+        res = self._request_report(user_token)
+        assert res.status_code == 403
+        assert res.data["detail"] == permission_error_message
+
+    @patch.dict(
+        os.environ,
+        {"GLOBAL_API_TOKEN": "testaxs3o76rdcdpfzexuccx3uatui2nw73r"},
+        clear=True,
+    )
     @patch("services.archive.ReportService.build_report_from_commit")
     @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
     def test_report_global_token_permission_success(
@@ -633,81 +647,83 @@ class ReportViewSetTestCase(TestCase):
     ):
         repository_artifact_permisssions_has_permission.return_value = False
         user_token = UserTokenFactory(
-            owner=self.user, token_type=UserToken.TokenType.G_API
+            owner=self.user,
+            token_type=UserToken.TokenType.G_API,
+            token="testaxs3o76rdcdpfzexuccx3uatui2nw73r",
         )
-        with self.settings(GLOBAL_API_TOKENS_LIST=[user_token.token]):
-            build_report_from_commit.return_value = sample_report()
 
-            res = self._request_report(user_token)
-            assert res.status_code == 200
-            assert res.json() == {
-                "totals": {
-                    "files": 2,
-                    "lines": 10,
-                    "hits": 6,
-                    "misses": 3,
-                    "partials": 1,
-                    "coverage": 60.0,
-                    "branches": 1,
-                    "methods": 0,
-                    "messages": 0,
-                    "sessions": 1,
-                    "complexity": 10.0,
-                    "complexity_total": 2.0,
-                    "complexity_ratio": 500.0,
-                    "diff": 0,
+        build_report_from_commit.return_value = sample_report()
+
+        res = self._request_report(user_token)
+        assert res.status_code == 200
+        assert res.json() == {
+            "totals": {
+                "files": 2,
+                "lines": 10,
+                "hits": 6,
+                "misses": 3,
+                "partials": 1,
+                "coverage": 60.0,
+                "branches": 1,
+                "methods": 0,
+                "messages": 0,
+                "sessions": 1,
+                "complexity": 10.0,
+                "complexity_total": 2.0,
+                "complexity_ratio": 500.0,
+                "diff": 0,
+            },
+            "files": [
+                {
+                    "name": "foo/file1.py",
+                    "totals": {
+                        "files": 0,
+                        "lines": 8,
+                        "hits": 5,
+                        "misses": 3,
+                        "partials": 0,
+                        "coverage": 62.5,
+                        "branches": 0,
+                        "methods": 0,
+                        "messages": 0,
+                        "sessions": 0,
+                        "complexity": 10.0,
+                        "complexity_total": 2.0,
+                        "complexity_ratio": 500.0,
+                        "diff": 0,
+                    },
+                    "line_coverage": [
+                        [1, 0],
+                        [2, 1],
+                        [3, 0],
+                        [5, 0],
+                        [6, 1],
+                        [8, 0],
+                        [9, 0],
+                        [10, 1],
+                    ],
                 },
-                "files": [
-                    {
-                        "name": "foo/file1.py",
-                        "totals": {
-                            "files": 0,
-                            "lines": 8,
-                            "hits": 5,
-                            "misses": 3,
-                            "partials": 0,
-                            "coverage": 62.5,
-                            "branches": 0,
-                            "methods": 0,
-                            "messages": 0,
-                            "sessions": 0,
-                            "complexity": 10.0,
-                            "complexity_total": 2.0,
-                            "complexity_ratio": 500.0,
-                            "diff": 0,
-                        },
-                        "line_coverage": [
-                            [1, 0],
-                            [2, 1],
-                            [3, 0],
-                            [5, 0],
-                            [6, 1],
-                            [8, 0],
-                            [9, 0],
-                            [10, 1],
-                        ],
+                {
+                    "name": "bar/file2.py",
+                    "totals": {
+                        "files": 0,
+                        "lines": 2,
+                        "hits": 1,
+                        "misses": 0,
+                        "partials": 1,
+                        "coverage": 50.0,
+                        "branches": 1,
+                        "methods": 0,
+                        "messages": 0,
+                        "sessions": 0,
+                        "complexity": 0.0,
+                        "complexity_total": 0.0,
+                        "complexity_ratio": 0,
+                        "diff": 0,
                     },
-                    {
-                        "name": "bar/file2.py",
-                        "totals": {
-                            "files": 0,
-                            "lines": 2,
-                            "hits": 1,
-                            "misses": 0,
-                            "partials": 1,
-                            "coverage": 50.0,
-                            "branches": 1,
-                            "methods": 0,
-                            "messages": 0,
-                            "sessions": 0,
-                            "complexity": 0.0,
-                            "complexity_total": 0.0,
-                            "complexity_ratio": 0,
-                            "diff": 0,
-                        },
-                        "line_coverage": [[12, 0], [51, 2]],
-                    },
-                ],
-            }
+                    "line_coverage": [[12, 0], [51, 2]],
+                },
+            ],
+        }
 
-            build_report_from_commit.assert_called_once_with(self.commit1)
+        build_report_from_commit.assert_called_once_with(self.commit1)

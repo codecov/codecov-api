@@ -73,11 +73,11 @@ class GlobalPermissionsMixin:
             or request.method not in SAFE_METHODS
         ):
             return False
-        user_token = request.auth.token
+        user_token = str(request.auth.token)
         if user_token == None:
             return False
         user_token_type = request.auth.token_type
         return (
             user_token_type == UserToken.TokenType.G_API
-            and user_token in settings.GLOBAL_API_TOKENS_LIST
+            and user_token in os.environ.get("GLOBAL_API_TOKEN")
         )
