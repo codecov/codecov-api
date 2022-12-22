@@ -110,6 +110,25 @@ class ReportViewSetTestCase(TestCase):
             else self.client.get(url)
         )
 
+    def _post_report(self, user_token=None, **params):
+        self.client.force_login(user=self.user)
+        url = reverse(
+            "report-detail",
+            kwargs={
+                "service": "github",
+                "owner_username": self.org.username,
+                "repo_name": self.repo.name,
+            },
+        )
+
+        qs = urlencode(params)
+        url = f"{url}?{qs}"
+        return (
+            self.client.post(url, HTTP_AUTHORIZATION=f"Bearer {user_token}")
+            if user_token
+            else self.client.post(url)
+        )
+
     @patch("services.archive.ReportService.build_report_from_commit")
     def test_report(self, build_report_from_commit, get_repo_permissions):
         get_repo_permissions.return_value = (True, True)
@@ -611,6 +630,18 @@ class ReportViewSetTestCase(TestCase):
         res = self._request_report("73c8d301-2e0b-42c0-9ace-95eef6b68e86")
         assert res.status_code == 401
         assert res.data["detail"] == "Invalid token."
+
+    @override_settings(GLOBAL_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
+    @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
+    def test_no_report_if_global_token_but_no_GET_request(
+        self, repository_artifact_permisssions_has_permission, _
+    ):
+        repository_artifact_permisssions_has_permission.return_value = False
+        res = self._post_report("testaxs3o76rdcdpfzexuccx3uatui2nw73r")
+        assert res.status_code == 403
+        assert (
+            res.data["detail"] == "You do not have permission to perform this action."
+        )
 
     @override_settings(GLOBAL_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
     @patch("services.archive.ReportService.build_report_from_commit")
