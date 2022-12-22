@@ -299,3 +299,11 @@ class SuperTokenAuthenticationTests(TestCase):
         authenticator = SuperTokenAuthentication()
         result = authenticator.authenticate(request)
         assert result == None
+
+    def test_bearer_token_no_envar_for_token(self):
+        super_token = "0ae68e58-79f8-4341-9531-55aada05a251"
+        request_factory = APIRequestFactory()
+        request = request_factory.get("", HTTP_AUTHORIZATION=f"Bearer {super_token}")
+        authenticator = SuperTokenAuthentication()
+        result = authenticator.authenticate(request)
+        assert result == None
