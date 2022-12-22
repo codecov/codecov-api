@@ -62,9 +62,6 @@ def flags_report():
     return report
 
 
-permission_error_message = "You do not have permission to perform this action."
-
-
 @patch("api.shared.repo.repository_accessors.RepoAccessors.get_repo_permissions")
 class ReportViewSetTestCase(TestCase):
     def setUp(self):
@@ -601,11 +598,13 @@ class ReportViewSetTestCase(TestCase):
 
         res = self._request_report()
         assert res.status_code == 403
-        assert res.data["detail"] == permission_error_message
+        assert (
+            res.data["detail"] == "You do not have permission to perform this action."
+        )
 
     @override_settings(GLOBAL_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
     @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
-    def test_report_no_global_token_permission_if_token_is_not_global_nor_user_token(
+    def test_no_report_if_not_global_token_nor_user_token(
         self, repository_artifact_permisssions_has_permission, _
     ):
         repository_artifact_permisssions_has_permission.return_value = False

@@ -67,7 +67,7 @@ class CompareSlugMixin(RepoPropertyMixin):
 
 class GlobalPermissionsMixin:
     def has_global_token_permissions(self, request):
-        if request.method not in SAFE_METHODS:
+        if request.method != "GET":
             return False
         user = request.user
         auth = request.auth

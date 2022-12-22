@@ -74,4 +74,3 @@ class UserTokenFactory(DjangoModelFactory):
 
     owner = factory.SubFactory(OwnerFactory)
     token = factory.LazyAttribute(lambda _: uuid4())
-    token_type = UserToken.TokenType.API

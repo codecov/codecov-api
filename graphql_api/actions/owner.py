@@ -1,6 +1,6 @@
 from asgiref.sync import sync_to_async
 
-from codecov_auth.models import Owner, UserToken
+from codecov_auth.models import Owner
 from utils.services import get_long_service_name
 
 
