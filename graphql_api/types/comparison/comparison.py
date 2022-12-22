@@ -28,6 +28,27 @@ def resolve_impacted_files(
     return comparison_report.impacted_files(filters=filters)
 
 
+@comparison_bindable.field("indirectChangesCount")
+@sync_to_async
+def resolve_indirect_changes_count(comparison: CommitComparison, info):
+    if "comparison" not in info.context:
+        return []
+
+    com = info.context["comparison"]
+    com.validate()
+    count = 0
+    comparison_report = ComparisonReport(comparison)
+    impacted_files = comparison_report.impacted_files(filters={})
+    for impacted_file in impacted_files:
+        file_comparison = com.get_file_comparison(
+            impacted_file.head_name, with_src=True, bypass_max_diff=True
+        )
+        for segment in file_comparison.segments:
+            if segment.has_unintended_changes:
+                count += 1
+    return count
+
+
 @comparison_bindable.field("impactedFile")
 @sync_to_async
 def resolve_impacted_file(comparison: CommitComparison, info, path) -> ImpactedFile:
