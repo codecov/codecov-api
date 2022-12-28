@@ -80,6 +80,7 @@ class ReportViewSetTestCase(TestCase):
             repository=self.repo,
         )
         self.branch = BranchFactory(repository=self.repo, name="test-branch")
+
         self.commit3 = CommitFactory(
             author=self.org,
             repository=self.repo,
@@ -262,6 +263,20 @@ class ReportViewSetTestCase(TestCase):
         build_report_from_commit.assert_called_once_with(self.commit2)
 
     @patch("services.archive.ReportService.build_report_from_commit")
+    def test_report_nonexistent_commit_sha(
+        self, build_report_from_commit, get_repo_permissions
+    ):
+        get_repo_permissions.return_value = (True, True)
+        build_report_from_commit.return_value = sample_report()
+
+        sha = "aSD*FAJ#GVUAJS-random-sha"
+        res = self._request_report(sha=sha)
+        assert res.status_code == 404
+        assert res.json() == {
+            "detail": f"The commit {sha} is not in our records. Please specify valid commit."
+        }
+
+    @patch("services.archive.ReportService.build_report_from_commit")
     def test_report_branch(self, build_report_from_commit, get_repo_permissions):
         get_repo_permissions.return_value = (True, True)
         build_report_from_commit.return_value = sample_report()
@@ -339,6 +354,20 @@ class ReportViewSetTestCase(TestCase):
         }
 
         build_report_from_commit.assert_called_once_with(self.commit3)
+
+    @patch("services.archive.ReportService.build_report_from_commit")
+    def test_report_nonexistent_branch(
+        self, build_report_from_commit, get_repo_permissions
+    ):
+        get_repo_permissions.return_value = (True, True)
+        build_report_from_commit.return_value = sample_report()
+
+        branch = "random-nonexistent-branch-aaa"
+        res = self._request_report(branch=branch)
+        assert res.status_code == 404
+        assert res.json() == {
+            "detail": f"The branch '{branch}' in not in our records. Please provide a valid branch name."
+        }
 
     @patch("services.archive.ReportService.build_report_from_commit")
     def test_report_path(self, build_report_from_commit, get_repo_permissions):

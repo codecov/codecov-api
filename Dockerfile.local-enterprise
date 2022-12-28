@@ -8,7 +8,7 @@ WORKDIR         /app
 
 RUN             python manage.py collectstatic --no-input
 ENV         DJANGO_SETTINGS_MODULE "codecov.settings_enterprise"
-ENV         RUN_ENV=enterprise
+ENV         RUN_ENV=ENTERPRISE
 RUN mkdir -p /config
 RUN rm /app/utils/config.py
 RUN rm /app/codecov/settings_dev.py
