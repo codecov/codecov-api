@@ -166,10 +166,10 @@ dive:
 	CI=true dive ${GCR_REPO}:${VERSION} --lowestEfficiency=0.97 --highestUserWastedPercent=0.06
 
 dive-enterprise:
-	CI=true dive ${ENTERPRISE_GCR_REPO}:${VERSION}  --lowestEfficiency=0.9999 --highestUserWastedPercent=0.02
+	CI=true dive ${ENTERPRISE_GCR_REPO}:${VERSION}_no_dependencies  --lowestEfficiency=0.9999 --highestUserWastedPercent=0.02
 
 deep-dive:
-	deep-dive --config .deep-dive.yaml ${ENTERPRISE_GCR_REPO}:latest
+	deep-dive --config .deep-dive.yaml ${ENTERPRISE_GCR_REPO}:${VERSION}_no_dependencies
 
 # LOCAL
 # used to test circleci jobs

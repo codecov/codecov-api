@@ -77,3 +77,5 @@ COOKIES_DOMAIN = get_config(
     "setup", "http", "cookies_domain", default=f".{DEFAULT_WHITELISTED_DOMAIN}"
 )
 SESSION_COOKIE_DOMAIN = COOKIES_DOMAIN
+
+ADMINS_LIST = get_config("setup", "admins", default=[])

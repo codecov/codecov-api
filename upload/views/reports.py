@@ -1,12 +1,14 @@
 import logging
 
 from django.http import HttpRequest, HttpResponseNotAllowed
-from rest_framework.generics import CreateAPIView, ListCreateAPIView
+from rest_framework.exceptions import ValidationError
+from rest_framework.generics import CreateAPIView, ListCreateAPIView, RetrieveAPIView
 
 from codecov_auth.authentication.repo_auth import (
     GlobalTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
 )
+from reports.models import ReportResults
 from upload.serializers import CommitReportSerializer, ReportResultsSerializer
 from upload.views.base import GetterMixin
 from upload.views.uploads import CanDoCoverageUploadsPermission
@@ -38,7 +40,11 @@ class ReportViews(ListCreateAPIView, GetterMixin):
         return HttpResponseNotAllowed(permitted_methods=["POST"])
 
 
-class ReportResultsView(CreateAPIView, GetterMixin):
+class ReportResultsView(
+    CreateAPIView,
+    RetrieveAPIView,
+    GetterMixin,
+):
     serializer_class = ReportResultsSerializer
     permission_classes = [CanDoCoverageUploadsPermission]
     authentication_classes = [
@@ -54,3 +60,20 @@ class ReportResultsView(CreateAPIView, GetterMixin):
             report=report,
         )
         return instance
+
+    def get_object(self):
+        repository = self.get_repo()
+        commit = self.get_commit(repository)
+        report = self.get_report(commit)
+        try:
+            report_results = ReportResults.objects.get(report=report)
+        except ReportResults.DoesNotExist:
+            log.info(
+                "Report Results not found",
+                extra=dict(
+                    commit_sha=commit.commitid,
+                    report_code=self.kwargs.get("report_code"),
+                ),
+            )
+            raise ValidationError(f"Report Results not found")
+        return report_results
