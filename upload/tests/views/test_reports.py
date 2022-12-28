@@ -8,18 +8,35 @@ from reports.tests.factories import ReportResultsFactory
 from upload.views.uploads import CanDoCoverageUploadsPermission
 
 
-def test_reports_get_not_allowed(client):
+def test_reports_get_not_allowed(client, mocker):
+    mocker.patch.object(
+        CanDoCoverageUploadsPermission, "has_permission", return_value=True
+    )
     url = reverse("new_upload.reports", args=["service", "the-repo", "commit-sha"])
     assert url == "/upload/service/the-repo/commits/commit-sha/reports"
     res = client.get(url)
     assert res.status_code == 405
 
 
-def test_reports_post_empty(client):
-    url = reverse("new_upload.reports", args=["service", "the-repo", "commit-sha"])
-    assert url == "/upload/service/the-repo/commits/commit-sha/reports"
-    res = client.post(url, content_type="application/json", data={})
-    assert res.status_code == 404
+def test_reports_post_empty(client, db, mocker):
+    repository = RepositoryFactory(
+        name="the_repo", author__username="codecov", author__service="github"
+    )
+    commit = CommitFactory(repository=repository)
+    repository.save()
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION="token " + repository.upload_token)
+    url = reverse(
+        "new_upload.reports",
+        args=["github", "codecov::::the_repo", commit.commitid],
+    )
+    response = client.post(url, data={"code": "code1"})
+
+    assert (
+        url == f"/upload/github/codecov::::the_repo/commits/{commit.commitid}/reports"
+    )
+    assert response.status_code == 201
+    assert CommitReport.objects.filter(commit_id=commit.id, code="code1").exists()
 
 
 def test_reports_results_post_successful(client, db, mocker):

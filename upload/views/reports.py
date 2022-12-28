@@ -1,10 +1,8 @@
 import logging
 
-from django.http import HttpRequest, HttpResponseNotAllowed, HttpResponseNotFound
+from django.http import HttpRequest, HttpResponseNotAllowed
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import CreateAPIView, ListCreateAPIView, RetrieveAPIView
-from rest_framework.permissions import AllowAny
-from rest_framework.response import Response
 
 from codecov_auth.authentication.repo_auth import (
     GlobalTokenAuthentication,
@@ -18,18 +16,25 @@ from upload.views.uploads import CanDoCoverageUploadsPermission
 log = logging.getLogger(__name__)
 
 
-class ReportViews(ListCreateAPIView):
+class ReportViews(ListCreateAPIView, GetterMixin):
     serializer_class = CommitReportSerializer
-    permission_classes = [
-        # TODO: Implement the correct permissions
-        AllowAny,
+    permission_classes = [CanDoCoverageUploadsPermission]
+    authentication_classes = [
+        GlobalTokenAuthentication,
+        RepositoryLegacyTokenAuthentication,
     ]
 
-    def create(self, request: HttpRequest, service: str, repo: str, commit_sha: str):
+    def perform_create(self, serializer):
+        repository = self.get_repo()
+        commit = self.get_commit(repository)
         log.info(
-            "Request to create new report", extra=dict(repo=repo, commit_id=commit_sha)
+            "Request to create new report",
+            extra=dict(repo=repository.name, commit_id=commit.commitid),
         )
-        return HttpResponseNotFound("Not available")
+        instance = serializer.save(
+            commit_id=commit.id,
+        )
+        return instance
 
     def list(self, request: HttpRequest, service: str, repo: str, commit_sha: str):
         return HttpResponseNotAllowed(permitted_methods=["POST"])
