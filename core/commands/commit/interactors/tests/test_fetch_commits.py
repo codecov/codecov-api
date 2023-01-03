@@ -19,8 +19,8 @@ class FetchCommitsInteractorTest(TransactionTestCase):
         ]
         self.repo_2 = RepositoryFactory(author=self.org, private=False)
         self.commits_2 = [
-            CommitFactory(repository=self.repo_2),
-            CommitFactory(repository=self.repo_2, branch="test2"),
+            CommitFactory(repository=self.repo_2, pullid=179),
+            CommitFactory(repository=self.repo_2, branch="test2", pullid=179),
             CommitFactory(repository=self.repo_2, ci_passed=False, branch="test2"),
         ]
 
@@ -40,6 +40,14 @@ class FetchCommitsInteractorTest(TransactionTestCase):
         commits = async_to_sync(self.execute)(None, self.repo_2, self.filters)
         commits_with_filter = list(
             filter(lambda commit: commit.ci_passed is True, self.commits_2)
+        )
+        assert list(commits) == commits_with_filter
+
+    def test_fetch_commits_with_pullid_filter(self):
+        self.filters = {"pull_id": 179}
+        commits = async_to_sync(self.execute)(None, self.repo_2, self.filters)
+        commits_with_filter = list(
+            filter(lambda commit: commit.pullid == 179, self.commits_2)
         )
         assert list(commits) == commits_with_filter
 
