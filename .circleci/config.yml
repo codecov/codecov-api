@@ -108,6 +108,13 @@ jobs:
     steps:
     - checkout
     - run:
+        name: upgrade curl
+        command: |
+          apk update
+          apk add curl
+          apk add git
+          apk upgrade
+    - run:
         name: verify postgres is up
         command: |
           while ! nc -vz postgres 5432; do sleep 1; echo "waiting for postgres"; done
@@ -127,26 +134,21 @@ jobs:
     - run:
         name: codecov python uploader
         command: |
-          apk add git
           codecov --auto-load-params-from circleci do-upload --flag unit-python-uploader
     - run:
         name: codecov latest uploader
         command: |
-          apk add curl
-          apk add git
           curl -o codecov-latest https://uploader.codecov.io/latest/linux/codecov
           chmod +x codecov-latest
           ./codecov-latest -F unit-latest-uploader -Z
     - run:
         name: codecov-staging
         command: |
-          apk add git
           chmod +x codecov-alpine
           ./codecov-alpine -R . --url https://stage-web.codecov.dev -t $CODECOV_STAGING_TOKEN -F unit
     - run:
         name: codecov-v5
         command: |
-          apk add git
           chmod +x codecov-alpine
           ./codecov-alpine -R . --url https://v5-qa.codecov.dev -t $CODECOV_V5_TOKEN -F unit
   portable:

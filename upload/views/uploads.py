@@ -80,7 +80,7 @@ class UploadViews(ListCreateAPIView, GetterMixin):
 
     def trigger_upload_task(self, repository, commit_sha, upload):
         redis = get_redis_connection()
-        task_arguments = {"commit": commit_sha, "upload_pk": upload.id, "version": "v4"}
+        task_arguments = {"commit": commit_sha, "upload_id": upload.id, "version": "v4"}
         dispatch_upload_task(task_arguments, repository, redis)
 
     def activate_repo(self, repository):
