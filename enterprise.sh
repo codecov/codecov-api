@@ -17,9 +17,6 @@ if [[ "$1" = "api" || -z "$1" ]];
 then
   # Migrate
   /home/api migrate
-  # Migrate timescale
-  # TODO make this optional somehow
-  /home/api migrate --database=timeseries timeseries
   # Start api
   ${SUB}/home/api run${POST}
 elif [[ "$1" = "rti" ]];
