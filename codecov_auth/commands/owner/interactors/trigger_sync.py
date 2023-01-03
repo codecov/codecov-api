@@ -10,6 +10,7 @@ class TriggerSyncInteractor(BaseInteractor):
         if not self.current_user.is_authenticated:
             raise Unauthenticated()
 
+    @sync_to_async
     def execute(self):
         self.validate()
         RefreshService().trigger_refresh(
