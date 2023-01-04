@@ -812,7 +812,9 @@ class ComparisonReport(object):
     def __init__(self, comparison):
         self.comparison = comparison
 
-    def files(self, filters={}):
+    def files(self, filters=None):
+        if filters is None:
+            filters = {}
         if not self.comparison.report_storage_path:
             return []
         report_data = self.get_comparison_data_from_archive()
@@ -834,13 +836,12 @@ class ComparisonReport(object):
         return self.deserialize_file(impacted_file)
 
     def files_with_unintended_change(self, files):
-        return list(
-            filter(
-                lambda file: file.get("unexpected_line_changes")
-                and len(file["unexpected_line_changes"]) > 0,
-                files,
-            )
-        )
+        return [
+            file
+            for file in files
+            if file.get("unexpected_line_changes")
+            and len(file["unexpected_line_changes"]) > 0
+        ]
 
     def impacted_files(self, filters):
         impacted_files = self.files(filters)
