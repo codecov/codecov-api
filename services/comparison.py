@@ -812,15 +812,20 @@ class ComparisonReport(object):
     def __init__(self, comparison):
         self.comparison = comparison
 
-    @cached_property
-    def files(self):
+    def files(self, filters={}):
         if not self.comparison.report_storage_path:
             return []
         report_data = self.get_comparison_data_from_archive()
-        return report_data.get("files", [])
+        files = report_data.get("files", [])
+
+        has_unintended_changes = filters.get("has_unintended_changes")
+        if has_unintended_changes is not None:
+            return self.files_with_unintended_change(files)
+
+        return files
 
     def file(self, path):
-        for file in self.files:
+        for file in self.files():
             if file["head_name"] == path:
                 return file
 
@@ -828,8 +833,18 @@ class ComparisonReport(object):
         impacted_file = self.file(path)
         return self.deserialize_file(impacted_file)
 
+    def files_with_unintended_change(self, files):
+        return list(
+            filter(
+                lambda file: file.get("unexpected_line_changes")
+                and len(file["unexpected_line_changes"]) > 0,
+                files,
+            )
+        )
+
     def impacted_files(self, filters):
-        impacted_files = self.files
+        impacted_files = self.files(filters)
+        print(impacted_files)
         impacted_files = [self.deserialize_file(file) for file in impacted_files]
         return self._apply_filters(impacted_files, filters)
 
