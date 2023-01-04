@@ -125,3 +125,43 @@ def test_commit_post_empty(db, client, mocker):
     assert response.status_code == 201
     assert expected_response == response_json
     mocked_call.assert_called_with(commitid="commit_sha", repoid=repository.repoid)
+
+
+def test_create_commit_already_exists(db, client, mocker):
+    mocked_call = mocker.patch.object(TaskService, "update_commit")
+    repository = RepositoryFactory.create()
+    commit = CommitFactory(repository=repository, author=None)
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION="token " + repository.upload_token)
+    repo_slug = f"{repository.author.username}::::{repository.name}"
+    url = reverse(
+        "new_upload.commits",
+        args=[repository.author.service, repo_slug],
+    )
+    response = client.post(
+        url,
+        {"commitid": commit.commitid, "pullid": "4", "branch": "abc"},
+        format="json",
+    )
+    response_json = response.json()
+    expected_response = {
+        "author": None,
+        "branch": commit.branch,
+        "ci_passed": commit.ci_passed,
+        "commitid": commit.commitid,
+        "message": commit.message,
+        "parent_commit_id": commit.parent_commit_id,
+        "repository": {
+            "name": repository.name,
+            "is_private": repository.private,
+            "active": repository.active,
+            "language": repository.language,
+            "yaml": repository.yaml,
+        },
+        "pullid": commit.pullid,
+        "state": commit.state,
+        "timestamp": commit.timestamp.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+    }
+    assert response.status_code == 201
+    assert expected_response == response_json
+    mocked_call.assert_called_with(commitid=commit.commitid, repoid=repository.repoid)
