@@ -819,7 +819,7 @@ class ComparisonReport(object):
         files = report_data.get("files", [])
 
         has_unintended_changes = filters.get("has_unintended_changes")
-        if has_unintended_changes is not None:
+        if has_unintended_changes is True:
             return self.files_with_unintended_change(files)
 
         return files
@@ -844,7 +844,6 @@ class ComparisonReport(object):
 
     def impacted_files(self, filters):
         impacted_files = self.files(filters)
-        print(impacted_files)
         impacted_files = [self.deserialize_file(file) for file in impacted_files]
         return self._apply_filters(impacted_files, filters)
 
