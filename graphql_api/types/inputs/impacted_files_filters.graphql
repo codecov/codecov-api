@@ -1,6 +1,6 @@
-
 input ImpactedFilesFilters {
   ordering: ImpactedFilesOrdering
+  hasUnintendedChanges: Boolean
 }
 
 input ImpactedFilesOrdering {
