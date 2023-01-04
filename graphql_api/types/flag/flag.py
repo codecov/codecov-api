@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Iterable
 
 from ariadne import ObjectType
@@ -42,7 +43,7 @@ def resolve_percent_change(flag: RepositoryFlag, info) -> float:
 
 @flag_bindable.field("measurements")
 def resolve_measurements(
-    flag: RepositoryFlag, info, interval: Interval, after: str, before: str
+    flag: RepositoryFlag, info, interval: Interval, after: datetime, before: datetime
 ) -> Iterable[MeasurementSummary]:
     measurements = info.context["flag_measurements"].get(flag.pk, [])
     if len(measurements) == 0:

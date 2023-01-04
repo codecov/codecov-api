@@ -317,7 +317,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
         )
 
     @patch("codecov_auth.commands.owner.owner.OwnerCommands.is_syncing")
-    @patch("codecov_auth.commands.owner.owner.OwnerCommands.trigger_sync")
+    @patch("codecov_auth.commands.owner.owner.TriggerSyncInteractor.execute")
     def test_sync_repo(self, mock_trigger_refresh, mock_is_refreshing):
         mock_is_refreshing.return_value = True
         query = """{
