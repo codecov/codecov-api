@@ -31,6 +31,9 @@ class ReportViews(ListCreateAPIView, GetterMixin):
             "Request to create new report",
             extra=dict(repo=repository.name, commit_id=commit.commitid),
         )
+        code = serializer.validated_data.get("code")
+        if code == "default":
+            serializer.validated_data["code"] = None
         instance = serializer.save(
             commit_id=commit.id,
         )
