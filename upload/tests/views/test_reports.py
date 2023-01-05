@@ -39,6 +39,29 @@ def test_reports_post_empty(client, db, mocker):
     assert CommitReport.objects.filter(commit_id=commit.id, code="code1").exists()
 
 
+def test_create_report_already_exists(client, db, mocker):
+    repository = RepositoryFactory(
+        name="the_repo", author__username="codecov", author__service="github"
+    )
+    commit = CommitFactory(repository=repository)
+    report = CommitReport.objects.create(commit=commit, code="code")
+
+    repository.save()
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION="token " + repository.upload_token)
+    url = reverse(
+        "new_upload.reports",
+        args=["github", "codecov::::the_repo", commit.commitid],
+    )
+    response = client.post(url, data={"code": "code"})
+
+    assert (
+        url == f"/upload/github/codecov::::the_repo/commits/{commit.commitid}/reports"
+    )
+    assert response.status_code == 201
+    assert CommitReport.objects.filter(commit_id=commit.id, code="code").exists()
+
+
 def test_reports_results_post_successful(client, db, mocker):
     mocker.patch.object(
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
