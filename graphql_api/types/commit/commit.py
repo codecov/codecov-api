@@ -4,6 +4,7 @@ import yaml
 from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
 from asgiref.sync import sync_to_async
 
+import services.components as components
 from core.models import Commit
 from graphql_api.actions.path_contents import sort_path_contents
 from graphql_api.dataloader.commit import CommitLoader
@@ -12,6 +13,7 @@ from graphql_api.dataloader.owner import OwnerLoader
 from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.enums import OrderingDirection, PathContentDisplayType
 from graphql_api.types.errors import MissingHeadReport
+from services.components import Component
 from services.path import ReportPaths
 from services.profiling import CriticalFile, ProfilingSummary
 
@@ -179,3 +181,11 @@ async def resolve_errors(commit, info, errorType):
 async def resolve_total_uploads(commit, info):
     command = info.context["executor"].get_command("commit")
     return await command.get_uploads_number(commit)
+
+
+@commit_bindable.field("components")
+@sync_to_async
+def resolve_components(commit: Commit, info) -> List[Component]:
+    request = info.context["request"]
+    info.context["component_commit"] = commit
+    return components.commit_components(commit, request.user)

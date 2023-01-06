@@ -5,6 +5,8 @@ from ..helpers.ariadne import ariadne_load_local_graphql
 from .branch import branch, branch_bindable
 from .commit import commit, commit_bindable
 from .comparison import comparison, comparison_bindable, comparison_result_bindable
+from .component import component, component_bindable
+from .component_comparison import component_comparison, component_comparison_bindable
 from .config import config, config_bindable
 from .coverage_totals import coverage_totals, coverage_totals_bindable
 from .enums import enum_types, enums
@@ -43,6 +45,8 @@ types = [
     branch,
     commit,
     comparison,
+    component,
+    component_comparison,
     file_comparison,
     flag,
     flag_comparison,
@@ -75,6 +79,8 @@ bindables = [
     commit_bindable,
     comparison_bindable,
     comparison_result_bindable,
+    component_bindable,
+    component_comparison_bindable,
     file_comparison_bindable,
     flag_bindable,
     flag_comparison_bindable,
