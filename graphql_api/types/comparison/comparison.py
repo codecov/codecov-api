@@ -79,6 +79,19 @@ def resolve_head_totals(comparison, info):
     return comparison.totals["head"]
 
 
+@comparison_bindable.field("patchTotals")
+def resolve_patch_totals(comparison: CommitComparison, info):
+    totals = comparison.patch_totals
+
+    coverage = totals["coverage"]
+    if coverage is not None:
+        # we always return `coverage` as a percentage but it's stored
+        # in the database as 0 <= value <= 1
+        coverage *= 100
+
+    return {**totals, "coverage": coverage}
+
+
 @comparison_bindable.field("flagComparisons")
 @sync_to_async
 def resolve_flag_comparisons(comparison, info) -> List[FlagComparison]:

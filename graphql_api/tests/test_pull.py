@@ -210,7 +210,7 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
         CommitComparisonFactory(
             base_commit=compared_to,
             compare_commit=head,
-            patch_totals={"coverage": 87.39},
+            patch_totals={"coverage": 0.8739},
         )
         my_pull = PullFactory(
             repository=self.repository,
