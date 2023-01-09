@@ -1,6 +1,5 @@
 import asyncio
 import copy
-import enum
 import functools
 import json
 import logging
@@ -793,14 +792,6 @@ class ImpactedFile:
     change_coverage: float
 
 
-class ImpactedFileParameter(enum.Enum):
-    FILE_NAME = "file_name"
-    CHANGE_COVERAGE = "change_coverage"
-    HEAD_COVERAGE = "head_coverage"
-    PATCH_COVERAGE_MISSES = "patch_coverage_misses"
-    PATCH_COVERAGE = "patch_coverage"
-
-
 """
 This class creates helper methods relevant to the report created for comparison between two commits.
 
@@ -835,63 +826,10 @@ class ComparisonReport(object):
         impacted_file = self.file(path)
         return self.deserialize_file(impacted_file)
 
-    def impacted_files(self, filters={}):
+    @cached_property
+    def impacted_files(self):
         impacted_files = self.files
-        impacted_files = [self.deserialize_file(file) for file in impacted_files]
-        return self._apply_filters(impacted_files, filters)
-
-    def _apply_filters(self, impacted_files, filters):
-        parameter = filters.get("ordering", {}).get("parameter")
-        direction = filters.get("ordering", {}).get("direction")
-        if parameter and direction:
-            impacted_files = self.sort_impacted_files(
-                impacted_files, parameter, direction
-            )
-        return impacted_files
-
-    def get_attribute(
-        self, impacted_file: ImpactedFile, parameter: ImpactedFileParameter
-    ):
-        if parameter == ImpactedFileParameter.FILE_NAME:
-            return impacted_file.file_name
-        elif parameter == ImpactedFileParameter.CHANGE_COVERAGE:
-            return impacted_file.change_coverage
-        elif parameter == ImpactedFileParameter.HEAD_COVERAGE:
-            if impacted_file.head_coverage is not None:
-                return impacted_file.head_coverage.coverage
-        elif parameter == ImpactedFileParameter.PATCH_COVERAGE_MISSES:
-            if impacted_file.patch_coverage is not None:
-                return impacted_file.patch_coverage.misses
-        elif parameter == ImpactedFileParameter.PATCH_COVERAGE:
-            if impacted_file.patch_coverage is not None:
-                return impacted_file.patch_coverage.coverage
-        else:
-            raise ValueError(f"invalid impacted file parameter: {parameter}")
-
-    """
-    Sorts the impacted files by any provided parameter and slides items with None values to the end
-    """
-
-    def sort_impacted_files(self, impacted_files, parameter, direction):
-        # Separate impacted files with None values for the specified parameter value
-        files_with_coverage = []
-        files_without_coverage = []
-        for file in impacted_files:
-            if self.get_attribute(file, parameter) is not None:
-                files_with_coverage.append(file)
-            else:
-                files_without_coverage.append(file)
-
-        # Sort impacted_files list based on parameter value
-        is_reversed = direction.value == "descending"
-        files_with_coverage = sorted(
-            files_with_coverage,
-            key=lambda x: self.get_attribute(x, parameter),
-            reverse=is_reversed,
-        )
-
-        # Merge both lists together
-        return files_with_coverage + files_without_coverage
+        return [self.deserialize_file(file) for file in impacted_files]
 
     """
     Fetches contents of the report
