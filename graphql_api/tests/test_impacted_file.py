@@ -86,6 +86,7 @@ query ImpactedFile(
     $repo: String!
     $pull: Int!
     $path: String!
+    $filters: SegmentsFilters
 ) {
   owner(username: $org) {
     repository(name: $repo) {
@@ -105,7 +106,7 @@ query ImpactedFile(
               patchCoverage {
                 percentCovered
               }
-              segments {
+              segments (filters: $filters) {
                 hasUnintendedChanges
               }
             }
@@ -180,14 +181,22 @@ mock_data_from_archive = """
 """
 
 
-class MockSegment(object):
+class MockSegmentWithNoUnexpectedChanges(object):
+    def __init__(self):
+        self.has_unintended_changes = False
+
+
+class MockSegmentWithUnintendedChanges(object):
     def __init__(self):
         self.has_unintended_changes = True
 
 
 class MockFileComparison(object):
     def __init__(self):
-        self.segments = [MockSegment()]
+        self.segments = [
+            MockSegmentWithUnintendedChanges(),
+            MockSegmentWithNoUnexpectedChanges(),
+        ]
 
 
 class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
@@ -330,6 +339,47 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                 "baseCoverage": {"percentCovered": 41.666666666666664},
                                 "headCoverage": {"percentCovered": 85.71428571428571},
                                 "patchCoverage": {"percentCovered": 100.0},
+                                "segments": [
+                                    {"hasUnintendedChanges": True},
+                                    {"hasUnintendedChanges": False},
+                                ],
+                            },
+                        }
+                    }
+                }
+            }
+        }
+
+    @patch("services.comparison.Comparison.validate")
+    @patch("services.comparison.PullRequestComparison.get_file_comparison")
+    @patch("services.archive.ArchiveService.read_file")
+    def test_fetch_impacted_file_with_segments_filter(
+        self, read_file, mock_get_file_comparison, mock_compare_validate
+    ):
+        read_file.return_value = mock_data_from_archive
+
+        mock_get_file_comparison.return_value = MockFileComparison()
+        mock_compare_validate.return_value = True
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "pull": self.pull.pullid,
+            "path": "fileA",
+            "filters": {"hasUnintendedChanges": True},
+        }
+        data = self.gql_request(query_impacted_file_through_pull, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "pull": {
+                        "compareWithBase": {
+                            "state": "processed",
+                            "impactedFile": {
+                                "headName": "fileA",
+                                "baseName": "fileA",
+                                "baseCoverage": {"percentCovered": 41.666666666666664},
+                                "headCoverage": {"percentCovered": 85.71428571428571},
+                                "patchCoverage": None,
                                 "segments": [{"hasUnintendedChanges": True}],
                             },
                         }

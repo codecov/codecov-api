@@ -5,6 +5,7 @@ from rest_framework.exceptions import server_error
 from api.internal.branch.views import BranchViewSet
 from api.internal.commit.views import CommitsViewSet
 from api.internal.compare.views import CompareViewSet
+from api.internal.coverage.views import CoverageViewSet
 from api.internal.enterprise_urls import urlpatterns as enterprise_urlpatterns
 from api.internal.owner.views import (
     AccountDetailsViewSet,
@@ -43,6 +44,7 @@ repository_artifacts_router = OptionalTrailingSlashRouter()
 repository_artifacts_router.register(r"pulls", PullViewSet, basename="pulls")
 repository_artifacts_router.register(r"commits", CommitsViewSet, basename="commits")
 repository_artifacts_router.register(r"branches", BranchViewSet, basename="branches")
+repository_artifacts_router.register(r"coverage", CoverageViewSet, basename="coverage")
 
 compare_router = RetrieveUpdateDestroyRouter()
 compare_router.register(r"compare", CompareViewSet, basename="compare")

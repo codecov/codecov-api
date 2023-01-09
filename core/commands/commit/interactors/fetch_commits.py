@@ -10,10 +10,13 @@ class FetchCommitsInteractor(BaseInteractor):
         filters = filters or {}
         hide_failed_ci = filters.get("hide_failed_ci")
         branch_name = filters.get("branch_name")
+        pull_id = filters.get("pull_id")
         if hide_failed_ci is True:
             queryset = queryset.filter(ci_passed=True)
         if branch_name:
             queryset = queryset.filter(branch=branch_name)
+        if pull_id:
+            queryset = queryset.filter(pullid=pull_id)
         return queryset
 
     @sync_to_async
