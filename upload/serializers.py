@@ -78,7 +78,7 @@ class CommitSerializer(serializers.ModelSerializer):
 
 
 class CommitReportSerializer(serializers.ModelSerializer):
-    commit_sha = serializers.CharField(source="commit.commitid")
+    commit_sha = serializers.CharField(source="commit.commitid", read_only=True)
 
     class Meta:
         model = CommitReport
