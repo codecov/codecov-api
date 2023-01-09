@@ -161,7 +161,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         res = self._request(query)
         assert res == {"compareWithBase": {"flagComparisons": []}}
 
-    def test_pull_flag_comparisons_count(self):
+    def test_pull_flag_comparisons(self):
         FlagComparisonFactory(
             commit_comparison=self.commit_comparison,
             repositoryflag=RepositoryFlagFactory(

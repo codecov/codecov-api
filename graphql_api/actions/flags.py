@@ -1,4 +1,5 @@
 from datetime import datetime
+from functools import lru_cache
 from typing import Iterable, Mapping
 
 from django.db.models import Avg, Max, Min, QuerySet
@@ -29,6 +30,7 @@ def _apply_filters(queryset: QuerySet, filters: Mapping) -> QuerySet:
     return queryset
 
 
+@lru_cache
 def get_flag_comparisons(
     commit_comparison: CommitComparison,
 ) -> Iterable[FlagComparison]:

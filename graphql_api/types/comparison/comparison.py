@@ -91,8 +91,8 @@ def resolve_flag_comparisons(comparison, info) -> List[FlagComparison]:
 
 @comparison_bindable.field("flagComparisonsCount")
 @sync_to_async
-def resolve_flag_comparisons(comparison, info):
-    return len(list(get_flag_comparisons(comparison)))
+def resolve_flag_comparisons_count(comparison, info):
+    return get_flag_comparisons(comparison).count()
 
 
 @comparison_bindable.field("hasDifferentNumberOfHeadAndBaseReports")
