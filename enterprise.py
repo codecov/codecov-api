@@ -39,11 +39,15 @@ if __name__ == "__main__":
             from django.core.management import execute_from_command_line
         except ImportError as exc:
             raise ImportError(
-                "Couldn't import Django. Are you sure it's installed and "
-                "available on your PYTHONPATH environment variable? Did you "
-                "forget to activate a virtual environment?"
+                "Couldn't import Django. Please contact support."
             ) from exc
         execute_from_command_line(sys.argv)
+        if sys.argv[1] == "migrate" and get_config(
+            "setup", "timeseries", "enabled", default=False
+        ):
+            print(f"Running timeseries migrations")
+            sys.argv += ["--database=timeseries", "timeseries"]
+            execute_from_command_line(sys.argv)
     else:
         if len(sys.argv) > 2 and sys.argv[1] == "run":
             del sys.argv[1]
