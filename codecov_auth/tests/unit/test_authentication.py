@@ -290,7 +290,7 @@ class SuperTokenAuthenticationTests(TestCase):
         assert isinstance(result[1], SuperToken)
         assert result[1].token == super_token
 
-    @override_settings(super_API_TOKEN="17603a9e-0463-45e1-883e-d649fccf4ae8")
+    @override_settings(SUPER_API_TOKEN="17603a9e-0463-45e1-883e-d649fccf4ae8")
     def test_bearer_token_auth_invalid_super_token(self):
         super_token = "0ae68e58-79f8-4341-9531-55aada05a251"
         request_factory = APIRequestFactory()
@@ -300,10 +300,18 @@ class SuperTokenAuthenticationTests(TestCase):
         result = authenticator.authenticate(request)
         assert result == None
 
-    def test_bearer_token_no_envar_for_token(self):
+    def test_bearer_token_default_token_envar(self):
         super_token = "0ae68e58-79f8-4341-9531-55aada05a251"
         request_factory = APIRequestFactory()
         request = request_factory.get("", HTTP_AUTHORIZATION=f"Bearer {super_token}")
         authenticator = SuperTokenAuthentication()
         result = authenticator.authenticate(request)
         assert result == None
+
+    def test_bearer_token_default_token_envar_and_same_string_as_header(self):
+        super_token = "not found"
+        request_factory = APIRequestFactory()
+        request = request_factory.get("", HTTP_AUTHORIZATION=f"Bearer {super_token}")
+        authenticator = SuperTokenAuthentication()
+        with pytest.raises(AuthenticationFailed, match="Invalid token header. Token string should not contain spaces."):
+            authenticator.authenticate(request)
