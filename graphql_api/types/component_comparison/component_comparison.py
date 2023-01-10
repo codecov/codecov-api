@@ -21,14 +21,14 @@ def resolve_name(component_comparison: ComponentComparison, info) -> str:
 def resolve_base_totals(
     component_comparison: ComponentComparison, info
 ) -> ReportTotals:
-    return component_comparison.base_report.totals
+    return component_comparison.base_totals
 
 
 @component_comparison_bindable.field("headTotals")
 def resolve_head_totals(
     component_comparison: ComponentComparison, info
 ) -> ReportTotals:
-    return component_comparison.head_report.totals
+    return component_comparison.head_totals
 
 
 @component_comparison_bindable.field("patchTotals")

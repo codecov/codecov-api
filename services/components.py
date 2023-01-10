@@ -45,6 +45,14 @@ class ComponentComparison:
         return component_filtered_report(self.comparison.head_report, self.component)
 
     @cached_property
+    def base_totals(self) -> ReportTotals:
+        return self.base_report.totals
+
+    @cached_property
+    def head_totals(self) -> ReportTotals:
+        return self.head_report.totals
+
+    @cached_property
     def patch_totals(self) -> ReportTotals:
         git_comparison = self.comparison.git_comparison
         return self.head_report.apply_diff(git_comparison["diff"])

@@ -109,8 +109,6 @@ def resolve_component_comparisons(
         return None
 
     comparison = info.context["comparison"]
-    comparison.validate()
-
     components = components_service.commit_components(comparison.head_commit, user)
     return [ComponentComparison(comparison, component) for component in components]
 
