@@ -947,15 +947,17 @@ class ComparisonReport(object):
         totals.coverage = (100 * totals.hits / nb_branches) if nb_branches > 0 else None
         file[key] = totals
 
-    def _reduce_unexpected_lines(self, acc, current_line_changes):
-        [line_in_base, line_in_head] = current_line_changes
+    def _misses_from_unexpected_line_changes(self, acc: int, unexpected_line_changes: list) -> int:
+        if not unexpected_line_changes:
+            return 0
+        [line_in_base, line_in_head] = unexpected_line_changes
         [line_number, line_coverage_value] = line_in_head
         return acc+1 if line_coverage_value == "m" else acc
 
-    def calculate_missed_lines_from_unexpected_line_changes(self, unexpected_lines):
-        if not unexpected_lines:
-            return 0
-        return functools.reduce(self._reduce_unexpected_lines, unexpected_lines, 0)
+    def calculate_misses_in_comparison(self, file):
+        total_misses = 0
+        total_misses += functools.reduce(self._misses_from_unexpected_line_changes, file["unexpected_line_changes"], 0)
+        return total_misses
 
     """
     Extracts relevant data from the fiels to be exposed as an impacted file
@@ -970,8 +972,7 @@ class ComparisonReport(object):
             file["head_coverage"], file["base_coverage"]
         )
         file_name = self.get_file_name_from_file_path(file["head_name"])
-        unexpected_line_changes = file["unexpected_line_changes"]
-        misses_in_comparison = self.calculate_missed_lines_from_unexpected_line_changes(unexpected_line_changes)
+        misses_in_comparison = self.calculate_misses_in_comparison(file)
         return ImpactedFile(
             file_name=file_name,
             head_name=file["head_name"],
