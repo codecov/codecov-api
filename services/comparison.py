@@ -793,19 +793,19 @@ class ImpactedFile:
     change_coverage: float
 
 
-"""
-This class creates helper methods relevant to the report created for comparison between two commits.
-
-This class takes an existing comparison as the parameter and outputs logic relevant to any contents within it.
-"""
-
-
 class ImpactedFileParameter(enum.Enum):
     FILE_NAME = "file_name"
     CHANGE_COVERAGE = "change_coverage"
     HEAD_COVERAGE = "head_coverage"
     PATCH_COVERAGE_MISSES = "patch_coverage_misses"
     PATCH_COVERAGE = "patch_coverage"
+
+
+"""
+This class creates helper methods relevant to the report created for comparison between two commits.
+
+This class takes an existing comparison as the parameter and outputs logic relevant to any contents within it.
+"""
 
 
 class ComparisonReport(object):
