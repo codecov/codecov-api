@@ -313,5 +313,8 @@ class SuperTokenAuthenticationTests(TestCase):
         request_factory = APIRequestFactory()
         request = request_factory.get("", HTTP_AUTHORIZATION=f"Bearer {super_token}")
         authenticator = SuperTokenAuthentication()
-        with pytest.raises(AuthenticationFailed, match="Invalid token header. Token string should not contain spaces."):
+        with pytest.raises(
+            AuthenticationFailed,
+            match="Invalid token header. Token string should not contain spaces.",
+        ):
             authenticator.authenticate(request)
