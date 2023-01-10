@@ -835,16 +835,8 @@ class ComparisonReport(object):
         impacted_file = self.file(path)
         return self.deserialize_file(impacted_file)
 
-    def files_with_unintended_change(self, files):
-        return [
-            file
-            for file in files
-            if file.get("unexpected_line_changes")
-            and len(file["unexpected_line_changes"]) > 0
-        ]
-
-    def impacted_files(self, filters):
-        impacted_files = self.files(filters)
+    def impacted_files(self, filters={}):
+        impacted_files = self.files
         impacted_files = [self.deserialize_file(file) for file in impacted_files]
         return self._apply_filters(impacted_files, filters)
 

@@ -29,6 +29,13 @@ def resolve_impacted_files(
     return comparison_report.impacted_files(filters=filters)
 
 
+@comparison_bindable.field("impactedFilesCount")
+@sync_to_async
+def resolve_impacted_files_count(comparison: CommitComparison, info):
+    comparison_report = ComparisonReport(comparison)
+    return len(comparison_report.impacted_files())
+
+
 @comparison_bindable.field("impactedFile")
 @sync_to_async
 def resolve_impacted_file(comparison: CommitComparison, info, path) -> ImpactedFile:
