@@ -21,6 +21,7 @@ query ImpactedFiles(
       commit(id: $commit) {
         compareWithParent {
           impactedFilesCount
+          indirectChangedFilesCount
           impactedFiles {
             fileName
             headName
@@ -241,6 +242,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                     "commit": {
                         "compareWithParent": {
                             "impactedFilesCount": 2,
+                            "indirectChangedFilesCount":0,
                             "impactedFiles": [
                                 {
                                     "fileName": "fileA",
@@ -298,6 +300,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                     "commit": {
                         "compareWithParent": {
                             "impactedFilesCount": 2,
+                            "indirectChangedFilesCount":0,
                             "impactedFiles": [
                                 {
                                     "fileName": "fileA",
