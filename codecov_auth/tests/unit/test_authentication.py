@@ -3,6 +3,7 @@ from uuid import uuid4
 
 import pytest
 import rest_framework
+from django.conf import settings
 from django.test import TestCase, override_settings
 from django.urls import ResolverMatch
 from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
@@ -309,7 +310,7 @@ class SuperTokenAuthenticationTests(TestCase):
         assert result == None
 
     def test_bearer_token_default_token_envar_and_same_string_as_header(self):
-        super_token = "not found"
+        super_token = settings.SUPER_API_TOKEN
         request_factory = APIRequestFactory()
         request = request_factory.get("", HTTP_AUTHORIZATION=f"Bearer {super_token}")
         authenticator = SuperTokenAuthentication()
