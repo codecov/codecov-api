@@ -9,6 +9,7 @@ type Comparison {
   fileComparisons: [FileComparison!]
   flagComparisons: [FlagComparison]
   hasDifferentNumberOfHeadAndBaseReports: Boolean!
+  flagComparisonsCount: Int!
 }
 
 type MissingBaseCommit implements ResolverError {
