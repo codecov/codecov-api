@@ -8,7 +8,7 @@ from services.path import (
     File,
     PrefixedPath,
     ReportPaths,
-    calculate_commit_file_url,
+    dashboard_commit_file_url,
 )
 
 # mock data
@@ -257,9 +257,9 @@ class TestPathMisc(TestCase):
         self.repo = "yios"
         self.commit_sha = "540feb1e8c5d39b714c43874d0aa9da02ad257b7"
 
-    def test_calculate_commit_file_url_path_none(self):
+    def test_dashboard_commit_file_url_path_none(self):
         path = None
-        commit_file_url = calculate_commit_file_url(
+        commit_file_url = dashboard_commit_file_url(
             path=path,
             service=self.service,
             owner=self.owner,
@@ -271,9 +271,9 @@ class TestPathMisc(TestCase):
             == f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.owner}/{self.repo}/commit/{self.commit_sha}/tree/"
         )
 
-    def test_calculate_commit_file_url_empty_path(self):
+    def test_dashboard_commit_file_url_empty_path(self):
         path = ""
-        commit_file_url = calculate_commit_file_url(
+        commit_file_url = dashboard_commit_file_url(
             path=path,
             service=self.service,
             owner=self.owner,
@@ -285,9 +285,9 @@ class TestPathMisc(TestCase):
             == f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.owner}/{self.repo}/commit/{self.commit_sha}/tree/"
         )
 
-    def test_calculate_commit_file_url_path_only_dirs(self):
+    def test_dashboard_commit_file_url_path_only_dirs(self):
         path = "folder/to/subfolder"
-        commit_file_url = calculate_commit_file_url(
+        commit_file_url = dashboard_commit_file_url(
             path=path,
             service=self.service,
             owner=self.owner,
@@ -299,9 +299,9 @@ class TestPathMisc(TestCase):
             == f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.owner}/{self.repo}/commit/{self.commit_sha}/tree/{path}"
         )
 
-    def test_calculate_commit_file_url_path_incomplete_dirs(self):
+    def test_dashboard_commit_file_url_path_incomplete_dirs(self):
         path = "folder/to/subf"
-        commit_file_url = calculate_commit_file_url(
+        commit_file_url = dashboard_commit_file_url(
             path=path,
             service=self.service,
             owner=self.owner,
@@ -313,9 +313,9 @@ class TestPathMisc(TestCase):
             == f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.owner}/{self.repo}/commit/{self.commit_sha}/tree/{path}"
         )
 
-    def test_calculate_commit_file_url_path_hidden_dirs(self):
+    def test_dashboard_commit_file_url_path_hidden_dirs(self):
         path = ".git/another-folder"
-        commit_file_url = calculate_commit_file_url(
+        commit_file_url = dashboard_commit_file_url(
             path=path,
             service=self.service,
             owner=self.owner,
@@ -327,9 +327,9 @@ class TestPathMisc(TestCase):
             == f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.owner}/{self.repo}/commit/{self.commit_sha}/tree/{path}"
         )
 
-    def test_calculate_commit_file_url_path_hidden_dirs_at_end_of_string(self):
+    def test_dashboard_commit_file_url_path_hidden_dirs_at_end_of_string(self):
         path = ".git/another-folder/.another-hidden-folder"
-        commit_file_url = calculate_commit_file_url(
+        commit_file_url = dashboard_commit_file_url(
             path=path,
             service=self.service,
             owner=self.owner,
@@ -341,9 +341,9 @@ class TestPathMisc(TestCase):
             == f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.owner}/{self.repo}/commit/{self.commit_sha}/tree/{path}"
         )
 
-    def test_calculate_commit_file_url_path_dir_and_filename(self):
+    def test_dashboard_commit_file_url_path_dir_and_filename(self):
         path = "folder/to/subfolder/and/file.js"
-        commit_file_url = calculate_commit_file_url(
+        commit_file_url = dashboard_commit_file_url(
             path=path,
             service=self.service,
             owner=self.owner,
@@ -355,9 +355,9 @@ class TestPathMisc(TestCase):
             == f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.owner}/{self.repo}/commit/{self.commit_sha}/blob/{path}"
         )
 
-    def test_calculate_commit_file_url_path_with_special_characters_and_filename(self):
+    def test_dashboard_commit_file_url_path_with_special_characters_and_filename(self):
         path = "foo-asd/asdfe/hasd*1@^$/bar.js"
-        commit_file_url = calculate_commit_file_url(
+        commit_file_url = dashboard_commit_file_url(
             path=path,
             service=self.service,
             owner=self.owner,

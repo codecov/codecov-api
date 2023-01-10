@@ -125,7 +125,7 @@ def is_file(path) -> bool:
     return True if "." in filename and filename[0] != "." else False
 
 
-def calculate_commit_file_url(
+def dashboard_commit_file_url(
     path: Optional[str], service: str, owner: str, repo: str, commit_sha: str
 ) -> str:
     if path is None:
