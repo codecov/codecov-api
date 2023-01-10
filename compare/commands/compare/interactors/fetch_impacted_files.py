@@ -62,9 +62,15 @@ class FetchImpactedFiles(BaseInteractor):
 
     def execute(self, comparison, filters):
         comparison_report = ComparisonReport(comparison)
-        impacted_files = comparison_report.impacted_files
 
         if filters is None:
-            return impacted_files
+            return comparison_report.impacted_files
+
+        has_unintended_changes = filters.get("has_unintended_changes")
+        impacted_files = (
+            comparison_report.impacted_files_with_unintended_change
+            if has_unintended_changes
+            else comparison_report.impacted_files
+        )
 
         return self._apply_filters(impacted_files, filters)
