@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils.functional import cached_property
@@ -6,6 +7,7 @@ from api.shared.serializers import (
     CommitRefQueryParamSerializer,
     PullIDQueryParamSerializer,
 )
+from codecov_auth.authentication import SuperToken, SuperUser
 from codecov_auth.models import Owner, Service
 from core.models import Repository
 from utils.services import get_long_service_name
@@ -59,3 +61,21 @@ class CompareSlugMixin(RepoPropertyMixin):
         serializer.is_valid(raise_exception=True)
         validated_data = serializer.validated_data
         return validated_data
+
+
+class SuperPermissionsMixin:
+    def has_super_token_permissions(self, request):
+        if request.method != "GET":
+            return False
+        user = request.user
+        auth = request.auth
+
+        if not isinstance(request.user, SuperUser) or not isinstance(
+            request.auth, SuperToken
+        ):
+            return False
+        return (
+            user.is_super_user
+            and auth.is_super_token
+            and auth.token == settings.SUPER_API_TOKEN
+        )

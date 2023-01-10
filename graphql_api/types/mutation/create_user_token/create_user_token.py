@@ -11,7 +11,7 @@ async def resolve_create_user_token(_, info, input):
     command = info.context["executor"].get_command("owner")
     user_token = await command.create_user_token(
         name=input.get("name"),
-        token_type=input.get("token_type"),
+        token_type=input.get("tokenType"),
     )
     return {
         "token": user_token,

@@ -80,6 +80,8 @@ def resolve_head_totals(comparison, info):
 @comparison_bindable.field("patchTotals")
 def resolve_patch_totals(comparison: CommitComparison, info):
     totals = comparison.patch_totals
+    if not totals:
+        return None
 
     coverage = totals["coverage"]
     if coverage is not None:
