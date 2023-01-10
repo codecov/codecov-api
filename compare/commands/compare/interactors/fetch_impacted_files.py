@@ -3,15 +3,7 @@ import enum
 from asgiref.sync import sync_to_async
 
 from codecov.commands.base import BaseInteractor
-from services.comparison import ComparisonReport, ImpactedFile
-
-
-class ImpactedFileParameter(enum.Enum):
-    FILE_NAME = "file_name"
-    CHANGE_COVERAGE = "change_coverage"
-    HEAD_COVERAGE = "head_coverage"
-    PATCH_COVERAGE_MISSES = "patch_coverage_misses"
-    PATCH_COVERAGE = "patch_coverage"
+from services.comparison import ComparisonReport, ImpactedFile, ImpactedFileParameter
 
 
 class FetchImpactedFiles(BaseInteractor):
@@ -68,7 +60,6 @@ class FetchImpactedFiles(BaseInteractor):
         # Merge both lists together
         return files_with_coverage + files_without_coverage
 
-    @sync_to_async
     def execute(self, comparison, filters):
         comparison_report = ComparisonReport(comparison)
         impacted_files = comparison_report.impacted_files

@@ -1,5 +1,6 @@
 import asyncio
 import copy
+import enum
 import functools
 import json
 import logging
@@ -797,6 +798,14 @@ This class creates helper methods relevant to the report created for comparison 
 
 This class takes an existing comparison as the parameter and outputs logic relevant to any contents within it.
 """
+
+
+class ImpactedFileParameter(enum.Enum):
+    FILE_NAME = "file_name"
+    CHANGE_COVERAGE = "change_coverage"
+    HEAD_COVERAGE = "head_coverage"
+    PATCH_COVERAGE_MISSES = "patch_coverage_misses"
+    PATCH_COVERAGE = "patch_coverage"
 
 
 class ComparisonReport(object):
