@@ -11,5 +11,5 @@ type ImpactedFile {
   patchCoverage: CoverageTotals
   changeCoverage: Float
   missesInComparison: Int!
-  segments: [SegmentComparison!]!
+  segments(filters: SegmentsFilters): [SegmentComparison!]!
 }

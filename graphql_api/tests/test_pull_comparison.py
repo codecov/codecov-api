@@ -183,6 +183,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         query = """
             compareWithBase {
                 ... on Comparison {
+                    flagComparisonsCount
                     flagComparisons {
                         name
                         patchTotals {
@@ -202,6 +203,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         res = self._request(query)
         assert res == {
             "compareWithBase": {
+                "flagComparisonsCount": 2,
                 "flagComparisons": [
                     {
                         "name": "flag_one",
@@ -215,7 +217,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                         "headTotals": {"percentCovered": 75.27382},
                         "baseTotals": {"percentCovered": 16.293},
                     },
-                ]
+                ],
             }
         }
 

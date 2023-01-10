@@ -1,6 +1,6 @@
 from typing import List
 
-from ariadne import ObjectType
+from ariadne import ObjectType, convert_kwargs_to_snake_case
 from asgiref.sync import sync_to_async
 from shared.reports.types import ReportTotals
 
@@ -47,7 +47,10 @@ def resolve_change_coverage(impacted_file: ImpactedFile, info) -> float:
 
 @impacted_file_bindable.field("segments")
 @sync_to_async
-def resolve_segments(impacted_file: ImpactedFile, info) -> List[Segment]:
+@convert_kwargs_to_snake_case
+def resolve_segments(impacted_file: ImpactedFile, info, filters=None) -> List[Segment]:
+    if filters is None:
+        filters = {}
     if "comparison" not in info.context:
         return []
 
@@ -56,7 +59,14 @@ def resolve_segments(impacted_file: ImpactedFile, info) -> List[Segment]:
     file_comparison = comparison.get_file_comparison(
         impacted_file.head_name, with_src=True, bypass_max_diff=True
     )
-    return file_comparison.segments
+    if filters.get("has_unintended_changes") is True:
+        return [
+            segment
+            for segment in file_comparison.segments
+            if segment.has_unintended_changes
+        ]
+    else:
+        return file_comparison.segments
 
 
 @impacted_file_bindable.field("isNewFile")

@@ -1404,7 +1404,8 @@ mock_data_from_archive = """
             [15,"h"],
             [16,"h"],
             [17,"h"]
-        ]
+        ],
+        "unexpected_line_changes": [[[1, "h"], [1, "h"]]]
     },
     {
         "head_name": "fileB",
@@ -3179,5 +3180,64 @@ class ComparisonReportTest(TestCase):
                     diff=0,
                 ),
                 change_coverage=35.256410256410255,
+            ),
+        ]
+
+    @patch("services.archive.ArchiveService.read_file")
+    def test_impacted_files_filtered_by_indirect_changes(self, read_file):
+        read_file.return_value = mock_data_from_archive
+        filters = {"has_unintended_changes": True}
+        impacted_files = self.comparison_report.impacted_files(filters)
+        assert impacted_files == [
+            ImpactedFile(
+                file_name="fileA",
+                base_name="fileA",
+                head_name="fileA",
+                base_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=5,
+                    misses=6,
+                    partials=1,
+                    coverage=41.666666666666664,
+                    branches=2,
+                    methods=4,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                head_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=10,
+                    misses=1,
+                    partials=1,
+                    coverage=83.33333333333333,
+                    branches=3,
+                    methods=5,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                patch_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=5,
+                    misses=2,
+                    partials=1,
+                    coverage=62.5,
+                    branches=0,
+                    methods=0,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                change_coverage=41.666666666666664,
             ),
         ]

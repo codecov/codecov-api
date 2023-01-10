@@ -2,7 +2,7 @@ import enum
 from dataclasses import dataclass
 from typing import List
 
-from ariadne import ObjectType, UnionType
+from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
 from asgiref.sync import sync_to_async
 
 from compare.models import CommitComparison, FlagComparison
@@ -20,6 +20,7 @@ comparison_bindable = ObjectType("Comparison")
 
 
 @comparison_bindable.field("impactedFiles")
+@convert_kwargs_to_snake_case
 @sync_to_async
 def resolve_impacted_files(
     comparison: CommitComparison, info, filters={}
@@ -76,6 +77,19 @@ def resolve_head_totals(comparison, info):
     return comparison.totals["head"]
 
 
+@comparison_bindable.field("patchTotals")
+def resolve_patch_totals(comparison: CommitComparison, info):
+    totals = comparison.patch_totals
+
+    coverage = totals["coverage"]
+    if coverage is not None:
+        # we always return `coverage` as a percentage but it's stored
+        # in the database as 0 <= value <= 1
+        coverage *= 100
+
+    return {**totals, "coverage": coverage}
+
+
 @comparison_bindable.field("flagComparisons")
 @sync_to_async
 def resolve_flag_comparisons(comparison, info) -> List[FlagComparison]:
@@ -87,6 +101,12 @@ def resolve_flag_comparisons(comparison, info) -> List[FlagComparison]:
     different number of reports on the head and base. This implementation
     excludes commits that have carried forward sessions.
 """
+
+
+@comparison_bindable.field("flagComparisonsCount")
+@sync_to_async
+def resolve_flag_comparisons_count(comparison, info):
+    return get_flag_comparisons(comparison).count()
 
 
 @comparison_bindable.field("hasDifferentNumberOfHeadAndBaseReports")
