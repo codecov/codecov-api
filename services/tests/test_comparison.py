@@ -1405,7 +1405,7 @@ mock_data_from_archive = """
             [16,"h"],
             [17,"h"]
         ],
-        "unexpected_line_changes": [[[1, "h"], [1, "h"]]]
+        "unexpected_line_changes": [[[1, "h"], [1, "m"]]]
     },
     {
         "head_name": "fileB",
@@ -1438,7 +1438,8 @@ mock_data_from_archive = """
             [15,"h"],
             [16,"h"],
             [17,"h"]
-        ]
+        ],
+        "unexpected_line_changes": []
     }]
 }
 """
@@ -1533,6 +1534,7 @@ class ComparisonReportTest(TestCase):
                     diff=0,
                 ),
                 change_coverage=35.256410256410255,
+                misses_in_comparison=3,
             ),
             ImpactedFile(
                 file_name="fileB",
@@ -1584,6 +1586,7 @@ class ComparisonReportTest(TestCase):
                     diff=0,
                 ),
                 change_coverage=44.047619047619044,
+                misses_in_comparison=1,
             ),
         ]
 
@@ -1648,6 +1651,7 @@ class ComparisonReportTest(TestCase):
                     diff=0,
                 ),
                 change_coverage=35.256410256410255,
+                misses_in_comparison=3,
             ),
             ImpactedFile(
                 file_name="fileB",
@@ -1699,6 +1703,7 @@ class ComparisonReportTest(TestCase):
                     diff=0,
                 ),
                 change_coverage=44.047619047619044,
+                misses_in_comparison=1,
             ),
         ]
 
@@ -1763,6 +1768,7 @@ class ComparisonReportTest(TestCase):
                     diff=0,
                 ),
                 change_coverage=44.047619047619044,
+                misses_in_comparison=1,
             ),
             ImpactedFile(
                 file_name="fileA",
@@ -1814,6 +1820,7 @@ class ComparisonReportTest(TestCase):
                     diff=0,
                 ),
                 change_coverage=35.256410256410255,
+                misses_in_comparison=3,
             ),
         ]
 
@@ -1878,6 +1885,7 @@ class ComparisonReportTest(TestCase):
                     diff=0,
                 ),
                 change_coverage=44.047619047619044,
+                misses_in_comparison=1,
             ),
             ImpactedFile(
                 file_name="fileA",
@@ -1929,6 +1937,7 @@ class ComparisonReportTest(TestCase):
                     diff=0,
                 ),
                 change_coverage=35.256410256410255,
+                misses_in_comparison=3,
             ),
         ]
 
@@ -1993,6 +2002,7 @@ class ComparisonReportTest(TestCase):
                     diff=0,
                 ),
                 change_coverage=35.256410256410255,
+                misses_in_comparison=3,
             ),
             ImpactedFile(
                 file_name="fileB",
@@ -2044,6 +2054,7 @@ class ComparisonReportTest(TestCase):
                     diff=0,
                 ),
                 change_coverage=44.047619047619044,
+                misses_in_comparison=1,
             ),
         ]
 
@@ -2108,6 +2119,7 @@ class ComparisonReportTest(TestCase):
                     diff=0,
                 ),
                 change_coverage=35.256410256410255,
+                misses_in_comparison=3,
             ),
             ImpactedFile(
                 file_name="fileB",
@@ -2159,6 +2171,7 @@ class ComparisonReportTest(TestCase):
                     diff=0,
                 ),
                 change_coverage=44.047619047619044,
+                misses_in_comparison=1,
             ),
         ]
 
@@ -2223,6 +2236,7 @@ class ComparisonReportTest(TestCase):
                     diff=0,
                 ),
                 change_coverage=44.047619047619044,
+                misses_in_comparison=1,
             ),
             ImpactedFile(
                 file_name="fileA",
@@ -2274,6 +2288,7 @@ class ComparisonReportTest(TestCase):
                     diff=0,
                 ),
                 change_coverage=35.256410256410255,
+                misses_in_comparison=3,
             ),
         ]
 
@@ -2338,6 +2353,7 @@ class ComparisonReportTest(TestCase):
                     diff=0,
                 ),
                 change_coverage=35.256410256410255,
+                misses_in_comparison=3,
             ),
             ImpactedFile(
                 file_name="fileB",
@@ -2389,6 +2405,7 @@ class ComparisonReportTest(TestCase):
                     diff=0,
                 ),
                 change_coverage=44.047619047619044,
+                misses_in_comparison=1,
             ),
         ]
 
@@ -2453,6 +2470,7 @@ class ComparisonReportTest(TestCase):
                     diff=0,
                 ),
                 change_coverage=44.047619047619044,
+                misses_in_comparison=1,
             ),
             ImpactedFile(
                 file_name="fileA",
@@ -2504,6 +2522,7 @@ class ComparisonReportTest(TestCase):
                     diff=0,
                 ),
                 change_coverage=35.256410256410255,
+                misses_in_comparison=3,
             ),
         ]
 
@@ -2561,6 +2580,7 @@ class ComparisonReportTest(TestCase):
                 diff=0,
             ),
             change_coverage=44.047619047619044,
+            misses_in_comparison=1,
         )
 
     def test_impacted_file_sort_function(self):
@@ -2587,6 +2607,7 @@ class ComparisonReportTest(TestCase):
                 ),
                 patch_coverage=None,
                 change_coverage=None,
+                misses_in_comparison=3,
             ),
             ImpactedFile(
                 file_name="mafs.js",
@@ -2638,6 +2659,7 @@ class ComparisonReportTest(TestCase):
                     diff=0,
                 ),
                 change_coverage=58.333333333333336,
+                misses_in_comparison=5,
             ),
             ImpactedFile(
                 file_name="mafs.js",
@@ -2689,6 +2711,7 @@ class ComparisonReportTest(TestCase):
                     diff=0,
                 ),
                 change_coverage=0,
+                misses_in_comparison=32,
             ),
         ]
         parameter = ImpactedFileParameter.CHANGE_COVERAGE
@@ -2747,6 +2770,7 @@ class ComparisonReportTest(TestCase):
                     diff=0,
                 ),
                 change_coverage=58.333333333333336,
+                misses_in_comparison=5,
             ),
             ImpactedFile(
                 file_name="mafs.js",
@@ -2798,6 +2822,7 @@ class ComparisonReportTest(TestCase):
                     diff=0,
                 ),
                 change_coverage=0,
+                misses_in_comparison=32,
             ),
             ImpactedFile(
                 file_name="words.js",
@@ -2821,6 +2846,7 @@ class ComparisonReportTest(TestCase):
                 ),
                 patch_coverage=None,
                 change_coverage=None,
+                misses_in_comparison=3,
             ),
         ]
 
@@ -2876,6 +2902,7 @@ class ComparisonReportTest(TestCase):
                     diff=0,
                 ),
                 change_coverage=0,
+                misses_in_comparison=3,
             ),
         ]
         parameter = "something else"
@@ -2949,6 +2976,7 @@ class ComparisonReportTest(TestCase):
             ),
             patch_coverage=None,
             change_coverage=None,
+            misses_in_comparison=1,
         )
 
     @patch("services.archive.ArchiveService.read_file")
@@ -3014,6 +3042,7 @@ class ComparisonReportTest(TestCase):
                     diff=0,
                 ),
                 change_coverage=35.256410256410255,
+                misses_in_comparison=3,
             ),
             ImpactedFile(
                 file_name="fileB",
@@ -3065,6 +3094,7 @@ class ComparisonReportTest(TestCase):
                     diff=0,
                 ),
                 change_coverage=44.047619047619044,
+                misses_in_comparison=1,
             ),
         ]
 
@@ -3129,6 +3159,7 @@ class ComparisonReportTest(TestCase):
                     diff=0,
                 ),
                 change_coverage=44.047619047619044,
+                misses_in_comparison=1,
             ),
             ImpactedFile(
                 file_name="fileA",
@@ -3180,6 +3211,7 @@ class ComparisonReportTest(TestCase):
                     diff=0,
                 ),
                 change_coverage=35.256410256410255,
+                misses_in_comparison=3,
             ),
         ]
 
@@ -3188,6 +3220,7 @@ class ComparisonReportTest(TestCase):
         read_file.return_value = mock_data_from_archive
         filters = {"has_unintended_changes": True}
         impacted_files = self.comparison_report.impacted_files(filters)
+        print("oyyyyy", impacted_files)
         assert impacted_files == [
             ImpactedFile(
                 file_name="fileA",
@@ -3212,9 +3245,9 @@ class ComparisonReportTest(TestCase):
                     files=0,
                     lines=0,
                     hits=10,
-                    misses=1,
+                    misses=2,
                     partials=1,
-                    coverage=83.33333333333333,
+                    coverage=76.92307692307692,
                     branches=3,
                     methods=5,
                     messages=0,
@@ -3238,6 +3271,7 @@ class ComparisonReportTest(TestCase):
                     complexity_total=0,
                     diff=0,
                 ),
-                change_coverage=41.666666666666664,
-            ),
+                change_coverage=35.256410256410255,
+                misses_in_comparison=3,
+            )
         ]

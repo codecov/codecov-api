@@ -799,7 +799,7 @@ class ImpactedFileParameter(enum.Enum):
     CHANGE_COVERAGE = "change_coverage"
     HEAD_COVERAGE = "head_coverage"
     HEAD_COVERAGE_MISSES = "head_coverage_misses"
-    # MISSES_IN_COMPARISON = "misses_in_comparison"
+    MISSES_IN_COMPARISON = "misses_in_comparison"
     PATCH_COVERAGE = "patch_coverage"
 
 
@@ -947,16 +947,31 @@ class ComparisonReport(object):
         totals.coverage = (100 * totals.hits / nb_branches) if nb_branches > 0 else None
         file[key] = totals
 
-    def _misses_from_unexpected_line_changes(self, acc: int, unexpected_line_changes: list) -> int:
+    def _misses_from_unexpected_line_changes(
+        self, acc: int, unexpected_line_changes: list
+    ) -> int:
         if not unexpected_line_changes:
             return 0
         [line_in_base, line_in_head] = unexpected_line_changes
         [line_number, line_coverage_value] = line_in_head
-        return acc+1 if line_coverage_value == "m" else acc
+        return acc + 1 if line_coverage_value == "m" else acc
+
+    def _misses_from_diff_coverage(self, diff_coverage: list) -> int:
+        if not diff_coverage:
+            return 0
+        return sum(
+            1 if line_coverage_value == "m" else 0
+            for line_number, line_coverage_value in diff_coverage
+        )
 
     def calculate_misses_in_comparison(self, file):
         total_misses = 0
-        total_misses += functools.reduce(self._misses_from_unexpected_line_changes, file["unexpected_line_changes"], 0)
+        total_misses += functools.reduce(
+            self._misses_from_unexpected_line_changes,
+            file["unexpected_line_changes"],
+            0,
+        )
+        total_misses += self._misses_from_diff_coverage(file["added_diff_coverage"])
         return total_misses
 
     """
@@ -981,7 +996,7 @@ class ComparisonReport(object):
             base_coverage=file["base_coverage"],
             patch_coverage=file["patch_coverage"],
             change_coverage=change_coverage,
-            misses_in_comparison=misses_in_comparison
+            misses_in_comparison=misses_in_comparison,
         )
 
     # TODO: I think this can be a function located elsewhere
