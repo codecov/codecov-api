@@ -81,7 +81,7 @@ class RepositoryAdmin(AdminMixin, admin.ModelAdmin):
 class PullsAdmin(AdminMixin, admin.ModelAdmin):
     list_display = ("pullid", "repository", "author")
     show_full_result_count = False
-
+    paginator = EstimatedCountPaginator
     readonly_fields = (
         "repository",
         "id",
