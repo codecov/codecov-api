@@ -3,8 +3,14 @@ from dataclasses import dataclass
 from functools import cached_property
 from typing import Iterable, List, Union
 
+from asgiref.sync import async_to_sync
 from shared.reports.resources import Report
 from shared.reports.types import ReportTotals
+from shared.torngit.exceptions import TorngitClientError
+
+from codecov_auth.models import Owner
+from core.models import Commit
+from services.repo_providers import RepoProviderService
 
 
 class PathNode:
@@ -123,16 +129,20 @@ class ReportPaths:
         self.report = report
         self.prefix = path or ""
 
-        self.paths = [
+        self._paths = [
             PrefixedPath(full_path=full_path, prefix=self.prefix)
             for full_path in report.files
             if is_subpath(full_path, self.prefix)
         ]
 
         if search_term:
-            self.paths = [
+            self._paths = [
                 path for path in self.paths if search_term in path.relative_path
             ]
+
+    @property
+    def paths(self):
+        return self._paths
 
     def full_filelist(self) -> Iterable[File]:
         """
@@ -181,3 +191,19 @@ class ReportPaths:
                 results.append(Dir(full_path=basename, children=children))
 
         return results
+
+
+def provider_path_exists(path: str, commit: Commit, user: Owner):
+    """
+    Check whether the given path exists on the provider.
+    """
+    try:
+        adapter = RepoProviderService().get_adapter(user, commit.repository)
+        async_to_sync(adapter.list_files)(commit.commitid, path)
+        return True
+    except TorngitClientError as e:
+        if e.code == 404:
+            return False
+        else:
+            # more generic error from provider
+            return None

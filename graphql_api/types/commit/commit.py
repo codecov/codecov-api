@@ -4,6 +4,7 @@ import yaml
 from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
 from asgiref.sync import sync_to_async
 
+import services.path as path_service
 from core.models import Commit
 from graphql_api.actions.path_contents import sort_path_contents
 from graphql_api.dataloader.commit import CommitLoader
@@ -11,7 +12,7 @@ from graphql_api.dataloader.comparison import ComparisonLoader
 from graphql_api.dataloader.owner import OwnerLoader
 from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.enums import OrderingDirection, PathContentDisplayType
-from graphql_api.types.errors import MissingHeadReport
+from graphql_api.types.errors import MissingCoverage, MissingHeadReport, UnknownPath
 from services.path import ReportPaths
 from services.profiling import CriticalFile, ProfilingSummary
 
@@ -27,19 +28,6 @@ commit_bindable.set_alias("branchName", "branch")
 def resolve_file(commit, info, path, flags=None):
     commit_report = commit.full_report.filter(flags=flags)
     file_report = commit_report.get(path)
-
-    critical_filenames = []
-    if "profiling_summary" in info.context:
-        if "critical_filenames" not in info.context:
-            info.context["critical_filenames"] = set(
-                [
-                    critical_file.name
-                    for critical_file in info.context[
-                        "profiling_summary"
-                    ].critical_files
-                ]
-            )
-        critical_filenames = info.context["critical_filenames"]
 
     return {
         "commit_report": commit_report,
@@ -125,29 +113,22 @@ def resolve_critical_files(commit: Commit, info, **kwargs) -> List[CriticalFile]
 @commit_bindable.field("pathContents")
 @convert_kwargs_to_snake_case
 @sync_to_async
-def resolve_path_contents(head_commit: Commit, info, path: str = None, filters=None):
+def resolve_path_contents(commit: Commit, info, path: str = None, filters=None):
     """
     The file directory tree is a list of all the files and directories
     extracted from the commit report of the latest, head commit.
     The is resolver results in a list that represent the tree with files
     and nested directories.
     """
+    user = info.context["request"].user
+
     # TODO: Might need to add reports here filtered by flags in the future
-    commit_report = head_commit.full_report
+    commit_report = commit.full_report
     if not commit_report:
         return MissingHeadReport()
 
-    if "profiling_summary" in info.context:
-        if "critical_filenames" not in info.context:
-            info.context["critical_filenames"] = set(
-                [
-                    critical_file.name
-                    for critical_file in info.context[
-                        "profiling_summary"
-                    ].critical_files
-                ]
-            )
-
+    if filters is None:
+        filters = {}
     search_value = filters.get("search_value")
     display_type = filters.get("display_type")
 
@@ -156,6 +137,16 @@ def resolve_path_contents(head_commit: Commit, info, path: str = None, filters=N
         path=path,
         search_term=search_value,
     )
+
+    if len(report_paths.paths) == 0:
+        # we do not know about this path
+
+        if path_service.provider_path_exists(path, commit, user) is False:
+            # file doesn't exist
+            return UnknownPath(f"path does not exist: {path}")
+
+        # we're just missing coverage for the file
+        return MissingCoverage(f"missing coverage for path: {path}")
 
     if search_value or display_type == PathContentDisplayType.LIST:
         items = report_paths.full_filelist()

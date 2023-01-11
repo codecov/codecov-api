@@ -1,8 +1,13 @@
+from unittest.mock import patch
+
 from django.test import TestCase
 from shared.reports.types import ReportTotals
+from shared.torngit.exceptions import TorngitClientGeneralError
 
+from codecov_auth.tests.factories import OwnerFactory
+from core.tests.factories import CommitFactory
 from services.archive import SerializableReport
-from services.path import Dir, File, PrefixedPath, ReportPaths
+from services.path import Dir, File, PrefixedPath, ReportPaths, provider_path_exists
 
 # mock data
 
@@ -200,6 +205,10 @@ class TestReportPaths(TestCase):
             ),
         ]
 
+    def test_invalid_path(self):
+        report_paths = ReportPaths(self.report, path="wrong")
+        assert report_paths.paths == []
+
 
 class TestReportPathsNested(TestCase):
     def setUp(self):
@@ -241,3 +250,29 @@ class TestReportPathsNested(TestCase):
         assert report_paths.single_directory() == [
             File(full_path="src/ui/A/A.js", totals=totals3),
         ]
+
+
+class MockedProviderAdapter:
+    async def list_files(self, *args, **kwargs):
+        return []
+
+
+class TestProviderPath(TestCase):
+    def setUp(self):
+        self.commit = CommitFactory()
+        self.owner = OwnerFactory()
+
+    @patch("services.repo_providers.RepoProviderService.get_adapter")
+    def test_provider_path(self, mock_provider_adapter):
+        mock_provider_adapter.return_value = MockedProviderAdapter()
+        assert provider_path_exists("foo/bar", self.commit, self.owner) == True
+
+    @patch("services.repo_providers.RepoProviderService.get_adapter")
+    def test_provider_path_not_found(self, mock_provider_adapter):
+        mock_provider_adapter.side_effect = TorngitClientGeneralError(404, None, None)
+        assert provider_path_exists("foo/bar", self.commit, self.owner) == False
+
+    @patch("services.repo_providers.RepoProviderService.get_adapter")
+    def test_provider_path_other_error(self, mock_provider_adapter):
+        mock_provider_adapter.side_effect = TorngitClientGeneralError(500, None, None)
+        assert provider_path_exists("foo/bar", self.commit, self.owner) == None

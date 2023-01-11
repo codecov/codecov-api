@@ -16,3 +16,13 @@ class MissingComparison:
 
 class MissingBaseReport:
     message = "Missing base report"
+
+
+class MissingCoverage:
+    def __init__(self, message):
+        self.message = message
+
+
+class UnknownPath:
+    def __init__(self, message):
+        self.message = message
