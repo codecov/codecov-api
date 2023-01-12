@@ -24,12 +24,10 @@ class CommitViews(ListCreateAPIView, GetterMixin):
     ]
 
     def get_queryset(self):
-        # TODO: This is not the final implementation.
         repository = self.get_repo()
         return Commit.objects.filter(repository=repository)
 
     def perform_create(self, serializer):
-        # TODO we should make sure that the commit is not already there, otherwise we'll get 500
         repository = self.get_repo()
         commit = serializer.save(repository=repository)
         TaskService().update_commit(
