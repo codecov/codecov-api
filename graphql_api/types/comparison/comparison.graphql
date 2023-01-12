@@ -8,6 +8,7 @@ type Comparison {
   headTotals: CoverageTotals
   fileComparisons: [FileComparison!]
   flagComparisons: [FlagComparison]
+  componentComparisons: [ComponentComparison!]
   hasDifferentNumberOfHeadAndBaseReports: Boolean!
   flagComparisonsCount: Int!
 }
