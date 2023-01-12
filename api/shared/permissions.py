@@ -5,6 +5,7 @@ from django.http import Http404
 from rest_framework.permissions import SAFE_METHODS  # ['GET', 'HEAD', 'OPTIONS']
 from rest_framework.permissions import BasePermission
 
+from api.shared.mixins import SuperPermissionsMixin
 from api.shared.repo.repository_accessors import RepoAccessors
 from services.activation import try_auto_activate
 from services.decorators import torngit_safe
@@ -63,9 +64,9 @@ class RepositoryArtifactPermissions(BasePermission):
 
     permissions_service = RepositoryPermissionsService()
     message = (
-        f"Permission denied: some possbile reasons for this are (1) the "
-        f"user doesn't have permission to view the specific resource; "
-        f"or (2) the organization has a per-user plan, and the user is "
+        f"Permission denied: some possible reasons for this are (1) the "
+        f"user doesn't have permission to view the specific resource, "
+        f"(2) the organization has a per-user plan or (3) the user is "
         f"trying to view a private repo but is not activated."
     )
 
@@ -81,13 +82,17 @@ class RepositoryArtifactPermissions(BasePermission):
             request.method in SAFE_METHODS
             and self.permissions_service.has_read_permissions(request.user, view.repo)
         )
-
         if has_read_permissions and user_activated_permissions:
             return True
         if has_read_permissions and not user_activated_permissions:
             # user that can access the repo; but are not activated
             return False
         raise Http404()
+
+
+class SuperTokenPermissions(BasePermission, SuperPermissionsMixin):
+    def has_permission(self, request, view):
+        return self.has_super_token_permissions(request)
 
 
 class ChartPermissions(BasePermission):
