@@ -56,7 +56,6 @@ class RepositoryAdmin(AdminMixin, admin.ModelAdmin):
         "name",
         "author",
         "service_id",
-        "private",
         "updatestamp",
         "active",
         "language",
@@ -69,7 +68,7 @@ class RepositoryAdmin(AdminMixin, admin.ModelAdmin):
         "activated",
         "deleted",
     )
-    fields = readonly_fields + ("bot", "using_integration", "branch")
+    fields = readonly_fields + ("bot", "using_integration", "branch", "private")
 
     def has_delete_permission(self, request, obj=None):
         return False
@@ -82,7 +81,7 @@ class RepositoryAdmin(AdminMixin, admin.ModelAdmin):
 class PullsAdmin(AdminMixin, admin.ModelAdmin):
     list_display = ("pullid", "repository", "author")
     show_full_result_count = False
-
+    paginator = EstimatedCountPaginator
     readonly_fields = (
         "repository",
         "id",
