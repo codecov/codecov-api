@@ -946,31 +946,18 @@ class ComparisonReport(object):
         totals.coverage = (100 * totals.hits / nb_branches) if nb_branches > 0 else None
         file[key] = totals
 
-    def _misses_from_unexpected_line_changes(
-        self, acc: int, unexpected_line_changes: list
-    ) -> int:
-        if not unexpected_line_changes:
-            return 0
-        [line_in_base, line_in_head] = unexpected_line_changes
-        [line_number, line_coverage_value] = line_in_head
-        return acc + 1 if line_coverage_value == "m" else acc
-
-    def _misses_from_diff_coverage(self, diff_coverage: list) -> int:
-        if not diff_coverage:
-            return 0
-        return sum(
-            1 if line_coverage_value == "m" else 0
-            for line_number, line_coverage_value in diff_coverage
-        )
-
     def calculate_misses_in_comparison(self, file):
         total_misses = 0
-        total_misses += functools.reduce(
-            self._misses_from_unexpected_line_changes,
-            file["unexpected_line_changes"],
-            0,
-        )
-        total_misses += self._misses_from_diff_coverage(file["added_diff_coverage"])
+        diff_coverage = file["added_diff_coverage"] or []
+        unexpected_line_changes = file["unexpected_line_changes"] or []
+
+        for line_number, line_coverage_value in diff_coverage:
+            if line_coverage_value == "m":
+                total_misses += 1
+
+        for [base, [head_line_number, head_coverage_value]] in unexpected_line_changes:
+            if head_coverage_value == "m":
+                total_misses += 1
         return total_misses
 
     """
