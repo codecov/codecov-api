@@ -1,0 +1,7 @@
+type ComponentComparison {
+    id: String!
+    name: String!
+    baseTotals: CoverageTotals
+    headTotals: CoverageTotals
+    patchTotals: CoverageTotals
+}
