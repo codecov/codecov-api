@@ -82,6 +82,8 @@ def resolve_head_totals(comparison, info):
 @comparison_bindable.field("patchTotals")
 def resolve_patch_totals(comparison: CommitComparison, info):
     totals = comparison.patch_totals
+    if not totals:
+        return None
 
     coverage = totals["coverage"]
     if coverage is not None:
@@ -118,6 +120,12 @@ def resolve_component_comparisons(
     different number of reports on the head and base. This implementation
     excludes commits that have carried forward sessions.
 """
+
+
+@comparison_bindable.field("flagComparisonsCount")
+@sync_to_async
+def resolve_flag_comparisons_count(comparison, info):
+    return get_flag_comparisons(comparison).count()
 
 
 @comparison_bindable.field("hasDifferentNumberOfHeadAndBaseReports")

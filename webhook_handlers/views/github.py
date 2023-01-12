@@ -232,7 +232,11 @@ class GithubWebhookHandler(APIView):
 
         log.info(
             f"Branch name updated for commits to {branch_name}",
-            extra=dict(repoid=repo.repoid, github_webhook_event=self.event),
+            extra=dict(
+                repoid=repo.repoid,
+                github_webhook_event=self.event,
+                commits=[commit.get("id") for commit in commits],
+            ),
         )
 
         most_recent_commit = commits[-1]

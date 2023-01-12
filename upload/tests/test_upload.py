@@ -885,7 +885,11 @@ class UploadHandlerHelpersTest(TestCase):
     @patch("services.task.TaskService.upload")
     def test_dispatch_upload_task(self, mock_task_service_upload):
         repo = G(Repository)
-        task_arguments = {"commit": "commit123", "version": "v4"}
+        task_arguments = {
+            "commit": "commit123",
+            "version": "v4",
+            "report_code": "local_report",
+        }
 
         expected_key = f"uploads/{repo.repoid}/commit123"
 
@@ -898,7 +902,10 @@ class UploadHandlerHelpersTest(TestCase):
         dispatch_upload_task(task_arguments, repo, redis)
         assert mock_task_service_upload.called
         mock_task_service_upload.assert_called_with(
-            repoid=repo.repoid, commitid=task_arguments.get("commit"), countdown=4
+            repoid=repo.repoid,
+            commitid=task_arguments.get("commit"),
+            report_code="local_report",
+            countdown=4,
         )
 
 

@@ -10,6 +10,7 @@ type Comparison {
   flagComparisons: [FlagComparison]
   componentComparisons: [ComponentComparison!]
   hasDifferentNumberOfHeadAndBaseReports: Boolean!
+  flagComparisonsCount: Int!
 }
 
 type MissingBaseCommit implements ResolverError {
