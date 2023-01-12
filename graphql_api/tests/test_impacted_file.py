@@ -69,9 +69,7 @@ query ImpactedFile(
             patchCoverage {
               percentCovered
             }
-            segments {
-              hasUnintendedChanges
-            }
+            missesInComparison
           }
         }
       }
@@ -296,6 +294,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
             "path": "fileB",
         }
         data = self.gql_request(query_impacted_file, variables=variables)
+        print("in test!", data)
         assert data == {
             "owner": {
                 "repository": {
@@ -307,7 +306,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                 "baseCoverage": {"percentCovered": 41.666666666666664},
                                 "headCoverage": {"percentCovered": 85.71428571428571},
                                 "patchCoverage": {"percentCovered": 100.0},
-                                "segments": [],
+                                "missesInComparison": 1,
                             }
                         }
                     }
