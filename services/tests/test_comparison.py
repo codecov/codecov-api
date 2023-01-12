@@ -2980,14 +2980,14 @@ class ComparisonReportTest(TestCase):
         )
 
     @patch("services.archive.ArchiveService.read_file")
-    def test_impacted_files_filtered_by_head_coverage_misses_descending(
+    def test_impacted_files_filtered_by_misses_in_comparison_descending(
         self, read_file
     ):
         read_file.return_value = mock_data_from_archive
         filters = {
             "ordering": {
                 "direction": OrderingDirection.DESC,
-                "parameter": ImpactedFileParameter.HEAD_COVERAGE_MISSES,
+                "parameter": ImpactedFileParameter.MISSES_IN_COMPARISON,
             }
         }
         impacted_files = self.comparison_report.impacted_files(filters)
@@ -3099,12 +3099,12 @@ class ComparisonReportTest(TestCase):
         ]
 
     @patch("services.archive.ArchiveService.read_file")
-    def test_impacted_files_filtered_by_head_coverage_misses_ascending(self, read_file):
+    def test_impacted_files_filtered_by_misses_in_comparison_ascending(self, read_file):
         read_file.return_value = mock_data_from_archive
         filters = {
             "ordering": {
                 "direction": OrderingDirection.ASC,
-                "parameter": ImpactedFileParameter.HEAD_COVERAGE_MISSES,
+                "parameter": ImpactedFileParameter.MISSES_IN_COMPARISON,
             }
         }
         impacted_files = self.comparison_report.impacted_files(filters)

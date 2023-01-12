@@ -91,7 +91,7 @@ def resolve_is_deleted_file(impacted_file: ImpactedFile, info) -> bool:
 
 
 @impacted_file_bindable.field("missesInComparison")
-def resolve_is_renamed_file(impacted_file: ImpactedFile, info) -> int:
+def resolve_misses_in_comparison(impacted_file: ImpactedFile, info) -> int:
     return impacted_file.misses_in_comparison
 
 
