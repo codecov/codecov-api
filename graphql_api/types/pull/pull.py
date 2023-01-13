@@ -2,6 +2,7 @@ from ariadne import ObjectType
 from asgiref.sync import sync_to_async
 
 from compare.models import CommitComparison
+from core.models import Pull
 from graphql_api.actions.commits import pull_commits
 from graphql_api.actions.comparison import validate_comparison
 from graphql_api.dataloader.commit import CommitLoader
@@ -116,7 +117,7 @@ async def resolve_compare_with_base(pull, info, **kwargs):
 
 @pull_bindable.field("commits")
 @sync_to_async
-def resolve_commits(pull, info, **kwargs):
+def resolve_commits(pull: Pull, info, **kwargs):
     queryset = pull_commits(pull)
 
     return queryset_to_connection_sync(
