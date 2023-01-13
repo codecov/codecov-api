@@ -1,0 +1,5 @@
+type Component {
+    id: String!
+    name: String!
+    totals: CoverageTotals
+}

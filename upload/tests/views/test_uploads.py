@@ -11,7 +11,7 @@ from codecov_auth.services.org_level_token_service import OrgLevelTokenService
 from codecov_auth.tests.factories import OrganizationLevelTokenFactory, OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
 from reports.models import CommitReport, ReportSession
-from reports.tests.factories import UploadFactory
+from reports.tests.factories import CommitReportFactory, UploadFactory
 from upload.views.uploads import CanDoCoverageUploadsPermission, UploadViews
 
 
@@ -242,10 +242,11 @@ def test_trigger_upload_task(db, mocker):
     upload_views = UploadViews()
     repo = RepositoryFactory.create()
     upload = UploadFactory.create()
+    report = CommitReportFactory.create()
     commitid = "commit id"
     mocked_redis = mocker.patch("upload.views.uploads.get_redis_connection")
     mocked_dispatched_task = mocker.patch("upload.views.uploads.dispatch_upload_task")
-    upload_views.trigger_upload_task(repo, commitid, upload)
+    upload_views.trigger_upload_task(repo, commitid, upload, report)
     mocked_redis.assert_called()
     mocked_dispatched_task.assert_called()
 
