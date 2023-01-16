@@ -98,6 +98,15 @@ class CommitReportSerializer(serializers.ModelSerializer):
         )
         fields = read_only_fields + ("code",)
 
+    def create(self, validated_data):
+        report = CommitReport.objects.filter(
+            code=validated_data.get("code"),
+            commit_id=validated_data.get("commit_id"),
+        ).first()
+        if report:
+            return report
+        return super().create(validated_data)
+
 
 class ReportResultsSerializer(serializers.ModelSerializer):
     report = CommitReportSerializer(read_only=True)
