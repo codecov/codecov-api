@@ -2,13 +2,16 @@ type Comparison {
   state: String!
   impactedFile(path: String!): ImpactedFile
   impactedFiles(filters: ImpactedFilesFilters): [ImpactedFile]!
+  impactedFilesCount: Int!
   patchTotals: CoverageTotals
   changeWithParent: Float
   baseTotals: CoverageTotals
   headTotals: CoverageTotals
   fileComparisons: [FileComparison!]
   flagComparisons: [FlagComparison]
+  componentComparisons: [ComponentComparison!]
   hasDifferentNumberOfHeadAndBaseReports: Boolean!
+  flagComparisonsCount: Int!
 }
 
 type MissingBaseCommit implements ResolverError {

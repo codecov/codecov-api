@@ -18,7 +18,7 @@ def test_reports_get_not_allowed(client, mocker):
     assert res.status_code == 405
 
 
-def test_reports_post_empty(client, db, mocker):
+def test_reports_post(client, db, mocker):
     repository = RepositoryFactory(
         name="the_repo", author__username="codecov", author__service="github"
     )
@@ -60,6 +60,27 @@ def test_create_report_already_exists(client, db, mocker):
     )
     assert response.status_code == 201
     assert CommitReport.objects.filter(commit_id=commit.id, code="code").exists()
+
+
+def test_reports_post_code_as_default(client, db, mocker):
+    repository = RepositoryFactory(
+        name="the_repo", author__username="codecov", author__service="github"
+    )
+    commit = CommitFactory(repository=repository)
+    repository.save()
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION="token " + repository.upload_token)
+    url = reverse(
+        "new_upload.reports",
+        args=["github", "codecov::::the_repo", commit.commitid],
+    )
+    response = client.post(url, data={"code": "default"})
+
+    assert (
+        url == f"/upload/github/codecov::::the_repo/commits/{commit.commitid}/reports"
+    )
+    assert response.status_code == 201
+    assert CommitReport.objects.filter(commit_id=commit.id, code=None).exists()
 
 
 def test_reports_results_post_successful(client, db, mocker):

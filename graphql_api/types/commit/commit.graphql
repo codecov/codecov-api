@@ -23,6 +23,7 @@ type Commit {
   pathContents(path: String, filters: PathContentsFilters): PathContentsResult
   errors(errorType: CommitErrorType!): CommitErrorsConnection!
   totalUploads: Int!
+  components: [Component!]!
 }
 
 type CommitErrorsConnection {

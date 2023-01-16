@@ -210,7 +210,7 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
         CommitComparisonFactory(
             base_commit=compared_to,
             compare_commit=head,
-            patch_totals={"coverage": 87.39},
+            patch_totals={"coverage": 0.8739},
         )
         my_pull = PullFactory(
             repository=self.repository,
@@ -231,6 +231,46 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "compareWithBase": {
                 "__typename": "Comparison",
                 "patchTotals": {"coverage": 87.39},
+            },
+        }
+
+    @freeze_time("2021-02-02")
+    def test_pull_no_patch_totals(self):
+        head = CommitFactory(
+            repository=self.repository,
+            author=self.user,
+            commitid="5672734ij1n234918231290j12nasdfioasud0f9",
+            totals=None,
+        )
+        report = CommitReportFactory(commit=head)
+        ReportLevelTotalsFactory(report=report, coverage=78.38)
+        compared_to = CommitFactory(
+            repository=self.repository,
+            author=self.user,
+            commitid="9asd78fa7as8d8fa97s8d7fgagsd8fa9asd8f77s",
+        )
+        CommitComparisonFactory(
+            base_commit=compared_to, compare_commit=head, patch_totals=None
+        )
+        my_pull = PullFactory(
+            repository=self.repository,
+            title="test-pull-request",
+            author=self.user,
+            head=head.commitid,
+            compared_to=compared_to.commitid,
+        )
+        pull = self.fetch_one_pull_request(my_pull.pullid)
+        assert pull == {
+            "title": "test-pull-request",
+            "state": "OPEN",
+            "pullId": my_pull.pullid,
+            "updatestamp": "2021-02-02T00:00:00",
+            "author": {"username": "test-pull-user"},
+            "head": {"totals": {"coverage": 78.38}},
+            "comparedTo": {"commitid": "9asd78fa7as8d8fa97s8d7fgagsd8fa9asd8f77s"},
+            "compareWithBase": {
+                "__typename": "Comparison",
+                "patchTotals": None,
             },
         }
 
@@ -265,6 +305,13 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             pullid=my_pull.pullid,
             commitid="33333",
             timestamp=datetime.today() - timedelta(days=3),
+        )
+        CommitFactory(
+            repository=self.repository,
+            pullid=my_pull.pullid,
+            commitid="44444",
+            timestamp=datetime.today() - timedelta(days=3),
+            deleted=True,
         )
 
         pull = self.fetch_one_pull_request(my_pull.pullid, query)

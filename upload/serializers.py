@@ -76,6 +76,15 @@ class CommitSerializer(serializers.ModelSerializer):
             "branch",
         )
 
+    def create(self, validated_data):
+        commit = Commit.objects.filter(
+            repository=validated_data.get("repository"),
+            commitid=validated_data.get("commitid"),
+        ).first()
+        if commit:
+            return commit
+        return super().create(validated_data)
+
 
 class CommitReportSerializer(serializers.ModelSerializer):
     commit_sha = serializers.CharField(source="commit.commitid", read_only=True)
