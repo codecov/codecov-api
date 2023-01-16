@@ -306,6 +306,13 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             commitid="33333",
             timestamp=datetime.today() - timedelta(days=3),
         )
+        CommitFactory(
+            repository=self.repository,
+            pullid=my_pull.pullid,
+            commitid="44444",
+            timestamp=datetime.today() - timedelta(days=3),
+            deleted=True,
+        )
 
         pull = self.fetch_one_pull_request(my_pull.pullid, query)
 

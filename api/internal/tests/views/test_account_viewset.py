@@ -27,6 +27,7 @@ class MockSubscription(object):
             "id": "cus_LK&*Hli8YLIO",
         }
         self.schedule = subscription_params["schedule_id"]
+        self.collection_method = subscription_params["collection_method"]
 
     def __getitem__(self, key):
         return getattr(self, key)
@@ -170,6 +171,7 @@ class AccountViewSetTests(APITestCase):
             "current_period_end": 1633512445,
             "latest_invoice": None,
             "schedule_id": "sub_sched_456",
+            "collection_method": "charge_automatically",
         }
 
         mock_retrieve_subscription.return_value = MockSubscription(subscription_params)
@@ -222,6 +224,7 @@ class AccountViewSetTests(APITestCase):
                 "cancel_at_period_end": False,
                 "current_period_end": 1633512445,
                 "customer": {"id": "cus_LK&*Hli8YLIO"},
+                "collection_method": "charge_automatically",
             },
             "checkout_session_id": None,
             "name": owner.name,
@@ -258,6 +261,7 @@ class AccountViewSetTests(APITestCase):
             "current_period_end": 1633512445,
             "latest_invoice": None,
             "schedule_id": "sub_sched_456678999",
+            "collection_method": "charge_automatically",
         }
 
         mock_retrieve_subscription.return_value = MockSubscription(subscription_params)
@@ -312,6 +316,7 @@ class AccountViewSetTests(APITestCase):
                 "cancel_at_period_end": False,
                 "current_period_end": 1633512445,
                 "customer": {"id": "cus_LK&*Hli8YLIO"},
+                "collection_method": "charge_automatically",
             },
             "checkout_session_id": None,
             "name": owner.name,
@@ -340,6 +345,7 @@ class AccountViewSetTests(APITestCase):
             "current_period_end": 1633512445,
             "latest_invoice": None,
             "schedule_id": None,
+            "collection_method": "charge_automatically",
         }
 
         mock_retrieve_subscription.return_value = MockSubscription(subscription_params)
@@ -372,6 +378,7 @@ class AccountViewSetTests(APITestCase):
                 "cancel_at_period_end": False,
                 "current_period_end": 1633512445,
                 "customer": {"id": "cus_LK&*Hli8YLIO"},
+                "collection_method": "charge_automatically",
             },
             "checkout_session_id": None,
             "name": owner.name,
@@ -507,6 +514,7 @@ class AccountViewSetTests(APITestCase):
             "current_period_end": 1633512445,
             "latest_invoice": json.load(f)["data"][0],
             "schedule_id": None,
+            "collection_method": "charge_automatically",
         }
 
         mock_subscription.return_value = MockSubscription(subscription_params)
@@ -530,6 +538,7 @@ class AccountViewSetTests(APITestCase):
                 }
             },
             "customer": {"id": "cus_LK&*Hli8YLIO"},
+            "collection_method": "charge_automatically",
         }
 
     @patch("services.billing.stripe.Subscription.retrieve")
@@ -643,6 +652,7 @@ class AccountViewSetTests(APITestCase):
             "default_payment_method": default_payment_method,
             "latest_invoice": json.load(f)["data"][0],
             "schedule_id": None,
+            "collection_method": "charge_automatically",
         }
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
@@ -802,6 +812,7 @@ class AccountViewSetTests(APITestCase):
             "current_period_end": 1633512445,
             "latest_invoice": json.load(f)["data"][0],
             "schedule_id": None,
+            "collection_method": "charge_automatically",
         }
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)

@@ -1,13 +1,15 @@
+import os
 from unittest.mock import call, patch
 from urllib.parse import urlencode
 
 from django.conf import settings
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from rest_framework.reverse import reverse
 from shared.reports.resources import Report, ReportFile, ReportLine
 from shared.utils.sessions import Session
 
-from codecov_auth.tests.factories import OwnerFactory
+from codecov_auth.models import UserToken
+from codecov_auth.tests.factories import OwnerFactory, UserTokenFactory
 from core.tests.factories import BranchFactory, CommitFactory, RepositoryFactory
 
 
@@ -93,7 +95,7 @@ class ReportViewSetTestCase(TestCase):
         self.branch.head = self.commit3.commitid
         self.branch.save()
 
-    def _request_report(self, **params):
+    def _request_report(self, user_token=None, **params):
         self.client.force_login(user=self.user)
         url = reverse(
             "report-detail",
@@ -106,7 +108,30 @@ class ReportViewSetTestCase(TestCase):
 
         qs = urlencode(params)
         url = f"{url}?{qs}"
-        return self.client.get(url)
+        return (
+            self.client.get(url, HTTP_AUTHORIZATION=f"Bearer {user_token}")
+            if user_token
+            else self.client.get(url)
+        )
+
+    def _post_report(self, user_token=None, **params):
+        self.client.force_login(user=self.user)
+        url = reverse(
+            "report-detail",
+            kwargs={
+                "service": "github",
+                "owner_username": self.org.username,
+                "repo_name": self.repo.name,
+            },
+        )
+
+        qs = urlencode(params)
+        url = f"{url}?{qs}"
+        return (
+            self.client.post(url, HTTP_AUTHORIZATION=f"Bearer {user_token}")
+            if user_token
+            else self.client.post(url)
+        )
 
     @patch("services.archive.ReportService.build_report_from_commit")
     def test_report(self, build_report_from_commit, get_repo_permissions):
@@ -588,3 +613,212 @@ class ReportViewSetTestCase(TestCase):
         build_report_from_commit.assert_has_calls(
             [call(self.commit1), call(self.commit1)]
         )
+
+    @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
+    @patch("api.shared.permissions.SuperTokenPermissions.has_permission")
+    def test_no_report_if_unauthenticated_token_request(
+        self,
+        super_token_permissions_has_permission,
+        repository_artifact_permisssions_has_permission,
+        _,
+    ):
+        super_token_permissions_has_permission.return_value = False
+        repository_artifact_permisssions_has_permission.return_value = False
+
+        res = self._request_report()
+        assert res.status_code == 403
+        assert (
+            res.data["detail"] == "You do not have permission to perform this action."
+        )
+
+    @override_settings(SUPER_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
+    @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
+    def test_no_report_if_not_super_token_nor_user_token(
+        self, repository_artifact_permisssions_has_permission, _
+    ):
+        repository_artifact_permisssions_has_permission.return_value = False
+        res = self._request_report("73c8d301-2e0b-42c0-9ace-95eef6b68e86")
+        assert res.status_code == 401
+        assert res.data["detail"] == "Invalid token."
+
+    @override_settings(SUPER_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
+    @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
+    def test_no_report_if_super_token_but_no_GET_request(
+        self, repository_artifact_permisssions_has_permission, _
+    ):
+        repository_artifact_permisssions_has_permission.return_value = False
+        res = self._post_report("testaxs3o76rdcdpfzexuccx3uatui2nw73r")
+        assert res.status_code == 403
+        assert (
+            res.data["detail"] == "You do not have permission to perform this action."
+        )
+
+    @override_settings(SUPER_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
+    @patch("services.archive.ReportService.build_report_from_commit")
+    def test_report_super_token_permission_success(
+        self,
+        build_report_from_commit,
+        _,
+    ):
+        build_report_from_commit.return_value = sample_report()
+        res = self._request_report("testaxs3o76rdcdpfzexuccx3uatui2nw73r")
+        assert res.status_code == 200
+        assert res.json() == {
+            "totals": {
+                "files": 2,
+                "lines": 10,
+                "hits": 6,
+                "misses": 3,
+                "partials": 1,
+                "coverage": 60.0,
+                "branches": 1,
+                "methods": 0,
+                "messages": 0,
+                "sessions": 1,
+                "complexity": 10.0,
+                "complexity_total": 2.0,
+                "complexity_ratio": 500.0,
+                "diff": 0,
+            },
+            "files": [
+                {
+                    "name": "foo/file1.py",
+                    "totals": {
+                        "files": 0,
+                        "lines": 8,
+                        "hits": 5,
+                        "misses": 3,
+                        "partials": 0,
+                        "coverage": 62.5,
+                        "branches": 0,
+                        "methods": 0,
+                        "messages": 0,
+                        "sessions": 0,
+                        "complexity": 10.0,
+                        "complexity_total": 2.0,
+                        "complexity_ratio": 500.0,
+                        "diff": 0,
+                    },
+                    "line_coverage": [
+                        [1, 0],
+                        [2, 1],
+                        [3, 0],
+                        [5, 0],
+                        [6, 1],
+                        [8, 0],
+                        [9, 0],
+                        [10, 1],
+                    ],
+                },
+                {
+                    "name": "bar/file2.py",
+                    "totals": {
+                        "files": 0,
+                        "lines": 2,
+                        "hits": 1,
+                        "misses": 0,
+                        "partials": 1,
+                        "coverage": 50.0,
+                        "branches": 1,
+                        "methods": 0,
+                        "messages": 0,
+                        "sessions": 0,
+                        "complexity": 0.0,
+                        "complexity_total": 0.0,
+                        "complexity_ratio": 0,
+                        "diff": 0,
+                    },
+                    "line_coverage": [[12, 0], [51, 2]],
+                },
+            ],
+            "commit_file_url": f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.username}/{self.repo_name}/commit/{self.commit1.commitid}/tree/"
+        }
+
+        build_report_from_commit.assert_called_once_with(self.commit1)
+
+    @override_settings(SUPER_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
+    @patch("api.shared.permissions.RepositoryPermissionsService.user_is_activated")
+    @patch("services.archive.ReportService.build_report_from_commit")
+    def test_report_success_if_token_is_not_super_but_is_user_token(
+        self, build_report_from_commit, mock_is_user_activated, get_repo_permissions
+    ):
+        build_report_from_commit.return_value = sample_report()
+        mock_is_user_activated.return_value = True
+        get_repo_permissions.return_value = (True, True)
+        user_token = UserTokenFactory(
+            owner=self.user,
+        )
+        res = self._request_report(user_token.token)
+        assert res.status_code == 200
+        assert res.json() == {
+            "totals": {
+                "files": 2,
+                "lines": 10,
+                "hits": 6,
+                "misses": 3,
+                "partials": 1,
+                "coverage": 60.0,
+                "branches": 1,
+                "methods": 0,
+                "messages": 0,
+                "sessions": 1,
+                "complexity": 10.0,
+                "complexity_total": 2.0,
+                "complexity_ratio": 500.0,
+                "diff": 0,
+            },
+            "files": [
+                {
+                    "name": "foo/file1.py",
+                    "totals": {
+                        "files": 0,
+                        "lines": 8,
+                        "hits": 5,
+                        "misses": 3,
+                        "partials": 0,
+                        "coverage": 62.5,
+                        "branches": 0,
+                        "methods": 0,
+                        "messages": 0,
+                        "sessions": 0,
+                        "complexity": 10.0,
+                        "complexity_total": 2.0,
+                        "complexity_ratio": 500.0,
+                        "diff": 0,
+                    },
+                    "line_coverage": [
+                        [1, 0],
+                        [2, 1],
+                        [3, 0],
+                        [5, 0],
+                        [6, 1],
+                        [8, 0],
+                        [9, 0],
+                        [10, 1],
+                    ],
+                },
+                {
+                    "name": "bar/file2.py",
+                    "totals": {
+                        "files": 0,
+                        "lines": 2,
+                        "hits": 1,
+                        "misses": 0,
+                        "partials": 1,
+                        "coverage": 50.0,
+                        "branches": 1,
+                        "methods": 0,
+                        "messages": 0,
+                        "sessions": 0,
+                        "complexity": 0.0,
+                        "complexity_total": 0.0,
+                        "complexity_ratio": 0,
+                        "diff": 0,
+                    },
+                    "line_coverage": [[12, 0], [51, 2]],
+                },
+            ],
+            "commit_file_url": f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.username}/{self.repo_name}/commit/{self.commit1.commitid}/tree/"
+        }
+
+        build_report_from_commit.assert_called_once_with(self.commit1)
