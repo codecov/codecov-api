@@ -731,7 +731,7 @@ class ReportViewSetTestCase(TestCase):
                     "line_coverage": [[12, 0], [51, 2]],
                 },
             ],
-            "commit_file_url": f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.username}/{self.repo_name}/commit/{self.commit1.commitid}/tree/"
+            "commit_file_url": f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.username}/{self.repo_name}/commit/{self.commit1.commitid}/tree/",
         }
 
         build_report_from_commit.assert_called_once_with(self.commit1)
@@ -818,7 +818,7 @@ class ReportViewSetTestCase(TestCase):
                     "line_coverage": [[12, 0], [51, 2]],
                 },
             ],
-            "commit_file_url": f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.username}/{self.repo_name}/commit/{self.commit1.commitid}/tree/"
+            "commit_file_url": f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.username}/{self.repo_name}/commit/{self.commit1.commitid}/tree/",
         }
 
         build_report_from_commit.assert_called_once_with(self.commit1)
