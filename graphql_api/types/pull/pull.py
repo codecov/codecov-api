@@ -1,11 +1,14 @@
 from ariadne import ObjectType
+from asgiref.sync import sync_to_async
 
 from compare.models import CommitComparison
+from core.models import Pull
+from graphql_api.actions.commits import pull_commits
 from graphql_api.actions.comparison import validate_comparison
 from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.comparison import ComparisonLoader
 from graphql_api.dataloader.owner import OwnerLoader
-from graphql_api.helpers.connection import queryset_to_connection
+from graphql_api.helpers.connection import queryset_to_connection_sync
 from graphql_api.types.comparison.comparison import (
     MissingBaseCommit,
     MissingBaseReport,
@@ -113,11 +116,11 @@ async def resolve_compare_with_base(pull, info, **kwargs):
 
 
 @pull_bindable.field("commits")
-async def resolve_commits(pull, info, **kwargs):
-    command = info.context["executor"].get_command("commit")
-    queryset = await command.fetch_commits_by_pullid(pull)
+@sync_to_async
+def resolve_commits(pull: Pull, info, **kwargs):
+    queryset = pull_commits(pull)
 
-    return await queryset_to_connection(
+    return queryset_to_connection_sync(
         queryset,
         ordering=("timestamp",),
         ordering_direction=OrderingDirection.DESC,

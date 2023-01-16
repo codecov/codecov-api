@@ -269,3 +269,8 @@ def resolve_measurements(
         after,
         before,
     )
+
+
+@repository_bindable.field("repositoryConfig")
+def resolve_repository_config(repository: Repository, info):
+    return repository
