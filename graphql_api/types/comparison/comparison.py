@@ -1,10 +1,11 @@
 import enum
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 
 from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
 from asgiref.sync import sync_to_async
 
+import services.components as components_service
 from compare.models import CommitComparison, FlagComparison
 from graphql_api.actions.flags import get_flag_comparisons
 from graphql_api.types.errors import (
@@ -15,6 +16,7 @@ from graphql_api.types.errors import (
     MissingHeadReport,
 )
 from services.comparison import ComparisonReport, ImpactedFile, PullRequestComparison
+from services.components import ComponentComparison
 
 comparison_bindable = ObjectType("Comparison")
 
@@ -23,10 +25,17 @@ comparison_bindable = ObjectType("Comparison")
 @convert_kwargs_to_snake_case
 @sync_to_async
 def resolve_impacted_files(
-    comparison: CommitComparison, info, filters={}
+    comparison: CommitComparison, info, filters=None
 ) -> List[ImpactedFile]:
+    command = info.context["executor"].get_command("compare")
+    return command.fetch_impacted_files(comparison, filters)
+
+
+@comparison_bindable.field("impactedFilesCount")
+@sync_to_async
+def resolve_impacted_files_count(comparison: CommitComparison, info):
     comparison_report = ComparisonReport(comparison)
-    return comparison_report.impacted_files(filters=filters)
+    return len(comparison_report.impacted_files)
 
 
 @comparison_bindable.field("impactedFile")
@@ -96,6 +105,21 @@ def resolve_patch_totals(comparison: CommitComparison, info):
 @sync_to_async
 def resolve_flag_comparisons(comparison, info) -> List[FlagComparison]:
     return list(get_flag_comparisons(comparison))
+
+
+@comparison_bindable.field("componentComparisons")
+@sync_to_async
+def resolve_component_comparisons(
+    comparison: CommitComparison, info
+) -> Optional[List[ComponentComparison]]:
+    user = info.context["request"].user
+
+    if "comparison" not in info.context:
+        return None
+
+    comparison = info.context["comparison"]
+    components = components_service.commit_components(comparison.head_commit, user)
+    return [ComponentComparison(comparison, component) for component in components]
 
 
 """

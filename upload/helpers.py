@@ -603,6 +603,7 @@ def dispatch_upload_task(task_arguments, repository, redis):
     TaskService().upload(
         repoid=repository.repoid,
         commitid=task_arguments.get("commit"),
+        report_code=task_arguments.get("report_code"),
         countdown=max(
             countdown, int(get_config("setup", "upload_processing_delay") or 0)
         ),

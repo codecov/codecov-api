@@ -20,6 +20,7 @@ query ImpactedFiles(
     repository(name: $repo) {
       commit(id: $commit) {
         compareWithParent {
+          impactedFilesCount
           impactedFiles {
             fileName
             headName
@@ -239,6 +240,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                 "repository": {
                     "commit": {
                         "compareWithParent": {
+                            "impactedFilesCount": 2,
                             "impactedFiles": [
                                 {
                                     "fileName": "fileA",
@@ -274,7 +276,64 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                     "patchCoverage": {"percentCovered": 100.0},
                                     "changeCoverage": 44.047619047619044,
                                 },
-                            ]
+                            ],
+                        }
+                    }
+                }
+            }
+        }
+
+    @patch("services.archive.ArchiveService.read_file")
+    def test_fetch_impacted_files_count(self, read_file):
+        read_file.return_value = mock_data_from_archive
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query_impacted_files, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "commit": {
+                        "compareWithParent": {
+                            "impactedFilesCount": 2,
+                            "impactedFiles": [
+                                {
+                                    "fileName": "fileA",
+                                    "headName": "fileA",
+                                    "baseName": "fileA",
+                                    "isNewFile": False,
+                                    "isRenamedFile": False,
+                                    "isDeletedFile": False,
+                                    "isCriticalFile": False,
+                                    "baseCoverage": {
+                                        "percentCovered": 41.666666666666664
+                                    },
+                                    "headCoverage": {
+                                        "percentCovered": 85.71428571428571
+                                    },
+                                    "patchCoverage": None,
+                                    "changeCoverage": 44.047619047619044,
+                                },
+                                {
+                                    "fileName": "fileB",
+                                    "headName": "fileB",
+                                    "baseName": "fileB",
+                                    "isNewFile": False,
+                                    "isRenamedFile": False,
+                                    "isDeletedFile": False,
+                                    "isCriticalFile": False,
+                                    "baseCoverage": {
+                                        "percentCovered": 41.666666666666664
+                                    },
+                                    "headCoverage": {
+                                        "percentCovered": 85.71428571428571
+                                    },
+                                    "patchCoverage": {"percentCovered": 100.0},
+                                    "changeCoverage": 44.047619047619044,
+                                },
+                            ],
                         }
                     }
                 }
