@@ -29,6 +29,7 @@ query_files = """
         branch(name: $branch) {
           head {
             pathContents (path: $path, filters: $filters) {
+                __typename
                 ... on PathContents {
                         results {
                         __typename
@@ -215,7 +216,12 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
             "owner": {
                 "repository": {
                     "branch": {
-                        "head": {"pathContents": {"message": "Missing head report"}}
+                        "head": {
+                            "pathContents": {
+                                "__typename": "MissingHeadReport",
+                                "message": "Missing head report",
+                            }
+                        }
                     }
                 }
             }
@@ -248,6 +254,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                     "branch": {
                         "head": {
                             "pathContents": {
+                                "__typename": "PathContents",
                                 "results": [
                                     {
                                         "__typename": "PathContentDir",
@@ -281,7 +288,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                         "percentCovered": 80.0,
                                         "isCriticalFile": True,
                                     },
-                                ]
+                                ],
                             }
                         }
                     }
@@ -319,6 +326,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                     "branch": {
                         "head": {
                             "pathContents": {
+                                "__typename": "PathContents",
                                 "results": [
                                     {
                                         "__typename": "PathContentFile",
@@ -341,7 +349,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                         "lines": 20,
                                         "percentCovered": 80.0,
                                     },
-                                ]
+                                ],
                             }
                         }
                     }
@@ -376,6 +384,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                     "branch": {
                         "head": {
                             "pathContents": {
+                                "__typename": "PathContents",
                                 "results": [
                                     {
                                         "__typename": "PathContentFile",
@@ -399,7 +408,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                         "percentCovered": 80.0,
                                         "isCriticalFile": True,
                                     },
-                                ]
+                                ],
                             }
                         }
                     }
@@ -428,6 +437,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                     "branch": {
                         "head": {
                             "pathContents": {
+                                "__typename": "PathContents",
                                 "results": [
                                     {
                                         "__typename": "PathContentFile",
@@ -484,7 +494,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                         "percentCovered": 80.0,
                                         "isCriticalFile": False,
                                     },
-                                ]
+                                ],
                             }
                         }
                     }
@@ -521,6 +531,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                     "branch": {
                         "head": {
                             "pathContents": {
+                                "__typename": "MissingCoverage",
                                 "message": "missing coverage for path: invalid",
                             }
                         }
@@ -555,6 +566,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                     "branch": {
                         "head": {
                             "pathContents": {
+                                "__typename": "UnknownPath",
                                 "message": "path does not exist: invalid",
                             }
                         }
