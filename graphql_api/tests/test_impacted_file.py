@@ -319,7 +319,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                     "headCoverage": {
                                         "percentCovered": 85.71428571428571
                                     },
-                                    "patchCoverage": None,
+                                    "patchCoverage": {"percentCovered": 50.0},
                                     "changeCoverage": 44.047619047619044,
                                 },
                                 {
