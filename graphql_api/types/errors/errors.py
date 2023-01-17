@@ -19,10 +19,10 @@ class MissingBaseReport:
 
 
 class MissingCoverage:
-    def __init__(self, message):
+    def __init__(self, message="Missing coverage"):
         self.message = message
 
 
 class UnknownPath:
-    def __init__(self, message):
+    def __init__(self, message="Unkown path"):
         self.message = message
