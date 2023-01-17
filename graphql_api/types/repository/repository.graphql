@@ -57,6 +57,7 @@ type Repository {
     after: DateTime!
     before: DateTime!
   ): [Measurement!]!
+  repositoryConfig: RepositoryConfig
 }
 
 type PullConnection {

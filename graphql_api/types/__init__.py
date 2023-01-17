@@ -30,6 +30,11 @@ from .profile import profile, profile_bindable
 from .pull import pull, pull_bindable
 from .query import query, query_bindable
 from .repository import repository, repository_bindable
+from .repository_config import (
+    indication_range_bindable,
+    repository_config,
+    repository_config_bindable,
+)
 from .segment_comparison import segment_comparison, segment_comparison_bindable
 from .session import session, session_bindable
 from .upload import upload, upload_bindable, upload_error_bindable
@@ -70,6 +75,7 @@ types = [
     impacted_file,
     config,
     user_token,
+    repository_config,
 ]
 
 bindables = [
@@ -106,4 +112,6 @@ bindables = [
     *mutation_resolvers,
     *enum_types.enum_types,
     path_contents_result_bindable,
+    repository_config_bindable,
+    indication_range_bindable,
 ]

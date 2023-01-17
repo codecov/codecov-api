@@ -147,6 +147,7 @@ class SubscriptionDetailSerializer(serializers.Serializer):
     cancel_at_period_end = serializers.BooleanField()
     current_period_end = serializers.IntegerField()
     customer = StripeCustomerSerializer()
+    collection_method = serializers.CharField()
 
 
 class StripeScheduledPhaseSerializer(serializers.Serializer):

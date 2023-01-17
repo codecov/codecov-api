@@ -23,10 +23,10 @@ from services.comparison import (
     FileComparison,
     FileComparisonTraverseManager,
     ImpactedFile,
-    ImpactedFileParameter,
     LineComparison,
     MissingComparisonReport,
     PullRequestComparison,
+    ImpactedFileParameter
 )
 
 # Pulled from core.tests.factories.CommitFactory files.
@@ -1465,8 +1465,7 @@ class ComparisonReportTest(TestCase):
         )
 
     def test_empty_impacted_files(self):
-        filters = {}
-        impacted_files = self.comparison_report_without_storage.impacted_files(filters)
+        impacted_files = self.comparison_report_without_storage.impacted_files
         assert impacted_files == []
 
     @patch("services.archive.ArchiveService.read_file")
@@ -1474,8 +1473,7 @@ class ComparisonReportTest(TestCase):
         self, mock_read_file
     ):
         mock_read_file.side_effect = Exception()
-        filters = {}
-        impacted_files = self.comparison_report.impacted_files(filters)
+        impacted_files = self.comparison_report.impacted_files
         assert impacted_files == []
 
     @patch("services.archive.ArchiveService.read_file")
