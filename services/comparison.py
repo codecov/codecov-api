@@ -1177,6 +1177,7 @@ class CommitComparisonService:
     @cached_property
     def base_commit(self):
         if "base_commit" not in self.commit_comparison._state.fields_cache:
+            # base_commit is already preloaded
             self.commit_comparison.base_commit = self._load_commit(
                 self.commit_comparison.base_commit_id
             )
@@ -1185,6 +1186,7 @@ class CommitComparisonService:
     @cached_property
     def compare_commit(self):
         if "compare_commit" not in self.commit_comparison._state.fields_cache:
+            # compare_commit is already preloaded
             self.commit_comparison.compare_commit = self._load_commit(
                 self.commit_comparison.compare_commit_id
             )
