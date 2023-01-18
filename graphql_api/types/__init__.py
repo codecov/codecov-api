@@ -5,6 +5,8 @@ from ..helpers.ariadne import ariadne_load_local_graphql
 from .branch import branch, branch_bindable
 from .commit import commit, commit_bindable
 from .comparison import comparison, comparison_bindable, comparison_result_bindable
+from .component import component, component_bindable
+from .component_comparison import component_comparison, component_comparison_bindable
 from .config import config, config_bindable
 from .coverage_totals import coverage_totals, coverage_totals_bindable
 from .enums import enum_types, enums
@@ -28,6 +30,11 @@ from .profile import profile, profile_bindable
 from .pull import pull, pull_bindable
 from .query import query, query_bindable
 from .repository import repository, repository_bindable
+from .repository_config import (
+    indication_range_bindable,
+    repository_config,
+    repository_config_bindable,
+)
 from .segment_comparison import segment_comparison, segment_comparison_bindable
 from .session import session, session_bindable
 from .upload import upload, upload_bindable, upload_error_bindable
@@ -43,6 +50,8 @@ types = [
     branch,
     commit,
     comparison,
+    component,
+    component_comparison,
     file_comparison,
     flag,
     flag_comparison,
@@ -66,6 +75,7 @@ types = [
     impacted_file,
     config,
     user_token,
+    repository_config,
 ]
 
 bindables = [
@@ -75,6 +85,8 @@ bindables = [
     commit_bindable,
     comparison_bindable,
     comparison_result_bindable,
+    component_bindable,
+    component_comparison_bindable,
     file_comparison_bindable,
     flag_bindable,
     flag_comparison_bindable,
@@ -100,4 +112,6 @@ bindables = [
     *mutation_resolvers,
     *enum_types.enum_types,
     path_contents_result_bindable,
+    repository_config_bindable,
+    indication_range_bindable,
 ]

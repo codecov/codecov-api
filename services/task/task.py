@@ -80,10 +80,24 @@ class TaskService(object):
             ),
         ).apply_async()
 
-    def upload(self, repoid, commitid, countdown=0, debug=False, rebuild=False):
+    def upload(
+        self,
+        repoid,
+        commitid,
+        report_code=None,
+        countdown=0,
+        debug=False,
+        rebuild=False,
+    ):
         self._create_signature(
             "app.tasks.upload.Upload",
-            kwargs=dict(repoid=repoid, commitid=commitid, debug=debug, rebuild=rebuild),
+            kwargs=dict(
+                repoid=repoid,
+                commitid=commitid,
+                report_code=report_code,
+                debug=debug,
+                rebuild=rebuild,
+            ),
         ).apply_async(countdown=countdown)
 
     def notify(self, repoid, commitid, current_yaml=None):

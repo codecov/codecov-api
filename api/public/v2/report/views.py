@@ -1,13 +1,20 @@
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, viewsets
+from rest_framework.authentication import BasicAuthentication, SessionAuthentication
 from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 
-from api.public.v2.commit.serializers import ReportSerializer
+from api.public.v2.report.serializers import CoverageReportSerializer
 from api.public.v2.schema import repo_parameters
 from api.shared.mixins import RepoPropertyMixin
-from api.shared.permissions import RepositoryArtifactPermissions
+from api.shared.permissions import RepositoryArtifactPermissions, SuperTokenPermissions
+from codecov_auth.authentication import (
+    CodecovTokenAuthentication,
+    SuperTokenAuthentication,
+    UserTokenAuthentication,
+)
+from services.path import dashboard_commit_file_url
 
 
 @extend_schema(
@@ -43,8 +50,15 @@ from api.shared.permissions import RepositoryArtifactPermissions
 class ReportViewSet(
     viewsets.GenericViewSet, mixins.RetrieveModelMixin, RepoPropertyMixin
 ):
-    serializer_class = ReportSerializer
-    permission_classes = [RepositoryArtifactPermissions]
+    serializer_class = CoverageReportSerializer
+    authentication_classes = [
+        SuperTokenAuthentication,
+        CodecovTokenAuthentication,
+        UserTokenAuthentication,
+        BasicAuthentication,
+        SessionAuthentication,
+    ]
+    permission_classes = [SuperTokenPermissions | RepositoryArtifactPermissions]
 
     def get_object(self):
         commit_sha = self.request.query_params.get("sha")
@@ -80,6 +94,17 @@ class ReportViewSet(
         flag = self.request.query_params.get("flag", None)
         if flag:
             report = report.filter(flags=[flag])
+
+        # Add commit url to report object
+        service, owner, repo = (
+            self.kwargs["service"],
+            self.kwargs["owner_username"],
+            self.kwargs["repo_name"],
+        )
+        commit_file_url = dashboard_commit_file_url(
+            path=path, service=service, owner=owner, repo=repo, commit_sha=commit_sha
+        )
+        report.commit_file_url = commit_file_url
 
         return report
 

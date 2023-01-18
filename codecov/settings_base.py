@@ -191,6 +191,9 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "SERVE_URLCONF": "api.public.v2.urls",
     "SERVERS": [{"url": "/api/v2"}],
+    "AUTHENTICATION_WHITELIST": [
+        "codecov_auth.authentication.UserTokenAuthentication",
+    ],
 }
 
 # Internationalization
@@ -254,6 +257,8 @@ COOKIES_DOMAIN = get_config("setup", "http", "cookies_domain", default=".codecov
 SESSION_COOKIE_DOMAIN = get_config(
     "setup", "http", "cookies_domain", default=".codecov.io"
 )
+# Defaulting to 'not found' as opposed to 'None' to avoid None somehow getting through as a bearer token. Token strings can't have spaces, hence 'not found' can never be forced as a header input value
+SUPER_API_TOKEN = os.getenv("SUPER_API_TOKEN", "not found")
 
 CIRCLECI_TOKEN = get_config("circleci", "token")
 

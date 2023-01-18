@@ -63,7 +63,7 @@ class UploadViews(ListCreateAPIView, GetterMixin):
             report_id=report.id,
             upload_extras={"format_version": "v1"},
         )
-        self.trigger_upload_task(repository, commit.commitid, instance)
+        self.trigger_upload_task(repository, commit.commitid, instance, report)
         metrics.incr("uploads.accepted", 1)
         self.activate_repo(repository)
         return instance
@@ -78,9 +78,15 @@ class UploadViews(ListCreateAPIView, GetterMixin):
     ):
         return HttpResponseNotAllowed(permitted_methods=["POST"])
 
-    def trigger_upload_task(self, repository, commit_sha, upload):
+    def trigger_upload_task(self, repository, commit_sha, upload, report):
         redis = get_redis_connection()
-        task_arguments = {"commit": commit_sha, "upload_id": upload.id, "version": "v4"}
+        task_arguments = {
+            "commit": commit_sha,
+            "upload_id": upload.id,
+            "version": "v4",
+            "report_code": report.code,
+            "reportid": str(report.external_id),
+        }
         dispatch_upload_task(task_arguments, repository, redis)
 
     def activate_repo(self, repository):
