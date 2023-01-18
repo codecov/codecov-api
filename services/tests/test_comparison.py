@@ -23,6 +23,7 @@ from services.comparison import (
     FileComparison,
     FileComparisonTraverseManager,
     ImpactedFile,
+    ImpactedFileParameter,
     LineComparison,
     MissingComparisonReport,
     PullRequestComparison,
@@ -1437,7 +1438,8 @@ mock_data_from_archive = """
             [15,"h"],
             [16,"h"],
             [17,"h"]
-        ]
+        ],
+        "unexpected_line_changes": []
     }]
 }
 """
@@ -1528,6 +1530,7 @@ class ComparisonReportTest(TestCase):
                 diff=0,
             ),
             change_coverage=44.047619047619044,
+            misses_in_comparison=1,
         )
 
     def test_impacted_file_deserialize_file(self):
@@ -1591,6 +1594,7 @@ class ComparisonReportTest(TestCase):
             ),
             patch_coverage=None,
             change_coverage=None,
+            misses_in_comparison=1,
         )
 
     @patch("services.archive.ArchiveService.read_file")
@@ -1648,5 +1652,6 @@ class ComparisonReportTest(TestCase):
                     diff=0,
                 ),
                 change_coverage=41.666666666666664,
+                misses_in_comparison=2,
             ),
         ]

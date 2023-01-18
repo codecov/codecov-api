@@ -90,6 +90,11 @@ def resolve_is_deleted_file(impacted_file: ImpactedFile, info) -> bool:
     return base_name is not None and head_name is None
 
 
+@impacted_file_bindable.field("missesInComparison")
+def resolve_misses_in_comparison(impacted_file: ImpactedFile, info) -> int:
+    return impacted_file.misses_in_comparison
+
+
 @impacted_file_bindable.field("isCriticalFile")
 @sync_to_async
 def resolve_is_critical_file(impacted_file: ImpactedFile, info) -> bool:
