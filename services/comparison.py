@@ -791,13 +791,14 @@ class ImpactedFile:
     head_coverage: ReportTotals
     patch_coverage: ReportTotals
     change_coverage: float
+    misses_in_comparison: int
 
 
 class ImpactedFileParameter(enum.Enum):
     FILE_NAME = "file_name"
     CHANGE_COVERAGE = "change_coverage"
     HEAD_COVERAGE = "head_coverage"
-    PATCH_COVERAGE_MISSES = "patch_coverage_misses"
+    MISSES_IN_COMPARISON = "misses_in_comparison"
     PATCH_COVERAGE = "patch_coverage"
 
 
@@ -890,6 +891,20 @@ class ComparisonReport(object):
         totals.coverage = (100 * totals.hits / nb_branches) if nb_branches > 0 else None
         file[key] = totals
 
+    def calculate_misses_in_comparison(self, file):
+        total_misses = 0
+        diff_coverage = file["added_diff_coverage"] or []
+        unexpected_line_changes = file["unexpected_line_changes"] or []
+
+        for line_number, line_coverage_value in diff_coverage:
+            if line_coverage_value == "m":
+                total_misses += 1
+
+        for [base, [head_line_number, head_coverage_value]] in unexpected_line_changes:
+            if head_coverage_value == "m":
+                total_misses += 1
+        return total_misses
+
     """
     Extracts relevant data from the fiels to be exposed as an impacted file
     """
@@ -903,6 +918,7 @@ class ComparisonReport(object):
             file["head_coverage"], file["base_coverage"]
         )
         file_name = self.get_file_name_from_file_path(file["head_name"])
+        misses_in_comparison = self.calculate_misses_in_comparison(file)
         return ImpactedFile(
             file_name=file_name,
             head_name=file["head_name"],
@@ -911,6 +927,7 @@ class ComparisonReport(object):
             base_coverage=file["base_coverage"],
             patch_coverage=file["patch_coverage"],
             change_coverage=change_coverage,
+            misses_in_comparison=misses_in_comparison,
         )
 
     # TODO: I think this can be a function located elsewhere
