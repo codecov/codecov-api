@@ -1,6 +1,7 @@
 from typing import TypedDict
 
 from ariadne import ObjectType
+from asgiref.sync import sync_to_async
 from shared.yaml.user_yaml import UserYaml
 
 from core.models import Repository
@@ -15,6 +16,7 @@ class IndicationRange(TypedDict):
 
 
 @repository_config_bindable.field("indicationRange")
+@sync_to_async
 def resolve_indication_range(repository: Repository, info) -> dict[str, int]:
     yaml = UserYaml.get_final_yaml(
         owner_yaml=repository.author.yaml, repo_yaml=repository.yaml
