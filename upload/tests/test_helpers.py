@@ -68,7 +68,7 @@ def test_try_to_get_best_possible_nothing_and_not_private(db, mocker):
     repository = RepositoryFactory.create(author=owner, bot=None, private=False)
     repository.save()
     assert try_to_get_best_possible_bot_token(repository) is something
-    mock_get_config.assert_called_with("github", "bot")
+    mock_get_config.assert_called_with("github", "tokenless_bot")
 
 
 def test_check_commit_contraints_settings_disabled(db, settings):
