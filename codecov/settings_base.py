@@ -191,6 +191,9 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "SERVE_URLCONF": "api.public.v2.urls",
     "SERVERS": [{"url": "/api/v2"}],
+    "AUTHENTICATION_WHITELIST": [
+        "codecov_auth.authentication.UserTokenAuthentication",
+    ],
 }
 
 # Internationalization
