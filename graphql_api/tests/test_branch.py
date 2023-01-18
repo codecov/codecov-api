@@ -543,7 +543,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
     @patch("services.path.provider_path_exists")
     @patch("services.path.ReportPaths.paths", new_callable=PropertyMock)
     @patch("core.models.ReportService.build_report_from_commit")
-    def test_fetch_path_contents_missing_coverage(
+    def test_fetch_path_contents_unknown_path(
         self, report_mock, paths_mock, provider_path_exists_mock
     ):
         report_mock.return_value = MockReport()
