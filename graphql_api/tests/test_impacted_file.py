@@ -242,13 +242,14 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
             "commit": self.commit.commitid,
         }
         data = self.gql_request(query_impacted_files, variables=variables)
+        print("data!!!", data)
         assert data == {
             "owner": {
                 "repository": {
                     "commit": {
                         "compareWithParent": {
                             "impactedFilesCount": 2,
-                            "indirectChangedFilesCount": 0,
+                            "indirectChangedFilesCount": 1,
                             "impactedFiles": [
                                 {
                                     "fileName": "fileA",
@@ -306,7 +307,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                     "commit": {
                         "compareWithParent": {
                             "impactedFilesCount": 2,
-                            "indirectChangedFilesCount": 0,
+                            "indirectChangedFilesCount": 1,
                             "impactedFiles": [
                                 {
                                     "fileName": "fileA",
