@@ -74,6 +74,7 @@ query ImpactedFile(
             segments {
               hasUnintendedChanges
             }
+            missesInComparison
           }
         }
       }
@@ -119,7 +120,6 @@ query ImpactedFile(
   }
 }
 """
-
 mock_data_from_archive = """
 {
     "files": [{
@@ -144,7 +144,12 @@ mock_data_from_archive = """
             "complexity": 0,
             "complexity_total": 0,
             "methods": 4
-        }
+        },
+        "added_diff_coverage": [
+            [9,"h"],
+            [10,"m"]
+        ],
+        "unexpected_line_changes": []
       },
       {
         "head_name": "fileB",
@@ -177,7 +182,8 @@ mock_data_from_archive = """
             [15,"h"],
             [16,"h"],
             [17,"h"]
-        ]
+        ],
+        "unexpected_line_changes": [[[1, "h"], [1, "m"]]]
     }]
 }
 """
@@ -236,13 +242,14 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
             "commit": self.commit.commitid,
         }
         data = self.gql_request(query_impacted_files, variables=variables)
+        print("data!!!", data)
         assert data == {
             "owner": {
                 "repository": {
                     "commit": {
                         "compareWithParent": {
                             "impactedFilesCount": 2,
-                            "indirectChangedFilesCount": 0,
+                            "indirectChangedFilesCount": 1,
                             "impactedFiles": [
                                 {
                                     "fileName": "fileA",
@@ -258,7 +265,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                     "headCoverage": {
                                         "percentCovered": 85.71428571428571
                                     },
-                                    "patchCoverage": None,
+                                    "patchCoverage": {"percentCovered": 50.0},
                                     "changeCoverage": 44.047619047619044,
                                 },
                                 {
@@ -300,7 +307,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                     "commit": {
                         "compareWithParent": {
                             "impactedFilesCount": 2,
-                            "indirectChangedFilesCount": 0,
+                            "indirectChangedFilesCount": 1,
                             "impactedFiles": [
                                 {
                                     "fileName": "fileA",
@@ -316,7 +323,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                     "headCoverage": {
                                         "percentCovered": 85.71428571428571
                                     },
-                                    "patchCoverage": None,
+                                    "patchCoverage": {"percentCovered": 50.0},
                                     "changeCoverage": 44.047619047619044,
                                 },
                                 {
@@ -365,6 +372,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                 "headCoverage": {"percentCovered": 85.71428571428571},
                                 "patchCoverage": {"percentCovered": 100.0},
                                 "segments": [],
+                                "missesInComparison": 1,
                             }
                         }
                     }
@@ -441,7 +449,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                 "baseName": "fileA",
                                 "baseCoverage": {"percentCovered": 41.666666666666664},
                                 "headCoverage": {"percentCovered": 85.71428571428571},
-                                "patchCoverage": None,
+                                "patchCoverage": {"percentCovered": 50.0},
                                 "segments": [{"hasUnintendedChanges": True}],
                             },
                         }

@@ -26,9 +26,9 @@ class FetchImpactedFiles(BaseInteractor):
         elif parameter == ImpactedFileParameter.HEAD_COVERAGE:
             if impacted_file.head_coverage is not None:
                 return impacted_file.head_coverage.coverage
-        elif parameter == ImpactedFileParameter.PATCH_COVERAGE_MISSES:
-            if impacted_file.patch_coverage is not None:
-                return impacted_file.patch_coverage.misses
+        elif parameter == ImpactedFileParameter.MISSES_IN_COMPARISON:
+            if impacted_file.misses_in_comparison is not None:
+                return impacted_file.misses_in_comparison
         elif parameter == ImpactedFileParameter.PATCH_COVERAGE:
             if impacted_file.patch_coverage is not None:
                 return impacted_file.patch_coverage.coverage
