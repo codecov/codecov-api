@@ -1190,6 +1190,7 @@ class CommitComparisonService:
     def _commit_report_details(self, commit: Commit) -> Optional[ReportDetails]:
         # CommitDetails records are updated by the worker every time a new upload is processed.
         # We can use the `updated_at` timestamp as a proxy for when a report was last updated.
+        # These are expected to have been preloaded.
         if hasattr(commit, "commitreport") and hasattr(
             commit.commitreport, "reportdetails"
         ):
