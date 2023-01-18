@@ -3,6 +3,7 @@ type Comparison {
   impactedFile(path: String!): ImpactedFile
   impactedFiles(filters: ImpactedFilesFilters): [ImpactedFile]!
   impactedFilesCount: Int!
+  indirectChangedFilesCount: Int!
   patchTotals: CoverageTotals
   changeWithParent: Float
   baseTotals: CoverageTotals
