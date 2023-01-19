@@ -473,6 +473,9 @@ class OwnerProfile(BaseCodecovModel):
     )
     goals = ArrayField(models.TextField(choices=Goal.choices), default=list)
     other_goal = models.TextField(null=True)
+    default_org = models.ForeignKey(
+        Owner, on_delete=models.CASCADE, null=True, related_name="default_org"
+    )
 
 
 class Session(models.Model):
