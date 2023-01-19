@@ -6,6 +6,13 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+    # BEGIN;
+    # --
+    # -- Add field default_org to ownerprofile
+    # --
+    # ALTER TABLE "codecov_auth_ownerprofile" ADD COLUMN "default_org_id" integer NULL CONSTRAINT "codecov_auth_ownerpr_default_org_id_da545ea8_fk_owners_ow" REFERENCES "owners"("ownerid") DEFERRABLE INITIALLY DEFERRED; SET CONSTRAINTS "codecov_auth_ownerpr_default_org_id_da545ea8_fk_owners_ow" IMMEDIATE;
+    # CREATE INDEX "codecov_auth_ownerprofile_default_org_id_da545ea8" ON "codecov_auth_ownerprofile" ("default_org_id");
+    # COMMIT;
 
     dependencies = [
         ("codecov_auth", "0019_alter_repositorytoken_token_type"),
