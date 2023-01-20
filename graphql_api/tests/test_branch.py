@@ -29,6 +29,7 @@ query_files = """
         branch(name: $branch) {
           head {
             pathContents (path: $path, filters: $filters) {
+                __typename
                 ... on PathContents {
                         results {
                         __typename
@@ -45,6 +46,12 @@ query_files = """
                     }
                 }
                 ... on MissingHeadReport {
+                    message
+                }
+                ... on MissingCoverage {
+                    message
+                }
+                ... on UnknownPath {
                     message
                 }
             }
@@ -208,7 +215,12 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
             "owner": {
                 "repository": {
                     "branch": {
-                        "head": {"pathContents": {"message": "Missing head report"}}
+                        "head": {
+                            "pathContents": {
+                                "__typename": "MissingHeadReport",
+                                "message": "Missing head report",
+                            }
+                        }
                     }
                 }
             }
@@ -241,6 +253,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                     "branch": {
                         "head": {
                             "pathContents": {
+                                "__typename": "PathContents",
                                 "results": [
                                     {
                                         "__typename": "PathContentDir",
@@ -274,7 +287,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                         "percentCovered": 80.0,
                                         "isCriticalFile": True,
                                     },
-                                ]
+                                ],
                             }
                         }
                     }
@@ -312,6 +325,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                     "branch": {
                         "head": {
                             "pathContents": {
+                                "__typename": "PathContents",
                                 "results": [
                                     {
                                         "__typename": "PathContentFile",
@@ -334,7 +348,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                         "lines": 20,
                                         "percentCovered": 80.0,
                                     },
-                                ]
+                                ],
                             }
                         }
                     }
@@ -369,6 +383,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                     "branch": {
                         "head": {
                             "pathContents": {
+                                "__typename": "PathContents",
                                 "results": [
                                     {
                                         "__typename": "PathContentFile",
@@ -392,7 +407,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                         "percentCovered": 80.0,
                                         "isCriticalFile": True,
                                     },
-                                ]
+                                ],
                             }
                         }
                     }
@@ -421,6 +436,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                     "branch": {
                         "head": {
                             "pathContents": {
+                                "__typename": "PathContents",
                                 "results": [
                                     {
                                         "__typename": "PathContentFile",
@@ -477,7 +493,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                         "percentCovered": 80.0,
                                         "isCriticalFile": False,
                                     },
-                                ]
+                                ],
                             }
                         }
                     }
@@ -487,3 +503,73 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
         assert len(
             data["owner"]["repository"]["branch"]["head"]["pathContents"]["results"]
         ) == len(report_mock.return_value.files)
+
+    @patch("services.path.provider_path_exists")
+    @patch("services.path.ReportPaths.paths", new_callable=PropertyMock)
+    @patch("core.models.ReportService.build_report_from_commit")
+    def test_fetch_path_contents_missing_coverage(
+        self, report_mock, paths_mock, provider_path_exists_mock
+    ):
+        report_mock.return_value = MockReport()
+        paths_mock.return_value = []
+        provider_path_exists_mock.return_value = True
+
+        data = self.gql_request(
+            query_files,
+            variables={
+                "org": self.org.username,
+                "repo": self.repo.name,
+                "branch": self.branch.name,
+                "path": "invalid",
+                "filters": {},
+            },
+        )
+        assert data == {
+            "owner": {
+                "repository": {
+                    "branch": {
+                        "head": {
+                            "pathContents": {
+                                "__typename": "MissingCoverage",
+                                "message": "missing coverage for path: invalid",
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    @patch("services.path.provider_path_exists")
+    @patch("services.path.ReportPaths.paths", new_callable=PropertyMock)
+    @patch("core.models.ReportService.build_report_from_commit")
+    def test_fetch_path_contents_unknown_path(
+        self, report_mock, paths_mock, provider_path_exists_mock
+    ):
+        report_mock.return_value = MockReport()
+        paths_mock.return_value = []
+        provider_path_exists_mock.return_value = False
+
+        data = self.gql_request(
+            query_files,
+            variables={
+                "org": self.org.username,
+                "repo": self.repo.name,
+                "branch": self.branch.name,
+                "path": "invalid",
+                "filters": {},
+            },
+        )
+        assert data == {
+            "owner": {
+                "repository": {
+                    "branch": {
+                        "head": {
+                            "pathContents": {
+                                "__typename": "UnknownPath",
+                                "message": "path does not exist: invalid",
+                            }
+                        }
+                    }
+                }
+            }
+        }

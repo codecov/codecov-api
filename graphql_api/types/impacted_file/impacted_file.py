@@ -5,6 +5,7 @@ from asgiref.sync import sync_to_async
 from shared.reports.types import ReportTotals
 
 from services.comparison import Segment
+from services.profiling import ProfilingSummary
 
 impacted_file_bindable = ObjectType("ImpactedFile")
 from services.comparison import ImpactedFile
@@ -90,22 +91,19 @@ def resolve_is_deleted_file(impacted_file: ImpactedFile, info) -> bool:
     return base_name is not None and head_name is None
 
 
+@impacted_file_bindable.field("missesInComparison")
+def resolve_misses_in_comparison(impacted_file: ImpactedFile, info) -> int:
+    return impacted_file.misses_in_comparison
+
+
 @impacted_file_bindable.field("isCriticalFile")
 @sync_to_async
 def resolve_is_critical_file(impacted_file: ImpactedFile, info) -> bool:
     if "profiling_summary" in info.context:
-        if "critical_filenames" not in info.context:
-            info.context["critical_filenames"] = set(
-                [
-                    critical_file.name
-                    for critical_file in info.context[
-                        "profiling_summary"
-                    ].critical_files
-                ]
-            )
-
         base_name = impacted_file.base_name
         head_name = impacted_file.head_name
-        critical_filenames = info.context["critical_filenames"]
+
+        profiling_summary: ProfilingSummary = info.context["profiling_summary"]
+        critical_filenames = profiling_summary.critical_filenames
 
         return base_name in critical_filenames or head_name in critical_filenames

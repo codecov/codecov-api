@@ -47,5 +47,7 @@ def resolve_content(data, info):
 
 
 @file_bindable.field("isCriticalFile")
+@sync_to_async
 def resolve_is_critical_file(data, info):
-    return data.get("path") in info.context["critical_filenames"]
+    critical_filenames = info.context["profiling_summary"].critical_filenames
+    return data.get("path") in critical_filenames
