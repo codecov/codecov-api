@@ -38,7 +38,6 @@ class OwnerFactory(DjangoModelFactory):
     oauth_token = factory.LazyAttribute(
         lambda o: encryptor.encode(o.unencrypted_oauth_token).decode()
     )
-    organizations = []
 
 
 class OwnerProfileFactory(DjangoModelFactory):
