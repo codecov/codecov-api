@@ -242,7 +242,6 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
             "commit": self.commit.commitid,
         }
         data = self.gql_request(query_impacted_files, variables=variables)
-        print("data!!!", data)
         assert data == {
             "owner": {
                 "repository": {

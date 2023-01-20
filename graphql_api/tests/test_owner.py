@@ -1,10 +1,15 @@
 import asyncio
 from hashlib import sha1
 from unittest.mock import patch
+
 from django.test import TransactionTestCase
 
 from billing.constants import BASIC_PLAN_NAME
-from codecov_auth.tests.factories import GetAdminProviderAdapter, OwnerFactory
+from codecov_auth.tests.factories import (
+    GetAdminProviderAdapter,
+    OwnerFactory,
+    OwnerProfileFactory,
+)
 from core.tests.factories import CommitFactory, OwnerFactory, RepositoryFactory
 from reports.tests.factories import CommitReportFactory, UploadFactory
 
@@ -273,23 +278,51 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, user=self.user)
         assert data["owner"]["orgUploadToken"] == "upload_token"
 
-    # def test_get_default_org_for_owner(self):
-    #     query = """{
-    #         me {
-    #             myOrganizations {
-    #                 edges {
-    #                     node {
-    #                         username
-    #                     }
-    #                 }
-    #             }
-    #         }
-    #     }
-    #     """
-    #     data = self.gql_request(query, user=self.user)
-    #     orgs = paginate_connection(data["me"]["myOrganizations"])
-    #     assert orgs == [
-    #         {"username": "spotify"},
-    #         {"username": "facebook"},
-    #         {"username": "codecov"},
-    #     ]
+    def test_get_default_org_for_owner(self):
+        organization = OwnerFactory(username="sample-org", service="github")
+        owner = OwnerFactory(
+            username="sample-owner",
+            service="github",
+            organizations=[organization.ownerid],
+        )
+        OwnerProfileFactory(owner=owner, default_org=organization)
+        query = """{
+            owner(username: "%s") {
+                defaultOrg
+                username
+            }
+        }
+        """ % (
+            owner.username
+        )
+        data = self.gql_request(query, user=owner)
+        assert data["owner"]["defaultOrg"] == organization.ownerid
+
+    def test_owner_without_default_org_returns_null(self):
+        owner = OwnerFactory(username="sample-owner", service="github")
+        OwnerProfileFactory(owner=owner, default_org=None)
+        query = """{
+            owner(username: "%s") {
+                defaultOrg
+                username
+            }
+        }
+        """ % (
+            owner.username
+        )
+        data = self.gql_request(query, user=owner)
+        assert data["owner"]["defaultOrg"] == None
+
+    def test_owner_without_owner_profile_returns_no_default_org(self):
+        owner = OwnerFactory(username="sample-owner", service="github")
+        query = """{
+            owner(username: "%s") {
+                defaultOrg
+                username
+            }
+        }
+        """ % (
+            owner.username
+        )
+        data = self.gql_request(query, user=owner)
+        assert data["owner"]["defaultOrg"] == None

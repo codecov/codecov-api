@@ -145,7 +145,9 @@ class Owner(models.Model):
     def default_org(self):
         try:
             profile = self.profile
-            return profile.default_org
+            if profile.default_org is not None:
+                return profile.default_org.ownerid
+            return None
         except:
             return None
 

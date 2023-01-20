@@ -90,6 +90,8 @@ def resolve_org_upload_token(owner, info, **kwargs):
     command = info.context["executor"].get_command("owner")
     return command.get_org_upload_token(owner)
 
+
 @owner_bindable.field("defaultOrg")
-def resolve_org_upload_token(owner: Owner, info, **kwargs) -> int:
+@sync_to_async
+def resolve_org_default_org(owner: Owner, info, **kwargs) -> int:
     return owner.default_org
