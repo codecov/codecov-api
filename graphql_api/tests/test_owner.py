@@ -1,10 +1,7 @@
 import asyncio
 from hashlib import sha1
 from unittest.mock import patch
-
-from ariadne import graphql_sync
 from django.test import TransactionTestCase
-from freezegun import freeze_time
 
 from billing.constants import BASIC_PLAN_NAME
 from codecov_auth.tests.factories import GetAdminProviderAdapter, OwnerFactory
@@ -275,3 +272,24 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         query = query_repositories % (self.user.username, "", "")
         data = self.gql_request(query, user=self.user)
         assert data["owner"]["orgUploadToken"] == "upload_token"
+
+    # def test_get_default_org_for_owner(self):
+    #     query = """{
+    #         me {
+    #             myOrganizations {
+    #                 edges {
+    #                     node {
+    #                         username
+    #                     }
+    #                 }
+    #             }
+    #         }
+    #     }
+    #     """
+    #     data = self.gql_request(query, user=self.user)
+    #     orgs = paginate_connection(data["me"]["myOrganizations"])
+    #     assert orgs == [
+    #         {"username": "spotify"},
+    #         {"username": "facebook"},
+    #         {"username": "codecov"},
+    #     ]

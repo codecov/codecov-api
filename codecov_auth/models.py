@@ -142,6 +142,14 @@ class Owner(models.Model):
         return self.yaml is not None
 
     @property
+    def default_org(self):
+        try:
+            profile = self.profile
+            return profile.default_org
+        except:
+            return None
+
+    @property
     def has_legacy_plan(self):
         return self.plan is None or not self.plan.startswith("users")
 
