@@ -1,6 +1,7 @@
 import logging
 
 from django.db.backends.postgresql.base import DatabaseWrapper as PostgresWrapper
+from django.db.models import Field, Lookup
 
 log = logging.getLogger(__name__)
 
@@ -18,3 +19,14 @@ class DatabaseWrapper(PostgresWrapper):
                 self.connection.close()
                 self.connection = None
         return super(DatabaseWrapper, self)._cursor(*args, **kwargs)
+
+
+@Field.register_lookup
+class IsNot(Lookup):
+    lookup_name = "isnot"
+
+    def as_sql(self, compiler, connection):
+        lhs, lhs_params = self.process_lhs(compiler, connection)
+        rhs, rhs_params = self.process_rhs(compiler, connection)
+        params = lhs_params + rhs_params
+        return "%s is not %s" % (lhs, rhs), params
