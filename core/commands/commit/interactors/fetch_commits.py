@@ -2,6 +2,7 @@ from asgiref.sync import sync_to_async
 from django.db.models import Prefetch
 
 from codecov.commands.base import BaseInteractor
+from codecov.db.base import IsNot
 from reports.models import CommitReport
 
 
@@ -31,4 +32,6 @@ class FetchCommitsInteractor(BaseInteractor):
         queryset = repository.commits.defer("report").prefetch_related(prefetch).all()
         queryset = self.apply_filters_to_commits_queryset(queryset, filters)
 
+        # We need `deleted is not true` in order for the query to use the right index.
+        queryset = queryset.filter(deleted__isnot=True)
         return queryset
