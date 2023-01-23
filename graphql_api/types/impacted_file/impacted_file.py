@@ -70,6 +70,30 @@ def resolve_segments(impacted_file: ImpactedFile, info, filters=None) -> List[Se
         return file_comparison.segments
 
 
+@impacted_file_bindable.field("segmentsDeprecated")
+@sync_to_async
+@convert_kwargs_to_snake_case
+def resolve_segments(impacted_file: ImpactedFile, info, filters=None) -> List[Segment]:
+    if filters is None:
+        filters = {}
+    if "comparison" not in info.context:
+        return []
+
+    comparison = info.context["comparison"]
+    comparison.validate()
+    file_comparison = comparison.get_file_comparison(
+        impacted_file.head_name, with_src=True, bypass_max_diff=True
+    )
+    if filters.get("has_unintended_changes") is True:
+        return [
+            segment
+            for segment in file_comparison.segments
+            if segment.has_unintended_changes
+        ]
+    else:
+        return file_comparison.segments
+
+
 @impacted_file_bindable.field("isNewFile")
 def resolve_is_new_file(impacted_file: ImpactedFile, info) -> bool:
     base_name = impacted_file.base_name
