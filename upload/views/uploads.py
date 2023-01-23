@@ -52,7 +52,7 @@ class UploadViews(ListCreateAPIView, GetterMixin):
         report = self.get_report(commit)
         log.info(
             "Request to create new upload",
-            extra=dict(repo=repository.name, commit_id=commit.commitid),
+            extra=dict(repo=repository.name, commit=commit.commitid),
         )
         archive_service = ArchiveService(repository)
         path = MinioEndpoints.raw.get_path(
@@ -87,7 +87,7 @@ class UploadViews(ListCreateAPIView, GetterMixin):
             "Triggering upload task",
             extra=dict(
                 repo=repository.name,
-                commit_id=commit_sha,
+                commit=commit_sha,
                 upload_id=upload.id,
                 report_code=report.code,
             ),
