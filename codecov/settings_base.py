@@ -95,6 +95,7 @@ else:
     DATABASE_PORT = get_config("services", "database", "port", default=5432)
 
 TIMESERIES_ENABLED = get_config("setup", "timeseries", "enabled", default=False)
+TIMESERIES_REAL_TIME_AGGREGATES = get_config("setup", "timeseries", "read_time_aggregates", default=False)
 
 timeseries_database_url = get_config("services", "timeseries_database_url")
 if timeseries_database_url:
