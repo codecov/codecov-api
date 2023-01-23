@@ -50,6 +50,10 @@ class UploadViews(ListCreateAPIView, GetterMixin):
         repository = self.get_repo()
         commit = self.get_commit(repository)
         report = self.get_report(commit)
+        log.info(
+            "Request to create new upload",
+            extra=dict(repo=repository.name, commit=commit.commitid),
+        )
         archive_service = ArchiveService(repository)
         path = MinioEndpoints.raw.get_path(
             version="v4",
@@ -79,6 +83,15 @@ class UploadViews(ListCreateAPIView, GetterMixin):
         return HttpResponseNotAllowed(permitted_methods=["POST"])
 
     def trigger_upload_task(self, repository, commit_sha, upload, report):
+        log.info(
+            "Triggering upload task",
+            extra=dict(
+                repo=repository.name,
+                commit=commit_sha,
+                upload_id=upload.id,
+                report_code=report.code,
+            ),
+        )
         redis = get_redis_connection()
         task_arguments = {
             "commit": commit_sha,
