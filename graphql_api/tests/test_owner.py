@@ -278,7 +278,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, user=self.user)
         assert data["owner"]["orgUploadToken"] == "upload_token"
 
-    def test_get_default_org_for_owner(self):
+    def test_get_default_org_username_for_owner(self):
         organization = OwnerFactory(username="sample-org", service="github")
         owner = OwnerFactory(
             username="sample-owner",
@@ -288,7 +288,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         OwnerProfileFactory(owner=owner, default_org=organization)
         query = """{
             owner(username: "%s") {
-                defaultOrg
+                defaultOrgUsername
                 username
             }
         }
@@ -296,14 +296,14 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
             owner.username
         )
         data = self.gql_request(query, user=owner)
-        assert data["owner"]["defaultOrg"] == organization.ownerid
+        assert data["owner"]["defaultOrgUsername"] == organization.username
 
     def test_owner_without_default_org_returns_null(self):
         owner = OwnerFactory(username="sample-owner", service="github")
         OwnerProfileFactory(owner=owner, default_org=None)
         query = """{
             owner(username: "%s") {
-                defaultOrg
+                defaultOrgUsername
                 username
             }
         }
@@ -311,13 +311,13 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
             owner.username
         )
         data = self.gql_request(query, user=owner)
-        assert data["owner"]["defaultOrg"] == None
+        assert data["owner"]["defaultOrgUsername"] == None
 
     def test_owner_without_owner_profile_returns_no_default_org(self):
         owner = OwnerFactory(username="sample-owner", service="github")
         query = """{
             owner(username: "%s") {
-                defaultOrg
+                defaultOrgUsername
                 username
             }
         }
@@ -325,4 +325,4 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
             owner.username
         )
         data = self.gql_request(query, user=owner)
-        assert data["owner"]["defaultOrg"] == None
+        assert data["owner"]["defaultOrgUsername"] == None

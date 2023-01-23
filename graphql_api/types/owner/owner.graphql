@@ -17,5 +17,5 @@ type Owner {
   isAdmin: Boolean!
   hashOwnerid: String!
   orgUploadToken: String
-  defaultOrg: Int
+  defaultOrgUsername: String
 }

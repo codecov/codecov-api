@@ -91,7 +91,7 @@ def resolve_org_upload_token(owner, info, **kwargs):
     return command.get_org_upload_token(owner)
 
 
-@owner_bindable.field("defaultOrg")
+@owner_bindable.field("defaultOrgUsername")
 @sync_to_async
-def resolve_org_default_org(owner: Owner, info, **kwargs) -> int:
-    return owner.default_org
+def resolve_org_default_org_username(owner: Owner, info, **kwargs) -> int:
+    return None if owner.default_org is None else owner.default_org.username

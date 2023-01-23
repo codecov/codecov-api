@@ -144,11 +144,9 @@ class Owner(models.Model):
     @property
     def default_org(self):
         try:
-            profile = self.profile
-            if profile.default_org is not None:
-                return profile.default_org.ownerid
-            return None
-        except:
+            if self.profile:
+                return self.profile.default_org
+        except OwnerProfile.DoesNotExist:
             return None
 
     @property
