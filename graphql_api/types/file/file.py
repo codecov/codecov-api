@@ -1,3 +1,4 @@
+import hashlib
 import math
 from fractions import Fraction
 
@@ -51,3 +52,12 @@ def resolve_content(data, info):
 def resolve_is_critical_file(data, info):
     critical_filenames = info.context["profiling_summary"].critical_filenames
     return data.get("path") in critical_filenames
+
+
+@file_bindable.field("hashedPath")
+def resolve_hashed_path(data, info):
+    path = data.get("path")
+    encoded_path = path.encode()
+    md5_path = hashlib.md5(encoded_path)
+
+    return md5_path.hexdigest()

@@ -1,3 +1,4 @@
+import hashlib
 from typing import List
 
 from ariadne import ObjectType, convert_kwargs_to_snake_case
@@ -44,6 +45,15 @@ def resolve_patch_coverage(impacted_file: ImpactedFile, info) -> ReportTotals:
 @impacted_file_bindable.field("changeCoverage")
 def resolve_change_coverage(impacted_file: ImpactedFile, info) -> float:
     return impacted_file.change_coverage
+
+
+@impacted_file_bindable.field("hashedPath")
+def resolve_hashed_path(impacted_file: ImpactedFile, info) -> str:
+    path = impacted_file.head_name
+    encoded_path = path.encode()
+    md5_path = hashlib.md5(encoded_path)
+
+    return md5_path.hexdigest()
 
 
 @impacted_file_bindable.field("segments")
