@@ -12,4 +12,5 @@ type ImpactedFile {
   changeCoverage: Float
   missesInComparison: Int!
   segments(filters: SegmentsFilters): [SegmentComparison!]!
+  segmentsDeprecated(filters: SegmentsFilters): [SegmentComparison!]!
 }
