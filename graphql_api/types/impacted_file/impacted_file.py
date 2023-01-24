@@ -73,7 +73,9 @@ def resolve_segments(impacted_file: ImpactedFile, info, filters=None) -> List[Se
 @impacted_file_bindable.field("segmentsDeprecated")
 @sync_to_async
 @convert_kwargs_to_snake_case
-def resolve_segments(impacted_file: ImpactedFile, info, filters=None) -> List[Segment]:
+def resolve_segments_deprecated(
+    impacted_file: ImpactedFile, info, filters=None
+) -> List[Segment]:
     if filters is None:
         filters = {}
     if "comparison" not in info.context:
