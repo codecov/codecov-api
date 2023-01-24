@@ -11,5 +11,7 @@ type ImpactedFile {
   patchCoverage: CoverageTotals
   changeCoverage: Float
   missesInComparison: Int!
+  hashedPath: String!
   segments(filters: SegmentsFilters): [SegmentComparison!]!
+  segmentsDeprecated(filters: SegmentsFilters): [SegmentComparison!]!
 }
