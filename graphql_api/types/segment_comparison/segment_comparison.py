@@ -1,9 +1,16 @@
+from dataclasses import dataclass
 from typing import List, Optional
-from xmlrpc.client import Boolean
 
-from ariadne import ObjectType
+from ariadne import ObjectType, UnionType
 
+from graphql_api.types.errors.errors import ProviderError, UnknownPath
 from services.comparison import LineComparison, Segment
+
+
+@dataclass
+class SegmentComparisons:
+    results: List[Segment]
+
 
 segment_comparison_bindable = ObjectType("SegmentComparison")
 
@@ -31,5 +38,18 @@ def resolve_lines(segment: Segment, info) -> List[LineComparison]:
 
 
 @segment_comparison_bindable.field("hasUnintendedChanges")
-def resolve_has_unintended_changes(segment: Segment, info) -> Boolean:
+def resolve_has_unintended_changes(segment: Segment, info) -> bool:
     return segment.has_unintended_changes
+
+
+segments_result_bindable = UnionType("SegmentsResult")
+
+
+@segments_result_bindable.type_resolver
+def resolve_segments_result_type(res, *_):
+    if isinstance(res, UnknownPath):
+        return "UnknownPath"
+    elif isinstance(res, ProviderError):
+        return "ProviderError"
+    elif isinstance(res, SegmentComparisons):
+        return "SegmentComparisons"

@@ -5,5 +5,6 @@ from .errors import (
     MissingCoverage,
     MissingHeadCommit,
     MissingHeadReport,
+    ProviderError,
     UnknownPath,
 )
