@@ -13,7 +13,7 @@ class UpdateDefaultOrganizationInteractor(BaseInteractor):
             raise Unauthenticated()
         if default_org is None or (
             default_org.ownerid not in self.current_user.organizations
-            and default_org.username != self.current_user.username
+            and default_org.ownerid != self.current_user.ownerid
         ):
             raise ValidationError(
                 "Organization does not belong in current user's organization list"
