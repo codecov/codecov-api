@@ -302,8 +302,6 @@ class FetchImpactedFilesTest(TransactionTestCase):
         filters = {"ordering": {"parameter": parameter, "direction": direction}}
         sorted_files = self.execute(None, self.comparison, filters)
 
-        print("filessssss", sorted_files)
-
         assert sorted_files == [
             ImpactedFile(
                 file_name="fileA",
@@ -1587,7 +1585,6 @@ class FetchImpactedFilesTest(TransactionTestCase):
         read_file.return_value = mock_data_from_archive
         filters = {}
         impacted_files = self.execute(None, self.comparison, filters)
-        print("hereee", impacted_files)
         assert impacted_files == [
             ImpactedFile(
                 file_name="fileA",

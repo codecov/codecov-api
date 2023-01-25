@@ -2,8 +2,10 @@ from hashlib import sha1
 
 import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
+from asgiref.sync import sync_to_async
 
 from codecov_auth.helpers import current_user_part_of_org
+from codecov_auth.models import Owner
 from graphql_api.actions.repository import list_repository_for_owner
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
 from graphql_api.helpers.connection import (
@@ -87,3 +89,9 @@ def resolve_hash_ownerid(owner, info):
 def resolve_org_upload_token(owner, info, **kwargs):
     command = info.context["executor"].get_command("owner")
     return command.get_org_upload_token(owner)
+
+
+@owner_bindable.field("defaultOrgUsername")
+@sync_to_async
+def resolve_org_default_org_username(owner: Owner, info, **kwargs) -> int:
+    return None if owner.default_org is None else owner.default_org.username
