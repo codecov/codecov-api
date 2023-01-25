@@ -11,10 +11,9 @@ class UpdateDefaultOrganizationInteractor(BaseInteractor):
     def validate(self, default_org: Optional[Owner]) -> Owner:
         if not self.current_user.is_authenticated:
             raise Unauthenticated()
-        if (
-            default_org is None
-            or default_org.ownerid not in self.current_user.organizations
-            or default_org.username != self.current_user.username
+        if default_org is None or (
+            default_org.ownerid not in self.current_user.organizations
+            and default_org.username != self.current_user.username
         ):
             raise ValidationError(
                 "Organization does not belong in current user's organization list"
@@ -33,4 +32,5 @@ class UpdateDefaultOrganizationInteractor(BaseInteractor):
             username=default_org_username, service=self.service
         ).first()
         self.validate(default_org)
-        return self.update_default_organization(default_org)
+        self.update_default_organization(default_org)
+        return None
