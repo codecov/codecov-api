@@ -19,7 +19,7 @@ from .serializers import FileComparisonSerializer, FlagComparisonSerializer
 class CompareViewSetMixin(CompareSlugMixin, viewsets.GenericViewSet):
     permission_classes = [RepositoryArtifactPermissions]
 
-    def get_object(self):
+    def get_object(self) -> Comparison:
         compare_data = self.get_compare_data()
 
         if "pull" in compare_data:

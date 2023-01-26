@@ -1,3 +1,5 @@
+from typing import List, Optional
+
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, viewsets
@@ -14,6 +16,7 @@ from codecov_auth.authentication import (
     SuperTokenAuthentication,
     UserTokenAuthentication,
 )
+from services.components import Component, commit_components, component_filtered_report
 from services.path import dashboard_commit_file_url
 
 
@@ -44,6 +47,12 @@ from services.path import dashboard_commit_file_url
             OpenApiParameter.QUERY,
             description="filter report to only include info pertaining to given flag name",
         ),
+        OpenApiParameter(
+            "component_id",
+            OpenApiTypes.STR,
+            OpenApiParameter.QUERY,
+            description="filter report to only include info pertaining to given component id",
+        ),
     ],
     tags=["Coverage"],
 )
@@ -61,24 +70,7 @@ class ReportViewSet(
     permission_classes = [SuperTokenPermissions | RepositoryArtifactPermissions]
 
     def get_object(self):
-        commit_sha = self.request.query_params.get("sha")
-        if not commit_sha:
-            branch_name = self.request.query_params.get("branch", self.repo.branch)
-            branch = self.repo.branches.filter(name=branch_name).first()
-            if branch is None:
-                raise NotFound(
-                    f"The branch '{branch_name}' in not in our records. Please provide a valid branch name.",
-                    404,
-                )
-            commit_sha = branch.head
-
-        commit = self.repo.commits.filter(commitid=commit_sha).first()
-        if commit is None:
-            raise NotFound(
-                f"The commit {commit_sha} is not in our records. Please specify valid commit.",
-                404,
-            )
-
+        commit = self.get_commit()
         report = commit.full_report
 
         path = self.request.query_params.get("path", None)
@@ -95,6 +87,23 @@ class ReportViewSet(
         if flag:
             report = report.filter(flags=[flag])
 
+        component_id = self.request.query_params.get("component_id", None)
+        if component_id:
+            component = next(
+                (
+                    component
+                    for component in commit_components(commit, self.request.user)
+                    if component.component_id == component_id
+                ),
+                None,
+            )
+            if component is None:
+                raise NotFound(
+                    f"The component {component_id} does not exist in commit {commit.commitid}",
+                    404,
+                )
+            report = component_filtered_report(report, component)
+
         # Add commit url to report object
         service, owner, repo = (
             self.kwargs["service"],
@@ -102,7 +111,11 @@ class ReportViewSet(
             self.kwargs["repo_name"],
         )
         commit_file_url = dashboard_commit_file_url(
-            path=path, service=service, owner=owner, repo=repo, commit_sha=commit_sha
+            path=path,
+            service=service,
+            owner=owner,
+            repo=repo,
+            commit_sha=commit.commitid,
         )
         report.commit_file_url = commit_file_url
 
@@ -120,6 +133,7 @@ class ReportViewSet(
         The report can be optionally filtered by specifying:
         * `path` - only show report info for pathnames that start with this value
         * `flag` - only show report info that applies to the specified flag name
+        * `component_id` - only show report info that applies to the specified component
         """
         try:
             report = self.get_object()

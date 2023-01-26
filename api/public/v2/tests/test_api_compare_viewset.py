@@ -3,15 +3,67 @@ from unittest.mock import PropertyMock, patch
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
-from shared.reports.resources import ReportFile
+from shared.reports.resources import Report, ReportFile, ReportLine
 from shared.reports.types import ReportTotals
 from shared.utils.merge import LineType
+from shared.utils.sessions import Session
 
 import services.comparison as comparison
 from api.shared.commit.serializers import ReportTotalsSerializer
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
 from services.archive import SerializableReport
+from services.components import Component
+
+
+def sample_report1():
+    report = Report()
+    first_file = ReportFile("foo/file1.py")
+    first_file.append(
+        1, ReportLine.create(coverage=1, sessions=[[0, 1]], complexity=(10, 2))
+    )
+    first_file.append(2, ReportLine.create(coverage=0, sessions=[[0, 1]]))
+    first_file.append(3, ReportLine.create(coverage=1, sessions=[[0, 1]]))
+    first_file.append(5, ReportLine.create(coverage=1, sessions=[[0, 1]]))
+    first_file.append(6, ReportLine.create(coverage=0, sessions=[[0, 1]]))
+    first_file.append(8, ReportLine.create(coverage=1, sessions=[[0, 1]]))
+    first_file.append(9, ReportLine.create(coverage=1, sessions=[[0, 1]]))
+    first_file.append(10, ReportLine.create(coverage=0, sessions=[[0, 1]]))
+    second_file = ReportFile("bar/file2.py")
+    second_file.append(12, ReportLine.create(coverage=1, sessions=[[0, 1]]))
+    second_file.append(
+        51, ReportLine.create(coverage="1/2", type="b", sessions=[[0, 1]])
+    )
+    report.append(first_file)
+    report.append(second_file)
+    report.add_session(Session(flags=["flag1", "flag2"]))
+    return report
+
+
+def sample_report2():
+    report = Report()
+    first_file = ReportFile("foo/file1.py")
+    first_file.append(
+        1, ReportLine.create(coverage=1, sessions=[[0, 1]], complexity=(10, 2))
+    )
+    first_file.append(2, ReportLine.create(coverage=0, sessions=[[0, 1]]))
+    first_file.append(3, ReportLine.create(coverage=1, sessions=[[0, 1]]))
+    first_file.append(5, ReportLine.create(coverage=1, sessions=[[0, 1]]))
+    first_file.append(6, ReportLine.create(coverage=0, sessions=[[0, 1]]))
+    first_file.append(8, ReportLine.create(coverage=1, sessions=[[0, 1]]))
+    first_file.append(9, ReportLine.create(coverage=1, sessions=[[0, 1]]))
+    first_file.append(10, ReportLine.create(coverage=0, sessions=[[0, 1]]))
+    first_file.append(11, ReportLine.create(coverage=0, sessions=[[0, 1]]))
+    second_file = ReportFile("bar/file2.py")
+    second_file.append(12, ReportLine.create(coverage=1, sessions=[[0, 1]]))
+    second_file.append(13, ReportLine.create(coverage=1, sessions=[[0, 1]]))
+    second_file.append(
+        51, ReportLine.create(coverage="1/2", type="b", sessions=[[0, 1]])
+    )
+    report.append(first_file)
+    report.append(second_file)
+    report.add_session(Session(flags=["flag1", "flag2"]))
+    return report
 
 
 class MockSerializableReport(SerializableReport):
@@ -533,3 +585,151 @@ class TestCompareViewSetRetrieve(APITestCase):
 
         res = self._get_flag_comparison()
         assert res.status_code == 200
+
+    @patch("api.public.v2.compare.views.commit_components")
+    def test_components_comparison(
+        self, commit_components, adapter_mock, base_report_mock, head_report_mock
+    ):
+        commit_components.return_value = [
+            Component(
+                component_id="foo",
+                paths=[r"^foo/.+"],
+                name="Foo",
+                flag_regexes=[],
+                statuses=[],
+            ),
+            Component(
+                component_id="bar",
+                paths=[r"^bar/.+"],
+                name="Bar",
+                flag_regexes=[],
+                statuses=[],
+            ),
+        ]
+        adapter_mock.return_value = self.mocked_compare_adapter
+        base_report_mock.return_value = sample_report1()
+        head_report_mock.return_value = sample_report2()
+
+        res = self.client.get(
+            reverse(
+                "api-v2-compare-components",
+                kwargs={
+                    "service": self.org.service,
+                    "owner_username": self.org.username,
+                    "repo_name": self.repo.name,
+                },
+            ),
+            data={
+                "base": self.base.commitid,
+                "head": self.head.commitid,
+            },
+            content_type="application/json",
+        )
+
+        assert res.status_code == 200
+        assert res.json() == [
+            {
+                "component_id": "foo",
+                "name": "Foo",
+                "base_report_totals": {
+                    "files": 1,
+                    "lines": 8,
+                    "hits": 5,
+                    "misses": 3,
+                    "partials": 0,
+                    "coverage": 62.5,
+                    "branches": 0,
+                    "methods": 0,
+                    "messages": 0,
+                    "sessions": 1,
+                    "complexity": 10.0,
+                    "complexity_total": 2.0,
+                    "complexity_ratio": 500.0,
+                    "diff": 0,
+                },
+                "head_report_totals": {
+                    "files": 1,
+                    "lines": 9,
+                    "hits": 5,
+                    "misses": 4,
+                    "partials": 0,
+                    "coverage": 55.56,
+                    "branches": 0,
+                    "methods": 0,
+                    "messages": 0,
+                    "sessions": 1,
+                    "complexity": 10.0,
+                    "complexity_total": 2.0,
+                    "complexity_ratio": 500.0,
+                    "diff": 0,
+                },
+                "diff_totals": {
+                    "files": 0,
+                    "lines": 0,
+                    "hits": 0,
+                    "misses": 0,
+                    "partials": 0,
+                    "coverage": 0,
+                    "branches": 0,
+                    "methods": 0,
+                    "messages": 0,
+                    "sessions": 0,
+                    "complexity": None,
+                    "complexity_total": None,
+                    "complexity_ratio": 0,
+                    "diff": 0,
+                },
+            },
+            {
+                "component_id": "bar",
+                "name": "Bar",
+                "base_report_totals": {
+                    "files": 1,
+                    "lines": 2,
+                    "hits": 1,
+                    "misses": 0,
+                    "partials": 1,
+                    "coverage": 50.0,
+                    "branches": 1,
+                    "methods": 0,
+                    "messages": 0,
+                    "sessions": 1,
+                    "complexity": 0.0,
+                    "complexity_total": 0.0,
+                    "complexity_ratio": 0,
+                    "diff": 0,
+                },
+                "head_report_totals": {
+                    "files": 1,
+                    "lines": 3,
+                    "hits": 2,
+                    "misses": 0,
+                    "partials": 1,
+                    "coverage": 66.67,
+                    "branches": 1,
+                    "methods": 0,
+                    "messages": 0,
+                    "sessions": 1,
+                    "complexity": 0.0,
+                    "complexity_total": 0.0,
+                    "complexity_ratio": 0,
+                    "diff": 0,
+                },
+                "diff_totals": {
+                    "files": 0,
+                    "lines": 0,
+                    "hits": 0,
+                    "misses": 0,
+                    "partials": 0,
+                    "coverage": 0,
+                    "branches": 0,
+                    "methods": 0,
+                    "messages": 0,
+                    "sessions": 0,
+                    "complexity": None,
+                    "complexity_total": None,
+                    "complexity_ratio": 0,
+                    "diff": 0,
+                },
+            },
+        ]
