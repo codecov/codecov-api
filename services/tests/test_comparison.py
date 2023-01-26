@@ -2,20 +2,27 @@ import asyncio
 import enum
 import json
 from collections import Counter
+from datetime import datetime
 from unittest.mock import PropertyMock, patch
 
 import minio
 import pytest
+import pytz
 from django.test import TestCase
 from shared.reports.resources import ReportFile
 from shared.reports.types import ReportTotals
 from shared.utils.merge import LineType
 
 from codecov_auth.tests.factories import OwnerFactory
+from compare.models import CommitComparison
 from compare.tests.factories import CommitComparisonFactory
+from core.models import Commit
 from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
+from reports.models import CommitReport, ReportDetails
+from reports.tests.factories import CommitReportFactory
 from services.archive import SerializableReport
 from services.comparison import (
+    CommitComparisonService,
     Comparison,
     ComparisonReport,
     CreateChangeSummaryVisitor,
@@ -1655,3 +1662,96 @@ class ComparisonReportTest(TestCase):
                 misses_in_comparison=2,
             ),
         ]
+
+
+class CommitComparisonTests(TestCase):
+    def setUp(self):
+        self.base_commit = CommitFactory(updatestamp=datetime(2023, 1, 1))
+        self.compare_commit = CommitFactory(updatestamp=datetime(2023, 1, 1))
+        self.base_commit_report = CommitReportFactory(commit=self.base_commit)
+        self.compare_commit_report = CommitReportFactory(commit=self.compare_commit)
+        self.base_report_details = ReportDetails.objects.create(
+            report_id=self.base_commit_report.id,
+            files_array=[],
+        )
+        self.compare_report_details = ReportDetails.objects.create(
+            report_id=self.compare_commit_report.id,
+            files_array=[],
+        )
+        self.commit_comparison = CommitComparisonFactory(
+            base_commit=self.base_commit,
+            compare_commit=self.compare_commit,
+        )
+
+    def test_needs_recompute(self):
+        commit_comparison = CommitComparison.objects.get(pk=self.commit_comparison.pk)
+        service = CommitComparisonService(commit_comparison)
+
+        assert service.needs_recompute() == False
+
+    def test_needs_recompute_missing_timestamp(self):
+        Commit.objects.filter(pk=self.base_commit.id).update(updatestamp=None)
+        commit_comparison = CommitComparison.objects.get(pk=self.commit_comparison.pk)
+        service = CommitComparisonService(commit_comparison)
+
+        assert service.needs_recompute() == False
+
+    def test_stale_base_commit(self):
+        # base_commit was updated after this comparison was made
+        self.commit_comparison.updated_at = datetime(2021, 1, 1, tzinfo=pytz.utc)
+        self.commit_comparison.save()
+        self.base_commit.updatestamp = datetime(2023, 1, 2)
+        self.base_commit.save()
+
+        commit_comparison = CommitComparison.objects.get(pk=self.commit_comparison.pk)
+        service = CommitComparisonService(commit_comparison)
+        assert service.needs_recompute() == True
+
+    def test_stale_compare_commit(self):
+        # compare_commit was updated after this comparison was made
+        self.commit_comparison.updated_at = datetime(2021, 1, 1, tzinfo=pytz.utc)
+        self.commit_comparison.save()
+
+        self.compare_commit.updatestamp = datetime(2023, 1, 2)
+        self.compare_commit.save()
+
+        commit_comparison = CommitComparison.objects.get(pk=self.commit_comparison.pk)
+        service = CommitComparisonService(commit_comparison)
+
+        assert service.needs_recompute() == True
+
+    def test_stale_base_report_details(self):
+        # base report details were updated after comparison was made
+        self.commit_comparison.updated_at = datetime(2021, 1, 1, tzinfo=pytz.utc)
+        self.commit_comparison.save()
+        self.base_report_details.updated_at = datetime(2023, 1, 2, tzinfo=pytz.utc)
+        self.base_report_details.save()
+
+        commit_comparison = CommitComparison.objects.get(pk=self.commit_comparison.pk)
+        print("OK", commit_comparison._state.fields_cache)
+        service = CommitComparisonService(commit_comparison)
+
+        assert service.needs_recompute() == True
+
+    def test_stale_compare_report_details(self):
+        # compare report details were updated after comparison was made
+        self.commit_comparison.updated_at = datetime(2021, 1, 1, tzinfo=pytz.utc)
+        self.commit_comparison.save()
+        self.compare_report_details.updated_at = datetime(2023, 1, 2, tzinfo=pytz.utc)
+        self.compare_report_details.save()
+
+        commit_comparison = CommitComparison.objects.get(pk=self.commit_comparison.pk)
+        service = CommitComparisonService(commit_comparison)
+
+        assert service.needs_recompute() == True
+
+    @patch("services.task.TaskService.compute_comparison")
+    def test_recompute_comparison(self, compute_comparison_mock):
+        commit_comparison = CommitComparison.objects.get(pk=self.commit_comparison.pk)
+        service = CommitComparisonService(commit_comparison)
+        service.recompute_comparison()
+
+        assert (
+            commit_comparison.state == CommitComparison.CommitComparisonStates.PENDING
+        )
+        compute_comparison_mock.assert_called_once_with(commit_comparison.id)

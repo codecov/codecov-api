@@ -1,4 +1,3 @@
-import pytz
 from django.db import models
 
 from codecov.models import BaseCodecovModel
@@ -40,19 +39,6 @@ class CommitComparison(BaseCodecovModel):
     @property
     def is_processed(self):
         return self.state == CommitComparison.CommitComparisonStates.PROCESSED
-
-    @property
-    def needs_recalculation(self):
-        timezone = pytz.utc
-        return (
-            self.compare_commit.updatestamp
-            and timezone.normalize(self.updated_at)
-            < timezone.localize(self.compare_commit.updatestamp)
-        ) or (
-            self.base_commit.updatestamp
-            and timezone.normalize(self.updated_at)
-            < timezone.localize(self.base_commit.updatestamp)
-        )
 
 
 class FlagComparison(BaseCodecovModel):

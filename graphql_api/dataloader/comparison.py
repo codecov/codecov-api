@@ -2,7 +2,7 @@ from asgiref.sync import sync_to_async
 
 from compare.models import CommitComparison
 from core.models import Commit
-from services.comparison import recalculate_comparison
+from services.comparison import CommitComparisonService
 
 from .commit import CommitLoader
 from .loader import BaseLoader
@@ -112,5 +112,6 @@ class ComparisonLoader(BaseLoader):
                 comparison.compare_commit_id
             )
 
-            if key in missing_keys or comparison.needs_recalculation:
-                recalculate_comparison(comparison)
+            commit_comparison_service = CommitComparisonService(comparison)
+            if key in missing_keys or commit_comparison_service.needs_recompute():
+                commit_comparison_service.recompute_comparison()
