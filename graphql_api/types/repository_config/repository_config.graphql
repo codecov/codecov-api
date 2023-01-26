@@ -1,0 +1,8 @@
+type RepositoryConfig {
+  indicationRange: IndicationRange
+}
+
+type IndicationRange {
+  upperRange: Int!
+  lowerRange: Int!
+}

@@ -142,6 +142,14 @@ class Owner(models.Model):
         return self.yaml is not None
 
     @property
+    def default_org(self):
+        try:
+            if self.profile:
+                return self.profile.default_org
+        except OwnerProfile.DoesNotExist:
+            return None
+
+    @property
     def has_legacy_plan(self):
         return self.plan is None or not self.plan.startswith("users")
 
@@ -473,6 +481,9 @@ class OwnerProfile(BaseCodecovModel):
     )
     goals = ArrayField(models.TextField(choices=Goal.choices), default=list)
     other_goal = models.TextField(null=True)
+    default_org = models.ForeignKey(
+        Owner, on_delete=models.CASCADE, null=True, related_name="profiles_with_default"
+    )
 
 
 class Session(models.Model):

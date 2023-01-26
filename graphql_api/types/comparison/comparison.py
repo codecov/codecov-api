@@ -25,10 +25,24 @@ comparison_bindable = ObjectType("Comparison")
 @convert_kwargs_to_snake_case
 @sync_to_async
 def resolve_impacted_files(
-    comparison: CommitComparison, info, filters={}
+    comparison: CommitComparison, info, filters=None
 ) -> List[ImpactedFile]:
+    command = info.context["executor"].get_command("compare")
+    return command.fetch_impacted_files(comparison, filters)
+
+
+@comparison_bindable.field("impactedFilesCount")
+@sync_to_async
+def resolve_impacted_files_count(comparison: CommitComparison, info):
     comparison_report = ComparisonReport(comparison)
-    return comparison_report.impacted_files(filters=filters)
+    return len(comparison_report.impacted_files)
+
+
+@comparison_bindable.field("indirectChangedFilesCount")
+@sync_to_async
+def resolve_impacted_files_count(comparison: CommitComparison, info):
+    comparison_report = ComparisonReport(comparison)
+    return len(comparison_report.impacted_files_with_unintended_change)
 
 
 @comparison_bindable.field("impactedFile")

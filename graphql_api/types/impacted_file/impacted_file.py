@@ -1,3 +1,4 @@
+import hashlib
 from typing import List
 
 from ariadne import ObjectType, convert_kwargs_to_snake_case
@@ -5,6 +6,7 @@ from asgiref.sync import sync_to_async
 from shared.reports.types import ReportTotals
 
 from services.comparison import Segment
+from services.profiling import ProfilingSummary
 
 impacted_file_bindable = ObjectType("ImpactedFile")
 from services.comparison import ImpactedFile
@@ -45,10 +47,45 @@ def resolve_change_coverage(impacted_file: ImpactedFile, info) -> float:
     return impacted_file.change_coverage
 
 
+@impacted_file_bindable.field("hashedPath")
+def resolve_hashed_path(impacted_file: ImpactedFile, info) -> str:
+    path = impacted_file.head_name
+    encoded_path = path.encode()
+    md5_path = hashlib.md5(encoded_path)
+
+    return md5_path.hexdigest()
+
+
 @impacted_file_bindable.field("segments")
 @sync_to_async
 @convert_kwargs_to_snake_case
 def resolve_segments(impacted_file: ImpactedFile, info, filters=None) -> List[Segment]:
+    if filters is None:
+        filters = {}
+    if "comparison" not in info.context:
+        return []
+
+    comparison = info.context["comparison"]
+    comparison.validate()
+    file_comparison = comparison.get_file_comparison(
+        impacted_file.head_name, with_src=True, bypass_max_diff=True
+    )
+    if filters.get("has_unintended_changes") is True:
+        return [
+            segment
+            for segment in file_comparison.segments
+            if segment.has_unintended_changes
+        ]
+    else:
+        return file_comparison.segments
+
+
+@impacted_file_bindable.field("segmentsDeprecated")
+@sync_to_async
+@convert_kwargs_to_snake_case
+def resolve_segments_deprecated(
+    impacted_file: ImpactedFile, info, filters=None
+) -> List[Segment]:
     if filters is None:
         filters = {}
     if "comparison" not in info.context:
@@ -90,22 +127,19 @@ def resolve_is_deleted_file(impacted_file: ImpactedFile, info) -> bool:
     return base_name is not None and head_name is None
 
 
+@impacted_file_bindable.field("missesInComparison")
+def resolve_misses_in_comparison(impacted_file: ImpactedFile, info) -> int:
+    return impacted_file.misses_in_comparison
+
+
 @impacted_file_bindable.field("isCriticalFile")
 @sync_to_async
 def resolve_is_critical_file(impacted_file: ImpactedFile, info) -> bool:
     if "profiling_summary" in info.context:
-        if "critical_filenames" not in info.context:
-            info.context["critical_filenames"] = set(
-                [
-                    critical_file.name
-                    for critical_file in info.context[
-                        "profiling_summary"
-                    ].critical_files
-                ]
-            )
-
         base_name = impacted_file.base_name
         head_name = impacted_file.head_name
-        critical_filenames = info.context["critical_filenames"]
+
+        profiling_summary: ProfilingSummary = info.context["profiling_summary"]
+        critical_filenames = profiling_summary.critical_filenames
 
         return base_name in critical_filenames or head_name in critical_filenames

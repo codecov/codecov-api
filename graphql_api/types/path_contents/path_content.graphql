@@ -33,4 +33,12 @@ type PathContents {
   results: [PathContent!]!
 }
 
-union PathContentsResult = PathContents | MissingHeadReport
+type MissingCoverage implements ResolverError {
+  message: String!
+}
+
+type UnknownPath implements ResolverError {
+  message: String!
+}
+
+union PathContentsResult = PathContents | MissingHeadReport | MissingCoverage | UnknownPath

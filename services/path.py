@@ -1,10 +1,18 @@
+import re
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import cached_property
-from typing import Iterable, List, Union
+from typing import Iterable, List, Optional, Union
 
+from asgiref.sync import async_to_sync
+from django.conf import settings
 from shared.reports.resources import Report
 from shared.reports.types import ReportTotals
+from shared.torngit.exceptions import TorngitClientError
+
+from codecov_auth.models import Owner
+from core.models import Commit
+from services.repo_providers import RepoProviderService
 
 
 class PathNode:
@@ -112,6 +120,27 @@ def is_subpath(full_path: str, subpath: str):
     return full_path.startswith(f"{subpath}/") or full_path == subpath
 
 
+# Regex that separates string into 2 groups, taken from https://stackoverflow.com/a/33021907
+def calculate_path_file_and_dir_groups(path: str) -> tuple[str, str]:
+    result = re.search(r"((?:[^/]*/)*)(.*)", path)
+    return result.groups()
+
+
+def is_file(path) -> bool:
+    (path, filename) = calculate_path_file_and_dir_groups(path=path)
+    return True if "." in filename and filename[0] != "." else False
+
+
+def dashboard_commit_file_url(
+    path: Optional[str], service: str, owner: str, repo: str, commit_sha: str
+) -> str:
+    if path is None:
+        path = ""
+    is_path_a_file = is_file(path=path)
+    commit_path = f"blob/{path}" if is_path_a_file else f"tree/{path}"
+    return f"{settings.CODECOV_DASHBOARD_URL}/{service}/{owner}/{repo}/commit/{commit_sha}/{commit_path}"
+
+
 class ReportPaths:
     """
     Contains methods for getting path information out of a single report.
@@ -123,16 +152,20 @@ class ReportPaths:
         self.report = report
         self.prefix = path or ""
 
-        self.paths = [
+        self._paths = [
             PrefixedPath(full_path=full_path, prefix=self.prefix)
             for full_path in report.files
             if is_subpath(full_path, self.prefix)
         ]
 
         if search_term:
-            self.paths = [
+            self._paths = [
                 path for path in self.paths if search_term in path.relative_path
             ]
+
+    @property
+    def paths(self):
+        return self._paths
 
     def full_filelist(self) -> Iterable[File]:
         """
@@ -181,3 +214,19 @@ class ReportPaths:
                 results.append(Dir(full_path=basename, children=children))
 
         return results
+
+
+def provider_path_exists(path: str, commit: Commit, user: Owner):
+    """
+    Check whether the given path exists on the provider.
+    """
+    try:
+        adapter = RepoProviderService().get_adapter(user, commit.repository)
+        async_to_sync(adapter.list_files)(commit.commitid, path)
+        return True
+    except TorngitClientError as e:
+        if e.code == 404:
+            return False
+        else:
+            # more generic error from provider
+            return None

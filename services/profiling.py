@@ -119,3 +119,7 @@ class ProfilingSummary:
         # Critical files from YAML might work without a profiling commit
         # If self.commit_sha is defined
         return [CriticalFile(name) for name in self._get_critical_files_from_yaml()]
+
+    @cached_property
+    def critical_filenames(self) -> set[str]:
+        return set([file.name for file in self.critical_files])

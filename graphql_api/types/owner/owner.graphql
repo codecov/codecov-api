@@ -3,10 +3,19 @@ type Owner {
   username: String
   isCurrentUserPartOfOrg: Boolean!
   yaml: String
-  repositories(filters: RepositorySetFilters, ordering: RepositoryOrdering, orderingDirection: OrderingDirection, first: Int, after: String, last: Int, before: String): RepositoryConnection!
+  repositories(
+    filters: RepositorySetFilters
+    ordering: RepositoryOrdering
+    orderingDirection: OrderingDirection
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): RepositoryConnection!
   repository(name: String!): Repository
   numberOfUploads: Int
   isAdmin: Boolean!
   hashOwnerid: String!
   orgUploadToken: String
+  defaultOrgUsername: String
 }
