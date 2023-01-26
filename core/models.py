@@ -267,6 +267,10 @@ class Commit(models.Model):
                 name="commits_on_pull",
                 condition=~models.Q(deleted=True),
             ),
+            models.Index(
+                fields=["repository", "pullid"],
+                name="all_commits_on_pull",
+            ),
         ]
 
 
