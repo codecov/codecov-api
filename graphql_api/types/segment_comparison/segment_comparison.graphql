@@ -8,4 +8,4 @@ type SegmentComparisons {
     results: [SegmentComparison!]!
 }
 
-union SegmentsResult = SegmentComparisons | UnknownPath | ProviderError
+union SegmentsResult = SegmentComparisons | UnknownPath | ProviderError | QueryError

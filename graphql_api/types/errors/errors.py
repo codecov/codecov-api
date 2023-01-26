@@ -29,4 +29,9 @@ class UnknownPath:
 
 
 class ProviderError:
-    message = "Error fetching data from provider"
+    message = "Error fetching data from the provider"
+
+
+class QueryError:
+    def __init__(self, message):
+        self.message = message

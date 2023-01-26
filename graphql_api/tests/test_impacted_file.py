@@ -394,7 +394,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                 "headCoverage": {"percentCovered": 85.71428571428571},
                                 "patchCoverage": {"percentCovered": 100.0},
                                 "segments": {
-                                    "results": [],
+                                    "message": "cannot query segments in this context"
                                 },
                                 "missesInComparison": 1,
                             }
@@ -559,7 +559,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                 "headCoverage": {"percentCovered": 85.71428571428571},
                                 "patchCoverage": {"percentCovered": 50.0},
                                 "segments": {
-                                    "message": "Error fetching data from provider"
+                                    "message": "Error fetching data from the provider"
                                 },
                             },
                         }

@@ -6,7 +6,7 @@ from asgiref.sync import sync_to_async
 from shared.reports.types import ReportTotals
 from shared.torngit.exceptions import TorngitClientError
 
-from graphql_api.types.errors import ProviderError, UnknownPath
+from graphql_api.types.errors import ProviderError, QueryError, UnknownPath
 from graphql_api.types.segment_comparison.segment_comparison import SegmentComparisons
 from services.comparison import Comparison, Segment
 from services.profiling import ProfilingSummary
@@ -65,10 +65,11 @@ def resolve_hashed_path(impacted_file: ImpactedFile, info) -> str:
 def resolve_segments(
     impacted_file: ImpactedFile, info, filters=None
 ) -> Union[UnknownPath, ProviderError, SegmentComparisons]:
+    if "comparison" not in info.context:
+        return QueryError("cannot query segments in this context")
+
     if filters is None:
         filters = {}
-    if "comparison" not in info.context:
-        return SegmentComparisons(results=[])
 
     comparison: Comparison = info.context["comparison"]
     path = impacted_file.head_name
