@@ -16,9 +16,12 @@ class CommitLoader(BaseLoader):
         return super().__init__(info, *args, **kwargs)
 
     def batch_queryset(self, keys):
-        # prefetch the CommitReport with the ReportLevelTotals
+        # prefetch the CommitReport with the ReportLevelTotals and ReportDetails
         prefetch = Prefetch(
-            "reports", queryset=CommitReport.objects.select_related("reportleveltotals")
+            "reports",
+            queryset=CommitReport.objects.select_related(
+                "reportleveltotals", "reportdetails"
+            ),
         )
 
         # We don't select the `report` column here b/c it can be many MBs of JSON
