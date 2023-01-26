@@ -1,3 +1,4 @@
+import hashlib
 from unittest.mock import PropertyMock, patch
 
 from django.test import TransactionTestCase
@@ -21,6 +22,7 @@ query ImpactedFiles(
       commit(id: $commit) {
         compareWithParent {
           impactedFilesCount
+          indirectChangedFilesCount
           impactedFiles {
             fileName
             headName
@@ -59,6 +61,7 @@ query ImpactedFile(
       commit(id: $commit) {
         compareWithParent {
           impactedFile(path: $path) {
+            hashedPath
             headName
             baseName
             baseCoverage {
@@ -73,6 +76,7 @@ query ImpactedFile(
             segments {
               hasUnintendedChanges
             }
+            missesInComparison
           }
         }
       }
@@ -98,6 +102,7 @@ query ImpactedFile(
             impactedFile(path: $path) {
               headName
               baseName
+              hashedPath
               baseCoverage {
                 percentCovered
               }
@@ -118,7 +123,6 @@ query ImpactedFile(
   }
 }
 """
-
 mock_data_from_archive = """
 {
     "files": [{
@@ -143,7 +147,12 @@ mock_data_from_archive = """
             "complexity": 0,
             "complexity_total": 0,
             "methods": 4
-        }
+        },
+        "added_diff_coverage": [
+            [9,"h"],
+            [10,"m"]
+        ],
+        "unexpected_line_changes": []
       },
       {
         "head_name": "fileB",
@@ -176,7 +185,8 @@ mock_data_from_archive = """
             [15,"h"],
             [16,"h"],
             [17,"h"]
-        ]
+        ],
+        "unexpected_line_changes": [[[1, "h"], [1, "m"]]]
     }]
 }
 """
@@ -241,6 +251,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                     "commit": {
                         "compareWithParent": {
                             "impactedFilesCount": 2,
+                            "indirectChangedFilesCount": 1,
                             "impactedFiles": [
                                 {
                                     "fileName": "fileA",
@@ -256,7 +267,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                     "headCoverage": {
                                         "percentCovered": 85.71428571428571
                                     },
-                                    "patchCoverage": None,
+                                    "patchCoverage": {"percentCovered": 50.0},
                                     "changeCoverage": 44.047619047619044,
                                 },
                                 {
@@ -298,6 +309,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                     "commit": {
                         "compareWithParent": {
                             "impactedFilesCount": 2,
+                            "indirectChangedFilesCount": 1,
                             "impactedFiles": [
                                 {
                                     "fileName": "fileA",
@@ -313,7 +325,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                     "headCoverage": {
                                         "percentCovered": 85.71428571428571
                                     },
-                                    "patchCoverage": None,
+                                    "patchCoverage": {"percentCovered": 50.0},
                                     "changeCoverage": 44.047619047619044,
                                 },
                                 {
@@ -358,10 +370,12 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                             "impactedFile": {
                                 "headName": "fileB",
                                 "baseName": "fileB",
+                                "hashedPath": hashlib.md5("fileB".encode()).hexdigest(),
                                 "baseCoverage": {"percentCovered": 41.666666666666664},
                                 "headCoverage": {"percentCovered": 85.71428571428571},
                                 "patchCoverage": {"percentCovered": 100.0},
                                 "segments": [],
+                                "missesInComparison": 1,
                             }
                         }
                     }
@@ -395,6 +409,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                             "impactedFile": {
                                 "headName": "fileB",
                                 "baseName": "fileB",
+                                "hashedPath": hashlib.md5("fileB".encode()).hexdigest(),
                                 "baseCoverage": {"percentCovered": 41.666666666666664},
                                 "headCoverage": {"percentCovered": 85.71428571428571},
                                 "patchCoverage": {"percentCovered": 100.0},
@@ -436,9 +451,10 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                             "impactedFile": {
                                 "headName": "fileA",
                                 "baseName": "fileA",
+                                "hashedPath": hashlib.md5("fileA".encode()).hexdigest(),
                                 "baseCoverage": {"percentCovered": 41.666666666666664},
                                 "headCoverage": {"percentCovered": 85.71428571428571},
-                                "patchCoverage": None,
+                                "patchCoverage": {"percentCovered": 50.0},
                                 "segments": [{"hasUnintendedChanges": True}],
                             },
                         }

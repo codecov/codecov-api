@@ -30,6 +30,10 @@ class CommitViews(ListCreateAPIView, GetterMixin):
     def perform_create(self, serializer):
         repository = self.get_repo()
         commit = serializer.save(repository=repository)
+        log.info(
+            "Request to create new report",
+            extra=dict(repo=repository.name, commit=commit.commitid),
+        )
         TaskService().update_commit(
             commitid=commit.commitid, repoid=commit.repository.repoid
         )

@@ -3,6 +3,7 @@ type File {
     coverage: [CoverageAnnotation]
     totals: CoverageTotals
     isCriticalFile: Boolean
+    hashedPath: String!
 }
 
 type CoverageAnnotation {

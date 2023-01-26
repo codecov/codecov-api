@@ -175,6 +175,12 @@ class Branch(models.Model):
                 fields=["name", "repository"], name="branches_repoid_branch"
             )
         ]
+        indexes = [
+            models.Index(
+                fields=["repository", "-updatestamp"],
+                name="branches_repoid_updatestamp",
+            ),
+        ]
 
 
 class Commit(models.Model):
