@@ -5,10 +5,18 @@ type Mutation {
   setYamlOnOwner(input: SetYamlOnOwnerInput!): SetYamlOnOwnerPayload
   syncWithGitProvider: SyncWithGitProviderPayload
   updateProfile(input: UpdateProfileInput!): UpdateProfilePayload
+  updateDefaultOrganization(
+    input: UpdateDefaultOrganizationInput!
+  ): UpdateDefaultOrganizationPayload
   deleteSession(input: DeleteSessionInput!): DeleteSessionPayload
   onboardUser(input: OnboardUserInput!): OnboardUserPayload
-  regenerateProfilingToken(input: RegenerateProfilingTokenInput!): RegenerateProfilingTokenPayload
-  activateFlagsMeasurements(input: ActivateFlagsMeasurementsInput!): ActivateFlagsMeasurementsPayload
-  regenerateOrgUploadToken(input: RegenerateOrgUploadTokenInput!): RegenerateOrgUploadTokenPayload
+  regenerateProfilingToken(
+    input: RegenerateProfilingTokenInput!
+  ): RegenerateProfilingTokenPayload
+  activateFlagsMeasurements(
+    input: ActivateFlagsMeasurementsInput!
+  ): ActivateFlagsMeasurementsPayload
+  regenerateOrgUploadToken(
+    input: RegenerateOrgUploadTokenInput!
+  ): RegenerateOrgUploadTokenPayload
 }
-  
