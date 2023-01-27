@@ -853,7 +853,7 @@ class ComparisonReport(object):
         return [self.deserialize_file(file) for file in impacted_files]
 
     @cached_property
-    def impacted_files_with_no_unintended_change(self):
+    def impacted_files_with_direct_changes(self):
         impacted_files = [
             file for file in self.files if not file.get("unexpected_line_changes")
         ]

@@ -71,7 +71,7 @@ class FetchImpactedFiles(BaseInteractor):
             impacted_files = (
                 comparison_report.impacted_files_with_unintended_change
                 if has_unintended_changes
-                else comparison_report.impacted_files_with_no_unintended_change
+                else comparison_report.impacted_files_with_direct_changes
             )
         else:
             impacted_files = comparison_report.impacted_files
