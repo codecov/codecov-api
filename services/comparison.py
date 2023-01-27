@@ -847,7 +847,6 @@ class ComparisonReport(object):
 
         return [self.deserialize_file(file) for file in impacted_files]
 
-    # Direct changes only or direct changes with indirect changes
     @cached_property
     def impacted_files_with_direct_changes(self):
         impacted_files = [file for file in self.files if self.has_diff(file)]
