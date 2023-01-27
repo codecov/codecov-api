@@ -2,6 +2,7 @@ import json
 import os
 from unittest.mock import patch
 
+from django.test import override_settings
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
@@ -914,3 +915,75 @@ class AccountViewSetTests(APITestCase):
             kwargs={"service": self.user.service, "owner_username": self.user.username}
         )
         segment_account_deleted_mock.assert_called_once_with(self.user)
+
+
+@override_settings(IS_ENTERPRISE=True)
+class EnterpriseAccountViewSetTests(APITestCase):
+    def _retrieve(self, kwargs={}):
+        if not kwargs:
+            kwargs = {
+                "service": self.user.service,
+                "owner_username": self.user.username,
+            }
+        return self.client.get(reverse("account_details-detail", kwargs=kwargs))
+
+    def _update(self, kwargs, data):
+        return self.client.patch(
+            reverse("account_details-detail", kwargs=kwargs), data=data, format="json"
+        )
+
+    def _destroy(self, kwargs):
+        return self.client.delete(reverse("account_details-detail", kwargs=kwargs))
+
+    def setUp(self):
+        self.service = "gitlab"
+        self.user = OwnerFactory(
+            stripe_customer_id=1000,
+            service=Service.GITHUB.value,
+            service_id="10238974029348",
+        )
+        self.client.force_login(user=self.user)
+
+    def test_retrieve_own_account_give_200(self):
+        response = self._retrieve(
+            kwargs={"service": self.user.service, "owner_username": self.user.username}
+        )
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_retrieve_account_gets_account_fields(self):
+        owner = OwnerFactory(admins=[self.user.ownerid])
+        self.user.organizations = [owner.ownerid]
+        self.user.save()
+        response = self._retrieve(
+            kwargs={"service": owner.service, "owner_username": owner.username}
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "activated_user_count": 0,
+            "root_organization": None,
+            "integration_id": owner.integration_id,
+            "plan_auto_activate": owner.plan_auto_activate,
+            "inactive_user_count": 1,
+            "plan": {
+                "marketing_name": "Basic",
+                "value": "users-basic",
+                "billing_rate": None,
+                "base_unit_price": 0,
+                "benefits": [
+                    "Up to 5 users",
+                    "Unlimited public repositories",
+                    "Unlimited private repositories",
+                ],
+                "quantity": 5,
+            },
+            "subscription_detail": None,
+            "checkout_session_id": None,
+            "name": owner.name,
+            "email": owner.email,
+            "nb_active_private_repos": 0,
+            "repo_total_credits": 99999999,
+            "plan_provider": owner.plan_provider,
+            "activated_student_count": 0,
+            "student_count": 0,
+            "schedule_detail": None,
+        }
