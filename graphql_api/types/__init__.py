@@ -35,7 +35,11 @@ from .repository_config import (
     repository_config,
     repository_config_bindable,
 )
-from .segment_comparison import segment_comparison, segment_comparison_bindable
+from .segment_comparison import (
+    segment_comparison,
+    segment_comparison_bindable,
+    segments_result_bindable,
+)
 from .session import session, session_bindable
 from .upload import upload, upload_bindable, upload_error_bindable
 from .user import user, user_bindable
@@ -91,6 +95,7 @@ bindables = [
     flag_bindable,
     flag_comparison_bindable,
     segment_comparison_bindable,
+    segments_result_bindable,
     line_comparison_bindable,
     measurement_bindable,
     pull_bindable,
