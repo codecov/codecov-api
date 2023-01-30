@@ -85,8 +85,15 @@ def resolve_segments(
             return ProviderError()
 
     segments = file_comparison.segments
+
     if filters.get("has_unintended_changes") is True:
-        segments = [segment for segment in segments if segment.has_unintended_changes]
+        segments = [
+            segment for segment in segments if segment.has_unintended_changes
+        ]
+    elif filters.get("has_unintended_changes") is False:
+        segments = [
+            segment for segment in segments if not segment.has_unintended_changes
+            ]
 
     return SegmentComparisons(results=segments)
 
@@ -107,14 +114,19 @@ def resolve_segments_deprecated(
     file_comparison = comparison.get_file_comparison(
         impacted_file.head_name, with_src=True, bypass_max_diff=True
     )
+
+    segments = file_comparison.segments
+
     if filters.get("has_unintended_changes") is True:
-        return [
-            segment
-            for segment in file_comparison.segments
-            if segment.has_unintended_changes
+        segments = [
+            segment for segment in segments if segment.has_unintended_changes
         ]
-    else:
-        return file_comparison.segments
+    elif filters.get("has_unintended_changes") is False:
+        segments = [
+            segment for segment in segments if not segment.has_unintended_changes
+            ]
+
+    return SegmentComparisons(results=segments)
 
 
 @impacted_file_bindable.field("isNewFile")
