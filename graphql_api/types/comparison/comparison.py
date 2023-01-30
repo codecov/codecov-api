@@ -40,7 +40,7 @@ def resolve_impacted_files_count(comparison: CommitComparison, info):
 
 @comparison_bindable.field("directChangedFilesCount")
 @sync_to_async
-def resolve_impacted_files_count(comparison: CommitComparison, info):
+def resolve_direct_changed_files_count(comparison: CommitComparison, info):
     comparison_report = ComparisonReport(comparison)
     return len(comparison_report.impacted_files_with_direct_changes)
 
