@@ -87,13 +87,11 @@ def resolve_segments(
     segments = file_comparison.segments
 
     if filters.get("has_unintended_changes") is True:
-        segments = [
-            segment for segment in segments if segment.has_unintended_changes
-        ]
+        segments = [segment for segment in segments if segment.has_unintended_changes]
     elif filters.get("has_unintended_changes") is False:
         segments = [
             segment for segment in segments if not segment.has_unintended_changes
-            ]
+        ]
 
     return SegmentComparisons(results=segments)
 
@@ -118,13 +116,11 @@ def resolve_segments_deprecated(
     segments = file_comparison.segments
 
     if filters.get("has_unintended_changes") is True:
-        segments = [
-            segment for segment in segments if segment.has_unintended_changes
-        ]
+        segments = [segment for segment in segments if segment.has_unintended_changes]
     elif filters.get("has_unintended_changes") is False:
         segments = [
             segment for segment in segments if not segment.has_unintended_changes
-            ]
+        ]
 
     return SegmentComparisons(results=segments)
 
