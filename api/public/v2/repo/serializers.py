@@ -37,7 +37,7 @@ class RepoSerializer(serializers.ModelSerializer):
 
 class RepoConfigSerializer(serializers.ModelSerializer):
     upload_token = serializers.CharField(
-        label="token used for uploading coverage reports"
+        label="token used for uploading coverage reports for this repo"
     )
 
     class Meta:
