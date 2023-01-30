@@ -1988,6 +1988,7 @@ class ComparisonReportTest(TestCase):
         has_diff = self.comparison_report.has_changes(file)
         assert has_diff is True
 
+
 class CommitComparisonTests(TestCase):
     def setUp(self):
         self.base_commit = CommitFactory(updatestamp=datetime(2023, 1, 1))
