@@ -842,13 +842,14 @@ class ComparisonReport(object):
         return [self.deserialize_file(file) for file in impacted_files]
 
     @cached_property
-    def impacted_files_with_unintended_change(self):
-        impacted_files = [
-            file
-            for file in self.files
-            if file.get("unexpected_line_changes")
-            and len(file["unexpected_line_changes"]) > 0
-        ]
+    def impacted_files_with_unintended_changes(self):
+        impacted_files = [file for file in self.files if self.has_changes(file)]
+
+        return [self.deserialize_file(file) for file in impacted_files]
+
+    @cached_property
+    def impacted_files_with_direct_changes(self):
+        impacted_files = [file for file in self.files if self.has_diff(file)]
 
         return [self.deserialize_file(file) for file in impacted_files]
 
@@ -948,6 +949,17 @@ class ComparisonReport(object):
     def get_file_name_from_file_path(self, file_path):
         parts = file_path.split("/")
         return parts[-1]
+
+    def has_diff(self, file):
+        return (
+            bool(file.get("removed_diff_coverage"))
+            or bool(file.get("added_diff_coverage"))
+            or file.get("file_was_removed_by_diff")
+            or file.get("file_was_added_by_diff")
+        )
+
+    def has_changes(self, file):
+        return bool(file.get("unexpected_line_changes"))
 
 
 class PullRequestComparison(Comparison):
