@@ -1707,7 +1707,7 @@ class ComparisonReportTest(TestCase):
     @patch("services.archive.ArchiveService.read_file")
     def test_impacted_files_filtered_by_indirect_changes(self, read_file):
         read_file.return_value = mock_data_from_archive
-        impacted_files = self.comparison_report.impacted_files_with_unintended_change
+        impacted_files = self.comparison_report.impacted_files_with_unintended_changes
         assert impacted_files == [
             ImpactedFile(
                 file_name="fileA",
@@ -1949,7 +1949,6 @@ class ComparisonReportTest(TestCase):
         }
         has_diff = self.comparison_report.has_diff(file)
         assert has_diff is True
-
 
     def test_file_has_changes(self):
         file = {
