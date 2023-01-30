@@ -122,7 +122,7 @@ def resolve_segments_deprecated(
             segment for segment in segments if not segment.has_unintended_changes
         ]
 
-    return SegmentComparisons(results=segments)
+    return segments
 
 
 @impacted_file_bindable.field("isNewFile")
