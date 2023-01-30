@@ -1,5 +1,4 @@
-from copy import deepcopy
-
+import sentry_sdk
 from pythonjsonlogger.jsonlogger import JsonFormatter
 
 
@@ -33,3 +32,7 @@ class CustomDatadogJsonFormatter(BaseLogger):
             log_record["level"] = log_record["level"].upper()
         else:
             log_record["level"] = record.levelname
+
+        trace_id = sentry_sdk.last_event_id()
+        if trace_id:
+            log_record["sentry_trace_id"] = trace_id
