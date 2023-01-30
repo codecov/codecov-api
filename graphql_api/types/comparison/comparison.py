@@ -42,7 +42,7 @@ def resolve_impacted_files_count(comparison: CommitComparison, info):
 @sync_to_async
 def resolve_impacted_files_count(comparison: CommitComparison, info):
     comparison_report = ComparisonReport(comparison)
-    return len(comparison_report.impacted_files_with_unintended_change)
+    return len(comparison_report.impacted_files_with_unintended_changes)
 
 
 @comparison_bindable.field("impactedFile")
