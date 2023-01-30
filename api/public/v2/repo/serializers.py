@@ -33,3 +33,14 @@ class RepoSerializer(serializers.ModelSerializer):
             "activated",
         )
         fields = read_only_fields
+
+
+class RepoConfigSerializer(serializers.ModelSerializer):
+    upload_token = serializers.CharField(
+        label="token used for uploading coverage reports"
+    )
+
+    class Meta:
+        model = Repository
+        read_only_fields = ("upload_token",)
+        fields = read_only_fields
