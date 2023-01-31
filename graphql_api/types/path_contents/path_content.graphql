@@ -33,4 +33,4 @@ type PathContents {
   results: [PathContent!]!
 }
 
-union PathContentsResult = PathContents | MissingHeadReport
+union PathContentsResult = PathContents | MissingHeadReport | MissingCoverage | UnknownPath

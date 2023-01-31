@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, PropertyMock, patch
 
@@ -404,7 +405,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
     ):
         query = (
             query_commit
-            % 'coverageFile(path: "path") { content, isCriticalFile, coverage { line,coverage }, totals {coverage} }'
+            % 'coverageFile(path: "path") { hashedPath, content, isCriticalFile, coverage { line,coverage }, totals {coverage} }'
         )
         variables = {
             "org": self.org.username,
@@ -431,6 +432,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         assert coverageFile["coverage"] == fake_coverage["coverage"]
         assert coverageFile["totals"] == fake_coverage["totals"]
         assert coverageFile["isCriticalFile"] == True
+        assert coverageFile["hashedPath"] == hashlib.md5("path".encode()).hexdigest()
 
     @patch(
         "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock

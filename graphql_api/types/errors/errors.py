@@ -16,3 +16,22 @@ class MissingComparison:
 
 class MissingBaseReport:
     message = "Missing base report"
+
+
+class MissingCoverage:
+    def __init__(self, message="Missing coverage"):
+        self.message = message
+
+
+class UnknownPath:
+    def __init__(self, message="Unkown path"):
+        self.message = message
+
+
+class ProviderError:
+    message = "Error fetching data from the provider"
+
+
+class QueryError:
+    def __init__(self, message):
+        self.message = message

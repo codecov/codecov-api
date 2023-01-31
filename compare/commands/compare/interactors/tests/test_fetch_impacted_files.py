@@ -18,7 +18,73 @@ class OrderingDirection(enum.Enum):
     DESC = "descending"
 
 
-mock_data_with_unintended_changes = """
+mock_data_without_misses = """
+{
+    "files": [{
+        "head_name": "fileA",
+        "base_name": "fileA",
+        "head_coverage": {
+            "hits": 10,
+            "misses": 1,
+            "partials": 1,
+            "branches": 3,
+            "sessions": 0,
+            "complexity": 0,
+            "complexity_total": 0,
+            "methods": 5
+        },
+        "base_coverage": {
+            "hits": 5,
+            "misses": 6,
+            "partials": 1,
+            "branches": 2,
+            "sessions": 0,
+            "complexity": 0,
+            "complexity_total": 0,
+            "methods": 4
+        },
+        "added_diff_coverage": [],
+        "unexpected_line_changes": []
+    },
+    {
+        "head_name": "fileB",
+        "base_name": "fileB",
+        "head_coverage": {
+            "hits": 12,
+            "misses": 1,
+            "partials": 1,
+            "branches": 3,
+            "sessions": 0,
+            "complexity": 0,
+            "complexity_total": 0,
+            "methods": 5
+        },
+        "base_coverage": {
+            "hits": 5,
+            "misses": 6,
+            "partials": 1,
+            "branches": 2,
+            "sessions": 0,
+            "complexity": 0,
+            "complexity_total": 0,
+            "methods": 4
+        },
+        "added_diff_coverage": [
+            [9,"h"],
+            [10,"m"],
+            [13,"p"],
+            [14,"h"],
+            [15,"h"],
+            [16,"h"],
+            [17,"h"]
+        ],
+        "unexpected_line_changes": []
+    }]
+}
+"""
+
+
+mock_data_from_archive = """
 {
     "files": [{
         "head_name": "fileA",
@@ -86,13 +152,13 @@ mock_data_with_unintended_changes = """
             [15,"h"],
             [16,"h"],
             [17,"h"]
-        ]
+        ],
+        "unexpected_line_changes": [[[1, "h"], [1, "m"]], [[2, "h"], [2, "m"]]]
     }]
 }
 """
 
-
-mock_data_from_archive = """
+mocked_files_with_direct_and_indirect_changes = """
 {
     "files": [{
         "head_name": "fileA",
@@ -126,7 +192,8 @@ mock_data_from_archive = """
             [15,"h"],
             [16,"h"],
             [17,"h"]
-        ]
+        ],
+        "unexpected_line_changes": [[[1, "h"], [1, "h"]]]
     },
     {
         "head_name": "fileB",
@@ -159,41 +226,12 @@ mock_data_from_archive = """
             [15,"h"],
             [16,"h"],
             [17,"h"]
-        ]
-    }]
-}
-"""
-
-mock_data_without_misses = """
-{
-    "files": [{
-        "head_name": "fileA",
-        "base_name": "fileA",
-        "head_coverage": {
-            "hits": 10,
-            "misses": 1,
-            "partials": 1,
-            "branches": 3,
-            "sessions": 0,
-            "complexity": 0,
-            "complexity_total": 0,
-            "methods": 5
-        },
-        "base_coverage": {
-            "hits": 5,
-            "misses": 6,
-            "partials": 1,
-            "branches": 2,
-            "sessions": 0,
-            "complexity": 0,
-            "complexity_total": 0,
-            "methods": 4
-        },
-        "added_diff_coverage": []
+        ],
+        "unexpected_line_changes": []
     },
     {
-        "head_name": "fileB",
-        "base_name": "fileB",
+        "head_name": "fileC",
+        "base_name": "fileC",
         "head_coverage": {
             "hits": 12,
             "misses": 1,
@@ -214,15 +252,8 @@ mock_data_without_misses = """
             "complexity_total": 0,
             "methods": 4
         },
-        "added_diff_coverage": [
-            [9,"h"],
-            [10,"m"],
-            [13,"p"],
-            [14,"h"],
-            [15,"h"],
-            [16,"h"],
-            [17,"h"]
-        ]
+        "added_diff_coverage": [],
+        "unexpected_line_changes": [[[1, "h"], [1, "h"]]]
     }]
 }
 """
@@ -307,6 +338,7 @@ class FetchImpactedFilesTest(TransactionTestCase):
                     diff=0,
                 ),
                 change_coverage=41.666666666666664,
+                misses_in_comparison=2,
             ),
             ImpactedFile(
                 file_name="fileB",
@@ -358,69 +390,19 @@ class FetchImpactedFilesTest(TransactionTestCase):
                     diff=0,
                 ),
                 change_coverage=44.047619047619044,
+                misses_in_comparison=3,
             ),
         ]
 
     @patch("services.archive.ArchiveService.read_file")
     def test_impacted_file_sort_function_no_misses(self, read_file):
         read_file.return_value = mock_data_without_misses
-        parameter = ImpactedFileParameter.PATCH_COVERAGE_MISSES
+        parameter = ImpactedFileParameter.MISSES_IN_COMPARISON
         direction = OrderingDirection.ASC
         filters = {"ordering": {"parameter": parameter, "direction": direction}}
         sorted_files = self.execute(None, self.comparison, filters)
 
         assert sorted_files == [
-            ImpactedFile(
-                file_name="fileB",
-                base_name="fileB",
-                head_name="fileB",
-                base_coverage=ReportTotals(
-                    files=0,
-                    lines=0,
-                    hits=5,
-                    misses=6,
-                    partials=1,
-                    coverage=41.666666666666664,
-                    branches=2,
-                    methods=4,
-                    messages=0,
-                    sessions=0,
-                    complexity=0,
-                    complexity_total=0,
-                    diff=0,
-                ),
-                head_coverage=ReportTotals(
-                    files=0,
-                    lines=0,
-                    hits=12,
-                    misses=1,
-                    partials=1,
-                    coverage=85.71428571428571,
-                    branches=3,
-                    methods=5,
-                    messages=0,
-                    sessions=0,
-                    complexity=0,
-                    complexity_total=0,
-                    diff=0,
-                ),
-                patch_coverage=ReportTotals(
-                    files=0,
-                    lines=0,
-                    hits=5,
-                    misses=1,
-                    partials=1,
-                    coverage=71.42857142857143,
-                    branches=0,
-                    methods=0,
-                    messages=0,
-                    sessions=0,
-                    complexity=0,
-                    complexity_total=0,
-                    diff=0,
-                ),
-                change_coverage=44.047619047619044,
-            ),
             ImpactedFile(
                 file_name="fileA",
                 base_name="fileA",
@@ -457,6 +439,59 @@ class FetchImpactedFilesTest(TransactionTestCase):
                 ),
                 patch_coverage=None,
                 change_coverage=41.666666666666664,
+                misses_in_comparison=0,
+            ),
+            ImpactedFile(
+                file_name="fileB",
+                base_name="fileB",
+                head_name="fileB",
+                base_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=5,
+                    misses=6,
+                    partials=1,
+                    coverage=41.666666666666664,
+                    branches=2,
+                    methods=4,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                head_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=12,
+                    misses=1,
+                    partials=1,
+                    coverage=85.71428571428571,
+                    branches=3,
+                    methods=5,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                patch_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=5,
+                    misses=1,
+                    partials=1,
+                    coverage=71.42857142857143,
+                    branches=0,
+                    methods=0,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                change_coverage=44.047619047619044,
+                misses_in_comparison=1,
             ),
         ]
 
@@ -534,6 +569,7 @@ class FetchImpactedFilesTest(TransactionTestCase):
                     diff=0,
                 ),
                 change_coverage=41.666666666666664,
+                misses_in_comparison=2,
             ),
             ImpactedFile(
                 file_name="fileB",
@@ -585,6 +621,7 @@ class FetchImpactedFilesTest(TransactionTestCase):
                     diff=0,
                 ),
                 change_coverage=44.047619047619044,
+                misses_in_comparison=3,
             ),
         ]
 
@@ -649,6 +686,7 @@ class FetchImpactedFilesTest(TransactionTestCase):
                     diff=0,
                 ),
                 change_coverage=44.047619047619044,
+                misses_in_comparison=3,
             ),
             ImpactedFile(
                 file_name="fileA",
@@ -700,6 +738,7 @@ class FetchImpactedFilesTest(TransactionTestCase):
                     diff=0,
                 ),
                 change_coverage=41.666666666666664,
+                misses_in_comparison=2,
             ),
         ]
 
@@ -764,6 +803,7 @@ class FetchImpactedFilesTest(TransactionTestCase):
                     diff=0,
                 ),
                 change_coverage=41.666666666666664,
+                misses_in_comparison=2,
             ),
             ImpactedFile(
                 file_name="fileB",
@@ -815,6 +855,7 @@ class FetchImpactedFilesTest(TransactionTestCase):
                     diff=0,
                 ),
                 change_coverage=44.047619047619044,
+                misses_in_comparison=3,
             ),
         ]
 
@@ -879,6 +920,7 @@ class FetchImpactedFilesTest(TransactionTestCase):
                     diff=0,
                 ),
                 change_coverage=41.666666666666664,
+                misses_in_comparison=2,
             ),
             ImpactedFile(
                 file_name="fileB",
@@ -930,6 +972,7 @@ class FetchImpactedFilesTest(TransactionTestCase):
                     diff=0,
                 ),
                 change_coverage=44.047619047619044,
+                misses_in_comparison=3,
             ),
         ]
 
@@ -994,6 +1037,7 @@ class FetchImpactedFilesTest(TransactionTestCase):
                     diff=0,
                 ),
                 change_coverage=44.047619047619044,
+                misses_in_comparison=3,
             ),
             ImpactedFile(
                 file_name="fileA",
@@ -1045,6 +1089,7 @@ class FetchImpactedFilesTest(TransactionTestCase):
                     diff=0,
                 ),
                 change_coverage=41.666666666666664,
+                misses_in_comparison=2,
             ),
         ]
 
@@ -1109,6 +1154,7 @@ class FetchImpactedFilesTest(TransactionTestCase):
                     diff=0,
                 ),
                 change_coverage=44.047619047619044,
+                misses_in_comparison=3,
             ),
             ImpactedFile(
                 file_name="fileA",
@@ -1160,6 +1206,7 @@ class FetchImpactedFilesTest(TransactionTestCase):
                     diff=0,
                 ),
                 change_coverage=41.666666666666664,
+                misses_in_comparison=2,
             ),
         ]
 
@@ -1224,6 +1271,7 @@ class FetchImpactedFilesTest(TransactionTestCase):
                     diff=0,
                 ),
                 change_coverage=41.666666666666664,
+                misses_in_comparison=2,
             ),
             ImpactedFile(
                 file_name="fileB",
@@ -1275,6 +1323,7 @@ class FetchImpactedFilesTest(TransactionTestCase):
                     diff=0,
                 ),
                 change_coverage=44.047619047619044,
+                misses_in_comparison=3,
             ),
         ]
 
@@ -1339,6 +1388,7 @@ class FetchImpactedFilesTest(TransactionTestCase):
                     diff=0,
                 ),
                 change_coverage=44.047619047619044,
+                misses_in_comparison=3,
             ),
             ImpactedFile(
                 file_name="fileA",
@@ -1390,22 +1440,73 @@ class FetchImpactedFilesTest(TransactionTestCase):
                     diff=0,
                 ),
                 change_coverage=41.666666666666664,
+                misses_in_comparison=2,
             ),
         ]
 
     @patch("services.archive.ArchiveService.read_file")
-    def test_impacted_files_filtered_by_patch_coverage_misses_ascending(
-        self, read_file
-    ):
+    def test_impacted_files_filtered_by_misses_in_comparisonascending(self, read_file):
         read_file.return_value = mock_data_from_archive
         filters = {
             "ordering": {
                 "direction": OrderingDirection.ASC,
-                "parameter": ImpactedFileParameter.PATCH_COVERAGE_MISSES,
+                "parameter": ImpactedFileParameter.MISSES_IN_COMPARISON,
             }
         }
         impacted_files = self.execute(None, self.comparison, filters)
         assert impacted_files == [
+            ImpactedFile(
+                file_name="fileA",
+                base_name="fileA",
+                head_name="fileA",
+                base_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=5,
+                    misses=6,
+                    partials=1,
+                    coverage=41.666666666666664,
+                    branches=2,
+                    methods=4,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                head_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=10,
+                    misses=1,
+                    partials=1,
+                    coverage=83.33333333333333,
+                    branches=3,
+                    methods=5,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                patch_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=5,
+                    misses=2,
+                    partials=1,
+                    coverage=62.5,
+                    branches=0,
+                    methods=0,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                change_coverage=41.666666666666664,
+                misses_in_comparison=2,
+            ),
             ImpactedFile(
                 file_name="fileB",
                 base_name="fileB",
@@ -1456,124 +1557,23 @@ class FetchImpactedFilesTest(TransactionTestCase):
                     diff=0,
                 ),
                 change_coverage=44.047619047619044,
-            ),
-            ImpactedFile(
-                file_name="fileA",
-                base_name="fileA",
-                head_name="fileA",
-                base_coverage=ReportTotals(
-                    files=0,
-                    lines=0,
-                    hits=5,
-                    misses=6,
-                    partials=1,
-                    coverage=41.666666666666664,
-                    branches=2,
-                    methods=4,
-                    messages=0,
-                    sessions=0,
-                    complexity=0,
-                    complexity_total=0,
-                    diff=0,
-                ),
-                head_coverage=ReportTotals(
-                    files=0,
-                    lines=0,
-                    hits=10,
-                    misses=1,
-                    partials=1,
-                    coverage=83.33333333333333,
-                    branches=3,
-                    methods=5,
-                    messages=0,
-                    sessions=0,
-                    complexity=0,
-                    complexity_total=0,
-                    diff=0,
-                ),
-                patch_coverage=ReportTotals(
-                    files=0,
-                    lines=0,
-                    hits=5,
-                    misses=2,
-                    partials=1,
-                    coverage=62.5,
-                    branches=0,
-                    methods=0,
-                    messages=0,
-                    sessions=0,
-                    complexity=0,
-                    complexity_total=0,
-                    diff=0,
-                ),
-                change_coverage=41.666666666666664,
+                misses_in_comparison=3,
             ),
         ]
 
     @patch("services.archive.ArchiveService.read_file")
-    def test_impacted_files_filtered_by_patch_coverage_misses_descending(
+    def test_impacted_files_filtered_by_misses_in_comparison_descending(
         self, read_file
     ):
         read_file.return_value = mock_data_from_archive
         filters = {
             "ordering": {
                 "direction": OrderingDirection.DESC,
-                "parameter": ImpactedFileParameter.PATCH_COVERAGE_MISSES,
+                "parameter": ImpactedFileParameter.MISSES_IN_COMPARISON,
             }
         }
         impacted_files = self.execute(None, self.comparison, filters)
         assert impacted_files == [
-            ImpactedFile(
-                file_name="fileA",
-                base_name="fileA",
-                head_name="fileA",
-                base_coverage=ReportTotals(
-                    files=0,
-                    lines=0,
-                    hits=5,
-                    misses=6,
-                    partials=1,
-                    coverage=41.666666666666664,
-                    branches=2,
-                    methods=4,
-                    messages=0,
-                    sessions=0,
-                    complexity=0,
-                    complexity_total=0,
-                    diff=0,
-                ),
-                head_coverage=ReportTotals(
-                    files=0,
-                    lines=0,
-                    hits=10,
-                    misses=1,
-                    partials=1,
-                    coverage=83.33333333333333,
-                    branches=3,
-                    methods=5,
-                    messages=0,
-                    sessions=0,
-                    complexity=0,
-                    complexity_total=0,
-                    diff=0,
-                ),
-                patch_coverage=ReportTotals(
-                    files=0,
-                    lines=0,
-                    hits=5,
-                    misses=2,
-                    partials=1,
-                    coverage=62.5,
-                    branches=0,
-                    methods=0,
-                    messages=0,
-                    sessions=0,
-                    complexity=0,
-                    complexity_total=0,
-                    diff=0,
-                ),
-                change_coverage=41.666666666666664,
-            ),
             ImpactedFile(
                 file_name="fileB",
                 base_name="fileB",
@@ -1624,6 +1624,59 @@ class FetchImpactedFilesTest(TransactionTestCase):
                     diff=0,
                 ),
                 change_coverage=44.047619047619044,
+                misses_in_comparison=3,
+            ),
+            ImpactedFile(
+                file_name="fileA",
+                base_name="fileA",
+                head_name="fileA",
+                base_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=5,
+                    misses=6,
+                    partials=1,
+                    coverage=41.666666666666664,
+                    branches=2,
+                    methods=4,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                head_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=10,
+                    misses=1,
+                    partials=1,
+                    coverage=83.33333333333333,
+                    branches=3,
+                    methods=5,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                patch_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=5,
+                    misses=2,
+                    partials=1,
+                    coverage=62.5,
+                    branches=0,
+                    methods=0,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                change_coverage=41.666666666666664,
+                misses_in_comparison=2,
             ),
         ]
 
@@ -1683,6 +1736,7 @@ class FetchImpactedFilesTest(TransactionTestCase):
                     diff=0,
                 ),
                 change_coverage=41.666666666666664,
+                misses_in_comparison=2,
             ),
             ImpactedFile(
                 file_name="fileB",
@@ -1734,6 +1788,7 @@ class FetchImpactedFilesTest(TransactionTestCase):
                     diff=0,
                 ),
                 change_coverage=44.047619047619044,
+                misses_in_comparison=3,
             ),
         ]
 
@@ -1746,17 +1801,6 @@ class FetchImpactedFilesTest(TransactionTestCase):
                 "direction": OrderingDirection.ASC,
                 "parameter": ImpactedFileParameter.FILE_NAME,
             },
-        }
-        impacted_files = self.execute(None, self.comparison, filters)
-        assert impacted_files == []
-
-    @patch("services.archive.ArchiveService.read_file")
-    def test_impacted_files_filtered_by_unintended_changes_returns_data(
-        self, read_file
-    ):
-        read_file.return_value = mock_data_with_unintended_changes
-        filters = {
-            "has_unintended_changes": True,
         }
         impacted_files = self.execute(None, self.comparison, filters)
         assert impacted_files == [
@@ -1810,5 +1854,178 @@ class FetchImpactedFilesTest(TransactionTestCase):
                     diff=0,
                 ),
                 change_coverage=41.666666666666664,
-            )
+                misses_in_comparison=2,
+            ),
+            ImpactedFile(
+                file_name="fileB",
+                base_name="fileB",
+                head_name="fileB",
+                base_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=5,
+                    misses=6,
+                    partials=1,
+                    coverage=41.666666666666664,
+                    branches=2,
+                    methods=4,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                head_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=12,
+                    misses=1,
+                    partials=1,
+                    coverage=85.71428571428571,
+                    branches=3,
+                    methods=5,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                patch_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=5,
+                    misses=1,
+                    partials=1,
+                    coverage=71.42857142857143,
+                    branches=0,
+                    methods=0,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                change_coverage=44.047619047619044,
+                misses_in_comparison=3,
+            ),
+        ]
+
+    @patch("services.archive.ArchiveService.read_file")
+    def test_impacted_files_filtered_by_unintended_changes_set_to_false(
+        self, read_file
+    ):
+        read_file.return_value = mocked_files_with_direct_and_indirect_changes
+        filters = {
+            "has_unintended_changes": False,
+            "ordering": {
+                "direction": OrderingDirection.ASC,
+                "parameter": ImpactedFileParameter.FILE_NAME,
+            },
+        }
+        impacted_files = self.execute(None, self.comparison, filters)
+        assert impacted_files == [
+            ImpactedFile(
+                file_name="fileA",
+                base_name="fileA",
+                head_name="fileA",
+                base_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=5,
+                    misses=6,
+                    partials=1,
+                    coverage=41.666666666666664,
+                    branches=2,
+                    methods=4,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                head_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=10,
+                    misses=1,
+                    partials=1,
+                    coverage=83.33333333333333,
+                    branches=3,
+                    methods=5,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                patch_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=5,
+                    misses=2,
+                    partials=1,
+                    coverage=62.5,
+                    branches=0,
+                    methods=0,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                change_coverage=41.666666666666664,
+                misses_in_comparison=2,
+            ),
+            ImpactedFile(
+                file_name="fileB",
+                base_name="fileB",
+                head_name="fileB",
+                base_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=5,
+                    misses=6,
+                    partials=1,
+                    coverage=41.666666666666664,
+                    branches=2,
+                    methods=4,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                head_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=12,
+                    misses=1,
+                    partials=1,
+                    coverage=85.71428571428571,
+                    branches=3,
+                    methods=5,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                patch_coverage=ReportTotals(
+                    files=0,
+                    lines=0,
+                    hits=5,
+                    misses=1,
+                    partials=1,
+                    coverage=71.42857142857143,
+                    branches=0,
+                    methods=0,
+                    messages=0,
+                    sessions=0,
+                    complexity=0,
+                    complexity_total=0,
+                    diff=0,
+                ),
+                change_coverage=44.047619047619044,
+                misses_in_comparison=1,
+            ),
         ]

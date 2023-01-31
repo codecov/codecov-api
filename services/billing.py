@@ -62,6 +62,10 @@ class AbstractPaymentService(ABC):
     def update_payment_method(self, owner, payment_method):
         pass
 
+    @abstractmethod
+    def get_schedule(self, owner):
+        pass
+
 
 class StripeService(AbstractPaymentService):
     def __init__(self, requesting_user):
@@ -395,12 +399,43 @@ class StripeService(AbstractPaymentService):
         )
 
 
+class EnterprisePaymentService(AbstractPaymentService):
+    # enterprise has no payments setup so these are all noops
+
+    def get_invoice(self, owner, invoice_id):
+        pass
+
+    def list_filtered_invoices(self, owner, limit=10):
+        pass
+
+    def delete_subscription(self, owner):
+        pass
+
+    def modify_subscription(self, owner, plan):
+        pass
+
+    def create_checkout_session(self, owner, plan):
+        pass
+
+    def get_subscription(self, owner):
+        pass
+
+    def update_payment_method(self, owner, payment_method):
+        pass
+
+    def get_schedule(self, owner):
+        pass
+
+
 class BillingService:
     payment_service = None
 
     def __init__(self, payment_service=None, requesting_user=None):
         if payment_service is None:
-            self.payment_service = StripeService(requesting_user=requesting_user)
+            if settings.IS_ENTERPRISE:
+                self.payment_service = EnterprisePaymentService()
+            else:
+                self.payment_service = StripeService(requesting_user=requesting_user)
         else:
             self.payment_service = payment_service
 

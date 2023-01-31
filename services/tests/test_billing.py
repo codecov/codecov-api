@@ -1108,6 +1108,9 @@ class MockPaymentService(AbstractPaymentService):
     def update_payment_method(self, owner, plan):
         pass
 
+    def get_schedule(self, owner):
+        pass
+
 
 class BillingServiceTests(TestCase):
     def setUp(self):

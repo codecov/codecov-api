@@ -1,6 +1,11 @@
+import hashlib
 from unittest.mock import PropertyMock, patch
 
 from django.test import TransactionTestCase
+from shared.torngit.exceptions import (
+    TorngitClientGeneralError,
+    TorngitObjectNotFoundError,
+)
 
 from codecov_auth.tests.factories import OwnerFactory
 from compare.models import CommitComparison
@@ -21,6 +26,7 @@ query ImpactedFiles(
       commit(id: $commit) {
         compareWithParent {
           impactedFilesCount
+          indirectChangedFilesCount
           impactedFiles {
             fileName
             headName
@@ -59,6 +65,7 @@ query ImpactedFile(
       commit(id: $commit) {
         compareWithParent {
           impactedFile(path: $path) {
+            hashedPath
             headName
             baseName
             baseCoverage {
@@ -71,8 +78,16 @@ query ImpactedFile(
               percentCovered
             }
             segments {
-              hasUnintendedChanges
+              ... on SegmentComparisons {
+                results {
+                  hasUnintendedChanges
+                }
+              }
+              ... on ResolverError {
+                message
+              }
             }
+            missesInComparison
           }
         }
       }
@@ -98,6 +113,7 @@ query ImpactedFile(
             impactedFile(path: $path) {
               headName
               baseName
+              hashedPath
               baseCoverage {
                 percentCovered
               }
@@ -107,8 +123,15 @@ query ImpactedFile(
               patchCoverage {
                 percentCovered
               }
-              segments (filters: $filters) {
-                hasUnintendedChanges
+              segments(filters: $filters) {
+                ... on SegmentComparisons {
+                  results {
+                    hasUnintendedChanges
+                  }
+                }
+                ... on ResolverError {
+                  message
+                }
               }
             }
           }
@@ -118,7 +141,6 @@ query ImpactedFile(
   }
 }
 """
-
 mock_data_from_archive = """
 {
     "files": [{
@@ -143,7 +165,12 @@ mock_data_from_archive = """
             "complexity": 0,
             "complexity_total": 0,
             "methods": 4
-        }
+        },
+        "added_diff_coverage": [
+            [9,"h"],
+            [10,"m"]
+        ],
+        "unexpected_line_changes": []
       },
       {
         "head_name": "fileB",
@@ -176,7 +203,8 @@ mock_data_from_archive = """
             [15,"h"],
             [16,"h"],
             [17,"h"]
-        ]
+        ],
+        "unexpected_line_changes": [[[1, "h"], [1, "m"]]]
     }]
 }
 """
@@ -241,6 +269,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                     "commit": {
                         "compareWithParent": {
                             "impactedFilesCount": 2,
+                            "indirectChangedFilesCount": 1,
                             "impactedFiles": [
                                 {
                                     "fileName": "fileA",
@@ -256,7 +285,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                     "headCoverage": {
                                         "percentCovered": 85.71428571428571
                                     },
-                                    "patchCoverage": None,
+                                    "patchCoverage": {"percentCovered": 50.0},
                                     "changeCoverage": 44.047619047619044,
                                 },
                                 {
@@ -298,6 +327,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                     "commit": {
                         "compareWithParent": {
                             "impactedFilesCount": 2,
+                            "indirectChangedFilesCount": 1,
                             "impactedFiles": [
                                 {
                                     "fileName": "fileA",
@@ -313,7 +343,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                     "headCoverage": {
                                         "percentCovered": 85.71428571428571
                                     },
-                                    "patchCoverage": None,
+                                    "patchCoverage": {"percentCovered": 50.0},
                                     "changeCoverage": 44.047619047619044,
                                 },
                                 {
@@ -358,10 +388,14 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                             "impactedFile": {
                                 "headName": "fileB",
                                 "baseName": "fileB",
+                                "hashedPath": hashlib.md5("fileB".encode()).hexdigest(),
                                 "baseCoverage": {"percentCovered": 41.666666666666664},
                                 "headCoverage": {"percentCovered": 85.71428571428571},
                                 "patchCoverage": {"percentCovered": 100.0},
-                                "segments": [],
+                                "segments": {
+                                    "message": "cannot query segments in this context"
+                                },
+                                "missesInComparison": 1,
                             }
                         }
                     }
@@ -395,13 +429,16 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                             "impactedFile": {
                                 "headName": "fileB",
                                 "baseName": "fileB",
+                                "hashedPath": hashlib.md5("fileB".encode()).hexdigest(),
                                 "baseCoverage": {"percentCovered": 41.666666666666664},
                                 "headCoverage": {"percentCovered": 85.71428571428571},
                                 "patchCoverage": {"percentCovered": 100.0},
-                                "segments": [
-                                    {"hasUnintendedChanges": True},
-                                    {"hasUnintendedChanges": False},
-                                ],
+                                "segments": {
+                                    "results": [
+                                        {"hasUnintendedChanges": True},
+                                        {"hasUnintendedChanges": False},
+                                    ],
+                                },
                             },
                         }
                     }
@@ -436,10 +473,178 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                             "impactedFile": {
                                 "headName": "fileA",
                                 "baseName": "fileA",
+                                "hashedPath": hashlib.md5("fileA".encode()).hexdigest(),
                                 "baseCoverage": {"percentCovered": 41.666666666666664},
                                 "headCoverage": {"percentCovered": 85.71428571428571},
-                                "patchCoverage": None,
-                                "segments": [{"hasUnintendedChanges": True}],
+                                "patchCoverage": {"percentCovered": 50.0},
+                                "segments": {
+                                    "results": [{"hasUnintendedChanges": True}],
+                                },
+                            },
+                        }
+                    }
+                }
+            }
+        }
+
+    @patch("services.comparison.Comparison.validate")
+    @patch("services.comparison.PullRequestComparison.get_file_comparison")
+    @patch("services.archive.ArchiveService.read_file")
+    def test_fetch_impacted_file_with_segments_unknown_path(
+        self, read_file, mock_get_file_comparison, mock_compare_validate
+    ):
+        read_file.return_value = mock_data_from_archive
+        mock_get_file_comparison.side_effect = TorngitObjectNotFoundError(None, None)
+        mock_compare_validate.return_value = True
+
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "pull": self.pull.pullid,
+            "path": "fileA",
+        }
+        data = self.gql_request(query_impacted_file_through_pull, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "pull": {
+                        "compareWithBase": {
+                            "state": "processed",
+                            "impactedFile": {
+                                "headName": "fileA",
+                                "baseName": "fileA",
+                                "hashedPath": hashlib.md5("fileA".encode()).hexdigest(),
+                                "baseCoverage": {"percentCovered": 41.666666666666664},
+                                "headCoverage": {"percentCovered": 85.71428571428571},
+                                "patchCoverage": {"percentCovered": 50.0},
+                                "segments": {"message": "path does not exist: fileA"},
+                            },
+                        }
+                    }
+                }
+            }
+        }
+
+    @patch("services.comparison.Comparison.validate")
+    @patch("services.comparison.PullRequestComparison.get_file_comparison")
+    @patch("services.archive.ArchiveService.read_file")
+    def test_fetch_impacted_file_with_segments_provider_error(
+        self, read_file, mock_get_file_comparison, mock_compare_validate
+    ):
+        read_file.return_value = mock_data_from_archive
+        mock_get_file_comparison.side_effect = TorngitClientGeneralError(
+            500, None, None
+        )
+        mock_compare_validate.return_value = True
+
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "pull": self.pull.pullid,
+            "path": "fileA",
+        }
+        data = self.gql_request(query_impacted_file_through_pull, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "pull": {
+                        "compareWithBase": {
+                            "state": "processed",
+                            "impactedFile": {
+                                "headName": "fileA",
+                                "baseName": "fileA",
+                                "hashedPath": hashlib.md5("fileA".encode()).hexdigest(),
+                                "baseCoverage": {"percentCovered": 41.666666666666664},
+                                "headCoverage": {"percentCovered": 85.71428571428571},
+                                "patchCoverage": {"percentCovered": 50.0},
+                                "segments": {
+                                    "message": "Error fetching data from the provider"
+                                },
+                            },
+                        }
+                    }
+                }
+            }
+        }
+
+    @patch("services.comparison.Comparison.validate")
+    @patch("services.comparison.PullRequestComparison.get_file_comparison")
+    @patch("services.archive.ArchiveService.read_file")
+    def test_fetch_impacted_file_with_segments_filter_set_to_false(
+        self, read_file, mock_get_file_comparison, mock_compare_validate
+    ):
+        read_file.return_value = mock_data_from_archive
+
+        mock_get_file_comparison.return_value = MockFileComparison()
+        mock_compare_validate.return_value = True
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "pull": self.pull.pullid,
+            "path": "fileA",
+            "filters": {"hasUnintendedChanges": False},
+        }
+        data = self.gql_request(query_impacted_file_through_pull, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "pull": {
+                        "compareWithBase": {
+                            "state": "processed",
+                            "impactedFile": {
+                                "headName": "fileA",
+                                "baseName": "fileA",
+                                "hashedPath": "5e9f0c9689fb7ec181ea0fb09ad3f74e",
+                                "baseCoverage": {"percentCovered": 41.666666666666664},
+                                "headCoverage": {"percentCovered": 85.71428571428571},
+                                "patchCoverage": {"percentCovered": 50.0},
+                                "segments": {
+                                    "results": [{"hasUnintendedChanges": False}]
+                                },
+                            },
+                        }
+                    }
+                }
+            }
+        }
+
+    @patch("services.comparison.Comparison.validate")
+    @patch("services.comparison.PullRequestComparison.get_file_comparison")
+    @patch("services.archive.ArchiveService.read_file")
+    def test_fetch_impacted_file_without_segments_filter(
+        self, read_file, mock_get_file_comparison, mock_compare_validate
+    ):
+        read_file.return_value = mock_data_from_archive
+
+        mock_get_file_comparison.return_value = MockFileComparison()
+        mock_compare_validate.return_value = True
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "pull": self.pull.pullid,
+            "path": "fileA",
+        }
+        data = self.gql_request(query_impacted_file_through_pull, variables=variables)
+        print(data)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "pull": {
+                        "compareWithBase": {
+                            "state": "processed",
+                            "impactedFile": {
+                                "headName": "fileA",
+                                "baseName": "fileA",
+                                "hashedPath": "5e9f0c9689fb7ec181ea0fb09ad3f74e",
+                                "baseCoverage": {"percentCovered": 41.666666666666664},
+                                "headCoverage": {"percentCovered": 85.71428571428571},
+                                "patchCoverage": {"percentCovered": 50.0},
+                                "segments": {
+                                    "results": [
+                                        {"hasUnintendedChanges": True},
+                                        {"hasUnintendedChanges": False},
+                                    ]
+                                },
                             },
                         }
                     }
