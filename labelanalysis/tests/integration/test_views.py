@@ -23,6 +23,7 @@ def test_simple_label_analysis_call_flow(db, mocker):
         "base_commit": base_commit.commitid,
         "head_commit": commit.commitid,
         "requested_labels": None,
+        "processing_params": {"pull_request_number": 8},
     }
     response = client.post(
         url,
@@ -38,6 +39,7 @@ def test_simple_label_analysis_call_flow(db, mocker):
     assert produced_object.requested_labels is None
     assert produced_object.state_id == LabelAnalysisRequestState.CREATED.db_id
     assert produced_object.result is None
+    assert produced_object.processing_params == {"pull_request_number": 8}
     response_json = response.json()
     expected_response_json = {
         "base_commit": base_commit.commitid,

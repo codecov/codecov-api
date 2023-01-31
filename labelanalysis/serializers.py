@@ -32,6 +32,7 @@ class LabelAnalysisRequestSerializer(serializers.ModelSerializer):
             "result",
             "state",
             "external_id",
+            "processing_params",
         )
         read_only_fields = ("result", "external_id")
 
