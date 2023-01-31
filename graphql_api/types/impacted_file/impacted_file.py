@@ -17,7 +17,8 @@ from services.comparison import ImpactedFile
 
 @impacted_file_bindable.field("fileName")
 def resolve_file_name(impacted_file: ImpactedFile, info) -> str:
-    return impacted_file.file_name
+    parts = impacted_file.head_name.split("/")
+    return parts[-1]
 
 
 @impacted_file_bindable.field("headName")
@@ -148,7 +149,7 @@ def resolve_is_deleted_file(impacted_file: ImpactedFile, info) -> bool:
 
 @impacted_file_bindable.field("missesInComparison")
 def resolve_misses_in_comparison(impacted_file: ImpactedFile, info) -> int:
-    return impacted_file.misses_in_comparison
+    return impacted_file.misses_count
 
 
 @impacted_file_bindable.field("isCriticalFile")
@@ -162,3 +163,5 @@ def resolve_is_critical_file(impacted_file: ImpactedFile, info) -> bool:
         critical_filenames = profiling_summary.critical_filenames
 
         return base_name in critical_filenames or head_name in critical_filenames
+    else:
+        return False

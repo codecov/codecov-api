@@ -17,7 +17,11 @@ from graphql_api.types.comparison.comparison import (
     MissingHeadReport,
 )
 from graphql_api.types.enums import OrderingDirection, PullRequestState
-from services.comparison import MissingComparisonReport, PullRequestComparison
+from services.comparison import (
+    ComparisonReport,
+    MissingComparisonReport,
+    PullRequestComparison,
+)
 
 pull_bindable = ObjectType("Pull")
 
@@ -112,7 +116,7 @@ async def resolve_compare_with_base(pull, info, **kwargs):
         # store the comparison in the context - to be used in the `Comparison` resolvers
         info.context["comparison"] = comparison
 
-    return commit_comparison
+    return ComparisonReport(commit_comparison)
 
 
 @pull_bindable.field("commits")

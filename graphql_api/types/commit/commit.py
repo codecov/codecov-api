@@ -14,6 +14,7 @@ from graphql_api.dataloader.owner import OwnerLoader
 from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.enums import OrderingDirection, PathContentDisplayType
 from graphql_api.types.errors import MissingCoverage, MissingHeadReport, UnknownPath
+from services.comparison import ComparisonReport
 from services.components import Component
 from services.path import ReportPaths
 from services.profiling import CriticalFile, ProfilingSummary
@@ -85,12 +86,16 @@ async def resolve_list_uploads(commit, info, **kwargs):
 
 
 @commit_bindable.field("compareWithParent")
-def resolve_compare_with_parent(commit, info, **kwargs):
+async def resolve_compare_with_parent(commit, info, **kwargs):
     if not commit.parent_commit_id:
         return None
 
     comparison_loader = ComparisonLoader.loader(info, commit.repository_id)
-    return comparison_loader.load((commit.parent_commit_id, commit.commitid))
+    commit_comparison = await comparison_loader.load(
+        (commit.parent_commit_id, commit.commitid)
+    )
+
+    return ComparisonReport(commit_comparison)
 
 
 @commit_bindable.field("flagNames")

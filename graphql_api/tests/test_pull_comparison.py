@@ -28,10 +28,10 @@ base_query = """{
 }
 """
 
-TestSegmentComparison = namedtuple(
-    "TestSegmentComparison", ["header", "lines", "has_unintended_changes"]
+MockSegmentComparison = namedtuple(
+    "MockSegmentComparison", ["header", "lines", "has_unintended_changes"]
 )
-TestLineComparison = namedtuple("TestLineComparison", ["number", "coverage", "value"])
+MockLineComparison = namedtuple("MockLineComparison", ["number", "coverage", "value"])
 
 
 class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
@@ -246,10 +246,10 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
     )
     @patch(
-        "services.comparison.PullRequestComparison.files",
+        "services.comparison.ComparisonReport.files",
         new_callable=PropertyMock,
     )
-    def test_pull_comparison_file_comparisons(self, files_mock, critical_files):
+    def test_pull_comparison_impacted_files(self, files_mock, critical_files):
         base_report_totals = ReportTotals(
             coverage=75.0,
             files=1,
@@ -265,43 +265,42 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             hits=3,
             misses=2,
             partials=1,
-            diff=ReportTotals(
-                coverage=0.5,
-                files=1,
-                lines=2,
-                hits=1,
-                misses=1,
-                partials=0,
-            ),
+            diff=None,
+        )
+        patch_totals = ReportTotals(
+            coverage=0.5,
+            files=1,
+            lines=2,
+            hits=1,
+            misses=1,
+            partials=0,
         )
 
-        TestFileComparison = namedtuple(
-            "TestFileComparison", ["name", "has_diff", "has_changes", "totals"]
+        TestImpactedFile = namedtuple(
+            "TestImpactedFile",
+            [
+                "base_name",
+                "head_name",
+                "base_coverage",
+                "head_coverage",
+                "patch_coverage",
+            ],
         )
+
         files_mock.return_value = [
-            TestFileComparison(
-                name={
-                    "base": "foo.py",
-                    "head": "bar.py",
-                },
-                has_diff=True,
-                has_changes=False,
-                totals={
-                    "base": base_report_totals,
-                    "head": head_report_totals,
-                },
+            TestImpactedFile(
+                base_name="foo.py",
+                head_name="bar.py",
+                base_coverage=base_report_totals,
+                head_coverage=head_report_totals,
+                patch_coverage=patch_totals,
             ),
-            TestFileComparison(
-                name={
-                    "base": None,
-                    "head": "baz.py",
-                },
-                has_diff=True,
-                has_changes=False,
-                totals={
-                    "base": base_report_totals,
-                    "head": head_report_totals,
-                },
+            TestImpactedFile(
+                base_name=None,
+                head_name="baz.py",
+                base_coverage=base_report_totals,
+                head_coverage=head_report_totals,
+                patch_coverage=patch_totals,
             ),
         ]
         critical_files.return_value = [
@@ -312,15 +311,13 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             pullId
             compareWithBase {
                 ... on Comparison {
-                    fileComparisons {
+                    impactedFiles {
                         baseName
                         headName
                         isNewFile
                         isRenamedFile
                         isDeletedFile
-                        hasDiff
-                        hasChanges
-                        baseTotals {
+                        baseCoverage {
                             percentCovered
                             fileCount
                             lineCount
@@ -328,7 +325,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                             missesCount
                             partialsCount
                         }
-                        headTotals {
+                        headCoverage {
                             percentCovered
                             fileCount
                             lineCount
@@ -336,7 +333,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                             missesCount
                             partialsCount
                         }
-                        patchTotals {
+                        patchCoverage {
                             percentCovered
                             fileCount
                             lineCount
@@ -378,18 +375,16 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         assert res == {
             "pullId": self.pull.pullid,
             "compareWithBase": {
-                "fileComparisons": [
+                "impactedFiles": [
                     {
                         "baseName": "foo.py",
                         "headName": "bar.py",
                         "isNewFile": False,
                         "isRenamedFile": True,
                         "isDeletedFile": False,
-                        "hasDiff": True,
-                        "hasChanges": False,
-                        "baseTotals": base_totals,
-                        "headTotals": head_totals,
-                        "patchTotals": patch_totals,
+                        "baseCoverage": base_totals,
+                        "headCoverage": head_totals,
+                        "patchCoverage": patch_totals,
                     },
                     {
                         "baseName": None,
@@ -397,11 +392,9 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                         "isNewFile": True,
                         "isRenamedFile": False,
                         "isDeletedFile": False,
-                        "hasDiff": True,
-                        "hasChanges": False,
-                        "baseTotals": base_totals,
-                        "headTotals": head_totals,
-                        "patchTotals": patch_totals,
+                        "baseCoverage": base_totals,
+                        "headCoverage": head_totals,
+                        "patchCoverage": patch_totals,
                     },
                 ]
             },
@@ -411,34 +404,22 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
     )
     @patch(
-        "services.comparison.PullRequestComparison.files",
+        "services.comparison.ComparisonReport.files",
         new_callable=PropertyMock,
     )
     def test_pull_comparison_is_critical_file(self, files_mock, critical_files):
-
-        TestFileComparisonIsCriticalFile = namedtuple(
-            "TestFileComparisonIsCriticalFile", ["name", "has_diff", "has_changes"]
-        )
+        TestImpactedFile = namedtuple("TestImpactedFile", ["base_name", "head_name"])
 
         files_mock.return_value = [
-            TestFileComparisonIsCriticalFile(
-                name={
-                    "base": "foo.py",
-                    "head": "bar.py",
-                },
-                has_diff=True,
-                has_changes=False,
+            TestImpactedFile(
+                base_name="foo.py",
+                head_name="bar.py",
             ),
-            TestFileComparisonIsCriticalFile(
-                name={
-                    "base": None,
-                    "head": "baz.py",
-                },
-                has_diff=True,
-                has_changes=False,
+            TestImpactedFile(
+                base_name=None,
+                head_name="baz.py",
             ),
         ]
-
         critical_files.return_value = [
             CriticalFile("foo.py"),
         ]
@@ -447,7 +428,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             pullId
             compareWithBase {
                 ... on Comparison {
-                    fileComparisons {
+                    impactedFiles {
                         baseName
                         headName
                         isCriticalFile
@@ -460,7 +441,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         assert res == {
             "pullId": self.pull.pullid,
             "compareWithBase": {
-                "fileComparisons": [
+                "impactedFiles": [
                     {
                         "baseName": "foo.py",
                         "headName": "bar.py",
@@ -476,25 +457,18 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         }
 
     @patch(
-        "services.comparison.PullRequestComparison.files",
+        "services.comparison.ComparisonReport.files",
         new_callable=PropertyMock,
     )
     def test_pull_comparison_is_critical_file_returns_false_through_repositories(
         self, files_mock
     ):
-
-        TestFileComparisonIsCriticalFile = namedtuple(
-            "TestFileComparisonIsCriticalFile", ["name", "has_diff", "has_changes"]
-        )
+        TestImpactedFile = namedtuple("TestImpactedFile", ["base_name", "head_name"])
 
         files_mock.return_value = [
-            TestFileComparisonIsCriticalFile(
-                name={
-                    "base": "foo.py",
-                    "head": "bar.py",
-                },
-                has_diff=True,
-                has_changes=False,
+            TestImpactedFile(
+                base_name="foo.py",
+                head_name="bar.py",
             ),
         ]
 
@@ -509,7 +483,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                         pullId
                                         compareWithBase {
                                             ... on Comparison {
-                                                fileComparisons {
+                                                impactedFiles {
                                                     baseName
                                                     headName
                                                     isCriticalFile
@@ -537,7 +511,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                     "pull": {
                                         "pullId": 2,
                                         "compareWithBase": {
-                                            "fileComparisons": [
+                                            "impactedFiles": [
                                                 {
                                                     "baseName": "foo.py",
                                                     "headName": "bar.py",
@@ -561,22 +535,31 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         "services.comparison.PullRequestComparison.files",
         new_callable=PropertyMock,
     )
-    def test_pull_comparison_line_comparisons(self, files_mock, get_file_comparison):
+    @patch(
+        "services.comparison.ComparisonReport.files",
+        new_callable=PropertyMock,
+    )
+    def test_pull_comparison_line_comparisons(
+        self, comparison_files_mock, files_mock, get_file_comparison
+    ):
         TestFileComparison = namedtuple(
-            "TestFileComparison", ["name", "has_diff", "has_changes", "segments"]
+            "TestFileComparison",
+            ["name", "head_name", "base_name", "has_diff", "has_changes", "segments"],
         )
 
         test_files = [
             TestFileComparison(
                 name={"head": "file1", "base": "file1"},
+                head_name="file1",
+                base_name="file1",
                 has_diff=True,
                 has_changes=False,
                 segments=[
-                    TestSegmentComparison(
+                    MockSegmentComparison(
                         header=(1, 2, 3, 4),
                         has_unintended_changes=False,
                         lines=[
-                            TestLineComparison(
+                            MockLineComparison(
                                 number={
                                     "head": "1",
                                     "base": "1",
@@ -587,7 +570,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                 },
                                 value=" line1",
                             ),
-                            TestLineComparison(
+                            MockLineComparison(
                                 number={
                                     "base": None,
                                     "head": "2",
@@ -604,14 +587,16 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             ),
             TestFileComparison(
                 name={"head": "file2", "base": "file2"},
+                head_name="file2",
+                base_name="file2",
                 has_diff=False,
                 has_changes=True,
                 segments=[
-                    TestSegmentComparison(
+                    MockSegmentComparison(
                         header=(1, None, 1, None),
                         has_unintended_changes=True,
                         lines=[
-                            TestLineComparison(
+                            MockLineComparison(
                                 number={
                                     "head": "1",
                                     "base": "1",
@@ -628,6 +613,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             ),
         ]
 
+        comparison_files_mock.return_value = test_files
         files_mock.return_value = test_files
         get_file_comparison.side_effect = test_files
 
@@ -635,16 +621,20 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             pullId
             compareWithBase {
                 ... on Comparison {
-                    fileComparisons {
+                    impactedFiles {
                         segments {
-                            header
-                            hasUnintendedChanges
-                            lines {
-                                baseNumber
-                                headNumber
-                                baseCoverage
-                                headCoverage
-                                content
+                            ... on SegmentComparisons {
+                                results {
+                                    header
+                                    hasUnintendedChanges
+                                    lines {
+                                        baseNumber
+                                        headNumber
+                                        baseCoverage
+                                        headCoverage
+                                        content
+                                    }
+                                }
                             }
                         }
                     }
@@ -656,47 +646,51 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         assert res == {
             "pullId": self.pull.pullid,
             "compareWithBase": {
-                "fileComparisons": [
+                "impactedFiles": [
                     {
-                        "segments": [
-                            {
-                                "header": "-1,2 +3,4",
-                                "hasUnintendedChanges": False,
-                                "lines": [
-                                    {
-                                        "baseNumber": "1",
-                                        "headNumber": "1",
-                                        "baseCoverage": "H",
-                                        "headCoverage": "H",
-                                        "content": " line1",
-                                    },
-                                    {
-                                        "baseNumber": None,
-                                        "headNumber": "2",
-                                        "baseCoverage": None,
-                                        "headCoverage": "H",
-                                        "content": "+ line2",
-                                    },
-                                ],
-                            }
-                        ]
+                        "segments": {
+                            "results": [
+                                {
+                                    "header": "-1,2 +3,4",
+                                    "hasUnintendedChanges": False,
+                                    "lines": [
+                                        {
+                                            "baseNumber": "1",
+                                            "headNumber": "1",
+                                            "baseCoverage": "H",
+                                            "headCoverage": "H",
+                                            "content": " line1",
+                                        },
+                                        {
+                                            "baseNumber": None,
+                                            "headNumber": "2",
+                                            "baseCoverage": None,
+                                            "headCoverage": "H",
+                                            "content": "+ line2",
+                                        },
+                                    ],
+                                }
+                            ]
+                        }
                     },
                     {
-                        "segments": [
-                            {
-                                "header": "-1 +1",
-                                "hasUnintendedChanges": True,
-                                "lines": [
-                                    {
-                                        "baseNumber": "1",
-                                        "headNumber": "1",
-                                        "baseCoverage": "M",
-                                        "headCoverage": "H",
-                                        "content": " line1",
-                                    },
-                                ],
-                            }
-                        ]
+                        "segments": {
+                            "results": [
+                                {
+                                    "header": "-1 +1",
+                                    "hasUnintendedChanges": True,
+                                    "lines": [
+                                        {
+                                            "baseNumber": "1",
+                                            "headNumber": "1",
+                                            "baseCoverage": "M",
+                                            "headCoverage": "H",
+                                            "content": " line1",
+                                        },
+                                    ],
+                                }
+                            ]
+                        }
                     },
                 ]
             },
@@ -707,23 +701,30 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         "services.comparison.PullRequestComparison.files",
         new_callable=PropertyMock,
     )
+    @patch(
+        "services.comparison.ComparisonReport.files",
+        new_callable=PropertyMock,
+    )
     def test_pull_comparison_coverage_changes(
-        self, files_mock, get_file_comparison_mock
+        self, comparison_files_mock, files_mock, get_file_comparison_mock
     ):
         TestFileComparison = namedtuple(
-            "TestFileComparison", ["has_diff", "has_changes", "segments", "name"]
+            "TestFileComparison",
+            ["has_diff", "has_changes", "segments", "name", "head_name", "base_name"],
         )
 
         test_file_comparison = TestFileComparison(
             has_diff=False,
             has_changes=True,
             name={"head": "test", "base": "test"},
+            head_name="test",
+            base_name="test",
             segments=[
-                TestSegmentComparison(
+                MockSegmentComparison(
                     header=(1, 1, 1, 1),
                     has_unintended_changes=True,
                     lines=[
-                        TestLineComparison(
+                        MockLineComparison(
                             number={
                                 "head": "1",
                                 "base": "1",
@@ -741,22 +742,27 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
 
         get_file_comparison_mock.return_value = test_file_comparison
 
+        comparison_files_mock.return_value = [test_file_comparison]
         files_mock.return_value = [test_file_comparison]
 
         query = """
             pullId
             compareWithBase {
                 ... on Comparison {
-                    fileComparisons {
+                    impactedFiles {
                         segments {
-                            header
-                            hasUnintendedChanges
-                            lines {
-                                baseNumber
-                                headNumber
-                                baseCoverage
-                                headCoverage
-                                content
+                            ... on SegmentComparisons {
+                                results {
+                                    header
+                                    hasUnintendedChanges
+                                    lines {
+                                        baseNumber
+                                        headNumber
+                                        baseCoverage
+                                        headCoverage
+                                        content
+                                    }
+                                }
                             }
                         }
                     }
@@ -768,23 +774,25 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         assert res == {
             "pullId": self.pull.pullid,
             "compareWithBase": {
-                "fileComparisons": [
+                "impactedFiles": [
                     {
-                        "segments": [
-                            {
-                                "header": "-1,1 +1,1",
-                                "hasUnintendedChanges": True,
-                                "lines": [
-                                    {
-                                        "baseNumber": "1",
-                                        "headNumber": "1",
-                                        "baseCoverage": "M",
-                                        "headCoverage": "H",
-                                        "content": " line1",
-                                    },
-                                ],
-                            }
-                        ]
+                        "segments": {
+                            "results": [
+                                {
+                                    "header": "-1,1 +1,1",
+                                    "hasUnintendedChanges": True,
+                                    "lines": [
+                                        {
+                                            "baseNumber": "1",
+                                            "headNumber": "1",
+                                            "baseCoverage": "M",
+                                            "headCoverage": "H",
+                                            "content": " line1",
+                                        },
+                                    ],
+                                }
+                            ]
+                        }
                     }
                 ]
             },
@@ -805,7 +813,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                     headTotals {
                         percentCovered
                     }
-                    fileComparisons {
+                    impactedFiles {
                         baseName
                         headName
                     }
@@ -820,7 +828,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                 "state": "pending",
                 "baseTotals": None,
                 "headTotals": None,
-                "fileComparisons": None,
+                "impactedFiles": [],
             },
         }
 
@@ -851,7 +859,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             compareWithBase {
                 ... on Comparison {
                     state
-                    fileComparisons {
+                    impactedFiles {
                         headName
                     }
                 }
@@ -867,7 +875,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         assert res["errors"][0]["message"] == "Missing head report"
         assert (
             res["data"]["me"]["owner"]["repository"]["pull"]["compareWithBase"][
-                "fileComparisons"
+                "impactedFiles"
             ]
             is None
         )
@@ -882,7 +890,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             compareWithBase {
                 ... on Comparison {
                     state
-                    fileComparisons {
+                    impactedFiles {
                         headName
                     }
                 }
@@ -898,7 +906,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         assert res["errors"][0]["message"] == "Missing base report"
         assert (
             res["data"]["me"]["owner"]["repository"]["pull"]["compareWithBase"][
-                "fileComparisons"
+                "impactedFiles"
             ]
             is None
         )

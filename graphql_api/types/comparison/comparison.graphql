@@ -9,7 +9,6 @@ type Comparison {
   changeWithParent: Float
   baseTotals: CoverageTotals
   headTotals: CoverageTotals
-  fileComparisons: [FileComparison!]
   flagComparisons: [FlagComparison]
   componentComparisons: [ComponentComparison!]
   hasDifferentNumberOfHeadAndBaseReports: Boolean!

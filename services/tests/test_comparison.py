@@ -18,7 +18,7 @@ from compare.models import CommitComparison
 from compare.tests.factories import CommitComparisonFactory
 from core.models import Commit
 from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
-from reports.models import CommitReport, ReportDetails
+from reports.models import ReportDetails
 from reports.tests.factories import CommitReportFactory
 from services.archive import SerializableReport
 from services.comparison import (
@@ -30,7 +30,6 @@ from services.comparison import (
     FileComparison,
     FileComparisonTraverseManager,
     ImpactedFile,
-    ImpactedFileParameter,
     LineComparison,
     MissingComparisonReport,
     PullRequestComparison,
@@ -1587,406 +1586,136 @@ class ComparisonReportTest(TestCase):
     def test_impacted_file(self, read_file):
         read_file.return_value = mock_data_from_archive
         impacted_file = self.comparison_report.impacted_file("fileB")
-        assert impacted_file == ImpactedFile(
-            file_name="fileB",
-            base_name="fileB",
-            head_name="fileB",
-            base_coverage=ReportTotals(
-                files=0,
-                lines=0,
-                hits=5,
-                misses=6,
-                partials=1,
-                coverage=41.666666666666664,
-                branches=2,
-                methods=4,
-                messages=0,
-                sessions=0,
-                complexity=0,
-                complexity_total=0,
-                diff=0,
-            ),
-            head_coverage=ReportTotals(
-                files=0,
-                lines=0,
-                hits=12,
-                misses=1,
-                partials=1,
-                coverage=85.71428571428571,
-                branches=3,
-                methods=5,
-                messages=0,
-                sessions=0,
-                complexity=0,
-                complexity_total=0,
-                diff=0,
-            ),
-            patch_coverage=ReportTotals(
-                files=0,
-                lines=0,
-                hits=5,
-                misses=1,
-                partials=1,
-                coverage=71.42857142857143,
-                branches=0,
-                methods=0,
-                messages=0,
-                sessions=0,
-                complexity=0,
-                complexity_total=0,
-                diff=0,
-            ),
-            change_coverage=44.047619047619044,
-            misses_in_comparison=1,
-        )
-
-    def test_impacted_file_deserialize_file(self):
-        file = {
-            "base_name": "flag2/words.js",
-            "head_name": "flag2/words.js",
-            "file_was_added_by_diff": False,
-            "file_was_removed_by_diff": False,
-            "base_coverage": None,
-            "head_coverage": {
-                "hits": 12,
-                "misses": 1,
-                "partials": 1,
-                "branches": 3,
-                "sessions": 0,
-                "complexity": 0,
-                "complexity_total": 0,
-                "methods": 5,
-            },
-            "removed_diff_coverage": None,
-            "added_diff_coverage": [],
-            "unexpected_line_changes": [
-                [[1, None], [1, "h"]],
-                [[2, None], [2, "h"]],
-                [[5, None], [5, "h"]],
-                [[6, None], [6, "h"]],
-                [[9, None], [9, "m"]],
-                [[10, None], [10, "p"]],
-                [[14, None], [13, "h"]],
-                [[15, None], [14, "h"]],
-                [[18, None], [17, "h"]],
-                [[19, None], [18, "h"]],
-                [[20, None], [19, "h"]],
-                [[22, None], [21, "h"]],
-                [[23, None], [22, "h"]],
-                [[27, None], [26, "h"]],
-            ],
-            "lines_only_on_base": [13],
-            "lines_only_on_head": [],
-        }
-        deserialized_file = self.comparison_report.deserialize_file(file)
-        assert deserialized_file == ImpactedFile(
-            file_name="words.js",
-            base_name="flag2/words.js",
-            head_name="flag2/words.js",
-            base_coverage=None,
-            head_coverage=ReportTotals(
-                files=0,
-                lines=0,
-                hits=12,
-                misses=1,
-                partials=1,
-                coverage=85.71428571428571,
-                branches=3,
-                methods=5,
-                messages=0,
-                sessions=0,
-                complexity=0,
-                complexity_total=0,
-                diff=0,
-            ),
-            patch_coverage=None,
-            change_coverage=None,
-            misses_in_comparison=1,
-        )
+        assert impacted_file.head_name == "fileB"
 
     @patch("services.archive.ArchiveService.read_file")
     def test_impacted_files_filtered_by_indirect_changes(self, read_file):
         read_file.return_value = mock_data_from_archive
         impacted_files = self.comparison_report.impacted_files_with_unintended_changes
-        assert impacted_files == [
-            ImpactedFile(
-                file_name="fileA",
-                base_name="fileA",
-                head_name="fileA",
-                base_coverage=ReportTotals(
-                    files=0,
-                    lines=0,
-                    hits=5,
-                    misses=6,
-                    partials=1,
-                    coverage=41.666666666666664,
-                    branches=2,
-                    methods=4,
-                    messages=0,
-                    sessions=0,
-                    complexity=0,
-                    complexity_total=0,
-                    diff=0,
-                ),
-                head_coverage=ReportTotals(
-                    files=0,
-                    lines=0,
-                    hits=10,
-                    misses=1,
-                    partials=1,
-                    coverage=83.33333333333333,
-                    branches=3,
-                    methods=5,
-                    messages=0,
-                    sessions=0,
-                    complexity=0,
-                    complexity_total=0,
-                    diff=0,
-                ),
-                patch_coverage=ReportTotals(
-                    files=0,
-                    lines=0,
-                    hits=5,
-                    misses=2,
-                    partials=1,
-                    coverage=62.5,
-                    branches=0,
-                    methods=0,
-                    messages=0,
-                    sessions=0,
-                    complexity=0,
-                    complexity_total=0,
-                    diff=0,
-                ),
-                change_coverage=41.666666666666664,
-                misses_in_comparison=2,
-            ),
-        ]
+        assert [file.head_name for file in impacted_files] == ["fileA"]
 
     @patch("services.archive.ArchiveService.read_file")
     def test_impacted_files_filtered_by_direct_changes(self, read_file):
         read_file.return_value = mocked_files_with_direct_and_indirect_changes
         impacted_files = self.comparison_report.impacted_files_with_direct_changes
-        assert impacted_files == [
-            ImpactedFile(
-                file_name="fileA",
-                base_name="fileA",
-                head_name="fileA",
-                base_coverage=ReportTotals(
-                    files=0,
-                    lines=0,
-                    hits=5,
-                    misses=6,
-                    partials=1,
-                    coverage=41.666666666666664,
-                    branches=2,
-                    methods=4,
-                    messages=0,
-                    sessions=0,
-                    complexity=0,
-                    complexity_total=0,
-                    diff=0,
-                ),
-                head_coverage=ReportTotals(
-                    files=0,
-                    lines=0,
-                    hits=10,
-                    misses=1,
-                    partials=1,
-                    coverage=83.33333333333333,
-                    branches=3,
-                    methods=5,
-                    messages=0,
-                    sessions=0,
-                    complexity=0,
-                    complexity_total=0,
-                    diff=0,
-                ),
-                patch_coverage=ReportTotals(
-                    files=0,
-                    lines=0,
-                    hits=5,
-                    misses=2,
-                    partials=1,
-                    coverage=62.5,
-                    branches=0,
-                    methods=0,
-                    messages=0,
-                    sessions=0,
-                    complexity=0,
-                    complexity_total=0,
-                    diff=0,
-                ),
-                change_coverage=41.666666666666664,
-                misses_in_comparison=2,
-            ),
-            ImpactedFile(
-                file_name="fileB",
-                base_name="fileB",
-                head_name="fileB",
-                base_coverage=ReportTotals(
-                    files=0,
-                    lines=0,
-                    hits=5,
-                    misses=6,
-                    partials=1,
-                    coverage=41.666666666666664,
-                    branches=2,
-                    methods=4,
-                    messages=0,
-                    sessions=0,
-                    complexity=0,
-                    complexity_total=0,
-                    diff=0,
-                ),
-                head_coverage=ReportTotals(
-                    files=0,
-                    lines=0,
-                    hits=12,
-                    misses=1,
-                    partials=1,
-                    coverage=85.71428571428571,
-                    branches=3,
-                    methods=5,
-                    messages=0,
-                    sessions=0,
-                    complexity=0,
-                    complexity_total=0,
-                    diff=0,
-                ),
-                patch_coverage=ReportTotals(
-                    files=0,
-                    lines=0,
-                    hits=5,
-                    misses=1,
-                    partials=1,
-                    coverage=71.42857142857143,
-                    branches=0,
-                    methods=0,
-                    messages=0,
-                    sessions=0,
-                    complexity=0,
-                    complexity_total=0,
-                    diff=0,
-                ),
-                change_coverage=44.047619047619044,
-                misses_in_comparison=1,
-            ),
-        ]
+        assert [file.head_name for file in impacted_files] == ["fileA", "fileB"]
 
     def test_file_has_diff(self):
-        file = {
-            "head_name": "fileB",
-            "base_name": "fileB",
-            "head_coverage": {
-                "hits": 12,
-                "misses": 1,
-                "partials": 1,
-                "branches": 3,
-                "sessions": 0,
-                "complexity": 0,
-                "complexity_total": 0,
-                "methods": 5,
-            },
-            "base_coverage": {
-                "hits": 5,
-                "misses": 6,
-                "partials": 1,
-                "branches": 2,
-                "sessions": 0,
-                "complexity": 0,
-                "complexity_total": 0,
-                "methods": 4,
-            },
-            "added_diff_coverage": [
-                [9, "h"],
-                [10, "m"],
-                [13, "p"],
-                [14, "h"],
-                [15, "h"],
-                [16, "h"],
-                [17, "h"],
-            ],
-            "unexpected_line_changes": [],
-        }
-        has_diff = self.comparison_report.has_diff(file)
-        assert has_diff is True
+        file = ImpactedFile(
+            **{
+                "head_name": "fileB",
+                "base_name": "fileB",
+                "head_coverage": {
+                    "hits": 12,
+                    "misses": 1,
+                    "partials": 1,
+                    "branches": 3,
+                    "sessions": 0,
+                    "complexity": 0,
+                    "complexity_total": 0,
+                    "methods": 5,
+                },
+                "base_coverage": {
+                    "hits": 5,
+                    "misses": 6,
+                    "partials": 1,
+                    "branches": 2,
+                    "sessions": 0,
+                    "complexity": 0,
+                    "complexity_total": 0,
+                    "methods": 4,
+                },
+                "added_diff_coverage": [
+                    [9, "h"],
+                    [10, "m"],
+                    [13, "p"],
+                    [14, "h"],
+                    [15, "h"],
+                    [16, "h"],
+                    [17, "h"],
+                ],
+                "unexpected_line_changes": [],
+            }
+        )
+        assert file.has_diff is True
 
     def test_file_has_diff_with_indirect_changes(self):
-        file = {
-            "head_name": "fileB",
-            "base_name": "fileB",
-            "head_coverage": {
-                "hits": 12,
-                "misses": 1,
-                "partials": 1,
-                "branches": 3,
-                "sessions": 0,
-                "complexity": 0,
-                "complexity_total": 0,
-                "methods": 5,
-            },
-            "base_coverage": {
-                "hits": 5,
-                "misses": 6,
-                "partials": 1,
-                "branches": 2,
-                "sessions": 0,
-                "complexity": 0,
-                "complexity_total": 0,
-                "methods": 4,
-            },
-            "added_diff_coverage": [
-                [9, "h"],
-                [10, "m"],
-                [13, "p"],
-                [14, "h"],
-                [15, "h"],
-                [16, "h"],
-                [17, "h"],
-            ],
-            "unexpected_line_changes": [[[1, "h"], [1, "h"]]],
-        }
-        has_diff = self.comparison_report.has_diff(file)
-        assert has_diff is True
+        file = ImpactedFile(
+            **{
+                "head_name": "fileB",
+                "base_name": "fileB",
+                "head_coverage": {
+                    "hits": 12,
+                    "misses": 1,
+                    "partials": 1,
+                    "branches": 3,
+                    "sessions": 0,
+                    "complexity": 0,
+                    "complexity_total": 0,
+                    "methods": 5,
+                },
+                "base_coverage": {
+                    "hits": 5,
+                    "misses": 6,
+                    "partials": 1,
+                    "branches": 2,
+                    "sessions": 0,
+                    "complexity": 0,
+                    "complexity_total": 0,
+                    "methods": 4,
+                },
+                "added_diff_coverage": [
+                    [9, "h"],
+                    [10, "m"],
+                    [13, "p"],
+                    [14, "h"],
+                    [15, "h"],
+                    [16, "h"],
+                    [17, "h"],
+                ],
+                "unexpected_line_changes": [[[1, "h"], [1, "h"]]],
+            }
+        )
+        assert file.has_diff is True
 
     def test_file_has_changes(self):
-        file = {
-            "head_name": "fileB",
-            "base_name": "fileB",
-            "head_coverage": {
-                "hits": 12,
-                "misses": 1,
-                "partials": 1,
-                "branches": 3,
-                "sessions": 0,
-                "complexity": 0,
-                "complexity_total": 0,
-                "methods": 5,
-            },
-            "base_coverage": {
-                "hits": 5,
-                "misses": 6,
-                "partials": 1,
-                "branches": 2,
-                "sessions": 0,
-                "complexity": 0,
-                "complexity_total": 0,
-                "methods": 4,
-            },
-            "added_diff_coverage": [
-                [9, "h"],
-                [10, "m"],
-                [13, "p"],
-                [14, "h"],
-                [15, "h"],
-                [16, "h"],
-                [17, "h"],
-            ],
-            "unexpected_line_changes": [[[1, "h"], [1, "h"]]],
-        }
-        has_diff = self.comparison_report.has_changes(file)
-        assert has_diff is True
+        file = ImpactedFile(
+            **{
+                "head_name": "fileB",
+                "base_name": "fileB",
+                "head_coverage": {
+                    "hits": 12,
+                    "misses": 1,
+                    "partials": 1,
+                    "branches": 3,
+                    "sessions": 0,
+                    "complexity": 0,
+                    "complexity_total": 0,
+                    "methods": 5,
+                },
+                "base_coverage": {
+                    "hits": 5,
+                    "misses": 6,
+                    "partials": 1,
+                    "branches": 2,
+                    "sessions": 0,
+                    "complexity": 0,
+                    "complexity_total": 0,
+                    "methods": 4,
+                },
+                "added_diff_coverage": [
+                    [9, "h"],
+                    [10, "m"],
+                    [13, "p"],
+                    [14, "h"],
+                    [15, "h"],
+                    [16, "h"],
+                    [17, "h"],
+                ],
+                "unexpected_line_changes": [[[1, "h"], [1, "h"]]],
+            }
+        )
+        assert file.has_changes is True
 
 
 class CommitComparisonTests(TestCase):

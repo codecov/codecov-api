@@ -1,6 +1,8 @@
 from ariadne import EnumType
 
-from services.comparison import ImpactedFileParameter
+from compare.commands.compare.interactors.fetch_impacted_files import (
+    ImpactedFileParameter,
+)
 from timeseries.models import Interval as MeasurementInterval
 
 from .enums import (

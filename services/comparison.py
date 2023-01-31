@@ -5,9 +5,9 @@ import functools
 import json
 import logging
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 import minio
 import pytz
@@ -789,177 +789,161 @@ class FlagComparison(object):
 
 @dataclass
 class ImpactedFile:
-    file_name: str
-    base_name: str
-    head_name: str
-    base_coverage: ReportTotals
-    head_coverage: ReportTotals
-    patch_coverage: ReportTotals
-    change_coverage: float
-    misses_in_comparison: int
+    @dataclass
+    class Totals(ReportTotals):
+        def __post_init__(self):
+            nb_branches = self.hits + self.misses + self.partials
+            self.coverage = (100 * self.hits / nb_branches) if nb_branches > 0 else None
 
+    base_name: Optional[str] = None  # will be `None` for created files
+    head_name: Optional[str] = None  # will be `None` for deleted files
+    file_was_added_by_diff: bool = False
+    file_was_removed_by_diff: bool = False
+    base_coverage: Optional[Totals] = None  # will be `None` for created files
+    head_coverage: Optional[Totals] = None  # will be `None` for deleted files
 
-class ImpactedFileParameter(enum.Enum):
-    FILE_NAME = "file_name"
-    CHANGE_COVERAGE = "change_coverage"
-    HEAD_COVERAGE = "head_coverage"
-    MISSES_IN_COMPARISON = "misses_in_comparison"
-    PATCH_COVERAGE = "patch_coverage"
+    # lists of (line number, coverage) tuples
+    added_diff_coverage: List[tuple[int, str]] = field(default_factory=list)
+    removed_diff_coverage: List[tuple[int, str]] = field(default_factory=list)
+    unexpected_line_changes: List[tuple[int, str]] = field(default_factory=list)
 
+    # Other values available in raw data:
+    # `lines_only_on_base`
+    # `lines_only_on_head`
 
-"""
-This class creates helper methods relevant to the report created for comparison between two commits.
-
-This class takes an existing comparison as the parameter and outputs logic relevant to any contents within it.
-"""
-
-
-class ComparisonReport(object):
-    def __init__(self, comparison):
-        self.comparison = comparison
-
-    @cached_property
-    def files(self):
-        if not self.comparison.report_storage_path:
-            return []
-        report_data = self.get_comparison_data_from_archive()
-        files = report_data.get("files", [])
-
-        return files
-
-    def file(self, path):
-        for file in self.files:
-            if file["head_name"] == path:
-                return file
-
-    def impacted_file(self, path):
-        impacted_file = self.file(path)
-        return self.deserialize_file(impacted_file)
+    @classmethod
+    def create(cls, **kwargs):
+        base_coverage = kwargs.pop("base_coverage")
+        head_coverage = kwargs.pop("head_coverage")
+        return cls(
+            **kwargs,
+            base_coverage=ImpactedFile.Totals(**base_coverage),
+            head_coverage=ImpactedFile.Totals(**head_coverage),
+        )
 
     @cached_property
-    def impacted_files(self):
-        impacted_files = self.files
-        return [self.deserialize_file(file) for file in impacted_files]
+    def has_diff(self) -> bool:
+        """
+        Returns `True` if the file has any additions or removals in the diff
+        """
+        return (
+            len(self.added_diff_coverage) > 0
+            or len(self.removed_diff_coverage) > 0
+            or self.file_was_added_by_diff
+            or self.file_was_removed_by_diff
+        )
 
     @cached_property
-    def impacted_files_with_unintended_changes(self):
-        impacted_files = [file for file in self.files if self.has_changes(file)]
-
-        return [self.deserialize_file(file) for file in impacted_files]
+    def has_changes(self) -> bool:
+        """
+        Returns `True` if the file has any unexpected changes
+        """
+        return len(self.unexpected_line_changes) > 0
 
     @cached_property
-    def impacted_files_with_direct_changes(self):
-        impacted_files = [file for file in self.files if self.has_diff(file)]
-
-        return [self.deserialize_file(file) for file in impacted_files]
-
-    """
-    Fetches contents of the report
-    """
-
-    def get_comparison_data_from_archive(self):
-        repository = self.comparison.compare_commit.repository
-        archive_service = ArchiveService(repository)
-        try:
-            data = archive_service.read_file(self.comparison.report_storage_path)
-            return json.loads(data)
-        except:
-            log.error(
-                "ComparisonReport - couldnt fetch data from storage", exc_info=True
-            )
-            return {}
-
-    """
-    Aggregates hits, misses and partials correspondent to the diff
-    """
-
-    def compute_patch_per_file(self, file):
-        added_diff_coverage = file.get("added_diff_coverage", [])
-        if not added_diff_coverage:
-            return None
-        patch_coverage = {"hits": 0, "misses": 0, "partials": 0}
-        for added_coverage in added_diff_coverage:
-            [_, type_coverage] = added_coverage
-            if type_coverage == "h":
-                patch_coverage["hits"] += 1
-            if type_coverage == "m":
-                patch_coverage["misses"] += 1
-            if type_coverage == "p":
-                patch_coverage["partials"] += 1
-        return patch_coverage
-
-    def deserialize_totals(self, file, key):
-        if not file.get(key):
-            return
-        # convert dict to ReportTotals and compute the coverage
-        totals = ReportTotals(**file[key])
-        nb_branches = totals.hits + totals.misses + totals.partials
-        totals.coverage = (100 * totals.hits / nb_branches) if nb_branches > 0 else None
-        file[key] = totals
-
-    def calculate_misses_in_comparison(self, file):
+    def misses_count(self):
+        """
+        Returns the total number of misses (diff misses and indirect misses)
+        """
         total_misses = 0
-        diff_coverage = file["added_diff_coverage"] or []
-        unexpected_line_changes = file["unexpected_line_changes"] or []
 
+        diff_coverage = self.added_diff_coverage or []
         for line_number, line_coverage_value in diff_coverage:
             if line_coverage_value == "m":
                 total_misses += 1
 
-        for [base, [head_line_number, head_coverage_value]] in unexpected_line_changes:
+        unexpected_line_changes = self.unexpected_line_changes or []
+        for [
+            base,
+            [head_line_number, head_coverage_value],
+        ] in unexpected_line_changes:
             if head_coverage_value == "m":
                 total_misses += 1
+
         return total_misses
 
-    """
-    Extracts relevant data from the fiels to be exposed as an impacted file
-    """
+    @cached_property
+    def patch_coverage(self) -> Optional[Totals]:
+        """
+        Sums of hits, misses and partials in the diff
+        """
+        if not self.added_diff_coverage:
+            return None
 
-    def deserialize_file(self, file):
-        file["patch_coverage"] = self.compute_patch_per_file(file)
-        self.deserialize_totals(file, "base_coverage")
-        self.deserialize_totals(file, "head_coverage")
-        self.deserialize_totals(file, "patch_coverage")
-        change_coverage = self.calculate_change(
-            file["head_coverage"], file["base_coverage"]
-        )
-        file_name = self.get_file_name_from_file_path(file["head_name"])
-        misses_in_comparison = self.calculate_misses_in_comparison(file)
-        return ImpactedFile(
-            file_name=file_name,
-            head_name=file["head_name"],
-            base_name=file["base_name"],
-            head_coverage=file["head_coverage"],
-            base_coverage=file["base_coverage"],
-            patch_coverage=file["patch_coverage"],
-            change_coverage=change_coverage,
-            misses_in_comparison=misses_in_comparison,
-        )
+        hits, misses, partials = (0, 0, 0)
+        for added_coverage in self.added_diff_coverage:
+            [_, type_coverage] = added_coverage
+            if type_coverage == "h":
+                hits += 1
+            if type_coverage == "m":
+                misses += 1
+            if type_coverage == "p":
+                partials += 1
 
-    # TODO: I think this can be a function located elsewhere
-    def calculate_change(self, head_coverage, compared_to_coverage):
-        if head_coverage and compared_to_coverage:
-            return float(head_coverage.coverage - compared_to_coverage.coverage)
-        # if not head_coverage:
-        #     # return there is no head coverage
-        # if not compared_to_coverage:
-        #     # return there is no base coverage
-        return None
+        return ImpactedFile.Totals(hits=hits, misses=misses, partials=partials)
 
-    def get_file_name_from_file_path(self, file_path):
-        parts = file_path.split("/")
+    @cached_property
+    def change_coverage(self) -> Optional[float]:
+        if self.base_coverage and self.head_coverage:
+            return float(self.head_coverage.coverage - self.base_coverage.coverage)
+
+    @cached_property
+    def file_name(self):
+        parts = self.head_name.split("/")
         return parts[-1]
 
-    def has_diff(self, file):
-        return (
-            bool(file.get("removed_diff_coverage"))
-            or bool(file.get("added_diff_coverage"))
-            or file.get("file_was_removed_by_diff")
-            or file.get("file_was_added_by_diff")
-        )
 
-    def has_changes(self, file):
-        return bool(file.get("unexpected_line_changes"))
+class ComparisonReport(object):
+    """
+    This is a wrapper around the data computed by the worker's commit comparison task.
+    The raw data is stored in blob storage and accessible via the `report_storage_path`
+    on a `CommitComparison`
+    """
+
+    def __init__(self, commit_comparison: CommitComparison):
+        self.commit_comparison = commit_comparison
+
+    @cached_property
+    def files(self) -> List[ImpactedFile]:
+        if not self.commit_comparison.report_storage_path:
+            return []
+
+        comparison_data = self._fetch_raw_comparison_data()
+        return [
+            ImpactedFile.create(**data) for data in comparison_data.get("files", [])
+        ]
+
+    def impacted_file(self, path: str) -> Optional[ImpactedFile]:
+        for file in self.files:
+            if file.head_name == path:
+                return file
+
+    @cached_property
+    def impacted_files(self) -> List[ImpactedFile]:
+        return self.files
+
+    @cached_property
+    def impacted_files_with_unintended_changes(self) -> List[ImpactedFile]:
+        return [file for file in self.files if file.has_changes]
+
+    @cached_property
+    def impacted_files_with_direct_changes(self) -> List[ImpactedFile]:
+        return [file for file in self.files if file.has_diff]
+
+    def _fetch_raw_comparison_data(self):
+        """
+        Fetches the raw comparison data from storage
+        """
+        repository = self.commit_comparison.compare_commit.repository
+        archive_service = ArchiveService(repository)
+        try:
+            data = archive_service.read_file(self.commit_comparison.report_storage_path)
+            return json.loads(data)
+        except:
+            log.error(
+                "ComparisonReport - couldn't fetch data from storage", exc_info=True
+            )
+            return {}
 
 
 class PullRequestComparison(Comparison):

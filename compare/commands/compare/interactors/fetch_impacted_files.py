@@ -1,9 +1,15 @@
 import enum
 
-from asgiref.sync import sync_to_async
-
 from codecov.commands.base import BaseInteractor
-from services.comparison import ComparisonReport, ImpactedFile, ImpactedFileParameter
+from services.comparison import ImpactedFile
+
+
+class ImpactedFileParameter(enum.Enum):
+    FILE_NAME = "file_name"
+    CHANGE_COVERAGE = "change_coverage"
+    HEAD_COVERAGE = "head_coverage"
+    MISSES_IN_COMPARISON = "misses_in_comparison"
+    PATCH_COVERAGE = "patch_coverage"
 
 
 class FetchImpactedFiles(BaseInteractor):
@@ -27,19 +33,18 @@ class FetchImpactedFiles(BaseInteractor):
             if impacted_file.head_coverage is not None:
                 return impacted_file.head_coverage.coverage
         elif parameter == ImpactedFileParameter.MISSES_IN_COMPARISON:
-            if impacted_file.misses_in_comparison is not None:
-                return impacted_file.misses_in_comparison
+            if impacted_file.misses_count is not None:
+                return impacted_file.misses_count
         elif parameter == ImpactedFileParameter.PATCH_COVERAGE:
             if impacted_file.patch_coverage is not None:
                 return impacted_file.patch_coverage.coverage
         else:
             raise ValueError(f"invalid impacted file parameter: {parameter}")
 
-    """
-    Sorts the impacted files by any provided parameter and slides items with None values to the end
-    """
-
     def sort_impacted_files(self, impacted_files, parameter, direction):
+        """
+        Sorts the impacted files by any provided parameter and slides items with None values to the end
+        """
         # Separate impacted files with None values for the specified parameter value
         files_with_coverage = []
         files_without_coverage = []
@@ -60,9 +65,7 @@ class FetchImpactedFiles(BaseInteractor):
         # Merge both lists together
         return files_with_coverage + files_without_coverage
 
-    def execute(self, comparison, filters):
-        comparison_report = ComparisonReport(comparison)
-
+    def execute(self, comparison_report, filters):
         if filters is None:
             return comparison_report.impacted_files
 
