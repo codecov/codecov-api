@@ -46,7 +46,11 @@ def _get_user_plan_from_profiling_upload(profiling_upload_id, *args, **kwargs) -
 
 
 def _get_user_plan_from_comparison_id(comparison_id, *args, **kwargs) -> str:
-    compare_commit = CommitComparison.objects.filter(id=comparison_id).first()
+    compare_commit = (
+        CommitComparison.objects.filter(id=comparison_id)
+        .select_related("compare_commit__repository__author")
+        .first()
+    )
     if (
         compare_commit
         and compare_commit.compare_commit

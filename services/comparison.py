@@ -1187,20 +1187,6 @@ class CommitComparisonService:
 
         return False
 
-    def recompute_comparison(self):
-        """
-        Enqueues a task for the worker to recompute the commit comparison
-        """
-        if (
-            self.commit_comparison.state
-            != CommitComparison.CommitComparisonStates.PENDING
-        ):
-            self.commit_comparison.state = (
-                CommitComparison.CommitComparisonStates.PENDING
-            )
-            self.commit_comparison.save()
-        TaskService().compute_comparison(self.commit_comparison.id)
-
     def _last_updated_before(self, timestamp: datetime) -> bool:
         """
         Returns true if the given timestamp occurred after the commit comparison's last update
