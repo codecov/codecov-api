@@ -807,9 +807,8 @@ class ImpactedFile:
     removed_diff_coverage: List[tuple[int, str]] = field(default_factory=list)
     unexpected_line_changes: List[tuple[int, str]] = field(default_factory=list)
 
-    # Other values available in raw data:
-    # `lines_only_on_base`
-    # `lines_only_on_head`
+    lines_only_on_base: List[int] = field(default_factory=list)
+    lines_only_on_head: List[int] = field(default_factory=list)
 
     @classmethod
     def create(cls, **kwargs):

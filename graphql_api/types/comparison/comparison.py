@@ -1,3 +1,4 @@
+from asyncio import gather
 from typing import List, Optional
 
 from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
@@ -6,6 +7,7 @@ from asgiref.sync import sync_to_async
 import services.components as components_service
 from compare.models import FlagComparison
 from graphql_api.actions.flags import get_flag_comparisons
+from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.types.errors import (
     MissingBaseCommit,
     MissingBaseReport,
@@ -13,6 +15,7 @@ from graphql_api.types.errors import (
     MissingHeadCommit,
     MissingHeadReport,
 )
+from reports.models import ReportLevelTotals
 from services.comparison import ComparisonReport, ImpactedFile, PullRequestComparison
 from services.components import ComponentComparison
 
@@ -42,9 +45,8 @@ def resolve_impacted_files_count(comparison: ComparisonReport, info):
 
 @comparison_bindable.field("directChangedFilesCount")
 @sync_to_async
-def resolve_direct_changed_files_count(comparison: CommitComparison, info):
-    comparison_report = ComparisonReport(comparison)
-    return len(comparison_report.impacted_files_with_direct_changes)
+def resolve_direct_changed_files_count(comparison: ComparisonReport, info):
+    return len(comparison.impacted_files_with_direct_changes)
 
 
 @comparison_bindable.field("indirectChangedFilesCount")
@@ -60,35 +62,64 @@ def resolve_impacted_file(comparison: ComparisonReport, info, path) -> ImpactedF
 
 
 # TODO: rename `changeCoverage`
-@comparison_bindable.field("changeWithParent")
-def resolve_change_with_parent(comparison: ComparisonReport, info):
-    # TODO: can we get this from the `ComparisonReport` instead?
-    command = info.context["executor"].get_command("compare")
-    return command.change_with_parent(comparison.commit_comparison)
+@comparison_bindable.field("changeCoverage")
+async def resolve_change_coverage(
+    comparison: ComparisonReport, info
+) -> Optional[float]:
+    repository_id = comparison.commit_comparison.compare_commit.repository_id
+    loader = CommitLoader.loader(info, repository_id)
+
+    # the loader prefetches everything we need to get the totals
+    base_commit, head_commit = await gather(
+        loader.load(comparison.commit_comparison.base_commit.commitid),
+        loader.load(comparison.commit_comparison.compare_commit.commitid),
+    )
+
+    base_totals = None
+    head_totals = None
+    if base_commit and base_commit.commitreport:
+        base_totals = base_commit.commitreport.reportleveltotals
+    if head_commit and head_commit.commitreport:
+        head_totals = head_commit.commitreport.reportleveltotals
+
+    if base_totals and head_totals:
+        return head_totals.coverage - base_totals.coverage
+
+
+# deprecated field
+comparison_bindable.set_field("changeWithParent", resolve_change_coverage)
 
 
 @comparison_bindable.field("baseTotals")
-@sync_to_async
-def resolve_base_totals(comparison: ComparisonReport, info):
-    if "comparison" not in info.context:
-        return None
+async def resolve_base_totals(
+    comparison: ComparisonReport, info
+) -> Optional[ReportLevelTotals]:
+    repository_id = comparison.commit_comparison.base_commit.repository_id
+    loader = CommitLoader.loader(info, repository_id)
 
-    comparison = info.context["comparison"]
-    return comparison.totals["base"]
+    # the loader prefetches everything we need to get the totals
+    base_commit = await loader.load(comparison.commit_comparison.base_commit.commitid)
+    if base_commit and base_commit.commitreport:
+        return base_commit.commitreport.reportleveltotals
 
 
 @comparison_bindable.field("headTotals")
-@sync_to_async
-def resolve_head_totals(comparison: ComparisonReport, info):
-    if "comparison" not in info.context:
-        return None
+async def resolve_head_totals(
+    comparison: ComparisonReport, info
+) -> Optional[ReportLevelTotals]:
+    repository_id = comparison.commit_comparison.compare_commit.repository_id
+    loader = CommitLoader.loader(info, repository_id)
 
-    comparison = info.context["comparison"]
-    return comparison.totals["head"]
+    # the loader prefetches everything we need to get the totals
+    head_commit = await loader.load(
+        comparison.commit_comparison.compare_commit.commitid
+    )
+    if head_commit and head_commit.commitreport:
+        return head_commit.commitreport.reportleveltotals
 
 
 @comparison_bindable.field("patchTotals")
-def resolve_patch_totals(comparison: ComparisonReport, info):
+def resolve_patch_totals(comparison: ComparisonReport, info) -> dict:
     totals = comparison.commit_comparison.patch_totals
     if not totals:
         return None
@@ -116,12 +147,13 @@ def resolve_component_comparisons(
     comparison: ComparisonReport, info
 ) -> Optional[List[ComponentComparison]]:
     user = info.context["request"].user
+    head_commit = comparison.commit_comparison.compare_commit
+    components = components_service.commit_components(head_commit, user)
 
-    if "comparison" not in info.context:
+    # TODO: can we change this to not rely on the comparison in the context?
+    if not "comparison" in info.context:
         return None
-
     comparison = info.context["comparison"]
-    components = components_service.commit_components(comparison.head_commit, user)
     return [ComponentComparison(comparison, component) for component in components]
 
 
@@ -141,6 +173,8 @@ def resolve_flag_comparisons_count(comparison: ComparisonReport, info):
 def resolve_has_different_number_of_head_and_base_reports(
     comparison: ComparisonReport, info, **kwargs
 ) -> int:
+    # TODO: can we remove the need for `info.context["conmparison"]` here?
+
     # Ensure PullRequestComparison type exists in context
     if "comparison" not in info.context:
         return False

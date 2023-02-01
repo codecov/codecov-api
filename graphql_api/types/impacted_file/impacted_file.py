@@ -17,8 +17,7 @@ from services.comparison import ImpactedFile
 
 @impacted_file_bindable.field("fileName")
 def resolve_file_name(impacted_file: ImpactedFile, info) -> str:
-    parts = impacted_file.head_name.split("/")
-    return parts[-1]
+    return impacted_file.file_name
 
 
 @impacted_file_bindable.field("headName")

@@ -6,13 +6,15 @@ type Comparison {
   indirectChangedFilesCount: Int!
   patchTotals: CoverageTotals
   directChangedFilesCount: Int!
-  changeWithParent: Float
   baseTotals: CoverageTotals
   headTotals: CoverageTotals
+  changeCoverage: Float
   flagComparisons: [FlagComparison]
   componentComparisons: [ComponentComparison!]
   hasDifferentNumberOfHeadAndBaseReports: Boolean!
   flagComparisonsCount: Int!
+
+  changeWithParent: Float @deprecated(reason: "Use `changeCoverage`")
 }
 
 type MissingBaseCommit implements ResolverError {

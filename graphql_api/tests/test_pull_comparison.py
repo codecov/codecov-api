@@ -10,6 +10,7 @@ from codecov_auth.tests.factories import OwnerFactory
 from compare.models import CommitComparison
 from compare.tests.factories import CommitComparisonFactory, FlagComparisonFactory
 from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
+from reports.models import CommitReport, ReportLevelTotals
 from reports.tests.factories import RepositoryFlagFactory
 from services.profiling import CriticalFile
 
@@ -84,20 +85,29 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             compared_to=self.base_commit.commitid,
         )
 
-    @patch("services.comparison.Comparison.totals", new_callable=PropertyMock)
-    def test_pull_comparison_totals(self, totals_mock):
-        report_totals = ReportTotals(
+    def test_pull_comparison_totals(self):
+        ReportLevelTotals.objects.create(
+            report=CommitReport.objects.create(commit=self.base_commit),
             coverage=75.0,
             files=1,
             lines=6,
             hits=3,
             misses=2,
             partials=1,
+            branches=0,
+            methods=0,
         )
-        totals_mock.return_value = {
-            "base": report_totals,
-            "head": report_totals,
-        }
+        ReportLevelTotals.objects.create(
+            report=CommitReport.objects.create(commit=self.head_commit),
+            coverage=75.0,
+            files=1,
+            lines=6,
+            hits=3,
+            misses=2,
+            partials=1,
+            branches=0,
+            methods=0,
+        )
 
         query = """
             pullId
