@@ -68,15 +68,12 @@ click==8.0.4
     #   click-didyoumean
     #   click-plugins
     #   click-repl
-    #   codecov-cli
 click-didyoumean==0.3.0
     # via celery
 click-plugins==1.1.1
     # via celery
 click-repl==0.2.0
     # via celery
-codecov-cli @ git+ssh://git@github.com/codecov/codecov-cli.git@bbbb4ebec1e7cdcf1534deb357b6ef2dc0cada5a
-    # via -r requirements.in
 codecovopentelem @ git+ssh://git@github.com/codecov/opentelem-python.git@v0.0.4a1
     # via -r requirements.in
 colour==0.1.5
@@ -294,7 +291,6 @@ pytz==2022.1
     #   minio
 pyyaml==6.0
     # via
-    #   codecov-cli
     #   drf-spectacular
     #   pre-commit
     #   vcrpy
@@ -308,7 +304,6 @@ requests==2.28.0
     # via
     #   -r requirements.in
     #   analytics-python
-    #   codecov-cli
     #   codecovopentelem
     #   google-api-core
     #   google-cloud-storage
