@@ -27,7 +27,7 @@ class FetchCommitsInteractor(BaseInteractor):
             "reports",
             queryset=CommitReport.objects.select_related(
                 "reportleveltotals", "reportdetails"
-            ),
+            ).defer("reportdetails__files_array"),
         )
 
         # We don't select the `report` column here b/c it can be many MBs of JSON

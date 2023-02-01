@@ -14,7 +14,7 @@ from .coverage.views import CoverageViewSet, FlagCoverageViewSet
 from .flag.views import FlagViewSet
 from .owner.views import OwnerViewSet, UserViewSet
 from .pull.views import PullViewSet
-from .repo.views import RepositoryViewSet
+from .repo.views import RepositoryConfigView, RepositoryViewSet
 from .report.views import ReportViewSet
 
 urls.handler404 = not_found
@@ -74,6 +74,11 @@ urlpatterns = [
     path(owner_prefix, include(owner_artifacts_router.urls)),
     path(owner_prefix, include(repository_router.urls)),
     path(repo_prefix, include(repository_artifacts_router.urls)),
+    path(
+        f"{repo_prefix}config/",
+        RepositoryConfigView.as_view(),
+        name="api-v2-repo-config",
+    ),
     path(repo_prefix, include(compare_router.urls)),
     path(repo_prefix, include(report_router.urls)),
     path(repo_prefix, include(coverage_router.urls)),
