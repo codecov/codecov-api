@@ -1,7 +1,7 @@
 import logging
 import os
 from datetime import datetime, timedelta
-from typing import Iterable
+from typing import Iterable, List
 
 import celery
 import sentry_sdk
@@ -34,12 +34,15 @@ if settings.SENTRY_ENV:
 
 
 class TaskService(object):
+    def _queue_name(self, name, args=None, kwargs=None) -> str:
+        queue_in_dict = route_task(name, args=args, kwargs=kwargs, options={})
+        return queue_in_dict["queue"]
+
     def _create_signature(self, name, args=None, kwargs=None):
         """
         Create Celery signature
         """
-        queue_in_dict = route_task(name, args=args, kwargs=kwargs, options={})
-        queue_name = queue_in_dict["queue"]
+        queue_name = self._queue_name(name, args, kwargs)
         set_tag("celery.queue", queue_name)
         return signature(
             name, args=args, kwargs=kwargs, app=celery_app, queue=queue_name
@@ -56,6 +59,27 @@ class TaskService(object):
             celery_config.compute_comparison_task_name,
             kwargs=dict(comparison_id=comparison_id),
         ).apply_async()
+
+    def compute_comparisons(self, comparison_ids: List[int]):
+        """
+        Enqueue a batch of comparison tasks using a Celery group
+        """
+        if len(comparison_ids) > 0:
+            queue_name = self._queue_name(
+                celery_config.compute_comparison_task_name,
+                kwargs=dict(comparison_id=comparison_ids[0]),
+            )
+            signatures = [
+                signature(
+                    celery_config.compute_comparison_task_name,
+                    args=None,
+                    kwargs=dict(comparison_id=comparison_id),
+                    app=celery_app,
+                    queue=queue_name,
+                )
+                for comparison_id in comparison_ids
+            ]
+            group(signatures).apply_async()
 
     def normalize_profiling_upload(self, profiling_upload_id):
         return self._create_signature(
