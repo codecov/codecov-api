@@ -53,6 +53,24 @@ query ImpactedFiles(
 }
 """
 
+query_direct_changed_files_count = """
+query ImpactedFiles(
+    $org: String!
+    $repo: String!
+    $commit: String!
+) {
+  owner(username: $org) {
+    repository(name: $repo) {
+      commit(id: $commit) {
+        compareWithParent {
+          directChangedFilesCount
+        }
+      }
+    }
+  }
+}
+"""
+
 query_impacted_file = """
 query ImpactedFile(
     $org: String!
@@ -646,6 +664,30 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                     ]
                                 },
                             },
+                        }
+                    }
+                }
+            }
+        }
+
+    @patch("services.archive.ArchiveService.read_file")
+    def test_fetch_direct_changed_files_count(self, read_file):
+        read_file.return_value = mock_data_from_archive
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(
+            query_direct_changed_files_count,
+            variables=variables,
+        )
+        assert data == {
+            "owner": {
+                "repository": {
+                    "commit": {
+                        "compareWithParent": {
+                            "directChangedFilesCount": 2,
                         }
                     }
                 }
