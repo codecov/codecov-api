@@ -1213,6 +1213,14 @@ class CommitComparisonService:
 
     def _load_commit(self, commit_id: int) -> Optional[Commit]:
         prefetch = Prefetch(
-            "reports", queryset=CommitReport.objects.select_related("reportdetails")
+            "reports",
+            queryset=CommitReport.objects.select_related("reportdetails").defer(
+                "reportdetails__files_array"
+            ),
         )
-        return Commit.objects.filter(pk=commit_id).prefetch_related(prefetch).first()
+        return (
+            Commit.objects.filter(pk=commit_id)
+            .prefetch_related(prefetch)
+            .defer("report")
+            .first()
+        )
