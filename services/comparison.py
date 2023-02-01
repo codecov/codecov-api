@@ -842,13 +842,14 @@ class ComparisonReport(object):
         return [self.deserialize_file(file) for file in impacted_files]
 
     @cached_property
-    def impacted_files_with_unintended_change(self):
-        impacted_files = [
-            file
-            for file in self.files
-            if file.get("unexpected_line_changes")
-            and len(file["unexpected_line_changes"]) > 0
-        ]
+    def impacted_files_with_unintended_changes(self):
+        impacted_files = [file for file in self.files if self.has_changes(file)]
+
+        return [self.deserialize_file(file) for file in impacted_files]
+
+    @cached_property
+    def impacted_files_with_direct_changes(self):
+        impacted_files = [file for file in self.files if self.has_diff(file)]
 
         return [self.deserialize_file(file) for file in impacted_files]
 
@@ -948,6 +949,17 @@ class ComparisonReport(object):
     def get_file_name_from_file_path(self, file_path):
         parts = file_path.split("/")
         return parts[-1]
+
+    def has_diff(self, file):
+        return (
+            bool(file.get("removed_diff_coverage"))
+            or bool(file.get("added_diff_coverage"))
+            or file.get("file_was_removed_by_diff")
+            or file.get("file_was_added_by_diff")
+        )
+
+    def has_changes(self, file):
+        return bool(file.get("unexpected_line_changes"))
 
 
 class PullRequestComparison(Comparison):
@@ -1175,20 +1187,6 @@ class CommitComparisonService:
 
         return False
 
-    def recompute_comparison(self):
-        """
-        Enqueues a task for the worker to recompute the commit comparison
-        """
-        if (
-            self.commit_comparison.state
-            != CommitComparison.CommitComparisonStates.PENDING
-        ):
-            self.commit_comparison.state = (
-                CommitComparison.CommitComparisonStates.PENDING
-            )
-            self.commit_comparison.save()
-        TaskService().compute_comparison(self.commit_comparison.id)
-
     def _last_updated_before(self, timestamp: datetime) -> bool:
         """
         Returns true if the given timestamp occurred after the commit comparison's last update
@@ -1215,6 +1213,14 @@ class CommitComparisonService:
 
     def _load_commit(self, commit_id: int) -> Optional[Commit]:
         prefetch = Prefetch(
-            "reports", queryset=CommitReport.objects.select_related("reportdetails")
+            "reports",
+            queryset=CommitReport.objects.select_related("reportdetails").defer(
+                "reportdetails__files_array"
+            ),
         )
-        return Commit.objects.filter(pk=commit_id).prefetch_related(prefetch).first()
+        return (
+            Commit.objects.filter(pk=commit_id)
+            .prefetch_related(prefetch)
+            .defer("report")
+            .first()
+        )
