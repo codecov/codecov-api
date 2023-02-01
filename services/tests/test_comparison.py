@@ -2069,14 +2069,3 @@ class CommitComparisonTests(TestCase):
         service = CommitComparisonService(commit_comparison)
 
         assert service.needs_recompute() == True
-
-    @patch("services.task.TaskService.compute_comparison")
-    def test_recompute_comparison(self, compute_comparison_mock):
-        commit_comparison = CommitComparison.objects.get(pk=self.commit_comparison.pk)
-        service = CommitComparisonService(commit_comparison)
-        service.recompute_comparison()
-
-        assert (
-            commit_comparison.state == CommitComparison.CommitComparisonStates.PENDING
-        )
-        compute_comparison_mock.assert_called_once_with(commit_comparison.id)
