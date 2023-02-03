@@ -1,5 +1,4 @@
-from asgiref.sync import sync_to_async
-
+from codecov.db import sync_to_async
 from services.comparison import PullRequestComparison
 
 

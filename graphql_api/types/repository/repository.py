@@ -3,11 +3,11 @@ from typing import Iterable, List, Mapping
 
 import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
-from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.forms.utils import from_current_timezone
 
 import timeseries.helpers as timeseries_helpers
+from codecov.db import sync_to_async
 from core.models import Repository
 from graphql_api.actions.flags import flag_measurements, flags_for_repo
 from graphql_api.dataloader.commit import CommitLoader
