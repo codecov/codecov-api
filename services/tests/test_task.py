@@ -177,6 +177,27 @@ def test_backfill_dataset(mocker):
     signature.apply_async.assert_called_once_with()
 
 
+def test_timeseries_delete(mocker):
+    signature_mock = mocker.patch("services.task.task.signature")
+    mock_route_task = mocker.patch(
+        "services.task.task.route_task", return_value={"queue": "celery"}
+    )
+    TaskService().delete_timeseries(repository_id=12345)
+    mock_route_task.assert_called_with(
+        "app.tasks.timeseries.delete",
+        args=None,
+        kwargs=dict(repository_id=12345),
+        options={},
+    )
+    signature_mock.assert_called_with(
+        "app.tasks.timeseries.delete",
+        args=None,
+        kwargs=dict(repository_id=12345),
+        app=celery_app,
+        queue="celery",
+    )
+
+
 def test_update_commit_task(mocker):
     signature_mock = mocker.patch("services.task.task.signature")
     mock_route_task = mocker.patch(

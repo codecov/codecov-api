@@ -262,6 +262,16 @@ class TaskService(object):
             ),
         ).apply_async()
 
+    def delete_timeseries(self, repository_id: int):
+        log.info(
+            f"Delete repository timeseries data",
+            extra=dict(repository_id=repository_id),
+        )
+        self._create_signature(
+            "app.tasks.timeseries.delete",
+            kwargs=dict(repository_id=repository_id),
+        ).apply_async()
+
     def update_commit(self, commitid, repoid):
         self._create_signature(
             "app.tasks.commit_update.CommitUpdate",

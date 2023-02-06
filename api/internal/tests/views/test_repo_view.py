@@ -17,6 +17,7 @@ from core.tests.factories import (
     PullFactory,
     RepositoryFactory,
 )
+from reports.tests.factories import RepositoryFlagFactory
 
 
 class RepositoryViewSetTestSuite(InternalAPITest):
@@ -749,8 +750,9 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         response = self._update(data={"branch": "dev"})
         self.assertEqual(response.status_code, 403)
 
+    @patch("services.task.TaskService.delete_timeseries")
     def test_erase_deletes_related_content_and_clears_cache_and_yaml(
-        self, mocked_get_permissions
+        self, mocked_delete_timeseries, mocked_get_permissions
     ):
         mocked_get_permissions.return_value = True, True
         self.org.admins = [self.user.ownerid]
@@ -765,6 +767,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         PullFactory(pullid=2, repository=self.repo, author=self.repo.author)
 
         BranchFactory(authors=[self.org.ownerid], repository=self.repo)
+        RepositoryFlagFactory(repository=self.repo)
 
         self.repo.cache = {"cache": "val"}
         self.repo.yaml = {"yaml": "val"}
@@ -776,6 +779,9 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         assert not self.repo.commits.exists()
         assert not self.repo.pull_requests.exists()
         assert not self.repo.branches.exists()
+        assert not self.repo.flags.exists()
+
+        mocked_delete_timeseries.assert_called_once_with(repository_id=self.repo.pk)
 
         self.repo.refresh_from_db()
         assert self.repo.yaml == None
@@ -805,9 +811,10 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         assert response.status_code == 403
         assert response.data["detail"] == "User not activated"
 
+    @patch("services.task.TaskService.delete_timeseries")
     @patch("services.segment.analytics.track")
     def test_erase_triggers_segment_event(
-        self, analytics_track_mock, mocked_get_permissions
+        self, analytics_track_mock, mocked_delete_timeseries, mocked_get_permissions
     ):
         mocked_get_permissions.return_value = True, True
         self.org.admins = [self.user.ownerid]
