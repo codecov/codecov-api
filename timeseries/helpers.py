@@ -305,10 +305,12 @@ def repository_coverage_measurements_with_fallback(
     If those are not available then we trigger a backfill and return computed results
     directly from the primary database (much slower to query).
     """
-    dataset = Dataset.objects.filter(
-        name=MeasurementName.COVERAGE.value,
-        repository_id=repository.pk,
-    ).first()
+    dataset = None
+    if settings.TIMESERIES_ENABLED:
+        dataset = Dataset.objects.filter(
+            name=MeasurementName.COVERAGE.value,
+            repository_id=repository.pk,
+        ).first()
 
     if settings.TIMESERIES_ENABLED and dataset and dataset.is_backfilled():
         # timeseries data is ready
