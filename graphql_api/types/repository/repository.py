@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Iterable, List, Mapping
+from typing import Iterable, List, Mapping, Optional
 
 import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
@@ -49,6 +49,21 @@ def resolve_coverage(repository: Repository, info):
 @repository_bindable.field("coverageSha")
 def resolve_coverage_sha(repository: Repository, info):
     return repository.coverage_sha
+
+
+@repository_bindable.field("hits")
+def resolve_hits(repository: Repository, info) -> Optional[int]:
+    return repository.hits
+
+
+@repository_bindable.field("misses")
+def resolve_misses(repository: Repository, info) -> Optional[int]:
+    return repository.misses
+
+
+@repository_bindable.field("lines")
+def resolve_lines(repository: Repository, info) -> Optional[int]:
+    return repository.lines
 
 
 @repository_bindable.field("branch")
