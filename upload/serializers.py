@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from codecov_auth.models import Owner
 from core.models import Commit, Repository
-from reports.models import CommitReport, ReportResults, ReportSession
+from reports.models import CommitReport, ReportResults, ReportSession, RepositoryFlag
 from services.archive import ArchiveService
 
 
@@ -31,6 +31,25 @@ class UploadSerializer(serializers.ModelSerializer):
         repo = obj.report.commit.repository
         archive_service = ArchiveService(repo)
         return archive_service.create_presigned_put(obj.storage_path)
+
+    def create(self, validated_data):
+        request = self.context["request"]
+        flag_names = request.data.getlist("flags")
+        upload = super().create(validated_data)
+        flags = []
+        if upload:
+            repoid = upload.report.commit.repository.repoid
+            for individual_flag in flag_names:
+                existing_flag = RepositoryFlag.objects.filter(
+                    repository_id=repoid, flag_name=individual_flag
+                ).first()
+                if not existing_flag:
+                    existing_flag = RepositoryFlag.objects.create(
+                        repository_id=repoid, flag_name=individual_flag
+                    )
+                flags.append(existing_flag)
+            upload.flags.set(flags)
+            return upload
 
 
 class OwnerSerializer(serializers.ModelSerializer):
