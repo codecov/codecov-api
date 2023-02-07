@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Iterable, List, Mapping
+from typing import Iterable, List, Mapping, Optional
 
 import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
@@ -264,7 +264,7 @@ def resolve_measurements(
     interval: Interval,
     after: datetime,
     before: datetime,
-    branch: str = None,
+    branch: Optional[str] = None,
 ) -> Iterable[MeasurementSummary]:
     return fill_sparse_measurements(
         timeseries_helpers.repository_coverage_measurements_with_fallback(
