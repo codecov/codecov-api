@@ -19,7 +19,7 @@ class UpdateDefaultOrganizationInteractor(BaseInteractor):
                 "Organization does not belong in current user's organization list"
             )
 
-    def update_default_organization(self, default_org: Optional[Owner]):
+    def update_default_organization(self, default_org: Owner):
         owner_profile, _ = OwnerProfile.objects.get_or_create(
             owner_id=self.current_user.ownerid
         )
