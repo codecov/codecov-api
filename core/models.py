@@ -263,6 +263,10 @@ class Commit(models.Model):
                 name="commits_repoid_timestamp_desc",
             ),
             models.Index(
+                fields=["repository", "branch", "state", "-timestamp"],
+                name="commits_repoid_branch_state_ts",
+            ),
+            models.Index(
                 fields=["repository", "pullid"],
                 name="commits_on_pull",
                 condition=~models.Q(deleted=True),
