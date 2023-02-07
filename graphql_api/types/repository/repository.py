@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Iterable, List, Mapping
+from typing import Iterable, List, Mapping, Optional
 
 import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
@@ -259,11 +259,20 @@ def resolve_flags_measurements_backfilled(repository: Repository, info) -> bool:
 @repository_bindable.field("measurements")
 @sync_to_async
 def resolve_measurements(
-    repository: Repository, info, interval: Interval, after: datetime, before: datetime
+    repository: Repository,
+    info,
+    interval: Interval,
+    after: datetime,
+    before: datetime,
+    branch: Optional[str] = None,
 ) -> Iterable[MeasurementSummary]:
     return fill_sparse_measurements(
         timeseries_helpers.repository_coverage_measurements_with_fallback(
-            repository, interval, after, before
+            repository,
+            interval,
+            after,
+            before,
+            branch=branch,
         ),
         interval,
         after,
