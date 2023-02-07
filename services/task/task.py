@@ -268,7 +268,7 @@ class TaskService(object):
             extra=dict(repository_id=repository_id),
         )
         self._create_signature(
-            "app.tasks.timeseries.delete",
+            celery_config.timeseries_delete_task_name,
             kwargs=dict(repository_id=repository_id),
         ).apply_async()
 

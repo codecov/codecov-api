@@ -184,13 +184,13 @@ def test_timeseries_delete(mocker):
     )
     TaskService().delete_timeseries(repository_id=12345)
     mock_route_task.assert_called_with(
-        "app.tasks.timeseries.delete",
+        celery_config.timeseries_delete_task_name,
         args=None,
         kwargs=dict(repository_id=12345),
         options={},
     )
     signature_mock.assert_called_with(
-        "app.tasks.timeseries.delete",
+        celery_config.timeseries_delete_task_name,
         args=None,
         kwargs=dict(repository_id=12345),
         app=celery_app,
