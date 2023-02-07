@@ -109,7 +109,7 @@ class FilepathListField(serializers.ListField):
             "file_snapshot",
         ).all()
         repo = data.first().file_snapshot.repository
-        self.context["archive_service"] = ArchiveService(repo)
+        self.context["archive_service"] = ArchiveService(repo, ttl=60)
         return super().to_representation(data)
 
 
