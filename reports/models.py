@@ -124,6 +124,11 @@ class ReportSession(BaseCodecovModel):
 
     @property
     def ci_url(self):
+        if self.build_url:
+            # build_url was saved in the database
+            return self.build_url
+
+        # otherwise we need to construct it ourself (if possible)
         build_url = ci.get(self.provider, {}).get("build_url")
         if not build_url:
             return
