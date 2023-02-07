@@ -12,6 +12,6 @@ type ImpactedFile {
   changeCoverage: Float
   missesInComparison: Int!
   hashedPath: String!
-  segments(filters: SegmentsFilters): [SegmentComparison!]!
+  segments(filters: SegmentsFilters): SegmentsResult!
   segmentsDeprecated(filters: SegmentsFilters): [SegmentComparison!]!
 }

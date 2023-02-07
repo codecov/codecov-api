@@ -2,6 +2,7 @@ from django.conf import settings
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils.functional import cached_property
+from rest_framework.exceptions import NotFound
 
 from api.shared.serializers import (
     CommitRefQueryParamSerializer,
@@ -9,7 +10,7 @@ from api.shared.serializers import (
 )
 from codecov_auth.authentication import SuperToken, SuperUser
 from codecov_auth.models import Owner, Service
-from core.models import Repository
+from core.models import Commit, Repository
 from utils.services import get_long_service_name
 
 
@@ -31,6 +32,27 @@ class RepoPropertyMixin(OwnerPropertyMixin):
         return get_object_or_404(
             Repository, name=self.kwargs.get("repo_name"), author=self.owner
         )
+
+    def get_commit(self) -> Commit:
+        commit_sha = self.request.query_params.get("sha")
+        if not commit_sha:
+            branch_name = self.request.query_params.get("branch", self.repo.branch)
+            branch = self.repo.branches.filter(name=branch_name).first()
+            if branch is None:
+                raise NotFound(
+                    f"The branch '{branch_name}' in not in our records. Please provide a valid branch name.",
+                    404,
+                )
+            commit_sha = branch.head
+
+        commit = self.repo.commits.filter(commitid=commit_sha).first()
+        if commit is None:
+            raise NotFound(
+                f"The commit {commit_sha} is not in our records. Please specify valid commit.",
+                404,
+            )
+
+        return commit
 
 
 class RepositoriesMixin:

@@ -11,6 +11,7 @@ from shared.utils.sessions import Session
 from codecov_auth.models import UserToken
 from codecov_auth.tests.factories import OwnerFactory, UserTokenFactory
 from core.tests.factories import BranchFactory, CommitFactory, RepositoryFactory
+from services.components import Component
 
 
 def sample_report():
@@ -822,3 +823,127 @@ class ReportViewSetTestCase(TestCase):
         }
 
         build_report_from_commit.assert_called_once_with(self.commit1)
+
+    @patch("api.public.v2.report.views.commit_components")
+    @patch("services.archive.ReportService.build_report_from_commit")
+    def test_report_component(
+        self, build_report_from_commit, commit_components, get_repo_permissions
+    ):
+        get_repo_permissions.return_value = (True, True)
+        commit_components.return_value = [
+            Component(
+                component_id="foo",
+                paths=[r"^foo/.+"],
+                name="Foo",
+                flag_regexes=[],
+                statuses=[],
+            ),
+            Component(
+                component_id="bar",
+                paths=[r"^bar/.+"],
+                name="Bar",
+                flag_regexes=[],
+                statuses=[],
+            ),
+        ]
+        build_report_from_commit.return_value = sample_report()
+
+        res = self._request_report(component_id="foo")
+        assert res.status_code == 200
+        assert res.json() == {
+            "totals": {
+                "files": 1,
+                "lines": 8,
+                "hits": 5,
+                "misses": 3,
+                "partials": 0,
+                "coverage": 62.5,
+                "branches": 0,
+                "methods": 0,
+                "messages": 0,
+                "sessions": 1,
+                "complexity": 10.0,
+                "complexity_total": 2.0,
+                "complexity_ratio": 500.0,
+                "diff": 0,
+            },
+            "files": [
+                {
+                    "name": "foo/file1.py",
+                    "totals": {
+                        "files": 0,
+                        "lines": 8,
+                        "hits": 5,
+                        "misses": 3,
+                        "partials": 0,
+                        "coverage": 62.5,
+                        "branches": 0,
+                        "methods": 0,
+                        "messages": 0,
+                        "sessions": 0,
+                        "complexity": 10.0,
+                        "complexity_total": 2.0,
+                        "complexity_ratio": 500.0,
+                        "diff": 0,
+                    },
+                    "line_coverage": [
+                        [1, 0],
+                        [2, 1],
+                        [3, 0],
+                        [5, 0],
+                        [6, 1],
+                        [8, 0],
+                        [9, 0],
+                        [10, 1],
+                    ],
+                }
+            ],
+            "commit_file_url": f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.username}/{self.repo_name}/commit/{self.commit1.commitid}/tree/",
+        }
+
+        res = self._request_report(component_id="bar")
+        assert res.status_code == 200
+        assert res.json() == {
+            "totals": {
+                "files": 1,
+                "lines": 2,
+                "hits": 1,
+                "misses": 0,
+                "partials": 1,
+                "coverage": 50.0,
+                "branches": 1,
+                "methods": 0,
+                "messages": 0,
+                "sessions": 1,
+                "complexity": 0.0,
+                "complexity_total": 0.0,
+                "complexity_ratio": 0,
+                "diff": 0,
+            },
+            "files": [
+                {
+                    "name": "bar/file2.py",
+                    "totals": {
+                        "files": 0,
+                        "lines": 2,
+                        "hits": 1,
+                        "misses": 0,
+                        "partials": 1,
+                        "coverage": 50.0,
+                        "branches": 1,
+                        "methods": 0,
+                        "messages": 0,
+                        "sessions": 0,
+                        "complexity": 0.0,
+                        "complexity_total": 0.0,
+                        "complexity_ratio": 0,
+                        "diff": 0,
+                    },
+                    "line_coverage": [[12, 0], [51, 2]],
+                }
+            ],
+            "commit_file_url": f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.username}/{self.repo_name}/commit/{self.commit1.commitid}/tree/",
+        }
+
+        res = self._request_report(component_id="invalid")
+        assert res.status_code == 404

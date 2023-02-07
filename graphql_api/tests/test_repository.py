@@ -294,7 +294,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
 
     @patch("shared.yaml.user_yaml.UserYaml.get_final_yaml")
     def test_repository_repository_config_indication_range(self, mocked_useryaml):
-        mocked_useryaml.return_value = {"coverage": {"range": [70, 100]}}
+        mocked_useryaml.return_value = {"coverage": {"range": [60, 80]}}
 
         repo = RepositoryFactory(
             author=self.user,
@@ -313,11 +313,11 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             data["me"]["owner"]["repository"]["repositoryConfig"]["indicationRange"][
                 "lowerRange"
             ]
-            == 70
+            == 60
         )
         assert (
             data["me"]["owner"]["repository"]["repositoryConfig"]["indicationRange"][
                 "upperRange"
             ]
-            == 100
+            == 80
         )

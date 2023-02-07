@@ -6,9 +6,13 @@ import json
 import logging
 from collections import Counter
 from dataclasses import dataclass
+from datetime import datetime
+from typing import Optional
 
 import minio
+import pytz
 from asgiref.sync import async_to_sync
+from django.db.models import Prefetch
 from django.utils.functional import cached_property
 from shared.helpers.yaml import walk
 from shared.reports.types import ReportTotals
@@ -16,6 +20,7 @@ from shared.utils.merge import LineType, line_type
 
 from compare.models import CommitComparison
 from core.models import Commit
+from reports.models import CommitReport, ReportDetails
 from services import ServiceException
 from services.archive import ArchiveService, ReportService
 from services.redis_configuration import get_redis_connection
@@ -837,13 +842,14 @@ class ComparisonReport(object):
         return [self.deserialize_file(file) for file in impacted_files]
 
     @cached_property
-    def impacted_files_with_unintended_change(self):
-        impacted_files = [
-            file
-            for file in self.files
-            if file.get("unexpected_line_changes")
-            and len(file["unexpected_line_changes"]) > 0
-        ]
+    def impacted_files_with_unintended_changes(self):
+        impacted_files = [file for file in self.files if self.has_changes(file)]
+
+        return [self.deserialize_file(file) for file in impacted_files]
+
+    @cached_property
+    def impacted_files_with_direct_changes(self):
+        impacted_files = [file for file in self.files if self.has_diff(file)]
 
         return [self.deserialize_file(file) for file in impacted_files]
 
@@ -944,6 +950,17 @@ class ComparisonReport(object):
         parts = file_path.split("/")
         return parts[-1]
 
+    def has_diff(self, file):
+        return (
+            bool(file.get("removed_diff_coverage"))
+            or bool(file.get("added_diff_coverage"))
+            or file.get("file_was_removed_by_diff")
+            or file.get("file_was_added_by_diff")
+        )
+
+    def has_changes(self, file):
+        return bool(file.get("unexpected_line_changes"))
+
 
 class PullRequestComparison(Comparison):
     """
@@ -964,7 +981,7 @@ class PullRequestComparison(Comparison):
     @cached_property
     def base_commit(self):
         try:
-            return Commit.objects.get(
+            return Commit.objects.defer("report").get(
                 repository=self.pull.repository,
                 commitid=self.pull.compared_to
                 if self.is_pseudo_comparison
@@ -976,7 +993,7 @@ class PullRequestComparison(Comparison):
     @cached_property
     def head_commit(self):
         try:
-            return Commit.objects.get(
+            return Commit.objects.defer("report").get(
                 repository=self.pull.repository, commitid=self.pull.head
             )
         except Commit.DoesNotExist:
@@ -1122,8 +1139,88 @@ class PullRequestComparison(Comparison):
         self.base_report.shift_lines_by_diff(self.pseudo_diff, forward=True)
 
 
-def recalculate_comparison(comparison: CommitComparison) -> None:
-    if comparison.state != CommitComparison.CommitComparisonStates.PENDING:
-        comparison.state = CommitComparison.CommitComparisonStates.PENDING
-        comparison.save()
-    TaskService().compute_comparison(comparison.id)
+class CommitComparisonService:
+    """
+    Utilities for determining whether a commit comparison needs to be recomputed
+    (and enqueueing that recompute when necessary)
+    """
+
+    def __init__(self, commit_comparison: CommitComparison):
+        self.commit_comparison = commit_comparison
+
+    @cached_property
+    def base_commit(self):
+        if "base_commit" not in self.commit_comparison._state.fields_cache:
+            # base_commit is already preloaded
+            self.commit_comparison.base_commit = self._load_commit(
+                self.commit_comparison.base_commit_id
+            )
+        return self.commit_comparison.base_commit
+
+    @cached_property
+    def compare_commit(self):
+        if "compare_commit" not in self.commit_comparison._state.fields_cache:
+            # compare_commit is already preloaded
+            self.commit_comparison.compare_commit = self._load_commit(
+                self.commit_comparison.compare_commit_id
+            )
+        return self.commit_comparison.compare_commit
+
+    def needs_recompute(self) -> bool:
+        if self._last_updated_before(self.compare_commit.updatestamp):
+            return True
+
+        if self._last_updated_before(self.base_commit.updatestamp):
+            return True
+
+        compare_commit_details = self._commit_report_details(self.compare_commit)
+        if compare_commit_details is not None and self._last_updated_before(
+            compare_commit_details.updated_at
+        ):
+            return True
+
+        base_commit_details = self._commit_report_details(self.base_commit)
+        if base_commit_details is not None and self._last_updated_before(
+            base_commit_details.updated_at
+        ):
+            return True
+
+        return False
+
+    def _last_updated_before(self, timestamp: datetime) -> bool:
+        """
+        Returns true if the given timestamp occurred after the commit comparison's last update
+        """
+        timezone = pytz.utc
+        if not timestamp:
+            return False
+
+        if timestamp.tzinfo is None:
+            timestamp = timezone.localize(timestamp)
+        else:
+            timestamp = timezone.normalize(timestamp)
+
+        return timezone.normalize(self.commit_comparison.updated_at) < timestamp
+
+    def _commit_report_details(self, commit: Commit) -> Optional[ReportDetails]:
+        # CommitDetails records are updated by the worker every time a new upload is processed.
+        # We can use the `updated_at` timestamp as a proxy for when a report was last updated.
+        # These are expected to have been preloaded.
+        if hasattr(commit, "commitreport") and hasattr(
+            commit.commitreport, "reportdetails"
+        ):
+            return commit.commitreport.reportdetails
+
+    def _load_commit(self, commit_id: int) -> Optional[Commit]:
+        prefetch = Prefetch(
+            "reports",
+            queryset=CommitReport.objects.select_related("reportdetails").defer(
+                "reportdetails__files_array"
+            ),
+        )
+        return (
+            Commit.objects.filter(pk=commit_id)
+            .prefetch_related(prefetch)
+            .defer("report")
+            .first()
+        )
