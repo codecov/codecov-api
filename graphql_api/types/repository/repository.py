@@ -51,6 +51,21 @@ def resolve_coverage_sha(repository: Repository, info):
     return repository.coverage_sha
 
 
+@repository_bindable.field("hits")
+def resolve_hits(repository: Repository, info) -> Optional[int]:
+    return repository.hits
+
+
+@repository_bindable.field("misses")
+def resolve_misses(repository: Repository, info) -> Optional[int]:
+    return repository.misses
+
+
+@repository_bindable.field("lines")
+def resolve_lines(repository: Repository, info) -> Optional[int]:
+    return repository.lines
+
+
 @repository_bindable.field("branch")
 def resolve_branch(repository, info, name):
     command = info.context["executor"].get_command("branch")
