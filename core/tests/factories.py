@@ -24,7 +24,6 @@ class RepositoryFactory(DjangoModelFactory):
     branch = "master"
     upload_token = factory.Faker("uuid4")
     using_integration = False
-    activated = True
 
 
 class CommitFactory(DjangoModelFactory):
