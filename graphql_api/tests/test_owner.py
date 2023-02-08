@@ -42,11 +42,21 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
         self.user = OwnerFactory(username="codecov-user", service="github")
         random_user = OwnerFactory(username="random-user", service="github")
-        RepositoryFactory(author=self.user, active=True, private=True, name="a")
-        RepositoryFactory(author=self.user, active=False, private=False, name="b")
-        RepositoryFactory(author=random_user, active=True, private=True, name="not")
         RepositoryFactory(
-            author=random_user, active=True, private=False, name="still-not"
+            author=self.user, active=True, activated=True, private=True, name="a"
+        )
+        RepositoryFactory(
+            author=self.user, active=False, private=False, activated=False, name="b"
+        )
+        RepositoryFactory(
+            author=random_user, active=True, activated=False, private=True, name="not"
+        )
+        RepositoryFactory(
+            author=random_user,
+            active=True,
+            private=False,
+            activated=True,
+            name="still-not",
         )
 
     def test_fetching_repositories(self):
@@ -125,7 +135,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         repos = paginate_connection(data["owner"]["repositories"])
         assert repos == [{"name": "b"}, {"name": "a"}]
 
-    def test_fetching_repositories_unactive_repositories(self):
+    def test_fetching_repositories_inactive_repositories(self):
         query = query_repositories % (
             self.user.username,
             "(filters: { active: false })",
@@ -144,6 +154,26 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, user=self.user)
         repos = paginate_connection(data["owner"]["repositories"])
         assert repos == [{"name": "a"}]
+
+    def test_fetching_repositories_activated_repositories(self):
+        query = query_repositories % (
+            self.user.username,
+            "(filters: { activated: true })",
+            "",
+        )
+        data = self.gql_request(query, user=self.user)
+        repos = paginate_connection(data["owner"]["repositories"])
+        assert repos == [{"name": "a"}]
+
+    def test_fetching_repositories_deactivated_repositories(self):
+        query = query_repositories % (
+            self.user.username,
+            "(filters: { activated: false })",
+            "",
+        )
+        data = self.gql_request(query, user=self.user)
+        repos = paginate_connection(data["owner"]["repositories"])
+        assert repos == [{"name": "b"}]
 
     def test_is_part_of_org_when_unauthenticated(self):
         query = query_repositories % (self.user.username, "", "")
