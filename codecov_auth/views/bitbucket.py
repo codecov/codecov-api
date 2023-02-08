@@ -94,7 +94,8 @@ class BitbucketLoginView(View, LoginMixin):
         user_dict = self.fetch_user_data(token)
         response = redirect(settings.CODECOV_DASHBOARD_URL + "/bb")
         response.delete_cookie("_oauth_request_token", domain=settings.COOKIES_DOMAIN)
-        user = self.login_from_user_dict(user_dict, request, response)
+        user = self.get_and_modify_user(user_dict, request)
+        self.set_cookies_and_login_user(user, request, response)
         log.info("User successfully logged in", extra=dict(ownerid=user.ownerid))
         return response
 

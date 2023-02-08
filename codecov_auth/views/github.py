@@ -97,7 +97,8 @@ class GithubLoginView(LoginMixin, StateMixin, View):
             log.warning("Unable to log in due to problem on Github", exc_info=True)
             return redirect(self.error_redirection_page)
         response = redirect(redirection_url)
-        self.login_from_user_dict(user_dict, request, response)
+        user = self.get_and_modify_user(user_dict, request)
+        self.set_cookies_and_login_user(user, request, response)
         self.remove_state(state)
         return response
 

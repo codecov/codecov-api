@@ -128,7 +128,8 @@ class BitbucketServerLoginView(View, LoginMixin):
         )
 
         def async_login():
-            user = self.login_from_user_dict(user_dict, request, response)
+            user = self.get_and_modify_user(user_dict, request)
+            self.set_cookies_and_login_user(user, request, response)
             log.info(
                 "User (async) successfully logged in", extra=dict(ownerid=user.ownerid)
             )
