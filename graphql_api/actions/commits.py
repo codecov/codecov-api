@@ -1,7 +1,7 @@
-from django.db.models import Field, Lookup, QuerySet
+from django.db.models import Case, QuerySet, Value, When
 
-from codecov.db.base import IsNot
 from core.models import Commit, Pull
+from reports.models import ReportSession
 
 
 def pull_commits(pull: Pull) -> QuerySet[Commit]:
@@ -17,3 +17,26 @@ def pull_commits(pull: Pull) -> QuerySet[Commit]:
     )
 
     return Commit.objects.filter(id__in=subquery).defer("report")
+
+
+def commit_uploads(commit: Commit) -> QuerySet[ReportSession]:
+    if not commit.commitreport:
+        return ReportSession.objects.none()
+
+    # just the sessions with flags
+    flags_qs = (
+        commit.commitreport.sessions.prefetch_related("flags")
+        .exclude(flags__id=None)
+        # if >1 sessions share a flag name, this selects just the session
+        # with upload_type=uploaded (discarding carriedforward rows)
+        .distinct("flags")
+        .order_by("flags", "-upload_type")
+    )
+
+    # just the sessions w/o flags
+    nonflags_qs = commit.commitreport.sessions.prefetch_related("flags").filter(
+        flags__id=None
+    )
+
+    # combined sessions
+    return nonflags_qs.union(flags_qs)
