@@ -15,7 +15,7 @@ from shared.encryption.token import encode_token
 from shared.license import LICENSE_ERRORS_MESSAGES, get_current_license
 
 from codecov_auth.helpers import create_signed_value
-from codecov_auth.models import Owner, Service, Session
+from codecov_auth.models import Owner, OwnerProfile, Service, Session
 from services.redis_configuration import get_redis_connection
 from services.refresh import RefreshService
 from services.segment import SegmentService
@@ -121,13 +121,41 @@ class StateMixin(object):
 class LoginMixin(object):
     segment_service = SegmentService()
 
+    def modify_redirection_url_based_on_default_user_org(
+        self, url: str, user: Owner
+    ) -> str:
+
+        if (
+            url
+            != f"{settings.CODECOV_DASHBOARD_URL}/{get_short_service_name(self.service)}"
+        ):
+
+            return url
+
+        owner_profile = None
+        if user:
+            owner_profile = OwnerProfile.objects.filter(owner_id=user.ownerid).first()
+        if owner_profile is not None and owner_profile.default_org is not None:
+            url += f"/{owner_profile.default_org.username}"
+        return url
+
     def get_or_create_org(self, single_organization):
         owner, was_created = Owner.objects.get_or_create(
             service=self.service, service_id=single_organization["id"]
         )
         return owner
 
-    def login_from_user_dict(self, user_dict, request, response):
+    def set_cookies_and_login_user(self, user, request, response):
+        self._set_proper_cookies_and_session(user, request, response)
+        RefreshService().trigger_refresh(user.ownerid, user.username)
+
+        # Login the user if staff via Django authentication. Allows staff users to access Django admin.
+        if user.is_staff:
+            login(request, user)
+
+        return log.info("User is logging in", extra=dict(ownerid=user.ownerid))
+
+    def get_and_modify_user(self, user_dict, request) -> Owner:
         user_orgs = user_dict["orgs"]
         formatted_orgs = [
             dict(username=org["username"], id=str(org["id"])) for org in user_orgs
@@ -167,14 +195,6 @@ class LoginMixin(object):
         if fields_to_update:
             user.save(update_fields=fields_to_update + ["updatestamp"])
 
-        self._set_proper_cookies_and_session(user, request, response)
-        RefreshService().trigger_refresh(user.ownerid, user.username)
-
-        # Login the user if staff via Django authentication. Allows staff users to access Django admin.
-        if user.is_staff:
-            login(request, user)
-
-        log.info("User is logging in", extra=dict(ownerid=user.ownerid))
         return user
 
     def _set_proper_cookies_and_session(self, user, request, response):
