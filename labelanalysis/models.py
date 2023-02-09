@@ -17,3 +17,4 @@ class LabelAnalysisRequest(BaseCodecovModel):
         null=False, choices=LabelAnalysisRequestState.choices()
     )
     result = models.JSONField(null=True)
+    processing_params = models.JSONField(null=True)
