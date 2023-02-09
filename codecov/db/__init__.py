@@ -1,6 +1,9 @@
 import logging
 
+from asgiref.sync import SyncToAsync
 from django.conf import settings
+from django.db import close_old_connections
+from django.db.models import Field, Lookup
 
 log = logging.getLogger(__name__)
 
@@ -34,3 +37,30 @@ class DatabaseRouter:
             return False
 
         return db == self.databases.get(app_label, "default")
+
+
+@Field.register_lookup
+class IsNot(Lookup):
+    lookup_name = "isnot"
+
+    def as_sql(self, compiler, connection):
+        lhs, lhs_params = self.process_lhs(compiler, connection)
+        rhs, rhs_params = self.process_rhs(compiler, connection)
+        params = lhs_params + rhs_params
+        return "%s is not %s" % (lhs, rhs), params
+
+
+class DatabaseSyncToAsync(SyncToAsync):
+    """
+    SyncToAsync version that cleans up old database connections.
+    """
+
+    def thread_handler(self, loop, *args, **kwargs):
+        close_old_connections()
+        try:
+            return super().thread_handler(loop, *args, **kwargs)
+        finally:
+            close_old_connections()
+
+
+sync_to_async = DatabaseSyncToAsync

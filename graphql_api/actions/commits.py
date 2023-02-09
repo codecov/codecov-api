@@ -1,4 +1,4 @@
-from django.db.models import Case, QuerySet, Value, When
+from django.db.models import QuerySet
 
 from core.models import Commit, Pull
 from reports.models import ReportSession

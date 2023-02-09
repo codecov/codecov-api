@@ -2,10 +2,10 @@ from typing import List, Union
 
 import yaml
 from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
-from asgiref.sync import sync_to_async
 
 import services.components as components
 import services.path as path_service
+from codecov.db import sync_to_async
 from core.models import Commit
 from graphql_api.actions.commits import commit_uploads
 from graphql_api.actions.path_contents import sort_path_contents

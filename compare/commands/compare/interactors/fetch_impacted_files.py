@@ -1,8 +1,7 @@
 import enum
 
-from asgiref.sync import sync_to_async
-
 from codecov.commands.base import BaseInteractor
+from codecov.db import sync_to_async
 from services.comparison import ComparisonReport, ImpactedFile, ImpactedFileParameter
 
 
