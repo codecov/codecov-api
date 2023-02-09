@@ -264,10 +264,10 @@ class LoginMixinTests(TestCase):
         )
         mock_get_config.return_value = ["awesome-team", "modest_mice"]
         with pytest.raises(PermissionDenied) as exp:
-            user = self.mixin_instance.get_and_modify_user(
-                user_dict, self.request
+            user = self.mixin_instance.get_and_modify_user(user_dict, self.request)
+            self.mixin_instance.set_cookies_and_login_user(
+                user, self.request, HttpResponse()
             )
-            self.mixin_instance.set_cookies_and_login_user(user, self.request, HttpResponse())
             assert exp.status_code == 401
         mock_get_config.assert_called_with("github", "organizations")
 
@@ -295,10 +295,10 @@ class LoginMixinTests(TestCase):
             user=dict(id=121),
         )
         # This time it should not raise an exception because the user is in one of the orgs
-        user = self.mixin_instance.get_and_modify_user(
-            user_dict, self.request
+        user = self.mixin_instance.get_and_modify_user(user_dict, self.request)
+        self.mixin_instance.set_cookies_and_login_user(
+            user, self.request, HttpResponse()
         )
-        self.mixin_instance.set_cookies_and_login_user(user, self.request, HttpResponse())
         mock_get_config.assert_any_call("github", "organizations")
 
     @patch(
@@ -318,10 +318,10 @@ class LoginMixinTests(TestCase):
     def test_get_and_modify_user_passes_if_not_enterprise(self, mock_get_config: Mock):
         user_dict = dict(orgs=[], is_student=False, user=dict(id=121))
         # This time it should not raise an exception because it's not in enterprise mode
-        user = self.mixin_instance.get_and_modify_user(
-            user_dict, self.request
+        user = self.mixin_instance.get_and_modify_user(user_dict, self.request)
+        self.mixin_instance.set_cookies_and_login_user(
+            user, self.request, HttpResponse()
         )
-        self.mixin_instance.set_cookies_and_login_user(user, self.request, HttpResponse())
         mock_get_config.assert_not_called()
 
     @override_settings(IS_ENTERPRISE=False)
@@ -461,10 +461,10 @@ class LoginMixinTests(TestCase):
         )
         # Raise exception because user is not member of My Team
         with pytest.raises(PermissionDenied) as exp:
-            user = self.mixin_instance.get_and_modify_user(
-                user_dict, self.request
+            user = self.mixin_instance.get_and_modify_user(user_dict, self.request)
+            self.mixin_instance.set_cookies_and_login_user(
+                user, self.request, HttpResponse()
             )
-            self.mixin_instance.set_cookies_and_login_user(user, self.request, HttpResponse())
             mock_get_config.assert_any_call("github", "organizations")
             mock_get_config.assert_any_call("github", "teams")
             assert (
@@ -474,10 +474,10 @@ class LoginMixinTests(TestCase):
             assert exp.status_code == 401
         # No exception if user is in My Team
         user_dict["teams"] = [dict(name="My Team")]
-        user = self.mixin_instance.get_and_modify_user(
-            user_dict, self.request
+        user = self.mixin_instance.get_and_modify_user(user_dict, self.request)
+        self.mixin_instance.set_cookies_and_login_user(
+            user, self.request, HttpResponse()
         )
-        self.mixin_instance.set_cookies_and_login_user(user, self.request, HttpResponse())
         mock_get_config.assert_any_call("github", "organizations")
         mock_get_config.assert_any_call("github", "teams")
 
@@ -511,9 +511,9 @@ class LoginMixinTests(TestCase):
             teams=[dict(name="My Team")],
         )
         # Don't raise exception if there's no team in the config
-        user = self.mixin_instance.get_and_modify_user(
-            user_dict, self.request
+        user = self.mixin_instance.get_and_modify_user(user_dict, self.request)
+        self.mixin_instance.set_cookies_and_login_user(
+            user, self.request, HttpResponse()
         )
-        self.mixin_instance.set_cookies_and_login_user(user, self.request, HttpResponse())
         mock_get_config.assert_any_call("github", "organizations")
         mock_get_config.assert_any_call("github", "teams")

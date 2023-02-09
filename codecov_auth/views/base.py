@@ -15,7 +15,7 @@ from shared.encryption.token import encode_token
 from shared.license import LICENSE_ERRORS_MESSAGES, get_current_license
 
 from codecov_auth.helpers import create_signed_value
-from codecov_auth.models import Owner, Service, Session, OwnerProfile
+from codecov_auth.models import Owner, OwnerProfile, Service, Session
 from services.redis_configuration import get_redis_connection
 from services.refresh import RefreshService
 from services.segment import SegmentService
@@ -121,15 +121,30 @@ class StateMixin(object):
 class LoginMixin(object):
     segment_service = SegmentService()
 
-    def modify_redirection_url_based_on_default_user_org(self, url: str, user: Owner) -> str:
+    def modify_redirection_url_based_on_default_user_org(
+        self, url: str, user: Owner
+    ) -> str:
         print("I am here!")
         print("user", user)
         print("url", url)
-        print("url", f"{settings.CODECOV_DASHBOARD_URL}/{get_short_service_name(self.service)}")
-        print(url != f"{settings.CODECOV_DASHBOARD_URL}/{get_short_service_name(self.service)}")
+        print(
+            "url",
+            f"{settings.CODECOV_DASHBOARD_URL}/{get_short_service_name(self.service)}",
+        )
+        print(
+            url
+            != f"{settings.CODECOV_DASHBOARD_URL}/{get_short_service_name(self.service)}"
+        )
         print(type(url))
-        print(type(f"{settings.CODECOV_DASHBOARD_URL}/{get_short_service_name(self.service)}"))
-        if url != f"{settings.CODECOV_DASHBOARD_URL}/{get_short_service_name(self.service)}":
+        print(
+            type(
+                f"{settings.CODECOV_DASHBOARD_URL}/{get_short_service_name(self.service)}"
+            )
+        )
+        if (
+            url
+            != f"{settings.CODECOV_DASHBOARD_URL}/{get_short_service_name(self.service)}"
+        ):
             print("I should be here?")
             return url
         print("Aftere")
