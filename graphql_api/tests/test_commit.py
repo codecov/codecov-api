@@ -255,39 +255,54 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
     def test_fetch_commit_uploads(self):
         flag_a = RepositoryFlagFactory(flag_name="flag_a")
         flag_b = RepositoryFlagFactory(flag_name="flag_b")
+        flag_c = RepositoryFlagFactory(flag_name="flag_c")
 
-        session_a = UploadFactory(
+        # `provider` is used here to differentiate sessions in the assertion
+
+        session_uploaded_flag_a_b_c = UploadFactory(
             report=self.report,
             provider="a",
             upload_type=UploadType.UPLOADED.value,
         )
-        UploadFlagMembershipFactory(report_session=session_a, flag=flag_a)
-        session_b = UploadFactory(
+        UploadFlagMembershipFactory(
+            report_session=session_uploaded_flag_a_b_c, flag=flag_a
+        )
+        UploadFlagMembershipFactory(
+            report_session=session_uploaded_flag_a_b_c, flag=flag_b
+        )
+        UploadFlagMembershipFactory(
+            report_session=session_uploaded_flag_a_b_c, flag=flag_c
+        )
+        session_carriedforward_flag = UploadFactory(
             report=self.report,
             provider="b",
             upload_type=UploadType.CARRIEDFORWARD.value,
         )
-        UploadFlagMembershipFactory(report_session=session_b, flag=flag_a)
+        UploadFlagMembershipFactory(
+            report_session=session_carriedforward_flag, flag=flag_a
+        )
 
-        session_c = UploadFactory(
+        session_carriedforward_flag_b = UploadFactory(
             report=self.report,
             provider="c",
             upload_type=UploadType.CARRIEDFORWARD.value,
         )
-        UploadFlagMembershipFactory(report_session=session_c, flag=flag_b)
-        session_d = UploadFactory(
+        UploadFlagMembershipFactory(
+            report_session=session_carriedforward_flag_b, flag=flag_b
+        )
+        session_updated_flag_b = UploadFactory(
             report=self.report,
             provider="d",
             upload_type=UploadType.UPLOADED.value,
         )
-        UploadFlagMembershipFactory(report_session=session_d, flag=flag_b)
+        UploadFlagMembershipFactory(report_session=session_updated_flag_b, flag=flag_b)
 
-        session_e = UploadFactory(
+        session_carriedforward_flagless = UploadFactory(
             report=self.report,
             provider="e",
             upload_type=UploadType.CARRIEDFORWARD.value,
         )
-        session_f = UploadFactory(
+        session_uploaded_flagless = UploadFactory(
             report=self.report,
             provider="f",
             upload_type=UploadType.UPLOADED.value,
@@ -319,7 +334,11 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         # ordered by upload id, omits uploads with carriedforward flag if another
         # upload exists with the same flag name is is not carriedforward
         assert uploads == [
-            {"uploadType": "UPLOADED", "flags": ["flag_a"], "provider": "a"},
+            {
+                "uploadType": "UPLOADED",
+                "flags": ["flag_a", "flag_b", "flag_c"],
+                "provider": "a",
+            },
             {"uploadType": "UPLOADED", "flags": ["flag_b"], "provider": "d"},
             {"uploadType": "CARRIEDFORWARD", "flags": [], "provider": "e"},
             {"uploadType": "UPLOADED", "flags": [], "provider": "f"},
