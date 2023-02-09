@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
 import pytest
+from django.conf import settings
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
 from django.http import HttpResponse
 from django.test import RequestFactory, TestCase, override_settings
@@ -9,7 +10,7 @@ from freezegun import freeze_time
 from shared.license import LicenseInformation
 
 from codecov_auth.models import Owner
-from codecov_auth.tests.factories import OwnerFactory
+from codecov_auth.tests.factories import OwnerFactory, OwnerProfileFactory
 from codecov_auth.views.base import LoginMixin, StateMixin
 
 
@@ -517,3 +518,97 @@ class LoginMixinTests(TestCase):
         )
         mock_get_config.assert_any_call("github", "organizations")
         mock_get_config.assert_any_call("github", "teams")
+
+    def test_adjust_redirection_url_is_unchanged_if_no_owner_profile(self):
+        provider = "gh"
+        owner = OwnerFactory(
+            username="sample-owner",
+            service="github",
+        )
+        url = f"{settings.CODECOV_DASHBOARD_URL}/{provider}"
+
+        redirect_url = (
+            self.mixin_instance.modify_redirection_url_based_on_default_user_org(
+                url, owner
+            )
+        )
+        assert redirect_url == url
+
+    def test_adjust_redirection_url_is_unchanged_if_no_default_org(self):
+        provider = "gh"
+        owner = OwnerFactory(
+            username="sample-owner-gh",
+            service="github",
+        )
+        OwnerProfileFactory(owner=owner, default_org=None)
+        url = f"{settings.CODECOV_DASHBOARD_URL}/{provider}"
+
+        redirect_url = (
+            self.mixin_instance.modify_redirection_url_based_on_default_user_org(
+                url, owner
+            )
+        )
+        assert redirect_url == url
+
+    def test_adjust_redirection_url_user_has_a_default_org_for_github(self):
+        provider = "gh"
+        default_org_username = "sample-org-gh"
+        organization = OwnerFactory(username=default_org_username, service="github")
+        owner = OwnerFactory(
+            username="sample-owner-gh",
+            service="github",
+            organizations=[organization.ownerid],
+        )
+        OwnerProfileFactory(owner=owner, default_org=organization)
+        url = f"{settings.CODECOV_DASHBOARD_URL}/{provider}"
+
+        redirect_url = (
+            self.mixin_instance.modify_redirection_url_based_on_default_user_org(
+                url, owner
+            )
+        )
+        assert redirect_url == url + f"/{default_org_username}"
+
+    def test_adjust_redirection_url_user_has_a_default_org_for_gitlab(self):
+        provider = "gl"
+        default_org_username = "sample-org-gl"
+        organization = OwnerFactory(username=default_org_username, service="gitlab")
+        owner = OwnerFactory(
+            username="sample-owner-gl",
+            service="gitlab",
+            organizations=[organization.ownerid],
+        )
+        OwnerProfileFactory(owner=owner, default_org=organization)
+        url = f"{settings.CODECOV_DASHBOARD_URL}/{provider}"
+
+        mixin_instance_gitlab = LoginMixin()
+        mixin_instance_gitlab.service = "gitlab"
+
+        redirect_url = (
+            mixin_instance_gitlab.modify_redirection_url_based_on_default_user_org(
+                url, owner
+            )
+        )
+        assert redirect_url == url + f"/{default_org_username}"
+
+    def test_adjust_redirection_url_user_has_a_default_org_for_bitbucket(self):
+        provider = "bb"
+        default_org_username = "sample-org-bb"
+        organization = OwnerFactory(username=default_org_username, service="bitbucket")
+        owner = OwnerFactory(
+            username="sample-owner-bb",
+            service="bitbucket",
+            organizations=[organization.ownerid],
+        )
+        OwnerProfileFactory(owner=owner, default_org=organization)
+        url = f"{settings.CODECOV_DASHBOARD_URL}/{provider}"
+
+        mixin_instance_bitbucket = LoginMixin()
+        mixin_instance_bitbucket.service = "bitbucket"
+
+        redirect_url = (
+            mixin_instance_bitbucket.modify_redirection_url_based_on_default_user_org(
+                url, owner
+            )
+        )
+        assert redirect_url == url + f"/{default_org_username}"
