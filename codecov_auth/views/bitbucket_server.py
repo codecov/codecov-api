@@ -1,16 +1,21 @@
 import base64
 import logging
+import re
 import threading
-from urllib.parse import urlencode
+from urllib.parse import parse_qsl, urlencode, urljoin
 
 import oauth2 as oauth
 from asgiref.sync import async_to_sync
 from django.conf import settings
+from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.views import View
 from shared.torngit import BitbucketServer
-from shared.torngit.exceptions import TorngitServerFailureError
+from shared.torngit.exceptions import (
+    TorngitClientGeneralError,
+    TorngitServerFailureError,
+)
 
 from codecov_auth.models import SERVICE_BITBUCKET_SERVER
 from codecov_auth.views.base import LoginMixin
@@ -123,8 +128,7 @@ class BitbucketServerLoginView(View, LoginMixin):
         )
 
         def async_login():
-            user = self.get_and_modify_user(user_dict, request)
-            self.set_cookies_and_login_user(user, request, response)
+            user = self.login_from_user_dict(user_dict, request, response)
             log.info(
                 "User (async) successfully logged in", extra=dict(ownerid=user.ownerid)
             )

@@ -255,7 +255,7 @@ class LoginMixinTests(TestCase):
         lambda *args: True,
     )
     @patch("codecov_auth.views.base.get_config")
-    def test_get_and_modify_user_enterprise_raise_usernotinorganization_error(
+    def test_login_from_user_dict_enterprise_raise_usernotinorganization_error(
         self, mock_get_config: Mock
     ):
         user_dict = dict(
@@ -264,9 +264,8 @@ class LoginMixinTests(TestCase):
         )
         mock_get_config.return_value = ["awesome-team", "modest_mice"]
         with pytest.raises(PermissionDenied) as exp:
-            user = self.mixin_instance.get_and_modify_user(user_dict, self.request)
-            self.mixin_instance.set_cookies_and_login_user(
-                user, self.request, HttpResponse()
+            self.mixin_instance.login_from_user_dict(
+                user_dict, self.request, HttpResponse()
             )
             assert exp.status_code == 401
         mock_get_config.assert_called_with("github", "organizations")
@@ -285,7 +284,7 @@ class LoginMixinTests(TestCase):
     )
     @patch("codecov_auth.views.base.get_config")
     @override_settings(IS_ENTERPRISE=True)
-    def test_get_and_modify_user_enterprise_orgs_passes_if_user_in_org(
+    def test_login_from_user_dict_enterprise_orgs_passes_if_user_in_org(
         self, mock_get_config: Mock
     ):
         mock_get_config.return_value = ["awesome-team", "modest_mice"]
@@ -295,9 +294,8 @@ class LoginMixinTests(TestCase):
             user=dict(id=121),
         )
         # This time it should not raise an exception because the user is in one of the orgs
-        user = self.mixin_instance.get_and_modify_user(user_dict, self.request)
-        self.mixin_instance.set_cookies_and_login_user(
-            user, self.request, HttpResponse()
+        self.mixin_instance.login_from_user_dict(
+            user_dict, self.request, HttpResponse()
         )
         mock_get_config.assert_any_call("github", "organizations")
 
@@ -315,12 +313,11 @@ class LoginMixinTests(TestCase):
     )
     @patch("codecov_auth.views.base.get_config")
     @override_settings(IS_ENTERPRISE=False)
-    def test_get_and_modify_user_passes_if_not_enterprise(self, mock_get_config: Mock):
+    def test_login_from_user_dict_passes_if_not_enterprise(self, mock_get_config: Mock):
         user_dict = dict(orgs=[], is_student=False, user=dict(id=121))
         # This time it should not raise an exception because it's not in enterprise mode
-        user = self.mixin_instance.get_and_modify_user(user_dict, self.request)
-        self.mixin_instance.set_cookies_and_login_user(
-            user, self.request, HttpResponse()
+        self.mixin_instance.login_from_user_dict(
+            user_dict, self.request, HttpResponse()
         )
         mock_get_config.assert_not_called()
 
@@ -461,9 +458,8 @@ class LoginMixinTests(TestCase):
         )
         # Raise exception because user is not member of My Team
         with pytest.raises(PermissionDenied) as exp:
-            user = self.mixin_instance.get_and_modify_user(user_dict, self.request)
-            self.mixin_instance.set_cookies_and_login_user(
-                user, self.request, HttpResponse()
+            self.mixin_instance.login_from_user_dict(
+                user_dict, self.request, HttpResponse()
             )
             mock_get_config.assert_any_call("github", "organizations")
             mock_get_config.assert_any_call("github", "teams")
@@ -474,9 +470,8 @@ class LoginMixinTests(TestCase):
             assert exp.status_code == 401
         # No exception if user is in My Team
         user_dict["teams"] = [dict(name="My Team")]
-        user = self.mixin_instance.get_and_modify_user(user_dict, self.request)
-        self.mixin_instance.set_cookies_and_login_user(
-            user, self.request, HttpResponse()
+        self.mixin_instance.login_from_user_dict(
+            user_dict, self.request, HttpResponse()
         )
         mock_get_config.assert_any_call("github", "organizations")
         mock_get_config.assert_any_call("github", "teams")
@@ -511,9 +506,8 @@ class LoginMixinTests(TestCase):
             teams=[dict(name="My Team")],
         )
         # Don't raise exception if there's no team in the config
-        user = self.mixin_instance.get_and_modify_user(user_dict, self.request)
-        self.mixin_instance.set_cookies_and_login_user(
-            user, self.request, HttpResponse()
+        self.mixin_instance.login_from_user_dict(
+            user_dict, self.request, HttpResponse()
         )
         mock_get_config.assert_any_call("github", "organizations")
         mock_get_config.assert_any_call("github", "teams")
