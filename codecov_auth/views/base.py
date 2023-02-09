@@ -124,24 +124,17 @@ class LoginMixin(object):
     def modify_redirection_url_based_on_default_user_org(
         self, url: str, user: Owner
     ) -> str:
-        print("hello0")
         if (
             url
             != f"{settings.CODECOV_DASHBOARD_URL}/{get_short_service_name(self.service)}"
         ):
-            print(self.service)
-            print("hello0.1")
             return url
 
         owner_profile = None
-        print("hello1")
         if user:
-            print("hello2")
             owner_profile = OwnerProfile.objects.filter(owner_id=user.ownerid).first()
         if owner_profile is not None and owner_profile.default_org is not None:
-            print("hello3")
             url += f"/{owner_profile.default_org.username}"
-        print("hello4")
         return url
 
     def get_or_create_org(self, single_organization):
