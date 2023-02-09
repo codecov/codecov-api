@@ -6,19 +6,27 @@ from reports.models import CommitReport, ReportResults, ReportSession, Repositor
 from services.archive import ArchiveService
 
 
+class FlagListField(serializers.ListField):
+    child = serializers.CharField()
+
+    def to_representation(self, data):
+        return [item.flag_name if item is not None else None for item in data.all()]
+
+
 class UploadSerializer(serializers.ModelSerializer):
+    flags = FlagListField(required=False)
+
     class Meta:
         read_only_fields = (
             "external_id",
             "created_at",
-            "storage_path",
             "raw_upload_location",
             "state",
             "provider",
+            "upload_type",
         )
         fields = read_only_fields + (
             "ci_url",
-            "upload_type",
             "flags",
             "env",
             "name",
@@ -33,9 +41,8 @@ class UploadSerializer(serializers.ModelSerializer):
         return archive_service.create_presigned_put(obj.storage_path)
 
     def create(self, validated_data):
-        request = self.context["request"]
-        flag_names = request.data.getlist("flags")
-        upload = super().create(validated_data)
+        flag_names = validated_data.pop("flags") if validated_data.get("flags") else []
+        upload = ReportSession.objects.create(**validated_data)
         flags = []
         if upload:
             repoid = upload.report.commit.repository.repoid
