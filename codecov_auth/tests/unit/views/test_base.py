@@ -519,6 +519,23 @@ class LoginMixinTests(TestCase):
         mock_get_config.assert_any_call("github", "organizations")
         mock_get_config.assert_any_call("github", "teams")
 
+    def test_adjust_redirection_url_is_unchanged_if_url_is_different_from_base_url(
+        self,
+    ):
+        provider = "gh"
+        owner = OwnerFactory(
+            username="sample-owner",
+            service="github",
+        )
+        url = f"{settings.CODECOV_DASHBOARD_URL}/{provider}/some/random/path/to/file.py"
+
+        redirect_url = (
+            self.mixin_instance.modify_redirection_url_based_on_default_user_org(
+                url, owner
+            )
+        )
+        assert redirect_url == url
+
     def test_adjust_redirection_url_is_unchanged_if_no_owner_profile(self):
         provider = "gh"
         owner = OwnerFactory(
