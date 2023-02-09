@@ -1,9 +1,9 @@
 from typing import TypedDict
 
 from ariadne import ObjectType
-from asgiref.sync import sync_to_async
 from shared.yaml.user_yaml import UserYaml
 
+from codecov.db import sync_to_async
 from core.models import Repository
 
 repository_config_bindable = ObjectType("RepositoryConfig")
