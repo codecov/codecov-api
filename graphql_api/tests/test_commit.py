@@ -15,8 +15,10 @@ from graphql_api.types.enums.enums import UploadType
 from reports.tests.factories import (
     CommitReportFactory,
     ReportLevelTotalsFactory,
+    RepositoryFlagFactory,
     UploadErrorFactory,
     UploadFactory,
+    UploadFlagMembershipFactory,
 )
 from services.profiling import CriticalFile
 
@@ -205,8 +207,8 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         commit = data["owner"]["repository"]["commit"]
         builds = paginate_connection(commit["uploads"])
         assert builds == [
-            {"provider": session_two.provider},
             {"provider": session_one.provider},
+            {"provider": session_two.provider},
         ]
 
     def test_fetch_commit_uploads_state(self):
@@ -244,23 +246,68 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         uploads = paginate_connection(commit["uploads"])
 
         assert uploads == [
-            {"state": UploadState.UPLOADED.name},
-            {"state": UploadState.COMPLETE.name},
-            {"state": UploadState.ERROR.name},
             {"state": UploadState.PROCESSED.name},
+            {"state": UploadState.ERROR.name},
+            {"state": UploadState.COMPLETE.name},
+            {"state": UploadState.UPLOADED.name},
         ]
 
-    def test_fetch_commit_uploads_type(self):
-        session_one = UploadFactory(
+    def test_fetch_commit_uploads(self):
+        flag_a = RepositoryFlagFactory(flag_name="flag_a")
+        flag_b = RepositoryFlagFactory(flag_name="flag_b")
+        flag_c = RepositoryFlagFactory(flag_name="flag_c")
+
+        # `provider` is used here to differentiate sessions in the assertion
+
+        session_uploaded_flag_a_b_c = UploadFactory(
             report=self.report,
-            provider="circleci",
-            upload_type=UploadType.CARRIEDFORWARD.value,
-        )
-        session_two = UploadFactory(
-            report=self.report,
-            provider="travisci",
+            provider="a",
             upload_type=UploadType.UPLOADED.value,
         )
+        UploadFlagMembershipFactory(
+            report_session=session_uploaded_flag_a_b_c, flag=flag_a
+        )
+        UploadFlagMembershipFactory(
+            report_session=session_uploaded_flag_a_b_c, flag=flag_b
+        )
+        UploadFlagMembershipFactory(
+            report_session=session_uploaded_flag_a_b_c, flag=flag_c
+        )
+        session_carriedforward_flag = UploadFactory(
+            report=self.report,
+            provider="b",
+            upload_type=UploadType.CARRIEDFORWARD.value,
+        )
+        UploadFlagMembershipFactory(
+            report_session=session_carriedforward_flag, flag=flag_a
+        )
+
+        session_carriedforward_flag_b = UploadFactory(
+            report=self.report,
+            provider="c",
+            upload_type=UploadType.CARRIEDFORWARD.value,
+        )
+        UploadFlagMembershipFactory(
+            report_session=session_carriedforward_flag_b, flag=flag_b
+        )
+        session_updated_flag_b = UploadFactory(
+            report=self.report,
+            provider="d",
+            upload_type=UploadType.UPLOADED.value,
+        )
+        UploadFlagMembershipFactory(report_session=session_updated_flag_b, flag=flag_b)
+
+        session_carriedforward_flagless = UploadFactory(
+            report=self.report,
+            provider="e",
+            upload_type=UploadType.CARRIEDFORWARD.value,
+        )
+        session_uploaded_flagless = UploadFactory(
+            report=self.report,
+            provider="f",
+            upload_type=UploadType.UPLOADED.value,
+        )
+
         query = (
             query_commit
             % """
@@ -268,6 +315,8 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 edges {
                     node {
                         uploadType
+                        flags
+                        provider
                     }
                 }
             }
@@ -282,10 +331,47 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         commit = data["owner"]["repository"]["commit"]
         uploads = paginate_connection(commit["uploads"])
 
+        # ordered by upload id, omits uploads with carriedforward flag if another
+        # upload exists with the same flag name is is not carriedforward
         assert uploads == [
-            {"uploadType": UploadType.UPLOADED.name},
-            {"uploadType": UploadType.CARRIEDFORWARD.name},
+            {
+                "uploadType": "UPLOADED",
+                "flags": ["flag_a", "flag_b", "flag_c"],
+                "provider": "a",
+            },
+            {"uploadType": "UPLOADED", "flags": ["flag_b"], "provider": "d"},
+            {"uploadType": "CARRIEDFORWARD", "flags": [], "provider": "e"},
+            {"uploadType": "UPLOADED", "flags": [], "provider": "f"},
         ]
+
+    def test_fetch_commit_uploads_no_report(self):
+        commit = CommitFactory(
+            repository=self.repo,
+            parent_commit_id=self.commit.commitid,
+        )
+        query = (
+            query_commit
+            % """
+            uploads {
+                edges {
+                    node {
+                        uploadType
+                        flags
+                        provider
+                    }
+                }
+            }
+        """
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        uploads = paginate_connection(commit["uploads"])
+        assert uploads == []
 
     def test_fetch_commit_uploads_errors(self):
         session = UploadFactory(
