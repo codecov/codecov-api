@@ -2,8 +2,8 @@ from functools import cached_property
 from typing import List, Optional
 
 from ariadne import ObjectType
-from asgiref.sync import sync_to_async
 
+from codecov.db import sync_to_async
 from services.comparison import FileComparison, Segment
 from services.profiling import ProfilingSummary
 

@@ -17,3 +17,19 @@ type NotFoundError implements ResolverError {
 type ValidationError implements ResolverError {
   message: String!
 }
+
+type MissingCoverage implements ResolverError {
+  message: String!
+}
+
+type UnknownPath implements ResolverError {
+  message: String!
+}
+
+type ProviderError implements ResolverError {
+  message: String!
+}
+
+type QueryError implements ResolverError {
+  message: String!
+}

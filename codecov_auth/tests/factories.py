@@ -7,6 +7,7 @@ from factory.django import DjangoModelFactory
 from codecov_auth.models import (
     OrganizationLevelToken,
     Owner,
+    OwnerProfile,
     RepositoryToken,
     Service,
     Session,
@@ -37,6 +38,14 @@ class OwnerFactory(DjangoModelFactory):
     oauth_token = factory.LazyAttribute(
         lambda o: encryptor.encode(o.unencrypted_oauth_token).decode()
     )
+
+
+class OwnerProfileFactory(DjangoModelFactory):
+    class Meta:
+        model = OwnerProfile
+
+    owner = factory.SubFactory(OwnerFactory)
+    default_org = factory.SubFactory(OwnerFactory)
 
 
 class SessionFactory(DjangoModelFactory):

@@ -43,6 +43,37 @@ def test_compute_comparison_task(mocker):
     )
 
 
+def test_compute_comparisons_task(mocker):
+    signature_mock = mocker.patch("services.task.task.signature")
+    mock_route_task = mocker.patch(
+        "services.task.task.route_task", return_value={"queue": "my_queue"}
+    )
+    apply_async_mock = mocker.patch("celery.group.apply_async")
+    TaskService().compute_comparisons([5, 10])
+    mock_route_task.assert_called_with(
+        celery_config.compute_comparison_task_name,
+        args=None,
+        kwargs=dict(comparison_id=5),
+        options={},
+    )
+    assert signature_mock.call_count == 2
+    signature_mock.assert_any_call(
+        celery_config.compute_comparison_task_name,
+        args=None,
+        kwargs=dict(comparison_id=10),
+        app=celery_app,
+        queue="my_queue",
+    )
+    signature_mock.assert_any_call(
+        celery_config.compute_comparison_task_name,
+        args=None,
+        kwargs=dict(comparison_id=5),
+        app=celery_app,
+        queue="my_queue",
+    )
+    apply_async_mock.assert_called_once_with()
+
+
 @pytest.mark.django_db
 def test_backfill_repo(mocker):
     signature_mock = mocker.patch("services.task.task.signature")

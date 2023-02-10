@@ -22,6 +22,10 @@ from .sync_with_git_provider import (
     error_sync_with_git_provider,
     resolve_sync_with_git_provider,
 )
+from .update_default_organization import (
+    error_update_default_organization,
+    resolve_update_default_organization,
+)
 from .update_profile import error_update_profile, resolve_update_profile
 
 mutation_bindable = MutationType()
@@ -34,6 +38,9 @@ mutation_bindable.field("setYamlOnOwner")(resolve_set_yaml_on_owner)
 mutation_bindable.field("syncWithGitProvider")(resolve_sync_with_git_provider)
 mutation_bindable.field("deleteSession")(resolve_delete_session)
 mutation_bindable.field("updateProfile")(resolve_update_profile)
+mutation_bindable.field("updateDefaultOrganization")(
+    resolve_update_default_organization
+)
 mutation_bindable.field("onboardUser")(resolve_onboard_user)
 mutation_bindable.field("regenerateProfilingToken")(resolve_regenerate_profling_token)
 mutation_bindable.field("activateFlagsMeasurements")(
@@ -50,6 +57,7 @@ mutation_resolvers = [
     error_sync_with_git_provider,
     error_delete_session,
     error_update_profile,
+    error_update_default_organization,
     error_onboard_user,
     error_generate_profiling_token,
     error_activate_flags_measurements,

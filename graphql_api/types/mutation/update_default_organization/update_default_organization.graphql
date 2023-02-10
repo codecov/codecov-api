@@ -1,0 +1,10 @@
+union UpdateDefaultOrganizationError = UnauthenticatedError | ValidationError
+
+type UpdateDefaultOrganizationPayload {
+  error: UpdateDefaultOrganizationError
+  username: String
+}
+
+input UpdateDefaultOrganizationInput {
+  username: String
+}

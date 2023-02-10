@@ -1,7 +1,10 @@
 import os
 from urllib.parse import urlparse
 
+import asgiref.sync as sync
+from asgiref.sync import SyncToAsync
 from corsheaders.defaults import default_headers
+from django.db import close_old_connections
 
 from utils.config import SettingsModule, get_config, get_settings_module
 
@@ -123,6 +126,9 @@ else:
     DATABASE_READ_PORT = get_config("services", "database_read", "port", default=5432)
 
 TIMESERIES_ENABLED = get_config("setup", "timeseries", "enabled", default=False)
+TIMESERIES_REAL_TIME_AGGREGATES = get_config(
+    "setup", "timeseries", "real_time_aggregates", default=False
+)
 
 timeseries_database_url = get_config("services", "timeseries_database_url")
 if timeseries_database_url:
@@ -208,9 +214,7 @@ if DATABASE_READ_REPLICA_ENABLED:
 
 if TIMESERIES_ENABLED:
     DATABASES["timeseries"] = {
-        # this wraps `django.db.backends.postgresql`
-        # (see `codecov/db/base.py`)
-        "ENGINE": "codecov.db",
+        "ENGINE": "django.db.backends.postgresql",
         "NAME": TIMESERIES_DATABASE_NAME,
         "USER": TIMESERIES_DATABASE_USER,
         "PASSWORD": TIMESERIES_DATABASE_PASSWORD,

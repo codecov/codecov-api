@@ -14,6 +14,7 @@ from .interactors.regenerate_org_upload_token import RegenerateOrgUploadTokenInt
 from .interactors.revoke_user_token import RevokeUserTokenInteractor
 from .interactors.set_yaml_on_owner import SetYamlOnOwnerInteractor
 from .interactors.trigger_sync import TriggerSyncInteractor
+from .interactors.update_default_organization import UpdateDefaultOrganizationInteractor
 from .interactors.update_profile import UpdateProfileInteractor
 
 
@@ -35,6 +36,11 @@ class OwnerCommands(BaseCommand):
 
     def update_profile(self, **kwargs):
         return self.get_interactor(UpdateProfileInteractor).execute(**kwargs)
+
+    def update_default_organization(self, **kwargs):
+        return self.get_interactor(UpdateDefaultOrganizationInteractor).execute(
+            **kwargs
+        )
 
     def fetch_owner(self, username):
         return self.get_interactor(FetchOwnerInteractor).execute(username)

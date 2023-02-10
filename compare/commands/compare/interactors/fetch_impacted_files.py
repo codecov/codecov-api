@@ -1,8 +1,7 @@
 import enum
 
-from asgiref.sync import sync_to_async
-
 from codecov.commands.base import BaseInteractor
+from codecov.db import sync_to_async
 from services.comparison import ComparisonReport, ImpactedFile, ImpactedFileParameter
 
 
@@ -67,10 +66,13 @@ class FetchImpactedFiles(BaseInteractor):
             return comparison_report.impacted_files
 
         has_unintended_changes = filters.get("has_unintended_changes")
-        impacted_files = (
-            comparison_report.impacted_files_with_unintended_change
-            if has_unintended_changes
-            else comparison_report.impacted_files
-        )
+        if has_unintended_changes is not None:
+            impacted_files = (
+                comparison_report.impacted_files_with_unintended_changes
+                if has_unintended_changes
+                else comparison_report.impacted_files_with_direct_changes
+            )
+        else:
+            impacted_files = comparison_report.impacted_files
 
         return self._apply_filters(impacted_files, filters)

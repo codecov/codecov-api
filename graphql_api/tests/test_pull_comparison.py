@@ -824,8 +824,8 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             },
         }
 
-    @patch("services.comparison.TaskService.compute_comparison")
-    def test_pull_comparison_no_comparison(self, compute_comparison):
+    @patch("services.comparison.TaskService.compute_comparisons")
+    def test_pull_comparison_no_comparison(self, compute_comparisons):
         self.commit_comparison.delete()
 
         query = """
@@ -1071,12 +1071,12 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             },
         }
 
-    @patch("services.comparison.TaskService.compute_comparison")
-    @patch("compare.models.CommitComparison.needs_recalculation", callable=PropertyMock)
+    @patch("services.comparison.TaskService.compute_comparisons")
+    @patch("services.comparison.CommitComparisonService.needs_recompute")
     def test_pull_comparison_needs_recalculation(
-        self, needs_recalculation, compute_comparison
+        self, needs_recompute_mock, compute_comparisons_mock
     ):
-        needs_recalculation.return_value = True
+        needs_recompute_mock.return_value = True
 
         query = """
             pullId
@@ -1093,3 +1093,4 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             "pullId": self.pull.pullid,
             "compareWithBase": {"state": "pending"},
         }
+        compute_comparisons_mock.assert_called_once

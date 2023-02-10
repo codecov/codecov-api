@@ -1,10 +1,14 @@
-from typing import List
+import hashlib
+from typing import List, Union
 
 from ariadne import ObjectType, convert_kwargs_to_snake_case
-from asgiref.sync import sync_to_async
 from shared.reports.types import ReportTotals
+from shared.torngit.exceptions import TorngitClientError
 
-from services.comparison import Segment
+from codecov.db import sync_to_async
+from graphql_api.types.errors import ProviderError, QueryError, UnknownPath
+from graphql_api.types.segment_comparison.segment_comparison import SegmentComparisons
+from services.comparison import Comparison, Segment
 from services.profiling import ProfilingSummary
 
 impacted_file_bindable = ObjectType("ImpactedFile")
@@ -46,10 +50,58 @@ def resolve_change_coverage(impacted_file: ImpactedFile, info) -> float:
     return impacted_file.change_coverage
 
 
+@impacted_file_bindable.field("hashedPath")
+def resolve_hashed_path(impacted_file: ImpactedFile, info) -> str:
+    path = impacted_file.head_name
+    encoded_path = path.encode()
+    md5_path = hashlib.md5(encoded_path)
+
+    return md5_path.hexdigest()
+
+
 @impacted_file_bindable.field("segments")
 @sync_to_async
 @convert_kwargs_to_snake_case
-def resolve_segments(impacted_file: ImpactedFile, info, filters=None) -> List[Segment]:
+def resolve_segments(
+    impacted_file: ImpactedFile, info, filters=None
+) -> Union[UnknownPath, ProviderError, SegmentComparisons]:
+    if "comparison" not in info.context:
+        return QueryError("cannot query segments in this context")
+
+    if filters is None:
+        filters = {}
+
+    comparison: Comparison = info.context["comparison"]
+    path = impacted_file.head_name
+
+    try:
+        file_comparison = comparison.get_file_comparison(
+            path, with_src=True, bypass_max_diff=True
+        )
+    except TorngitClientError as e:
+        if e.code == 404:
+            return UnknownPath(f"path does not exist: {path}")
+        else:
+            return ProviderError()
+
+    segments = file_comparison.segments
+
+    if filters.get("has_unintended_changes") is True:
+        segments = [segment for segment in segments if segment.has_unintended_changes]
+    elif filters.get("has_unintended_changes") is False:
+        segments = [
+            segment for segment in segments if not segment.has_unintended_changes
+        ]
+
+    return SegmentComparisons(results=segments)
+
+
+@impacted_file_bindable.field("segmentsDeprecated")
+@sync_to_async
+@convert_kwargs_to_snake_case
+def resolve_segments_deprecated(
+    impacted_file: ImpactedFile, info, filters=None
+) -> List[Segment]:
     if filters is None:
         filters = {}
     if "comparison" not in info.context:
@@ -60,14 +112,17 @@ def resolve_segments(impacted_file: ImpactedFile, info, filters=None) -> List[Se
     file_comparison = comparison.get_file_comparison(
         impacted_file.head_name, with_src=True, bypass_max_diff=True
     )
+
+    segments = file_comparison.segments
+
     if filters.get("has_unintended_changes") is True:
-        return [
-            segment
-            for segment in file_comparison.segments
-            if segment.has_unintended_changes
+        segments = [segment for segment in segments if segment.has_unintended_changes]
+    elif filters.get("has_unintended_changes") is False:
+        segments = [
+            segment for segment in segments if not segment.has_unintended_changes
         ]
-    else:
-        return file_comparison.segments
+
+    return segments
 
 
 @impacted_file_bindable.field("isNewFile")

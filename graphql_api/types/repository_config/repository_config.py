@@ -1,9 +1,9 @@
 from typing import TypedDict
 
 from ariadne import ObjectType
-from asgiref.sync import sync_to_async
 from shared.yaml.user_yaml import UserYaml
 
+from codecov.db import sync_to_async
 from core.models import Repository
 
 repository_config_bindable = ObjectType("RepositoryConfig")
@@ -21,9 +21,7 @@ def resolve_indication_range(repository: Repository, info) -> dict[str, int]:
     yaml = UserYaml.get_final_yaml(
         owner_yaml=repository.author.yaml, repo_yaml=repository.yaml
     )
-    range: list[int] = yaml.get("coverage", {"range": [70, 100]}).get(
-        "range", [70, 100]
-    )
+    range: list[int] = yaml.get("coverage", {"range": [60, 80]}).get("range", [60, 80])
     return {"lowerRange": range[0], "upperRange": range[1]}
 
 
