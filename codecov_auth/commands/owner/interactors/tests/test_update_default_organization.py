@@ -52,19 +52,21 @@ class UpdateDefaultOrganizationInteractorTest(TransactionTestCase):
     def test_update_owners_default_org(self):
         assert not OwnerProfile.objects.filter(owner_id=self.user.ownerid).exists()
 
-        self.execute(user=self.user)
+        username = self.execute(user=self.user)
 
         owner_profile: OwnerProfile = OwnerProfile.objects.filter(
             owner_id=self.user.ownerid
         ).first()
         assert owner_profile.default_org == self.default_organization
+        assert username == self.default_organization.username
 
     def test_update_owners_default_org_when_current_user_is_selected(self):
         assert not OwnerProfile.objects.filter(owner_id=self.user.ownerid).exists()
 
-        self.execute(user=self.user, username=self.user.username)
+        username = self.execute(user=self.user, username=self.user.username)
 
         owner_profile: OwnerProfile = OwnerProfile.objects.filter(
             owner_id=self.user.ownerid
         ).first()
         assert owner_profile.default_org == self.user
+        assert username == self.user.username
