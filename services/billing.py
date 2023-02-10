@@ -66,6 +66,10 @@ class AbstractPaymentService(ABC):
     def get_schedule(self, owner):
         pass
 
+    @abstractmethod
+    def apply_cancellation_discount(self, owner: Owner):
+        pass
+
 
 class StripeService(AbstractPaymentService):
     def __init__(self, requesting_user):
@@ -398,6 +402,13 @@ class StripeService(AbstractPaymentService):
             f"Stripe success update payment method for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
         )
 
+    def apply_cancellation_discount(self, owner: Owner):
+        if owner.stripe_subscription_id and settings.STRIPE_CANCELLATION_COUPON_ID:
+            stripe.Subscription.modify(
+                owner.stripe_subscription_id,
+                coupon=settings.STRIPE_CANCELLATION_COUPON_ID,
+            )
+
 
 class EnterprisePaymentService(AbstractPaymentService):
     # enterprise has no payments setup so these are all noops
@@ -424,6 +435,9 @@ class EnterprisePaymentService(AbstractPaymentService):
         pass
 
     def get_schedule(self, owner):
+        pass
+
+    def apply_cancellation_discount(self, owner: Owner):
         pass
 
 
@@ -488,3 +502,6 @@ class BillingService:
         the card data differently
         """
         return self.payment_service.update_payment_method(owner, payment_method)
+
+    def apply_cancellation_discount(self, owner: Owner):
+        return self.payment_service.apply_cancellation_discount(owner)

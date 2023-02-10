@@ -2,7 +2,7 @@ import json
 from unittest.mock import patch
 
 from django.conf import settings
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from stripe.error import InvalidRequestError, StripeError
 
 from billing.constants import BASIC_PLAN_NAME
@@ -1085,6 +1085,21 @@ class StripeServiceTests(TestCase):
         assert self.stripe.get_invoice(owner, invoice_id) == invoice
         retrieve_invoice_mock.assert_called_once_with(invoice_id)
 
+    @override_settings(STRIPE_CANCELLATION_COUPON_ID="test-coupon-id")
+    @patch("services.billing.stripe.Subscription.modify")
+    def test_apply_cancellation_discount(self, subscription_modify_mock):
+        subscription_id = "sub_abc"
+        customer_id = "cus_abc"
+        owner = OwnerFactory(
+            stripe_subscription_id=subscription_id, stripe_customer_id=customer_id
+        )
+        self.stripe.apply_cancellation_discount(owner)
+
+        subscription_modify_mock.assert_called_once_with(
+            subscription_id,
+            coupon="test-coupon-id",
+        )
+
 
 class MockPaymentService(AbstractPaymentService):
     def list_filtered_invoices(self, owner, limit=10):
@@ -1109,6 +1124,9 @@ class MockPaymentService(AbstractPaymentService):
         pass
 
     def get_schedule(self, owner):
+        pass
+
+    def apply_cancellation_discount(self, owner):
         pass
 
 

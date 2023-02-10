@@ -28,6 +28,7 @@ STRIPE_PLAN_IDS = {
     "users-pr-inappm": "plan_H6P3KZXwmAbqPS",
     "users-pr-inappy": "plan_H6P16wij3lUuxg",
 }
+STRIPE_CANCELLATION_COUPON_ID = "rHAiNSbE"
 
 SENTRY_ENV = "staging"
 SENTRY_SAMPLE_RATE = float(os.environ.get("SERVICES__SENTRY__SAMPLE_RATE", 1))

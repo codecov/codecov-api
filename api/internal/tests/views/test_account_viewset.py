@@ -29,6 +29,7 @@ class MockSubscription(object):
         }
         self.schedule = subscription_params["schedule_id"]
         self.collection_method = subscription_params["collection_method"]
+        self.discount = subscription_params.get("discount")
 
     def __getitem__(self, key):
         return getattr(self, key)
@@ -173,6 +174,7 @@ class AccountViewSetTests(APITestCase):
             "latest_invoice": None,
             "schedule_id": "sub_sched_456",
             "collection_method": "charge_automatically",
+            "discount": None,
         }
 
         mock_retrieve_subscription.return_value = MockSubscription(subscription_params)
@@ -226,6 +228,7 @@ class AccountViewSetTests(APITestCase):
                 "current_period_end": 1633512445,
                 "customer": {"id": "cus_LK&*Hli8YLIO"},
                 "collection_method": "charge_automatically",
+                "discount": None,
             },
             "checkout_session_id": None,
             "name": owner.name,
@@ -318,6 +321,7 @@ class AccountViewSetTests(APITestCase):
                 "current_period_end": 1633512445,
                 "customer": {"id": "cus_LK&*Hli8YLIO"},
                 "collection_method": "charge_automatically",
+                "discount": None,
             },
             "checkout_session_id": None,
             "name": owner.name,
@@ -380,6 +384,7 @@ class AccountViewSetTests(APITestCase):
                 "current_period_end": 1633512445,
                 "customer": {"id": "cus_LK&*Hli8YLIO"},
                 "collection_method": "charge_automatically",
+                "discount": None,
             },
             "checkout_session_id": None,
             "name": owner.name,
@@ -540,6 +545,7 @@ class AccountViewSetTests(APITestCase):
             },
             "customer": {"id": "cus_LK&*Hli8YLIO"},
             "collection_method": "charge_automatically",
+            "discount": None,
         }
 
     @patch("services.billing.stripe.Subscription.retrieve")
@@ -889,6 +895,63 @@ class AccountViewSetTests(APITestCase):
 
         assert response.status_code == code
         assert response.data["detail"] == message
+
+    @override_settings(STRIPE_CANCELLATION_COUPON_ID="test-coupon-id")
+    @patch("services.billing.stripe.Subscription.retrieve")
+    @patch("services.billing.stripe.Subscription.modify")
+    def test_update_apply_cancellation_discount(
+        self, modify_subscription_mock, retrieve_subscription_mock
+    ):
+        self.user.stripe_customer_id = "flsoe"
+        self.user.stripe_subscription_id = "djfos"
+        self.user.save()
+
+        subscription_params = {
+            "default_payment_method": None,
+            "cancel_at_period_end": False,
+            "current_period_end": 1633512445,
+            "latest_invoice": None,
+            "schedule_id": None,
+            "collection_method": "charge_automatically",
+            "discount": {
+                "coupon": {
+                    "name": "30% off for 6 months",
+                    "percent_off": 30.0,
+                    "duration": "repeating",
+                    "duration_in_months": 6,
+                    "valid": True,
+                }
+            },
+        }
+
+        retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+
+        response = self._update(
+            kwargs={"service": self.user.service, "owner_username": self.user.username},
+            data={"apply_cancellation_discount": True},
+        )
+
+        modify_subscription_mock.assert_called_once_with(
+            self.user.stripe_subscription_id,
+            coupon="test-coupon-id",
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["subscription_detail"] == {
+            "latest_invoice": None,
+            "default_payment_method": None,
+            "cancel_at_period_end": False,
+            "current_period_end": 1633512445,
+            "customer": {"id": "cus_LK&*Hli8YLIO"},
+            "collection_method": "charge_automatically",
+            "discount": {
+                "name": "30% off for 6 months",
+                "percent_off": 30.0,
+                "duration": "repeating",
+                "duration_in_months": 6,
+                "valid": True,
+            },
+        }
 
     @patch("services.task.TaskService.delete_owner")
     def test_destroy_triggers_delete_owner_task(self, delete_owner_mock):
