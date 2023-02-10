@@ -32,4 +32,4 @@ class UpdateDefaultOrganizationInteractor(BaseInteractor):
         ).first()
         self.validate(default_org)
         self.update_default_organization(default_org)
-        return None
+        return default_org_username
