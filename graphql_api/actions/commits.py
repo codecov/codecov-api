@@ -1,6 +1,5 @@
-from django.db.models import Field, Lookup, QuerySet
+from django.db.models import QuerySet
 
-from codecov.db.base import IsNot
 from core.models import Commit, Pull
 
 

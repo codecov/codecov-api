@@ -5,6 +5,9 @@ type Repository {
   private: Boolean!
   coverage: Float
   coverageSha: String
+  hits: Int
+  misses: Int
+  lines: Int
   oldestCommitAt: DateTime
   latestCommitAt: DateTime
   updatedAt: DateTime
@@ -56,6 +59,7 @@ type Repository {
     interval: MeasurementInterval!
     after: DateTime!
     before: DateTime!
+    branch: String
   ): [Measurement!]!
   repositoryConfig: RepositoryConfig
 }

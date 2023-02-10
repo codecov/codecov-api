@@ -1,8 +1,7 @@
-from asgiref.sync import sync_to_async
 from django.db.models import Prefetch
 
 from codecov.commands.base import BaseInteractor
-from codecov.db.base import IsNot
+from codecov.db import IsNot, sync_to_async
 from reports.models import CommitReport
 
 
