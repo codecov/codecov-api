@@ -154,7 +154,7 @@ jobs:
         command: |
           apk add git openssh musl-dev gcc build-base python3-dev libffi-dev
           pip install git+ssh://git@github.com/codecov/codecov-cli.git@16282e83ac4c7658b1c3cee28dea0ee49b258f48#egg=codecov-cli
-          codecovcli --auto-load-params-from circleci do-upload --flag unit-latest-uploader --flag unit --use-new-uploader True   
+          codecovcli --auto-load-params-from circleci do-upload --flag unit-latest-uploader --flag unit --use-new-uploader True -t ${CODECOV_ORG_TOKEN}
     - run:
         name: codecov-staging
         command: |
