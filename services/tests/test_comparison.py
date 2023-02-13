@@ -2053,7 +2053,6 @@ class CommitComparisonTests(TestCase):
         self.base_report_details.save()
 
         commit_comparison = CommitComparison.objects.get(pk=self.commit_comparison.pk)
-        print("OK", commit_comparison._state.fields_cache)
         service = CommitComparisonService(commit_comparison)
 
         assert service.needs_recompute() == True
