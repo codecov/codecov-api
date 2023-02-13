@@ -302,7 +302,11 @@ def try_to_get_best_possible_bot_token(repository):
         )
         return encryptor.decrypt_token(repository.author.oauth_token)
     if not repository.private:
-        return get_config(service, "bot")
+        log.info(
+            "Using tokenless bot as bot fallback",
+            extra=dict(repoid=repository.repoid, ownerid=repository.author.ownerid),
+        )
+        return get_config(service, "bots", "tokenless")
     return None
 
 
