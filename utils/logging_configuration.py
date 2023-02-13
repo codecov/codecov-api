@@ -1,5 +1,5 @@
-import sentry_sdk
 from pythonjsonlogger.jsonlogger import JsonFormatter
+from sentry_sdk import Hub
 
 
 class BaseLogger(JsonFormatter):
@@ -33,6 +33,6 @@ class CustomDatadogJsonFormatter(BaseLogger):
         else:
             log_record["level"] = record.levelname
 
-        trace_id = sentry_sdk.last_event_id()
-        if trace_id:
-            log_record["sentry_trace_id"] = trace_id
+        span = Hub.current.scope.span
+        if span and span.trace_id:
+            log_record["sentry_trace_id"] = span.trace_id
