@@ -69,9 +69,13 @@ class GitlabLoginView(LoginMixin, StateMixin, View):
         except TorngitError:
             log.warning("Unable to log in due to problem on Gitlab", exc_info=True)
             return redirect(self.error_redirection_page)
+        user = self.get_and_modify_user(user_dict, request)
         redirection_url = self.get_redirection_url_from_state(state)
+        redirection_url = self.modify_redirection_url_based_on_default_user_org(
+            redirection_url, user
+        )
         response = redirect(redirection_url)
-        self.login_from_user_dict(user_dict, request, response)
+        self.set_cookies_and_login_user(user, request, response)
         self.remove_state(state, delay=5)
         return response
 
