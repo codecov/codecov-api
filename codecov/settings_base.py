@@ -225,7 +225,7 @@ if TIMESERIES_ENABLED:
 
     if TIMESERIES_DATABASE_READ_REPLICA_ENABLED:
         DATABASES["timeseries_read"] = {
-            "ENGINE": "codecov.db",
+            "ENGINE": "django.db.backends.postgresql",
             "NAME": TIMESERIES_DATABASE_READ_NAME,
             "USER": TIMESERIES_DATABASE_READ_USER,
             "PASSWORD": TIMESERIES_DATABASE_READ_PASSWORD,
