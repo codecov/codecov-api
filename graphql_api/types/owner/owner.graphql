@@ -18,4 +18,10 @@ type Owner {
   hashOwnerid: String!
   orgUploadToken: String
   defaultOrgUsername: String
+  measurements(
+    interval: MeasurementInterval!
+    after: DateTime!
+    before: DateTime!
+    repos: [String!]
+  ): [Measurement!]!
 }
