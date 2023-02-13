@@ -402,12 +402,38 @@ class StripeService(AbstractPaymentService):
             f"Stripe success update payment method for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
         )
 
+    @_log_stripe_error
     def apply_cancellation_discount(self, owner: Owner):
-        if owner.stripe_subscription_id and settings.STRIPE_CANCELLATION_COUPON_ID:
-            stripe.Subscription.modify(
-                owner.stripe_subscription_id,
-                coupon=settings.STRIPE_CANCELLATION_COUPON_ID,
+        if owner.stripe_subscription_id is None:
+            log.info(
+                f"stripe_subscription_id is None, not applying cancellation coupon for owner {owner.ownerid}"
             )
+            return
+
+        if not owner.stripe_coupon_id:
+            log.info(f"Creating Stripe cancellation coupon for owner {owner.ownerid}")
+            coupon = stripe.Coupon.create(
+                percent_off=30.0,
+                duration="repeating",
+                duration_in_months=6,
+                name="30% off for 6 months",
+                max_redemptions=1,
+                metadata={
+                    "ownerid": owner.ownerid,
+                    "username": owner.username,
+                },
+            )
+
+            owner.stripe_coupon_id = coupon.id
+            owner.save()
+
+        log.info(
+            f"Applying cancellation coupon to Stripe subscription for owner {owner.ownerid}"
+        )
+        stripe.Subscription.modify(
+            owner.stripe_subscription_id,
+            coupon=owner.stripe_coupon_id,
+        )
 
 
 class EnterprisePaymentService(AbstractPaymentService):

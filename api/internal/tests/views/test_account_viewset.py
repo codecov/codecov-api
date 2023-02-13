@@ -1,6 +1,6 @@
 import json
 import os
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from django.test import override_settings
 from rest_framework import status
@@ -896,12 +896,14 @@ class AccountViewSetTests(APITestCase):
         assert response.status_code == code
         assert response.data["detail"] == message
 
-    @override_settings(STRIPE_CANCELLATION_COUPON_ID="test-coupon-id")
+    @patch("services.billing.stripe.Coupon.create")
     @patch("services.billing.stripe.Subscription.retrieve")
     @patch("services.billing.stripe.Subscription.modify")
     def test_update_apply_cancellation_discount(
-        self, modify_subscription_mock, retrieve_subscription_mock
+        self, modify_subscription_mock, retrieve_subscription_mock, coupon_create_mock
     ):
+        coupon_create_mock.return_value = MagicMock(id="test-coupon-id")
+
         self.user.stripe_customer_id = "flsoe"
         self.user.stripe_subscription_id = "djfos"
         self.user.save()

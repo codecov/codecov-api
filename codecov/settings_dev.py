@@ -17,7 +17,6 @@ STRIPE_PLAN_IDS = {
     "users-pr-inappm": "plan_H6P3KZXwmAbqPS",
     "users-pr-inappy": "plan_H6P16wij3lUuxg",
 }
-STRIPE_CANCELLATION_COUPON_ID = "rHAiNSbE"
 
 CORS_ALLOW_CREDENTIALS = True
 CODECOV_URL = "localhost"
