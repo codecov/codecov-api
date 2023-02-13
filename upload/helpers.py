@@ -446,6 +446,7 @@ def validate_upload(upload_params, repository, redis):
     Make sure the upload can proceed and, if so, activate the repository if needed.
     """
 
+    validate_activated_repo(repository)
     # Make sure repo hasn't moved
     if not repository.name:
         raise ValidationError(
@@ -612,3 +613,11 @@ def dispatch_upload_task(task_arguments, repository, redis):
             countdown, int(get_config("setup", "upload_processing_delay") or 0)
         ),
     )
+
+
+def validate_activated_repo(repository):
+    if repository.active and not repository.activated:
+        settings_url = f"{settings.CODECOV_DASHBOARD_URL}/{repository.author.service}/{repository.author.username}/{repository.name}/settings"
+        raise ValidationError(
+            f"This repository has been deactivated. To resume uploading to it, please activate the repository in the codecov UI: {settings_url}"
+        )
