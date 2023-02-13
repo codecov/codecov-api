@@ -60,12 +60,6 @@ class BaseReportViewSet(
     viewsets.GenericViewSet, mixins.RetrieveModelMixin, RepoPropertyMixin
 ):
     serializer_class = CoverageReportSerializer
-    authentication_classes = [
-        CodecovTokenAuthentication,
-        UserTokenAuthentication,
-        BasicAuthentication,
-        SessionAuthentication,
-    ]
     permission_classes = [RepositoryArtifactPermissions]
 
     def get_object(self):
