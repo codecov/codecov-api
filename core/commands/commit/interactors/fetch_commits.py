@@ -1,7 +1,7 @@
-from asgiref.sync import sync_to_async
 from django.db.models import Prefetch
 
 from codecov.commands.base import BaseInteractor
+from codecov.db import IsNot, sync_to_async
 from reports.models import CommitReport
 
 
@@ -21,9 +21,12 @@ class FetchCommitsInteractor(BaseInteractor):
 
     @sync_to_async
     def execute(self, repository, filters):
-        # prefetch the CommitReport with the ReportLevelTotals
+        # prefetch the CommitReport with the ReportLevelTotals and ReportDetails
         prefetch = Prefetch(
-            "reports", queryset=CommitReport.objects.select_related("reportleveltotals")
+            "reports",
+            queryset=CommitReport.objects.select_related(
+                "reportleveltotals", "reportdetails"
+            ).defer("reportdetails__files_array"),
         )
 
         # We don't select the `report` column here b/c it can be many MBs of JSON
@@ -31,4 +34,6 @@ class FetchCommitsInteractor(BaseInteractor):
         queryset = repository.commits.defer("report").prefetch_related(prefetch).all()
         queryset = self.apply_filters_to_commits_queryset(queryset, filters)
 
+        # We need `deleted is not true` in order for the query to use the right index.
+        queryset = queryset.filter(deleted__isnot=True)
         return queryset

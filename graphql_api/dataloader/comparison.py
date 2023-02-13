@@ -1,8 +1,8 @@
-from asgiref.sync import sync_to_async
-
+from codecov.db import sync_to_async
 from compare.models import CommitComparison
 from core.models import Commit
-from services.comparison import recalculate_comparison
+from services.comparison import CommitComparisonService
+from services.task import TaskService
 
 from .commit import CommitLoader
 from .loader import BaseLoader
@@ -106,11 +106,22 @@ class ComparisonLoader(BaseLoader):
         """
         Recalculate comparisons for newly added or out-of-date comparisons.
         """
+        comparison_ids = []
         for key, comparison in comparisons.items():
             comparison.base_commit = commit_cache.get_by_pk(comparison.base_commit_id)
             comparison.compare_commit = commit_cache.get_by_pk(
                 comparison.compare_commit_id
             )
 
-            if key in missing_keys or comparison.needs_recalculation:
-                recalculate_comparison(comparison)
+            commit_comparison_service = CommitComparisonService(comparison)
+            if key in missing_keys or commit_comparison_service.needs_recompute():
+                comparison_ids.append(comparison.pk)
+                commit_comparison_service.commit_comparison.state = (
+                    CommitComparison.CommitComparisonStates.PENDING
+                )
+
+        if len(comparison_ids) > 0:
+            CommitComparison.objects.filter(pk__in=comparison_ids).update(
+                state=CommitComparison.CommitComparisonStates.PENDING
+            )
+            TaskService().compute_comparisons(comparison_ids)

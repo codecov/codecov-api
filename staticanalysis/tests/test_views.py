@@ -72,5 +72,5 @@ def test_simple_static_analysis_call_no_uploads_yet(db, mocker):
     mocked_presigned_put.assert_called_with(
         "archive",
         mocker.ANY,
-        10,
+        60,
     )

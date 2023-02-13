@@ -3,3 +3,9 @@ type SegmentComparison {
     hasUnintendedChanges: Boolean!
     lines: [LineComparison!]!
 }
+
+type SegmentComparisons {
+    results: [SegmentComparison!]!
+}
+
+union SegmentsResult = SegmentComparisons | UnknownPath | ProviderError | QueryError

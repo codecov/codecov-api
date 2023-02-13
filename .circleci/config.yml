@@ -100,6 +100,24 @@ jobs:
           make -f Makefile.circle build-enterprise-runtime VERSION=$CIRCLE_TAG
           make -f Makefile.circle push-enterprise
           make -f Makefile.circle tag-enterprise
+  codecovstartup:
+    executor: codecov-api
+    working_directory: ~/repo
+    steps:
+    - checkout
+    - run:
+        name: Install CLI
+        command: |
+          apk add git openssh musl-dev gcc build-base python3-dev libffi-dev
+          pip install git+ssh://git@github.com/codecov/codecov-cli.git@16282e83ac4c7658b1c3cee28dea0ee49b258f48#egg=codecov-cli
+    - run:
+        name: Save commit info 
+        command: |
+          codecovcli --auto-load-params-from circleci create-commit --service=github
+    - run: 
+        name: Create report
+        command: |
+          codecovcli --auto-load-params-from circleci create-report --service=github
   test:
     executor: codecov-api
     working_directory: ~/repo
@@ -132,15 +150,11 @@ jobs:
         command: |
           make check-for-migration-conflicts
     - run:
-        name: codecov python uploader
+        name: upload using codecovcli 
         command: |
-          codecov --auto-load-params-from circleci do-upload --flag unit-python-uploader
-    - run:
-        name: codecov latest uploader
-        command: |
-          curl -o codecov-latest https://uploader.codecov.io/latest/linux/codecov
-          chmod +x codecov-latest
-          ./codecov-latest -F unit-latest-uploader -Z
+          apk add git openssh musl-dev gcc build-base python3-dev libffi-dev
+          pip install git+ssh://git@github.com/codecov/codecov-cli.git@16282e83ac4c7658b1c3cee28dea0ee49b258f48#egg=codecov-cli
+          codecovcli --auto-load-params-from circleci do-upload --flag unit-latest-uploader --flag unit --use-new-uploader True -t ${CODECOV_ORG_TOKEN}
     - run:
         name: codecov-staging
         command: |
@@ -287,6 +301,13 @@ workflows:
               only:
                 - /enterprise-.*/
                 - /qa-.*/
+      - codecovstartup:
+          context: "circleci google deploy context"
+          requires:
+            - build
+          filters:
+            tags:
+              only: /.*/
       - test:
           context: "circleci google deploy context"
           requires:

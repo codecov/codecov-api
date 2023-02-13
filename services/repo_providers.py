@@ -2,11 +2,11 @@ import logging
 from os import getenv
 from typing import Callable, Dict
 
-from asgiref.sync import sync_to_async
 from django.conf import settings
 from shared.encryption.token import encode_token
 from shared.torngit import get
 
+from codecov.db import sync_to_async
 from codecov_auth.models import Owner, Service
 from core.models import Repository
 from utils.config import get_config

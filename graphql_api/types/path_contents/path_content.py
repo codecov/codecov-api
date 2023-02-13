@@ -2,8 +2,10 @@ from typing import List, Union
 
 from ariadne import InterfaceType, ObjectType, UnionType
 
-from graphql_api.types.errors import MissingHeadReport
+from codecov.db import sync_to_async
+from graphql_api.types.errors import MissingCoverage, MissingHeadReport, UnknownPath
 from services.path import Dir, File
+from services.profiling import ProfilingSummary
 
 path_content_bindable = InterfaceType("PathContent")
 path_content_file_bindable = ObjectType("PathContentFile")
@@ -54,9 +56,11 @@ def resolve_percent_covered(item: Union[File, Dir], info) -> float:
 
 
 @path_content_file_bindable.field("isCriticalFile")
+@sync_to_async
 def resolve_is_critical_file(item: Union[File, Dir], info) -> bool:
-    if isinstance(item, File) and "critical_filenames" in info.context:
-        return item.full_path in info.context["critical_filenames"]
+    if isinstance(item, File) and "profiling_summary" in info.context:
+        profiling_summary: ProfilingSummary = info.context["profiling_summary"]
+        return item.full_path in profiling_summary.critical_filenames
 
     return False
 
@@ -68,5 +72,9 @@ path_contents_result_bindable = UnionType("PathContentsResult")
 def resolve_path_contents_result_type(res, *_):
     if isinstance(res, MissingHeadReport):
         return "MissingHeadReport"
+    elif isinstance(res, MissingCoverage):
+        return "MissingCoverage"
+    elif isinstance(res, UnknownPath):
+        return "UnknownPath"
     if isinstance(res, type({"results": List[Union[File, Dir]]})):
         return "PathContents"

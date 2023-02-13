@@ -2,10 +2,12 @@ import enum
 from dataclasses import dataclass
 from typing import List, Optional
 
+print("IMPORTING")
+
 from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
-from asgiref.sync import sync_to_async
 
 import services.components as components_service
+from codecov.db import sync_to_async
 from compare.models import CommitComparison, FlagComparison
 from graphql_api.actions.flags import get_flag_comparisons
 from graphql_api.types.errors import (
@@ -38,11 +40,18 @@ def resolve_impacted_files_count(comparison: CommitComparison, info):
     return len(comparison_report.impacted_files)
 
 
+@comparison_bindable.field("directChangedFilesCount")
+@sync_to_async
+def resolve_direct_changed_files_count(comparison: CommitComparison, info):
+    comparison_report = ComparisonReport(comparison)
+    return len(comparison_report.impacted_files_with_direct_changes)
+
+
 @comparison_bindable.field("indirectChangedFilesCount")
 @sync_to_async
 def resolve_impacted_files_count(comparison: CommitComparison, info):
     comparison_report = ComparisonReport(comparison)
-    return len(comparison_report.impacted_files_with_unintended_change)
+    return len(comparison_report.impacted_files_with_unintended_changes)
 
 
 @comparison_bindable.field("impactedFile")

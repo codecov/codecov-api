@@ -2,9 +2,10 @@ from functools import cached_property
 from typing import List, Optional
 
 from ariadne import ObjectType
-from asgiref.sync import sync_to_async
 
+from codecov.db import sync_to_async
 from services.comparison import FileComparison, Segment
+from services.profiling import ProfilingSummary
 
 file_comparison_bindable = ObjectType("FileComparison")
 
@@ -85,19 +86,11 @@ def resolve_segments(file_comparison: FileComparison, info) -> List[Segment]:
 @sync_to_async
 def resolve_is_critical_file(file_comparison: FileComparison, info) -> bool:
     if "profiling_summary" in info.context:
-        if "critical_filenames" not in info.context:
-            info.context["critical_filenames"] = set(
-                [
-                    critical_file.name
-                    for critical_file in info.context[
-                        "profiling_summary"
-                    ].critical_files
-                ]
-            )
-
         base_name = file_comparison.name["base"]
         head_name = file_comparison.name["head"]
-        critical_filenames = info.context["critical_filenames"]
+
+        profiling_summary: ProfilingSummary = info.context["profiling_summary"]
+        critical_filenames = profiling_summary.critical_filenames
 
         return base_name in critical_filenames or head_name in critical_filenames
 

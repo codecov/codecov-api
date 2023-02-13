@@ -49,6 +49,14 @@ class OwnerCommandsTest(TransactionTestCase):
         self.command.update_profile(name=name)
         interactor_mock.assert_called_once_with(name=name)
 
+    @patch(
+        "codecov_auth.commands.owner.owner.UpdateDefaultOrganizationInteractor.execute"
+    )
+    def test_update_default_organization_delegate_to_interactor(self, interactor_mock):
+        username = "codecov-user"
+        self.command.update_default_organization(default_org_username=username)
+        interactor_mock.assert_called_once_with(default_org_username=username)
+
     @patch("codecov_auth.commands.owner.owner.TriggerSyncInteractor.execute")
     def test_trigger_sync_delegate_to_interactor(self, interactor_mock):
         self.command.trigger_sync()

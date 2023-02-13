@@ -9,11 +9,12 @@ from utils.routers import OptionalTrailingSlashRouter, RetrieveUpdateDestroyRout
 from .branch.views import BranchViewSet
 from .commit.views import CommitsViewSet
 from .compare.views import CompareViewSet
+from .component.views import ComponentViewSet
 from .coverage.views import CoverageViewSet, FlagCoverageViewSet
 from .flag.views import FlagViewSet
 from .owner.views import OwnerViewSet, UserViewSet
 from .pull.views import PullViewSet
-from .repo.views import RepositoryViewSet
+from .repo.views import RepositoryConfigView, RepositoryViewSet
 from .report.views import ReportViewSet
 
 urls.handler404 = not_found
@@ -37,6 +38,9 @@ repository_artifacts_router.register(
     r"branches", BranchViewSet, basename="api-v2-branches"
 )
 repository_artifacts_router.register(r"flags", FlagViewSet, basename="api-v2-flags")
+repository_artifacts_router.register(
+    r"components", ComponentViewSet, basename="api-v2-components"
+)
 
 compare_router = RetrieveUpdateDestroyRouter()
 compare_router.register(r"compare", CompareViewSet, basename="api-v2-compare")
@@ -70,6 +74,11 @@ urlpatterns = [
     path(owner_prefix, include(owner_artifacts_router.urls)),
     path(owner_prefix, include(repository_router.urls)),
     path(repo_prefix, include(repository_artifacts_router.urls)),
+    path(
+        f"{repo_prefix}config/",
+        RepositoryConfigView.as_view(),
+        name="api-v2-repo-config",
+    ),
     path(repo_prefix, include(compare_router.urls)),
     path(repo_prefix, include(report_router.urls)),
     path(repo_prefix, include(coverage_router.urls)),
