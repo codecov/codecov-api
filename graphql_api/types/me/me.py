@@ -105,4 +105,7 @@ tracking_metadata_bindable = ObjectType("trackingMetadata")
 @tracking_metadata_bindable.field("profile")
 @sync_to_async
 def resolve_profile(owner: Owner, info) -> OwnerProfile:
-    return owner.profile
+    try:
+        return owner.profile
+    except OwnerProfile.DoesNotExist:
+        return None
