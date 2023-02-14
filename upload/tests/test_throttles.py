@@ -12,7 +12,7 @@ from upload.throttles import UploadsPerCommitThrottle, UploadsPerWindowThrottle
 
 class ThrottlesUnitTests(APITestCase):
     def setUp(self):
-        self.owner = OwnerFactory(plan=BASIC_PLAN_NAME)
+        self.owner = OwnerFactory(plan=BASIC_PLAN_NAME, max_upload_limit=150)
 
     def request_should_not_throttle(self, commit):
         self.uploads_per_window_not_throttled(commit)
@@ -20,9 +20,8 @@ class ThrottlesUnitTests(APITestCase):
 
     def set_view_obj(self, commit):
         view = MagicMock()
-        d = {"commitid": commit.commitid}
-        view.kwargs.get.side_effect = d.get
         view.get_repo.return_value = commit.repository
+        view.get_commit.return_value = commit
         return view
 
     def uploads_per_commit_throttled(self, commit):

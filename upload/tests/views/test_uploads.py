@@ -69,6 +69,7 @@ def test_uploads_get_not_allowed(client, db, mocker):
     repository = RepositoryFactory(
         name="the-repo", author__username="codecov", author__service="github"
     )
+    commit = CommitFactory(repository=repository, commitid="commit-sha")
     owner = repository.author
     client = APIClient()
     client.force_authenticate(user=owner)

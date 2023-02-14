@@ -19,21 +19,20 @@ log = logging.getLogger(__name__)
 
 class UploadsPerCommitThrottle(BaseThrottle):
     def allow_request(self, request, view):
-        commit_id = view.kwargs.get("commitid")
         try:
             repository = view.get_repo()
-            commit = Commit.objects.get(commitid=commit_id, repository=repository)
+            commit = view.get_commit(repository)
             new_session_count = ReportSession.objects.filter(
                 ~Q(state="error"),
                 ~Q(upload_type=UploadType.CARRIEDFORWARD.db_name),
                 report__commit=commit,
             ).count()
-            current_upload_limit = settings.MAX_UPLOAD_LIMIT
-            if new_session_count > current_upload_limit:
+            max_upload_limit = repository.author.max_upload_limit or 150
+            if new_session_count > max_upload_limit:
                 log.warning(
                     "Too many uploads to this commit",
                     extra=dict(
-                        commit=commit_id,
+                        commit=commit.commitid,
                         repoid=repository.repoid,
                     ),
                 )
@@ -45,13 +44,9 @@ class UploadsPerCommitThrottle(BaseThrottle):
 
 class UploadsPerWindowThrottle(BaseThrottle):
     def allow_request(self, request, view):
-        commit_id = view.kwargs.get("commitid")
         try:
             repository = view.get_repo()
-            commit = Commit.objects.defer("report").get(
-                commitid=commit_id,
-                repository=repository,
-            )
+            commit = view.get_commit(repository)
 
             if settings.UPLOAD_THROTTLING_ENABLED and repository.private:
                 owner = _determine_responsible_owner(repository)
