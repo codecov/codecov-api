@@ -56,18 +56,11 @@ from services.path import dashboard_commit_file_url
     ],
     tags=["Coverage"],
 )
-class ReportViewSet(
+class BaseReportViewSet(
     viewsets.GenericViewSet, mixins.RetrieveModelMixin, RepoPropertyMixin
 ):
     serializer_class = CoverageReportSerializer
-    authentication_classes = [
-        SuperTokenAuthentication,
-        CodecovTokenAuthentication,
-        UserTokenAuthentication,
-        BasicAuthentication,
-        SessionAuthentication,
-    ]
-    permission_classes = [SuperTokenPermissions | RepositoryArtifactPermissions]
+    permission_classes = [RepositoryArtifactPermissions]
 
     def get_object(self):
         commit = self.get_commit()
@@ -121,10 +114,61 @@ class ReportViewSet(
 
         return report
 
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            report = self.get_object()
+        except NotFound as inst:
+            (detail, code) = inst.args
+            raise NotFound(detail)
+
+        serializer = self.get_serializer(report)
+        return Response(serializer.data)
+
+
+class TotalsViewSet(BaseReportViewSet):
+    def get_serializer_context(self, *args, **kwargs):
+        context = super().get_serializer_context(*args, **kwargs)
+        context.update({"include_line_coverage": False})
+        return context
+
+    @extend_schema(summary="Commit coverage totals")
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Returns the coverage totals for a given commit and the
+        coverage totals broken down by file.
+
+        By default that commit is the head of the default branch but can also be specified explictily by:
+        * `sha` - return totals for the commit with the given SHA
+        * `branch` - return totals for the head commit of the branch with the given name
+
+        The totals can be optionally filtered by specifying:
+        * `path` - only show totals for pathnames that start with this value
+        * `flag` - only show totals that applies to the specified flag name
+        * `component_id` - only show totals that applies to the specified component
+        """
+        return super().retrieve(request, *args, **kwargs)
+
+
+class ReportViewSet(BaseReportViewSet):
+    authentication_classes = [
+        SuperTokenAuthentication,
+        CodecovTokenAuthentication,
+        UserTokenAuthentication,
+        BasicAuthentication,
+        SessionAuthentication,
+    ]
+    permission_classes = [SuperTokenPermissions | RepositoryArtifactPermissions]
+
+    def get_serializer_context(self, *args, **kwargs):
+        context = super().get_serializer_context(*args, **kwargs)
+        context.update({"include_line_coverage": True})
+        return context
+
     @extend_schema(summary="Commit coverage report")
     def retrieve(self, request, *args, **kwargs):
         """
-        Returns the coverage report for a given commit.
+        Similar to the coverage totals endpoint but also returns line-by-line
+        coverage info (hit=0/miss=1/partial=2).
 
         By default that commit is the head of the default branch but can also be specified explictily by:
         * `sha` - return report for the commit with the given SHA
@@ -135,11 +179,4 @@ class ReportViewSet(
         * `flag` - only show report info that applies to the specified flag name
         * `component_id` - only show report info that applies to the specified component
         """
-        try:
-            report = self.get_object()
-        except NotFound as inst:
-            (detail, code) = inst.args
-            raise NotFound(detail)
-
-        serializer = self.get_serializer(report)
-        return Response(serializer.data)
+        return super().retrieve(request, *args, **kwargs)
