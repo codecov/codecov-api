@@ -2,8 +2,8 @@ from hashlib import sha1
 
 import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
-from asgiref.sync import sync_to_async
 
+from codecov.db import sync_to_async
 from codecov_auth.helpers import current_user_part_of_org
 from codecov_auth.models import Owner
 from graphql_api.actions.repository import list_repository_for_owner

@@ -10,9 +10,10 @@ from graphql_api.helpers.mutation import (
 @wrap_error_handling_mutation
 async def resolve_update_default_organization(_, info, input):
     command: OwnerCommands = info.context["executor"].get_command("owner")
-    return await command.update_default_organization(
+    default_username = await command.update_default_organization(
         default_org_username=input.get("username")
     )
+    return {"username": default_username}
 
 
 error_update_default_organization = UnionType("UpdateDefaultOrganizationError")

@@ -1,13 +1,13 @@
 from datetime import datetime, timedelta
-from typing import Iterable, List, Mapping
+from typing import Iterable, List, Mapping, Optional
 
 import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
-from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.forms.utils import from_current_timezone
 
 import timeseries.helpers as timeseries_helpers
+from codecov.db import sync_to_async
 from core.models import Repository
 from graphql_api.actions.flags import flag_measurements, flags_for_repo
 from graphql_api.dataloader.commit import CommitLoader
@@ -49,6 +49,21 @@ def resolve_coverage(repository: Repository, info):
 @repository_bindable.field("coverageSha")
 def resolve_coverage_sha(repository: Repository, info):
     return repository.coverage_sha
+
+
+@repository_bindable.field("hits")
+def resolve_hits(repository: Repository, info) -> Optional[int]:
+    return repository.hits
+
+
+@repository_bindable.field("misses")
+def resolve_misses(repository: Repository, info) -> Optional[int]:
+    return repository.misses
+
+
+@repository_bindable.field("lines")
+def resolve_lines(repository: Repository, info) -> Optional[int]:
+    return repository.lines
 
 
 @repository_bindable.field("branch")
@@ -259,11 +274,20 @@ def resolve_flags_measurements_backfilled(repository: Repository, info) -> bool:
 @repository_bindable.field("measurements")
 @sync_to_async
 def resolve_measurements(
-    repository: Repository, info, interval: Interval, after: datetime, before: datetime
+    repository: Repository,
+    info,
+    interval: Interval,
+    after: datetime,
+    before: datetime,
+    branch: Optional[str] = None,
 ) -> Iterable[MeasurementSummary]:
     return fill_sparse_measurements(
         timeseries_helpers.repository_coverage_measurements_with_fallback(
-            repository, interval, after, before
+            repository,
+            interval,
+            after,
+            before,
+            branch=branch,
         ),
         interval,
         after,

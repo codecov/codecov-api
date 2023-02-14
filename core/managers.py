@@ -7,6 +7,7 @@ from django.db.models import (
     DateTimeField,
     F,
     FloatField,
+    IntegerField,
     Manager,
     OuterRef,
     Q,
@@ -63,6 +64,18 @@ class RepositoryQuerySet(QuerySet):
             KeyTextTransform("c", "recent_commit_totals"),
             output_field=FloatField(),
         )
+        hits = Cast(
+            KeyTextTransform("h", "recent_commit_totals"),
+            output_field=IntegerField(),
+        )
+        misses = Cast(
+            KeyTextTransform("m", "recent_commit_totals"),
+            output_field=IntegerField(),
+        )
+        lines = Cast(
+            KeyTextTransform("n", "recent_commit_totals"),
+            output_field=IntegerField(),
+        )
 
         return self.annotate(
             recent_commit_totals=Subquery(commits_queryset.values("totals")[:1]),
@@ -73,6 +86,9 @@ class RepositoryQuerySet(QuerySet):
                 Value(-1),
                 output_field=FloatField(),
             ),
+            hits=hits,
+            misses=misses,
+            lines=lines,
         )
 
     def with_latest_commit_totals_before(
