@@ -33,16 +33,31 @@ class DatabaseRouter:
             return "default"
 
     def allow_migrate(self, db, app_label, model_name=None, **hints):
-        if db == "timeseries" and not settings.TIMESERIES_ENABLED:
+        if (
+            db == "timeseries" or db == "timeseries_read"
+        ) and not settings.TIMESERIES_ENABLED:
             log.warning("Skipping timeseries migration")
             return False
-        if db == "default_read":
+        if db == "default_read" or db == "timeseries_read":
             log.warning("Skipping migration of read-only database")
             return False
         if app_label == "timeseries":
             return db == "timeseries"
         else:
             return db == "default"
+
+    def allow_relation(self, obj1, obj2, **hints):
+        obj1_app = obj1._meta.app_label
+        obj2_app = obj2._meta.app_label
+
+        # cannot form relationship across default <-> timeseries dbs
+        if obj1_app == "timeseries" and obj2_app != "timeseries":
+            return False
+        if obj1_app != "timeseries" and obj2_app == "timeseries":
+            return False
+
+        # otherwise we allow it
+        return True
 
 
 @Field.register_lookup
