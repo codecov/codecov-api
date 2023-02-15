@@ -3,9 +3,9 @@ from datetime import datetime, timedelta
 from typing import Iterable
 
 from django.conf import settings
-from django.contrib.postgres.fields.jsonb import KeyTextTransform
 from django.db import connections
 from django.db.models import Avg, F, FloatField, Max, Min, QuerySet, Sum
+from django.db.models.fields.json import KeyTextTransform
 from django.db.models.functions import Cast, Trunc
 from django.utils import timezone
 
