@@ -339,7 +339,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 "flags": ["flag_a", "flag_b", "flag_c"],
                 "provider": "a",
             },
-            # {"uploadType": "UPLOADED", "flags": ["flag_b"], "provider": "d"},
+            {"uploadType": "UPLOADED", "flags": ["flag_b"], "provider": "d"},
             {"uploadType": "CARRIEDFORWARD", "flags": [], "provider": "e"},
             {"uploadType": "UPLOADED", "flags": [], "provider": "f"},
         ]
