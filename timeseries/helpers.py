@@ -9,6 +9,7 @@ from django.db.models import Avg, F, FloatField, Max, Min, QuerySet, Sum
 from django.db.models.functions import Cast, Trunc
 from django.utils import timezone
 
+from codecov_auth.models import Owner
 from core.models import Commit, Repository
 from reports.models import RepositoryFlag
 from services.archive import ReportService
@@ -145,23 +146,20 @@ def aggregate_measurements(
     )
 
 
-def repository_coverage_measurements(
-    repository: Repository,
+def coverage_measurements(
     interval: Interval,
     start_date: datetime,
     end_date: datetime,
-    branch: str = None,
+    **filters,
 ):
-    """
-    Returns the COVERAGE measurements for the given repository.
-    """
-    queryset = MeasurementSummary.agg_by(interval).filter(
-        name=MeasurementName.COVERAGE.value,
-        owner_id=repository.author_id,
-        repo_id=repository.pk,
-        branch=branch or repository.branch,
-        timestamp_bin__gte=start_date,
-        timestamp_bin__lte=end_date,
+    queryset = (
+        MeasurementSummary.agg_by(interval)
+        .filter(
+            name=MeasurementName.COVERAGE.value,
+            timestamp_bin__gte=start_date,
+            timestamp_bin__lte=end_date,
+        )
+        .filter(**filters)
     )
     return aggregate_measurements(queryset)
 
@@ -256,15 +254,14 @@ def fill_sparse_measurements(
     return intervals
 
 
-def repository_coverage_fallback_query(
-    repository: Repository,
+def coverage_fallback_query(
     interval: Interval,
     start_date: datetime,
     end_date: datetime,
-    branch: str = None,
+    **filters,
 ):
     """
-    Query for repository coverage timeseries directly from the database
+    Query for coverage timeseries directly from the database
     """
     intervals = {
         Interval.INTERVAL_1_DAY: "day",
@@ -273,11 +270,11 @@ def repository_coverage_fallback_query(
     }
 
     return (
-        repository.commits.filter(
+        Commit.objects.filter(
             timestamp__gte=start_date,
             timestamp__lte=end_date,
-            branch=branch or repository.branch,
         )
+        .filter(**filters)
         .annotate(
             timestamp_bin=Trunc("timestamp", intervals[interval], tzinfo=timezone.utc),
             coverage=Cast(KeyTextTransform("c", "totals"), output_field=FloatField()),
@@ -314,12 +311,13 @@ def repository_coverage_measurements_with_fallback(
 
     if settings.TIMESERIES_ENABLED and dataset and dataset.is_backfilled():
         # timeseries data is ready
-        return repository_coverage_measurements(
-            repository,
+        return coverage_measurements(
             interval,
             start_date,
             end_date,
-            branch=branch,
+            owner_id=repository.author_id,
+            repo_id=repository.pk,
+            branch=branch or repository.branch,
         )
     else:
         if settings.TIMESERIES_ENABLED and not dataset:
@@ -331,10 +329,65 @@ def repository_coverage_measurements_with_fallback(
             trigger_backfill(dataset)
 
         # we're still backfilling or timeseries is disabled
-        return repository_coverage_fallback_query(
-            repository,
+        return coverage_fallback_query(
             interval,
-            start_date=start_date,
-            end_date=end_date,
-            branch=branch,
+            start_date,
+            end_date,
+            repository_id=repository.pk,
+            branch=branch or repository.branch,
+        )
+
+
+def owner_coverage_measurements_with_fallback(
+    owner: Owner,
+    repo_ids: Iterable[str],
+    interval: Interval,
+    start_date: datetime,
+    end_date: datetime,
+):
+    """
+    Tries to return owner coverage measurements from Timescale.
+    If those are not available then we trigger a backfill and return computed results
+    directly from the primary database (much slower to query).
+    """
+    datasets = []
+    if settings.TIMESERIES_ENABLED:
+        datasets = Dataset.objects.filter(
+            name=MeasurementName.COVERAGE.value,
+            repository_id__in=repo_ids,
+        )
+
+    all_backfilled = len(datasets) == len(repo_ids) and all(
+        dataset.is_backfilled() for dataset in datasets
+    )
+
+    if settings.TIMESERIES_ENABLED and all_backfilled:
+        # timeseries data is ready
+        return coverage_measurements(
+            interval,
+            start_date,
+            end_date,
+            owner_id=owner.pk,
+            repo_id__in=repo_ids,
+        )
+    else:
+        if settings.TIMESERIES_ENABLED:
+            # we need to backfill some datasets
+            dataset_repo_ids = set(dataset.repository_id for dataset in datasets)
+            missing_dataset_repo_ids = set(repo_ids) - dataset_repo_ids
+            created_datasets = Dataset.objects.bulk_create(
+                [
+                    Dataset(name=MeasurementName.COVERAGE.value, repository_id=repo_id)
+                    for repo_id in missing_dataset_repo_ids
+                ]
+            )
+            for dataset in created_datasets:
+                trigger_backfill(dataset)
+
+        # we're still backfilling or timeseries is disabled
+        return coverage_fallback_query(
+            interval,
+            start_date,
+            end_date,
+            repository_id__in=repo_ids,
         )
