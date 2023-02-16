@@ -15,7 +15,7 @@ executors:
       auth:
         username: _json_key
         password: $GCLOUD_SERVICE_KEY
-    - image: cimg/postgres:14.6
+    - image: cimg/postgres:14.4
       name: postgres
     - image: timescale/timescaledb-ha:pg14-latest
       name: timescale
