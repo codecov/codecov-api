@@ -629,3 +629,24 @@ class LoginMixinTests(TestCase):
             )
         )
         assert redirect_url == url + f"/{default_org_username}"
+
+    def test_adjust_redirection_url_user_has_a_default_org_for_github_long_org_name(
+        self,
+    ):
+        provider = "github"
+        default_org_username = "sample-org-gh"
+        organization = OwnerFactory(username=default_org_username, service="github")
+        owner = OwnerFactory(
+            username="sample-owner-gh",
+            service="github",
+            organizations=[organization.ownerid],
+        )
+        OwnerProfileFactory(owner=owner, default_org=organization)
+        url = f"{settings.CODECOV_DASHBOARD_URL}/{provider}"
+
+        redirect_url = (
+            self.mixin_instance.modify_redirection_url_based_on_default_user_org(
+                url, owner
+            )
+        )
+        assert redirect_url == url + f"/{default_org_username}"
