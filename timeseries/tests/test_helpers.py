@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 import pytest
 from django.conf import settings
@@ -8,11 +8,13 @@ from django.utils import timezone
 from shared.reports.resources import Report, ReportFile, ReportLine
 from shared.utils.sessions import Session
 
+from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
 from reports.tests.factories import RepositoryFlagFactory
 from timeseries.helpers import (
+    coverage_measurements,
+    owner_coverage_measurements_with_fallback,
     refresh_measurement_summaries,
-    repository_coverage_measurements,
     repository_coverage_measurements_with_fallback,
     save_commit_measurements,
     save_repo_measurements,
@@ -372,12 +374,13 @@ class RepositoryCoverageMeasurementsTest(TestCase):
             commit_sha="commit4",
         )
 
-    def test_repository_coverage_measurements(self):
-        res = repository_coverage_measurements(
-            self.repo,
+    def test_coverage_measurements(self):
+        res = coverage_measurements(
             Interval.INTERVAL_1_DAY,
             start_date=datetime(2021, 12, 30, 0, 0, 0),
             end_date=datetime(2022, 1, 4, 0, 0, 0),
+            repo_id=self.repo.pk,
+            branch=self.repo.branch,
         )
         assert list(res) == [
             {
@@ -604,3 +607,400 @@ class RepositoryCoverageMeasurementsWithFallbackTest(TestCase):
         ).first()
         assert dataset
         trigger_backfill.assert_called_once_with(dataset)
+
+
+@pytest.mark.skipif(
+    not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
+)
+class OwnerCoverageMeasurementsWithFallbackTest(TestCase):
+    databases = {"default", "timeseries"}
+
+    def setUp(self):
+        self.owner = OwnerFactory()
+        self.repo1 = RepositoryFactory(author=self.owner)
+        self.repo2 = RepositoryFactory(author=self.owner)
+
+    @patch("timeseries.models.Dataset.is_backfilled")
+    def test_backfilled_datasets(self, is_backfilled):
+        is_backfilled.return_value = True
+
+        MeasurementFactory(
+            name=MeasurementName.COVERAGE.value,
+            owner_id=self.repo1.author_id,
+            repo_id=self.repo1.pk,
+            timestamp=datetime(2022, 1, 1, 1, 0, 0),
+            value=80.0,
+            branch="master",
+            commit_sha="commit1",
+        )
+        MeasurementFactory(
+            name=MeasurementName.COVERAGE.value,
+            owner_id=self.repo1.author_id,
+            repo_id=self.repo1.pk,
+            timestamp=datetime(2022, 1, 1, 2, 0, 0),
+            value=85.0,
+            branch="master",
+            commit_sha="commit2",
+        )
+        MeasurementFactory(
+            name=MeasurementName.COVERAGE.value,
+            owner_id=self.repo1.author_id,
+            repo_id=self.repo1.pk,
+            timestamp=datetime(2022, 1, 1, 3, 0, 0),
+            value=90.0,
+            branch="other",
+            commit_sha="commit3",
+        )
+        MeasurementFactory(
+            name=MeasurementName.COVERAGE.value,
+            owner_id=self.repo1.author_id,
+            repo_id=self.repo1.pk,
+            timestamp=datetime(2022, 1, 2, 1, 0, 0),
+            value=80.0,
+            branch="master",
+            commit_sha="commit4",
+        )
+
+        MeasurementFactory(
+            name=MeasurementName.COVERAGE.value,
+            owner_id=self.repo2.author_id,
+            repo_id=self.repo2.pk,
+            timestamp=datetime(2022, 1, 1, 1, 0, 0),
+            value=80.0,
+            branch="master",
+            commit_sha="commit1",
+        )
+        MeasurementFactory(
+            name=MeasurementName.COVERAGE.value,
+            owner_id=self.repo2.author_id,
+            repo_id=self.repo2.pk,
+            timestamp=datetime(2022, 1, 1, 2, 0, 0),
+            value=85.0,
+            branch="master",
+            commit_sha="commit2",
+        )
+        MeasurementFactory(
+            name=MeasurementName.COVERAGE.value,
+            owner_id=self.repo2.author_id,
+            repo_id=self.repo2.pk,
+            timestamp=datetime(2022, 1, 1, 3, 0, 0),
+            value=90.0,
+            branch="other",
+            commit_sha="commit3",
+        )
+        MeasurementFactory(
+            name=MeasurementName.COVERAGE.value,
+            owner_id=self.repo2.author_id,
+            repo_id=self.repo2.pk,
+            timestamp=datetime(2022, 1, 2, 1, 0, 0),
+            value=90.0,
+            branch="master",
+            commit_sha="commit4",
+        )
+
+        DatasetFactory(
+            name=MeasurementName.COVERAGE.value,
+            repository_id=self.repo1.pk,
+        )
+        DatasetFactory(
+            name=MeasurementName.COVERAGE.value,
+            repository_id=self.repo2.pk,
+        )
+
+        res = owner_coverage_measurements_with_fallback(
+            owner=self.owner,
+            repo_ids=[self.repo1.pk, self.repo2.pk],
+            interval=Interval.INTERVAL_1_DAY,
+            start_date=datetime(2021, 12, 31, 0, 0, 0, tzinfo=timezone.utc),
+            end_date=datetime(2022, 1, 3, 0, 0, 0, tzinfo=timezone.utc),
+        )
+        assert list(res) == [
+            {
+                # aggregates over 3 measurements on all branches
+                "timestamp_bin": datetime(2022, 1, 1, 0, 0, tzinfo=timezone.utc),
+                "avg": 85.0,
+                "min": 80.0,
+                "max": 90.0,
+            },
+            {
+                # aggregates over 1 measurement (commit4)
+                "timestamp_bin": datetime(2022, 1, 2, 0, 0, tzinfo=timezone.utc),
+                "avg": 85.0,
+                "min": 80.0,
+                "max": 90.0,
+            },
+        ]
+        res = owner_coverage_measurements_with_fallback(
+            owner=self.owner,
+            repo_ids=[self.repo1.pk],
+            interval=Interval.INTERVAL_1_DAY,
+            start_date=datetime(2021, 12, 31, 0, 0, 0, tzinfo=timezone.utc),
+            end_date=datetime(2022, 1, 3, 0, 0, 0, tzinfo=timezone.utc),
+        )
+        assert list(res) == [
+            {
+                # aggregates over 3 measurements on all branches
+                "timestamp_bin": datetime(2022, 1, 1, 0, 0, tzinfo=timezone.utc),
+                "avg": 85.0,
+                "min": 80.0,
+                "max": 90.0,
+            },
+            {
+                # aggregates over 1 measurement (commit4)
+                "timestamp_bin": datetime(2022, 1, 2, 0, 0, tzinfo=timezone.utc),
+                "avg": 80.0,
+                "min": 80.0,
+                "max": 80.0,
+            },
+        ]
+
+    @patch("timeseries.models.Dataset.is_backfilled")
+    def test_unbackfilled_dataset(self, is_backfilled):
+        is_backfilled.return_value = False
+
+        CommitFactory(
+            commitid="commit1",
+            repository_id=self.repo1.pk,
+            branch="master",
+            timestamp=datetime(2022, 1, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+            totals={
+                "c": "80.00",
+            },
+        )
+        CommitFactory(
+            commitid="commit2",
+            repository_id=self.repo1.pk,
+            branch="master",
+            timestamp=datetime(2022, 1, 1, 2, 0, 0, 0, tzinfo=timezone.utc),
+            totals={"c": "85.00"},
+        )
+        CommitFactory(
+            commitid="commit3",
+            repository_id=self.repo1.pk,
+            branch="other",
+            timestamp=datetime(2022, 1, 1, 3, 0, 0, 0, tzinfo=timezone.utc),
+            totals={"c": "90.00"},
+        )
+        CommitFactory(
+            commitid="commit4",
+            repository_id=self.repo1.pk,
+            branch="master",
+            timestamp=datetime(2022, 1, 2, 1, 0, 0, 0, tzinfo=timezone.utc),
+            totals={
+                "c": "80.00",
+            },
+        )
+
+        CommitFactory(
+            commitid="commit1",
+            repository_id=self.repo2.pk,
+            branch="master",
+            timestamp=datetime(2022, 1, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+            totals={
+                "c": "80.00",
+            },
+        )
+        CommitFactory(
+            commitid="commit2",
+            repository_id=self.repo2.pk,
+            branch="master",
+            timestamp=datetime(2022, 1, 1, 2, 0, 0, 0, tzinfo=timezone.utc),
+            totals={"c": "85.00"},
+        )
+        CommitFactory(
+            commitid="commit3",
+            repository_id=self.repo2.pk,
+            branch="other",
+            timestamp=datetime(2022, 1, 1, 3, 0, 0, 0, tzinfo=timezone.utc),
+            totals={"c": "90.00"},
+        )
+        CommitFactory(
+            commitid="commit4",
+            repository_id=self.repo2.pk,
+            branch="master",
+            timestamp=datetime(2022, 1, 2, 1, 0, 0, 0, tzinfo=timezone.utc),
+            totals={
+                "c": "90.00",
+            },
+        )
+
+        DatasetFactory(
+            name=MeasurementName.COVERAGE.value,
+            repository_id=self.repo1.pk,
+        )
+        DatasetFactory(
+            name=MeasurementName.COVERAGE.value,
+            repository_id=self.repo2.pk,
+        )
+
+        res = owner_coverage_measurements_with_fallback(
+            owner=self.owner,
+            repo_ids=[self.repo1.pk, self.repo2.pk],
+            interval=Interval.INTERVAL_1_DAY,
+            start_date=datetime(2021, 12, 31, 0, 0, 0, tzinfo=timezone.utc),
+            end_date=datetime(2022, 1, 3, 0, 0, 0, tzinfo=timezone.utc),
+        )
+        assert list(res) == [
+            {
+                # aggregates over 3 commits on all branches
+                "timestamp_bin": datetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+                "avg": 85.0,
+                "min": 80.0,
+                "max": 90.0,
+            },
+            {
+                # aggregates over 1 commit (commit4)
+                "timestamp_bin": datetime(2022, 1, 2, 0, 0, 0, tzinfo=timezone.utc),
+                "avg": 85.0,
+                "min": 80.0,
+                "max": 90.0,
+            },
+        ]
+        res = owner_coverage_measurements_with_fallback(
+            owner=self.owner,
+            repo_ids=[self.repo1.pk],
+            interval=Interval.INTERVAL_1_DAY,
+            start_date=datetime(2021, 12, 31, 0, 0, 0, tzinfo=timezone.utc),
+            end_date=datetime(2022, 1, 3, 0, 0, 0, tzinfo=timezone.utc),
+        )
+        assert list(res) == [
+            {
+                # aggregates over 3 commits on all branches
+                "timestamp_bin": datetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+                "avg": 85.0,
+                "min": 80.0,
+                "max": 90.0,
+            },
+            {
+                # aggregates over 1 commit (commit4)
+                "timestamp_bin": datetime(2022, 1, 2, 0, 0, 0, tzinfo=timezone.utc),
+                "avg": 80.0,
+                "min": 80.0,
+                "max": 80.0,
+            },
+        ]
+
+    @patch("timeseries.helpers.trigger_backfill")
+    def test_no_dataset(self, trigger_backfill):
+        CommitFactory(
+            commitid="commit1",
+            repository_id=self.repo1.pk,
+            branch="master",
+            timestamp=datetime(2022, 1, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+            totals={
+                "c": "80.00",
+            },
+        )
+        CommitFactory(
+            commitid="commit2",
+            repository_id=self.repo1.pk,
+            branch="master",
+            timestamp=datetime(2022, 1, 1, 2, 0, 0, 0, tzinfo=timezone.utc),
+            totals={"c": "85.00"},
+        )
+        CommitFactory(
+            commitid="commit3",
+            repository_id=self.repo1.pk,
+            branch="other",
+            timestamp=datetime(2022, 1, 1, 3, 0, 0, 0, tzinfo=timezone.utc),
+            totals={"c": "90.00"},
+        )
+        CommitFactory(
+            commitid="commit4",
+            repository_id=self.repo1.pk,
+            branch="master",
+            timestamp=datetime(2022, 1, 2, 1, 0, 0, 0, tzinfo=timezone.utc),
+            totals={
+                "c": "80.00",
+            },
+        )
+
+        CommitFactory(
+            commitid="commit1",
+            repository_id=self.repo2.pk,
+            branch="master",
+            timestamp=datetime(2022, 1, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+            totals={
+                "c": "80.00",
+            },
+        )
+        CommitFactory(
+            commitid="commit2",
+            repository_id=self.repo2.pk,
+            branch="master",
+            timestamp=datetime(2022, 1, 1, 2, 0, 0, 0, tzinfo=timezone.utc),
+            totals={"c": "85.00"},
+        )
+        CommitFactory(
+            commitid="commit3",
+            repository_id=self.repo2.pk,
+            branch="other",
+            timestamp=datetime(2022, 1, 1, 3, 0, 0, 0, tzinfo=timezone.utc),
+            totals={"c": "90.00"},
+        )
+        CommitFactory(
+            commitid="commit4",
+            repository_id=self.repo2.pk,
+            branch="master",
+            timestamp=datetime(2022, 1, 2, 1, 0, 0, 0, tzinfo=timezone.utc),
+            totals={
+                "c": "90.00",
+            },
+        )
+
+        res = owner_coverage_measurements_with_fallback(
+            owner=self.owner,
+            repo_ids=[self.repo1.pk, self.repo2.pk],
+            interval=Interval.INTERVAL_1_DAY,
+            start_date=datetime(2021, 12, 31, 0, 0, 0, tzinfo=timezone.utc),
+            end_date=datetime(2022, 1, 3, 0, 0, 0, tzinfo=timezone.utc),
+        )
+        assert list(res) == [
+            {
+                # aggregates over 3 commits on all branches
+                "timestamp_bin": datetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+                "avg": 85.0,
+                "min": 80.0,
+                "max": 90.0,
+            },
+            {
+                # aggregates over 1 measurement (commit4)
+                "timestamp_bin": datetime(2022, 1, 2, 0, 0, 0, tzinfo=timezone.utc),
+                "avg": 85.0,
+                "min": 80.0,
+                "max": 90.0,
+            },
+        ]
+
+        datasets = Dataset.objects.filter(
+            name=MeasurementName.COVERAGE.value,
+            repository_id__in=[self.repo1.pk, self.repo2.pk],
+        )
+        assert datasets.count() == 2
+        trigger_backfill.assert_has_calls(
+            [call(datasets[0]), call(datasets[1])], any_order=True
+        )
+
+        res = owner_coverage_measurements_with_fallback(
+            owner=self.owner,
+            repo_ids=[self.repo1.pk],
+            interval=Interval.INTERVAL_1_DAY,
+            start_date=datetime(2021, 12, 31, 0, 0, 0, tzinfo=timezone.utc),
+            end_date=datetime(2022, 1, 3, 0, 0, 0, tzinfo=timezone.utc),
+        )
+        assert list(res) == [
+            {
+                # aggregates over 3 commits on all branches
+                "timestamp_bin": datetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+                "avg": 85.0,
+                "min": 80.0,
+                "max": 90.0,
+            },
+            {
+                # aggregates over 1 measurement (commit4)
+                "timestamp_bin": datetime(2022, 1, 2, 0, 0, 0, tzinfo=timezone.utc),
+                "avg": 80.0,
+                "min": 80.0,
+                "max": 80.0,
+            },
+        ]

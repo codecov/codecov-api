@@ -16,7 +16,7 @@ from .flag import flag, flag_bindable
 from .flag_comparison import flag_comparison, flag_comparison_bindable
 from .impacted_file import impacted_file, impacted_file_bindable
 from .line_comparison import line_comparison, line_comparison_bindable
-from .me import me, me_bindable
+from .me import me, me_bindable, tracking_metadata_bindable
 from .measurement import measurement, measurement_bindable
 from .mutation import mutation, mutation_resolvers
 from .owner import owner, owner_bindable
@@ -119,4 +119,5 @@ bindables = [
     path_contents_result_bindable,
     repository_config_bindable,
     indication_range_bindable,
+    tracking_metadata_bindable,
 ]

@@ -1,5 +1,7 @@
 from ariadne import ObjectType, convert_kwargs_to_snake_case
 
+from codecov.db import sync_to_async
+from codecov_auth.models import Owner, OwnerProfile
 from graphql_api.actions.owner import (
     get_owner_login_sessions,
     get_user_tokens,
@@ -95,3 +97,15 @@ def resolve_is_syncing_with_git_provider(_, info):
 @me_bindable.field("trackingMetadata")
 def resolve_tracking_data(current_user, _, **kwargs):
     return current_user
+
+
+tracking_metadata_bindable = ObjectType("trackingMetadata")
+
+
+@tracking_metadata_bindable.field("profile")
+@sync_to_async
+def resolve_profile(owner: Owner, info) -> OwnerProfile:
+    try:
+        return owner.profile
+    except OwnerProfile.DoesNotExist:
+        return None
