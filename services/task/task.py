@@ -267,3 +267,14 @@ class TaskService(object):
             "app.tasks.commit_update.CommitUpdate",
             kwargs=dict(commitid=commitid, repoid=repoid),
         ).apply_async()
+
+    def create_report_results(self, commitid, repoid, report_code, current_yaml=None):
+        self._create_signature(
+            "app.tasks.reports.save_report_results",
+            kwargs=dict(
+                commitid=commitid,
+                repoid=repoid,
+                report_code=report_code,
+                current_yaml=current_yaml,
+            ),
+        ).apply_async()

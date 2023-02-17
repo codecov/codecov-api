@@ -84,6 +84,7 @@ def test_reports_post_code_as_default(client, db, mocker):
 
 
 def test_reports_results_post_successful(client, db, mocker):
+    mocked_task = mocker.patch("services.task.TaskService.create_report_results")
     mocker.patch.object(
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
     )
@@ -112,6 +113,7 @@ def test_reports_results_post_successful(client, db, mocker):
     assert ReportResults.objects.filter(
         report_id=commit_report.id,
     ).exists()
+    mocked_task.assert_called_once()
 
 
 def test_report_results_get_successful(client, db, mocker):
