@@ -176,7 +176,7 @@ def coverage_measurements(
     )
     older = aggregate_measurements(older).order_by("-timestamp_bin")[:1]
 
-    return older.union(aggregate_measurements(queryset))
+    return older.union(aggregate_measurements(queryset)).order_by("timestamp_bin")
 
 
 def trigger_backfill(dataset: Dataset):
@@ -309,7 +309,7 @@ def coverage_fallback_query(
     ).filter(**filters)
     older = _commits_coverage(older, interval).order_by("-timestamp_bin")[:1]
 
-    return older.union(commits)
+    return older.union(commits).order_by("timestamp_bin")
 
 
 def _commits_coverage(
