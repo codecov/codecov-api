@@ -71,7 +71,9 @@ class CoverageViewSet(
     def list(self, request, *args, **kwargs):
         """
         Returns a paginated list of timeseries measurements aggregated by the specified
-        `interval`.
+        `interval`.  If there are no measurements on `start_date` then the response will include
+        1 measurement older than `start_date` so that the coverage value can be carried forward
+        if necessary.
 
         Optionally filterable by:
         * `branch`

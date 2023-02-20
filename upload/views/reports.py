@@ -60,7 +60,9 @@ class ReportResultsView(
         repository = self.get_repo()
         commit = self.get_commit(repository)
         report = self.get_report(commit)
-        instance = serializer.save(report=report, state="pending")
+        instance = serializer.save(
+            report=report, state=ReportResults.ReportResultsStates.PENDING
+        )
         TaskService().create_report_results(
             commitid=commit.commitid,
             repoid=repository.repoid,
