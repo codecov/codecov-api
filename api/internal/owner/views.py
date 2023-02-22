@@ -117,6 +117,7 @@ class UsersOrderingFilter(filters.OrderingFilter):
 
         if ordering:
             ordering = [self._order_expression(order) for order in ordering]
+            ordering += ["ownerid"]  # secondary sort column makes this deterministic
             return queryset.order_by(*ordering)
 
         return queryset

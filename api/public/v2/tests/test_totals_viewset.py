@@ -65,7 +65,7 @@ def flags_report():
 
 
 @patch("api.shared.repo.repository_accessors.RepoAccessors.get_repo_permissions")
-class ReportViewSetTestCase(TestCase):
+class TotalsViewSetTestCase(TestCase):
     def setUp(self):
         self.service = "github"
         self.username = "codecov"
@@ -99,7 +99,7 @@ class ReportViewSetTestCase(TestCase):
     def _request_report(self, user_token=None, **params):
         self.client.force_login(user=self.user)
         url = reverse(
-            "api-v2-report-detail",
+            "api-v2-totals-detail",
             kwargs={
                 "service": "github",
                 "owner_username": self.org.username,
@@ -118,7 +118,7 @@ class ReportViewSetTestCase(TestCase):
     def _post_report(self, user_token=None, **params):
         self.client.force_login(user=self.user)
         url = reverse(
-            "api-v2-report-detail",
+            "api-v2-totals-detail",
             kwargs={
                 "service": "github",
                 "owner_username": self.org.username,
@@ -177,16 +177,6 @@ class ReportViewSetTestCase(TestCase):
                         "complexity_ratio": 500.0,
                         "diff": 0,
                     },
-                    "line_coverage": [
-                        [1, 0],
-                        [2, 1],
-                        [3, 0],
-                        [5, 0],
-                        [6, 1],
-                        [8, 0],
-                        [9, 0],
-                        [10, 1],
-                    ],
                 },
                 {
                     "name": "bar/file2.py",
@@ -206,7 +196,6 @@ class ReportViewSetTestCase(TestCase):
                         "complexity_ratio": 0,
                         "diff": 0,
                     },
-                    "line_coverage": [[12, 0], [51, 2]],
                 },
             ],
             "commit_file_url": f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.username}/{self.repo_name}/commit/{self.commit1.commitid}/tree/",
@@ -257,16 +246,6 @@ class ReportViewSetTestCase(TestCase):
                         "complexity_ratio": 500.0,
                         "diff": 0,
                     },
-                    "line_coverage": [
-                        [1, 0],
-                        [2, 1],
-                        [3, 0],
-                        [5, 0],
-                        [6, 1],
-                        [8, 0],
-                        [9, 0],
-                        [10, 1],
-                    ],
                 },
                 {
                     "name": "bar/file2.py",
@@ -286,7 +265,6 @@ class ReportViewSetTestCase(TestCase):
                         "complexity_ratio": 0,
                         "diff": 0,
                     },
-                    "line_coverage": [[12, 0], [51, 2]],
                 },
             ],
             "commit_file_url": f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.username}/{self.repo_name}/commit/{self.commit2.commitid}/tree/",
@@ -307,16 +285,6 @@ class ReportViewSetTestCase(TestCase):
         assert res.json() == {
             "detail": f"The commit {sha} is not in our records. Please specify valid commit."
         }
-
-    @patch("services.archive.ReportService.build_report_from_commit")
-    def test_report_missing_report(
-        self, build_report_from_commit, get_repo_permissions
-    ):
-        get_repo_permissions.return_value = (True, True)
-        build_report_from_commit.return_value = None
-
-        res = self._request_report()
-        assert res.status_code == 404
 
     @patch("services.archive.ReportService.build_report_from_commit")
     def test_report_branch(self, build_report_from_commit, get_repo_permissions):
@@ -361,16 +329,6 @@ class ReportViewSetTestCase(TestCase):
                         "complexity_ratio": 500.0,
                         "diff": 0,
                     },
-                    "line_coverage": [
-                        [1, 0],
-                        [2, 1],
-                        [3, 0],
-                        [5, 0],
-                        [6, 1],
-                        [8, 0],
-                        [9, 0],
-                        [10, 1],
-                    ],
                 },
                 {
                     "name": "bar/file2.py",
@@ -390,7 +348,6 @@ class ReportViewSetTestCase(TestCase):
                         "complexity_ratio": 0,
                         "diff": 0,
                     },
-                    "line_coverage": [[12, 0], [51, 2]],
                 },
             ],
             "commit_file_url": f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.username}/{self.repo_name}/commit/{self.commit3.commitid}/tree/",
@@ -455,7 +412,6 @@ class ReportViewSetTestCase(TestCase):
                         "complexity_ratio": 0,
                         "diff": 0,
                     },
-                    "line_coverage": [[12, 0], [51, 2]],
                 }
             ],
             "commit_file_url": f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.username}/{self.repo_name}/commit/{self.commit1.commitid}/tree/bar",
@@ -520,16 +476,6 @@ class ReportViewSetTestCase(TestCase):
                         "complexity_ratio": 0,
                         "diff": 0,
                     },
-                    "line_coverage": [
-                        [1, 0],
-                        [2, 1],
-                        [3, 0],
-                        [5, 0],
-                        [6, 1],
-                        [8, 0],
-                        [9, 0],
-                        [10, 1],
-                    ],
                 },
                 {
                     "name": "bar/file2.py",
@@ -549,7 +495,6 @@ class ReportViewSetTestCase(TestCase):
                         "complexity_ratio": 0,
                         "diff": 0,
                     },
-                    "line_coverage": [],
                 },
             ],
             "commit_file_url": f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.username}/{self.repo_name}/commit/{self.commit1.commitid}/tree/",
@@ -595,7 +540,6 @@ class ReportViewSetTestCase(TestCase):
                         "complexity_ratio": 0,
                         "diff": 0,
                     },
-                    "line_coverage": [],
                 },
                 {
                     "name": "bar/file2.py",
@@ -615,7 +559,6 @@ class ReportViewSetTestCase(TestCase):
                         "complexity_ratio": 0,
                         "diff": 0,
                     },
-                    "line_coverage": [[12, 0], [51, 0]],
                 },
             ],
             "commit_file_url": f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.username}/{self.repo_name}/commit/{self.commit1.commitid}/tree/",
@@ -626,213 +569,19 @@ class ReportViewSetTestCase(TestCase):
         )
 
     @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
-    @patch("api.shared.permissions.SuperTokenPermissions.has_permission")
     def test_no_report_if_unauthenticated_token_request(
         self,
-        super_token_permissions_has_permission,
         repository_artifact_permisssions_has_permission,
         _,
     ):
-        super_token_permissions_has_permission.return_value = False
         repository_artifact_permisssions_has_permission.return_value = False
 
         res = self._request_report()
         assert res.status_code == 403
         assert (
-            res.data["detail"] == "You do not have permission to perform this action."
+            res.data["detail"]
+            == "Permission denied: some possible reasons for this are (1) the user doesn't have permission to view the specific resource, (2) the organization has a per-user plan or (3) the user is trying to view a private repo but is not activated."
         )
-
-    @override_settings(SUPER_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
-    @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
-    def test_no_report_if_not_super_token_nor_user_token(
-        self, repository_artifact_permisssions_has_permission, _
-    ):
-        repository_artifact_permisssions_has_permission.return_value = False
-        res = self._request_report("73c8d301-2e0b-42c0-9ace-95eef6b68e86")
-        assert res.status_code == 401
-        assert res.data["detail"] == "Invalid token."
-
-    @override_settings(SUPER_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
-    @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
-    def test_no_report_if_super_token_but_no_GET_request(
-        self, repository_artifact_permisssions_has_permission, _
-    ):
-        repository_artifact_permisssions_has_permission.return_value = False
-        res = self._post_report("testaxs3o76rdcdpfzexuccx3uatui2nw73r")
-        assert res.status_code == 403
-        assert (
-            res.data["detail"] == "You do not have permission to perform this action."
-        )
-
-    @override_settings(SUPER_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
-    @patch("services.archive.ReportService.build_report_from_commit")
-    def test_report_super_token_permission_success(
-        self,
-        build_report_from_commit,
-        _,
-    ):
-        build_report_from_commit.return_value = sample_report()
-        res = self._request_report("testaxs3o76rdcdpfzexuccx3uatui2nw73r")
-        assert res.status_code == 200
-        assert res.json() == {
-            "totals": {
-                "files": 2,
-                "lines": 10,
-                "hits": 6,
-                "misses": 3,
-                "partials": 1,
-                "coverage": 60.0,
-                "branches": 1,
-                "methods": 0,
-                "messages": 0,
-                "sessions": 1,
-                "complexity": 10.0,
-                "complexity_total": 2.0,
-                "complexity_ratio": 500.0,
-                "diff": 0,
-            },
-            "files": [
-                {
-                    "name": "foo/file1.py",
-                    "totals": {
-                        "files": 0,
-                        "lines": 8,
-                        "hits": 5,
-                        "misses": 3,
-                        "partials": 0,
-                        "coverage": 62.5,
-                        "branches": 0,
-                        "methods": 0,
-                        "messages": 0,
-                        "sessions": 0,
-                        "complexity": 10.0,
-                        "complexity_total": 2.0,
-                        "complexity_ratio": 500.0,
-                        "diff": 0,
-                    },
-                    "line_coverage": [
-                        [1, 0],
-                        [2, 1],
-                        [3, 0],
-                        [5, 0],
-                        [6, 1],
-                        [8, 0],
-                        [9, 0],
-                        [10, 1],
-                    ],
-                },
-                {
-                    "name": "bar/file2.py",
-                    "totals": {
-                        "files": 0,
-                        "lines": 2,
-                        "hits": 1,
-                        "misses": 0,
-                        "partials": 1,
-                        "coverage": 50.0,
-                        "branches": 1,
-                        "methods": 0,
-                        "messages": 0,
-                        "sessions": 0,
-                        "complexity": 0.0,
-                        "complexity_total": 0.0,
-                        "complexity_ratio": 0,
-                        "diff": 0,
-                    },
-                    "line_coverage": [[12, 0], [51, 2]],
-                },
-            ],
-            "commit_file_url": f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.username}/{self.repo_name}/commit/{self.commit1.commitid}/tree/",
-        }
-
-        build_report_from_commit.assert_called_once_with(self.commit1)
-
-    @override_settings(SUPER_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
-    @patch("api.shared.permissions.RepositoryPermissionsService.user_is_activated")
-    @patch("services.archive.ReportService.build_report_from_commit")
-    def test_report_success_if_token_is_not_super_but_is_user_token(
-        self, build_report_from_commit, mock_is_user_activated, get_repo_permissions
-    ):
-        build_report_from_commit.return_value = sample_report()
-        mock_is_user_activated.return_value = True
-        get_repo_permissions.return_value = (True, True)
-        user_token = UserTokenFactory(
-            owner=self.user,
-        )
-        res = self._request_report(user_token.token)
-        assert res.status_code == 200
-        assert res.json() == {
-            "totals": {
-                "files": 2,
-                "lines": 10,
-                "hits": 6,
-                "misses": 3,
-                "partials": 1,
-                "coverage": 60.0,
-                "branches": 1,
-                "methods": 0,
-                "messages": 0,
-                "sessions": 1,
-                "complexity": 10.0,
-                "complexity_total": 2.0,
-                "complexity_ratio": 500.0,
-                "diff": 0,
-            },
-            "files": [
-                {
-                    "name": "foo/file1.py",
-                    "totals": {
-                        "files": 0,
-                        "lines": 8,
-                        "hits": 5,
-                        "misses": 3,
-                        "partials": 0,
-                        "coverage": 62.5,
-                        "branches": 0,
-                        "methods": 0,
-                        "messages": 0,
-                        "sessions": 0,
-                        "complexity": 10.0,
-                        "complexity_total": 2.0,
-                        "complexity_ratio": 500.0,
-                        "diff": 0,
-                    },
-                    "line_coverage": [
-                        [1, 0],
-                        [2, 1],
-                        [3, 0],
-                        [5, 0],
-                        [6, 1],
-                        [8, 0],
-                        [9, 0],
-                        [10, 1],
-                    ],
-                },
-                {
-                    "name": "bar/file2.py",
-                    "totals": {
-                        "files": 0,
-                        "lines": 2,
-                        "hits": 1,
-                        "misses": 0,
-                        "partials": 1,
-                        "coverage": 50.0,
-                        "branches": 1,
-                        "methods": 0,
-                        "messages": 0,
-                        "sessions": 0,
-                        "complexity": 0.0,
-                        "complexity_total": 0.0,
-                        "complexity_ratio": 0,
-                        "diff": 0,
-                    },
-                    "line_coverage": [[12, 0], [51, 2]],
-                },
-            ],
-            "commit_file_url": f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.username}/{self.repo_name}/commit/{self.commit1.commitid}/tree/",
-        }
-
-        build_report_from_commit.assert_called_once_with(self.commit1)
 
     @patch("api.public.v2.report.views.commit_components")
     @patch("services.archive.ReportService.build_report_from_commit")
@@ -896,16 +645,6 @@ class ReportViewSetTestCase(TestCase):
                         "complexity_ratio": 500.0,
                         "diff": 0,
                     },
-                    "line_coverage": [
-                        [1, 0],
-                        [2, 1],
-                        [3, 0],
-                        [5, 0],
-                        [6, 1],
-                        [8, 0],
-                        [9, 0],
-                        [10, 1],
-                    ],
                 }
             ],
             "commit_file_url": f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.username}/{self.repo_name}/commit/{self.commit1.commitid}/tree/",
@@ -949,7 +688,6 @@ class ReportViewSetTestCase(TestCase):
                         "complexity_ratio": 0,
                         "diff": 0,
                     },
-                    "line_coverage": [[12, 0], [51, 2]],
                 }
             ],
             "commit_file_url": f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.username}/{self.repo_name}/commit/{self.commit1.commitid}/tree/",

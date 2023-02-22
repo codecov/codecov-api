@@ -1,11 +1,15 @@
+from datetime import datetime
 from hashlib import sha1
+from typing import Iterable, List, Optional
 
 import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
 
+import timeseries.helpers as timeseries_helpers
 from codecov.db import sync_to_async
 from codecov_auth.helpers import current_user_part_of_org
 from codecov_auth.models import Owner
+from core.models import Repository
 from graphql_api.actions.repository import list_repository_for_owner
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
 from graphql_api.helpers.connection import (
@@ -14,6 +18,8 @@ from graphql_api.helpers.connection import (
 )
 from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
 from services.profiling import ProfilingSummary
+from timeseries.helpers import fill_sparse_measurements
+from timeseries.models import Interval, MeasurementSummary
 
 owner = ariadne_load_local_graphql(__file__, "owner.graphql")
 owner = owner + build_connection_graphql("RepositoryConnection", "Repository")
@@ -95,3 +101,35 @@ def resolve_org_upload_token(owner, info, **kwargs):
 @sync_to_async
 def resolve_org_default_org_username(owner: Owner, info, **kwargs) -> int:
     return None if owner.default_org is None else owner.default_org.username
+
+
+@owner_bindable.field("measurements")
+@sync_to_async
+def resolve_measurements(
+    owner: Owner,
+    info,
+    interval: Interval,
+    after: datetime,
+    before: datetime,
+    repos: Optional[List[str]] = None,
+) -> Iterable[MeasurementSummary]:
+    user = info.context["request"].user
+
+    queryset = Repository.objects.filter(author=owner).viewable_repos(user)
+    if repos is None:
+        repo_ids = queryset.values_list("pk", flat=True)
+    else:
+        repo_ids = queryset.filter(name__in=repos).values_list("pk", flat=True)
+
+    return fill_sparse_measurements(
+        timeseries_helpers.owner_coverage_measurements_with_fallback(
+            owner,
+            list(repo_ids),
+            interval,
+            after,
+            before,
+        ),
+        interval,
+        after,
+        before,
+    )
