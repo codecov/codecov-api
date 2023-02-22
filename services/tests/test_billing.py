@@ -1095,6 +1095,7 @@ class StripeServiceTests(TestCase):
         owner = OwnerFactory(
             stripe_subscription_id="test-subscription-id",
             stripe_customer_id="test-customer-id",
+            plan="users-inappm",
         )
         self.stripe.apply_cancellation_discount(owner)
 
@@ -1118,6 +1119,22 @@ class StripeServiceTests(TestCase):
 
         owner.refresh_from_db()
         assert owner.stripe_coupon_id == "test-coupon-id"
+
+    @patch("services.billing.stripe.Coupon.create")
+    @patch("services.billing.stripe.Customer.modify")
+    def test_apply_cancellation_discount_yearly(
+        self, customer_modify_mock, coupon_create_mock
+    ):
+        owner = OwnerFactory(
+            stripe_customer_id="test-customer-id",
+            stripe_subscription_id=None,
+            plan="users-inappy",
+        )
+        self.stripe.apply_cancellation_discount(owner)
+
+        assert not customer_modify_mock.called
+        assert not coupon_create_mock.called
+        assert owner.stripe_coupon_id == None
 
     @patch("services.billing.stripe.Coupon.create")
     @patch("services.billing.stripe.Customer.modify")

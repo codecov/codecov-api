@@ -912,6 +912,7 @@ class AccountViewSetTests(APITestCase):
     ):
         coupon_create_mock.return_value = MagicMock(id="test-coupon-id")
 
+        self.user.plan = "users-inappm"
         self.user.stripe_customer_id = "flsoe"
         self.user.stripe_subscription_id = "djfos"
         self.user.save()
@@ -952,6 +953,40 @@ class AccountViewSetTests(APITestCase):
             "duration_in_months": 6,
             "valid": True,
         }
+
+    @patch("services.billing.stripe.Coupon.create")
+    @patch("services.billing.stripe.Subscription.retrieve")
+    @patch("services.billing.stripe.Customer.modify")
+    def test_update_apply_cancellation_discount_yearly(
+        self, modify_customer_mock, retrieve_subscription_mock, coupon_create_mock
+    ):
+        coupon_create_mock.return_value = MagicMock(id="test-coupon-id")
+
+        self.user.plan = "users-inappy"
+        self.user.stripe_customer_id = "flsoe"
+        self.user.stripe_subscription_id = "djfos"
+        self.user.save()
+
+        subscription_params = {
+            "default_payment_method": None,
+            "cancel_at_period_end": False,
+            "current_period_end": 1633512445,
+            "latest_invoice": None,
+            "schedule_id": None,
+            "collection_method": "charge_automatically",
+        }
+
+        retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+
+        response = self._update(
+            kwargs={"service": self.user.service, "owner_username": self.user.username},
+            data={"apply_cancellation_discount": True},
+        )
+
+        assert not modify_customer_mock.called
+        assert not coupon_create_mock.called
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["subscription_detail"]["customer"]["discount"] == None
 
     @patch("services.task.TaskService.delete_owner")
     def test_destroy_triggers_delete_owner_task(self, delete_owner_mock):

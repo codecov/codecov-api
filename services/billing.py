@@ -410,7 +410,11 @@ class StripeService(AbstractPaymentService):
             )
             return
 
-        if not owner.stripe_coupon_id:
+        billing_period = USER_PLAN_REPRESENTATIONS.get(owner.plan, {}).get(
+            "billing_rate"
+        )
+
+        if billing_period == "monthly" and not owner.stripe_coupon_id:
             log.info(f"Creating Stripe cancellation coupon for owner {owner.ownerid}")
             coupon = stripe.Coupon.create(
                 percent_off=30.0,

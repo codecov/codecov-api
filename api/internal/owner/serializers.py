@@ -250,7 +250,6 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
 
     def get_subscription_detail(self, owner):
         subscription_detail = self._get_billing().get_subscription(owner)
-        print("SUB", subscription_detail)
         if subscription_detail:
             return SubscriptionDetailSerializer(subscription_detail).data
 
