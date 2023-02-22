@@ -70,13 +70,15 @@ class BaseReportViewSet(
         commit = self.get_commit()
         report = commit.full_report
 
+        if report is None:
+            raise NotFound(f"No coverage report found for commit {commit.commitid}")
+
         path = self.request.query_params.get("path", None)
         if path:
             paths = [file for file in report.files if file.startswith(path)]
             if not paths:
                 raise NotFound(
-                    f"The file path '{path}' does not exist. Please provide an existing file path.",
-                    404,
+                    f"The file path '{path}' does not exist. Please provide an existing file path."
                 )
             report = report.filter(paths=paths)
 
@@ -96,8 +98,7 @@ class BaseReportViewSet(
             )
             if component is None:
                 raise NotFound(
-                    f"The component {component_id} does not exist in commit {commit.commitid}",
-                    404,
+                    f"The component {component_id} does not exist in commit {commit.commitid}"
                 )
             report = component_filtered_report(report, component)
 
@@ -119,12 +120,7 @@ class BaseReportViewSet(
         return report
 
     def retrieve(self, request, *args, **kwargs):
-        try:
-            report = self.get_object()
-        except NotFound as inst:
-            (detail, code) = inst.args
-            raise NotFound(detail)
-
+        report = self.get_object()
         serializer = self.get_serializer(report)
         return Response(serializer.data)
 
