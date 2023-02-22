@@ -14,7 +14,10 @@ class UpdateDefaultOrganizationInteractor(BaseInteractor):
         if not self.current_user.is_authenticated:
             raise Unauthenticated()
 
-        if default_org is None or (
+        if default_org is None:
+            return
+
+        if (
             default_org.ownerid not in self.current_user.organizations
             and default_org.ownerid != self.current_user.ownerid
         ):
@@ -31,12 +34,11 @@ class UpdateDefaultOrganizationInteractor(BaseInteractor):
 
     @sync_to_async
     def execute(self, default_org_username: str):
-        if default_org_username is None:
-            self.update_default_organization(None)
-        else:
+        default_org = None
+        if default_org_username is not None:
             default_org = Owner.objects.filter(
                 username=default_org_username, service=self.service
             ).first()
-            self.validate(default_org)
-            self.update_default_organization(default_org)
+        self.validate(default_org)
+        self.update_default_organization(default_org)
         return default_org_username
