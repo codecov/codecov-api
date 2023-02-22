@@ -421,19 +421,21 @@ class StripeService(AbstractPaymentService):
                 metadata={
                     "ownerid": owner.ownerid,
                     "username": owner.username,
+                    "email": owner.email,
+                    "name": owner.name,
                 },
             )
 
             owner.stripe_coupon_id = coupon.id
             owner.save()
 
-        log.info(
-            f"Applying cancellation coupon to Stripe subscription for owner {owner.ownerid}"
-        )
-        stripe.Subscription.modify(
-            owner.stripe_subscription_id,
-            coupon=owner.stripe_coupon_id,
-        )
+            log.info(
+                f"Applying cancellation coupon to Stripe subscription for owner {owner.ownerid}"
+            )
+            stripe.Customer.modify(
+                owner.stripe_customer_id,
+                coupon=owner.stripe_coupon_id,
+            )
 
 
 class EnterprisePaymentService(AbstractPaymentService):

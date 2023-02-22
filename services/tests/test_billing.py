@@ -1086,9 +1086,9 @@ class StripeServiceTests(TestCase):
         retrieve_invoice_mock.assert_called_once_with(invoice_id)
 
     @patch("services.billing.stripe.Coupon.create")
-    @patch("services.billing.stripe.Subscription.modify")
+    @patch("services.billing.stripe.Customer.modify")
     def test_apply_cancellation_discount(
-        self, subscription_modify_mock, coupon_create_mock
+        self, customer_modify_mock, coupon_create_mock
     ):
         coupon_create_mock.return_value = MagicMock(id="test-coupon-id")
 
@@ -1107,10 +1107,12 @@ class StripeServiceTests(TestCase):
             metadata={
                 "ownerid": owner.ownerid,
                 "username": owner.username,
+                "email": owner.email,
+                "name": owner.name,
             },
         )
-        subscription_modify_mock.assert_called_once_with(
-            "test-subscription-id",
+        customer_modify_mock.assert_called_once_with(
+            "test-customer-id",
             coupon="test-coupon-id",
         )
 
@@ -1118,9 +1120,9 @@ class StripeServiceTests(TestCase):
         assert owner.stripe_coupon_id == "test-coupon-id"
 
     @patch("services.billing.stripe.Coupon.create")
-    @patch("services.billing.stripe.Subscription.modify")
+    @patch("services.billing.stripe.Customer.modify")
     def test_apply_cancellation_discount_no_subscription(
-        self, subscription_modify_mock, coupon_create_mock
+        self, customer_modify_mock, coupon_create_mock
     ):
         owner = OwnerFactory(
             stripe_customer_id="test-customer-id",
@@ -1128,14 +1130,14 @@ class StripeServiceTests(TestCase):
         )
         self.stripe.apply_cancellation_discount(owner)
 
-        assert not subscription_modify_mock.called
+        assert not customer_modify_mock.called
         assert not coupon_create_mock.called
         assert owner.stripe_coupon_id == None
 
     @patch("services.billing.stripe.Coupon.create")
-    @patch("services.billing.stripe.Subscription.modify")
+    @patch("services.billing.stripe.Customer.modify")
     def test_apply_cancellation_discount_existing_coupon(
-        self, subscription_modify_mock, coupon_create_mock
+        self, customer_modify_mock, coupon_create_mock
     ):
         owner = OwnerFactory(
             stripe_customer_id="test-customer-id",
@@ -1144,10 +1146,7 @@ class StripeServiceTests(TestCase):
         )
         self.stripe.apply_cancellation_discount(owner)
 
-        subscription_modify_mock.assert_called_once_with(
-            "test-subscription-id",
-            coupon="test-coupon-id",
-        )
+        assert not customer_modify_mock.called
         assert not coupon_create_mock.called
 
 

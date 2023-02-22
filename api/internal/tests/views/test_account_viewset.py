@@ -26,10 +26,14 @@ class MockSubscription(object):
                 "default_payment_method": subscription_params["default_payment_method"]
             },
             "id": "cus_LK&*Hli8YLIO",
+            "discount": None,
         }
         self.schedule = subscription_params["schedule_id"]
         self.collection_method = subscription_params["collection_method"]
-        self.discount = subscription_params.get("discount")
+
+        customer_coupon = subscription_params.get("customer_coupon")
+        if customer_coupon:
+            self.customer["discount"] = {"coupon": customer_coupon}
 
     def __getitem__(self, key):
         return getattr(self, key)
@@ -174,7 +178,6 @@ class AccountViewSetTests(APITestCase):
             "latest_invoice": None,
             "schedule_id": "sub_sched_456",
             "collection_method": "charge_automatically",
-            "discount": None,
         }
 
         mock_retrieve_subscription.return_value = MockSubscription(subscription_params)
@@ -226,9 +229,8 @@ class AccountViewSetTests(APITestCase):
                 "default_payment_method": None,
                 "cancel_at_period_end": False,
                 "current_period_end": 1633512445,
-                "customer": {"id": "cus_LK&*Hli8YLIO"},
+                "customer": {"id": "cus_LK&*Hli8YLIO", "discount": None},
                 "collection_method": "charge_automatically",
-                "discount": None,
             },
             "checkout_session_id": None,
             "name": owner.name,
@@ -319,9 +321,11 @@ class AccountViewSetTests(APITestCase):
                 "default_payment_method": None,
                 "cancel_at_period_end": False,
                 "current_period_end": 1633512445,
-                "customer": {"id": "cus_LK&*Hli8YLIO"},
+                "customer": {
+                    "id": "cus_LK&*Hli8YLIO",
+                    "discount": None,
+                },
                 "collection_method": "charge_automatically",
-                "discount": None,
             },
             "checkout_session_id": None,
             "name": owner.name,
@@ -382,9 +386,11 @@ class AccountViewSetTests(APITestCase):
                 "default_payment_method": None,
                 "cancel_at_period_end": False,
                 "current_period_end": 1633512445,
-                "customer": {"id": "cus_LK&*Hli8YLIO"},
+                "customer": {
+                    "id": "cus_LK&*Hli8YLIO",
+                    "discount": None,
+                },
                 "collection_method": "charge_automatically",
-                "discount": None,
             },
             "checkout_session_id": None,
             "name": owner.name,
@@ -543,9 +549,11 @@ class AccountViewSetTests(APITestCase):
                     "last4": "abcd",
                 }
             },
-            "customer": {"id": "cus_LK&*Hli8YLIO"},
+            "customer": {
+                "id": "cus_LK&*Hli8YLIO",
+                "discount": None,
+            },
             "collection_method": "charge_automatically",
-            "discount": None,
         }
 
     @patch("services.billing.stripe.Subscription.retrieve")
@@ -898,9 +906,9 @@ class AccountViewSetTests(APITestCase):
 
     @patch("services.billing.stripe.Coupon.create")
     @patch("services.billing.stripe.Subscription.retrieve")
-    @patch("services.billing.stripe.Subscription.modify")
+    @patch("services.billing.stripe.Customer.modify")
     def test_update_apply_cancellation_discount(
-        self, modify_subscription_mock, retrieve_subscription_mock, coupon_create_mock
+        self, modify_customer_mock, retrieve_subscription_mock, coupon_create_mock
     ):
         coupon_create_mock.return_value = MagicMock(id="test-coupon-id")
 
@@ -915,14 +923,12 @@ class AccountViewSetTests(APITestCase):
             "latest_invoice": None,
             "schedule_id": None,
             "collection_method": "charge_automatically",
-            "discount": {
-                "coupon": {
-                    "name": "30% off for 6 months",
-                    "percent_off": 30.0,
-                    "duration": "repeating",
-                    "duration_in_months": 6,
-                    "valid": True,
-                }
+            "customer_coupon": {
+                "name": "30% off for 6 months",
+                "percent_off": 30.0,
+                "duration": "repeating",
+                "duration_in_months": 6,
+                "valid": True,
             },
         }
 
@@ -933,26 +939,18 @@ class AccountViewSetTests(APITestCase):
             data={"apply_cancellation_discount": True},
         )
 
-        modify_subscription_mock.assert_called_once_with(
-            self.user.stripe_subscription_id,
+        modify_customer_mock.assert_called_once_with(
+            self.user.stripe_customer_id,
             coupon="test-coupon-id",
         )
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.json()["subscription_detail"] == {
-            "latest_invoice": None,
-            "default_payment_method": None,
-            "cancel_at_period_end": False,
-            "current_period_end": 1633512445,
-            "customer": {"id": "cus_LK&*Hli8YLIO"},
-            "collection_method": "charge_automatically",
-            "discount": {
-                "name": "30% off for 6 months",
-                "percent_off": 30.0,
-                "duration": "repeating",
-                "duration_in_months": 6,
-                "valid": True,
-            },
+        assert response.json()["subscription_detail"]["customer"]["discount"] == {
+            "name": "30% off for 6 months",
+            "percent_off": 30.0,
+            "duration": "repeating",
+            "duration_in_months": 6,
+            "valid": True,
         }
 
     @patch("services.task.TaskService.delete_owner")

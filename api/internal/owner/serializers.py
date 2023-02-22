@@ -86,6 +86,7 @@ class StripeDiscountSerializer(serializers.Serializer):
 
 class StripeCustomerSerializer(serializers.Serializer):
     id = serializers.CharField()
+    discount = StripeDiscountSerializer()
 
 
 class StripeCardSerializer(serializers.Serializer):
@@ -156,7 +157,6 @@ class SubscriptionDetailSerializer(serializers.Serializer):
     current_period_end = serializers.IntegerField()
     customer = StripeCustomerSerializer()
     collection_method = serializers.CharField()
-    discount = StripeDiscountSerializer()
 
 
 class StripeScheduledPhaseSerializer(serializers.Serializer):
@@ -250,6 +250,7 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
 
     def get_subscription_detail(self, owner):
         subscription_detail = self._get_billing().get_subscription(owner)
+        print("SUB", subscription_detail)
         if subscription_detail:
             return SubscriptionDetailSerializer(subscription_detail).data
 
