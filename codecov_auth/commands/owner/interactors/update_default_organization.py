@@ -10,7 +10,11 @@ class UpdateDefaultOrganizationInteractor(BaseInteractor):
     def validate(self, default_org: Optional[Owner]) -> Owner:
         if not self.current_user.is_authenticated:
             raise Unauthenticated()
-        if default_org is None or (
+
+        if default_org is None:
+            return
+
+        if (
             default_org.ownerid not in self.current_user.organizations
             and default_org.ownerid != self.current_user.ownerid
         ):
