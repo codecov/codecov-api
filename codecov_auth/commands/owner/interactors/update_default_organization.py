@@ -9,7 +9,7 @@ from codecov_auth.models import Owner, OwnerProfile
 class UpdateDefaultOrganizationInteractor(BaseInteractor):
     def validate(
         self,
-        default_org: Optional[Owner],
+        default_org: Owner,
     ) -> Optional[Owner]:
         if not self.current_user.is_authenticated:
             raise Unauthenticated()
