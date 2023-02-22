@@ -4,10 +4,14 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, viewsets
 from rest_framework.authentication import BasicAuthentication, SessionAuthentication
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.response import Response
+from shared.reports.resources import Report
 
-from api.public.v2.report.serializers import CoverageReportSerializer
+from api.public.v2.report.serializers import (
+    CoverageReportSerializer,
+    FileReportSerializer,
+)
 from api.public.v2.schema import repo_parameters
 from api.shared.mixins import RepoPropertyMixin
 from api.shared.permissions import RepositoryArtifactPermissions, SuperTokenPermissions
@@ -176,3 +180,107 @@ class ReportViewSet(BaseReportViewSet):
         * `component_id` - only show report info that applies to the specified component
         """
         return super().retrieve(request, *args, **kwargs)
+
+
+@extend_schema(
+    parameters=repo_parameters
+    + [
+        OpenApiParameter(
+            "path",
+            OpenApiTypes.STR,
+            OpenApiParameter.PATH,
+            description="the file path for which to retrieve coverage info",
+        ),
+        OpenApiParameter(
+            "sha",
+            OpenApiTypes.STR,
+            OpenApiParameter.QUERY,
+            description="commit SHA for which to return report",
+        ),
+        OpenApiParameter(
+            "branch",
+            OpenApiTypes.STR,
+            OpenApiParameter.QUERY,
+            description="branch name for which to return report (of head commit)",
+        ),
+    ],
+    tags=["Coverage"],
+)
+class FileReportViewSet(
+    viewsets.GenericViewSet, mixins.RetrieveModelMixin, RepoPropertyMixin
+):
+    authentication_classes = [
+        SuperTokenAuthentication,
+        CodecovTokenAuthentication,
+        UserTokenAuthentication,
+        BasicAuthentication,
+        SessionAuthentication,
+    ]
+    permission_classes = [SuperTokenPermissions | RepositoryArtifactPermissions]
+    serializer_class = FileReportSerializer
+
+    def get_queryset(self):
+        return None
+
+    def get_object(self):
+        path = self.kwargs.get("path")
+
+        walk_back = int(self.request.query_params.get("walk_back", 0))
+        if walk_back > 20:
+            raise ValidationError("walk_back must be <= 20")
+
+        self.commit = self.get_commit()
+        report = self.commit.full_report
+
+        for i in range(walk_back):
+            if self._is_valid_report(report, path):
+                break
+            else:
+                # walk commit ancestors until we find coverage info for the given path
+                if not self.commit.parent_commit_id:
+                    report = None
+                    break
+                self.commit = self.repo.commits.filter(
+                    commitid=self.commit.parent_commit_id
+                ).first()
+                if not self.commit:
+                    report = None
+                    break
+                report = self.commit.full_report
+
+        if not self._is_valid_report(report, path):
+            raise NotFound(f"coverage info not found for path '{path}'")
+
+        return report.get(path)
+
+    def get_serializer_context(self, *args, **kwargs):
+        context = super().get_serializer_context(*args, **kwargs)
+        context.update(
+            {
+                "include_line_coverage": True,
+                "commit_sha": self.commit.commitid,
+            }
+        )
+        return context
+
+    @extend_schema(summary="File coverage report")
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Similar to the coverage report endpoint but only returns coverage info for a single
+        file specified by `path`.
+
+        By default that commit is the head of the default branch but can also be specified explictily by:
+        * `sha` - return report for the commit with the given SHA
+        * `branch` - return report for the head commit of the branch with the given name
+        """
+        return super().retrieve(request, *args, **kwargs)
+
+    def _is_valid_report(self, report: Report, path: str):
+        if report is None:
+            return False
+
+        report_file = report.get(path)
+        if report_file is None:
+            return False
+
+        return True

@@ -15,7 +15,7 @@ from .flag.views import FlagViewSet
 from .owner.views import OwnerViewSet, UserViewSet
 from .pull.views import PullViewSet
 from .repo.views import RepositoryConfigView, RepositoryViewSet
-from .report.views import ReportViewSet, TotalsViewSet
+from .report.views import FileReportViewSet, ReportViewSet, TotalsViewSet
 
 urls.handler404 = not_found
 urls.handler500 = server_error
@@ -59,6 +59,11 @@ totals_router.register(r"totals", TotalsViewSet, basename="api-v2-totals")
 report_router = RetrieveUpdateDestroyRouter()
 report_router.register(r"report", ReportViewSet, basename="api-v2-report")
 
+file_report_router = RetrieveUpdateDestroyRouter()
+file_report_router.register(
+    r"file_report/(?P<path>.+)", FileReportViewSet, basename="api-v2-file-report"
+)
+
 service_prefix = "<str:service>/"
 owner_prefix = "<str:service>/<str:owner_username>/"
 repo_prefix = "<str:service>/<str:owner_username>/repos/<str:repo_name>/"
@@ -85,6 +90,7 @@ urlpatterns = [
     path(repo_prefix, include(compare_router.urls)),
     path(repo_prefix, include(totals_router.urls)),
     path(repo_prefix, include(report_router.urls)),
+    path(repo_prefix, include(file_report_router.urls)),
     path(repo_prefix, include(coverage_router.urls)),
 ]
 
