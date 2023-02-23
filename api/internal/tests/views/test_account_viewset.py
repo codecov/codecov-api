@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 from django.test import override_settings
@@ -927,9 +928,8 @@ class AccountViewSetTests(APITestCase):
             "customer_coupon": {
                 "name": "30% off for 6 months",
                 "percent_off": 30.0,
-                "duration": "repeating",
                 "duration_in_months": 6,
-                "valid": True,
+                "created": int(datetime(2023, 1, 1, 0, 0, 0).timestamp()),
             },
         }
 
@@ -949,9 +949,8 @@ class AccountViewSetTests(APITestCase):
         assert response.json()["subscription_detail"]["customer"]["discount"] == {
             "name": "30% off for 6 months",
             "percent_off": 30.0,
-            "duration": "repeating",
             "duration_in_months": 6,
-            "valid": True,
+            "expires": int(datetime(2023, 7, 1, 0, 0, 0).timestamp()),
         }
 
     @patch("services.billing.stripe.Coupon.create")

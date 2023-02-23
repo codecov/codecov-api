@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime
 
+from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
@@ -79,9 +80,17 @@ class StripeInvoiceSerializer(serializers.Serializer):
 class StripeDiscountSerializer(serializers.Serializer):
     name = serializers.CharField(source="coupon.name")
     percent_off = serializers.FloatField(source="coupon.percent_off")
-    duration = serializers.CharField(source="coupon.duration")
     duration_in_months = serializers.IntegerField(source="coupon.duration_in_months")
-    valid = serializers.BooleanField(source="coupon.valid")
+    expires = serializers.SerializerMethodField()
+
+    def get_expires(self, customer):
+        coupon = customer.get("coupon")
+        if coupon:
+            months = coupon.get("duration_in_months")
+            created = coupon.get("created")
+            if months and created:
+                expires = datetime.fromtimestamp(created) + relativedelta(months=months)
+                return int(expires.timestamp())
 
 
 class StripeCustomerSerializer(serializers.Serializer):
