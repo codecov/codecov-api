@@ -3,6 +3,7 @@ from graphql_api.helpers.ariadne import ariadne_load_local_graphql
 from .activate_flags_measurements import gql_activate_flags_measurements
 from .create_api_token import gql_create_api_token
 from .create_user_token import gql_create_user_token
+from .delete_flag import gql_delete_flag
 from .delete_session import gql_delete_session
 from .mutation import mutation_resolvers
 from .onboard_user import gql_onboard_user
@@ -27,3 +28,4 @@ mutation = mutation + gql_activate_flags_measurements
 mutation = mutation + gql_regenerate_org_upload_token
 mutation = mutation + gql_create_user_token
 mutation = mutation + gql_revoke_user_token
+mutation = mutation + gql_delete_flag

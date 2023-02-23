@@ -13,6 +13,7 @@ from timeseries.models import Interval, MeasurementName, MeasurementSummary
 def flags_for_repo(repository: Repository, filters: Mapping = None) -> QuerySet:
     queryset = RepositoryFlag.objects.filter(
         repository=repository,
+        deleted__isnot=True,
     )
     queryset = _apply_filters(queryset, filters or {})
     return queryset

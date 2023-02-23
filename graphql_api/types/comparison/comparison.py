@@ -2,8 +2,6 @@ import enum
 from dataclasses import dataclass
 from typing import List, Optional
 
-print("IMPORTING")
-
 from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
 
 import services.components as components_service

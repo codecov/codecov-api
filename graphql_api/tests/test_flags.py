@@ -100,6 +100,9 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
     def test_fetch_flags_no_measurements(self):
         flag1 = RepositoryFlagFactory(repository=self.repo, flag_name="flag1")
         flag2 = RepositoryFlagFactory(repository=self.repo, flag_name="flag2")
+        flag3 = RepositoryFlagFactory(
+            repository=self.repo, flag_name="flag3", deleted=True
+        )
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
@@ -140,6 +143,9 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
     def test_fetch_flags_timeseries_not_enabled(self):
         flag1 = RepositoryFlagFactory(repository=self.repo, flag_name="flag1")
         flag2 = RepositoryFlagFactory(repository=self.repo, flag_name="flag2")
+        flag3 = RepositoryFlagFactory(
+            repository=self.repo, flag_name="flag3", deleted=True
+        )
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
@@ -179,6 +185,9 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
     def test_fetch_flags_with_measurements(self):
         flag1 = RepositoryFlagFactory(repository=self.repo, flag_name="flag1")
         flag2 = RepositoryFlagFactory(repository=self.repo, flag_name="flag2")
+        flag3 = RepositoryFlagFactory(
+            repository=self.repo, flag_name="flag3", deleted=True
+        )
         MeasurementFactory(
             name="flag_coverage",
             owner_id=self.org.pk,
@@ -506,6 +515,9 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
         """
         RepositoryFlagFactory(repository=self.repo, flag_name="flag1")
         RepositoryFlagFactory(repository=self.repo, flag_name="flag2")
+        RepositoryFlagFactory(
+            repository=self.repo, flag_name="flag1-deleted", deleted=True
+        )
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
@@ -551,10 +563,11 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
         RepositoryFlagFactory(repository=self.repo, flag_name="flag1")
         RepositoryFlagFactory(repository=self.repo, flag_name="flag2")
         RepositoryFlagFactory(repository=self.repo, flag_name="flag3")
+        RepositoryFlagFactory(repository=self.repo, flag_name="flag4", deleted=True)
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
-            "filters": {"flagsNames": ["flag1", "flag3"]},
+            "filters": {"flagsNames": ["flag1", "flag3", "flag4"]},
         }
         data = self.gql_request(query, variables=variables)
         assert data == {
