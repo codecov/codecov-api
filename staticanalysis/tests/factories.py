@@ -1,6 +1,7 @@
 from uuid import uuid4
 
 import factory
+from factory.django import DjangoModelFactory
 
 from core.tests.factories import CommitFactory, RepositoryFactory
 from staticanalysis.models import (
@@ -10,14 +11,14 @@ from staticanalysis.models import (
 )
 
 
-class StaticAnalysisSuiteFactory(factory.Factory):
+class StaticAnalysisSuiteFactory(DjangoModelFactory):
     class Meta:
         model = StaticAnalysisSuite
 
     commit = factory.SubFactory(CommitFactory)
 
 
-class StaticAnalysisSingleFileSnapshotFactory(factory.Factory):
+class StaticAnalysisSingleFileSnapshotFactory(DjangoModelFactory):
     class Meta:
         model = StaticAnalysisSingleFileSnapshot
 
@@ -26,7 +27,7 @@ class StaticAnalysisSingleFileSnapshotFactory(factory.Factory):
     content_location = "a/b/c.txt"
 
 
-class StaticAnalysisSuiteFilepathFactory(factory.Factory):
+class StaticAnalysisSuiteFilepathFactory(DjangoModelFactory):
     class Meta:
         model = StaticAnalysisSuiteFilepath
 

@@ -1,5 +1,4 @@
-from asgiref.sync import sync_to_async
-
+from codecov.db import sync_to_async
 from compare.models import CommitComparison
 from core.models import Commit
 from services.comparison import CommitComparisonService

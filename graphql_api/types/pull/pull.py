@@ -1,6 +1,6 @@
 from ariadne import ObjectType
-from asgiref.sync import sync_to_async
 
+from codecov.db import sync_to_async
 from compare.models import CommitComparison
 from core.models import Pull
 from graphql_api.actions.commits import pull_commits

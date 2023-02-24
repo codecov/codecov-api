@@ -1,19 +1,24 @@
 from typing import List, Union
 
 import yaml
-from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
-from asgiref.sync import sync_to_async
+from ariadne import ObjectType, convert_kwargs_to_snake_case
 
 import services.components as components
 import services.path as path_service
+from codecov.db import sync_to_async
 from core.models import Commit
+from graphql_api.actions.commits import commit_uploads
 from graphql_api.actions.path_contents import sort_path_contents
 from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.comparison import ComparisonLoader
 from graphql_api.dataloader.owner import OwnerLoader
-from graphql_api.helpers.connection import queryset_to_connection
+from graphql_api.helpers.connection import (
+    queryset_to_connection,
+    queryset_to_connection_sync,
+)
 from graphql_api.types.enums import OrderingDirection, PathContentDisplayType
 from graphql_api.types.errors import MissingCoverage, MissingHeadReport, UnknownPath
+from services.archive import ReadOnlyReport, ReportService
 from services.comparison import ComparisonReport
 from services.components import Component
 from services.path import ReportPaths
@@ -68,19 +73,15 @@ async def resolve_yaml(commit, info):
     return yaml.dump(final_yaml)
 
 
-@sync_to_async
-def get_uploads_number(queryset):
-    return len(queryset)
-
-
 @commit_bindable.field("uploads")
-async def resolve_list_uploads(commit, info, **kwargs):
-    command = info.context["executor"].get_command("commit")
-    queryset = await command.get_uploads_of_commit(commit)
+@sync_to_async
+def resolve_list_uploads(commit: Commit, info, **kwargs):
+    queryset = commit_uploads(commit)
 
     if not kwargs:  # temp to override kwargs -> return all current uploads
-        kwargs["first"] = await get_uploads_number(queryset)
-    return await queryset_to_connection(
+        kwargs["first"] = queryset.count()
+
+    return queryset_to_connection_sync(
         queryset, ordering=("id",), ordering_direction=OrderingDirection.ASC, **kwargs
     )
 
@@ -130,7 +131,9 @@ def resolve_path_contents(commit: Commit, info, path: str = None, filters=None):
     user = info.context["request"].user
 
     # TODO: Might need to add reports here filtered by flags in the future
-    commit_report = commit.full_report
+    commit_report = ReportService().build_report_from_commit(
+        commit, report_class=ReadOnlyReport
+    )
     if not commit_report:
         return MissingHeadReport()
 

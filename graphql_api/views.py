@@ -8,7 +8,6 @@ from ariadne import format_error
 
 # from .ariadne.views import GraphQLView
 from ariadne_django.views import GraphQLAsyncView
-from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.http import HttpResponseNotAllowed
@@ -16,6 +15,7 @@ from sentry_sdk import capture_exception
 
 from codecov.commands.exceptions import BaseException
 from codecov.commands.executor import get_executor_from_request
+from codecov.db import sync_to_async
 from codecov_auth.authentication import CodecovTokenAuthentication
 from services import ServiceException
 
