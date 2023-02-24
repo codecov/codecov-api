@@ -141,6 +141,7 @@ class Repository(models.Model):
         self.commits.all().delete()
         self.branches.all().delete()
         self.pull_requests.all().delete()
+        self.flags.all().delete()
         self.yaml = None
         self.cache = None
         self.save()
