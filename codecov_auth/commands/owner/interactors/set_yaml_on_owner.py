@@ -1,7 +1,6 @@
 import html
 
 import yaml
-from asgiref.sync import sync_to_async
 from shared.validation.exceptions import InvalidYamlException
 from shared.yaml.validation import validate_yaml
 
@@ -12,6 +11,7 @@ from codecov.commands.exceptions import (
     Unauthorized,
     ValidationError,
 )
+from codecov.db import sync_to_async
 from codecov_auth.helpers import current_user_part_of_org
 from codecov_auth.models import Owner
 

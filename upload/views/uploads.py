@@ -16,7 +16,7 @@ from core.models import Commit, Repository
 from reports.models import CommitReport
 from services.archive import ArchiveService, MinioEndpoints
 from services.redis_configuration import get_redis_connection
-from upload.helpers import dispatch_upload_task
+from upload.helpers import dispatch_upload_task, validate_activated_repo
 from upload.serializers import UploadSerializer
 from upload.throttles import UploadsPerCommitThrottle, UploadsPerWindowThrottle
 from upload.views.base import GetterMixin
@@ -48,6 +48,7 @@ class UploadViews(ListCreateAPIView, GetterMixin):
 
     def perform_create(self, serializer):
         repository = self.get_repo()
+        validate_activated_repo(repository)
         commit = self.get_commit(repository)
         report = self.get_report(commit)
         log.info(

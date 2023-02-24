@@ -125,6 +125,7 @@ class Owner(models.Model):
     student_updated_at = DateTimeWithoutTZField(null=True)
     onboarding_completed = models.BooleanField(default=False)
     is_superuser = models.BooleanField(null=True, default=False)
+    max_upload_limit = models.IntegerField(null=True, default=150, blank=True)
 
     objects = OwnerManager()
 

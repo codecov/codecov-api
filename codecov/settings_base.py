@@ -1,7 +1,10 @@
 import os
 from urllib.parse import urlparse
 
+import asgiref.sync as sync
+from asgiref.sync import SyncToAsync
 from corsheaders.defaults import default_headers
+from django.db import close_old_connections
 
 from utils.config import SettingsModule, get_config, get_settings_module
 
@@ -77,6 +80,7 @@ WSGI_APPLICATION = "codecov.wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
+
 db_url = get_config("services", "database_url")
 if db_url:
     db_conf = urlparse(db_url)
@@ -94,7 +98,37 @@ else:
     DATABASE_HOST = get_config("services", "database", "host", default="postgres")
     DATABASE_PORT = get_config("services", "database", "port", default=5432)
 
+DATABASE_READ_REPLICA_ENABLED = get_config(
+    "setup", "database", "read_replica_enabled", default=False
+)
+
+db_read_url = get_config("services", "database_read_url")
+if db_read_url:
+    db_conf = urlparse(db_read_url)
+    DATABASE_READ_USER = db_conf.username
+    DATABASE_READ_NAME = db_conf.path.replace("/", "")
+    DATABASE_READ_PASSWORD = db_conf.password
+    DATABASE_READ_HOST = db_conf.hostname
+    DATABASE_READ_PORT = db_conf.port
+else:
+    DATABASE_READ_USER = get_config(
+        "services", "database_read", "username", default="postgres"
+    )
+    DATABASE_READ_NAME = get_config(
+        "services", "database_read", "name", default="postgres"
+    )
+    DATABASE_READ_PASSWORD = get_config(
+        "services", "database_read", "password", default="postgres"
+    )
+    DATABASE_READ_HOST = get_config(
+        "services", "database_read", "host", default="postgres"
+    )
+    DATABASE_READ_PORT = get_config("services", "database_read", "port", default=5432)
+
 TIMESERIES_ENABLED = get_config("setup", "timeseries", "enabled", default=False)
+TIMESERIES_REAL_TIME_AGGREGATES = get_config(
+    "setup", "timeseries", "real_time_aggregates", default=False
+)
 
 timeseries_database_url = get_config("services", "timeseries_database_url")
 if timeseries_database_url:
@@ -121,6 +155,35 @@ else:
         "services", "timeseries_database", "port", default=5432
     )
 
+TIMESERIES_DATABASE_READ_REPLICA_ENABLED = get_config(
+    "setup", "timeseries", "read_replica_enabled", default=False
+)
+
+timeseries_database_read_url = get_config("services", "timeseries_database_read_url")
+if timeseries_database_read_url:
+    timeseries_database_conf = urlparse(timeseries_database_read_url)
+    TIMESERIES_DATABASE_READ_USER = timeseries_database_conf.username
+    TIMESERIES_DATABASE_READ_NAME = timeseries_database_conf.path.replace("/", "")
+    TIMESERIES_DATABASE_READ_PASSWORD = timeseries_database_conf.password
+    TIMESERIES_DATABASE_READ_HOST = timeseries_database_conf.hostname
+    TIMESERIES_DATABASE_READ_PORT = timeseries_database_conf.port
+else:
+    TIMESERIES_DATABASE_READ_USER = get_config(
+        "services", "timeseries_database_read", "username", default="postgres"
+    )
+    TIMESERIES_DATABASE_READ_NAME = get_config(
+        "services", "timeseries_database_read", "name", default="postgres"
+    )
+    TIMESERIES_DATABASE_READ_PASSWORD = get_config(
+        "services", "timeseries_database_read", "password", default="postgres"
+    )
+    TIMESERIES_DATABASE_READ_HOST = get_config(
+        "services", "timeseries_database_read", "host", default="timescale"
+    )
+    TIMESERIES_DATABASE_READ_PORT = get_config(
+        "services", "timeseries_database_read", "port", default=5432
+    )
+
 # this is the time in seconds django decides to keep the connection open after the request
 # the default is 0 seconds, meaning django closes the connection after every request
 # https://docs.djangoproject.com/en/3.1/ref/settings/#conn-max-age
@@ -135,14 +198,23 @@ DATABASES = {
         "HOST": DATABASE_HOST,
         "PORT": DATABASE_PORT,
         "CONN_MAX_AGE": CONN_MAX_AGE,
-    },
+    }
 }
+
+if DATABASE_READ_REPLICA_ENABLED:
+    DATABASES["default_read"] = {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": DATABASE_READ_NAME,
+        "USER": DATABASE_READ_USER,
+        "PASSWORD": DATABASE_READ_PASSWORD,
+        "HOST": DATABASE_READ_HOST,
+        "PORT": DATABASE_READ_PORT,
+        "CONN_MAX_AGE": CONN_MAX_AGE,
+    }
 
 if TIMESERIES_ENABLED:
     DATABASES["timeseries"] = {
-        # this wraps `django.db.backends.postgresql`
-        # (see `codecov/db/base.py`)
-        "ENGINE": "codecov.db",
+        "ENGINE": "django.db.backends.postgresql",
         "NAME": TIMESERIES_DATABASE_NAME,
         "USER": TIMESERIES_DATABASE_USER,
         "PASSWORD": TIMESERIES_DATABASE_PASSWORD,
@@ -150,6 +222,17 @@ if TIMESERIES_ENABLED:
         "PORT": TIMESERIES_DATABASE_PORT,
         "CONN_MAX_AGE": CONN_MAX_AGE,
     }
+
+    if TIMESERIES_DATABASE_READ_REPLICA_ENABLED:
+        DATABASES["timeseries_read"] = {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": TIMESERIES_DATABASE_READ_NAME,
+            "USER": TIMESERIES_DATABASE_READ_USER,
+            "PASSWORD": TIMESERIES_DATABASE_READ_PASSWORD,
+            "HOST": TIMESERIES_DATABASE_READ_HOST,
+            "PORT": TIMESERIES_DATABASE_READ_PORT,
+            "CONN_MAX_AGE": CONN_MAX_AGE,
+        }
 
 DATABASE_ROUTERS = ["codecov.db.DatabaseRouter"]
 
@@ -265,6 +348,9 @@ CIRCLECI_TOKEN = get_config("circleci", "token")
 GITHUB_CLIENT_ID = get_config("github", "client_id")
 GITHUB_CLIENT_SECRET = get_config("github", "client_secret")
 GITHUB_BOT_KEY = get_config("github", "bot", "key")
+GITHUB_TOKENLESS_BOT_KEY = get_config(
+    "github", "bots", "tokenless", "key", default=GITHUB_BOT_KEY
+)
 GITHUB_ACTIONS_TOKEN = get_config("github", "actions_token")
 
 GITHUB_ENTERPRISE_URL = get_config("github_enterprise", "url")
@@ -272,11 +358,17 @@ GITHUB_ENTERPRISE_API_URL = get_config("github_enterprise", "api_url")
 GITHUB_ENTERPRISE_CLIENT_ID = get_config("github_enterprise", "client_id")
 GITHUB_ENTERPRISE_CLIENT_SECRET = get_config("github_enterprise", "client_secret")
 GITHUB_ENTERPRISE_BOT_KEY = get_config("github_enterprise", "bot", "key")
+GITHUB_ENTERPRISE_TOKENLESS_BOT_KEY = get_config(
+    "github_enterprise", "bots", "tokenless", "key", default=GITHUB_ENTERPRISE_BOT_KEY
+)
 GITHUB_ENTERPRISE_ACTIONS_TOKEN = get_config("github_enterprise", "actions_token")
 
 BITBUCKET_CLIENT_ID = get_config("bitbucket", "client_id")
 BITBUCKET_CLIENT_SECRET = get_config("bitbucket", "client_secret")
 BITBUCKET_BOT_KEY = get_config("bitbucket", "bot", "key")
+BITBUCKET_TOKENLESS_BOT_KEY = get_config(
+    "bitbucket", "bots", "tokenless", "key", default=BITBUCKET_BOT_KEY
+)
 BITBUCKET_REDIRECT_URI = get_config(
     "bitbucket", "redirect_uri", default="https://codecov.io/login/bitbucket"
 )
@@ -285,6 +377,9 @@ BITBUCKET_SERVER_URL = get_config("bitbucket_server", "url")
 BITBUCKET_SERVER_CLIENT_ID = get_config("bitbucket_server", "client_id")
 BITBUCKET_SERVER_CLIENT_SECRET = get_config("bitbucket_server", "client_secret")
 BITBUCKET_SERVER_BOT_KEY = get_config("bitbucket_server", "bot", "key")
+BITBUCKET_SERVER_TOKENLESS_BOT_KEY = get_config(
+    "bitbucket_server", "bots", "tokenless", "key", default=BITBUCKET_SERVER_BOT_KEY
+)
 
 GITLAB_CLIENT_ID = get_config("gitlab", "client_id")
 GITLAB_CLIENT_SECRET = get_config("gitlab", "client_secret")
@@ -292,6 +387,9 @@ GITLAB_REDIRECT_URI = get_config(
     "gitlab", "redirect_uri", default="https://codecov.io/login/gitlab"
 )
 GITLAB_BOT_KEY = get_config("gitlab", "bot", "key")
+GITLAB_TOKENLESS_BOT_KEY = get_config(
+    "gitlab", "bots", "tokenless", "key", default=GITLAB_BOT_KEY
+)
 
 
 GITLAB_ENTERPRISE_CLIENT_ID = get_config("gitlab_enterprise", "client_id")
@@ -302,6 +400,9 @@ GITLAB_ENTERPRISE_REDIRECT_URI = get_config(
     default="https://codecov.io/login/gitlab_enterprise",
 )
 GITLAB_ENTERPRISE_BOT_KEY = get_config("gitlab_enterprise", "bot", "key")
+GITLAB_ENTERPRISE_TOKENLESS_BOT_KEY = get_config(
+    "gitlab_enterprise", "bots", "tokenless", "key", default=GITLAB_ENTERPRISE_BOT_KEY
+)
 GITLAB_ENTERPRISE_URL = get_config("gitlab_enterprise", "url")
 GITLAB_ENTERPRISE_API_URL = get_config("gitlab_enterprise", "api_url")
 

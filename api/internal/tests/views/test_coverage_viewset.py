@@ -28,8 +28,11 @@ def sample_report():
     second_file.append(
         51, ReportLine.create(coverage="1/2", type="b", sessions=[[0, 1]])
     )
+    third_file = ReportFile("file3.py")
+    third_file.append(1, ReportLine.create(coverage=1, sessions=[[0, 1]]))
     report.append(first_file)
     report.append(second_file)
+    report.append(third_file)
     report.add_session(Session(flags=["flag1", "flag2"]))
     return report
 
@@ -121,6 +124,15 @@ class CoverageViewSetTests(APITestCase):
                     }
                 ],
             },
+            {
+                "name": "file3.py",
+                "full_path": "file3.py",
+                "coverage": 100.0,
+                "lines": 1,
+                "hits": 1,
+                "partials": 0,
+                "misses": 0,
+            },
         ]
 
         build_report_from_commit.assert_called_once_with(self.commit1)
@@ -171,6 +183,15 @@ class CoverageViewSetTests(APITestCase):
                         "misses": 0,
                     }
                 ],
+            },
+            {
+                "name": "file3.py",
+                "full_path": "file3.py",
+                "coverage": 100.0,
+                "lines": 1,
+                "hits": 1,
+                "partials": 0,
+                "misses": 0,
             },
         ]
 
@@ -229,6 +250,15 @@ class CoverageViewSetTests(APITestCase):
                         "misses": 0,
                     }
                 ],
+            },
+            {
+                "name": "file3.py",
+                "full_path": "file3.py",
+                "coverage": 100.0,
+                "lines": 1,
+                "hits": 1,
+                "partials": 0,
+                "misses": 0,
             },
         ]
 

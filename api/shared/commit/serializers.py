@@ -73,10 +73,17 @@ class ReportFileSerializer(serializers.Serializer):
     )
 
     def get_line_coverage(self, report_file: ReportFile) -> list:
-        return [
-            (ln, line_type(report_line.coverage))
-            for ln, report_line in report_file.lines
-        ]
+        if self.context.get("include_line_coverage"):
+            return [
+                (ln, line_type(report_line.coverage))
+                for ln, report_line in report_file.lines
+            ]
+
+    def to_representation(self, value):
+        res = super().to_representation(value)
+        if not self.context.get("include_line_coverage"):
+            del res["line_coverage"]
+        return res
 
 
 class ReportSerializer(serializers.Serializer):
@@ -84,4 +91,7 @@ class ReportSerializer(serializers.Serializer):
     files = serializers.SerializerMethodField(label="file specific coverage totals")
 
     def get_files(self, report: Report) -> ReportFileSerializer:
-        return [ReportFileSerializer(report.get(file)).data for file in report.files]
+        return [
+            ReportFileSerializer(report.get(file), context=self.context).data
+            for file in report.files
+        ]
