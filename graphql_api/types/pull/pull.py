@@ -54,7 +54,7 @@ def resolve_base(pull, info):
 
 
 @pull_bindable.field("compareWithBaseTemp")
-async def resolve_compare_with_base(pull, info, **kwargs):
+async def resolve_compare_with_base_temp(pull, info, **kwargs):
     if not pull.compared_to or not pull.head:
         return None
 
@@ -68,7 +68,7 @@ async def resolve_compare_with_base(pull, info, **kwargs):
         # store the comparison in the context - to be used in the `Comparison` resolvers
         info.context["comparison"] = comparison
 
-    return commit_comparison
+    return ComparisonReport(commit_comparison)
 
 
 @pull_bindable.field("compareWithBase")
