@@ -13,6 +13,7 @@ from core.tests.factories import CommitFactory, RepositoryFactory
 from reports.tests.factories import RepositoryFlagFactory
 from timeseries.helpers import (
     coverage_measurements,
+    fill_sparse_measurements,
     owner_coverage_measurements_with_fallback,
     refresh_measurement_summaries,
     repository_coverage_measurements_with_fallback,
@@ -396,6 +397,155 @@ class RepositoryCoverageMeasurementsTest(TransactionTestCase):
                 "avg": 80.0,
                 "min": 80.0,
                 "max": 80.0,
+            },
+        ]
+
+
+@pytest.mark.skipif(
+    not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
+)
+class FillSparseMeasurementsTest(TransactionTestCase):
+    databases = {"default", "timeseries"}
+
+    def setUp(self):
+        self.repo = RepositoryFactory()
+
+        MeasurementFactory(
+            name=MeasurementName.COVERAGE.value,
+            owner_id=self.repo.author_id,
+            repo_id=self.repo.pk,
+            timestamp=datetime(2022, 1, 1, 1, 0, 0),
+            value=80.0,
+            branch="master",
+            commit_sha="commit1",
+        )
+        MeasurementFactory(
+            name=MeasurementName.COVERAGE.value,
+            owner_id=self.repo.author_id,
+            repo_id=self.repo.pk,
+            timestamp=datetime(2022, 1, 1, 2, 0, 0),
+            value=85.0,
+            branch="master",
+            commit_sha="commit2",
+        )
+        MeasurementFactory(
+            name=MeasurementName.COVERAGE.value,
+            owner_id=self.repo.author_id,
+            repo_id=self.repo.pk,
+            timestamp=datetime(2022, 1, 1, 3, 0, 0),
+            value=90.0,
+            branch="other",
+            commit_sha="commit3",
+        )
+        MeasurementFactory(
+            name=MeasurementName.COVERAGE.value,
+            owner_id=self.repo.author_id,
+            repo_id=self.repo.pk,
+            timestamp=datetime(2022, 1, 2, 1, 0, 0),
+            value=80.0,
+            branch="master",
+            commit_sha="commit4",
+        )
+
+    def test_fill_sparse_measurements(self):
+        start_date = datetime(2021, 12, 31, 0, 0, 0, tzinfo=timezone.utc)
+        end_date = datetime(2022, 1, 3, 0, 0, 0, tzinfo=timezone.utc)
+        measurements = coverage_measurements(
+            Interval.INTERVAL_1_DAY,
+            start_date=start_date,
+            end_date=end_date,
+            owner_id=self.repo.author_id,
+            repo_id=self.repo.pk,
+            branch="master",
+        )
+        assert fill_sparse_measurements(
+            measurements, Interval.INTERVAL_1_DAY, start_date, end_date
+        ) == [
+            {
+                "timestamp_bin": datetime(2021, 12, 31, 0, 0, tzinfo=timezone.utc),
+                "avg": None,
+                "min": None,
+                "max": None,
+            },
+            {
+                # aggregates over 2 measurements on main branch (commit1, commit2)
+                "timestamp_bin": datetime(2022, 1, 1, 0, 0, tzinfo=timezone.utc),
+                "avg": 82.5,
+                "min": 80.0,
+                "max": 85.0,
+            },
+            {
+                # aggregates over 1 measurement (commit4)
+                "timestamp_bin": datetime(2022, 1, 2, 0, 0, tzinfo=timezone.utc),
+                "avg": 80.0,
+                "min": 80.0,
+                "max": 80.0,
+            },
+            {
+                "timestamp_bin": datetime(2022, 1, 3, 0, 0, tzinfo=timezone.utc),
+                "avg": None,
+                "min": None,
+                "max": None,
+            },
+        ]
+
+    def test_fill_sparse_measurements_first_datapoint(self):
+        MeasurementFactory(
+            name=MeasurementName.COVERAGE.value,
+            owner_id=self.repo.author_id,
+            repo_id=self.repo.pk,
+            timestamp=datetime(2021, 12, 1, 1, 0, 0),
+            value=80.0,
+            branch="master",
+        )
+        MeasurementFactory(
+            name=MeasurementName.COVERAGE.value,
+            owner_id=self.repo.author_id,
+            repo_id=self.repo.pk,
+            timestamp=datetime(2021, 12, 1, 1, 0, 0),
+            value=90.0,
+            branch="master",
+        )
+
+        start_date = datetime(2021, 12, 31, 0, 0, 0, tzinfo=timezone.utc)
+        end_date = datetime(2022, 1, 3, 0, 0, 0, tzinfo=timezone.utc)
+        measurements = coverage_measurements(
+            Interval.INTERVAL_1_DAY,
+            start_date=start_date,
+            end_date=end_date,
+            owner_id=self.repo.author_id,
+            repo_id=self.repo.pk,
+            branch="master",
+        )
+        assert fill_sparse_measurements(
+            measurements, Interval.INTERVAL_1_DAY, start_date, end_date
+        ) == [
+            {
+                # this bin is carried forward from the last datapoint before `start_date`
+                "timestamp_bin": datetime(2021, 12, 31, 0, 0, tzinfo=timezone.utc),
+                "avg": 85.0,
+                "min": 80.0,
+                "max": 90.0,
+            },
+            {
+                # aggregates over 2 measurements on main branch (commit1, commit2)
+                "timestamp_bin": datetime(2022, 1, 1, 0, 0, tzinfo=timezone.utc),
+                "avg": 82.5,
+                "min": 80.0,
+                "max": 85.0,
+            },
+            {
+                # aggregates over 1 measurement (commit4)
+                "timestamp_bin": datetime(2022, 1, 2, 0, 0, tzinfo=timezone.utc),
+                "avg": 80.0,
+                "min": 80.0,
+                "max": 80.0,
+            },
+            {
+                "timestamp_bin": datetime(2022, 1, 3, 0, 0, tzinfo=timezone.utc),
+                "avg": None,
+                "min": None,
+                "max": None,
             },
         ]
 
