@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
     """
 
     dependencies = [
-        ("codecov_auth", "0023_auto_20230214_1129"),
+        ("codecov_auth", "0024_alter_owner_max_upload_limit"),
     ]
 
     operations = [
