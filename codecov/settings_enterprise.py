@@ -31,6 +31,7 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 20,
 }
 
+DEFAULT_TRUSTED_ORIGIN = None
 
 # select out CODECOV_URL domain
 if CODECOV_URL.startswith("https://"):
@@ -40,8 +41,10 @@ elif CODECOV_URL.startswith("http://"):
 # select out CODECOV_API_URL domain
 if CODECOV_API_URL.startswith("https://"):
     API_DOMAIN = CODECOV_API_URL[8:]
+    DEFAULT_TRUSTED_ORIGIN = f"https://*.{API_DOMAIN}"
 elif CODECOV_API_URL.startswith("http://"):
     API_DOMAIN = CODECOV_API_URL[7:]
+    DEFAULT_TRUSTED_ORIGIN = f"http://*.{API_DOMAIN}"
 
 CORS_ALLOWED_ORIGINS = get_config(
     "setup", "api_cors_allowed_origins", default=[CODECOV_URL]
@@ -81,5 +84,5 @@ SESSION_COOKIE_DOMAIN = COOKIES_DOMAIN
 ADMINS_LIST = get_config("setup", "admins", default=[])
 
 CSRF_TRUSTED_ORIGINS = [
-    get_config("setup", "trusted_origin", default="http://localhost")
+    get_config("setup", "trusted_origin", default=DEFAULT_TRUSTED_ORIGIN)
 ]
