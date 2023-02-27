@@ -54,7 +54,7 @@ class RepositoryQuerySetTests(TestCase):
         assert stats["sum_lines"] == 110
         assert stats["sum_partials"] == 0
         # We would expect the weighted coverage to be (54 / 110) * 100
-        assert stats["weighted_coverage"] == 54.5454545454545
+        assert stats["weighted_coverage"] == 54.54545454545454
         # We would expect the weighted coverage to be (54 / 110) * 100 - (45 / 100) * 100
         assert stats["weighted_coverage_change"] == 9.54545454545454
 
