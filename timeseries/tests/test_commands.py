@@ -6,7 +6,7 @@ import pytz
 from django.conf import settings
 from django.core.management import call_command
 from django.core.management.base import CommandError
-from django.test import TransactionTestCase
+from django.test import TestCase
 from freezegun import freeze_time
 
 from codecov_auth.tests.factories import OwnerFactory
@@ -16,7 +16,7 @@ from core.tests.factories import RepositoryFactory
 @pytest.mark.skipif(
     not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
 )
-class BackfillCommandTest(TransactionTestCase):
+class BackfillCommandTest(TestCase):
     databases = {"default", "timeseries"}
 
     def setUp(self):

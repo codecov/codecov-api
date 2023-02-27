@@ -44,6 +44,6 @@ class FlagViewSetTestCase(TestCase):
             "count": 2,
             "next": None,
             "previous": None,
-            "results": [{"flag_name": "foo"}, {"flag_name": "bar"}],
+            "results": [{"flag_name": "bar"}, {"flag_name": "foo"}],
             "total_pages": 1,
         }

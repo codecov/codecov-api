@@ -1,5 +1,4 @@
 from django.db.models import Exists, OuterRef
-from django.db.models.functions import Coalesce
 from django_filters import rest_framework as django_filters
 from rest_framework import filters, mixins, viewsets
 from rest_framework.decorators import action
@@ -36,12 +35,9 @@ class UserViewSet(
             .filter(organizations__isnull=False)
             .all()
             .annotate(
-                is_admin=Coalesce(
-                    Exists(self_hosted.admin_owners().filter(pk=OuterRef("pk"))), False
-                ),
-                activated=Coalesce(
-                    Exists(self_hosted.activated_owners().filter(pk=OuterRef("pk"))),
-                    False,
+                is_admin=Exists(self_hosted.admin_owners().filter(pk=OuterRef("pk"))),
+                activated=Exists(
+                    self_hosted.activated_owners().filter(pk=OuterRef("pk"))
                 ),
             )
         )

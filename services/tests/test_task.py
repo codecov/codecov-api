@@ -74,10 +74,7 @@ def test_compute_comparisons_task(mocker):
     apply_async_mock.assert_called_once_with()
 
 
-@pytest.mark.skipif(
-    not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
-)
-@pytest.mark.django_db(databases={"default", "timeseries"})
+@pytest.mark.django_db
 def test_backfill_repo(mocker):
     signature_mock = mocker.patch("services.task.task.signature")
     mock_route_task = mocker.patch(
@@ -150,7 +147,7 @@ def test_backfill_repo(mocker):
 @pytest.mark.skipif(
     not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
 )
-@pytest.mark.django_db(databases={"default", "timeseries"})
+@pytest.mark.django_db(databases=["timeseries"])
 def test_backfill_dataset(mocker):
     signature_mock = mocker.patch("services.task.task.signature")
     mock_route_task = mocker.patch(

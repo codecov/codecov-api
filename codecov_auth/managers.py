@@ -1,5 +1,4 @@
 from django.db.models import Exists, Func, Manager, OuterRef, Q, QuerySet, Subquery
-from django.db.models.functions import Coalesce
 
 from core.models import Pull
 
@@ -26,18 +25,15 @@ class OwnerQuerySet(QuerySet):
         from codecov_auth.models import Owner
 
         return self.annotate(
-            activated=Coalesce(
-                Exists(
-                    Owner.objects.filter(
-                        ownerid=owner.ownerid,
-                        plan_activated_users__contains=Func(
-                            OuterRef("ownerid"),
-                            function="ARRAY",
-                            template="%(function)s[%(expressions)s]",
-                        ),
-                    )
-                ),
-                False,
+            activated=Exists(
+                Owner.objects.filter(
+                    ownerid=owner.ownerid,
+                    plan_activated_users__contains=Func(
+                        OuterRef("ownerid"),
+                        function="ARRAY",
+                        template="%(function)s[%(expressions)s]",
+                    ),
+                )
             )
         )
 
@@ -50,18 +46,15 @@ class OwnerQuerySet(QuerySet):
         from codecov_auth.models import Owner
 
         return self.annotate(
-            is_admin=Coalesce(
-                Exists(
-                    Owner.objects.filter(
-                        ownerid=owner.ownerid,
-                        admins__contains=Func(
-                            OuterRef("ownerid"),
-                            function="ARRAY",
-                            template="%(function)s[%(expressions)s]",
-                        ),
-                    )
-                ),
-                False,
+            is_admin=Exists(
+                Owner.objects.filter(
+                    ownerid=owner.ownerid,
+                    admins__contains=Func(
+                        OuterRef("ownerid"),
+                        function="ARRAY",
+                        template="%(function)s[%(expressions)s]",
+                    ),
+                )
             )
         )
 

@@ -12,7 +12,7 @@ from django.core.exceptions import MultipleObjectsReturned
 from django.http import Http404, HttpResponse, HttpResponseServerError
 from django.utils import timezone
 from django.utils.decorators import classonlymethod
-from django.utils.encoding import smart_str
+from django.utils.encoding import smart_text
 from django.views import View
 from rest_framework import renderers, status
 from rest_framework.exceptions import APIException, ValidationError
@@ -51,7 +51,7 @@ class PlainTextRenderer(renderers.BaseRenderer):
     format = "txt"
 
     def render(self, data, media_type=None, renderer_context=None):
-        return smart_str(data, encoding=self.charset)
+        return smart_text(data, encoding=self.charset)
 
 
 class UploadHandler(APIView):

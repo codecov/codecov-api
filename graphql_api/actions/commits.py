@@ -23,20 +23,20 @@ def commit_uploads(commit: Commit) -> QuerySet[ReportSession]:
     if not commit.commitreport:
         return ReportSession.objects.none()
 
-    sessions = commit.commitreport.sessions.prefetch_related("flags")
-
-    # sessions w/ flags and type uploaded
-    flags_uploaded = sessions.exclude(flags__id=None).filter(upload_type="uploaded")
-
-    # carry forward flags that do not have an equivalent uploaded flag
-    flags_carried_forward = (
-        sessions.exclude(flags__id=None)
-        .filter(upload_type="carriedforward")
-        .exclude(flags__id__in=flags_uploaded.values_list("flags__id", flat=True))
+    # just the sessions with flags
+    flags_qs = (
+        commit.commitreport.sessions.prefetch_related("flags")
+        .exclude(flags__id=None)
+        # if >1 sessions share a flag name, this selects just the session
+        # with upload_type=uploaded (discarding carriedforward rows)
+        .distinct("flags")
+        .order_by("flags", "-upload_type")
     )
 
-    # sessions w/o flags
-    flagless = sessions.filter(flags__id=None)
+    # just the sessions w/o flags
+    nonflags_qs = commit.commitreport.sessions.prefetch_related("flags").filter(
+        flags__id=None
+    )
 
     # combined sessions
-    return flags_uploaded.union(flags_carried_forward).union(flagless).order_by("id")
+    return nonflags_qs.union(flags_qs)

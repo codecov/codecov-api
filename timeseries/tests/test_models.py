@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 import pytest
 from django.conf import settings
-from django.test import TransactionTestCase
+from django.test import TestCase
 from freezegun import freeze_time
 
 from timeseries.models import Dataset, Interval, MeasurementName, MeasurementSummary
@@ -13,7 +13,7 @@ from .factories import DatasetFactory, MeasurementFactory
 @pytest.mark.skipif(
     not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
 )
-class MeasurementTests(TransactionTestCase):
+class MeasurementTests(TestCase):
     databases = {"timeseries"}
 
     def test_measurement_agg_1day(self):
@@ -98,7 +98,7 @@ class MeasurementTests(TransactionTestCase):
 @pytest.mark.skipif(
     not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
 )
-class DatasetTests(TransactionTestCase):
+class DatasetTests(TestCase):
     databases = {"timeseries"}
 
     @freeze_time("2022-01-01T01:00:01+0000")
