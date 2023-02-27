@@ -1,5 +1,5 @@
 import json
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from django.conf import settings
 from django.test import TestCase
@@ -1085,6 +1085,87 @@ class StripeServiceTests(TestCase):
         assert self.stripe.get_invoice(owner, invoice_id) == invoice
         retrieve_invoice_mock.assert_called_once_with(invoice_id)
 
+    @patch("services.billing.stripe.Coupon.create")
+    @patch("services.billing.stripe.Customer.modify")
+    def test_apply_cancellation_discount(
+        self, customer_modify_mock, coupon_create_mock
+    ):
+        coupon_create_mock.return_value = MagicMock(id="test-coupon-id")
+
+        owner = OwnerFactory(
+            stripe_subscription_id="test-subscription-id",
+            stripe_customer_id="test-customer-id",
+            plan="users-inappm",
+        )
+        self.stripe.apply_cancellation_discount(owner)
+
+        coupon_create_mock.assert_called_once_with(
+            percent_off=30.0,
+            duration="repeating",
+            duration_in_months=6,
+            name="30% off for 6 months",
+            max_redemptions=1,
+            metadata={
+                "ownerid": owner.ownerid,
+                "username": owner.username,
+                "email": owner.email,
+                "name": owner.name,
+            },
+        )
+        customer_modify_mock.assert_called_once_with(
+            "test-customer-id",
+            coupon="test-coupon-id",
+        )
+
+        owner.refresh_from_db()
+        assert owner.stripe_coupon_id == "test-coupon-id"
+
+    @patch("services.billing.stripe.Coupon.create")
+    @patch("services.billing.stripe.Customer.modify")
+    def test_apply_cancellation_discount_yearly(
+        self, customer_modify_mock, coupon_create_mock
+    ):
+        owner = OwnerFactory(
+            stripe_customer_id="test-customer-id",
+            stripe_subscription_id=None,
+            plan="users-inappy",
+        )
+        self.stripe.apply_cancellation_discount(owner)
+
+        assert not customer_modify_mock.called
+        assert not coupon_create_mock.called
+        assert owner.stripe_coupon_id == None
+
+    @patch("services.billing.stripe.Coupon.create")
+    @patch("services.billing.stripe.Customer.modify")
+    def test_apply_cancellation_discount_no_subscription(
+        self, customer_modify_mock, coupon_create_mock
+    ):
+        owner = OwnerFactory(
+            stripe_customer_id="test-customer-id",
+            stripe_subscription_id=None,
+        )
+        self.stripe.apply_cancellation_discount(owner)
+
+        assert not customer_modify_mock.called
+        assert not coupon_create_mock.called
+        assert owner.stripe_coupon_id == None
+
+    @patch("services.billing.stripe.Coupon.create")
+    @patch("services.billing.stripe.Customer.modify")
+    def test_apply_cancellation_discount_existing_coupon(
+        self, customer_modify_mock, coupon_create_mock
+    ):
+        owner = OwnerFactory(
+            stripe_customer_id="test-customer-id",
+            stripe_subscription_id="test-subscription-id",
+            stripe_coupon_id="test-coupon-id",
+        )
+        self.stripe.apply_cancellation_discount(owner)
+
+        assert not customer_modify_mock.called
+        assert not coupon_create_mock.called
+
 
 class MockPaymentService(AbstractPaymentService):
     def list_filtered_invoices(self, owner, limit=10):
@@ -1109,6 +1190,9 @@ class MockPaymentService(AbstractPaymentService):
         pass
 
     def get_schedule(self, owner):
+        pass
+
+    def apply_cancellation_discount(self, owner):
         pass
 
 

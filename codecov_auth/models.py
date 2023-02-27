@@ -86,6 +86,7 @@ class Owner(models.Model):
     oauth_token = models.TextField(null=True)
     stripe_customer_id = models.TextField(null=True, blank=True)
     stripe_subscription_id = models.TextField(null=True, blank=True)
+    stripe_coupon_id = models.TextField(null=True, blank=True)
 
     # createstamp seems to be used by legacy to track first login
     # so we shouldn't touch this outside login
