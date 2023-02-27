@@ -45,7 +45,7 @@ class UpdateDefaultOrganizationInteractorTest(TransactionTestCase):
         with pytest.raises(ValidationError):
             self.execute(user=self.user, username="imposter")
 
-    def test_update_org_when_default_org_is_none(self):
+    def test_update_org_when_default_org_username_is_none(self):
         assert not OwnerProfile.objects.filter(owner_id=self.user.ownerid).exists()
         self.execute(user=self.user, username=None)
 
