@@ -803,9 +803,11 @@ class ImpactedFile:
     head_coverage: Optional[Totals] = None  # will be `None` for deleted files
 
     # lists of (line number, coverage) tuples
-    added_diff_coverage: List[tuple[int, str]] = field(default_factory=list)
-    removed_diff_coverage: List[tuple[int, str]] = field(default_factory=list)
-    unexpected_line_changes: List[tuple[int, str]] = field(default_factory=list)
+    added_diff_coverage: Optional[List[tuple[int, str]]] = None
+    removed_diff_coverage: Optional[List[tuple[int, str]]] = field(default_factory=list)
+    unexpected_line_changes: Optional[List[tuple[int, str]]] = field(
+        default_factory=list
+    )
 
     lines_only_on_base: List[int] = field(default_factory=list)
     lines_only_on_head: List[int] = field(default_factory=list)
@@ -816,8 +818,12 @@ class ImpactedFile:
         head_coverage = kwargs.pop("head_coverage")
         return cls(
             **kwargs,
-            base_coverage=ImpactedFile.Totals(**base_coverage),
-            head_coverage=ImpactedFile.Totals(**head_coverage),
+            base_coverage=ImpactedFile.Totals(**base_coverage)
+            if base_coverage
+            else None,
+            head_coverage=ImpactedFile.Totals(**head_coverage)
+            if head_coverage
+            else None,
         )
 
     @cached_property
@@ -826,8 +832,10 @@ class ImpactedFile:
         Returns `True` if the file has any additions or removals in the diff
         """
         return (
-            len(self.added_diff_coverage) > 0
-            or len(self.removed_diff_coverage) > 0
+            self.added_diff_coverage
+            and len(self.added_diff_coverage) > 0
+            or self.removed_diff_coverage
+            and len(self.removed_diff_coverage) > 0
             or self.file_was_added_by_diff
             or self.file_was_removed_by_diff
         )
@@ -837,7 +845,7 @@ class ImpactedFile:
         """
         Returns `True` if the file has any unexpected changes
         """
-        return len(self.unexpected_line_changes) > 0
+        return self.unexpected_line_changes and len(self.unexpected_line_changes) > 0
 
     @cached_property
     def misses_count(self):
@@ -866,7 +874,7 @@ class ImpactedFile:
         """
         Sums of hits, misses and partials in the diff
         """
-        if len(self.added_diff_coverage) > 0:
+        if self.added_diff_coverage and len(self.added_diff_coverage) > 0:
             hits, misses, partials = (0, 0, 0)
             for added_coverage in self.added_diff_coverage:
                 [_, type_coverage] = added_coverage
