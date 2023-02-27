@@ -68,7 +68,8 @@ async def resolve_compare_with_base_temp(pull, info, **kwargs):
         # store the comparison in the context - to be used in the `Comparison` resolvers
         info.context["comparison"] = comparison
 
-    return ComparisonReport(commit_comparison)
+    if commit_comparison:
+        return ComparisonReport(commit_comparison)
 
 
 @pull_bindable.field("compareWithBase")
@@ -116,7 +117,8 @@ async def resolve_compare_with_base(pull, info, **kwargs):
         # store the comparison in the context - to be used in the `Comparison` resolvers
         info.context["comparison"] = comparison
 
-    return ComparisonReport(commit_comparison)
+    if commit_comparison:
+        return ComparisonReport(commit_comparison)
 
 
 @pull_bindable.field("commits")

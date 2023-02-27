@@ -96,7 +96,8 @@ async def resolve_compare_with_parent(commit, info, **kwargs):
         (commit.parent_commit_id, commit.commitid)
     )
 
-    return ComparisonReport(commit_comparison)
+    if commit_comparison:
+        return ComparisonReport(commit_comparison)
 
 
 @commit_bindable.field("flagNames")

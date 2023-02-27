@@ -866,20 +866,18 @@ class ImpactedFile:
         """
         Sums of hits, misses and partials in the diff
         """
-        if not self.added_diff_coverage:
-            return None
+        if len(self.added_diff_coverage) > 0:
+            hits, misses, partials = (0, 0, 0)
+            for added_coverage in self.added_diff_coverage:
+                [_, type_coverage] = added_coverage
+                if type_coverage == "h":
+                    hits += 1
+                if type_coverage == "m":
+                    misses += 1
+                if type_coverage == "p":
+                    partials += 1
 
-        hits, misses, partials = (0, 0, 0)
-        for added_coverage in self.added_diff_coverage:
-            [_, type_coverage] = added_coverage
-            if type_coverage == "h":
-                hits += 1
-            if type_coverage == "m":
-                misses += 1
-            if type_coverage == "p":
-                partials += 1
-
-        return ImpactedFile.Totals(hits=hits, misses=misses, partials=partials)
+            return ImpactedFile.Totals(hits=hits, misses=misses, partials=partials)
 
     @cached_property
     def change_coverage(self) -> Optional[float]:
@@ -892,6 +890,7 @@ class ImpactedFile:
         return parts[-1]
 
 
+@dataclass
 class ComparisonReport(object):
     """
     This is a wrapper around the data computed by the worker's commit comparison task.
@@ -899,8 +898,7 @@ class ComparisonReport(object):
     on a `CommitComparison`
     """
 
-    def __init__(self, commit_comparison: CommitComparison):
-        self.commit_comparison = commit_comparison
+    commit_comparison: CommitComparison = None
 
     @cached_property
     def files(self) -> List[ImpactedFile]:
@@ -929,7 +927,7 @@ class ComparisonReport(object):
     def impacted_files_with_direct_changes(self) -> List[ImpactedFile]:
         return [file for file in self.files if file.has_diff]
 
-    def _fetch_raw_comparison_data(self):
+    def _fetch_raw_comparison_data(self) -> dict:
         """
         Fetches the raw comparison data from storage
         """

@@ -66,6 +66,9 @@ def resolve_impacted_file(comparison: ComparisonReport, info, path) -> ImpactedF
 async def resolve_change_coverage(
     comparison: ComparisonReport, info
 ) -> Optional[float]:
+    if not comparison.commit_comparison:
+        return None
+
     repository_id = comparison.commit_comparison.compare_commit.repository_id
     loader = CommitLoader.loader(info, repository_id)
 
