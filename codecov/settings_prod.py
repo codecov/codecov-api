@@ -64,3 +64,7 @@ SILENCED_SYSTEM_CHECKS = ["urls.W002"]
 
 # Reinforcing the Cookie SameSite configuration to be sure it's Lax in prod
 COOKIE_SAME_SITE = "Lax"
+
+CSRF_TRUSTED_ORIGINS = [
+    get_config("setup", "trusted_origin", default="https://*.codecov.io")
+]

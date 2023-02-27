@@ -79,3 +79,7 @@ COOKIES_DOMAIN = get_config(
 SESSION_COOKIE_DOMAIN = COOKIES_DOMAIN
 
 ADMINS_LIST = get_config("setup", "admins", default=[])
+
+CSRF_TRUSTED_ORIGINS = [
+    get_config("setup", "trusted_origin", default="http://localhost")
+]
