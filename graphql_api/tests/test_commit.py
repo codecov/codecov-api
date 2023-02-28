@@ -618,7 +618,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             methods=0,
         )
         ReportLevelTotalsFactory(
-            report=CommitReportFactory(commit=self.commit),
+            report=self.report,
             coverage=80.0,
             files=0,
             lines=0,

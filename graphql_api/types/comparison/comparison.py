@@ -75,11 +75,21 @@ async def resolve_change_coverage(
         loader.load(comparison.commit_comparison.compare_commit.commitid),
     )
 
+    print("HERE", base_commit.commitreport, head_commit.commitreport)
+
     base_totals = None
     head_totals = None
-    if base_commit and base_commit.commitreport:
+    if (
+        base_commit
+        and base_commit.commitreport
+        and hasattr(base_commit.commitreport, "reportleveltotals")
+    ):
         base_totals = base_commit.commitreport.reportleveltotals
-    if head_commit and head_commit.commitreport:
+    if (
+        head_commit
+        and head_commit.commitreport
+        and hasattr(head_commit.commitreport, "reportleveltotals")
+    ):
         head_totals = head_commit.commitreport.reportleveltotals
 
     if base_totals and head_totals:
@@ -99,7 +109,11 @@ async def resolve_base_totals(
 
     # the loader prefetches everything we need to get the totals
     base_commit = await loader.load(comparison.commit_comparison.base_commit.commitid)
-    if base_commit and base_commit.commitreport:
+    if (
+        base_commit
+        and base_commit.commitreport
+        and hasattr(base_commit.commitreport, "reportleveltotals")
+    ):
         return base_commit.commitreport.reportleveltotals
 
 
@@ -114,7 +128,11 @@ async def resolve_head_totals(
     head_commit = await loader.load(
         comparison.commit_comparison.compare_commit.commitid
     )
-    if head_commit and head_commit.commitreport:
+    if (
+        head_commit
+        and head_commit.commitreport
+        and hasattr(head_commit.commitreport, "reportleveltotals")
+    ):
         return head_commit.commitreport.reportleveltotals
 
 
