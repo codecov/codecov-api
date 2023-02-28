@@ -2,7 +2,12 @@ from unittest.mock import patch
 
 from django.test import TransactionTestCase
 
-from codecov.commands.exceptions import Unauthenticated, Unauthorized, ValidationError
+from codecov.commands.exceptions import (
+    NotFound,
+    Unauthenticated,
+    Unauthorized,
+    ValidationError,
+)
 from graphql_api.tests.helper import GraphQLTestHelper
 
 query = """
@@ -107,5 +112,29 @@ class DeleteFlagTest(GraphQLTestHelper, TransactionTestCase):
         assert data == {
             "deleteFlag": {
                 "error": {"__typename": "ValidationError", "message": "test error"}
+            }
+        }
+
+    @patch("core.commands.flag.interactors.delete_flag.DeleteFlagInteractor.execute")
+    def test_delete_flag_not_found(self, execute_mock):
+        execute_mock.side_effect = NotFound()
+
+        data = self.gql_request(
+            query,
+            variables={
+                "input": {
+                    "ownerUsername": "test-owner",
+                    "repoName": "test-repo",
+                    "flagName": "test-flag",
+                }
+            },
+        )
+
+        assert data == {
+            "deleteFlag": {
+                "error": {
+                    "__typename": "NotFoundError",
+                    "message": "Cant find the requested resource",
+                }
             }
         }

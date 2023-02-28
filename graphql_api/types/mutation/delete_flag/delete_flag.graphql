@@ -1,4 +1,4 @@
-union DeleteFlagError = UnauthenticatedError | UnauthorizedError | ValidationError
+union DeleteFlagError = UnauthenticatedError | UnauthorizedError | ValidationError | NotFoundError
 
 type DeleteFlagPayload {
     error: DeleteFlagError

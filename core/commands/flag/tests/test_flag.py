@@ -3,7 +3,12 @@ from unittest.mock import patch
 from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
 
-from codecov.commands.exceptions import Unauthenticated, Unauthorized, ValidationError
+from codecov.commands.exceptions import (
+    NotFound,
+    Unauthenticated,
+    Unauthorized,
+    ValidationError,
+)
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
 from reports.tests.factories import RepositoryFlagFactory
@@ -67,9 +72,9 @@ class FlagCommandsTest(TransactionTestCase):
             )
 
     def test_delete_flag_not_found(self):
-        # noop
-        self.command.delete_flag(
-            owner_username=self.owner.username,
-            repo_name=self.repo.name,
-            flag_name="nonexistent",
-        )
+        with self.assertRaises(NotFound):
+            self.command.delete_flag(
+                owner_username=self.owner.username,
+                repo_name=self.repo.name,
+                flag_name="nonexistent",
+            )

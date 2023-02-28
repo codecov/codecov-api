@@ -1,5 +1,10 @@
 from codecov.commands.base import BaseInteractor
-from codecov.commands.exceptions import Unauthenticated, Unauthorized, ValidationError
+from codecov.commands.exceptions import (
+    NotFound,
+    Unauthenticated,
+    Unauthorized,
+    ValidationError,
+)
 from codecov_auth.models import Owner
 from core.models import Repository
 from reports.models import RepositoryFlag
@@ -34,7 +39,7 @@ class DeleteFlagInteractor(BaseInteractor):
             repository_id=repo.pk, flag_name=flag_name
         ).first()
         if not flag:
-            return
+            raise NotFound()
 
         flag.deleted = True
         flag.save()
