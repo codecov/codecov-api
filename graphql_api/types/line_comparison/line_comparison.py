@@ -42,4 +42,5 @@ def resolve_head_coverage(line_comparison: LineComparison, info) -> Optional[str
 
 @line_comparison_bindable.field("content")
 def resolve_content(line_comparison: LineComparison, info) -> str:
-    return line_comparison.value
+    value = line_comparison.value
+    return value[0] + " " + value[1:]

@@ -669,14 +669,14 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                             "headNumber": "1",
                                             "baseCoverage": "H",
                                             "headCoverage": "H",
-                                            "content": " line1",
+                                            "content": "  line1",
                                         },
                                         {
                                             "baseNumber": None,
                                             "headNumber": "2",
                                             "baseCoverage": None,
                                             "headCoverage": "H",
-                                            "content": "+ line2",
+                                            "content": "+  line2",
                                         },
                                     ],
                                 }
@@ -695,8 +695,8 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                             "headNumber": "1",
                                             "baseCoverage": "M",
                                             "headCoverage": "H",
-                                            "content": " line1",
-                                        },
+                                            "content": "  line1",
+                                        }
                                     ],
                                 }
                             ]
@@ -797,7 +797,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                             "headNumber": "1",
                                             "baseCoverage": "M",
                                             "headCoverage": "H",
-                                            "content": " line1",
+                                            "content": "  line1",
                                         },
                                     ],
                                 }
