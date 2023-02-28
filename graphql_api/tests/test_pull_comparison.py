@@ -798,7 +798,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                             "baseCoverage": "M",
                                             "headCoverage": "H",
                                             "content": "  line1",
-                                        },
+                                        }
                                     ],
                                 }
                             ]
