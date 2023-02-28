@@ -66,6 +66,10 @@ class AbstractPaymentService(ABC):
     def get_schedule(self, owner):
         pass
 
+    @abstractmethod
+    def apply_cancellation_discount(self, owner: Owner):
+        pass
+
 
 class StripeService(AbstractPaymentService):
     def __init__(self, requesting_user):
@@ -398,6 +402,45 @@ class StripeService(AbstractPaymentService):
             f"Stripe success update payment method for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
         )
 
+    @_log_stripe_error
+    def apply_cancellation_discount(self, owner: Owner):
+        if owner.stripe_subscription_id is None:
+            log.info(
+                f"stripe_subscription_id is None, not applying cancellation coupon for owner {owner.ownerid}"
+            )
+            return
+
+        billing_period = USER_PLAN_REPRESENTATIONS.get(owner.plan, {}).get(
+            "billing_rate"
+        )
+
+        if billing_period == "monthly" and not owner.stripe_coupon_id:
+            log.info(f"Creating Stripe cancellation coupon for owner {owner.ownerid}")
+            coupon = stripe.Coupon.create(
+                percent_off=30.0,
+                duration="repeating",
+                duration_in_months=6,
+                name="30% off for 6 months",
+                max_redemptions=1,
+                metadata={
+                    "ownerid": owner.ownerid,
+                    "username": owner.username,
+                    "email": owner.email,
+                    "name": owner.name,
+                },
+            )
+
+            owner.stripe_coupon_id = coupon.id
+            owner.save()
+
+            log.info(
+                f"Applying cancellation coupon to Stripe subscription for owner {owner.ownerid}"
+            )
+            stripe.Customer.modify(
+                owner.stripe_customer_id,
+                coupon=owner.stripe_coupon_id,
+            )
+
 
 class EnterprisePaymentService(AbstractPaymentService):
     # enterprise has no payments setup so these are all noops
@@ -424,6 +467,9 @@ class EnterprisePaymentService(AbstractPaymentService):
         pass
 
     def get_schedule(self, owner):
+        pass
+
+    def apply_cancellation_discount(self, owner: Owner):
         pass
 
 
@@ -488,3 +534,6 @@ class BillingService:
         the card data differently
         """
         return self.payment_service.update_payment_method(owner, payment_method)
+
+    def apply_cancellation_discount(self, owner: Owner):
+        return self.payment_service.apply_cancellation_discount(owner)
