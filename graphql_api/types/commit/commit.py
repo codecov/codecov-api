@@ -1,7 +1,7 @@
 from typing import List, Union
 
 import yaml
-from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
+from ariadne import ObjectType, convert_kwargs_to_snake_case
 
 import services.components as components
 import services.path as path_service
@@ -19,6 +19,7 @@ from graphql_api.helpers.connection import (
 from graphql_api.types.enums import OrderingDirection, PathContentDisplayType
 from graphql_api.types.errors import MissingCoverage, MissingHeadReport, UnknownPath
 from services.archive import ReadOnlyReport, ReportService
+from services.comparison import ComparisonReport
 from services.components import Component
 from services.path import ReportPaths
 from services.profiling import CriticalFile, ProfilingSummary
@@ -86,12 +87,17 @@ def resolve_list_uploads(commit: Commit, info, **kwargs):
 
 
 @commit_bindable.field("compareWithParent")
-def resolve_compare_with_parent(commit, info, **kwargs):
+async def resolve_compare_with_parent(commit, info, **kwargs):
     if not commit.parent_commit_id:
         return None
 
     comparison_loader = ComparisonLoader.loader(info, commit.repository_id)
-    return comparison_loader.load((commit.parent_commit_id, commit.commitid))
+    commit_comparison = await comparison_loader.load(
+        (commit.parent_commit_id, commit.commitid)
+    )
+
+    if commit_comparison:
+        return ComparisonReport(commit_comparison)
 
 
 @commit_bindable.field("flagNames")
