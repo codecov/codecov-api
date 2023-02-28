@@ -262,8 +262,29 @@ class TaskService(object):
             ),
         ).apply_async()
 
+    def delete_timeseries(self, repository_id: int):
+        log.info(
+            f"Delete repository timeseries data",
+            extra=dict(repository_id=repository_id),
+        )
+        self._create_signature(
+            celery_config.timeseries_delete_task_name,
+            kwargs=dict(repository_id=repository_id),
+        ).apply_async()
+
     def update_commit(self, commitid, repoid):
         self._create_signature(
             "app.tasks.commit_update.CommitUpdate",
             kwargs=dict(commitid=commitid, repoid=repoid),
+        ).apply_async()
+
+    def create_report_results(self, commitid, repoid, report_code, current_yaml=None):
+        self._create_signature(
+            "app.tasks.reports.save_report_results",
+            kwargs=dict(
+                commitid=commitid,
+                repoid=repoid,
+                report_code=report_code,
+                current_yaml=current_yaml,
+            ),
         ).apply_async()

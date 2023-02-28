@@ -33,8 +33,9 @@ class CommitReport(BaseCodecovModel):
 
 class ReportResults(BaseCodecovModel):
     class ReportResultsStates(models.TextChoices):
-        CREATED = "created"
-        READY = "ready"
+        PENDING = "pending"
+        COMPLETED = "completed"
+        ERROR = "error"
 
     report = models.OneToOneField(CommitReport, on_delete=models.CASCADE)
     state = models.TextField(null=True, choices=ReportResultsStates.choices)

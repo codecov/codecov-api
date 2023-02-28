@@ -86,6 +86,7 @@ class Owner(models.Model):
     oauth_token = models.TextField(null=True)
     stripe_customer_id = models.TextField(null=True, blank=True)
     stripe_subscription_id = models.TextField(null=True, blank=True)
+    stripe_coupon_id = models.TextField(null=True, blank=True)
 
     # createstamp seems to be used by legacy to track first login
     # so we shouldn't touch this outside login
@@ -125,7 +126,7 @@ class Owner(models.Model):
     student_updated_at = DateTimeWithoutTZField(null=True)
     onboarding_completed = models.BooleanField(default=False)
     is_superuser = models.BooleanField(null=True, default=False)
-    max_upload_limit = models.IntegerField(null=True, default=150)
+    max_upload_limit = models.IntegerField(null=True, default=150, blank=True)
 
     objects = OwnerManager()
 

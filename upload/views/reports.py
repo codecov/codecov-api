@@ -9,6 +9,7 @@ from codecov_auth.authentication.repo_auth import (
     RepositoryLegacyTokenAuthentication,
 )
 from reports.models import ReportResults
+from services.task import TaskService
 from upload.serializers import CommitReportSerializer, ReportResultsSerializer
 from upload.views.base import GetterMixin
 from upload.views.uploads import CanDoCoverageUploadsPermission
@@ -60,7 +61,12 @@ class ReportResultsView(
         commit = self.get_commit(repository)
         report = self.get_report(commit)
         instance = serializer.save(
-            report=report,
+            report=report, state=ReportResults.ReportResultsStates.PENDING
+        )
+        TaskService().create_report_results(
+            commitid=commit.commitid,
+            repoid=repository.repoid,
+            report_code=report.code,
         )
         return instance
 

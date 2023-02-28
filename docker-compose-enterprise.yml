@@ -21,7 +21,7 @@ services:
       - RUN_ENV=DEV
   postgres:
     hostname: postgres
-    image: postgres:9.6-alpine
+    image: postgres:14.4-alpine
     volumes:
       - postgres-volume:/var/lib/postgresql/data
     networks:
