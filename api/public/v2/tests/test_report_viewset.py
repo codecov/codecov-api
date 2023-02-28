@@ -309,6 +309,16 @@ class ReportViewSetTestCase(TestCase):
         }
 
     @patch("services.archive.ReportService.build_report_from_commit")
+    def test_report_missing_report(
+        self, build_report_from_commit, get_repo_permissions
+    ):
+        get_repo_permissions.return_value = (True, True)
+        build_report_from_commit.return_value = None
+
+        res = self._request_report()
+        assert res.status_code == 404
+
+    @patch("services.archive.ReportService.build_report_from_commit")
     def test_report_branch(self, build_report_from_commit, get_repo_permissions):
         get_repo_permissions.return_value = (True, True)
         build_report_from_commit.return_value = sample_report()

@@ -3,7 +3,7 @@ from unittest.mock import call, patch
 
 import pytest
 from django.conf import settings
-from django.test import TestCase
+from django.test import TransactionTestCase
 from django.utils import timezone
 from shared.reports.resources import Report, ReportFile, ReportLine
 from shared.utils.sessions import Session
@@ -51,7 +51,7 @@ def sample_report():
 @pytest.mark.skipif(
     not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
 )
-class SaveCommitMeasurementsTest(TestCase):
+class SaveCommitMeasurementsTest(TransactionTestCase):
     databases = {"default", "timeseries"}
 
     @patch("services.archive.ReportService.build_report_from_commit")
@@ -266,7 +266,7 @@ class SaveCommitMeasurementsTest(TestCase):
 @pytest.mark.skipif(
     not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
 )
-class SaveRepoMeasurementsTest(TestCase):
+class SaveRepoMeasurementsTest(TransactionTestCase):
     databases = {"default", "timeseries"}
 
     def setUp(self):
@@ -310,7 +310,7 @@ class SaveRepoMeasurementsTest(TestCase):
 @pytest.mark.skipif(
     not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
 )
-class RefreshMeasurementSummariesTest(TestCase):
+class RefreshMeasurementSummariesTest(TransactionTestCase):
     databases = {"timeseries"}
 
     @patch("django.db.backends.utils.CursorWrapper.execute")
@@ -332,7 +332,7 @@ class RefreshMeasurementSummariesTest(TestCase):
 @pytest.mark.skipif(
     not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
 )
-class RepositoryCoverageMeasurementsTest(TestCase):
+class RepositoryCoverageMeasurementsTest(TransactionTestCase):
     databases = {"default", "timeseries"}
 
     def setUp(self):
@@ -404,7 +404,7 @@ class RepositoryCoverageMeasurementsTest(TestCase):
 @pytest.mark.skipif(
     not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
 )
-class FillSparseMeasurementsTest(TestCase):
+class FillSparseMeasurementsTest(TransactionTestCase):
     databases = {"default", "timeseries"}
 
     def setUp(self):
@@ -553,7 +553,7 @@ class FillSparseMeasurementsTest(TestCase):
 @pytest.mark.skipif(
     not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
 )
-class RepositoryCoverageMeasurementsWithFallbackTest(TestCase):
+class RepositoryCoverageMeasurementsWithFallbackTest(TransactionTestCase):
     databases = {"default", "timeseries"}
 
     def setUp(self):
@@ -762,7 +762,7 @@ class RepositoryCoverageMeasurementsWithFallbackTest(TestCase):
 @pytest.mark.skipif(
     not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
 )
-class OwnerCoverageMeasurementsWithFallbackTest(TestCase):
+class OwnerCoverageMeasurementsWithFallbackTest(TransactionTestCase):
     databases = {"default", "timeseries"}
 
     def setUp(self):

@@ -64,12 +64,13 @@ class TestOwnerModel(TransactionTestCase):
         assert self.owner.repo_credits == 1 + self.owner.free or 0
 
     def test_nb_active_private_repos(self):
-        RepositoryFactory(author=self.owner, active=True, private=True)
-        RepositoryFactory(author=self.owner, active=True, private=False)
-        RepositoryFactory(author=self.owner, active=False, private=True)
-        RepositoryFactory(author=self.owner, active=False, private=False)
+        owner = OwnerFactory()
+        RepositoryFactory(author=owner, active=True, private=True)
+        RepositoryFactory(author=owner, active=True, private=False)
+        RepositoryFactory(author=owner, active=False, private=True)
+        RepositoryFactory(author=owner, active=False, private=False)
 
-        assert self.owner.nb_active_private_repos == 1
+        assert owner.nb_active_private_repos == 1
 
     def test_plan_is_null_when_validating_form(self):
         owner = OwnerFactory()
