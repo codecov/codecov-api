@@ -439,6 +439,13 @@ class Segment:
         return self._lines
 
     @property
+    def has_diff_changes(self):
+        for line in self.lines:
+            if line.added or line.removed:
+                return True
+        return False
+
+    @property
     def has_unintended_changes(self):
         for line in self.lines:
             head_coverage = line.coverage["base"]

@@ -1,4 +1,5 @@
 import hashlib
+from dataclasses import dataclass
 from unittest.mock import PropertyMock, patch
 
 from django.test import TransactionTestCase
@@ -228,21 +229,18 @@ mock_data_from_archive = """
 """
 
 
-class MockSegmentWithNoUnexpectedChanges(object):
-    def __init__(self):
-        self.has_unintended_changes = False
-
-
-class MockSegmentWithUnintendedChanges(object):
-    def __init__(self):
-        self.has_unintended_changes = True
+@dataclass
+class MockSegment:
+    has_diff_changes: bool = False
+    has_unintended_changes: bool = False
 
 
 class MockFileComparison(object):
     def __init__(self):
         self.segments = [
-            MockSegmentWithUnintendedChanges(),
-            MockSegmentWithNoUnexpectedChanges(),
+            MockSegment(has_unintended_changes=True, has_diff_changes=False),
+            MockSegment(has_unintended_changes=False, has_diff_changes=True),
+            MockSegment(has_unintended_changes=True, has_diff_changes=True),
         ]
 
 
@@ -455,6 +453,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                     "results": [
                                         {"hasUnintendedChanges": True},
                                         {"hasUnintendedChanges": False},
+                                        {"hasUnintendedChanges": True},
                                     ],
                                 },
                             },
@@ -496,7 +495,9 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                 "headCoverage": {"percentCovered": 85.71428571428571},
                                 "patchCoverage": {"percentCovered": 50.0},
                                 "segments": {
-                                    "results": [{"hasUnintendedChanges": True}],
+                                    "results": [
+                                        {"hasUnintendedChanges": True},
+                                    ],
                                 },
                             },
                         }
@@ -617,7 +618,12 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                 "headCoverage": {"percentCovered": 85.71428571428571},
                                 "patchCoverage": {"percentCovered": 50.0},
                                 "segments": {
-                                    "results": [{"hasUnintendedChanges": False}]
+                                    "results": [
+                                        {"hasUnintendedChanges": False},
+                                        {
+                                            "hasUnintendedChanges": True
+                                        },  # direct and indirect
+                                    ]
                                 },
                             },
                         }
@@ -661,6 +667,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                     "results": [
                                         {"hasUnintendedChanges": True},
                                         {"hasUnintendedChanges": False},
+                                        {"hasUnintendedChanges": True},
                                     ]
                                 },
                             },

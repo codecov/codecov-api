@@ -536,6 +536,7 @@ class FileComparisonTests(TestCase):
         assert len(segments) == 1
         assert segments[0].lines == self.file_comparison.lines
         assert segments[0].header == (1, 3, 1, 3)
+        assert segments[0].has_diff_changes == True
         assert segments[0].has_unintended_changes == False
 
     @patch("services.comparison.FileComparison.lines", new_callable=PropertyMock)
@@ -551,6 +552,7 @@ class FileComparisonTests(TestCase):
         assert len(segments) == 1
         assert segments[0].lines == self.file_comparison.lines
         assert segments[0].header == (1, 3, 1, 3)
+        assert segments[0].has_diff_changes == False
         assert segments[0].has_unintended_changes
 
     @patch("services.comparison.FileComparison.lines", new_callable=PropertyMock)

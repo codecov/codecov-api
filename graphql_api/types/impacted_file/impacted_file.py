@@ -87,11 +87,15 @@ def resolve_segments(
     segments = file_comparison.segments
 
     if filters.get("has_unintended_changes") is True:
-        segments = [segment for segment in segments if segment.has_unintended_changes]
-    elif filters.get("has_unintended_changes") is False:
+        # segments with no diff changes and at least 1 unintended change
         segments = [
-            segment for segment in segments if not segment.has_unintended_changes
+            segment
+            for segment in segments
+            if segment.has_unintended_changes and not segment.has_diff_changes
         ]
+    elif filters.get("has_unintended_changes") is False:
+        # segments with at least 1 diff change
+        segments = [segment for segment in segments if segment.has_diff_changes]
 
     return SegmentComparisons(results=segments)
 
@@ -116,11 +120,15 @@ def resolve_segments_deprecated(
     segments = file_comparison.segments
 
     if filters.get("has_unintended_changes") is True:
-        segments = [segment for segment in segments if segment.has_unintended_changes]
-    elif filters.get("has_unintended_changes") is False:
+        # segments with no diff changes and at least 1 unintended change
         segments = [
-            segment for segment in segments if not segment.has_unintended_changes
+            segment
+            for segment in segments
+            if segment.has_unintended_changes and not segment.has_diff_changes
         ]
+    elif filters.get("has_unintended_changes") is False:
+        # segments with at least 1 diff change
+        segments = [segment for segment in segments if segment.has_diff_changes]
 
     return segments
 
