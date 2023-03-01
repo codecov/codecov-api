@@ -75,8 +75,6 @@ async def resolve_change_coverage(
         loader.load(comparison.commit_comparison.compare_commit.commitid),
     )
 
-    print("HERE", base_commit.commitreport, head_commit.commitreport)
-
     base_totals = None
     head_totals = None
     if (
