@@ -24,4 +24,17 @@ def commit_uploads(commit: Commit) -> QuerySet[ReportSession]:
         return ReportSession.objects.none()
 
     sessions = commit.commitreport.sessions.prefetch_related("flags")
-    return sessions
+
+    # sessions w/ flags and type 'uploaded'
+    uploaded = sessions.filter(upload_type="uploaded")
+
+    # carry forward flags that do not have an equivalent uploaded flag
+    carried_forward = sessions.filter(upload_type="carriedforward").exclude(
+        uploadflagmembership__flag_id__in=uploaded.values_list(
+            "uploadflagmembership__flag_id", flat=True
+        )
+    )
+
+    return (uploaded.prefetch_related("flags")).union(
+        carried_forward.prefetch_related("flags")
+    )
