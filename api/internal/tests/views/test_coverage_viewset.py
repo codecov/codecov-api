@@ -270,3 +270,10 @@ class CoverageViewSetTests(APITestCase):
 
         res = self._tree(branch="wrong-branch")
         assert res.status_code == 404
+
+    @patch("services.archive.ReportService.build_report_from_commit")
+    def test_tree_missing_report(self, build_report_from_commit):
+        build_report_from_commit.return_value = None
+
+        res = self._tree()
+        assert res.status_code == 404
