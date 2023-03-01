@@ -1,0 +1,5 @@
+input DeleteFlagInput {
+  ownerUsername: String!
+  repoName: String!
+  flagName: String!
+}
