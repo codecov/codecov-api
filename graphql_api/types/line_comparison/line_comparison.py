@@ -42,7 +42,7 @@ def resolve_head_coverage(line_comparison: LineComparison, info) -> Optional[str
 
 @line_comparison_bindable.field("content")
 def resolve_content(line_comparison: LineComparison, info) -> str:
-    value = line_comparison.value
+    value = line_comparison.value # If there are some non-diff lines that do not start with a space is that going to mean they’re all out-of-alignment?
     if value and line_comparison.is_diff:
         return f"{value[0]} {value[1:]}"
     return f" {value}"
