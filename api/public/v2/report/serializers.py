@@ -13,6 +13,12 @@ class FileReportSerializer(ReportFileSerializer):
     commit_sha = serializers.SerializerMethodField(
         label="commit SHA of the commit for which coverage info was found"
     )
+    commit_file_url = serializers.SerializerMethodField(
+        label="Codecov URL to see file coverage on commit."
+    )
 
     def get_commit_sha(self, obj):
         return self.context["commit_sha"]
+
+    def get_commit_file_url(self, obj):
+        return self.context["commit_file_url"]

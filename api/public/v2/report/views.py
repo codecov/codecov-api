@@ -20,8 +20,26 @@ from codecov_auth.authentication import (
     SuperTokenAuthentication,
     UserTokenAuthentication,
 )
-from services.components import Component, commit_components, component_filtered_report
+from core.models import Commit
+from services.components import commit_components, component_filtered_report
 from services.path import dashboard_commit_file_url
+
+
+class ReportMixin:
+    def _commit_file_url(self, commit: Commit, path: str):
+        service, owner, repo = (
+            self.kwargs["service"],
+            self.kwargs["owner_username"],
+            self.kwargs["repo_name"],
+        )
+        commit_file_url = dashboard_commit_file_url(
+            path=path,
+            service=service,
+            owner=owner,
+            repo=repo,
+            commit_sha=commit.commitid,
+        )
+        return commit_file_url
 
 
 @extend_schema(
@@ -61,7 +79,7 @@ from services.path import dashboard_commit_file_url
     tags=["Coverage"],
 )
 class BaseReportViewSet(
-    viewsets.GenericViewSet, mixins.RetrieveModelMixin, RepoPropertyMixin
+    viewsets.GenericViewSet, mixins.RetrieveModelMixin, RepoPropertyMixin, ReportMixin
 ):
     serializer_class = CoverageReportSerializer
     permission_classes = [RepositoryArtifactPermissions]
@@ -103,19 +121,7 @@ class BaseReportViewSet(
             report = component_filtered_report(report, component)
 
         # Add commit url to report object
-        service, owner, repo = (
-            self.kwargs["service"],
-            self.kwargs["owner_username"],
-            self.kwargs["repo_name"],
-        )
-        commit_file_url = dashboard_commit_file_url(
-            path=path,
-            service=service,
-            owner=owner,
-            repo=repo,
-            commit_sha=commit.commitid,
-        )
-        report.commit_file_url = commit_file_url
+        report.commit_file_url = self._commit_file_url(commit, path)
 
         return report
 
@@ -207,7 +213,7 @@ class ReportViewSet(BaseReportViewSet):
     tags=["Coverage"],
 )
 class FileReportViewSet(
-    viewsets.GenericViewSet, mixins.RetrieveModelMixin, RepoPropertyMixin
+    viewsets.GenericViewSet, mixins.RetrieveModelMixin, RepoPropertyMixin, ReportMixin
 ):
     authentication_classes = [
         SuperTokenAuthentication,
@@ -223,7 +229,7 @@ class FileReportViewSet(
         return None
 
     def get_object(self):
-        path = self.kwargs.get("path")
+        self.path = self.kwargs.get("path")
 
         walk_back = int(self.request.query_params.get("walk_back", 0))
         if walk_back > 20:
@@ -233,7 +239,7 @@ class FileReportViewSet(
         report = self.commit.full_report
 
         for i in range(walk_back):
-            if self._is_valid_report(report, path):
+            if self._is_valid_report(report, self.path):
                 break
             else:
                 # walk commit ancestors until we find coverage info for the given path
@@ -248,10 +254,10 @@ class FileReportViewSet(
                     break
                 report = self.commit.full_report
 
-        if not self._is_valid_report(report, path):
-            raise NotFound(f"coverage info not found for path '{path}'")
+        if not self._is_valid_report(report, self.path):
+            raise NotFound(f"coverage info not found for path '{self.path}'")
 
-        return report.get(path)
+        return report.get(self.path)
 
     def get_serializer_context(self, *args, **kwargs):
         context = super().get_serializer_context(*args, **kwargs)
@@ -259,6 +265,7 @@ class FileReportViewSet(
             {
                 "include_line_coverage": True,
                 "commit_sha": self.commit.commitid,
+                "commit_file_url": self._commit_file_url(self.commit, self.path),
             }
         )
         return context
