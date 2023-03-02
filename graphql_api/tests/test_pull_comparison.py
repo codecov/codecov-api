@@ -32,7 +32,9 @@ base_query = """{
 MockSegmentComparison = namedtuple(
     "MockSegmentComparison", ["header", "lines", "has_unintended_changes"]
 )
-MockLineComparison = namedtuple("MockLineComparison", ["number", "coverage", "value", "is_diff"])
+MockLineComparison = namedtuple(
+    "MockLineComparison", ["number", "coverage", "value", "is_diff"]
+)
 
 
 class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
