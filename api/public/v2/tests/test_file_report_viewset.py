@@ -123,6 +123,7 @@ class FileReportViewSetTestCase(TestCase):
                 [10, 1],
             ],
             "commit_sha": self.commit3.commitid,
+            "commit_file_url": f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.username}/{self.repo_name}/commit/{self.commit3.commitid}/blob/foo/file1.py",
         }
 
         build_report_from_commit.assert_called_once_with(self.commit3)
@@ -191,6 +192,7 @@ class FileReportViewSetTestCase(TestCase):
                 [10, 1],
             ],
             "commit_sha": self.commit1.commitid,
+            "commit_file_url": f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.username}/{self.repo_name}/commit/{self.commit1.commitid}/blob/foo/file1.py",
         }
 
         build_report_from_commit.assert_has_calls(
