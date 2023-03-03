@@ -32,7 +32,9 @@ base_query = """{
 MockSegmentComparison = namedtuple(
     "MockSegmentComparison", ["header", "lines", "has_unintended_changes"]
 )
-MockLineComparison = namedtuple("MockLineComparison", ["number", "coverage", "value"])
+MockLineComparison = namedtuple(
+    "MockLineComparison", ["number", "coverage", "value", "is_diff"]
+)
 
 
 class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
@@ -579,6 +581,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                     "head": LineType.hit,
                                 },
                                 value=" line1",
+                                is_diff=False,
                             ),
                             MockLineComparison(
                                 number={
@@ -590,6 +593,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                     "head": LineType.hit,
                                 },
                                 value="+ line2",
+                                is_diff=True,
                             ),
                         ],
                     ),
@@ -616,6 +620,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                     "head": LineType.hit,
                                 },
                                 value=" line1",
+                                is_diff=True,
                             ),
                         ],
                     ),
@@ -744,6 +749,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                 "head": LineType.hit,
                             },
                             value=" line1",
+                            is_diff=True,
                         ),
                     ],
                 ),
