@@ -131,8 +131,9 @@ USER_PLAN_REPRESENTATIONS = {
         "value": FREE_PLAN_NAME,
         "billing_rate": None,
         "base_unit_price": 0,
+        "monthly_uploads_limit": 250,
         "benefits": [
-            "Up to 5 users",
+            "Up to 1 user",
             "Unlimited public repositories",
             "Unlimited private repositories",
         ],
@@ -161,8 +162,9 @@ FREE_PLAN_REPRESENTATIONS = {
         "value": FREE_PLAN_NAME,
         "billing_rate": None,
         "base_unit_price": 0,
+        "monthly_uploads_limit": 250,
         "benefits": [
-            "Up to 5 users",
+            "Up to 1 user",
             "Unlimited public repositories",
             "Unlimited private repositories",
         ],
@@ -188,8 +190,9 @@ CURRENTLY_OFFERED_PLANS = {
         "value": FREE_PLAN_NAME,
         "billing_rate": None,
         "base_unit_price": 0,
+        "monthly_uploads_limit": 250,
         "benefits": [
-            "Up to 5 users",
+            "Up to 1 user",
             "Unlimited public repositories",
             "Unlimited private repositories",
         ],

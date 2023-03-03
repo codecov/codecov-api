@@ -373,7 +373,7 @@ class TestOwnerModel(TransactionTestCase):
         self.owner.refresh_from_db()
 
         assert self.owner.plan == "users-free"
-        assert self.owner.plan_user_count == 5
+        assert self.owner.plan_user_count == 1
         assert self.owner.plan_activated_users == None
         assert self.owner.plan_auto_activate == False
         assert self.owner.stripe_subscription_id == None
@@ -482,6 +482,13 @@ class TestOrganizationLevelTokenModel(TransactionTestCase):
         with pytest.raises(ValidationError):
             token.save()
 
+    def test_cant_save_org_token_for_org_not_in_valid_plan_users_basic(self):
+        owner = OwnerFactory(plan="users-free")
+        owner.save()
+        token = OrganizationLevelToken(owner=owner)
+        with pytest.raises(ValidationError):
+            token.save()
+
     def test_token_is_deleted_when_changing_user_plan(self):
         owner = OwnerFactory(plan="users-enterprisem")
         org_token = OrganizationLevelTokenFactory(owner=owner)
@@ -489,5 +496,15 @@ class TestOrganizationLevelTokenModel(TransactionTestCase):
         org_token.save()
         assert OrganizationLevelToken.objects.filter(owner=owner).count() == 1
         owner.plan = "users-basic"
+        owner.save()
+        assert OrganizationLevelToken.objects.filter(owner=owner).count() == 0
+
+    def test_token_is_deleted_when_changing_user_plan_free(self):
+        owner = OwnerFactory(plan="users-enterprisem")
+        org_token = OrganizationLevelTokenFactory(owner=owner)
+        owner.save()
+        org_token.save()
+        assert OrganizationLevelToken.objects.filter(owner=owner).count() == 1
+        owner.plan = "users-free"
         owner.save()
         assert OrganizationLevelToken.objects.filter(owner=owner).count() == 0

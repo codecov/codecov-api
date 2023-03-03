@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from django.test import TransactionTestCase
 
-from billing.constants import BASIC_PLAN_NAME
+from billing.constants import BASIC_PLAN_NAME, FREE_PLAN_NAME
 from codecov_auth.tests.factories import (
     GetAdminProviderAdapter,
     OwnerFactory,
@@ -253,6 +253,24 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         """
         repository = RepositoryFactory.create(
             author__plan=BASIC_PLAN_NAME, author=self.user
+        )
+        first_commit = CommitFactory.create(repository=repository)
+        first_report = CommitReportFactory.create(commit=first_commit)
+        for i in range(150):
+            UploadFactory.create(report=first_report)
+        query = query_uploads_number % (repository.author.username)
+        data = self.gql_request(query, user=self.user)
+        assert data["owner"]["numberOfUploads"] == 150
+
+    def test_resolve_number_of_uploads_per_user_free_plan(self):
+        query_uploads_number = """{
+            owner(username: "%s") {
+               numberOfUploads
+            }
+        }
+        """
+        repository = RepositoryFactory.create(
+            author__plan=FREE_PLAN_NAME, author=self.user
         )
         first_commit = CommitFactory.create(repository=repository)
         first_report = CommitReportFactory.create(commit=first_commit)

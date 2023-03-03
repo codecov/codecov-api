@@ -4,7 +4,7 @@ from django.test import override_settings
 from django.urls import reverse
 from rest_framework.test import APIClient, APITestCase
 
-from billing.constants import BASIC_PLAN_NAME
+from billing.constants import FREE_PLAN_NAME
 from core.tests.factories import CommitFactory, OwnerFactory, RepositoryFactory
 from reports.tests.factories import CommitReportFactory, UploadFactory
 from upload.throttles import UploadsPerCommitThrottle, UploadsPerWindowThrottle
@@ -12,7 +12,7 @@ from upload.throttles import UploadsPerCommitThrottle, UploadsPerWindowThrottle
 
 class ThrottlesUnitTests(APITestCase):
     def setUp(self):
-        self.owner = OwnerFactory(plan=BASIC_PLAN_NAME)
+        self.owner = OwnerFactory(plan=FREE_PLAN_NAME)
 
     def request_should_not_throttle(self, commit):
         self.uploads_per_window_not_throttled(commit)
@@ -48,7 +48,7 @@ class ThrottlesUnitTests(APITestCase):
     @override_settings(UPLOAD_THROTTLING_ENABLED=False)
     def test_check_commit_contraints_settings_disabled(self):
         repository = RepositoryFactory(
-            author__plan=BASIC_PLAN_NAME, private=True, author=self.owner
+            author__plan=FREE_PLAN_NAME, private=True, author=self.owner
         )
         first_commit = CommitFactory(repository=repository)
         second_commit = CommitFactory(repository=repository)

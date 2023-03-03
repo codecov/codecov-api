@@ -4,7 +4,7 @@ import pytest
 from django.conf import settings
 from rest_framework.exceptions import Throttled, ValidationError
 
-from billing.constants import BASIC_PLAN_NAME
+from billing.constants import FREE_PLAN_NAME
 from core.tests.factories import CommitFactory, OwnerFactory, RepositoryFactory
 from reports.tests.factories import CommitReportFactory, UploadFactory
 from upload.helpers import (
@@ -75,7 +75,7 @@ def test_try_to_get_best_possible_nothing_and_not_private(db, mocker):
 
 def test_check_commit_contraints_settings_disabled(db, settings):
     settings.UPLOAD_THROTTLING_ENABLED = False
-    repository = RepositoryFactory.create(author__plan=BASIC_PLAN_NAME, private=True)
+    repository = RepositoryFactory.create(author__plan=FREE_PLAN_NAME, private=True)
     first_commit = CommitFactory.create(repository=repository)
     second_commit = CommitFactory.create(repository=repository)
     third_commit = CommitFactory.create(repository__author=repository.author)
@@ -92,7 +92,7 @@ def test_check_commit_contraints_settings_disabled(db, settings):
 
 def test_check_commit_contraints_settings_enabled(db, settings):
     settings.UPLOAD_THROTTLING_ENABLED = True
-    author = OwnerFactory.create(plan=BASIC_PLAN_NAME)
+    author = OwnerFactory.create(plan=FREE_PLAN_NAME)
     repository = RepositoryFactory.create(author=author, private=True)
     public_repository = RepositoryFactory.create(author=author, private=False)
     first_commit = CommitFactory.create(repository=repository)

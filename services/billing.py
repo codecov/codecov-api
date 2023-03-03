@@ -141,7 +141,7 @@ class StripeService(AbstractPaymentService):
 
         if owner.plan not in USER_PLAN_REPRESENTATIONS:
             log.info(
-                f"Downgrade to basic plan from legacy plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
+                f"Downgrade to free plan from legacy plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
                 extra=dict(ownerid=owner.ownerid),
             )
             if not subscription_schedule_id:
@@ -156,10 +156,10 @@ class StripeService(AbstractPaymentService):
                     extra=dict(ownerid=owner.ownerid),
                 )
                 stripe.SubscriptionSchedule.cancel(subscription_schedule_id)
-            owner.set_basic_plan()
+            owner.set_free_plan()
         else:
             log.info(
-                f"Downgrade to basic plan from user plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
+                f"Downgrade to free plan from user plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
                 extra=dict(ownerid=owner.ownerid),
             )
             if subscription_schedule_id:
@@ -512,7 +512,7 @@ class BillingService:
             if owner.stripe_subscription_id is not None:
                 self.payment_service.delete_subscription(owner)
             else:
-                owner.set_basic_plan()
+                owner.set_free_plan()
         elif (
             desired_plan["value"] in PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS
             or desired_plan["value"] in ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS

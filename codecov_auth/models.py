@@ -10,8 +10,8 @@ from django.db import models
 from django.forms import ValidationError
 
 from billing.constants import (
-    BASIC_PLAN_NAME,
     ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
+    FREE_PLAN_NAME,
     USER_PLAN_REPRESENTATIONS,
 )
 from codecov.models import BaseCodecovModel
@@ -99,11 +99,11 @@ class Owner(models.Model):
     staff = models.BooleanField(null=True, default=False)
     cache = models.JSONField(null=True)
     # Really an ENUM in db
-    plan = models.TextField(null=True, default=BASIC_PLAN_NAME, blank=True)
+    plan = models.TextField(null=True, default=FREE_PLAN_NAME, blank=True)
     plan_provider = models.TextField(
         null=True, choices=PlanProviders.choices, blank=True
     )  # postgres enum containing only "github"
-    plan_user_count = models.SmallIntegerField(null=True, default=5, blank=True)
+    plan_user_count = models.SmallIntegerField(null=True, default=1, blank=True)
     plan_auto_activate = models.BooleanField(null=True, default=True)
     plan_activated_users = ArrayField(
         models.IntegerField(null=True), null=True, blank=True
@@ -423,10 +423,11 @@ class Owner(models.Model):
         log.info(f"Setting plan to users-free for owner {self.ownerid}")
         self.plan = "users-free"
         self.plan_activated_users = None
-        self.plan_user_count = 5
+        self.plan_user_count = 1
         self.stripe_subscription_id = None
         self.save()
 
+    # We're going back to users-free plan. This function will be left here in case we change back to it
     def set_basic_plan(self):
         log.info(f"Setting plan to users-basic for owner {self.ownerid}")
         self.plan = "users-basic"

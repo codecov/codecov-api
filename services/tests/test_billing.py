@@ -5,7 +5,7 @@ from django.conf import settings
 from django.test import TestCase
 from stripe.error import InvalidRequestError, StripeError
 
-from billing.constants import BASIC_PLAN_NAME
+from billing.constants import FREE_PLAN_NAME
 from codecov_auth.models import Service
 from codecov_auth.tests.factories import OwnerFactory
 from services.billing import AbstractPaymentService, BillingService, StripeService
@@ -264,7 +264,7 @@ class StripeServiceTests(TestCase):
 
     @patch("services.billing.stripe.Subscription.delete")
     @patch("services.billing.stripe.Subscription.retrieve")
-    def test_delete_subscription_without_schedule_deletes_subscription_and_sets_plan_to_basic_if_invalid_plan(
+    def test_delete_subscription_without_schedule_deletes_subscription_and_sets_plan_to_free_if_invalid_plan(
         self, retrieve_subscription_mock, delete_subscription_mock
     ):
         plan = "v4-50m"
@@ -288,13 +288,13 @@ class StripeServiceTests(TestCase):
 
         owner.refresh_from_db()
         assert owner.stripe_subscription_id == None
-        assert owner.plan == BASIC_PLAN_NAME
+        assert owner.plan == FREE_PLAN_NAME
         assert owner.plan_activated_users == None
-        assert owner.plan_user_count == 5
+        assert owner.plan_user_count == 1
 
     @patch("services.billing.stripe.SubscriptionSchedule.cancel")
     @patch("services.billing.stripe.Subscription.retrieve")
-    def test_delete_subscription_with_schedule_deletes_schedule_and_sets_plan_to_basic_if_owner_not_on_user_plan(
+    def test_delete_subscription_with_schedule_deletes_schedule_and_sets_plan_to_free_if_owner_not_on_user_plan(
         self, retrieve_subscription_mock, schedule_cancel_mock
     ):
         plan = "v4-50m"
@@ -316,9 +316,9 @@ class StripeServiceTests(TestCase):
 
         owner.refresh_from_db()
         assert owner.stripe_subscription_id == None
-        assert owner.plan == BASIC_PLAN_NAME
+        assert owner.plan == FREE_PLAN_NAME
         assert owner.plan_activated_users == None
-        assert owner.plan_user_count == 5
+        assert owner.plan_user_count == 1
 
     @patch("services.billing.stripe.Subscription.retrieve")
     @patch("services.billing.stripe.Subscription.modify")
@@ -1217,34 +1217,34 @@ class BillingServiceTests(TestCase):
         ) == self.mock_payment_service.list_filtered_invoices(owner)
 
     @patch("services.tests.test_billing.MockPaymentService.delete_subscription")
-    def test_update_plan_to_users_basic_deletes_subscription_if_user_has_stripe_subscription(
+    def test_update_plan_to_users_free_deletes_subscription_if_user_has_stripe_subscription(
         self, delete_subscription_mock
     ):
         owner = OwnerFactory(stripe_subscription_id="tor_dsoe")
-        self.billing_service.update_plan(owner, {"value": "users-basic"})
+        self.billing_service.update_plan(owner, {"value": "users-free"})
         delete_subscription_mock.assert_called_once_with(owner)
 
-    @patch("codecov_auth.models.Owner.set_basic_plan")
+    @patch("codecov_auth.models.Owner.set_free_plan")
     @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
     @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
     @patch("services.tests.test_billing.MockPaymentService.delete_subscription")
-    def test_update_plan_to_users_basic_sets_plan_if_no_subscription_id(
+    def test_update_plan_to_users_free_sets_plan_if_no_subscription_id(
         self,
         delete_subscription_mock,
         modify_subscription_mock,
         create_checkout_session_mock,
-        set_basic_plan_mock,
+        set_free_plan_mock,
     ):
         owner = OwnerFactory()
-        self.billing_service.update_plan(owner, {"value": "users-basic"})
+        self.billing_service.update_plan(owner, {"value": "users-free"})
 
-        set_basic_plan_mock.assert_called_once()
+        set_free_plan_mock.assert_called_once()
 
         delete_subscription_mock.assert_not_called()
         modify_subscription_mock.assert_not_called()
         create_checkout_session_mock.assert_not_called()
 
-    @patch("codecov_auth.models.Owner.set_basic_plan")
+    @patch("codecov_auth.models.Owner.set_free_plan")
     @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
     @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
     @patch("services.tests.test_billing.MockPaymentService.delete_subscription")
@@ -1253,7 +1253,7 @@ class BillingServiceTests(TestCase):
         delete_subscription_mock,
         modify_subscription_mock,
         create_checkout_session_mock,
-        set_basic_plan_mock,
+        set_free_plan_mock,
     ):
         owner = OwnerFactory(stripe_subscription_id=10)
         desired_plan = {"value": "users-pr-inappy", "quantity": 10}
@@ -1261,11 +1261,11 @@ class BillingServiceTests(TestCase):
 
         modify_subscription_mock.assert_called_once_with(owner, desired_plan)
 
-        set_basic_plan_mock.assert_not_called()
+        set_free_plan_mock.assert_not_called()
         delete_subscription_mock.assert_not_called()
         create_checkout_session_mock.assert_not_called()
 
-    @patch("codecov_auth.models.Owner.set_basic_plan")
+    @patch("codecov_auth.models.Owner.set_free_plan")
     @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
     @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
     @patch("services.tests.test_billing.MockPaymentService.delete_subscription")
@@ -1274,7 +1274,7 @@ class BillingServiceTests(TestCase):
         delete_subscription_mock,
         modify_subscription_mock,
         create_checkout_session_mock,
-        set_basic_plan_mock,
+        set_free_plan_mock,
     ):
         owner = OwnerFactory(stripe_subscription_id=None)
         desired_plan = {"value": "users-pr-inappy", "quantity": 10}
@@ -1282,11 +1282,11 @@ class BillingServiceTests(TestCase):
 
         create_checkout_session_mock.assert_called_once_with(owner, desired_plan)
 
-        set_basic_plan_mock.assert_not_called()
+        set_free_plan_mock.assert_not_called()
         delete_subscription_mock.assert_not_called()
         modify_subscription_mock.assert_not_called()
 
-    @patch("codecov_auth.models.Owner.set_basic_plan")
+    @patch("codecov_auth.models.Owner.set_free_plan")
     @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
     @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
     @patch("services.tests.test_billing.MockPaymentService.delete_subscription")
@@ -1295,13 +1295,13 @@ class BillingServiceTests(TestCase):
         delete_subscription_mock,
         modify_subscription_mock,
         create_checkout_session_mock,
-        set_basic_plan_mock,
+        set_free_plan_mock,
     ):
         owner = OwnerFactory()
         desired_plan = {"value": "v4-50m"}
         self.billing_service.update_plan(owner, desired_plan)
 
-        set_basic_plan_mock.assert_not_called()
+        set_free_plan_mock.assert_not_called()
         delete_subscription_mock.assert_not_called()
         modify_subscription_mock.assert_not_called()
         create_checkout_session_mock.assert_not_called()

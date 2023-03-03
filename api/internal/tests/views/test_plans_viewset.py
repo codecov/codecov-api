@@ -19,8 +19,9 @@ class PlansViewSetTests(APITestCase):
                 "value": "users-free",
                 "billing_rate": None,
                 "base_unit_price": 0,
+                "monthly_uploads_limit": 250,
                 "benefits": [
-                    "Up to 5 users",
+                    "Up to 1 user",
                     "Unlimited public repositories",
                     "Unlimited private repositories",
                 ],

@@ -123,44 +123,6 @@ class AccountViewSetTests(APITestCase):
         )
         assert response.status_code == status.HTTP_200_OK
 
-    def test_retrieve_account_gets_account_fields(self):
-        owner = OwnerFactory(admins=[self.user.ownerid])
-        self.user.organizations = [owner.ownerid]
-        self.user.save()
-        response = self._retrieve(
-            kwargs={"service": owner.service, "owner_username": owner.username}
-        )
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data == {
-            "activated_user_count": 0,
-            "root_organization": None,
-            "integration_id": owner.integration_id,
-            "plan_auto_activate": owner.plan_auto_activate,
-            "inactive_user_count": 1,
-            "plan": {
-                "marketing_name": "Basic",
-                "value": "users-basic",
-                "billing_rate": None,
-                "base_unit_price": 0,
-                "benefits": [
-                    "Up to 5 users",
-                    "Unlimited public repositories",
-                    "Unlimited private repositories",
-                ],
-                "quantity": 5,
-            },
-            "subscription_detail": None,
-            "checkout_session_id": None,
-            "name": owner.name,
-            "email": owner.email,
-            "nb_active_private_repos": 0,
-            "repo_total_credits": 99999999,
-            "plan_provider": owner.plan_provider,
-            "activated_student_count": 0,
-            "student_count": 0,
-            "schedule_detail": None,
-        }
-
     @patch("services.billing.stripe.SubscriptionSchedule.retrieve")
     @patch("services.billing.stripe.Subscription.retrieve")
     def test_retrieve_account_gets_account_fields_when_there_are_scheduled_details(
@@ -214,16 +176,16 @@ class AccountViewSetTests(APITestCase):
             "plan_auto_activate": owner.plan_auto_activate,
             "inactive_user_count": 1,
             "plan": {
-                "marketing_name": "Basic",
-                "value": "users-basic",
+                "marketing_name": "Free",
+                "value": "users-free",
                 "billing_rate": None,
                 "base_unit_price": 0,
                 "benefits": [
-                    "Up to 5 users",
+                    "Up to 1 user",
                     "Unlimited public repositories",
                     "Unlimited private repositories",
                 ],
-                "quantity": 5,
+                "quantity": 1,
             },
             "subscription_detail": {
                 "latest_invoice": None,
@@ -306,16 +268,16 @@ class AccountViewSetTests(APITestCase):
             "plan_auto_activate": owner.plan_auto_activate,
             "inactive_user_count": 1,
             "plan": {
-                "marketing_name": "Basic",
-                "value": "users-basic",
+                "marketing_name": "Free",
+                "value": "users-free",
                 "billing_rate": None,
                 "base_unit_price": 0,
                 "benefits": [
-                    "Up to 5 users",
+                    "Up to 1 user",
                     "Unlimited public repositories",
                     "Unlimited private repositories",
                 ],
-                "quantity": 5,
+                "quantity": 1,
             },
             "subscription_detail": {
                 "latest_invoice": None,
@@ -371,16 +333,16 @@ class AccountViewSetTests(APITestCase):
             "plan_auto_activate": owner.plan_auto_activate,
             "inactive_user_count": 1,
             "plan": {
-                "marketing_name": "Basic",
-                "value": "users-basic",
+                "marketing_name": "Free",
+                "value": "users-free",
                 "billing_rate": None,
                 "base_unit_price": 0,
                 "benefits": [
-                    "Up to 5 users",
+                    "Up to 1 user",
                     "Unlimited public repositories",
                     "Unlimited private repositories",
                 ],
-                "quantity": 5,
+                "quantity": 1,
             },
             "subscription_detail": {
                 "latest_invoice": None,
@@ -447,11 +409,11 @@ class AccountViewSetTests(APITestCase):
             "billing_rate": None,
             "base_unit_price": 0,
             "benefits": [
-                "Up to 5 users",
+                "Up to 1 user",
                 "Unlimited public repositories",
                 "Unlimited private repositories",
             ],
-            "quantity": self.user.plan_user_count,
+            "quantity": 1,
         }
 
     def test_account_with_paid_user_plan_billed_monthly(self):
@@ -603,22 +565,22 @@ class AccountViewSetTests(APITestCase):
         assert self.user.plan_auto_activate is False
         assert response.data["plan_auto_activate"] is False
 
-    def test_update_can_set_plan_to_users_basic(self):
+    def test_update_can_set_plan_to_users_free(self):
         self.user.plan = "users-inappy"
         self.user.save()
 
         response = self._update(
             kwargs={"service": self.user.service, "owner_username": self.user.username},
-            data={"plan": {"value": "users-basic"}},
+            data={"plan": {"value": "users-free"}},
         )
 
         assert response.status_code == status.HTTP_200_OK
 
         self.user.refresh_from_db()
 
-        assert self.user.plan == "users-basic"
+        assert self.user.plan == "users-free"
         assert self.user.plan_activated_users is None
-        assert self.user.plan_user_count == 5
+        assert self.user.plan_user_count == 1
         assert response.data["plan_auto_activate"] is True
 
     @patch("services.billing.stripe.checkout.Session.create")
@@ -1062,16 +1024,16 @@ class EnterpriseAccountViewSetTests(APITestCase):
             "plan_auto_activate": owner.plan_auto_activate,
             "inactive_user_count": 1,
             "plan": {
-                "marketing_name": "Basic",
-                "value": "users-basic",
+                "marketing_name": "Free",
+                "value": "users-free",
                 "billing_rate": None,
                 "base_unit_price": 0,
                 "benefits": [
-                    "Up to 5 users",
+                    "Up to 1 user",
                     "Unlimited public repositories",
                     "Unlimited private repositories",
                 ],
-                "quantity": 5,
+                "quantity": 1,
             },
             "subscription_detail": None,
             "checkout_session_id": None,
