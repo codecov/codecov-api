@@ -581,7 +581,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                     "head": LineType.hit,
                                 },
                                 value=" line1",
-                                is_diff=True,
+                                is_diff=False,
                             ),
                             MockLineComparison(
                                 number={
