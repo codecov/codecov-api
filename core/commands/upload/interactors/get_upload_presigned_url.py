@@ -33,8 +33,11 @@ class GetUploadPresignedUrlInteractor(BaseInteractor):
                 expires=300,
             )
 
-        except minio.error.NoSuchKey as e:
-            raise Exception("Requested report could not be found")
+        except minio.error.S3Error as e:
+            if e.code == "NoSuchKey":
+                raise Exception("Requested report could not be found")
+            else:
+                raise
 
     @sync_to_async
     def execute(self, upload):
