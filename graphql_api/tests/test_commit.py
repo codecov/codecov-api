@@ -628,6 +628,34 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         commit = data["owner"]["repository"]["commit"]
         assert commit["compareWithParent"]["changeCoverage"] == 5.0
 
+    def test_compare_with_parent_missing_change_coverage(self):
+        CommitComparisonFactory(
+            base_commit=self.parent_commit,
+            compare_commit=self.commit,
+            state=CommitComparison.CommitComparisonStates.PROCESSED,
+        )
+        ReportLevelTotalsFactory(
+            report=CommitReportFactory(commit=self.parent_commit),
+            coverage=75.0,
+            files=0,
+            lines=0,
+            hits=0,
+            misses=0,
+            partials=0,
+            branches=0,
+            methods=0,
+        )
+
+        query = query_commit % "compareWithParent { changeCoverage }"
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        assert commit["compareWithParent"]["changeCoverage"] == None
+
     def test_has_different_number_of_head_and_base_reports_without_PR_comparison(self):
         query = (
             query_commit
