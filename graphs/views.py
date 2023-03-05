@@ -80,7 +80,7 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         try:
             repo = self.repo
         except Http404:
-            log.warning("Repo not found")
+            log.warning("Repo not found", extra=dict(repo=self.kwargs.get("repo_name")))
             return None, coverage_range
 
         if repo.private and repo.image_token != self.request.query_params.get("token"):
@@ -122,12 +122,12 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
 
         return coverage, coverage_range
 
-    def flag_coverage(self, flag, commit):
+    def flag_coverage(self, flag_name, commit):
         """
         Looks into a commit's report sessions and returns the coverage for a perticular flag
 
         Parameters
-        flag (string): name of flag
+        flag_name (string): name of flag
         commit (obj): commit object containing report
         """
         if commit.full_report is None:
@@ -138,9 +138,9 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         flags = commit.full_report.flags
         if flags is None:
             return None
-        for name, f in flags.items():
-            if flag == name:
-                return f.totals.coverage
+        flag = flags.get(flag_name)
+        if flag:
+            return flag.totals.coverage
         return None
 
 
