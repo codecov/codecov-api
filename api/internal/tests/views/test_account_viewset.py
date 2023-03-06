@@ -786,14 +786,18 @@ class AccountViewSetTests(APITestCase):
             == "Quantity or plan for paid plan must be different from the existing one"
         )
 
-    def test_update_quantity_must_be_at_least_5_if_paid_plan(self):
-        desired_plan = {"value": "users-pr-inappy", "quantity": 4}
+    def test_update_quantity_must_be_at_least_2_if_paid_plan(self):
+        desired_plan = {"value": "users-pr-inappy", "quantity": 1}
         response = self._update(
             kwargs={"service": self.user.service, "owner_username": self.user.username},
             data={"plan": desired_plan},
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert (
+            response.data["plan"]["non_field_errors"][0]
+            == "Quantity for paid plan must be greater than 1"
+        )
 
     def test_update_payment_method_without_body(self):
         kwargs = {"service": self.user.service, "owner_username": self.user.username}
