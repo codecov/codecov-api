@@ -239,7 +239,7 @@ def resolve_flags(
 @repository_bindable.field("flagsCount")
 @sync_to_async
 def resolve_flags_count(repository: Repository, info) -> int:
-    return repository.flags.count()
+    return repository.flags.filter(deleted__isnot=True).count()
 
 
 @repository_bindable.field("flagsMeasurementsActive")

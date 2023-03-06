@@ -2,6 +2,7 @@ from codecov_auth.commands.owner import OwnerCommands
 from compare.commands.compare import CompareCommands
 from core.commands.branch import BranchCommands
 from core.commands.commit import CommitCommands
+from core.commands.flag import FlagCommands
 from core.commands.pull import PullCommands
 from core.commands.repository import RepositoryCommands
 from core.commands.upload import UploadCommands
@@ -15,6 +16,7 @@ mapping = {
     "compare": CompareCommands,
     "pull": PullCommands,
     "upload": UploadCommands,
+    "flag": FlagCommands,
 }
 
 

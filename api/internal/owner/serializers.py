@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime
 
+from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
@@ -76,8 +77,25 @@ class StripeInvoiceSerializer(serializers.Serializer):
     customer_shipping = serializers.CharField()
 
 
+class StripeDiscountSerializer(serializers.Serializer):
+    name = serializers.CharField(source="coupon.name")
+    percent_off = serializers.FloatField(source="coupon.percent_off")
+    duration_in_months = serializers.IntegerField(source="coupon.duration_in_months")
+    expires = serializers.SerializerMethodField()
+
+    def get_expires(self, customer):
+        coupon = customer.get("coupon")
+        if coupon:
+            months = coupon.get("duration_in_months")
+            created = coupon.get("created")
+            if months and created:
+                expires = datetime.fromtimestamp(created) + relativedelta(months=months)
+                return int(expires.timestamp())
+
+
 class StripeCustomerSerializer(serializers.Serializer):
     id = serializers.CharField()
+    discount = StripeDiscountSerializer()
 
 
 class StripeCardSerializer(serializers.Serializer):
@@ -209,6 +227,7 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
     subscription_detail = serializers.SerializerMethodField()
     root_organization = RootOrganizationSerializer()
     schedule_detail = serializers.SerializerMethodField()
+    apply_cancellation_discount = serializers.BooleanField(write_only=True)
 
     class Meta:
         model = Owner
@@ -231,6 +250,7 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
             "schedule_detail",
             "student_count",
             "subscription_detail",
+            "apply_cancellation_discount",
         )
 
     def _get_billing(self):
@@ -258,6 +278,9 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
 
             if checkout_session_id_or_none is not None:
                 self.context["checkout_session_id"] = checkout_session_id_or_none
+
+        if validated_data.get("apply_cancellation_discount") is True:
+            self._get_billing().apply_cancellation_discount(instance)
 
         super().update(instance, validated_data)
         return self.context["view"].get_object()

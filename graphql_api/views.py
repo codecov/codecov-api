@@ -34,9 +34,9 @@ class AsyncGraphqlView(GraphQLAsyncView):
     schema = schema
     extensions = []
 
-    def get(self, *args, **kwargs):
+    async def get(self, *args, **kwargs):
         if settings.GRAPHQL_PLAYGROUND:
-            return super().get(*args, **kwargs)
+            return await super().get(*args, **kwargs)
         # No GraphqlPlayground if no settings.DEBUG
         return HttpResponseNotAllowed(["POST"])
 

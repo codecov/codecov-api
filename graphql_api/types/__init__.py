@@ -11,7 +11,6 @@ from .config import config, config_bindable
 from .coverage_totals import coverage_totals, coverage_totals_bindable
 from .enums import enum_types, enums
 from .file import commit_file, file_bindable
-from .file_comparison import file_comparison, file_comparison_bindable
 from .flag import flag, flag_bindable
 from .flag_comparison import flag_comparison, flag_comparison_bindable
 from .impacted_file import impacted_file, impacted_file_bindable
@@ -56,7 +55,6 @@ types = [
     comparison,
     component,
     component_comparison,
-    file_comparison,
     flag,
     flag_comparison,
     segment_comparison,
@@ -91,7 +89,6 @@ bindables = [
     comparison_result_bindable,
     component_bindable,
     component_comparison_bindable,
-    file_comparison_bindable,
     flag_bindable,
     flag_comparison_bindable,
     segment_comparison_bindable,

@@ -79,7 +79,7 @@ class ReportResultsFactory(DjangoModelFactory):
     report = factory.SubFactory(CommitReportFactory)
     state = factory.Iterator(
         [
-            ReportResults.ReportResultsStates.CREATED,
-            ReportResults.ReportResultsStates.READY,
+            ReportResults.ReportResultsStates.PENDING,
+            ReportResults.ReportResultsStates.COMPLETED,
         ]
     )
