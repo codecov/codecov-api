@@ -18,6 +18,7 @@ type Owner {
   hashOwnerid: String!
   orgUploadToken: String
   defaultOrgUsername: String
+  isCurrentUserActivated: Boolean!
   measurements(
     interval: MeasurementInterval!
     after: DateTime!
