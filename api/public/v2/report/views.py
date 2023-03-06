@@ -238,6 +238,8 @@ class FileReportViewSet(
         self.commit = self.get_commit()
         report = self.commit.full_report
 
+        oldest_sha = self.request.query_params.get("oldest_sha")
+
         for i in range(walk_back):
             if self._is_valid_report(report, self.path):
                 break
@@ -253,6 +255,9 @@ class FileReportViewSet(
                     report = None
                     break
                 report = self.commit.full_report
+
+                if oldest_sha and oldest_sha == self.commit.commitid:
+                    break
 
         if not self._is_valid_report(report, self.path):
             raise NotFound(f"coverage info not found for path '{self.path}'")
