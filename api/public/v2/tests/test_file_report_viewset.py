@@ -200,6 +200,23 @@ class FileReportViewSetTestCase(TestCase):
         )
 
     @patch("services.archive.ReportService.build_report_from_commit")
+    def test_file_report_with_walk_back_oldest_sha(
+        self, build_report_from_commit, get_repo_permissions
+    ):
+        get_repo_permissions.return_value = (True, True)
+        build_report_from_commit.side_effect = [None, None, sample_report()]
+
+        res = self._request_file_report(
+            path="foo/file1.py", walk_back=2, oldest_sha=self.commit2.commitid
+        )
+        assert res.status_code == 404
+
+        # does not walk back to commit1
+        build_report_from_commit.assert_has_calls(
+            [call(self.commit3), call(self.commit2)]
+        )
+
+    @patch("services.archive.ReportService.build_report_from_commit")
     def test_file_report_large_walk_back(
         self, build_report_from_commit, get_repo_permissions
     ):
