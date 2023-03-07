@@ -133,3 +133,11 @@ def resolve_measurements(
         after,
         before,
     )
+
+
+@owner_bindable.field("isCurrentUserActivated")
+def resolve_is_current_user_activated(owner, info):
+    current_user = info.context["request"].user
+    if owner.plan_activated_users is None:
+        return False
+    return current_user.ownerid in owner.plan_activated_users
