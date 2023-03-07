@@ -20,8 +20,8 @@ type Owner {
   defaultOrgUsername: String
   measurements(
     interval: MeasurementInterval!
-    after: DateTime!
-    before: DateTime!
+    after: DateTime
+    before: DateTime
     repos: [String!]
   ): [Measurement!]!
 }
