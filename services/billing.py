@@ -4,11 +4,13 @@ from abc import ABC, abstractmethod
 import stripe
 from django.conf import settings
 
+import services.sentry as sentry
 from billing.constants import (
     ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
     FREE_PLAN_REPRESENTATIONS,
     PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
     REMOVED_INVOICE_STATUSES,
+    SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
     USER_PLAN_REPRESENTATIONS,
 )
 from codecov_auth.models import Owner
@@ -516,11 +518,25 @@ class BillingService:
         elif (
             desired_plan["value"] in PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS
             or desired_plan["value"] in ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS
+            or desired_plan["value"] in SENTRY_PAID_USER_PLAN_REPRESENTATIONS
         ):
+            if desired_plan["value"] in SENTRY_PAID_USER_PLAN_REPRESENTATIONS:
+                if not sentry.is_sentry_user(owner):
+                    log.warning(
+                        f"Non-Sentry user attempted to transition to Sentry plan",
+                        extra=dict(owner_id=owner.pk, plan=desired_plan["value"]),
+                    )
+                    return
+
             if owner.stripe_subscription_id is not None:
                 self.payment_service.modify_subscription(owner, desired_plan)
             else:
                 return self.payment_service.create_checkout_session(owner, desired_plan)
+
+            if desired_plan["value"] in SENTRY_PAID_USER_PLAN_REPRESENTATIONS:
+                # TODO: we need to enqueue a task that makes a webhook request
+                # back to Sentry with info about the owner
+                pass
         else:
             log.warning(
                 f"Attempted to transition to non-existent or legacy plan: "

@@ -16,6 +16,8 @@ STRIPE_ENDPOINT_SECRET = "whsec_testv00ijzofmsvxcktfmna1duw9pn8b"
 STRIPE_PLAN_IDS = {
     "users-pr-inappm": "plan_H6P3KZXwmAbqPS",
     "users-pr-inappy": "plan_H6P16wij3lUuxg",
+    "users-sentrym": "price_1Mj1kYGlVGuVgOrk7jucaZAa",
+    "users-sentryy": "price_1Mj1mMGlVGuVgOrkC0ORc6iW",
 }
 
 CORS_ALLOW_CREDENTIALS = True

@@ -83,6 +83,33 @@ PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
     },
 }
 
+SENTRY_PAID_USER_PLAN_REPRESENTATIONS = {
+    "users-sentrym": {
+        "marketing_name": "Sentry Pro Team",
+        "value": "users-sentrym",
+        "billing_rate": "monthly",
+        "base_unit_price": 12,
+        "benefits": [
+            "Configurable # of users",
+            "Unlimited public repositories",
+            "Unlimited private repositories",
+            "Priority Support",
+        ],
+    },
+    "users-sentryy": {
+        "marketing_name": "Sentry Pro Team",
+        "value": "users-sentryy",
+        "billing_rate": "annually",
+        "base_unit_price": 10,
+        "benefits": [
+            "Configurable # of users",
+            "Unlimited public repositories",
+            "Unlimited private repositories",
+            "Priority Support",
+        ],
+    },
+}
+
 # TODO: Update these values
 ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS = {
     "users-enterprisem": {
@@ -151,6 +178,7 @@ USER_PLAN_REPRESENTATIONS = {
     },
     **NON_PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
     **PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
+    **SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
     **GHM_PLAN_REPRESENTATION,
     **ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
 }

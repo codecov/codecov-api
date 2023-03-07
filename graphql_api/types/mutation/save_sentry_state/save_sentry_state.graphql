@@ -1,0 +1,5 @@
+union SaveSentryStateError = UnauthenticatedError | ValidationError
+
+type SaveSentryStatePayload {
+    error: SaveSentryStateError
+}

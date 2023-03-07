@@ -11,7 +11,7 @@ from api.shared.mixins import OwnerPropertyMixin
 from api.shared.owner.mixins import OwnerViewSetMixin, UserViewSetMixin
 from api.shared.permissions import MemberOfOrgPermissions
 from billing.constants import CURRENTLY_OFFERED_PLANS
-from billing.helpers import on_enterprise_plan
+from billing.helpers import available_plans, on_enterprise_plan
 from services.billing import BillingService
 from services.decorators import stripe_safe
 from services.segment import SegmentService
@@ -157,5 +157,9 @@ class UserViewSet(
 
 
 class PlanViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
+    def get_queryset(self):
+        return None
+
     def list(self, request, *args, **kwargs):
-        return Response([val for key, val in CURRENTLY_OFFERED_PLANS.items()])
+        current_user = request.user
+        return Response(available_plans(current_user))

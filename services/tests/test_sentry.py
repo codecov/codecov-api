@@ -1,0 +1,91 @@
+from unittest.mock import MagicMock, patch
+
+import jwt
+from django.test import TestCase, TransactionTestCase, override_settings
+
+from codecov_auth.tests.factories import OwnerFactory
+from services.sentry import (
+    SentryInvalidStateError,
+    SentryUserAlreadyExistsError,
+    decode_state,
+    is_sentry_user,
+    save_sentry_state,
+)
+
+
+@override_settings(SENTRY_JWT_SHARED_SECRET="secret")
+class DecodeStateTests(TestCase):
+    def setUp(self):
+        self.decoded_state = {"user_id": "sentry-user-id", "org_id": "sentry-org-id"}
+        self.state = jwt.encode(self.decoded_state, "secret", algorithm="HS256")
+
+    def test_decode_state(self):
+        res = decode_state(self.state)
+        assert res == self.decoded_state
+
+    @override_settings(SENTRY_JWT_SHARED_SECRET="wrong")
+    def test_decode_state_wrong_secret(self):
+        res = decode_state(self.state)
+        assert res == None
+
+    def test_decode_state_malformed(self):
+        res = decode_state("malformed")
+        assert res == None
+
+
+class SaveSentryStateTests(TransactionTestCase):
+    def setUp(self):
+        self.owner = OwnerFactory()
+
+        self.decode_state_patcher = patch("services.sentry.decode_state")
+        self.decode_state = self.decode_state_patcher.start()
+        self.decode_state.return_value = {
+            "user_id": "sentry-user-id",
+            "org_id": "sentry-org-id",
+        }
+        self.addCleanup(self.decode_state_patcher.stop)
+
+    def test_save_sentry_state(self):
+        state_mock = MagicMock()
+        save_sentry_state(self.owner, state_mock)
+
+        self.decode_state.assert_called_once_with(state_mock)
+
+        self.owner.refresh_from_db()
+        assert self.owner.sentry_user_id == "sentry-user-id"
+        assert self.owner.sentry_user_data == {
+            "user_id": "sentry-user-id",
+            "org_id": "sentry-org-id",
+        }
+
+    def test_save_sentry_state_invalid_state(self):
+        self.decode_state.return_value = None
+
+        with self.assertRaises(SentryInvalidStateError):
+            save_sentry_state(self.owner, MagicMock())
+
+        self.owner.refresh_from_db()
+        assert self.owner.sentry_user_id == None
+        assert self.owner.sentry_user_data == None
+
+    def test_save_sentry_state_duplicate_user_id(self):
+        OwnerFactory(sentry_user_id="sentry-user-id")
+        with self.assertRaises(SentryUserAlreadyExistsError):
+            save_sentry_state(self.owner, MagicMock())
+
+        self.owner.refresh_from_db()
+        assert self.owner.sentry_user_id == None
+        assert self.owner.sentry_user_data == None
+
+
+class IsSentryUserTests(TestCase):
+    def setUp(self):
+        self.owner = OwnerFactory()
+
+    def test_owner_has_sentry_user_id(self):
+        self.owner.sentry_user_id = "testing"
+        assert is_sentry_user(self.owner) == True
+
+    def test_owner_missing_sentry_user_id(self):
+        self.owner.sentry_user_id = None
+        assert is_sentry_user(self.owner) == False

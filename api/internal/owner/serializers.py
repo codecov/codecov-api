@@ -10,6 +10,7 @@ from billing.constants import (
     CURRENTLY_OFFERED_PLANS,
     ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
     PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
+    SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
 )
 from codecov_auth.models import Owner
 from services.billing import BillingService
@@ -133,6 +134,7 @@ class PlanSerializer(serializers.Serializer):
         plans_of_interest = {
             **PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
             **ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
+            **SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
         }
         if plan["value"] in plans_of_interest:
             if "quantity" not in plan:
@@ -182,6 +184,7 @@ class StripeScheduledPhaseSerializer(serializers.Serializer):
         plans_of_interest = {
             **PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
             **ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
+            **SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
         }
         marketing_plan_name = plans_of_interest[plan_name]["billing_rate"]
         return marketing_plan_name
