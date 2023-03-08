@@ -10,7 +10,6 @@ from rest_framework.response import Response
 from api.shared.mixins import OwnerPropertyMixin
 from api.shared.owner.mixins import OwnerViewSetMixin, UserViewSetMixin
 from api.shared.permissions import MemberOfOrgPermissions
-from billing.constants import CURRENTLY_OFFERED_PLANS
 from billing.helpers import available_plans, on_enterprise_plan
 from services.billing import BillingService
 from services.decorators import stripe_safe

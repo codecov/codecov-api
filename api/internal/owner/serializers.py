@@ -7,11 +7,11 @@ from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 
 from billing.constants import (
-    CURRENTLY_OFFERED_PLANS,
     ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
     PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
     SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
 )
+from billing.helpers import available_plans
 from codecov_auth.models import Owner
 from services.billing import BillingService
 from services.segment import SegmentService
@@ -120,10 +120,11 @@ class PlanSerializer(serializers.Serializer):
     quantity = serializers.IntegerField(required=False)
 
     def validate_value(self, value):
-        if value not in CURRENTLY_OFFERED_PLANS:
+        owner = self.context["view"].owner
+        plans = [plan["value"] for plan in available_plans(owner)]
+        if value not in plans:
             raise serializers.ValidationError(
-                f"Invalid value for plan: {value}; "
-                f"must be one of {CURRENTLY_OFFERED_PLANS.keys()}"
+                f"Invalid value for plan: {value}; " f"must be one of {plans.keys()}"
             )
         return value
 

@@ -18,12 +18,12 @@ def available_plans(user: Owner) -> List[dict]:
     Returns all plan representations available to the given owner.
     """
     # these are available to everyone
-    plans = [val for key, val in constants.CURRENTLY_OFFERED_PLANS.items()]
+    plans = []
+    plans += list(constants.FREE_PLAN_REPRESENTATIONS.values())
+    plans += list(constants.PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values())
 
     if sentry.is_sentry_user(user):
         # these are only available to Sentry users
-        plans += [
-            val for key, val in constants.SENTRY_PAID_USER_PLAN_REPRESENTATIONS.items()
-        ]
+        plans += list(constants.SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values())
 
     return plans

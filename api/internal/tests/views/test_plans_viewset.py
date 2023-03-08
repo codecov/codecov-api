@@ -129,6 +129,7 @@ class PlansViewSetTests(APITestCase):
                     "Unlimited private repositories",
                     "Priority Support",
                 ],
+                "trial_days": 14,
             },
             {
                 "marketing_name": "Sentry Pro Team",
@@ -141,6 +142,7 @@ class PlansViewSetTests(APITestCase):
                     "Unlimited private repositories",
                     "Priority Support",
                 ],
+                "trial_days": 14,
             },
         ]
         is_sentry_user.assert_called_once_with(self.user)
