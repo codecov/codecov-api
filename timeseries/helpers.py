@@ -4,9 +4,20 @@ from typing import Iterable
 
 from django.conf import settings
 from django.db import connections
-from django.db.models import Avg, F, FloatField, Max, Min, QuerySet, Sum
+from django.db.models import (
+    Avg,
+    DateTimeField,
+    F,
+    FloatField,
+    Func,
+    Max,
+    Min,
+    QuerySet,
+    Sum,
+    Value,
+)
 from django.db.models.fields.json import KeyTextTransform
-from django.db.models.functions import Cast, Trunc
+from django.db.models.functions import Cast
 from django.utils import timezone
 
 from codecov_auth.models import Owner
@@ -316,14 +327,21 @@ def _commits_coverage(
     commits_queryset: QuerySet[Commit], interval: Interval
 ) -> QuerySet[Commit]:
     intervals = {
-        Interval.INTERVAL_1_DAY: "day",
-        Interval.INTERVAL_7_DAY: "week",
-        Interval.INTERVAL_30_DAY: "month",
+        Interval.INTERVAL_1_DAY: "1 day",
+        Interval.INTERVAL_7_DAY: "7 days",
+        Interval.INTERVAL_30_DAY: "30 days",
     }
 
     return (
         commits_queryset.annotate(
-            timestamp_bin=Trunc("timestamp", intervals[interval], tzinfo=timezone.utc),
+            timestamp_bin=Func(
+                Value(intervals[interval]),
+                F("timestamp"),
+                Value("2000-01-03"),  # mimic how Timescale aligns bins
+                function="date_bin",
+                template="%(function)s(%(expressions)s) at time zone 'utc'",
+                output_field=DateTimeField(),
+            ),
             coverage=Cast(KeyTextTransform("c", "totals"), output_field=FloatField()),
         )
         .filter(coverage__isnull=False)
