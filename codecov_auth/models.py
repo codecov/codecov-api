@@ -103,7 +103,7 @@ class Owner(models.Model):
     plan_provider = models.TextField(
         null=True, choices=PlanProviders.choices, blank=True
     )  # postgres enum containing only "github"
-    plan_user_count = models.SmallIntegerField(null=True, default=5, blank=True)
+    plan_user_count = models.SmallIntegerField(null=True, default=1, blank=True)
     plan_auto_activate = models.BooleanField(null=True, default=True)
     plan_activated_users = ArrayField(
         models.IntegerField(null=True), null=True, blank=True
@@ -431,7 +431,7 @@ class Owner(models.Model):
         log.info(f"Setting plan to users-basic for owner {self.ownerid}")
         self.plan = "users-basic"
         self.plan_activated_users = None
-        self.plan_user_count = 5
+        self.plan_user_count = 1
         self.stripe_subscription_id = None
         self.save()
 

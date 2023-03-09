@@ -290,7 +290,7 @@ class StripeServiceTests(TestCase):
         assert owner.stripe_subscription_id == None
         assert owner.plan == BASIC_PLAN_NAME
         assert owner.plan_activated_users == None
-        assert owner.plan_user_count == 5
+        assert owner.plan_user_count == 1
 
     @patch("services.billing.stripe.SubscriptionSchedule.cancel")
     @patch("services.billing.stripe.Subscription.retrieve")
@@ -318,7 +318,7 @@ class StripeServiceTests(TestCase):
         assert owner.stripe_subscription_id == None
         assert owner.plan == BASIC_PLAN_NAME
         assert owner.plan_activated_users == None
-        assert owner.plan_user_count == 5
+        assert owner.plan_user_count == 1
 
     @patch("services.billing.stripe.Subscription.retrieve")
     @patch("services.billing.stripe.Subscription.modify")
