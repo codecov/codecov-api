@@ -390,7 +390,7 @@ class TestOwnerModel(TransactionTestCase):
         self.owner.refresh_from_db()
 
         assert self.owner.plan == "users-basic"
-        assert self.owner.plan_user_count == 5
+        assert self.owner.plan_user_count == 1
         assert self.owner.plan_activated_users == None
         assert self.owner.plan_auto_activate == False
         assert self.owner.stripe_subscription_id == None

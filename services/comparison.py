@@ -902,7 +902,12 @@ class ImpactedFile:
 
     @cached_property
     def change_coverage(self) -> Optional[float]:
-        if self.base_coverage and self.head_coverage:
+        if (
+            self.base_coverage
+            and self.base_coverage.coverage
+            and self.head_coverage
+            and self.head_coverage.coverage
+        ):
             return float(self.head_coverage.coverage - self.base_coverage.coverage)
 
     @cached_property

@@ -80,9 +80,14 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         try:
             repo = self.repo
         except Http404:
+            log.warning("Repo not found", extra=dict(repo=self.kwargs.get("repo_name")))
             return None, coverage_range
 
         if repo.private and repo.image_token != self.request.query_params.get("token"):
+            log.warning(
+                "Token provided does not match repo's image token",
+                extra=dict(repo=repo),
+            )
             return None, coverage_range
 
         branch_name = self.kwargs.get("branch") or repo.branch
@@ -91,11 +96,15 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         ).first()
 
         if branch is None:
+            log.warning(
+                "Branch not found", extra=dict(branch_name=branch_name, repo=repo)
+            )
             return None, coverage_range
         try:
             commit = repo.commits.get(commitid=branch.head)
         except ObjectDoesNotExist:
             # if commit does not exist return None coverage
+            log.warning("Commit not found", extra=dict(commit=branch.head))
             return None, coverage_range
 
         if repo.yaml and repo.yaml.get("coverage", {}).get("range") is not None:
@@ -113,24 +122,25 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
 
         return coverage, coverage_range
 
-    def flag_coverage(self, flag, commit):
+    def flag_coverage(self, flag_name, commit):
         """
         Looks into a commit's report sessions and returns the coverage for a perticular flag
 
         Parameters
-        flag (string): name of flag
+        flag_name (string): name of flag
         commit (obj): commit object containing report
         """
-        if commit.report is None:
+        if commit.full_report is None:
+            log.warning(
+                "Commit's report not found", extra=dict(commit=commit, flag=flag_name)
+            )
             return None
-        sessions = commit.report.get("sessions")
-        if sessions is None:
+        flags = commit.full_report.flags
+        if flags is None:
             return None
-        for key, data in sessions.items():
-            f = data.get("f") or []
-            if flag in f:
-                totals = data.get("t", [])
-                return totals[5] if totals is not None and len(totals) > 5 else None
+        flag = flags.get(flag_name)
+        if flag:
+            return flag.totals.coverage
         return None
 
 
