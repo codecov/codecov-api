@@ -102,6 +102,13 @@ class FlagCoverageViewSet(CoverageViewSet):
             flag_id=flag.pk,
         )
 
+        start_date = self.request.query_params.get("start_date")
+        if start_date is not None:
+            queryset = queryset.filter(timestamp_bin__gte=start_date)
+        end_date = self.request.query_params.get("end_date")
+        if end_date is not None:
+            queryset = queryset.filter(timestamp_bin__lte=end_date)
+
         return aggregate_measurements(
             queryset, ["timestamp_bin", "owner_id", "repo_id", "flag_id"]
         )

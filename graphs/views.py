@@ -132,7 +132,7 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         """
         if commit.full_report is None:
             log.warning(
-                "Commit's report not found", extra=dict(commit=commit, flag=flag)
+                "Commit's report not found", extra=dict(commit=commit, flag=flag_name)
             )
             return None
         flags = commit.full_report.flags
