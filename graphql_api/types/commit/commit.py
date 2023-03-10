@@ -18,11 +18,11 @@ from graphql_api.helpers.connection import (
 )
 from graphql_api.types.enums import OrderingDirection, PathContentDisplayType
 from graphql_api.types.errors import MissingCoverage, MissingHeadReport, UnknownPath
-from services.archive import ReadOnlyReport, ReportService
 from services.comparison import ComparisonReport
 from services.components import Component
 from services.path import ReportPaths
 from services.profiling import CriticalFile, ProfilingSummary
+from services.report import ReadOnlyReport, build_report_from_commit
 
 commit_bindable = ObjectType("Commit")
 
@@ -132,9 +132,7 @@ def resolve_path_contents(commit: Commit, info, path: str = None, filters=None):
     user = info.context["request"].user
 
     # TODO: Might need to add reports here filtered by flags in the future
-    commit_report = ReportService().build_report_from_commit(
-        commit, report_class=ReadOnlyReport
-    )
+    commit_report = build_report_from_commit(commit, report_class=ReadOnlyReport)
     if not commit_report:
         return MissingHeadReport()
 

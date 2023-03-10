@@ -2,14 +2,15 @@ import random
 import string
 import uuid
 from datetime import datetime
+from typing import Optional
 
 from django.contrib.postgres.fields import ArrayField, CITextField
 from django.db import models
 from django.forms import ValidationError
 from django.utils.functional import cached_property
+from shared.reports.resources import Report
 
 from codecov.models import BaseCodecovModel
-from services.archive import ReportService
 
 from .encoders import ReportJSONEncoder
 from .managers import RepositoryManager
@@ -236,6 +237,7 @@ class Commit(models.Model):
         for certain calculations only the totals over the entire runs are needed. This query should be used when that
         is the case for performance reasons.
         """
+        # TODO: remove the reliance on `commits.report`
         return Commit.objects.raw(
             "SELECT id, json_data.key as file_name, json_data.value->1 as totals FROM commits, jsonb_each(commits.report->'files') as json_data WHERE commits.id = %s;",
             [commit_id],
@@ -247,9 +249,13 @@ class Commit(models.Model):
         return reports[0] if reports else None
 
     @cached_property
-    def full_report(self):
-        report_service = ReportService()
-        return report_service.build_report_from_commit(self)
+    def full_report(self) -> Optional[Report]:
+        # TODO: we should probably remove use of this method since it inverts the
+        # dependency tree (services should be importing models and not the other
+        # way around).  The caching should be preserved somehow though.
+        from services.report import build_report_from_commit
+
+        return build_report_from_commit(self)
 
     class Meta:
         db_table = "commits"

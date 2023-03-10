@@ -23,7 +23,7 @@ from django.utils import timezone
 from codecov_auth.models import Owner
 from core.models import Commit, Repository
 from reports.models import RepositoryFlag
-from services.archive import ReportService
+from services.report import build_report_from_commit
 from services.task import TaskService
 from timeseries.models import (
     Dataset,
@@ -47,9 +47,7 @@ def save_commit_measurements(commit: Commit) -> None:
       - the report total coverage
       - the flag coverage for each relevant flag
     """
-    report_service = ReportService()
-    report = report_service.build_report_from_commit(commit)
-
+    report = build_report_from_commit(commit)
     if not report:
         return
 

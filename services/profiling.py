@@ -9,7 +9,8 @@ from shared.yaml import UserYaml
 
 from core.models import Commit, Repository
 from profiling.models import ProfilingCommit
-from services.archive import ArchiveService, ReportService
+from services.archive import ArchiveService
+from services.report import build_report_from_commit
 
 log = logging.getLogger(__name__)
 
@@ -80,8 +81,7 @@ class ProfilingSummary:
             return []
         commit_sha = self.commit_sha or profiling_commit.commit_sha
         commit = Commit.objects.get(commitid=commit_sha)
-        report_service = ReportService()
-        report = report_service.build_report_from_commit(commit)
+        report = build_report_from_commit(commit)
         if report is None:
             return []
         critical_files_paths = repo_yaml["profiling"]["critical_files_paths"]
