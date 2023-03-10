@@ -1,3 +1,4 @@
+import json
 from unittest.mock import MagicMock, patch
 
 import jwt
@@ -10,6 +11,7 @@ from services.sentry import (
     decode_state,
     is_sentry_user,
     save_sentry_state,
+    send_webhook,
 )
 
 
@@ -89,3 +91,50 @@ class IsSentryUserTests(TestCase):
     def test_owner_missing_sentry_user_id(self):
         self.owner.sentry_user_id = None
         assert is_sentry_user(self.owner) == False
+
+
+@patch("services.task.TaskService.http_request")
+class SendWebhookTests(TestCase):
+    def setUp(self):
+        self.user = OwnerFactory(
+            sentry_user_id="sentry-user-id",
+            sentry_user_data={"user_id": "sentry-user-id", "org_id": "sentry-org-id"},
+        )
+        self.org = OwnerFactory(
+            service="github",
+            service_id="org-service-id",
+        )
+
+    @override_settings(
+        SENTRY_WEBHOOK_URL="https://example.com", SENTRY_JWT_SHARED_SECRET="secret"
+    )
+    def test_webhook(self, http_request):
+        send_webhook(self.user, self.org)
+
+        encoded_state = jwt.encode(
+            {
+                "user_id": self.user.sentry_user_id,
+                "org_id": self.user.sentry_user_data.get("org_id"),
+                "codecov_owner_id": self.user.pk,
+                "codecov_organization_id": self.org.pk,
+                "service": self.org.service,
+                "service_id": self.org.service_id,
+            },
+            "secret",
+            algorithm="HS256",
+        )
+
+        http_request.assert_called_once_with(
+            url="https://example.com",
+            method="POST",
+            headers={
+                "Content-Type": "application/json",
+                "User-Agent": "Codecov",
+            },
+            data=json.dumps({"state": f"{encoded_state}"}),
+        )
+
+    @override_settings(SENTRY_WEBHOOK_URL=None)
+    def test_webhook_no_url(self, http_request):
+        send_webhook(self.user, self.org)
+        assert not http_request.called

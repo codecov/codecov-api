@@ -549,11 +549,6 @@ class BillingService:
                 self.payment_service.modify_subscription(owner, desired_plan)
             else:
                 return self.payment_service.create_checkout_session(owner, desired_plan)
-
-            if desired_plan["value"] in SENTRY_PAID_USER_PLAN_REPRESENTATIONS:
-                # TODO: we need to enqueue a task that makes a webhook request
-                # back to Sentry with info about the owner
-                pass
         else:
             log.warning(
                 f"Attempted to transition to non-existent or legacy plan: "

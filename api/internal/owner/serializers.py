@@ -15,6 +15,7 @@ from billing.helpers import available_plans
 from codecov_auth.models import Owner
 from services.billing import BillingService
 from services.segment import SegmentService
+from services.sentry import send_webhook as send_sentry_webhook
 
 log = logging.getLogger(__name__)
 
@@ -276,9 +277,14 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         if "pretty_plan" in validated_data:
+            desired_plan = validated_data.pop("pretty_plan")
             checkout_session_id_or_none = self._get_billing().update_plan(
-                instance, validated_data.pop("pretty_plan")
+                instance, desired_plan
             )
+
+            if desired_plan["value"] in SENTRY_PAID_USER_PLAN_REPRESENTATIONS:
+                current_user = self.context["view"].request.user
+                send_sentry_webhook(current_user, instance)
 
             if checkout_session_id_or_none is not None:
                 self.context["checkout_session_id"] = checkout_session_id_or_none
