@@ -1,6 +1,5 @@
 from codecov.commands.base import BaseCommand
 
-from .interactors.fetch_commits import FetchCommitsInteractor
 from .interactors.fetch_totals import FetchTotalsInteractor
 from .interactors.get_commit_errors import GetCommitErrorsInteractor
 from .interactors.get_file_content import GetFileContentInteractor
@@ -11,9 +10,6 @@ from .interactors.get_uploads_number import GetUploadsNumberInteractor
 class CommitCommands(BaseCommand):
     def get_file_content(self, commit, path):
         return self.get_interactor(GetFileContentInteractor).execute(commit, path)
-
-    def fetch_commits(self, repository, filters):
-        return self.get_interactor(FetchCommitsInteractor).execute(repository, filters)
 
     def fetch_totals(self, commit):
         return self.get_interactor(FetchTotalsInteractor).execute(commit)

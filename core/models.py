@@ -4,7 +4,9 @@ import uuid
 from datetime import datetime
 
 from django.contrib.postgres.fields import ArrayField, CITextField
+from django.contrib.postgres.indexes import GinIndex, OpClass
 from django.db import models
+from django.db.models.functions import Lower, Substr, Upper
 from django.forms import ValidationError
 from django.utils.functional import cached_property
 
@@ -275,6 +277,16 @@ class Commit(models.Model):
             models.Index(
                 fields=["repository", "pullid"],
                 name="all_commits_on_pull",
+            ),
+            models.Index(
+                "repository",
+                Substr(Lower("commitid"), 1, 7),
+                name="commits_repoid_commitid_short",
+            ),
+            GinIndex(
+                "repository",
+                OpClass(Upper("message"), name="gin_trgm_ops"),
+                name="commit_message_gin_trgm",
             ),
         ]
 
