@@ -102,9 +102,9 @@ def resolve_tracking_data(current_user, _, **kwargs):
 @me_bindable.field("privateAccess")
 @sync_to_async
 def resolve_profile(owner: Owner, info) -> bool:
-    if owner.private_access is not None:
-        return owner.private_access
-    return False
+    if owner.private_access is None:
+        return False
+    return owner.private_access
 
 
 tracking_metadata_bindable = ObjectType("trackingMetadata")
