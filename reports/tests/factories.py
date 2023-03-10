@@ -58,6 +58,21 @@ class ReportLevelTotalsFactory(DjangoModelFactory):
     files = factory.Faker("pyint")
 
 
+class UploadLevelTotalsFactory(DjangoModelFactory):
+    class Meta:
+        model = models.UploadLevelTotals
+
+    report_session = factory.SubFactory(UploadFactory)
+
+
+class ReportDetailsFactory(DjangoModelFactory):
+    class Meta:
+        model = models.ReportDetails
+
+    report = factory.SubFactory(CommitReportFactory)
+    files_array = factory.LazyAttribute(lambda _: [])
+
+
 class UploadErrorFactory(DjangoModelFactory):
     class Meta:
         model = models.UploadError

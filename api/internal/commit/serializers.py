@@ -31,21 +31,22 @@ class CommitSerializer(serializers.ModelSerializer):
 class CommitWithFileLevelReportSerializer(CommitSerializer):
     report = serializers.SerializerMethodField()
 
-    def get_report(self, obj):
-        # TODO: Re-evaluate this data-format when we start writing
-        # the new UI components that use it.
-        report_totals_by_file_name = Commit.report_totals_by_file_name(obj.id)
+    def get_report(self, commit: Commit):
+        commit_report = commit.reports.select_related(
+            "reportdetails", "reportleveltotals"
+        ).first()
+
         return {
             "files": [
                 {
-                    "name": report.file_name,
+                    "name": file["filename"],
                     "totals": CommitTotalsSerializer(
-                        {key: val for key, val in zip(TOTALS_MAP, report.totals)}
+                        {key: val for key, val in zip(TOTALS_MAP, file["file_totals"])}
                     ).data,
                 }
-                for report in report_totals_by_file_name
+                for file in commit_report.reportdetails.files_array
             ],
-            "totals": CommitTotalsSerializer(obj.totals).data,
+            "totals": CommitTotalsSerializer(commit.totals).data,
         }
 
     class Meta:

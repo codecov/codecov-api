@@ -479,7 +479,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
     )
     @patch("core.commands.commit.commit.CommitCommands.get_file_content")
-    @patch("core.models.ReportService.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_fetch_commit_coverage_file_call_the_command(
         self, report_mock, content_mock, critical_files
     ):
@@ -518,7 +518,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
     )
     @patch("core.commands.commit.commit.CommitCommands.get_file_content")
-    @patch("core.models.ReportService.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_fetch_commit_with_no_coverage_data(
         self, report_mock, content_mock, critical_files
     ):
@@ -544,7 +544,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         assert coverageFile["totals"] == fake_coverage["totals"]
         assert coverageFile["isCriticalFile"] == False
 
-    @patch("core.models.ReportService.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_flag_names(self, report_mock):
         query = query_commit % "flagNames"
         variables = {

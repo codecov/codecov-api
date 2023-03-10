@@ -213,7 +213,7 @@ class ProfilingSummaryTests(TestCase):
             ownerid=self.repo.author.ownerid,
         )
 
-    @patch("services.profiling.ReportService.build_report_from_commit")
+    @patch("services.profiling.build_report_from_commit")
     @patch("services.profiling.UserYaml.get_final_yaml")
     @patch("services.profiling.ProfilingSummary.summary_data")
     @patch("services.profiling.ProfilingSummary.latest_profiling_commit")
@@ -248,7 +248,7 @@ class ProfilingSummaryTests(TestCase):
         )
         mocked_reportservice.assert_called()
 
-    @patch("services.profiling.ReportService.build_report_from_commit")
+    @patch("services.profiling.build_report_from_commit")
     @patch("services.profiling.UserYaml.get_final_yaml")
     @patch("services.profiling.ProfilingSummary.summary_data")
     @patch("services.profiling.ProfilingSummary.latest_profiling_commit")
@@ -293,7 +293,7 @@ class ProfilingSummaryTests(TestCase):
         )
         mocked_reportservice.assert_called()
 
-    @patch("services.profiling.ReportService.build_report_from_commit")
+    @patch("services.profiling.build_report_from_commit")
     @patch("services.profiling.UserYaml.get_final_yaml")
     @patch("services.profiling.ProfilingSummary.summary_data")
     @patch("services.profiling.ProfilingSummary.latest_profiling_commit")
@@ -327,7 +327,7 @@ class ProfilingSummaryTests(TestCase):
         mocked_useryaml.assert_called()
         mocked_reportservice.assert_called()
 
-    @patch("services.profiling.ReportService.build_report_from_commit")
+    @patch("services.profiling.build_report_from_commit")
     @patch("services.profiling.UserYaml.get_final_yaml")
     @patch("services.profiling.ProfilingSummary.summary_data")
     @patch("services.profiling.ProfilingSummary.latest_profiling_commit")
@@ -371,7 +371,7 @@ class ProfilingSummaryTests(TestCase):
             "src/critical/very_important.json",
         ]
 
-    @patch("services.profiling.ReportService.build_report_from_commit")
+    @patch("services.profiling.build_report_from_commit")
     @patch("services.profiling.UserYaml.get_final_yaml")
     @patch("services.profiling.ProfilingSummary.summary_data")
     @patch("services.profiling.ProfilingSummary.latest_profiling_commit")

@@ -5,6 +5,7 @@ from ariadne import ObjectType, convert_kwargs_to_snake_case
 
 import services.components as components
 import services.path as path_service
+import services.report as report_service
 from codecov.db import sync_to_async
 from core.models import Commit
 from graphql_api.actions.commits import commit_uploads
@@ -22,7 +23,7 @@ from services.comparison import ComparisonReport
 from services.components import Component
 from services.path import ReportPaths
 from services.profiling import CriticalFile, ProfilingSummary
-from services.report import ReadOnlyReport, build_report_from_commit
+from services.report import ReadOnlyReport
 
 commit_bindable = ObjectType("Commit")
 
@@ -132,7 +133,9 @@ def resolve_path_contents(commit: Commit, info, path: str = None, filters=None):
     user = info.context["request"].user
 
     # TODO: Might need to add reports here filtered by flags in the future
-    commit_report = build_report_from_commit(commit, report_class=ReadOnlyReport)
+    commit_report = report_service.build_report_from_commit(
+        commit, report_class=ReadOnlyReport
+    )
     if not commit_report:
         return MissingHeadReport()
 
