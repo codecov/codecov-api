@@ -83,6 +83,39 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             "me": {"trackingMetadata": {"ownerid": self.user.ownerid, "profile": None}}
         }
 
+    def test_private_access_when_private_access_field_is_null(self):
+        current_user = OwnerFactory(private_access=None)
+        query = """{
+            me {
+                privateAccess
+            }
+        }
+        """
+        data = self.gql_request(query, user=current_user)
+        assert data == {"me": {"privateAccess": False}}
+
+    def test_private_access_when_private_access_field_is_false(self):
+        current_user = OwnerFactory(private_access=False)
+        query = """{
+            me {
+                privateAccess
+            }
+        }
+        """
+        data = self.gql_request(query, user=current_user)
+        assert data == {"me": {"privateAccess": False}}
+
+    def test_private_access_when_private_access_field_is_true(self):
+        current_user = OwnerFactory(private_access=True)
+        query = """{
+            me {
+                privateAccess
+            }
+        }
+        """
+        data = self.gql_request(query, user=current_user)
+        assert data == {"me": {"privateAccess": True}}
+
     def test_fetching_viewable_repositories(self):
         org_1 = OwnerFactory()
         org_2 = OwnerFactory()
