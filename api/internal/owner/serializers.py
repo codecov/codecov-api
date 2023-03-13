@@ -15,7 +15,7 @@ from billing.helpers import available_plans
 from codecov_auth.models import Owner
 from services.billing import BillingService
 from services.segment import SegmentService
-from services.sentry import send_webhook as send_sentry_webhook
+from services.sentry import send_user_webhook as send_sentry_webhook
 
 log = logging.getLogger(__name__)
 
@@ -122,10 +122,11 @@ class PlanSerializer(serializers.Serializer):
 
     def validate_value(self, value):
         owner = self.context["view"].owner
-        plans = [plan["value"] for plan in available_plans(owner)]
-        if value not in plans:
+        plan_values = [plan["value"] for plan in available_plans(owner)]
+        if value not in plan_values:
             raise serializers.ValidationError(
-                f"Invalid value for plan: {value}; " f"must be one of {plans.keys()}"
+                f"Invalid value for plan: {value}; "
+                f"must be one of {plan_values.keys()}"
             )
         return value
 

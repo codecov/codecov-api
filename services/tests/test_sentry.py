@@ -11,7 +11,7 @@ from services.sentry import (
     decode_state,
     is_sentry_user,
     save_sentry_state,
-    send_webhook,
+    send_user_webhook,
 )
 
 
@@ -106,10 +106,10 @@ class SendWebhookTests(TestCase):
         )
 
     @override_settings(
-        SENTRY_WEBHOOK_URL="https://example.com", SENTRY_JWT_SHARED_SECRET="secret"
+        SENTRY_USER_WEBHOOK_URL="https://example.com", SENTRY_JWT_SHARED_SECRET="secret"
     )
     def test_webhook(self, http_request):
-        send_webhook(self.user, self.org)
+        send_user_webhook(self.user, self.org)
 
         encoded_state = jwt.encode(
             {
@@ -134,7 +134,7 @@ class SendWebhookTests(TestCase):
             data=json.dumps({"state": f"{encoded_state}"}),
         )
 
-    @override_settings(SENTRY_WEBHOOK_URL=None)
+    @override_settings(SENTRY_USER_WEBHOOK_URL=None)
     def test_webhook_no_url(self, http_request):
-        send_webhook(self.user, self.org)
+        send_user_webhook(self.user, self.org)
         assert not http_request.called

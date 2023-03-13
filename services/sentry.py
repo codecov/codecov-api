@@ -93,13 +93,13 @@ def is_sentry_user(owner: Owner) -> bool:
     return owner.sentry_user_id is not None
 
 
-def send_webhook(user: Owner, org: Owner):
+def send_user_webhook(user: Owner, org: Owner):
     """
     Sends data back to Sentry about the Sentry <-> Codecov user link.
     """
     assert is_sentry_user(user)
 
-    webhook_url = settings.SENTRY_WEBHOOK_URL
+    webhook_url = settings.SENTRY_USER_WEBHOOK_URL
     if webhook_url is None:
         log.warning("No Sentry webhook URL is configured")
         return

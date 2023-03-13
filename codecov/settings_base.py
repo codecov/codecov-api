@@ -440,4 +440,4 @@ CANNY_SSO_PRIVATE_TOKEN = get_config("canny", "sso_private_token", default="")
 SENTRY_JWT_SHARED_SECRET = get_config(
     "setup", "sentry", "jwt_shared_secret", default=None
 )
-SENTRY_WEBHOOK_URL = get_config("setup", "sentry", "webhook_url", default=None)
+SENTRY_USER_WEBHOOK_URL = get_config("setup", "sentry", "webhook_url", default=None)

@@ -907,8 +907,23 @@ class AccountViewSetTests(APITestCase):
 
     @patch("api.internal.owner.serializers.send_sentry_webhook")
     @patch("services.billing.StripeService.modify_subscription")
-    def test_update_sentry_plan(self, modify_sub_mock, send_sentry_webhook):
+    def test_update_sentry_plan_monthly(self, modify_sub_mock, send_sentry_webhook):
         desired_plan = {"value": "users-sentrym", "quantity": 12}
+        self.user.stripe_customer_id = "flsoe"
+        self.user.stripe_subscription_id = "djfos"
+        self.user.sentry_user_id = "sentry-user-id"
+        self.user.save()
+
+        self._update(
+            kwargs={"service": self.user.service, "owner_username": self.user.username},
+            data={"plan": desired_plan},
+        )
+        send_sentry_webhook.assert_called_once_with(self.user, self.user)
+
+    @patch("api.internal.owner.serializers.send_sentry_webhook")
+    @patch("services.billing.StripeService.modify_subscription")
+    def test_update_sentry_plan_annual(self, modify_sub_mock, send_sentry_webhook):
+        desired_plan = {"value": "users-sentryy", "quantity": 12}
         self.user.stripe_customer_id = "flsoe"
         self.user.stripe_subscription_id = "djfos"
         self.user.sentry_user_id = "sentry-user-id"
