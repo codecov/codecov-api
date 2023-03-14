@@ -59,7 +59,16 @@ class UploadDownloadHelperTest(APITransactionTestCase):
     @patch("services.archive.ArchiveService.get_archive_hash")
     @patch("services.archive.ArchiveService.read_file")
     def test_invalid_archive_path(self, read_file, get_archive_hash):
-        read_file.side_effect = [minio.error.NoSuchKey]
+        read_file.side_effect = [
+            minio.error.S3Error(
+                code="NoSuchKey",
+                message=None,
+                resource=None,
+                request_id=None,
+                host_id=None,
+                response=None,
+            )
+        ]
         get_archive_hash.return_value = "path"
         response = self._get(
             kwargs={

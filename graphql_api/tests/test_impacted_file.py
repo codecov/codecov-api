@@ -647,7 +647,6 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
             "path": "fileA",
         }
         data = self.gql_request(query_impacted_file_through_pull, variables=variables)
-        print(data)
         assert data == {
             "owner": {
                 "repository": {

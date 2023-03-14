@@ -1212,7 +1212,14 @@ class ComparisonHeadReportTests(TestCase):
     def test_head_report_and_base_report_translates_nosuchkey_into_missingcomparisonreport(
         self, build_report_from_commit_mock, git_comparison_mock
     ):
-        build_report_from_commit_mock.side_effect = minio.error.NoSuchKey()
+        build_report_from_commit_mock.side_effect = minio.error.S3Error(
+            code="NoSuchKey",
+            message=None,
+            resource=None,
+            request_id=None,
+            host_id=None,
+            response=None,
+        )
         with self.assertRaises(MissingComparisonReport):
             self.comparison.head_report
 
