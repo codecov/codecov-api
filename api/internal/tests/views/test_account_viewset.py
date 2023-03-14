@@ -447,7 +447,7 @@ class AccountViewSetTests(APITestCase):
             "billing_rate": None,
             "base_unit_price": 0,
             "benefits": [
-                "Up to 5 users",
+                "Up to 1 user",
                 "Unlimited public repositories",
                 "Unlimited private repositories",
             ],
