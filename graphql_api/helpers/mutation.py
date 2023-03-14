@@ -45,5 +45,16 @@ def wrap_error_handling_mutation(resolver):
     return resolver_with_error_handling
 
 
+def require_authenticated(resolver):
+    def authenticated_resolver(instance, info, *args, **kwargs):
+        current_user = info.context["request"].user
+        if not current_user.is_authenticated:
+            raise exceptions.Unauthenticated()
+
+        return resolver(instance, info, *args, **kwargs)
+
+    return authenticated_resolver
+
+
 def resolve_union_error_type(error, *_):
     return error.get_graphql_type()

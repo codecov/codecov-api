@@ -1,19 +1,20 @@
 from ariadne import UnionType
 
 import services.sentry as sentry
-from codecov.commands.exceptions import Unauthenticated, ValidationError
+from codecov.commands.exceptions import ValidationError
+from codecov.db import sync_to_async
 from graphql_api.helpers.mutation import (
+    require_authenticated,
     resolve_union_error_type,
     wrap_error_handling_mutation,
 )
 
 
 @wrap_error_handling_mutation
-async def resolve_save_sentry_state(_, info, input):
+@require_authenticated
+@sync_to_async
+def resolve_save_sentry_state(_, info, input):
     current_user = info.context["request"].user
-    if not current_user.is_authenticated:
-        raise Unauthenticated()
-
     try:
         sentry.save_sentry_state(current_user, input.get("state"))
     except sentry.SentryInvalidStateError:
