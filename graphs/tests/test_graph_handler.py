@@ -164,10 +164,6 @@ class TestGraphHandler(APITestCase):
         </svg>"""
 
         graph = response.content.decode("utf-8")
-
-        print("GRAPH", graph)
-        print("EXPECTED", expected_graph)
-
         graph = [line.strip() for line in graph.split("\n")]
         expected_graph = [line.strip() for line in expected_graph.split("\n")]
         assert expected_graph == graph

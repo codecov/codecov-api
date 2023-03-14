@@ -1186,7 +1186,7 @@ class PullRequestComparisonTests(TestCase):
 
 
 @patch("services.comparison.Comparison.git_comparison", new_callable=PropertyMock)
-@patch("services.comparison.build_report_from_commit")
+@patch("services.report.build_report_from_commit")
 class ComparisonHeadReportTests(TestCase):
     def setUp(self):
         owner = OwnerFactory()

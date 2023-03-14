@@ -17,6 +17,7 @@ from shared.helpers.yaml import walk
 from shared.reports.types import ReportTotals
 from shared.utils.merge import LineType, line_type
 
+import services.report as report_service
 from compare.models import CommitComparison
 from core.models import Commit
 from reports.models import CommitReport, ReportDetails
@@ -24,7 +25,6 @@ from services import ServiceException
 from services.archive import ArchiveService
 from services.redis_configuration import get_redis_connection
 from services.repo_providers import RepoProviderService
-from services.report import build_report_from_commit
 from utils.config import get_config
 
 log = logging.getLogger(__name__)
@@ -666,7 +666,7 @@ class Comparison(object):
     @cached_property
     def base_report(self):
         try:
-            return build_report_from_commit(self.base_commit)
+            return report_service.build_report_from_commit(self.base_commit)
         except minio.error.S3Error as e:
             if e.code == "NoSuchKey":
                 raise MissingComparisonReport("Missing base report")
@@ -676,7 +676,7 @@ class Comparison(object):
     @cached_property
     def head_report(self):
         try:
-            report = build_report_from_commit(self.head_commit)
+            report = report_service.build_report_from_commit(self.head_commit)
         except minio.error.S3Error as e:
             if e.code == "NoSuchKey":
                 raise MissingComparisonReport("Missing head report")
