@@ -61,19 +61,21 @@ def build_report_from_commit(commit: Commit, report_class=None):
     """
 
     commit_report = fetch_commit_report(commit)
-    if not commit_report:
-        # TODO: fallback to using `commits.report` - we may take this branch
-        # for old commits in the database before the new `reports_*` tables
-        # were populated.
-        return None
+    if commit_report:
+        files = build_files(commit_report.reportdetails)
+        sessions = build_sessions(commit_report)
+        totals = build_totals(commit_report.reportleveltotals)
+    else:
+        if not commit.report:
+            return None
+
+        files = commit.report["files"]
+        sessions = commit.report["sessions"]
+        totals = commit.totals
 
     chunks = ArchiveService(commit.repository).read_chunks(commit.commitid)
-    files = build_files(commit_report.reportdetails)
-    sessions = build_sessions(commit_report)
-    report_totals = build_totals(commit_report.reportleveltotals)
-    return build_report(
-        chunks, files, sessions, report_totals, report_class=report_class
-    )
+
+    return build_report(chunks, files, sessions, totals, report_class=report_class)
 
 
 def fetch_commit_report(commit: Commit) -> Optional[CommitReport]:

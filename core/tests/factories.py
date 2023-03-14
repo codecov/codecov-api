@@ -111,12 +111,12 @@ class CommitWithReportFactory(CommitFactory):
         )
         ReportLevelTotalsFactory(
             report=commit_report,
-            files=1,
-            lines=2,
-            hits=1,
-            misses=1,
+            files=3,
+            lines=20,
+            hits=17,
+            misses=3,
             partials=0,
-            coverage=50.0,
+            coverage=85.0,
             branches=0,
             methods=0,
         )

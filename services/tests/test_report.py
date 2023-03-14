@@ -1,14 +1,17 @@
+from decimal import Decimal
 from pathlib import Path
+from unittest.mock import patch
 
-from core.tests.factories import CommitFactory
-from services.archive import ArchiveService
+from django.test import TestCase
+
+from core.tests.factories import CommitFactory, CommitWithReportFactory
 from services.report import build_report, build_report_from_commit
 
 current_file = Path(__file__)
 
 
-class ReportServiceTest:
-    def test_report_generator(self, codecov_vcr):
+class ReportServiceTest(TestCase):
+    def test_report_generator(self):
         data = {
             "chunks": "{}\n[1, null, [[0, 1]]]\n\n\n[1, null, [[0, 1]]]\n[0, null, [[0, 0]]]\n<<<<< end_of_chunk >>>>>\n{}\n[1, null, [[0, 1]]]\n\n\n[1, null, [[0, 1]]]\n[1, null, [[0, 1]]]\n\n\n[1, null, [[0, 1]]]\n[1, null, [[0, 1]]]\n\n\n[1, null, [[0, 1]]]\n[1, null, [[0, 1]]]\n<<<<< end_of_chunk >>>>>\n{}\n[1, null, [[0, 1]]]\n[1, null, [[0, 1]]]\n\n\n[1, null, [[0, 1]]]\n[0, null, [[0, 0]]]\n\n\n[1, null, [[0, 1]]]\n[1, null, [[0, 1]]]\n[1, null, [[0, 1]]]\n[1, null, [[0, 1]]]\n\n\n[1, null, [[0, 1]]]\n[0, null, [[0, 0]]]",
             "files": {
@@ -66,11 +69,11 @@ class ReportServiceTest:
         res = build_report(**data)
         assert len(res._chunks) == 3
 
-    def test_build_report_from_commit(self, db, mocker, codecov_vcr):
-        mocked = mocker.patch.object(ArchiveService, "read_chunks")
+    @patch("services.archive.ArchiveService.read_chunks")
+    def test_build_report_from_commit(self, read_chunks_mock):
         f = open(current_file.parent / "samples" / "chunks.txt", "r")
-        mocked.return_value = f.read()
-        commit = CommitFactory.create(message="aaaaa", commitid="abf6d4d")
+        read_chunks_mock.return_value = f.read()
+        commit = CommitWithReportFactory.create(message="aaaaa", commitid="abf6d4d")
         res = build_report_from_commit(commit)
         assert len(res._chunks) == 3
         assert len(res.files) == 3
@@ -81,28 +84,28 @@ class ReportServiceTest:
         assert tuple(file_2.totals) == (0, 3, 2, 1, 0, "66.66667", 0, 0, 0, 0, 0, 0, 0)
         assert file_3.name == "tests/test_sample.py"
         assert tuple(file_3.totals) == (0, 7, 7, 0, 0, "100", 0, 0, 0, 0, 0, 0, 0)
-        mocked.assert_called_with("abf6d4d")
+        read_chunks_mock.assert_called_with("abf6d4d")
         assert list(res.totals) == [
             3,
             20,
             17,
             3,
             0,
-            "85.00000",
+            Decimal("85.00000"),
             0,
             0,
             0,
-            1,
             0,
             0,
-            [1, 2, 1, 1, 0, "50.00000", 0, 0, 0, 0, 0, 0, 0],
+            0,
+            0,
         ]
 
-    def test_build_report_from_commit_with_flags(self, db, mocker, codecov_vcr):
-        mocked = mocker.patch.object(ArchiveService, "read_chunks")
+    @patch("services.archive.ArchiveService.read_chunks")
+    def test_build_report_from_commit_with_flags(self, read_chunks_mock):
         f = open(current_file.parent / "samples" / "chunks.txt", "r")
-        mocked.return_value = f.read()
-        commit = CommitFactory.create(message="aaaaa", commitid="abf6d4d")
+        read_chunks_mock.return_value = f.read()
+        commit = CommitWithReportFactory.create(message="aaaaa", commitid="abf6d4d")
         report = build_report_from_commit(commit)
         res = report.flags["integrations"].report
         assert len(res.report._chunks) == 3
@@ -114,16 +117,58 @@ class ReportServiceTest:
         assert tuple(file_2.totals) == (0, 3, 0, 3, 0, "0", 0, 0, 0, 0, 0, 0, 0)
         assert file_3.name == "tests/test_sample.py"
         assert tuple(file_3.totals) == (0, 7, 2, 5, 0, "28.57143", 0, 0, 0, 0, 0, 0, 0)
-        mocked.assert_called_with("abf6d4d")
+        read_chunks_mock.assert_called_with("abf6d4d")
         assert list(res.totals) == [3, 20, 3, 17, 0, "15.00000", 0, 0, 0, 1, 0, 0, 0]
 
+    @patch("services.archive.ArchiveService.read_chunks")
     def test_build_report_from_commit_with_non_carried_forward_flags(
-        self, db, mocker, codecov_vcr
+        self, read_chunks_mock
     ):
-        mocked = mocker.patch.object(ArchiveService, "read_chunks")
         f = open(current_file.parent / "samples" / "chunks.txt", "r")
-        mocked.return_value = f.read()
-        report_with_carried_forward_flag = {
+        read_chunks_mock.return_value = f.read()
+        commit = CommitWithReportFactory.create(
+            message="another test",
+            commitid="asdfbhasdf89",
+        )
+        commit_report = commit.reports.first()
+        session = commit_report.sessions.filter(order_number=1).first()
+        session.upload_type = "carriedforward"
+        session.upload_extras = {
+            "carriedforward_from": "56e05fced214c44a37759efa2dfc25a65d8ae98d"
+        }
+        session.save()
+
+        report = build_report_from_commit(commit)
+        res = report.flags["integrations"].report
+        assert len(res.report._chunks) == 3
+        assert len(res.files) == 3
+        file_1, file_2, file_3 = sorted(res.file_reports(), key=lambda x: x.name)
+        assert file_1.name == "awesome/__init__.py"
+        assert tuple(file_1.totals) == (0, 10, 1, 9, 0, "10.00000", 0, 0, 0, 0, 0, 0, 0)
+        assert file_2.name == "tests/__init__.py"
+        assert tuple(file_2.totals) == (0, 3, 0, 3, 0, "0", 0, 0, 0, 0, 0, 0, 0)
+        assert file_3.name == "tests/test_sample.py"
+        assert tuple(file_3.totals) == (0, 7, 2, 5, 0, "28.57143", 0, 0, 0, 0, 0, 0, 0)
+        read_chunks_mock.assert_called_with("asdfbhasdf89")
+        assert list(res.totals) == [3, 20, 3, 17, 0, "15.00000", 0, 0, 0, 1, 0, 0, 0]
+        cff_session = res.report.sessions[1]
+        assert cff_session.session_type.value == "carriedforward"
+        assert (
+            cff_session.session_extras["carriedforward_from"]
+            == "56e05fced214c44a37759efa2dfc25a65d8ae98d"
+        )
+
+    def test_build_report_from_commit_no_report(self):
+        commit = CommitFactory()
+        report = build_report_from_commit(commit)
+        assert report is None
+
+    @patch("services.archive.ArchiveService.read_chunks")
+    def test_build_report_from_commit_fallback(self, read_chunks_mock):
+        f = open(current_file.parent / "samples" / "chunks.txt", "r")
+        read_chunks_mock.return_value = f.read()
+
+        report = {
             "files": {
                 "awesome/__init__.py": [
                     2,
@@ -164,45 +209,44 @@ class ReportServiceTest:
                     "c": None,
                     "d": 1547084427,
                     "e": None,
-                    "f": ["cff_flag"],
+                    "f": ["integrations"],
                     "j": None,
                     "n": None,
                     "p": None,
                     "t": [3, 20, 17, 3, 0, "85.00000", 0, 0, 0, 0, 0, 0, 0],
                     "": None,
-                    "st": "carriedforward",
-                    "se": {
-                        "carriedforward_from": "56e05fced214c44a37759efa2dfc25a65d8ae98d"
-                    },
                 },
             },
         }
+
+        # there are no associated `reports_*` records but we have `commits.report` populated
         commit = CommitFactory.create(
-            message="another test",
-            commitid="asdfbhasdf89",
-            report=report_with_carried_forward_flag,
+            message="aaaaa", commitid="abf6d4d", report=report
         )
-        report = build_report_from_commit(commit)
-        res = report.flags["cff_flag"].report
-        assert len(res.report._chunks) == 3
+        res = build_report_from_commit(commit)
+
+        assert len(res._chunks) == 3
         assert len(res.files) == 3
         file_1, file_2, file_3 = sorted(res.file_reports(), key=lambda x: x.name)
         assert file_1.name == "awesome/__init__.py"
-        assert tuple(file_1.totals) == (0, 10, 1, 9, 0, "10.00000", 0, 0, 0, 0, 0, 0, 0)
+        assert tuple(file_1.totals) == (0, 10, 8, 2, 0, "80.00000", 0, 0, 0, 0, 0, 0, 0)
         assert file_2.name == "tests/__init__.py"
-        assert tuple(file_2.totals) == (0, 3, 0, 3, 0, "0", 0, 0, 0, 0, 0, 0, 0)
+        assert tuple(file_2.totals) == (0, 3, 2, 1, 0, "66.66667", 0, 0, 0, 0, 0, 0, 0)
         assert file_3.name == "tests/test_sample.py"
-        assert tuple(file_3.totals) == (0, 7, 2, 5, 0, "28.57143", 0, 0, 0, 0, 0, 0, 0)
-        mocked.assert_called_with("asdfbhasdf89")
-        assert list(res.totals) == [3, 20, 3, 17, 0, "15.00000", 0, 0, 0, 1, 0, 0, 0]
-        cff_session = res.report.sessions[1]
-        assert cff_session.session_type.value == "carriedforward"
-        assert (
-            cff_session.session_extras["carriedforward_from"]
-            == "56e05fced214c44a37759efa2dfc25a65d8ae98d"
-        )
-
-    def test_build_report_from_commit_no_report(self, db, mocker, codecov_vcr):
-        commit = CommitFactory(report=None)
-        report = build_report_from_commit(commit)
-        assert report is None
+        assert tuple(file_3.totals) == (0, 7, 7, 0, 0, "100", 0, 0, 0, 0, 0, 0, 0)
+        read_chunks_mock.assert_called_with("abf6d4d")
+        assert list(res.totals) == [
+            3,
+            20,
+            17,
+            3,
+            0,
+            "85.00000",
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            [1, 2, 1, 1, 0, "50.00000", 0, 0, 0, 0, 0, 0, 0],
+        ]
