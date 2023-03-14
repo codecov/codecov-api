@@ -7,6 +7,7 @@ from django.test import TestCase, TransactionTestCase, override_settings
 from codecov_auth.tests.factories import OwnerFactory
 from services.sentry import (
     SentryInvalidStateError,
+    SentryState,
     SentryUserAlreadyExistsError,
     decode_state,
     is_sentry_user,
@@ -23,7 +24,7 @@ class DecodeStateTests(TestCase):
 
     def test_decode_state(self):
         res = decode_state(self.state)
-        assert res == self.decoded_state
+        assert res.data == self.decoded_state
 
     @override_settings(SENTRY_JWT_SHARED_SECRET="wrong")
     def test_decode_state_wrong_secret(self):
@@ -41,10 +42,12 @@ class SaveSentryStateTests(TransactionTestCase):
 
         self.decode_state_patcher = patch("services.sentry.decode_state")
         self.decode_state = self.decode_state_patcher.start()
-        self.decode_state.return_value = {
-            "user_id": "sentry-user-id",
-            "org_id": "sentry-org-id",
-        }
+        self.decode_state.return_value = SentryState(
+            {
+                "user_id": "sentry-user-id",
+                "org_id": "sentry-org-id",
+            }
+        )
         self.addCleanup(self.decode_state_patcher.stop)
 
     def test_save_sentry_state(self):

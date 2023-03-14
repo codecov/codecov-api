@@ -32,14 +32,24 @@ class SentryUserAlreadyExistsError(SentryError):
     pass
 
 
-def decode_state(state: str) -> Optional[dict]:
+class SentryState:
+    def __init__(self, data: dict):
+        self.data = data
+
+    @property
+    def user_id(self) -> Optional[str]:
+        return self.data.get("user_id")
+
+
+def decode_state(state: str) -> Optional[SentryState]:
     """
     Decode the given state (a JWT) using our shared secret.
     Returns `None` if the state could not be decoded.
     """
     secret = settings.SENTRY_JWT_SHARED_SECRET
     try:
-        return jwt.decode(state, secret, algorithms=["HS256"])
+        data = jwt.decode(state, secret, algorithms=["HS256"])
+        return SentryState(data)
     except jwt.exceptions.InvalidSignatureError:
         # signed with a different secret
         log.error(
@@ -56,21 +66,21 @@ def decode_state(state: str) -> Optional[dict]:
         return None
 
 
-def save_sentry_state(owner: Owner, state: str):
+def save_sentry_state(owner: Owner, encoded_state: str):
     """
     If the given state decodes successfully then save it with the owner.
     """
-    decoded_state = decode_state(state)
+    decoded_state = decode_state(encoded_state)
     if decoded_state is None:
         log.error(
-            "Invalid Sentry state", extra=dict(owner_id=owner.pk, sentry_state=state)
+            "Invalid Sentry state",
+            extra=dict(owner_id=owner.pk, sentry_state=encoded_state),
         )
         raise SentryInvalidStateError()
 
-    sentry_user_id = decoded_state.get("user_id")
-    if sentry_user_id is not None:
-        owner.sentry_user_id = sentry_user_id
-    owner.sentry_user_data = decoded_state
+    if decoded_state.user_id is not None:
+        owner.sentry_user_id = decoded_state.user_id
+    owner.sentry_user_data = decoded_state.data
 
     try:
         owner.save()
@@ -79,8 +89,8 @@ def save_sentry_state(owner: Owner, state: str):
             "Sentry user already exists",
             extra=dict(
                 owner_id=owner.pk,
-                sentry_user_id=sentry_user_id,
-                sentry_user_data=decoded_state,
+                sentry_user_id=decoded_state.user_id,
+                sentry_user_data=decoded_state.data,
             ),
         )
         raise SentryUserAlreadyExistsError()
