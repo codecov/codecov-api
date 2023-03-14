@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -5,11 +7,13 @@ from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import (
     BranchFactory,
     CommitFactory,
+    CommitWithReportFactory,
     PullFactory,
     RepositoryFactory,
 )
 
 
+@patch("services.archive.ArchiveService.read_chunks", lambda obj, _: "")
 class TestGraphHandler(APITestCase):
     def _get(self, graph_type, kwargs={}, data={}):
         path = f"/{kwargs.get('service')}/{kwargs.get('owner_username')}/{kwargs.get('repo_name')}/graphs/{graph_type}.{kwargs.get('ext')}"
@@ -81,7 +85,7 @@ class TestGraphHandler(APITestCase):
         repo = RepositoryFactory(
             author=gh_owner, active=True, private=False, name="repo1"
         )
-        commit = CommitFactory(repository=repo, author=gh_owner)
+        commit = CommitWithReportFactory(repository=repo, author=gh_owner)
 
         # test default precision
         response = self._get(
@@ -124,7 +128,7 @@ class TestGraphHandler(APITestCase):
         repo = RepositoryFactory(
             author=gh_owner, active=True, private=False, name="repo1"
         )
-        commit = CommitFactory(repository=repo, author=gh_owner)
+        commit = CommitWithReportFactory(repository=repo, author=gh_owner)
 
         # test default precision
         response = self._get(
@@ -160,6 +164,10 @@ class TestGraphHandler(APITestCase):
         </svg>"""
 
         graph = response.content.decode("utf-8")
+
+        print("GRAPH", graph)
+        print("EXPECTED", expected_graph)
+
         graph = [line.strip() for line in graph.split("\n")]
         expected_graph = [line.strip() for line in expected_graph.split("\n")]
         assert expected_graph == graph
@@ -170,7 +178,7 @@ class TestGraphHandler(APITestCase):
         repo = RepositoryFactory(
             author=gh_owner, active=True, private=False, name="repo1"
         )
-        commit = CommitFactory(repository=repo, author=gh_owner)
+        commit = CommitWithReportFactory(repository=repo, author=gh_owner)
 
         # test default precision
         response = self._get(
@@ -281,7 +289,7 @@ class TestGraphHandler(APITestCase):
             name="repo1",
             image_token="12345678",
         )
-        commit = CommitFactory(repository=repo, author=gh_owner)
+        commit = CommitWithReportFactory(repository=repo, author=gh_owner)
 
         response = self._get(
             "sunburst",
@@ -354,7 +362,7 @@ class TestGraphHandler(APITestCase):
             image_token="12345678",
             branch="branch1",
         )
-        commit = CommitFactory(repository=repo, author=gh_owner)
+        commit = CommitWithReportFactory(repository=repo, author=gh_owner)
         commit_2_totals = {
             "C": 0,
             "M": 0,
@@ -370,7 +378,7 @@ class TestGraphHandler(APITestCase):
             "p": 0,
             "s": 1,
         }
-        commit_2 = CommitFactory(
+        commit_2 = CommitWithReportFactory(
             repository=repo, author=gh_owner, totals=commit_2_totals
         )
         branch_2 = BranchFactory(
@@ -421,7 +429,7 @@ class TestGraphHandler(APITestCase):
             name="repo1",
             image_token="12345678",
         )
-        commit_1 = CommitFactory(repository=repo, author=gh_owner)
+        commit_1 = CommitWithReportFactory(repository=repo, author=gh_owner)
 
         # make sure commit 2 report is different than commit 1 and
         # assert that the expected graph below still pertains to commit_1
@@ -594,7 +602,7 @@ class TestGraphHandler(APITestCase):
             image_token="12345678",
             branch="master",
         )
-        commit = CommitFactory(repository=repo, author=gh_owner)
+        commit = CommitWithReportFactory(repository=repo, author=gh_owner)
         pull = PullFactory(pullid=10, repository_id=repo.repoid, flare=None)
 
         # test default precision

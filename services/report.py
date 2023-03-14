@@ -60,24 +60,23 @@ def build_report_from_commit(commit: Commit, report_class=None):
     from various `reports_*` tables in the database.
     """
 
-    commit_report = _fetch_commit_report(commit)
+    commit_report = fetch_commit_report(commit)
     if not commit_report:
+        # TODO: fallback to using `commits.report` - we may take this branch
+        # for old commits in the database before the new `reports_*` tables
+        # were populated.
         return None
 
     chunks = ArchiveService(commit.repository).read_chunks(commit.commitid)
-    files = _build_files(commit_report.reportdetails)
-    sessions = {}
-    for upload in commit_report.sessions.all():
-        session = _build_session(upload)
-        sessions[upload.order_number] = session
-
-    report_totals = _build_totals(commit_report.reportleveltotals)
+    files = build_files(commit_report.reportdetails)
+    sessions = build_sessions(commit_report)
+    report_totals = build_totals(commit_report.reportleveltotals)
     return build_report(
         chunks, files, sessions, report_totals, report_class=report_class
     )
 
 
-def _fetch_commit_report(commit: Commit) -> Optional[CommitReport]:
+def fetch_commit_report(commit: Commit) -> Optional[CommitReport]:
     """
     Fetch a single `CommitReport` for the given commit.
     All the necessary report relations are prefetched.
@@ -95,7 +94,7 @@ def _fetch_commit_report(commit: Commit) -> Optional[CommitReport]:
     )
 
 
-def _build_totals(totals: AbstractTotals) -> ReportTotals:
+def build_totals(totals: AbstractTotals) -> ReportTotals:
     """
     Build a `shared.reports.types.ReportTotals` instance from one of the
     various database totals records.
@@ -112,11 +111,11 @@ def _build_totals(totals: AbstractTotals) -> ReportTotals:
     )
 
 
-def _build_session(upload: ReportSession) -> Session:
+def build_session(upload: ReportSession) -> Session:
     """
     Build a `shared.utils.sessions.Session` from a database `reports_upload` record.
     """
-    upload_totals = _build_totals(upload.uploadleveltotals)
+    upload_totals = build_totals(upload.uploadleveltotals)
     flags = [flag.flag_name for flag in upload.flags.all()]
 
     return Session(
@@ -137,12 +136,22 @@ def _build_session(upload: ReportSession) -> Session:
     )
 
 
-def _build_files(report_details: ReportDetails) -> dict[str, ReportFileSummary]:
+def build_sessions(commit_report: CommitReport) -> dict[int, Session]:
+    """
+    Build mapping of report number -> session that can be passed to the report class.
+    """
+    sessions = {}
+    for upload in commit_report.sessions.all():
+        session = build_session(upload)
+        sessions[upload.order_number] = session
+    return sessions
+
+
+def build_files(report_details: ReportDetails) -> dict[str, ReportFileSummary]:
     """
     Construct a files dictionary in a format compatible with `shared.reports.resources.Report`
     from data in the `reports_reportdetails.files_array` column in the database.
     """
-
     return {
         file["filename"]: ReportFileSummary(
             file_index=file["file_index"],

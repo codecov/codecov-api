@@ -54,56 +54,6 @@ class CommitFactory(DjangoModelFactory):
         "p": 0,
         "s": 1,
     }
-    report = {
-        "files": {
-            "awesome/__init__.py": [
-                2,
-                [0, 10, 8, 2, 0, "80.00000", 0, 0, 0, 0, 0, 0, 0],
-                [[0, 10, 8, 2, 0, "80.00000", 0, 0, 0, 0, 0, 0, 0]],
-                [0, 2, 1, 1, 0, "50.00000", 0, 0, 0, 0, 0, 0, 0],
-            ],
-            "tests/__init__.py": [
-                0,
-                [0, 3, 2, 1, 0, "66.66667", 0, 0, 0, 0, 0, 0, 0],
-                [[0, 3, 2, 1, 0, "66.66667", 0, 0, 0, 0, 0, 0, 0]],
-                None,
-            ],
-            "tests/test_sample.py": [
-                1,
-                [0, 7, 7, 0, 0, "100", 0, 0, 0, 0, 0, 0, 0],
-                [[0, 7, 7, 0, 0, "100", 0, 0, 0, 0, 0, 0, 0]],
-                None,
-            ],
-        },
-        "sessions": {
-            "0": {
-                "N": None,
-                "a": "v4/raw/2019-01-10/4434BC2A2EC4FCA57F77B473D83F928C/abf6d4df662c47e32460020ab14abf9303581429/9ccc55a1-8b41-4bb1-a946-ee7a33a7fb56.txt",
-                "c": None,
-                "d": 1547084427,
-                "e": None,
-                "f": ["unittests"],
-                "j": None,
-                "n": None,
-                "p": None,
-                "t": [3, 20, 17, 3, 0, "85.00000", 0, 0, 0, 0, 0, 0, 0],
-                "": None,
-            },
-            "1": {
-                "N": None,
-                "a": "v4/raw/2019-01-10/4434BC2A2EC4FCA57F77B473D83F928C/abf6d4df662c47e32460020ab14abf9303581429/9ccc55a1-8b41-4bb1-a946-ee7a33a7fb56.txt",
-                "c": None,
-                "d": 1547084427,
-                "e": None,
-                "f": ["integrations"],
-                "j": None,
-                "n": None,
-                "p": None,
-                "t": [3, 20, 17, 3, 0, "85.00000", 0, 0, 0, 0, 0, 0, 0],
-                "": None,
-            },
-        },
-    }
     parent_commit_id = factory.LazyAttribute(
         lambda o: sha1((o.message + "parent").encode("utf-8")).hexdigest()
     )
@@ -133,15 +83,6 @@ class CommitWithReportFactory(CommitFactory):
             report=commit_report,
             files_array=[
                 {
-                    "filename": "awesome/__init__.py",
-                    "file_index": 2,
-                    "file_totals": [0, 10, 8, 2, 0, "80.00000", 0, 0, 0, 0, 0, 0, 0],
-                    "session_totals": [
-                        [0, 10, 8, 2, 0, "80.00000", 0, 0, 0, 0, 0, 0, 0]
-                    ],
-                    "diff_totals": [0, 2, 1, 1, 0, "50.00000", 0, 0, 0, 0, 0, 0, 0],
-                },
-                {
                     "filename": "tests/__init__.py",
                     "file_index": 0,
                     "file_totals": [0, 3, 2, 1, 0, "66.66667", 0, 0, 0, 0, 0, 0, 0],
@@ -156,6 +97,15 @@ class CommitWithReportFactory(CommitFactory):
                     "file_totals": [0, 7, 7, 0, 0, "100", 0, 0, 0, 0, 0, 0, 0],
                     "session_totals": [[0, 7, 7, 0, 0, "100", 0, 0, 0, 0, 0, 0, 0]],
                     "diff_totals": None,
+                },
+                {
+                    "filename": "awesome/__init__.py",
+                    "file_index": 2,
+                    "file_totals": [0, 10, 8, 2, 0, "80.00000", 0, 0, 0, 0, 0, 0, 0],
+                    "session_totals": [
+                        [0, 10, 8, 2, 0, "80.00000", 0, 0, 0, 0, 0, 0, 0]
+                    ],
+                    "diff_totals": [0, 2, 1, 1, 0, "50.00000", 0, 0, 0, 0, 0, 0, 0],
                 },
             ],
         )
