@@ -159,7 +159,8 @@ def build_files(report_details: ReportDetails) -> dict[str, ReportFileSummary]:
             file_index=file["file_index"],
             file_totals=ReportTotals(*file["file_totals"]),
             session_totals=[
-                ReportTotals(*session) for session in file["session_totals"]
+                ReportTotals(*session) if session else None
+                for session in file["session_totals"]
             ],
             diff_totals=file["diff_totals"],
         )
