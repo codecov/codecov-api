@@ -87,11 +87,15 @@ def resolve_segments(
     segments = file_comparison.segments
 
     if filters.get("has_unintended_changes") is True:
-        segments = [segment for segment in segments if segment.has_unintended_changes]
-    elif filters.get("has_unintended_changes") is False:
+        # segments with no diff changes and at least 1 unintended change
         segments = [
-            segment for segment in segments if not segment.has_unintended_changes
+            segment
+            for segment in segments
+            if segment.has_unintended_changes and not segment.has_diff_changes
         ]
+    elif filters.get("has_unintended_changes") is False:
+        # segments with at least 1 diff change
+        segments = [segment for segment in segments if segment.has_diff_changes]
 
     return SegmentComparisons(results=segments)
 
@@ -116,11 +120,15 @@ def resolve_segments_deprecated(
     segments = file_comparison.segments
 
     if filters.get("has_unintended_changes") is True:
-        segments = [segment for segment in segments if segment.has_unintended_changes]
-    elif filters.get("has_unintended_changes") is False:
+        # segments with no diff changes and at least 1 unintended change
         segments = [
-            segment for segment in segments if not segment.has_unintended_changes
+            segment
+            for segment in segments
+            if segment.has_unintended_changes and not segment.has_diff_changes
         ]
+    elif filters.get("has_unintended_changes") is False:
+        # segments with at least 1 diff change
+        segments = [segment for segment in segments if segment.has_diff_changes]
 
     return segments
 
@@ -148,7 +156,7 @@ def resolve_is_deleted_file(impacted_file: ImpactedFile, info) -> bool:
 
 @impacted_file_bindable.field("missesInComparison")
 def resolve_misses_in_comparison(impacted_file: ImpactedFile, info) -> int:
-    return impacted_file.misses_in_comparison
+    return impacted_file.misses_count
 
 
 @impacted_file_bindable.field("isCriticalFile")
@@ -162,3 +170,5 @@ def resolve_is_critical_file(impacted_file: ImpactedFile, info) -> bool:
         critical_filenames = profiling_summary.critical_filenames
 
         return base_name in critical_filenames or head_name in critical_filenames
+    else:
+        return False

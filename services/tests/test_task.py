@@ -74,7 +74,10 @@ def test_compute_comparisons_task(mocker):
     apply_async_mock.assert_called_once_with()
 
 
-@pytest.mark.django_db
+@pytest.mark.skipif(
+    not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
+)
+@pytest.mark.django_db(databases={"default", "timeseries"})
 def test_backfill_repo(mocker):
     signature_mock = mocker.patch("services.task.task.signature")
     mock_route_task = mocker.patch(
@@ -147,7 +150,7 @@ def test_backfill_repo(mocker):
 @pytest.mark.skipif(
     not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
 )
-@pytest.mark.django_db(databases=["timeseries"])
+@pytest.mark.django_db(databases={"default", "timeseries"})
 def test_backfill_dataset(mocker):
     signature_mock = mocker.patch("services.task.task.signature")
     mock_route_task = mocker.patch(
@@ -175,6 +178,27 @@ def test_backfill_dataset(mocker):
         queue="celery",
     )
     signature.apply_async.assert_called_once_with()
+
+
+def test_timeseries_delete(mocker):
+    signature_mock = mocker.patch("services.task.task.signature")
+    mock_route_task = mocker.patch(
+        "services.task.task.route_task", return_value={"queue": "celery"}
+    )
+    TaskService().delete_timeseries(repository_id=12345)
+    mock_route_task.assert_called_with(
+        celery_config.timeseries_delete_task_name,
+        args=None,
+        kwargs=dict(repository_id=12345),
+        options={},
+    )
+    signature_mock.assert_called_with(
+        celery_config.timeseries_delete_task_name,
+        args=None,
+        kwargs=dict(repository_id=12345),
+        app=celery_app,
+        queue="celery",
+    )
 
 
 def test_update_commit_task(mocker):

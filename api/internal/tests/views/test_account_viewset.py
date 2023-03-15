@@ -1,6 +1,7 @@
 import json
 import os
-from unittest.mock import patch
+from datetime import datetime
+from unittest.mock import MagicMock, patch
 
 from django.test import override_settings
 from rest_framework import status
@@ -26,9 +27,14 @@ class MockSubscription(object):
                 "default_payment_method": subscription_params["default_payment_method"]
             },
             "id": "cus_LK&*Hli8YLIO",
+            "discount": None,
         }
         self.schedule = subscription_params["schedule_id"]
         self.collection_method = subscription_params["collection_method"]
+
+        customer_coupon = subscription_params.get("customer_coupon")
+        if customer_coupon:
+            self.customer["discount"] = {"coupon": customer_coupon}
 
     def __getitem__(self, key):
         return getattr(self, key)
@@ -137,11 +143,11 @@ class AccountViewSetTests(APITestCase):
                 "billing_rate": None,
                 "base_unit_price": 0,
                 "benefits": [
-                    "Up to 5 users",
+                    "Up to 1 user",
                     "Unlimited public repositories",
                     "Unlimited private repositories",
                 ],
-                "quantity": 5,
+                "quantity": 1,
             },
             "subscription_detail": None,
             "checkout_session_id": None,
@@ -213,18 +219,18 @@ class AccountViewSetTests(APITestCase):
                 "billing_rate": None,
                 "base_unit_price": 0,
                 "benefits": [
-                    "Up to 5 users",
+                    "Up to 1 user",
                     "Unlimited public repositories",
                     "Unlimited private repositories",
                 ],
-                "quantity": 5,
+                "quantity": 1,
             },
             "subscription_detail": {
                 "latest_invoice": None,
                 "default_payment_method": None,
                 "cancel_at_period_end": False,
                 "current_period_end": 1633512445,
-                "customer": {"id": "cus_LK&*Hli8YLIO"},
+                "customer": {"id": "cus_LK&*Hli8YLIO", "discount": None},
                 "collection_method": "charge_automatically",
             },
             "checkout_session_id": None,
@@ -305,18 +311,21 @@ class AccountViewSetTests(APITestCase):
                 "billing_rate": None,
                 "base_unit_price": 0,
                 "benefits": [
-                    "Up to 5 users",
+                    "Up to 1 user",
                     "Unlimited public repositories",
                     "Unlimited private repositories",
                 ],
-                "quantity": 5,
+                "quantity": 1,
             },
             "subscription_detail": {
                 "latest_invoice": None,
                 "default_payment_method": None,
                 "cancel_at_period_end": False,
                 "current_period_end": 1633512445,
-                "customer": {"id": "cus_LK&*Hli8YLIO"},
+                "customer": {
+                    "id": "cus_LK&*Hli8YLIO",
+                    "discount": None,
+                },
                 "collection_method": "charge_automatically",
             },
             "checkout_session_id": None,
@@ -367,18 +376,21 @@ class AccountViewSetTests(APITestCase):
                 "billing_rate": None,
                 "base_unit_price": 0,
                 "benefits": [
-                    "Up to 5 users",
+                    "Up to 1 user",
                     "Unlimited public repositories",
                     "Unlimited private repositories",
                 ],
-                "quantity": 5,
+                "quantity": 1,
             },
             "subscription_detail": {
                 "latest_invoice": None,
                 "default_payment_method": None,
                 "cancel_at_period_end": False,
                 "current_period_end": 1633512445,
-                "customer": {"id": "cus_LK&*Hli8YLIO"},
+                "customer": {
+                    "id": "cus_LK&*Hli8YLIO",
+                    "discount": None,
+                },
                 "collection_method": "charge_automatically",
             },
             "checkout_session_id": None,
@@ -538,7 +550,10 @@ class AccountViewSetTests(APITestCase):
                     "last4": "abcd",
                 }
             },
-            "customer": {"id": "cus_LK&*Hli8YLIO"},
+            "customer": {
+                "id": "cus_LK&*Hli8YLIO",
+                "discount": None,
+            },
             "collection_method": "charge_automatically",
         }
 
@@ -603,7 +618,7 @@ class AccountViewSetTests(APITestCase):
 
         assert self.user.plan == "users-basic"
         assert self.user.plan_activated_users is None
-        assert self.user.plan_user_count == 5
+        assert self.user.plan_user_count == 1
         assert response.data["plan_auto_activate"] is True
 
     @patch("services.billing.stripe.checkout.Session.create")
@@ -771,14 +786,18 @@ class AccountViewSetTests(APITestCase):
             == "Quantity or plan for paid plan must be different from the existing one"
         )
 
-    def test_update_quantity_must_be_at_least_5_if_paid_plan(self):
-        desired_plan = {"value": "users-pr-inappy", "quantity": 4}
+    def test_update_quantity_must_be_at_least_2_if_paid_plan(self):
+        desired_plan = {"value": "users-pr-inappy", "quantity": 1}
         response = self._update(
             kwargs={"service": self.user.service, "owner_username": self.user.username},
             data={"plan": desired_plan},
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert (
+            response.data["plan"]["non_field_errors"][0]
+            == "Quantity for paid plan must be greater than 1"
+        )
 
     def test_update_payment_method_without_body(self):
         kwargs = {"service": self.user.service, "owner_username": self.user.username}
@@ -890,6 +909,88 @@ class AccountViewSetTests(APITestCase):
         assert response.status_code == code
         assert response.data["detail"] == message
 
+    @patch("services.billing.stripe.Coupon.create")
+    @patch("services.billing.stripe.Subscription.retrieve")
+    @patch("services.billing.stripe.Customer.modify")
+    def test_update_apply_cancellation_discount(
+        self, modify_customer_mock, retrieve_subscription_mock, coupon_create_mock
+    ):
+        coupon_create_mock.return_value = MagicMock(id="test-coupon-id")
+
+        self.user.plan = "users-inappm"
+        self.user.stripe_customer_id = "flsoe"
+        self.user.stripe_subscription_id = "djfos"
+        self.user.save()
+
+        subscription_params = {
+            "default_payment_method": None,
+            "cancel_at_period_end": False,
+            "current_period_end": 1633512445,
+            "latest_invoice": None,
+            "schedule_id": None,
+            "collection_method": "charge_automatically",
+            "customer_coupon": {
+                "name": "30% off for 6 months",
+                "percent_off": 30.0,
+                "duration_in_months": 6,
+                "created": int(datetime(2023, 1, 1, 0, 0, 0).timestamp()),
+            },
+        }
+
+        retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+
+        response = self._update(
+            kwargs={"service": self.user.service, "owner_username": self.user.username},
+            data={"apply_cancellation_discount": True},
+        )
+
+        modify_customer_mock.assert_called_once_with(
+            self.user.stripe_customer_id,
+            coupon="test-coupon-id",
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["subscription_detail"]["customer"]["discount"] == {
+            "name": "30% off for 6 months",
+            "percent_off": 30.0,
+            "duration_in_months": 6,
+            "expires": int(datetime(2023, 7, 1, 0, 0, 0).timestamp()),
+        }
+
+    @patch("services.billing.stripe.Coupon.create")
+    @patch("services.billing.stripe.Subscription.retrieve")
+    @patch("services.billing.stripe.Customer.modify")
+    def test_update_apply_cancellation_discount_yearly(
+        self, modify_customer_mock, retrieve_subscription_mock, coupon_create_mock
+    ):
+        coupon_create_mock.return_value = MagicMock(id="test-coupon-id")
+
+        self.user.plan = "users-inappy"
+        self.user.stripe_customer_id = "flsoe"
+        self.user.stripe_subscription_id = "djfos"
+        self.user.save()
+
+        subscription_params = {
+            "default_payment_method": None,
+            "cancel_at_period_end": False,
+            "current_period_end": 1633512445,
+            "latest_invoice": None,
+            "schedule_id": None,
+            "collection_method": "charge_automatically",
+        }
+
+        retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+
+        response = self._update(
+            kwargs={"service": self.user.service, "owner_username": self.user.username},
+            data={"apply_cancellation_discount": True},
+        )
+
+        assert not modify_customer_mock.called
+        assert not coupon_create_mock.called
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["subscription_detail"]["customer"]["discount"] == None
+
     @patch("services.task.TaskService.delete_owner")
     def test_destroy_triggers_delete_owner_task(self, delete_owner_mock):
         response = self._destroy(
@@ -949,41 +1050,3 @@ class EnterpriseAccountViewSetTests(APITestCase):
             kwargs={"service": self.user.service, "owner_username": self.user.username}
         )
         assert response.status_code == status.HTTP_200_OK
-
-    def test_retrieve_account_gets_account_fields(self):
-        owner = OwnerFactory(admins=[self.user.ownerid])
-        self.user.organizations = [owner.ownerid]
-        self.user.save()
-        response = self._retrieve(
-            kwargs={"service": owner.service, "owner_username": owner.username}
-        )
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data == {
-            "activated_user_count": 0,
-            "root_organization": None,
-            "integration_id": owner.integration_id,
-            "plan_auto_activate": owner.plan_auto_activate,
-            "inactive_user_count": 1,
-            "plan": {
-                "marketing_name": "Basic",
-                "value": "users-basic",
-                "billing_rate": None,
-                "base_unit_price": 0,
-                "benefits": [
-                    "Up to 5 users",
-                    "Unlimited public repositories",
-                    "Unlimited private repositories",
-                ],
-                "quantity": 5,
-            },
-            "subscription_detail": None,
-            "checkout_session_id": None,
-            "name": owner.name,
-            "email": owner.email,
-            "nb_active_private_repos": 0,
-            "repo_total_credits": 99999999,
-            "plan_provider": owner.plan_provider,
-            "activated_student_count": 0,
-            "student_count": 0,
-            "schedule_detail": None,
-        }

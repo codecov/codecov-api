@@ -1,4 +1,5 @@
 import hashlib
+from dataclasses import dataclass
 from unittest.mock import PropertyMock, patch
 
 from django.test import TransactionTestCase
@@ -228,21 +229,18 @@ mock_data_from_archive = """
 """
 
 
-class MockSegmentWithNoUnexpectedChanges(object):
-    def __init__(self):
-        self.has_unintended_changes = False
-
-
-class MockSegmentWithUnintendedChanges(object):
-    def __init__(self):
-        self.has_unintended_changes = True
+@dataclass
+class MockSegment:
+    has_diff_changes: bool = False
+    has_unintended_changes: bool = False
 
 
 class MockFileComparison(object):
     def __init__(self):
         self.segments = [
-            MockSegmentWithUnintendedChanges(),
-            MockSegmentWithNoUnexpectedChanges(),
+            MockSegment(has_unintended_changes=True, has_diff_changes=False),
+            MockSegment(has_unintended_changes=False, has_diff_changes=True),
+            MockSegment(has_unintended_changes=True, has_diff_changes=True),
         ]
 
 
@@ -455,6 +453,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                     "results": [
                                         {"hasUnintendedChanges": True},
                                         {"hasUnintendedChanges": False},
+                                        {"hasUnintendedChanges": True},
                                     ],
                                 },
                             },
@@ -467,7 +466,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
     @patch("services.comparison.Comparison.validate")
     @patch("services.comparison.PullRequestComparison.get_file_comparison")
     @patch("services.archive.ArchiveService.read_file")
-    def test_fetch_impacted_file_with_segments_filter(
+    def test_fetch_impacted_file_segments_with_indirect_changes_only(
         self, read_file, mock_get_file_comparison, mock_compare_validate
     ):
         read_file.return_value = mock_data_from_archive
@@ -496,7 +495,9 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                 "headCoverage": {"percentCovered": 85.71428571428571},
                                 "patchCoverage": {"percentCovered": 50.0},
                                 "segments": {
-                                    "results": [{"hasUnintendedChanges": True}],
+                                    "results": [
+                                        {"hasUnintendedChanges": True},
+                                    ],
                                 },
                             },
                         }
@@ -588,7 +589,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
     @patch("services.comparison.Comparison.validate")
     @patch("services.comparison.PullRequestComparison.get_file_comparison")
     @patch("services.archive.ArchiveService.read_file")
-    def test_fetch_impacted_file_with_segments_filter_set_to_false(
+    def test_fetch_impacted_file_segments_with_direct_and_indirect_changes(
         self, read_file, mock_get_file_comparison, mock_compare_validate
     ):
         read_file.return_value = mock_data_from_archive
@@ -617,7 +618,10 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                 "headCoverage": {"percentCovered": 85.71428571428571},
                                 "patchCoverage": {"percentCovered": 50.0},
                                 "segments": {
-                                    "results": [{"hasUnintendedChanges": False}]
+                                    "results": [
+                                        {"hasUnintendedChanges": False},
+                                        {"hasUnintendedChanges": True},
+                                    ]
                                 },
                             },
                         }
@@ -643,7 +647,6 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
             "path": "fileA",
         }
         data = self.gql_request(query_impacted_file_through_pull, variables=variables)
-        print(data)
         assert data == {
             "owner": {
                 "repository": {
@@ -661,6 +664,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                     "results": [
                                         {"hasUnintendedChanges": True},
                                         {"hasUnintendedChanges": False},
+                                        {"hasUnintendedChanges": True},
                                     ]
                                 },
                             },

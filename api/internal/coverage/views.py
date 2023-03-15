@@ -34,6 +34,9 @@ class CoverageViewSet(viewsets.ViewSet, RepoPropertyMixin):
             )
 
         report = commit.full_report
+        if report is None:
+            raise NotFound(f"Coverage report for {commit_sha} not found")
+
         return report
 
     @action(

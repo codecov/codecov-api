@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from django.test import TransactionTestCase
 
-from codecov_auth.tests.factories import OwnerFactory
+from codecov_auth.tests.factories import OwnerFactory, OwnerProfileFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
 
 from .helper import GraphQLTestHelper, paginate_connection
@@ -44,6 +44,77 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
         query = "{ me { trackingMetadata { ownerid } } }"
         data = self.gql_request(query, user=self.user)
         assert data == {"me": {"trackingMetadata": {"ownerid": self.user.ownerid}}}
+
+    def test_when_tracking_metadata_profile(self):
+        query = """
+        {
+            me {
+                trackingMetadata {
+                    ownerid
+                    profile { goals }
+                }
+            }
+        }
+        """
+        OwnerProfileFactory(owner=self.user, goals=["IMPROVE_COVERAGE"])
+        data = self.gql_request(query, user=self.user)
+        assert data == {
+            "me": {
+                "trackingMetadata": {
+                    "ownerid": self.user.ownerid,
+                    "profile": {"goals": ["IMPROVE_COVERAGE"]},
+                }
+            }
+        }
+
+    def test_when_tracking_metadata_no_profile(self):
+        query = """
+        {
+            me {
+                trackingMetadata {
+                    ownerid
+                    profile { goals }
+                }
+            }
+        }
+        """
+        data = self.gql_request(query, user=self.user)
+        assert data == {
+            "me": {"trackingMetadata": {"ownerid": self.user.ownerid, "profile": None}}
+        }
+
+    def test_private_access_when_private_access_field_is_null(self):
+        current_user = OwnerFactory(private_access=None)
+        query = """{
+            me {
+                privateAccess
+            }
+        }
+        """
+        data = self.gql_request(query, user=current_user)
+        assert data == {"me": {"privateAccess": False}}
+
+    def test_private_access_when_private_access_field_is_false(self):
+        current_user = OwnerFactory(private_access=False)
+        query = """{
+            me {
+                privateAccess
+            }
+        }
+        """
+        data = self.gql_request(query, user=current_user)
+        assert data == {"me": {"privateAccess": False}}
+
+    def test_private_access_when_private_access_field_is_true(self):
+        current_user = OwnerFactory(private_access=True)
+        query = """{
+            me {
+                privateAccess
+            }
+        }
+        """
+        data = self.gql_request(query, user=current_user)
+        assert data == {"me": {"privateAccess": True}}
 
     def test_fetching_viewable_repositories(self):
         org_1 = OwnerFactory()

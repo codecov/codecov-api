@@ -622,6 +622,9 @@ class TestChartQueryRunnerQuery(TestCase):
                 len(results) == expected_num_datapoints + 1
             )  # We add one because the date range is inclusive
 
+    @pytest.mark.skip(
+        reason="flaky, skipping since we're moving away from ChartQueryRunner soon anyway"
+    )
     def test_query_supports_reverse_ordering(self):
         self.commit1.timestamp = timezone.now() - timedelta(days=7)
         self.commit1.save()

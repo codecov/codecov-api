@@ -1,6 +1,5 @@
-from copy import deepcopy
-
 from pythonjsonlogger.jsonlogger import JsonFormatter
+from sentry_sdk import Hub
 
 
 class BaseLogger(JsonFormatter):
@@ -33,3 +32,7 @@ class CustomDatadogJsonFormatter(BaseLogger):
             log_record["level"] = log_record["level"].upper()
         else:
             log_record["level"] = record.levelname
+
+        span = Hub.current.scope.span
+        if span and span.trace_id:
+            log_record["sentry_trace_id"] = span.trace_id

@@ -21,7 +21,7 @@ from services.refresh import RefreshService
 from services.segment import SegmentService
 from utils.config import get_config
 from utils.encryption import encryptor
-from utils.services import get_short_service_name
+from utils.services import get_long_service_name, get_short_service_name
 
 log = logging.getLogger(__name__)
 
@@ -127,6 +127,8 @@ class LoginMixin(object):
         if (
             url
             != f"{settings.CODECOV_DASHBOARD_URL}/{get_short_service_name(self.service)}"
+            and url
+            != f"{settings.CODECOV_DASHBOARD_URL}/{get_long_service_name(self.service)}"
         ):
             return url
 
