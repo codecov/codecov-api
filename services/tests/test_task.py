@@ -220,3 +220,42 @@ def test_update_commit_task(mocker):
         app=celery_app,
         queue="celery",
     )
+
+
+def test_update_commit_task(mocker):
+    signature_mock = mocker.patch("services.task.task.signature")
+    mock_route_task = mocker.patch(
+        "services.task.task.route_task", return_value={"queue": "celery"}
+    )
+    TaskService().http_request(
+        url="http://example.com",
+        method="POST",
+        headers={"Content-Type": "text/plain"},
+        data="test body",
+        timeout=10,
+    )
+    mock_route_task.assert_called_with(
+        "app.tasks.http_request.HTTPRequest",
+        args=None,
+        kwargs=dict(
+            url="http://example.com",
+            method="POST",
+            headers={"Content-Type": "text/plain"},
+            data="test body",
+            timeout=10,
+        ),
+        options={},
+    )
+    signature_mock.assert_called_with(
+        "app.tasks.http_request.HTTPRequest",
+        args=None,
+        kwargs=dict(
+            url="http://example.com",
+            method="POST",
+            headers={"Content-Type": "text/plain"},
+            data="test body",
+            timeout=10,
+        ),
+        app=celery_app,
+        queue="celery",
+    )
