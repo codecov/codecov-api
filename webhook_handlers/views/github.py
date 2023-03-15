@@ -2,7 +2,7 @@ import hmac
 import logging
 import re
 from contextlib import suppress
-from hashlib import sha256
+from hashlib import sha1, sha256
 
 from django.utils.crypto import constant_time_compare
 from rest_framework import status
@@ -54,14 +54,24 @@ class GithubWebhookHandler(APIView):
             # must convert to bytearray for use with hmac
             key = bytes(key, "utf-8")
 
-        sig = "sha256=" + hmac.new(key, request.body, digestmod=sha256).hexdigest()
+        expected_sig = None
+        computed_sig = None
+        if GitHubHTTPHeaders.SIGNATURE_256 in request.META:
+            expected_sig = request.META.get(GitHubHTTPHeaders.SIGNATURE_256)
+            computed_sig = (
+                "sha256=" + hmac.new(key, request.body, digestmod=sha256).hexdigest()
+            )
+        elif GitHubHTTPHeaders.SIGNATURE in request.META:
+            expected_sig = request.META.get(GitHubHTTPHeaders.SIGNATURE)
+            computed_sig = (
+                "sha1=" + hmac.new(key, request.body, digestmod=sha1).hexdigest()
+            )
 
         if (
-            not request.META.get(GitHubHTTPHeaders.SIGNATURE_256)
-            or len(sig) != len(request.META.get(GitHubHTTPHeaders.SIGNATURE_256))
-            or not constant_time_compare(
-                sig, request.META.get(GitHubHTTPHeaders.SIGNATURE_256)
-            )
+            computed_sig is None
+            or expected_sig is None
+            or len(computed_sig) != len(expected_sig)
+            or not constant_time_compare(computed_sig, expected_sig)
         ):
             raise PermissionDenied()
 
