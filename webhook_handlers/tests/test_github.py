@@ -2,7 +2,7 @@ import hmac
 import json
 import uuid
 from collections import namedtuple
-from hashlib import sha256
+from hashlib import sha1, sha256
 from unittest.mock import call, patch
 
 import pytest
@@ -727,13 +727,57 @@ class GithubWebhookHandlerTests(APITestCase):
             **{
                 GitHubHTTPHeaders.EVENT: "",
                 GitHubHTTPHeaders.DELIVERY_TOKEN: uuid.UUID(int=5),
-                GitHubHTTPHeaders.SIGNATURE: 0,
+                GitHubHTTPHeaders.SIGNATURE: "",
             },
             data={},
             format="json"
         )
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
+
+        response = self.client.post(
+            reverse("github-webhook"),
+            **{
+                GitHubHTTPHeaders.EVENT: "",
+                GitHubHTTPHeaders.DELIVERY_TOKEN: uuid.UUID(int=5),
+                GitHubHTTPHeaders.SIGNATURE_256: "sha256="
+                + hmac.new(
+                    get_config(
+                        "github",
+                        "webhook_secret",
+                        default=b"testixik8qdauiab1yiffydimvi72ekq",
+                    ),
+                    json.dumps({}, separators=(",", ":")).encode("utf-8"),
+                    digestmod=sha256,
+                ).hexdigest(),
+            },
+            data={},
+            format="json"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+
+        response = self.client.post(
+            reverse("github-webhook"),
+            **{
+                GitHubHTTPHeaders.EVENT: "",
+                GitHubHTTPHeaders.DELIVERY_TOKEN: uuid.UUID(int=5),
+                GitHubHTTPHeaders.SIGNATURE: "sha1="
+                + hmac.new(
+                    get_config(
+                        "github",
+                        "webhook_secret",
+                        default=b"testixik8qdauiab1yiffydimvi72ekq",
+                    ),
+                    json.dumps({}, separators=(",", ":")).encode("utf-8"),
+                    digestmod=sha1,
+                ).hexdigest(),
+            },
+            data={},
+            format="json"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
 
     @patch("webhook_handlers.views.github.get_config")
     def test_signature_validation_with_string_key(self, get_config_mock):
