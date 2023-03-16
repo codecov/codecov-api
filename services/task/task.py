@@ -288,3 +288,15 @@ class TaskService(object):
                 current_yaml=current_yaml,
             ),
         ).apply_async()
+
+    def http_request(self, url, method="POST", headers=None, data=None, timeout=None):
+        self._create_signature(
+            "app.tasks.http_request.HTTPRequest",
+            kwargs=dict(
+                url=url,
+                method=method,
+                headers=headers,
+                data=data,
+                timeout=timeout,
+            ),
+        ).apply_async()

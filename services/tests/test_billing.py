@@ -991,6 +991,7 @@ class StripeServiceTests(TestCase):
         create_checkout_session_mock.assert_called_once_with(
             billing_address_collection="required",
             payment_method_types=["card"],
+            payment_method_collection="if_required",
             client_reference_id=owner.ownerid,
             customer=owner.stripe_customer_id,
             customer_email=owner.email,
@@ -1011,6 +1012,50 @@ class StripeServiceTests(TestCase):
                     "obo_name": self.user.name,
                     "obo_email": self.user.email,
                     "obo": self.user.ownerid,
+                },
+            },
+        )
+
+    @patch("services.billing.stripe.checkout.Session.create")
+    def test_create_checkout_session_with_trial(self, create_checkout_session_mock):
+        owner = OwnerFactory(service=Service.GITHUB.value)
+        expected_id = "fkkgosd"
+        create_checkout_session_mock.return_value = {"id": expected_id}
+        desired_quantity = 25
+        desired_plan = {"value": "users-sentrym", "quantity": desired_quantity}
+
+        assert self.stripe.create_checkout_session(owner, desired_plan) == expected_id
+
+        create_checkout_session_mock.assert_called_once_with(
+            billing_address_collection="auto",
+            payment_method_types=["card"],
+            payment_method_collection="if_required",
+            client_reference_id=owner.ownerid,
+            customer=owner.stripe_customer_id,
+            customer_email=owner.email,
+            success_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?success",
+            cancel_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?cancel",
+            subscription_data={
+                "items": [
+                    {
+                        "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                        "quantity": desired_quantity,
+                    }
+                ],
+                "payment_behavior": "allow_incomplete",
+                "metadata": {
+                    "service": owner.service,
+                    "obo_organization": owner.ownerid,
+                    "username": owner.username,
+                    "obo_name": self.user.name,
+                    "obo_email": self.user.email,
+                    "obo": self.user.ownerid,
+                },
+                "trial_period_days": 14,
+                "trial_settings": {
+                    "end_behavior": {
+                        "missing_payment_method": "cancel",
+                    },
                 },
             },
         )
@@ -1305,6 +1350,54 @@ class BillingServiceTests(TestCase):
         delete_subscription_mock.assert_not_called()
         modify_subscription_mock.assert_not_called()
         create_checkout_session_mock.assert_not_called()
+
+    @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
+    @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
+    def test_update_plan_nonsentry_user_sentrym(
+        self, modify_subscription_mock, create_checkout_session_mock
+    ):
+        owner = OwnerFactory()
+        desired_plan = {"value": "users-sentrym"}
+        self.billing_service.update_plan(owner, desired_plan)
+
+        modify_subscription_mock.assert_not_called()
+        create_checkout_session_mock.assert_not_called()
+
+    @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
+    @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
+    def test_update_plan_nonsentry_user_sentryy(
+        self, modify_subscription_mock, create_checkout_session_mock
+    ):
+        owner = OwnerFactory()
+        desired_plan = {"value": "users-sentryy"}
+        self.billing_service.update_plan(owner, desired_plan)
+
+        modify_subscription_mock.assert_not_called()
+        create_checkout_session_mock.assert_not_called()
+
+    @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
+    @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
+    def test_update_plan_sentry_user_sentrym(
+        self, modify_subscription_mock, create_checkout_session_mock
+    ):
+        owner = OwnerFactory(sentry_user_id="sentry-user")
+        desired_plan = {"value": "users-sentrym"}
+        self.billing_service.update_plan(owner, desired_plan)
+
+        modify_subscription_mock.assert_not_called()
+        create_checkout_session_mock.assert_called_once_with(owner, desired_plan)
+
+    @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
+    @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
+    def test_update_plan_sentry_user_sentryy(
+        self, modify_subscription_mock, create_checkout_session_mock
+    ):
+        owner = OwnerFactory(sentry_user_id="sentry-user")
+        desired_plan = {"value": "users-sentryy"}
+        self.billing_service.update_plan(owner, desired_plan)
+
+        modify_subscription_mock.assert_not_called()
+        create_checkout_session_mock.assert_called_once_with(owner, desired_plan)
 
     @patch("services.tests.test_billing.MockPaymentService.get_subscription")
     def test_get_subscription(self, get_subscription_mock):
