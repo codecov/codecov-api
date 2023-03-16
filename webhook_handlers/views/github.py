@@ -43,6 +43,7 @@ class GithubWebhookHandler(APIView):
     redis = get_redis_connection()
 
     segment_service = SegmentService()
+    service_name = "github"
 
     def validate_signature(self, request):
         key = get_config(
@@ -88,7 +89,9 @@ class GithubWebhookHandler(APIView):
         repo_slug = repo_data.get("full_name")
 
         try:
-            owner = Owner.objects.get(service="github", service_id=owner_service_id)
+            owner = Owner.objects.get(
+                service=self.service_name, service_id=owner_service_id
+            )
         except Owner.DoesNotExist:
             log.info(
                 f"Error fetching owner with service_id {owner_service_id}, "
@@ -101,7 +104,7 @@ class GithubWebhookHandler(APIView):
                     extra=dict(repo_service_id=repo_service_id, repo_slug=repo_slug),
                 )
                 return Repository.objects.get(
-                    author__service="github", service_id=repo_service_id
+                    author__service=self.service_name, service_id=repo_service_id
                 )
             except Repository.DoesNotExist:
                 log.info(
@@ -365,7 +368,7 @@ class GithubWebhookHandler(APIView):
         action = request.data.get("action")
 
         owner, _ = Owner.objects.get_or_create(
-            service="github", service_id=service_id, username=username
+            service=self.service_name, service_id=service_id, username=username
         )
 
         if action == "deleted":
@@ -428,7 +431,8 @@ class GithubWebhookHandler(APIView):
 
             try:
                 org = Owner.objects.get(
-                    service="github", service_id=request.data["organization"]["id"]
+                    service=self.service_name,
+                    service_id=request.data["organization"]["id"],
                 )
             except Owner.DoesNotExist:
                 log.info("Organization does not exist, exiting")
@@ -439,7 +443,7 @@ class GithubWebhookHandler(APIView):
 
             try:
                 member = Owner.objects.get(
-                    service="github",
+                    service=self.service_name,
                     service_id=request.data["membership"]["user"]["id"],
                 )
             except Owner.DoesNotExist:
@@ -481,7 +485,7 @@ class GithubWebhookHandler(APIView):
         with suppress(Exception):
             # log if users purchase GHM plans while having a stripe plan
             username = request.data["marketplace_purchase"]["account"]["login"]
-            owner = Owner.objects.get(service="github", username=username)
+            owner = Owner.objects.get(service=self.service_name, username=username)
             subscription = BillingService(requesting_user=owner).get_subscription(owner)
             if subscription.status == "active":
                 log.warning(
@@ -508,7 +512,7 @@ class GithubWebhookHandler(APIView):
             )
             try:
                 member = Owner.objects.get(
-                    service="github", service_id=request.data["member"]["id"]
+                    service=self.service_name, service_id=request.data["member"]["id"]
                 )
             except Owner.DoesNotExist:
                 log.info(
@@ -554,3 +558,7 @@ class GithubWebhookHandler(APIView):
 
         handler = getattr(self, self.event, self.unhandled_webhook_event)
         return handler(request, *args, **kwargs)
+
+
+class GithubEnterpriseWebhookHandler(GithubWebhookHandler):
+    service_name = "github_enterprise"
