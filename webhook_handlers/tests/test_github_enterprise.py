@@ -733,7 +733,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
             **{
                 GitHubHTTPHeaders.EVENT: "",
                 GitHubHTTPHeaders.DELIVERY_TOKEN: uuid.UUID(int=5),
-                GitHubHTTPHeaders.SIGNATURE: 0,
+                GitHubHTTPHeaders.SIGNATURE: "",
             },
             data={},
             format="json"
