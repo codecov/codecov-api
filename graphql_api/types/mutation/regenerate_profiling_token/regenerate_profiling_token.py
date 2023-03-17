@@ -1,12 +1,14 @@
 from ariadne import UnionType
 
 from graphql_api.helpers.mutation import (
+    require_authenticated,
     resolve_union_error_type,
     wrap_error_handling_mutation,
 )
 
 
 @wrap_error_handling_mutation
+@require_authenticated
 async def resolve_regenerate_profling_token(_, info, input):
     command = info.context["executor"].get_command("repository")
     profilingToken = await command.regenerate_repository_token(

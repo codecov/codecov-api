@@ -37,10 +37,6 @@ class RegenerateRepositoryTokenInteractorTest(TransactionTestCase):
             token_type="profiling",
         )
 
-    async def test_when_unauthenticated_raise(self):
-        with pytest.raises(Unauthenticated):
-            await self.execute(user="", repo=self.active_repo)
-
     async def test_when_validation_error_repo_not_active(self):
         with pytest.raises(ValidationError):
             await self.execute(user=self.random_user, repo=self.inactive_repo)
