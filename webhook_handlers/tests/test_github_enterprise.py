@@ -2,7 +2,7 @@ import hmac
 import json
 import uuid
 from collections import namedtuple
-from hashlib import sha1, sha256
+from hashlib import sha256
 from unittest.mock import call, patch
 
 import pytest
@@ -29,10 +29,10 @@ from webhook_handlers.constants import (
 MockedSubscription = namedtuple("Subscription", ["status"])
 
 
-class GithubWebhookHandlerTests(APITestCase):
+class GithubEnterpriseWebhookHandlerTests(APITestCase):
     def _post_event_data(self, event, data={}):
         return self.client.post(
-            reverse("github-webhook"),
+            reverse("github_enterprise-webhook"),
             **{
                 GitHubHTTPHeaders.EVENT: event,
                 GitHubHTTPHeaders.DELIVERY_TOKEN: uuid.UUID(int=5),
@@ -53,7 +53,7 @@ class GithubWebhookHandlerTests(APITestCase):
 
     def setUp(self):
         self.repo = RepositoryFactory(
-            author=OwnerFactory(service=Service.GITHUB.value),
+            author=OwnerFactory(service=Service.GITHUB_ENTERPRISE.value),
             service_id=12345,
             active=True,
         )
@@ -474,7 +474,7 @@ class GithubWebhookHandlerTests(APITestCase):
             )
 
             owner = Owner.objects.filter(
-                service="github", service_id=service_id, username=username
+                service="github_enterprise", service_id=service_id, username=username
             )
 
             assert owner.exists()
@@ -485,7 +485,7 @@ class GithubWebhookHandlerTests(APITestCase):
     def test_installation_events_with_deleted_action_nulls_values(self):
         # Should set integration_id to null for owner,
         # and set using_integration=False and bot=null for repos
-        owner = OwnerFactory(service=Service.GITHUB.value)
+        owner = OwnerFactory(service=Service.GITHUB_ENTERPRISE.value)
         repo1 = RepositoryFactory(author=owner)
         repo2 = RepositoryFactory(author=owner)
 
@@ -532,7 +532,7 @@ class GithubWebhookHandlerTests(APITestCase):
         self,
     ):
         integration_id = 44
-        owner = OwnerFactory(service=Service.GITHUB.value)
+        owner = OwnerFactory(service=Service.GITHUB_ENTERPRISE.value)
 
         for event in [
             GitHubWebhookEvents.INSTALLATION,
@@ -559,7 +559,7 @@ class GithubWebhookHandlerTests(APITestCase):
 
     @patch("services.task.TaskService.refresh")
     def test_installation_events_trigger_refresh_with_other_actions(self, refresh_mock):
-        owner = OwnerFactory(service=Service.GITHUB.value)
+        owner = OwnerFactory(service=Service.GITHUB_ENTERPRISE.value)
 
         for event in [
             GitHubWebhookEvents.INSTALLATION,
@@ -599,9 +599,11 @@ class GithubWebhookHandlerTests(APITestCase):
     def test_organization_with_removed_action_removes_user_from_org_and_activated_user_list(
         self,
     ):
-        org = OwnerFactory(service_id="4321", service=Service.GITHUB.value)
+        org = OwnerFactory(service_id="4321", service=Service.GITHUB_ENTERPRISE.value)
         user = OwnerFactory(
-            organizations=[org.ownerid], service_id="12", service=Service.GITHUB.value
+            organizations=[org.ownerid],
+            service_id="12",
+            service=Service.GITHUB_ENTERPRISE.value,
         )
         org.plan_activated_users = [user.ownerid]
         org.save()
@@ -622,7 +624,7 @@ class GithubWebhookHandlerTests(APITestCase):
         assert user.ownerid not in org.plan_activated_users
 
     def test_organization_member_removed_with_nonexistent_org_doesnt_crash(self):
-        user = OwnerFactory(service_id="12", service=Service.GITHUB.value)
+        user = OwnerFactory(service_id="12", service=Service.GITHUB_ENTERPRISE.value)
 
         response = self._post_event_data(
             event=GitHubWebhookEvents.ORGANIZATION,
@@ -638,10 +640,12 @@ class GithubWebhookHandlerTests(APITestCase):
         org = OwnerFactory(
             service_id="4321",
             plan_activated_users=[50392],
-            service=Service.GITHUB.value,
+            service=Service.GITHUB_ENTERPRISE.value,
         )
         user = OwnerFactory(
-            service_id="12", organizations=[60798], service=Service.GITHUB.value
+            service_id="12",
+            organizations=[60798],
+            service=Service.GITHUB_ENTERPRISE.value,
         )
 
         response = self._post_event_data(
@@ -656,7 +660,7 @@ class GithubWebhookHandlerTests(APITestCase):
         assert response.status_code == status.HTTP_200_OK
 
     def test_organization_member_removed_with_nonexistent_member_doesnt_crash(self):
-        org = OwnerFactory(service_id="4321", service=Service.GITHUB.value)
+        org = OwnerFactory(service_id="4321", service=Service.GITHUB_ENTERPRISE.value)
 
         response = self._post_event_data(
             event=GitHubWebhookEvents.ORGANIZATION,
@@ -700,7 +704,9 @@ class GithubWebhookHandlerTests(APITestCase):
         action = "purchased"
         account = {"type": "Organization", "id": 54678, "login": "username"}
         OwnerFactory(
-            username=account["login"], service="github", stripe_subscription_id="abc"
+            username=account["login"],
+            service="github_enterprise",
+            stripe_subscription_id="abc",
         )
         subscription_retrieve_mock.return_value = MockedSubscription("active")
         response = self._post_event_data(
@@ -735,50 +741,6 @@ class GithubWebhookHandlerTests(APITestCase):
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-        response = self.client.post(
-            reverse("github-webhook"),
-            **{
-                GitHubHTTPHeaders.EVENT: "",
-                GitHubHTTPHeaders.DELIVERY_TOKEN: uuid.UUID(int=5),
-                GitHubHTTPHeaders.SIGNATURE_256: "sha256="
-                + hmac.new(
-                    get_config(
-                        "github",
-                        "webhook_secret",
-                        default=b"testixik8qdauiab1yiffydimvi72ekq",
-                    ),
-                    json.dumps({}, separators=(",", ":")).encode("utf-8"),
-                    digestmod=sha256,
-                ).hexdigest(),
-            },
-            data={},
-            format="json"
-        )
-
-        assert response.status_code == status.HTTP_200_OK
-
-        response = self.client.post(
-            reverse("github-webhook"),
-            **{
-                GitHubHTTPHeaders.EVENT: "",
-                GitHubHTTPHeaders.DELIVERY_TOKEN: uuid.UUID(int=5),
-                GitHubHTTPHeaders.SIGNATURE: "sha1="
-                + hmac.new(
-                    get_config(
-                        "github",
-                        "webhook_secret",
-                        default=b"testixik8qdauiab1yiffydimvi72ekq",
-                    ),
-                    json.dumps({}, separators=(",", ":")).encode("utf-8"),
-                    digestmod=sha1,
-                ).hexdigest(),
-            },
-            data={},
-            format="json"
-        )
-
-        assert response.status_code == status.HTTP_200_OK
-
     @patch("webhook_handlers.views.github.get_config")
     def test_signature_validation_with_string_key(self, get_config_mock):
         # make get_config return string
@@ -788,7 +750,9 @@ class GithubWebhookHandlerTests(APITestCase):
 
     def test_member_removes_repo_permissions_if_member_removed(self):
         member = OwnerFactory(
-            permission=[self.repo.repoid], service_id=6098, service=Service.GITHUB.value
+            permission=[self.repo.repoid],
+            service_id=6098,
+            service=Service.GITHUB_ENTERPRISE.value,
         )
         response = self._post_event_data(
             event=GitHubWebhookEvents.MEMBER,
@@ -804,7 +768,7 @@ class GithubWebhookHandlerTests(APITestCase):
 
     def test_member_doesnt_crash_if_member_permission_array_is_None(self):
         member = OwnerFactory(
-            permission=None, service_id=6098, service=Service.GITHUB.value
+            permission=None, service_id=6098, service=Service.GITHUB_ENTERPRISE.value
         )
         response = self._post_event_data(
             event=GitHubWebhookEvents.MEMBER,
@@ -819,7 +783,7 @@ class GithubWebhookHandlerTests(APITestCase):
         member = OwnerFactory(
             permission=[self.repo.service_id + 1],
             service_id=6098,
-            service=Service.GITHUB.value,
+            service=Service.GITHUB_ENTERPRISE.value,
         )
         response = self._post_event_data(
             event=GitHubWebhookEvents.MEMBER,
@@ -854,7 +818,7 @@ class GithubWebhookHandlerTests(APITestCase):
         "services.segment.SegmentService.account_installed_source_control_service_app"
     )
     def test_installing_app_triggers_segment(self, segment_install_mock):
-        owner = OwnerFactory(service=Service.GITHUB.value)
+        owner = OwnerFactory(service=Service.GITHUB_ENTERPRISE.value)
         response = self._post_event_data(
             event=GitHubWebhookEvents.INSTALLATION,
             data={
@@ -875,7 +839,7 @@ class GithubWebhookHandlerTests(APITestCase):
         "services.segment.SegmentService.account_uninstalled_source_control_service_app"
     )
     def test_installing_app_triggers_segment(self, segment_uninstall_mock):
-        owner = OwnerFactory(service=Service.GITHUB.value)
+        owner = OwnerFactory(service=Service.GITHUB_ENTERPRISE.value)
         response = self._post_event_data(
             event=GitHubWebhookEvents.INSTALLATION,
             data={
@@ -894,7 +858,9 @@ class GithubWebhookHandlerTests(APITestCase):
 
     def test_repo_not_found_when_owner_has_integration_creates_repo(self):
         owner = OwnerFactory(
-            integration_id=4850403, service_id=97968493, service=Service.GITHUB.value
+            integration_id=4850403,
+            service_id=97968493,
+            service=Service.GITHUB_ENTERPRISE.value,
         )
         response = self._post_event_data(
             event=GitHubWebhookEvents.REPOSITORY,
@@ -914,7 +880,9 @@ class GithubWebhookHandlerTests(APITestCase):
 
     def test_repo_creation_doesnt_crash_for_forked_repo(self):
         owner = OwnerFactory(
-            integration_id=4850403, service_id=97968493, service=Service.GITHUB.value
+            integration_id=4850403,
+            service_id=97968493,
+            service=Service.GITHUB_ENTERPRISE.value,
         )
         response = self._post_event_data(
             event=GitHubWebhookEvents.REPOSITORY,
