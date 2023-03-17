@@ -117,7 +117,12 @@ def build_session(upload: ReportSession) -> Session:
     """
     Build a `shared.utils.sessions.Session` from a database `reports_upload` record.
     """
-    upload_totals = build_totals(upload.uploadleveltotals)
+    try:
+        upload_totals = build_totals(upload.uploadleveltotals)
+    except ReportSession.uploadleveltotals.RelatedObjectDoesNotExist:
+        # upload does not have any totals - maybe the processing failed
+        # or the upload was empty?
+        upload_totals = None
     flags = [flag.flag_name for flag in upload.flags.all()]
 
     return Session(
