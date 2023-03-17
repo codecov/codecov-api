@@ -10,9 +10,9 @@ type Mutation {
   ): UpdateDefaultOrganizationPayload
   deleteSession(input: DeleteSessionInput!): DeleteSessionPayload
   onboardUser(input: OnboardUserInput!): OnboardUserPayload
-  regenerateProfilingToken(
-    input: RegenerateProfilingTokenInput!
-  ): RegenerateProfilingTokenPayload
+  regenerateRepositoryToken(
+    input: RegenerateRepositoryTokenInput!
+  ): RegenerateRepositoryTokenPayload
   activateFlagsMeasurements(
     input: ActivateFlagsMeasurementsInput!
   ): ActivateFlagsMeasurementsPayload
@@ -21,4 +21,8 @@ type Mutation {
   ): RegenerateOrgUploadTokenPayload
   deleteFlag(input: DeleteFlagInput!): DeleteFlagPayload
   saveSentryState(input: SaveSentryStateInput!): SaveSentryStatePayload
+
+  regenerateProfilingToken(
+    input: RegenerateProfilingTokenInput!
+  ): RegenerateProfilingTokenPayload @deprecated(reason: "use regenerateRepositoryToken")
 }

@@ -5,7 +5,7 @@ from codecov_auth.models import Owner, RepositoryToken
 from core.models import Repository
 
 
-class RegenerateProfilingTokenInteractor(BaseInteractor):
+class RegenerateRepositoryTokenInteractor(BaseInteractor):
     def validate(self, repo):
         if not self.current_user.is_authenticated:
             raise Unauthenticated()
@@ -13,8 +13,10 @@ class RegenerateProfilingTokenInteractor(BaseInteractor):
             raise ValidationError("Repo not found")
 
     @sync_to_async
-    def execute(self, repo_name, owner):
-        author = Owner.objects.filter(name=owner, service=self.service).first()
+    def execute(self, repo_name: str, owner_username: str, token_type: str):
+        author = Owner.objects.filter(
+            username=owner_username, service=self.service
+        ).first()
         repo = (
             Repository.objects.viewable_repos(self.current_user)
             .filter(author=author, name=repo_name, active=True)
@@ -23,7 +25,7 @@ class RegenerateProfilingTokenInteractor(BaseInteractor):
         self.validate(repo)
 
         token, created = RepositoryToken.objects.get_or_create(
-            repository_id=repo.repoid, token_type="profiling"
+            repository_id=repo.repoid, token_type=token_type
         )
         if not created:
             token.key = token.generate_key()
