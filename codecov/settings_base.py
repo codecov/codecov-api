@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django_filters",
     "drf_spectacular",
+    "drf_spectacular_sidecar",
     "ariadne_django",
     "corsheaders",
     "rest_framework",
@@ -277,6 +278,7 @@ SPECTACULAR_SETTINGS = {
     "AUTHENTICATION_WHITELIST": [
         "codecov_auth.authentication.UserTokenAuthentication",
     ],
+    "REDOC_DIST": "SIDECAR",  # serve Redoc from Django (not CDN)
 }
 
 # Internationalization
