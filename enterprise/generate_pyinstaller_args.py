@@ -110,6 +110,7 @@ def main():
         "drf_spectacular.contrib.django_filters",
         "drf_spectacular.contrib.rest_framework_recursive",
         "drf_spectacular.contrib.rest_framework_gis",
+        "drf_spectacular_sidecar",
         # Imports for bitbucket_server
         "asyncore",
         "imaplib",
