@@ -1,6 +1,6 @@
 from typing import Optional
 
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
 from django.utils.functional import cached_property
 from shared.helpers.flag import Flag
 from shared.reports.readonly import ReadOnlyReport as SharedReadOnlyReport
@@ -148,7 +148,9 @@ def build_sessions(commit_report: CommitReport) -> dict[int, Session]:
     Build mapping of report number -> session that can be passed to the report class.
     """
     sessions = {}
-    for upload in commit_report.sessions.all():
+    for upload in commit_report.sessions.filter(
+        Q(state="complete") | Q(state="processed")
+    ):
         session = build_session(upload)
         sessions[upload.order_number] = session
     return sessions

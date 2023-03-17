@@ -25,6 +25,7 @@ class UploadFactory(DjangoModelFactory):
 
     build_code = factory.Sequence(lambda n: f"{n}")
     report = factory.SubFactory(CommitReportFactory)
+    state = "processed"
 
 
 class RepositoryFlagFactory(DjangoModelFactory):

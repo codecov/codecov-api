@@ -5,6 +5,7 @@ from unittest.mock import patch
 from django.test import TestCase
 
 from core.tests.factories import CommitFactory, CommitWithReportFactory
+from reports.tests.factories import UploadFactory
 from services.report import build_report, build_report_from_commit
 
 current_file = Path(__file__)
@@ -74,6 +75,16 @@ class ReportServiceTest(TestCase):
         f = open(current_file.parent / "samples" / "chunks.txt", "r")
         read_chunks_mock.return_value = f.read()
         commit = CommitWithReportFactory.create(message="aaaaa", commitid="abf6d4d")
+        commit_report = commit.reports.first()
+
+        # this will be ignored
+        UploadFactory(
+            report=commit_report,
+            order_number=None,
+            storage_path="v4/raw/2019-01-10/4434BC2A2EC4FCA57F77B473D83F928C/abf6d4df662c47e32460020ab14abf9303581429/9ccc55a1-8b41-4bb1-a946-ee7a33a7fb56.txt",
+            state="error",
+        )
+
         res = build_report_from_commit(commit)
         assert len(res._chunks) == 3
         assert len(res.files) == 3
