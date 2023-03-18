@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 from django.test import TransactionTestCase
 
+from codecov_auth.models import OwnerProfile
 from codecov_auth.tests.factories import OwnerFactory, OwnerProfileFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
 
@@ -56,7 +57,9 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             }
         }
         """
-        OwnerProfileFactory(owner=self.user, goals=["IMPROVE_COVERAGE"])
+        OwnerProfile.objects.filter(owner_id=self.user.ownerid).update(
+            goals=["IMPROVE_COVERAGE"]
+        )
         data = self.gql_request(query, user=self.user)
         assert data == {
             "me": {
@@ -80,7 +83,12 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
         """
         data = self.gql_request(query, user=self.user)
         assert data == {
-            "me": {"trackingMetadata": {"ownerid": self.user.ownerid, "profile": None}}
+            "me": {
+                "trackingMetadata": {
+                    "ownerid": self.user.ownerid,
+                    "profile": {"goals": []},
+                }
+            }
         }
 
     def test_private_access_when_private_access_field_is_null(self):

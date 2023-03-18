@@ -5,6 +5,7 @@ from unittest.mock import patch
 from django.test import TransactionTestCase
 
 from billing.constants import BASIC_PLAN_NAME
+from codecov_auth.models import OwnerProfile
 from codecov_auth.tests.factories import (
     GetAdminProviderAdapter,
     OwnerFactory,
@@ -315,7 +316,9 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
             service="github",
             organizations=[organization.ownerid],
         )
-        OwnerProfileFactory(owner=owner, default_org=organization)
+        OwnerProfile.objects.filter(owner_id=owner.ownerid).update(
+            default_org=organization
+        )
         query = """{
             owner(username: "%s") {
                 defaultOrgUsername
@@ -330,7 +333,6 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
 
     def test_owner_without_default_org_returns_null(self):
         owner = OwnerFactory(username="sample-owner", service="github")
-        OwnerProfileFactory(owner=owner, default_org=None)
         query = """{
             owner(username: "%s") {
                 defaultOrgUsername
