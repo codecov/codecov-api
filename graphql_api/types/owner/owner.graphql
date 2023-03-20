@@ -15,6 +15,7 @@ type Owner {
   repository(name: String!): Repository
   numberOfUploads: Int
   isAdmin: Boolean!
+  hashOwnerid: String!
   ownerid: Int!
   orgUploadToken: String
   defaultOrgUsername: String

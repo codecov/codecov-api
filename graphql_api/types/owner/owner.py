@@ -85,6 +85,12 @@ def resolve_is_current_user_an_admin(owner, info):
     return command.get_is_current_user_an_admin(owner, current_user)
 
 
+@owner_bindable.field("hashOwnerid")
+def resolve_hash_ownerid(owner, info):
+    hash_ownerid = sha1(str(owner.ownerid).encode())
+    return hash_ownerid.hexdigest()
+
+
 @owner_bindable.field("orgUploadToken")
 def resolve_org_upload_token(owner, info, **kwargs):
     command = info.context["executor"].get_command("owner")
