@@ -294,7 +294,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
     def test_ownerid(self):
         query = query_repositories % (self.user.username, "", "")
         data = self.gql_request(query, user=self.user)
-        assert data["owner"]["ownerid"] == self.owner.ownerid
+        assert data["owner"]["ownerid"] == self.user.ownerid
 
     @patch("codecov_auth.commands.owner.owner.OwnerCommands.get_org_upload_token")
     def test_get_org_upload_token(self, mocker):
