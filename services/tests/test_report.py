@@ -3,9 +3,14 @@ from pathlib import Path
 from unittest.mock import patch
 
 from django.test import TestCase
+from shared.utils.sessions import SessionType
 
 from core.tests.factories import CommitFactory, CommitWithReportFactory
-from reports.tests.factories import UploadFactory
+from reports.tests.factories import (
+    UploadFactory,
+    UploadFlagMembershipFactory,
+    UploadLevelTotalsFactory,
+)
 from services.report import build_report, build_report_from_commit
 
 current_file = Path(__file__)
@@ -111,6 +116,30 @@ class ReportServiceTest(TestCase):
             0,
             0,
         ]
+
+    @patch("services.archive.ArchiveService.read_chunks")
+    def test_build_report_from_commit_cff_and_direct_uploads(self, read_chunks_mock):
+        f = open(current_file.parent / "samples" / "chunks.txt", "r")
+        read_chunks_mock.return_value = f.read()
+
+        commit = CommitWithReportFactory.create()
+        commit_report = commit.reports.first()
+
+        # this upload will be ignored since there's another direct
+        # upload with the same flag
+        upload = UploadFactory(
+            report=commit_report,
+            order_number=2,
+            storage_path="v4/raw/2019-01-10/4434BC2A2EC4FCA57F77B473D83F928C/abf6d4df662c47e32460020ab14abf9303581429/9ccc55a1-8b41-4bb1-a946-ee7a33a7fb56.txt",
+            upload_type="carriedforward",
+        )
+        UploadFlagMembershipFactory(
+            report_session=upload,
+            flag=commit.repository.flags.get(flag_name="unittests"),
+        )
+
+        res = build_report_from_commit(commit)
+        assert len(res.sessions) == 2
 
     @patch("services.archive.ArchiveService.read_chunks")
     def test_build_report_from_commit_null_session_totals(self, read_chunks_mock):

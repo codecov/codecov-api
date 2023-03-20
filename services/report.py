@@ -146,13 +146,33 @@ def build_session(upload: ReportSession) -> Session:
 def build_sessions(commit_report: CommitReport) -> dict[int, Session]:
     """
     Build mapping of report number -> session that can be passed to the report class.
+    Does not include CF sessions if there is also an upload session with the same
+    flag name.
     """
     sessions = {}
+
+    carryforward_sessions = {}
+    uploaded_flags = set()
+
     for upload in commit_report.sessions.filter(
         Q(state="complete") | Q(state="processed")
     ):
         session = build_session(upload)
-        sessions[upload.order_number] = session
+        if session.session_type == SessionType.carriedforward:
+            carryforward_sessions[upload.order_number] = session
+        else:
+            sessions[upload.order_number] = session
+            uploaded_flags |= set(session.flags)
+
+    for sid, session in carryforward_sessions.items():
+        # we only ever expect 1 flag for CF sessions
+        overlapping_flags = uploaded_flags & set(session.flags)
+
+        if len(overlapping_flags) == 0:
+            # we can include this CF session since there are no direct uploads
+            # with the same flag name
+            sessions[sid] = session
+
     return sessions
 
 
