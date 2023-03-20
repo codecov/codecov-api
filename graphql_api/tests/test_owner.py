@@ -304,6 +304,22 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, user=self.user)
         assert data["owner"]["orgUploadToken"] == "upload_token"
 
+    # Applies for old users that didn't get their owner profiles created w/ their owner
+    def test_when_owner_profile_doesnt_exist(self):
+        owner = OwnerFactory(username="no-profile-user")
+        owner.profile.delete()
+        query = """{
+            owner(username: "%s") {
+                defaultOrgUsername
+                username
+            }
+        }
+        """ % (
+            owner.username
+        )
+        data = self.gql_request(query, user=owner)
+        assert data["owner"]["defaultOrgUsername"] == None
+
     def test_get_default_org_username_for_owner(self):
         organization = OwnerFactory(username="sample-org", service="github")
         owner = OwnerFactory(

@@ -91,6 +91,30 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
+    # Applies for old users that didn't get their owner profiles created w/ their owner
+    def test_when_owner_profile_doesnt_exist(self):
+        query = """
+        {
+            me {
+                trackingMetadata {
+                    ownerid
+                    profile { goals }
+                }
+            }
+        }
+        """
+        owner = OwnerFactory(username="another-user")
+        owner.profile.delete()
+        data = self.gql_request(query, user=owner)
+        assert data == {
+            "me": {
+                "trackingMetadata": {
+                    "ownerid": owner.ownerid,
+                    "profile": None,
+                }
+            }
+        }
+
     def test_private_access_when_private_access_field_is_null(self):
         current_user = OwnerFactory(private_access=None)
         query = """{
