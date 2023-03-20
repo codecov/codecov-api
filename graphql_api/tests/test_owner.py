@@ -1,5 +1,4 @@
 import asyncio
-from hashlib import sha1
 from unittest.mock import patch
 
 from django.test import TransactionTestCase
@@ -18,7 +17,7 @@ from .helper import GraphQLTestHelper, paginate_connection
 query_repositories = """{
     owner(username: "%s") {
         orgUploadToken
-        hashOwnerid
+        ownerid
         isCurrentUserPartOfOrg
         yaml
         repositories%s {
@@ -62,12 +61,10 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
     def test_fetching_repositories(self):
         query = query_repositories % (self.user.username, "", "")
         data = self.gql_request(query, user=self.user)
-        hash_ownerid = sha1(str(self.user.ownerid).encode())
-        hashOwnerid = hash_ownerid.hexdigest()
         assert data == {
             "owner": {
                 "orgUploadToken": None,
-                "hashOwnerid": hashOwnerid,
+                "ownerid": self.user.ownerid,
                 "isCurrentUserPartOfOrg": True,
                 "yaml": None,
                 "repositories": {
@@ -294,12 +291,10 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, user=user)
         assert data["owner"]["isAdmin"] is True
 
-    def test_hashOwnerid(self):
+    def test_ownerid(self):
         query = query_repositories % (self.user.username, "", "")
         data = self.gql_request(query, user=self.user)
-        hash_ownerid = sha1(str(self.user.ownerid).encode())
-        hashOwnerid = hash_ownerid.hexdigest()
-        assert data["owner"]["hashOwnerid"] == hashOwnerid
+        assert data["owner"]["ownerid"] == self.user.ownerid
 
     @patch("codecov_auth.commands.owner.owner.OwnerCommands.get_org_upload_token")
     def test_get_org_upload_token(self, mocker):
