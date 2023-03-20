@@ -16,16 +16,17 @@ class CommitLoader(BaseLoader):
         return super().__init__(info, *args, **kwargs)
 
     def batch_queryset(self, keys):
+        # We don't select the `report` or `files_array` columns here b/c then can be
+        # very large JSON blobs and cause performance issues
+
         # prefetch the CommitReport with the ReportLevelTotals and ReportDetails
         prefetch = Prefetch(
             "reports",
             queryset=CommitReport.objects.select_related(
                 "reportleveltotals", "reportdetails"
-            ),
+            ).defer("reportdetails__files_array"),
         )
 
-        # We don't select the `report` column here b/c it can be many MBs of JSON
-        # and can cause performance issues
         return (
             Commit.objects.filter(commitid__in=keys, repository_id=self.repository_id)
             .defer("report")

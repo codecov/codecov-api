@@ -1,4 +1,5 @@
 import hashlib
+from dataclasses import dataclass
 from unittest.mock import PropertyMock, patch
 
 from django.test import TransactionTestCase
@@ -46,6 +47,24 @@ query ImpactedFiles(
             }
             changeCoverage
           }
+        }
+      }
+    }
+  }
+}
+"""
+
+query_direct_changed_files_count = """
+query ImpactedFiles(
+    $org: String!
+    $repo: String!
+    $commit: String!
+) {
+  owner(username: $org) {
+    repository(name: $repo) {
+      commit(id: $commit) {
+        compareWithParent {
+          directChangedFilesCount
         }
       }
     }
@@ -210,21 +229,18 @@ mock_data_from_archive = """
 """
 
 
-class MockSegmentWithNoUnexpectedChanges(object):
-    def __init__(self):
-        self.has_unintended_changes = False
-
-
-class MockSegmentWithUnintendedChanges(object):
-    def __init__(self):
-        self.has_unintended_changes = True
+@dataclass
+class MockSegment:
+    has_diff_changes: bool = False
+    has_unintended_changes: bool = False
 
 
 class MockFileComparison(object):
     def __init__(self):
         self.segments = [
-            MockSegmentWithUnintendedChanges(),
-            MockSegmentWithNoUnexpectedChanges(),
+            MockSegment(has_unintended_changes=True, has_diff_changes=False),
+            MockSegment(has_unintended_changes=False, has_diff_changes=True),
+            MockSegment(has_unintended_changes=True, has_diff_changes=True),
         ]
 
 
@@ -437,6 +453,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                     "results": [
                                         {"hasUnintendedChanges": True},
                                         {"hasUnintendedChanges": False},
+                                        {"hasUnintendedChanges": True},
                                     ],
                                 },
                             },
@@ -449,7 +466,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
     @patch("services.comparison.Comparison.validate")
     @patch("services.comparison.PullRequestComparison.get_file_comparison")
     @patch("services.archive.ArchiveService.read_file")
-    def test_fetch_impacted_file_with_segments_filter(
+    def test_fetch_impacted_file_segments_with_indirect_changes_only(
         self, read_file, mock_get_file_comparison, mock_compare_validate
     ):
         read_file.return_value = mock_data_from_archive
@@ -478,7 +495,9 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                 "headCoverage": {"percentCovered": 85.71428571428571},
                                 "patchCoverage": {"percentCovered": 50.0},
                                 "segments": {
-                                    "results": [{"hasUnintendedChanges": True}],
+                                    "results": [
+                                        {"hasUnintendedChanges": True},
+                                    ],
                                 },
                             },
                         }
@@ -561,6 +580,118 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                     "message": "Error fetching data from the provider"
                                 },
                             },
+                        }
+                    }
+                }
+            }
+        }
+
+    @patch("services.comparison.Comparison.validate")
+    @patch("services.comparison.PullRequestComparison.get_file_comparison")
+    @patch("services.archive.ArchiveService.read_file")
+    def test_fetch_impacted_file_segments_with_direct_and_indirect_changes(
+        self, read_file, mock_get_file_comparison, mock_compare_validate
+    ):
+        read_file.return_value = mock_data_from_archive
+
+        mock_get_file_comparison.return_value = MockFileComparison()
+        mock_compare_validate.return_value = True
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "pull": self.pull.pullid,
+            "path": "fileA",
+            "filters": {"hasUnintendedChanges": False},
+        }
+        data = self.gql_request(query_impacted_file_through_pull, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "pull": {
+                        "compareWithBase": {
+                            "state": "processed",
+                            "impactedFile": {
+                                "headName": "fileA",
+                                "baseName": "fileA",
+                                "hashedPath": "5e9f0c9689fb7ec181ea0fb09ad3f74e",
+                                "baseCoverage": {"percentCovered": 41.666666666666664},
+                                "headCoverage": {"percentCovered": 85.71428571428571},
+                                "patchCoverage": {"percentCovered": 50.0},
+                                "segments": {
+                                    "results": [
+                                        {"hasUnintendedChanges": False},
+                                        {"hasUnintendedChanges": True},
+                                    ]
+                                },
+                            },
+                        }
+                    }
+                }
+            }
+        }
+
+    @patch("services.comparison.Comparison.validate")
+    @patch("services.comparison.PullRequestComparison.get_file_comparison")
+    @patch("services.archive.ArchiveService.read_file")
+    def test_fetch_impacted_file_without_segments_filter(
+        self, read_file, mock_get_file_comparison, mock_compare_validate
+    ):
+        read_file.return_value = mock_data_from_archive
+
+        mock_get_file_comparison.return_value = MockFileComparison()
+        mock_compare_validate.return_value = True
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "pull": self.pull.pullid,
+            "path": "fileA",
+        }
+        data = self.gql_request(query_impacted_file_through_pull, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "pull": {
+                        "compareWithBase": {
+                            "state": "processed",
+                            "impactedFile": {
+                                "headName": "fileA",
+                                "baseName": "fileA",
+                                "hashedPath": "5e9f0c9689fb7ec181ea0fb09ad3f74e",
+                                "baseCoverage": {"percentCovered": 41.666666666666664},
+                                "headCoverage": {"percentCovered": 85.71428571428571},
+                                "patchCoverage": {"percentCovered": 50.0},
+                                "segments": {
+                                    "results": [
+                                        {"hasUnintendedChanges": True},
+                                        {"hasUnintendedChanges": False},
+                                        {"hasUnintendedChanges": True},
+                                    ]
+                                },
+                            },
+                        }
+                    }
+                }
+            }
+        }
+
+    @patch("services.archive.ArchiveService.read_file")
+    def test_fetch_direct_changed_files_count(self, read_file):
+        read_file.return_value = mock_data_from_archive
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(
+            query_direct_changed_files_count,
+            variables=variables,
+        )
+        assert data == {
+            "owner": {
+                "repository": {
+                    "commit": {
+                        "compareWithParent": {
+                            "directChangedFilesCount": 2,
                         }
                     }
                 }

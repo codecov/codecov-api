@@ -3,13 +3,13 @@ from unittest.mock import patch
 import minio
 from ddf import G
 from rest_framework.reverse import reverse
-from rest_framework.test import APITestCase
+from rest_framework.test import APITransactionTestCase
 
 from codecov_auth.models import Owner
 from core.models import Repository
 
 
-class UploadDownloadHelperTest(APITestCase):
+class UploadDownloadHelperTest(APITransactionTestCase):
     def _get(self, kwargs={}, data={}):
         path = f"/upload/{kwargs.get('service')}/{kwargs.get('owner_username')}/{kwargs.get('repo_name')}/download"
         return self.client.get(path, data=data)
@@ -59,7 +59,16 @@ class UploadDownloadHelperTest(APITestCase):
     @patch("services.archive.ArchiveService.get_archive_hash")
     @patch("services.archive.ArchiveService.read_file")
     def test_invalid_archive_path(self, read_file, get_archive_hash):
-        read_file.side_effect = [minio.error.NoSuchKey]
+        read_file.side_effect = [
+            minio.error.S3Error(
+                code="NoSuchKey",
+                message=None,
+                resource=None,
+                request_id=None,
+                host_id=None,
+                response=None,
+            )
+        ]
         get_archive_hash.return_value = "path"
         response = self._get(
             kwargs={

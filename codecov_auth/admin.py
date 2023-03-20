@@ -124,6 +124,7 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
         "stripe_customer_id",
         "stripe_subscription_id",
         "organizations",
+        "max_upload_limit",
     )
 
     def get_form(self, request, obj=None, change=False, **kwargs):

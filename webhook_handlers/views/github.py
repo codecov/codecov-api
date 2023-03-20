@@ -47,7 +47,9 @@ class GithubWebhookHandler(APIView):
 
     def validate_signature(self, request):
         key = get_config(
-            "github", "webhook_secret", default=b"testixik8qdauiab1yiffydimvi72ekq"
+            self.service_name,
+            "webhook_secret",
+            default=b"testixik8qdauiab1yiffydimvi72ekq",
         )
         if type(key) is str:
             # If "key" comes from k8s secret, it is of type str, so

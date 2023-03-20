@@ -4,11 +4,13 @@ from abc import ABC, abstractmethod
 import stripe
 from django.conf import settings
 
+import services.sentry as sentry
 from billing.constants import (
     ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
     FREE_PLAN_REPRESENTATIONS,
     PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
     REMOVED_INVOICE_STATUSES,
+    SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
     USER_PLAN_REPRESENTATIONS,
 )
 from codecov_auth.models import Owner
@@ -64,6 +66,10 @@ class AbstractPaymentService(ABC):
 
     @abstractmethod
     def get_schedule(self, owner):
+        pass
+
+    @abstractmethod
+    def apply_cancellation_discount(self, owner: Owner):
         pass
 
 
@@ -356,24 +362,41 @@ class StripeService(AbstractPaymentService):
     def create_checkout_session(self, owner, desired_plan):
         success_url, cancel_url = self._get_success_and_cancel_url(owner)
         log.info("Creating Stripe Checkout Session for owner: {owner.ownerid}")
+
+        billing_address_collection = "required"
+        subscription_data = {
+            "items": [
+                {
+                    "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    "quantity": desired_plan["quantity"],
+                }
+            ],
+            "payment_behavior": "allow_incomplete",
+            "metadata": self._get_checkout_session_and_subscription_metadata(owner),
+        }
+
+        plan_representation = USER_PLAN_REPRESENTATIONS[desired_plan["value"]]
+        trial_days = plan_representation.get("trial_days")
+        if trial_days is not None:
+            billing_address_collection = "auto"
+            subscription_data["trial_period_days"] = trial_days
+            subscription_data["trial_settings"] = {
+                "end_behavior": {
+                    # `customer.subscription.deleted` webhook will be triggered at the end of trial period
+                    "missing_payment_method": "cancel",
+                }
+            }
+
         session = stripe.checkout.Session.create(
-            billing_address_collection="required",
+            billing_address_collection=billing_address_collection,
             payment_method_types=["card"],
+            payment_method_collection="if_required",
             client_reference_id=owner.ownerid,
             customer=owner.stripe_customer_id,
             customer_email=owner.email,
             success_url=success_url,
             cancel_url=cancel_url,
-            subscription_data={
-                "items": [
-                    {
-                        "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                        "quantity": desired_plan["quantity"],
-                    }
-                ],
-                "payment_behavior": "allow_incomplete",
-                "metadata": self._get_checkout_session_and_subscription_metadata(owner),
-            },
+            subscription_data=subscription_data,
         )
         log.info(
             f"Stripe Checkout Session created successfully for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
@@ -397,6 +420,45 @@ class StripeService(AbstractPaymentService):
         log.info(
             f"Stripe success update payment method for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
         )
+
+    @_log_stripe_error
+    def apply_cancellation_discount(self, owner: Owner):
+        if owner.stripe_subscription_id is None:
+            log.info(
+                f"stripe_subscription_id is None, not applying cancellation coupon for owner {owner.ownerid}"
+            )
+            return
+
+        billing_period = USER_PLAN_REPRESENTATIONS.get(owner.plan, {}).get(
+            "billing_rate"
+        )
+
+        if billing_period == "monthly" and not owner.stripe_coupon_id:
+            log.info(f"Creating Stripe cancellation coupon for owner {owner.ownerid}")
+            coupon = stripe.Coupon.create(
+                percent_off=30.0,
+                duration="repeating",
+                duration_in_months=6,
+                name="30% off for 6 months",
+                max_redemptions=1,
+                metadata={
+                    "ownerid": owner.ownerid,
+                    "username": owner.username,
+                    "email": owner.email,
+                    "name": owner.name,
+                },
+            )
+
+            owner.stripe_coupon_id = coupon.id
+            owner.save()
+
+            log.info(
+                f"Applying cancellation coupon to Stripe subscription for owner {owner.ownerid}"
+            )
+            stripe.Customer.modify(
+                owner.stripe_customer_id,
+                coupon=owner.stripe_coupon_id,
+            )
 
 
 class EnterprisePaymentService(AbstractPaymentService):
@@ -424,6 +486,9 @@ class EnterprisePaymentService(AbstractPaymentService):
         pass
 
     def get_schedule(self, owner):
+        pass
+
+    def apply_cancellation_discount(self, owner: Owner):
         pass
 
 
@@ -470,7 +535,16 @@ class BillingService:
         elif (
             desired_plan["value"] in PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS
             or desired_plan["value"] in ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS
+            or desired_plan["value"] in SENTRY_PAID_USER_PLAN_REPRESENTATIONS
         ):
+            if desired_plan["value"] in SENTRY_PAID_USER_PLAN_REPRESENTATIONS:
+                if not sentry.is_sentry_user(owner):
+                    log.warning(
+                        f"Non-Sentry user attempted to transition to Sentry plan",
+                        extra=dict(owner_id=owner.pk, plan=desired_plan["value"]),
+                    )
+                    return
+
             if owner.stripe_subscription_id is not None:
                 self.payment_service.modify_subscription(owner, desired_plan)
             else:
@@ -488,3 +562,6 @@ class BillingService:
         the card data differently
         """
         return self.payment_service.update_payment_method(owner, payment_method)
+
+    def apply_cancellation_discount(self, owner: Owner):
+        return self.payment_service.apply_cancellation_discount(owner)

@@ -1,10 +1,10 @@
 from datetime import timedelta
 
-from asgiref.sync import sync_to_async
 from django.utils import timezone
 
 from billing.constants import USER_PLAN_REPRESENTATIONS
 from codecov.commands.base import BaseInteractor
+from codecov.db import sync_to_async
 from reports.models import ReportSession
 
 

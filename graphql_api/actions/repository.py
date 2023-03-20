@@ -5,11 +5,15 @@ def apply_filters_to_queryset(queryset, filters):
     filters = filters or {}
     term = filters.get("term")
     active = filters.get("active")
+    activated = filters.get("activated")
     repo_names = filters.get("repo_names")
+
     if repo_names:
         queryset = queryset.filter(name__in=repo_names)
     if term:
         queryset = queryset.filter(name__contains=term)
+    if activated is not None:
+        queryset = queryset.filter(activated=activated)
     if active is not None:
         queryset = queryset.filter(active=active)
     return queryset

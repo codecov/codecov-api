@@ -10,6 +10,7 @@ from django.utils import timezone
 from django.utils.functional import cached_property
 from minio import Minio
 from shared.helpers.flag import Flag
+from shared.reports.readonly import ReadOnlyReport as SharedReadOnlyReport
 from shared.reports.resources import Report
 
 from services.storage import StorageService
@@ -32,7 +33,7 @@ class MinioEndpoints(Enum):
         return self.value.format(**kwaargs)
 
 
-class SerializableReport(Report):
+class ReportMixin:
     def file_reports(self):
         for f in self.files:
             yield self.get(f)
@@ -55,6 +56,14 @@ class SerializableReport(Report):
         return flags_dict
 
 
+class SerializableReport(ReportMixin, Report):
+    pass
+
+
+class ReadOnlyReport(ReportMixin, SharedReadOnlyReport):
+    pass
+
+
 def get_minio_client():
     return Minio(
         settings.MINIO_LOCATION,
@@ -64,8 +73,10 @@ def get_minio_client():
     )
 
 
-def build_report(chunks, files, sessions, totals):
-    return SerializableReport(
+def build_report(chunks, files, sessions, totals, report_class=None):
+    if report_class is None:
+        report_class = SerializableReport
+    return report_class.from_chunks(
         chunks=chunks, files=files, sessions=sessions, totals=totals
     )
 
@@ -96,11 +107,11 @@ class ArchiveService(object):
     """
     ttl = 10
 
-    def __init__(self, repository):
+    def __init__(self, repository, ttl=None):
         self.root = get_config("services", "minio", "bucket", default="archive")
         self.region = get_config("services", "minio", "region", default="us-east-1")
         # Set TTL from config and default to existing value
-        self.ttl = int(get_config("services", "minio", "ttl", default=self.ttl))
+        self.ttl = ttl or int(get_config("services", "minio", "ttl", default=self.ttl))
         self.storage = StorageService()
         self.storage_hash = self.get_archive_hash(repository)
 
@@ -292,7 +303,7 @@ class ReportService(object):
         - Fetch a report for a specific commit
     """
 
-    def build_report_from_commit(self, commit):
+    def build_report_from_commit(self, commit, report_class=None):
         """Builds a `shared.reports.resources.Report` from a given commit
 
         Args:
@@ -308,4 +319,4 @@ class ReportService(object):
         files = commit.report["files"]
         sessions = commit.report["sessions"]
         totals = commit.totals
-        return build_report(chunks, files, sessions, totals)
+        return build_report(chunks, files, sessions, totals, report_class=report_class)

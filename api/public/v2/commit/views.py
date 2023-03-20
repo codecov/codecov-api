@@ -17,6 +17,11 @@ class CommitsViewSet(
 ):
     queryset = Commit.objects.none()
 
+    def get_serializer_context(self, *args, **kwargs):
+        context = super().get_serializer_context(*args, **kwargs)
+        context.update({"include_line_coverage": True})
+        return context
+
     def get_serializer_class(self):
         if self.action == "retrieve":
             return CommitDetailSerializer

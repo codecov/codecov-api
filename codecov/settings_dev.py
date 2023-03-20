@@ -16,6 +16,8 @@ STRIPE_ENDPOINT_SECRET = "whsec_testv00ijzofmsvxcktfmna1duw9pn8b"
 STRIPE_PLAN_IDS = {
     "users-pr-inappm": "plan_H6P3KZXwmAbqPS",
     "users-pr-inappy": "plan_H6P16wij3lUuxg",
+    "users-sentrym": "price_1Mj1kYGlVGuVgOrk7jucaZAa",
+    "users-sentryy": "price_1Mj1mMGlVGuVgOrkC0ORc6iW",
 }
 
 CORS_ALLOW_CREDENTIALS = True
@@ -25,6 +27,7 @@ CODECOV_URL = "localhost"
 GITHUB_CLIENT_ID = "3d44be0e772666136a13"
 GITHUB_CLIENT_SECRET = "testrjumu7w1dfvxbr23q9sx3c7u3hgftcf1uho8"
 GITHUB_BOT_KEY = "testjltl8ckrcduovemrhp7upoqzs2sovquv9fzk"
+GITHUB_TOKENLESS_BOT_KEY = "testjltl8ckrcduovemrhp7upoqzs2sovquv9fzk"
 
 BITBUCKET_CLIENT_ID = "testqmo19ebdkseoby"
 BITBUCKET_CLIENT_SECRET = "testfi8hzehvz453qj8mhv21ca4rf83f"

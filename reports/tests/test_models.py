@@ -29,6 +29,10 @@ class UploadTests(TestCase):
             == f"https://travis-ci.com/{repo.author.username}/{repo.name}/jobs/{session.job_code}"
         )
 
+    def test_ci_url_when_db_has_build_url(self):
+        session = UploadFactory(build_url="http://example.com")
+        assert session.ci_url == "http://example.com"
+
     def test_flags(self):
         session = UploadFactory()
         flag_one = RepositoryFlagFactory()

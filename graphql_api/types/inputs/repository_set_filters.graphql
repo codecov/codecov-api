@@ -2,4 +2,5 @@ input RepositorySetFilters {
   term: String
   repoNames: [String]
   active: Boolean
+  activated: Boolean
 }

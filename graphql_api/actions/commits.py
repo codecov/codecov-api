@@ -1,7 +1,7 @@
-from django.db.models import Field, Lookup, QuerySet
+from django.db.models import QuerySet
 
-from codecov.db.base import IsNot
 from core.models import Commit, Pull
+from reports.models import ReportSession
 
 
 def pull_commits(pull: Pull) -> QuerySet[Commit]:
@@ -17,3 +17,24 @@ def pull_commits(pull: Pull) -> QuerySet[Commit]:
     )
 
     return Commit.objects.filter(id__in=subquery).defer("report")
+
+
+def commit_uploads(commit: Commit) -> QuerySet[ReportSession]:
+    if not commit.commitreport:
+        return ReportSession.objects.none()
+
+    sessions = commit.commitreport.sessions.prefetch_related("flags")
+
+    # sessions w/ flags and type 'uploaded'
+    uploaded = sessions.filter(upload_type="uploaded")
+
+    # carry forward flags that do not have an equivalent uploaded flag
+    carried_forward = sessions.filter(upload_type="carriedforward").exclude(
+        uploadflagmembership__flag_id__in=uploaded.values_list(
+            "uploadflagmembership__flag_id", flat=True
+        )
+    )
+
+    return (uploaded.prefetch_related("flags")).union(
+        carried_forward.prefetch_related("flags")
+    )

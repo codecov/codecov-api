@@ -1,10 +1,10 @@
 from distutils.util import strtobool
 
 from ariadne import ObjectType
-from asgiref.sync import sync_to_async
 from django.conf import settings
 
 import services.self_hosted as self_hosted
+from codecov.db import sync_to_async
 from graphql_api.types.enums.enums import LoginProvider
 
 config_bindable = ObjectType("Config")

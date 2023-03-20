@@ -64,12 +64,13 @@ class TestOwnerModel(TransactionTestCase):
         assert self.owner.repo_credits == 1 + self.owner.free or 0
 
     def test_nb_active_private_repos(self):
-        RepositoryFactory(author=self.owner, active=True, private=True)
-        RepositoryFactory(author=self.owner, active=True, private=False)
-        RepositoryFactory(author=self.owner, active=False, private=True)
-        RepositoryFactory(author=self.owner, active=False, private=False)
+        owner = OwnerFactory()
+        RepositoryFactory(author=owner, active=True, private=True)
+        RepositoryFactory(author=owner, active=True, private=False)
+        RepositoryFactory(author=owner, active=False, private=True)
+        RepositoryFactory(author=owner, active=False, private=False)
 
-        assert self.owner.nb_active_private_repos == 1
+        assert owner.nb_active_private_repos == 1
 
     def test_plan_is_null_when_validating_form(self):
         owner = OwnerFactory()
@@ -360,23 +361,6 @@ class TestOwnerModel(TransactionTestCase):
         self.owner.refresh_from_db()
         assert self.owner.admins == [admin1.ownerid]
 
-    def test_set_free_plan_sets_correct_values(self):
-        self.owner.plan = "users-inappy"
-        self.owner.stripe_subscription_id = "4kw23l4k"
-        self.owner.plan_user_count = 20
-        self.owner.plan_activated_users = [44]
-        self.owner.plan_auto_activate = False
-        self.owner.save()
-
-        self.owner.set_free_plan()
-        self.owner.refresh_from_db()
-
-        assert self.owner.plan == "users-free"
-        assert self.owner.plan_user_count == 5
-        assert self.owner.plan_activated_users == None
-        assert self.owner.plan_auto_activate == False
-        assert self.owner.stripe_subscription_id == None
-
     def test_set_basic_plan_sets_correct_values(self):
         self.owner.plan = "users-inappy"
         self.owner.stripe_subscription_id = "4kw23l4k"
@@ -389,7 +373,7 @@ class TestOwnerModel(TransactionTestCase):
         self.owner.refresh_from_db()
 
         assert self.owner.plan == "users-basic"
-        assert self.owner.plan_user_count == 5
+        assert self.owner.plan_user_count == 1
         assert self.owner.plan_activated_users == None
         assert self.owner.plan_auto_activate == False
         assert self.owner.stripe_subscription_id == None

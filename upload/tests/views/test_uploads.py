@@ -2,6 +2,7 @@ import uuid
 from unittest.mock import MagicMock, patch
 
 import pytest
+from django.conf import settings
 from django.urls import reverse
 from rest_framework.exceptions import ValidationError
 from rest_framework.test import APIClient
@@ -10,7 +11,12 @@ from codecov_auth.authentication.repo_auth import OrgLevelTokenRepositoryAuth
 from codecov_auth.services.org_level_token_service import OrgLevelTokenService
 from codecov_auth.tests.factories import OrganizationLevelTokenFactory, OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
-from reports.models import CommitReport, ReportSession
+from reports.models import (
+    CommitReport,
+    ReportSession,
+    RepositoryFlag,
+    UploadFlagMembership,
+)
 from reports.tests.factories import CommitReportFactory, UploadFactory
 from upload.views.uploads import CanDoCoverageUploadsPermission, UploadViews
 
@@ -219,10 +225,12 @@ def test_uploads_post(mock_metrics, db, mocker, mock_redis):
     )
     response = client.post(
         url,
-        {"state": "uploaded"},
-        format="json",
+        {"state": "uploaded", "flags": ["flag1", "flag2"]},
     )
     response_json = response.json()
+    upload = ReportSession.objects.filter(
+        report_id=commit_report.id, upload_extras={"format_version": "v1"}
+    ).first()
     assert response.status_code == 201
     assert all(
         map(
@@ -233,9 +241,68 @@ def test_uploads_post(mock_metrics, db, mocker, mock_redis):
     assert ReportSession.objects.filter(
         report_id=commit_report.id, upload_extras={"format_version": "v1"}
     ).exists()
+    assert RepositoryFlag.objects.filter(
+        repository_id=repository.repoid, flag_name="flag1"
+    ).exists()
+    assert RepositoryFlag.objects.filter(
+        repository_id=repository.repoid, flag_name="flag2"
+    ).exists()
+    flag1 = RepositoryFlag.objects.filter(
+        repository_id=repository.repoid, flag_name="flag1"
+    ).first()
+    flag2 = RepositoryFlag.objects.filter(
+        repository_id=repository.repoid, flag_name="flag2"
+    ).first()
+    assert UploadFlagMembership.objects.filter(
+        report_session_id=upload.id, flag_id=flag1.id
+    ).exists()
+    assert UploadFlagMembership.objects.filter(
+        report_session_id=upload.id, flag_id=flag2.id
+    ).exists()
+    assert [flag for flag in upload.flags.all()] == [flag1, flag2]
     mock_metrics.assert_called_once_with("uploads.accepted", 1)
     presigned_put_mock.assert_called()
     upload_task_mock.assert_called()
+
+
+def test_deactivated_repo(db, mocker, mock_redis):
+    mocker.patch.object(
+        CanDoCoverageUploadsPermission, "has_permission", return_value=True
+    )
+    repository = RepositoryFactory(
+        name="the_repo",
+        author__username="codecov",
+        author__service="github",
+        active=True,
+        activated=False,
+    )
+    commit = CommitFactory(repository=repository)
+    commit_report = CommitReport.objects.create(commit=commit, code="code")
+    repository.save()
+    commit_report.save()
+
+    owner = repository.author
+    client = APIClient()
+    client.force_authenticate(user=owner)
+    url = reverse(
+        "new_upload.uploads",
+        args=[
+            "github",
+            "codecov::::the_repo",
+            commit.commitid,
+            commit_report.code,
+        ],
+    )
+    response = client.post(
+        url,
+        {"state": "uploaded"},
+        format="json",
+    )
+    response_json = response.json()
+    assert response.status_code == 400
+    assert response_json == [
+        f"This repository has been deactivated. To resume uploading to it, please activate the repository in the codecov UI: {settings.CODECOV_DASHBOARD_URL}/github/codecov/the_repo/settings"
+    ]
 
 
 def test_trigger_upload_task(db, mocker):

@@ -88,26 +88,26 @@ class TestPathContents(TransactionTestCase):
         self.info = MockContext({"request": request})
         self.commit = CommitFactory()
 
-    @patch("core.models.Commit.full_report", new_callable=PropertyMock)
+    @patch("services.archive.ReportService.build_report_from_commit")
     @patch("services.path.provider_path_exists")
     @patch("services.path.ReportPaths.paths", new_callable=PropertyMock)
     async def test_missing_coverage(
-        self, paths_mock, provider_path_exists_mock, full_report_mock
+        self, paths_mock, provider_path_exists_mock, report_mock
     ):
         paths_mock.return_value = []
         provider_path_exists_mock.return_value = True
-        full_report_mock.return_value = sample_report()
+        report_mock.return_value = sample_report()
         res = await resolve_path_contents(self.commit, self.info, "test/path")
         assert isinstance(res, MissingCoverage)
 
-    @patch("core.models.Commit.full_report", new_callable=PropertyMock)
+    @patch("services.archive.ReportService.build_report_from_commit")
     @patch("services.path.provider_path_exists")
     @patch("services.path.ReportPaths.paths", new_callable=PropertyMock)
     async def test_unknown_path(
-        self, paths_mock, provider_path_exists_mock, full_report_mock
+        self, paths_mock, provider_path_exists_mock, report_mock
     ):
         paths_mock.return_value = []
         provider_path_exists_mock.return_value = False
-        full_report_mock.return_value = sample_report()
+        report_mock.return_value = sample_report()
         res = await resolve_path_contents(self.commit, self.info, "test/path")
         assert isinstance(res, UnknownPath)

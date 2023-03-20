@@ -83,6 +83,35 @@ PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
     },
 }
 
+SENTRY_PAID_USER_PLAN_REPRESENTATIONS = {
+    "users-sentrym": {
+        "marketing_name": "Sentry Pro Team",
+        "value": "users-sentrym",
+        "billing_rate": "monthly",
+        "base_unit_price": 12,
+        "benefits": [
+            "Includes 5 seats",
+            "Unlimited public repositories",
+            "Unlimited private repositories",
+            "Priority Support",
+        ],
+        "trial_days": 14,
+    },
+    "users-sentryy": {
+        "marketing_name": "Sentry Pro Team",
+        "value": "users-sentryy",
+        "billing_rate": "annually",
+        "base_unit_price": 10,
+        "benefits": [
+            "Includes 5 seats",
+            "Unlimited public repositories",
+            "Unlimited private repositories",
+            "Priority Support",
+        ],
+        "trial_days": 14,
+    },
+}
+
 # TODO: Update these values
 ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS = {
     "users-enterprisem": {
@@ -125,36 +154,6 @@ GHM_PLAN_REPRESENTATION = {
     }
 }
 
-USER_PLAN_REPRESENTATIONS = {
-    FREE_PLAN_NAME: {
-        "marketing_name": "Free",
-        "value": FREE_PLAN_NAME,
-        "billing_rate": None,
-        "base_unit_price": 0,
-        "benefits": [
-            "Up to 5 users",
-            "Unlimited public repositories",
-            "Unlimited private repositories",
-        ],
-    },
-    BASIC_PLAN_NAME: {
-        "marketing_name": "Basic",
-        "value": BASIC_PLAN_NAME,
-        "billing_rate": None,
-        "base_unit_price": 0,
-        "monthly_uploads_limit": 250,
-        "benefits": [
-            "Up to 5 users",
-            "Unlimited public repositories",
-            "Unlimited private repositories",
-        ],
-    },
-    **NON_PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
-    **PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
-    **GHM_PLAN_REPRESENTATION,
-    **ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
-}
-
 FREE_PLAN_REPRESENTATIONS = {
     FREE_PLAN_NAME: {
         "marketing_name": "Free",
@@ -162,7 +161,7 @@ FREE_PLAN_REPRESENTATIONS = {
         "billing_rate": None,
         "base_unit_price": 0,
         "benefits": [
-            "Up to 5 users",
+            "Up to 1 user",
             "Unlimited public repositories",
             "Unlimited private repositories",
         ],
@@ -174,39 +173,21 @@ FREE_PLAN_REPRESENTATIONS = {
         "base_unit_price": 0,
         "monthly_uploads_limit": 250,
         "benefits": [
-            "Up to 5 users",
+            "Up to 1 user",
             "Unlimited public repositories",
             "Unlimited private repositories",
         ],
     },
 }
 
-
-CURRENTLY_OFFERED_PLANS = {
-    FREE_PLAN_NAME: {
-        "marketing_name": "Free",
-        "value": FREE_PLAN_NAME,
-        "billing_rate": None,
-        "base_unit_price": 0,
-        "benefits": [
-            "Up to 5 users",
-            "Unlimited public repositories",
-            "Unlimited private repositories",
-        ],
-    },
-    BASIC_PLAN_NAME: {
-        "marketing_name": "Basic",
-        "value": BASIC_PLAN_NAME,
-        "billing_rate": None,
-        "base_unit_price": 0,
-        "monthly_uploads_limit": 250,
-        "benefits": [
-            "Up to 5 users",
-            "Unlimited public repositories",
-            "Unlimited private repositories",
-        ],
-    },
+USER_PLAN_REPRESENTATIONS = {
+    **FREE_PLAN_REPRESENTATIONS,
+    **NON_PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
     **PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
+    **SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
+    **GHM_PLAN_REPRESENTATION,
+    **ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
 }
+
 
 REMOVED_INVOICE_STATUSES = ["draft", "void"]

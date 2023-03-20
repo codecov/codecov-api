@@ -1,12 +1,12 @@
 from asgiref.sync import async_to_sync
-from django.test import TestCase
+from django.test import TransactionTestCase
 
 from core.models import Repository
 from core.tests.factories import RepositoryFactory
 from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
 
 
-class RepositoryQuerySetTests(TestCase):
+class RepositoryQuerySetTests(TransactionTestCase):
     def test_queryset_to_connection_deterministic_ordering(self):
         from graphql_api.helpers.connection import queryset_to_connection
 

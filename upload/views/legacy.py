@@ -6,14 +6,13 @@ from json import dumps
 from uuid import uuid4
 
 import minio
-from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import MultipleObjectsReturned
 from django.http import Http404, HttpResponse, HttpResponseServerError
 from django.utils import timezone
 from django.utils.decorators import classonlymethod
-from django.utils.encoding import smart_text
+from django.utils.encoding import smart_str
 from django.views import View
 from rest_framework import renderers, status
 from rest_framework.exceptions import APIException, ValidationError
@@ -21,6 +20,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from shared.metrics import metrics
 
+from codecov.db import sync_to_async
 from codecov_auth.authentication import CodecovTokenAuthentication
 from codecov_auth.commands.owner import OwnerCommands
 from core.commands.repository import RepositoryCommands
@@ -51,7 +51,7 @@ class PlainTextRenderer(renderers.BaseRenderer):
     format = "txt"
 
     def render(self, data, media_type=None, renderer_context=None):
-        return smart_text(data, encoding=self.charset)
+        return smart_str(data, encoding=self.charset)
 
 
 class UploadHandler(APIView):
@@ -373,8 +373,11 @@ class UploadDownloadHandler(View):
         try:
             return archive_service.read_file(self.path)
 
-        except minio.error.NoSuchKey as e:
-            raise Http404("Requested report could not be found")
+        except minio.error.S3Error as e:
+            if e.code == "NoSuchKey":
+                raise Http404("Requested report could not be found")
+            else:
+                raise
 
     async def get(self, request, *args, **kwargs):
         self.read_params()

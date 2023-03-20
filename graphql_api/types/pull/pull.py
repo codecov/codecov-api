@@ -1,6 +1,6 @@
 from ariadne import ObjectType
-from asgiref.sync import sync_to_async
 
+from codecov.db import sync_to_async
 from compare.models import CommitComparison
 from core.models import Pull
 from graphql_api.actions.commits import pull_commits
@@ -17,7 +17,11 @@ from graphql_api.types.comparison.comparison import (
     MissingHeadReport,
 )
 from graphql_api.types.enums import OrderingDirection, PullRequestState
-from services.comparison import MissingComparisonReport, PullRequestComparison
+from services.comparison import (
+    ComparisonReport,
+    MissingComparisonReport,
+    PullRequestComparison,
+)
 
 pull_bindable = ObjectType("Pull")
 
@@ -50,7 +54,7 @@ def resolve_base(pull, info):
 
 
 @pull_bindable.field("compareWithBaseTemp")
-async def resolve_compare_with_base(pull, info, **kwargs):
+async def resolve_compare_with_base_temp(pull, info, **kwargs):
     if not pull.compared_to or not pull.head:
         return None
 
@@ -64,7 +68,8 @@ async def resolve_compare_with_base(pull, info, **kwargs):
         # store the comparison in the context - to be used in the `Comparison` resolvers
         info.context["comparison"] = comparison
 
-    return commit_comparison
+    if commit_comparison:
+        return ComparisonReport(commit_comparison)
 
 
 @pull_bindable.field("compareWithBase")
@@ -112,7 +117,8 @@ async def resolve_compare_with_base(pull, info, **kwargs):
         # store the comparison in the context - to be used in the `Comparison` resolvers
         info.context["comparison"] = comparison
 
-    return commit_comparison
+    if commit_comparison:
+        return ComparisonReport(commit_comparison)
 
 
 @pull_bindable.field("commits")

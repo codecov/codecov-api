@@ -1,10 +1,9 @@
 import uuid
 
-from asgiref.sync import sync_to_async
-
 from billing.constants import ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS
 from codecov.commands.base import BaseInteractor
 from codecov.commands.exceptions import Unauthenticated, Unauthorized, ValidationError
+from codecov.db import sync_to_async
 from codecov_auth.models import OrganizationLevelToken, Owner
 
 

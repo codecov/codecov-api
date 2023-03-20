@@ -141,6 +141,7 @@ class Repository(models.Model):
         self.commits.all().delete()
         self.branches.all().delete()
         self.pull_requests.all().delete()
+        self.flags.all().delete()
         self.yaml = None
         self.cache = None
         self.save()
@@ -261,6 +262,10 @@ class Commit(models.Model):
             models.Index(
                 fields=["repository", "-timestamp"],
                 name="commits_repoid_timestamp_desc",
+            ),
+            models.Index(
+                fields=["repository", "branch", "state", "-timestamp"],
+                name="commits_repoid_branch_state_ts",
             ),
             models.Index(
                 fields=["repository", "pullid"],

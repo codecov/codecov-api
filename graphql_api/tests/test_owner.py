@@ -1,5 +1,4 @@
 import asyncio
-from hashlib import sha1
 from unittest.mock import patch
 
 from django.test import TransactionTestCase
@@ -18,7 +17,7 @@ from .helper import GraphQLTestHelper, paginate_connection
 query_repositories = """{
     owner(username: "%s") {
         orgUploadToken
-        hashOwnerid
+        ownerid
         isCurrentUserPartOfOrg
         yaml
         repositories%s {
@@ -42,22 +41,30 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
         self.user = OwnerFactory(username="codecov-user", service="github")
         random_user = OwnerFactory(username="random-user", service="github")
-        RepositoryFactory(author=self.user, active=True, private=True, name="a")
-        RepositoryFactory(author=self.user, active=False, private=False, name="b")
-        RepositoryFactory(author=random_user, active=True, private=True, name="not")
         RepositoryFactory(
-            author=random_user, active=True, private=False, name="still-not"
+            author=self.user, active=True, activated=True, private=True, name="a"
+        )
+        RepositoryFactory(
+            author=self.user, active=False, private=False, activated=False, name="b"
+        )
+        RepositoryFactory(
+            author=random_user, active=True, activated=False, private=True, name="not"
+        )
+        RepositoryFactory(
+            author=random_user,
+            active=True,
+            private=False,
+            activated=True,
+            name="still-not",
         )
 
     def test_fetching_repositories(self):
         query = query_repositories % (self.user.username, "", "")
         data = self.gql_request(query, user=self.user)
-        hash_ownerid = sha1(str(self.user.ownerid).encode())
-        hashOwnerid = hash_ownerid.hexdigest()
         assert data == {
             "owner": {
                 "orgUploadToken": None,
-                "hashOwnerid": hashOwnerid,
+                "ownerid": self.user.ownerid,
                 "isCurrentUserPartOfOrg": True,
                 "yaml": None,
                 "repositories": {
@@ -125,7 +132,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         repos = paginate_connection(data["owner"]["repositories"])
         assert repos == [{"name": "b"}, {"name": "a"}]
 
-    def test_fetching_repositories_unactive_repositories(self):
+    def test_fetching_repositories_inactive_repositories(self):
         query = query_repositories % (
             self.user.username,
             "(filters: { active: false })",
@@ -144,6 +151,26 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, user=self.user)
         repos = paginate_connection(data["owner"]["repositories"])
         assert repos == [{"name": "a"}]
+
+    def test_fetching_repositories_activated_repositories(self):
+        query = query_repositories % (
+            self.user.username,
+            "(filters: { activated: true })",
+            "",
+        )
+        data = self.gql_request(query, user=self.user)
+        repos = paginate_connection(data["owner"]["repositories"])
+        assert repos == [{"name": "a"}]
+
+    def test_fetching_repositories_deactivated_repositories(self):
+        query = query_repositories % (
+            self.user.username,
+            "(filters: { activated: false })",
+            "",
+        )
+        data = self.gql_request(query, user=self.user)
+        repos = paginate_connection(data["owner"]["repositories"])
+        assert repos == [{"name": "b"}]
 
     def test_is_part_of_org_when_unauthenticated(self):
         query = query_repositories % (self.user.username, "", "")
@@ -264,12 +291,10 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, user=user)
         assert data["owner"]["isAdmin"] is True
 
-    def test_hashOwnerid(self):
+    def test_ownerid(self):
         query = query_repositories % (self.user.username, "", "")
         data = self.gql_request(query, user=self.user)
-        hash_ownerid = sha1(str(self.user.ownerid).encode())
-        hashOwnerid = hash_ownerid.hexdigest()
-        assert data["owner"]["hashOwnerid"] == hashOwnerid
+        assert data["owner"]["ownerid"] == self.user.ownerid
 
     @patch("codecov_auth.commands.owner.owner.OwnerCommands.get_org_upload_token")
     def test_get_org_upload_token(self, mocker):
@@ -326,3 +351,46 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         )
         data = self.gql_request(query, user=owner)
         assert data["owner"]["defaultOrgUsername"] == None
+
+    def test_is_current_user_not_activated(self):
+        owner = OwnerFactory(username="sample-owner", service="github")
+        query = """{
+            owner(username: "%s") {
+                isCurrentUserActivated
+            }
+        }
+        """ % (
+            owner.username
+        )
+        data = self.gql_request(query, user=owner)
+        assert data["owner"]["isCurrentUserActivated"] == False
+
+    def test_is_current_user_activated(self):
+        user = OwnerFactory(username="sample-user")
+        owner = OwnerFactory(
+            username="sample-owner", plan_activated_users=[user.ownerid]
+        )
+        query = """{
+            owner(username: "%s") {
+                isCurrentUserActivated
+            }
+        }
+        """ % (
+            owner.username
+        )
+        data = self.gql_request(query, user=user)
+        assert data["owner"]["isCurrentUserActivated"] == True
+
+    def test_is_current_user_activated_when_plan_activated_users_is_none(self):
+        user = OwnerFactory(username="sample-user")
+        owner = OwnerFactory(username="sample-owner", plan_activated_users=None)
+        query = """{
+            owner(username: "%s") {
+                isCurrentUserActivated
+            }
+        }
+        """ % (
+            owner.username
+        )
+        data = self.gql_request(query, user=user)
+        assert data["owner"]["isCurrentUserActivated"] == False

@@ -27,6 +27,8 @@ SESSION_COOKIE_DOMAIN = ".codecov.dev"
 STRIPE_PLAN_IDS = {
     "users-pr-inappm": "plan_H6P3KZXwmAbqPS",
     "users-pr-inappy": "plan_H6P16wij3lUuxg",
+    "users-sentrym": "price_1Mj1kYGlVGuVgOrk7jucaZAa",
+    "users-sentryy": "price_1Mj1mMGlVGuVgOrkC0ORc6iW",
 }
 
 SENTRY_ENV = "staging"
@@ -79,3 +81,7 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 15000000
 COOKIE_SAME_SITE = "None"
 
 GRAPHQL_PLAYGROUND = True
+
+CSRF_TRUSTED_ORIGINS = [
+    get_config("setup", "trusted_origin", default="https://*.codecov.dev")
+]

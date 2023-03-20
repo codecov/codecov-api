@@ -198,6 +198,15 @@ class CoverageViewSetTestCase(TestCase):
 
         MeasurementFactory(
             name=MeasurementName.FLAG_COVERAGE.value,
+            timestamp="2022-08-10T00:12:00",
+            owner_id=self.org.pk,
+            repo_id=self.repo.pk,
+            flag_id=flag1.pk,
+            branch="master",
+            value=100.0,
+        )
+        MeasurementFactory(
+            name=MeasurementName.FLAG_COVERAGE.value,
             timestamp="2022-08-18T00:12:00",
             owner_id=self.org.pk,
             repo_id=self.repo.pk,
@@ -231,6 +240,15 @@ class CoverageViewSetTestCase(TestCase):
             flag_id=flag2.pk,
             branch="master",
             value=10.0,
+        )
+        MeasurementFactory(
+            name=MeasurementName.FLAG_COVERAGE.value,
+            timestamp="2022-08-20T00:12:00",
+            owner_id=self.org.pk,
+            repo_id=self.repo.pk,
+            flag_id=flag1.pk,
+            branch="master",
+            value=100.0,
         )
 
         self.client.force_login(user=self.user)

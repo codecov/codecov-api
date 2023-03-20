@@ -46,7 +46,11 @@ def _get_user_plan_from_profiling_upload(profiling_upload_id, *args, **kwargs) -
 
 
 def _get_user_plan_from_comparison_id(comparison_id, *args, **kwargs) -> str:
-    compare_commit = CommitComparison.objects.filter(id=comparison_id).first()
+    compare_commit = (
+        CommitComparison.objects.filter(id=comparison_id)
+        .select_related("compare_commit__repository__author")
+        .first()
+    )
     if (
         compare_commit
         and compare_commit.compare_commit
@@ -82,7 +86,7 @@ def _get_user_plan_from_task(task_name: str, task_kwargs: dict) -> str:
     return func_to_use(**task_kwargs)
 
 
-def route_task(name, args, kwargs, options, task=None, **kw):
+def route_task(name, args, kwargs, options={}, task=None, **kw):
     """Function to dynamically route tasks to the proper queue.
     Docs: https://docs.celeryq.dev/en/stable/userguide/routing.html#routers
     """

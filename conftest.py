@@ -4,6 +4,13 @@ from pathlib import Path
 import fakeredis
 import pytest
 import vcr
+from django.conf import settings
+
+# we need to enable this in the test environment since we're often creating
+# timeseries data and then asserting something about the aggregates all in
+# a single transaction.  calling `refresh_continuous_aggregate` doesn't work
+# either since it cannot be called in a transaction.
+settings.TIMESERIES_REAL_TIME_AGGREGATES = True
 
 
 def pytest_configure(config):

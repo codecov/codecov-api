@@ -1,7 +1,7 @@
 from ariadne import ObjectType
-from asgiref.sync import sync_to_async
 from shared.reports.types import ReportTotals
 
+from codecov.db import sync_to_async
 from services.components import ComponentComparison
 
 component_comparison_bindable = ObjectType("ComponentComparison")

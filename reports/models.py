@@ -33,8 +33,9 @@ class CommitReport(BaseCodecovModel):
 
 class ReportResults(BaseCodecovModel):
     class ReportResultsStates(models.TextChoices):
-        CREATED = "created"
-        READY = "ready"
+        PENDING = "pending"
+        COMPLETED = "completed"
+        ERROR = "error"
 
     report = models.OneToOneField(CommitReport, on_delete=models.CASCADE)
     state = models.TextField(null=True, choices=ReportResultsStates.choices)
@@ -81,6 +82,7 @@ class RepositoryFlag(BaseCodecovModel):
         "core.Repository", related_name="flags", on_delete=models.CASCADE
     )
     flag_name = models.CharField(max_length=255)
+    deleted = models.BooleanField(null=True)
 
 
 class ReportSession(BaseCodecovModel):
@@ -124,6 +126,11 @@ class ReportSession(BaseCodecovModel):
 
     @property
     def ci_url(self):
+        if self.build_url:
+            # build_url was saved in the database
+            return self.build_url
+
+        # otherwise we need to construct it ourself (if possible)
         build_url = ci.get(self.provider, {}).get("build_url")
         if not build_url:
             return

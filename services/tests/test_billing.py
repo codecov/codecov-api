@@ -1,5 +1,5 @@
 import json
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from django.conf import settings
 from django.test import TestCase
@@ -290,7 +290,7 @@ class StripeServiceTests(TestCase):
         assert owner.stripe_subscription_id == None
         assert owner.plan == BASIC_PLAN_NAME
         assert owner.plan_activated_users == None
-        assert owner.plan_user_count == 5
+        assert owner.plan_user_count == 1
 
     @patch("services.billing.stripe.SubscriptionSchedule.cancel")
     @patch("services.billing.stripe.Subscription.retrieve")
@@ -318,7 +318,7 @@ class StripeServiceTests(TestCase):
         assert owner.stripe_subscription_id == None
         assert owner.plan == BASIC_PLAN_NAME
         assert owner.plan_activated_users == None
-        assert owner.plan_user_count == 5
+        assert owner.plan_user_count == 1
 
     @patch("services.billing.stripe.Subscription.retrieve")
     @patch("services.billing.stripe.Subscription.modify")
@@ -991,6 +991,7 @@ class StripeServiceTests(TestCase):
         create_checkout_session_mock.assert_called_once_with(
             billing_address_collection="required",
             payment_method_types=["card"],
+            payment_method_collection="if_required",
             client_reference_id=owner.ownerid,
             customer=owner.stripe_customer_id,
             customer_email=owner.email,
@@ -1011,6 +1012,50 @@ class StripeServiceTests(TestCase):
                     "obo_name": self.user.name,
                     "obo_email": self.user.email,
                     "obo": self.user.ownerid,
+                },
+            },
+        )
+
+    @patch("services.billing.stripe.checkout.Session.create")
+    def test_create_checkout_session_with_trial(self, create_checkout_session_mock):
+        owner = OwnerFactory(service=Service.GITHUB.value)
+        expected_id = "fkkgosd"
+        create_checkout_session_mock.return_value = {"id": expected_id}
+        desired_quantity = 25
+        desired_plan = {"value": "users-sentrym", "quantity": desired_quantity}
+
+        assert self.stripe.create_checkout_session(owner, desired_plan) == expected_id
+
+        create_checkout_session_mock.assert_called_once_with(
+            billing_address_collection="auto",
+            payment_method_types=["card"],
+            payment_method_collection="if_required",
+            client_reference_id=owner.ownerid,
+            customer=owner.stripe_customer_id,
+            customer_email=owner.email,
+            success_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?success",
+            cancel_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?cancel",
+            subscription_data={
+                "items": [
+                    {
+                        "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                        "quantity": desired_quantity,
+                    }
+                ],
+                "payment_behavior": "allow_incomplete",
+                "metadata": {
+                    "service": owner.service,
+                    "obo_organization": owner.ownerid,
+                    "username": owner.username,
+                    "obo_name": self.user.name,
+                    "obo_email": self.user.email,
+                    "obo": self.user.ownerid,
+                },
+                "trial_period_days": 14,
+                "trial_settings": {
+                    "end_behavior": {
+                        "missing_payment_method": "cancel",
+                    },
                 },
             },
         )
@@ -1085,6 +1130,87 @@ class StripeServiceTests(TestCase):
         assert self.stripe.get_invoice(owner, invoice_id) == invoice
         retrieve_invoice_mock.assert_called_once_with(invoice_id)
 
+    @patch("services.billing.stripe.Coupon.create")
+    @patch("services.billing.stripe.Customer.modify")
+    def test_apply_cancellation_discount(
+        self, customer_modify_mock, coupon_create_mock
+    ):
+        coupon_create_mock.return_value = MagicMock(id="test-coupon-id")
+
+        owner = OwnerFactory(
+            stripe_subscription_id="test-subscription-id",
+            stripe_customer_id="test-customer-id",
+            plan="users-inappm",
+        )
+        self.stripe.apply_cancellation_discount(owner)
+
+        coupon_create_mock.assert_called_once_with(
+            percent_off=30.0,
+            duration="repeating",
+            duration_in_months=6,
+            name="30% off for 6 months",
+            max_redemptions=1,
+            metadata={
+                "ownerid": owner.ownerid,
+                "username": owner.username,
+                "email": owner.email,
+                "name": owner.name,
+            },
+        )
+        customer_modify_mock.assert_called_once_with(
+            "test-customer-id",
+            coupon="test-coupon-id",
+        )
+
+        owner.refresh_from_db()
+        assert owner.stripe_coupon_id == "test-coupon-id"
+
+    @patch("services.billing.stripe.Coupon.create")
+    @patch("services.billing.stripe.Customer.modify")
+    def test_apply_cancellation_discount_yearly(
+        self, customer_modify_mock, coupon_create_mock
+    ):
+        owner = OwnerFactory(
+            stripe_customer_id="test-customer-id",
+            stripe_subscription_id=None,
+            plan="users-inappy",
+        )
+        self.stripe.apply_cancellation_discount(owner)
+
+        assert not customer_modify_mock.called
+        assert not coupon_create_mock.called
+        assert owner.stripe_coupon_id == None
+
+    @patch("services.billing.stripe.Coupon.create")
+    @patch("services.billing.stripe.Customer.modify")
+    def test_apply_cancellation_discount_no_subscription(
+        self, customer_modify_mock, coupon_create_mock
+    ):
+        owner = OwnerFactory(
+            stripe_customer_id="test-customer-id",
+            stripe_subscription_id=None,
+        )
+        self.stripe.apply_cancellation_discount(owner)
+
+        assert not customer_modify_mock.called
+        assert not coupon_create_mock.called
+        assert owner.stripe_coupon_id == None
+
+    @patch("services.billing.stripe.Coupon.create")
+    @patch("services.billing.stripe.Customer.modify")
+    def test_apply_cancellation_discount_existing_coupon(
+        self, customer_modify_mock, coupon_create_mock
+    ):
+        owner = OwnerFactory(
+            stripe_customer_id="test-customer-id",
+            stripe_subscription_id="test-subscription-id",
+            stripe_coupon_id="test-coupon-id",
+        )
+        self.stripe.apply_cancellation_discount(owner)
+
+        assert not customer_modify_mock.called
+        assert not coupon_create_mock.called
+
 
 class MockPaymentService(AbstractPaymentService):
     def list_filtered_invoices(self, owner, limit=10):
@@ -1109,6 +1235,9 @@ class MockPaymentService(AbstractPaymentService):
         pass
 
     def get_schedule(self, owner):
+        pass
+
+    def apply_cancellation_discount(self, owner):
         pass
 
 
@@ -1221,6 +1350,54 @@ class BillingServiceTests(TestCase):
         delete_subscription_mock.assert_not_called()
         modify_subscription_mock.assert_not_called()
         create_checkout_session_mock.assert_not_called()
+
+    @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
+    @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
+    def test_update_plan_nonsentry_user_sentrym(
+        self, modify_subscription_mock, create_checkout_session_mock
+    ):
+        owner = OwnerFactory()
+        desired_plan = {"value": "users-sentrym"}
+        self.billing_service.update_plan(owner, desired_plan)
+
+        modify_subscription_mock.assert_not_called()
+        create_checkout_session_mock.assert_not_called()
+
+    @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
+    @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
+    def test_update_plan_nonsentry_user_sentryy(
+        self, modify_subscription_mock, create_checkout_session_mock
+    ):
+        owner = OwnerFactory()
+        desired_plan = {"value": "users-sentryy"}
+        self.billing_service.update_plan(owner, desired_plan)
+
+        modify_subscription_mock.assert_not_called()
+        create_checkout_session_mock.assert_not_called()
+
+    @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
+    @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
+    def test_update_plan_sentry_user_sentrym(
+        self, modify_subscription_mock, create_checkout_session_mock
+    ):
+        owner = OwnerFactory(sentry_user_id="sentry-user")
+        desired_plan = {"value": "users-sentrym"}
+        self.billing_service.update_plan(owner, desired_plan)
+
+        modify_subscription_mock.assert_not_called()
+        create_checkout_session_mock.assert_called_once_with(owner, desired_plan)
+
+    @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
+    @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
+    def test_update_plan_sentry_user_sentryy(
+        self, modify_subscription_mock, create_checkout_session_mock
+    ):
+        owner = OwnerFactory(sentry_user_id="sentry-user")
+        desired_plan = {"value": "users-sentryy"}
+        self.billing_service.update_plan(owner, desired_plan)
+
+        modify_subscription_mock.assert_not_called()
+        create_checkout_session_mock.assert_called_once_with(owner, desired_plan)
 
     @patch("services.tests.test_billing.MockPaymentService.get_subscription")
     def test_get_subscription(self, get_subscription_mock):

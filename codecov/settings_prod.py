@@ -24,6 +24,8 @@ STRIPE_ENDPOINT_SECRET = os.environ.get("SERVICES__STRIPE__ENDPOINT_SECRET", Non
 STRIPE_PLAN_IDS = {
     "users-pr-inappm": "price_1Gv2B8GlVGuVgOrkFnLunCgc",
     "users-pr-inappy": "price_1Gv2COGlVGuVgOrkuOYVLIj7",
+    "users-sentrym": get_config("services", "stripe", "users_sentrym_plan_id"),
+    "users-sentryy": get_config("services", "stripe", "users_sentryy_plan_id"),
 }
 
 SENTRY_ENV = "production"
@@ -64,3 +66,7 @@ SILENCED_SYSTEM_CHECKS = ["urls.W002"]
 
 # Reinforcing the Cookie SameSite configuration to be sure it's Lax in prod
 COOKIE_SAME_SITE = "Lax"
+
+CSRF_TRUSTED_ORIGINS = [
+    get_config("setup", "trusted_origin", default="https://*.codecov.io")
+]

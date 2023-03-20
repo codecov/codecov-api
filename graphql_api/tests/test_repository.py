@@ -47,6 +47,9 @@ default_fields = """
     name
     coverage
     coverageSha
+    hits
+    misses
+    lines
     active
     private
     updatedAt
@@ -100,6 +103,9 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "private": True,
             "coverage": None,
             "coverageSha": None,
+            "hits": None,
+            "misses": None,
+            "lines": None,
             "latestCommitAt": None,
             "oldestCommitAt": None,
             "updatedAt": "2021-01-01T00:00:00+00:00",
@@ -125,7 +131,9 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
 
         hour_ago = datetime.datetime.now() - datetime.timedelta(hours=1)
         coverage_commit = CommitFactory(
-            repository=repo, totals={"c": 75}, timestamp=hour_ago
+            repository=repo,
+            totals={"c": 75, "h": 30, "m": 10, "n": 40},
+            timestamp=hour_ago,
         )
         CommitFactory(repository=repo, totals={"c": 85})
 
@@ -146,6 +154,9 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "private": True,
             "coverage": 75,
             "coverageSha": coverage_commit.commitid,
+            "hits": 30,
+            "misses": 10,
+            "lines": 40,
             "updatedAt": "2021-01-01T00:00:00+00:00",
             "uploadToken": repo.upload_token,
             "defaultBranch": "master",
@@ -294,7 +305,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
 
     @patch("shared.yaml.user_yaml.UserYaml.get_final_yaml")
     def test_repository_repository_config_indication_range(self, mocked_useryaml):
-        mocked_useryaml.return_value = {"coverage": {"range": [70, 100]}}
+        mocked_useryaml.return_value = {"coverage": {"range": [60, 80]}}
 
         repo = RepositoryFactory(
             author=self.user,
@@ -313,11 +324,11 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             data["me"]["owner"]["repository"]["repositoryConfig"]["indicationRange"][
                 "lowerRange"
             ]
-            == 70
+            == 60
         )
         assert (
             data["me"]["owner"]["repository"]["repositoryConfig"]["indicationRange"][
                 "upperRange"
             ]
-            == 100
+            == 80
         )

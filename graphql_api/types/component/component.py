@@ -1,9 +1,9 @@
 from typing import Optional
 
 from ariadne import ObjectType
-from asgiref.sync import sync_to_async
 from shared.reports.types import ReportTotals
 
+from codecov.db import sync_to_async
 from core.models import Commit
 from services.components import Component, component_filtered_report
 

@@ -13,15 +13,16 @@ from .helper import GraphQLTestHelper
 
 @patch("timeseries.helpers.repository_coverage_measurements_with_fallback")
 class TestMeasurement(TransactionTestCase, GraphQLTestHelper):
-    def _request(self):
+    def _request(self, variables=None):
         query = f"""
-            query {{
+            query Measurements($branch: String) {{
                 owner(username: "{self.org.username}") {{
                     repository(name: "{self.repo.name}") {{
                         measurements(
                             interval: INTERVAL_1_DAY
                             after: "2022-01-01"
                             before: "2022-01-03"
+                            branch: $branch
                         ) {{
                             timestamp
                             avg
@@ -32,7 +33,7 @@ class TestMeasurement(TransactionTestCase, GraphQLTestHelper):
                 }}
             }}
         """
-        data = self.gql_request(query, user=self.user)
+        data = self.gql_request(query, user=self.user, variables=variables)
         return data["owner"]["repository"]["measurements"]
 
     def setUp(self):
@@ -69,6 +70,7 @@ class TestMeasurement(TransactionTestCase, GraphQLTestHelper):
             Interval.INTERVAL_1_DAY,
             datetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
             datetime(2022, 1, 3, 0, 0, 0, tzinfo=timezone.utc),
+            branch=None,
         )
 
     @override_settings(TIMESERIES_ENABLED=False)
@@ -96,4 +98,18 @@ class TestMeasurement(TransactionTestCase, GraphQLTestHelper):
             Interval.INTERVAL_1_DAY,
             datetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
             datetime(2022, 1, 3, 0, 0, 0, tzinfo=timezone.utc),
+            branch=None,
+        )
+
+    @override_settings(TIMESERIES_ENABLED=True)
+    def test_measurements_branch(self, repository_coverage_measurements_with_fallback):
+        repository_coverage_measurements_with_fallback.return_value = []
+        self._request(variables={"branch": "foo"})
+
+        repository_coverage_measurements_with_fallback.assert_called_once_with(
+            self.repo,
+            Interval.INTERVAL_1_DAY,
+            datetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+            datetime(2022, 1, 3, 0, 0, 0, tzinfo=timezone.utc),
+            branch="foo",
         )

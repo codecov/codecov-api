@@ -71,7 +71,9 @@ class CoverageViewSet(
     def list(self, request, *args, **kwargs):
         """
         Returns a paginated list of timeseries measurements aggregated by the specified
-        `interval`.
+        `interval`.  If there are no measurements on `start_date` then the response will include
+        1 measurement older than `start_date` so that the coverage value can be carried forward
+        if necessary.
 
         Optionally filterable by:
         * `branch`
@@ -99,6 +101,13 @@ class FlagCoverageViewSet(CoverageViewSet):
             repo_id=self.repo.pk,
             flag_id=flag.pk,
         )
+
+        start_date = self.request.query_params.get("start_date")
+        if start_date is not None:
+            queryset = queryset.filter(timestamp_bin__gte=start_date)
+        end_date = self.request.query_params.get("end_date")
+        if end_date is not None:
+            queryset = queryset.filter(timestamp_bin__lte=end_date)
 
         return aggregate_measurements(
             queryset, ["timestamp_bin", "owner_id", "repo_id", "flag_id"]

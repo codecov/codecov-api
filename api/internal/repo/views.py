@@ -14,6 +14,7 @@ from api.shared.repo.mixins import RepositoryViewSetMixin
 from services.decorators import torngit_safe
 from services.repo_providers import RepoProviderService
 from services.segment import SegmentService
+from services.task import TaskService
 
 from .repository_actions import create_webhook_on_provider, delete_webhook_on_provider
 from .serializers import (
@@ -106,6 +107,7 @@ class RepositoryViewSet(
     def erase(self, request, *args, **kwargs):
         self._assert_is_admin()
         repo = self.get_object()
+        TaskService().delete_timeseries(repository_id=repo.repoid)
         repo.flush()
         SegmentService().account_erased_repository(self.request.user.ownerid, repo)
         return Response(self.get_serializer(repo).data)

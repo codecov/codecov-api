@@ -19,16 +19,17 @@ class MeasurementFilters(django_filters.FilterSet):
     )
     branch = django_filters.CharFilter(label="branch name", method="filter_branch")
 
+    # the filtering for these methods happens in the view since they
+    # all need to be passed in to some of the timeseries helper functions
+
     def filter_interval(self, queryset, name, value):
-        # the filtering for this method happens in the view since it
-        # delegates to different underlying models
         return queryset
 
     def filter_start_date(self, queryset, name, value):
-        return queryset.filter(timestamp_bin__gte=value)
+        return queryset
 
     def filter_end_date(self, queryset, name, value):
-        return queryset.filter(timestamp_bin__lte=value)
+        return queryset
 
     def filter_branch(self, queryset, name, value):
-        return queryset.filter(branch=value)
+        return queryset

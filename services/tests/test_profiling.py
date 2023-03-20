@@ -111,7 +111,16 @@ class ProfilingSummaryTests(TestCase):
 
     @patch("services.archive.ArchiveService.read_file")
     def test_summary_data_not_found(self, read_file):
-        read_file.side_effect = [minio.error.NoSuchKey]
+        read_file.side_effect = [
+            minio.error.S3Error(
+                code="NoSuchKey",
+                message=None,
+                resource=None,
+                request_id=None,
+                host_id=None,
+                response=None,
+            )
+        ]
 
         pc = ProfilingCommitFactory(
             repository=self.repo,

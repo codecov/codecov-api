@@ -2,10 +2,10 @@ import hashlib
 from typing import List, Union
 
 from ariadne import ObjectType, convert_kwargs_to_snake_case
-from asgiref.sync import sync_to_async
 from shared.reports.types import ReportTotals
 from shared.torngit.exceptions import TorngitClientError
 
+from codecov.db import sync_to_async
 from graphql_api.types.errors import ProviderError, QueryError, UnknownPath
 from graphql_api.types.segment_comparison.segment_comparison import SegmentComparisons
 from services.comparison import Comparison, Segment
@@ -85,8 +85,17 @@ def resolve_segments(
             return ProviderError()
 
     segments = file_comparison.segments
+
     if filters.get("has_unintended_changes") is True:
-        segments = [segment for segment in segments if segment.has_unintended_changes]
+        # segments with no diff changes and at least 1 unintended change
+        segments = [
+            segment
+            for segment in segments
+            if segment.has_unintended_changes and not segment.has_diff_changes
+        ]
+    elif filters.get("has_unintended_changes") is False:
+        # segments with at least 1 diff change
+        segments = [segment for segment in segments if segment.has_diff_changes]
 
     return SegmentComparisons(results=segments)
 
@@ -107,14 +116,21 @@ def resolve_segments_deprecated(
     file_comparison = comparison.get_file_comparison(
         impacted_file.head_name, with_src=True, bypass_max_diff=True
     )
+
+    segments = file_comparison.segments
+
     if filters.get("has_unintended_changes") is True:
-        return [
+        # segments with no diff changes and at least 1 unintended change
+        segments = [
             segment
-            for segment in file_comparison.segments
-            if segment.has_unintended_changes
+            for segment in segments
+            if segment.has_unintended_changes and not segment.has_diff_changes
         ]
-    else:
-        return file_comparison.segments
+    elif filters.get("has_unintended_changes") is False:
+        # segments with at least 1 diff change
+        segments = [segment for segment in segments if segment.has_diff_changes]
+
+    return segments
 
 
 @impacted_file_bindable.field("isNewFile")
@@ -140,7 +156,7 @@ def resolve_is_deleted_file(impacted_file: ImpactedFile, info) -> bool:
 
 @impacted_file_bindable.field("missesInComparison")
 def resolve_misses_in_comparison(impacted_file: ImpactedFile, info) -> int:
-    return impacted_file.misses_in_comparison
+    return impacted_file.misses_count
 
 
 @impacted_file_bindable.field("isCriticalFile")
@@ -154,3 +170,5 @@ def resolve_is_critical_file(impacted_file: ImpactedFile, info) -> bool:
         critical_filenames = profiling_summary.critical_filenames
 
         return base_name in critical_filenames or head_name in critical_filenames
+    else:
+        return False

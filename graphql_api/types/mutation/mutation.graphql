@@ -19,4 +19,6 @@ type Mutation {
   regenerateOrgUploadToken(
     input: RegenerateOrgUploadTokenInput!
   ): RegenerateOrgUploadTokenPayload
+  deleteFlag(input: DeleteFlagInput!): DeleteFlagPayload
+  saveSentryState(input: SaveSentryStateInput!): SaveSentryStatePayload
 }

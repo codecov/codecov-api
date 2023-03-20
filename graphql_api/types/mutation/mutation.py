@@ -6,6 +6,7 @@ from .activate_flags_measurements import (
 )
 from .create_api_token import error_create_api_token, resolve_create_api_token
 from .create_user_token import error_create_user_token, resolve_create_user_token
+from .delete_flag import error_delete_flag, resolve_delete_flag
 from .delete_session import error_delete_session, resolve_delete_session
 from .onboard_user import error_onboard_user, resolve_onboard_user
 from .regenerate_org_upload_token import (
@@ -17,6 +18,7 @@ from .regenerate_profiling_token import (
     resolve_regenerate_profling_token,
 )
 from .revoke_user_token import error_revoke_user_token, resolve_revoke_user_token
+from .save_sentry_state import error_save_sentry_state, resolve_save_sentry_state
 from .set_yaml_on_owner import error_set_yaml_error, resolve_set_yaml_on_owner
 from .sync_with_git_provider import (
     error_sync_with_git_provider,
@@ -47,6 +49,8 @@ mutation_bindable.field("activateFlagsMeasurements")(
     resolve_activate_flags_measurements
 )
 mutation_bindable.field("regenerateOrgUploadToken")(resolve_regenerate_org_upload_token)
+mutation_bindable.field("deleteFlag")(resolve_delete_flag)
+mutation_bindable.field("saveSentryState")(resolve_save_sentry_state)
 
 mutation_resolvers = [
     mutation_bindable,
@@ -62,4 +66,6 @@ mutation_resolvers = [
     error_generate_profiling_token,
     error_activate_flags_measurements,
     error_generate_org_upload_token,
+    error_delete_flag,
+    error_save_sentry_state,
 ]

@@ -99,7 +99,7 @@ class ReportViewSetTestCase(TestCase):
     def _request_report(self, user_token=None, **params):
         self.client.force_login(user=self.user)
         url = reverse(
-            "report-detail",
+            "api-v2-report-detail",
             kwargs={
                 "service": "github",
                 "owner_username": self.org.username,
@@ -118,7 +118,7 @@ class ReportViewSetTestCase(TestCase):
     def _post_report(self, user_token=None, **params):
         self.client.force_login(user=self.user)
         url = reverse(
-            "report-detail",
+            "api-v2-report-detail",
             kwargs={
                 "service": "github",
                 "owner_username": self.org.username,
@@ -307,6 +307,16 @@ class ReportViewSetTestCase(TestCase):
         assert res.json() == {
             "detail": f"The commit {sha} is not in our records. Please specify valid commit."
         }
+
+    @patch("services.archive.ReportService.build_report_from_commit")
+    def test_report_missing_report(
+        self, build_report_from_commit, get_repo_permissions
+    ):
+        get_repo_permissions.return_value = (True, True)
+        build_report_from_commit.return_value = None
+
+        res = self._request_report()
+        assert res.status_code == 404
 
     @patch("services.archive.ReportService.build_report_from_commit")
     def test_report_branch(self, build_report_from_commit, get_repo_permissions):

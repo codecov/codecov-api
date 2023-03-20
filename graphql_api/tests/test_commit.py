@@ -8,6 +8,7 @@ from django.test import TransactionTestCase
 from shared.reports.types import LineSession
 
 from codecov_auth.tests.factories import OwnerFactory
+from compare.models import CommitComparison
 from compare.tests.factories import CommitComparisonFactory
 from core.tests.factories import CommitErrorFactory, CommitFactory, RepositoryFactory
 from graphql_api.types.enums import UploadErrorEnum, UploadState
@@ -15,8 +16,10 @@ from graphql_api.types.enums.enums import UploadType
 from reports.tests.factories import (
     CommitReportFactory,
     ReportLevelTotalsFactory,
+    RepositoryFlagFactory,
     UploadErrorFactory,
     UploadFactory,
+    UploadFlagMembershipFactory,
 )
 from services.profiling import CriticalFile
 
@@ -205,8 +208,8 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         commit = data["owner"]["repository"]["commit"]
         builds = paginate_connection(commit["uploads"])
         assert builds == [
-            {"provider": session_two.provider},
             {"provider": session_one.provider},
+            {"provider": session_two.provider},
         ]
 
     def test_fetch_commit_uploads_state(self):
@@ -244,23 +247,60 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         uploads = paginate_connection(commit["uploads"])
 
         assert uploads == [
-            {"state": UploadState.UPLOADED.name},
-            {"state": UploadState.COMPLETE.name},
-            {"state": UploadState.ERROR.name},
             {"state": UploadState.PROCESSED.name},
+            {"state": UploadState.ERROR.name},
+            {"state": UploadState.COMPLETE.name},
+            {"state": UploadState.UPLOADED.name},
         ]
 
-    def test_fetch_commit_uploads_type(self):
-        session_one = UploadFactory(
+    def test_fetch_commit_uploads(self):
+        flag_a = RepositoryFlagFactory(flag_name="flag_a")
+        flag_b = RepositoryFlagFactory(flag_name="flag_b")
+        flag_c = RepositoryFlagFactory(flag_name="flag_c")
+        flag_d = RepositoryFlagFactory(flag_name="flag_d")
+
+        # `provider` is used here to differentiate sessions in the assertion
+
+        session_a = UploadFactory(
             report=self.report,
-            provider="circleci",
-            upload_type=UploadType.CARRIEDFORWARD.value,
-        )
-        session_two = UploadFactory(
-            report=self.report,
-            provider="travisci",
+            provider="a",
             upload_type=UploadType.UPLOADED.value,
         )
+        UploadFlagMembershipFactory(report_session=session_a, flag=flag_a)
+        UploadFlagMembershipFactory(report_session=session_a, flag=flag_b)
+        UploadFlagMembershipFactory(report_session=session_a, flag=flag_c)
+        session_b = UploadFactory(
+            report=self.report,
+            provider="b",
+            upload_type=UploadType.CARRIEDFORWARD.value,
+        )
+        UploadFlagMembershipFactory(report_session=session_b, flag=flag_a)
+
+        session_c = UploadFactory(
+            report=self.report,
+            provider="c",
+            upload_type=UploadType.CARRIEDFORWARD.value,
+        )
+        UploadFlagMembershipFactory(report_session=session_c, flag=flag_b)
+        session_d = UploadFactory(
+            report=self.report,
+            provider="d",
+            upload_type=UploadType.UPLOADED.value,
+        )
+        UploadFlagMembershipFactory(report_session=session_d, flag=flag_b)
+
+        session_e = UploadFactory(
+            report=self.report,
+            provider="e",
+            upload_type=UploadType.CARRIEDFORWARD.value,
+        )
+        UploadFlagMembershipFactory(report_session=session_e, flag=flag_d)
+        session_f = UploadFactory(
+            report=self.report,
+            provider="f",
+            upload_type=UploadType.UPLOADED.value,
+        )
+
         query = (
             query_commit
             % """
@@ -268,6 +308,8 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 edges {
                     node {
                         uploadType
+                        flags
+                        provider
                     }
                 }
             }
@@ -282,10 +324,48 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         commit = data["owner"]["repository"]["commit"]
         uploads = paginate_connection(commit["uploads"])
 
+        # ordered by upload id, omits uploads with carriedforward flag if another
+        # upload exists with the same flag name is is not carriedforward
+
         assert uploads == [
-            {"uploadType": UploadType.UPLOADED.name},
-            {"uploadType": UploadType.CARRIEDFORWARD.name},
+            {
+                "uploadType": "UPLOADED",
+                "flags": ["flag_a", "flag_b", "flag_c"],
+                "provider": "a",
+            },
+            {"uploadType": "UPLOADED", "flags": ["flag_b"], "provider": "d"},
+            {"uploadType": "CARRIEDFORWARD", "flags": ["flag_d"], "provider": "e"},
+            {"uploadType": "UPLOADED", "flags": [], "provider": "f"},
         ]
+
+    def test_fetch_commit_uploads_no_report(self):
+        commit = CommitFactory(
+            repository=self.repo,
+            parent_commit_id=self.commit.commitid,
+        )
+        query = (
+            query_commit
+            % """
+            uploads {
+                edges {
+                    node {
+                        uploadType
+                        flags
+                        provider
+                    }
+                }
+            }
+        """
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        uploads = paginate_connection(commit["uploads"])
+        assert uploads == []
 
     def test_fetch_commit_uploads_errors(self):
         session = UploadFactory(
@@ -509,9 +589,36 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         commit = data["owner"]["repository"]["commit"]
         assert commit["compareWithParent"] == None
 
-    @patch("compare.commands.compare.compare.CompareCommands.change_with_parent")
-    def test_change_with_parent_call_the_command(self, command_mock):
-        query = query_commit % "compareWithParent { changeWithParent }"
+    def test_compare_with_parent_change_coverage(self):
+        CommitComparisonFactory(
+            base_commit=self.parent_commit,
+            compare_commit=self.commit,
+            state=CommitComparison.CommitComparisonStates.PROCESSED,
+        )
+        ReportLevelTotalsFactory(
+            report=CommitReportFactory(commit=self.parent_commit),
+            coverage=75.0,
+            files=0,
+            lines=0,
+            hits=0,
+            misses=0,
+            partials=0,
+            branches=0,
+            methods=0,
+        )
+        ReportLevelTotalsFactory(
+            report=self.report,
+            coverage=80.0,
+            files=0,
+            lines=0,
+            hits=0,
+            misses=0,
+            partials=0,
+            branches=0,
+            methods=0,
+        )
+
+        query = query_commit % "compareWithParent { changeCoverage }"
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
@@ -519,11 +626,35 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
-        fake_compare = 56.89
-        command_mock.return_value = fake_compare
+        assert commit["compareWithParent"]["changeCoverage"] == 5.0
+
+    def test_compare_with_parent_missing_change_coverage(self):
+        CommitComparisonFactory(
+            base_commit=self.parent_commit,
+            compare_commit=self.commit,
+            state=CommitComparison.CommitComparisonStates.PROCESSED,
+        )
+        ReportLevelTotalsFactory(
+            report=CommitReportFactory(commit=self.parent_commit),
+            coverage=75.0,
+            files=0,
+            lines=0,
+            hits=0,
+            misses=0,
+            partials=0,
+            branches=0,
+            methods=0,
+        )
+
+        query = query_commit % "compareWithParent { changeCoverage }"
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
-        assert commit["compareWithParent"]["changeWithParent"] == 56.89
+        assert commit["compareWithParent"]["changeCoverage"] == None
 
     def test_has_different_number_of_head_and_base_reports_without_PR_comparison(self):
         query = (

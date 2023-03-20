@@ -5,6 +5,7 @@ from core.tests.factories import CommitFactory, RepositoryFactory
 from reports.tests.factories import (
     CommitReportFactory,
     ReportResultsFactory,
+    RepositoryFlagFactory,
     UploadFactory,
 )
 from upload.serializers import (
@@ -26,6 +27,18 @@ def get_fake_upload():
     return UploadFactory.create(report=report)
 
 
+def get_fake_upload_with_flags():
+    upload = get_fake_upload()
+    flag1 = RepositoryFlagFactory(
+        repository=upload.report.commit.repository, flag_name="flag1"
+    )
+    flag2 = RepositoryFlagFactory(
+        repository=upload.report.commit.repository, flag_name="flag2"
+    )
+    upload.flags.set([flag1, flag2])
+    return upload
+
+
 def test_serialize_upload(transactional_db, mocker):
     mocker.patch(
         "services.archive.StorageService.create_presigned_put",
@@ -43,7 +56,53 @@ def test_serialize_upload(transactional_db, mocker):
     assert fake_upload.name == "upload name...?"
 
 
-def test_contains_expected_fields(transactional_db, mocker):
+def test_upload_serializer_contains_expected_fields_no_flags(transactional_db, mocker):
+    mocker.patch(
+        "services.archive.StorageService.create_presigned_put",
+        return_value="presigned put",
+    )
+    upload = get_fake_upload()
+    serializer = UploadSerializer(instance=upload)
+    expected_data = {
+        "external_id": str(upload.external_id),
+        "created_at": upload.created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+        "raw_upload_location": "presigned put",
+        "state": upload.state,
+        "provider": upload.provider,
+        "upload_type": upload.upload_type,
+        "ci_url": upload.ci_url,
+        "flags": [],
+        "env": upload.env,
+        "name": upload.name,
+    }
+    assert serializer.data == expected_data
+
+
+def test_upload_serializer_contains_expected_fields_with_flags(
+    transactional_db, mocker
+):
+    mocker.patch(
+        "services.archive.StorageService.create_presigned_put",
+        return_value="presigned put",
+    )
+    upload = get_fake_upload_with_flags()
+    serializer = UploadSerializer(instance=upload)
+    expected_data = {
+        "external_id": str(upload.external_id),
+        "created_at": upload.created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+        "raw_upload_location": "presigned put",
+        "state": upload.state,
+        "provider": upload.provider,
+        "upload_type": upload.upload_type,
+        "ci_url": upload.ci_url,
+        "flags": ["flag1", "flag2"],
+        "env": upload.env,
+        "name": upload.name,
+    }
+    assert serializer.data == expected_data
+
+
+def test_commit_serializer_contains_expected_fields(transactional_db, mocker):
     commit = CommitFactory.create()
     serializer = CommitSerializer(commit)
     expected_data = {

@@ -2,11 +2,11 @@ import inspect
 from unittest.mock import patch
 
 import pytest
-from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from shared.torngit import Bitbucket, Github, Gitlab
 
+from codecov.db import sync_to_async
 from codecov.tests.base_test import InternalAPITest
 from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory

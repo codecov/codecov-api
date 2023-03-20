@@ -1,11 +1,11 @@
 from datetime import datetime, timedelta
 
-from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.utils import timezone
 
 from codecov.commands.base import BaseInteractor
 from codecov.commands.exceptions import Unauthenticated, ValidationError
+from codecov.db import sync_to_async
 from codecov_auth.models import Owner
 from core.models import Commit, Repository
 from services.task import TaskService
