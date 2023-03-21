@@ -154,6 +154,17 @@ class TestConfigType(GraphQLTestHelper, TestCase):
         }
 
     @override_settings(
+        IS_ENTERPRISE=False,
+    )
+    def test_resolve_null_github_enterprise_url(self):
+        data = self.gql_request("query { config { githubEnterpriseURL }}")
+        assert data == {
+            "config": {
+                "githubEnterpriseURL": None,
+            },
+        }
+
+    @override_settings(
         IS_ENTERPRISE=True,
         GITLAB_ENTERPRISE_CLIENT_ID="Gitlab",
         GITLAB_ENTERPRISE_URL="https://gitlab.example.com",
@@ -167,6 +178,17 @@ class TestConfigType(GraphQLTestHelper, TestCase):
         }
 
     @override_settings(
+        IS_ENTERPRISE=False,
+    )
+    def test_resolve_null_gitlab_enterprise_url(self):
+        data = self.gql_request("query { config { gitlabEnterpriseURL }}")
+        assert data == {
+            "config": {
+                "gitlabEnterpriseURL": None,
+            },
+        }
+
+    @override_settings(
         IS_ENTERPRISE=True,
         BITBUCKET_SERVER_CLIENT_ID="Bitbucket",
         BITBUCKET_SERVER_URL="https://bitbucket.example.com",
@@ -176,5 +198,16 @@ class TestConfigType(GraphQLTestHelper, TestCase):
         assert data == {
             "config": {
                 "bitbucketServerURL": "https://bitbucket.example.com",
+            },
+        }
+
+    @override_settings(
+        IS_ENTERPRISE=False,
+    )
+    def test_resolve_null_bitbucket_sever_url(self):
+        data = self.gql_request("query { config { bitbucketServerURL }}")
+        assert data == {
+            "config": {
+                "bitbucketServerURL": None,
             },
         }
