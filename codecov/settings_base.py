@@ -436,3 +436,7 @@ UPLOAD_THROTTLING_ENABLED = True
 MAX_UPLOAD_LIMIT = get_config("setup", "max_sessions", default=150)
 
 CANNY_SSO_PRIVATE_TOKEN = get_config("canny", "sso_private_token", default="")
+
+# list of repo IDs that will use the new-style report builder
+# TODO: we can eventually get rid of this once it's confirmed working well for many repos
+REPORT_BUILDER_REPO_IDS = get_config("setup", "report_builder", "repo_ids", default=[])

@@ -1,5 +1,6 @@
 from typing import Optional
 
+from django.conf import settings
 from django.db.models import Prefetch, Q
 from django.utils.functional import cached_property
 from shared.helpers.flag import Flag
@@ -11,6 +12,7 @@ from shared.utils.sessions import Session, SessionType
 from core.models import Commit
 from reports.models import AbstractTotals, CommitReport, ReportDetails, ReportSession
 from services.archive import ArchiveService
+from utils.config import RUN_ENV
 
 
 class ReportMixin:
@@ -60,8 +62,15 @@ def build_report_from_commit(commit: Commit, report_class=None):
     from various `reports_*` tables in the database.
     """
 
+    # TODO: this can be removed once confirmed working well on prod
+    new_report_builder_enabled = (
+        RUN_ENV == "DEV"
+        or RUN_ENV == "TESTING"
+        or commit.repository_id in settings.REPORT_BUILDER_REPO_IDS
+    )
+
     commit_report = fetch_commit_report(commit)
-    if commit_report:
+    if commit_report and new_report_builder_enabled:
         files = build_files(commit_report)
         sessions = build_sessions(commit_report)
         try:
