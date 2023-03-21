@@ -4,6 +4,7 @@ from unittest.mock import patch
 from django.test import TransactionTestCase
 
 from billing.constants import BASIC_PLAN_NAME
+from codecov_auth.models import OwnerProfile
 from codecov_auth.tests.factories import (
     GetAdminProviderAdapter,
     OwnerFactory,
@@ -303,6 +304,22 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, user=self.user)
         assert data["owner"]["orgUploadToken"] == "upload_token"
 
+    # Applies for old users that didn't get their owner profiles created w/ their owner
+    def test_when_owner_profile_doesnt_exist(self):
+        owner = OwnerFactory(username="no-profile-user")
+        owner.profile.delete()
+        query = """{
+            owner(username: "%s") {
+                defaultOrgUsername
+                username
+            }
+        }
+        """ % (
+            owner.username
+        )
+        data = self.gql_request(query, user=owner)
+        assert data["owner"]["defaultOrgUsername"] == None
+
     def test_get_default_org_username_for_owner(self):
         organization = OwnerFactory(username="sample-org", service="github")
         owner = OwnerFactory(
@@ -310,7 +327,9 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
             service="github",
             organizations=[organization.ownerid],
         )
-        OwnerProfileFactory(owner=owner, default_org=organization)
+        OwnerProfile.objects.filter(owner_id=owner.ownerid).update(
+            default_org=organization
+        )
         query = """{
             owner(username: "%s") {
                 defaultOrgUsername
@@ -325,7 +344,6 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
 
     def test_owner_without_default_org_returns_null(self):
         owner = OwnerFactory(username="sample-owner", service="github")
-        OwnerProfileFactory(owner=owner, default_org=None)
         query = """{
             owner(username: "%s") {
                 defaultOrgUsername

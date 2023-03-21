@@ -38,15 +38,10 @@ class UpdateDefaultOrganizationInteractorTest(TransactionTestCase):
             self.execute(user=None, username="random-name")
 
     def test_update_org_not_belonging_to_users_organizations(self):
-        assert not OwnerProfile.objects.filter(
-            owner_id=self.org_not_in_users_organizations.ownerid
-        ).exists()
-
         with pytest.raises(ValidationError):
             self.execute(user=self.user, username="imposter")
 
     def test_update_org_when_default_org_username_is_none(self):
-        assert not OwnerProfile.objects.filter(owner_id=self.user.ownerid).exists()
         self.execute(user=self.user, username=None)
 
         owner_profile: OwnerProfile = OwnerProfile.objects.filter(
@@ -55,8 +50,6 @@ class UpdateDefaultOrganizationInteractorTest(TransactionTestCase):
         assert owner_profile.default_org == None
 
     def test_update_owners_default_org(self):
-        assert not OwnerProfile.objects.filter(owner_id=self.user.ownerid).exists()
-
         username = self.execute(
             user=self.user, username=self.default_organization_username
         )
@@ -68,8 +61,6 @@ class UpdateDefaultOrganizationInteractorTest(TransactionTestCase):
         assert username == self.default_organization.username
 
     def test_update_owners_default_org_when_current_user_is_selected(self):
-        assert not OwnerProfile.objects.filter(owner_id=self.user.ownerid).exists()
-
         username = self.execute(user=self.user, username=self.user.username)
 
         owner_profile: OwnerProfile = OwnerProfile.objects.filter(
