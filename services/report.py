@@ -62,9 +62,12 @@ def build_report_from_commit(commit: Commit, report_class=None):
 
     commit_report = fetch_commit_report(commit)
     if commit_report:
-        files = build_files(commit_report.reportdetails)
+        files = build_files(commit_report)
         sessions = build_sessions(commit_report)
-        totals = build_totals(commit_report.reportleveltotals)
+        try:
+            totals = build_totals(commit_report.reportleveltotals)
+        except CommitReport.reportleveltotals.RelatedObjectDoesNotExist:
+            totals = None
     else:
         if not commit.report:
             return None
@@ -176,11 +179,18 @@ def build_sessions(commit_report: CommitReport) -> dict[int, Session]:
     return sessions
 
 
-def build_files(report_details: ReportDetails) -> dict[str, ReportFileSummary]:
+def build_files(commit_report: CommitReport) -> dict[str, ReportFileSummary]:
     """
     Construct a files dictionary in a format compatible with `shared.reports.resources.Report`
     from data in the `reports_reportdetails.files_array` column in the database.
     """
+    try:
+        report_details = commit_report.reportdetails
+    except CommitReport.reportdetails.RelatedObjectDoesNotExist:
+        # we don't expect this but something could have gone wrong in the worker
+        # we can't really recover here
+        return {}
+
     return {
         file["filename"]: ReportFileSummary(
             file_index=file["file_index"],
