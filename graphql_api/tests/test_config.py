@@ -139,3 +139,42 @@ class TestConfigType(GraphQLTestHelper, TestCase):
                 "hasAdmins": True,
             },
         }
+
+    @override_settings(
+        IS_ENTERPRISE=True,
+        GITHUB_ENTERPRISE_CLIENT_ID="Github",
+        GITHUB_ENTERPRISE_URL="https://github.example.com",
+    )
+    def test_resolve_github_enterprise_url(self):
+        data = self.gql_request("query { config { githubEnterpriseURL }}")
+        assert data == {
+            "config": {
+                "githubEnterpriseURL": "https://github.example.com",
+            },
+        }
+
+    @override_settings(
+        IS_ENTERPRISE=True,
+        GITLAB_ENTERPRISE_CLIENT_ID="Gitlab",
+        GITLAB_ENTERPRISE_URL="https://gitlab.example.com",
+    )
+    def test_resolve_gitlab_enterprise_url(self):
+        data = self.gql_request("query { config { gitlabEnterpriseURL }}")
+        assert data == {
+            "config": {
+                "gitlabEnterpriseURL": "https://gitlab.example.com",
+            },
+        }
+
+    @override_settings(
+        IS_ENTERPRISE=True,
+        BITBUCKET_SERVER_CLIENT_ID="Bitbucket",
+        BITBUCKET_SERVER_URL="https://bitbucket.example.com",
+    )
+    def test_resolve_bitbucket_server_url(self):
+        data = self.gql_request("query { config { bitbucketServerURL }}")
+        assert data == {
+            "config": {
+                "bitbucketServerURL": "https://bitbucket.example.com",
+            },
+        }

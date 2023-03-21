@@ -67,3 +67,30 @@ def resolve_has_admins(_, info):
         return None
 
     return len(settings.ADMINS_LIST) != 0
+
+
+@config_bindable.field("githubEnterpriseURL")
+def resolve_github_enterprise_url(_, info):
+    if not settings.IS_ENTERPRISE:
+        return None
+
+    if settings.GITHUB_ENTERPRISE_CLIENT_ID:
+        return settings.GITHUB_ENTERPRISE_URL
+
+
+@config_bindable.field("gitlabEnterpriseURL")
+def resolve_gitlab_enterprise_url(_, info):
+    if not settings.IS_ENTERPRISE:
+        return None
+
+    if settings.GITLAB_ENTERPRISE_CLIENT_ID:
+        return settings.GITLAB_ENTERPRISE_URL
+
+
+@config_bindable.field("bitbucketServerURL")
+def resolve_bitbucket_server_url(_, info):
+    if not settings.IS_ENTERPRISE:
+        return None
+
+    if settings.BITBUCKET_SERVER_CLIENT_ID:
+        return settings.BITBUCKET_SERVER_URL
