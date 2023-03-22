@@ -7,6 +7,7 @@ from graphql_api.helpers.mutation import (
     wrap_error_handling_mutation,
 )
 
+
 @wrap_error_handling_mutation
 @require_authenticated
 async def resolve_save_terms_agreement(_, info, input):

@@ -19,7 +19,10 @@ from .regenerate_profiling_token import (
 )
 from .revoke_user_token import error_revoke_user_token, resolve_revoke_user_token
 from .save_sentry_state import error_save_sentry_state, resolve_save_sentry_state
-from .save_terms_agreement import error_save_terms_agreement, resolve_save_terms_agreement
+from .save_terms_agreement import (
+    error_save_terms_agreement,
+    resolve_save_terms_agreement,
+)
 from .set_yaml_on_owner import error_set_yaml_error, resolve_set_yaml_on_owner
 from .sync_with_git_provider import (
     error_sync_with_git_provider,

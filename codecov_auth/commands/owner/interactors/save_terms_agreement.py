@@ -17,8 +17,8 @@ class SaveTermsAgreementInteractor(BaseInteractor):
         owner_profile, _ = OwnerProfile.objects.get_or_create(
             owner=self.current_user,
         )
-        owner_profile.terms_agreement=input.terms_agreement
-        owner_profile.terms_agreement_at=datetime.now()
+        owner_profile.terms_agreement = input.terms_agreement
+        owner_profile.terms_agreement_at = datetime.now()
         owner_profile.save()
 
         if input.email is not None and input.email != "":
@@ -27,5 +27,7 @@ class SaveTermsAgreementInteractor(BaseInteractor):
 
     @sync_to_async
     def execute(self, input):
-        typed_input = TermsAgreementInput(email=input.get("email"), terms_agreement=input.get("termsAgreement"))
+        typed_input = TermsAgreementInput(
+            email=input.get("email"), terms_agreement=input.get("termsAgreement")
+        )
         return self.update_terms_agreement(typed_input)
