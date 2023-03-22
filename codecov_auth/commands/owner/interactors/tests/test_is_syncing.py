@@ -19,4 +19,3 @@ class IsSyncingInteractorTest(TransactionTestCase):
         res = await IsSyncingInteractor(self.user, "github").execute()
         assert res is True
         mock_is_refreshing.assert_called()
-        print(mock_is_refreshing)

@@ -42,6 +42,9 @@ class OnboardUserInteractor(BaseInteractor):
             },
         )
 
+        # refresh in case the profile was already preloaded
+        self.current_user.profile.refresh_from_db()
+
     @sync_to_async
     def execute(self, params):
         self.validate(params)
