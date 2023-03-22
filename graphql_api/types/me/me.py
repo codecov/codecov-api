@@ -1,3 +1,5 @@
+from typing import Optional
+
 from ariadne import ObjectType, convert_kwargs_to_snake_case
 
 from codecov.db import sync_to_async
@@ -97,6 +99,20 @@ def resolve_is_syncing_with_git_provider(_, info):
 @me_bindable.field("trackingMetadata")
 def resolve_tracking_data(current_user, _, **kwargs):
     return current_user
+
+
+@me_bindable.field("termsAgreement")
+def resolve_terms_agreement(current_user: Owner, _, **kwargs) -> Optional[bool]:
+    try:
+        owner_profile = current_user.profile
+        return owner_profile.terms_agreement
+    except OwnerProfile.DoesNotExist:
+        return None
+
+
+@me_bindable.field("businessEmail")
+def resolve_terms_agreement(current_user: Owner, _, **kwargs) -> Optional[str]:
+    return current_user.business_email
 
 
 @me_bindable.field("privateAccess")
