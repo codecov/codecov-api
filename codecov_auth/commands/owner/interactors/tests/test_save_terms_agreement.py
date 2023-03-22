@@ -20,7 +20,9 @@ class UpdateSaveTermsAgreementInteractorTest(TransactionTestCase):
         )
 
     @async_to_sync
-    def execute(self, current_user, input={"email": None, "termsAgreement": False}):
+    def execute(
+        self, current_user, input={"businessEmail": None, "termsAgreement": False}
+    ):
         current_user = current_user
         return SaveTermsAgreementInteractor(current_user, "github").execute(
             input=input,
@@ -58,7 +60,7 @@ class UpdateSaveTermsAgreementInteractorTest(TransactionTestCase):
     def test_update_owner_and_profile_when_email_isnt_empty(self):
         self.execute(
             current_user=self.current_user,
-            input={"email": "something@email.com", "termsAgreement": True},
+            input={"businessEmail": "something@email.com", "termsAgreement": True},
         )
 
         owner_profile: OwnerProfile = OwnerProfile.objects.filter(

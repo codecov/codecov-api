@@ -5,6 +5,6 @@ type SaveTermsAgreementPayload {
 }
 
 input SaveTermsAgreementInput {
-  email: String
+  businessEmail: String
   termsAgreement: Boolean!
 }
