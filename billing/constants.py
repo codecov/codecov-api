@@ -91,6 +91,7 @@ SENTRY_PAID_USER_PLAN_REPRESENTATIONS = {
         "base_unit_price": 12,
         "benefits": [
             "Includes 5 seats",
+            "$12 per additional seat",
             "Unlimited public repositories",
             "Unlimited private repositories",
             "Priority Support",
@@ -104,6 +105,7 @@ SENTRY_PAID_USER_PLAN_REPRESENTATIONS = {
         "base_unit_price": 10,
         "benefits": [
             "Includes 5 seats",
+            "$10 per additional seat",
             "Unlimited public repositories",
             "Unlimited private repositories",
             "Priority Support",
