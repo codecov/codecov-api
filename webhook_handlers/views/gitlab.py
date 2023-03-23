@@ -22,6 +22,7 @@ log = logging.getLogger(__name__)
 
 class GitLabWebhookHandler(APIView):
     permission_classes = [AllowAny]
+    service_name = "gitlab"
 
     def post(self, request, *args, **kwargs):
         event = self.request.META.get(GitLabHTTPHeaders.EVENT)
@@ -35,7 +36,7 @@ class GitLabWebhookHandler(APIView):
         if project_id and request.data.get("event_name") != "project_create":
             # make sure the repo exists in the repos table
             repo = get_object_or_404(
-                Repository, author__service="gitlab", service_id=project_id
+                Repository, author__service=self.service_name, service_id=project_id
             )
 
         if event == GitLabWebhookEvents.PUSH:
@@ -143,7 +144,9 @@ class GitLabWebhookHandler(APIView):
             ).split("/", 2)
 
             try:
-                owner = Owner.objects.get(service="gitlab", username=owner_username)
+                owner = Owner.objects.get(
+                    service=self.service_name, username=owner_username
+                )
 
                 obj, created = Repository.objects.get_or_create(
                     author=owner,
@@ -173,7 +176,7 @@ class GitLabWebhookHandler(APIView):
                 "path_with_namespace"
             ).split("/")
             new_owner = Owner.objects.filter(
-                service="gitlab", username=owner_username
+                service=self.service_name, username=owner_username
             ).first()
 
             if new_owner:
@@ -184,7 +187,7 @@ class GitLabWebhookHandler(APIView):
 
         elif event_name == "user_create":
             obj, created = Owner.objects.update_or_create(
-                service="gitlab",
+                service=self.service_name,
                 service_id=self.request.data.get("user_id"),
                 username=self.request.data.get("username"),
                 email=self.request.data.get("email"),
@@ -197,7 +200,7 @@ class GitLabWebhookHandler(APIView):
             and self.request.data.get("project_visibility") == "private"
         ):
             user = Owner.objects.filter(
-                service="gitlab",
+                service=self.service_name,
                 service_id=self.request.data.get("user_id"),
                 oauth_token__isnull=False,
             ).first()
@@ -219,3 +222,7 @@ class GitLabWebhookHandler(APIView):
                 message = "User not found or not active"
 
         return Response(data=message)
+
+
+class GitLabEnterpriseWebhookHandler(GitLabWebhookHandler):
+    service_name = "gitlab_enterprise"

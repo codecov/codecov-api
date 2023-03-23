@@ -12,6 +12,7 @@ from rest_framework.views import APIView
 from billing.constants import (
     ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
     PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
+    SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
 )
 from codecov_auth.models import Owner
 from services.billing import BillingService
@@ -200,6 +201,7 @@ class StripeWebhookHandler(APIView):
         pro_plans = {
             **PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
             **ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
+            **SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
         }
         if subscription.plan.name not in pro_plans:
             log.warning(

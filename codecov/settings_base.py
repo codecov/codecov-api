@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django_filters",
     "drf_spectacular",
+    "drf_spectacular_sidecar",
     "ariadne_django",
     "corsheaders",
     "rest_framework",
@@ -277,6 +278,7 @@ SPECTACULAR_SETTINGS = {
     "AUTHENTICATION_WHITELIST": [
         "codecov_auth.authentication.UserTokenAuthentication",
     ],
+    "REDOC_DIST": "SIDECAR",  # serve Redoc from Django (not CDN)
 }
 
 # Internationalization
@@ -436,6 +438,11 @@ UPLOAD_THROTTLING_ENABLED = True
 MAX_UPLOAD_LIMIT = get_config("setup", "max_sessions", default=150)
 
 CANNY_SSO_PRIVATE_TOKEN = get_config("canny", "sso_private_token", default="")
+
+SENTRY_JWT_SHARED_SECRET = get_config(
+    "setup", "sentry", "jwt_shared_secret", default=None
+)
+SENTRY_USER_WEBHOOK_URL = get_config("setup", "sentry", "webhook_url", default=None)
 
 # list of repo IDs that will use the new-style report builder
 # TODO: we can eventually get rid of this once it's confirmed working well for many repos

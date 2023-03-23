@@ -1,10 +1,10 @@
 import asyncio
-from hashlib import sha1
 from unittest.mock import patch
 
 from django.test import TransactionTestCase
 
 from billing.constants import BASIC_PLAN_NAME
+from codecov_auth.models import OwnerProfile
 from codecov_auth.tests.factories import (
     GetAdminProviderAdapter,
     OwnerFactory,
@@ -18,7 +18,7 @@ from .helper import GraphQLTestHelper, paginate_connection
 query_repositories = """{
     owner(username: "%s") {
         orgUploadToken
-        hashOwnerid
+        ownerid
         isCurrentUserPartOfOrg
         yaml
         repositories%s {
@@ -62,12 +62,10 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
     def test_fetching_repositories(self):
         query = query_repositories % (self.user.username, "", "")
         data = self.gql_request(query, user=self.user)
-        hash_ownerid = sha1(str(self.user.ownerid).encode())
-        hashOwnerid = hash_ownerid.hexdigest()
         assert data == {
             "owner": {
                 "orgUploadToken": None,
-                "hashOwnerid": hashOwnerid,
+                "ownerid": self.user.ownerid,
                 "isCurrentUserPartOfOrg": True,
                 "yaml": None,
                 "repositories": {
@@ -294,12 +292,10 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, user=user)
         assert data["owner"]["isAdmin"] is True
 
-    def test_hashOwnerid(self):
+    def test_ownerid(self):
         query = query_repositories % (self.user.username, "", "")
         data = self.gql_request(query, user=self.user)
-        hash_ownerid = sha1(str(self.user.ownerid).encode())
-        hashOwnerid = hash_ownerid.hexdigest()
-        assert data["owner"]["hashOwnerid"] == hashOwnerid
+        assert data["owner"]["ownerid"] == self.user.ownerid
 
     @patch("codecov_auth.commands.owner.owner.OwnerCommands.get_org_upload_token")
     def test_get_org_upload_token(self, mocker):
@@ -308,6 +304,22 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, user=self.user)
         assert data["owner"]["orgUploadToken"] == "upload_token"
 
+    # Applies for old users that didn't get their owner profiles created w/ their owner
+    def test_when_owner_profile_doesnt_exist(self):
+        owner = OwnerFactory(username="no-profile-user")
+        owner.profile.delete()
+        query = """{
+            owner(username: "%s") {
+                defaultOrgUsername
+                username
+            }
+        }
+        """ % (
+            owner.username
+        )
+        data = self.gql_request(query, user=owner)
+        assert data["owner"]["defaultOrgUsername"] == None
+
     def test_get_default_org_username_for_owner(self):
         organization = OwnerFactory(username="sample-org", service="github")
         owner = OwnerFactory(
@@ -315,7 +327,9 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
             service="github",
             organizations=[organization.ownerid],
         )
-        OwnerProfileFactory(owner=owner, default_org=organization)
+        OwnerProfile.objects.filter(owner_id=owner.ownerid).update(
+            default_org=organization
+        )
         query = """{
             owner(username: "%s") {
                 defaultOrgUsername
@@ -330,7 +344,6 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
 
     def test_owner_without_default_org_returns_null(self):
         owner = OwnerFactory(username="sample-owner", service="github")
-        OwnerProfileFactory(owner=owner, default_org=None)
         query = """{
             owner(username: "%s") {
                 defaultOrgUsername
@@ -398,4 +411,17 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
             owner.username
         )
         data = self.gql_request(query, user=user)
+        assert data["owner"]["isCurrentUserActivated"] == False
+
+    def test_is_current_user_activated_anonymous(self):
+        owner = OwnerFactory(username="sample-owner")
+        query = """{
+            owner(username: "%s") {
+                isCurrentUserActivated
+            }
+        }
+        """ % (
+            owner.username
+        )
+        data = self.gql_request(query)
         assert data["owner"]["isCurrentUserActivated"] == False

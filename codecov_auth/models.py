@@ -128,6 +128,9 @@ class Owner(models.Model):
     is_superuser = models.BooleanField(null=True, default=False)
     max_upload_limit = models.IntegerField(null=True, default=150, blank=True)
 
+    sentry_user_id = models.TextField(null=True, blank=True, unique=True)
+    sentry_user_data = models.JSONField(null=True)
+
     objects = OwnerManager()
 
     repository_set = RepositoryManager()
@@ -478,6 +481,8 @@ class OwnerProfile(BaseCodecovModel):
     default_org = models.ForeignKey(
         Owner, on_delete=models.CASCADE, null=True, related_name="profiles_with_default"
     )
+    terms_agreement = models.BooleanField(null=True)
+    terms_agreement_at = DateTimeWithoutTZField(null=True)
 
 
 class Session(models.Model):

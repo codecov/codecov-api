@@ -44,5 +44,4 @@ class GetFinalYamlInteractorTest(TransactionTestCase):
             response_data=404, message="not found"
         )
         config = await self.execute(None, self.commit)
-        print(config)
         assert config["codecov"]["require_ci_to_pass"] is True

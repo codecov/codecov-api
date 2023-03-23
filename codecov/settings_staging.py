@@ -27,6 +27,8 @@ SESSION_COOKIE_DOMAIN = ".codecov.dev"
 STRIPE_PLAN_IDS = {
     "users-pr-inappm": "plan_H6P3KZXwmAbqPS",
     "users-pr-inappy": "plan_H6P16wij3lUuxg",
+    "users-sentrym": "price_1Mj1kYGlVGuVgOrk7jucaZAa",
+    "users-sentryy": "price_1Mj1mMGlVGuVgOrkC0ORc6iW",
 }
 
 SENTRY_ENV = "staging"

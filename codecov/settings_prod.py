@@ -24,6 +24,8 @@ STRIPE_ENDPOINT_SECRET = os.environ.get("SERVICES__STRIPE__ENDPOINT_SECRET", Non
 STRIPE_PLAN_IDS = {
     "users-pr-inappm": "price_1Gv2B8GlVGuVgOrkFnLunCgc",
     "users-pr-inappy": "price_1Gv2COGlVGuVgOrkuOYVLIj7",
+    "users-sentrym": "price_1MlY9yGlVGuVgOrkHluurBtJ",
+    "users-sentryy": "price_1MlYAYGlVGuVgOrke9SdbBUn",
 }
 
 SENTRY_ENV = "production"
