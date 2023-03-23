@@ -1,23 +1,18 @@
 import json
 from unittest.mock import PropertyMock, patch
 
-import pytest
-from django.test import override_settings
 from rest_framework import status
 from rest_framework.reverse import reverse
-from shared.reports.resources import ReportFile
 
 from api.internal.commit.serializers import CommitTotalsSerializer
 from codecov.tests.base_test import InternalAPITest
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import (
     BranchFactory,
-    CommitFactory,
+    CommitWithReportFactory,
     PullFactory,
     RepositoryFactory,
 )
-from services.archive import ArchiveService, SerializableReport
-from services.comparison import Comparison
 
 
 def build_commits(client):
@@ -31,16 +26,16 @@ def build_commits(client):
         author__unencrypted_oauth_token="testqmit3okrgutcoyzscveipor3toi3nsmb927v",
         author__username="ThiagoCodecov",
     )
-    parent_commit = CommitFactory.create(
+    parent_commit = CommitWithReportFactory.create(
         message="test_compare_parent", commitid="c5b6730", repository=repo
     )
-    commit_base = CommitFactory.create(
+    commit_base = CommitWithReportFactory.create(
         message="test_compare_commits_base",
         commitid="9193232a8fe3429496956ba82b5fed2583d1b5eb",
         parent_commit_id=parent_commit.commitid,
         repository=repo,
     )
-    commit_head = CommitFactory.create(
+    commit_head = CommitWithReportFactory.create(
         message="test_compare_commits_head",
         commitid="abf6d4df662c47e32460020ab14abf9303581429",
         parent_commit_id=parent_commit.commitid,

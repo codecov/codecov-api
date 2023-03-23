@@ -481,6 +481,8 @@ class OwnerProfile(BaseCodecovModel):
     default_org = models.ForeignKey(
         Owner, on_delete=models.CASCADE, null=True, related_name="profiles_with_default"
     )
+    terms_agreement = models.BooleanField(null=True)
+    terms_agreement_at = DateTimeWithoutTZField(null=True)
 
 
 class Session(models.Model):

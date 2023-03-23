@@ -238,7 +238,7 @@ class RepoCommitDetailTestCase(TestCase):
             },
         )
 
-    @patch("core.models.ReportService.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_commit_detail_not_authenticated(
         self, build_report_from_commit, get_repo_permissions
     ):
@@ -264,7 +264,7 @@ class RepoCommitDetailTestCase(TestCase):
         # allows access to public repos
         assert response.status_code == 200
 
-    @patch("core.models.ReportService.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_commit_detail_authenticated(
         self, build_report_from_commit, get_repo_permissions
     ):
