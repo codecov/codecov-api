@@ -195,8 +195,10 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
         ]
 
     @override_settings(DEBUG=True)
-    def test_fetch_path_contents_with_no_report(self):
-        commit_without_report = CommitFactory(repository=self.repo, report=None)
+    @patch("services.report.build_report_from_commit")
+    def test_fetch_path_contents_with_no_report(self, report_mock):
+        report_mock.return_value = None
+        commit_without_report = CommitFactory(repository=self.repo)
         branch = BranchFactory(
             repository=self.repo,
             head=commit_without_report.commitid,
@@ -229,7 +231,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
     @patch(
         "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
     )
-    @patch("core.models.ReportService.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_fetch_path_contents_with_files(self, report_mock, critical_files):
         variables = {
             "org": self.org.username,
@@ -298,7 +300,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
     @patch(
         "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
     )
-    @patch("core.models.ReportService.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_fetch_path_contents_with_files_and_path_prefix(
         self, report_mock, critical_files
     ):
@@ -359,7 +361,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
     @patch(
         "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
     )
-    @patch("core.models.ReportService.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_fetch_path_contents_with_files_and_search_value(
         self, report_mock, critical_files
     ):
@@ -415,7 +417,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
-    @patch("core.models.ReportService.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_fetch_path_contents_with_files_and_list_display_type(self, report_mock):
         variables = {
             "org": self.org.username,
@@ -506,7 +508,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
 
     @patch("services.path.provider_path_exists")
     @patch("services.path.ReportPaths.paths", new_callable=PropertyMock)
-    @patch("core.models.ReportService.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_fetch_path_contents_missing_coverage(
         self, report_mock, paths_mock, provider_path_exists_mock
     ):
@@ -541,7 +543,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
 
     @patch("services.path.provider_path_exists")
     @patch("services.path.ReportPaths.paths", new_callable=PropertyMock)
-    @patch("core.models.ReportService.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_fetch_path_contents_unknown_path(
         self, report_mock, paths_mock, provider_path_exists_mock
     ):

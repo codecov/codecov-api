@@ -88,7 +88,7 @@ class TestPathContents(TransactionTestCase):
         self.info = MockContext({"request": request})
         self.commit = CommitFactory()
 
-    @patch("services.archive.ReportService.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     @patch("services.path.provider_path_exists")
     @patch("services.path.ReportPaths.paths", new_callable=PropertyMock)
     async def test_missing_coverage(
@@ -100,7 +100,7 @@ class TestPathContents(TransactionTestCase):
         res = await resolve_path_contents(self.commit, self.info, "test/path")
         assert isinstance(res, MissingCoverage)
 
-    @patch("services.archive.ReportService.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     @patch("services.path.provider_path_exists")
     @patch("services.path.ReportPaths.paths", new_callable=PropertyMock)
     async def test_unknown_path(

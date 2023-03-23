@@ -7,9 +7,10 @@ from django.utils.functional import cached_property
 from shared.profiling import ProfilingSummaryDataAnalyzer
 from shared.yaml import UserYaml
 
+import services.report as report_service
 from core.models import Commit, Repository
 from profiling.models import ProfilingCommit
-from services.archive import ArchiveService, ReportService
+from services.archive import ArchiveService
 
 log = logging.getLogger(__name__)
 
@@ -80,7 +81,6 @@ class ProfilingSummary:
             return []
         commit_sha = self.commit_sha or profiling_commit.commit_sha
         commit = Commit.objects.get(commitid=commit_sha)
-        report_service = ReportService()
         report = report_service.build_report_from_commit(commit)
         if report is None:
             return []

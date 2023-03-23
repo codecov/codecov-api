@@ -54,7 +54,7 @@ def sample_report():
 class SaveCommitMeasurementsTest(TransactionTestCase):
     databases = {"default", "timeseries"}
 
-    @patch("services.archive.ReportService.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_insert_commit_measurement(self, mock_report):
         mock_report.return_value = sample_report()
 
@@ -81,7 +81,7 @@ class SaveCommitMeasurementsTest(TransactionTestCase):
         assert measurement.branch == "foo"
         assert measurement.value == 60.0
 
-    @patch("services.archive.ReportService.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_insert_commit_measurement_no_report(self, mock_report):
         mock_report.return_value = None
 
@@ -95,7 +95,7 @@ class SaveCommitMeasurementsTest(TransactionTestCase):
         )
         assert measurement_queryset.count() == 0
 
-    @patch("services.archive.ReportService.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_update_commit_measurement(self, mock_report):
         mock_report.return_value = sample_report()
 
@@ -132,7 +132,7 @@ class SaveCommitMeasurementsTest(TransactionTestCase):
         assert measurement.branch == "foo"
         assert measurement.value == 60.0
 
-    @patch("services.archive.ReportService.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_commit_measurement_insert_flags(self, mock_report):
         mock_report.return_value = sample_report()
 
@@ -186,7 +186,7 @@ class SaveCommitMeasurementsTest(TransactionTestCase):
         assert measurement.branch == "foo"
         assert measurement.value == 100.0
 
-    @patch("services.archive.ReportService.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_commit_measurement_update_flags(self, mock_report):
         mock_report.return_value = sample_report()
 
