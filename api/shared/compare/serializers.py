@@ -20,7 +20,7 @@ class LineComparisonSerializer(serializers.Serializer):
     is_diff = serializers.BooleanField()
     added = serializers.BooleanField()
     removed = serializers.BooleanField()
-    sessions = serializers.IntegerField()
+    sessions = serializers.IntegerField(source="hit_count")
 
 
 class FileComparisonSerializer(serializers.Serializer):

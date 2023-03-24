@@ -32,7 +32,8 @@ MockSegmentComparison = namedtuple(
     "MockSegmentComparison", ["header", "lines", "has_unintended_changes"]
 )
 MockLineComparison = namedtuple(
-    "MockLineComparison", ["number", "coverage", "value", "is_diff"]
+    "MockLineComparison",
+    ["number", "coverage", "value", "is_diff", "hit_count", "hit_session_ids"],
 )
 
 
@@ -580,6 +581,8 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                 },
                                 value=" line1",
                                 is_diff=False,
+                                hit_count=1,
+                                hit_session_ids=[0],
                             ),
                             MockLineComparison(
                                 number={
@@ -592,6 +595,8 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                 },
                                 value="+ line2",
                                 is_diff=True,
+                                hit_count=1,
+                                hit_session_ids=[0],
                             ),
                         ],
                     ),
@@ -619,6 +624,8 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                 },
                                 value=" line1",
                                 is_diff=True,
+                                hit_count=1,
+                                hit_session_ids=[0],
                             ),
                         ],
                     ),
@@ -646,6 +653,8 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                         baseCoverage
                                         headCoverage
                                         content
+                                        hitCount
+                                        hitUploadIds
                                     }
                                 }
                             }
@@ -673,6 +682,8 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                             "baseCoverage": "H",
                                             "headCoverage": "H",
                                             "content": "  line1",
+                                            "hitCount": 1,
+                                            "hitUploadIds": [0],
                                         },
                                         {
                                             "baseNumber": None,
@@ -680,6 +691,8 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                             "baseCoverage": None,
                                             "headCoverage": "H",
                                             "content": "+  line2",
+                                            "hitCount": 1,
+                                            "hitUploadIds": [0],
                                         },
                                     ],
                                 }
@@ -699,6 +712,8 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                             "baseCoverage": "M",
                                             "headCoverage": "H",
                                             "content": "  line1",
+                                            "hitCount": 1,
+                                            "hitUploadIds": [0],
                                         }
                                     ],
                                 }
@@ -748,6 +763,8 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                             },
                             value=" line1",
                             is_diff=True,
+                            hit_count=1,
+                            hit_session_ids=[0],
                         ),
                     ],
                 ),

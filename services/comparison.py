@@ -335,27 +335,50 @@ class LineComparison:
             else line_type(self.head_line[0]),
         }
 
-    @property
-    def sessions(self):
-        """
-        Returns the number of LineSessions in the head ReportLine such that
-        LineSession.coverage == 1 (indicating a hit).
-        """
+    @cached_property
+    def head_line_sessions(self) -> Optional[List[tuple]]:
         if self.head_line is None:
             return None
 
-        # an array of 1's (like [1, 1, ...]) of length equal to the number of sessions
-        # where each session's coverage == 1 (hit)
-        session_coverage = [
-            session[1] for session in self.head_line[2] if session[1] == 1
-        ]
-        if session_coverage:
-            return functools.reduce(lambda a, b: a + b, session_coverage)
+        # `head_line` is the tuple representation of a `shared.reports.types.ReportLine`
+        # it has the following shape:
+        # (coverage, type, sessions, messages, complexity, datapoints)
+
+        # each session is a tuple representation of a `shared.reports.types.LineSession`
+        # is has the following shape:
+        # (id, coverage, branches, partials, complexity)
+        sessions = self.head_line[2]
+
+        return sessions
+
+    @cached_property
+    def hit_count(self) -> Optional[int]:
+        if self.head_line_sessions is None:
+            return None
+
+        hit_count = 0
+        for (id, coverage, *rest) in self.head_line_sessions:
+            if coverage == 1:
+                hit_count += 1
+        if hit_count > 0:
+            return hit_count
+
+    @cached_property
+    def hit_session_ids(self) -> Optional[List[int]]:
+        if self.head_line_sessions is None:
+            return None
+
+        ids = []
+        for (id, coverage, *rest) in self.head_line_sessions:
+            if coverage == 1:
+                ids.append(id)
+        if len(ids) > 0:
+            return ids
 
 
 class Segment:
     """
-    A segment represents a continuous subset set of lines in a file where either
+    A segment represents a contiguous subset of lines in a file where either
     the coverage has changed or the code has changed (i.e. is part of a diff).
     """
 
