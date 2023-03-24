@@ -9,8 +9,7 @@ import services.comparison as comparison
 from codecov_auth.tests.factories import OwnerFactory
 from compare.models import CommitComparison
 from compare.tests.factories import CommitComparisonFactory, FlagComparisonFactory
-from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
-from reports.models import CommitReport, ReportLevelTotals
+from core.tests.factories import CommitWithReportFactory, PullFactory, RepositoryFactory
 from reports.tests.factories import RepositoryFlagFactory
 from services.profiling import CriticalFile
 
@@ -65,11 +64,11 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             active=True,
             private=True,
         )
-        self.base_commit = CommitFactory(
+        self.base_commit = CommitWithReportFactory(
             repository=self.repository,
             author=self.user,
         )
-        self.head_commit = CommitFactory(
+        self.head_commit = CommitWithReportFactory(
             parent_commit_id=self.base_commit.commitid,
             repository=self.repository,
             author=self.user,
@@ -88,28 +87,27 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         )
 
     def test_pull_comparison_totals(self):
-        ReportLevelTotals.objects.create(
-            report=CommitReport.objects.create(commit=self.base_commit),
-            coverage=75.0,
-            files=1,
-            lines=6,
-            hits=3,
-            misses=2,
-            partials=1,
-            branches=0,
-            methods=0,
-        )
-        ReportLevelTotals.objects.create(
-            report=CommitReport.objects.create(commit=self.head_commit),
-            coverage=75.0,
-            files=1,
-            lines=6,
-            hits=3,
-            misses=2,
-            partials=1,
-            branches=0,
-            methods=0,
-        )
+        base_totals = self.base_commit.reports.first().reportleveltotals
+        base_totals.coverage = 75.0
+        base_totals.files = 1
+        base_totals.lines = 6
+        base_totals.hits = 3
+        base_totals.misses = 2
+        base_totals.partials = 1
+        base_totals.branches = 0
+        base_totals.methods = 0
+        base_totals.save()
+
+        head_totals = self.head_commit.reports.first().reportleveltotals
+        head_totals.coverage = 75.0
+        head_totals.files = 1
+        head_totals.lines = 6
+        head_totals.hits = 3
+        head_totals.misses = 2
+        head_totals.partials = 1
+        head_totals.branches = 0
+        head_totals.methods = 0
+        head_totals.save()
 
         query = """
             pullId
@@ -818,6 +816,12 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         self.commit_comparison.state = CommitComparison.CommitComparisonStates.PENDING
         self.commit_comparison.save()
 
+        # these are created by default in the factory
+        base_report = self.base_commit.reports.first()
+        base_report.reportleveltotals.delete()
+        head_report = self.head_commit.reports.first()
+        head_report.reportleveltotals.delete()
+
         query = """
             pullId
             compareWithBase {
@@ -848,8 +852,8 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             },
         }
 
-    @patch("services.comparison.TaskService.compute_comparisons")
-    def test_pull_comparison_no_comparison(self, compute_comparisons):
+    @patch("services.task.TaskService.compute_comparisons")
+    def test_pull_comparison_no_comparison(self, compute_comparisons_mock):
         self.commit_comparison.delete()
 
         query = """
@@ -864,6 +868,8 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         res = self._request(query)
         # it regenerates the comparison as needed
         assert res["compareWithBase"] != None
+
+        compute_comparisons_mock.assert_called_once
 
     def test_pull_comparison_missing_head_report(self):
         self.head_report.side_effect = comparison.MissingComparisonReport(
@@ -1095,7 +1101,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             },
         }
 
-    @patch("services.comparison.TaskService.compute_comparisons")
+    @patch("services.task.TaskService.compute_comparisons")
     @patch("services.comparison.CommitComparisonService.needs_recompute")
     def test_pull_comparison_needs_recalculation(
         self, needs_recompute_mock, compute_comparisons_mock

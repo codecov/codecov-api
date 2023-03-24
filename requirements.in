@@ -10,6 +10,7 @@ django-dynamic-fixture
 django-filter
 djangorestframework
 drf-spectacular
+drf-spectacular-sidecar
 elastic-apm
 factory-boy
 fakeredis

@@ -1,5 +1,6 @@
 from ariadne import EnumType
 
+from codecov_auth.models import RepositoryToken
 from compare.commands.compare.interactors.fetch_impacted_files import (
     ImpactedFileParameter,
 )
@@ -37,4 +38,5 @@ enum_types = [
     EnumType("LoginProvider", LoginProvider),
     EnumType("ImpactedFileParameter", ImpactedFileParameter),
     EnumType("CommitState", Commit.CommitStates),
+    EnumType("RepositoryTokenType", RepositoryToken.TokenType),
 ]

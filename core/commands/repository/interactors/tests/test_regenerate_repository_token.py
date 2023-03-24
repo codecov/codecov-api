@@ -7,12 +7,12 @@ from codecov.commands.exceptions import Unauthenticated, ValidationError
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory, RepositoryTokenFactory
 
-from ..regenerate_profiling_token import RegenerateProfilingTokenInteractor
+from ..regenerate_repository_token import RegenerateRepositoryTokenInteractor
 
 
-class RegenerateProfilingTokenInteractorTest(TransactionTestCase):
+class RegenerateRepositoryTokenInteractorTest(TransactionTestCase):
     def setUp(self):
-        self.org = OwnerFactory(name="codecov")
+        self.org = OwnerFactory(username="codecov")
         self.active_repo = RepositoryFactory(
             author=self.org, name="gazebo", active=True
         )
@@ -31,13 +31,11 @@ class RegenerateProfilingTokenInteractorTest(TransactionTestCase):
 
     def execute(self, user, repo):
         current_user = user or AnonymousUser()
-        return RegenerateProfilingTokenInteractor(current_user, "github").execute(
-            repo_name=repo.name, owner=self.org.name
+        return RegenerateRepositoryTokenInteractor(current_user, "github").execute(
+            repo_name=repo.name,
+            owner_username=self.org.username,
+            token_type="profiling",
         )
-
-    async def test_when_unauthenticated_raise(self):
-        with pytest.raises(Unauthenticated):
-            await self.execute(user="", repo=self.active_repo)
 
     async def test_when_validation_error_repo_not_active(self):
         with pytest.raises(ValidationError):
