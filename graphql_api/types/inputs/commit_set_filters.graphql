@@ -2,4 +2,7 @@ input CommitsSetFilters {
   hideFailedCI: Boolean
   branchName: String
   pullId: Int
+  sha: String
+  message: String
+  states: [CommitState!]
 }
