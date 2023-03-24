@@ -24,7 +24,6 @@ from graphql_api.helpers.connection import (
 from graphql_api.types.comparison.comparison import (
     MissingBaseCommit,
     MissingBaseReport,
-    MissingHeadCommit,
     MissingHeadReport,
 )
 from graphql_api.types.enums import OrderingDirection, PathContentDisplayType
@@ -99,8 +98,6 @@ def resolve_list_uploads(commit: Commit, info, **kwargs):
 
 @commit_bindable.field("compareWithParent")
 async def resolve_compare_with_parent(commit: Commit, info, **kwargs):
-    if not commit:
-        return MissingHeadCommit()
     if not commit.parent_commit_id:
         return MissingBaseCommit()
 
@@ -109,16 +106,14 @@ async def resolve_compare_with_parent(commit: Commit, info, **kwargs):
         (commit.parent_commit_id, commit.commitid)
     )
 
-    is_valid_commit_comparison, invalid_reason = validate_commit_comparison(
-        commit_comparison=commit_comparison
-    )
+    comparison_error = validate_commit_comparison(commit_comparison=commit_comparison)
 
-    if not is_valid_commit_comparison:
-        return invalid_reason
+    if comparison_error:
+        return comparison_error
 
     if commit_comparison and commit_comparison.is_processed:
         user = info.context["request"].user
-        parent_commit = CommitLoader.loader(info, commit.repository_id).load(
+        parent_commit = await CommitLoader.loader(info, commit.repository_id).load(
             commit.parent_commit_id
         )
         comparison = Comparison(

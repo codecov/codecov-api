@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from ariadne import ObjectType, UnionType
 
-from graphql_api.types.errors.errors import ProviderError, QueryError, UnknownPath
+from graphql_api.types.errors.errors import ProviderError, UnknownPath
 from services.comparison import LineComparison, Segment
 
 
@@ -53,5 +53,3 @@ def resolve_segments_result_type(res, *_):
         return "ProviderError"
     elif isinstance(res, SegmentComparisons):
         return "SegmentComparisons"
-    elif isinstance(res, QueryError):
-        return "QueryError"

@@ -6,7 +6,7 @@ from shared.reports.types import ReportTotals
 from shared.torngit.exceptions import TorngitClientError
 
 from codecov.db import sync_to_async
-from graphql_api.types.errors import ProviderError, QueryError, UnknownPath
+from graphql_api.types.errors import ProviderError, UnknownPath
 from graphql_api.types.segment_comparison.segment_comparison import SegmentComparisons
 from services.comparison import Comparison, Segment
 from services.profiling import ProfilingSummary

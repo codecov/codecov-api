@@ -7,6 +7,7 @@ import yaml
 from django.test import TransactionTestCase
 from shared.reports.types import LineSession
 
+import services.comparison as comparison
 from codecov_auth.tests.factories import OwnerFactory
 from compare.models import CommitComparison
 from compare.tests.factories import CommitComparisonFactory
@@ -588,6 +589,92 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
         assert commit["compareWithParent"] == {"state": "pending"}
+
+    def test_fetch_commit_compare_no_parent(self):
+        self.commit.parent_commit_id = None
+        self.commit.save()
+
+        query = (
+            query_commit
+            % "compareWithParent { __typename ... on Comparison { state } }"
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        assert commit["compareWithParent"]["__typename"] == "MissingBaseCommit"
+
+    def test_compare_with_parent_comparison_missing_when_commit_comparison_state_is_errored(
+        self,
+    ):
+        CommitComparisonFactory(
+            base_commit=self.parent_commit,
+            compare_commit=self.commit,
+            state=CommitComparison.CommitComparisonStates.ERROR,
+        )
+        query = (
+            query_commit
+            % "compareWithParent { __typename ... on Comparison { state } }"
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        assert commit["compareWithParent"]["__typename"] == "MissingComparison"
+
+    def test_compare_with_parent_comparison_missing_head_report_with_successful_commit_comparison(
+        self,
+    ):
+        CommitComparisonFactory(
+            base_commit=self.parent_commit,
+            compare_commit=self.commit,
+            state=CommitComparison.CommitComparisonStates.PROCESSED,
+        )
+        self.head_report.side_effect = comparison.MissingComparisonReport(
+            "Missing head report"
+        )
+        query = (
+            query_commit
+            % "compareWithParent { __typename ... on Comparison { state } }"
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        assert commit["compareWithParent"]["__typename"] == "MissingHeadReport"
+
+    def test_compare_with_parent_comparison_missing_base_report_with_successful_commit_comparison(
+        self,
+    ):
+        CommitComparisonFactory(
+            base_commit=self.parent_commit,
+            compare_commit=self.commit,
+            state=CommitComparison.CommitComparisonStates.PROCESSED,
+        )
+        self.head_report.side_effect = comparison.MissingComparisonReport(
+            "Missing base report"
+        )
+        query = (
+            query_commit
+            % "compareWithParent { __typename ... on Comparison { state } }"
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        assert commit["compareWithParent"]["__typename"] == "MissingBaseReport"
 
     def test_fetch_commit_compare_no_parent(self):
         self.commit.parent_commit_id = None

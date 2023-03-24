@@ -83,12 +83,10 @@ async def resolve_compare_with_base(pull, info, **kwargs):
     comparison_loader = ComparisonLoader.loader(info, pull.repository_id)
     commit_comparison = await comparison_loader.load((pull.compared_to, pull.head))
 
-    is_valid_commit_comparison, invalid_reason = validate_commit_comparison(
-        commit_comparison=commit_comparison
-    )
+    comparison_error = validate_commit_comparison(commit_comparison=commit_comparison)
 
-    if not is_valid_commit_comparison:
-        return invalid_reason
+    if comparison_error:
+        return comparison_error
 
     if commit_comparison and commit_comparison.is_processed:
         user = info.context["request"].user
