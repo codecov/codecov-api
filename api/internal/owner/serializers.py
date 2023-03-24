@@ -7,13 +7,15 @@ from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 
 from billing.constants import (
-    CURRENTLY_OFFERED_PLANS,
     ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
     PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
+    SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
 )
+from billing.helpers import available_plans
 from codecov_auth.models import Owner
 from services.billing import BillingService
 from services.segment import SegmentService
+from services.sentry import send_user_webhook as send_sentry_webhook
 
 log = logging.getLogger(__name__)
 
@@ -119,10 +121,12 @@ class PlanSerializer(serializers.Serializer):
     quantity = serializers.IntegerField(required=False)
 
     def validate_value(self, value):
-        if value not in CURRENTLY_OFFERED_PLANS:
+        owner = self.context["view"].owner
+        plan_values = [plan["value"] for plan in available_plans(owner)]
+        if value not in plan_values:
             raise serializers.ValidationError(
                 f"Invalid value for plan: {value}; "
-                f"must be one of {CURRENTLY_OFFERED_PLANS.keys()}"
+                f"must be one of {plan_values.keys()}"
             )
         return value
 
@@ -133,15 +137,16 @@ class PlanSerializer(serializers.Serializer):
         plans_of_interest = {
             **PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
             **ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
+            **SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
         }
         if plan["value"] in plans_of_interest:
             if "quantity" not in plan:
                 raise serializers.ValidationError(
                     f"Field 'quantity' required for updating to paid plans"
                 )
-            if plan["quantity"] < 5:
+            if plan["quantity"] <= 1:
                 raise serializers.ValidationError(
-                    f"Quantity for paid plan must be greater than 5"
+                    f"Quantity for paid plan must be greater than 1"
                 )
             if plan["quantity"] < owner.activated_user_count:
                 raise serializers.ValidationError(
@@ -182,6 +187,7 @@ class StripeScheduledPhaseSerializer(serializers.Serializer):
         plans_of_interest = {
             **PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
             **ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
+            **SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
         }
         marketing_plan_name = plans_of_interest[plan_name]["billing_rate"]
         return marketing_plan_name
@@ -272,9 +278,14 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         if "pretty_plan" in validated_data:
+            desired_plan = validated_data.pop("pretty_plan")
             checkout_session_id_or_none = self._get_billing().update_plan(
-                instance, validated_data.pop("pretty_plan")
+                instance, desired_plan
             )
+
+            if desired_plan["value"] in SENTRY_PAID_USER_PLAN_REPRESENTATIONS:
+                current_user = self.context["view"].request.user
+                send_sentry_webhook(current_user, instance)
 
             if checkout_session_id_or_none is not None:
                 self.context["checkout_session_id"] = checkout_session_id_or_none

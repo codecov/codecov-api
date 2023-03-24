@@ -373,8 +373,11 @@ class UploadDownloadHandler(View):
         try:
             return archive_service.read_file(self.path)
 
-        except minio.error.NoSuchKey as e:
-            raise Http404("Requested report could not be found")
+        except minio.error.S3Error as e:
+            if e.code == "NoSuchKey":
+                raise Http404("Requested report could not be found")
+            else:
+                raise
 
     async def get(self, request, *args, **kwargs):
         self.read_params()

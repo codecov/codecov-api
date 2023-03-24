@@ -86,7 +86,7 @@ def _get_user_plan_from_task(task_name: str, task_kwargs: dict) -> str:
     return func_to_use(**task_kwargs)
 
 
-def route_task(name, args, kwargs, options, task=None, **kw):
+def route_task(name, args, kwargs, options={}, task=None, **kw):
     """Function to dynamically route tasks to the proper queue.
     Docs: https://docs.celeryq.dev/en/stable/userguide/routing.html#routers
     """

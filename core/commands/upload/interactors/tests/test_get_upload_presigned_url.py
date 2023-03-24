@@ -36,7 +36,16 @@ class GetUploadPresignedUrlInteractorTest(TransactionTestCase):
     async def test_noSuchKey_minio_error(
         self, create_raw_upload_presigned_get, get_archive_hash
     ):
-        create_raw_upload_presigned_get.side_effect = [minio.error.NoSuchKey]
+        create_raw_upload_presigned_get.side_effect = [
+            minio.error.S3Error(
+                code="NoSuchKey",
+                message=None,
+                resource=None,
+                request_id=None,
+                host_id=None,
+                response=None,
+            )
+        ]
         get_archive_hash.return_value = "path"
 
         with pytest.raises(Exception):

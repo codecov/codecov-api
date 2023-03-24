@@ -1,6 +1,5 @@
 from unittest.mock import PropertyMock, patch
 
-import minio
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
@@ -12,7 +11,7 @@ import services.comparison as comparison
 from api.shared.commit.serializers import ReportTotalsSerializer
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
-from services.archive import SerializableReport
+from services.report import SerializableReport
 
 
 class MockSerializableReport(SerializableReport):

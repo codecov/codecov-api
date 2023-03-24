@@ -25,6 +25,7 @@ class UploadFactory(DjangoModelFactory):
 
     build_code = factory.Sequence(lambda n: f"{n}")
     report = factory.SubFactory(CommitReportFactory)
+    state = "processed"
 
 
 class RepositoryFlagFactory(DjangoModelFactory):
@@ -56,6 +57,21 @@ class ReportLevelTotalsFactory(DjangoModelFactory):
     misses = factory.Faker("pyint")
     partials = factory.Faker("pyint")
     files = factory.Faker("pyint")
+
+
+class UploadLevelTotalsFactory(DjangoModelFactory):
+    class Meta:
+        model = models.UploadLevelTotals
+
+    report_session = factory.SubFactory(UploadFactory)
+
+
+class ReportDetailsFactory(DjangoModelFactory):
+    class Meta:
+        model = models.ReportDetails
+
+    report = factory.SubFactory(CommitReportFactory)
+    files_array = factory.LazyAttribute(lambda _: [])
 
 
 class UploadErrorFactory(DjangoModelFactory):

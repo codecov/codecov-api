@@ -111,7 +111,16 @@ class ProfilingSummaryTests(TestCase):
 
     @patch("services.archive.ArchiveService.read_file")
     def test_summary_data_not_found(self, read_file):
-        read_file.side_effect = [minio.error.NoSuchKey]
+        read_file.side_effect = [
+            minio.error.S3Error(
+                code="NoSuchKey",
+                message=None,
+                resource=None,
+                request_id=None,
+                host_id=None,
+                response=None,
+            )
+        ]
 
         pc = ProfilingCommitFactory(
             repository=self.repo,
@@ -204,7 +213,7 @@ class ProfilingSummaryTests(TestCase):
             ownerid=self.repo.author.ownerid,
         )
 
-    @patch("services.profiling.ReportService.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     @patch("services.profiling.UserYaml.get_final_yaml")
     @patch("services.profiling.ProfilingSummary.summary_data")
     @patch("services.profiling.ProfilingSummary.latest_profiling_commit")
@@ -239,7 +248,7 @@ class ProfilingSummaryTests(TestCase):
         )
         mocked_reportservice.assert_called()
 
-    @patch("services.profiling.ReportService.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     @patch("services.profiling.UserYaml.get_final_yaml")
     @patch("services.profiling.ProfilingSummary.summary_data")
     @patch("services.profiling.ProfilingSummary.latest_profiling_commit")
@@ -284,7 +293,7 @@ class ProfilingSummaryTests(TestCase):
         )
         mocked_reportservice.assert_called()
 
-    @patch("services.profiling.ReportService.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     @patch("services.profiling.UserYaml.get_final_yaml")
     @patch("services.profiling.ProfilingSummary.summary_data")
     @patch("services.profiling.ProfilingSummary.latest_profiling_commit")
@@ -318,7 +327,7 @@ class ProfilingSummaryTests(TestCase):
         mocked_useryaml.assert_called()
         mocked_reportservice.assert_called()
 
-    @patch("services.profiling.ReportService.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     @patch("services.profiling.UserYaml.get_final_yaml")
     @patch("services.profiling.ProfilingSummary.summary_data")
     @patch("services.profiling.ProfilingSummary.latest_profiling_commit")
@@ -362,7 +371,7 @@ class ProfilingSummaryTests(TestCase):
             "src/critical/very_important.json",
         ]
 
-    @patch("services.profiling.ReportService.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     @patch("services.profiling.UserYaml.get_final_yaml")
     @patch("services.profiling.ProfilingSummary.summary_data")
     @patch("services.profiling.ProfilingSummary.latest_profiling_commit")

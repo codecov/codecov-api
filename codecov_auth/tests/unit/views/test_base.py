@@ -9,7 +9,7 @@ from django.test import RequestFactory, TestCase, override_settings
 from freezegun import freeze_time
 from shared.license import LicenseInformation
 
-from codecov_auth.models import Owner
+from codecov_auth.models import Owner, OwnerProfile
 from codecov_auth.tests.factories import OwnerFactory, OwnerProfileFactory
 from codecov_auth.views.base import LoginMixin, StateMixin
 
@@ -557,7 +557,7 @@ class LoginMixinTests(TestCase):
             username="sample-owner-gh",
             service="github",
         )
-        OwnerProfileFactory(owner=owner, default_org=None)
+        # OwnerProfile implicitly has no default org
         url = f"{settings.CODECOV_DASHBOARD_URL}/{provider}"
 
         redirect_url = (
@@ -576,7 +576,9 @@ class LoginMixinTests(TestCase):
             service="github",
             organizations=[organization.ownerid],
         )
-        OwnerProfileFactory(owner=owner, default_org=organization)
+        OwnerProfile.objects.filter(owner_id=owner.ownerid).update(
+            default_org=organization
+        )
         url = f"{settings.CODECOV_DASHBOARD_URL}/{provider}"
 
         redirect_url = (
@@ -595,7 +597,9 @@ class LoginMixinTests(TestCase):
             service="gitlab",
             organizations=[organization.ownerid],
         )
-        OwnerProfileFactory(owner=owner, default_org=organization)
+        OwnerProfile.objects.filter(owner_id=owner.ownerid).update(
+            default_org=organization
+        )
         url = f"{settings.CODECOV_DASHBOARD_URL}/{provider}"
 
         mixin_instance_gitlab = LoginMixin()
@@ -617,7 +621,9 @@ class LoginMixinTests(TestCase):
             service="bitbucket",
             organizations=[organization.ownerid],
         )
-        OwnerProfileFactory(owner=owner, default_org=organization)
+        OwnerProfile.objects.filter(owner_id=owner.ownerid).update(
+            default_org=organization
+        )
         url = f"{settings.CODECOV_DASHBOARD_URL}/{provider}"
 
         mixin_instance_bitbucket = LoginMixin()
@@ -641,7 +647,11 @@ class LoginMixinTests(TestCase):
             service="github",
             organizations=[organization.ownerid],
         )
-        OwnerProfileFactory(owner=owner, default_org=organization)
+        # OwnerProfiles get created automatically, so we need to fetch and update the entry manually
+        OwnerProfile.objects.filter(owner_id=owner.ownerid).update(
+            default_org=organization
+        )
+
         url = f"{settings.CODECOV_DASHBOARD_URL}/{provider}"
 
         redirect_url = (

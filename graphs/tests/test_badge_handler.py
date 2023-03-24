@@ -7,7 +7,6 @@ from shared.reports.types import ReportLine, ReportTotals
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import BranchFactory, CommitFactory, RepositoryFactory
-from services.archive import ReportService
 
 
 def sample_report():

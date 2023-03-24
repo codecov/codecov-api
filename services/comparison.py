@@ -1,6 +1,5 @@
 import asyncio
 import copy
-import enum
 import functools
 import json
 import logging
@@ -18,14 +17,14 @@ from shared.helpers.yaml import walk
 from shared.reports.types import ReportTotals
 from shared.utils.merge import LineType, line_type
 
+import services.report as report_service
 from compare.models import CommitComparison
 from core.models import Commit
 from reports.models import CommitReport, ReportDetails
 from services import ServiceException
-from services.archive import ArchiveService, ReportService
+from services.archive import ArchiveService
 from services.redis_configuration import get_redis_connection
 from services.repo_providers import RepoProviderService
-from services.task import TaskService
 from utils.config import get_config
 
 log = logging.getLogger(__name__)
@@ -603,9 +602,6 @@ class FileComparison:
         return Segment.segments(self)
 
 
-report_service = ReportService()
-
-
 class Comparison(object):
     def __init__(self, user, base_commit, head_commit):
         self.user = user
@@ -671,15 +667,21 @@ class Comparison(object):
     def base_report(self):
         try:
             return report_service.build_report_from_commit(self.base_commit)
-        except minio.error.NoSuchKey:
-            raise MissingComparisonReport("Missing base report")
+        except minio.error.S3Error as e:
+            if e.code == "NoSuchKey":
+                raise MissingComparisonReport("Missing base report")
+            else:
+                raise e
 
     @cached_property
     def head_report(self):
         try:
             report = report_service.build_report_from_commit(self.head_commit)
-        except minio.error.NoSuchKey:
-            raise MissingComparisonReport("Missing head report")
+        except minio.error.S3Error as e:
+            if e.code == "NoSuchKey":
+                raise MissingComparisonReport("Missing head report")
+            else:
+                raise e
 
         report.apply_diff(self.git_comparison["diff"])
         return report

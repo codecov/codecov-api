@@ -20,7 +20,6 @@ from core.models import Commit
 from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
 from reports.models import ReportDetails
 from reports.tests.factories import CommitReportFactory
-from services.archive import SerializableReport
 from services.comparison import (
     CommitComparisonService,
     Comparison,
@@ -34,6 +33,7 @@ from services.comparison import (
     MissingComparisonReport,
     PullRequestComparison,
 )
+from services.report import SerializableReport
 
 # Pulled from core.tests.factories.CommitFactory files.
 # Contents don't actually matter, it's just for providing a format
@@ -1186,14 +1186,14 @@ class PullRequestComparisonTests(TestCase):
 
 
 @patch("services.comparison.Comparison.git_comparison", new_callable=PropertyMock)
-@patch("services.archive.ReportService.build_report_from_commit")
+@patch("services.report.build_report_from_commit")
 class ComparisonHeadReportTests(TestCase):
     def setUp(self):
         owner = OwnerFactory()
         base, head = CommitFactory(author=owner), CommitFactory(author=owner)
         self.comparison = Comparison(base, head, owner)
 
-    @patch("services.archive.SerializableReport.apply_diff")
+    @patch("services.report.SerializableReport.apply_diff")
     def test_head_report_calls_apply_diff(
         self, apply_diff_mock, build_report_from_commit_mock, git_comparison_mock
     ):
@@ -1212,7 +1212,14 @@ class ComparisonHeadReportTests(TestCase):
     def test_head_report_and_base_report_translates_nosuchkey_into_missingcomparisonreport(
         self, build_report_from_commit_mock, git_comparison_mock
     ):
-        build_report_from_commit_mock.side_effect = minio.error.NoSuchKey()
+        build_report_from_commit_mock.side_effect = minio.error.S3Error(
+            code="NoSuchKey",
+            message=None,
+            resource=None,
+            request_id=None,
+            host_id=None,
+            response=None,
+        )
         with self.assertRaises(MissingComparisonReport):
             self.comparison.head_report
 
