@@ -68,8 +68,8 @@ class TestMeasurement(TransactionTestCase, GraphQLTestHelper):
         repository_coverage_measurements_with_fallback.assert_called_once_with(
             self.repo,
             Interval.INTERVAL_1_DAY,
-            datetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
-            datetime(2022, 1, 3, 0, 0, 0, tzinfo=timezone.utc),
+            start_date=datetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+            end_date=datetime(2022, 1, 3, 0, 0, 0, tzinfo=timezone.utc),
             branch=None,
         )
 
@@ -96,8 +96,8 @@ class TestMeasurement(TransactionTestCase, GraphQLTestHelper):
         repository_coverage_measurements_with_fallback.assert_called_once_with(
             self.repo,
             Interval.INTERVAL_1_DAY,
-            datetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
-            datetime(2022, 1, 3, 0, 0, 0, tzinfo=timezone.utc),
+            start_date=datetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+            end_date=datetime(2022, 1, 3, 0, 0, 0, tzinfo=timezone.utc),
             branch=None,
         )
 
@@ -109,7 +109,7 @@ class TestMeasurement(TransactionTestCase, GraphQLTestHelper):
         repository_coverage_measurements_with_fallback.assert_called_once_with(
             self.repo,
             Interval.INTERVAL_1_DAY,
-            datetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
-            datetime(2022, 1, 3, 0, 0, 0, tzinfo=timezone.utc),
+            start_date=datetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+            end_date=datetime(2022, 1, 3, 0, 0, 0, tzinfo=timezone.utc),
             branch="foo",
         )

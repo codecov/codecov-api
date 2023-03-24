@@ -277,21 +277,21 @@ def resolve_measurements(
     repository: Repository,
     info,
     interval: Interval,
-    after: datetime,
-    before: datetime,
+    before: Optional[datetime] = None,
+    after: Optional[datetime] = None,
     branch: Optional[str] = None,
 ) -> Iterable[MeasurementSummary]:
     return fill_sparse_measurements(
         timeseries_helpers.repository_coverage_measurements_with_fallback(
             repository,
             interval,
-            after,
-            before,
+            start_date=after,
+            end_date=before,
             branch=branch,
         ),
         interval,
-        after,
-        before,
+        start_date=after,
+        end_date=before,
     )
 
 
