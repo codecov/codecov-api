@@ -47,6 +47,7 @@ query ImpactedFiles(
                 percentCovered
                 }
                 changeCoverage
+                missesInComparison
             }
           }
         }
@@ -68,51 +69,6 @@ query ImpactedFiles(
         compareWithParent {
           ... on Comparison {
             directChangedFilesCount
-          }
-        }
-      }
-    }
-  }
-}
-"""
-
-query_impacted_file = """
-query ImpactedFile(
-    $org: String!
-    $repo: String!
-    $commit: String!
-    $path: String!
-) {
-  owner(username: $org) {
-    repository(name: $repo) {
-      commit(id: $commit) {
-        compareWithParent {
-          ... on Comparison {
-            impactedFile(path: $path) {
-                hashedPath
-                headName
-                baseName
-                baseCoverage {
-                percentCovered
-                }
-                headCoverage {
-                percentCovered
-                }
-                patchCoverage {
-                percentCovered
-                }
-                segments {
-                ... on SegmentComparisons {
-                    results {
-                    hasUnintendedChanges
-                    }
-                }
-                ... on ResolverError {
-                    message
-                }
-                }
-                missesInComparison
-            }
           }
         }
       }
@@ -323,6 +279,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                     },
                                     "patchCoverage": {"percentCovered": 50.0},
                                     "changeCoverage": 44.047619047619044,
+                                    "missesInComparison": 1,
                                 },
                                 {
                                     "fileName": "fileB",
@@ -340,6 +297,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                     },
                                     "patchCoverage": {"percentCovered": 100.0},
                                     "changeCoverage": 44.047619047619044,
+                                    "missesInComparison": 1,
                                 },
                             ],
                         }
@@ -381,6 +339,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                     },
                                     "patchCoverage": {"percentCovered": 50.0},
                                     "changeCoverage": 44.047619047619044,
+                                    "missesInComparison": 1,
                                 },
                                 {
                                     "fileName": "fileB",
@@ -398,6 +357,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                     },
                                     "patchCoverage": {"percentCovered": 100.0},
                                     "changeCoverage": 44.047619047619044,
+                                    "missesInComparison": 1,
                                 },
                             ],
                         }
