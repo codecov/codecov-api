@@ -1,0 +1,6 @@
+enum CommitState {
+    COMPLETE
+    PENDING
+    ERROR
+    SKIPPED
+}

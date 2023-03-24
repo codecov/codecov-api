@@ -4,6 +4,7 @@ from codecov_auth.models import RepositoryToken
 from compare.commands.compare.interactors.fetch_impacted_files import (
     ImpactedFileParameter,
 )
+from core.models import Commit
 from timeseries.models import Interval as MeasurementInterval
 
 from .enums import (
@@ -36,5 +37,6 @@ enum_types = [
     EnumType("MeasurementInterval", MeasurementInterval),
     EnumType("LoginProvider", LoginProvider),
     EnumType("ImpactedFileParameter", ImpactedFileParameter),
+    EnumType("CommitState", Commit.CommitStates),
     EnumType("RepositoryTokenType", RepositoryToken.TokenType),
 ]
