@@ -65,9 +65,6 @@ def resolve_hashed_path(impacted_file: ImpactedFile, info) -> str:
 def resolve_segments(
     impacted_file: ImpactedFile, info, filters=None
 ) -> Union[UnknownPath, ProviderError, SegmentComparisons]:
-    if "comparison" not in info.context:
-        return QueryError("cannot query segments in this context")
-
     if filters is None:
         filters = {}
 

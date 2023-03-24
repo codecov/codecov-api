@@ -26,26 +26,28 @@ query ImpactedFiles(
     repository(name: $repo) {
       commit(id: $commit) {
         compareWithParent {
-          impactedFilesCount
-          indirectChangedFilesCount
-          impactedFiles {
-            fileName
-            headName
-            baseName
-            isNewFile
-            isRenamedFile
-            isDeletedFile
-            isCriticalFile
-            baseCoverage {
-              percentCovered
+          ... on Comparison {
+            impactedFilesCount
+            indirectChangedFilesCount
+            impactedFiles {
+                fileName
+                headName
+                baseName
+                isNewFile
+                isRenamedFile
+                isDeletedFile
+                isCriticalFile
+                baseCoverage {
+                percentCovered
+                }
+                headCoverage {
+                percentCovered
+                }
+                patchCoverage {
+                percentCovered
+                }
+                changeCoverage
             }
-            headCoverage {
-              percentCovered
-            }
-            patchCoverage {
-              percentCovered
-            }
-            changeCoverage
           }
         }
       }
@@ -64,7 +66,9 @@ query ImpactedFiles(
     repository(name: $repo) {
       commit(id: $commit) {
         compareWithParent {
-          directChangedFilesCount
+          ... on Comparison {
+            directChangedFilesCount
+          }
         }
       }
     }
@@ -83,30 +87,32 @@ query ImpactedFile(
     repository(name: $repo) {
       commit(id: $commit) {
         compareWithParent {
-          impactedFile(path: $path) {
-            hashedPath
-            headName
-            baseName
-            baseCoverage {
-              percentCovered
-            }
-            headCoverage {
-              percentCovered
-            }
-            patchCoverage {
-              percentCovered
-            }
-            segments {
-              ... on SegmentComparisons {
-                results {
-                  hasUnintendedChanges
+          ... on Comparison {
+            impactedFile(path: $path) {
+                hashedPath
+                headName
+                baseName
+                baseCoverage {
+                percentCovered
                 }
-              }
-              ... on ResolverError {
-                message
-              }
+                headCoverage {
+                percentCovered
+                }
+                patchCoverage {
+                percentCovered
+                }
+                segments {
+                ... on SegmentComparisons {
+                    results {
+                    hasUnintendedChanges
+                    }
+                }
+                ... on ResolverError {
+                    message
+                }
+                }
+                missesInComparison
             }
-            missesInComparison
           }
         }
       }
@@ -270,6 +276,20 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
         )
         self.comparison_report = ComparisonReport(self.comparison)
 
+        # mock reports for all tests in this class
+        self.head_report_patcher = patch(
+            "services.comparison.Comparison.head_report", new_callable=PropertyMock
+        )
+        self.head_report = self.head_report_patcher.start()
+        self.head_report.return_value = None
+        self.addCleanup(self.head_report_patcher.stop)
+        self.base_report_patcher = patch(
+            "services.comparison.Comparison.base_report", new_callable=PropertyMock
+        )
+        self.base_report = self.base_report_patcher.start()
+        self.base_report.return_value = None
+        self.addCleanup(self.base_report_patcher.stop)
+
     @patch("services.archive.ArchiveService.read_file")
     def test_fetch_impacted_files(self, read_file):
         read_file.return_value = mock_data_from_archive
@@ -380,39 +400,6 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                     "changeCoverage": 44.047619047619044,
                                 },
                             ],
-                        }
-                    }
-                }
-            }
-        }
-
-    @patch("services.archive.ArchiveService.read_file")
-    def test_fetch_impacted_file_without_segments(self, read_file):
-        read_file.return_value = mock_data_from_archive
-        variables = {
-            "org": self.org.username,
-            "repo": self.repo.name,
-            "commit": self.commit.commitid,
-            "path": "fileB",
-        }
-        data = self.gql_request(query_impacted_file, variables=variables)
-        assert data == {
-            "owner": {
-                "repository": {
-                    "commit": {
-                        "compareWithParent": {
-                            "impactedFile": {
-                                "headName": "fileB",
-                                "baseName": "fileB",
-                                "hashedPath": hashlib.md5("fileB".encode()).hexdigest(),
-                                "baseCoverage": {"percentCovered": 41.666666666666664},
-                                "headCoverage": {"percentCovered": 85.71428571428571},
-                                "patchCoverage": {"percentCovered": 100.0},
-                                "segments": {
-                                    "message": "cannot query segments in this context"
-                                },
-                                "missesInComparison": 1,
-                            }
                         }
                     }
                 }

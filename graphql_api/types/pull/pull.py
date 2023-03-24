@@ -1,10 +1,12 @@
 from ariadne import ObjectType
 
 from codecov.db import sync_to_async
-from compare.models import CommitComparison
 from core.models import Pull
 from graphql_api.actions.commits import pull_commits
-from graphql_api.actions.comparison import validate_comparison
+from graphql_api.actions.comparison import (
+    validate_commit_comparison,
+    validate_comparison,
+)
 from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.comparison import ComparisonLoader
 from graphql_api.dataloader.owner import OwnerLoader
@@ -12,7 +14,6 @@ from graphql_api.helpers.connection import queryset_to_connection_sync
 from graphql_api.types.comparison.comparison import (
     MissingBaseCommit,
     MissingBaseReport,
-    MissingComparison,
     MissingHeadCommit,
     MissingHeadReport,
 )
@@ -82,23 +83,12 @@ async def resolve_compare_with_base(pull, info, **kwargs):
     comparison_loader = ComparisonLoader.loader(info, pull.repository_id)
     commit_comparison = await comparison_loader.load((pull.compared_to, pull.head))
 
-    if not commit_comparison:
-        return MissingComparison()
+    is_valid_commit_comparison, invalid_reason = validate_commit_comparison(
+        commit_comparison=commit_comparison
+    )
 
-    if (
-        commit_comparison.error
-        == CommitComparison.CommitComparisonErrors.MISSING_BASE_REPORT.value
-    ):
-        return MissingBaseReport()
-
-    if (
-        commit_comparison.error
-        == CommitComparison.CommitComparisonErrors.MISSING_HEAD_REPORT.value
-    ):
-        return MissingHeadReport()
-
-    if commit_comparison.state == CommitComparison.CommitComparisonStates.ERROR:
-        return MissingComparison()
+    if not is_valid_commit_comparison:
+        return invalid_reason
 
     if commit_comparison and commit_comparison.is_processed:
         user = info.context["request"].user
