@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List
 
 import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
@@ -8,7 +8,7 @@ import services.path as path_service
 import services.report as report_service
 from codecov.db import sync_to_async
 from core.models import Commit
-from graphql_api.actions.commits import commit_uploads, get_parent_commit
+from graphql_api.actions.commits import commit_uploads
 from graphql_api.actions.comparison import (
     validate_commit_comparison,
     validate_comparison,
@@ -118,8 +118,9 @@ async def resolve_compare_with_parent(commit: Commit, info, **kwargs):
 
     if commit_comparison and commit_comparison.is_processed:
         user = info.context["request"].user
-        # Commit loader instead
-        parent_commit = await get_parent_commit(commit=commit)
+        parent_commit = CommitLoader.loader(info, commit.repository_id).load(
+            commit.parent_commit_id
+        )
         comparison = Comparison(
             user=user, base_commit=parent_commit, head_commit=commit
         )

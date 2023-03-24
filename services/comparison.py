@@ -603,7 +603,6 @@ class FileComparison:
 
 
 class Comparison(object):
-    # TODO: Modify this fn to take commit id's rather than the whole commit so it is initialized here
     def __init__(self, user, base_commit, head_commit):
         self.user = user
         self._base_commit = base_commit

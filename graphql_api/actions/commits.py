@@ -1,6 +1,5 @@
 from django.db.models import QuerySet
 
-from codecov.db import sync_to_async
 from core.models import Commit, Pull
 from reports.models import ReportSession
 
@@ -38,11 +37,4 @@ def commit_uploads(commit: Commit) -> QuerySet[ReportSession]:
 
     return (uploaded.prefetch_related("flags")).union(
         carried_forward.prefetch_related("flags")
-    )
-
-
-@sync_to_async
-def get_parent_commit(commit: Commit) -> Commit:
-    return Commit.objects.defer("report").get(
-        repository=commit.repository, commitid=commit.parent_commit_id
     )
