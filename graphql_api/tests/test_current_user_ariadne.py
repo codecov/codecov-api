@@ -148,6 +148,39 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, user=current_user)
         assert data == {"me": {"privateAccess": True}}
 
+    def test_fetch_terms_agreement_and_business_email_when_owner_profile_is_not_null(
+        self,
+    ):
+        current_user = OwnerFactory(
+            private_access=True, business_email="testEmail@gmail.com"
+        )
+        current_user.profile.terms_agreement = True
+        current_user.profile.save()
+        query = """{
+            me {
+                businessEmail
+                termsAgreement
+            }
+        }
+        """
+        data = self.gql_request(query, user=current_user)
+        assert data == {
+            "me": {"businessEmail": "testEmail@gmail.com", "termsAgreement": True}
+        }
+
+    def test_fetch_terms_agreement_and_business_email_when_owner_profile_is_null(self):
+        current_user = OwnerFactory(private_access=True, business_email=None)
+        current_user.profile.delete()
+        query = """{
+            me {
+                businessEmail
+                termsAgreement
+            }
+        }
+        """
+        data = self.gql_request(query, user=current_user)
+        assert data == {"me": {"businessEmail": None, "termsAgreement": None}}
+
     def test_fetching_viewable_repositories(self):
         org_1 = OwnerFactory()
         org_2 = OwnerFactory()

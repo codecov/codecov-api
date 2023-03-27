@@ -49,6 +49,12 @@ class OwnerCommandsTest(TransactionTestCase):
         self.command.update_profile(name=name)
         interactor_mock.assert_called_once_with(name=name)
 
+    @patch("codecov_auth.commands.owner.owner.SaveTermsAgreementInteractor.execute")
+    def test_save_terms_agreement_delegate_to_interactor(self, interactor_mock):
+        input_dict = {"email": "a@a.com", "termsAgreement": False}
+        self.command.save_terms_agreement(input_dict)
+        interactor_mock.assert_called_once_with(input_dict)
+
     @patch(
         "codecov_auth.commands.owner.owner.UpdateDefaultOrganizationInteractor.execute"
     )

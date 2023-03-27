@@ -21,8 +21,9 @@ type Mutation {
   ): RegenerateOrgUploadTokenPayload
   deleteFlag(input: DeleteFlagInput!): DeleteFlagPayload
   saveSentryState(input: SaveSentryStateInput!): SaveSentryStatePayload
-
+  saveTermsAgreement(input: SaveTermsAgreementInput!): SaveTermsAgreementPayload
   regenerateProfilingToken(
     input: RegenerateProfilingTokenInput!
-  ): RegenerateProfilingTokenPayload @deprecated(reason: "use regenerateRepositoryToken")
+  ): RegenerateProfilingTokenPayload
+    @deprecated(reason: "use regenerateRepositoryToken")
 }
