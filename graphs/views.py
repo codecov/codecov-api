@@ -1,4 +1,3 @@
-import json
 import logging
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -10,9 +9,9 @@ from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from shared.reports.resources import Report
 
+import services.report as report_service
 from api.shared.mixins import RepoPropertyMixin
-from codecov_auth.models import Owner
-from core.models import Branch, Pull, Repository
+from core.models import Branch, Pull
 from graphs.settings import settings
 
 from .helpers.badge import format_coverage_precision, get_badge
@@ -213,11 +212,8 @@ class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
             raise NotFound(
                 "Not found. Note: private repositories require ?token arguments"
             )
-        report = Report(
-            files=commit.report["files"],
-            sessions=commit.report["sessions"],
-            totals=commit.totals,
-        )
+
+        report = report_service.build_report_from_commit(commit)
         return report.flare(None, [70, 100])
 
     def get_pull_flare(self, pullid):

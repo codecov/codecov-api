@@ -12,8 +12,8 @@ import services.comparison as comparison
 from api.shared.commit.serializers import ReportTotalsSerializer
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
-from services.archive import SerializableReport
 from services.components import Component
+from services.report import SerializableReport
 
 
 def sample_report1():

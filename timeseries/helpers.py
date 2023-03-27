@@ -1,6 +1,6 @@
 import math
 from datetime import datetime, timedelta
-from typing import Iterable
+from typing import Iterable, Optional
 
 from django.conf import settings
 from django.db import connections
@@ -20,10 +20,10 @@ from django.db.models.fields.json import KeyTextTransform
 from django.db.models.functions import Cast
 from django.utils import timezone
 
+import services.report as report_service
 from codecov_auth.models import Owner
 from core.models import Commit, Repository
 from reports.models import RepositoryFlag
-from services.archive import ReportService
 from services.task import TaskService
 from timeseries.models import (
     Dataset,
@@ -47,9 +47,7 @@ def save_commit_measurements(commit: Commit) -> None:
       - the report total coverage
       - the flag coverage for each relevant flag
     """
-    report_service = ReportService()
     report = report_service.build_report_from_commit(commit)
-
     if not report:
         return
 
@@ -159,35 +157,40 @@ def aggregate_measurements(
 
 def coverage_measurements(
     interval: Interval,
-    start_date: datetime,
-    end_date: datetime,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
     **filters,
 ):
+    timestamp_filters = {}
+    if start_date is not None:
+        timestamp_filters["timestamp_bin__gte"] = start_date
+    if end_date is not None:
+        timestamp_filters["timestamp_bin__lte"] = end_date
+
     queryset = (
         MeasurementSummary.agg_by(interval)
-        .filter(
-            name=MeasurementName.COVERAGE.value,
-            timestamp_bin__gte=start_date,
-            timestamp_bin__lte=end_date,
-        )
+        .filter(name=MeasurementName.COVERAGE.value, **timestamp_filters)
         .filter(**filters)
     )
 
-    # The first measurement of the specified range (`start_date` through `end_date`)
-    # may be missing the first datapoint.  In order for consumers of this API to have
-    # usable data to show we can carry an older datapoint forward to the first time bin.
-    # Including this older datapoint in the result set makes that possible.
-    older = (
-        MeasurementSummary.agg_by(interval)
-        .filter(
-            name=MeasurementName.COVERAGE.value,
-            timestamp_bin__lt=start_date,
+    if start_date:
+        # The first measurement of the specified range (`start_date` through `end_date`)
+        # may be missing the first datapoint.  In order for consumers of this API to have
+        # usable data to show we can carry an older datapoint forward to the first time bin.
+        # Including this older datapoint in the result set makes that possible.
+        older = (
+            MeasurementSummary.agg_by(interval)
+            .filter(
+                name=MeasurementName.COVERAGE.value,
+                timestamp_bin__lt=start_date,
+            )
+            .filter(**filters)
         )
-        .filter(**filters)
-    )
-    older = aggregate_measurements(older).order_by("-timestamp_bin")[:1]
+        older = aggregate_measurements(older).order_by("-timestamp_bin")[:1]
 
-    return older.union(aggregate_measurements(queryset)).order_by("timestamp_bin")
+        return older.union(aggregate_measurements(queryset)).order_by("timestamp_bin")
+    else:
+        return aggregate_measurements(queryset).order_by("timestamp_bin")
 
 
 def trigger_backfill(dataset: Dataset):
@@ -232,18 +235,18 @@ def aligned_start_date(interval: Interval, date: datetime) -> datetime:
     # TimescaleDB aligns time buckets starting on 2000-01-03)
     aligning_date = datetime(2000, 1, 3, tzinfo=timezone.utc)
 
-    # number of full intervals between aligning date and the requested `after` date
+    # number of full intervals between aligning date and the given date
     intervals_before = math.floor((date - aligning_date) / delta)
 
-    # date of time bucket that contains given start date
+    # starting date of time bucket that contains the given date
     return aligning_date + (intervals_before * delta)
 
 
 def fill_sparse_measurements(
     measurements: Iterable[dict],
     interval: Interval,
-    start_date: datetime,
-    end_date: datetime,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
 ) -> Iterable[dict]:
     """
     Fill in sparse array of measurements with values such that we
@@ -254,9 +257,15 @@ def fill_sparse_measurements(
         measurement["timestamp_bin"].replace(tzinfo=timezone.utc): measurement
         for measurement in measurements
     }
-
+    timestamps = sorted(by_timestamp.keys())
     delta = interval_deltas[interval]
+
+    if start_date is None:
+        start_date = timestamps[0]
     start_date = aligned_start_date(interval, start_date)
+
+    if end_date is None:
+        end_date = datetime.now().replace(tzinfo=timezone.utc)
 
     intervals = []
 
@@ -274,10 +283,8 @@ def fill_sparse_measurements(
                     "max": None,
                 }
             )
-
         current_date += delta
 
-    timestamps = sorted(by_timestamp.keys())
     if len(timestamps) > 0:
         oldest_date = timestamps[0]
         if (
@@ -298,29 +305,34 @@ def fill_sparse_measurements(
 
 def coverage_fallback_query(
     interval: Interval,
-    start_date: datetime,
-    end_date: datetime,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
     **filters,
 ):
     """
     Query for coverage timeseries directly from the database
     """
-    commits = Commit.objects.filter(
-        timestamp__gte=start_date,
-        timestamp__lte=end_date,
-    ).filter(**filters)
+    timestamp_filters = {}
+    if start_date is not None:
+        timestamp_filters["timestamp__gte"] = start_date
+    if end_date is not None:
+        timestamp_filters["timestamp__lte"] = end_date
+    commits = Commit.objects.filter(**timestamp_filters).filter(**filters)
     commits = _commits_coverage(commits, interval)
 
-    # The first measurement of the specified range (`start_date` through `end_date`)
-    # may be missing the first datapoint.  In order for consumers of this API to have
-    # usable data to show we can carry an older datapoint forward to the first time bin.
-    # Including this older datapoint in the result set makes that possible.
-    older = Commit.objects.filter(
-        timestamp__lt=start_date,
-    ).filter(**filters)
-    older = _commits_coverage(older, interval).order_by("-timestamp_bin")[:1]
+    if start_date:
+        # The first measurement of the specified range (`start_date` through `end_date`)
+        # may be missing the first datapoint.  In order for consumers of this API to have
+        # usable data to show we can carry an older datapoint forward to the first time bin.
+        # Including this older datapoint in the result set makes that possible.
+        older = Commit.objects.filter(
+            timestamp__lt=start_date,
+        ).filter(**filters)
+        older = _commits_coverage(older, interval).order_by("-timestamp_bin")[:1]
 
-    return older.union(commits).order_by("timestamp_bin")
+        return older.union(commits).order_by("timestamp_bin")
+    else:
+        return commits.order_by("timestamp_bin")
 
 
 def _commits_coverage(
@@ -358,8 +370,8 @@ def _commits_coverage(
 def repository_coverage_measurements_with_fallback(
     repository: Repository,
     interval: Interval,
-    start_date: datetime,
-    end_date: datetime,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
     branch: str = None,
 ):
     """
@@ -378,8 +390,8 @@ def repository_coverage_measurements_with_fallback(
         # timeseries data is ready
         return coverage_measurements(
             interval,
-            start_date,
-            end_date,
+            start_date=start_date,
+            end_date=end_date,
             owner_id=repository.author_id,
             repo_id=repository.pk,
             branch=branch or repository.branch,
@@ -396,8 +408,8 @@ def repository_coverage_measurements_with_fallback(
         # we're still backfilling or timeseries is disabled
         return coverage_fallback_query(
             interval,
-            start_date,
-            end_date,
+            start_date=start_date,
+            end_date=end_date,
             repository_id=repository.pk,
             branch=branch or repository.branch,
         )
@@ -430,8 +442,8 @@ def owner_coverage_measurements_with_fallback(
         # timeseries data is ready
         return coverage_measurements(
             interval,
-            start_date,
-            end_date,
+            start_date=start_date,
+            end_date=end_date,
             owner_id=owner.pk,
             repo_id__in=repo_ids,
         )
@@ -452,7 +464,7 @@ def owner_coverage_measurements_with_fallback(
         # we're still backfilling or timeseries is disabled
         return coverage_fallback_query(
             interval,
-            start_date,
-            end_date,
+            start_date=start_date,
+            end_date=end_date,
             repository_id__in=repo_ids,
         )

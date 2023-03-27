@@ -109,8 +109,8 @@ def resolve_measurements(
     owner: Owner,
     info,
     interval: Interval,
-    after: datetime,
-    before: datetime,
+    after: Optional[datetime] = None,
+    before: Optional[datetime] = None,
     repos: Optional[List[str]] = None,
 ) -> Iterable[MeasurementSummary]:
     user = info.context["request"].user
@@ -126,12 +126,12 @@ def resolve_measurements(
             owner,
             list(repo_ids),
             interval,
-            after,
-            before,
+            start_date=after,
+            end_date=before,
         ),
         interval,
-        after,
-        before,
+        start_date=after,
+        end_date=before,
     )
 
 

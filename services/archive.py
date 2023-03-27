@@ -7,11 +7,7 @@ from uuid import uuid4
 
 from django.conf import settings
 from django.utils import timezone
-from django.utils.functional import cached_property
 from minio import Minio
-from shared.helpers.flag import Flag
-from shared.reports.readonly import ReadOnlyReport as SharedReadOnlyReport
-from shared.reports.resources import Report
 
 from services.storage import StorageService
 from utils.config import get_config
@@ -33,51 +29,12 @@ class MinioEndpoints(Enum):
         return self.value.format(**kwaargs)
 
 
-class ReportMixin:
-    def file_reports(self):
-        for f in self.files:
-            yield self.get(f)
-
-    @cached_property
-    def flags(self):
-        """returns dict(:name=<Flag>)"""
-        flags_dict = {}
-        for sid, session in self.sessions.items():
-            if session.flags is not None:
-                carriedforward = session.session_type.value == "carriedforward"
-                carriedforward_from = session.session_extras.get("carriedforward_from")
-                for flag in session.flags:
-                    flags_dict[flag] = Flag(
-                        self,
-                        flag,
-                        carriedforward=carriedforward,
-                        carriedforward_from=carriedforward_from,
-                    )
-        return flags_dict
-
-
-class SerializableReport(ReportMixin, Report):
-    pass
-
-
-class ReadOnlyReport(ReportMixin, SharedReadOnlyReport):
-    pass
-
-
 def get_minio_client():
     return Minio(
         settings.MINIO_LOCATION,
         access_key=settings.MINIO_SECRET_KEY,
         secret_key=settings.MINIO_ACCESS_KEY,
         secure=True,
-    )
-
-
-def build_report(chunks, files, sessions, totals, report_class=None):
-    if report_class is None:
-        report_class = SerializableReport
-    return report_class.from_chunks(
-        chunks=chunks, files=files, sessions=sessions, totals=totals
     )
 
 
@@ -293,30 +250,3 @@ class ArchiveService(object):
             expires = self.ttl
 
         return self.storage.create_presigned_get(self.root, path, expires)
-
-
-class ReportService(object):
-    """
-    Class that centralizes all the high-level archive-related logic.
-
-    Examples of responsabilities it has:
-        - Fetch a report for a specific commit
-    """
-
-    def build_report_from_commit(self, commit, report_class=None):
-        """Builds a `shared.reports.resources.Report` from a given commit
-
-        Args:
-            commit (core.models.Commit): The commit we want to see the report about
-
-        Returns:
-            SerializableReport: A report with all information from such commit
-        """
-        if not commit.report:
-            return None
-        commitid = commit.commitid
-        chunks = ArchiveService(commit.repository).read_chunks(commitid)
-        files = commit.report["files"]
-        sessions = commit.report["sessions"]
-        totals = commit.totals
-        return build_report(chunks, files, sessions, totals, report_class=report_class)

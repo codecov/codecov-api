@@ -7,7 +7,6 @@ from shared.torngit.exceptions import TorngitClientGeneralError
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory
-from services.archive import SerializableReport
 from services.path import (
     Dir,
     File,
@@ -16,6 +15,7 @@ from services.path import (
     dashboard_commit_file_url,
     provider_path_exists,
 )
+from services.report import SerializableReport
 
 # mock data
 

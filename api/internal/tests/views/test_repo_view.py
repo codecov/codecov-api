@@ -14,6 +14,7 @@ from core.models import Repository
 from core.tests.factories import (
     BranchFactory,
     CommitFactory,
+    CommitWithReportFactory,
     PullFactory,
     RepositoryFactory,
 )
@@ -1031,25 +1032,28 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
     def test_retrieve_returns_latest_commit_data(self, mocked_get_permissions):
         self.maxDiff = None
         mocked_get_permissions.return_value = True, True
-        commit = CommitFactory(
+        commit = CommitWithReportFactory(
             repository=self.repo,
-            report={
-                "files": {
-                    "test_file_1.py": [
-                        2,
-                        [1, 10, 8, 2, 5, "80.00000", 6, 7, 9, 8, 20, 40, 13],
-                        [[0, 10, 8, 2, 0, "80.00000", 0, 0, 0, 0, 0, 0, 0]],
-                        [0, 2, 1, 1, 0, "50.00000", 0, 0, 0, 0, 0, 0, 0],
-                    ],
-                    "test_file_2.py": [
-                        0,
-                        [1, 3, 2, 1, 0, "66.66667", 0, 0, 0, 0, 0, 0, 0],
-                        [[0, 3, 2, 1, 0, "66.66667", 0, 0, 0, 0, 0, 0, 0]],
-                        None,
-                    ],
-                }
-            },
         )
+
+        report_details = commit.reports.first().reportdetails
+        report_details.files_array = [
+            {
+                "filename": "test_file_1.py",
+                "file_index": 2,
+                "file_totals": [1, 10, 8, 2, 5, "80.00000", 6, 7, 9, 8, 20, 40, 13],
+                "session_totals": [[0, 10, 8, 2, 0, "80.00000", 0, 0, 0, 0, 0, 0, 0]],
+                "diff_totals": [0, 2, 1, 1, 0, "50.00000", 0, 0, 0, 0, 0, 0, 0],
+            },
+            {
+                "filename": "test_file_2.py",
+                "file_index": 0,
+                "file_totals": [1, 3, 2, 1, 0, "66.66667", 0, 0, 0, 0, 0, 0, 0],
+                "session_totals": [[0, 3, 2, 1, 0, "66.66667", 0, 0, 0, 0, 0, 0, 0]],
+                "diff_totals": None,
+            },
+        ]
+        report_details.save()
 
         from api.internal.commit.serializers import CommitWithFileLevelReportSerializer
 
@@ -1109,8 +1113,10 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
     ):
         mocked_get_permissions.return_value = True, True
 
-        commit = CommitFactory(repository=self.repo)
-        more_recent_commit = CommitFactory(repository=self.repo, branch="other-branch")
+        commit = CommitWithReportFactory(repository=self.repo)
+        more_recent_commit = CommitWithReportFactory(
+            repository=self.repo, branch="other-branch"
+        )
 
         response = self._retrieve()
 
@@ -1123,8 +1129,8 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
     ):
         mocked_get_permissions.return_value = True, True
 
-        commit = CommitFactory(repository=self.repo, branch="other-branch")
-        more_recent_commit = CommitFactory(repository=self.repo)
+        commit = CommitWithReportFactory(repository=self.repo, branch="other-branch")
+        more_recent_commit = CommitWithReportFactory(repository=self.repo)
 
         response = self._retrieve(data={"branch": "other-branch"})
 
