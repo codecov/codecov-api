@@ -380,7 +380,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         """ % (
             owner.username
         )
-        data = self.gql_request(query, user=owner)
+        data = self.gql_request(query, user=self.user)
         assert data["owner"]["isCurrentUserActivated"] == False
 
     def test_is_current_user_activated(self):

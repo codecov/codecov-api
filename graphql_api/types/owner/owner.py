@@ -140,10 +140,10 @@ def resolve_is_current_user_activated(owner, info):
     current_user = info.context["request"].user
     if not current_user.is_authenticated:
         return False
-    if owner.plan_activated_users is None:
-        return False
+    if owner.ownerid == current_user.ownerid:
+        return True
 
     return (
-        current_user.ownerid in owner.plan_activated_users
-        or owner.ownerid == current_user.ownerid
+        bool(owner.plan_activated_users)
+        and current_user.ownerid in owner.plan_activated_users
     )
