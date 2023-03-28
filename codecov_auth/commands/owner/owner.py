@@ -12,6 +12,7 @@ from .interactors.is_syncing import IsSyncingInteractor
 from .interactors.onboard_user import OnboardUserInteractor
 from .interactors.regenerate_org_upload_token import RegenerateOrgUploadTokenInteractor
 from .interactors.revoke_user_token import RevokeUserTokenInteractor
+from .interactors.save_terms_agreement import SaveTermsAgreementInteractor
 from .interactors.set_yaml_on_owner import SetYamlOnOwnerInteractor
 from .interactors.trigger_sync import TriggerSyncInteractor
 from .interactors.update_default_organization import UpdateDefaultOrganizationInteractor
@@ -36,6 +37,9 @@ class OwnerCommands(BaseCommand):
 
     def update_profile(self, **kwargs):
         return self.get_interactor(UpdateProfileInteractor).execute(**kwargs)
+
+    def save_terms_agreement(self, input):
+        return self.get_interactor(SaveTermsAgreementInteractor).execute(input)
 
     def update_default_organization(self, **kwargs):
         return self.get_interactor(UpdateDefaultOrganizationInteractor).execute(
