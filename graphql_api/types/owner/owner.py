@@ -142,4 +142,8 @@ def resolve_is_current_user_activated(owner, info):
         return False
     if owner.plan_activated_users is None:
         return False
-    return current_user.ownerid in owner.plan_activated_users
+
+    return (
+        current_user.ownerid in owner.plan_activated_users
+        or owner.ownerid == current_user.ownerid
+    )
