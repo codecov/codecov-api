@@ -121,8 +121,8 @@ class PlanSerializer(serializers.Serializer):
     quantity = serializers.IntegerField(required=False)
 
     def validate_value(self, value):
-        owner = self.context["view"].owner
-        plan_values = [plan["value"] for plan in available_plans(owner)]
+        request_user = self.context["request"].user
+        plan_values = [plan["value"] for plan in available_plans(request_user)]
         if value not in plan_values:
             raise serializers.ValidationError(
                 f"Invalid value for plan: {value}; "
