@@ -3,6 +3,7 @@ import logging
 from rest_framework import serializers
 from shared.reports.types import TOTALS_MAP
 
+import services.report as report_service
 from api.internal.owner.serializers import OwnerSerializer
 from api.shared.commit.serializers import CommitTotalsSerializer
 from core.models import Commit
@@ -31,21 +32,27 @@ class CommitSerializer(serializers.ModelSerializer):
 class CommitWithFileLevelReportSerializer(CommitSerializer):
     report = serializers.SerializerMethodField()
 
-    def get_report(self, obj):
-        # TODO: Re-evaluate this data-format when we start writing
-        # the new UI components that use it.
-        report_totals_by_file_name = Commit.report_totals_by_file_name(obj.id)
-        return {
-            "files": [
+    def get_report(self, commit: Commit):
+        report = report_service.build_report_from_commit(commit)
+        if report is None:
+            return None
+
+        files = []
+        for filename in report.files:
+            file_report = report.get(filename)
+            file_totals = CommitTotalsSerializer(
+                {key: val for key, val in zip(TOTALS_MAP, file_report.totals)}
+            )
+            files.append(
                 {
-                    "name": report.file_name,
-                    "totals": CommitTotalsSerializer(
-                        {key: val for key, val in zip(TOTALS_MAP, report.totals)}
-                    ).data,
+                    "name": filename,
+                    "totals": file_totals.data,
                 }
-                for report in report_totals_by_file_name
-            ],
-            "totals": CommitTotalsSerializer(obj.totals).data,
+            )
+
+        return {
+            "files": files,
+            "totals": CommitTotalsSerializer(commit.totals).data,
         }
 
     class Meta:

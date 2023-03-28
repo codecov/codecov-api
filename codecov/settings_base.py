@@ -24,8 +24,10 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.postgres",
     "django_filters",
     "drf_spectacular",
+    "drf_spectacular_sidecar",
     "ariadne_django",
     "corsheaders",
     "rest_framework",
@@ -277,6 +279,7 @@ SPECTACULAR_SETTINGS = {
     "AUTHENTICATION_WHITELIST": [
         "codecov_auth.authentication.UserTokenAuthentication",
     ],
+    "REDOC_DIST": "SIDECAR",  # serve Redoc from Django (not CDN)
 }
 
 # Internationalization
@@ -440,3 +443,7 @@ SENTRY_JWT_SHARED_SECRET = get_config(
     "setup", "sentry", "jwt_shared_secret", default=None
 )
 SENTRY_USER_WEBHOOK_URL = get_config("setup", "sentry", "webhook_url", default=None)
+
+# list of repo IDs that will use the new-style report builder
+# TODO: we can eventually get rid of this once it's confirmed working well for many repos
+REPORT_BUILDER_REPO_IDS = get_config("setup", "report_builder", "repo_ids", default=[])

@@ -5,6 +5,8 @@ import pytest
 from django.conf import settings
 from django.test import TransactionTestCase
 from django.utils import timezone
+from freezegun import freeze_time
+from freezegun.api import FakeDatetime
 from shared.reports.resources import Report, ReportFile, ReportLine
 from shared.utils.sessions import Session
 
@@ -54,7 +56,7 @@ def sample_report():
 class SaveCommitMeasurementsTest(TransactionTestCase):
     databases = {"default", "timeseries"}
 
-    @patch("services.archive.ReportService.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_insert_commit_measurement(self, mock_report):
         mock_report.return_value = sample_report()
 
@@ -81,7 +83,7 @@ class SaveCommitMeasurementsTest(TransactionTestCase):
         assert measurement.branch == "foo"
         assert measurement.value == 60.0
 
-    @patch("services.archive.ReportService.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_insert_commit_measurement_no_report(self, mock_report):
         mock_report.return_value = None
 
@@ -95,7 +97,7 @@ class SaveCommitMeasurementsTest(TransactionTestCase):
         )
         assert measurement_queryset.count() == 0
 
-    @patch("services.archive.ReportService.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_update_commit_measurement(self, mock_report):
         mock_report.return_value = sample_report()
 
@@ -132,7 +134,7 @@ class SaveCommitMeasurementsTest(TransactionTestCase):
         assert measurement.branch == "foo"
         assert measurement.value == 60.0
 
-    @patch("services.archive.ReportService.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_commit_measurement_insert_flags(self, mock_report):
         mock_report.return_value = sample_report()
 
@@ -186,7 +188,7 @@ class SaveCommitMeasurementsTest(TransactionTestCase):
         assert measurement.branch == "foo"
         assert measurement.value == 100.0
 
-    @patch("services.archive.ReportService.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_commit_measurement_update_flags(self, mock_report):
         mock_report.return_value = sample_report()
 
@@ -489,6 +491,83 @@ class FillSparseMeasurementsTest(TransactionTestCase):
             },
         ]
 
+    def test_fill_sparse_measurements_no_start_date(self):
+        end_date = datetime(2022, 1, 3, 0, 0, 0, tzinfo=timezone.utc)
+        measurements = coverage_measurements(
+            Interval.INTERVAL_1_DAY,
+            end_date=end_date,
+            owner_id=self.repo.author_id,
+            repo_id=self.repo.pk,
+            branch="master",
+        )
+        assert fill_sparse_measurements(
+            measurements, Interval.INTERVAL_1_DAY, start_date=None, end_date=end_date
+        ) == [
+            {
+                # aggregates over 2 measurements on main branch (commit1, commit2)
+                "timestamp_bin": datetime(2022, 1, 1, 0, 0, tzinfo=timezone.utc),
+                "avg": 82.5,
+                "min": 80.0,
+                "max": 85.0,
+            },
+            {
+                # aggregates over 1 measurement (commit4)
+                "timestamp_bin": datetime(2022, 1, 2, 0, 0, tzinfo=timezone.utc),
+                "avg": 80.0,
+                "min": 80.0,
+                "max": 80.0,
+            },
+            {
+                "timestamp_bin": datetime(2022, 1, 3, 0, 0, tzinfo=timezone.utc),
+                "avg": None,
+                "min": None,
+                "max": None,
+            },
+        ]
+
+    @freeze_time("2022-01-03T00:00:00")
+    def test_fill_sparse_measurements_no_end_date(self):
+        start_date = datetime(2021, 12, 31, 0, 0, 0, tzinfo=timezone.utc)
+        measurements = coverage_measurements(
+            Interval.INTERVAL_1_DAY,
+            start_date=start_date,
+            owner_id=self.repo.author_id,
+            repo_id=self.repo.pk,
+            branch="master",
+        )
+        assert fill_sparse_measurements(
+            measurements,
+            Interval.INTERVAL_1_DAY,
+            start_date=start_date,
+        ) == [
+            {
+                "timestamp_bin": FakeDatetime(2021, 12, 31, 0, 0, tzinfo=timezone.utc),
+                "avg": None,
+                "min": None,
+                "max": None,
+            },
+            {
+                # aggregates over 2 measurements on main branch (commit1, commit2)
+                "timestamp_bin": datetime(2022, 1, 1, 0, 0, tzinfo=timezone.utc),
+                "avg": 82.5,
+                "min": 80.0,
+                "max": 85.0,
+            },
+            {
+                # aggregates over 1 measurement (commit4)
+                "timestamp_bin": datetime(2022, 1, 2, 0, 0, tzinfo=timezone.utc),
+                "avg": 80.0,
+                "min": 80.0,
+                "max": 80.0,
+            },
+            {
+                "timestamp_bin": FakeDatetime(2022, 1, 3, 0, 0, tzinfo=timezone.utc),
+                "avg": None,
+                "min": None,
+                "max": None,
+            },
+        ]
+
     def test_fill_sparse_measurements_first_datapoint(self):
         MeasurementFactory(
             name=MeasurementName.COVERAGE.value,
@@ -629,6 +708,73 @@ class RepositoryCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         ]
 
     @patch("timeseries.models.Dataset.is_backfilled")
+    def test_backfilled_dataset_no_start_end_dates(self, is_backfilled):
+        is_backfilled.return_value = True
+
+        MeasurementFactory(
+            name=MeasurementName.COVERAGE.value,
+            owner_id=self.repo.author_id,
+            repo_id=self.repo.pk,
+            timestamp=datetime(2022, 1, 1, 1, 0, 0),
+            value=80.0,
+            branch="master",
+            commit_sha="commit1",
+        )
+        MeasurementFactory(
+            name=MeasurementName.COVERAGE.value,
+            owner_id=self.repo.author_id,
+            repo_id=self.repo.pk,
+            timestamp=datetime(2022, 1, 1, 2, 0, 0),
+            value=85.0,
+            branch="master",
+            commit_sha="commit2",
+        )
+        MeasurementFactory(
+            name=MeasurementName.COVERAGE.value,
+            owner_id=self.repo.author_id,
+            repo_id=self.repo.pk,
+            timestamp=datetime(2021, 1, 1, 3, 0, 0),
+            value=90.0,
+            branch="other",
+            commit_sha="commit3",
+        )
+        MeasurementFactory(
+            name=MeasurementName.COVERAGE.value,
+            owner_id=self.repo.author_id,
+            repo_id=self.repo.pk,
+            timestamp=datetime(2022, 1, 2, 1, 0, 0),
+            value=80.0,
+            branch="master",
+            commit_sha="commit4",
+        )
+
+        DatasetFactory(
+            name=MeasurementName.COVERAGE.value,
+            repository_id=self.repo.pk,
+        )
+
+        res = repository_coverage_measurements_with_fallback(
+            self.repo,
+            Interval.INTERVAL_1_DAY,
+        )
+        assert list(res) == [
+            {
+                # aggregates over 2 measurements on main branch (commit1, commit2)
+                "timestamp_bin": datetime(2022, 1, 1, 0, 0, tzinfo=timezone.utc),
+                "avg": 82.5,
+                "min": 80.0,
+                "max": 85.0,
+            },
+            {
+                # aggregates over 1 measurement (commit4)
+                "timestamp_bin": datetime(2022, 1, 2, 0, 0, tzinfo=timezone.utc),
+                "avg": 80.0,
+                "min": 80.0,
+                "max": 80.0,
+            },
+        ]
+
+    @patch("timeseries.models.Dataset.is_backfilled")
     def test_unbackfilled_dataset(self, is_backfilled):
         is_backfilled.return_value = False
 
@@ -675,6 +821,69 @@ class RepositoryCoverageMeasurementsWithFallbackTest(TransactionTestCase):
             Interval.INTERVAL_1_DAY,
             start_date=datetime(2021, 12, 31, 0, 0, 0, tzinfo=timezone.utc),
             end_date=datetime(2022, 1, 3, 0, 0, 0, tzinfo=timezone.utc),
+        )
+        assert list(res) == [
+            {
+                # aggregates over 2 measurements on main branch (commit1, commit2)
+                "timestamp_bin": datetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+                "avg": 82.5,
+                "min": 80.0,
+                "max": 85.0,
+            },
+            {
+                # aggregates over 1 measurement (commit4)
+                "timestamp_bin": datetime(2022, 1, 2, 0, 0, 0, tzinfo=timezone.utc),
+                "avg": 80.0,
+                "min": 80.0,
+                "max": 80.0,
+            },
+        ]
+
+    @patch("timeseries.models.Dataset.is_backfilled")
+    def test_unbackfilled_dataset_no_start_end_dates(self, is_backfilled):
+        is_backfilled.return_value = False
+
+        CommitFactory(
+            commitid="commit1",
+            repository_id=self.repo.pk,
+            branch="master",
+            timestamp=datetime(2022, 1, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+            totals={
+                "c": "80.00",
+            },
+        )
+        CommitFactory(
+            commitid="commit2",
+            repository_id=self.repo.pk,
+            branch="master",
+            timestamp=datetime(2022, 1, 1, 2, 0, 0, 0, tzinfo=timezone.utc),
+            totals={"c": "85.00"},
+        )
+        CommitFactory(
+            commitid="commit3",
+            repository_id=self.repo.pk,
+            branch="other",
+            timestamp=datetime(2022, 1, 1, 3, 0, 0, 0, tzinfo=timezone.utc),
+            totals={"c": "90.00"},
+        )
+        CommitFactory(
+            commitid="commit4",
+            repository_id=self.repo.pk,
+            branch="master",
+            timestamp=datetime(2022, 1, 2, 1, 0, 0, 0, tzinfo=timezone.utc),
+            totals={
+                "c": "80.00",
+            },
+        )
+
+        DatasetFactory(
+            name=MeasurementName.COVERAGE.value,
+            repository_id=self.repo.pk,
+        )
+
+        res = repository_coverage_measurements_with_fallback(
+            self.repo,
+            Interval.INTERVAL_1_DAY,
         )
         assert list(res) == [
             {

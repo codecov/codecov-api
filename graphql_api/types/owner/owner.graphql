@@ -16,13 +16,14 @@ type Owner {
   numberOfUploads: Int
   isAdmin: Boolean!
   hashOwnerid: String!
+  ownerid: Int!
   orgUploadToken: String
   defaultOrgUsername: String
   isCurrentUserActivated: Boolean!
   measurements(
     interval: MeasurementInterval!
-    after: DateTime!
-    before: DateTime!
+    after: DateTime
+    before: DateTime
     repos: [String!]
   ): [Measurement!]!
 }

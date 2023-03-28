@@ -34,18 +34,25 @@ if settings.SENTRY_ENV:
 
 
 class TaskService(object):
-    def _queue_name(self, name, args=None, kwargs=None) -> str:
-        queue_in_dict = route_task(name, args=args, kwargs=kwargs, options={})
-        return queue_in_dict["queue"]
-
     def _create_signature(self, name, args=None, kwargs=None):
         """
         Create Celery signature
         """
-        queue_name = self._queue_name(name, args, kwargs)
+        queue_and_config = route_task(name, args=args, kwargs=kwargs)
+        queue_name = queue_and_config["queue"]
+        extra_config = queue_and_config.get("extra_config", {})
+        celery_compatible_config = {
+            "time_limit": extra_config.get("hard_timelimit", None),
+            "soft_time_limit": extra_config.get("soft_timelimit", None),
+        }
         set_tag("celery.queue", queue_name)
         return signature(
-            name, args=args, kwargs=kwargs, app=celery_app, queue=queue_name
+            name,
+            args=args,
+            kwargs=kwargs,
+            app=celery_app,
+            queue=queue_name,
+            **celery_compatible_config,
         )
 
     def schedule_task(self, task_name, *, kwargs, apply_async_kwargs):
@@ -65,17 +72,27 @@ class TaskService(object):
         Enqueue a batch of comparison tasks using a Celery group
         """
         if len(comparison_ids) > 0:
-            queue_name = self._queue_name(
+            queue_and_config = route_task(
                 celery_config.compute_comparison_task_name,
+                args=None,
                 kwargs=dict(comparison_id=comparison_ids[0]),
             )
+            celery_compatible_config = {
+                "queue": queue_and_config["queue"],
+                "time_limit": queue_and_config.get("extra_config", {}).get(
+                    "hard_timelimit", None
+                ),
+                "soft_time_limit": queue_and_config.get("extra_config", {}).get(
+                    "soft_timelimit", None
+                ),
+            }
             signatures = [
                 signature(
                     celery_config.compute_comparison_task_name,
                     args=None,
                     kwargs=dict(comparison_id=comparison_id),
                     app=celery_app,
-                    queue=queue_name,
+                    **celery_compatible_config,
                 )
                 for comparison_id in comparison_ids
             ]

@@ -1,0 +1,10 @@
+union SaveTermsAgreementError = UnauthenticatedError | ValidationError
+
+type SaveTermsAgreementPayload {
+  error: SaveTermsAgreementError
+}
+
+input SaveTermsAgreementInput {
+  businessEmail: String
+  termsAgreement: Boolean!
+}

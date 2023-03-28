@@ -90,7 +90,8 @@ SENTRY_PAID_USER_PLAN_REPRESENTATIONS = {
         "billing_rate": "monthly",
         "base_unit_price": 12,
         "benefits": [
-            "Configurable # of users",
+            "Includes 5 seats",
+            "$12 per additional seat",
             "Unlimited public repositories",
             "Unlimited private repositories",
             "Priority Support",
@@ -103,7 +104,8 @@ SENTRY_PAID_USER_PLAN_REPRESENTATIONS = {
         "billing_rate": "annually",
         "base_unit_price": 10,
         "benefits": [
-            "Configurable # of users",
+            "Includes 5 seats",
+            "$10 per additional seat",
             "Unlimited public repositories",
             "Unlimited private repositories",
             "Priority Support",

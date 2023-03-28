@@ -9,6 +9,7 @@ from django.forms.utils import from_current_timezone
 import timeseries.helpers as timeseries_helpers
 from codecov.db import sync_to_async
 from core.models import Repository
+from graphql_api.actions.commits import repo_commits
 from graphql_api.actions.flags import flag_measurements, flags_for_repo
 from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.owner import OwnerLoader
@@ -113,8 +114,7 @@ async def resolve_pulls(
 @repository_bindable.field("commits")
 @convert_kwargs_to_snake_case
 async def resolve_commits(repository, info, filters=None, **kwargs):
-    command = info.context["executor"].get_command("commit")
-    queryset = await command.fetch_commits(repository, filters)
+    queryset = await sync_to_async(repo_commits)(repository, filters)
     connection = await queryset_to_connection(
         queryset,
         ordering=("timestamp",),
@@ -277,21 +277,21 @@ def resolve_measurements(
     repository: Repository,
     info,
     interval: Interval,
-    after: datetime,
-    before: datetime,
+    before: Optional[datetime] = None,
+    after: Optional[datetime] = None,
     branch: Optional[str] = None,
 ) -> Iterable[MeasurementSummary]:
     return fill_sparse_measurements(
         timeseries_helpers.repository_coverage_measurements_with_fallback(
             repository,
             interval,
-            after,
-            before,
+            start_date=after,
+            end_date=before,
             branch=branch,
         ),
         interval,
-        after,
-        before,
+        start_date=after,
+        end_date=before,
     )
 
 

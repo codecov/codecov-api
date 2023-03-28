@@ -32,7 +32,6 @@ def test_compute_comparison_task(mocker):
         celery_config.compute_comparison_task_name,
         args=None,
         kwargs=dict(comparison_id=5),
-        options={},
     )
     signature_mock.assert_called_with(
         celery_config.compute_comparison_task_name,
@@ -40,6 +39,8 @@ def test_compute_comparison_task(mocker):
         kwargs=dict(comparison_id=5),
         app=celery_app,
         queue="my_queue",
+        soft_time_limit=None,
+        time_limit=None,
     )
 
 
@@ -50,11 +51,11 @@ def test_compute_comparisons_task(mocker):
     )
     apply_async_mock = mocker.patch("celery.group.apply_async")
     TaskService().compute_comparisons([5, 10])
+    assert mock_route_task.call_count == 1
     mock_route_task.assert_called_with(
         celery_config.compute_comparison_task_name,
         args=None,
         kwargs=dict(comparison_id=5),
-        options={},
     )
     assert signature_mock.call_count == 2
     signature_mock.assert_any_call(
@@ -63,6 +64,8 @@ def test_compute_comparisons_task(mocker):
         kwargs=dict(comparison_id=10),
         app=celery_app,
         queue="my_queue",
+        soft_time_limit=None,
+        time_limit=None,
     )
     signature_mock.assert_any_call(
         celery_config.compute_comparison_task_name,
@@ -70,6 +73,8 @@ def test_compute_comparisons_task(mocker):
         kwargs=dict(comparison_id=5),
         app=celery_app,
         queue="my_queue",
+        soft_time_limit=None,
+        time_limit=None,
     )
     apply_async_mock.assert_called_once_with()
 
@@ -104,7 +109,6 @@ def test_backfill_repo(mocker):
             end_date="2022-01-25T00:00:00",
             dataset_names=["testing"],
         ),
-        options={},
     )
 
     signature_mock.assert_any_call(
@@ -118,6 +122,8 @@ def test_backfill_repo(mocker):
         ),
         app=celery_app,
         queue="celery",
+        soft_time_limit=None,
+        time_limit=None,
     )
     signature_mock.assert_any_call(
         celery_config.timeseries_backfill_task_name,
@@ -130,6 +136,8 @@ def test_backfill_repo(mocker):
         ),
         app=celery_app,
         queue="celery",
+        soft_time_limit=None,
+        time_limit=None,
     )
     signature_mock.assert_any_call(
         celery_config.timeseries_backfill_task_name,
@@ -142,6 +150,8 @@ def test_backfill_repo(mocker):
         ),
         app=celery_app,
         queue="celery",
+        soft_time_limit=None,
+        time_limit=None,
     )
 
     apply_async_mock.assert_called_once_with()
@@ -176,6 +186,8 @@ def test_backfill_dataset(mocker):
         ),
         app=celery_app,
         queue="celery",
+        soft_time_limit=None,
+        time_limit=None,
     )
     signature.apply_async.assert_called_once_with()
 
@@ -190,7 +202,6 @@ def test_timeseries_delete(mocker):
         celery_config.timeseries_delete_task_name,
         args=None,
         kwargs=dict(repository_id=12345),
-        options={},
     )
     signature_mock.assert_called_with(
         celery_config.timeseries_delete_task_name,
@@ -198,20 +209,25 @@ def test_timeseries_delete(mocker):
         kwargs=dict(repository_id=12345),
         app=celery_app,
         queue="celery",
+        soft_time_limit=None,
+        time_limit=None,
     )
 
 
 def test_update_commit_task(mocker):
     signature_mock = mocker.patch("services.task.task.signature")
     mock_route_task = mocker.patch(
-        "services.task.task.route_task", return_value={"queue": "celery"}
+        "services.task.task.route_task",
+        return_value={
+            "queue": "celery",
+            "extra_config": {"soft_timelimit": 300, "hard_timelimit": 400},
+        },
     )
     TaskService().update_commit(1, 2)
     mock_route_task.assert_called_with(
         celery_config.commit_update_task_name,
         args=None,
         kwargs=dict(commitid=1, repoid=2),
-        options={},
     )
     signature_mock.assert_called_with(
         celery_config.commit_update_task_name,
@@ -219,6 +235,8 @@ def test_update_commit_task(mocker):
         kwargs=dict(commitid=1, repoid=2),
         app=celery_app,
         queue="celery",
+        soft_time_limit=300,
+        time_limit=400,
     )
 
 
@@ -244,7 +262,6 @@ def test_update_commit_task(mocker):
             data="test body",
             timeout=10,
         ),
-        options={},
     )
     signature_mock.assert_called_with(
         "app.tasks.http_request.HTTPRequest",
@@ -258,4 +275,6 @@ def test_update_commit_task(mocker):
         ),
         app=celery_app,
         queue="celery",
+        soft_time_limit=None,
+        time_limit=None,
     )

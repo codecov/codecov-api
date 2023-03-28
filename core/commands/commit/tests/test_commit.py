@@ -16,12 +16,6 @@ class CommitCommandsTest(TransactionTestCase):
         self.pull = PullFactory(repository_id=self.repository.repoid)
         self.command = CommitCommands(self.user, "github")
 
-    @patch("core.commands.commit.commit.FetchCommitsInteractor.execute")
-    def test_fetch_commits_delegate_to_interactor(self, interactor_mock):
-        self.filters = None
-        self.command.fetch_commits(self.repository, self.filters)
-        interactor_mock.assert_called_once_with(self.repository, self.filters)
-
     @patch("core.commands.commit.commit.GetFinalYamlInteractor.execute")
     def test_get_final_yaml_delegate_to_interactor(self, interactor_mock):
         self.command.get_final_yaml(self.commit)
