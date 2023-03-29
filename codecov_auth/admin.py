@@ -45,7 +45,7 @@ impersonate_owner.short_description = "Impersonate the selected user"
 
 class OwnerProfileInline(admin.TabularInline):
     model = OwnerProfile
-    readonly_fields = ["terms_agreement_at"]
+    fk_name = "owner"
     fields = ["terms_agreement", "terms_agreement_at"]
 
     def has_change_permission(self, request, obj=None):
@@ -95,7 +95,7 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
     search_fields = ("username__iexact",)
     actions = [impersonate_owner]
     autocomplete_fields = ("bot",)
-    inlines = [OrgUploadTokenInline, OrgUploadTokenInline]
+    inlines = [OrgUploadTokenInline, OwnerProfileInline]
 
     readonly_fields = (
         "ownerid",
