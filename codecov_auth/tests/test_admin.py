@@ -193,7 +193,6 @@ class OwnerAdminTest(TestCase):
         request = RequestFactory().get(request_url)
         request.user = self.staff_user
         inlines = self.owner_admin.get_inline_instances(request, self.staff_user)
-        # Orgs in enterprise cloud have a token created automagically
         assert isinstance(inlines[1], OwnerProfileInline)
 
     def test_inline_owner_profile_permissions(self):
