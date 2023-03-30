@@ -31,4 +31,5 @@ class GenerateAccessTokenView(APIView):
             owner=owner,
             token_type=token_type,
         )
+        user_token.save()
         return Response({"token": user_token.token}, status=200)
