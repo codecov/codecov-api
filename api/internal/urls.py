@@ -55,6 +55,7 @@ if settings.IS_ENTERPRISE:
     urlpatterns += enterprise_urlpatterns
 
 urlpatterns += [
+    path("slack/", include("api.internal.slack.urls")),
     path("charts/", include("api.internal.chart.urls")),
     path("", include(plans_router.urls)),
     path("<str:service>/", include(owners_router.urls)),

@@ -194,3 +194,13 @@ class SuperTokenAuthentication(authentication.TokenAuthentication):
         if key == settings.SUPER_API_TOKEN:
             return (SuperUser(), SuperToken(token=key))
         return None
+
+
+class SlackTokenAuthentication(authentication.TokenAuthentication):
+    keyword = "Bearer"
+
+    def authenticate_credentials(self, key):
+        if key == settings.SLACK_API_TOKEN:
+            return (None, None)
+
+        raise exceptions.AuthenticationFailed("Invalid token.")

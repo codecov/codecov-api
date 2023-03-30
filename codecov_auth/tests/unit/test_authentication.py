@@ -13,6 +13,7 @@ from rest_framework.test import APIRequestFactory
 from codecov_auth.authentication import (
     CodecovSessionAuthentication,
     CodecovTokenAuthentication,
+    SlackTokenAuthentication,
     SuperTokenAuthentication,
     UserTokenAuthentication,
 )
@@ -314,6 +315,44 @@ class SuperTokenAuthenticationTests(TestCase):
         request_factory = APIRequestFactory()
         request = request_factory.get("", HTTP_AUTHORIZATION=f"Bearer {super_token}")
         authenticator = SuperTokenAuthentication()
+        with pytest.raises(
+            AuthenticationFailed,
+            match="Invalid token header. Token string should not contain spaces.",
+        ):
+            authenticator.authenticate(request)
+
+
+class SlackTokenAuthenticationTests(TestCase):
+    @override_settings(SLACK_API_TOKEN="17603a9e-0463-45e1-883e-d649fccf4ae8")
+    def test_bearer_token_auth_if_token_is_slack_api_token(self):
+        slack_token = "17603a9e-0463-45e1-883e-d649fccf4ae8"
+
+        request_factory = APIRequestFactory()
+        request = request_factory.get("", HTTP_AUTHORIZATION=f"Bearer {slack_token}")
+
+        authenticator = SlackTokenAuthentication()
+        result = authenticator.authenticate(request)
+        assert result == (None, None)
+
+    @override_settings(SLACK_API_TOKEN="17603a9e-0463-45e1-883e-d649fccf4ae8")
+    def test_bearer_token_auth_if_token_is_not_slack_api_token(self):
+        slack_token = "random_token"
+
+        request_factory = APIRequestFactory()
+        request = request_factory.get("", HTTP_AUTHORIZATION=f"Bearer {slack_token}")
+
+        authenticator = SlackTokenAuthentication()
+        with pytest.raises(
+            AuthenticationFailed,
+            match="Invalid token",
+        ):
+            authenticator.authenticate(request)
+
+    def test_bearer_token_default_token_envar_and_same_string_as_header(self):
+        slack_token = settings.SLACK_API_TOKEN
+        request_factory = APIRequestFactory()
+        request = request_factory.get("", HTTP_AUTHORIZATION=f"Bearer {slack_token}")
+        authenticator = SlackTokenAuthentication()
         with pytest.raises(
             AuthenticationFailed,
             match="Invalid token header. Token string should not contain spaces.",
