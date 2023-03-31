@@ -5,7 +5,12 @@ from django.contrib.auth.backends import BaseBackend
 from django.utils import timezone
 from rest_framework import authentication, exceptions
 
-from codecov_auth.authentication.types import SuperToken, SuperUser
+from codecov_auth.authentication.types import (
+    InternalToken,
+    InternalUser,
+    SuperToken,
+    SuperUser,
+)
 from codecov_auth.helpers import decode_token_from_cookie
 from codecov_auth.models import Owner, Session, UserToken
 from utils.config import get_config
@@ -196,11 +201,11 @@ class SuperTokenAuthentication(authentication.TokenAuthentication):
         return None
 
 
-class SlackTokenAuthentication(authentication.TokenAuthentication):
+class InternalTokenAuthentication(authentication.TokenAuthentication):
     keyword = "Bearer"
 
     def authenticate_credentials(self, key):
-        if key == settings.SLACK_API_TOKEN:
-            return (None, None)
+        if key == settings.CODECOV_INTERNAL_TOKEN:
+            return (InternalUser(), InternalToken(token=key))
 
         raise exceptions.AuthenticationFailed("Invalid token.")
