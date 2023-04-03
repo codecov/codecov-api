@@ -29,6 +29,7 @@ class DjangoUser(object):
     id = None
     pk = None
     is_staff = False
+    is_superuser = False
     is_active = False
     _groups = EmptyManager(Group)
     _user_permissions = EmptyManager(Permission)
@@ -66,14 +67,12 @@ class DjangoUser(object):
 
 
 class SuperUser(DjangoUser):
-    is_superuser = False
     is_super_user = True
 
     pass
 
 
 class InternalUser(DjangoUser):
-    is_internaluser = False
     is_internal_user = True
 
     pass

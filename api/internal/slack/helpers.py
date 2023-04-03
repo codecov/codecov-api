@@ -1,5 +1,7 @@
 from rest_framework.exceptions import ValidationError
 
+from codecov_auth.models import Service
+
 
 def validate_params(username, service):
     """
@@ -8,5 +10,5 @@ def validate_params(username, service):
     if not username or not service:
         raise ValidationError("Username and service are required")
 
-    if service not in ["github", "gitlab", "bitbucket"]:
+    if service not in Service:
         raise ValidationError("Invalid service")

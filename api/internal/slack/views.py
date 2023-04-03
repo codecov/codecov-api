@@ -27,9 +27,9 @@ class GenerateAccessTokenView(APIView):
             raise NotFound("Owner not found")
 
         token_type = UserToken.TokenType.API.value
-        user_token = UserToken.objects.get_or_create(
+        user_token, _ = UserToken.objects.get_or_create(
             name="slack-codecov-access-token",
             owner=owner,
             token_type=token_type,
-        )[0]
+        )
         return Response({"token": user_token.token}, status=200)
