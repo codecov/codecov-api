@@ -8,7 +8,12 @@ from api.shared.serializers import (
     CommitRefQueryParamSerializer,
     PullIDQueryParamSerializer,
 )
-from codecov_auth.authentication import SuperToken, SuperUser
+from codecov_auth.authentication import (
+    InternalToken,
+    InternalUser,
+    SuperToken,
+    SuperUser,
+)
 from codecov_auth.models import Owner, Service
 from core.models import Commit, Repository
 from utils.services import get_long_service_name
@@ -100,4 +105,22 @@ class SuperPermissionsMixin:
             user.is_super_user
             and auth.is_super_token
             and auth.token == settings.SUPER_API_TOKEN
+        )
+
+
+class InternalPermissionsMixin:
+    def has_internal_token_permissions(self, request):
+        if request.method != "POST":
+            return False
+        user = request.user
+        auth = request.auth
+
+        if not isinstance(request.user, InternalUser) or not isinstance(
+            request.auth, InternalToken
+        ):
+            return False
+        return (
+            user.is_internal_user
+            and auth.is_internal_token
+            and auth.token == settings.CODECOV_INTERNAL_TOKEN
         )
