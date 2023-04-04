@@ -124,9 +124,13 @@ class PlanSerializer(serializers.Serializer):
         request_user = self.context["request"].user
         plan_values = [plan["value"] for plan in available_plans(request_user)]
         if value not in plan_values:
+            if value in SENTRY_PAID_USER_PLAN_REPRESENTATIONS:
+                log.warning(
+                    f"Non-Sentry user attempted to transition to Sentry plan",
+                    extra=dict(owner_id=request_user.pk, plan=value),
+                )
             raise serializers.ValidationError(
-                f"Invalid value for plan: {value}; "
-                f"must be one of {plan_values.keys()}"
+                f"Invalid value for plan: {value}; " f"must be one of {plan_values}"
             )
         return value
 
