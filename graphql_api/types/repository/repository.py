@@ -152,7 +152,13 @@ def resolve_default_branch(repository, info):
 @repository_bindable.field("profilingToken")
 def resolve_profiling_token(repository, info):
     command = info.context["executor"].get_command("repository")
-    return command.get_profiling_token(repository)
+    return command.get_repository_token(repository, token_type="profiling")
+
+
+@repository_bindable.field("staticAnalysisToken")
+def resolve_static_analysis_token(repository, info):
+    command = info.context["executor"].get_command("repository")
+    return command.get_repository_token(repository, token_type="static_analysis")
 
 
 @repository_bindable.field("criticalFiles")

@@ -62,6 +62,7 @@ type Repository {
     branch: String
   ): [Measurement!]!
   repositoryConfig: RepositoryConfig
+  staticAnalysisToken: String
 }
 
 type PullConnection {

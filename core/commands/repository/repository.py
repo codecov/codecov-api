@@ -2,7 +2,7 @@ from codecov.commands.base import BaseCommand
 
 from .interactors.activate_flags_measurements import ActivateFlagsMeasurementsInteractor
 from .interactors.fetch_repository import FetchRepositoryInteractor
-from .interactors.get_profiling_token import GetProfilingTokenInteractor
+from .interactors.get_repository_token import GetRepositoryTokenInteractor
 from .interactors.get_upload_token import GetUploadTokenInteractor
 from .interactors.regenerate_repository_token import RegenerateRepositoryTokenInteractor
 
@@ -14,8 +14,10 @@ class RepositoryCommands(BaseCommand):
     def get_upload_token(self, repository):
         return self.get_interactor(GetUploadTokenInteractor).execute(repository)
 
-    def get_profiling_token(self, repository):
-        return self.get_interactor(GetProfilingTokenInteractor).execute(repository)
+    def get_repository_token(self, repository, token_type):
+        return self.get_interactor(GetRepositoryTokenInteractor).execute(
+            repository, token_type
+        )
 
     def regenerate_repository_token(
         self, repo_name: str, owner_username: str, token_type: str
