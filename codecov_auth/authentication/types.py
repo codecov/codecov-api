@@ -25,13 +25,12 @@ class RepositoryAuthInterface(object):
         raise NotImplementedError()
 
 
-class SuperUser(object):
+class DjangoUser(object):
     id = None
     pk = None
     is_staff = False
-    is_active = False
     is_superuser = False
-    is_super_user = True
+    is_active = False
     _groups = EmptyManager(Group)
     _user_permissions = EmptyManager(Permission)
 
@@ -67,8 +66,30 @@ class SuperUser(object):
         return False
 
 
-class SuperToken(object):
+class SuperUser(DjangoUser):
+    is_super_user = True
+
+    pass
+
+
+class InternalUser(DjangoUser):
+    is_internal_user = True
+
+    pass
+
+
+class DjangoToken(object):
     def __init__(self, token=None):
         self.token = token
 
+
+class SuperToken(DjangoToken):
     is_super_token = True
+
+    pass
+
+
+class InternalToken(DjangoToken):
+    is_internal_token = True
+
+    pass
