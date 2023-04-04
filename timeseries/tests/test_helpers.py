@@ -1075,11 +1075,11 @@ class OwnerCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         )
         assert list(res) == [
             {
-                # aggregates over 3 measurements on all branches
+                # aggregates over 2 measurements on master branch
                 "timestamp_bin": datetime(2022, 1, 1, 0, 0, tzinfo=timezone.utc),
-                "avg": 85.0,
+                "avg": 82.5,
                 "min": 80.0,
-                "max": 90.0,
+                "max": 85.0,
             },
             {
                 # aggregates over 1 measurement (commit4)
@@ -1098,11 +1098,11 @@ class OwnerCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         )
         assert list(res) == [
             {
-                # aggregates over 3 measurements on all branches
+                # aggregates over 2 measurements on master branch
                 "timestamp_bin": datetime(2022, 1, 1, 0, 0, tzinfo=timezone.utc),
-                "avg": 85.0,
+                "avg": 82.5,
                 "min": 80.0,
-                "max": 90.0,
+                "max": 85.0,
             },
             {
                 # aggregates over 1 measurement (commit4)
@@ -1201,11 +1201,11 @@ class OwnerCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         )
         assert list(res) == [
             {
-                # aggregates over 3 commits on all branches
+                # aggregates over 2 commits on master branch
                 "timestamp_bin": datetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
-                "avg": 85.0,
+                "avg": 82.5,
                 "min": 80.0,
-                "max": 90.0,
+                "max": 85.0,
             },
             {
                 # aggregates over 1 commit (commit4)
@@ -1224,11 +1224,11 @@ class OwnerCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         )
         assert list(res) == [
             {
-                # aggregates over 3 commits on all branches
+                # aggregates over 2 commits on master branch
                 "timestamp_bin": datetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
-                "avg": 85.0,
+                "avg": 82.5,
                 "min": 80.0,
-                "max": 90.0,
+                "max": 85.0,
             },
             {
                 # aggregates over 1 commit (commit4)
@@ -1316,11 +1316,11 @@ class OwnerCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         )
         assert list(res) == [
             {
-                # aggregates over 3 commits on all branches
+                # aggregates over 2 commits on master branch
                 "timestamp_bin": datetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
-                "avg": 85.0,
+                "avg": 82.5,
                 "min": 80.0,
-                "max": 90.0,
+                "max": 85.0,
             },
             {
                 # aggregates over 1 measurement (commit4)
@@ -1349,11 +1349,11 @@ class OwnerCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         )
         assert list(res) == [
             {
-                # aggregates over 3 commits on all branches
+                # aggregates over 2 commits on master branch
                 "timestamp_bin": datetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
-                "avg": 85.0,
+                "avg": 82.5,
                 "min": 80.0,
-                "max": 90.0,
+                "max": 85.0,
             },
             {
                 # aggregates over 1 measurement (commit4)
