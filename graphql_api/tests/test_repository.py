@@ -194,7 +194,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
     def test_repository_get_profiling_token(self):
         user = OwnerFactory()
         repo = RepositoryFactory(author=user, name="gazebo", active=True)
-        RepositoryTokenFactory(repository=repo, key="random")
+        RepositoryTokenFactory(repository=repo, key="random", token_type="profiling")
 
         data = self.gql_request(
             query_repository % "profilingToken",
@@ -206,22 +206,12 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
     def test_repository_get_static_analysis_token(self):
         user = OwnerFactory()
         repo = RepositoryFactory(author=user, name="gazebo", active=True)
-        RepositoryTokenFactory(repository=repo, key="random")
-
-        query = """
-        query {
-            me {
-                owner {
-                    repository(name: "%s") {
-                        staticAnalysisToken
-                    }
-                }
-            }
-        }
-        """
+        RepositoryTokenFactory(
+            repository=repo, key="random", token_type="static_analysis"
+        )
 
         data = self.gql_request(
-            query % "staticAnalysisToken",
+            query_repository % "staticAnalysisToken",
             user=user,
             variables={"name": repo.name},
         )
