@@ -83,15 +83,15 @@ class RepoCommitsTests(TransactionTestCase):
         assert list(commits) == commits_with_filter
 
     def test_long_sha(self):
-        commits = repo_commits(self.repo, {"sha": self.commits[0].commitid})
+        commits = repo_commits(self.repo, {"search": self.commits[0].commitid})
         assert list(commits) == [self.commits[0]]
 
     def test_short_sha(self):
-        commits = repo_commits(self.repo, {"sha": self.commits[0].commitid[0:7]})
+        commits = repo_commits(self.repo, {"search": self.commits[0].commitid[0:7]})
         assert list(commits) == [self.commits[0]]
 
     def test_message(self):
-        commits = repo_commits(self.repo, {"message": "bar"})
+        commits = repo_commits(self.repo, {"search": "bar"})
         assert list(commits) == [self.commits[0], self.commits[1]]
 
     def test_states(self):
