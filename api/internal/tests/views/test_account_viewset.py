@@ -926,6 +926,29 @@ class AccountViewSetTests(APITestCase):
 
     @patch("api.internal.owner.serializers.send_sentry_webhook")
     @patch("services.billing.StripeService.modify_subscription")
+    def test_update_sentry_plan_monthly_with_users_org(
+        self, modify_sub_mock, send_sentry_webhook
+    ):
+        desired_plan = {"value": "users-sentrym", "quantity": 12}
+        org = OwnerFactory(
+            service=Service.GITHUB.value,
+            service_id="923836740",
+        )
+
+        self.user.stripe_customer_id = "flsoe"
+        self.user.stripe_subscription_id = "djfos"
+        self.user.sentry_user_id = "sentry-user-id"
+        self.user.organizations = [org.ownerid]
+        self.user.save()
+
+        self._update(
+            kwargs={"service": org.service, "owner_username": org.username},
+            data={"plan": desired_plan},
+        )
+        send_sentry_webhook.assert_called_once_with(self.user, org)
+
+    @patch("api.internal.owner.serializers.send_sentry_webhook")
+    @patch("services.billing.StripeService.modify_subscription")
     def test_update_sentry_plan_annual(self, modify_sub_mock, send_sentry_webhook):
         desired_plan = {"value": "users-sentryy", "quantity": 12}
         self.user.stripe_customer_id = "flsoe"
@@ -938,6 +961,59 @@ class AccountViewSetTests(APITestCase):
             data={"plan": desired_plan},
         )
         send_sentry_webhook.assert_called_once_with(self.user, self.user)
+
+    @patch("api.internal.owner.serializers.send_sentry_webhook")
+    @patch("services.billing.StripeService.modify_subscription")
+    def test_update_sentry_plan_annual_with_users_org(
+        self, modify_sub_mock, send_sentry_webhook
+    ):
+        desired_plan = {"value": "users-sentryy", "quantity": 12}
+        org = OwnerFactory(
+            service=Service.GITHUB.value,
+            service_id="923836740",
+        )
+        self.user.stripe_customer_id = "flsoe"
+        self.user.stripe_subscription_id = "djfos"
+        self.user.sentry_user_id = "sentry-user-id"
+        self.user.organizations = [org.ownerid]
+        self.user.save()
+
+        self._update(
+            kwargs={"service": org.service, "owner_username": org.username},
+            data={"plan": desired_plan},
+        )
+        send_sentry_webhook.assert_called_once_with(self.user, org)
+
+    @patch("api.internal.owner.serializers.send_sentry_webhook")
+    @patch("services.billing.StripeService.modify_subscription")
+    def test_update_sentry_plan_non_sentry_user(
+        self, modify_sub_mock, send_sentry_webhook
+    ):
+        desired_plan = {"value": "users-sentrym", "quantity": 5}
+        org = OwnerFactory(
+            service=Service.GITHUB.value,
+            service_id="923836740",
+        )
+        self.user.stripe_customer_id = "flsoe"
+        self.user.stripe_subscription_id = "djfos"
+        self.user.sentry_user_id = None
+        self.user.organizations = [org.ownerid]
+        self.user.save()
+
+        res = self._update(
+            kwargs={"service": org.service, "owner_username": org.username},
+            data={"plan": desired_plan},
+        )
+
+        # cannot upgrade to Sentry plan
+        assert res.status_code == 400
+        assert res.json() == {
+            "plan": {
+                "value": [
+                    "Invalid value for plan: users-sentrym; must be one of ['users-free', 'users-basic', 'users-pr-inappm', 'users-pr-inappy']"
+                ]
+            }
+        }
 
     @patch("services.billing.stripe.Coupon.create")
     @patch("services.billing.stripe.Subscription.retrieve")

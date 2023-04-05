@@ -8,10 +8,10 @@ from codecov.commands.exceptions import Unauthenticated, ValidationError
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory, RepositoryTokenFactory
 
-from ..get_profiling_token import GetProfilingTokenInteractor
+from ..get_repository_token import GetRepositoryTokenInteractor
 
 
-class GetProfilingTokenInteractorTest(TransactionTestCase):
+class GetRepositoryTokenInteractorTest(TransactionTestCase):
     def setUp(self):
         self.org = OwnerFactory(name="codecov")
         self.active_repo = RepositoryFactory(
@@ -26,10 +26,10 @@ class GetProfilingTokenInteractorTest(TransactionTestCase):
         self.user = OwnerFactory(organizations=[self.org.ownerid])
         RepositoryTokenFactory(repository=self.active_repo, key="random")
 
-    def execute(self, user, repo):
+    def execute(self, user, repo, token_type="profiling"):
         current_user = user or AnonymousUser()
-        return GetProfilingTokenInteractor(current_user, "github").execute(
-            repository=repo
+        return GetRepositoryTokenInteractor(current_user, "github").execute(
+            repository=repo, token_type=token_type
         )
 
     async def test_when_unauthenticated_raise(self):
@@ -49,3 +49,10 @@ class GetProfilingTokenInteractorTest(TransactionTestCase):
         token = await self.execute(user=self.user, repo=self.active_repo)
         assert token is not None
         assert token == "random"
+
+    async def test_get_static_analysis_token(self):
+        token = await self.execute(
+            user=self.user, repo=self.active_repo, token_type="static_analysis"
+        )
+        assert token is not None
+        assert len(token) == 40

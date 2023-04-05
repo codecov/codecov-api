@@ -13,10 +13,16 @@ from rest_framework.test import APIRequestFactory
 from codecov_auth.authentication import (
     CodecovSessionAuthentication,
     CodecovTokenAuthentication,
+    InternalTokenAuthentication,
     SuperTokenAuthentication,
     UserTokenAuthentication,
 )
-from codecov_auth.authentication.types import SuperToken, SuperUser
+from codecov_auth.authentication.types import (
+    InternalToken,
+    InternalUser,
+    SuperToken,
+    SuperUser,
+)
 from codecov_auth.tests.factories import OwnerFactory, SessionFactory, UserTokenFactory
 from utils.test_utils import BaseTestCase
 
@@ -314,6 +320,46 @@ class SuperTokenAuthenticationTests(TestCase):
         request_factory = APIRequestFactory()
         request = request_factory.get("", HTTP_AUTHORIZATION=f"Bearer {super_token}")
         authenticator = SuperTokenAuthentication()
+        with pytest.raises(
+            AuthenticationFailed,
+            match="Invalid token header. Token string should not contain spaces.",
+        ):
+            authenticator.authenticate(request)
+
+
+class InternalTokenAuthenticationTests(TestCase):
+    @override_settings(CODECOV_INTERNAL_TOKEN="17603a9e-0463-45e1-883e-d649fccf4ae8")
+    def test_bearer_token_auth_if_token_is_internal_token(self):
+        internal_token = "17603a9e-0463-45e1-883e-d649fccf4ae8"
+
+        request_factory = APIRequestFactory()
+        request = request_factory.get("", HTTP_AUTHORIZATION=f"Bearer {internal_token}")
+
+        authenticator = InternalTokenAuthentication()
+        result = authenticator.authenticate(request)
+        assert isinstance(result[0], InternalUser)
+        assert isinstance(result[1], InternalToken)
+        assert result[1].token == internal_token
+
+    @override_settings(CODECOV_INTERNAL_TOKEN="17603a9e-0463-45e1-883e-d649fccf4ae8")
+    def test_bearer_token_auth_if_token_is_not_internal_token(self):
+        internal_token = "random_token"
+
+        request_factory = APIRequestFactory()
+        request = request_factory.get("", HTTP_AUTHORIZATION=f"Bearer {internal_token}")
+
+        authenticator = InternalTokenAuthentication()
+        with pytest.raises(
+            AuthenticationFailed,
+            match="Invalid token",
+        ):
+            authenticator.authenticate(request)
+
+    def test_bearer_token_default_token_envar_and_same_string_as_header(self):
+        internal_token = settings.CODECOV_INTERNAL_TOKEN
+        request_factory = APIRequestFactory()
+        request = request_factory.get("", HTTP_AUTHORIZATION=f"Bearer {internal_token}")
+        authenticator = InternalTokenAuthentication()
         with pytest.raises(
             AuthenticationFailed,
             match="Invalid token header. Token string should not contain spaces.",

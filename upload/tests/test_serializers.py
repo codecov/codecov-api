@@ -70,8 +70,9 @@ def test_upload_serializer_contains_expected_fields_no_flags(transactional_db, m
         "state": upload.state,
         "provider": upload.provider,
         "upload_type": upload.upload_type,
-        "ci_url": upload.ci_url,
+        "ci_url": upload.build_url,
         "flags": [],
+        "job_code": upload.job_code,
         "env": upload.env,
         "name": upload.name,
     }
@@ -94,8 +95,9 @@ def test_upload_serializer_contains_expected_fields_with_flags(
         "state": upload.state,
         "provider": upload.provider,
         "upload_type": upload.upload_type,
-        "ci_url": upload.ci_url,
+        "ci_url": upload.build_url,
         "flags": ["flag1", "flag2"],
+        "job_code": upload.job_code,
         "env": upload.env,
         "name": upload.name,
     }

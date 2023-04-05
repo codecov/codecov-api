@@ -5,7 +5,12 @@ from django.contrib.auth.backends import BaseBackend
 from django.utils import timezone
 from rest_framework import authentication, exceptions
 
-from codecov_auth.authentication.types import SuperToken, SuperUser
+from codecov_auth.authentication.types import (
+    InternalToken,
+    InternalUser,
+    SuperToken,
+    SuperUser,
+)
 from codecov_auth.helpers import decode_token_from_cookie
 from codecov_auth.models import Owner, Session, UserToken
 from utils.config import get_config
@@ -194,3 +199,13 @@ class SuperTokenAuthentication(authentication.TokenAuthentication):
         if key == settings.SUPER_API_TOKEN:
             return (SuperUser(), SuperToken(token=key))
         return None
+
+
+class InternalTokenAuthentication(authentication.TokenAuthentication):
+    keyword = "Bearer"
+
+    def authenticate_credentials(self, key):
+        if key == settings.CODECOV_INTERNAL_TOKEN:
+            return (InternalUser(), InternalToken(token=key))
+
+        raise exceptions.AuthenticationFailed("Invalid token.")

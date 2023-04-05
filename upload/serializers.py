@@ -15,6 +15,7 @@ class FlagListField(serializers.ListField):
 
 class UploadSerializer(serializers.ModelSerializer):
     flags = FlagListField(required=False)
+    ci_url = serializers.CharField(source="build_url", required=False)
 
     class Meta:
         read_only_fields = (
@@ -30,6 +31,7 @@ class UploadSerializer(serializers.ModelSerializer):
             "flags",
             "env",
             "name",
+            "job_code",
         )
         model = ReportSession
 
