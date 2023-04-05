@@ -12,7 +12,7 @@ type Commit {
   ciPassed: Boolean
   flagNames: [String]
   coverageFile(path: String!, flags: [String]): File
-  compareWithParent: Comparison
+  compareWithParent: ComparisonResult
   uploads(
     first: Int
     after: String
@@ -51,4 +51,3 @@ type UploadEdge {
   cursor: String!
   node: Upload!
 }
-

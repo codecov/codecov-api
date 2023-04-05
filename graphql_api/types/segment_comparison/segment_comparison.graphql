@@ -1,11 +1,11 @@
 type SegmentComparison {
-    header: String
-    hasUnintendedChanges: Boolean!
-    lines: [LineComparison!]!
+  header: String
+  hasUnintendedChanges: Boolean!
+  lines: [LineComparison!]!
 }
 
 type SegmentComparisons {
-    results: [SegmentComparison!]!
+  results: [SegmentComparison!]!
 }
 
-union SegmentsResult = SegmentComparisons | UnknownPath | ProviderError | QueryError
+union SegmentsResult = SegmentComparisons | UnknownPath | ProviderError

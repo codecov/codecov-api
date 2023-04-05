@@ -287,38 +287,3 @@ class TestComponentsComparison(GraphQLTestHelper, TransactionTestCase):
                 }
             }
         }
-
-    def test_components_no_comparison(self):
-        query = """
-            query CommitComponentsComparison(
-                $org: String!
-                $repo: String!
-                $sha: String!
-            ) {
-                owner(username: $org) {
-                    repository(name: $repo) {
-                        commit(id: $sha) {
-                            compareWithParent {
-                                componentComparisons {
-                                    id
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        """
-
-        variables = {
-            "org": self.org.username,
-            "repo": self.repo.name,
-            "sha": self.head.commitid,
-        }
-        data = self.gql_request(query, variables=variables)
-        assert data == {
-            "owner": {
-                "repository": {
-                    "commit": {"compareWithParent": {"componentComparisons": None}}
-                }
-            }
-        }
