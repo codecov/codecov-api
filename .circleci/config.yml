@@ -161,6 +161,11 @@ jobs:
           chmod +x codecov-alpine
           ./codecov-alpine -R . --url https://stage-web.codecov.dev -t $CODECOV_STAGING_TOKEN -F unit
     - run:
+        name: codecov-doordash
+        command: |
+          chmod +x codecov-alpine
+          ./codecov-alpine -R . --url https://doordash.codecov.io -t $CODECOV_DOORDASH_TOKEN -F unit
+    - run:
         name: codecov-v5
         command: |
           chmod +x codecov-alpine
