@@ -194,7 +194,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
     def test_repository_get_profiling_token(self):
         user = OwnerFactory()
         repo = RepositoryFactory(author=user, name="gazebo", active=True)
-        RepositoryTokenFactory(repository=repo, key="random")
+        RepositoryTokenFactory(repository=repo, key="random", token_type="profiling")
 
         data = self.gql_request(
             query_repository % "profilingToken",
@@ -202,6 +202,20 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             variables={"name": repo.name},
         )
         assert data["me"]["owner"]["repository"]["profilingToken"] == "random"
+
+    def test_repository_get_static_analysis_token(self):
+        user = OwnerFactory()
+        repo = RepositoryFactory(author=user, name="gazebo", active=True)
+        RepositoryTokenFactory(
+            repository=repo, key="random", token_type="static_analysis"
+        )
+
+        data = self.gql_request(
+            query_repository % "staticAnalysisToken",
+            user=user,
+            variables={"name": repo.name},
+        )
+        assert data["me"]["owner"]["repository"]["staticAnalysisToken"] == "random"
 
     @patch(
         "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock

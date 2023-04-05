@@ -537,14 +537,6 @@ class BillingService:
             or desired_plan["value"] in ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS
             or desired_plan["value"] in SENTRY_PAID_USER_PLAN_REPRESENTATIONS
         ):
-            if desired_plan["value"] in SENTRY_PAID_USER_PLAN_REPRESENTATIONS:
-                if not sentry.is_sentry_user(owner):
-                    log.warning(
-                        f"Non-Sentry user attempted to transition to Sentry plan",
-                        extra=dict(owner_id=owner.pk, plan=desired_plan["value"]),
-                    )
-                    return
-
             if owner.stripe_subscription_id is not None:
                 self.payment_service.modify_subscription(owner, desired_plan)
             else:
