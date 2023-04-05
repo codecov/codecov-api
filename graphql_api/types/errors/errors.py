@@ -32,6 +32,7 @@ class ProviderError:
     message = "Error fetching data from the provider"
 
 
+# Currently unused, but I can leave it here if we use it eventually
 class QueryError:
     def __init__(self, message):
         self.message = message

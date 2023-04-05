@@ -29,7 +29,3 @@ type UnknownPath implements ResolverError {
 type ProviderError implements ResolverError {
   message: String!
 }
-
-type QueryError implements ResolverError {
-  message: String!
-}

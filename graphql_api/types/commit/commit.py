@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List
 
 import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
@@ -9,6 +9,10 @@ import services.report as report_service
 from codecov.db import sync_to_async
 from core.models import Commit
 from graphql_api.actions.commits import commit_uploads
+from graphql_api.actions.comparison import (
+    validate_commit_comparison,
+    validate_comparison,
+)
 from graphql_api.actions.path_contents import sort_path_contents
 from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.comparison import ComparisonLoader
@@ -17,9 +21,14 @@ from graphql_api.helpers.connection import (
     queryset_to_connection,
     queryset_to_connection_sync,
 )
+from graphql_api.types.comparison.comparison import (
+    MissingBaseCommit,
+    MissingBaseReport,
+    MissingHeadReport,
+)
 from graphql_api.types.enums import OrderingDirection, PathContentDisplayType
 from graphql_api.types.errors import MissingCoverage, MissingHeadReport, UnknownPath
-from services.comparison import ComparisonReport
+from services.comparison import Comparison, ComparisonReport, MissingComparisonReport
 from services.components import Component
 from services.path import ReportPaths
 from services.profiling import CriticalFile, ProfilingSummary
@@ -88,14 +97,41 @@ def resolve_list_uploads(commit: Commit, info, **kwargs):
 
 
 @commit_bindable.field("compareWithParent")
-async def resolve_compare_with_parent(commit, info, **kwargs):
+async def resolve_compare_with_parent(commit: Commit, info, **kwargs):
     if not commit.parent_commit_id:
-        return None
+        return MissingBaseCommit()
 
     comparison_loader = ComparisonLoader.loader(info, commit.repository_id)
     commit_comparison = await comparison_loader.load(
         (commit.parent_commit_id, commit.commitid)
     )
+
+    comparison_error = validate_commit_comparison(commit_comparison=commit_comparison)
+
+    if comparison_error:
+        return comparison_error
+
+    if commit_comparison and commit_comparison.is_processed:
+        user = info.context["request"].user
+        parent_commit = await CommitLoader.loader(info, commit.repository_id).load(
+            commit.parent_commit_id
+        )
+        comparison = Comparison(
+            user=user, base_commit=parent_commit, head_commit=commit
+        )
+
+        # Preemptively validate the comparison object before storing it in context as a commit_comparison can
+        # be successful but still have errors w/ the head+base report
+        try:
+            await validate_comparison(comparison)
+        except MissingComparisonReport as e:
+            (error_message) = str(e)
+            if error_message == "Missing head report":
+                return MissingHeadReport()
+            if error_message == "Missing base report":
+                return MissingBaseReport()
+        # store the comparison in the context - to be used in the `Comparison` resolvers
+        info.context["comparison"] = comparison
 
     if commit_comparison:
         return ComparisonReport(commit_comparison)
