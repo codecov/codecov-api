@@ -7,6 +7,7 @@ from django.db import connections
 from django.db.models import (
     Avg,
     DateTimeField,
+    DecimalField,
     F,
     FloatField,
     Func,
@@ -149,7 +150,13 @@ def aggregate_measurements(
         .annotate(
             min=Min("value_min"),
             max=Max("value_max"),
-            avg=(Sum(F("value_avg") * F("value_count")) / Sum("value_count")),
+            avg=Cast(
+                Sum(F("value_avg") * F("value_count")) / Sum(F("value_count")),
+                # this is equivalent to Postgres' numeric(1000, 5) type
+                # 1000 is the max precision
+                # (used to avoid floating point error)
+                DecimalField(max_digits=1000, decimal_places=5),
+            ),
         )
         .order_by("timestamp_bin")
     )
