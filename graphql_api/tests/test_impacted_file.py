@@ -12,7 +12,7 @@ from codecov_auth.tests.factories import OwnerFactory
 from compare.models import CommitComparison
 from compare.tests.factories import CommitComparisonFactory
 from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
-from services.comparison import ComparisonReport
+from services.comparison import ComparisonReport, MissingComparisonReport
 
 from .helper import GraphQLTestHelper
 
@@ -526,6 +526,45 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                 "segments": {
                                     "message": "Error fetching data from the provider"
                                 },
+                            },
+                        }
+                    }
+                }
+            }
+        }
+
+    @patch("services.comparison.Comparison.validate")
+    @patch("services.comparison.PullRequestComparison.get_file_comparison")
+    @patch("services.archive.ArchiveService.read_file")
+    def test_fetch_impacted_file_with_invalid_comparison(
+        self, read_file, mock_get_file_comparison, mock_compare_validate
+    ):
+        read_file.return_value = mock_data_from_archive
+
+        mock_get_file_comparison.return_value = MockFileComparison()
+        mock_compare_validate.side_effect = MissingComparisonReport()
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "pull": self.pull.pullid,
+            "path": "fileA",
+            "filters": {"hasUnintendedChanges": False},
+        }
+        data = self.gql_request(query_impacted_file_through_pull, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "pull": {
+                        "compareWithBase": {
+                            "state": "processed",
+                            "impactedFile": {
+                                "headName": "fileA",
+                                "baseName": "fileA",
+                                "hashedPath": "5e9f0c9689fb7ec181ea0fb09ad3f74e",
+                                "baseCoverage": {"percentCovered": 41.666666666666664},
+                                "headCoverage": {"percentCovered": 85.71428571428571},
+                                "patchCoverage": {"percentCovered": 50.0},
+                                "segments": {"results": []},
                             },
                         }
                     }

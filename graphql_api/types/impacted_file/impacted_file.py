@@ -72,7 +72,7 @@ def resolve_segments(
     try:
         comparison.validate()
     except MissingComparisonReport:
-        return []
+        return SegmentComparisons(results=[])
     path = impacted_file.head_name
 
     try:
@@ -109,8 +109,6 @@ def resolve_segments_deprecated(
 ) -> List[Segment]:
     if filters is None:
         filters = {}
-    if "comparison" not in info.context:
-        return []
 
     comparison = info.context["comparison"]
     try:

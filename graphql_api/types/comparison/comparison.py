@@ -165,16 +165,16 @@ def resolve_flag_comparisons(
 @comparison_bindable.field("componentComparisons")
 @sync_to_async
 def resolve_component_comparisons(
-    comparison: ComparisonReport, info
+    comparison_report: ComparisonReport, info
 ) -> Optional[List[ComponentComparison]]:
     user = info.context["request"].user
-    head_commit = comparison.commit_comparison.compare_commit
-    components = components_service.commit_components(head_commit, user)
     comparison: Comparison = info.context["comparison"]
     try:
         comparison.validate()
     except MissingComparisonReport:
         return []
+    head_commit = comparison_report.commit_comparison.compare_commit
+    components = components_service.commit_components(head_commit, user)
     # store the comparison in the context - to be used in the `Comparison` resolvers
     return [ComponentComparison(comparison, component) for component in components]
 
@@ -197,7 +197,6 @@ def resolve_has_different_number_of_head_and_base_reports(
 ) -> False:
     # TODO: can we remove the need for `info.context["conmparison"]` here?
     comparison: Comparison = info.context["comparison"]
-    print("here", comparison.__dict__)
     try:
         comparison.validate()
     except MissingComparisonReport:

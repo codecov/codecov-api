@@ -610,9 +610,7 @@ class Comparison(object):
 
     def validate(self):
         # make sure head and base reports exist (will throw an error if not)
-        print("here 1.1")
         self.head_report
-        print("here 1.2")
         self.base_report
 
     @cached_property
