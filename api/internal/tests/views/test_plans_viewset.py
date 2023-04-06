@@ -120,7 +120,7 @@ class PlansViewSetTests(APITestCase):
                 ],
             },
             {
-                "marketing_name": "Sentry Pro Team",
+                "marketing_name": "Pro Team for Sentry",
                 "value": "users-sentrym",
                 "billing_rate": "monthly",
                 "base_unit_price": 12,
@@ -134,7 +134,7 @@ class PlansViewSetTests(APITestCase):
                 "trial_days": 14,
             },
             {
-                "marketing_name": "Sentry Pro Team",
+                "marketing_name": "Pro Team for Sentry",
                 "value": "users-sentryy",
                 "billing_rate": "annually",
                 "base_unit_price": 10,
