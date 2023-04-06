@@ -282,6 +282,11 @@ SPECTACULAR_SETTINGS = {
     "REDOC_DIST": "SIDECAR",  # serve Redoc from Django (not CDN)
 }
 
+CSP_WORKER_SRC = ("'self'", "blob:")
+CSP_IMG_SRC = ("'self'", "data:", "cdn.redoc.ly")
+CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "fonts.googleapis.com")
+CSP_FONT_SRC = ("'self'", "fonts.gstatic.com")
+
 # Internationalization
 # https://docs.djangoproject.com/en/2.1/topics/i18n/
 
