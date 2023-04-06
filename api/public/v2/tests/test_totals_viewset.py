@@ -428,7 +428,7 @@ class TotalsViewSetTestCase(TestCase):
         res = self._request_report(path=path)
         assert res.status_code == 404
         assert res.json() == {
-            "detail": f"The file path '{path}' does not exist. Please provide an existing file path."
+            "detail": f"No files or directories found matching path: {path}"
         }
 
         build_report_from_commit.assert_called_once_with(self.commit1)

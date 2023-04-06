@@ -93,12 +93,9 @@ class BaseReportViewSet(
 
         path = self.request.query_params.get("path", None)
         if path:
-            paths = [file for file in report.files if file.startswith(path)]
-            if not paths:
-                raise NotFound(
-                    f"The file path '{path}' does not exist. Please provide an existing file path."
-                )
-            report = report.filter(paths=paths)
+            report = report.filter(paths=[f"{path}*"])
+            if len(report.files) == 0:
+                raise NotFound(f"No files or directories found matching path: {path}")
 
         flag = self.request.query_params.get("flag", None)
         if flag:
