@@ -8,7 +8,7 @@ from shared.torngit.exceptions import TorngitClientError
 from codecov.db import sync_to_async
 from graphql_api.types.errors import ProviderError, UnknownPath
 from graphql_api.types.segment_comparison.segment_comparison import SegmentComparisons
-from services.comparison import Comparison, Segment
+from services.comparison import Comparison, MissingComparisonReport, Segment
 from services.profiling import ProfilingSummary
 
 impacted_file_bindable = ObjectType("ImpactedFile")
@@ -69,6 +69,10 @@ def resolve_segments(
         filters = {}
 
     comparison: Comparison = info.context["comparison"]
+    try:
+        comparison.validate()
+    except MissingComparisonReport:
+        return []
     path = impacted_file.head_name
 
     try:
@@ -109,7 +113,10 @@ def resolve_segments_deprecated(
         return []
 
     comparison = info.context["comparison"]
-    comparison.validate()
+    try:
+        comparison.validate()
+    except MissingComparisonReport:
+        return []
     file_comparison = comparison.get_file_comparison(
         impacted_file.head_name, with_src=True, bypass_max_diff=True
     )

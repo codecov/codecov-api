@@ -16,7 +16,12 @@ from graphql_api.types.errors import (
     MissingHeadReport,
 )
 from reports.models import ReportLevelTotals
-from services.comparison import ComparisonReport, ImpactedFile, PullRequestComparison
+from services.comparison import (
+    Comparison,
+    ComparisonReport,
+    ImpactedFile,
+    MissingComparisonReport,
+)
 from services.components import ComponentComparison
 
 comparison_bindable = ObjectType("Comparison")
@@ -165,7 +170,12 @@ def resolve_component_comparisons(
     user = info.context["request"].user
     head_commit = comparison.commit_comparison.compare_commit
     components = components_service.commit_components(head_commit, user)
-    comparison = info.context["comparison"]
+    comparison: Comparison = info.context["comparison"]
+    try:
+        comparison.validate()
+    except MissingComparisonReport:
+        return []
+    # store the comparison in the context - to be used in the `Comparison` resolvers
     return [ComponentComparison(comparison, component) for component in components]
 
 
@@ -184,14 +194,14 @@ def resolve_flag_comparisons_count(comparison: ComparisonReport, info):
 @sync_to_async
 def resolve_has_different_number_of_head_and_base_reports(
     comparison: ComparisonReport, info, **kwargs
-) -> int:
+) -> False:
     # TODO: can we remove the need for `info.context["conmparison"]` here?
-
-    # Ensure PullRequestComparison type exists in context
-    if "comparison" not in info.context:
+    comparison: Comparison = info.context["comparison"]
+    print("here", comparison.__dict__)
+    try:
+        comparison.validate()
+    except MissingComparisonReport:
         return False
-
-    comparison: PullRequestComparison = info.context["comparison"]
     return comparison.has_different_number_of_head_and_base_sessions
 
 
