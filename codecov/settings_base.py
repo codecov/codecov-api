@@ -284,7 +284,13 @@ SPECTACULAR_SETTINGS = {
 
 CSP_WORKER_SRC = ("'self'", "blob:")
 CSP_IMG_SRC = ("'self'", "data:", "cdn.redoc.ly")
-CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "fonts.googleapis.com")
+CSP_STYLE_SRC = (
+    "'self'",
+    "sha256-GvZq6XrzMRhFZ2MvEI09Lw7QbE3DnWuVQTMYafGYLcg=",
+    "sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
+    "sha256-DLDPR1ic47WIdK2WyeLkblb/tm2mQH+Jt/NNhZWu1k0=",
+    "fonts.googleapis.com",
+)
 CSP_FONT_SRC = ("'self'", "fonts.gstatic.com")
 
 # Internationalization
