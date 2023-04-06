@@ -165,10 +165,6 @@ def resolve_component_comparisons(
     user = info.context["request"].user
     head_commit = comparison.commit_comparison.compare_commit
     components = components_service.commit_components(head_commit, user)
-
-    # TODO: can we change this to not rely on the comparison in the context?
-    if not "comparison" in info.context:
-        return None
     comparison = info.context["comparison"]
     return [ComponentComparison(comparison, component) for component in components]
 
