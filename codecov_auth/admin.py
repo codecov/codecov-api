@@ -203,7 +203,7 @@ class LogEntryAdmin(admin.ModelAdmin):
         "change_message",
     )
     list_display = ["__str__", "action_time", "user", "change_message"]
-    search_fields = ("user__name", "change_message")
+    search_fields = ("object_repr", "change_message")
 
     # keep only view permission
     def has_add_permission(self, request):
