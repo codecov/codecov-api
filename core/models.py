@@ -336,6 +336,10 @@ class Pull(models.Model):
                 fields=["author", "updatestamp"],
                 name="pulls_author_updatestamp",
             ),
+            models.Index(
+                fields=["repository", "updatestamp"],
+                name="pulls_repository_updatestamp",
+            ),
         ]
 
     def save(self, *args, **kwargs):

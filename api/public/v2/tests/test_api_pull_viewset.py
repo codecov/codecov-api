@@ -5,6 +5,7 @@ from freezegun import freeze_time
 
 from codecov.tests.base_test import InternalAPITest
 from codecov_auth.tests.factories import OwnerFactory
+from core.models import Pull
 from core.tests.factories import PullFactory, RepositoryFactory
 
 
@@ -20,6 +21,9 @@ class PullViewsetTests(InternalAPITest):
             PullFactory(repository=self.repo),
             PullFactory(repository=self.repo),
         ]
+        Pull.objects.filter(pk=self.pulls[1].pk).update(
+            updatestamp="2023-01-01T00:00:00"
+        )
         self.client.force_login(user=self.user)
 
     def test_list(self):
@@ -44,7 +48,7 @@ class PullViewsetTests(InternalAPITest):
                     "title": self.pulls[1].title,
                     "base_totals": None,
                     "head_totals": None,
-                    "updatestamp": "2022-01-01T00:00:00Z",
+                    "updatestamp": "2023-01-01T00:00:00Z",
                     "state": "open",
                     "ci_passed": None,
                     "author": None,
@@ -55,6 +59,67 @@ class PullViewsetTests(InternalAPITest):
                     "base_totals": None,
                     "head_totals": None,
                     "updatestamp": "2022-01-01T00:00:00Z",
+                    "state": "open",
+                    "ci_passed": None,
+                    "author": None,
+                },
+            ],
+            "total_pages": 1,
+        }
+
+    def test_list_state(self):
+        pull = PullFactory(repository=self.repo, state="closed")
+        url = reverse(
+            "api-v2-pulls-list",
+            kwargs={
+                "service": self.org.service,
+                "owner_username": self.org.username,
+                "repo_name": self.repo.name,
+            },
+        )
+        res = self.client.get(f"{url}?state=closed")
+        assert res.status_code == 200
+        assert res.json() == {
+            "count": 1,
+            "next": None,
+            "previous": None,
+            "results": [
+                {
+                    "pullid": pull.pullid,
+                    "title": pull.title,
+                    "base_totals": None,
+                    "head_totals": None,
+                    "updatestamp": "2022-01-01T00:00:00Z",
+                    "state": "closed",
+                    "ci_passed": None,
+                    "author": None,
+                },
+            ],
+            "total_pages": 1,
+        }
+
+    def test_list_start_date(self):
+        url = reverse(
+            "api-v2-pulls-list",
+            kwargs={
+                "service": self.org.service,
+                "owner_username": self.org.username,
+                "repo_name": self.repo.name,
+            },
+        )
+        res = self.client.get(f"{url}?start_date=2022-12-01")
+        assert res.status_code == 200
+        assert res.json() == {
+            "count": 1,
+            "next": None,
+            "previous": None,
+            "results": [
+                {
+                    "pullid": self.pulls[1].pullid,
+                    "title": self.pulls[1].title,
+                    "base_totals": None,
+                    "head_totals": None,
+                    "updatestamp": "2023-01-01T00:00:00Z",
                     "state": "open",
                     "ci_passed": None,
                     "author": None,
