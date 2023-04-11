@@ -256,6 +256,57 @@ class FileReportViewSetTestCase(TestCase):
         build_report_from_commit.assert_has_calls([call(self.commit3)])
 
     @patch("services.report.build_report_from_commit")
+    def test_file_report_walk_back_commit_not_complete(
+        self, build_report_from_commit, get_repo_permissions
+    ):
+        get_repo_permissions.return_value = (True, True)
+
+        self.commit1.state = "pending"
+        self.commit1.save()
+
+        build_report_from_commit.side_effect = [
+            sample_report(),  # skips since the state is pending
+            None,  # skips since there's no report
+            sample_report(),  # found
+        ]
+
+        res = self._request_file_report(path="foo/file1.py", walk_back=20)
+        assert res.status_code == 200
+        assert res.json() == {
+            "name": "foo/file1.py",
+            "totals": {
+                "files": 0,
+                "lines": 8,
+                "hits": 5,
+                "misses": 3,
+                "partials": 0,
+                "coverage": 62.5,
+                "branches": 0,
+                "methods": 0,
+                "messages": 0,
+                "sessions": 0,
+                "complexity": 10.0,
+                "complexity_total": 2.0,
+                "complexity_ratio": 500.0,
+                "diff": 0,
+            },
+            "line_coverage": [
+                [1, 0],
+                [2, 1],
+                [3, 0],
+                [5, 0],
+                [6, 1],
+                [8, 0],
+                [9, 0],
+                [10, 1],
+            ],
+            "commit_sha": self.commit3.commitid,
+            "commit_file_url": f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.username}/{self.repo_name}/commit/{self.commit3.commitid}/blob/foo/file1.py",
+        }
+
+        build_report_from_commit.assert_has_calls([call(self.commit3)])
+
+    @patch("services.report.build_report_from_commit")
     def test_file_report_walk_back_found(
         self, build_report_from_commit, get_repo_permissions
     ):
