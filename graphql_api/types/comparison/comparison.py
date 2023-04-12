@@ -175,7 +175,6 @@ def resolve_component_comparisons(
         return []
     head_commit = comparison_report.commit_comparison.compare_commit
     components = components_service.commit_components(head_commit, user)
-    # store the comparison in the context - to be used in the `Comparison` resolvers
     return [ComponentComparison(comparison, component) for component in components]
 
 
