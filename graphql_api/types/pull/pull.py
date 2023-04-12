@@ -124,7 +124,6 @@ def resolve_commits(pull: Pull, info, **kwargs):
 
 @pull_bindable.field("behind_by")
 def resolve_behind_by(pull: Pull, info, **kwargs) -> int:
-    print("I am here", pull.__dict__)
     return pull.behind_by
 
 
