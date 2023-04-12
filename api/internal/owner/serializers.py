@@ -175,6 +175,7 @@ class SubscriptionDetailSerializer(serializers.Serializer):
     current_period_end = serializers.IntegerField()
     customer = StripeCustomerSerializer()
     collection_method = serializers.CharField()
+    trial_end = serializers.IntegerField()
 
 
 class StripeScheduledPhaseSerializer(serializers.Serializer):
