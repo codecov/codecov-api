@@ -120,3 +120,14 @@ def resolve_commits(pull: Pull, info, **kwargs):
         ordering_direction=OrderingDirection.DESC,
         **kwargs,
     )
+
+
+@pull_bindable.field("behind_by")
+def resolve_behind_by(pull: Pull, info, **kwargs) -> int:
+    print("I am here", pull.__dict__)
+    return pull.behind_by
+
+
+@pull_bindable.field("behind_by_commit")
+def resolve_behind_by_commit(pull: Pull, info, **kwargs) -> str:
+    return pull.behind_by_commit
