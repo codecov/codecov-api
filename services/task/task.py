@@ -195,7 +195,7 @@ class TaskService(object):
 
     def sync_plans(self, sender=None, account=None, action=None):
         self._create_signature(
-            "app.tasks.ghm_sync_plans.SyncPlans",
+            celery_config.ghm_sync_plans_task_name,
             kwargs=dict(sender=sender, account=account, action=action),
         ).apply_async()
 
