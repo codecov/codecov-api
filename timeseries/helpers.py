@@ -158,10 +158,13 @@ def aggregate_measurements(
 def _filter_repos(
     queryset: QuerySet, repos: Optional[List[Repository]], column_name: str = "repo_id"
 ) -> QuerySet:
+    """
+    Filter the given generic queryset by a set of (repoid, branch) tuples.
+    """
     if repos:
-        tuples = tuple((repo.repoid, repo.branch) for repo in repos)
         queryset = queryset.extra(
-            where=[f"({column_name}, branch) in %s"], params=[tuples]
+            where=[f"({column_name}, branch) in %s"],
+            params=[tuple((repo.repoid, repo.branch) for repo in repos)],
         )
     return queryset
 
