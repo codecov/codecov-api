@@ -96,6 +96,10 @@ class TaskService(object):
                 )
                 for comparison_id in comparison_ids
             ]
+            log.info(
+                "Triggering compute comparison task",
+                extra=dict(comparison_ids=comparison_ids),
+            )
             group(signatures).apply_async()
 
     def normalize_profiling_upload(self, profiling_upload_id):
