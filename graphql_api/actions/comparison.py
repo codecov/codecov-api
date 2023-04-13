@@ -10,11 +10,6 @@ from graphql_api.types.comparison.comparison import (
 from services.comparison import Comparison, PullRequestComparison
 
 
-@sync_to_async
-def validate_comparison(comparison: Union[PullRequestComparison, Comparison]):
-    comparison.validate()
-
-
 def validate_commit_comparison(
     commit_comparison: Optional[CommitComparison],
 ) -> Union[MissingBaseReport, MissingHeadReport, MissingComparison]:

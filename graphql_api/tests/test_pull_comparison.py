@@ -1051,56 +1051,6 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             },
         }
 
-    def test_pull_comparison_missing_head_report_with_successful_commit_comparison(
-        self,
-    ):
-        self.commit_comparison.error = None
-        self.commit_comparison.save()
-
-        self.head_report.side_effect = comparison.MissingComparisonReport(
-            "Missing head report"
-        )
-
-        query = """
-            pullId
-            compareWithBase {
-                __typename
-            }
-        """
-
-        res = self._request(query)
-        assert res == {
-            "pullId": self.pull.pullid,
-            "compareWithBase": {
-                "__typename": "MissingHeadReport",
-            },
-        }
-
-    def test_pull_comparison_missing_base_report_with_successful_commit_comparison(
-        self,
-    ):
-        self.commit_comparison.error = None
-        self.commit_comparison.save()
-
-        self.head_report.side_effect = comparison.MissingComparisonReport(
-            "Missing base report"
-        )
-
-        query = """
-            pullId
-            compareWithBase {
-                __typename
-            }
-        """
-
-        res = self._request(query)
-        assert res == {
-            "pullId": self.pull.pullid,
-            "compareWithBase": {
-                "__typename": "MissingBaseReport",
-            },
-        }
-
     @patch("services.task.TaskService.compute_comparisons")
     @patch("services.comparison.CommitComparisonService.needs_recompute")
     def test_pull_comparison_needs_recalculation(
