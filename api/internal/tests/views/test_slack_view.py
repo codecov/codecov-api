@@ -1,7 +1,6 @@
 from django.test import override_settings
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
-import json
 
 from api.internal.slack.views import GenerateAccessTokenView
 from codecov_auth.models import Owner, UserToken
