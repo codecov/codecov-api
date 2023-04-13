@@ -7,6 +7,7 @@ import yaml
 from django.test import TransactionTestCase
 from shared.reports.types import LineSession
 
+import services.comparison as comparison
 from codecov_auth.tests.factories import OwnerFactory
 from compare.models import CommitComparison
 from compare.tests.factories import CommitComparisonFactory
@@ -21,6 +22,7 @@ from reports.tests.factories import (
     UploadFactory,
     UploadFlagMembershipFactory,
 )
+from services.comparison import MissingComparisonReport
 from services.profiling import CriticalFile
 
 from .helper import GraphQLTestHelper, paginate_connection
@@ -105,6 +107,20 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             parent_commit_id=self.parent_commit.commitid,
         )
         self.report = CommitReportFactory(commit=self.commit)
+
+        # mock reports for all tests in this class
+        self.head_report_patcher = patch(
+            "services.comparison.Comparison.head_report", new_callable=PropertyMock
+        )
+        self.head_report = self.head_report_patcher.start()
+        self.head_report.return_value = None
+        self.addCleanup(self.head_report_patcher.stop)
+        self.base_report_patcher = patch(
+            "services.comparison.Comparison.base_report", new_callable=PropertyMock
+        )
+        self.base_report = self.base_report_patcher.start()
+        self.base_report.return_value = None
+        self.addCleanup(self.base_report_patcher.stop)
 
     def test_fetch_commit(self):
         query = (
@@ -563,7 +579,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             base_commit=self.parent_commit,
             compare_commit=self.commit,
         )
-        query = query_commit % "compareWithParent { state }"
+        query = query_commit % "compareWithParent { ... on Comparison { state } }"
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
@@ -579,7 +595,10 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         self.commit.parent_commit_id = None
         self.commit.save()
 
-        query = query_commit % "compareWithParent { state }"
+        query = (
+            query_commit
+            % "compareWithParent { __typename ... on Comparison { state } }"
+        )
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
@@ -587,7 +606,45 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
-        assert commit["compareWithParent"] == None
+        assert commit["compareWithParent"]["__typename"] == "MissingBaseCommit"
+
+    def test_compare_with_parent_comparison_missing_when_commit_comparison_state_is_errored(
+        self,
+    ):
+        CommitComparisonFactory(
+            base_commit=self.parent_commit,
+            compare_commit=self.commit,
+            state=CommitComparison.CommitComparisonStates.ERROR,
+        )
+        query = (
+            query_commit
+            % "compareWithParent { __typename ... on Comparison { state } }"
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        assert commit["compareWithParent"]["__typename"] == "MissingComparison"
+
+    def test_fetch_commit_compare_no_parent(self):
+        self.commit.parent_commit_id = None
+        self.commit.save()
+
+        query = (
+            query_commit
+            % "compareWithParent { __typename ... on Comparison { state } }"
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        assert commit["compareWithParent"]["__typename"] == "MissingBaseCommit"
 
     def test_compare_with_parent_change_coverage(self):
         CommitComparisonFactory(
@@ -618,7 +675,9 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             methods=0,
         )
 
-        query = query_commit % "compareWithParent { changeCoverage }"
+        query = (
+            query_commit % "compareWithParent { ... on Comparison { changeCoverage } }"
+        )
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
@@ -646,7 +705,9 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             methods=0,
         )
 
-        query = query_commit % "compareWithParent { changeCoverage }"
+        query = (
+            query_commit % "compareWithParent { ... on Comparison { changeCoverage } }"
+        )
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
@@ -655,25 +716,6 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
         assert commit["compareWithParent"]["changeCoverage"] == None
-
-    def test_has_different_number_of_head_and_base_reports_without_PR_comparison(self):
-        query = (
-            query_commit
-            % "compareWithParent { hasDifferentNumberOfHeadAndBaseReports }"
-        )
-        variables = {
-            "org": self.org.username,
-            "repo": self.repo.name,
-            "commit": self.commit.commitid,
-        }
-        data = self.gql_request(query, variables=variables)
-        commit = data["owner"]["repository"]["commit"]
-        data = self.gql_request(query, variables=variables)
-        commit = data["owner"]["repository"]["commit"]
-        assert (
-            commit["compareWithParent"]["hasDifferentNumberOfHeadAndBaseReports"]
-            == False
-        )
 
     @patch(
         "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
@@ -760,6 +802,38 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 "name": "First Upload",
             }
         ]
+
+    @patch("services.comparison.Comparison.validate")
+    def test_has_different_number_of_head_and_base_reports_with_invalid_comparison(
+        self, mock_compare_validate
+    ):
+        CommitComparisonFactory(
+            base_commit=self.parent_commit,
+            compare_commit=self.commit,
+            state=CommitComparison.CommitComparisonStates.PROCESSED,
+        )
+        mock_compare_validate.side_effect = MissingComparisonReport()
+        query = (
+            query_commit
+            % "compareWithParent { ... on Comparison { hasDifferentNumberOfHeadAndBaseReports } }"
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "commit": {
+                        "compareWithParent": {
+                            "hasDifferentNumberOfHeadAndBaseReports": False
+                        }
+                    }
+                }
+            }
+        }
 
     def test_fetch_upload_name_is_none(self):
         UploadFactory(

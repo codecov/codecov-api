@@ -16,7 +16,12 @@ from graphql_api.types.errors import (
     MissingHeadReport,
 )
 from reports.models import ReportLevelTotals
-from services.comparison import ComparisonReport, ImpactedFile, PullRequestComparison
+from services.comparison import (
+    Comparison,
+    ComparisonReport,
+    ImpactedFile,
+    MissingComparisonReport,
+)
 from services.components import ComponentComparison
 
 comparison_bindable = ObjectType("Comparison")
@@ -160,16 +165,16 @@ def resolve_flag_comparisons(
 @comparison_bindable.field("componentComparisons")
 @sync_to_async
 def resolve_component_comparisons(
-    comparison: ComparisonReport, info
+    comparison_report: ComparisonReport, info
 ) -> Optional[List[ComponentComparison]]:
     user = info.context["request"].user
-    head_commit = comparison.commit_comparison.compare_commit
+    comparison: Comparison = info.context["comparison"]
+    try:
+        comparison.validate()
+    except MissingComparisonReport:
+        return []
+    head_commit = comparison_report.commit_comparison.compare_commit
     components = components_service.commit_components(head_commit, user)
-
-    # TODO: can we change this to not rely on the comparison in the context?
-    if not "comparison" in info.context:
-        return None
-    comparison = info.context["comparison"]
     return [ComponentComparison(comparison, component) for component in components]
 
 
@@ -188,14 +193,13 @@ def resolve_flag_comparisons_count(comparison: ComparisonReport, info):
 @sync_to_async
 def resolve_has_different_number_of_head_and_base_reports(
     comparison: ComparisonReport, info, **kwargs
-) -> int:
+) -> False:
     # TODO: can we remove the need for `info.context["conmparison"]` here?
-
-    # Ensure PullRequestComparison type exists in context
-    if "comparison" not in info.context:
+    comparison: Comparison = info.context["comparison"]
+    try:
+        comparison.validate()
+    except MissingComparisonReport:
         return False
-
-    comparison: PullRequestComparison = info.context["comparison"]
     return comparison.has_different_number_of_head_and_base_sessions
 
 

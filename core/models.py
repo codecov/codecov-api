@@ -315,6 +315,8 @@ class Pull(models.Model):
     updatestamp = DateTimeWithoutTZField(default=datetime.now)
     diff = models.JSONField(null=True)
     flare = models.JSONField(null=True)
+    behind_by = models.IntegerField(null=True)
+    behind_by_commit = models.TextField(null=True)
 
     class Meta:
         db_table = "pulls"

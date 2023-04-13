@@ -9,6 +9,7 @@ from codecov_auth.tests.factories import OwnerFactory
 from compare.models import CommitComparison
 from compare.tests.factories import CommitComparisonFactory
 from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
+from services.comparison import MissingComparisonReport
 from services.components import Component
 
 from .helper import GraphQLTestHelper
@@ -231,6 +232,28 @@ class TestComponentsComparison(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
+    @patch("services.comparison.Comparison.validate")
+    def test_components_invalid_comparison_object(self, mock_compare_validate):
+        mock_compare_validate.side_effect = MissingComparisonReport()
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "pullid": self.pull.pullid,
+        }
+        data = self.gql_request(query_components_comparison, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "pull": {
+                        "compareWithBase": {
+                            "__typename": "Comparison",
+                            "componentComparisons": [],
+                        }
+                    }
+                }
+            }
+        }
+
     @patch(
         "services.components.ComponentComparison.patch_totals",
         new_callable=PropertyMock,
@@ -284,41 +307,6 @@ class TestComponentsComparison(GraphQLTestHelper, TransactionTestCase):
                             ],
                         }
                     }
-                }
-            }
-        }
-
-    def test_components_no_comparison(self):
-        query = """
-            query CommitComponentsComparison(
-                $org: String!
-                $repo: String!
-                $sha: String!
-            ) {
-                owner(username: $org) {
-                    repository(name: $repo) {
-                        commit(id: $sha) {
-                            compareWithParent {
-                                componentComparisons {
-                                    id
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        """
-
-        variables = {
-            "org": self.org.username,
-            "repo": self.repo.name,
-            "sha": self.head.commitid,
-        }
-        data = self.gql_request(query, variables=variables)
-        assert data == {
-            "owner": {
-                "repository": {
-                    "commit": {"compareWithParent": {"componentComparisons": None}}
                 }
             }
         }

@@ -334,6 +334,43 @@ class TestCompareViewSetRetrieve(APITestCase):
         assert response.status_code == status.HTTP_200_OK
         assert response.data["files"] == self.expected_files
 
+    @patch("redis.Redis.get", lambda self, key: None)
+    @patch("redis.Redis.set", lambda self, key, val, ex: None)
+    def test_has_diff_query_param(
+        self, adapter_mock, base_report_mock, head_report_mock
+    ):
+        adapter_mock.return_value = self.mocked_compare_adapter
+        base_report_mock.return_value = self.base_report
+        head_report_mock.return_value = self.head_report
+
+        pull = PullFactory(
+            base=self.base.commitid,
+            head=self.head.commitid,
+            compared_to=self.base.commitid,
+            pullid=2,
+            repository=self.repo,
+        )
+
+        response = self._get_comparison(
+            query_params={
+                "pullid": pull.pullid,
+                "has_diff": "false",
+            }
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["files"] == []
+
+        response = self._get_comparison(
+            query_params={
+                "pullid": pull.pullid,
+                "has_diff": "true",
+            }
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["files"] == self.expected_files
+
     def test_pullid_with_nonexistent_base_returns_404(
         self, adapter_mock, base_report_mock, head_report_mock
     ):

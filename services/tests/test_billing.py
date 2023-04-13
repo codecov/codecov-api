@@ -1353,30 +1353,6 @@ class BillingServiceTests(TestCase):
 
     @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
     @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
-    def test_update_plan_nonsentry_user_sentrym(
-        self, modify_subscription_mock, create_checkout_session_mock
-    ):
-        owner = OwnerFactory()
-        desired_plan = {"value": "users-sentrym"}
-        self.billing_service.update_plan(owner, desired_plan)
-
-        modify_subscription_mock.assert_not_called()
-        create_checkout_session_mock.assert_not_called()
-
-    @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
-    @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
-    def test_update_plan_nonsentry_user_sentryy(
-        self, modify_subscription_mock, create_checkout_session_mock
-    ):
-        owner = OwnerFactory()
-        desired_plan = {"value": "users-sentryy"}
-        self.billing_service.update_plan(owner, desired_plan)
-
-        modify_subscription_mock.assert_not_called()
-        create_checkout_session_mock.assert_not_called()
-
-    @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
-    @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
     def test_update_plan_sentry_user_sentrym(
         self, modify_subscription_mock, create_checkout_session_mock
     ):

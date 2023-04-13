@@ -6,6 +6,5 @@ from .errors import (
     MissingHeadCommit,
     MissingHeadReport,
     ProviderError,
-    QueryError,
     UnknownPath,
 )

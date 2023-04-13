@@ -981,6 +981,8 @@ class PullRequestComparison(Comparison):
             head_commit=None,
         )
 
+    # TODO: try using the dataloader to fetch the commits before you create this class, and pass those commits
+    # to the constructor
     @cached_property
     def base_commit(self):
         try:
