@@ -168,6 +168,9 @@ def resolve_component_comparisons(
     comparison_report: ComparisonReport, info
 ) -> Optional[List[ComponentComparison]]:
     user = info.context["request"].user
+    # TODO: can we change this to not rely on the comparison in the context?
+    if not "comparison" in info.context:
+        return None
     comparison: Comparison = info.context["comparison"]
     try:
         comparison.validate()
@@ -195,6 +198,8 @@ def resolve_has_different_number_of_head_and_base_reports(
     comparison: ComparisonReport, info, **kwargs
 ) -> False:
     # TODO: can we remove the need for `info.context["conmparison"]` here?
+    if "comparison" not in info.context:
+        return False
     comparison: Comparison = info.context["comparison"]
     try:
         comparison.validate()
