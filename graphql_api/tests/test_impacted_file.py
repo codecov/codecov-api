@@ -366,16 +366,18 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
+    @patch("services.task.TaskService.compute_comparisons")
     @patch("services.comparison.ComparisonReport.impacted_file")
     @patch("services.comparison.Comparison.validate")
     @patch("services.comparison.PullRequestComparison.get_file_comparison")
     @patch("services.archive.ArchiveService.read_file")
-    def test_fetch_impacted_file_with_segments_without_comparison_in_context(
+    def test_fetch_impacted_file_segments_without_comparison_in_context(
         self,
         read_file,
         mock_get_file_comparison,
         mock_compare_validate,
         mock_impacted_file,
+        _,
     ):
         read_file.return_value = mock_data_from_archive
         mock_get_file_comparison.return_value = MockFileComparison()
