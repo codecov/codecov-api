@@ -628,6 +628,9 @@ class FillSparseMeasurementsTest(TransactionTestCase):
             },
         ]
 
+    def test_fill_sparse_measurements_no_measurements(self):
+        assert fill_sparse_measurements([], Interval.INTERVAL_1_DAY, None, None) == []
+
 
 @pytest.mark.skipif(
     not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"

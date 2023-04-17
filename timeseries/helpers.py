@@ -283,6 +283,9 @@ def fill_sparse_measurements(
         for measurement in measurements
     }
     timestamps = sorted(by_timestamp.keys())
+    if len(timestamps) == 0:
+        return []
+
     delta = interval_deltas[interval]
 
     if start_date is None:
