@@ -247,7 +247,7 @@ class TestComponentsComparison(GraphQLTestHelper, TransactionTestCase):
                     "pull": {
                         "compareWithBase": {
                             "__typename": "Comparison",
-                            "componentComparisons": [],
+                            "componentComparisons": None,
                         }
                     }
                 }

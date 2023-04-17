@@ -175,7 +175,7 @@ def resolve_component_comparisons(
     try:
         comparison.validate()
     except MissingComparisonReport:
-        return []
+        return None
     head_commit = comparison_report.commit_comparison.compare_commit
     components = components_service.commit_components(head_commit, user)
     return [ComponentComparison(comparison, component) for component in components]
