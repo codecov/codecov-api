@@ -18,8 +18,8 @@ class GenerateAccessTokenView(APIView):
     permission_classes = [InternalTokenPermissions]
 
     def post(self, request, *args, **kwargs):
-        username = request.headers.get("username")
-        service = request.headers.get("service")
+        username = request.data.get("username")
+        service = request.data.get("service")
         validate_params(username, service)
 
         owner = Owner.objects.filter(username=username, service=service).first()

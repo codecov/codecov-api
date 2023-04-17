@@ -67,6 +67,8 @@ def resolve_segments(
 ) -> Union[UnknownPath, ProviderError, SegmentComparisons]:
     if filters is None:
         filters = {}
+    if "comparison" not in info.context:
+        return SegmentComparisons(results=[])
 
     comparison: Comparison = info.context["comparison"]
     try:

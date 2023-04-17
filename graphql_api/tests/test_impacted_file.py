@@ -12,7 +12,7 @@ from codecov_auth.tests.factories import OwnerFactory
 from compare.models import CommitComparison
 from compare.tests.factories import CommitComparisonFactory
 from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
-from services.comparison import ComparisonReport, MissingComparisonReport
+from services.comparison import ComparisonReport, ImpactedFile, MissingComparisonReport
 
 from .helper import GraphQLTestHelper
 
@@ -360,6 +360,87 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                     "missesInComparison": 1,
                                 },
                             ],
+                        }
+                    }
+                }
+            }
+        }
+
+    @patch("services.task.TaskService.compute_comparisons")
+    @patch("services.comparison.ComparisonReport.impacted_file")
+    @patch("services.comparison.Comparison.validate")
+    @patch("services.comparison.PullRequestComparison.get_file_comparison")
+    @patch("services.archive.ArchiveService.read_file")
+    def test_fetch_impacted_file_segments_without_comparison_in_context(
+        self,
+        read_file,
+        mock_get_file_comparison,
+        mock_compare_validate,
+        mock_impacted_file,
+        _,
+    ):
+        read_file.return_value = mock_data_from_archive
+        mock_get_file_comparison.return_value = MockFileComparison()
+        mock_compare_validate.return_value = True
+        mock_impacted_file.return_value = ImpactedFile(
+            **{
+                "head_name": "fileB",
+                "base_name": "fileB",
+                "head_coverage": {
+                    "hits": 12,
+                    "misses": 1,
+                    "partials": 1,
+                    "branches": 3,
+                    "sessions": 0,
+                    "complexity": 0,
+                    "complexity_total": 0,
+                    "methods": 5,
+                },
+                "base_coverage": {
+                    "hits": 5,
+                    "misses": 6,
+                    "partials": 1,
+                    "branches": 2,
+                    "sessions": 0,
+                    "complexity": 0,
+                    "complexity_total": 0,
+                    "methods": 4,
+                },
+                "added_diff_coverage": [
+                    [9, "h"],
+                    [10, "m"],
+                    [13, "p"],
+                    [14, "h"],
+                    [15, "h"],
+                    [16, "h"],
+                    [17, "h"],
+                ],
+                "unexpected_line_changes": [[[1, "h"], [1, "h"]]],
+            }
+        )
+        self.comparison.delete()
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "pull": self.pull.pullid,
+            "path": "fileB",
+        }
+        data = self.gql_request(query_impacted_file_through_pull, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "pull": {
+                        "compareWithBase": {
+                            "state": "pending",
+                            "impactedFile": {
+                                "headName": "fileB",
+                                "baseName": "fileB",
+                                "hashedPath": "eea3f37743bfd3409bec556ab26d4698",
+                                "baseCoverage": {"percentCovered": None},
+                                "headCoverage": {"percentCovered": None},
+                                "patchCoverage": {"percentCovered": 71.42857142857143},
+                                "segments": {"results": []},
+                            },
                         }
                     }
                 }
