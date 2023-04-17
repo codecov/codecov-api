@@ -92,13 +92,16 @@ class BaseReportViewSet(
             raise NotFound(f"No coverage report found for commit {commit.commitid}")
 
         path = self.request.query_params.get("path", None)
-        if path:
+        flag = self.request.query_params.get("flag", None)
+        if path and flag:
+            # need to filter these together - we can't call `filter`
+            # on a filtered report
+            report = report.filter(flags=[flag], paths=[f"{path}*"])
+        elif path:
             report = report.filter(paths=[f"{path}*"])
             if len(report.files) == 0:
                 raise NotFound(f"No files or directories found matching path: {path}")
-
-        flag = self.request.query_params.get("flag", None)
-        if flag:
+        elif flag:
             report = report.filter(flags=[flag])
 
         component_id = self.request.query_params.get("component_id", None)
