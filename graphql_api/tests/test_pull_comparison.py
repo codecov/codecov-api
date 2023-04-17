@@ -171,6 +171,38 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         res = self._request(query)
         assert res == {"compareWithBase": {"flagComparisons": []}}
 
+    @patch("services.task.TaskService.compute_comparisons")
+    def test_pull_different_number_of_head_and_base_reports_without_context(self, _):
+        # Just running this w/ the commit_comparison in setup will yield nothing
+        query = """
+            compareWithBase {
+                ... on Comparison {
+                    hasDifferentNumberOfHeadAndBaseReports
+                }
+            }
+        """
+        self.commit_comparison.delete()
+        res = self._request(query)
+        assert res == {
+            "compareWithBase": {"hasDifferentNumberOfHeadAndBaseReports": False}
+        }
+
+    @patch("services.task.TaskService.compute_comparisons")
+    def test_pull_component_comparison_without_context(self, _):
+        # Just running this w/ the commit_comparison in setup will yield nothing
+        query = """
+            compareWithBase {
+                ... on Comparison {
+                    componentComparisons {
+                        name
+                    }
+                }
+            }
+        """
+        self.commit_comparison.delete()
+        res = self._request(query)
+        assert res == {"compareWithBase": {"componentComparisons": None}}
+
     def test_pull_flag_comparisons(self):
         FlagComparisonFactory(
             commit_comparison=self.commit_comparison,
