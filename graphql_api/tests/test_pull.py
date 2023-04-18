@@ -54,8 +54,8 @@ default_pull_request_detail_query = """
             }
         }
     }
-    behind_by
-    behind_by_commit
+    behindBy
+    behindByCommit
 """
 
 query_pull_request_detail = """{
@@ -121,8 +121,8 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "compareWithBase": {
                 "__typename": "MissingBaseCommit",
             },
-            "behind_by": None,
-            "behind_by_commit": None,
+            "behindBy": None,
+            "behindByCommit": None,
         }
 
     @freeze_time("2021-02-02")
@@ -146,8 +146,8 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "compareWithBase": {
                 "__typename": "MissingBaseCommit",
             },
-            "behind_by": None,
-            "behind_by_commit": None,
+            "behindBy": None,
+            "behindByCommit": None,
         }
 
     @freeze_time("2021-02-02")
@@ -170,8 +170,8 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "compareWithBase": {
                 "__typename": "MissingHeadCommit",
             },
-            "behind_by": None,
-            "behind_by_commit": None,
+            "behindBy": None,
+            "behindByCommit": None,
         }
 
     @freeze_time("2021-02-02")
@@ -198,8 +198,8 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "compareWithBase": {
                 "__typename": "MissingComparison",
             },
-            "behind_by": None,
-            "behind_by_commit": None,
+            "behindBy": None,
+            "behindByCommit": None,
         }
 
     @freeze_time("2021-02-02")
@@ -244,8 +244,8 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
                 "__typename": "Comparison",
                 "patchTotals": {"coverage": 87.39},
             },
-            "behind_by": 23,
-            "behind_by_commit": "1089nf898as-jdf09hahs09fgh",
+            "behindBy": 23,
+            "behindByCommit": "1089nf898as-jdf09hahs09fgh",
         }
 
     @freeze_time("2021-02-02")
@@ -286,8 +286,8 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
                 "__typename": "Comparison",
                 "patchTotals": None,
             },
-            "behind_by": None,
-            "behind_by_commit": None,
+            "behindBy": None,
+            "behindByCommit": None,
         }
 
     @freeze_time("2021-02-02")
