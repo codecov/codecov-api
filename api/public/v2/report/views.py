@@ -94,13 +94,16 @@ class BaseReportViewSet(
             raise NotFound(f"No coverage report found for commit {commit.commitid}")
 
         path = self.request.query_params.get("path", None)
-        if path:
+        flag = self.request.query_params.get("flag", None)
+        if path and flag:
+            # need to filter these together - we can't call `filter`
+            # on a filtered report
+            report = report.filter(flags=[flag], paths=[f"{path}*"])
+        elif path:
             report = report.filter(paths=[f"{path}*"])
             if len(report.files) == 0:
                 raise NotFound(f"No files or directories found matching path: {path}")
-
-        flag = self.request.query_params.get("flag", None)
-        if flag:
+        elif flag:
             report = report.filter(flags=[flag])
 
         component_id = self.request.query_params.get("component_id", None)
@@ -289,7 +292,9 @@ class FileReportViewSet(
         oldest_sha = self.request.query_params.get("oldest_sha")
 
         for i in range(walk_back):
-            if self._is_valid_report(report, self.path):
+            if self._is_valid_commit(self.commit) and self._is_valid_report(
+                report, self.path
+            ):
                 break
             else:
                 # walk commit ancestors until we find coverage info for the given path
@@ -335,7 +340,10 @@ class FileReportViewSet(
         """
         return super().retrieve(request, *args, **kwargs)
 
-    def _is_valid_report(self, report: Report, path: str):
+    def _is_valid_commit(self, commit: Commit) -> bool:
+        return commit.state == Commit.CommitStates.COMPLETE
+
+    def _is_valid_report(self, report: Report, path: str) -> bool:
         if report is None:
             return False
 

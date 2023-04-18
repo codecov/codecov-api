@@ -9,6 +9,7 @@ from codecov_auth.tests.factories import OwnerFactory
 from compare.models import CommitComparison
 from compare.tests.factories import CommitComparisonFactory
 from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
+from services.comparison import MissingComparisonReport
 from services.components import Component
 
 from .helper import GraphQLTestHelper
@@ -225,6 +226,28 @@ class TestComponentsComparison(GraphQLTestHelper, TransactionTestCase):
                         "compareWithBase": {
                             "__typename": "Comparison",
                             "componentComparisons": [],
+                        }
+                    }
+                }
+            }
+        }
+
+    @patch("services.comparison.Comparison.validate")
+    def test_components_invalid_comparison_object(self, mock_compare_validate):
+        mock_compare_validate.side_effect = MissingComparisonReport()
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "pullid": self.pull.pullid,
+        }
+        data = self.gql_request(query_components_comparison, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "pull": {
+                        "compareWithBase": {
+                            "__typename": "Comparison",
+                            "componentComparisons": None,
                         }
                     }
                 }

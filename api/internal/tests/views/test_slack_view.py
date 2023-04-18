@@ -13,6 +13,7 @@ class SlackViewSetTests(APITestCase):
         self.owner = Owner.objects.create(
             username="test", service="github", name="test"
         )
+        self.data = {"username": self.owner.username, "service": self.owner.service}
         self.view = GenerateAccessTokenView.as_view()
 
     def test_generate_access_token_missing_headers(self):
@@ -32,8 +33,7 @@ class SlackViewSetTests(APITestCase):
             reverse(
                 "generate-token",
             ),
-            HTTP_USERNAME="test",
-            HTTP_SERVICE="github",
+            data=self.data,
             HTTP_AUTHORIZATION=f"Bearer {codecov_internal_token}",
         )
         assert response.status_code == 401
@@ -46,8 +46,10 @@ class SlackViewSetTests(APITestCase):
                 "generate-token",
             ),
             HTTP_AUTHORIZATION=f"Bearer {codecov_internal_token}",
-            HTTP_USERNAME="invalid",
-            HTTP_SERVICE="github",
+            data={
+                "username": "random-owner",
+                "service": self.owner.service,
+            },
         )
 
         assert response.status_code == 404
@@ -60,8 +62,10 @@ class SlackViewSetTests(APITestCase):
                 "generate-token",
             ),
             HTTP_AUTHORIZATION=f"Bearer {codecov_internal_token}",
-            HTTP_USERNAME="test",
-            HTTP_SERVICE="invalid",
+            data={
+                "username": self.owner.username,
+                "service": "random-service",
+            },
         )
 
         assert response.status_code == 400
@@ -77,10 +81,10 @@ class SlackViewSetTests(APITestCase):
             reverse(
                 "generate-token",
             ),
-            HTTP_USERNAME="test",
-            HTTP_SERVICE="github",
             HTTP_AUTHORIZATION=f"Bearer {codecov_internal_token}",
+            data=self.data,
         )
+
         assert response.status_code == 200
         assert response.data["token"] == self.owner.user_tokens.first().token
 
@@ -90,9 +94,9 @@ class SlackViewSetTests(APITestCase):
             reverse(
                 "generate-token",
             ),
-            HTTP_USERNAME="test",
-            HTTP_SERVICE="github",
+            data=self.data,
             HTTP_AUTHORIZATION=f"Bearer {codecov_internal_token}",
         )
+
         assert response.status_code == 200
         assert response.data["token"] == self.owner.user_tokens.first().token

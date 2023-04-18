@@ -171,6 +171,38 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         res = self._request(query)
         assert res == {"compareWithBase": {"flagComparisons": []}}
 
+    @patch("services.task.TaskService.compute_comparisons")
+    def test_pull_different_number_of_head_and_base_reports_without_context(self, _):
+        # Just running this w/ the commit_comparison in setup will yield nothing
+        query = """
+            compareWithBase {
+                ... on Comparison {
+                    hasDifferentNumberOfHeadAndBaseReports
+                }
+            }
+        """
+        self.commit_comparison.delete()
+        res = self._request(query)
+        assert res == {
+            "compareWithBase": {"hasDifferentNumberOfHeadAndBaseReports": False}
+        }
+
+    @patch("services.task.TaskService.compute_comparisons")
+    def test_pull_component_comparison_without_context(self, _):
+        # Just running this w/ the commit_comparison in setup will yield nothing
+        query = """
+            compareWithBase {
+                ... on Comparison {
+                    componentComparisons {
+                        name
+                    }
+                }
+            }
+        """
+        self.commit_comparison.delete()
+        res = self._request(query)
+        assert res == {"compareWithBase": {"componentComparisons": None}}
+
     def test_pull_flag_comparisons(self):
         FlagComparisonFactory(
             commit_comparison=self.commit_comparison,
@@ -1048,56 +1080,6 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             "pullId": self.pull.pullid,
             "compareWithBase": {
                 "__typename": "MissingHeadReport",
-            },
-        }
-
-    def test_pull_comparison_missing_head_report_with_successful_commit_comparison(
-        self,
-    ):
-        self.commit_comparison.error = None
-        self.commit_comparison.save()
-
-        self.head_report.side_effect = comparison.MissingComparisonReport(
-            "Missing head report"
-        )
-
-        query = """
-            pullId
-            compareWithBase {
-                __typename
-            }
-        """
-
-        res = self._request(query)
-        assert res == {
-            "pullId": self.pull.pullid,
-            "compareWithBase": {
-                "__typename": "MissingHeadReport",
-            },
-        }
-
-    def test_pull_comparison_missing_base_report_with_successful_commit_comparison(
-        self,
-    ):
-        self.commit_comparison.error = None
-        self.commit_comparison.save()
-
-        self.head_report.side_effect = comparison.MissingComparisonReport(
-            "Missing base report"
-        )
-
-        query = """
-            pullId
-            compareWithBase {
-                __typename
-            }
-        """
-
-        res = self._request(query)
-        assert res == {
-            "pullId": self.pull.pullid,
-            "compareWithBase": {
-                "__typename": "MissingBaseReport",
             },
         }
 
