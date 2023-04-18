@@ -1,6 +1,6 @@
 type Pull {
-  behind_by: Int
-  behind_by_commit: String
+  behindBy: Int
+  behindByCommit: String
   title: String
   state: PullRequestState
   pullId: Int
