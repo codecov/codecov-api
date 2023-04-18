@@ -4,6 +4,7 @@ from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins
 
 from api.public.v2.schema import repo_parameters
+from api.shared.pagination import PaginationMixin
 from api.shared.pull.mixins import PullViewSetMixin
 from core.models import Pull
 
@@ -12,6 +13,7 @@ from .serializers import PullSerializer
 
 @extend_schema(parameters=repo_parameters, tags=["Pulls"])
 class PullViewSet(
+    PaginationMixin,
     PullViewSetMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,

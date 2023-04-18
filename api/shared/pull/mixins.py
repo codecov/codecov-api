@@ -4,6 +4,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets
 
 from api.shared.mixins import RepoPropertyMixin
+from api.shared.pagination import PaginationMixin
 from api.shared.permissions import RepositoryArtifactPermissions
 from core.models import Commit
 
@@ -14,7 +15,8 @@ class PullViewSetMixin(
 ):
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ["state"]
-    ordering_fields = ("pullid",)
+    ordering = ["-pullid"]
+    ordering_fields = ["pullid"]
     permission_classes = [RepositoryArtifactPermissions]
     lookup_field = "pullid"
 

@@ -63,6 +63,50 @@ class PullViewsetTests(InternalAPITest):
             "total_pages": 1,
         }
 
+    def test_list_cursor_pagination(self):
+        url = reverse(
+            "api-v2-pulls-list",
+            kwargs={
+                "service": self.org.service,
+                "owner_username": self.org.username,
+                "repo_name": self.repo.name,
+            },
+        )
+        res = self.client.get(f"{url}?page_size=1&cursor=")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["results"] == [
+            {
+                "pullid": self.pulls[1].pullid,
+                "title": self.pulls[1].title,
+                "base_totals": None,
+                "head_totals": None,
+                "updatestamp": "2022-01-01T00:00:00Z",
+                "state": "open",
+                "ci_passed": None,
+                "author": None,
+            },
+        ]
+        assert data["previous"] is None
+        assert data["next"] is not None
+
+        res = self.client.get(data["next"])
+        data = res.json()
+        assert data["results"] == [
+            {
+                "pullid": self.pulls[0].pullid,
+                "title": self.pulls[0].title,
+                "base_totals": None,
+                "head_totals": None,
+                "updatestamp": "2022-01-01T00:00:00Z",
+                "state": "open",
+                "ci_passed": None,
+                "author": None,
+            },
+        ]
+        assert data["previous"] is not None
+        assert data["next"] is None
+
     @patch("api.shared.repo.repository_accessors.RepoAccessors.get_repo_permissions")
     def test_retrieve(self, get_repo_permissions):
         get_repo_permissions.return_value = (True, True)
