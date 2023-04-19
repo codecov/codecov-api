@@ -26,7 +26,6 @@ class PaginationMixin:
 
     @property
     def paginator(self):
-        print("HERE!")
         if not hasattr(self, "_paginator"):
             if self.pagination_class is None:
                 self._paginator = None
