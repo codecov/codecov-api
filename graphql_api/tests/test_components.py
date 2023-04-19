@@ -155,6 +155,7 @@ query_components_comparison = """
                     compareWithBase {
                         __typename
                         ... on Comparison {
+                            componentComparisonsCount
                             componentComparisons {
                                 id
                                 name
@@ -212,7 +213,7 @@ class TestComponentsComparison(GraphQLTestHelper, TransactionTestCase):
         self.base_report.return_value = sample_report()
         self.addCleanup(self.base_report_patcher.stop)
 
-    def test_no_components(self):
+    def test_no_components_in_pull_reqyuest(self):
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
@@ -226,6 +227,7 @@ class TestComponentsComparison(GraphQLTestHelper, TransactionTestCase):
                         "compareWithBase": {
                             "__typename": "Comparison",
                             "componentComparisons": [],
+                            "componentComparisonsCount": 0,
                         }
                     }
                 }
@@ -248,6 +250,7 @@ class TestComponentsComparison(GraphQLTestHelper, TransactionTestCase):
                         "compareWithBase": {
                             "__typename": "Comparison",
                             "componentComparisons": None,
+                            "componentComparisonsCount": 0,
                         }
                     }
                 }
@@ -289,6 +292,7 @@ class TestComponentsComparison(GraphQLTestHelper, TransactionTestCase):
                     "pull": {
                         "compareWithBase": {
                             "__typename": "Comparison",
+                            "componentComparisonsCount": 2,
                             "componentComparisons": [
                                 {
                                     "id": "python",
