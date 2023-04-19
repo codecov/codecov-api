@@ -99,11 +99,11 @@ def resolve_commits(pull: Pull, info, **kwargs):
     )
 
 
-@pull_bindable.field("behind_by")
+@pull_bindable.field("behindBy")
 def resolve_behind_by(pull: Pull, info, **kwargs) -> int:
     return pull.behind_by
 
 
-@pull_bindable.field("behind_by_commit")
+@pull_bindable.field("behindByCommit")
 def resolve_behind_by_commit(pull: Pull, info, **kwargs) -> str:
     return pull.behind_by_commit
