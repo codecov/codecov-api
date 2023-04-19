@@ -181,6 +181,25 @@ def resolve_component_comparisons(
     return [ComponentComparison(comparison, component) for component in components]
 
 
+@comparison_bindable.field("componentComparisonsCount")
+@sync_to_async
+def resolve_component_comparisons_count(
+    comparison_report: ComparisonReport, info
+) -> int:
+    # TODO: can we change this to not rely on the comparison in the context?
+    if not "comparison" in info.context:
+        return 0
+    comparison: Comparison = info.context["comparison"]
+    try:
+        comparison.validate()
+    except MissingComparisonReport:
+        return 0
+    user = info.context["request"].user
+    head_commit = comparison_report.commit_comparison.compare_commit
+    components = components_service.commit_components(head_commit, user)
+    return len([ComponentComparison(comparison, component) for component in components])
+
+
 @comparison_bindable.field("flagComparisonsCount")
 @sync_to_async
 def resolve_flag_comparisons_count(comparison: ComparisonReport, info):
