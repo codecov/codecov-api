@@ -201,7 +201,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         """
         self.commit_comparison.delete()
         res = self._request(query)
-        assert res == {"compareWithBase": {"componentComparisons": None}}
+        assert res == {"compareWithBase": {"componentComparisons": []}}
 
     def test_pull_flag_comparisons(self):
         FlagComparisonFactory(
