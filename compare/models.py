@@ -51,3 +51,21 @@ class FlagComparison(BaseCodecovModel):
     head_totals = models.JSONField(null=True)
     base_totals = models.JSONField(null=True)
     patch_totals = models.JSONField(null=True)
+
+
+class ComponentComparison(BaseCodecovModel):
+    commit_comparison = models.ForeignKey(
+        CommitComparison, on_delete=models.CASCADE, related_name="component_comparisons"
+    )
+    component_id = models.TextField(null=False, blank=False)
+    head_totals = models.JSONField(null=True)
+    base_totals = models.JSONField(null=True)
+    patch_totals = models.JSONField(null=True)
+
+    class Meta:
+        indexes = [
+            models.Index(
+                fields=["commit_comparison_id", "component_id"],
+                name="component_comparison_component",
+            ),
+        ]
