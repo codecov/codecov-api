@@ -140,15 +140,6 @@ class Repository(models.Model):
     def service(self):
         return self.author.service
 
-    def flush(self):
-        self.commits.all().delete()
-        self.branches.all().delete()
-        self.pull_requests.all().delete()
-        self.flags.all().delete()
-        self.yaml = None
-        self.cache = None
-        self.save()
-
     def clean(self):
         if self.using_integration is None:
             raise ValidationError("using_integration cannot be null")
