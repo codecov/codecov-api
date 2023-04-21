@@ -214,6 +214,28 @@ def test_timeseries_delete(mocker):
     )
 
 
+def test_flush_repo(mocker):
+    signature_mock = mocker.patch("services.task.task.signature")
+    mock_route_task = mocker.patch(
+        "services.task.task.route_task", return_value={"queue": "celery"}
+    )
+    TaskService().flush_repo(repository_id=12345)
+    mock_route_task.assert_called_with(
+        "app.tasks.flush_repo.FlushRepo",
+        args=None,
+        kwargs=dict(repoid=12345),
+    )
+    signature_mock.assert_called_with(
+        "app.tasks.flush_repo.FlushRepo",
+        args=None,
+        kwargs=dict(repoid=12345),
+        app=celery_app,
+        queue="celery",
+        soft_time_limit=None,
+        time_limit=None,
+    )
+
+
 def test_update_commit_task(mocker):
     signature_mock = mocker.patch("services.task.task.signature")
     mock_route_task = mocker.patch(
