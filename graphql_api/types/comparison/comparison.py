@@ -5,7 +5,7 @@ from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
 
 import services.components as components_service
 from codecov.db import sync_to_async
-from compare.models import FlagComparison
+from compare.models import ComponentComparison, FlagComparison
 from graphql_api.actions.flags import get_flag_comparisons
 from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.types.errors import (
@@ -16,8 +16,12 @@ from graphql_api.types.errors import (
     MissingHeadReport,
 )
 from reports.models import ReportLevelTotals
-from services.comparison import ComparisonReport, ImpactedFile, PullRequestComparison
-from services.components import ComponentComparison
+from services.comparison import (
+    Comparison,
+    ComparisonReport,
+    ImpactedFile,
+    MissingComparisonReport,
+)
 
 comparison_bindable = ObjectType("Comparison")
 
@@ -160,17 +164,26 @@ def resolve_flag_comparisons(
 @comparison_bindable.field("componentComparisons")
 @sync_to_async
 def resolve_component_comparisons(
-    comparison: ComparisonReport, info
-) -> Optional[List[ComponentComparison]]:
+    comparison_report: ComparisonReport, info
+) -> List[ComponentComparison]:
     user = info.context["request"].user
-    head_commit = comparison.commit_comparison.compare_commit
+    head_commit = comparison_report.commit_comparison.compare_commit
     components = components_service.commit_components(head_commit, user)
 
-    # TODO: can we change this to not rely on the comparison in the context?
-    if not "comparison" in info.context:
-        return None
-    comparison = info.context["comparison"]
-    return [ComponentComparison(comparison, component) for component in components]
+    # store for child resolvers (needed to get the component name, for example)
+    info.context["components"] = {
+        component.component_id: component for component in components
+    }
+
+    return list(comparison_report.commit_comparison.component_comparisons.all())
+
+
+@comparison_bindable.field("componentComparisonsCount")
+@sync_to_async
+def resolve_component_comparisons_count(
+    comparison_report: ComparisonReport, info
+) -> int:
+    return comparison_report.commit_comparison.component_comparisons.count()
 
 
 @comparison_bindable.field("flagComparisonsCount")
@@ -188,14 +201,15 @@ def resolve_flag_comparisons_count(comparison: ComparisonReport, info):
 @sync_to_async
 def resolve_has_different_number_of_head_and_base_reports(
     comparison: ComparisonReport, info, **kwargs
-) -> int:
+) -> False:
     # TODO: can we remove the need for `info.context["conmparison"]` here?
-
-    # Ensure PullRequestComparison type exists in context
     if "comparison" not in info.context:
         return False
-
-    comparison: PullRequestComparison = info.context["comparison"]
+    comparison: Comparison = info.context["comparison"]
+    try:
+        comparison.validate()
+    except MissingComparisonReport:
+        return False
     return comparison.has_different_number_of_head_and_base_sessions
 
 

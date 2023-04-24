@@ -1,12 +1,13 @@
 import math
 from datetime import datetime, timedelta
-from typing import Iterable, Optional
+from typing import Iterable, List, Optional
 
 from django.conf import settings
 from django.db import connections
 from django.db.models import (
     Avg,
     DateTimeField,
+    DecimalField,
     F,
     FloatField,
     Func,
@@ -149,16 +150,37 @@ def aggregate_measurements(
         .annotate(
             min=Min("value_min"),
             max=Max("value_max"),
-            avg=(Sum(F("value_avg") * F("value_count")) / Sum("value_count")),
+            avg=Cast(
+                Sum(F("value_avg") * F("value_count")) / Sum(F("value_count")),
+                # this is equivalent to Postgres' numeric(1000, 5) type
+                # 1000 is the max precision
+                # (used to avoid floating point error)
+                DecimalField(max_digits=1000, decimal_places=5),
+            ),
         )
         .order_by("timestamp_bin")
     )
+
+
+def _filter_repos(
+    queryset: QuerySet, repos: Optional[List[Repository]], column_name: str = "repo_id"
+) -> QuerySet:
+    """
+    Filter the given generic queryset by a set of (repoid, branch) tuples.
+    """
+    if repos:
+        queryset = queryset.extra(
+            where=[f"({column_name}, branch) in %s"],
+            params=[tuple((repo.repoid, repo.branch) for repo in repos)],
+        )
+    return queryset
 
 
 def coverage_measurements(
     interval: Interval,
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
+    repos: Optional[List[Repository]] = None,
     **filters,
 ):
     timestamp_filters = {}
@@ -173,6 +195,8 @@ def coverage_measurements(
         .filter(**filters)
     )
 
+    queryset = _filter_repos(queryset, repos)
+
     if start_date:
         # The first measurement of the specified range (`start_date` through `end_date`)
         # may be missing the first datapoint.  In order for consumers of this API to have
@@ -186,6 +210,7 @@ def coverage_measurements(
             )
             .filter(**filters)
         )
+        older = _filter_repos(older, repos)
         older = aggregate_measurements(older).order_by("-timestamp_bin")[:1]
 
         return older.union(aggregate_measurements(queryset)).order_by("timestamp_bin")
@@ -258,6 +283,9 @@ def fill_sparse_measurements(
         for measurement in measurements
     }
     timestamps = sorted(by_timestamp.keys())
+    if len(timestamps) == 0:
+        return []
+
     delta = interval_deltas[interval]
 
     if start_date is None:
@@ -307,6 +335,7 @@ def coverage_fallback_query(
     interval: Interval,
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
+    repos: Optional[List[Repository]] = None,
     **filters,
 ):
     """
@@ -318,6 +347,7 @@ def coverage_fallback_query(
     if end_date is not None:
         timestamp_filters["timestamp__lte"] = end_date
     commits = Commit.objects.filter(**timestamp_filters).filter(**filters)
+    commits = _filter_repos(commits, repos, column_name="repoid")
     commits = _commits_coverage(commits, interval)
 
     if start_date:
@@ -328,6 +358,7 @@ def coverage_fallback_query(
         older = Commit.objects.filter(
             timestamp__lt=start_date,
         ).filter(**filters)
+        older = _filter_repos(older, repos, column_name="repoid")
         older = _commits_coverage(older, interval).order_by("-timestamp_bin")[:1]
 
         return older.union(commits).order_by("timestamp_bin")
@@ -419,8 +450,8 @@ def owner_coverage_measurements_with_fallback(
     owner: Owner,
     repo_ids: Iterable[str],
     interval: Interval,
-    start_date: datetime,
-    end_date: datetime,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
 ):
     """
     Tries to return owner coverage measurements from Timescale.
@@ -438,6 +469,10 @@ def owner_coverage_measurements_with_fallback(
         dataset.is_backfilled() for dataset in datasets
     )
 
+    # we can't join across databases so we need to load all this into memory.
+    # select just the needed columns to keep this manageable
+    repos = Repository.objects.filter(repoid__in=repo_ids).only("repoid", "branch")
+
     if settings.TIMESERIES_ENABLED and all_backfilled:
         # timeseries data is ready
         return coverage_measurements(
@@ -445,7 +480,7 @@ def owner_coverage_measurements_with_fallback(
             start_date=start_date,
             end_date=end_date,
             owner_id=owner.pk,
-            repo_id__in=repo_ids,
+            repos=repos,
         )
     else:
         if settings.TIMESERIES_ENABLED:
@@ -466,5 +501,5 @@ def owner_coverage_measurements_with_fallback(
             interval,
             start_date=start_date,
             end_date=end_date,
-            repository_id__in=repo_ids,
+            repos=repos,
         )

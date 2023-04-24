@@ -282,6 +282,17 @@ SPECTACULAR_SETTINGS = {
     "REDOC_DIST": "SIDECAR",  # serve Redoc from Django (not CDN)
 }
 
+CSP_WORKER_SRC = ("'self'", "blob:")
+CSP_IMG_SRC = ("'self'", "data:", "cdn.redoc.ly")
+CSP_STYLE_SRC = (
+    "'self'",
+    "sha256-GvZq6XrzMRhFZ2MvEI09Lw7QbE3DnWuVQTMYafGYLcg=",
+    "sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
+    "sha256-DLDPR1ic47WIdK2WyeLkblb/tm2mQH+Jt/NNhZWu1k0=",
+    "fonts.googleapis.com",
+)
+CSP_FONT_SRC = ("'self'", "fonts.gstatic.com")
+
 # Internationalization
 # https://docs.djangoproject.com/en/2.1/topics/i18n/
 
@@ -343,6 +354,7 @@ SESSION_COOKIE_DOMAIN = get_config(
 )
 # Defaulting to 'not found' as opposed to 'None' to avoid None somehow getting through as a bearer token. Token strings can't have spaces, hence 'not found' can never be forced as a header input value
 SUPER_API_TOKEN = os.getenv("SUPER_API_TOKEN", "not found")
+CODECOV_INTERNAL_TOKEN = os.getenv("CODECOV_INTERNAL_TOKEN", "not found")
 
 CIRCLECI_TOKEN = get_config("circleci", "token")
 
@@ -436,7 +448,6 @@ CORS_ALLOWED_ORIGINS = []
 GRAPHQL_PLAYGROUND = False
 
 UPLOAD_THROTTLING_ENABLED = True
-MAX_UPLOAD_LIMIT = get_config("setup", "max_sessions", default=150)
 
 CANNY_SSO_PRIVATE_TOKEN = get_config("canny", "sso_private_token", default="")
 

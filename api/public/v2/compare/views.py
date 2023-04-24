@@ -1,3 +1,4 @@
+from distutils.util import strtobool
 from inspect import Parameter
 
 from drf_spectacular.types import OpenApiTypes
@@ -49,6 +50,14 @@ class CompareViewSet(
 
     def get_queryset(self):
         return None
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        if "has_diff" in self.request.query_params:
+            context.update(
+                {"has_diff": strtobool(self.request.query_params["has_diff"])}
+            )
+        return context
 
     @extend_schema(
         summary="Comparison",

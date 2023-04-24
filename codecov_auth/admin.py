@@ -14,7 +14,7 @@ from billing.constants import (
     USER_PLAN_REPRESENTATIONS,
 )
 from codecov.admin import AdminMixin
-from codecov_auth.models import OrganizationLevelToken, Owner
+from codecov_auth.models import OrganizationLevelToken, Owner, OwnerProfile
 from codecov_auth.services.org_level_token_service import OrgLevelTokenService
 from services.task import TaskService
 from utils.services import get_short_service_name
@@ -41,6 +41,18 @@ def impersonate_owner(self, request, queryset):
 
 
 impersonate_owner.short_description = "Impersonate the selected user"
+
+
+class OwnerProfileInline(admin.TabularInline):
+    model = OwnerProfile
+    fk_name = "owner"
+    fields = ["terms_agreement", "terms_agreement_at"]
+
+    def has_change_permission(self, request, obj=None):
+        return True
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 class OrgUploadTokenInline(admin.TabularInline):
@@ -83,7 +95,7 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
     search_fields = ("username__iexact",)
     actions = [impersonate_owner]
     autocomplete_fields = ("bot",)
-    inlines = [OrgUploadTokenInline]
+    inlines = [OrgUploadTokenInline, OwnerProfileInline]
 
     readonly_fields = (
         "ownerid",
@@ -191,6 +203,7 @@ class LogEntryAdmin(admin.ModelAdmin):
         "change_message",
     )
     list_display = ["__str__", "action_time", "user", "change_message"]
+    search_fields = ("object_repr", "change_message")
 
     # keep only view permission
     def has_add_permission(self, request):

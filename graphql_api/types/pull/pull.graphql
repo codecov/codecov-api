@@ -1,4 +1,6 @@
 type Pull {
+  behindBy: Int
+  behindByCommit: String
   title: String
   state: PullRequestState
   pullId: Int
@@ -8,5 +10,10 @@ type Pull {
   comparedTo: Commit
   compareWithBase: ComparisonResult
   compareWithBaseTemp: Comparison
-  commits(first: Int, after: String, last: Int, before: String): CommitConnection
+  commits(
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): CommitConnection
 }

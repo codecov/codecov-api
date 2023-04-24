@@ -85,7 +85,7 @@ PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
 
 SENTRY_PAID_USER_PLAN_REPRESENTATIONS = {
     "users-sentrym": {
-        "marketing_name": "Sentry Pro Team",
+        "marketing_name": "Pro Team for Sentry",
         "value": "users-sentrym",
         "billing_rate": "monthly",
         "base_unit_price": 12,
@@ -99,7 +99,7 @@ SENTRY_PAID_USER_PLAN_REPRESENTATIONS = {
         "trial_days": 14,
     },
     "users-sentryy": {
-        "marketing_name": "Sentry Pro Team",
+        "marketing_name": "Pro Team for Sentry",
         "value": "users-sentryy",
         "billing_rate": "annually",
         "base_unit_price": 10,

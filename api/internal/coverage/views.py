@@ -6,9 +6,8 @@ from rest_framework.views import APIView
 
 from api.shared.mixins import RepoPropertyMixin
 from api.shared.permissions import RepositoryArtifactPermissions
+from api.shared.report.serializers import TreeSerializer
 from services.path import ReportPaths
-
-from .serializers import TreeSerializer
 
 
 class CoverageViewSet(viewsets.ViewSet, RepoPropertyMixin):

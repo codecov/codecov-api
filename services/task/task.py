@@ -96,6 +96,12 @@ class TaskService(object):
                 )
                 for comparison_id in comparison_ids
             ]
+            for comparison_id in comparison_ids:
+                # log each separately so it can be filtered easily in the logs
+                log.info(
+                    "Triggering compute comparison task",
+                    extra=dict(comparison_id=comparison_id),
+                )
             group(signatures).apply_async()
 
     def normalize_profiling_upload(self, profiling_upload_id):
@@ -195,7 +201,7 @@ class TaskService(object):
 
     def sync_plans(self, sender=None, account=None, action=None):
         self._create_signature(
-            "app.tasks.ghm_sync_plans.SyncPlans",
+            celery_config.ghm_sync_plans_task_name,
             kwargs=dict(sender=sender, account=account, action=action),
         ).apply_async()
 

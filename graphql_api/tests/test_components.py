@@ -7,8 +7,9 @@ from shared.utils.sessions import Session
 
 from codecov_auth.tests.factories import OwnerFactory
 from compare.models import CommitComparison
-from compare.tests.factories import CommitComparisonFactory
+from compare.tests.factories import CommitComparisonFactory, ComponentComparisonFactory
 from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
+from services.comparison import MissingComparisonReport
 from services.components import Component
 
 from .helper import GraphQLTestHelper
@@ -154,6 +155,7 @@ query_components_comparison = """
                     compareWithBase {
                         __typename
                         ... on Comparison {
+                            componentComparisonsCount
                             componentComparisons {
                                 id
                                 name
@@ -211,7 +213,7 @@ class TestComponentsComparison(GraphQLTestHelper, TransactionTestCase):
         self.base_report.return_value = sample_report()
         self.addCleanup(self.base_report_patcher.stop)
 
-    def test_no_components(self):
+    def test_no_components_in_pull_request(self):
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
@@ -225,18 +227,38 @@ class TestComponentsComparison(GraphQLTestHelper, TransactionTestCase):
                         "compareWithBase": {
                             "__typename": "Comparison",
                             "componentComparisons": [],
+                            "componentComparisonsCount": 0,
                         }
                     }
                 }
             }
         }
 
-    @patch(
-        "services.components.ComponentComparison.patch_totals",
-        new_callable=PropertyMock,
-    )
+    @patch("services.comparison.Comparison.validate")
+    def test_components_invalid_comparison_object(self, mock_compare_validate):
+        mock_compare_validate.side_effect = MissingComparisonReport()
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "pullid": self.pull.pullid,
+        }
+        data = self.gql_request(query_components_comparison, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "pull": {
+                        "compareWithBase": {
+                            "__typename": "Comparison",
+                            "componentComparisons": [],
+                            "componentComparisonsCount": 0,
+                        }
+                    }
+                }
+            }
+        }
+
     @patch("services.components.commit_components")
-    def test_components(self, commit_components_mock, patch_totals_mock):
+    def test_components(self, commit_components_mock):
         commit_components_mock.return_value = [
             Component.from_dict(
                 {
@@ -252,7 +274,14 @@ class TestComponentsComparison(GraphQLTestHelper, TransactionTestCase):
             ),
         ]
 
-        patch_totals_mock.return_value = ReportTotals(coverage=10)
+        ComponentComparisonFactory(
+            commit_comparison=self.comparison,
+            component_id="python",
+        )
+        ComponentComparisonFactory(
+            commit_comparison=self.comparison,
+            component_id="golang",
+        )
 
         variables = {
             "org": self.org.username,
@@ -266,59 +295,25 @@ class TestComponentsComparison(GraphQLTestHelper, TransactionTestCase):
                     "pull": {
                         "compareWithBase": {
                             "__typename": "Comparison",
+                            "componentComparisonsCount": 2,
                             "componentComparisons": [
                                 {
                                     "id": "python",
                                     "name": "python",
-                                    "baseTotals": {"percentCovered": 50.0},
-                                    "headTotals": {"percentCovered": 50.0},
-                                    "patchTotals": {"percentCovered": 10.0},
+                                    "baseTotals": {"percentCovered": 72.92638},
+                                    "headTotals": {"percentCovered": 85.71429},
+                                    "patchTotals": {"percentCovered": 28.57143},
                                 },
                                 {
                                     "id": "golang",
                                     "name": "golang",
-                                    "baseTotals": {"percentCovered": 62.5},
-                                    "headTotals": {"percentCovered": 62.5},
-                                    "patchTotals": {"percentCovered": 10.0},
+                                    "baseTotals": {"percentCovered": 72.92638},
+                                    "headTotals": {"percentCovered": 85.71429},
+                                    "patchTotals": {"percentCovered": 28.57143},
                                 },
                             ],
                         }
                     }
-                }
-            }
-        }
-
-    def test_components_no_comparison(self):
-        query = """
-            query CommitComponentsComparison(
-                $org: String!
-                $repo: String!
-                $sha: String!
-            ) {
-                owner(username: $org) {
-                    repository(name: $repo) {
-                        commit(id: $sha) {
-                            compareWithParent {
-                                componentComparisons {
-                                    id
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        """
-
-        variables = {
-            "org": self.org.username,
-            "repo": self.repo.name,
-            "sha": self.head.commitid,
-        }
-        data = self.gql_request(query, variables=variables)
-        assert data == {
-            "owner": {
-                "repository": {
-                    "commit": {"compareWithParent": {"componentComparisons": None}}
                 }
             }
         }
