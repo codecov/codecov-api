@@ -4,4 +4,6 @@ type LineComparison {
     baseCoverage: CoverageLine
     headCoverage: CoverageLine
     content: String
+    hitCount: Int
+    hitUploadIds: [Int!]
 }
