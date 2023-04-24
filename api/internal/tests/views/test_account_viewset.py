@@ -31,6 +31,7 @@ class MockSubscription(object):
         }
         self.schedule = subscription_params["schedule_id"]
         self.collection_method = subscription_params["collection_method"]
+        self.trial_end = subscription_params.get("trial_end")
 
         customer_coupon = subscription_params.get("customer_coupon")
         if customer_coupon:
@@ -232,6 +233,7 @@ class AccountViewSetTests(APITestCase):
                 "current_period_end": 1633512445,
                 "customer": {"id": "cus_LK&*Hli8YLIO", "discount": None},
                 "collection_method": "charge_automatically",
+                "trial_end": None,
             },
             "checkout_session_id": None,
             "name": owner.name,
@@ -269,6 +271,7 @@ class AccountViewSetTests(APITestCase):
             "latest_invoice": None,
             "schedule_id": "sub_sched_456678999",
             "collection_method": "charge_automatically",
+            "trial_end": 1633512445,
         }
 
         mock_retrieve_subscription.return_value = MockSubscription(subscription_params)
@@ -327,6 +330,7 @@ class AccountViewSetTests(APITestCase):
                     "discount": None,
                 },
                 "collection_method": "charge_automatically",
+                "trial_end": 1633512445,
             },
             "checkout_session_id": None,
             "name": owner.name,
@@ -392,6 +396,7 @@ class AccountViewSetTests(APITestCase):
                     "discount": None,
                 },
                 "collection_method": "charge_automatically",
+                "trial_end": None,
             },
             "checkout_session_id": None,
             "name": owner.name,
@@ -555,6 +560,7 @@ class AccountViewSetTests(APITestCase):
                 "discount": None,
             },
             "collection_method": "charge_automatically",
+            "trial_end": None,
         }
 
     @patch("services.billing.stripe.Subscription.retrieve")

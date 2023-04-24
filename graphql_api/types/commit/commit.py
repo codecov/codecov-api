@@ -9,10 +9,7 @@ import services.report as report_service
 from codecov.db import sync_to_async
 from core.models import Commit
 from graphql_api.actions.commits import commit_uploads
-from graphql_api.actions.comparison import (
-    validate_commit_comparison,
-    validate_comparison,
-)
+from graphql_api.actions.comparison import validate_commit_comparison
 from graphql_api.actions.path_contents import sort_path_contents
 from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.comparison import ComparisonLoader
@@ -21,11 +18,7 @@ from graphql_api.helpers.connection import (
     queryset_to_connection,
     queryset_to_connection_sync,
 )
-from graphql_api.types.comparison.comparison import (
-    MissingBaseCommit,
-    MissingBaseReport,
-    MissingHeadReport,
-)
+from graphql_api.types.comparison.comparison import MissingBaseCommit, MissingHeadReport
 from graphql_api.types.enums import OrderingDirection, PathContentDisplayType
 from graphql_api.types.errors import MissingCoverage, MissingHeadReport, UnknownPath
 from services.comparison import Comparison, ComparisonReport, MissingComparisonReport
@@ -112,6 +105,7 @@ async def resolve_compare_with_parent(commit: Commit, info, **kwargs):
         return comparison_error
 
     if commit_comparison and commit_comparison.is_processed:
+
         user = info.context["request"].user
         parent_commit = await CommitLoader.loader(info, commit.repository_id).load(
             commit.parent_commit_id
@@ -119,18 +113,6 @@ async def resolve_compare_with_parent(commit: Commit, info, **kwargs):
         comparison = Comparison(
             user=user, base_commit=parent_commit, head_commit=commit
         )
-
-        # Preemptively validate the comparison object before storing it in context as a commit_comparison can
-        # be successful but still have errors w/ the head+base report
-        try:
-            await validate_comparison(comparison)
-        except MissingComparisonReport as e:
-            (error_message) = str(e)
-            if error_message == "Missing head report":
-                return MissingHeadReport()
-            if error_message == "Missing base report":
-                return MissingBaseReport()
-        # store the comparison in the context - to be used in the `Comparison` resolvers
         info.context["comparison"] = comparison
 
     if commit_comparison:

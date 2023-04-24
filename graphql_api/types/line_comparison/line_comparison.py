@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 
 from ariadne import ObjectType
 from shared.utils.merge import LineType
@@ -46,3 +46,15 @@ def resolve_content(line_comparison: LineComparison, info) -> str:
     if value and line_comparison.is_diff:
         return f"{value[0]} {value[1:]}"
     return f" {value}"
+
+
+@line_comparison_bindable.field("hitCount")
+def resolve_upload_count(line_comparison: LineComparison, info) -> Optional[int]:
+    return line_comparison.hit_count
+
+
+@line_comparison_bindable.field("hitUploadIds")
+def resolve_hit_upload_ids(
+    line_comparison: LineComparison, info
+) -> Optional[List[int]]:
+    return line_comparison.hit_session_ids

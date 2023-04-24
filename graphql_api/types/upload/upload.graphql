@@ -11,6 +11,7 @@ type Upload {
   buildCode: String
   errors: UploadErrorsConnection
   name: String
+  id: Int
 }
 
 type UploadErrorsConnection {

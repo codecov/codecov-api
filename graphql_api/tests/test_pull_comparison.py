@@ -32,7 +32,8 @@ MockSegmentComparison = namedtuple(
     "MockSegmentComparison", ["header", "lines", "has_unintended_changes"]
 )
 MockLineComparison = namedtuple(
-    "MockLineComparison", ["number", "coverage", "value", "is_diff"]
+    "MockLineComparison",
+    ["number", "coverage", "value", "is_diff", "hit_count", "hit_session_ids"],
 )
 
 
@@ -170,6 +171,38 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
 
         res = self._request(query)
         assert res == {"compareWithBase": {"flagComparisons": []}}
+
+    @patch("services.task.TaskService.compute_comparisons")
+    def test_pull_different_number_of_head_and_base_reports_without_context(self, _):
+        # Just running this w/ the commit_comparison in setup will yield nothing
+        query = """
+            compareWithBase {
+                ... on Comparison {
+                    hasDifferentNumberOfHeadAndBaseReports
+                }
+            }
+        """
+        self.commit_comparison.delete()
+        res = self._request(query)
+        assert res == {
+            "compareWithBase": {"hasDifferentNumberOfHeadAndBaseReports": False}
+        }
+
+    @patch("services.task.TaskService.compute_comparisons")
+    def test_pull_component_comparison_without_context(self, _):
+        # Just running this w/ the commit_comparison in setup will yield nothing
+        query = """
+            compareWithBase {
+                ... on Comparison {
+                    componentComparisons {
+                        name
+                    }
+                }
+            }
+        """
+        self.commit_comparison.delete()
+        res = self._request(query)
+        assert res == {"compareWithBase": {"componentComparisons": []}}
 
     def test_pull_flag_comparisons(self):
         FlagComparisonFactory(
@@ -580,6 +613,8 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                 },
                                 value=" line1",
                                 is_diff=False,
+                                hit_count=1,
+                                hit_session_ids=[0],
                             ),
                             MockLineComparison(
                                 number={
@@ -592,6 +627,8 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                 },
                                 value="+ line2",
                                 is_diff=True,
+                                hit_count=1,
+                                hit_session_ids=[0],
                             ),
                         ],
                     ),
@@ -619,6 +656,8 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                 },
                                 value=" line1",
                                 is_diff=True,
+                                hit_count=1,
+                                hit_session_ids=[0],
                             ),
                         ],
                     ),
@@ -646,6 +685,8 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                         baseCoverage
                                         headCoverage
                                         content
+                                        hitCount
+                                        hitUploadIds
                                     }
                                 }
                             }
@@ -673,6 +714,8 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                             "baseCoverage": "H",
                                             "headCoverage": "H",
                                             "content": "  line1",
+                                            "hitCount": 1,
+                                            "hitUploadIds": [0],
                                         },
                                         {
                                             "baseNumber": None,
@@ -680,6 +723,8 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                             "baseCoverage": None,
                                             "headCoverage": "H",
                                             "content": "+  line2",
+                                            "hitCount": 1,
+                                            "hitUploadIds": [0],
                                         },
                                     ],
                                 }
@@ -699,6 +744,8 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                             "baseCoverage": "M",
                                             "headCoverage": "H",
                                             "content": "  line1",
+                                            "hitCount": 1,
+                                            "hitUploadIds": [0],
                                         }
                                     ],
                                 }
@@ -748,6 +795,8 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                             },
                             value=" line1",
                             is_diff=True,
+                            hit_count=1,
+                            hit_session_ids=[0],
                         ),
                     ],
                 ),
@@ -1048,56 +1097,6 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             "pullId": self.pull.pullid,
             "compareWithBase": {
                 "__typename": "MissingHeadReport",
-            },
-        }
-
-    def test_pull_comparison_missing_head_report_with_successful_commit_comparison(
-        self,
-    ):
-        self.commit_comparison.error = None
-        self.commit_comparison.save()
-
-        self.head_report.side_effect = comparison.MissingComparisonReport(
-            "Missing head report"
-        )
-
-        query = """
-            pullId
-            compareWithBase {
-                __typename
-            }
-        """
-
-        res = self._request(query)
-        assert res == {
-            "pullId": self.pull.pullid,
-            "compareWithBase": {
-                "__typename": "MissingHeadReport",
-            },
-        }
-
-    def test_pull_comparison_missing_base_report_with_successful_commit_comparison(
-        self,
-    ):
-        self.commit_comparison.error = None
-        self.commit_comparison.save()
-
-        self.head_report.side_effect = comparison.MissingComparisonReport(
-            "Missing base report"
-        )
-
-        query = """
-            pullId
-            compareWithBase {
-                __typename
-            }
-        """
-
-        res = self._request(query)
-        assert res == {
-            "pullId": self.pull.pullid,
-            "compareWithBase": {
-                "__typename": "MissingBaseReport",
             },
         }
 

@@ -4,6 +4,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, viewsets
 from rest_framework.authentication import BasicAuthentication, SessionAuthentication
+from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.response import Response
 from shared.reports.resources import Report
@@ -15,6 +16,7 @@ from api.public.v2.report.serializers import (
 from api.public.v2.schema import repo_parameters
 from api.shared.mixins import RepoPropertyMixin
 from api.shared.permissions import RepositoryArtifactPermissions, SuperTokenPermissions
+from api.shared.report.serializers import TreeSerializer
 from codecov_auth.authentication import (
     CodecovTokenAuthentication,
     SuperTokenAuthentication,
@@ -22,7 +24,7 @@ from codecov_auth.authentication import (
 )
 from core.models import Commit
 from services.components import commit_components, component_filtered_report
-from services.path import dashboard_commit_file_url
+from services.path import ReportPaths, dashboard_commit_file_url
 
 
 class ReportMixin:
@@ -92,13 +94,16 @@ class BaseReportViewSet(
             raise NotFound(f"No coverage report found for commit {commit.commitid}")
 
         path = self.request.query_params.get("path", None)
-        if path:
+        flag = self.request.query_params.get("flag", None)
+        if path and flag:
+            # need to filter these together - we can't call `filter`
+            # on a filtered report
+            report = report.filter(flags=[flag], paths=[f"{path}*"])
+        elif path:
             report = report.filter(paths=[f"{path}*"])
             if len(report.files) == 0:
                 raise NotFound(f"No files or directories found matching path: {path}")
-
-        flag = self.request.query_params.get("flag", None)
-        if flag:
+        elif flag:
             report = report.filter(flags=[flag])
 
         component_id = self.request.query_params.get("component_id", None)
@@ -162,6 +167,9 @@ class ReportViewSet(BaseReportViewSet):
     ]
     permission_classes = [SuperTokenPermissions | RepositoryArtifactPermissions]
 
+    def get_queryset(self):
+        return None
+
     def get_serializer_context(self, *args, **kwargs):
         context = super().get_serializer_context(*args, **kwargs)
         context.update({"include_line_coverage": True})
@@ -183,6 +191,52 @@ class ReportViewSet(BaseReportViewSet):
         * `component_id` - only show report info that applies to the specified component
         """
         return super().retrieve(request, *args, **kwargs)
+
+    @extend_schema(
+        summary="Coverage report tree",
+        parameters=[
+            OpenApiParameter(
+                "depth",
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
+                description="depth of the traversal (default=1)",
+            ),
+            OpenApiParameter(
+                "path",
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
+                description="starting path of the traversal (default is root path)",
+            ),
+        ],
+        responses={200: TreeSerializer},
+    )
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="tree",
+    )
+    def tree(self, request, *args, **kwargs):
+        """
+        Returns a hierarchical view of the report that matches the file structure of the covered files
+        with coverage info rollups at each level.
+
+        Returns only top-level data by default but the depth of the traversal can be controlled via
+        the `depth` parameter.
+
+        * `depth` - how deep in the tree to traverse (default=1)
+        * `path` - path in the tree from which to start the traversal (default is the root)
+        """
+        report = self.get_object()
+        path = request.query_params.get("path")
+        paths = ReportPaths(report, path=path)
+        serializer = TreeSerializer(
+            paths.single_directory(),
+            many=True,
+            context={
+                "max_depth": int(request.query_params.get("depth", 1)),
+            },
+        )
+        return Response(serializer.data)
 
 
 @extend_schema(
@@ -238,7 +292,9 @@ class FileReportViewSet(
         oldest_sha = self.request.query_params.get("oldest_sha")
 
         for i in range(walk_back):
-            if self._is_valid_report(report, self.path):
+            if self._is_valid_commit(self.commit) and self._is_valid_report(
+                report, self.path
+            ):
                 break
             else:
                 # walk commit ancestors until we find coverage info for the given path
@@ -284,7 +340,10 @@ class FileReportViewSet(
         """
         return super().retrieve(request, *args, **kwargs)
 
-    def _is_valid_report(self, report: Report, path: str):
+    def _is_valid_commit(self, commit: Commit) -> bool:
+        return commit.state == Commit.CommitStates.COMPLETE
+
+    def _is_valid_report(self, report: Report, path: str) -> bool:
         if report is None:
             return False
 

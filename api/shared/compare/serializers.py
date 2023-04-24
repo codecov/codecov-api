@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from api.internal.commit.serializers import CommitSerializer
 from api.shared.commit.serializers import ReportTotalsSerializer
-from core.models import Commit
+from services.comparison import Comparison, FileComparison
 
 
 class TotalsComparisonSerializer(serializers.Serializer):
@@ -20,7 +20,7 @@ class LineComparisonSerializer(serializers.Serializer):
     is_diff = serializers.BooleanField()
     added = serializers.BooleanField()
     removed = serializers.BooleanField()
-    sessions = serializers.IntegerField()
+    sessions = serializers.IntegerField(source="hit_count")
 
 
 class FileComparisonSerializer(serializers.Serializer):
@@ -38,7 +38,7 @@ class ComparisonSerializer(serializers.Serializer):
     totals = TotalsComparisonSerializer()
     commit_uploads = CommitSerializer(many=True, source="upload_commits")
     diff = serializers.SerializerMethodField()
-    files = FileComparisonSerializer(many=True)
+    files = serializers.SerializerMethodField()
     untracked = serializers.SerializerMethodField()
     has_unmerged_base_commits = serializers.BooleanField()
 
@@ -52,6 +52,19 @@ class ComparisonSerializer(serializers.Serializer):
 
     def get_diff(self, comparison) -> dict:
         return {"git_commits": comparison.git_commits}
+
+    def get_files(self, comparison: Comparison) -> List[dict]:
+        return [
+            FileComparisonSerializer(file).data
+            for file in comparison.files
+            if self._should_include_file(file)
+        ]
+
+    def _should_include_file(self, file: FileComparison):
+        if "has_diff" in self.context:
+            return self.context["has_diff"] == file.has_diff
+        else:
+            return True
 
 
 class FlagComparisonSerializer(serializers.Serializer):

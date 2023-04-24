@@ -625,6 +625,66 @@ class ReportViewSetTestCase(TestCase):
             [call(self.commit1), call(self.commit1)]
         )
 
+    @patch("services.report.build_report_from_commit")
+    def test_report_flag_and_path(self, build_report_from_commit, get_repo_permissions):
+        get_repo_permissions.return_value = (True, True)
+        build_report_from_commit.return_value = flags_report()
+
+        res = self._request_report(flag="flag-a", path="foo")
+        assert res.status_code == 200
+        assert res.json() == {
+            "totals": {
+                "files": 1,
+                "lines": 8,
+                "hits": 5,
+                "misses": 3,
+                "partials": 0,
+                "coverage": 62.5,
+                "branches": 0,
+                "methods": 0,
+                "messages": 0,
+                "sessions": 1,
+                "complexity": 0.0,
+                "complexity_total": 0.0,
+                "complexity_ratio": 0,
+                "diff": 0,
+            },
+            "files": [
+                {
+                    "name": "foo/file1.py",
+                    "totals": {
+                        "files": 0,
+                        "lines": 8,
+                        "hits": 5,
+                        "misses": 3,
+                        "partials": 0,
+                        "coverage": 62.5,
+                        "branches": 0,
+                        "methods": 0,
+                        "messages": 0,
+                        "sessions": 0,
+                        "complexity": 0.0,
+                        "complexity_total": 0.0,
+                        "complexity_ratio": 0,
+                        "diff": 0,
+                    },
+                    "line_coverage": [
+                        [1, 0],
+                        [2, 1],
+                        [3, 0],
+                        [5, 0],
+                        [6, 1],
+                        [8, 0],
+                        [9, 0],
+                        [10, 1],
+                    ],
+                },
+            ],
+            "commit_file_url": f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.username}/{self.repo_name}/commit/{self.commit1.commitid}/tree/foo",
+        }
+
+        build_report_from_commit.assert_called_once_with(self.commit1)
+
     @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
     @patch("api.shared.permissions.SuperTokenPermissions.has_permission")
     def test_no_report_if_unauthenticated_token_request(
