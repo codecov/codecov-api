@@ -337,8 +337,8 @@ class Pull(models.Model):
                 name="pulls_author_updatestamp",
             ),
             models.Index(
-                fields=["repository", "updatestamp"],
-                name="pulls_repository_updatestamp",
+                fields=["repository", "pullid", "updatestamp"],
+                name="pulls_repoid_pullid_ts",
             ),
         ]
 
