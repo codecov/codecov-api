@@ -397,6 +397,10 @@ class LineComparisonTests(TestCase):
         lc = LineComparison(None, [0, "", [[0, 0, 0, 0, 0]], 0, 0], 0, 0, "", False)
         assert lc.hit_session_ids == None
 
+    def test_hit_session_ids_no_head_line(self):
+        lc = LineComparison(None, None, 0, 0, "", False)
+        assert lc.hit_session_ids == None
+
 
 class FileComparisonConstructorTests(TestCase):
     def test_constructor_no_keyError_if_diff_data_segements_is_missing(self):
