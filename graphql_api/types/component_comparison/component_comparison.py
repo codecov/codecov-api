@@ -1,20 +1,30 @@
+from typing import List
+
 from ariadne import ObjectType
 from shared.reports.types import ReportTotals
 
 from codecov.db import sync_to_async
-from services.components import ComponentComparison
+from compare.models import ComponentComparison
+from services.components import Component
 
 component_comparison_bindable = ObjectType("ComponentComparison")
 
 
 @component_comparison_bindable.field("id")
 def resolve_id(component_comparison: ComponentComparison, info) -> str:
-    return component_comparison.component.component_id
+    return component_comparison.component_id
 
 
 @component_comparison_bindable.field("name")
 def resolve_name(component_comparison: ComponentComparison, info) -> str:
-    return component_comparison.component.get_display_name()
+    components: dict[str, Component] = info.context["components"]
+    component = components.get(component_comparison.component_id)
+    if component:
+        return component.get_display_name()
+    else:
+        # not sure when we would ever get here
+        # (yaml components out-of-sync with database for some reason)
+        return component_comparison.component_id
 
 
 @component_comparison_bindable.field("baseTotals")

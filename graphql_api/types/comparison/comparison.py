@@ -5,7 +5,7 @@ from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
 
 import services.components as components_service
 from codecov.db import sync_to_async
-from compare.models import FlagComparison
+from compare.models import ComponentComparison, FlagComparison
 from graphql_api.actions.flags import get_flag_comparisons
 from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.types.errors import (
@@ -22,7 +22,6 @@ from services.comparison import (
     ImpactedFile,
     MissingComparisonReport,
 )
-from services.components import ComponentComparison
 
 comparison_bindable = ObjectType("Comparison")
 
@@ -166,19 +165,17 @@ def resolve_flag_comparisons(
 @sync_to_async
 def resolve_component_comparisons(
     comparison_report: ComparisonReport, info
-) -> Optional[List[ComponentComparison]]:
+) -> List[ComponentComparison]:
     user = info.context["request"].user
-    # TODO: can we change this to not rely on the comparison in the context?
-    if not "comparison" in info.context:
-        return None
-    comparison: Comparison = info.context["comparison"]
-    try:
-        comparison.validate()
-    except MissingComparisonReport:
-        return None
     head_commit = comparison_report.commit_comparison.compare_commit
     components = components_service.commit_components(head_commit, user)
-    return [ComponentComparison(comparison, component) for component in components]
+
+    # store for child resolvers (needed to get the component name, for example)
+    info.context["components"] = {
+        component.component_id: component for component in components
+    }
+
+    return list(comparison_report.commit_comparison.component_comparisons.all())
 
 
 @comparison_bindable.field("componentComparisonsCount")
@@ -186,18 +183,7 @@ def resolve_component_comparisons(
 def resolve_component_comparisons_count(
     comparison_report: ComparisonReport, info
 ) -> int:
-    # TODO: can we change this to not rely on the comparison in the context?
-    if not "comparison" in info.context:
-        return 0
-    comparison: Comparison = info.context["comparison"]
-    try:
-        comparison.validate()
-    except MissingComparisonReport:
-        return 0
-    user = info.context["request"].user
-    head_commit = comparison_report.commit_comparison.compare_commit
-    components = components_service.commit_components(head_commit, user)
-    return len([ComponentComparison(comparison, component) for component in components])
+    return comparison_report.commit_comparison.component_comparisons.count()
 
 
 @comparison_bindable.field("flagComparisonsCount")

@@ -1,4 +1,4 @@
-from datetime import datetime
+from typing import Optional
 
 from ariadne import ObjectType
 
@@ -10,6 +10,7 @@ from graphql_api.types.enums import (
     UploadState,
     UploadType,
 )
+from reports.models import ReportSession
 
 upload_bindable = ObjectType("Upload")
 upload_bindable.set_alias("flags", "flag_names")
@@ -25,6 +26,11 @@ upload_error_bindable = ObjectType("UploadError")
 @upload_bindable.field("state")
 def resolve_state(upload, info):
     return UploadState(upload.state)
+
+
+@upload_bindable.field("id")
+def resolve_id(upload: ReportSession, info) -> Optional[int]:
+    return upload.order_number
 
 
 @upload_bindable.field("uploadType")

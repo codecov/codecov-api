@@ -275,46 +275,44 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         flag_c = RepositoryFlagFactory(flag_name="flag_c")
         flag_d = RepositoryFlagFactory(flag_name="flag_d")
 
-        # `provider` is used here to differentiate sessions in the assertion
-
         session_a = UploadFactory(
             report=self.report,
-            provider="a",
             upload_type=UploadType.UPLOADED.value,
+            order_number=0,
         )
         UploadFlagMembershipFactory(report_session=session_a, flag=flag_a)
         UploadFlagMembershipFactory(report_session=session_a, flag=flag_b)
         UploadFlagMembershipFactory(report_session=session_a, flag=flag_c)
         session_b = UploadFactory(
             report=self.report,
-            provider="b",
             upload_type=UploadType.CARRIEDFORWARD.value,
+            order_number=1,
         )
         UploadFlagMembershipFactory(report_session=session_b, flag=flag_a)
 
         session_c = UploadFactory(
             report=self.report,
-            provider="c",
             upload_type=UploadType.CARRIEDFORWARD.value,
+            order_number=2,
         )
         UploadFlagMembershipFactory(report_session=session_c, flag=flag_b)
         session_d = UploadFactory(
             report=self.report,
-            provider="d",
             upload_type=UploadType.UPLOADED.value,
+            order_number=3,
         )
         UploadFlagMembershipFactory(report_session=session_d, flag=flag_b)
 
         session_e = UploadFactory(
             report=self.report,
-            provider="e",
             upload_type=UploadType.CARRIEDFORWARD.value,
+            order_number=4,
         )
         UploadFlagMembershipFactory(report_session=session_e, flag=flag_d)
         session_f = UploadFactory(
             report=self.report,
-            provider="f",
             upload_type=UploadType.UPLOADED.value,
+            order_number=5,
         )
 
         query = (
@@ -323,9 +321,9 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             uploads {
                 edges {
                     node {
+                        id
                         uploadType
                         flags
-                        provider
                     }
                 }
             }
@@ -345,13 +343,13 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
 
         assert uploads == [
             {
+                "id": 0,
                 "uploadType": "UPLOADED",
                 "flags": ["flag_a", "flag_b", "flag_c"],
-                "provider": "a",
             },
-            {"uploadType": "UPLOADED", "flags": ["flag_b"], "provider": "d"},
-            {"uploadType": "CARRIEDFORWARD", "flags": ["flag_d"], "provider": "e"},
-            {"uploadType": "UPLOADED", "flags": [], "provider": "f"},
+            {"id": 3, "uploadType": "UPLOADED", "flags": ["flag_b"]},
+            {"id": 4, "uploadType": "CARRIEDFORWARD", "flags": ["flag_d"]},
+            {"id": 5, "uploadType": "UPLOADED", "flags": []},
         ]
 
     def test_fetch_commit_uploads_no_report(self):
