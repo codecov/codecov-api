@@ -13,5 +13,4 @@ type ImpactedFile {
   missesInComparison: Int!
   hashedPath: String!
   segments(filters: SegmentsFilters): SegmentsResult!
-  segmentsDeprecated(filters: SegmentsFilters): [SegmentComparison!]!
 }
