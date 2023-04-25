@@ -334,22 +334,56 @@ class StripeService(AbstractPaymentService):
             metadata=self._get_checkout_session_and_subscription_metadata(owner),
         )
 
-    def _get_proration_params(self, owner, desired_plan):
-        proration_behavior = "none"
-        if owner.plan == desired_plan["value"]:
-            # Same product, increased number of seats
-            if (
-                owner.plan_user_count
-                and owner.plan_user_count < desired_plan["quantity"]
-            ):
-                return "always_invoice"
-            # Same product, decreased nummber of seats
-            return proration_behavior
+    def _is_upgrading_seats(self, owner: Owner, desired_plan: dict) -> bool:
+        """
+        Returns `True` if purchasing more seats.
+        """
+        return (
+            owner.plan_user_count and owner.plan_user_count < desired_plan["quantity"]
+        )
 
-        elif "m" in owner.plan and "y" in desired_plan["value"]:
-            # From monthly to yearly
+    def _is_extending_term(self, owner: Owner, desired_plan: dict) -> bool:
+        """
+        Returns `True` if switching from monthly to yearly plan.
+        """
+        current_plan_info = USER_PLAN_REPRESENTATIONS.get(owner.plan)
+        desired_plan_info = USER_PLAN_REPRESENTATIONS.get(desired_plan["value"])
+
+        return (
+            current_plan_info
+            and current_plan_info["billing_rate"] == "monthly"
+            and desired_plan_info
+            and desired_plan_info["billing_rate"] == "annually"
+        )
+
+    def _is_similar_plan(self, owner: Owner, desired_plan: dict) -> bool:
+        """
+        Returns `True` if switching to a plan with similar term and seats.
+        """
+        current_plan_info = USER_PLAN_REPRESENTATIONS.get(owner.plan)
+        desired_plan_info = USER_PLAN_REPRESENTATIONS.get(desired_plan["value"])
+
+        is_same_term = (
+            current_plan_info
+            and desired_plan_info
+            and current_plan_info["billing_rate"] == desired_plan_info["billing_rate"]
+        )
+
+        is_same_seats = (
+            owner.plan_user_count and owner.plan_user_count == desired_plan["quantity"]
+        )
+
+        return is_same_term and is_same_seats
+
+    def _get_proration_params(self, owner: Owner, desired_plan: dict) -> str:
+        if (
+            self._is_upgrading_seats(owner, desired_plan)
+            or self._is_extending_term(owner, desired_plan)
+            or self._is_similar_plan(owner, desired_plan)
+        ):
             return "always_invoice"
-        return proration_behavior
+        else:
+            return "none"
 
     def _get_success_and_cancel_url(self, owner):
         short_services = {"github": "gh", "bitbucket": "bb", "gitlab": "gl"}
