@@ -16,6 +16,7 @@ class Interval(Enum):
 class MeasurementName(Enum):
     COVERAGE = "coverage"
     FLAG_COVERAGE = "flag_coverage"
+    COMPONENT_COVERAGE = "component_coverage"
 
 
 class Measurement(models.Model):
@@ -28,6 +29,8 @@ class Measurement(models.Model):
 
     owner_id = models.BigIntegerField(null=False)
     repo_id = models.BigIntegerField(null=False)
+    measurable_id = models.TextField(null=True)
+    # TODO: run a migration to backpopulate measureable_id w/ info from the flag_id, component_id + repo_id to deprecate flag_id
     flag_id = models.BigIntegerField(null=True)
     branch = models.TextField(null=True)
 
@@ -180,6 +183,8 @@ class Dataset(models.Model):
     repository_id = models.IntegerField(null=False)
 
     # indicates whether the backfill task has completed for this dataset
+    # TODO: We're not really using this field anymore as a backfill task takes very long for this to be populated when finished.
+    # The solution would be to somehow have a celery task return when it's done, hence the TODO
     backfilled = models.BooleanField(null=False, default=False)
 
     created_at = DateTimeWithoutTZField(default=datetime.now, null=True)
