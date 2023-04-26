@@ -365,21 +365,63 @@ class LineComparisonTests(TestCase):
         lc = LineComparison([base_cov, "", [], 0, 0], None, 0, 0, "-", False)
         assert lc.coverage == {"base": LineType.miss, "head": None}
 
-    def test_sessions_returns_sessions_hit_in_head(self):
+    def test_hit_count_returns_sessions_hit_in_head(self):
         lc = LineComparison(
             None,
-            [1, "", [[0, 1, 0, 0, 0], [1, 2, 0, 0, 0], [2, 1, 0, 0, 0]], 0, 0],
+            [
+                1,
+                "",
+                [
+                    [0, 1, 0, 0, 0],
+                    [1, 2, 0, 0, 0],
+                    [2, 0, 0, 0, 0],
+                    [3, "2/2", 0, 0, 0],
+                ],
+                0,
+                0,
+            ],
             0,
             0,
             "",
             False,
         )
 
-        assert lc.sessions == 2
+        assert lc.hit_count == 3
 
-    def test_sessions_returns_none_if_no_coverage(self):
+    def test_hit_count_returns_none_if_no_coverage(self):
         lc = LineComparison(None, [0, "", [[0, 0, 0, 0, 0]], 0, 0], 0, 0, "", False)
-        assert lc.sessions is None
+        assert lc.hit_count is None
+
+    def test_hit_session_ids(self):
+        lc = LineComparison(
+            None,
+            [
+                1,
+                "",
+                [
+                    [0, 1, 0, 0, 0],
+                    [1, 2, 0, 0, 0],
+                    [2, 0, 0, 0, 0],
+                    [3, "2/2", 0, 0, 0],
+                ],
+                0,
+                0,
+            ],
+            0,
+            0,
+            "",
+            False,
+        )
+
+        assert lc.hit_session_ids == [0, 1, 3]
+
+    def test_hit_session_ids_no_coverage(self):
+        lc = LineComparison(None, [0, "", [[0, 0, 0, 0, 0]], 0, 0], 0, 0, "", False)
+        assert lc.hit_session_ids == None
+
+    def test_hit_session_ids_no_head_line(self):
+        lc = LineComparison(None, None, 0, 0, "", False)
+        assert lc.hit_session_ids == None
 
 
 class FileComparisonConstructorTests(TestCase):

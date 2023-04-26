@@ -2,6 +2,7 @@ from uuid import uuid4
 
 from django.urls import reverse
 from rest_framework.test import APIClient
+from shared.celery_config import static_analysis_task_name
 
 from core.tests.factories import CommitFactory, RepositoryTokenFactory
 from services.task import TaskService
@@ -65,7 +66,7 @@ def test_simple_static_analysis_call_no_uploads_yet(db, mocker):
         "commit": commit.commitid,
     }
     mocked_task_service.assert_called_with(
-        "app.tasks.staticanalysis.check_suite",
+        static_analysis_task_name,
         kwargs={"suite_id": produced_object.id},
         apply_async_kwargs={"countdown": 10},
     )
