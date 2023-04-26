@@ -1,6 +1,7 @@
+from functools import cached_property
 from typing import List, Optional
 
-from ariadne import ObjectType
+from ariadne import ObjectType, convert_kwargs_to_snake_case
 from shared.utils.merge import LineType
 
 from graphql_api.types.enums import CoverageLine
@@ -11,6 +12,26 @@ line_coverages = {
     LineType.miss: CoverageLine.M,
     LineType.partial: CoverageLine.P,
 }
+
+
+class CoverageInfo:
+    def __init__(
+        self, line_comparison: LineComparison, ignored_upload_ids: List[int] = None
+    ):
+        self.line_comparison = line_comparison
+        self.ignored_upload_ids = set(ignored_upload_ids or [])
+
+    @cached_property
+    def hit_count(self):
+        upload_ids = self.hit_upload_ids
+        if upload_ids is not None:
+            return len(upload_ids)
+
+    @cached_property
+    def hit_upload_ids(self):
+        upload_ids = self.line_comparison.hit_session_ids
+        if upload_ids is not None:
+            return set(upload_ids) - self.ignored_upload_ids
 
 
 line_comparison_bindable = ObjectType("LineComparison")
@@ -48,13 +69,9 @@ def resolve_content(line_comparison: LineComparison, info) -> str:
     return f" {value}"
 
 
-@line_comparison_bindable.field("hitCount")
-def resolve_upload_count(line_comparison: LineComparison, info) -> Optional[int]:
-    return line_comparison.hit_count
-
-
-@line_comparison_bindable.field("hitUploadIds")
-def resolve_hit_upload_ids(
-    line_comparison: LineComparison, info
-) -> Optional[List[int]]:
-    return line_comparison.hit_session_ids
+@line_comparison_bindable.field("coverageInfo")
+@convert_kwargs_to_snake_case
+def resolve_coverage_info(
+    line_comparison: LineComparison, info, ignored_upload_ids: List[int] = None
+) -> CoverageInfo:
+    return CoverageInfo(line_comparison, ignored_upload_ids=ignored_upload_ids)

@@ -1,9 +1,13 @@
+type CoverageInfo {
+    hitCount: Int
+    hitUploadIds: [Int!]
+}
+
 type LineComparison {
     baseNumber: String
     headNumber: String
     baseCoverage: CoverageLine
     headCoverage: CoverageLine
     content: String
-    hitCount: Int
-    hitUploadIds: [Int!]
+    coverageInfo(ignoredUploadIds: [Int!]): CoverageInfo!
 }
