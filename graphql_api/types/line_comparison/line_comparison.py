@@ -16,7 +16,9 @@ line_coverages = {
 
 class CoverageInfo:
     def __init__(
-        self, line_comparison: LineComparison, ignored_upload_ids: List[int] = None
+        self,
+        line_comparison: LineComparison,
+        ignored_upload_ids: Optional[List[int]] = None,
     ):
         self.line_comparison = line_comparison
         self.ignored_upload_ids = set(ignored_upload_ids or [])
@@ -72,6 +74,8 @@ def resolve_content(line_comparison: LineComparison, info) -> str:
 @line_comparison_bindable.field("coverageInfo")
 @convert_kwargs_to_snake_case
 def resolve_coverage_info(
-    line_comparison: LineComparison, info, ignored_upload_ids: List[int] = None
+    line_comparison: LineComparison,
+    info,
+    ignored_upload_ids: Optional[List[int]] = None,
 ) -> CoverageInfo:
     return CoverageInfo(line_comparison, ignored_upload_ids=ignored_upload_ids)
