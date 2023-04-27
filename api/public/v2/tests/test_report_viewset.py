@@ -905,7 +905,7 @@ class ReportViewSetTestCase(TestCase):
                 component_id="foo",
                 paths=[r"^foo/.+"],
                 name="Foo",
-                flag_regexes=[],
+                flag_regexes=["flag1"],
                 statuses=[],
             ),
             Component(
@@ -916,7 +916,7 @@ class ReportViewSetTestCase(TestCase):
                 statuses=[],
             ),
         ]
-        build_report_from_commit.return_value = sample_report()
+        build_report_from_commit.return_value = flags_report()
 
         res = self._request_report(component_id="foo")
         assert res.status_code == 200
@@ -931,10 +931,10 @@ class ReportViewSetTestCase(TestCase):
                 "branches": 0,
                 "methods": 0,
                 "messages": 0,
-                "sessions": 1,
-                "complexity": 10.0,
-                "complexity_total": 2.0,
-                "complexity_ratio": 500.0,
+                "sessions": 2,
+                "complexity": 0,
+                "complexity_total": 0.0,
+                "complexity_ratio": 0,
                 "diff": 0,
             },
             "files": [
@@ -951,9 +951,9 @@ class ReportViewSetTestCase(TestCase):
                         "methods": 0,
                         "messages": 0,
                         "sessions": 0,
-                        "complexity": 10.0,
-                        "complexity_total": 2.0,
-                        "complexity_ratio": 500.0,
+                        "complexity": 0,
+                        "complexity_total": 0.0,
+                        "complexity_ratio": 0,
                         "diff": 0,
                     },
                     "line_coverage": [
@@ -984,7 +984,7 @@ class ReportViewSetTestCase(TestCase):
                 "branches": 1,
                 "methods": 0,
                 "messages": 0,
-                "sessions": 1,
+                "sessions": 2,
                 "complexity": 0.0,
                 "complexity_total": 0.0,
                 "complexity_ratio": 0,
@@ -1017,3 +1017,49 @@ class ReportViewSetTestCase(TestCase):
 
         res = self._request_report(component_id="invalid")
         assert res.status_code == 404
+
+        res = self._request_report(component_id="foo", path="bar")
+        assert res.status_code == 200
+        assert res.json() == {
+            "totals": {
+                "files": 0,
+                "lines": 0,
+                "hits": 0,
+                "misses": 0,
+                "partials": 0,
+                "coverage": 0,
+                "branches": 0,
+                "methods": 0,
+                "messages": 0,
+                "sessions": 0,
+                "complexity": 0.0,
+                "complexity_total": 0.0,
+                "complexity_ratio": 0,
+                "diff": 0,
+            },
+            "files": [],
+            "commit_file_url": f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.username}/{self.repo_name}/commit/{self.commit1.commitid}/tree/bar",
+        }
+
+        res = self._request_report(component_id="foo", flag="flag-b")
+        assert res.status_code == 200
+        assert res.json() == {
+            "totals": {
+                "files": 0,
+                "lines": 0,
+                "hits": 0,
+                "misses": 0,
+                "partials": 0,
+                "coverage": 0,
+                "branches": 0,
+                "methods": 0,
+                "messages": 0,
+                "sessions": 0,
+                "complexity": 0.0,
+                "complexity_total": 0.0,
+                "complexity_ratio": 0,
+                "diff": 0,
+            },
+            "files": [],
+            "commit_file_url": f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.username}/{self.repo_name}/commit/{self.commit1.commitid}/tree/",
+        }
