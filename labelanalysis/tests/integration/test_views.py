@@ -2,6 +2,7 @@ from uuid import uuid4
 
 from django.urls import reverse
 from rest_framework.test import APIClient
+from shared.celery_config import label_analysis_task_name
 
 from core.tests.factories import (
     CommitFactory,
@@ -56,7 +57,7 @@ def test_simple_label_analysis_call_flow(db, mocker):
     }
     assert response_json == expected_response_json
     mocked_task_service.assert_called_with(
-        "app.tasks.label_analysis.process",
+        label_analysis_task_name,
         kwargs={"request_id": produced_object.id},
         apply_async_kwargs={},
     )
@@ -150,7 +151,7 @@ def test_simple_label_analysis_call_flow_with_fallback_on_base(db, mocker):
     }
     assert response_json == expected_response_json
     mocked_task_service.assert_called_with(
-        "app.tasks.label_analysis.process",
+        label_analysis_task_name,
         kwargs={"request_id": produced_object.id},
         apply_async_kwargs={},
     )

@@ -99,9 +99,10 @@ def fetch_commit_report(commit: Commit) -> Optional[CommitReport]:
         commit.reports.prefetch_related(
             Prefetch(
                 "sessions",
-                queryset=ReportSession.objects.select_related("uploadleveltotals"),
+                queryset=ReportSession.objects.prefetch_related("flags").select_related(
+                    "uploadleveltotals"
+                ),
             ),
-            "sessions__flags",
         )
         .select_related("reportdetails", "reportleveltotals")
         .first()

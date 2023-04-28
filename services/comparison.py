@@ -358,7 +358,7 @@ class LineComparison:
 
         hit_count = 0
         for (id, coverage, *rest) in self.head_line_sessions:
-            if coverage == 1:
+            if line_type(coverage) == LineType.hit:
                 hit_count += 1
         if hit_count > 0:
             return hit_count
@@ -370,7 +370,7 @@ class LineComparison:
 
         ids = []
         for (id, coverage, *rest) in self.head_line_sessions:
-            if coverage == 1:
+            if line_type(coverage) == LineType.hit:
                 ids.append(id)
         if len(ids) > 0:
             return ids

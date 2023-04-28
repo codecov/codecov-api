@@ -1,6 +1,7 @@
 import logging
 
 from rest_framework.generics import CreateAPIView
+from shared.celery_config import static_analysis_task_name
 
 from codecov_auth.authentication.repo_auth import RepositoryTokenAuthentication
 from codecov_auth.permissions import SpecificScopePermission
@@ -22,7 +23,7 @@ class StaticAnalysisSuiteView(CreateAPIView):
         # Let's later add a specific endpoint to let customers trigger the check
         # whenever they tell us they are done
         TaskService().schedule_task(
-            "app.tasks.staticanalysis.check_suite",
+            static_analysis_task_name,
             kwargs=dict(suite_id=instance.id),
             apply_async_kwargs=dict(countdown=10),
         )
