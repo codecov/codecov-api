@@ -2,6 +2,8 @@
 
 from django.db import migrations, models
 
+from utils.migrations import RiskyAddConstraint, RiskyAddIndex
+
 
 class Migration(migrations.Migration):
 
@@ -15,7 +17,7 @@ class Migration(migrations.Migration):
             name="measurable_id",
             field=models.TextField(null=True),
         ),
-        migrations.AddIndex(
+        RiskyAddIndex(
             model_name="measurement",
             index=models.Index(
                 fields=[
@@ -29,7 +31,7 @@ class Migration(migrations.Migration):
                 name="timeseries__owner_i_08d6fe_idx",
             ),
         ),
-        migrations.AddConstraint(
+        RiskyAddConstraint(
             model_name="measurement",
             constraint=models.UniqueConstraint(
                 fields=(
