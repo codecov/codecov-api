@@ -2,6 +2,8 @@
 
 from django.db import migrations, models
 
+from utils.migrations import RiskyAddIndex
+
 
 class Migration(migrations.Migration):
     """
@@ -18,7 +20,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddIndex(
+        RiskyAddIndex(
             model_name="pull",
             index=models.Index(
                 fields=["repository", "pullid", "updatestamp"],
