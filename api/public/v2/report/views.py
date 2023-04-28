@@ -8,6 +8,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.response import Response
 from shared.reports.resources import Report
+from shared.utils.match import match
 
 from api.public.v2.report.serializers import (
     CoverageReportSerializer,
@@ -86,27 +87,14 @@ class BaseReportViewSet(
     serializer_class = CoverageReportSerializer
     permission_classes = [RepositoryArtifactPermissions]
 
-    def get_object(self):
-        commit = self.get_commit()
-        report = commit.full_report
-
-        if report is None:
-            raise NotFound(f"No coverage report found for commit {commit.commitid}")
-
-        path = self.request.query_params.get("path", None)
-        flag = self.request.query_params.get("flag", None)
-        if path and flag:
-            # need to filter these together - we can't call `filter`
-            # on a filtered report
-            report = report.filter(flags=[flag], paths=[f"{path}*"])
-        elif path:
-            report = report.filter(paths=[f"{path}*"])
-            if len(report.files) == 0:
-                raise NotFound(f"No files or directories found matching path: {path}")
-        elif flag:
-            report = report.filter(flags=[flag])
-
-        component_id = self.request.query_params.get("component_id", None)
+    def filter_report(
+        self,
+        commit: Commit,
+        report: Report,
+        path: Optional[str] = None,
+        flag: Optional[str] = None,
+        component_id: Optional[str] = None,
+    ) -> Report:
         if component_id:
             component = next(
                 (
@@ -120,7 +108,45 @@ class BaseReportViewSet(
                 raise NotFound(
                     f"The component {component_id} does not exist in commit {commit.commitid}"
                 )
-            report = component_filtered_report(report, component)
+
+            if path and not match(component.paths, path):
+                # empty report since the path is not part of the component
+                return Report()
+
+            component_flags = component.get_matching_flags(report.flags.keys())
+            if flag and len(component.flag_regexes) > 0 and flag not in component_flags:
+                # empty report since the flag is not part of the component
+                return Report()
+
+        if path and flag:
+            report = report.filter(flags=[flag], paths=[f"{path}*"])
+        elif path:
+            report = report.filter(paths=[f"{path}*"])
+        elif flag:
+            report = report.filter(flags=[flag])
+        elif component_id:
+            report = report.filter(flags=component_flags, paths=component.paths)
+
+        if path and len(report.files) == 0:
+            raise NotFound(f"No files or directories found matching path: {path}")
+
+        return report
+
+    def get_object(self):
+        commit = self.get_commit()
+        report = commit.full_report
+
+        if report is None:
+            raise NotFound(f"No coverage report found for commit {commit.commitid}")
+
+        path = self.request.query_params.get("path", None)
+        report = self.filter_report(
+            commit,
+            report,
+            path=path,
+            flag=self.request.query_params.get("flag", None),
+            component_id=self.request.query_params.get("component_id", None),
+        )
 
         # Add commit url to report object
         report.commit_file_url = self._commit_file_url(commit, path)
