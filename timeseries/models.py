@@ -54,16 +54,6 @@ class Measurement(models.Model):
                     "timestamp",
                 ]
             ),
-            models.Index(
-                fields=[
-                    "owner_id",
-                    "repo_id",
-                    "measurable_id",
-                    "branch",
-                    "name",
-                    "timestamp",
-                ]
-            ),
         ]
         constraints = [
             # for updating measurements
@@ -89,17 +79,6 @@ class Measurement(models.Model):
                 ],
                 condition=models.Q(flag_id__isnull=True),
                 name="timeseries_measurement_noflag_unique",
-            ),
-            models.UniqueConstraint(
-                fields=[
-                    "name",
-                    "owner_id",
-                    "repo_id",
-                    "measurable_id",
-                    "commit_sha",
-                    "timestamp",
-                ],
-                name="timeseries_measurement_measurable_unique",
             ),
         ]
 
