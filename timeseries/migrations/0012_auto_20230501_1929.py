@@ -13,9 +13,6 @@ class Migration(migrations.Migration):
 
     operations = [
         RiskyRunSQL(
-            "update timeseries_measurement set measurable_id = repo_id::text where name = 'coverage' and measurable_id is null;"
-        ),
-        RiskyRunSQL(
-            "update timeseries_measurement set measurable_id = flag_id::text where name = 'flag_coverage' and measurable_id is null;"
+            "update timeseries_measurement set measurable_id = case when name = 'coverage' then repo_id::text when name = 'flag_coverage' then flag_id::text end where measurable_id is null;"
         ),
     ]
