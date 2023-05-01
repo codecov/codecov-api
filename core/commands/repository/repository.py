@@ -1,5 +1,8 @@
 from codecov.commands.base import BaseCommand
 
+from .interactors.activate_component_measurements import (
+    ActivateComponentMeasurementsInteractor,
+)
 from .interactors.activate_flags_measurements import ActivateFlagsMeasurementsInteractor
 from .interactors.fetch_repository import FetchRepositoryInteractor
 from .interactors.get_repository_token import GetRepositoryTokenInteractor
@@ -26,7 +29,12 @@ class RepositoryCommands(BaseCommand):
             repo_name, owner_username, token_type
         )
 
-    def activate_flags_measurements(self, repo_name, owner_name):
+    def activate_component_measurements(self, repo_name: str, owner_name: str):
+        return self.get_interactor(ActivateComponentMeasurementsInteractor).execute(
+            repo_name, owner_name
+        )
+
+    def activate_flags_measurements(self, repo_name: str, owner_name: str):
         return self.get_interactor(ActivateFlagsMeasurementsInteractor).execute(
             repo_name, owner_name
         )

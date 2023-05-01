@@ -9,7 +9,7 @@ from timeseries.helpers import trigger_backfill
 from timeseries.models import Dataset, MeasurementName
 
 
-class ActivateFlagsMeasurementsInteractor(BaseInteractor):
+class ActivateComponentMeasurementsInteractor(BaseInteractor):
     def validate(self, repo):
         if not repo:
             raise ValidationError("Repo not found")
@@ -27,7 +27,7 @@ class ActivateFlagsMeasurementsInteractor(BaseInteractor):
         self.validate(repo)
 
         dataset, created = Dataset.objects.get_or_create(
-            name=MeasurementName.FLAG_COVERAGE.value,
+            name=MeasurementName.COMPONENT_COVERAGE.value,
             repository_id=repo.pk,
         )
 

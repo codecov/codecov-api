@@ -14,13 +14,13 @@ from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
 from timeseries.models import Dataset, MeasurementName
 
-from ..activate_flags_measurements import ActivateFlagsMeasurementsInteractor
+from ..activate_component_measurements import ActivateComponentMeasurementsInteractor
 
 
 @pytest.mark.skipif(
     not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
 )
-class ActivateFlagsMeasurementsInteractorTest(TransactionTestCase):
+class ActivateComponentMeasurementsInteractorTest(TransactionTestCase):
     databases = {"default", "timeseries"}
 
     def setUp(self):
@@ -31,7 +31,7 @@ class ActivateFlagsMeasurementsInteractorTest(TransactionTestCase):
     @async_to_sync
     def execute(self, user, repo_name=None):
         current_user = user or AnonymousUser()
-        return ActivateFlagsMeasurementsInteractor(current_user, "github").execute(
+        return ActivateComponentMeasurementsInteractor(current_user, "github").execute(
             repo_name=repo_name or "test-repo",
             owner_name="test-org",
         )
@@ -48,14 +48,14 @@ class ActivateFlagsMeasurementsInteractorTest(TransactionTestCase):
     @patch("services.task.TaskService.backfill_dataset")
     def test_creates_dataset(self, backfill_dataset):
         assert not Dataset.objects.filter(
-            name=MeasurementName.FLAG_COVERAGE.value,
+            name=MeasurementName.COMPONENT_COVERAGE.value,
             repository_id=self.repo.pk,
         ).exists()
 
         self.execute(user=self.user)
 
         assert Dataset.objects.filter(
-            name=MeasurementName.FLAG_COVERAGE.value,
+            name=MeasurementName.COMPONENT_COVERAGE.value,
             repository_id=self.repo.pk,
         ).exists()
 
@@ -66,7 +66,7 @@ class ActivateFlagsMeasurementsInteractorTest(TransactionTestCase):
         CommitFactory(repository=self.repo, timestamp=datetime(2021, 12, 31, 1, 1, 1))
         self.execute(user=self.user)
         dataset = Dataset.objects.filter(
-            name=MeasurementName.FLAG_COVERAGE.value,
+            name=MeasurementName.COMPONENT_COVERAGE.value,
             repository_id=self.repo.pk,
         ).first()
         backfill_dataset.assert_called_once_with(
