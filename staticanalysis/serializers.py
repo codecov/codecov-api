@@ -93,13 +93,12 @@ class StaticAnalysisSuiteFilepathField(serializers.ModelSerializer):
         ).name
 
     def get_raw_upload_location(self, obj):
-        if self.context["view"].action == "create":
-            # TODO: This has a built-in ttl of 10 seconds.
-            # We have to consider changing it in case customers are doing a few
-            # thousand uploads on the first time
-            return self.context["archive_service"].create_presigned_put(
-                obj.file_snapshot.content_location
-            )
+        # TODO: This has a built-in ttl of 10 seconds.
+        # We have to consider changing it in case customers are doing a few
+        # thousand uploads on the first time
+        return self.context["archive_service"].create_presigned_put(
+            obj.file_snapshot.content_location
+        )
 
 
 class FilepathListField(serializers.ListField):

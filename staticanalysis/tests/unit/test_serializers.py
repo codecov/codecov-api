@@ -65,34 +65,6 @@ def test_filepath_field(db, mocker):
     serializer_field = StaticAnalysisSuiteFilepathField(
         context={
             "archive_service": fake_archive_service,
-            "view": mocker.MagicMock(action="something"),
-        }
-    )
-    assert dict(serializer_field.to_representation(fp)) == {
-        "file_hash": sasfs.file_hash,
-        "filepath": "ohoooo",
-        "raw_upload_location": None,
-        "state": "VALID",
-    }
-
-
-def test_filepath_field_create(db, mocker):
-    sasfs = StaticAnalysisSingleFileSnapshotFactory.create(
-        state_id=StaticAnalysisSingleFileSnapshotState.VALID.db_id
-    )
-    sasfs.save()
-    fp = StaticAnalysisSuiteFilepathFactory.create(
-        filepath="ohoooo", file_snapshot=sasfs
-    )
-    fp.analysis_suite.save()
-    fp.save()
-    fake_archive_service = mocker.MagicMock(
-        create_presigned_put=mocker.MagicMock(return_value="some_url_stuff")
-    )
-    serializer_field = StaticAnalysisSuiteFilepathField(
-        context={
-            "archive_service": fake_archive_service,
-            "view": mocker.MagicMock(action="create"),
         }
     )
     assert dict(serializer_field.to_representation(fp)) == {

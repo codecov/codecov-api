@@ -7,10 +7,7 @@ from shared.celery_config import static_analysis_task_name
 from core.tests.factories import CommitFactory, RepositoryTokenFactory
 from services.task import TaskService
 from staticanalysis.models import StaticAnalysisSuite
-from staticanalysis.tests.factories import (
-    StaticAnalysisSuiteFactory,
-    StaticAnalysisSuiteFilepathFactory,
-)
+from staticanalysis.tests.factories import StaticAnalysisSuiteFactory
 
 
 def test_simple_static_analysis_call_no_uploads_yet(db, mocker):
@@ -85,7 +82,6 @@ def test_static_analysis_finish(db, mocker):
     mocked_task_service = mocker.patch.object(TaskService, "schedule_task")
     commit = CommitFactory.create(repository__active=True)
     suite = StaticAnalysisSuiteFactory(commit=commit)
-    filepath = StaticAnalysisSuiteFilepathFactory(analysis_suite=suite)
     token = RepositoryTokenFactory.create(
         repository=commit.repository, token_type="static_analysis"
     )
@@ -94,20 +90,7 @@ def test_static_analysis_finish(db, mocker):
     response = client.post(
         reverse("staticanalyses-finish", kwargs={"external_id": suite.external_id})
     )
-    assert response.status_code == 200
-    print(response.json())
-    assert response.json() == {
-        "external_id": str(suite.external_id),
-        "commit": commit.commitid,
-        "filepaths": [
-            {
-                "filepath": "",
-                "file_hash": str(UUID(filepath.file_hash)),
-                "raw_upload_location": None,
-                "state": "CREATED",
-            }
-        ],
-    }
+    assert response.status_code == 204
     mocked_task_service.assert_called_with(
         static_analysis_task_name,
         kwargs={"suite_id": suite.id},

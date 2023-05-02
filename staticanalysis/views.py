@@ -1,5 +1,6 @@
 import logging
 
+from django.http import HttpResponse
 from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -43,4 +44,4 @@ class StaticAnalysisSuiteViewSet(mixins.CreateModelMixin, viewsets.GenericViewSe
             kwargs=dict(suite_id=suite.pk),
             apply_async_kwargs={},
         )
-        return Response(self.get_serializer(suite).data)
+        return HttpResponse(status=204)
