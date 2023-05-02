@@ -6,18 +6,20 @@ from graphql_api.helpers.mutation import (
     resolve_union_error_type,
     wrap_error_handling_mutation,
 )
+from timeseries.models import MeasurementName
 
 
 @wrap_error_handling_mutation
 @require_authenticated
-async def resolve_activate_flags_measurements(_, info, input):
+async def resolve_activate_measurements(_, info, input):
     command: RepositoryCommands = info.context["executor"].get_command("repository")
-    await command.activate_flags_measurements(
+    await command.activate_measurements(
         owner_name=input.get("owner"),
         repo_name=input.get("repoName"),
+        measurement_type=input.get("measurementType", MeasurementName.FLAG_COVERAGE),
     )
     return None
 
 
-error_activate_flags_measurements = UnionType("ActivateFlagsMeasurementsError")
-error_activate_flags_measurements.type_resolver(resolve_union_error_type)
+error_activate_measurements = UnionType("ActivateMeasurementsError")
+error_activate_measurements.type_resolver(resolve_union_error_type)

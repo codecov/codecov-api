@@ -6,8 +6,8 @@ from codecov_auth.tests.factories import OwnerFactory
 from graphql_api.tests.helper import GraphQLTestHelper
 
 query = """
-mutation($input: ActivateFlagsMeasurementsInput!) {
-  activateFlagsMeasurements(input: $input) {
+mutation($input: ActivateMeasurementsInput!) {
+  activateMeasurements(input: $input) {
     error {
       __typename
     }
@@ -16,7 +16,7 @@ mutation($input: ActivateFlagsMeasurementsInput!) {
 """
 
 
-class ActivateFlagsMeasurementsTestCase(GraphQLTestHelper, TransactionTestCase):
+class ActivateMeasurementsTestCase(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
         self.user = OwnerFactory()
 
@@ -25,12 +25,12 @@ class ActivateFlagsMeasurementsTestCase(GraphQLTestHelper, TransactionTestCase):
             query, variables={"input": {"owner": "codecov", "repoName": "test-repo"}}
         )
         assert (
-            data["activateFlagsMeasurements"]["error"]["__typename"]
+            data["activateMeasurements"]["error"]["__typename"]
             == "UnauthenticatedError"
         )
 
     @patch(
-        "core.commands.repository.interactors.activate_flags_measurements.ActivateFlagsMeasurementsInteractor.execute"
+        "core.commands.repository.interactors.activate_measurements.ActivateMeasurementsInteractor.execute"
     )
     def test_when_authenticated(self, execute):
         data = self.gql_request(
@@ -38,4 +38,4 @@ class ActivateFlagsMeasurementsTestCase(GraphQLTestHelper, TransactionTestCase):
             user=self.user,
             variables={"input": {"owner": "codecov", "repoName": "test-repo"}},
         )
-        assert data == {"activateFlagsMeasurements": None}
+        assert data == {"activateMeasurements": None}

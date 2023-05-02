@@ -1,6 +1,7 @@
 from codecov.commands.base import BaseCommand
+from timeseries.models import MeasurementName
 
-from .interactors.activate_flags_measurements import ActivateFlagsMeasurementsInteractor
+from .interactors.activate_measurements import ActivateMeasurementsInteractor
 from .interactors.fetch_repository import FetchRepositoryInteractor
 from .interactors.get_repository_token import GetRepositoryTokenInteractor
 from .interactors.get_upload_token import GetUploadTokenInteractor
@@ -26,7 +27,9 @@ class RepositoryCommands(BaseCommand):
             repo_name, owner_username, token_type
         )
 
-    def activate_flags_measurements(self, repo_name: str, owner_name: str):
-        return self.get_interactor(ActivateFlagsMeasurementsInteractor).execute(
-            repo_name, owner_name
+    def activate_measurements(
+        self, repo_name: str, owner_name: str, measurement_type: MeasurementName
+    ):
+        return self.get_interactor(ActivateMeasurementsInteractor).execute(
+            repo_name, owner_name, measurement_type
         )

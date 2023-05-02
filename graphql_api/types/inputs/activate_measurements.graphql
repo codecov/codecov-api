@@ -1,0 +1,5 @@
+input ActivateMeasurementsInput {
+  owner: String!
+  repoName: String!
+  measurementType: MeasurementType
+}
