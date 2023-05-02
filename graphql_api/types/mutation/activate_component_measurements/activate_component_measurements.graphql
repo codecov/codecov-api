@@ -1,7 +1,0 @@
-union ActivateComponentMeasurementsError =
-    UnauthenticatedError
-  | ValidationError
-
-type ActivateComponentMeasurementsPayload {
-  error: ActivateComponentMeasurementsError
-}

@@ -13,9 +13,6 @@ type Mutation {
   regenerateRepositoryToken(
     input: RegenerateRepositoryTokenInput!
   ): RegenerateRepositoryTokenPayload
-  activateComponentMeasurements(
-    input: ActivateComponentMeasurementsInput!
-  ): ActivateComponentMeasurementsPayload
   activateFlagsMeasurements(
     input: ActivateFlagsMeasurementsInput!
   ): ActivateFlagsMeasurementsPayload

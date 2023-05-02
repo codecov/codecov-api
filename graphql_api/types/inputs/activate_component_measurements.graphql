@@ -1,4 +1,0 @@
-input ActivateComponentMeasurementsInput {
-  owner: String!
-  repoName: String!
-}

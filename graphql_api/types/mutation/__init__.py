@@ -1,6 +1,5 @@
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
 
-from .activate_component_measurements import gql_activate_component_measurements
 from .activate_flags_measurements import gql_activate_flags_measurements
 from .create_api_token import gql_create_api_token
 from .create_user_token import gql_create_user_token
@@ -29,7 +28,6 @@ mutation = mutation + gql_update_default_organization
 mutation = mutation + gql_onboard_user
 mutation = mutation + gql_regenerate_profling_token
 mutation = mutation + gql_regenerate_repository_token
-mutation = mutation + gql_activate_component_measurements
 mutation = mutation + gql_activate_flags_measurements
 mutation = mutation + gql_regenerate_org_upload_token
 mutation = mutation + gql_create_user_token

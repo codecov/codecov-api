@@ -1,5 +1,3 @@
-from unittest.mock import patch
-
 from django.test import TransactionTestCase
 
 from codecov_auth.tests.factories import OwnerFactory
@@ -28,14 +26,3 @@ class ActivateComponentMeasurementsTestCase(GraphQLTestHelper, TransactionTestCa
             data["activateComponentMeasurements"]["error"]["__typename"]
             == "UnauthenticatedError"
         )
-
-    @patch(
-        "core.commands.repository.interactors.activate_component_measurements.ActivateComponentMeasurementsInteractor.execute"
-    )
-    def test_when_authenticated(self, execute):
-        data = self.gql_request(
-            query,
-            user=self.user,
-            variables={"input": {"owner": "codecov", "repoName": "test-repo"}},
-        )
-        assert data == {"activateComponentMeasurements": None}
