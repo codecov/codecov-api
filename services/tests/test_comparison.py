@@ -368,14 +368,25 @@ class LineComparisonTests(TestCase):
     def test_hit_count_returns_sessions_hit_in_head(self):
         lc = LineComparison(
             None,
-            [1, "", [[0, 1, 0, 0, 0], [1, 2, 0, 0, 0], [2, 1, 0, 0, 0]], 0, 0],
+            [
+                1,
+                "",
+                [
+                    [0, 1, 0, 0, 0],
+                    [1, 2, 0, 0, 0],
+                    [2, 0, 0, 0, 0],
+                    [3, "2/2", 0, 0, 0],
+                ],
+                0,
+                0,
+            ],
             0,
             0,
             "",
             False,
         )
 
-        assert lc.hit_count == 2
+        assert lc.hit_count == 3
 
     def test_hit_count_returns_none_if_no_coverage(self):
         lc = LineComparison(None, [0, "", [[0, 0, 0, 0, 0]], 0, 0], 0, 0, "", False)
@@ -384,14 +395,25 @@ class LineComparisonTests(TestCase):
     def test_hit_session_ids(self):
         lc = LineComparison(
             None,
-            [1, "", [[0, 1, 0, 0, 0], [1, 2, 0, 0, 0], [2, 1, 0, 0, 0]], 0, 0],
+            [
+                1,
+                "",
+                [
+                    [0, 1, 0, 0, 0],
+                    [1, 2, 0, 0, 0],
+                    [2, 0, 0, 0, 0],
+                    [3, "2/2", 0, 0, 0],
+                ],
+                0,
+                0,
+            ],
             0,
             0,
             "",
             False,
         )
 
-        assert lc.hit_session_ids == [0, 2]
+        assert lc.hit_session_ids == [0, 1, 3]
 
     def test_hit_session_ids_no_coverage(self):
         lc = LineComparison(None, [0, "", [[0, 0, 0, 0, 0]], 0, 0], 0, 0, "", False)

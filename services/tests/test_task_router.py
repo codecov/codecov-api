@@ -5,17 +5,21 @@ from shared.billing import BillingPlan
 from codecov_auth.tests.factories import OwnerFactory
 from compare.tests.factories import CommitComparisonFactory
 from core.tests.factories import RepositoryFactory
+from labelanalysis.tests.factories import LabelAnalysisRequestFactory
 from profiling.models import ProfilingUpload
 from profiling.tests.factories import ProfilingCommitFactory
 from services.task.task_router import (
     _get_user_plan_from_comparison_id,
+    _get_user_plan_from_label_request_id,
     _get_user_plan_from_ownerid,
     _get_user_plan_from_profiling_commit,
     _get_user_plan_from_profiling_upload,
     _get_user_plan_from_repoid,
+    _get_user_plan_from_suite_id,
     _get_user_plan_from_task,
     route_task,
 )
+from staticanalysis.tests.factories import StaticAnalysisSuiteFactory
 
 
 @pytest.fixture
@@ -72,6 +76,30 @@ def fake_compare_commit(db, fake_repos):
     compare_commit.save()
     compare_commit_enterprise.save()
     return (compare_commit, compare_commit_enterprise)
+
+
+@pytest.fixture
+def fake_label_analysis_request(db, fake_repos):
+    (repo, repo_enterprise_cloud) = fake_repos
+    label_analysis_request = LabelAnalysisRequestFactory(head_commit__repository=repo)
+    label_analysis_request_enterprise = LabelAnalysisRequestFactory(
+        head_commit__repository=repo_enterprise_cloud
+    )
+    label_analysis_request.save()
+    label_analysis_request_enterprise.save()
+    return (label_analysis_request, label_analysis_request_enterprise)
+
+
+@pytest.fixture
+def fake_static_analysis_suite(db, fake_repos):
+    (repo, repo_enterprise_cloud) = fake_repos
+    static_analysis_suite = StaticAnalysisSuiteFactory(commit__repository=repo)
+    static_analysis_suite_enterprise = StaticAnalysisSuiteFactory(
+        commit__repository=repo_enterprise_cloud
+    )
+    static_analysis_suite.save()
+    static_analysis_suite_enterprise.save()
+    return (static_analysis_suite, static_analysis_suite_enterprise)
 
 
 def test_get_owner_plan_from_ownerid(fake_owners):
@@ -141,6 +169,43 @@ def test_get_user_plan_from_comparison_id(fake_compare_commit):
     assert (
         _get_user_plan_from_comparison_id(10000000) == BillingPlan.users_basic.db_name
     )
+
+
+def test_get_user_plan_from_label_request_id(fake_label_analysis_request):
+    (
+        label_analysis_request,
+        label_analysis_request_enterprise,
+    ) = fake_label_analysis_request
+    assert (
+        _get_user_plan_from_label_request_id(request_id=label_analysis_request.id)
+        == BillingPlan.pr_monthly.db_name
+    )
+    assert (
+        _get_user_plan_from_label_request_id(
+            request_id=label_analysis_request_enterprise.id
+        )
+        == BillingPlan.enterprise_cloud_yearly.db_name
+    )
+    assert (
+        _get_user_plan_from_label_request_id(10000000)
+        == BillingPlan.users_basic.db_name
+    )
+
+
+def test_get_user_plan_from_static_analysis_suite(fake_static_analysis_suite):
+    (
+        static_analysis_suite,
+        static_analysis_suite_enterprise,
+    ) = fake_static_analysis_suite
+    assert (
+        _get_user_plan_from_suite_id(suite_id=static_analysis_suite.id)
+        == BillingPlan.pr_monthly.db_name
+    )
+    assert (
+        _get_user_plan_from_suite_id(suite_id=static_analysis_suite_enterprise.id)
+        == BillingPlan.enterprise_cloud_yearly.db_name
+    )
+    assert _get_user_plan_from_suite_id(10000000) == BillingPlan.users_basic.db_name
 
 
 def test_get_user_plan_from_task(

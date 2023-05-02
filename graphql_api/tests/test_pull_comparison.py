@@ -33,7 +33,7 @@ MockSegmentComparison = namedtuple(
 )
 MockLineComparison = namedtuple(
     "MockLineComparison",
-    ["number", "coverage", "value", "is_diff", "hit_count", "hit_session_ids"],
+    ["number", "coverage", "value", "is_diff", "hit_session_ids"],
 )
 
 
@@ -613,7 +613,6 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                 },
                                 value=" line1",
                                 is_diff=False,
-                                hit_count=1,
                                 hit_session_ids=[0],
                             ),
                             MockLineComparison(
@@ -627,8 +626,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                 },
                                 value="+ line2",
                                 is_diff=True,
-                                hit_count=1,
-                                hit_session_ids=[0],
+                                hit_session_ids=[0, 1],
                             ),
                         ],
                     ),
@@ -656,7 +654,6 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                 },
                                 value=" line1",
                                 is_diff=True,
-                                hit_count=1,
                                 hit_session_ids=[0],
                             ),
                         ],
@@ -685,8 +682,10 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                         baseCoverage
                                         headCoverage
                                         content
-                                        hitCount
-                                        hitUploadIds
+                                        coverageInfo(ignoredUploadIds: [1]) {
+                                            hitCount
+                                            hitUploadIds
+                                        }
                                     }
                                 }
                             }
@@ -714,8 +713,10 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                             "baseCoverage": "H",
                                             "headCoverage": "H",
                                             "content": "  line1",
-                                            "hitCount": 1,
-                                            "hitUploadIds": [0],
+                                            "coverageInfo": {
+                                                "hitCount": 1,
+                                                "hitUploadIds": [0],
+                                            },
                                         },
                                         {
                                             "baseNumber": None,
@@ -723,8 +724,10 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                             "baseCoverage": None,
                                             "headCoverage": "H",
                                             "content": "+  line2",
-                                            "hitCount": 1,
-                                            "hitUploadIds": [0],
+                                            "coverageInfo": {
+                                                "hitCount": 1,
+                                                "hitUploadIds": [0],
+                                            },
                                         },
                                     ],
                                 }
@@ -744,8 +747,10 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                             "baseCoverage": "M",
                                             "headCoverage": "H",
                                             "content": "  line1",
-                                            "hitCount": 1,
-                                            "hitUploadIds": [0],
+                                            "coverageInfo": {
+                                                "hitCount": 1,
+                                                "hitUploadIds": [0],
+                                            },
                                         }
                                     ],
                                 }
@@ -795,8 +800,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                             },
                             value=" line1",
                             is_diff=True,
-                            hit_count=1,
-                            hit_session_ids=[0],
+                            hit_session_ids=[0, 1],
                         ),
                     ],
                 ),

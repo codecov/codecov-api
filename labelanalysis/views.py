@@ -1,5 +1,6 @@
 from rest_framework.exceptions import NotFound
 from rest_framework.generics import CreateAPIView, RetrieveAPIView
+from shared.celery_config import label_analysis_task_name
 
 from codecov_auth.authentication.repo_auth import RepositoryTokenAuthentication
 from codecov_auth.permissions import SpecificScopePermission
@@ -18,7 +19,7 @@ class LabelAnalysisRequestCreateView(CreateAPIView):
     def perform_create(self, serializer):
         instance = serializer.save(state_id=LabelAnalysisRequestState.CREATED.db_id)
         TaskService().schedule_task(
-            "app.tasks.label_analysis.process",
+            label_analysis_task_name,
             kwargs=dict(request_id=instance.id),
             apply_async_kwargs=dict(),
         )
