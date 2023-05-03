@@ -1,8 +1,8 @@
 from ariadne import MutationType
 
-from .activate_flags_measurements import (
-    error_activate_flags_measurements,
-    resolve_activate_flags_measurements,
+from .activate_measurements import (
+    error_activate_measurements,
+    resolve_activate_measurements,
 )
 from .create_api_token import error_create_api_token, resolve_create_api_token
 from .create_user_token import error_create_user_token, resolve_create_user_token
@@ -56,9 +56,7 @@ mutation_bindable.field("regenerateProfilingToken")(resolve_regenerate_profling_
 mutation_bindable.field("regenerateRepositoryToken")(
     resolve_regenerate_repository_token
 )
-mutation_bindable.field("activateFlagsMeasurements")(
-    resolve_activate_flags_measurements
-)
+mutation_bindable.field("activateMeasurements")(resolve_activate_measurements)
 mutation_bindable.field("regenerateOrgUploadToken")(resolve_regenerate_org_upload_token)
 mutation_bindable.field("deleteFlag")(resolve_delete_flag)
 mutation_bindable.field("saveSentryState")(resolve_save_sentry_state)
@@ -77,7 +75,7 @@ mutation_resolvers = [
     error_onboard_user,
     error_generate_profiling_token,
     error_regenerate_repository_token,
-    error_activate_flags_measurements,
+    error_activate_measurements,
     error_generate_org_upload_token,
     error_delete_flag,
     error_save_sentry_state,

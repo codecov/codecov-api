@@ -1,0 +1,5 @@
+enum MeasurementType {
+  COVERAGE
+  FLAG_COVERAGE
+  COMPONENT_COVERAGE
+}
