@@ -17,14 +17,10 @@ class FetchImpactedFiles(BaseInteractor):
         parameter = filters.get("ordering", {}).get("parameter")
         direction = filters.get("ordering", {}).get("direction")
         if parameter and direction:
-            impacted_files = self.sort_impacted_files(
-                impacted_files, parameter, direction
-            )
+            impacted_files = self.sort_impacted_files(impacted_files, parameter, direction)
         return impacted_files
 
-    def get_attribute(
-        self, impacted_file: ImpactedFile, parameter: ImpactedFileParameter
-    ):
+    def get_attribute(self, impacted_file: ImpactedFile, parameter: ImpactedFileParameter):
         if parameter == ImpactedFileParameter.FILE_NAME:
             return impacted_file.file_name
         elif parameter == ImpactedFileParameter.CHANGE_COVERAGE:
@@ -66,10 +62,14 @@ class FetchImpactedFiles(BaseInteractor):
         return files_with_coverage + files_without_coverage
 
     def execute(self, comparison_report, filters):
+        print("impacted filesssss", comparison_report.impacted_files)
         if filters is None:
             return comparison_report.impacted_files
 
         has_unintended_changes = filters.get("has_unintended_changes")
+        print("Has unintended changes", has_unintended_changes)
+        print("impacted files with unintended changes", comparison_report.impacted_files_with_unintended_changes)
+        print("impacted files with direct changes", comparison_report.impacted_files_with_direct_changes)
         if has_unintended_changes is not None:
             impacted_files = (
                 comparison_report.impacted_files_with_unintended_changes

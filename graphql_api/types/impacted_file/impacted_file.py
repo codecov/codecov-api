@@ -65,6 +65,7 @@ def resolve_hashed_path(impacted_file: ImpactedFile, info) -> str:
 def resolve_segments(
     impacted_file: ImpactedFile, info, filters=None
 ) -> Union[UnknownPath, ProviderError, SegmentComparisons]:
+    print("I'm in segemnts!!!", impacted_file.file_name)
     if filters is None:
         filters = {}
     if "comparison" not in info.context:
@@ -78,9 +79,7 @@ def resolve_segments(
     path = impacted_file.head_name
 
     try:
-        file_comparison = comparison.get_file_comparison(
-            path, with_src=True, bypass_max_diff=True
-        )
+        file_comparison = comparison.get_file_comparison(path, with_src=True, bypass_max_diff=True)
     except TorngitClientError as e:
         if e.code == 404:
             return UnknownPath(f"path does not exist: {path}")
@@ -89,16 +88,17 @@ def resolve_segments(
 
     segments = file_comparison.segments
 
+    print("these are the segments for this!", segments[0].__dict__)
+    print("lines of the segment", segments[0].lines[0].__dict__)
+
     if filters.get("has_unintended_changes") is True:
         # segments with no diff changes and at least 1 unintended change
-        segments = [
-            segment
-            for segment in segments
-            if segment.has_unintended_changes and not segment.has_diff_changes
-        ]
+        segments = [segment for segment in segments if segment.has_unintended_changes and not segment.has_diff_changes]
     elif filters.get("has_unintended_changes") is False:
         # segments with at least 1 diff change
         segments = [segment for segment in segments if segment.has_diff_changes]
+
+    print("this is the segment after the filtering logic", segments)
 
     return SegmentComparisons(results=segments)
 
@@ -106,9 +106,7 @@ def resolve_segments(
 @impacted_file_bindable.field("segmentsDeprecated")
 @sync_to_async
 @convert_kwargs_to_snake_case
-def resolve_segments_deprecated(
-    impacted_file: ImpactedFile, info, filters=None
-) -> List[Segment]:
+def resolve_segments_deprecated(impacted_file: ImpactedFile, info, filters=None) -> List[Segment]:
     if filters is None:
         filters = {}
 
@@ -117,19 +115,13 @@ def resolve_segments_deprecated(
         comparison.validate()
     except MissingComparisonReport:
         return []
-    file_comparison = comparison.get_file_comparison(
-        impacted_file.head_name, with_src=True, bypass_max_diff=True
-    )
+    file_comparison = comparison.get_file_comparison(impacted_file.head_name, with_src=True, bypass_max_diff=True)
 
     segments = file_comparison.segments
 
     if filters.get("has_unintended_changes") is True:
         # segments with no diff changes and at least 1 unintended change
-        segments = [
-            segment
-            for segment in segments
-            if segment.has_unintended_changes and not segment.has_diff_changes
-        ]
+        segments = [segment for segment in segments if segment.has_unintended_changes and not segment.has_diff_changes]
     elif filters.get("has_unintended_changes") is False:
         # segments with at least 1 diff change
         segments = [segment for segment in segments if segment.has_diff_changes]
