@@ -48,7 +48,6 @@ def get_extensions(path):
             new_ext = Extension(dot_name, ["{}/*.py".format(dir_path)])
             extensions.append(new_ext)
     # return an array of extensions
-    print(extensions)
     return extensions
 
 
