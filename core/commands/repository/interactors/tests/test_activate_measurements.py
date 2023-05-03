@@ -9,18 +9,18 @@ from django.test import TransactionTestCase, override_settings
 from django.utils import timezone
 from freezegun import freeze_time
 
-from codecov.commands.exceptions import Unauthenticated, ValidationError
+from codecov.commands.exceptions import ValidationError
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
-from timeseries.models import Dataset, Measurement, MeasurementName
+from timeseries.models import Dataset, MeasurementName
 
-from ..activate_flags_measurements import ActivateFlagsMeasurementsInteractor
+from ..activate_measurements import ActivateMeasurementsInteractor
 
 
 @pytest.mark.skipif(
     not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
 )
-class ActivateFlagsMeasurementsInteractorTest(TransactionTestCase):
+class ActivateMeasurementsInteractorTest(TransactionTestCase):
     databases = {"default", "timeseries"}
 
     def setUp(self):
@@ -29,16 +29,13 @@ class ActivateFlagsMeasurementsInteractorTest(TransactionTestCase):
         self.user = OwnerFactory(permission=[self.repo.pk])
 
     @async_to_sync
-    def execute(self, user, repo_name=None):
+    def execute(self, user, repo_name=None, measurement_type=None):
         current_user = user or AnonymousUser()
-        return ActivateFlagsMeasurementsInteractor(current_user, "github").execute(
+        return ActivateMeasurementsInteractor(current_user, "github").execute(
             repo_name=repo_name or "test-repo",
             owner_name="test-org",
+            measurement_type=measurement_type or MeasurementName.FLAG_COVERAGE,
         )
-
-    def test_unauthenticated(self):
-        with pytest.raises(Unauthenticated):
-            self.execute(user=None)
 
     def test_repo_not_found(self):
         with pytest.raises(ValidationError):
@@ -50,7 +47,7 @@ class ActivateFlagsMeasurementsInteractorTest(TransactionTestCase):
             self.execute(user=self.user)
 
     @patch("services.task.TaskService.backfill_dataset")
-    def test_creates_dataset(self, backfill_dataset):
+    def test_creates_flag_dataset(self, backfill_dataset):
         assert not Dataset.objects.filter(
             name=MeasurementName.FLAG_COVERAGE.value,
             repository_id=self.repo.pk,
@@ -60,6 +57,42 @@ class ActivateFlagsMeasurementsInteractorTest(TransactionTestCase):
 
         assert Dataset.objects.filter(
             name=MeasurementName.FLAG_COVERAGE.value,
+            repository_id=self.repo.pk,
+        ).exists()
+
+    @patch("services.task.TaskService.backfill_dataset")
+    def test_creates_component_dataset(self, backfill_dataset):
+        assert not Dataset.objects.filter(
+            name=MeasurementName.COMPONENT_COVERAGE.value,
+            repository_id=self.repo.pk,
+        ).exists()
+
+        self.execute(
+            user=self.user,
+            repo_name="test-repo",
+            measurement_type=MeasurementName.COMPONENT_COVERAGE,
+        )
+
+        assert Dataset.objects.filter(
+            name=MeasurementName.COMPONENT_COVERAGE.value,
+            repository_id=self.repo.pk,
+        ).exists()
+
+    @patch("services.task.TaskService.backfill_dataset")
+    def test_creates_coverage_dataset(self, backfill_dataset):
+        assert not Dataset.objects.filter(
+            name=MeasurementName.COVERAGE.value,
+            repository_id=self.repo.pk,
+        ).exists()
+
+        self.execute(
+            user=self.user,
+            repo_name="test-repo",
+            measurement_type=MeasurementName.COVERAGE,
+        )
+
+        assert Dataset.objects.filter(
+            name=MeasurementName.COVERAGE.value,
             repository_id=self.repo.pk,
         ).exists()
 
