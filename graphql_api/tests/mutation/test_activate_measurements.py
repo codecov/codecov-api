@@ -22,7 +22,14 @@ class ActivateMeasurementsTestCase(GraphQLTestHelper, TransactionTestCase):
 
     def test_when_unauthenticated(self):
         data = self.gql_request(
-            query, variables={"input": {"owner": "codecov", "repoName": "test-repo"}}
+            query,
+            variables={
+                "input": {
+                    "owner": "codecov",
+                    "repoName": "test-repo",
+                    "measurementType": "FLAG_COVERAGE",
+                }
+            },
         )
         assert (
             data["activateMeasurements"]["error"]["__typename"]
@@ -36,6 +43,12 @@ class ActivateMeasurementsTestCase(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(
             query,
             user=self.user,
-            variables={"input": {"owner": "codecov", "repoName": "test-repo"}},
+            variables={
+                "input": {
+                    "owner": "codecov",
+                    "repoName": "test-repo",
+                    "measurementType": "FLAG_COVERAGE",
+                }
+            },
         )
         assert data == {"activateMeasurements": None}

@@ -1,5 +1,5 @@
 input ActivateMeasurementsInput {
   owner: String!
   repoName: String!
-  measurementType: MeasurementType
+  measurementType: MeasurementType!
 }

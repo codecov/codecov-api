@@ -16,7 +16,7 @@ async def resolve_activate_measurements(_, info, input):
     await command.activate_measurements(
         owner_name=input.get("owner"),
         repo_name=input.get("repoName"),
-        measurement_type=input.get("measurementType", MeasurementName.FLAG_COVERAGE),
+        measurement_type=input.get("measurementType"),
     )
     return None
 
