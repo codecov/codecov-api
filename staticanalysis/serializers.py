@@ -1,4 +1,5 @@
 import logging
+import math
 
 from rest_framework import exceptions, serializers
 
@@ -127,7 +128,9 @@ class StaticAnalysisSuiteSerializer(serializers.ModelSerializer):
         request = self.context["request"]
         repository = request.auth.get_repositories()[0]
         archive_service = ArchiveService(repository)
-        self.context["archive_service"] = ArchiveService(repository, ttl=60)
+        # allow 1s per 10 uploads
+        ttl = max(math.ceil(len(file_metadata_array) / 10), 10)
+        self.context["archive_service"] = ArchiveService(repository, ttl=ttl)
         all_hashes = [val["file_hash"] for val in file_metadata_array]
         existing_values = StaticAnalysisSingleFileSnapshot.objects.filter(
             repository=repository, file_hash__in=all_hashes
