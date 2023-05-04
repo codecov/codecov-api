@@ -129,7 +129,7 @@ class StaticAnalysisSuiteSerializer(serializers.ModelSerializer):
         repository = request.auth.get_repositories()[0]
         archive_service = ArchiveService(repository)
         # allow 1s per 10 uploads
-        ttl = max(math.ceil(len(file_metadata_array) / 10), 10)
+        ttl = max(math.ceil(len(file_metadata_array) / 10) + 5, 10)
         self.context["archive_service"] = ArchiveService(repository, ttl=ttl)
         all_hashes = [val["file_hash"] for val in file_metadata_array]
         existing_values = StaticAnalysisSingleFileSnapshot.objects.filter(
