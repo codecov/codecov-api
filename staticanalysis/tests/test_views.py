@@ -1,4 +1,4 @@
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from django.urls import reverse
 from rest_framework.test import APIClient
@@ -7,6 +7,7 @@ from shared.celery_config import static_analysis_task_name
 from core.tests.factories import CommitFactory, RepositoryTokenFactory
 from services.task import TaskService
 from staticanalysis.models import StaticAnalysisSuite
+from staticanalysis.tests.factories import StaticAnalysisSuiteFactory
 
 
 def test_simple_static_analysis_call_no_uploads_yet(db, mocker):
@@ -20,7 +21,7 @@ def test_simple_static_analysis_call_no_uploads_yet(db, mocker):
         repository=commit.repository, token_type="static_analysis"
     )
     client = APIClient()
-    url = reverse("static_analysis_upload")
+    url = reverse("staticanalyses-list")
     client.credentials(HTTP_AUTHORIZATION="repotoken " + token.key)
     some_uuid, second_uuid = uuid4(), uuid4()
     response = client.post(
@@ -74,4 +75,24 @@ def test_simple_static_analysis_call_no_uploads_yet(db, mocker):
         "archive",
         mocker.ANY,
         60,
+    )
+
+
+def test_static_analysis_finish(db, mocker):
+    mocked_task_service = mocker.patch.object(TaskService, "schedule_task")
+    commit = CommitFactory.create(repository__active=True)
+    suite = StaticAnalysisSuiteFactory(commit=commit)
+    token = RepositoryTokenFactory.create(
+        repository=commit.repository, token_type="static_analysis"
+    )
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION="repotoken " + token.key)
+    response = client.post(
+        reverse("staticanalyses-finish", kwargs={"external_id": suite.external_id})
+    )
+    assert response.status_code == 204
+    mocked_task_service.assert_called_with(
+        static_analysis_task_name,
+        kwargs={"suite_id": suite.id},
+        apply_async_kwargs={},
     )

@@ -63,7 +63,9 @@ def test_filepath_field(db, mocker):
         create_presigned_put=mocker.MagicMock(return_value="some_url_stuff")
     )
     serializer_field = StaticAnalysisSuiteFilepathField(
-        context={"archive_service": fake_archive_service}
+        context={
+            "archive_service": fake_archive_service,
+        }
     )
     assert dict(serializer_field.to_representation(fp)) == {
         "file_hash": sasfs.file_hash,
