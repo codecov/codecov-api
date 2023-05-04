@@ -14,8 +14,6 @@ type Comparison {
   hasDifferentNumberOfHeadAndBaseReports: Boolean!
   flagComparisonsCount: Int!
   componentComparisonsCount: Int!
-
-  changeWithParent: Float @deprecated(reason: "Use `changeCoverage`")
 }
 
 type MissingBaseCommit implements ResolverError {
