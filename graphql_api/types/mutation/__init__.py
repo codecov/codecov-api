@@ -8,7 +8,6 @@ from .delete_session import gql_delete_session
 from .mutation import mutation_resolvers
 from .onboard_user import gql_onboard_user
 from .regenerate_org_upload_token import gql_regenerate_org_upload_token
-from .regenerate_profiling_token import gql_regenerate_profling_token
 from .regenerate_repository_token import gql_regenerate_repository_token
 from .revoke_user_token import gql_revoke_user_token
 from .save_sentry_state import gql_save_sentry_state
@@ -26,7 +25,6 @@ mutation = mutation + gql_set_yaml_on_owner
 mutation = mutation + gql_update_profile
 mutation = mutation + gql_update_default_organization
 mutation = mutation + gql_onboard_user
-mutation = mutation + gql_regenerate_profling_token
 mutation = mutation + gql_regenerate_repository_token
 mutation = mutation + gql_activate_measurements
 mutation = mutation + gql_regenerate_org_upload_token

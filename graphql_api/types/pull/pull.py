@@ -42,25 +42,6 @@ def resolve_base(pull, info):
     return CommitLoader.loader(info, pull.repository_id).load(pull.compared_to)
 
 
-@pull_bindable.field("compareWithBaseTemp")
-async def resolve_compare_with_base_temp(pull, info, **kwargs):
-    if not pull.compared_to or not pull.head:
-        return None
-
-    comparison_loader = ComparisonLoader.loader(info, pull.repository_id)
-    commit_comparison = await comparison_loader.load((pull.compared_to, pull.head))
-
-    if commit_comparison and commit_comparison.is_processed:
-        user = info.context["request"].user
-        comparison = PullRequestComparison(user, pull)
-
-        # store the comparison in the context - to be used in the `Comparison` resolvers
-        info.context["comparison"] = comparison
-
-    if commit_comparison:
-        return ComparisonReport(commit_comparison)
-
-
 @pull_bindable.field("compareWithBase")
 async def resolve_compare_with_base(pull, info, **kwargs):
     if not pull.compared_to:

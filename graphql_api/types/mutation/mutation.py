@@ -13,10 +13,6 @@ from .regenerate_org_upload_token import (
     error_generate_org_upload_token,
     resolve_regenerate_org_upload_token,
 )
-from .regenerate_profiling_token import (
-    error_generate_profiling_token,
-    resolve_regenerate_profling_token,
-)
 from .regenerate_repository_token import (
     error_regenerate_repository_token,
     resolve_regenerate_repository_token,
@@ -52,7 +48,6 @@ mutation_bindable.field("updateDefaultOrganization")(
     resolve_update_default_organization
 )
 mutation_bindable.field("onboardUser")(resolve_onboard_user)
-mutation_bindable.field("regenerateProfilingToken")(resolve_regenerate_profling_token)
 mutation_bindable.field("regenerateRepositoryToken")(
     resolve_regenerate_repository_token
 )
@@ -73,7 +68,6 @@ mutation_resolvers = [
     error_update_profile,
     error_update_default_organization,
     error_onboard_user,
-    error_generate_profiling_token,
     error_regenerate_repository_token,
     error_activate_measurements,
     error_generate_org_upload_token,

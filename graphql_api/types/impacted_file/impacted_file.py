@@ -99,40 +99,6 @@ def resolve_segments(
     return SegmentComparisons(results=segments)
 
 
-@impacted_file_bindable.field("segmentsDeprecated")
-@sync_to_async
-@convert_kwargs_to_snake_case
-def resolve_segments_deprecated(
-    impacted_file: ImpactedFile, info, filters=None
-) -> List[Segment]:
-    if filters is None:
-        filters = {}
-
-    comparison = info.context["comparison"]
-    try:
-        comparison.validate()
-    except MissingComparisonReport:
-        return []
-    file_comparison = comparison.get_file_comparison(
-        impacted_file.head_name, with_src=True, bypass_max_diff=True
-    )
-
-    segments = file_comparison.segments
-
-    if filters.get("has_unintended_changes") is True:
-        # segments with no diff changes and at least 1 unintended change
-        segments = [
-            segment
-            for segment in segments
-            if segment.has_unintended_changes and not segment.has_diff_changes
-        ]
-    elif filters.get("has_unintended_changes") is False:
-        # segments with at least 1 diff change
-        segments = [segment for segment in segments if segment.has_diff_changes]
-
-    return segments
-
-
 @impacted_file_bindable.field("isNewFile")
 def resolve_is_new_file(impacted_file: ImpactedFile, info) -> bool:
     base_name = impacted_file.base_name
