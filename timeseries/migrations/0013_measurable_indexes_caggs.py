@@ -10,6 +10,10 @@ class Migration(migrations.Migration):
     """
     BEGIN;
     --
+    -- Alter field measurable_id on measurement
+    --
+    ALTER TABLE "timeseries_measurement" ALTER COLUMN "measurable_id" SET NOT NULL;
+    --
     -- Remove index timeseries__owner_i_2cc713_idx from measurement
     --
     DROP INDEX IF EXISTS "timeseries__owner_i_2cc713_idx";
@@ -135,6 +139,11 @@ class Migration(migrations.Migration):
 
     operations = (
         [
+            migrations.AlterField(
+                model_name="measurement",
+                name="measurable_id",
+                field=models.TextField(),
+            ),
             migrations.RemoveIndex(
                 model_name="measurement",
                 name="timeseries__owner_i_2cc713_idx",
@@ -195,10 +204,7 @@ class Migration(migrations.Migration):
                     end_offset => NULL,
                     schedule_interval => INTERVAL '1 h'
                 );
-            """,
-                reverse_sql=f"""
-                drop materialized view timeseries_measurement_summary_{days}day;
-            """,
+                """
             )
             for days in [1, 7, 30]
         ]
@@ -206,7 +212,7 @@ class Migration(migrations.Migration):
             migrations.RunSQL(
                 f"""
                 alter materialized view timeseries_measurement_summary_{days}day set (timescaledb.materialized_only = true);
-            """
+                """
             )
             for days in [1, 7, 30]
             if not settings.TIMESERIES_REAL_TIME_AGGREGATES

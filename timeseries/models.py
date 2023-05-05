@@ -29,7 +29,7 @@ class Measurement(models.Model):
 
     owner_id = models.BigIntegerField(null=False)
     repo_id = models.BigIntegerField(null=False)
-    measurable_id = models.TextField(null=True)
+    measurable_id = models.TextField(null=False)
     # TODO: run a migration to backpopulate measurable_id w/ info from the flag_id, component_id + repo_id to deprecate flag_id
     flag_id = models.BigIntegerField(null=True)
     branch = models.TextField(null=True)
