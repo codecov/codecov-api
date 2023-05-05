@@ -1,6 +1,5 @@
 import logging
 from base64 import b16encode
-from datetime import datetime
 from enum import Enum
 from hashlib import md5
 from uuid import uuid4
@@ -243,7 +242,7 @@ class ArchiveService(object):
             repo_hash = self.storage_hash
 
         if date_string is None:
-            date_string = datetime.now().strftime("%Y-%m-%d")
+            date_string = timezone.now().strftime("%Y-%m-%d")
 
         path = "v4/raw/{}/{}/{}/{}".format(
             date_string, self.storage_hash, commit_sha, filename
