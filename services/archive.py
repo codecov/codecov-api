@@ -18,6 +18,9 @@ log = logging.getLogger(__name__)
 class MinioEndpoints(Enum):
     chunks = "{version}/repos/{repo_hash}/commits/{commitid}/chunks.txt"
     raw = "v4/raw/{date}/{repo_hash}/{commit_sha}/{reportid}.txt"
+    raw_with_upload_id = (
+        "v4/raw/{date}/{repo_hash}/{commit_sha}/{reportid}/{uploadid}.txt"
+    )
     profiling_upload = (
         "{version}/repos/{repo_hash}/profilinguploads/{profiling_version}/{location}"
     )
