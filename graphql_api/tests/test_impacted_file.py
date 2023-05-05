@@ -494,7 +494,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
     @patch("services.comparison.Comparison.validate")
     @patch("services.comparison.PullRequestComparison.get_file_comparison")
     @patch("services.archive.ArchiveService.read_file")
-    def test_fetch_impacted_file_segments_with_indirect_changes_only(
+    def test_fetch_impacted_file_segments_with_indirect_and_direct_changes(
         self, read_file, mock_get_file_comparison, mock_compare_validate
     ):
         read_file.return_value = mock_data_from_archive
@@ -518,14 +518,15 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                             "impactedFile": {
                                 "headName": "fileA",
                                 "baseName": "fileA",
-                                "hashedPath": hashlib.md5("fileA".encode()).hexdigest(),
+                                "hashedPath": "5e9f0c9689fb7ec181ea0fb09ad3f74e",
                                 "baseCoverage": {"percentCovered": 41.666666666666664},
                                 "headCoverage": {"percentCovered": 85.71428571428571},
                                 "patchCoverage": {"percentCovered": 50.0},
                                 "segments": {
                                     "results": [
                                         {"hasUnintendedChanges": True},
-                                    ],
+                                        {"hasUnintendedChanges": True},
+                                    ]
                                 },
                             },
                         }

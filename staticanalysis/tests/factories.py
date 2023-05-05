@@ -25,6 +25,7 @@ class StaticAnalysisSingleFileSnapshotFactory(DjangoModelFactory):
     repository = factory.SubFactory(RepositoryFactory)
     file_hash = factory.LazyFunction(lambda: uuid4().hex)
     content_location = "a/b/c.txt"
+    state_id = 1
 
 
 class StaticAnalysisSuiteFilepathFactory(DjangoModelFactory):
