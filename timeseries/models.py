@@ -48,7 +48,7 @@ class Measurement(models.Model):
                 fields=[
                     "owner_id",
                     "repo_id",
-                    "flag_id",
+                    "measurable_id",
                     "branch",
                     "name",
                     "timestamp",
@@ -57,6 +57,18 @@ class Measurement(models.Model):
         ]
         constraints = [
             # for updating measurements
+            models.UniqueConstraint(
+                fields=[
+                    "name",
+                    "owner_id",
+                    "repo_id",
+                    "measurable_id",
+                    "commit_sha",
+                    "timestamp",
+                ],
+                name="timeseries_measurement_unique",
+            ),
+            # TODO: remove these once the worker does not rely on them for updating measurements
             models.UniqueConstraint(
                 fields=[
                     "name",
@@ -87,7 +99,7 @@ class MeasurementSummary(models.Model):
     timestamp_bin = models.DateTimeField(primary_key=True)
     owner_id = models.BigIntegerField()
     repo_id = models.BigIntegerField()
-    flag_id = models.BigIntegerField()
+    measurable_id = models.TextField()
     branch = models.TextField()
     name = models.TextField()
     value_avg = models.FloatField()
