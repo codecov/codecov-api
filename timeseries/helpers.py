@@ -219,7 +219,7 @@ def fill_sparse_measurements(
     start_date = aligned_start_date(interval, start_date)
 
     if end_date is None:
-        end_date = datetime.now().replace(tzinfo=timezone.utc)
+        end_date = timezone.now()
 
     intervals = []
 
