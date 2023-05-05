@@ -53,7 +53,9 @@ class CoverageViewSet(
         return repository_coverage_measurements_with_fallback(
             self.repo,
             self.get_measurement_interval(),
-            start_date=self.request.query_params.get("start_date", datetime(2000, 1, 1)),
+            start_date=self.request.query_params.get(
+                "start_date", datetime(2000, 1, 1)
+            ),
             end_date=self.request.query_params.get("end_date", datetime.now()),
             branch=self.request.query_params.get("branch"),
         )
@@ -107,4 +109,6 @@ class FlagCoverageViewSet(CoverageViewSet):
         if end_date is not None:
             queryset = queryset.filter(timestamp_bin__lte=end_date)
 
-        return aggregate_measurements(queryset, ["timestamp_bin", "owner_id", "repo_id", "flag_id"])
+        return aggregate_measurements(
+            queryset, ["timestamp_bin", "owner_id", "repo_id", "flag_id"]
+        )

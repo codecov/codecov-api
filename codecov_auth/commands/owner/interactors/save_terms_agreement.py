@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Optional
+
 from django.utils import timezone
 
 from codecov.commands.base import BaseInteractor
