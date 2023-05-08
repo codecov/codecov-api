@@ -364,28 +364,23 @@ class UploadDownloadHandler(View):
         self.owner_username = self.kwargs.get("owner_username")
 
     @sync_to_async
-    def get_from_storage(self, repo):
+    def get_presigned_url(self, repo):
         archive_service = ArchiveService(repo)
 
         # Verify that the repo hash in the path matches the repo in the URL by generating the repo hash
         if archive_service.storage_hash not in self.path:
             raise Http404("Requested report could not be found")
-        try:
-            return archive_service.read_file(self.path)
 
-        except minio.error.S3Error as e:
-            if e.code == "NoSuchKey":
-                raise Http404("Requested report could not be found")
-            else:
-                raise
+        return archive_service.storage.create_presigned_get(
+            archive_service.root, self.path, expires=30
+        )
 
     async def get(self, request, *args, **kwargs):
         self.read_params()
         self.validate_path()
         request.user = await self.get_user(request)
         repo = await self.get_repo()
-        raw_uploaded_report = await self.get_from_storage(repo)
 
-        response = HttpResponse(raw_uploaded_report)
-        response["Content-Type"] = "text/plain"
+        response = HttpResponse(status=302)
+        response["Location"] = await self.get_presigned_url(repo)
         return response
