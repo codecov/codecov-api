@@ -371,9 +371,15 @@ class UploadDownloadHandler(View):
         if archive_service.storage_hash not in self.path:
             raise Http404("Requested report could not be found")
 
-        return archive_service.storage.create_presigned_get(
-            archive_service.root, self.path, expires=30
-        )
+        try:
+            return archive_service.storage.create_presigned_get(
+                archive_service.root, self.path, expires=30
+            )
+        except minio.error.S3Error as e:
+            if e.code == "NoSuchKey":
+                raise Http404("Requested report could not be found")
+            else:
+                raise
 
     async def get(self, request, *args, **kwargs):
         self.read_params()

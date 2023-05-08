@@ -56,8 +56,8 @@ class UploadDownloadHelperTest(APITransactionTestCase):
         )
         assert response.status_code == 404
 
+    @patch("services.archive.ArchiveService.get_archive_hash")
     @patch("services.archive.StorageService.create_presigned_get")
-    @patch("services.archive.ArchiveService.read_file")
     def test_invalid_archive_path(self, create_presigned_get, get_archive_hash):
         create_presigned_get.side_effect = [
             minio.error.S3Error(
