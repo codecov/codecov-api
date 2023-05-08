@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 
 import django.db.models as models
-from django.db import connections
+from django.utils import timezone
 
 from core.models import DateTimeWithoutTZField
 
@@ -150,8 +150,8 @@ class Dataset(models.Model):
     # The solution would be to somehow have a celery task return when it's done, hence the TODO
     backfilled = models.BooleanField(null=False, default=False)
 
-    created_at = DateTimeWithoutTZField(default=datetime.now, null=True)
-    updated_at = DateTimeWithoutTZField(default=datetime.now, null=True)
+    created_at = DateTimeWithoutTZField(default=timezone.now, null=True)
+    updated_at = DateTimeWithoutTZField(default=timezone.now, null=True)
 
     class Meta:
         indexes = [

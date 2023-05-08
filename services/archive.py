@@ -1,6 +1,5 @@
 import logging
 from base64 import b16encode
-from datetime import datetime
 from enum import Enum
 from hashlib import md5
 from uuid import uuid4
