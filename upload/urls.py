@@ -1,6 +1,7 @@
 from django.urls import path, re_path
 
 from upload.views.commits import CommitViews
+from upload.views.empty_upload import EmptyUploadView
 from upload.views.legacy import UploadDownloadHandler, UploadHandler
 from upload.views.reports import ReportResultsView, ReportViews
 from upload.views.uploads import UploadViews
@@ -27,6 +28,11 @@ urlpatterns = [
         "<str:service>/<str:repo>/commits/<str:commit_sha>/reports",
         ReportViews.as_view(),
         name="new_upload.reports",
+    ),
+    path(
+        "<str:service>/<str:repo>/commits/<str:commit_sha>/empty-upload",
+        EmptyUploadView.as_view(),
+        name="new_upload.empty_upload",
     ),
     path(
         "<str:service>/<str:repo>/commits",
