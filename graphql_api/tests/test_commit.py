@@ -447,10 +447,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             }
         ]
 
-    @patch("core.commands.upload.upload.UploadCommands.get_upload_presigned_url")
-    def test_fetch_download_url(self, get_upload_presigned_url):
-        get_upload_presigned_url.return_value = "presigned_url_mock"
-
+    def test_fetch_download_url(self):
         upload = UploadFactory(
             report=self.report,
             storage_path="v4/raw/2022-06-23/942173DE95CBF167C5683F40B7DB34C0/ee3ecad424e67419d6c4531540f1ef5df045ff12/919ccc6d-7972-4895-b289-f2d569683a17.txt",
@@ -466,7 +463,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         uploads = paginate_connection(commit["uploads"])
         assert uploads == [
             {
-                "downloadUrl": "presigned_url_mock",
+                "downloadUrl": f"http://testserver/upload/gh/{self.org.username}/{self.repo.name}/download?path={upload.storage_path}",
             }
         ]
 

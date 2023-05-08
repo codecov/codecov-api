@@ -234,6 +234,7 @@ class ArchiveService(object):
             expires = self.ttl
 
         return self.storage.create_presigned_put(self.root, path, expires)
+<<<<<<< HEAD
 
     def create_raw_upload_presigned_get(
         self, commit_sha, filename, date_string=None, repo_hash=None, expires=None
@@ -252,3 +253,5 @@ class ArchiveService(object):
             expires = self.ttl
 
         return self.storage.create_presigned_get(self.root, path, expires)
+=======
+>>>>>>> d8710df8f6ba72a8013528e8fc09f97851a42fe7
