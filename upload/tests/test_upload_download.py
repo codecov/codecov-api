@@ -57,9 +57,9 @@ class UploadDownloadHelperTest(APITransactionTestCase):
         assert response.status_code == 404
 
     @patch("services.archive.ArchiveService.get_archive_hash")
-    @patch("services.archive.ArchiveService.read_file")
-    def test_invalid_archive_path(self, read_file, get_archive_hash):
-        read_file.side_effect = [
+    @patch("services.archive.StorageService.create_presigned_get")
+    def test_invalid_archive_path(self, create_presigned_get, get_archive_hash):
+        create_presigned_get.side_effect = [
             minio.error.S3Error(
                 code="NoSuchKey",
                 message=None,
@@ -81,9 +81,9 @@ class UploadDownloadHelperTest(APITransactionTestCase):
         assert response.status_code == 404
 
     @patch("services.archive.ArchiveService.get_archive_hash")
-    @patch("services.archive.ArchiveService.read_file")
-    def test_valid_repo_archive_path(self, mock_read_file, get_archive_hash):
-        mock_read_file.return_value = "Report!"
+    @patch("services.storage.StorageService.create_presigned_get")
+    def test_valid_repo_archive_path(self, create_presigned_get, get_archive_hash):
+        create_presigned_get.return_value = "presigned-url"
         get_archive_hash.return_value = "hasssshhh"
         response = self._get(
             kwargs={
@@ -93,9 +93,10 @@ class UploadDownloadHelperTest(APITransactionTestCase):
             },
             data={"path": "v4/raw/hasssshhh"},
         )
-        assert response.status_code == 200
+        assert response.status_code == 302
         headers = response.headers
-        assert headers["content-type"] == "text/plain"
+        assert headers["location"] == "presigned-url"
+        assert create_presigned_get.called_once_with("archive", "v4/raw/hasssshhh", 30)
 
     @patch("services.archive.ArchiveService.read_file")
     def test_invalid_repo_archive_path(self, mock_read_file):
