@@ -364,6 +364,8 @@ class CommitNotification(models.Model):
         STANDARD = "standard"
         UPGRADE = "upgrade"
         UPLOAD_LIMIT = "upload_limit"
+        PASSING_EMPTY_UPLOAD = "passing_empty_upload"
+        FAILING_EMPTY_UPLOAD = "failing_empty_upload"
 
     class States(models.TextChoices):
         PENDING = "pending"
