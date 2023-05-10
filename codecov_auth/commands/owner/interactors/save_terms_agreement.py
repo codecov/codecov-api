@@ -1,6 +1,7 @@
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Optional
+
+from django.utils import timezone
 
 from codecov.commands.base import BaseInteractor
 from codecov.commands.exceptions import ValidationError
@@ -24,7 +25,7 @@ class SaveTermsAgreementInteractor(BaseInteractor):
             owner=self.current_user,
         )
         owner_profile.terms_agreement = input.terms_agreement
-        owner_profile.terms_agreement_at = datetime.now()
+        owner_profile.terms_agreement_at = timezone.now()
         owner_profile.save()
 
         if input.business_email is not None and input.business_email != "":

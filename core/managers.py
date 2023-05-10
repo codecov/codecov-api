@@ -18,6 +18,7 @@ from django.db.models import (
 )
 from django.db.models.fields.json import KeyTextTransform
 from django.db.models.functions import Cast, Coalesce
+from django.utils import timezone
 
 
 class RepositoryQuerySet(QuerySet):
@@ -51,7 +52,7 @@ class RepositoryQuerySet(QuerySet):
         """
         from core.models import Commit
 
-        timestamp = datetime.datetime.now() - datetime.timedelta(hours=1)
+        timestamp = timezone.now() - timezone.timedelta(hours=1)
 
         commits_queryset = Commit.objects.filter(
             repository_id=OuterRef("pk"),

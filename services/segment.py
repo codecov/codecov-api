@@ -145,7 +145,7 @@ class SegmentOwner:
             "createdAt": self.owner.createstamp.replace(microsecond=0)
             if self.owner.createstamp
             else datetime(2014, 1, 1, 12, 0, 0),
-            "updatedAt": self.owner.updatestamp.replace(microsecond=0)
+            "updatedAt": self.owner.updatestamp.replace(microsecond=0, tzinfo=None)
             if self.owner.updatestamp
             else datetime(2014, 1, 1, 12, 0, 0),
             "student_created_at": self.owner.student_created_at.replace(microsecond=0)

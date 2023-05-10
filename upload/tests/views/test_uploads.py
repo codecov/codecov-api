@@ -18,6 +18,7 @@ from reports.models import (
     UploadFlagMembership,
 )
 from reports.tests.factories import CommitReportFactory, UploadFactory
+from services.archive import ArchiveService, MinioEndpoints
 from upload.views.uploads import CanDoCoverageUploadsPermission, UploadViews
 
 
@@ -262,7 +263,17 @@ def test_uploads_post(mock_metrics, db, mocker, mock_redis):
     ).exists()
     assert [flag for flag in upload.flags.all()] == [flag1, flag2]
     mock_metrics.assert_called_once_with("uploads.accepted", 1)
-    presigned_put_mock.assert_called()
+
+    archive_service = ArchiveService(repository)
+    assert upload.storage_path == MinioEndpoints.raw_with_upload_id.get_path(
+        version="v4",
+        date=upload.created_at.strftime("%Y-%m-%d"),
+        repo_hash=archive_service.storage_hash,
+        commit_sha=commit.commitid,
+        reportid=commit_report.external_id,
+        uploadid=upload.external_id,
+    )
+    presigned_put_mock.assert_called_with("archive", upload.storage_path, 10)
     upload_task_mock.assert_called()
 
 

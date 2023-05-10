@@ -13,7 +13,7 @@ from codecov_auth.authentication.repo_auth import (
     RepositoryLegacyTokenAuthentication,
 )
 from core.models import Commit, Repository
-from reports.models import CommitReport
+from reports.models import CommitReport, ReportSession
 from services.archive import ArchiveService, MinioEndpoints
 from services.redis_configuration import get_redis_connection
 from upload.helpers import dispatch_upload_task, validate_activated_repo
@@ -56,18 +56,20 @@ class UploadViews(ListCreateAPIView, GetterMixin):
             extra=dict(repo=repository.name, commit=commit.commitid),
         )
         archive_service = ArchiveService(repository)
-        path = MinioEndpoints.raw.get_path(
+        instance: ReportSession = serializer.save(
+            report_id=report.id,
+            upload_extras={"format_version": "v1"},
+        )
+        path = MinioEndpoints.raw_with_upload_id.get_path(
             version="v4",
             date=timezone.now().strftime("%Y-%m-%d"),
             repo_hash=archive_service.storage_hash,
             commit_sha=commit.commitid,
             reportid=report.external_id,
+            uploadid=instance.external_id,
         )
-        instance = serializer.save(
-            storage_path=path,
-            report_id=report.id,
-            upload_extras={"format_version": "v1"},
-        )
+        instance.storage_path = path
+        instance.save()
         self.trigger_upload_task(repository, commit.commitid, instance, report)
         metrics.incr("uploads.accepted", 1)
         self.activate_repo(repository)
