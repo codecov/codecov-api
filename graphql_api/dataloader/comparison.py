@@ -38,7 +38,7 @@ class ComparisonLoader(BaseLoader):
         return super().__init__(info, *args, **kwargs)
 
     def batch_queryset(self, keys):
-        return CommitComparison.objects.raw(
+        queryset = CommitComparison.objects.raw(
             f"""
             select
                 {comparison_table}.*,
@@ -53,6 +53,11 @@ class ComparisonLoader(BaseLoader):
         """,
             [tuple(keys)],
         )
+
+        # we need to make sure we're performing the query against the primary database
+        # (and not the read replica) since we may have just inserted new comparisons
+        # that we'd like to ensure are returned here
+        return queryset.using("default")
 
     async def batch_load_fn(self, keys):
         # flat list of all commits involved in all comparisons
