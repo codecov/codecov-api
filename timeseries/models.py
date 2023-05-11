@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 
 import django.db.models as models
-from django.db import connections
+from django.utils import timezone
 
 from core.models import DateTimeWithoutTZField
 
@@ -16,6 +16,7 @@ class Interval(Enum):
 class MeasurementName(Enum):
     COVERAGE = "coverage"
     FLAG_COVERAGE = "flag_coverage"
+    COMPONENT_COVERAGE = "component_coverage"
 
 
 class Measurement(models.Model):
@@ -28,6 +29,8 @@ class Measurement(models.Model):
 
     owner_id = models.BigIntegerField(null=False)
     repo_id = models.BigIntegerField(null=False)
+    measurable_id = models.TextField(null=False)
+    # TODO: run a migration to backpopulate measurable_id w/ info from the flag_id, component_id + repo_id to deprecate flag_id
     flag_id = models.BigIntegerField(null=True)
     branch = models.TextField(null=True)
 
@@ -45,7 +48,7 @@ class Measurement(models.Model):
                 fields=[
                     "owner_id",
                     "repo_id",
-                    "flag_id",
+                    "measurable_id",
                     "branch",
                     "name",
                     "timestamp",
@@ -54,6 +57,18 @@ class Measurement(models.Model):
         ]
         constraints = [
             # for updating measurements
+            models.UniqueConstraint(
+                fields=[
+                    "name",
+                    "owner_id",
+                    "repo_id",
+                    "measurable_id",
+                    "commit_sha",
+                    "timestamp",
+                ],
+                name="timeseries_measurement_unique",
+            ),
+            # TODO: remove these once the worker does not rely on them for updating measurements
             models.UniqueConstraint(
                 fields=[
                     "name",
@@ -79,49 +94,12 @@ class Measurement(models.Model):
             ),
         ]
 
-    def upsert(self):
-        """
-        Insert or update a measurement
-        """
-        conflict_target = (
-            "(name, owner_id, repo_id, commit_sha, timestamp) WHERE flag_id IS NULL"
-            if self.flag_id is None
-            else "(name, owner_id, repo_id, flag_id, commit_sha, timestamp) WHERE flag_id IS NOT NULL"
-        )
-
-        sql = f"""
-            INSERT INTO timeseries_measurement
-                (name, owner_id, repo_id, flag_id, branch, commit_sha, timestamp, value)
-            VALUES
-                (%s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT {conflict_target}
-            DO UPDATE SET
-                branch = EXCLUDED.branch,
-                value = EXCLUDED.value
-        """
-
-        connection = connections["timeseries"]
-        with connection.cursor() as cursor:
-            cursor.execute(
-                sql,
-                [
-                    self.name,
-                    self.owner_id,
-                    self.repo_id,
-                    self.flag_id,
-                    self.branch,
-                    self.commit_sha,
-                    self.timestamp,
-                    self.value,
-                ],
-            )
-
 
 class MeasurementSummary(models.Model):
     timestamp_bin = models.DateTimeField(primary_key=True)
     owner_id = models.BigIntegerField()
     repo_id = models.BigIntegerField()
-    flag_id = models.BigIntegerField()
+    measurable_id = models.TextField()
     branch = models.TextField()
     name = models.TextField()
     value_avg = models.FloatField()
@@ -180,10 +158,12 @@ class Dataset(models.Model):
     repository_id = models.IntegerField(null=False)
 
     # indicates whether the backfill task has completed for this dataset
+    # TODO: We're not really using this field anymore as a backfill task takes very long for this to be populated when finished.
+    # The solution would be to somehow have a celery task return when it's done, hence the TODO
     backfilled = models.BooleanField(null=False, default=False)
 
-    created_at = DateTimeWithoutTZField(default=datetime.now, null=True)
-    updated_at = DateTimeWithoutTZField(default=datetime.now, null=True)
+    created_at = DateTimeWithoutTZField(default=timezone.now, null=True)
+    updated_at = DateTimeWithoutTZField(default=timezone.now, null=True)
 
     class Meta:
         indexes = [

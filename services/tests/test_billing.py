@@ -962,17 +962,84 @@ class StripeServiceTests(TestCase):
         # Test same plan, increased users
         owner = OwnerFactory(plan="users-pr-inappy", plan_user_count=10)
         desired_plan = {"value": "users-pr-inappy", "quantity": 14}
-        self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+        assert (
+            self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+        )
 
         # Test same plan, drecrease users
         owner = OwnerFactory(plan="users-pr-inappy", plan_user_count=20)
         desired_plan = {"value": "users-pr-inappy", "quantity": 14}
-        self.stripe._get_proration_params(owner, desired_plan) == "none"
+        assert self.stripe._get_proration_params(owner, desired_plan) == "none"
 
         # Test going from monthly to yearly
         owner = OwnerFactory(plan="users-pr-inappm", plan_user_count=20)
         desired_plan = {"value": "users-pr-inappy", "quantity": 14}
+        assert (
+            self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+        )
+
+        # monthly to Sentry monthly plan
+        owner = OwnerFactory(plan="users-pr-inappm", plan_user_count=20)
+        desired_plan = {"value": "users-sentrym", "quantity": 19}
+        self.stripe._get_proration_params(owner, desired_plan) == "none"
+        desired_plan = {"value": "users-sentrym", "quantity": 20}
         self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+        desired_plan = {"value": "users-sentrym", "quantity": 21}
+        assert (
+            self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+        )
+
+        # yearly to Sentry monthly plan
+        owner = OwnerFactory(plan="users-pr-inappy", plan_user_count=20)
+        desired_plan = {"value": "users-sentrym", "quantity": 19}
+        assert self.stripe._get_proration_params(owner, desired_plan) == "none"
+        desired_plan = {"value": "users-sentrym", "quantity": 20}
+        assert self.stripe._get_proration_params(owner, desired_plan) == "none"
+        desired_plan = {"value": "users-sentrym", "quantity": 21}
+        assert (
+            self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+        )
+
+        # monthly to Sentry monthly plan
+        owner = OwnerFactory(plan="users-pr-inappm", plan_user_count=20)
+        desired_plan = {"value": "users-sentrym", "quantity": 19}
+        assert self.stripe._get_proration_params(owner, desired_plan) == "none"
+        desired_plan = {"value": "users-sentrym", "quantity": 20}
+        assert (
+            self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+        )
+        desired_plan = {"value": "users-sentrym", "quantity": 21}
+        assert (
+            self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+        )
+
+        # yearly to Sentry yearly plan
+        owner = OwnerFactory(plan="users-pr-inappy", plan_user_count=20)
+        desired_plan = {"value": "users-sentryy", "quantity": 19}
+        assert self.stripe._get_proration_params(owner, desired_plan) == "none"
+        desired_plan = {"value": "users-sentryy", "quantity": 20}
+        assert (
+            self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+        )
+        desired_plan = {"value": "users-sentryy", "quantity": 21}
+        assert (
+            self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+        )
+
+        # monthly to Sentry yearly plan
+        owner = OwnerFactory(plan="users-pr-inappm", plan_user_count=20)
+        desired_plan = {"value": "users-sentryy", "quantity": 19}
+        assert (
+            self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+        )
+        desired_plan = {"value": "users-sentryy", "quantity": 20}
+        assert (
+            self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+        )
+        desired_plan = {"value": "users-sentryy", "quantity": 21}
+        assert (
+            self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+        )
 
     @patch("services.billing.stripe.checkout.Session.create")
     def test_create_checkout_session_creates_with_correct_args_and_returns_id(

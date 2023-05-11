@@ -2,6 +2,7 @@ import random
 from hashlib import sha1
 
 import factory
+from django.utils import timezone
 from factory.django import DjangoModelFactory
 
 from codecov_auth.models import RepositoryToken
@@ -204,6 +205,7 @@ class PullFactory(DjangoModelFactory):
     compared_to = factory.LazyAttribute(
         lambda o: sha1(o.title.encode("utf-8")).hexdigest()
     )
+    updatestamp = factory.LazyFunction(timezone.now)
 
 
 class BranchFactory(DjangoModelFactory):

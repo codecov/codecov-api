@@ -13,17 +13,13 @@ type Mutation {
   regenerateRepositoryToken(
     input: RegenerateRepositoryTokenInput!
   ): RegenerateRepositoryTokenPayload
-  activateFlagsMeasurements(
-    input: ActivateFlagsMeasurementsInput!
-  ): ActivateFlagsMeasurementsPayload
+  activateMeasurements(
+    input: ActivateMeasurementsInput!
+  ): activateMeasurementsPayload
   regenerateOrgUploadToken(
     input: RegenerateOrgUploadTokenInput!
   ): RegenerateOrgUploadTokenPayload
   deleteFlag(input: DeleteFlagInput!): DeleteFlagPayload
   saveSentryState(input: SaveSentryStateInput!): SaveSentryStatePayload
   saveTermsAgreement(input: SaveTermsAgreementInput!): SaveTermsAgreementPayload
-  regenerateProfilingToken(
-    input: RegenerateProfilingTokenInput!
-  ): RegenerateProfilingTokenPayload
-    @deprecated(reason: "use regenerateRepositoryToken")
 }

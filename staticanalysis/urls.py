@@ -1,7 +1,9 @@
 from django.urls import path
 
-from staticanalysis.views import StaticAnalysisSuiteView
+from staticanalysis.views import StaticAnalysisSuiteViewSet
+from utils.routers import OptionalTrailingSlashRouter
 
-urlpatterns = [
-    path("analyses", StaticAnalysisSuiteView.as_view(), name="static_analysis_upload"),
-]
+router = OptionalTrailingSlashRouter()
+router.register("analyses", StaticAnalysisSuiteViewSet, basename="staticanalyses")
+
+urlpatterns = router.urls

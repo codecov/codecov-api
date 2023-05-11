@@ -102,6 +102,7 @@ def resolve_tracking_data(current_user, _, **kwargs):
 
 
 @me_bindable.field("termsAgreement")
+@sync_to_async
 def resolve_terms_agreement(current_user: Owner, _, **kwargs) -> Optional[bool]:
     try:
         owner_profile = current_user.profile

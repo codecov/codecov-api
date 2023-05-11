@@ -99,7 +99,7 @@ class FlagCoverageViewSet(CoverageViewSet):
             name=MeasurementName.FLAG_COVERAGE.value,
             owner_id=self.repo.author_id,
             repo_id=self.repo.pk,
-            flag_id=flag.pk,
+            measurable_id=str(flag.pk),
         )
 
         start_date = self.request.query_params.get("start_date")
@@ -110,5 +110,5 @@ class FlagCoverageViewSet(CoverageViewSet):
             queryset = queryset.filter(timestamp_bin__lte=end_date)
 
         return aggregate_measurements(
-            queryset, ["timestamp_bin", "owner_id", "repo_id", "flag_id"]
+            queryset, ["timestamp_bin", "owner_id", "repo_id", "measurable_id"]
         )

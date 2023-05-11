@@ -52,8 +52,7 @@ build-enterprise:
 	docker build \
 		-f Dockerfile.circle-enterprise . \
 		-t ${ENTERPRISE_GCR_REPO}:latest_no_dependencies \
-		--build-arg REQUIREMENTS_IMAGE=${GCR_REPO}:${REQUIREMENTS_TAG} \
-		--squash
+		--build-arg REQUIREMENTS_IMAGE=${GCR_REPO}:${REQUIREMENTS_TAG}
 
 # CIRCLECI
 # job: enterprise-runtime
@@ -62,8 +61,7 @@ build-enterprise-runtime:
 	docker build \
 		-f Dockerfile.enterprise_runtime . \
 		-t ${ENTERPRISE_GCR_REPO}:latest \
-		--build-arg CODECOV_ENTERPRISE_RELEASE=${ENTERPRISE_GCR_REPO}:latest_no_dependencies \
-		--squash
+		--build-arg CODECOV_ENTERPRISE_RELEASE=${ENTERPRISE_GCR_REPO}:latest_no_dependencies
 
 # CIRCLECI
 # job: portable

@@ -6,6 +6,7 @@ from compare.commands.compare.interactors.fetch_impacted_files import (
 )
 from core.models import Commit
 from timeseries.models import Interval as MeasurementInterval
+from timeseries.models import MeasurementName
 
 from .enums import (
     CoverageLine,
@@ -38,5 +39,6 @@ enum_types = [
     EnumType("LoginProvider", LoginProvider),
     EnumType("ImpactedFileParameter", ImpactedFileParameter),
     EnumType("CommitState", Commit.CommitStates),
+    EnumType("MeasurementType", MeasurementName),
     EnumType("RepositoryTokenType", RepositoryToken.TokenType),
 ]
