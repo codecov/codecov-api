@@ -58,7 +58,17 @@ class TokenlessCircleciHandler(BaseTokenlessUploadHandler):
 
         build = self.get_build()
 
-        if build.get("vcs_revision", "") != self.upload_params["commit"]:
+        if build.get("vcs_revision", "") != self.upload_params.get("commit"):
+            log.warning(
+                f"Failed to fetch commit from CircleCI",
+                extra=dict(
+                    commit=self.upload_params.get("commit"),
+                    vcs_revision=build.get("vcs_revision", ""),
+                    repo_name=self.upload_params.get("repo"),
+                    build_num=self.build.split(".")[0],
+                    owner=self.upload_params.get("owner"),
+                ),
+            )
             raise NotFound(
                 "Commit sha does not match Circle build. Please upload with the Codecov repository upload token to resolve issue."
             )
