@@ -19,11 +19,11 @@ setup:
     upload:
       queue: uploads
   cache:
-    yaml: 600  # 10 minutes
-    tree: 600  # 10 minutes
-    diff: 300  # 5 minutes
-    chunks: 300  # 5 minutes
-    uploads: 86400  # 1 day
+    yaml: 600 # 10 minutes
+    tree: 600 # 10 minutes
+    diff: 300 # 5 minutes
+    chunks: 300 # 5 minutes
+    uploads: 86400 # 1 day
 
 services:
   database_url: postgres://postgres:@postgres:5432/circle_test
@@ -34,12 +34,11 @@ services:
     host: postgres
   redis_url: redis://redis:@localhost:6379/
   minio:
-    hash_key: testixik8qdauiab1yiffydimvi72ekq  # never change this
+    hash_key: testixik8qdauiab1yiffydimvi72ekq # never change this
     periodic_callback_ms: false
     access_key_id: codecov-default-key
     secret_access_key: codecov-default-secret
     verify_ssl: false
-  circleci_token: testquyiqktx1o6in8zutfdwikzwe0kgclxy9j27
 
 github:
   bot:
