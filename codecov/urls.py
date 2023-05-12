@@ -23,5 +23,5 @@ urlpatterns = [
     path(f"{settings.DJANGO_ADMIN_URL}/", admin.site.urls),
     path("staticanalysis/", include("staticanalysis.urls")),
     path("labels/", include("labelanalysis.urls")),
-    re_path(r"^redirect_app", views.redirect_app)
+    re_path(r"^redirect_app", views.redirect_app),
 ]
