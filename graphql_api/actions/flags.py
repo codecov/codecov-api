@@ -52,19 +52,19 @@ def flag_measurements(
         name=MeasurementName.FLAG_COVERAGE.value,
         owner_id=repository.author_id,
         repo_id=repository.pk,
-        flag_id__in=flag_ids,
+        measurable_id__in=[str(flag_id) for flag_id in flag_ids],
         timestamp_bin__gte=aligned_start_date(interval, after),
         timestamp_bin__lte=before,
     )
 
     queryset = aggregate_measurements(
-        queryset, ["timestamp_bin", "owner_id", "repo_id", "flag_id"]
+        queryset, ["timestamp_bin", "owner_id", "repo_id", "measurable_id"]
     )
 
     # group by flag_id
     measurements = {}
     for measurement in queryset:
-        flag_id = measurement["flag_id"]
+        flag_id = int(measurement["measurable_id"])
         if flag_id not in measurements:
             measurements[flag_id] = []
         measurements[flag_id].append(measurement)

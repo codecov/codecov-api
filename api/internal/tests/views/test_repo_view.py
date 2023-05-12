@@ -752,41 +752,19 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         self.assertEqual(response.status_code, 403)
 
     @patch("services.task.TaskService.delete_timeseries")
-    def test_erase_deletes_related_content_and_clears_cache_and_yaml(
-        self, mocked_delete_timeseries, mocked_get_permissions
+    @patch("services.task.TaskService.flush_repo")
+    def test_erase_triggers_task(
+        self, mocked_flush_repo, mocked_delete_timeseries, mocked_get_permissions
     ):
         mocked_get_permissions.return_value = True, True
         self.org.admins = [self.user.ownerid]
         self.org.save()
 
-        CommitFactory(
-            message="test_commits_base",
-            commitid="9193232a8fe3429496956ba82b5fed2583d1b5eb",
-            repository=self.repo,
-        )
-
-        PullFactory(pullid=2, repository=self.repo, author=self.repo.author)
-
-        BranchFactory(authors=[self.org.ownerid], repository=self.repo)
-        RepositoryFlagFactory(repository=self.repo)
-
-        self.repo.cache = {"cache": "val"}
-        self.repo.yaml = {"yaml": "val"}
-        self.repo.save()
-
         response = self._erase()
         assert response.status_code == 200
 
-        assert not self.repo.commits.exists()
-        assert not self.repo.pull_requests.exists()
-        assert not self.repo.branches.exists()
-        assert not self.repo.flags.exists()
-
+        mocked_flush_repo.assert_called_once_with(repository_id=self.repo.pk)
         mocked_delete_timeseries.assert_called_once_with(repository_id=self.repo.pk)
-
-        self.repo.refresh_from_db()
-        assert self.repo.yaml == None
-        assert self.repo.cache == None
 
     @patch("api.shared.permissions.get_provider")
     def test_erase_without_admin_rights_returns_403(
@@ -813,9 +791,14 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         assert response.data["detail"] == "User not activated"
 
     @patch("services.task.TaskService.delete_timeseries")
+    @patch("services.task.TaskService.flush_repo")
     @patch("services.segment.analytics.track")
     def test_erase_triggers_segment_event(
-        self, analytics_track_mock, mocked_delete_timeseries, mocked_get_permissions
+        self,
+        analytics_track_mock,
+        mocked_flush_repo,
+        mocked_delete_timeseries,
+        mocked_get_permissions,
     ):
         mocked_get_permissions.return_value = True, True
         self.org.admins = [self.user.ownerid]
