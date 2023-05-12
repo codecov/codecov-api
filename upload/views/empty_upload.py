@@ -3,11 +3,11 @@ import logging
 import re
 
 from asgiref.sync import async_to_sync
-from django.http import HttpRequest, HttpResponseNotAllowed
 from rest_framework import status
-from rest_framework.generics import ListCreateAPIView
+from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
 from shared.torngit.exceptions import TorngitObjectNotFoundError
+from shared.validation.helpers import translate_glob_to_regex
 
 from codecov_auth.authentication.repo_auth import (
     GlobalTokenAuthentication,
@@ -55,7 +55,7 @@ GLOB_NON_TESTABLE_FILES = [
 ]
 
 
-class EmptyUploadView(ListCreateAPIView, GetterMixin):
+class EmptyUploadView(CreateAPIView, GetterMixin):
     permission_classes = [CanDoCoverageUploadsPermission]
     authentication_classes = [
         GlobalTokenAuthentication,
@@ -82,23 +82,18 @@ class EmptyUploadView(ListCreateAPIView, GetterMixin):
         changed_files = async_to_sync(provider.get_pull_request_files)(pull_id)
 
         ignored_files = yaml.get("ignore", [])
-        compiled_ignored_files = [re.compile(path) for path in ignored_files]
         regex_non_testable_files = [
-            fnmatch.translate(path) for path in GLOB_NON_TESTABLE_FILES
+            translate_glob_to_regex(path) for path in GLOB_NON_TESTABLE_FILES
         ]
-        compiled_non_testable_files = [
-            re.compile(path) for path in regex_non_testable_files
+        compiled_files_to_ignore = [
+            re.compile(path) for path in (regex_non_testable_files + ignored_files)
         ]
-
         ignored_changed_files = [
             file
             for file in changed_files
-            if any(map(lambda regex: regex.match(file), compiled_ignored_files))
-        ] + [
-            file
-            for file in changed_files
-            if any(map(lambda regex: regex.match(file), compiled_non_testable_files))
+            if any(map(lambda regex: regex.match(file), compiled_files_to_ignore))
         ]
+
         if set(changed_files) == set(ignored_changed_files):
             TaskService().notify(
                 repoid=repo.repoid, commitid=commit.commitid, empty_upload="pass"
@@ -122,12 +117,3 @@ class EmptyUploadView(ListCreateAPIView, GetterMixin):
             },
             status=status.HTTP_200_OK,
         )
-
-    def list(
-        self,
-        request: HttpRequest,
-        service: str,
-        repo: str,
-        commit_sha: str,
-    ):
-        return HttpResponseNotAllowed(permitted_methods=["POST"])
