@@ -147,10 +147,15 @@ class TaskService(object):
             ),
         ).apply_async(countdown=countdown)
 
-    def notify(self, repoid, commitid, current_yaml=None):
+    def notify(self, repoid, commitid, current_yaml=None, empty_upload=None):
         self._create_signature(
             "app.tasks.notify.Notify",
-            kwargs=dict(repoid=repoid, commitid=commitid, current_yaml=current_yaml),
+            kwargs=dict(
+                repoid=repoid,
+                commitid=commitid,
+                current_yaml=current_yaml,
+                empty_upload=empty_upload,
+            ),
         ).apply_async()
 
     def pulls_sync(self, repoid, pullid):
