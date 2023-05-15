@@ -5,6 +5,7 @@ from typing import Iterable, List, Optional
 import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
 
+import services.activation as activation
 import timeseries.helpers as timeseries_helpers
 from codecov.db import sync_to_async
 from codecov_auth.helpers import current_user_part_of_org
@@ -65,7 +66,11 @@ def resolve_yaml(owner, info):
 @owner_bindable.field("repository")
 async def resolve_repository(owner, info, name):
     command = info.context["executor"].get_command("repository")
-    repository = await command.fetch_repository(owner, name)
+    repository: Repository = await command.fetch_repository(owner, name)
+
+    user = info.context["request"].user
+    if repository.private:
+        await sync_to_async(activation.try_auto_activate)(owner, user)
 
     info.context["profiling_summary"] = ProfilingSummary(repository)
 
