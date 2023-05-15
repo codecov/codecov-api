@@ -66,7 +66,7 @@ def resolve_yaml(owner, info):
 @owner_bindable.field("repository")
 async def resolve_repository(owner, info, name):
     command = info.context["executor"].get_command("repository")
-    repository: Repository = await command.fetch_repository(owner, name)
+    repository: Optional[Repository] = await command.fetch_repository(owner, name)
 
     if repository is not None:
         user = info.context["request"].user
