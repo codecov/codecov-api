@@ -346,3 +346,22 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             ]
             == 80
         )
+
+    @patch("services.activation.try_auto_activate")
+    def test_repository_auto_activate(self, try_auto_activate):
+        repo = RepositoryFactory(
+            author=self.user,
+            active=True,
+            private=True,
+        )
+
+        self.gql_request(
+            query_repository % "name",
+            user=self.user,
+            variables={"name": repo.name},
+        )
+
+        try_auto_activate.assert_called_once_with(
+            self.user,
+            self.user,
+        )
