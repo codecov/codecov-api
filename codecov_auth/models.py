@@ -8,6 +8,7 @@ from hashlib import md5
 from django.contrib.postgres.fields import ArrayField, CITextField
 from django.db import models
 from django.forms import ValidationError
+from django.utils import timezone
 
 from billing.constants import (
     BASIC_PLAN_NAME,
@@ -139,7 +140,7 @@ class Owner(models.Model):
         return f"Owner<{self.service}/{self.username}>"
 
     def save(self, *args, **kwargs):
-        self.updatestamp = datetime.now()
+        self.updatestamp = timezone.now()
         super().save(*args, **kwargs)
 
     @property

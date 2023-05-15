@@ -315,7 +315,8 @@ class RepoPullList(InternalAPITest):
                         "diff": [1, 2, 1, 1, 0, "50.00000", 0, 0, 0, 0, 0, 0, 0],
                     },
                     # This whole TZ settings is messing things up a bit
-                    "updatestamp": pull.updatestamp.isoformat() + "Z",
+                    "updatestamp": pull.updatestamp.replace(tzinfo=None).isoformat()
+                    + "Z",
                     "state": "open",
                     "ci_passed": True,
                 }

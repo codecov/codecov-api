@@ -63,9 +63,10 @@ def resolve_ci_url(upload, info):
 
 
 @upload_bindable.field("downloadUrl")
+@sync_to_async
 def resolve_download_url(upload, info):
-    command = info.context["executor"].get_command("upload")
-    return command.get_upload_presigned_url(upload)
+    request = info.context["request"]
+    return request.build_absolute_uri(upload.download_url)
 
 
 @upload_bindable.field("name")

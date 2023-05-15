@@ -328,3 +328,9 @@ class TaskService(object):
                 timeout=timeout,
             ),
         ).apply_async()
+
+    def flush_repo(self, repository_id: int):
+        self._create_signature(
+            "app.tasks.flush_repo.FlushRepo",
+            kwargs=dict(repoid=repository_id),
+        ).apply_async()

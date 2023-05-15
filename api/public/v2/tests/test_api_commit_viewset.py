@@ -123,7 +123,8 @@ class RepoCommitListTestCase(TestCase):
                 {
                     "commitid": self.commit.commitid,
                     "message": self.commit.message,
-                    "timestamp": self.commit.timestamp.isoformat() + "Z",
+                    "timestamp": self.commit.timestamp.replace(tzinfo=None).isoformat()
+                    + "Z",
                     "ci_passed": True,
                     "author": {
                         "service": "github",
@@ -178,7 +179,8 @@ class RepoCommitListTestCase(TestCase):
                 {
                     "commitid": self.commit.commitid,
                     "message": self.commit.message,
-                    "timestamp": self.commit.timestamp.isoformat() + "Z",
+                    "timestamp": self.commit.timestamp.replace(tzinfo=None).isoformat()
+                    + "Z",
                     "ci_passed": True,
                     "author": {
                         "service": "github",
@@ -287,7 +289,7 @@ class RepoCommitDetailTestCase(TestCase):
         assert response.json() == {
             "commitid": self.commit.commitid,
             "message": self.commit.message,
-            "timestamp": self.commit.timestamp.isoformat() + "Z",
+            "timestamp": self.commit.timestamp.replace(tzinfo=None).isoformat() + "Z",
             "ci_passed": True,
             "author": {
                 "service": "github",

@@ -43,6 +43,7 @@ class CoverageViewSetTestCase(TestCase):
             timestamp="2022-08-18T00:12:00",
             owner_id=self.org.pk,
             repo_id=self.repo.pk,
+            measurable_id=str(self.repo.pk),
             branch="master",
             value=80.0,
         )
@@ -51,6 +52,7 @@ class CoverageViewSetTestCase(TestCase):
             timestamp="2022-08-18T00:13:00",
             owner_id=self.org.pk,
             repo_id=self.repo.pk,
+            measurable_id=str(self.repo.pk),
             branch="master",
             value=90.0,
         )
@@ -59,6 +61,7 @@ class CoverageViewSetTestCase(TestCase):
             timestamp="2022-08-19T00:01:00",
             owner_id=self.org.pk,
             repo_id=self.repo.pk,
+            measurable_id=str(self.repo.pk),
             branch="master",
             value=100.0,
         )
@@ -67,6 +70,7 @@ class CoverageViewSetTestCase(TestCase):
             timestamp="2022-08-18T00:12:00",
             owner_id=self.org.pk,
             repo_id=9999,
+            measurable_id="9999",
             branch="master",
             value=10.0,
         )
@@ -112,6 +116,7 @@ class CoverageViewSetTestCase(TestCase):
             timestamp="2022-08-18T00:12:00",
             owner_id=self.org.pk,
             repo_id=self.repo.pk,
+            measurable_id=str(self.repo.pk),
             branch="other",
             value=80.0,
         )
@@ -120,6 +125,7 @@ class CoverageViewSetTestCase(TestCase):
             timestamp="2022-08-18T00:13:00",
             owner_id=self.org.pk,
             repo_id=self.repo.pk,
+            measurable_id=str(self.repo.pk),
             branch="master",
             value=90.0,
         )
@@ -128,6 +134,7 @@ class CoverageViewSetTestCase(TestCase):
             timestamp="2022-08-19T00:01:00",
             owner_id=self.org.pk,
             repo_id=self.repo.pk,
+            measurable_id=str(self.repo.pk),
             branch="other",
             value=100.0,
         )
@@ -136,6 +143,7 @@ class CoverageViewSetTestCase(TestCase):
             timestamp="2022-08-18T00:12:00",
             owner_id=self.org.pk,
             repo_id=9999,
+            measurable_id="9999",
             branch="other",
             value=10.0,
         )
@@ -202,6 +210,7 @@ class CoverageViewSetTestCase(TestCase):
             owner_id=self.org.pk,
             repo_id=self.repo.pk,
             flag_id=flag1.pk,
+            measurable_id=str(flag1.pk),
             branch="master",
             value=100.0,
         )
@@ -211,6 +220,7 @@ class CoverageViewSetTestCase(TestCase):
             owner_id=self.org.pk,
             repo_id=self.repo.pk,
             flag_id=flag1.pk,
+            measurable_id=str(flag1.pk),
             branch="master",
             value=80.0,
         )
@@ -220,6 +230,7 @@ class CoverageViewSetTestCase(TestCase):
             owner_id=self.org.pk,
             repo_id=self.repo.pk,
             flag_id=flag1.pk,
+            measurable_id=str(flag1.pk),
             branch="master",
             value=90.0,
         )
@@ -229,6 +240,7 @@ class CoverageViewSetTestCase(TestCase):
             owner_id=self.org.pk,
             repo_id=self.repo.pk,
             flag_id=flag1.pk,
+            measurable_id=str(flag1.pk),
             branch="master",
             value=100.0,
         )
@@ -238,6 +250,7 @@ class CoverageViewSetTestCase(TestCase):
             owner_id=self.org.pk,
             repo_id=self.repo.pk,
             flag_id=flag2.pk,
+            measurable_id=str(flag2.pk),
             branch="master",
             value=10.0,
         )
@@ -247,6 +260,7 @@ class CoverageViewSetTestCase(TestCase):
             owner_id=self.org.pk,
             repo_id=self.repo.pk,
             flag_id=flag1.pk,
+            measurable_id=str(flag1.pk),
             branch="master",
             value=100.0,
         )

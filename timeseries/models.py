@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 
 import django.db.models as models
-from django.db import connections
+from django.utils import timezone
 
 from core.models import DateTimeWithoutTZField
 
@@ -29,7 +29,7 @@ class Measurement(models.Model):
 
     owner_id = models.BigIntegerField(null=False)
     repo_id = models.BigIntegerField(null=False)
-    measurable_id = models.TextField(null=True)
+    measurable_id = models.TextField(null=False)
     # TODO: run a migration to backpopulate measurable_id w/ info from the flag_id, component_id + repo_id to deprecate flag_id
     flag_id = models.BigIntegerField(null=True)
     branch = models.TextField(null=True)
@@ -48,7 +48,7 @@ class Measurement(models.Model):
                 fields=[
                     "owner_id",
                     "repo_id",
-                    "flag_id",
+                    "measurable_id",
                     "branch",
                     "name",
                     "timestamp",
@@ -57,6 +57,18 @@ class Measurement(models.Model):
         ]
         constraints = [
             # for updating measurements
+            models.UniqueConstraint(
+                fields=[
+                    "name",
+                    "owner_id",
+                    "repo_id",
+                    "measurable_id",
+                    "commit_sha",
+                    "timestamp",
+                ],
+                name="timeseries_measurement_unique",
+            ),
+            # TODO: remove these once the worker does not rely on them for updating measurements
             models.UniqueConstraint(
                 fields=[
                     "name",
@@ -87,7 +99,7 @@ class MeasurementSummary(models.Model):
     timestamp_bin = models.DateTimeField(primary_key=True)
     owner_id = models.BigIntegerField()
     repo_id = models.BigIntegerField()
-    flag_id = models.BigIntegerField()
+    measurable_id = models.TextField()
     branch = models.TextField()
     name = models.TextField()
     value_avg = models.FloatField()
@@ -150,8 +162,8 @@ class Dataset(models.Model):
     # The solution would be to somehow have a celery task return when it's done, hence the TODO
     backfilled = models.BooleanField(null=False, default=False)
 
-    created_at = DateTimeWithoutTZField(default=datetime.now, null=True)
-    updated_at = DateTimeWithoutTZField(default=datetime.now, null=True)
+    created_at = DateTimeWithoutTZField(default=timezone.now, null=True)
+    updated_at = DateTimeWithoutTZField(default=timezone.now, null=True)
 
     class Meta:
         indexes = [

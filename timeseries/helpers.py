@@ -63,7 +63,7 @@ def aggregate_measurements(
 ) -> QuerySet:
     """
     The given queryset is a set of measurement summaries.  These are already
-    pre-aggregated by (timestamp, owner_id, repo_id, flag_id, branch) via TimescaleDB's
+    pre-aggregated by (timestamp, owner_id, repo_id, measurable_id, branch) via TimescaleDB's
     continuous aggregates.  If we want to further aggregate over any of those columns
     then we need to perform additional aggregation in SQL.  That is what this function
     does to the given queryset.
@@ -219,7 +219,7 @@ def fill_sparse_measurements(
     start_date = aligned_start_date(interval, start_date)
 
     if end_date is None:
-        end_date = datetime.now().replace(tzinfo=timezone.utc)
+        end_date = timezone.now()
 
     intervals = []
 
@@ -351,6 +351,7 @@ def repository_coverage_measurements_with_fallback(
             end_date=end_date,
             owner_id=repository.author_id,
             repo_id=repository.pk,
+            measurable_id=str(repository.pk),
             branch=branch or repository.branch,
         )
     else:

@@ -9,6 +9,7 @@ from django.contrib.postgres.indexes import GinIndex, OpClass
 from django.db import models
 from django.db.models.functions import Lower, Substr, Upper
 from django.forms import ValidationError
+from django.utils import timezone
 from django.utils.functional import cached_property
 from shared.reports.resources import Report
 
@@ -140,15 +141,6 @@ class Repository(models.Model):
     def service(self):
         return self.author.service
 
-    def flush(self):
-        self.commits.all().delete()
-        self.branches.all().delete()
-        self.pull_requests.all().delete()
-        self.flags.all().delete()
-        self.yaml = None
-        self.cache = None
-        self.save()
-
     def clean(self):
         if self.using_integration is None:
             raise ValidationError("using_integration cannot be null")
@@ -196,8 +188,8 @@ class Commit(models.Model):
 
     id = models.BigAutoField(primary_key=True)
     commitid = models.TextField()
-    timestamp = DateTimeWithoutTZField(default=datetime.now)
-    updatestamp = DateTimeWithoutTZField(default=datetime.now)
+    timestamp = DateTimeWithoutTZField(default=timezone.now)
+    updatestamp = DateTimeWithoutTZField(default=timezone.now)
     author = models.ForeignKey(
         "codecov_auth.Owner", db_column="author", on_delete=models.SET_NULL, null=True
     )
@@ -223,7 +215,7 @@ class Commit(models.Model):
     )  # Really an ENUM in db
 
     def save(self, *args, **kwargs):
-        self.updatestamp = datetime.now()
+        self.updatestamp = timezone.now()
         super().save(*args, **kwargs)
 
     @cached_property
@@ -312,7 +304,7 @@ class Pull(models.Model):
     author = models.ForeignKey(
         "codecov_auth.Owner", db_column="author", on_delete=models.SET_NULL, null=True
     )
-    updatestamp = DateTimeWithoutTZField(default=datetime.now)
+    updatestamp = DateTimeWithoutTZField(default=timezone.now)
     diff = models.JSONField(null=True)
     flare = models.JSONField(null=True)
     behind_by = models.IntegerField(null=True)
@@ -343,7 +335,7 @@ class Pull(models.Model):
         ]
 
     def save(self, *args, **kwargs):
-        self.updatestamp = datetime.now()
+        self.updatestamp = timezone.now()
         super().save(*args, **kwargs)
 
 
@@ -363,6 +355,8 @@ class CommitNotification(models.Model):
         STANDARD = "standard"
         UPGRADE = "upgrade"
         UPLOAD_LIMIT = "upload_limit"
+        PASSING_EMPTY_UPLOAD = "passing_empty_upload"
+        FAILING_EMPTY_UPLOAD = "failing_empty_upload"
 
     class States(models.TextChoices):
         PENDING = "pending"
@@ -384,7 +378,7 @@ class CommitNotification(models.Model):
     updated_at = DateTimeWithoutTZField(default=datetime.now)
 
     def save(self, *args, **kwargs):
-        self.updated_at = datetime.now()
+        self.updated_at = timezone.now()
         super().save(*args, **kwargs)
 
     class Meta:
