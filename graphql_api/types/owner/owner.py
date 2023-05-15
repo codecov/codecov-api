@@ -68,11 +68,12 @@ async def resolve_repository(owner, info, name):
     command = info.context["executor"].get_command("repository")
     repository: Repository = await command.fetch_repository(owner, name)
 
-    user = info.context["request"].user
-    if repository.private:
-        await sync_to_async(activation.try_auto_activate)(owner, user)
+    if repository is not None:
+        user = info.context["request"].user
+        if repository.private:
+            await sync_to_async(activation.try_auto_activate)(owner, user)
 
-    info.context["profiling_summary"] = ProfilingSummary(repository)
+        info.context["profiling_summary"] = ProfilingSummary(repository)
 
     return repository
 
