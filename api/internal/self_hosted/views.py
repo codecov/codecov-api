@@ -1,4 +1,4 @@
-from django.db.models import Exists, OuterRef
+from django.db.models import Exists, OuterRef, Q
 from django.db.models.functions import Coalesce
 from django_filters import rest_framework as django_filters
 from rest_framework import filters, mixins, viewsets
@@ -31,19 +31,18 @@ class UserViewSet(
     search_fields = ["name", "username", "email"]
 
     def get_queryset(self):
-        return (
-            Owner.objects.filter(oauth_token__isnull=False)
-            .filter(organizations__isnull=False)
-            .all()
-            .annotate(
-                is_admin=Coalesce(
-                    Exists(self_hosted.admin_owners().filter(pk=OuterRef("pk"))), False
-                ),
-                activated=Coalesce(
-                    Exists(self_hosted.activated_owners().filter(pk=OuterRef("pk"))),
-                    False,
-                ),
-            )
+        activated_owners = self_hosted.activated_owners()
+        condition = (Q(oauth_token__isnull=False) & Q(organizations__isnull=False)) | Q(
+            pk__in=activated_owners
+        )
+        return Owner.objects.filter(condition).annotate(
+            is_admin=Coalesce(
+                Exists(self_hosted.admin_owners().filter(pk=OuterRef("pk"))), False
+            ),
+            activated=Coalesce(
+                Exists(activated_owners.filter(pk=OuterRef("pk"))),
+                False,
+            ),
         )
 
     @action(

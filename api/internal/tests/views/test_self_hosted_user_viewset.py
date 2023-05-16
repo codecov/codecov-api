@@ -90,11 +90,17 @@ class UserViewsetAdminTestCase(UserViewsetTestCase):
         other_other_owner = OwnerFactory(
             oauth_token=None, organizations=[self.owner.ownerid]
         )
+        activated_owner = OwnerFactory(
+            oauth_token=None,
+            organizations=None,
+        )
+        self.owner.plan_activated_users = [activated_owner.pk]
+        self.owner.save()
 
         res = self.client.get(reverse("selfhosted-users-list"))
         assert res.status_code == 200
         assert res.json() == {
-            "count": 1,
+            "count": 2,
             "next": None,
             "previous": None,
             "results": [
@@ -105,6 +111,14 @@ class UserViewsetAdminTestCase(UserViewsetTestCase):
                     "name": self.user.name,
                     "is_admin": True,
                     "activated": False,
+                },
+                {
+                    "ownerid": activated_owner.pk,
+                    "username": activated_owner.username,
+                    "email": activated_owner.email,
+                    "name": activated_owner.name,
+                    "is_admin": False,
+                    "activated": True,
                 },
             ],
             "total_pages": 1,
