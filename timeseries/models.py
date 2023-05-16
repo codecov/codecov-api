@@ -30,8 +30,6 @@ class Measurement(models.Model):
     owner_id = models.BigIntegerField(null=False)
     repo_id = models.BigIntegerField(null=False)
     measurable_id = models.TextField(null=False)
-    # TODO: run a migration to backpopulate measurable_id w/ info from the flag_id, component_id + repo_id to deprecate flag_id
-    flag_id = models.BigIntegerField(null=True)
     branch = models.TextField(null=True)
 
     # useful for updating a measurement if needed
@@ -67,30 +65,6 @@ class Measurement(models.Model):
                     "timestamp",
                 ],
                 name="timeseries_measurement_unique",
-            ),
-            # TODO: remove these once the worker does not rely on them for updating measurements
-            models.UniqueConstraint(
-                fields=[
-                    "name",
-                    "owner_id",
-                    "repo_id",
-                    "flag_id",
-                    "commit_sha",
-                    "timestamp",
-                ],
-                condition=models.Q(flag_id__isnull=False),
-                name="timeseries_measurement_flag_unique",
-            ),
-            models.UniqueConstraint(
-                fields=[
-                    "name",
-                    "owner_id",
-                    "repo_id",
-                    "commit_sha",
-                    "timestamp",
-                ],
-                condition=models.Q(flag_id__isnull=True),
-                name="timeseries_measurement_noflag_unique",
             ),
         ]
 
