@@ -6,7 +6,7 @@ import pytest
 from ddf import G
 from rest_framework import status
 from rest_framework.reverse import reverse
-from rest_framework.test import APITestCase
+from rest_framework.test import APITransactionTestCase
 
 from api.internal.tests.test_utils import GetAdminProviderAdapter
 from codecov_auth.tests.factories import OwnerFactory, SessionFactory
@@ -14,7 +14,7 @@ from core.models import Pull, Repository
 from core.tests.factories import PullFactory, RepositoryFactory
 
 
-class UserViewSetTests(APITestCase):
+class UserViewSetTests(APITransactionTestCase):
     def setUp(self):
         non_org_active_user = OwnerFactory()
         self.owner = OwnerFactory(
