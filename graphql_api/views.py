@@ -89,7 +89,10 @@ class AsyncGraphqlView(GraphQLAsyncView):
         return formatted
 
 
-BaseAriadneView = AsyncGraphqlView.as_view()
+BaseAriadneView = AsyncGraphqlView.as_view(
+    # disable introspection when playground is disabled
+    introspection=settings.GRAPHQL_PLAYGROUND
+)
 
 
 async def ariadne_view(request, service):
