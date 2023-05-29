@@ -350,6 +350,7 @@ class CommitNotification(models.Model):
         STATUS_PATCH = "status_patch"
         STATUS_PROJECT = "status_project"
         WEBHOOK = "webhook"
+        CODECOV_SLACK_APP = "codecov_slack_app"
 
     class DecorationTypes(models.TextChoices):
         STANDARD = "standard"
