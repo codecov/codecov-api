@@ -63,3 +63,21 @@ class BranchViewsetTests(InternalAPITest):
         assert res.status_code == 200
         assert res.data["name"] == self.branches[0].name
         assert res.data["head_commit"]["report"]
+
+    def test_retrieve_period(self):
+        branch = BranchFactory(repository=self.repo, name="test.dot")
+
+        res = self.client.get(
+            reverse(
+                "api-v2-branches-detail",
+                kwargs={
+                    "service": self.org.service,
+                    "owner_username": self.org.username,
+                    "repo_name": self.repo.name,
+                    "name": branch.name,
+                },
+            )
+        )
+        assert res.status_code == 200
+        assert res.data["name"] == branch.name
+        assert res.data["head_commit"]["report"]

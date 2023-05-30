@@ -78,6 +78,21 @@ async def resolve_repository(owner, info, name):
     return repository
 
 
+@owner_bindable.field("repositoryDeprecated")
+async def resolve_repository_deprecated(owner, info, name):
+    command = info.context["executor"].get_command("repository")
+    repository: Optional[Repository] = await command.fetch_repository(owner, name)
+
+    if repository is not None:
+        user = info.context["request"].user
+        if repository.private:
+            await sync_to_async(activation.try_auto_activate)(owner, user)
+
+        info.context["profiling_summary"] = ProfilingSummary(repository)
+
+    return repository
+
+
 @owner_bindable.field("numberOfUploads")
 async def resolve_number_of_uploads(owner, info, **kwargs):
     command = info.context["executor"].get_command("owner")

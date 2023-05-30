@@ -16,6 +16,7 @@ class BranchViewSet(
     mixins.RetrieveModelMixin,
 ):
     queryset = Branch.objects.none()
+    lookup_value_regex = "[^/]+"
 
     def get_serializer_class(self):
         if self.action == "retrieve":
