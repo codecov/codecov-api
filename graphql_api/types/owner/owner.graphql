@@ -13,6 +13,7 @@ type Owner {
     before: String
   ): RepositoryConnection!
   repository(name: String!): Repository
+  repositoryDeprecated(name: String!): Repository
   numberOfUploads: Int
   isAdmin: Boolean!
   hashOwnerid: String!
