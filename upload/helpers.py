@@ -576,13 +576,12 @@ def parse_headers(headers, upload_params):
 
 
 def store_report_in_redis(request, commitid, reportid, redis):
-    if not request.META.get("X_REDIS_KEY"):
-        encoding = request.META.get("HTTP_X_CONTENT_ENCODING") or request.META.get(
-            "HTTP_CONTENT_ENCODING"
-        )
-        redis_key = f"upload/{commitid[:7]}/{reportid}/{'gzip' if encoding == 'gzip' else 'plain'}"
-    else:
-        redis_key = request.META.get("X_REDIS_KEY")
+    encoding = request.META.get("HTTP_X_CONTENT_ENCODING") or request.META.get(
+        "HTTP_CONTENT_ENCODING"
+    )
+    redis_key = (
+        f"upload/{commitid[:7]}/{reportid}/{'gzip' if encoding == 'gzip' else 'plain'}"
+    )
     redis.setex(redis_key, 10800, request.body)
 
     return redis_key

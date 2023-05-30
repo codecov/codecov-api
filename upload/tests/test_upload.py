@@ -712,17 +712,6 @@ class UploadHandlerHelpersTest(TestCase):
 
         redis = MockRedis()
 
-        with self.subTest("redis key in headers"):
-            assert (
-                store_report_in_redis(
-                    APIRequestFactory().get("", X_REDIS_KEY="redis/key/in/headers"),
-                    "commit",
-                    "report",
-                    redis,
-                )
-                == "redis/key/in/headers"
-            )
-
         with self.subTest("gzip encoding"):
             assert (
                 store_report_in_redis(
