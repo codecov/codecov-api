@@ -10,7 +10,7 @@ type ImpactedFile {
   headCoverage: CoverageTotals
   patchCoverage: CoverageTotals
   changeCoverage: Float
-  missesInComparison: Int!
+  missesCount: Int!
   hashedPath: String!
   segments(filters: SegmentsFilters): SegmentsResult!
 }

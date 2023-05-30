@@ -8,7 +8,7 @@ class ImpactedFileParameter(enum.Enum):
     FILE_NAME = "file_name"
     CHANGE_COVERAGE = "change_coverage"
     HEAD_COVERAGE = "head_coverage"
-    MISSES_IN_COMPARISON = "misses_in_comparison"
+    MISSES_COUNT = "misses_count"
     PATCH_COVERAGE = "patch_coverage"
 
 
@@ -32,7 +32,7 @@ class FetchImpactedFiles(BaseInteractor):
         elif parameter == ImpactedFileParameter.HEAD_COVERAGE:
             if impacted_file.head_coverage is not None:
                 return impacted_file.head_coverage.coverage
-        elif parameter == ImpactedFileParameter.MISSES_IN_COMPARISON:
+        elif parameter == ImpactedFileParameter.MISSES_COUNT:
             if impacted_file.misses_count is not None:
                 return impacted_file.misses_count
         elif parameter == ImpactedFileParameter.PATCH_COVERAGE:

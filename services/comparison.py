@@ -880,16 +880,22 @@ class ImpactedFile:
         return self.unexpected_line_changes and len(self.unexpected_line_changes) > 0
 
     @cached_property
-    def misses_count(self):
-        """
-        Returns the total number of misses (diff misses and indirect misses)
-        """
+    def misses_count(self) -> int:
         total_misses = 0
+        if self.has_diff:
+            total_misses += self.direct_misses_count
 
-        diff_coverage = self.added_diff_coverage or []
-        for line_number, line_coverage_value in diff_coverage:
-            if line_coverage_value == "m":
-                total_misses += 1
+        if self.has_changes:
+            total_misses += self.unintended_misses_count
+
+        return total_misses
+
+    @cached_property
+    def unintended_misses_count(self) -> int:
+        """
+        Returns the misses count for a unintended impacted file
+        """
+        misses = 0
 
         unexpected_line_changes = self.unexpected_line_changes or []
         for [
@@ -897,9 +903,24 @@ class ImpactedFile:
             [head_line_number, head_coverage_value],
         ] in unexpected_line_changes:
             if head_coverage_value == "m":
-                total_misses += 1
+                misses += 1
 
-        return total_misses
+        return misses
+
+    @cached_property
+    def direct_misses_count(self) -> int:
+        """
+        Returns the misses count for a direct impacted file
+        """
+
+        misses = 0
+
+        diff_coverage = self.added_diff_coverage or []
+        for line_number, line_coverage_value in diff_coverage:
+            if line_coverage_value == "m":
+                misses += 1
+
+        return misses
 
     @cached_property
     def patch_coverage(self) -> Optional[Totals]:
