@@ -299,7 +299,7 @@ class GithubWebhookHandler(APIView):
             return Response(data=WebhookHandlerErrorMessages.SKIP_NOT_ACTIVE)
         if request.data.get("context", "")[:8] == "codecov/":
             log.info(
-                "Status is Codecov status, exiting",
+                "Recieved a web hook for a Codecov status from GitHub. We ignore these, skipping.",
                 extra=dict(
                     repoid=repo.repoid, commit=commitid, github_webhook_event=self.event
                 ),
