@@ -1777,11 +1777,11 @@ class CommitComparisonTests(TestCase):
         self.compare_commit_report = CommitReportFactory(commit=self.compare_commit)
         self.base_report_details = ReportDetails.objects.create(
             report_id=self.base_commit_report.id,
-            files_array=[],
+            _files_array=[],
         )
         self.compare_report_details = ReportDetails.objects.create(
             report_id=self.compare_commit_report.id,
-            files_array=[],
+            _files_array=[],
         )
         self.commit_comparison = CommitComparisonFactory(
             base_commit=self.base_commit,

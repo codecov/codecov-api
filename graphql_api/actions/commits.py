@@ -51,7 +51,7 @@ def repo_commits(
         "reports",
         queryset=CommitReport.objects.select_related(
             "reportleveltotals", "reportdetails"
-        ).defer("reportdetails__files_array"),
+        ).defer("reportdetails___files_array"),
     )
 
     # We don't select the `report` column here b/c it can be many MBs of JSON

@@ -1,13 +1,19 @@
-import uuid
+import json
+import logging
 
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.urls import reverse
+from django.utils.functional import cached_property
 from shared.reports.enums import UploadState, UploadType
+from shared.storage.exceptions import FileNotInStorageError
 
 from codecov.models import BaseCodecovModel
+from services.archive import ArchiveService
 from upload.constants import ci
 from utils.services import get_short_service_name
+
+log = logging.getLogger(__name__)
 
 
 class AbstractTotals(BaseCodecovModel):
@@ -45,7 +51,33 @@ class ReportResults(BaseCodecovModel):
 
 class ReportDetails(BaseCodecovModel):
     report = models.OneToOneField(CommitReport, on_delete=models.CASCADE)
-    files_array = ArrayField(models.JSONField())
+    _files_array = ArrayField(models.JSONField(), db_column="files_array", null=True)
+    _files_array_storage_path = models.URLField(
+        db_column="files_array_storage_path", null=True
+    )
+
+    @cached_property
+    def files_array(self):
+        # Get files_array from the proper source
+        if self._files_array is not None:
+            return self._files_array
+        repository = self.report.commit.repository
+        archive_service = ArchiveService(repository=repository)
+        try:
+            file_str = archive_service.read_file(self._files_array_storage_path)
+            return json.loads(file_str)
+        except FileNotInStorageError:
+            log.error(
+                "files_array not in storage",
+                extra=dict(
+                    storage_path=self._files_array_storage_path,
+                    report_details=self.id,
+                    commit=self.report.commit,
+                ),
+            )
+            # Return empty array to be consistent with current behavior
+            # (instead of raising error)
+            return []
 
 
 class ReportLevelTotals(AbstractTotals):
