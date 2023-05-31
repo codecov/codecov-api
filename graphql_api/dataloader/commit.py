@@ -24,7 +24,7 @@ class CommitLoader(BaseLoader):
             "reports",
             queryset=CommitReport.objects.select_related(
                 "reportleveltotals", "reportdetails"
-            ).defer("reportdetails__files_array"),
+            ).defer("reportdetails___files_array"),
         )
 
         return (

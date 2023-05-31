@@ -82,7 +82,7 @@ class CommitWithReportFactory(CommitFactory):
         commit_report = CommitReportFactory(commit=commit)
         ReportDetailsFactory(
             report=commit_report,
-            files_array=[
+            _files_array=[
                 {
                     "filename": "tests/__init__.py",
                     "file_index": 0,

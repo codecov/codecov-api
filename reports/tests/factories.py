@@ -71,7 +71,8 @@ class ReportDetailsFactory(DjangoModelFactory):
         model = models.ReportDetails
 
     report = factory.SubFactory(CommitReportFactory)
-    files_array = factory.LazyAttribute(lambda _: [])
+    _files_array = factory.LazyAttribute(lambda _: [])
+    _files_array_storage_path = None
 
 
 class UploadErrorFactory(DjangoModelFactory):

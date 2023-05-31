@@ -1243,7 +1243,7 @@ class CommitComparisonService:
         prefetch = Prefetch(
             "reports",
             queryset=CommitReport.objects.select_related("reportdetails").defer(
-                "reportdetails__files_array"
+                "reportdetails___files_array"
             ),
         )
         return (

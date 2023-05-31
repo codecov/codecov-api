@@ -1,5 +1,6 @@
+import json
 from datetime import datetime
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 from django.utils import timezone
@@ -1020,7 +1021,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         )
 
         report_details = commit.reports.first().reportdetails
-        report_details.files_array = [
+        report_details._files_array = [
             {
                 "filename": "test_file_1.py",
                 "file_index": 2,
@@ -1042,6 +1043,147 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
 
         expected_commit_payload = CommitWithFileLevelReportSerializer(commit).data
 
+        response = self._retrieve()
+        assert response.status_code == 200
+        assert (
+            response.data["latest_commit"]["report"]["totals"]
+            == expected_commit_payload["report"]["totals"]
+        )
+        self.assertEquals(
+            response.data["latest_commit"]["report"]["files"],
+            [
+                {
+                    "name": "test_file_1.py",
+                    "totals": {
+                        "files": 1,
+                        "lines": 10,
+                        "hits": 8,
+                        "misses": 2,
+                        "partials": 5,
+                        "coverage": 80.0,
+                        "branches": 6,
+                        "methods": 7,
+                        "sessions": 8,
+                        "complexity": 20.0,
+                        "complexity_total": 40.0,
+                        "complexity_ratio": 50.0,
+                        "diff": None,
+                    },
+                },
+                {
+                    "name": "test_file_2.py",
+                    "totals": {
+                        "files": 1,
+                        "lines": 3,
+                        "hits": 2,
+                        "misses": 1,
+                        "partials": 0,
+                        "coverage": 66.67,
+                        "branches": 0,
+                        "methods": 0,
+                        "sessions": 0,
+                        "complexity": 0,
+                        "complexity_total": 0,
+                        "complexity_ratio": 0,
+                        "diff": None,
+                    },
+                },
+            ],
+        )
+
+    @patch("services.archive.ArchiveService.read_chunks", lambda obj, _: "")
+    @patch("reports.models.ArchiveService")
+    def test_retrieve_returns_latest_commit_data_report_details_from_storage(
+        self, mocker_archive_service, mocked_get_permissions
+    ):
+        self.maxDiff = None
+        mocked_get_permissions.return_value = True, True
+        files_array_storage_path = "https://storage/path/to/details/files_array.json"
+        commit = CommitWithReportFactory(
+            repository=self.repo,
+        )
+
+        def side_effect(path, *args, **kwargs):
+            if path == files_array_storage_path:
+                return json.dumps(
+                    [
+                        {
+                            "filename": "test_file_1.py",
+                            "file_index": 2,
+                            "file_totals": [
+                                1,
+                                10,
+                                8,
+                                2,
+                                5,
+                                "80.00000",
+                                6,
+                                7,
+                                9,
+                                8,
+                                20,
+                                40,
+                                13,
+                            ],
+                            "session_totals": [
+                                [0, 10, 8, 2, 0, "80.00000", 0, 0, 0, 0, 0, 0, 0]
+                            ],
+                            "diff_totals": [
+                                0,
+                                2,
+                                1,
+                                1,
+                                0,
+                                "50.00000",
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                            ],
+                        },
+                        {
+                            "filename": "test_file_2.py",
+                            "file_index": 0,
+                            "file_totals": [
+                                1,
+                                3,
+                                2,
+                                1,
+                                0,
+                                "66.66667",
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                            ],
+                            "session_totals": [
+                                [0, 3, 2, 1, 0, "66.66667", 0, 0, 0, 0, 0, 0, 0]
+                            ],
+                            "diff_totals": None,
+                        },
+                    ]
+                )
+            else:
+                return ""
+
+        mock_read_file = Mock(side_effect=side_effect)
+        mocker_archive_service.return_value = Mock(read_file=mock_read_file)
+        report_details = commit.reports.first().reportdetails
+        report_details._files_array = None
+        report_details._files_array_storage_path = files_array_storage_path
+        report_details.save()
+
+        from api.internal.commit.serializers import CommitWithFileLevelReportSerializer
+
+        expected_commit_payload = CommitWithFileLevelReportSerializer(commit).data
+        mocker_archive_service.assert_called_with(repository=commit.repository)
+        mock_read_file.assert_called_with(files_array_storage_path)
         response = self._retrieve()
         assert response.status_code == 200
         assert (
