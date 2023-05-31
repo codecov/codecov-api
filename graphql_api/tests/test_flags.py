@@ -25,11 +25,13 @@ query Flags(
 ) {
     owner(username: $org) {
         repository(name: $repo) {
-            flagsCount
-            flags {
-                edges {
-                    node {
-                        ...FlagFragment
+            ... on Repository {
+                flagsCount
+                flags {
+                    edges {
+                        node {
+                            ...FlagFragment
+                        }
                     }
                 }
             }
@@ -61,21 +63,23 @@ query Repo(
 ) {
     owner(username: $org) {
         repository(name: $repo) {
-            flagsCount
-            flagsMeasurementsActive
-            flagsMeasurementsBackfilled
-            flags {
-                edges {
-                    node {
-                        measurements(
-                            interval: INTERVAL_1_DAY
-                            after: "2022-01-01",
-                            before: "2022-12-31",
-                        ) {
-                            timestamp
-                            avg
-                            min
-                            max
+            ... on Repository {
+                flagsCount
+                flagsMeasurementsActive
+                flagsMeasurementsBackfilled
+                flags {
+                    edges {
+                        node {
+                            measurements(
+                                interval: INTERVAL_1_DAY
+                                after: "2022-01-01",
+                                before: "2022-12-31",
+                            ) {
+                                timestamp
+                                avg
+                                min
+                                max
+                            }
                         }
                     }
                 }
@@ -448,12 +452,14 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
             ) {
                 owner(username: $org) {
                     repository(name: $repo) {
-                        flags {
-                            edges {
-                                node {
-                                    name
-                                    percentCovered
-                                    percentChange
+                        ... on Repository {
+                            flags {
+                                edges {
+                                    node {
+                                        name
+                                        percentCovered
+                                        percentChange
+                                    }
                                 }
                             }
                         }
@@ -502,10 +508,12 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
             ) {
                 owner(username: $org) {
                     repository(name: $repo) {
-                        flags(filters: $filters) {
-                            edges {
-                                node {
-                                    name
+                        ... on Repository {
+                            flags(filters: $filters) {
+                                edges {
+                                    node {
+                                        name
+                                    }
                                 }
                             }
                         }
@@ -549,10 +557,12 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
             ) {
                 owner(username: $org) {
                     repository(name: $repo) {
-                        flags(filters: $filters) {
-                            edges {
-                                node {
-                                    name
+                        ... on Repository {
+                            flags(filters: $filters) {
+                                edges {
+                                    node {
+                                        name
+                                    }
                                 }
                             }
                         }
@@ -599,10 +609,12 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
             ) {
                 owner(username: $org) {
                     repository(name: $repo) {
-                        flags(orderingDirection: DESC) {
-                            edges {
-                                node {
-                                    name
+                        ... on Repository {
+                            flags(orderingDirection: DESC) {
+                                edges {
+                                    node {
+                                        name
+                                    }
                                 }
                             }
                         }
@@ -647,12 +659,14 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
             ) {
                 owner(username: $org) {
                     repository(name: $repo) {
-                        flags(after: $after) {
-                            edges {
-                                node {
-                                    name
+                        ... on Repository {
+                            flags(after: $after) {
+                                edges {
+                                    node {
+                                        name
+                                    }
+                                    cursor
                                 }
-                                cursor
                             }
                         }
                     }
@@ -720,8 +734,10 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
             ) {
                 owner(username: $org) {
                     repository(name: $repo) {
-                        flags {
-                            __typename
+                        ... on Repository {
+                            flags {
+                                __typename
+                            }
                         }
                     }
                 }

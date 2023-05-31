@@ -232,7 +232,9 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         query_repositories = """{
             owner(username: "%s") {
                 repository(name: "%s") {
-                    name
+                    ... on Repository {
+                        name
+                    }
                 }
             }
         }

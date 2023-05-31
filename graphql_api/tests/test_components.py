@@ -47,14 +47,16 @@ query_commit_components = """
     ) {
         owner(username: $org) {
             repository(name: $repo) {
-                commit(id: $sha) {
-                    components {
-                        id
-                        name
-                        totals {
-                            hitsCount
-                            missesCount
-                            percentCovered
+                ... on Repository {
+                    commit(id: $sha) {
+                        components {
+                            id
+                            name
+                            totals {
+                                hitsCount
+                                missesCount
+                                percentCovered
+                            }
                         }
                     }
                 }
@@ -151,22 +153,24 @@ query_components_comparison = """
     ) {
         owner(username: $org) {
             repository(name: $repo) {
-                pull(id: $pullid) {
-                    compareWithBase {
-                        __typename
-                        ... on Comparison {
-                            componentComparisonsCount
-                            componentComparisons {
-                                id
-                                name
-                                baseTotals {
-                                    percentCovered
-                                }
-                                headTotals {
-                                    percentCovered
-                                }
-                                patchTotals {
-                                    percentCovered
+                ... on Repository {
+                    pull(id: $pullid) {
+                        compareWithBase {
+                            __typename
+                            ... on Comparison {
+                                componentComparisonsCount
+                                componentComparisons {
+                                    id
+                                    name
+                                    baseTotals {
+                                        percentCovered
+                                    }
+                                    headTotals {
+                                        percentCovered
+                                    }
+                                    patchTotals {
+                                        percentCovered
+                                    }
                                 }
                             }
                         }

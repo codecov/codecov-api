@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import Iterable, List, Mapping, Optional
 
 import yaml
-from ariadne import ObjectType, convert_kwargs_to_snake_case
+from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
 from django.conf import settings
 from django.forms.utils import from_current_timezone
 
@@ -19,6 +19,7 @@ from graphql_api.helpers.connection import (
 )
 from graphql_api.helpers.lookahead import lookahead
 from graphql_api.types.enums import OrderingDirection
+from graphql_api.types.errors.errors import NotActivatedError, NotFoundError
 from services.profiling import CriticalFile, ProfilingSummary
 from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Dataset, Interval, MeasurementName, MeasurementSummary
@@ -304,3 +305,16 @@ def resolve_measurements(
 @repository_bindable.field("repositoryConfig")
 def resolve_repository_config(repository: Repository, info):
     return repository
+
+
+repository_result_bindable = UnionType("RepositoryResult")
+
+
+@repository_result_bindable.type_resolver
+def resolve_repository_result_type(obj, *_):
+    if isinstance(obj, Repository):
+        return "Repository"
+    elif isinstance(obj, NotActivatedError):
+        return "NotActivatedError"
+    elif isinstance(obj, NotFoundError):
+        return "NotFoundError"

@@ -28,7 +28,7 @@ from .path_contents import (
 from .profile import profile, profile_bindable
 from .pull import pull, pull_bindable
 from .query import query, query_bindable
-from .repository import repository, repository_bindable
+from .repository import repository, repository_bindable, repository_result_bindable
 from .repository_config import (
     indication_range_bindable,
     repository_config,
@@ -99,6 +99,7 @@ bindables = [
     user_bindable,
     owner_bindable,
     repository_bindable,
+    repository_result_bindable,
     session_bindable,
     coverage_totals_bindable,
     file_bindable,

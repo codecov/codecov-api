@@ -97,3 +97,5 @@ type BranchEdge {
   cursor: String!
   node: Branch!
 }
+
+union RepositoryResult = Repository | NotFoundError | NotActivatedError
