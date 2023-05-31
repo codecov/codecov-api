@@ -883,15 +883,15 @@ class ImpactedFile:
     def misses_count(self) -> int:
         total_misses = 0
         if self.has_diff:
-            total_misses += self.direct_misses_count
+            total_misses += self._direct_misses_count
 
         if self.has_changes:
-            total_misses += self.unintended_misses_count
+            total_misses += self._unintended_misses_count
 
         return total_misses
 
     @cached_property
-    def unintended_misses_count(self) -> int:
+    def _unintended_misses_count(self) -> int:
         """
         Returns the misses count for a unintended impacted file
         """
@@ -908,7 +908,7 @@ class ImpactedFile:
         return misses
 
     @cached_property
-    def direct_misses_count(self) -> int:
+    def _direct_misses_count(self) -> int:
         """
         Returns the misses count for a direct impacted file
         """
