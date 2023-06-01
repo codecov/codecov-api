@@ -882,12 +882,8 @@ class ImpactedFile:
     @cached_property
     def misses_count(self) -> int:
         total_misses = 0
-        if self.has_diff:
-            total_misses += self._direct_misses_count
-
-        if self.has_changes:
-            total_misses += self._unintended_misses_count
-
+        total_misses += self._direct_misses_count
+        total_misses += self._unintended_misses_count
         return total_misses
 
     @cached_property
