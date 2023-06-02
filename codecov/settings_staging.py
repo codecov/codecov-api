@@ -1,11 +1,5 @@
 import os
 
-import sentry_sdk
-from sentry_sdk.integrations.celery import CeleryIntegration
-from sentry_sdk.integrations.django import DjangoIntegration
-from sentry_sdk.integrations.httpx import HttpxIntegration
-from sentry_sdk.integrations.redis import RedisIntegration
-
 from .settings_base import *
 
 DEBUG = False
@@ -31,24 +25,6 @@ STRIPE_PLAN_IDS = {
     "users-sentryy": "price_1Mj1mMGlVGuVgOrkC0ORc6iW",
 }
 
-SENTRY_ENV = "staging"
-SENTRY_SAMPLE_RATE = float(os.environ.get("SERVICES__SENTRY__SAMPLE_RATE", 1))
-
-sentry_sdk.init(
-    dsn=os.environ.get("SERVICES__SENTRY__SERVER_DSN", None),
-    integrations=[
-        DjangoIntegration(),
-        RedisIntegration(),
-        HttpxIntegration(),
-    ],
-    environment=SENTRY_ENV,
-    traces_sample_rate=SENTRY_SAMPLE_RATE,
-    _experiments={
-        "profiles_sample_rate": float(
-            os.environ.get("SERVICES__SENTRY__PROFILE_SAMPLE_RATE", 1.0)
-        ),
-    },
-)
 CORS_ALLOW_HEADERS += ["sentry-trace", "baggage"]
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^(https:\/\/)?deploy-preview-\d+--codecov\.netlify\.app$",
