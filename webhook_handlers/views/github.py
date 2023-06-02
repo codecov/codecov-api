@@ -290,7 +290,7 @@ class GithubWebhookHandler(APIView):
         commitid = request.data.get("sha")
 
         if not repo.active:
-            log.info(
+            log.debug(
                 "Repository is not active, ignoring status event",
                 extra=dict(
                     repoid=repo.repoid, commit=commitid, github_webhook_event=self.event
@@ -298,7 +298,7 @@ class GithubWebhookHandler(APIView):
             )
             return Response(data=WebhookHandlerErrorMessages.SKIP_NOT_ACTIVE)
         if request.data.get("context", "")[:8] == "codecov/":
-            log.info(
+            log.debug(
                 "Recieved a web hook for a Codecov status from GitHub. We ignore these, skipping.",
                 extra=dict(
                     repoid=repo.repoid, commit=commitid, github_webhook_event=self.event
@@ -306,7 +306,7 @@ class GithubWebhookHandler(APIView):
             )
             return Response(data=WebhookHandlerErrorMessages.SKIP_CODECOV_STATUS)
         if request.data.get("state") == "pending":
-            log.info(
+            log.debug(
                 "Recieved a web hook for a `pending` status from GitHub. We ignore these, skipping.",
                 extra=dict(
                     repoid=repo.repoid, commit=commitid, github_webhook_event=self.event
