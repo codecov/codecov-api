@@ -2,9 +2,14 @@ import os
 from urllib.parse import urlparse
 
 import asgiref.sync as sync
+import sentry_sdk
 from asgiref.sync import SyncToAsync
 from corsheaders.defaults import default_headers
 from django.db import close_old_connections
+from sentry_sdk.integrations.celery import CeleryIntegration
+from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.httpx import HttpxIntegration
+from sentry_sdk.integrations.redis import RedisIntegration
 
 from utils.config import SettingsModule, get_config, get_settings_module
 
@@ -423,8 +428,7 @@ SEGMENT_API_KEY = get_config("setup", "segment", "key", default=None)
 SEGMENT_ENABLED = get_config("setup", "segment", "enabled", default=False) and not bool(
     get_config("setup", "enterprise_license", default=False)
 )
-SENTRY_ENV = False
-SENTRY_SAMPLE_RATE = 1.0
+
 CORS_ALLOW_HEADERS = list(default_headers) + ["token-type"]
 
 SKIP_RISKY_MIGRATION_STEPS = get_config("migrations", "skip_risky_steps", default=False)
@@ -459,3 +463,24 @@ SENTRY_USER_WEBHOOK_URL = get_config("setup", "sentry", "webhook_url", default=N
 # list of repo IDs that will use the new-style report builder
 # TODO: we can eventually get rid of this once it's confirmed working well for many repos
 REPORT_BUILDER_REPO_IDS = get_config("setup", "report_builder", "repo_ids", default=[])
+
+SENTRY_ENV = os.environ.get("CODECOV_ENV", False)
+SENTRY_DSN = os.environ.get("SERVICES__SENTRY__SERVER_DSN", None)
+if SENTRY_DSN is not None:
+    SENTRY_SAMPLE_RATE = float(os.environ.get("SERVICES__SENTRY__SAMPLE_RATE", 0.1))
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[
+            DjangoIntegration(),
+            CeleryIntegration(),
+            RedisIntegration(),
+            HttpxIntegration(),
+        ],
+        environment=SENTRY_ENV,
+        traces_sample_rate=SENTRY_SAMPLE_RATE,
+        _experiments={
+            "profiles_sample_rate": float(
+                os.environ.get("SERVICES__SENTRY__PROFILE_SAMPLE_RATE", 0.01)
+            ),
+        },
+    )
