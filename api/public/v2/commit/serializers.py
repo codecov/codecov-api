@@ -21,6 +21,10 @@ class CommitSerializer(serializers.ModelSerializer):
         label="Codecov processing state for this commit",
         choices=Commit.CommitStates.choices,
     )
+    parent = serializers.CharField(
+        label="commit SHA of first ancestor commit with coverage",
+        source="parent_commit_id",
+    )
 
     class Meta:
         model = Commit
@@ -33,6 +37,7 @@ class CommitSerializer(serializers.ModelSerializer):
             "branch",
             "totals",
             "state",
+            "parent",
         )
 
 
