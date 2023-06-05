@@ -294,7 +294,7 @@ class FetchImpactedFilesTest(TransactionTestCase):
     @patch("services.archive.ArchiveService.read_file")
     def test_impacted_file_sort_function_no_misses(self, read_file):
         read_file.return_value = mock_data_without_misses
-        parameter = ImpactedFileParameter.MISSES_IN_COMPARISON
+        parameter = ImpactedFileParameter.MISSES_COUNT
         direction = OrderingDirection.ASC
         filters = {"ordering": {"parameter": parameter, "direction": direction}}
         sorted_files = self.execute(None, self.comparison, filters)
@@ -410,26 +410,24 @@ class FetchImpactedFilesTest(TransactionTestCase):
         assert [file.head_name for file in impacted_files] == ["fileB", "fileA"]
 
     @patch("services.archive.ArchiveService.read_file")
-    def test_impacted_files_filtered_by_misses_in_comparisonascending(self, read_file):
+    def test_impacted_files_filtered_by_misses_count_ascending(self, read_file):
         read_file.return_value = mock_data_from_archive
         filters = {
             "ordering": {
                 "direction": OrderingDirection.ASC,
-                "parameter": ImpactedFileParameter.MISSES_IN_COMPARISON,
+                "parameter": ImpactedFileParameter.MISSES_COUNT,
             }
         }
         impacted_files = self.execute(None, self.comparison, filters)
         assert [file.head_name for file in impacted_files] == ["fileA", "fileB"]
 
     @patch("services.archive.ArchiveService.read_file")
-    def test_impacted_files_filtered_by_misses_in_comparison_descending(
-        self, read_file
-    ):
+    def test_impacted_files_filtered_by_misses_count_descending(self, read_file):
         read_file.return_value = mock_data_from_archive
         filters = {
             "ordering": {
                 "direction": OrderingDirection.DESC,
-                "parameter": ImpactedFileParameter.MISSES_IN_COMPARISON,
+                "parameter": ImpactedFileParameter.MISSES_COUNT,
             }
         }
         impacted_files = self.execute(None, self.comparison, filters)

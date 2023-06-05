@@ -48,7 +48,7 @@ query ImpactedFiles(
                                     percentCovered
                                 }
                                 changeCoverage
-                                    missesInComparison
+                                    missesCount
                                 }
                             }
                         }
@@ -188,7 +188,7 @@ mock_data_from_archive = """
             [13,"h"],
             [14,"h"],
             [15,"h"],
-            [16,"h"],
+            [16,"m"],
             [17,"h"]
         ],
         "unexpected_line_changes": [[[1, "h"], [1, "m"]]]
@@ -285,7 +285,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                     },
                                     "patchCoverage": {"percentCovered": 50.0},
                                     "changeCoverage": 44.047619047619044,
-                                    "missesInComparison": 1,
+                                    "missesCount": 1,
                                 },
                                 {
                                     "fileName": "fileB",
@@ -301,69 +301,11 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                     "headCoverage": {
                                         "percentCovered": 85.71428571428571
                                     },
-                                    "patchCoverage": {"percentCovered": 100.0},
-                                    "changeCoverage": 44.047619047619044,
-                                    "missesInComparison": 1,
-                                },
-                            ],
-                        }
-                    }
-                }
-            }
-        }
-
-    @patch("services.archive.ArchiveService.read_file")
-    def test_fetch_impacted_files_count(self, read_file):
-        read_file.return_value = mock_data_from_archive
-        variables = {
-            "org": self.org.username,
-            "repo": self.repo.name,
-            "commit": self.commit.commitid,
-        }
-        data = self.gql_request(query_impacted_files, variables=variables)
-        assert data == {
-            "owner": {
-                "repository": {
-                    "commit": {
-                        "compareWithParent": {
-                            "impactedFilesCount": 2,
-                            "indirectChangedFilesCount": 1,
-                            "impactedFiles": [
-                                {
-                                    "fileName": "fileA",
-                                    "headName": "fileA",
-                                    "baseName": "fileA",
-                                    "isNewFile": False,
-                                    "isRenamedFile": False,
-                                    "isDeletedFile": False,
-                                    "isCriticalFile": False,
-                                    "baseCoverage": {
-                                        "percentCovered": 41.666666666666664
-                                    },
-                                    "headCoverage": {
+                                    "patchCoverage": {
                                         "percentCovered": 85.71428571428571
                                     },
-                                    "patchCoverage": {"percentCovered": 50.0},
                                     "changeCoverage": 44.047619047619044,
-                                    "missesInComparison": 1,
-                                },
-                                {
-                                    "fileName": "fileB",
-                                    "headName": "fileB",
-                                    "baseName": "fileB",
-                                    "isNewFile": False,
-                                    "isRenamedFile": False,
-                                    "isDeletedFile": False,
-                                    "isCriticalFile": False,
-                                    "baseCoverage": {
-                                        "percentCovered": 41.666666666666664
-                                    },
-                                    "headCoverage": {
-                                        "percentCovered": 85.71428571428571
-                                    },
-                                    "patchCoverage": {"percentCovered": 100.0},
-                                    "changeCoverage": 44.047619047619044,
-                                    "missesInComparison": 1,
+                                    "missesCount": 2,
                                 },
                             ],
                         }
@@ -482,7 +424,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                 "hashedPath": hashlib.md5("fileB".encode()).hexdigest(),
                                 "baseCoverage": {"percentCovered": 41.666666666666664},
                                 "headCoverage": {"percentCovered": 85.71428571428571},
-                                "patchCoverage": {"percentCovered": 100.0},
+                                "patchCoverage": {"percentCovered": 85.71428571428571},
                                 "segments": {
                                     "results": [
                                         {"hasUnintendedChanges": True},

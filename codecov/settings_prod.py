@@ -28,24 +28,6 @@ STRIPE_PLAN_IDS = {
     "users-sentryy": "price_1MlYAYGlVGuVgOrke9SdbBUn",
 }
 
-SENTRY_ENV = "production"
-SENTRY_SAMPLE_RATE = float(os.environ.get("SERVICES__SENTRY__SAMPLE_RATE", 0.1))
-sentry_sdk.init(
-    dsn=os.environ.get("SERVICES__SENTRY__SERVER_DSN", None),
-    integrations=[
-        DjangoIntegration(),
-        CeleryIntegration(),
-        RedisIntegration(),
-        HttpxIntegration(),
-    ],
-    environment=SENTRY_ENV,
-    traces_sample_rate=SENTRY_SAMPLE_RATE,
-    _experiments={
-        "profiles_sample_rate": float(
-            os.environ.get("SERVICES__SENTRY__PROFILE_SAMPLE_RATE", 0.01)
-        ),
-    },
-)
 CORS_ALLOW_HEADERS += ["sentry-trace", "baggage"]
 CORS_ALLOW_CREDENTIALS = True
 CODECOV_URL = get_config("setup", "codecov_url", default="https://codecov.io")
