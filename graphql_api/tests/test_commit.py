@@ -425,6 +425,24 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             {"errorCode": UploadErrorEnum.FILE_NOT_IN_STORAGE.name},
         ]
 
+    def test_yaml_return_default_state_if_default(self):
+        org = OwnerFactory(username="default_yaml_owner")
+        repo = RepositoryFactory(author=org, private=False)
+        commit = CommitFactory(repository=repo)
+        query = (
+            query_commit
+            % """
+            yamlState
+        """
+        )
+        variables = {
+            "org": org.username,
+            "repo": repo.name,
+            "commit": commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        assert data["owner"]["repository"]["commit"]["yamlState"] == "DEFAULT"
+
     def test_fetch_commit_ci(self):
         session_one = UploadFactory(
             report=self.report,

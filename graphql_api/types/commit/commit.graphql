@@ -9,6 +9,7 @@ type Commit {
   pullId: Int
   branchName: String
   yaml: String
+  yamlState: YamlStates
   ciPassed: Boolean
   flagNames: [String]
   coverageFile(path: String!, flags: [String]): File
