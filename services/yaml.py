@@ -1,3 +1,5 @@
+import enum
+from functools import lru_cache
 from typing import Dict, Optional
 
 from asgiref.sync import async_to_sync
@@ -6,9 +8,13 @@ from shared.yaml.user_yaml import UserYaml
 from shared.yaml.validation import validate_yaml
 from yaml import safe_load
 
-from codecov_auth.models import Owner
+from codecov_auth.models import Owner, get_config
 from core.models import Commit
 from services.repo_providers import RepoProviderService
+
+
+class YamlStates(enum.Enum):
+    DEFAULT = "default"
 
 
 def fetch_commit_yaml(commit: Commit, user: Owner) -> Optional[Dict]:
@@ -33,9 +39,16 @@ def fetch_commit_yaml(commit: Commit, user: Owner) -> Optional[Dict]:
         return None
 
 
+@lru_cache()
+# TODO: make this use the Redis cache logic in 'shared' once it's there
 def final_commit_yaml(commit: Commit, user: Owner) -> UserYaml:
     return UserYaml.get_final_yaml(
         owner_yaml=commit.repository.author.yaml,
         repo_yaml=commit.repository.yaml,
         commit_yaml=fetch_commit_yaml(commit, user),
     )
+
+
+def get_yaml_state(yaml: UserYaml) -> YamlStates:
+    if yaml == get_config("site", default={}):
+        return YamlStates.DEFAULT

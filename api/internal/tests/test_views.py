@@ -297,7 +297,7 @@ class RepoPullList(InternalAPITest):
                         "complexity": 0.0,
                         "complexity_total": 0.0,
                         "complexity_ratio": 0,
-                        "diff": [1, 2, 1, 1, 0, "50.00000", 0, 0, 0, 0, 0, 0, 0],
+                        "diff": 0,
                     },
                     "head_totals": {
                         "files": 3,
@@ -312,7 +312,7 @@ class RepoPullList(InternalAPITest):
                         "complexity": 0.0,
                         "complexity_total": 0.0,
                         "complexity_ratio": 0,
-                        "diff": [1, 2, 1, 1, 0, "50.00000", 0, 0, 0, 0, 0, 0, 0],
+                        "diff": 0,
                     },
                     # This whole TZ settings is messing things up a bit
                     "updatestamp": pull.updatestamp.replace(tzinfo=None).isoformat()

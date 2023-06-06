@@ -148,6 +148,7 @@ class RepoCommitListTestCase(TestCase):
                         "diff": 0,
                     },
                     "state": "complete",
+                    "parent": self.commit.parent_commit_id,
                 }
             ],
         }
@@ -204,6 +205,7 @@ class RepoCommitListTestCase(TestCase):
                         "diff": 0,
                     },
                     "state": "complete",
+                    "parent": self.commit.parent_commit_id,
                 }
             ],
         }
@@ -313,6 +315,7 @@ class RepoCommitDetailTestCase(TestCase):
                 "diff": 0,
             },
             "state": "complete",
+            "parent": self.commit.parent_commit_id,
             "report": {
                 "files": [
                     {

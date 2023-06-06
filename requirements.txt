@@ -11,10 +11,12 @@ amqp==5.1.0
 analytics-python==1.3.0b1
     # via shared
 anyio==3.6.1
-    # via httpcore
+    # via
+    #   httpcore
+    #   starlette
 appdirs==1.4.4
     # via virtualenv
-ariadne==0.13.0
+ariadne==0.19.1
     # via
     #   -r requirements.in
     #   ariadne-django
@@ -147,7 +149,7 @@ google-resumable-media==1.2.0
     # via google-cloud-storage
 googleapis-common-protos==1.52.0
     # via google-api-core
-graphql-core==3.1.3
+graphql-core==3.2.3
     # via ariadne
 gunicorn==20.1.0
     # via -r requirements.in
@@ -346,7 +348,7 @@ sortedcontainers==2.4.0
     #   intervaltree
 sqlparse==0.4.2
     # via django
-starlette==0.14.2
+starlette==0.27.0
     # via ariadne
 statsd==3.3.0
     # via shared
@@ -363,8 +365,10 @@ toml==0.10.2
     #   pre-commit
     #   pytest
     #   pytest-cov
-typing-extensions==3.7.4.3
-    # via ariadne
+typing-extensions==4.6.2
+    # via
+    #   ariadne
+    #   starlette
 uritemplate==4.1.1
     # via drf-spectacular
 urllib3==1.26.13
