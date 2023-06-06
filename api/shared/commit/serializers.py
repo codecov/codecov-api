@@ -16,7 +16,9 @@ class CommitTotalsSerializer(serializers.Serializer):
     complexity = serializers.FloatField(source="C")
     complexity_total = serializers.FloatField(source="N")
     complexity_ratio = serializers.SerializerMethodField()
-    diff = serializers.SerializerMethodField()
+    diff = serializers.SerializerMethodField(
+        label="Deprecated: this will always return 0.  Please use comparison endpoint for diff totals instead."
+    )
 
     def get_coverage(self, totals) -> float:
         if totals.get("c") is None:
@@ -31,9 +33,10 @@ class CommitTotalsSerializer(serializers.Serializer):
             else 0
         )
 
-    def get_diff(self, totals) -> list:
-        if "diff" in totals:
-            return totals["diff"]
+    def get_diff(self, totals) -> int:
+        # deprecated
+        # 0 is used as the default elsewhere in the system so we'll use that here as well (instead of null)
+        return 0
 
 
 class ReportTotalsSerializer(serializers.Serializer):
