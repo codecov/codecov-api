@@ -39,7 +39,7 @@ def fetch_commit_yaml(commit: Commit, user: Owner) -> Optional[Dict]:
         return None
 
 
-@lru_cache(maxsize=None)
+@lru_cache()
 def final_commit_yaml(commit: Commit, user: Owner) -> UserYaml:
     return UserYaml.get_final_yaml(
         owner_yaml=commit.repository.author.yaml,
