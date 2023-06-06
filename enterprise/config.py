@@ -1,4 +1,3 @@
-import os
 from enum import Enum
 
 from shared.config import get_config as shared_get_config
