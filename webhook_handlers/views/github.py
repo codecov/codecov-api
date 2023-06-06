@@ -116,7 +116,7 @@ class GithubWebhookHandler(APIView):
                 raise NotFound("Repository does not exist")
         else:
             try:
-                log.info(
+                log.debug(
                     "Found repository owner, fetching repo with ownerid, service_id",
                     extra=dict(repo_service_id=repo_service_id, repo_slug=repo_slug),
                 )
@@ -205,14 +205,14 @@ class GithubWebhookHandler(APIView):
         ref_type = "branch" if request.data.get("ref")[5:10] == "heads" else "tag"
         repo = self._get_repo(request)
         if ref_type != "branch":
-            log.info(
+            log.debug(
                 "Ref is tag, not branch, ignoring push event",
                 extra=dict(repoid=repo.repoid, github_webhook_event=self.event),
             )
             return Response(f"Unsupported ref type: {ref_type}")
 
         if not repo.active:
-            log.info(
+            log.debug(
                 "Repository is not active, ignoring push event",
                 extra=dict(repoid=repo.repoid, github_webhook_event=self.event),
             )
@@ -222,7 +222,7 @@ class GithubWebhookHandler(APIView):
         commits = self.request.data.get("commits", [])
 
         if not commits:
-            log.info(
+            log.debug(
                 f"No commits in webhook payload for branch {branch_name}",
                 extra=dict(repoid=repo.repoid, github_webhook_event=self.event),
             )
@@ -548,7 +548,7 @@ class GithubWebhookHandler(APIView):
 
     def post(self, request, *args, **kwargs):
         self.event = self.request.META.get(GitHubHTTPHeaders.EVENT)
-        log.info(
+        log.debug(
             "GitHub Webhook Handler invoked",
             extra=dict(
                 github_webhook_event=self.event,
