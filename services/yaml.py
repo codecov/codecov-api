@@ -40,6 +40,7 @@ def fetch_commit_yaml(commit: Commit, user: Owner) -> Optional[Dict]:
 
 
 @lru_cache()
+# TODO: make this use the Redis cache logic in 'shared' once it's there
 def final_commit_yaml(commit: Commit, user: Owner) -> UserYaml:
     return UserYaml.get_final_yaml(
         owner_yaml=commit.repository.author.yaml,
