@@ -21,11 +21,12 @@ from graphql_api.helpers.connection import (
 from graphql_api.types.comparison.comparison import MissingBaseCommit, MissingHeadReport
 from graphql_api.types.enums import OrderingDirection, PathContentDisplayType
 from graphql_api.types.errors import MissingCoverage, MissingHeadReport, UnknownPath
-from services.comparison import Comparison, ComparisonReport, MissingComparisonReport
+from services.comparison import Comparison, ComparisonReport
 from services.components import Component
 from services.path import ReportPaths
 from services.profiling import CriticalFile, ProfilingSummary
 from services.report import ReadOnlyReport
+from services.yaml import YamlStates, get_yaml_state
 
 commit_bindable = ObjectType("Commit")
 
@@ -70,10 +71,18 @@ def resolve_parent(commit, info):
 
 
 @commit_bindable.field("yaml")
-async def resolve_yaml(commit, info):
+async def resolve_yaml(commit: Commit, info) -> dict:
     command = info.context["executor"].get_command("commit")
     final_yaml = await command.get_final_yaml(commit)
     return yaml.dump(final_yaml)
+
+
+@commit_bindable.field("yamlState")
+@convert_kwargs_to_snake_case
+async def resolve_yaml_state(commit: Commit, info) -> YamlStates:
+    command = info.context["executor"].get_command("commit")
+    final_yaml = await command.get_final_yaml(commit)
+    return get_yaml_state(yaml=final_yaml)
 
 
 @commit_bindable.field("uploads")
