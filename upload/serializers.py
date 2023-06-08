@@ -15,7 +15,7 @@ class FlagListField(serializers.ListField):
 
 class UploadSerializer(serializers.ModelSerializer):
     flags = FlagListField(required=False)
-    ci_url = serializers.CharField(source="build_url", required=False)
+    ci_url = serializers.CharField(source="build_url", required=False, allow_null=True)
 
     class Meta:
         read_only_fields = (
@@ -43,7 +43,9 @@ class UploadSerializer(serializers.ModelSerializer):
         return archive_service.create_presigned_put(obj.storage_path)
 
     def create(self, validated_data):
-        flag_names = validated_data.pop("flags") if validated_data.get("flags") else []
+        flag_names = (
+            validated_data.pop("flags") if "flags" in validated_data.keys() else []
+        )
         upload = ReportSession.objects.create(**validated_data)
         flags = []
         if upload:

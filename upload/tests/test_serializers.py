@@ -104,6 +104,19 @@ def test_upload_serializer_contains_expected_fields_with_flags(
     assert serializer.data == expected_data
 
 
+def test_upload_serializer_null_build_url_empty_flags(transactional_db, mocker):
+    data = {
+        "ci_url": None,
+        "flags": [],
+        "env": "env",
+        "name": "name",
+        "job_code": "job_code",
+    }
+
+    serializer = UploadSerializer(data=data)
+    assert serializer.is_valid()
+
+
 def test_commit_serializer_contains_expected_fields(transactional_db, mocker):
     commit = CommitFactory.create()
     serializer = CommitSerializer(commit)
