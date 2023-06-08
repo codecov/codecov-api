@@ -98,4 +98,4 @@ type BranchEdge {
   node: Branch!
 }
 
-union RepositoryResult = Repository | NotFoundError | NotActivatedError
+union RepositoryResult = Repository | NotFoundError | OwnerNotActivatedError

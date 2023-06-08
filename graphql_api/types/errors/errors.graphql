@@ -30,6 +30,6 @@ type ProviderError implements ResolverError {
   message: String!
 }
 
-type NotActivatedError implements ResolverError {
+type OwnerNotActivatedError implements ResolverError {
   message: String!
 }

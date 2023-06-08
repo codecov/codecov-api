@@ -391,7 +391,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             variables={"name": repo.name},
         )
         assert data["me"]["owner"]["repository"] == {
-            "__typename": "NotActivatedError",
+            "__typename": "OwnerNotActivatedError",
             "message": "You must be activated in the org",
         }
 
@@ -410,7 +410,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             variables={"name": repo.name},
         )
         assert data["me"]["owner"]["repository"] == {
-            "__typename": "NotActivatedError",
+            "__typename": "OwnerNotActivatedError",
             "message": "You must be activated in the org",
         }
 

@@ -19,7 +19,7 @@ from graphql_api.helpers.connection import (
 )
 from graphql_api.helpers.lookahead import lookahead
 from graphql_api.types.enums import OrderingDirection
-from graphql_api.types.errors.errors import NotActivatedError, NotFoundError
+from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
 from services.profiling import CriticalFile, ProfilingSummary
 from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Dataset, Interval, MeasurementName, MeasurementSummary
@@ -319,7 +319,7 @@ repository_result_bindable = UnionType("RepositoryResult")
 def resolve_repository_result_type(obj, *_):
     if isinstance(obj, Repository):
         return "Repository"
-    elif isinstance(obj, NotActivatedError):
-        return "NotActivatedError"
+    elif isinstance(obj, OwnerNotActivatedError):
+        return "OwnerNotActivatedError"
     elif isinstance(obj, NotFoundError):
         return "NotFoundError"

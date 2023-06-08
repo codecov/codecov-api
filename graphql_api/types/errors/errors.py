@@ -32,7 +32,7 @@ class ProviderError:
     message = "Error fetching data from the provider"
 
 
-class NotActivatedError:
+class OwnerNotActivatedError:
     message = "You must be activated in the org"
 
 

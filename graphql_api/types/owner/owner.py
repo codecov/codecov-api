@@ -18,7 +18,7 @@ from graphql_api.helpers.connection import (
     queryset_to_connection,
 )
 from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
-from graphql_api.types.errors.errors import NotActivatedError, NotFoundError
+from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
 from services.profiling import ProfilingSummary
 from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Interval, MeasurementSummary
@@ -77,7 +77,7 @@ async def resolve_repository(owner, info, name):
         await sync_to_async(activation.try_auto_activate)(owner, user)
         is_activated = await sync_to_async(activation.is_activated)(owner, user)
         if not is_activated:
-            return NotActivatedError()
+            return OwnerNotActivatedError()
 
     info.context["profiling_summary"] = ProfilingSummary(repository)
 
