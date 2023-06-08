@@ -18,6 +18,7 @@ from graphql_api.helpers.connection import (
     queryset_to_connection,
 )
 from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
+from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
 from services.profiling import ProfilingSummary
 from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Interval, MeasurementSummary
@@ -68,12 +69,17 @@ async def resolve_repository(owner, info, name):
     command = info.context["executor"].get_command("repository")
     repository: Optional[Repository] = await command.fetch_repository(owner, name)
 
-    if repository is not None:
-        user = info.context["request"].user
-        if repository.private:
-            await sync_to_async(activation.try_auto_activate)(owner, user)
+    if repository is None:
+        return NotFoundError()
 
-        info.context["profiling_summary"] = ProfilingSummary(repository)
+    user = info.context["request"].user
+    if repository.private:
+        await sync_to_async(activation.try_auto_activate)(owner, user)
+        is_activated = await sync_to_async(activation.is_activated)(owner, user)
+        if not is_activated:
+            return OwnerNotActivatedError()
+
+    info.context["profiling_summary"] = ProfilingSummary(repository)
 
     return repository
 

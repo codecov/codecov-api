@@ -29,29 +29,33 @@ from .helper import GraphQLTestHelper, paginate_connection
 
 query_commit = """
 query FetchCommit($org: String!, $repo: String!, $commit: String!) {
-  owner(username: $org) {
-    repository(name: $repo) {
-      commit(id: $commit) {
-        %s
-      }
-    }
-  }
-}
-"""
-
-query_commits = """
-query FetchCommits($org: String!, $repo: String!) {
-  owner(username: $org) {
-    repository(name: $repo) {
-        commits {
-            edges {
-                node {
+    owner(username: $org) {
+        repository(name: $repo) {
+            ... on Repository {
+                commit(id: $commit) {
                     %s
                 }
             }
         }
     }
-  }
+}
+"""
+
+query_commits = """
+query FetchCommits($org: String!, $repo: String!) {
+    owner(username: $org) {
+        repository(name: $repo) {
+            ... on Repository {
+                commits {
+                    edges {
+                        node {
+                            %s
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 """
 

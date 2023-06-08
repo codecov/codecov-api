@@ -18,16 +18,18 @@ class TestMeasurement(TransactionTestCase, GraphQLTestHelper):
             query Measurements($branch: String) {{
                 owner(username: "{self.org.username}") {{
                     repository(name: "{self.repo.name}") {{
-                        measurements(
-                            interval: INTERVAL_1_DAY
-                            after: "2022-01-01"
-                            before: "2022-01-03"
-                            branch: $branch
-                        ) {{
-                            timestamp
-                            avg
-                            min
-                            max
+                        ... on Repository {{
+                            measurements(
+                                interval: INTERVAL_1_DAY
+                                after: "2022-01-01"
+                                before: "2022-01-03"
+                                branch: $branch
+                            ) {{
+                                timestamp
+                                avg
+                                min
+                                max
+                            }}
                         }}
                     }}
                 }}
