@@ -243,6 +243,11 @@ def resolve_flags(
     return connection
 
 
+@repository_bindable.field("active")
+def resolve_active(repository: Repository, info) -> bool:
+    return repository.active or False
+
+
 @repository_bindable.field("flagsCount")
 @sync_to_async
 def resolve_flags_count(repository: Repository, info) -> int:
