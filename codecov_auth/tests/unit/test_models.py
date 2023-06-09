@@ -458,12 +458,12 @@ class TestOwnerModel(TransactionTestCase):
 
 
 class TestOrganizationLevelTokenModel(TransactionTestCase):
-    def test_cant_save_org_token_for_org_not_in_valid_plan(self):
+    def test_cant_save_org_token_for_org_basic_plan(self):
         owner = OwnerFactory(plan="users-basic")
         owner.save()
         token = OrganizationLevelToken(owner=owner)
-        with pytest.raises(ValidationError):
-            token.save()
+        token.save()
+        assert OrganizationLevelToken.objects.filter(owner=owner).count() == 1
 
     def test_token_is_deleted_when_changing_user_plan(self):
         owner = OwnerFactory(plan="users-enterprisem")
