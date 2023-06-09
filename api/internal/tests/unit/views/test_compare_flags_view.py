@@ -30,7 +30,7 @@ class TestCompareFlagsView(InternalAPITest):
         )
         self.commit = CommitWithReportFactory.create(
             message="test_report_serializer",
-            commitid="68946ef98daec68c7798459150982fc799c87d85",
+            commitid="68946ef98daec68c7798459150982fc799c87d8",
             parent_commit_id=self.parent_commit.commitid,
             repository=self.repo,
         )
