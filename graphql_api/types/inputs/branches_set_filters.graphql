@@ -1,3 +1,4 @@
 input BranchesSetFilters {
   searchValue: String
+  mergedBranches: Boolean
 }
