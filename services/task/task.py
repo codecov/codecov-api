@@ -45,6 +45,7 @@ class TaskService(object):
             "time_limit": extra_config.get("hard_timelimit", None),
             "soft_time_limit": extra_config.get("soft_timelimit", None),
         }
+        headers = dict(created_timestamp=datetime.now().isoformat())
         set_tag("celery.queue", queue_name)
         return signature(
             name,
@@ -52,6 +53,7 @@ class TaskService(object):
             kwargs=kwargs,
             app=celery_app,
             queue=queue_name,
+            headers=headers,
             **celery_compatible_config,
         )
 
