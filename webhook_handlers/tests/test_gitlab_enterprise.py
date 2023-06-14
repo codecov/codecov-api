@@ -15,7 +15,7 @@ from webhook_handlers.constants import (
     WebhookHandlerErrorMessages,
 )
 
-webhook_secret = "46204fb3-374e-4cfc-8cae-d7ca43371096"
+webhook_secret = "test-46204fb3-374e-4cfc-8cae-d7ca43371096"
 
 
 def get_config_mock(*args, **kwargs):
