@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 from celery import Task
 from django.conf import settings
+from freezegun import freeze_time
 from shared import celery_config
 
 from core.tests.factories import RepositoryFactory
@@ -22,6 +23,7 @@ def test_refresh_task(mocker):
     mock_route_task.assert_called()
 
 
+@freeze_time("2023-06-13T10:01:01.000123")
 def test_compute_comparison_task(mocker):
     signature_mock = mocker.patch("services.task.task.signature")
     mock_route_task = mocker.patch(
@@ -41,6 +43,7 @@ def test_compute_comparison_task(mocker):
         queue="my_queue",
         soft_time_limit=None,
         time_limit=None,
+        headers=dict(created_timestamp="2023-06-13T10:01:01.000123"),
     )
 
 
@@ -83,6 +86,7 @@ def test_compute_comparisons_task(mocker):
     not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
 )
 @pytest.mark.django_db(databases={"default", "timeseries"})
+@freeze_time("2023-06-13T10:01:01.000123")
 def test_backfill_repo(mocker):
     signature_mock = mocker.patch("services.task.task.signature")
     mock_route_task = mocker.patch(
@@ -124,6 +128,7 @@ def test_backfill_repo(mocker):
         queue="celery",
         soft_time_limit=None,
         time_limit=None,
+        headers=dict(created_timestamp="2023-06-13T10:01:01.000123"),
     )
     signature_mock.assert_any_call(
         celery_config.timeseries_backfill_task_name,
@@ -138,6 +143,7 @@ def test_backfill_repo(mocker):
         queue="celery",
         soft_time_limit=None,
         time_limit=None,
+        headers=dict(created_timestamp="2023-06-13T10:01:01.000123"),
     )
     signature_mock.assert_any_call(
         celery_config.timeseries_backfill_task_name,
@@ -152,6 +158,7 @@ def test_backfill_repo(mocker):
         queue="celery",
         soft_time_limit=None,
         time_limit=None,
+        headers=dict(created_timestamp="2023-06-13T10:01:01.000123"),
     )
 
     apply_async_mock.assert_called_once_with()
@@ -161,6 +168,7 @@ def test_backfill_repo(mocker):
     not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
 )
 @pytest.mark.django_db(databases={"default", "timeseries"})
+@freeze_time("2023-06-13T10:01:01.000123")
 def test_backfill_dataset(mocker):
     signature_mock = mocker.patch("services.task.task.signature")
     mock_route_task = mocker.patch(
@@ -188,10 +196,12 @@ def test_backfill_dataset(mocker):
         queue="celery",
         soft_time_limit=None,
         time_limit=None,
+        headers=dict(created_timestamp="2023-06-13T10:01:01.000123"),
     )
     signature.apply_async.assert_called_once_with()
 
 
+@freeze_time("2023-06-13T10:01:01.000123")
 def test_timeseries_delete(mocker):
     signature_mock = mocker.patch("services.task.task.signature")
     mock_route_task = mocker.patch(
@@ -211,9 +221,11 @@ def test_timeseries_delete(mocker):
         queue="celery",
         soft_time_limit=None,
         time_limit=None,
+        headers=dict(created_timestamp="2023-06-13T10:01:01.000123"),
     )
 
 
+@freeze_time("2023-06-13T10:01:01.000123")
 def test_flush_repo(mocker):
     signature_mock = mocker.patch("services.task.task.signature")
     mock_route_task = mocker.patch(
@@ -233,9 +245,11 @@ def test_flush_repo(mocker):
         queue="celery",
         soft_time_limit=None,
         time_limit=None,
+        headers=dict(created_timestamp="2023-06-13T10:01:01.000123"),
     )
 
 
+@freeze_time("2023-06-13T10:01:01.000123")
 def test_update_commit_task(mocker):
     signature_mock = mocker.patch("services.task.task.signature")
     mock_route_task = mocker.patch(
@@ -259,10 +273,12 @@ def test_update_commit_task(mocker):
         queue="celery",
         soft_time_limit=300,
         time_limit=400,
+        headers=dict(created_timestamp="2023-06-13T10:01:01.000123"),
     )
 
 
-def test_update_commit_task(mocker):
+@freeze_time("2023-06-13T10:01:01.000123")
+def test_make_http_request_task(mocker):
     signature_mock = mocker.patch("services.task.task.signature")
     mock_route_task = mocker.patch(
         "services.task.task.route_task", return_value={"queue": "celery"}
@@ -299,4 +315,5 @@ def test_update_commit_task(mocker):
         queue="celery",
         soft_time_limit=None,
         time_limit=None,
+        headers=dict(created_timestamp="2023-06-13T10:01:01.000123"),
     )

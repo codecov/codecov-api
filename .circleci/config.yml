@@ -113,6 +113,39 @@ jobs:
         name: Create report
         command: |
           codecovcli create-report
+  staticanalysis:
+    executor: codecov-api
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - run:
+          name: Install CLI
+          command: |
+            apk add git build-base
+            pip install codecov-cli
+      - run:
+          name: Run Static Analysis
+          command: |
+            codecovcli static-analysis --token=$STATIC_TOKEN
+  iterativetesting:
+    executor: codecov-api
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - run:
+          name: Install CLI
+          command: |
+            apk add git build-base
+            pip install codecov-cli
+      - run:
+          name: Run Predictor Analysis
+          command: |
+            echo $(git merge-base HEAD^ master)
+            codecovcli label-analysis --token=$STATIC_TOKEN --base-sha=$(git merge-base HEAD^ master)
+      - run:
+          name: Upload onlysomelabels
+          command: |
+            codecovcli --codecov-yml-path=codecov_cli.yml do-upload --plugin pycoverage --plugin compress-pycoverage --flag smart-labels --fail-on-error
   test:
     executor: codecov-api
     working_directory: ~/repo
@@ -145,11 +178,16 @@ jobs:
         command: |
           make check-for-migration-conflicts
     - run:
+          name: Install CLI
+          command: |
+            apk add git build-base
+            pip install codecov-cli
+    - run:
         name: upload using codecovcli 
         command: |
-          apk add git build-base
-          pip install codecov-cli
-          codecovcli  do-upload --flag unit-latest-uploader --flag unit -t ${CODECOV_ORG_TOKEN}
+          codecovcli  do-upload --flag unit-latest-uploader --flag unit -t ${CODECOV_ORG_TOKEN} \
+            --coverage-files-search-exclude-folder=graphql_api/types/** \
+            --coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
     - run:
         name: codecov-staging
         command: |
@@ -303,10 +341,25 @@ workflows:
           filters:
             tags:
               only: /.*/
+      - staticanalysis:
+          context: "circleci google deploy context"
+          requires:
+            - codecovstartup
+          filters:
+            tags:
+              only: /.*/
+      - iterativetesting:
+          context: "circleci google deploy context"
+          requires:
+            - staticanalysis
+          filters:
+            tags:
+              only: /.*/
       - test:
           context: "circleci google deploy context"
           requires:
             - build
+            - codecovstartup
           filters:
             tags:
               only: /.*/
