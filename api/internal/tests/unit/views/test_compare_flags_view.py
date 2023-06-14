@@ -24,13 +24,14 @@ class TestCompareFlagsView(InternalAPITest):
         )
 
     def setUp(self):
+        test = "12"
         self.repo = RepositoryFactory.create(author__username="ThiagoCodecov")
         self.parent_commit = CommitWithReportFactory.create(
             commitid="00c7b4b49778b3c79427f9c4c13a8612a376ff19", repository=self.repo
         )
         self.commit = CommitWithReportFactory.create(
             message="test_report_serializer",
-            commitid="68946ef98daec68c7798459150982fc799c87d8",
+            commitid="68946ef98daec68c7798459150982fc799c87d85",
             parent_commit_id=self.parent_commit.commitid,
             repository=self.repo,
         )
