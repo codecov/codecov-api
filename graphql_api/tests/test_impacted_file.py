@@ -22,39 +22,41 @@ query ImpactedFiles(
     $repo: String!
     $commit: String!
 ) {
-  owner(username: $org) {
-    repository(name: $repo) {
-      commit(id: $commit) {
-        compareWithParent {
-          ... on Comparison {
-            impactedFilesCount
-            indirectChangedFilesCount
-            impactedFiles {
-                fileName
-                headName
-                baseName
-                isNewFile
-                isRenamedFile
-                isDeletedFile
-                isCriticalFile
-                baseCoverage {
-                percentCovered
+    owner(username: $org) {
+        repository(name: $repo) {
+            ... on Repository {
+                commit(id: $commit) {
+                    compareWithParent {
+                        ... on Comparison {
+                            impactedFilesCount
+                            indirectChangedFilesCount
+                            impactedFiles {
+                                fileName
+                                headName
+                                baseName
+                                isNewFile
+                                isRenamedFile
+                                isDeletedFile
+                                isCriticalFile
+                                baseCoverage {
+                                    percentCovered
+                                }
+                                headCoverage {
+                                    percentCovered
+                                }
+                                patchCoverage {
+                                    percentCovered
+                                }
+                                changeCoverage
+                                    missesCount
+                                }
+                            }
+                        }
+                    }
                 }
-                headCoverage {
-                percentCovered
-                }
-                patchCoverage {
-                percentCovered
-                }
-                changeCoverage
-                missesCount
             }
-          }
         }
-      }
     }
-  }
-}
 """
 
 query_direct_changed_files_count = """
@@ -63,17 +65,19 @@ query ImpactedFiles(
     $repo: String!
     $commit: String!
 ) {
-  owner(username: $org) {
-    repository(name: $repo) {
-      commit(id: $commit) {
-        compareWithParent {
-          ... on Comparison {
-            directChangedFilesCount
-          }
+    owner(username: $org) {
+        repository(name: $repo) {
+            ... on Repository {
+                commit(id: $commit) {
+                    compareWithParent {
+                        ... on Comparison {
+                            directChangedFilesCount
+                        }
+                    }
+                }
+            }
         }
-      }
     }
-  }
 }
 """
 
@@ -85,41 +89,43 @@ query ImpactedFile(
     $path: String!
     $filters: SegmentsFilters
 ) {
-  owner(username: $org) {
-    repository(name: $repo) {
-      pull(id: $pull) {
-        compareWithBase {
-          ... on Comparison {
-            state
-            impactedFile(path: $path) {
-              headName
-              baseName
-              hashedPath
-              baseCoverage {
-                percentCovered
-              }
-              headCoverage {
-                percentCovered
-              }
-              patchCoverage {
-                percentCovered
-              }
-              segments(filters: $filters) {
-                ... on SegmentComparisons {
-                  results {
-                    hasUnintendedChanges
-                  }
+    owner(username: $org) {
+        repository(name: $repo) {
+            ... on Repository {
+                pull(id: $pull) {
+                    compareWithBase {
+                        ... on Comparison {
+                            state
+                            impactedFile(path: $path) {
+                                headName
+                                baseName
+                                hashedPath
+                                baseCoverage {
+                                    percentCovered
+                                }
+                                headCoverage {
+                                    percentCovered
+                                }
+                                patchCoverage {
+                                    percentCovered
+                                }
+                                segments(filters: $filters) {
+                                    ... on SegmentComparisons {
+                                        results {
+                                            hasUnintendedChanges
+                                        }
+                                    }
+                                    ... on ResolverError {
+                                        message
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
-                ... on ResolverError {
-                  message
-                }
-              }
             }
-          }
         }
-      }
     }
-  }
 }
 """
 mock_data_from_archive = """

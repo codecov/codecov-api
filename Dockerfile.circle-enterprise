@@ -20,6 +20,7 @@ WORKDIR         /app
 
 
 RUN pip install pyinstaller==4.7
+RUN pip uninstall -y typing
 # install cython
 RUN pip install cython==3.0a9
 RUN pip install tinyaes

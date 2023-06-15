@@ -19,8 +19,10 @@ base_query = """{
     me {
         owner {
             repository(name: "%s") {
-                pull(id: %s) {
-                    %s
+                ... on Repository {
+                    pull(id: %s) {
+                        %s
+                    }
                 }
             }
         }

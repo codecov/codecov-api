@@ -30,3 +30,11 @@ class UnknownPath:
 
 class ProviderError:
     message = "Error fetching data from the provider"
+
+
+class OwnerNotActivatedError:
+    message = "You must be activated in the org"
+
+
+class NotFoundError:
+    message = "Not found"

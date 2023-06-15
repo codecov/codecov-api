@@ -12,7 +12,7 @@ type Owner {
     last: Int
     before: String
   ): RepositoryConnection!
-  repository(name: String!): Repository
+  repository(name: String!): RepositoryResult!
   repositoryDeprecated(name: String!): Repository
   numberOfUploads: Int
   isAdmin: Boolean!

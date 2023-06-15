@@ -20,7 +20,13 @@ query Repository($name: String!){
     me {
         owner {
             repository(name: $name) {
-                %s
+                __typename
+                ... on Repository {
+                    %s
+                }
+                ... on ResolverError {
+                    message
+                }
             }
         }
     }
@@ -98,6 +104,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         ).key
         graphToken = repo.image_token
         assert self.fetch_repository(repo.name) == {
+            "__typename": "Repository",
             "name": "a",
             "active": True,
             "private": True,
@@ -147,6 +154,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         ).key
         graphToken = repo.image_token
         assert self.fetch_repository(repo.name) == {
+            "__typename": "Repository",
             "name": "b",
             "active": True,
             "latestCommitAt": None,
@@ -365,3 +373,54 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             self.user,
             self.user,
         )
+
+    @patch("services.activation.is_activated")
+    @patch("services.activation.try_auto_activate")
+    def test_repository_not_activated(self, try_auto_activate, is_activated):
+        repo = RepositoryFactory(
+            author=self.user,
+            active=True,
+            private=True,
+        )
+
+        is_activated.return_value = False
+
+        data = self.gql_request(
+            query_repository % "name",
+            user=self.user,
+            variables={"name": repo.name},
+        )
+        assert data["me"]["owner"]["repository"] == {
+            "__typename": "OwnerNotActivatedError",
+            "message": "You must be activated in the org",
+        }
+
+    @override_settings(IS_ENTERPRISE=True)
+    @patch("services.activation.try_auto_activate")
+    def test_repository_not_activated_self_hosted(self, try_auto_activate):
+        repo = RepositoryFactory(
+            author=self.user,
+            active=True,
+            private=True,
+        )
+
+        data = self.gql_request(
+            query_repository % "name",
+            user=self.user,
+            variables={"name": repo.name},
+        )
+        assert data["me"]["owner"]["repository"] == {
+            "__typename": "OwnerNotActivatedError",
+            "message": "You must be activated in the org",
+        }
+
+    def test_repository_not_found(self):
+        data = self.gql_request(
+            query_repository % "name",
+            user=self.user,
+            variables={"name": "nonexistent-repo-name"},
+        )
+        assert data["me"]["owner"]["repository"] == {
+            "__typename": "NotFoundError",
+            "message": "Not found",
+        }

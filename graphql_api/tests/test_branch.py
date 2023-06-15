@@ -11,55 +11,59 @@ from services.profiling import CriticalFile
 from .helper import GraphQLTestHelper
 
 query_branch = """
-query FetchBranch($org: String!, $repo: String!, $branch: String!) {
-  owner(username: $org) {
-    repository(name: $repo) {
-      branch(name: $branch) {
-        %s
-      }
+    query FetchBranch($org: String!, $repo: String!, $branch: String!) {
+        owner(username: $org) {
+            repository(name: $repo) {
+                ... on Repository {
+                    branch(name: $branch) {
+                        %s
+                    }
+                }
+            }
+        }
     }
-  }
-}
 """
 
 query_files = """
-  query FetchFiles($org: String!, $repo: String!, $branch: String!, $path: String!, $filters: PathContentsFilters!) {
-    owner(username: $org) {
-      repository(name: $repo) {
-        branch(name: $branch) {
-          head {
-            pathContents (path: $path, filters: $filters) {
-                __typename
-                ... on PathContents {
-                        results {
-                        __typename
-                        name
-                        path
-                        hits
-                        misses
-                        partials
-                        lines
-                        percentCovered
-                        ... on PathContentFile {
-                            isCriticalFile
-                        }  
+    query FetchFiles($org: String!, $repo: String!, $branch: String!, $path: String!, $filters: PathContentsFilters!) {
+        owner(username: $org) {
+            repository(name: $repo) {
+                ... on Repository {
+                    branch(name: $branch) {
+                        head {
+                            pathContents (path: $path, filters: $filters) {
+                                __typename
+                                ... on PathContents {
+                                    results {
+                                        __typename
+                                        name
+                                        path
+                                        hits
+                                        misses
+                                        partials
+                                        lines
+                                        percentCovered
+                                        ... on PathContentFile {
+                                            isCriticalFile
+                                        }  
+                                    }
+                                }
+                                ... on MissingHeadReport {
+                                    message
+                                }
+                                ... on MissingCoverage {
+                                    message
+                                }
+                                ... on UnknownPath {
+                                    message
+                                }
+                            }
+                        }
                     }
                 }
-                ... on MissingHeadReport {
-                    message
-                }
-                ... on MissingCoverage {
-                    message
-                }
-                ... on UnknownPath {
-                    message
-                }
             }
-          }
         }
-      }
     }
-  }
 """
 
 
@@ -145,15 +149,17 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
     def test_fetch_branches(self):
         query_branches = """{
             owner(username: "%s") {
-              repository(name: "%s") {
-                branches{
-                  edges{
-                    node{
-                      name
+                repository(name: "%s") {
+                    ... on Repository {
+                        branches {
+                            edges {
+                                node {
+                                    name
+                                }
+                            }
+                        }
                     }
-                  }
                 }
-              }
             }
         }
         """
@@ -173,10 +179,12 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
         query_branches = """{
             owner(username: "%s") {
                 repository(name: "%s") {
-                    branches (filters: {searchValue: "%s"}){
-                        edges{
-                            node{
-                                name
+                    ... on Repository {
+                        branches (filters: {searchValue: "%s"}) {
+                            edges {
+                                node {
+                                    name
+                                }
                             }
                         }
                     }

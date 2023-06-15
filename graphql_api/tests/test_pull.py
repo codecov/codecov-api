@@ -15,12 +15,14 @@ query_list_pull_request = """{
     me {
         owner {
             repository(name: "test-repo-for-pull") {
-                name
-                pulls {
-                    edges {
-                        node {
-                            title
-                            pullId
+                ... on Repository {
+                    name
+                    pulls {
+                        edges {
+                            node {
+                                title
+                                pullId
+                            }
                         }
                     }
                 }
@@ -62,9 +64,11 @@ query_pull_request_detail = """{
     me {
         owner {
             repository(name: "test-repo-for-pull") {
-                name
-                pull(id: %s) {
-                    %s
+                ... on Repository {
+                    name
+                    pull(id: %s) {
+                        %s
+                    }
                 }
             }
         }
