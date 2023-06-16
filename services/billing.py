@@ -423,11 +423,6 @@ class StripeService(AbstractPaymentService):
 
         session = None
 
-        # 1) User with email, no stripe id
-        # 2) User with no email, no stripe id
-        # 3) User with stripe id, no email
-        # 4) User with both email and id
-
         if not owner.stripe_customer_id:
             # If we don't have an email on our DB, the user will have to manually input an email in the checkout form. This field otherwise gets automatically set the customer_email field.
             session = stripe.checkout.Session.create(
