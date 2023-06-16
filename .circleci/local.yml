@@ -17,7 +17,7 @@ k8s_auth: &k8s_auth
 jobs:
   build:
     docker:
-    - image: gcr.io/genuine-polymer-165712/codecov-deploy:latest
+    - image: $CODECOV_DEPLOY_IMAGE_LATEST
       user: root
       auth:
         username: _json_key
@@ -37,7 +37,7 @@ jobs:
           make -f Makefile.circle push
   test:
     docker:
-    - image: gcr.io/genuine-polymer-165712/codecov-api:latest
+    - image: $CODECOV_API_IMAGE_LATEST
       user: root
       auth:
         username: _json_key
@@ -58,7 +58,7 @@ jobs:
           codecov
   deploy:
     docker:
-    - image: gcr.io/genuine-polymer-165712/codecov-deploy:latest
+    - image: $CODECOV_DEPLOY_IMAGE_LATEST
       user: root
       auth:
         username: _json_key
