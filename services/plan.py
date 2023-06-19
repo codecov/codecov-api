@@ -41,10 +41,7 @@ class PlanService(object):
         Returns:
             No value
         """
-        if (
-            self.current_org.trial_start_date is None
-            and self.current_org.trial_end_date is None
-        ):
+        if self.current_org.trial_start_date is None:
             return TrialStatusChoices.NOT_STARTED
         if timezone.now() > self.current_org.trial_end_date:
             return TrialStatusChoices.EXPIRED
