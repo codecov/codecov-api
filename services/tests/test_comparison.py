@@ -244,6 +244,28 @@ class FileComparisonTraverseManagerTests(TestCase):
         manager.apply([visitor])
         assert visitor.line_numbers == [(1, 1), (2, 2), (3, None), (None, 3)]
 
+    def test_can_traverse_diff_with_difflike_lines(self):
+        src = [
+            "- line 1",  # not part of diff
+            "- line 2",  # not part of diff
+            "line 3",
+        ]
+
+        # this is the diff
+        segments = [
+            {
+                "header": ["3", "4", "3", "4"],
+                "lines": ["-line 3", "+line 3"],
+            }
+        ]
+        manager = FileComparisonTraverseManager(
+            head_file_eof=3, base_file_eof=3, segments=segments, src=src
+        )
+
+        visitor = LineNumberCollector()
+        manager.apply([visitor])
+        assert visitor.line_numbers == [(1, 1), (2, 2), (3, None), (None, 3)]
+
 
 class CreateLineComparisonVisitorTests(TestCase):
     def setUp(self):
@@ -340,12 +362,24 @@ class LineComparisonTests(TestCase):
 
     def test_number_shows_none_for_base_if_added(self):
         head_ln = 4
-        lc = LineComparison(None, [0, "", [], 0, 0], 0, head_ln, "+", False)
+        lc = LineComparison(None, [0, "", [], 0, 0], 0, head_ln, "+", True)
         assert lc.number == {"base": None, "head": head_ln}
+
+    def test_number_shows_none_for_base_if_plus_not_part_of_diff(self):
+        base_ln = 3
+        head_ln = 4
+        lc = LineComparison(None, [0, "", [], 0, 0], base_ln, head_ln, "+", False)
+        assert lc.number == {"base": base_ln, "head": head_ln}
+
+    def test_number_shows_none_for_base_if_minux_not_part_of_diff(self):
+        base_ln = 3
+        head_ln = 4
+        lc = LineComparison(None, [0, "", [], 0, 0], base_ln, head_ln, "-", False)
+        assert lc.number == {"base": base_ln, "head": head_ln}
 
     def test_number_shows_none_for_head_if_removed(self):
         base_ln = 3
-        lc = LineComparison([0, "", [], 0, 0], None, base_ln, 0, "-", False)
+        lc = LineComparison([0, "", [], 0, 0], None, base_ln, 0, "-", True)
         assert lc.number == {"base": base_ln, "head": None}
 
     def test_coverage_shows_coverage_for_base_and_head(self):
