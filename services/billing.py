@@ -4,7 +4,6 @@ from abc import ABC, abstractmethod
 import stripe
 from django.conf import settings
 
-import services.sentry as sentry
 from billing.constants import (
     ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
     FREE_PLAN_REPRESENTATIONS,
@@ -393,7 +392,7 @@ class StripeService(AbstractPaymentService):
         return success_url, cancel_url
 
     @_log_stripe_error
-    def create_checkout_session(self, owner, desired_plan):
+    def create_checkout_session(self, owner: Owner, desired_plan):
         success_url, cancel_url = self._get_success_and_cancel_url(owner)
         log.info("Creating Stripe Checkout Session for owner: {owner.ownerid}")
 
@@ -421,17 +420,32 @@ class StripeService(AbstractPaymentService):
                 }
             }
 
-        session = stripe.checkout.Session.create(
-            billing_address_collection=billing_address_collection,
-            payment_method_types=["card"],
-            payment_method_collection="if_required",
-            client_reference_id=owner.ownerid,
-            customer=owner.stripe_customer_id,
-            customer_email=owner.email,
-            success_url=success_url,
-            cancel_url=cancel_url,
-            subscription_data=subscription_data,
-        )
+        session = None
+
+        if not owner.stripe_customer_id:
+            # If we don't have an email on our DB, the user will have to manually input an email in the checkout form. This field otherwise gets automatically set the customer_email field.
+            session = stripe.checkout.Session.create(
+                billing_address_collection=billing_address_collection,
+                payment_method_types=["card"],
+                payment_method_collection="if_required",
+                client_reference_id=owner.ownerid,
+                customer_email=owner.email,
+                success_url=success_url,
+                cancel_url=cancel_url,
+                subscription_data=subscription_data,
+            )
+
+        else:
+            session = stripe.checkout.Session.create(
+                billing_address_collection=billing_address_collection,
+                payment_method_types=["card"],
+                payment_method_collection="if_required",
+                client_reference_id=owner.ownerid,
+                customer=owner.stripe_customer_id,
+                success_url=success_url,
+                cancel_url=cancel_url,
+                subscription_data=subscription_data,
+            )
         log.info(
             f"Stripe Checkout Session created successfully for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
         )

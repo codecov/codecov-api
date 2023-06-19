@@ -1,15 +1,18 @@
-import json
 import time
+from datetime import timedelta
 from unittest.mock import patch
 
 import stripe
 from django.conf import settings
+from django.utils import timezone
+from freezegun import freeze_time
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APIRequestFactory, APITestCase
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
+from services.plan import TRIAL_DAYS_LENGTH
 
 from ..constants import StripeHTTPHeaders
 
@@ -133,8 +136,11 @@ class StripeWebhookHandlerTests(APITestCase):
         assert response.status_code == status.HTTP_204_NO_CONTENT
         assert self.owner.delinquent is True
 
+    @patch("services.plan.PlanService.expire_trial_preemptively")
     @patch("codecov_auth.models.Owner.set_basic_plan")
-    def test_customer_subscription_deleted_sets_plan_to_free(self, set_basic_plan_mock):
+    def test_customer_subscription_deleted_sets_plan_to_free(
+        self, set_basic_plan_mock, expire_trial_preemptively_mock
+    ):
         self.owner.plan = "users-inappy"
         self.owner.plan_user_count = 20
         self.owner.save()
@@ -153,6 +159,7 @@ class StripeWebhookHandlerTests(APITestCase):
         )
 
         set_basic_plan_mock.assert_called_once()
+        expire_trial_preemptively_mock.assert_called_once()
 
     def test_customer_subscription_deleted_deactivates_all_repos(self):
         RepositoryFactory(author=self.owner, activated=True, active=True)
@@ -292,6 +299,7 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.owner.plan_auto_activate is True
         assert self.owner.plan == plan_name
 
+    @freeze_time("2023-06-19")
     @patch("services.billing.StripeService.update_payment_method")
     @patch("services.segment.SegmentService.trial_started")
     def test_customer_subscription_created_can_trigger_identify_and_trialing_segment_events(
@@ -331,6 +339,14 @@ class StripeWebhookHandlerTests(APITestCase):
                 "trial_start_date": trial_start,
             },
         )
+
+        self.owner.refresh_from_db()
+        assert (
+            self.owner.trial_start_date.replace(tzinfo=timezone.utc) == timezone.now()
+        )
+        assert self.owner.trial_end_date.replace(
+            tzinfo=timezone.utc
+        ) == timezone.now() + timedelta(days=TRIAL_DAYS_LENGTH)
 
     @patch("services.billing.StripeService.update_payment_method")
     def test_customer_subscription_updated_doesnt_change_subscription_if_not_paid_user_plan(

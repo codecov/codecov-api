@@ -1,8 +1,9 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest.mock import call, patch
 
 import pytest
 from django.test import TestCase
+from django.utils import timezone
 
 from codecov_auth.models import PlanProviders
 from codecov_auth.tests.factories import OwnerFactory
@@ -25,7 +26,8 @@ class SegmentOwnerTests(TestCase):
                 plan_provider=PlanProviders.GITHUB.value,
                 plan_user_count=10,
                 delinquent=True,
-                did_trial=True,
+                trial_start_date=timezone.now(),
+                trial_end_date=timezone.now() + timedelta(days=14),
                 student=True,
                 bot=OwnerFactory(),
                 email="user@codecov.io",
@@ -51,7 +53,8 @@ class SegmentOwnerTests(TestCase):
             "plan_provider": self.segment_owner.owner.plan_provider,
             "plan_user_count": self.segment_owner.owner.plan_user_count,
             "delinquent": self.segment_owner.owner.delinquent,
-            "did_trial": self.segment_owner.owner.did_trial,
+            "trial_start_date": self.segment_owner.owner.trial_start_date,
+            "trial_end_date": self.segment_owner.owner.trial_end_date,
             "student": self.segment_owner.owner.student,
             "student_created_at": datetime(2017, 1, 1, 12, 0, 0),
             "student_updated_at": datetime(2018, 1, 1, 12, 0, 0),
@@ -73,7 +76,8 @@ class SegmentOwnerTests(TestCase):
                 plan_provider=None,
                 plan_user_count=None,
                 delinquent=None,
-                did_trial=None,
+                trial_start_date=None,
+                trial_end_date=None,
                 student=0,
                 bot=None,
                 student_created_at=None,
@@ -95,7 +99,8 @@ class SegmentOwnerTests(TestCase):
             "plan_provider": "",
             "plan_user_count": 5,
             "delinquent": False,
-            "did_trial": False,
+            "trial_start_date": None,
+            "trial_end_date": None,
             "student": False,
             "student_created_at": datetime(2014, 1, 1, 12, 0, 0),
             "student_updated_at": datetime(2014, 1, 1, 12, 0, 0),

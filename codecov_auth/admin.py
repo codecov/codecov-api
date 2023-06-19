@@ -124,7 +124,8 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
     fields = readonly_fields + (
         "admins",
         "plan_auto_activate",
-        "did_trial",
+        "trial_start_date",
+        "trial_end_date",
         "onboarding_completed",
         "staff",
         "plan",
