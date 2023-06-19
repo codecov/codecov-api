@@ -6,6 +6,7 @@ from rest_framework.generics import CreateAPIView, ListCreateAPIView, RetrieveAP
 
 from codecov_auth.authentication.repo_auth import (
     GlobalTokenAuthentication,
+    OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
 )
 from reports.models import ReportResults
@@ -22,6 +23,7 @@ class ReportViews(ListCreateAPIView, GetterMixin):
     permission_classes = [CanDoCoverageUploadsPermission]
     authentication_classes = [
         GlobalTokenAuthentication,
+        OrgLevelTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
     ]
 
