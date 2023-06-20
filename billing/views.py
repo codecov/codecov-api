@@ -1,4 +1,3 @@
-import json
 import logging
 
 import stripe
@@ -15,7 +14,7 @@ from billing.constants import (
 )
 from codecov_auth.models import Owner
 from services.billing import BillingService
-from services.plan import PlanService, TrialStatusChoices
+from services.plan import PlanService, TrialStatus
 from services.segment import SegmentService
 
 from .constants import StripeHTTPHeaders, StripeWebhookEvents
@@ -84,10 +83,6 @@ class StripeWebhookHandler(APIView):
             stripe_subscription_id=subscription.id,
         )
         owner.set_basic_plan()
-
-        plan_service = PlanService(current_org=owner)
-        if plan_service.trial_status != TrialStatusChoices.EXPIRED:
-            plan_service.expire_trial_preemptively()
         owner.repository_set.update(active=False, activated=False)
 
         self.segment_service.account_cancelled_subscription(

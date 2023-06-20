@@ -422,30 +422,20 @@ class StripeService(AbstractPaymentService):
 
         session = None
 
+        session_params = {
+            "billing_address_collection": billing_address_collection,
+            "payment_method_types": ["card"],
+            "payment_method_collection": "if_required",
+            "client_reference_id": owner.ownerid,
+            "success_url": success_url,
+            "cancel_url": cancel_url,
+            "subscription_data": subscription_data,
+        }
         if not owner.stripe_customer_id:
-            # If we don't have an email on our DB, the user will have to manually input an email in the checkout form. This field otherwise gets automatically set the customer_email field.
-            session = stripe.checkout.Session.create(
-                billing_address_collection=billing_address_collection,
-                payment_method_types=["card"],
-                payment_method_collection="if_required",
-                client_reference_id=owner.ownerid,
-                customer_email=owner.email,
-                success_url=success_url,
-                cancel_url=cancel_url,
-                subscription_data=subscription_data,
-            )
-
+            session_params["customer_email"] = owner.email
         else:
-            session = stripe.checkout.Session.create(
-                billing_address_collection=billing_address_collection,
-                payment_method_types=["card"],
-                payment_method_collection="if_required",
-                client_reference_id=owner.ownerid,
-                customer=owner.stripe_customer_id,
-                success_url=success_url,
-                cancel_url=cancel_url,
-                subscription_data=subscription_data,
-            )
+            session_params["customer"] = owner.stripe_customer_id
+        session = stripe.checkout.Session.create(**session_params)
         log.info(
             f"Stripe Checkout Session created successfully for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
         )

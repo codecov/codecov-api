@@ -8,7 +8,7 @@ from django.utils.functional import cached_property
 from codecov_auth.models import Owner
 
 
-class TrialStatusChoices(enum.Enum):
+class TrialStatus(enum.Enum):
     NOT_STARTED = "not_started"
     ONGOING = "ongoing"
     EXPIRED = "expired"
@@ -32,7 +32,7 @@ class PlanService(object):
         self.current_org = current_org
         self.plan_name = current_org.plan
 
-    @cached_property
+    @property
     def trial_status(self) -> None:
         """
         Method that determines the trial status based on the trial_start_date and
@@ -41,12 +41,15 @@ class PlanService(object):
         Returns:
             No value
         """
-        if self.current_org.trial_start_date is None:
-            return TrialStatusChoices.NOT_STARTED
+        if (
+            self.current_org.trial_start_date is None
+            and self.current_org.trial_end_date is None
+        ):
+            return TrialStatus.NOT_STARTED
         if timezone.now() > self.current_org.trial_end_date:
-            return TrialStatusChoices.EXPIRED
+            return TrialStatus.EXPIRED
         else:
-            return TrialStatusChoices.ONGOING
+            return TrialStatus.ONGOING
 
     def start_trial(self) -> None:
         """
@@ -59,7 +62,7 @@ class PlanService(object):
         Raises:
             ValidationError: if trial has already started
         """
-        if self.trial_status != TrialStatusChoices.NOT_STARTED:
+        if self.trial_status != TrialStatus.NOT_STARTED:
             raise ValidationError("Cannot start an existing trial")
         start_date = timezone.now()
         self.current_org.trial_start_date = start_date
@@ -77,5 +80,7 @@ class PlanService(object):
         """
         # I initially wanted to raise a validation error if there wasnt a start date/end date, but this will
         # be hard to apply for entries before this migration without start/end trial dates
+        if self.current_org.trial_end_date is None:
+            raise ValidationError("Cannot expire an unstarted trial")
         self.current_org.trial_end_date = timezone.now()
         self.current_org.save()

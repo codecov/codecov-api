@@ -169,6 +169,7 @@ def test_get_github_already_with_code(client, mocker, db, mock_redis, settings):
     assert owner.plan_user_count is 1
     assert owner.plan_auto_activate is True
     assert owner.plan_activated_users is None
+    assert owner.did_trial is None
     assert owner.free == 0
     assert owner.invoice_details is None
     assert owner.delinquent is None

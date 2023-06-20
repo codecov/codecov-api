@@ -109,6 +109,7 @@ class Owner(models.Model):
     plan_activated_users = ArrayField(
         models.IntegerField(null=True), null=True, blank=True
     )
+    did_trial = models.BooleanField(null=True)
     trial_start_date = DateTimeWithoutTZField(null=True)
     trial_end_date = DateTimeWithoutTZField(null=True)
     free = models.SmallIntegerField(default=0)

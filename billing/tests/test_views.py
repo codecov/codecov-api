@@ -136,11 +136,8 @@ class StripeWebhookHandlerTests(APITestCase):
         assert response.status_code == status.HTTP_204_NO_CONTENT
         assert self.owner.delinquent is True
 
-    @patch("services.plan.PlanService.expire_trial_preemptively")
     @patch("codecov_auth.models.Owner.set_basic_plan")
-    def test_customer_subscription_deleted_sets_plan_to_free(
-        self, set_basic_plan_mock, expire_trial_preemptively_mock
-    ):
+    def test_customer_subscription_deleted_sets_plan_to_free(self, set_basic_plan_mock):
         self.owner.plan = "users-inappy"
         self.owner.plan_user_count = 20
         self.owner.save()
@@ -159,7 +156,6 @@ class StripeWebhookHandlerTests(APITestCase):
         )
 
         set_basic_plan_mock.assert_called_once()
-        expire_trial_preemptively_mock.assert_called_once()
 
     def test_customer_subscription_deleted_deactivates_all_repos(self):
         RepositoryFactory(author=self.owner, activated=True, active=True)

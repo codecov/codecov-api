@@ -7,7 +7,7 @@ from freezegun import freeze_time
 
 from billing.constants import BASIC_PLAN_NAME
 from codecov_auth.tests.factories import OwnerFactory
-from services.plan import TRIAL_DAYS_LENGTH, PlanService, TrialStatusChoices
+from services.plan import TRIAL_DAYS_LENGTH, PlanService, TrialStatus
 
 
 @freeze_time("2023-06-19")
@@ -16,7 +16,7 @@ class PlanServiceTests(TestCase):
         current_org = OwnerFactory(plan=BASIC_PLAN_NAME)
         plan_service = PlanService(current_org=current_org)
 
-        assert plan_service.trial_status == TrialStatusChoices.NOT_STARTED
+        assert plan_service.trial_status == TrialStatus.NOT_STARTED
 
     def test_plan_service_trial_status_expired(self):
         trial_start_date = timezone.now()
@@ -28,7 +28,7 @@ class PlanServiceTests(TestCase):
         )
         plan_service = PlanService(current_org=current_org)
 
-        assert plan_service.trial_status == TrialStatusChoices.EXPIRED
+        assert plan_service.trial_status == TrialStatus.EXPIRED
 
     def test_plan_service_trial_status_ongoing(self):
         trial_start_date = timezone.now()
@@ -40,7 +40,7 @@ class PlanServiceTests(TestCase):
         )
         plan_service = PlanService(current_org=current_org)
 
-        assert plan_service.trial_status == TrialStatusChoices.ONGOING
+        assert plan_service.trial_status == TrialStatus.ONGOING
 
     def test_plan_service_start_trial_errors_if_status_isnt_started(self):
         trial_start_date = timezone.now()
@@ -55,10 +55,13 @@ class PlanServiceTests(TestCase):
         with self.assertRaises(ValidationError) as e:
             plan_service.start_trial()
 
-    def test_plan_service_start_trial_succeeds_if_no_start_date(self):
+    def test_plan_service_start_trial_succeeds_if_no_start_or_end_date(self):
         trial_start_date = None
+        trial_end_date = None
         current_org = OwnerFactory(
-            plan=BASIC_PLAN_NAME, trial_start_date=trial_start_date
+            plan=BASIC_PLAN_NAME,
+            trial_start_date=trial_start_date,
+            trial_end_date=trial_end_date,
         )
         plan_service = PlanService(current_org=current_org)
 
