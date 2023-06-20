@@ -1,5 +1,5 @@
 from rest_framework.exceptions import NotFound
-from rest_framework.generics import CreateAPIView, RetrieveAPIView
+from rest_framework.generics import CreateAPIView, RetrieveAPIView, UpdateAPIView
 from shared.celery_config import label_analysis_task_name
 
 from codecov_auth.authentication.repo_auth import RepositoryTokenAuthentication
@@ -26,7 +26,7 @@ class LabelAnalysisRequestCreateView(CreateAPIView):
         return instance
 
 
-class LabelAnalysisRequestDetailView(RetrieveAPIView):
+class LabelAnalysisRequestDetailView(RetrieveAPIView, UpdateAPIView):
     serializer_class = LabelAnalysisRequestSerializer
     authentication_classes = [RepositoryTokenAuthentication]
     permission_classes = [SpecificScopePermission]
