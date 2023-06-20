@@ -10,7 +10,7 @@ executors:
     working_directory: /work
   codecov-api:
     docker:
-    - image: 
+    - image: $CODECOV_API_IMAGE_LATEST
       user: root
       auth:
         username: _json_key
