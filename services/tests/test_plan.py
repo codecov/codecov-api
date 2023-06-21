@@ -71,6 +71,19 @@ class PlanServiceTests(TestCase):
             days=TRIAL_DAYS_LENGTH
         )
 
+    def test_plan_service_expire_trial_preemptively_fails_if_no_trial_end_date(
+        self,
+    ):
+        trial_end_date = None
+        current_org = OwnerFactory(
+            plan=BASIC_PLAN_NAME,
+            trial_end_date=trial_end_date,
+        )
+        plan_service = PlanService(current_org=current_org)
+
+        with self.assertRaises(ValidationError) as e:
+            plan_service.expire_trial_preemptively()
+
     def test_plan_service_expire_trial_preemptively_succeeds_if_start_and_end_date(
         self,
     ):
