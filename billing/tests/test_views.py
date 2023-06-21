@@ -1,10 +1,9 @@
 import time
-from datetime import timedelta
+from datetime import datetime, timedelta
 from unittest.mock import patch
 
 import stripe
 from django.conf import settings
-from django.utils import timezone
 from freezegun import freeze_time
 from rest_framework import status
 from rest_framework.reverse import reverse
@@ -337,12 +336,10 @@ class StripeWebhookHandlerTests(APITestCase):
         )
 
         self.owner.refresh_from_db()
-        assert (
-            self.owner.trial_start_date.replace(tzinfo=timezone.utc) == timezone.now()
+        assert self.owner.trial_start_date == datetime.utcnow()
+        assert self.owner.trial_end_date == datetime.utcnow() + timedelta(
+            days=TRIAL_DAYS_LENGTH
         )
-        assert self.owner.trial_end_date.replace(
-            tzinfo=timezone.utc
-        ) == timezone.now() + timedelta(days=TRIAL_DAYS_LENGTH)
 
     @patch("services.billing.StripeService.update_payment_method")
     def test_customer_subscription_updated_doesnt_change_subscription_if_not_paid_user_plan(

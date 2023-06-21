@@ -1,9 +1,8 @@
 import enum
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from django.forms import ValidationError
 from django.utils import timezone
-from django.utils.functional import cached_property
 
 from codecov_auth.models import Owner
 
@@ -46,7 +45,7 @@ class PlanService(object):
             and self.current_org.trial_end_date is None
         ):
             return TrialStatus.NOT_STARTED
-        if timezone.now() > self.current_org.trial_end_date.astimezone(timezone.utc):
+        if datetime.utcnow() > self.current_org.trial_end_date:
             return TrialStatus.EXPIRED
         else:
             return TrialStatus.ONGOING
@@ -64,7 +63,7 @@ class PlanService(object):
         """
         if self.trial_status != TrialStatus.NOT_STARTED:
             raise ValidationError("Cannot start an existing trial")
-        start_date = timezone.now()
+        start_date = datetime.utcnow()
         self.current_org.trial_start_date = start_date
         self.current_org.trial_end_date = start_date + timedelta(days=TRIAL_DAYS_LENGTH)
         self.current_org.save()
@@ -82,5 +81,5 @@ class PlanService(object):
         # be hard to apply for entries before this migration without start/end trial dates
         if self.current_org.trial_end_date is None:
             raise ValidationError("Cannot expire an unstarted trial")
-        self.current_org.trial_end_date = timezone.now()
+        self.current_org.trial_end_date = datetime.utcnow()
         self.current_org.save()
