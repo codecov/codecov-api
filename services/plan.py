@@ -46,7 +46,7 @@ class PlanService(object):
             and self.current_org.trial_end_date is None
         ):
             return TrialStatus.NOT_STARTED
-        if timezone.now().replace(tzinfo=None) > self.current_org.trial_end_date:
+        if timezone.now() > self.current_org.trial_end_date.astimezone(timezone.utc):
             return TrialStatus.EXPIRED
         else:
             return TrialStatus.ONGOING
