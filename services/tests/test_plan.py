@@ -19,8 +19,8 @@ class PlanServiceTests(TestCase):
         assert plan_service.trial_status == TrialStatus.NOT_STARTED
 
     def test_plan_service_trial_status_expired(self):
-        trial_start_date = timezone.now()
-        trial_end_date_expired = timezone.now() - timedelta(days=1)
+        trial_start_date = timezone.now().replace(tzinfo=None)
+        trial_end_date_expired = trial_start_date - timedelta(days=1)
         current_org = OwnerFactory(
             plan=BASIC_PLAN_NAME,
             trial_start_date=trial_start_date,
@@ -31,8 +31,8 @@ class PlanServiceTests(TestCase):
         assert plan_service.trial_status == TrialStatus.EXPIRED
 
     def test_plan_service_trial_status_ongoing(self):
-        trial_start_date = timezone.now()
-        trial_end_date_ongoing = timezone.now() + timedelta(days=5)
+        trial_start_date = timezone.now().replace(tzinfo=None)
+        trial_end_date_ongoing = trial_start_date + timedelta(days=5)
         current_org = OwnerFactory(
             plan=BASIC_PLAN_NAME,
             trial_start_date=trial_start_date,
@@ -43,8 +43,8 @@ class PlanServiceTests(TestCase):
         assert plan_service.trial_status == TrialStatus.ONGOING
 
     def test_plan_service_start_trial_errors_if_status_isnt_started(self):
-        trial_start_date = timezone.now()
-        trial_end_date = timezone.now() + timedelta(days=TRIAL_DAYS_LENGTH)
+        trial_start_date = timezone.now().replace(tzinfo=None)
+        trial_end_date = trial_start_date + timedelta(days=TRIAL_DAYS_LENGTH)
         current_org = OwnerFactory(
             plan=BASIC_PLAN_NAME,
             trial_start_date=trial_start_date,
@@ -87,8 +87,8 @@ class PlanServiceTests(TestCase):
     def test_plan_service_expire_trial_preemptively_succeeds_if_start_and_end_date(
         self,
     ):
-        time_now = timezone.now()
-        time_in_three_days = timezone.now() + timedelta(days=3)
+        time_now = timezone.now().replace(tzinfo=None)
+        time_in_three_days = time_now + timedelta(days=3)
         trial_start_date = time_now
         trial_end_date = time_now + timedelta(days=TRIAL_DAYS_LENGTH)
         current_org = OwnerFactory(
@@ -101,4 +101,4 @@ class PlanServiceTests(TestCase):
         with freeze_time(time_in_three_days) as frozen_time:
             plan_service.expire_trial_preemptively()
             assert current_org.trial_start_date == time_now
-            assert current_org.trial_end_date == time_in_three_days
+            assert current_org.trial_end_date.replace(tzinfo=None) == time_in_three_days
