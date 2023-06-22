@@ -1,4 +1,5 @@
 import uuid
+from unittest.mock import patch
 
 import pytest
 from django.forms import ValidationError
@@ -9,9 +10,13 @@ from codecov_auth.services.org_level_token_service import OrgLevelTokenService
 from codecov_auth.tests.factories import OrganizationLevelTokenFactory, OwnerFactory
 
 
-def test_token_is_deleted_when_changing_user_plan(db):
+@patch(
+    "codecov_auth.services.org_level_token_service.OrgLevelTokenService.org_can_have_upload_token"
+)
+def test_token_is_deleted_when_changing_user_plan(mocked_org_can_have_upload_token, db):
     # This should happen because of the signal consumer we have defined in
     # codecov_auth/services/org_upload_token_service.py > manage_org_tokens_if_owner_plan_changed
+    mocked_org_can_have_upload_token.return_value = False
     owner = OwnerFactory(plan="users-enterprisey")
     org_token = OrganizationLevelTokenFactory(owner=owner)
     owner.save()
@@ -36,10 +41,13 @@ class TestOrgWideUploadTokenService(TransactionTestCase):
         token = OrgLevelTokenService.get_or_create_org_token(user_in_enterprise_plan)
         assert isinstance(token.token, uuid.UUID)
         assert token.owner == user_in_enterprise_plan
-        # Check that users not in enterprise plan can't create org tokens
+        # Check that users not in enterprise plan can create org tokens
         user_not_in_enterprise_plan = OwnerFactory(plan="users-basic")
-        with pytest.raises(ValidationError):
-            OrgLevelTokenService.get_or_create_org_token(user_not_in_enterprise_plan)
+        token = OrgLevelTokenService.get_or_create_org_token(
+            user_not_in_enterprise_plan
+        )
+        assert isinstance(token.token, uuid.UUID)
+        assert token.owner == user_not_in_enterprise_plan
 
     def test_delete_token(self):
         owner = OwnerFactory(plan="users-enterprisey")
