@@ -23,6 +23,8 @@ def get_config_mock(*args, **kwargs):
         return True
     elif args == ("gitlab_enterprise", "webhook_secret"):
         return webhook_secret
+    elif args == ("gitlab_enterprise", "webhook_validation"):
+        return True
     else:
         return kwargs.get("default")
 
@@ -260,8 +262,6 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
         def side_effect(*args, **kwargs):
             if args == ("setup", "enterprise_license"):
                 return None
-            elif args == ("gitlab_enterprise", "webhook_secret"):
-                return webhook_secret
             else:
                 return kwargs.get("default")
 
