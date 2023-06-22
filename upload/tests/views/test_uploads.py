@@ -237,9 +237,14 @@ def test_uploads_post(mock_metrics, db, mocker, mock_redis):
     assert all(
         map(
             lambda x: x in response_json.keys(),
-            ["external_id", "created_at", "raw_upload_location"],
+            ["external_id", "created_at", "raw_upload_location", "url"],
         )
     )
+    assert (
+        response_json.get("url")
+        == f"{settings.CODECOV_DASHBOARD_URL}/{repository.author.service}/{repository.author.username}/{repository.name}/commit/{commit.commitid}"
+    )
+
     assert ReportSession.objects.filter(
         report_id=commit_report.id, upload_extras={"format_version": "v1"}
     ).exists()

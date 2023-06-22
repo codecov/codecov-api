@@ -388,9 +388,9 @@ class TestOwnerModel(TransactionTestCase):
         self.owner.service = "gitlab"
         self.owner.save()
 
-        # The 4th query is from OrganizationLevelToken. There's a hook that rnus after Owner is saved
-        # To see if a org-wide token should be generated or deleted.
-        with self.assertNumQueries(4):
+        # In some cases, there will be a 4th query from OrganizationLevelToken. There's a hook that rnus after Owner is saved
+        # To see if a org-wide token should be deleted. For cases when it should be deleted, the number of queries becomes 4
+        with self.assertNumQueries(3):
             assert self.owner.root_organization == root
 
         # cache the root organization id
@@ -458,14 +458,20 @@ class TestOwnerModel(TransactionTestCase):
 
 
 class TestOrganizationLevelTokenModel(TransactionTestCase):
-    def test_cant_save_org_token_for_org_not_in_valid_plan(self):
+    def test_can_save_org_token_for_org_basic_plan(self):
         owner = OwnerFactory(plan="users-basic")
         owner.save()
         token = OrganizationLevelToken(owner=owner)
-        with pytest.raises(ValidationError):
-            token.save()
+        token.save()
+        assert OrganizationLevelToken.objects.filter(owner=owner).count() == 1
 
-    def test_token_is_deleted_when_changing_user_plan(self):
+    @patch(
+        "codecov_auth.services.org_level_token_service.OrgLevelTokenService.org_can_have_upload_token"
+    )
+    def test_token_is_deleted_when_changing_user_plan(
+        self, mocked_org_can_have_upload_token
+    ):
+        mocked_org_can_have_upload_token.return_value = False
         owner = OwnerFactory(plan="users-enterprisem")
         org_token = OrganizationLevelTokenFactory(owner=owner)
         owner.save()

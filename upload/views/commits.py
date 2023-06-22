@@ -4,6 +4,7 @@ from rest_framework.generics import ListCreateAPIView
 
 from codecov_auth.authentication.repo_auth import (
     GlobalTokenAuthentication,
+    OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
 )
 from core.models import Commit
@@ -20,6 +21,7 @@ class CommitViews(ListCreateAPIView, GetterMixin):
     permission_classes = [CanDoCoverageUploadsPermission]
     authentication_classes = [
         GlobalTokenAuthentication,
+        OrgLevelTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
     ]
 
