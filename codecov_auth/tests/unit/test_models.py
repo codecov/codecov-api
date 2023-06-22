@@ -458,7 +458,7 @@ class TestOwnerModel(TransactionTestCase):
 
 
 class TestOrganizationLevelTokenModel(TransactionTestCase):
-    def test_cant_save_org_token_for_org_basic_plan(self):
+    def test_can_save_org_token_for_org_basic_plan(self):
         owner = OwnerFactory(plan="users-basic")
         owner.save()
         token = OrganizationLevelToken(owner=owner)
