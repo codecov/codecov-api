@@ -165,18 +165,19 @@ class FileComparisonTraverseManager:
         """
         while not self.traverse_finished():
             line_value = self.pop_line()
+            is_diff = self.traversing_diff()
 
             for visitor in visitors:
                 visitor(
-                    None if _is_added(line_value) else self.base_ln,
-                    None if _is_removed(line_value) else self.head_ln,
+                    None if is_diff and _is_added(line_value) else self.base_ln,
+                    None if is_diff and _is_removed(line_value) else self.head_ln,
                     line_value,
-                    self.traversing_diff(),  # TODO(pierce): remove when upon combining diff + changes tabs in UI
+                    is_diff,  # TODO(pierce): remove when upon combining diff + changes tabs in UI
                 )
 
-            if _is_added(line_value):
+            if is_diff and _is_added(line_value):
                 self.head_ln += 1
-            elif _is_removed(line_value):
+            elif is_diff and _is_removed(line_value):
                 self.base_ln += 1
             else:
                 self.head_ln += 1
@@ -314,8 +315,8 @@ class LineComparison:
         self.value = value
         self.is_diff = is_diff
 
-        self.added = _is_added(value)
-        self.removed = _is_removed(value)
+        self.added = is_diff and _is_added(value)
+        self.removed = is_diff and _is_removed(value)
 
     @property
     def number(self):

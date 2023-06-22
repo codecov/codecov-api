@@ -71,6 +71,7 @@ class BitbucketServerWebhookEvents:
 
 class GitLabHTTPHeaders:
     EVENT = "HTTP_X_GITLAB_EVENT"
+    TOKEN = "HTTP_X_GITLAB_TOKEN"
 
 
 class GitLabWebhookEvents:

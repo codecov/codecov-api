@@ -347,3 +347,94 @@ def test_simple_label_analysis_get_does_not_exist(db, mocker):
     )
     assert response.status_code == 404
     assert response.json() == {"detail": "No such Label Analysis exists"}
+
+
+def test_simple_label_analysis_put_labels(db, mocker):
+    commit = CommitFactory.create(repository__active=True)
+    StaticAnalysisSuiteFactory.create(commit=commit)
+    base_commit = CommitFactory.create(repository=commit.repository)
+    StaticAnalysisSuiteFactory.create(commit=base_commit)
+    token = RepositoryTokenFactory.create(
+        repository=commit.repository, token_type="static_analysis"
+    )
+    label_analysis = LabelAnalysisRequestFactory.create(
+        head_commit=commit,
+        base_commit=base_commit,
+        state_id=LabelAnalysisRequestState.CREATED.db_id,
+        result=None,
+    )
+    label_analysis.save()
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION="repotoken " + token.key)
+    assert LabelAnalysisRequest.objects.filter(head_commit=commit).count() == 1
+    produced_object = LabelAnalysisRequest.objects.get(head_commit=commit)
+    assert produced_object == label_analysis
+    assert produced_object.requested_labels is None
+    expected_response_json = {
+        "base_commit": base_commit.commitid,
+        "head_commit": commit.commitid,
+        "requested_labels": ["label_1", "label_2", "label_3"],
+        "result": None,
+        "state": "created",
+        "external_id": str(produced_object.external_id),
+    }
+    patch_url = reverse(
+        "view_label_analysis", kwargs=dict(external_id=produced_object.external_id)
+    )
+    response = client.patch(
+        patch_url,
+        format="json",
+        data={
+            "requested_labels": ["label_1", "label_2", "label_3"],
+            "base_commit": base_commit.commitid,
+            "head_commit": commit.commitid,
+        },
+    )
+    print(response.json())
+    assert response.status_code == 200
+    assert response.json() == expected_response_json
+
+
+def test_simple_label_analysis_put_labels_wrong_base_return_404(db, mocker):
+    commit = CommitFactory.create(repository__active=True)
+    StaticAnalysisSuiteFactory.create(commit=commit)
+    base_commit = CommitFactory.create(repository=commit.repository)
+    StaticAnalysisSuiteFactory.create(commit=base_commit)
+    token = RepositoryTokenFactory.create(
+        repository=commit.repository, token_type="static_analysis"
+    )
+    label_analysis = LabelAnalysisRequestFactory.create(
+        head_commit=commit,
+        base_commit=base_commit,
+        state_id=LabelAnalysisRequestState.CREATED.db_id,
+        result=None,
+    )
+    label_analysis.save()
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION="repotoken " + token.key)
+    assert LabelAnalysisRequest.objects.filter(head_commit=commit).count() == 1
+    produced_object = LabelAnalysisRequest.objects.get(head_commit=commit)
+    assert produced_object == label_analysis
+    assert produced_object.requested_labels is None
+    expected_response_json = {
+        "base_commit": base_commit.commitid,
+        "head_commit": commit.commitid,
+        "requested_labels": ["label_1", "label_2", "label_3"],
+        "result": None,
+        "state": "created",
+        "external_id": str(produced_object.external_id),
+    }
+    patch_url = reverse(
+        "view_label_analysis", kwargs=dict(external_id=produced_object.external_id)
+    )
+    response = client.patch(
+        patch_url,
+        format="json",
+        data={
+            "requested_labels": ["label_1", "label_2", "label_3"],
+            "base_commit": "not_base_commit",
+            "head_commit": commit.commitid,
+        },
+    )
+    print(response.json())
+    assert response.status_code == 404

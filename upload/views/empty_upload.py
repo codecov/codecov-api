@@ -11,6 +11,7 @@ from shared.validation.helpers import translate_glob_to_regex
 
 from codecov_auth.authentication.repo_auth import (
     GlobalTokenAuthentication,
+    OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
 )
 from services.repo_providers import RepoProviderService
@@ -59,6 +60,7 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
     permission_classes = [CanDoCoverageUploadsPermission]
     authentication_classes = [
         GlobalTokenAuthentication,
+        OrgLevelTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
     ]
 
