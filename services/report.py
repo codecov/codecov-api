@@ -65,6 +65,7 @@ def build_report_from_commit(commit: Commit, report_class=None):
     # TODO: this can be removed once confirmed working well on prod
     new_report_builder_enabled = (
         RUN_ENV == "DEV"
+        or RUN_ENV == "STAGING"
         or RUN_ENV == "TESTING"
         or commit.repository_id in settings.REPORT_BUILDER_REPO_IDS
     )
