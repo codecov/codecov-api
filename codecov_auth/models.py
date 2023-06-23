@@ -450,10 +450,6 @@ class OrganizationLevelToken(BaseCodecovModel):
     )
 
     def save(self, *args, **kwargs):
-        if not self.owner.plan in ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS:
-            raise ValidationError(
-                "Organization-wide upload tokens are only available in enterprise-cloud plans."
-            )
         super().save(*args, **kwargs)
 
 

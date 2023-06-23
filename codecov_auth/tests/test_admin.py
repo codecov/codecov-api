@@ -167,7 +167,7 @@ class OwnerAdminTest(TestCase):
         request.user = self.staff_user
         inlines = self.owner_admin.get_inline_instances(request, self.staff_user)
         inline_instance = inlines[0]
-        assert inline_instance.has_add_permission(request, self.staff_user) == False
+        assert inline_instance.has_add_permission(request, self.staff_user) == True
 
     def test_inline_orgwide_add_token_permission_no_token_user_not_in_enterprise_cloud_plan(
         self,
