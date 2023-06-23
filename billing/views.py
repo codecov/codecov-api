@@ -242,12 +242,13 @@ class StripeWebhookHandler(APIView):
             # In a future initiative, every customer will go first through a trial so this logic will change. I'll set this piece
             # to start the trial here for now. This will also be called in the onboarding mutation coming from the client.
             plan_service = PlanService(current_org=owner)
-            plan_service.start_trial()
+            if plan_service.trial_status == TrialStatus.NOT_STARTED:
+                plan_service.start_trial()
 
         self._log_updated(1)
 
     def customer_subscription_updated(self, subscription):
-        owner = Owner.objects.get(
+        owner: Owner = Owner.objects.get(
             stripe_subscription_id=subscription.id,
             stripe_customer_id=subscription.customer,
         )

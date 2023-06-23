@@ -74,6 +74,9 @@ class PlanService(object):
         expired based on the 'trial_status' property above, but a user can decide to
         cause that expiration premptively
 
+        Raises:
+            ValidationError: if trial hasnt started
+
         Returns:
             No value
         """
