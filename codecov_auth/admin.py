@@ -61,9 +61,7 @@ class OrgUploadTokenInline(admin.TabularInline):
     fields = ["token", "valid_until", "token_type", "refresh"]
     extra = 0
     max_num = 1
-    verbose_name = (
-        "Organization Level Token (only available for enterprise-cloud plans)"
-    )
+    verbose_name = "Organization Level Token"
 
     def refresh(self, obj: OrganizationLevelToken):
         # 0 in this case refers to the 0th index of the inline
@@ -80,11 +78,7 @@ class OrgUploadTokenInline(admin.TabularInline):
 
     def has_add_permission(self, request: HttpRequest, obj: Optional[Owner]) -> bool:
         has_token = OrganizationLevelToken.objects.filter(owner=obj).count() > 0
-        return (
-            obj.plan in ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS
-            and (not has_token)
-            and request.user.is_staff
-        )
+        return (not has_token) and request.user.is_staff
 
 
 @admin.register(Owner)

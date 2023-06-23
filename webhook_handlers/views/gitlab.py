@@ -1,6 +1,7 @@
 import logging
 
 from django.shortcuts import get_object_or_404
+from django.utils.crypto import constant_time_compare
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny
@@ -29,6 +30,8 @@ class GitLabWebhookHandler(APIView):
         repo = None
 
         log.info("GitLab webhook message received", extra=dict(event=event))
+
+        self._validate_secret(request)
 
         project_id = request.data.get("project_id") or request.data.get(
             "object_attributes", {}
@@ -222,6 +225,20 @@ class GitLabWebhookHandler(APIView):
                 message = "User not found or not active"
 
         return Response(data=message)
+
+    def _validate_secret(self, request):
+        webhook_validation = bool(
+            get_config(self.service_name, "webhook_validation", default=False)
+        )
+        webhook_secret = get_config(
+            self.service_name,
+            "webhook_secret",
+            default=None,
+        )
+        if webhook_validation and webhook_secret is not None:
+            token = request.META.get(GitLabHTTPHeaders.TOKEN)
+            if not constant_time_compare(webhook_secret, token):
+                raise PermissionDenied()
 
 
 class GitLabEnterpriseWebhookHandler(GitLabWebhookHandler):
