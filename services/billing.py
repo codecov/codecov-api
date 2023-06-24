@@ -13,6 +13,7 @@ from billing.constants import (
     USER_PLAN_REPRESENTATIONS,
 )
 from codecov_auth.models import Owner
+from services.plan import PlanService, TrialStatus
 from services.segment import SegmentService
 
 log = logging.getLogger(__name__)
@@ -410,7 +411,11 @@ class StripeService(AbstractPaymentService):
 
         plan_representation = USER_PLAN_REPRESENTATIONS[desired_plan["value"]]
         trial_days = plan_representation.get("trial_days")
-        if trial_days is not None:
+        plan_service = PlanService(current_org=owner)
+        if (
+            trial_days is not None
+            and plan_service.trial_status == TrialStatus.NOT_STARTED
+        ):
             billing_address_collection = "auto"
             subscription_data["trial_period_days"] = trial_days
             subscription_data["trial_settings"] = {
