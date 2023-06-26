@@ -1,15 +1,17 @@
-import json
 import time
+from datetime import datetime, timedelta
 from unittest.mock import patch
 
 import stripe
 from django.conf import settings
+from freezegun import freeze_time
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APIRequestFactory, APITestCase
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
+from services.plan import TRIAL_DAYS_LENGTH
 
 from ..constants import StripeHTTPHeaders
 
@@ -292,6 +294,7 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.owner.plan_auto_activate is True
         assert self.owner.plan == plan_name
 
+    @freeze_time("2023-06-19")
     @patch("services.billing.StripeService.update_payment_method")
     @patch("services.segment.SegmentService.trial_started")
     def test_customer_subscription_created_can_trigger_identify_and_trialing_segment_events(
@@ -330,6 +333,12 @@ class StripeWebhookHandlerTests(APITestCase):
                 "trial_end_date": trial_end,
                 "trial_start_date": trial_start,
             },
+        )
+
+        self.owner.refresh_from_db()
+        assert self.owner.trial_start_date == datetime.utcnow()
+        assert self.owner.trial_end_date == datetime.utcnow() + timedelta(
+            days=TRIAL_DAYS_LENGTH
         )
 
     @patch("services.billing.StripeService.update_payment_method")

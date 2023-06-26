@@ -110,6 +110,8 @@ class Owner(models.Model):
         models.IntegerField(null=True), null=True, blank=True
     )
     did_trial = models.BooleanField(null=True)
+    trial_start_date = DateTimeWithoutTZField(null=True)
+    trial_end_date = DateTimeWithoutTZField(null=True)
     free = models.SmallIntegerField(default=0)
     invoice_details = models.TextField(null=True)
     delinquent = models.BooleanField(null=True)

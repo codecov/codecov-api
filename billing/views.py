@@ -1,9 +1,7 @@
-import json
 import logging
 
 import stripe
 from django.conf import settings
-from django.core.exceptions import MultipleObjectsReturned
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -16,6 +14,7 @@ from billing.constants import (
 )
 from codecov_auth.models import Owner
 from services.billing import BillingService
+from services.plan import PlanService, TrialStatus
 from services.segment import SegmentService
 
 from .constants import StripeHTTPHeaders, StripeWebhookEvents
@@ -79,11 +78,10 @@ class StripeWebhookHandler(APIView):
                 stripe_customer_id=subscription.customer,
             ),
         )
-        owner = Owner.objects.get(
+        owner: Owner = Owner.objects.get(
             stripe_customer_id=subscription.customer,
             stripe_subscription_id=subscription.id,
         )
-
         owner.set_basic_plan()
         owner.repository_set.update(active=False, activated=False)
 
@@ -241,11 +239,16 @@ class StripeWebhookHandler(APIView):
                     "trial_start_date": subscription.trial_start,
                 },
             )
+            # In a future initiative, every customer will go first through a trial so this logic will change. I'll set this piece
+            # to start the trial here for now. This will also be called in the onboarding mutation coming from the client.
+            plan_service = PlanService(current_org=owner)
+            if plan_service.trial_status == TrialStatus.NOT_STARTED:
+                plan_service.start_trial()
 
         self._log_updated(1)
 
     def customer_subscription_updated(self, subscription):
-        owner = Owner.objects.get(
+        owner: Owner = Owner.objects.get(
             stripe_subscription_id=subscription.id,
             stripe_customer_id=subscription.customer,
         )
