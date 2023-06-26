@@ -5,6 +5,7 @@ from compare.commands.compare.interactors.fetch_impacted_files import (
     ImpactedFileParameter,
 )
 from core.models import Commit
+from services.plan import TrialStatus
 from services.yaml import YamlStates
 from timeseries.models import Interval as MeasurementInterval
 from timeseries.models import MeasurementName
@@ -42,5 +43,6 @@ enum_types = [
     EnumType("CommitState", Commit.CommitStates),
     EnumType("MeasurementType", MeasurementName),
     EnumType("RepositoryTokenType", RepositoryToken.TokenType),
+    EnumType("TrialStatus", TrialStatus),
     EnumType("YamlStates", YamlStates),
 ]

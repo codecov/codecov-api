@@ -1,15 +1,14 @@
 import asyncio
+from datetime import timedelta
 from unittest.mock import patch
 
 from django.test import TransactionTestCase
+from django.utils import timezone
+from freezegun import freeze_time
 
 from billing.constants import BASIC_PLAN_NAME
 from codecov_auth.models import OwnerProfile
-from codecov_auth.tests.factories import (
-    GetAdminProviderAdapter,
-    OwnerFactory,
-    OwnerProfileFactory,
-)
+from codecov_auth.tests.factories import GetAdminProviderAdapter, OwnerFactory
 from core.tests.factories import CommitFactory, OwnerFactory, RepositoryFactory
 from reports.tests.factories import CommitReportFactory, UploadFactory
 
@@ -452,3 +451,22 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         )
         data = self.gql_request(query, user=self.user)
         assert data["owner"]["isCurrentUserActivated"] == True
+
+    @freeze_time("2023-06-19")
+    def test_owner_trial_is_expired(self):
+        current_org = OwnerFactory(
+            username="random-trial-user",
+            service="github",
+            trial_start_date=timezone.now(),
+            trial_end_date=timezone.now() + timedelta(days=-3),
+        )
+        query = """{
+            owner(username: "%s") {
+                trialStatus
+            }
+        }
+        """ % (
+            current_org.username
+        )
+        data = self.gql_request(query, user=current_org)
+        assert data["owner"]["trialStatus"] == "EXPIRED"
