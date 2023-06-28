@@ -8,7 +8,7 @@ from django.shortcuts import redirect
 from django.views import View
 from shared.torngit import Github
 from shared.torngit.exceptions import TorngitError
-
+from utils.config import get_config
 from codecov_auth.views.base import LoginMixin, StateMixin
 
 log = logging.getLogger(__name__)
@@ -74,7 +74,11 @@ class GithubLoginView(LoginMixin, StateMixin, View):
         # Comply to torngit's token encoding
         authenticated_user["key"] = authenticated_user["access_token"]
         user_orgs = await repo_service.list_teams()
-        is_student = await repo_service.is_student()
+        student_disabled = get_config(self.service, "student_disabled", default=False)
+        if not student_disabled:
+            is_student = await repo_service.is_student()
+        else:
+            is_student = False
         has_private_access = "repo" in authenticated_user["scope"].split(",")
 
         teams = await self._get_teams_data(repo_service)
