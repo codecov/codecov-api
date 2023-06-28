@@ -8,8 +8,9 @@ from django.shortcuts import redirect
 from django.views import View
 from shared.torngit import Github
 from shared.torngit.exceptions import TorngitError
-from utils.config import get_config
+
 from codecov_auth.views.base import LoginMixin, StateMixin
+from utils.config import get_config
 
 log = logging.getLogger(__name__)
 
