@@ -21,6 +21,7 @@ type Owner {
   orgUploadToken: String
   defaultOrgUsername: String
   isCurrentUserActivated: Boolean!
+  trialStatus: TrialStatus!
   measurements(
     interval: MeasurementInterval!
     after: DateTime

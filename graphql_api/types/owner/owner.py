@@ -19,6 +19,7 @@ from graphql_api.helpers.connection import (
 )
 from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
+from services.plan import PlanService, TrialStatus
 from services.profiling import ProfilingSummary
 from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Interval, MeasurementSummary
@@ -62,6 +63,12 @@ def resolve_yaml(owner, info):
     if not current_user_part_of_org(current_user, owner):
         return
     return yaml.dump(owner.yaml)
+
+
+@owner_bindable.field("trialStatus")
+def resolve_trial_status(owner: Owner, info) -> TrialStatus:
+    plan_service = PlanService(current_org=owner)
+    return plan_service.trial_status
 
 
 @owner_bindable.field("repository")
