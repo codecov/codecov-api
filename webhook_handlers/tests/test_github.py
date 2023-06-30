@@ -155,6 +155,32 @@ class GithubWebhookHandlerTests(APITestCase):
         assert self.repo.active is False
         assert self.repo.activated is False
 
+    def test_repository_delete_renames_repo(self):
+        self.repo.name = "testing"
+        self.repo.save()
+
+        other_repo = RepositoryFactory(
+            name="testing",
+            author=OwnerFactory(service=Service.GITHUB.value),
+            service_id=67890,
+            active=True,
+        )
+
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.REPOSITORY,
+            data={"action": "deleted", "repository": {"id": self.repo.service_id}},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        self.repo.refresh_from_db()
+        assert self.repo.deleted is True
+        # assert self.repo.name == "testing-deleted"
+
+        # renaming the deleted repo allows the other repo to potentially be moved to a
+        # new owner (uniqueness constraints would have prevented this otherwise)
+        other_repo.author = self.repo.author
+        other_repo.save()
+
     def test_delete_event_deletes_branch(self):
         branch = BranchFactory(repository=self.repo)
 
