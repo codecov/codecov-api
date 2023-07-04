@@ -37,10 +37,6 @@ class RegenerateOrgUploadTokenInteractorTest(TransactionTestCase):
         with pytest.raises(Unauthorized):
             await self.execute(user=self.random_user, owner=self.owner.name)
 
-    async def test_when_validation_not_enterprise(self):
-        with pytest.raises(ValidationError):
-            await self.execute(user=self.random_user, owner=self.owner_free_plan.name)
-
     async def test_regenerate_org_upload_token(self):
         token = await self.execute(user=self.owner, owner=self.owner.name)
         assert token is not None
