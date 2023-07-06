@@ -15,10 +15,6 @@ class RegenerateOrgUploadTokenInteractor(BaseInteractor):
             raise ValidationError("Owner not found")
         if not owner_obj.is_admin(self.current_user):
             raise Unauthorized()
-        if not owner_obj.plan in ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS:
-            raise ValidationError(
-                "Organization-wide upload tokens are only available in enterprise-cloud plans."
-            )
 
     @sync_to_async
     def execute(self, owner):
