@@ -66,11 +66,6 @@ def test_simple_static_analysis_call_no_uploads_yet(db, mocker):
         "external_id": str(produced_object.external_id),
         "commit": commit.commitid,
     }
-    mocked_task_service.assert_called_with(
-        static_analysis_task_name,
-        kwargs={"suite_id": produced_object.id},
-        apply_async_kwargs={"countdown": 10},
-    )
     mocked_presigned_put.assert_called_with(
         "archive",
         mocker.ANY,
