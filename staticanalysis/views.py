@@ -28,12 +28,6 @@ class StaticAnalysisSuiteViewSet(mixins.CreateModelMixin, viewsets.GenericViewSe
 
     def perform_create(self, serializer):
         instance = serializer.save()
-        # TODO: remove this once the CLI is calling the `finish` endpoint
-        TaskService().schedule_task(
-            static_analysis_task_name,
-            kwargs=dict(suite_id=instance.id),
-            apply_async_kwargs=dict(countdown=10),
-        )
         return instance
 
     @action(detail=True, methods=["post"])
