@@ -67,9 +67,7 @@ class AccountDetailsViewSet(
 
     @stripe_safe
     def retrieve(self, *args, **kwargs):
-        res = super().retrieve(*args, **kwargs)
-        print("RETRIEVE", res.data)
-        return res
+        return super().retrieve(*args, **kwargs)
 
     @stripe_safe
     def update(self, *args, **kwargs):

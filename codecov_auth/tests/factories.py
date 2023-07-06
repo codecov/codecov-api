@@ -9,6 +9,7 @@ from codecov_auth.models import (
     Owner,
     OwnerProfile,
     RepositoryToken,
+    SentryUser,
     Service,
     Session,
     TokenTypeChoices,
@@ -46,6 +47,18 @@ class OwnerFactory(DjangoModelFactory):
     oauth_token = factory.LazyAttribute(
         lambda o: encryptor.encode(o.unencrypted_oauth_token).decode()
     )
+    user = factory.SubFactory(UserFactory)
+
+
+class SentryUserFactory(DjangoModelFactory):
+    class Meta:
+        model = SentryUser
+
+    email = factory.Faker("email")
+    name = factory.Faker("name")
+    sentry_id = factory.LazyFunction(lambda: uuid4().hex)
+    access_token = factory.LazyFunction(lambda: uuid4().hex)
+    refresh_token = factory.LazyFunction(lambda: uuid4().hex)
     user = factory.SubFactory(UserFactory)
 
 
