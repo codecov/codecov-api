@@ -28,7 +28,7 @@ class PlansViewSetTests(APITestCase):
                 ],
             },
             {
-                "marketing_name": "Basic",
+                "marketing_name": "Developer",
                 "value": "users-basic",
                 "billing_rate": None,
                 "base_unit_price": 0,
@@ -84,7 +84,7 @@ class PlansViewSetTests(APITestCase):
                 ],
             },
             {
-                "marketing_name": "Basic",
+                "marketing_name": "Developer",
                 "value": "users-basic",
                 "billing_rate": None,
                 "base_unit_price": 0,
@@ -166,7 +166,7 @@ class PlansViewSetTests(APITestCase):
                 ],
             },
             {
-                "marketing_name": "Basic",
+                "marketing_name": "Developer",
                 "value": "users-basic",
                 "billing_rate": None,
                 "base_unit_price": 0,

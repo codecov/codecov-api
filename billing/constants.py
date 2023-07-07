@@ -169,7 +169,7 @@ FREE_PLAN_REPRESENTATIONS = {
         ],
     },
     BASIC_PLAN_NAME: {
-        "marketing_name": "Basic",
+        "marketing_name": "Developer",
         "value": BASIC_PLAN_NAME,
         "billing_rate": None,
         "base_unit_price": 0,
