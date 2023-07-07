@@ -78,25 +78,27 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
                 pull_id = async_to_sync(provider.find_pull_request)(
                     commit=commit.commitid
                 )
-        except TorngitClientGeneralError as e:
+        except TorngitClientGeneralError:
             log.warning(
-                f"Request client error {e}",
+                f"Request client error",
                 extra=dict(
                     commit=commit.commitid,
-                    repo_name=repo.name,
+                    repoid=commit.repoid,
                 ),
+                exc_info=True,
             )
             raise NotFound(f"Unable to get pull request for commit: {commit.commitid}")
 
         try:
             changed_files = async_to_sync(provider.get_pull_request_files)(pull_id)
-        except TorngitClientError as e:
+        except TorngitClientError:
             log.warning(
-                f"Request client error {e}",
+                f"Request client error",
                 extra=dict(
                     commit=commit.commitid,
-                    repo_name=repo.name,
+                    repoid=commit.repoid,
                 ),
+                exc_info=True,
             )
             raise NotFound("Unable to get pull request's files.")
 
