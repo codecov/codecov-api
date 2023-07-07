@@ -9,6 +9,7 @@ tag ?= $(shell echo $$(git rev-list --count HEAD)$$(git show -s --format=.%ad.%h
 branch = $(shell git branch | grep \* | cut -f2 -d' ')
 docker_version = $(shell git describe --always --tags --dirty | sed 's/^v//')
 release_env = master
+dockerhub_image := codecov/self-hosted-api
 SEMANTIC_VERSION := `cat VERSION`
 
 ifneq ($(branch), master)
@@ -115,8 +116,6 @@ save:
 
 # build and tag with staging tag
 # - when the docker image is uploaded to GCR with the "staging" tag, spinnaker will automatically detect the new image and deploy to the staging k8s cluster
-# - spinnaker pipeline: https://spinnaker.codecov.dev/?to=https%3A%2F%2Fspinnaker.codecov.dev%2F%23%2Fsearch#/applications/codecov-staging/executions?pipeline=api
-# - staging url: https://stage-api.codecov.dev
 staging:
 	docker load -i app.tar
 	docker tag "${GCR_REPO}:${VERSION}" "${GCR_REPO}:staging-${VERSION}"
@@ -124,7 +123,6 @@ staging:
 
 # build and tag with production tag
 # - when the docker image is uploaded to GCR with the "production" tag, spinnaker will automatically detect the new image and deploy to the production k8s cluster
-# - spinnaker pipeline: https://spinnaker.codecov.dev/?to=https%3A%2F%2Fspinnaker.codecov.dev%2F%23%2Fsearch#/applications/codecov-production/executions?pipeline=api
 production:
 	docker load -i app.tar
 	docker tag "${GCR_REPO}:${VERSION}" "${GCR_REPO}:production-${VERSION}"
@@ -137,13 +135,13 @@ enterprise:
 	docker pull ${ENTERPRISE_GCR_REPO}:${VERSION}
 	docker pull ${ENTERPRISE_GCR_REPO}:${VERSION}_no_dependencies
 	docker tag ${ENTERPRISE_GCR_REPO}:${VERSION} ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION}
-	docker tag ${ENTERPRISE_GCR_REPO}:${VERSION} codecov/api-private:${SEMANTIC_VERSION}-${VERSION}
+	docker tag ${ENTERPRISE_GCR_REPO}:${VERSION} ${dockerhub_image}:rolling
 	docker tag ${ENTERPRISE_GCR_REPO}:${VERSION}_no_dependencies ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION}_no_dependencies
-	docker tag ${ENTERPRISE_GCR_REPO}:${VERSION}_no_dependencies codecov/api-private:${SEMANTIC_VERSION}-${VERSION}_no_dependencies
+	docker tag ${ENTERPRISE_GCR_REPO}:${VERSION}_no_dependencies ${dockerhub_image}:rolling_no_dependencies
 	docker push ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION}
-	docker push codecov/api-private:${SEMANTIC_VERSION}-${VERSION}
+	docker push ${dockerhub_image}:rolling
 	docker push ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION}_no_dependencies
-	docker push codecov/api-private:${SEMANTIC_VERSION}-${VERSION}_no_dependencies
+	docker push ${dockerhub_image}:rolling_no_dependencies
 
 # CIRCLECI
 # job: enterprise-release
@@ -151,14 +149,18 @@ enterprise:
 release-enterprise:
 	docker pull ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION}
 	docker pull ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION}_no_dependencies
-	docker tag ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION} codecov/enterprise-api:${SEMANTIC_VERSION}
-	docker tag ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION} codecov/enterprise-api:latest-stable
-	docker tag ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION}_no_dependencies codecov/enterprise-api:${SEMANTIC_VERSION}_no_dependencies
-	docker tag ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION}_no_dependencies codecov/enterprise-api:latest-stable_no_dependencies
-	docker push codecov/enterprise-api:${SEMANTIC_VERSION}
-	docker push codecov/enterprise-api:latest-stable
-	docker push codecov/enterprise-api:${SEMANTIC_VERSION}_no_dependencies
-	docker push codecov/enterprise-api:latest-stable_no_dependencies
+	docker tag ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION} ${dockerhub_image}:${SEMANTIC_VERSION}
+	docker tag ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION} ${dockerhub_image}:latest-stable
+	docker tag ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION} ${dockerhub_image}:latest-calver
+	docker tag ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION}_no_dependencies ${dockerhub_image}:${SEMANTIC_VERSION}_no_dependencies
+	docker tag ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION}_no_dependencies ${dockerhub_image}:latest-stable_no_dependencies
+	docker tag ${ENTERPRISE_GCR_REPO}:${SEMANTIC_VERSION}-${VERSION}_no_dependencies ${dockerhub_image}:latest-calver_no_dependencies
+	docker push ${dockerhub_image}:${SEMANTIC_VERSION}
+	docker push ${dockerhub_image}:latest-stable
+	docker push ${dockerhub_image}:latest-calver
+	docker push ${dockerhub_image}:${SEMANTIC_VERSION}_no_dependencies
+	docker push ${dockerhub_image}:latest-stable_no_dependencies
+	docker push ${dockerhub_image}:latest-calver_no_dependencies
 
 dive:
 	docker load -i app.tar
