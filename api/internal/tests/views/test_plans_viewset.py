@@ -17,7 +17,7 @@ class PlansViewSetTests(APITestCase):
         assert response.status_code == status.HTTP_200_OK
         assert response.data == [
             {
-                "marketing_name": "Free",
+                "marketing_name": "Developer",
                 "value": "users-free",
                 "billing_rate": None,
                 "base_unit_price": 0,
@@ -73,7 +73,7 @@ class PlansViewSetTests(APITestCase):
         assert response.status_code == status.HTTP_200_OK
         assert response.data == [
             {
-                "marketing_name": "Free",
+                "marketing_name": "Developer",
                 "value": "users-free",
                 "billing_rate": None,
                 "base_unit_price": 0,
@@ -155,7 +155,7 @@ class PlansViewSetTests(APITestCase):
         assert response.status_code == status.HTTP_200_OK
         assert response.data == [
             {
-                "marketing_name": "Free",
+                "marketing_name": "Developer",
                 "value": "users-free",
                 "billing_rate": None,
                 "base_unit_price": 0,
