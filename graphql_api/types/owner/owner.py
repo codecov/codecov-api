@@ -65,6 +65,11 @@ def resolve_yaml(owner, info):
     return yaml.dump(owner.yaml)
 
 
+@owner_bindable.field("plan")
+def resolve_plan(owner: Owner, info) -> TrialStatus:
+    return PlanService(current_org=owner)
+
+
 @owner_bindable.field("trialStatus")
 def resolve_trial_status(owner: Owner, info) -> TrialStatus:
     plan_service = PlanService(current_org=owner)
