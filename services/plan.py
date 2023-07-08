@@ -22,8 +22,8 @@ class PlanMarketingName(enum.Enum):
     SENTRY_PRO = "Pro Team for Sentry"
     ENTERPRISE_CLOUD = "Enterprise Cloud"
     GITHUB_MARKETPLACE = "Github Marketplace"
-    FREE = "Free"
-    BASIC = "Basic"
+    FREE = "Developer"
+    BASIC = "Developer"
 
 
 class PlanNames(enum.Enum):
@@ -327,7 +327,10 @@ class PlanService(AbstractPlan):
             raise ValidationError("Cannot start an existing trial")
         start_date = datetime.utcnow()
         self.current_org.trial_start_date = start_date
-        self.current_org.trial_end_date = start_date + timedelta(days=self.total_trial_days)
+        # TODO: make days here be the amount of days belonging to the plan
+        self.current_org.trial_end_date = start_date + timedelta(
+            days=TrialDaysAmount.CODECOV_SENTRY.value
+        )
         self.current_org.save()
 
     def expire_trial_preemptively(self) -> None:
@@ -371,7 +374,7 @@ class PlanService(AbstractPlan):
         # This type of customer would have None for both the start and trial end date, but I was thinking, upon plan cancellation,
         # we could ad some logic that to set both their start and end date to the exact same value and represent a customer that
         # was never able to trial after they cancel. Not 100% sold here but I think it works.
-        elif trial_start_date == trial_end_date:
+        elif trial_start_date == trial_end_date and self.current_org.stripe_customer_id:
             return TrialStatus.NEVER_TRIALLED
         elif datetime.utcnow() > trial_end_date:
             return TrialStatus.EXPIRED

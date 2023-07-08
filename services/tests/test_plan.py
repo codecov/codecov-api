@@ -6,7 +6,7 @@ from freezegun import freeze_time
 
 from billing.constants import BASIC_PLAN_NAME
 from codecov_auth.tests.factories import OwnerFactory
-from services.plan import TRIAL_DAYS_LENGTH, PlanService, TrialStatus
+from services.plan import PlanService, TrialDaysAmount, TrialStatus
 
 
 @freeze_time("2023-06-19")
@@ -41,9 +41,36 @@ class PlanServiceTests(TestCase):
 
         assert plan_service.trial_status == TrialStatus.ONGOING
 
+    def test_plan_service_trial_status_never_trialled_if_current_paid_customer(self):
+        current_org_with_paid_plan = OwnerFactory(
+            plan=BASIC_PLAN_NAME,
+            trial_start_date=None,
+            trial_end_date=None,
+            stripe_customer_id="test_id_123123",
+        )
+        plan_service = PlanService(current_org=current_org_with_paid_plan)
+        assert plan_service.trial_status == TrialStatus.NEVER_TRIALLED
+
+    def test_plan_service_trial_status_never_started_if_it_used_to_be_paid_customer(
+        self,
+    ):
+        now = datetime.utcnow()
+        trial_start_date = now
+        trial_end_date = now
+        current_org_with_paid_plan = OwnerFactory(
+            plan=BASIC_PLAN_NAME,
+            trial_start_date=trial_start_date,
+            trial_end_date=trial_end_date,
+            stripe_customer_id="test_id_123123",
+        )
+        plan_service = PlanService(current_org=current_org_with_paid_plan)
+        assert plan_service.trial_status == TrialStatus.NEVER_TRIALLED
+
     def test_plan_service_start_trial_errors_if_status_isnt_started(self):
         trial_start_date = datetime.utcnow()
-        trial_end_date = trial_start_date + timedelta(days=TRIAL_DAYS_LENGTH)
+        trial_end_date = trial_start_date + timedelta(
+            days=TrialDaysAmount.CODECOV_SENTRY.value
+        )
         current_org = OwnerFactory(
             plan=BASIC_PLAN_NAME,
             trial_start_date=trial_start_date,
@@ -67,7 +94,7 @@ class PlanServiceTests(TestCase):
         plan_service.start_trial()
         assert current_org.trial_start_date == datetime.utcnow()
         assert current_org.trial_end_date == datetime.utcnow() + timedelta(
-            days=TRIAL_DAYS_LENGTH
+            days=TrialDaysAmount.CODECOV_SENTRY.value
         )
 
     def test_plan_service_expire_trial_preemptively_fails_if_no_trial_end_date(
@@ -89,7 +116,7 @@ class PlanServiceTests(TestCase):
         time_now = datetime.utcnow()
         time_in_three_days = time_now + timedelta(days=3)
         trial_start_date = time_now
-        trial_end_date = time_now + timedelta(days=TRIAL_DAYS_LENGTH)
+        trial_end_date = time_now + timedelta(days=TrialDaysAmount.CODECOV_SENTRY.value)
         current_org = OwnerFactory(
             plan=BASIC_PLAN_NAME,
             trial_start_date=trial_start_date,
