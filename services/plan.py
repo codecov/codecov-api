@@ -366,10 +366,11 @@ class PlanService(AbstractPlan):
 
         if trial_start_date is None and trial_end_date is None:
             # Scenario: A paid customer before the trial changes were introduced (they can never undergo trial for this org)
-            if self.current_org.stripe_customer_id:
-                return TrialStatus.NEVER_TRIALLED
-            else:
-                return TrialStatus.NOT_STARTED
+            # I have to comment this for now because it is currently affected by a Stripe webhook we wont be using in the future.
+            # if self.current_org.stripe_customer_id:
+            #     return TrialStatus.NEVER_TRIALLED
+            # else:
+            return TrialStatus.NOT_STARTED
         # Scenario: An paid customer before the trial changes were introduced (they can never undergo trial for this org)
         # This type of customer would have None for both the start and trial end date, but I was thinking, upon plan cancellation,
         # we could ad some logic that to set both their start and end date to the exact same value and represent a customer that
