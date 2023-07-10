@@ -13,8 +13,6 @@ class RegenerateOrgUploadTokenInteractor(BaseInteractor):
             raise Unauthenticated()
         if not owner_obj:
             raise ValidationError("Owner not found")
-        if not owner_obj.is_admin(self.current_user):
-            raise Unauthorized()
 
     @sync_to_async
     def execute(self, owner):
