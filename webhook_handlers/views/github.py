@@ -161,7 +161,8 @@ class GithubWebhookHandler(APIView):
             repo.deleted = True
             repo.activated = False
             repo.active = False
-            repo.save(update_fields=["deleted", "activated", "active"])
+            repo.name = f"{repo.name}-deleted"
+            repo.save(update_fields=["deleted", "activated", "active", "name"])
             log.info(
                 "Repository soft-deleted",
                 extra=dict(repoid=repo.repoid, github_webhook_event=self.event),
