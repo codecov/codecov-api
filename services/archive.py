@@ -1,3 +1,4 @@
+import json
 import logging
 from base64 import b16encode
 from enum import Enum
@@ -7,6 +8,7 @@ from uuid import uuid4
 from django.conf import settings
 from django.utils import timezone
 from minio import Minio
+from shared.utils.ReportEncoder import ReportEncoder
 
 from services.storage import StorageService
 from utils.config import get_config
@@ -16,6 +18,7 @@ log = logging.getLogger(__name__)
 
 class MinioEndpoints(Enum):
     chunks = "{version}/repos/{repo_hash}/commits/{commitid}/chunks.txt"
+    json_data = "{version}/repos/{repo_hash}/commits/{commitid}/json_data/{model}/{field}/{external_id}.json"
     raw = "v4/raw/{date}/{repo_hash}/{commit_sha}/{reportid}.txt"
     raw_with_upload_id = (
         "v4/raw/{date}/{repo_hash}/{commit_sha}/{reportid}/{uploadid}.txt"
@@ -111,6 +114,28 @@ class ArchiveService(object):
         ).encode()
         _hash.update(val)
         return b16encode(_hash.digest()).decode()
+
+    def write_json_data_to_storage(
+        self,
+        commit_id,
+        model: str,
+        field: str,
+        external_id: str,
+        data: dict,
+        *,
+        encoder=ReportEncoder,
+    ):
+        path = MinioEndpoints.json_data.get_path(
+            version="v4",
+            repo_hash=self.storage_hash,
+            commitid=commit_id,
+            model=model,
+            field=field,
+            external_id=external_id,
+        )
+        stringified_data = json.dumps(data, cls=encoder)
+        self.write_file(path, stringified_data)
+        return path
 
     """
     Grabs path from storage, adds data to path object

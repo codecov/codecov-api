@@ -1,6 +1,7 @@
 import json
 from unittest.mock import MagicMock, patch
 
+import pytest
 from django.test import TestCase
 from shared.storage.exceptions import FileNotInStorageError
 
@@ -88,7 +89,7 @@ class ReportDetailsTests(TestCase):
         mock_archive.assert_not_called()
         mock_read_file.assert_not_called()
 
-    @patch("reports.models.ArchiveService")
+    @patch("utils.model_utils.ArchiveService")
     def test_get_files_array_from_storage(self, mock_archive):
         details = ReportDetailsFactory()
         storage_path = "https://storage/path/files_array.json"
@@ -107,13 +108,22 @@ class ReportDetailsTests(TestCase):
         assert mock_archive.call_count == 1
         assert mock_read_file.call_count == 1
         # This one to help us understand caching across different instances
-        # of the same object. We see that cache is not propagated across
-        # different instances
+        # of the same object. We see that cache is propagated across
+        # different instances if they are the same
         assert details.files_array == self.sample_files_array
+        assert mock_archive.call_count == 1
+        assert mock_read_file.call_count == 1
+        # Let's see for objects with different IDs
+        diff_details = ReportDetailsFactory()
+        storage_path = "https://storage/path/files_array.json"
+        diff_details._files_array = None
+        diff_details._files_array_storage_path = storage_path
+        diff_details.save()
+        assert diff_details.files_array == self.sample_files_array
         assert mock_archive.call_count == 2
         assert mock_read_file.call_count == 2
 
-    @patch("reports.models.ArchiveService")
+    @patch("utils.model_utils.ArchiveService")
     def test_get_files_array_from_storage_file_not_found(self, mock_archive):
         details = ReportDetailsFactory()
         storage_path = "https://storage/path/files_array.json"
@@ -131,3 +141,63 @@ class ReportDetailsTests(TestCase):
         assert fetched.files_array == []
         mock_archive.assert_called()
         mock_read_file.assert_called_with(storage_path)
+
+
+@pytest.mark.parametrize(
+    "config,owner_username,expected",
+    [
+        (
+            {
+                "setup": {
+                    "save_report_data_in_storage": {
+                        "report_details_files_array": True,
+                        "only_codecov": True,
+                    }
+                }
+            },
+            "some_owner",
+            False,
+        ),
+        (
+            {
+                "setup": {
+                    "save_report_data_in_storage": {
+                        "report_details_files_array": True,
+                        "only_codecov": True,
+                    }
+                }
+            },
+            "codecov",
+            True,
+        ),
+        (
+            {
+                "setup": {
+                    "save_report_data_in_storage": {
+                        "report_details_files_array": True,
+                        "only_codecov": False,
+                    }
+                }
+            },
+            "some_owner",
+            True,
+        ),
+    ],
+)
+def test_should_write_to_storage(config, owner_username, expected, mocker, db):
+    def fake_get_config(*path, default=None):
+        curr = config
+        for key in path:
+            try:
+                curr = curr[key]
+            except KeyError:
+                return default
+        return curr
+
+    mock_get_config = mocker.patch(
+        "reports.models.get_config", side_effect=fake_get_config
+    )
+    report_details = ReportDetailsFactory(
+        report__commit__repository__author__username=owner_username
+    )
+    assert report_details._should_write_to_storage() == expected

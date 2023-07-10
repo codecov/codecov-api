@@ -1,16 +1,15 @@
-import json
 import logging
 
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.urls import reverse
-from django.utils.functional import cached_property
+from shared.config import get_config
 from shared.reports.enums import UploadState, UploadType
-from shared.storage.exceptions import FileNotInStorageError
 
 from codecov.models import BaseCodecovModel
 from services.archive import ArchiveService
 from upload.constants import ci
+from utils.model_utils import GCSDecorator
 from utils.services import get_short_service_name
 
 log = logging.getLogger(__name__)
@@ -49,6 +48,15 @@ class ReportResults(BaseCodecovModel):
     result = models.JSONField(default=dict)
 
 
+report_details_gcs_decorator = GCSDecorator(
+    decorated_class_name="ReportDetails",
+    db_field_name="_files_array",
+    gcs_field_name="_files_array_storage_path",
+    attributes_to_repository=("report", "commit", "repository"),
+    attributes_to_commit=("report", "commit"),
+)
+
+
 class ReportDetails(BaseCodecovModel):
     report = models.OneToOneField(CommitReport, on_delete=models.CASCADE)
     _files_array = ArrayField(models.JSONField(), db_column="files_array", null=True)
@@ -56,28 +64,38 @@ class ReportDetails(BaseCodecovModel):
         db_column="files_array_storage_path", null=True
     )
 
-    @cached_property
-    def files_array(self):
-        # Get files_array from the proper source
-        if self._files_array is not None:
-            return self._files_array
-        repository = self.report.commit.repository
-        archive_service = ArchiveService(repository=repository)
-        try:
-            file_str = archive_service.read_file(self._files_array_storage_path)
-            return json.loads(file_str)
-        except FileNotInStorageError:
-            log.error(
-                "files_array not in storage",
-                extra=dict(
-                    storage_path=self._files_array_storage_path,
-                    report_details=self.id,
-                    commit=self.report.commit,
-                ),
-            )
-            # Return empty array to be consistent with current behavior
-            # (instead of raising error)
-            return []
+    files_array = property(
+        fget=report_details_gcs_decorator.get_gcs_enabled_field(
+            default_value_fn=list,
+        ),
+        fset=report_details_gcs_decorator.set_gcs_enabled_field(
+            should_write_to_storage_fn=lambda self: self._should_write_to_storage
+        ),
+    )
+
+    def _should_write_to_storage(self):
+        report_builder_repo_ids = get_config(
+            "setup", "save_report_data_in_storage", "repo_ids", default=[]
+        )
+        master_write_switch = get_config(
+            "setup",
+            "save_report_data_in_storage",
+            "report_details_files_array",
+            default=False,
+        )
+        only_codecov = get_config(
+            "setup",
+            "save_report_data_in_storage",
+            "only_codecov",
+            default=True,
+        )
+        is_codecov_repo = self.report.commit.repository.author.username == "codecov"
+        is_in_allowed_repos = (
+            self.report.commit.repository.repoid in report_builder_repo_ids
+        )
+        return master_write_switch and (
+            is_codecov_repo or is_in_allowed_repos or not only_codecov
+        )
 
 
 class ReportLevelTotals(AbstractTotals):
