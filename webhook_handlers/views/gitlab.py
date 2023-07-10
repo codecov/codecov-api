@@ -165,7 +165,8 @@ class GitLabWebhookHandler(APIView):
             repo.deleted = True
             repo.activated = False
             repo.active = False
-            repo.save(update_fields=["deleted", "activated", "active"])
+            repo.name = f"{repo.name}-deleted"
+            repo.save(update_fields=["deleted", "activated", "active", "name"])
             message = "Repository deleted"
 
         elif event_name == "project_rename":
