@@ -1,9 +1,8 @@
 import enum
-from abc import ABC, abstractproperty
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import List, Optional
 
-from attr import dataclass
 from django.forms import ValidationError
 
 from codecov_auth.models import Owner
@@ -37,26 +36,20 @@ class PlanNames(enum.Enum):
     SENTRY_MONTHLY = "users-sentrym"
     SENTRY_YEARLY = "users-sentryy"
     ENTERPRISE_CLOUD_MONTHLY = "users-enterprisem"
-    ENTERPRISE_CLOUD_ANNUALLY = "users-enterprisey"
+    ENTERPRISE_CLOUD_YEARLY = "users-enterprisey"
 
 
 class PlanBillingRate(enum.Enum):
     MONTHLY = "monthly"
-    ANUALLY = "annually"
+    YEARLY = "annually"
 
 
 class PlanPrice(enum.Enum):
+    MONTHLY = 12
+    YEARLY = 10
     CODECOV_FREE = 0
     CODECOV_BASIC = 0
-    CODECOV_PRO_MONTHLY_LEGACY = 12
-    CODECOV_PRO_ANNUALLY_LEGACY = 10
-    CODECOV_PRO_MONTHLY = 12
-    CODECOV_PRO_ANNUALLY = 10
-    ENTERPRISE_CLOUD_MONTHLY = 12
-    ENTERPRISE_CLOUD_ANNUALLY = 10
     GHM_PRICE = 12
-    SENTRY_MONTHLY = 12
-    SENTRY_ANNUALLY = 10
 
 
 class TrialStatus(enum.Enum):
@@ -64,36 +57,6 @@ class TrialStatus(enum.Enum):
     ONGOING = "ongoing"
     EXPIRED = "expired"
     NEVER_TRIALLED = "never_trialled"
-
-
-class AbstractPlan(ABC):
-    @abstractproperty
-    def marketing_name(self) -> PlanMarketingName:
-        pass
-
-    @abstractproperty
-    def plan_name(self) -> PlanNames:
-        pass
-
-    @abstractproperty
-    def billing_rate(self) -> Optional[PlanBillingRate]:
-        pass
-
-    @abstractproperty
-    def base_unit_price(self) -> PlanPrice:
-        pass
-
-    @abstractproperty
-    def benefits(self) -> List[str]:
-        pass
-
-    @abstractproperty
-    def monthly_uploads_limit(self) -> Optional[MonthlyUploadLimits]:
-        pass
-
-    @abstractproperty
-    def total_trial_days(self) -> Optional[TrialDaysAmount]:
-        pass
 
 
 @dataclass(repr=False)
@@ -110,16 +73,13 @@ class PlanData:
     monthly_uploads_limit: Optional[MonthlyUploadLimits]
     trial_days: Optional[TrialDaysAmount]
 
-    def __repr__(self):
-        return f"Plan: {self.marketing_name}/{self.value}; rate: {self.billing_rate}; price: {self.base_unit_price}"
-
 
 NON_PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
     PlanNames.CODECOV_PRO_MONTHLY_LEGACY.value: PlanData(
         marketing_name=PlanMarketingName.CODECOV_PRO.value,
         value=PlanNames.CODECOV_PRO_MONTHLY_LEGACY.value,
         billing_rate=PlanBillingRate.MONTHLY.value,
-        base_unit_price=PlanPrice.CODECOV_PRO_MONTHLY_LEGACY.value,
+        base_unit_price=PlanPrice.MONTHLY.value,
         benefits=[
             "Configurable # of users",
             "Unlimited public repositories",
@@ -132,8 +92,8 @@ NON_PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
     PlanNames.CODECOV_PRO_YEARLY_LEGACY.value: PlanData(
         marketing_name=PlanMarketingName.CODECOV_PRO.value,
         value=PlanNames.CODECOV_PRO_YEARLY_LEGACY.value,
-        billing_rate=PlanBillingRate.ANUALLY.value,
-        base_unit_price=PlanPrice.CODECOV_PRO_ANNUALLY_LEGACY.value,
+        billing_rate=PlanBillingRate.YEARLY.value,
+        base_unit_price=PlanPrice.YEARLY.value,
         benefits=[
             "Configurable # of users",
             "Unlimited public repositories",
@@ -151,7 +111,7 @@ PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
         marketing_name=PlanMarketingName.CODECOV_PRO.value,
         value=PlanNames.CODECOV_PRO_MONTHLY.value,
         billing_rate=PlanBillingRate.MONTHLY.value,
-        base_unit_price=PlanPrice.CODECOV_PRO_MONTHLY.value,
+        base_unit_price=PlanPrice.MONTHLY.value,
         benefits=[
             "Configurable # of users",
             "Unlimited public repositories",
@@ -164,8 +124,8 @@ PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
     PlanNames.CODECOV_PRO_YEARLY.value: PlanData(
         marketing_name=PlanMarketingName.CODECOV_PRO.value,
         value=PlanNames.CODECOV_PRO_YEARLY.value,
-        billing_rate=PlanBillingRate.ANUALLY.value,
-        base_unit_price=PlanPrice.CODECOV_PRO_ANNUALLY.value,
+        billing_rate=PlanBillingRate.YEARLY.value,
+        base_unit_price=PlanPrice.YEARLY.value,
         benefits=[
             "Configurable # of users",
             "Unlimited public repositories",
@@ -182,7 +142,7 @@ SENTRY_PAID_USER_PLAN_REPRESENTATIONS = {
         marketing_name=PlanMarketingName.SENTRY_PRO.value,
         value=PlanNames.SENTRY_MONTHLY.value,
         billing_rate=PlanBillingRate.MONTHLY.value,
-        base_unit_price=PlanPrice.SENTRY_MONTHLY.value,
+        base_unit_price=PlanPrice.MONTHLY.value,
         benefits=[
             "Includes 5 seats",
             "$12 per additional seat",
@@ -196,8 +156,8 @@ SENTRY_PAID_USER_PLAN_REPRESENTATIONS = {
     PlanNames.SENTRY_YEARLY.value: PlanData(
         marketing_name=PlanMarketingName.SENTRY_PRO.value,
         value=PlanNames.SENTRY_YEARLY.value,
-        billing_rate=PlanBillingRate.ANUALLY.value,
-        base_unit_price=PlanPrice.SENTRY_ANNUALLY.value,
+        billing_rate=PlanBillingRate.YEARLY.value,
+        base_unit_price=PlanPrice.YEARLY.value,
         benefits=[
             "Includes 5 seats",
             "$10 per additional seat",
@@ -216,7 +176,7 @@ ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS = {
         marketing_name=PlanMarketingName.ENTERPRISE_CLOUD.value,
         value=PlanNames.ENTERPRISE_CLOUD_MONTHLY.value,
         billing_rate=PlanBillingRate.MONTHLY.value,
-        base_unit_price=PlanPrice.ENTERPRISE_CLOUD_MONTHLY.value,
+        base_unit_price=PlanPrice.MONTHLY.value,
         benefits=[
             "Configurable # of users",
             "Unlimited public repositories",
@@ -226,11 +186,11 @@ ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS = {
         trial_days=None,
         monthly_uploads_limit=None,
     ),
-    PlanNames.ENTERPRISE_CLOUD_ANNUALLY.value: PlanData(
+    PlanNames.ENTERPRISE_CLOUD_YEARLY.value: PlanData(
         marketing_name=PlanMarketingName.ENTERPRISE_CLOUD.value,
-        value=PlanNames.ENTERPRISE_CLOUD_ANNUALLY.value,
-        billing_rate=PlanBillingRate.ANUALLY.value,
-        base_unit_price=PlanPrice.ENTERPRISE_CLOUD_ANNUALLY.value,
+        value=PlanNames.ENTERPRISE_CLOUD_YEARLY.value,
+        billing_rate=PlanBillingRate.YEARLY.value,
+        base_unit_price=PlanPrice.YEARLY.value,
         benefits=[
             "Configurable # of users",
             "Unlimited public repositories",
@@ -297,7 +257,7 @@ USER_PLAN_REPRESENTATIONS = {
 }
 
 
-class PlanService(AbstractPlan):
+class PlanService:
     def __init__(self, current_org: Owner):
         """
         Initializes a plan service object with a plan. The plan will be a trial plan

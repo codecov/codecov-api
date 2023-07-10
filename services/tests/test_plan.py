@@ -6,7 +6,12 @@ from freezegun import freeze_time
 
 from billing.constants import BASIC_PLAN_NAME
 from codecov_auth.tests.factories import OwnerFactory
-from services.plan import PlanService, TrialDaysAmount, TrialStatus
+from services.plan import (
+    FREE_PLAN_REPRESENTATIONS,
+    PlanService,
+    TrialDaysAmount,
+    TrialStatus,
+)
 
 
 @freeze_time("2023-06-19")
@@ -129,3 +134,53 @@ class PlanServiceTests(TestCase):
             plan_service.expire_trial_preemptively()
             assert current_org.trial_start_date == time_now
             assert current_org.trial_end_date == time_in_three_days
+
+    def test_plan_service_returns_plan_data_for_non_trial_basic_plan(self):
+        trial_start_date = None
+        trial_end_date = None
+        current_org = OwnerFactory(
+            plan=BASIC_PLAN_NAME,
+            trial_start_date=trial_start_date,
+            trial_end_date=trial_end_date,
+        )
+        plan_service = PlanService(current_org=current_org)
+
+        basic_plan = FREE_PLAN_REPRESENTATIONS[BASIC_PLAN_NAME]
+        assert plan_service.trial_status == TrialStatus.NOT_STARTED
+        assert plan_service.marketing_name == basic_plan.marketing_name
+        assert plan_service.plan_name == basic_plan.value
+        assert plan_service.billing_rate == basic_plan.billing_rate
+        assert plan_service.base_unit_price == basic_plan.base_unit_price
+        assert plan_service.benefits == basic_plan.benefits
+        assert (
+            plan_service.monthly_uploads_limit == basic_plan.monthly_uploads_limit
+        )  # should be 250
+        assert (
+            plan_service.monthly_uploads_limit == 250
+        )  # should be 250 since not trialling
+        assert plan_service.total_trial_days == basic_plan.trial_days
+
+    def test_plan_service_returns_plan_data_for_trialling_basic_plan(self):
+        trial_start_date = datetime.utcnow()
+        trial_end_date = datetime.utcnow() + timedelta(
+            days=TrialDaysAmount.CODECOV_SENTRY.value
+        )
+        current_org = OwnerFactory(
+            plan=BASIC_PLAN_NAME,
+            trial_start_date=trial_start_date,
+            trial_end_date=trial_end_date,
+        )
+        plan_service = PlanService(current_org=current_org)
+
+        basic_plan = FREE_PLAN_REPRESENTATIONS[BASIC_PLAN_NAME]
+        print("value?", plan_service.monthly_uploads_limit)
+        assert plan_service.trial_status == TrialStatus.ONGOING
+        assert plan_service.marketing_name == basic_plan.marketing_name
+        assert plan_service.plan_name == basic_plan.value
+        assert plan_service.billing_rate == basic_plan.billing_rate
+        assert plan_service.base_unit_price == basic_plan.base_unit_price
+        assert plan_service.benefits == basic_plan.benefits
+        assert (
+            plan_service.monthly_uploads_limit == None
+        )  # Not 250 since it's trialling
+        assert plan_service.total_trial_days == basic_plan.trial_days
