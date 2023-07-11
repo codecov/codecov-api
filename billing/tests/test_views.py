@@ -11,7 +11,7 @@ from rest_framework.test import APIRequestFactory, APITestCase
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
-from services.plan import TRIAL_DAYS_LENGTH
+from services.plan import TrialDaysAmount
 
 from ..constants import StripeHTTPHeaders
 
@@ -338,7 +338,7 @@ class StripeWebhookHandlerTests(APITestCase):
         self.owner.refresh_from_db()
         assert self.owner.trial_start_date == datetime.utcnow()
         assert self.owner.trial_end_date == datetime.utcnow() + timedelta(
-            days=TRIAL_DAYS_LENGTH
+            days=TrialDaysAmount.CODECOV_SENTRY.value
         )
 
     @patch("services.billing.StripeService.update_payment_method")

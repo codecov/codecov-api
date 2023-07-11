@@ -470,3 +470,26 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         )
         data = self.gql_request(query, user=current_org)
         assert data["owner"]["trialStatus"] == "EXPIRED"
+
+    @freeze_time("2023-06-19")
+    def test_owner_plan_status(self):
+        current_org = OwnerFactory(
+            username="random-plan-user",
+            service="github",
+            trial_start_date=timezone.now(),
+            trial_end_date=timezone.now() + timedelta(days=14),
+        )
+        query = """{
+            owner(username: "%s") {
+                plan {
+                    trialStatus
+                }
+            }
+        }
+        """ % (
+            current_org.username
+        )
+        data = self.gql_request(query, user=current_org)
+        assert data["owner"]["plan"] == {
+            "trialStatus": "ONGOING",
+        }
