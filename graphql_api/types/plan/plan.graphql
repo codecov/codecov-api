@@ -1,0 +1,5 @@
+type Plan {
+  trialStatus: TrialStatus!
+  trialStartDate: DateTime
+  trialEndDate: DateTime
+}
