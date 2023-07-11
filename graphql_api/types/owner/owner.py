@@ -19,7 +19,7 @@ from graphql_api.helpers.connection import (
 )
 from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
-from services.plan import PlanNames, PlanService, TrialStatus
+from services.plan import PlanService, TrialStatus
 from services.profiling import ProfilingSummary
 from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Interval, MeasurementSummary
@@ -66,7 +66,7 @@ def resolve_yaml(owner, info):
 
 
 @owner_bindable.field("plan")
-def resolve_plan(owner: Owner, info) -> PlanNames:
+def resolve_plan(owner: Owner, info) -> PlanService:
     return PlanService(current_org=owner)
 
 
