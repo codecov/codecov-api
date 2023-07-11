@@ -226,7 +226,7 @@ class Commit(models.Model):
 
     @cached_property
     def commitreport(self):
-        reports = list(self.reports.all())
+        reports = list(self.reports.filter(code=None))
         return reports[0] if reports else None
 
     @cached_property
