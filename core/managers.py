@@ -27,7 +27,7 @@ class RepositoryQuerySet(QuerySet):
         Filters queryset so that result only includes repos viewable by the
         given owner.
         """
-        filters = Q(private=False)
+        filters = Q(private=False) & ~Q(deleted=True)
 
         if owner.is_authenticated:
             filters = filters | Q(author__ownerid=owner.ownerid)

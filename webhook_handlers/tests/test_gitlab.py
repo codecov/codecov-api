@@ -326,6 +326,7 @@ class TestGitlabWebhookHandler(APITestCase):
         project_id = 73
         owner = OwnerFactory(service="gitlab", username=username)
         repo = RepositoryFactory(
+            name="testing",
             author=owner,
             service_id=project_id,
             active=True,
@@ -355,6 +356,7 @@ class TestGitlabWebhookHandler(APITestCase):
         assert repo.active is False
         assert repo.activated is False
         assert repo.deleted is True
+        assert repo.name == "testing-deleted"
 
     def test_handle_system_hook_project_rename(self):
         username = "jsmith"

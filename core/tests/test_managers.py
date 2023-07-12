@@ -93,6 +93,7 @@ class RepositoryQuerySetTests(TestCase):
     def test_viewable_repos(self):
         private_repo = RepositoryFactory(private=True)
         public_repo = RepositoryFactory(private=False)
+        deleted_repo = RepositoryFactory(deleted=True)
 
         with self.subTest("when owner permission is none doesnt crash"):
             owner = OwnerFactory(permission=None)
@@ -104,6 +105,7 @@ class RepositoryQuerySetTests(TestCase):
             repoids = repos.values_list("repoid", flat=True)
             assert public_repo.repoid in repoids
             assert owned_repo.repoid in repoids
+            assert deleted_repo.repoid not in repoids
 
         with self.subTest("when repository do not have a name doesnt return it"):
             owner = OwnerFactory(permission=None)
@@ -116,6 +118,7 @@ class RepositoryQuerySetTests(TestCase):
             # only public repo created above
             repoids = repos.values_list("repoid", flat=True)
             assert public_repo.repoid in repoids
+            assert deleted_repo.repoid not in repoids
 
         with self.subTest("when owner permission is not none, returns repos"):
             owner = OwnerFactory(permission=[private_repo.repoid])
@@ -128,6 +131,7 @@ class RepositoryQuerySetTests(TestCase):
             assert public_repo.repoid in repoids
             assert owned_repo.repoid in repoids
             assert private_repo.repoid in repoids
+            assert deleted_repo.repoid not in repoids
 
         with self.subTest("when user not authed, returns only public"):
             user = AnonymousUser()
@@ -137,3 +141,4 @@ class RepositoryQuerySetTests(TestCase):
 
             repoids = repos.values_list("repoid", flat=True)
             assert public_repo.repoid in repoids
+            assert deleted_repo.repoid not in repoids
