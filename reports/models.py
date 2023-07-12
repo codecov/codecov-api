@@ -7,9 +7,8 @@ from shared.config import get_config
 from shared.reports.enums import UploadState, UploadType
 
 from codecov.models import BaseCodecovModel
-from services.archive import ArchiveService
 from upload.constants import ci
-from utils.model_utils import GCSDecorator
+from utils.model_utils import ArchiveField
 from utils.services import get_short_service_name
 
 log = logging.getLogger(__name__)
@@ -48,15 +47,6 @@ class ReportResults(BaseCodecovModel):
     result = models.JSONField(default=dict)
 
 
-report_details_gcs_decorator = GCSDecorator(
-    decorated_class_name="ReportDetails",
-    db_field_name="_files_array",
-    gcs_field_name="_files_array_storage_path",
-    attributes_to_repository=("report", "commit", "repository"),
-    attributes_to_commit=("report", "commit"),
-)
-
-
 class ReportDetails(BaseCodecovModel):
     report = models.OneToOneField(CommitReport, on_delete=models.CASCADE)
     _files_array = ArrayField(models.JSONField(), db_column="files_array", null=True)
@@ -64,16 +54,15 @@ class ReportDetails(BaseCodecovModel):
         db_column="files_array_storage_path", null=True
     )
 
-    files_array = property(
-        fget=report_details_gcs_decorator.get_gcs_enabled_field(
-            default_value_fn=list,
-        ),
-        fset=report_details_gcs_decorator.set_gcs_enabled_field(
-            should_write_to_storage_fn=lambda self: self._should_write_to_storage
-        ),
-    )
+    files_array = ArchiveField(default_value=[])
 
-    def _should_write_to_storage(self):
+    def get_repository(self):
+        return self.report.commit.repository
+
+    def get_commitid(self):
+        return self.report.commit.commitid
+
+    def should_write_to_storage(self):
         report_builder_repo_ids = get_config(
             "setup", "save_report_data_in_storage", "repo_ids", default=[]
         )

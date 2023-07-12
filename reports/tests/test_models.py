@@ -57,7 +57,7 @@ class UploadTests(TestCase):
         )
 
 
-class ReportDetailsTests(TestCase):
+class TestReportDetails(TestCase):
     sample_files_array = [
         {
             "filename": "test_file_1.py",
@@ -75,7 +75,7 @@ class ReportDetailsTests(TestCase):
         },
     ]
 
-    @patch("reports.models.ArchiveService")
+    @patch("utils.model_utils.ArchiveService")
     def test_get_files_array_from_db(self, mock_archive):
         details = ReportDetailsFactory()
         mock_read_file = MagicMock()
@@ -142,6 +142,35 @@ class ReportDetailsTests(TestCase):
         mock_archive.assert_called()
         mock_read_file.assert_called_with(storage_path)
 
+    @patch("reports.models.get_config")
+    def test_write_filed_array_and_retrieve_from_db(self, mock_get_config):
+        config = {
+            "setup": {
+                "save_report_data_in_storage": {
+                    "report_details_files_array": False,
+                }
+            }
+        }
+
+        def fake_get_config(*path, default=None):
+            curr = config
+            for key in path:
+                try:
+                    curr = curr[key]
+                except KeyError:
+                    return default
+            return curr
+
+        mock_get_config.side_effect = fake_get_config
+        details = ReportDetailsFactory()
+        assert details.should_write_to_storage() == False
+        details.files_array = self.sample_files_array
+        details.save()
+
+        fetched = ReportDetails.objects.get(id=details.id)
+        assert fetched._files_array == self.sample_files_array
+        assert fetched.files_array == self.sample_files_array
+
 
 @pytest.mark.parametrize(
     "config,owner_username,expected",
@@ -200,4 +229,4 @@ def test_should_write_to_storage(config, owner_username, expected, mocker, db):
     report_details = ReportDetailsFactory(
         report__commit__repository__author__username=owner_username
     )
-    assert report_details._should_write_to_storage() == expected
+    assert report_details.should_write_to_storage() == expected
