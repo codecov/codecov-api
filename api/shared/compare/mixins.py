@@ -24,7 +24,8 @@ class CompareViewSetMixin(CompareSlugMixin, viewsets.GenericViewSet):
 
         if "pull" in compare_data:
             comparison = PullRequestComparison(
-                user=self.request.user, pull=compare_data["pull"]
+                user=self.request.user,
+                pull=compare_data["pull"],
             )
             try:
                 # make sure we have a base and head commit

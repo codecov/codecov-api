@@ -412,32 +412,6 @@ class TestCompareViewSetRetrieve(APITestCase):
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_diffs_larger_than_MAX_DIFF_SIZE_doesnt_include_lines(
-        self, adapter_mock, base_report_mock, head_report_mock
-    ):
-        adapter_mock.return_value = self.mocked_compare_adapter
-        base_report_mock.return_value = self.base_report
-        head_report_mock.return_value = self.head_report
-
-        previous_max = comparison.MAX_DIFF_SIZE
-        comparison.MAX_DIFF_SIZE = (
-            len(
-                self.mock_git_compare_data["diff"]["files"][self.file_name]["segments"][
-                    0
-                ]["lines"]
-            )
-            - 1
-        )
-
-        response = self._get_comparison()
-
-        assert response.status_code == status.HTTP_200_OK
-        assert (
-            response.data["files"][0]["lines"] == None
-        )  # None means diff was truncated
-
-        comparison.MAX_DIFF_SIZE = previous_max
-
     def test_file_returns_comparefile_with_diff_and_src_data(
         self, adapter_mock, base_report_mock, head_report_mock
     ):

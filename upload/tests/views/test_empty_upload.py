@@ -111,7 +111,13 @@ def test_empty_upload_non_testable_files(
         }
     )
     mock_repo_provider_service.return_value = MockedProviderAdapter(
-        ["README.md", "codecov.yml", "template.txt"]
+        [
+            "README.md",
+            "codecov.yml",
+            "template.txt",
+            "dir/sub-dir/codecov.yml",
+            ".circleci/config.yml",
+        ]
     )
     repository = RepositoryFactory(
         name="the_repo", author__username="codecov", author__service="github"

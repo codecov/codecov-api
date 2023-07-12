@@ -139,7 +139,7 @@ class AccountViewSetTests(APITestCase):
             "plan_auto_activate": owner.plan_auto_activate,
             "inactive_user_count": 1,
             "plan": {
-                "marketing_name": "Basic",
+                "marketing_name": "Developer",
                 "value": "users-basic",
                 "billing_rate": None,
                 "base_unit_price": 0,
@@ -215,7 +215,7 @@ class AccountViewSetTests(APITestCase):
             "plan_auto_activate": owner.plan_auto_activate,
             "inactive_user_count": 1,
             "plan": {
-                "marketing_name": "Basic",
+                "marketing_name": "Developer",
                 "value": "users-basic",
                 "billing_rate": None,
                 "base_unit_price": 0,
@@ -309,7 +309,7 @@ class AccountViewSetTests(APITestCase):
             "plan_auto_activate": owner.plan_auto_activate,
             "inactive_user_count": 1,
             "plan": {
-                "marketing_name": "Basic",
+                "marketing_name": "Developer",
                 "value": "users-basic",
                 "billing_rate": None,
                 "base_unit_price": 0,
@@ -375,7 +375,7 @@ class AccountViewSetTests(APITestCase):
             "plan_auto_activate": owner.plan_auto_activate,
             "inactive_user_count": 1,
             "plan": {
-                "marketing_name": "Basic",
+                "marketing_name": "Developer",
                 "value": "users-basic",
                 "billing_rate": None,
                 "base_unit_price": 0,
@@ -447,7 +447,7 @@ class AccountViewSetTests(APITestCase):
         response = self._retrieve()
         assert response.status_code == status.HTTP_200_OK
         assert response.data["plan"] == {
-            "marketing_name": "Free",
+            "marketing_name": "Developer",
             "value": "users-free",
             "billing_rate": None,
             "base_unit_price": 0,

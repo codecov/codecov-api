@@ -158,7 +158,7 @@ GHM_PLAN_REPRESENTATION = {
 
 FREE_PLAN_REPRESENTATIONS = {
     FREE_PLAN_NAME: {
-        "marketing_name": "Free",
+        "marketing_name": "Developer",
         "value": FREE_PLAN_NAME,
         "billing_rate": None,
         "base_unit_price": 0,
@@ -169,7 +169,7 @@ FREE_PLAN_REPRESENTATIONS = {
         ],
     },
     BASIC_PLAN_NAME: {
-        "marketing_name": "Basic",
+        "marketing_name": "Developer",
         "value": BASIC_PLAN_NAME,
         "billing_rate": None,
         "base_unit_price": 0,
