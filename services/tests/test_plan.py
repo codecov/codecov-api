@@ -173,7 +173,6 @@ class PlanServiceTests(TestCase):
         plan_service = PlanService(current_org=current_org)
 
         basic_plan = FREE_PLAN_REPRESENTATIONS[BASIC_PLAN_NAME]
-        print("value?", plan_service.monthly_uploads_limit)
         assert plan_service.trial_status == TrialStatus.ONGOING
         assert plan_service.marketing_name == basic_plan.marketing_name
         assert plan_service.plan_name == basic_plan.value

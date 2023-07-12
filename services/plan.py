@@ -313,6 +313,7 @@ class PlanService:
         self.current_org.save()
 
     @property
+    # TODO: should this account for if a plan is paid?
     def trial_status(self) -> TrialStatus:
         """
         Property that determines the trial status based on the trial_start_date and

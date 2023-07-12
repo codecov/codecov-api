@@ -13,6 +13,7 @@ from .revoke_user_token import gql_revoke_user_token
 from .save_sentry_state import gql_save_sentry_state
 from .save_terms_agreement import gql_save_terms_agreement
 from .set_yaml_on_owner import gql_set_yaml_on_owner
+from .start_trial import gql_start_trial
 from .sync_with_git_provider import gql_sync_with_git_provider
 from .update_default_organization import gql_update_default_organization
 from .update_profile import gql_update_profile
@@ -33,3 +34,4 @@ mutation = mutation + gql_revoke_user_token
 mutation = mutation + gql_delete_flag
 mutation = mutation + gql_save_sentry_state
 mutation = mutation + gql_save_terms_agreement
+mutation = mutation + gql_start_trial

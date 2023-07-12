@@ -1,5 +1,7 @@
 from ariadne import MutationType
 
+from graphql_api.types.mutation.start_trial.start_trial import resolve_start_trial
+
 from .activate_measurements import (
     error_activate_measurements,
     resolve_activate_measurements,
@@ -24,6 +26,7 @@ from .save_terms_agreement import (
     resolve_save_terms_agreement,
 )
 from .set_yaml_on_owner import error_set_yaml_error, resolve_set_yaml_on_owner
+from .start_trial import error_start_trial, resolve_start_trial
 from .sync_with_git_provider import (
     error_sync_with_git_provider,
     resolve_sync_with_git_provider,
@@ -56,6 +59,7 @@ mutation_bindable.field("regenerateOrgUploadToken")(resolve_regenerate_org_uploa
 mutation_bindable.field("deleteFlag")(resolve_delete_flag)
 mutation_bindable.field("saveSentryState")(resolve_save_sentry_state)
 mutation_bindable.field("saveTermsAgreement")(resolve_save_terms_agreement)
+mutation_bindable.field("startTrial")(resolve_start_trial)
 
 mutation_resolvers = [
     mutation_bindable,
@@ -74,4 +78,5 @@ mutation_resolvers = [
     error_delete_flag,
     error_save_sentry_state,
     error_save_terms_agreement,
+    error_start_trial,
 ]

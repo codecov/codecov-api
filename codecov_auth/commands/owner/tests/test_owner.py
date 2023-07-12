@@ -55,6 +55,12 @@ class OwnerCommandsTest(TransactionTestCase):
         self.command.save_terms_agreement(input_dict)
         interactor_mock.assert_called_once_with(input_dict)
 
+    @patch("codecov_auth.commands.owner.owner.StartTrialInteractor.execute")
+    def test_start_trial_delegate_to_interactor(self, interactor_mock):
+        org_username = "random_org"
+        self.command.start_trial(org_username=org_username)
+        interactor_mock.assert_called_once_with(org_username=org_username)
+
     @patch(
         "codecov_auth.commands.owner.owner.UpdateDefaultOrganizationInteractor.execute"
     )
