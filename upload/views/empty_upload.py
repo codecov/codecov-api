@@ -4,10 +4,10 @@ import re
 
 from asgiref.sync import async_to_sync
 from rest_framework import status
+from rest_framework.exceptions import NotFound
 from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
-from shared.torngit.exceptions import TorngitObjectNotFoundError
-from shared.validation.helpers import translate_glob_to_regex
+from shared.torngit.exceptions import TorngitClientError, TorngitClientGeneralError
 
 from codecov_auth.authentication.repo_auth import (
     GlobalTokenAuthentication,
@@ -71,21 +71,14 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
 
         provider = RepoProviderService().get_adapter(repo.author, repo)
         pull_id = commit.pullid
-        try:
-            if pull_id is None:
-                pull_id = async_to_sync(provider.find_pull_request)(
-                    commit=commit.commitid
-                )
-        except:
-            raise TorngitObjectNotFoundError(
-                f"Pull not found for commit: {commit.commitid}"
-            )
+        if pull_id is None:
+            pull_id = self.get_pull_request_id(commit, provider, pull_id)
 
-        changed_files = async_to_sync(provider.get_pull_request_files)(pull_id)
+        changed_files = self.get_changed_files_from_provider(commit, provider, pull_id)
 
         ignored_files = yaml.get("ignore", [])
         regex_non_testable_files = [
-            translate_glob_to_regex(path) for path in GLOB_NON_TESTABLE_FILES
+            fnmatch.translate(path) for path in GLOB_NON_TESTABLE_FILES
         ]
         compiled_files_to_ignore = [
             re.compile(path) for path in (regex_non_testable_files + ignored_files)
@@ -119,3 +112,36 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
             },
             status=status.HTTP_200_OK,
         )
+
+    def get_changed_files_from_provider(self, commit, provider, pull_id):
+        try:
+            changed_files = async_to_sync(provider.get_pull_request_files)(pull_id)
+        except TorngitClientError:
+            log.warning(
+                f"Request client error",
+                extra=dict(
+                    commit=commit.commitid,
+                    repoid=commit.repoid,
+                ),
+                exc_info=True,
+            )
+            raise NotFound("Unable to get pull request's files.")
+        return changed_files
+
+    def get_pull_request_id(self, commit, provider, pull_id):
+        try:
+            if pull_id is None:
+                pull_id = async_to_sync(provider.find_pull_request)(
+                    commit=commit.commitid
+                )
+        except TorngitClientGeneralError:
+            log.warning(
+                f"Request client error",
+                extra=dict(
+                    commit=commit.commitid,
+                    repoid=commit.repoid,
+                ),
+                exc_info=True,
+            )
+            raise NotFound(f"Unable to get pull request for commit: {commit.commitid}")
+        return pull_id
