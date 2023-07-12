@@ -8,6 +8,7 @@ from rest_framework.exceptions import NotFound
 from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
 from shared.torngit.exceptions import TorngitClientError, TorngitClientGeneralError
+from shared.validation.helpers import translate_glob_to_regex
 
 from codecov_auth.authentication.repo_auth import (
     GlobalTokenAuthentication,
@@ -17,6 +18,7 @@ from codecov_auth.authentication.repo_auth import (
 from services.repo_providers import RepoProviderService
 from services.task import TaskService
 from services.yaml import final_commit_yaml
+from upload.helpers import try_to_get_best_possible_bot_token
 from upload.views.base import GetterMixin
 from upload.views.uploads import CanDoCoverageUploadsPermission
 
@@ -68,8 +70,8 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
         repo = self.get_repo()
         commit = self.get_commit(repo)
         yaml = final_commit_yaml(commit, request.user).to_dict()
-
-        provider = RepoProviderService().get_adapter(repo.author, repo)
+        token = try_to_get_best_possible_bot_token(repo)
+        provider = RepoProviderService().get_adapter(repo.author, repo, token=token)
         pull_id = commit.pullid
         if pull_id is None:
             pull_id = self.get_pull_request_id(commit, provider, pull_id)
