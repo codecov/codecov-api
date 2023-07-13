@@ -47,7 +47,7 @@ class PlanServiceTests(TestCase):
         assert plan_service.trial_status == TrialStatus.ONGOING
 
     # TODO: uncomment this when trial_status logic is adjusted
-    # def test_plan_service_trial_status_never_trialled_if_current_paid_customer(self):
+    # def test_plan_service_trial_status_cannot_trial_if_current_paid_customer(self):
     #     current_org_with_paid_plan = OwnerFactory(
     #         plan=BASIC_PLAN_NAME,
     #         trial_start_date=None,
@@ -55,7 +55,7 @@ class PlanServiceTests(TestCase):
     #         stripe_customer_id="test_id_123123",
     #     )
     #     plan_service = PlanService(current_org=current_org_with_paid_plan)
-    #     assert plan_service.trial_status == TrialStatus.NEVER_TRIALLED
+    #     assert plan_service.trial_status == TrialStatus.CANNOT_TRIAL
 
     def test_plan_service_trial_status_never_started_if_it_used_to_be_paid_customer(
         self,
@@ -70,7 +70,7 @@ class PlanServiceTests(TestCase):
             stripe_customer_id="test_id_123123",
         )
         plan_service = PlanService(current_org=current_org_with_paid_plan)
-        assert plan_service.trial_status == TrialStatus.NEVER_TRIALLED
+        assert plan_service.trial_status == TrialStatus.CANNOT_TRIAL
 
     def test_plan_service_start_trial_errors_if_status_isnt_started(self):
         trial_start_date = datetime.utcnow()
@@ -157,10 +157,10 @@ class PlanServiceTests(TestCase):
         )  # should be 250
         assert (
             plan_service.monthly_uploads_limit == 250
-        )  # should be 250 since not trialling
-        assert plan_service.total_trial_days == basic_plan.trial_days
+        )  # should be 250 since not trialing
+        assert plan_service.trial_total_days == basic_plan.trial_days
 
-    def test_plan_service_returns_plan_data_for_trialling_basic_plan(self):
+    def test_plan_service_returns_plan_data_for_trialing_basic_plan(self):
         trial_start_date = datetime.utcnow()
         trial_end_date = datetime.utcnow() + timedelta(
             days=TrialDaysAmount.CODECOV_SENTRY.value
@@ -173,14 +173,11 @@ class PlanServiceTests(TestCase):
         plan_service = PlanService(current_org=current_org)
 
         basic_plan = FREE_PLAN_REPRESENTATIONS[BASIC_PLAN_NAME]
-        print("value?", plan_service.monthly_uploads_limit)
         assert plan_service.trial_status == TrialStatus.ONGOING
         assert plan_service.marketing_name == basic_plan.marketing_name
         assert plan_service.plan_name == basic_plan.value
         assert plan_service.billing_rate == basic_plan.billing_rate
         assert plan_service.base_unit_price == basic_plan.base_unit_price
         assert plan_service.benefits == basic_plan.benefits
-        assert (
-            plan_service.monthly_uploads_limit == None
-        )  # Not 250 since it's trialling
-        assert plan_service.total_trial_days == basic_plan.trial_days
+        assert plan_service.monthly_uploads_limit == None  # Not 250 since it's trialing
+        assert plan_service.trial_total_days == basic_plan.trial_days
