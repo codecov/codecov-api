@@ -227,6 +227,10 @@ class Commit(models.Model):
     @cached_property
     def commitreport(self):
         reports = list(self.reports.all())
+        # This is almost always prefetched w/ `filter(code=None)` and so the
+        # reports above have `code=None`.  In the case that the reports were not
+        # prefetched we'll filter again in memory.
+        reports = [report for report in reports if report.code is None]
         return reports[0] if reports else None
 
     @cached_property

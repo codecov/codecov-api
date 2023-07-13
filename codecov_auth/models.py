@@ -110,6 +110,8 @@ class Owner(models.Model):
         models.IntegerField(null=True), null=True, blank=True
     )
     did_trial = models.BooleanField(null=True)
+    trial_start_date = DateTimeWithoutTZField(null=True)
+    trial_end_date = DateTimeWithoutTZField(null=True)
     free = models.SmallIntegerField(default=0)
     invoice_details = models.TextField(null=True)
     delinquent = models.BooleanField(null=True)
@@ -450,10 +452,6 @@ class OrganizationLevelToken(BaseCodecovModel):
     )
 
     def save(self, *args, **kwargs):
-        if not self.owner.plan in ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS:
-            raise ValidationError(
-                "Organization-wide upload tokens are only available in enterprise-cloud plans."
-            )
         super().save(*args, **kwargs)
 
 

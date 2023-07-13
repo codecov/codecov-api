@@ -11,3 +11,6 @@ flag_management:
     - name: "smart-labels"
       carryforward: true
       carryforward_mode: "labels"
+
+codecov:
+  require_ci_to_pass: false

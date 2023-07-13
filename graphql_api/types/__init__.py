@@ -25,6 +25,7 @@ from .path_contents import (
     path_content_file_bindable,
     path_contents_result_bindable,
 )
+from .plan import plan, plan_bindable
 from .profile import profile, profile_bindable
 from .pull import pull, pull_bindable
 from .query import query, query_bindable
@@ -65,6 +66,7 @@ types = [
     owner,
     repository,
     inputs,
+    plan,
     enums,
     session,
     mutation,
@@ -89,6 +91,7 @@ bindables = [
     comparison_result_bindable,
     component_bindable,
     component_comparison_bindable,
+    plan_bindable,
     flag_bindable,
     flag_comparison_bindable,
     segment_comparison_bindable,

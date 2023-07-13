@@ -165,7 +165,8 @@ class GitLabWebhookHandler(APIView):
             repo.deleted = True
             repo.activated = False
             repo.active = False
-            repo.save(update_fields=["deleted", "activated", "active"])
+            repo.name = f"{repo.name}-deleted"
+            repo.save(update_fields=["deleted", "activated", "active", "name"])
             message = "Repository deleted"
 
         elif event_name == "project_rename":
@@ -227,12 +228,15 @@ class GitLabWebhookHandler(APIView):
         return Response(data=message)
 
     def _validate_secret(self, request):
+        webhook_validation = bool(
+            get_config(self.service_name, "webhook_validation", default=False)
+        )
         webhook_secret = get_config(
             self.service_name,
             "webhook_secret",
             default=None,
         )
-        if webhook_secret is not None:
+        if webhook_validation and webhook_secret is not None:
             token = request.META.get(GitLabHTTPHeaders.TOKEN)
             if not constant_time_compare(webhook_secret, token):
                 raise PermissionDenied()

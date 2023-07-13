@@ -4,7 +4,6 @@ from abc import ABC, abstractmethod
 import stripe
 from django.conf import settings
 
-import services.sentry as sentry
 from billing.constants import (
     ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
     FREE_PLAN_REPRESENTATIONS,
@@ -14,6 +13,7 @@ from billing.constants import (
     USER_PLAN_REPRESENTATIONS,
 )
 from codecov_auth.models import Owner
+from services.plan import PlanService, TrialStatus
 from services.segment import SegmentService
 
 log = logging.getLogger(__name__)
@@ -211,6 +211,7 @@ class StripeService(AbstractPaymentService):
         # invoice a user if the user increases the number of seats or if the plan changes from monthly to yearly.
         # An increase in seats and/or plan implies the user is upgrading, hence 'is_upgrading' is a consequence
         # of proration_behavior providing an invoice, in this case, != "none"
+        # TODO: change this to "self._is_upgrading_seats(owner, desired_plan) or self._is_extending_term(owner, desired_plan)"
         is_upgrading = True if proration_behavior != "none" else False
 
         # Divide logic bw immediate updates and scheduled updates
@@ -393,7 +394,7 @@ class StripeService(AbstractPaymentService):
         return success_url, cancel_url
 
     @_log_stripe_error
-    def create_checkout_session(self, owner, desired_plan):
+    def create_checkout_session(self, owner: Owner, desired_plan):
         success_url, cancel_url = self._get_success_and_cancel_url(owner)
         log.info("Creating Stripe Checkout Session for owner: {owner.ownerid}")
 
@@ -411,7 +412,11 @@ class StripeService(AbstractPaymentService):
 
         plan_representation = USER_PLAN_REPRESENTATIONS[desired_plan["value"]]
         trial_days = plan_representation.get("trial_days")
-        if trial_days is not None:
+        plan_service = PlanService(current_org=owner)
+        if (
+            trial_days is not None
+            and plan_service.trial_status == TrialStatus.NOT_STARTED
+        ):
             billing_address_collection = "auto"
             subscription_data["trial_period_days"] = trial_days
             subscription_data["trial_settings"] = {
@@ -421,17 +426,22 @@ class StripeService(AbstractPaymentService):
                 }
             }
 
-        session = stripe.checkout.Session.create(
-            billing_address_collection=billing_address_collection,
-            payment_method_types=["card"],
-            payment_method_collection="if_required",
-            client_reference_id=owner.ownerid,
-            customer=owner.stripe_customer_id,
-            customer_email=owner.email,
-            success_url=success_url,
-            cancel_url=cancel_url,
-            subscription_data=subscription_data,
-        )
+        session = None
+
+        session_params = {
+            "billing_address_collection": billing_address_collection,
+            "payment_method_types": ["card"],
+            "payment_method_collection": "if_required",
+            "client_reference_id": owner.ownerid,
+            "success_url": success_url,
+            "cancel_url": cancel_url,
+            "subscription_data": subscription_data,
+        }
+        if not owner.stripe_customer_id:
+            session_params["customer_email"] = owner.email
+        else:
+            session_params["customer"] = owner.stripe_customer_id
+        session = stripe.checkout.Session.create(**session_params)
         log.info(
             f"Stripe Checkout Session created successfully for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
         )

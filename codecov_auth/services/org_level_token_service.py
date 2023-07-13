@@ -6,8 +6,8 @@ from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.forms import ValidationError
 
-from billing.constants import ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS
-from codecov_auth.models import OrganizationLevelToken, Owner, TokenTypeChoices
+from billing.constants import USER_PLAN_REPRESENTATIONS
+from codecov_auth.models import OrganizationLevelToken, Owner
 
 log = logging.getLogger(__name__)
 
@@ -16,19 +16,18 @@ class OrgLevelTokenService(object):
     """
     Groups some basic CRUD functionality to create and delete OrganizationLevelToken.
     Restrictions:
-        -- only Owners in ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS can have OrganizationLevelToken
         -- only 1 token per Owner
     """
 
     @classmethod
     def org_can_have_upload_token(cls, org: Owner):
-        return org.plan in ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS
+        return org.plan in USER_PLAN_REPRESENTATIONS
 
     @classmethod
     def get_or_create_org_token(cls, org: Owner):
         if not cls.org_can_have_upload_token(org):
             raise ValidationError(
-                "Organization-wide upload tokens are only available in enterprise-cloud plans."
+                "Organization-wide upload tokens are not available for your organization."
             )
         token, created = OrganizationLevelToken.objects.get_or_create(owner=org)
         if created:
