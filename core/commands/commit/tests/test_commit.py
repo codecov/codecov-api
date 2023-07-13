@@ -10,11 +10,11 @@ from ..commit import CommitCommands
 
 class CommitCommandsTest(TransactionTestCase):
     def setUp(self):
-        self.user = OwnerFactory(username="codecov-user")
+        self.owner = OwnerFactory(username="codecov-user")
         self.repository = RepositoryFactory()
         self.commit = CommitFactory()
         self.pull = PullFactory(repository_id=self.repository.repoid)
-        self.command = CommitCommands(self.user, "github")
+        self.command = CommitCommands(self.owner, "github")
 
     @patch("core.commands.commit.commit.GetFinalYamlInteractor.execute")
     def test_get_final_yaml_delegate_to_interactor(self, interactor_mock):

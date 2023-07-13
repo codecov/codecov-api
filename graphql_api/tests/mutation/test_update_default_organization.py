@@ -21,7 +21,7 @@ class UpdateProfileTestCase(GraphQLTestHelper, TransactionTestCase):
         self.default_organization = OwnerFactory(
             username=self.default_organization_username, service="github"
         )
-        self.user = OwnerFactory(
+        self.owner = OwnerFactory(
             username="sample-owner",
             service="github",
             organizations=[self.default_organization.ownerid],
@@ -30,10 +30,10 @@ class UpdateProfileTestCase(GraphQLTestHelper, TransactionTestCase):
     def test_when_authenticated(self):
         self.gql_request(
             query,
-            user=self.user,
+            owner=self.owner,
             variables={"input": {"username": self.default_organization_username}},
         )
         owner_profile: OwnerProfile = OwnerProfile.objects.filter(
-            owner_id=self.user.ownerid
+            owner_id=self.owner.ownerid
         ).first()
         assert owner_profile.default_org == self.default_organization

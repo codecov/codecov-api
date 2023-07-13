@@ -9,6 +9,7 @@ from stripe.error import InvalidRequestError, StripeError
 
 from api.internal.tests.test_utils import GetAdminProviderAdapter
 from codecov_auth.tests.factories import OwnerFactory
+from utils.test_utils import Client
 
 curr_path = os.path.dirname(__file__)
 
@@ -16,7 +17,7 @@ curr_path = os.path.dirname(__file__)
 class InvoiceViewSetTests(APITestCase):
     def setUp(self):
         self.service = "gitlab"
-        self.user = OwnerFactory(stripe_customer_id="1000")
+        self.current_owner = OwnerFactory(stripe_customer_id="1000")
         self.expected_invoice = {
             "number": "EF0A41E-0001",
             "status": "paid",
@@ -49,7 +50,8 @@ class InvoiceViewSetTests(APITestCase):
             "customer_shipping": None,
         }
 
-        self.client.force_login(user=self.user)
+        self.client = Client()
+        self.client.force_login_owner(self.current_owner)
 
     def _list(self, kwargs):
         return self.client.get(reverse("invoices-list", kwargs=kwargs))
@@ -67,7 +69,10 @@ class InvoiceViewSetTests(APITestCase):
         expected_invoices = [self.expected_invoice] * 100
 
         response = self._list(
-            kwargs={"service": self.user.service, "owner_username": self.user.username}
+            kwargs={
+                "service": self.current_owner.service,
+                "owner_username": self.current_owner.username,
+            }
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -88,12 +93,12 @@ class InvoiceViewSetTests(APITestCase):
         with open("./services/tests/samples/stripe_invoice.json") as f:
             stripe_invoice_response = json.load(f)
         invoice = stripe_invoice_response["data"][0]
-        invoice["customer"] = self.user.stripe_customer_id
+        invoice["customer"] = self.current_owner.stripe_customer_id
         mock_retrieve_invoice.return_value = invoice
         response = self._retrieve(
             kwargs={
-                "service": self.user.service,
-                "owner_username": self.user.username,
+                "service": self.current_owner.service,
+                "owner_username": self.current_owner.username,
                 "pk": invoice["id"],
             }
         )
@@ -107,8 +112,8 @@ class InvoiceViewSetTests(APITestCase):
         )
         response = self._retrieve(
             kwargs={
-                "service": self.user.service,
-                "owner_username": self.user.username,
+                "service": self.current_owner.service,
+                "owner_username": self.current_owner.username,
                 "pk": "abc",
             }
         )
@@ -119,8 +124,8 @@ class InvoiceViewSetTests(APITestCase):
         mock_retrieve_invoice.return_value = {"customer": "123456789"}
         response = self._retrieve(
             kwargs={
-                "service": self.user.service,
-                "owner_username": self.user.username,
+                "service": self.current_owner.service,
+                "owner_username": self.current_owner.username,
                 "pk": "abc",
             }
         )

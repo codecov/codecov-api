@@ -26,7 +26,7 @@ mutation($input: CreateApiTokenInput!) {
 
 class CreateApiTokenTestCase(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
-        self.user = OwnerFactory(username="codecov-user")
+        self.owner = OwnerFactory(username="codecov-user")
 
     def test_when_unauthenticated(self):
         data = self.gql_request(query, variables={"input": {"name": "yo"}})
@@ -35,9 +35,9 @@ class CreateApiTokenTestCase(GraphQLTestHelper, TransactionTestCase):
     def test_when_authenticated(self):
         name = "yo"
         data = self.gql_request(
-            query, user=self.user, variables={"input": {"name": name}}
+            query, owner=self.owner, variables={"input": {"name": name}}
         )
-        created_token = self.user.session_set.filter(name=name).first()
+        created_token = self.owner.session_set.filter(name=name).first()
         assert data["createApiToken"]["session"] == {
             "name": name,
             "ip": None,
@@ -50,7 +50,7 @@ class CreateApiTokenTestCase(GraphQLTestHelper, TransactionTestCase):
     def test_when_authenticated_full_token(self):
         name = "yo"
         data = self.gql_request(
-            query, user=self.user, variables={"input": {"name": name}}
+            query, owner=self.owner, variables={"input": {"name": name}}
         )
-        created_token = self.user.session_set.filter(name=name).first()
+        created_token = self.owner.session_set.filter(name=name).first()
         assert data["createApiToken"]["fullToken"] == str(created_token.token)

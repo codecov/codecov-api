@@ -2,11 +2,11 @@ from unittest.mock import patch
 
 from django.test import TransactionTestCase, override_settings
 from rest_framework.reverse import reverse
-from rest_framework.test import APIClient
 
 from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
 from services.self_hosted import activate_owner, is_activated_owner
+from utils.test_utils import APIClient
 
 
 @override_settings(IS_ENTERPRISE=True, ROOT_URLCONF="api.internal.enterprise_urls")
@@ -20,10 +20,10 @@ class UserViewsetUnauthenticatedTestCase(TransactionTestCase):
 @override_settings(IS_ENTERPRISE=True, ROOT_URLCONF="api.internal.enterprise_urls")
 class UserViewsetTestCase(TransactionTestCase):
     def setUp(self):
-        self.client = APIClient()
         self.owner = OwnerFactory()
-        self.user = OwnerFactory(organizations=[self.owner.ownerid])
-        self.client.force_authenticate(user=self.user)
+        self.current_owner = OwnerFactory(organizations=[self.owner.ownerid])
+        self.client = APIClient()
+        self.client.force_login_owner(self.current_owner)
 
 
 class UserViewsetAuthenticatedTestCase(UserViewsetTestCase):
@@ -42,7 +42,7 @@ class UserViewsetAuthenticatedTestCase(UserViewsetTestCase):
 
     def test_detail_self(self):
         res = self.client.get(
-            reverse("selfhosted-users-detail", kwargs={"pk": self.user.pk})
+            reverse("selfhosted-users-detail", kwargs={"pk": self.current_owner.pk})
         )
         assert res.status_code == 403
 
@@ -50,10 +50,10 @@ class UserViewsetAuthenticatedTestCase(UserViewsetTestCase):
         res = self.client.get(reverse("selfhosted-users-current"))
         assert res.status_code == 200
         assert res.json() == {
-            "ownerid": self.user.pk,
-            "username": self.user.username,
-            "email": self.user.email,
-            "name": self.user.name,
+            "ownerid": self.current_owner.pk,
+            "username": self.current_owner.username,
+            "email": self.current_owner.email,
+            "name": self.current_owner.name,
             "is_admin": False,
             "activated": False,
         }
@@ -63,28 +63,28 @@ class UserViewsetAuthenticatedTestCase(UserViewsetTestCase):
         license_seats.return_value = 5
 
         org = OwnerFactory()
-        self.user.organizations = [org.pk]
-        self.user.save()
+        self.current_owner.organizations = [org.pk]
+        self.current_owner.save()
 
         res = self.client.patch(
             reverse("selfhosted-users-current"), data={"activated": True}, format="json"
         )
         assert res.status_code == 200
         assert res.json() == {
-            "ownerid": self.user.pk,
-            "username": self.user.username,
-            "email": self.user.email,
-            "name": self.user.name,
+            "ownerid": self.current_owner.pk,
+            "username": self.current_owner.username,
+            "email": self.current_owner.email,
+            "name": self.current_owner.name,
             "is_admin": False,
             "activated": True,
         }
-        assert is_activated_owner(self.user) == True
+        assert is_activated_owner(self.current_owner) == True
 
 
 class UserViewsetAdminTestCase(UserViewsetTestCase):
     @patch("services.self_hosted.admin_owners")
     def test_list_users(self, admin_owners):
-        admin_owners.return_value = Owner.objects.filter(pk__in=[self.user.pk])
+        admin_owners.return_value = Owner.objects.filter(pk__in=[self.current_owner.pk])
 
         other_owner = OwnerFactory()
         other_other_owner = OwnerFactory(
@@ -105,10 +105,10 @@ class UserViewsetAdminTestCase(UserViewsetTestCase):
             "previous": None,
             "results": [
                 {
-                    "ownerid": self.user.pk,
-                    "username": self.user.username,
-                    "email": self.user.email,
-                    "name": self.user.name,
+                    "ownerid": self.current_owner.pk,
+                    "username": self.current_owner.username,
+                    "email": self.current_owner.email,
+                    "name": self.current_owner.name,
                     "is_admin": True,
                     "activated": False,
                 },
@@ -126,7 +126,7 @@ class UserViewsetAdminTestCase(UserViewsetTestCase):
 
     @patch("services.self_hosted.admin_owners")
     def test_list_users_filter_admin(self, admin_owners):
-        admin_owners.return_value = Owner.objects.filter(pk__in=[self.user.pk])
+        admin_owners.return_value = Owner.objects.filter(pk__in=[self.current_owner.pk])
 
         other_owner = OwnerFactory()
 
@@ -138,10 +138,10 @@ class UserViewsetAdminTestCase(UserViewsetTestCase):
             "previous": None,
             "results": [
                 {
-                    "ownerid": self.user.pk,
-                    "username": self.user.username,
-                    "email": self.user.email,
-                    "name": self.user.name,
+                    "ownerid": self.current_owner.pk,
+                    "username": self.current_owner.username,
+                    "email": self.current_owner.email,
+                    "name": self.current_owner.name,
                     "is_admin": True,
                     "activated": False,
                 },
@@ -152,7 +152,7 @@ class UserViewsetAdminTestCase(UserViewsetTestCase):
     @patch("services.self_hosted.activated_owners")
     @patch("services.self_hosted.admin_owners")
     def test_list_users_filter_activated(self, admin_owners, activated_owners):
-        admin_owners.return_value = Owner.objects.filter(pk__in=[self.user.pk])
+        admin_owners.return_value = Owner.objects.filter(pk__in=[self.current_owner.pk])
 
         other_owner = OwnerFactory(organizations=[self.owner.ownerid])
         activated_owners.return_value = Owner.objects.filter(pk__in=[other_owner.pk])
@@ -178,7 +178,7 @@ class UserViewsetAdminTestCase(UserViewsetTestCase):
 
     @patch("services.self_hosted.admin_owners")
     def test_list_users_search(self, admin_owners):
-        admin_owners.return_value = Owner.objects.filter(pk__in=[self.user.pk])
+        admin_owners.return_value = Owner.objects.filter(pk__in=[self.current_owner.pk])
 
         other_owner = OwnerFactory(
             username="foobar", organizations=[self.owner.ownerid]
@@ -205,7 +205,7 @@ class UserViewsetAdminTestCase(UserViewsetTestCase):
 
     @patch("services.self_hosted.admin_owners")
     def test_detail(self, admin_owners):
-        admin_owners.return_value = Owner.objects.filter(pk__in=[self.user.pk])
+        admin_owners.return_value = Owner.objects.filter(pk__in=[self.current_owner.pk])
 
         other_owner = OwnerFactory(organizations=[self.owner.ownerid])
 
@@ -225,7 +225,7 @@ class UserViewsetAdminTestCase(UserViewsetTestCase):
     @patch("services.self_hosted.license_seats")
     @patch("services.self_hosted.admin_owners")
     def test_update_activate(self, admin_owners, license_seats):
-        admin_owners.return_value = Owner.objects.filter(pk__in=[self.user.pk])
+        admin_owners.return_value = Owner.objects.filter(pk__in=[self.current_owner.pk])
         license_seats.return_value = 5
 
         org = OwnerFactory()
@@ -250,7 +250,7 @@ class UserViewsetAdminTestCase(UserViewsetTestCase):
     @patch("services.self_hosted.license_seats")
     @patch("services.self_hosted.admin_owners")
     def test_update_activate_no_more_seats(self, admin_owners, license_seats):
-        admin_owners.return_value = Owner.objects.filter(pk__in=[self.user.pk])
+        admin_owners.return_value = Owner.objects.filter(pk__in=[self.current_owner.pk])
         license_seats.return_value = 0
 
         org = OwnerFactory()
@@ -270,7 +270,7 @@ class UserViewsetAdminTestCase(UserViewsetTestCase):
     @patch("services.self_hosted.license_seats")
     @patch("services.self_hosted.admin_owners")
     def test_update_deactivate(self, admin_owners, license_seats):
-        admin_owners.return_value = Owner.objects.filter(pk__in=[self.user.pk])
+        admin_owners.return_value = Owner.objects.filter(pk__in=[self.current_owner.pk])
         license_seats.return_value = 5
 
         org = OwnerFactory()

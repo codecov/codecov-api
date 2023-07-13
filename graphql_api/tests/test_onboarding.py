@@ -6,7 +6,7 @@ from graphql_api.tests.helper import GraphQLTestHelper, paginate_connection
 
 class OnboardingTest(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
-        self.user = OwnerFactory(username="codecov-user")
+        self.owner = OwnerFactory(username="codecov-user")
         self.params = {
             "typeProjects": ["PERSONAL"],
             "goals": ["STARTING_WITH_TESTS", "OTHER"],
@@ -15,7 +15,7 @@ class OnboardingTest(GraphQLTestHelper, TransactionTestCase):
 
     def test_when_not_onboarded(self):
         query = "{ me { onboardingCompleted } }"
-        data = self.gql_request(query, user=self.user)
+        data = self.gql_request(query, owner=self.owner)
         assert data == {"me": {"onboardingCompleted": False}}
 
     def test_onboarding_mutation(self):
@@ -35,7 +35,9 @@ class OnboardingTest(GraphQLTestHelper, TransactionTestCase):
           }
         }
         """
-        data = self.gql_request(query, user=self.user, variables={"input": self.params})
+        data = self.gql_request(
+            query, owner=self.owner, variables={"input": self.params}
+        )
         assert data == {
             "onboardUser": {
                 "me": {

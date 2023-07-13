@@ -3,6 +3,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 from django.conf import settings
+from django.contrib.sessions.backends.cache import SessionStore
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
 from django.http import HttpResponse
 from django.test import RequestFactory, TestCase, override_settings
@@ -10,7 +11,7 @@ from freezegun import freeze_time
 from shared.license import LicenseInformation
 
 from codecov_auth.models import Owner, OwnerProfile
-from codecov_auth.tests.factories import OwnerFactory, OwnerProfileFactory
+from codecov_auth.tests.factories import OwnerFactory, UserFactory
 from codecov_auth.views.base import LoginMixin, StateMixin
 
 
@@ -119,11 +120,14 @@ class LoginMixinTests(TestCase):
         self.mixin_instance = LoginMixin()
         self.mixin_instance.service = "github"
         self.request = RequestFactory().get("", {})
+        self.request.user = None
+        self.request.current_owner = None
+        self.request.session = SessionStore()
         self.mixin_instance.request = self.request
 
     @patch("services.segment.SegmentService.identify_user")
-    def test_get_or_create_user_calls_segment_identify_user(self, identify_user_mock):
-        self.mixin_instance._get_or_create_user(
+    def test_get_or_create_owner_calls_segment_identify_user(self, identify_user_mock):
+        self.mixin_instance._get_or_create_owner(
             {
                 "user": {"id": 12345, "key": "4567", "login": "testuser"},
                 "has_private_access": False,
@@ -136,7 +140,7 @@ class LoginMixinTests(TestCase):
     def test_get_or_create_calls_segment_user_signed_up_when_owner_created(
         self, user_signed_up_mock
     ):
-        self.mixin_instance._get_or_create_user(
+        self.mixin_instance._get_or_create_owner(
             {
                 "user": {"id": 12345, "key": "4567", "login": "testuser"},
                 "has_private_access": False,
@@ -150,7 +154,7 @@ class LoginMixinTests(TestCase):
         self, user_signed_in_mock
     ):
         owner = OwnerFactory(service_id=89, service="github")
-        self.mixin_instance._get_or_create_user(
+        self.mixin_instance._get_or_create_owner(
             {
                 "user": {
                     "id": owner.service_id,
@@ -211,7 +215,7 @@ class LoginMixinTests(TestCase):
         self.request.COOKIES[
             "_marketing_tags"
         ] = "utm_department=a&utm_campaign=b&utm_medium=c&utm_source=d&utm_content=e&utm_term=f"
-        self.mixin_instance._get_or_create_user(
+        self.mixin_instance._get_or_create_owner(
             {
                 "user": {
                     "id": owner.service_id,
@@ -244,7 +248,7 @@ class LoginMixinTests(TestCase):
 
     @override_settings(IS_ENTERPRISE=True)
     @patch(
-        "codecov_auth.views.base.LoginMixin._get_or_create_user",
+        "codecov_auth.views.base.LoginMixin._get_or_create_owner",
         mock_get_or_create_owner,
     )
     @patch(
@@ -265,15 +269,13 @@ class LoginMixinTests(TestCase):
         )
         mock_get_config.return_value = ["awesome-team", "modest_mice"]
         with pytest.raises(PermissionDenied) as exp:
-            user = self.mixin_instance.get_and_modify_user(user_dict, self.request)
-            self.mixin_instance.set_cookies_and_login_user(
-                user, self.request, HttpResponse()
-            )
+            user = self.mixin_instance.get_and_modify_owner(user_dict, self.request)
+            self.mixin_instance.login_owner(user, self.request, HttpResponse())
             assert exp.status_code == 401
         mock_get_config.assert_called_with("github", "organizations")
 
     @patch(
-        "codecov_auth.views.base.LoginMixin._get_or_create_user",
+        "codecov_auth.views.base.LoginMixin._get_or_create_owner",
         mock_get_or_create_owner,
     )
     @patch(
@@ -296,14 +298,12 @@ class LoginMixinTests(TestCase):
             user=dict(id=121),
         )
         # This time it should not raise an exception because the user is in one of the orgs
-        user = self.mixin_instance.get_and_modify_user(user_dict, self.request)
-        self.mixin_instance.set_cookies_and_login_user(
-            user, self.request, HttpResponse()
-        )
+        user = self.mixin_instance.get_and_modify_owner(user_dict, self.request)
+        self.mixin_instance.login_owner(user, self.request, HttpResponse())
         mock_get_config.assert_any_call("github", "organizations")
 
     @patch(
-        "codecov_auth.views.base.LoginMixin._get_or_create_user",
+        "codecov_auth.views.base.LoginMixin._get_or_create_owner",
         mock_get_or_create_owner,
     )
     @patch(
@@ -319,10 +319,8 @@ class LoginMixinTests(TestCase):
     def test_get_and_modify_user_passes_if_not_enterprise(self, mock_get_config: Mock):
         user_dict = dict(orgs=[], is_student=False, user=dict(id=121))
         # This time it should not raise an exception because it's not in enterprise mode
-        user = self.mixin_instance.get_and_modify_user(user_dict, self.request)
-        self.mixin_instance.set_cookies_and_login_user(
-            user, self.request, HttpResponse()
-        )
+        user = self.mixin_instance.get_and_modify_owner(user_dict, self.request)
+        self.mixin_instance.login_owner(user, self.request, HttpResponse())
         mock_get_config.assert_not_called()
 
     @override_settings(IS_ENTERPRISE=False)
@@ -434,15 +432,11 @@ class LoginMixinTests(TestCase):
     @override_settings(IS_ENTERPRISE=True)
     @patch("services.refresh.RefreshService.trigger_refresh", lambda *args: None)
     @patch(
-        "codecov_auth.views.base.LoginMixin._set_proper_cookies_and_session",
-        lambda *args: None,
-    )
-    @patch(
         "codecov_auth.views.base.LoginMixin._check_user_count_limitations",
         lambda *args: True,
     )
     @patch(
-        "codecov_auth.views.base.LoginMixin._get_or_create_user",
+        "codecov_auth.views.base.LoginMixin._get_or_create_owner",
         mock_get_or_create_owner,
     )
     @patch("codecov_auth.views.base.get_config")
@@ -462,10 +456,8 @@ class LoginMixinTests(TestCase):
         )
         # Raise exception because user is not member of My Team
         with pytest.raises(PermissionDenied) as exp:
-            user = self.mixin_instance.get_and_modify_user(user_dict, self.request)
-            self.mixin_instance.set_cookies_and_login_user(
-                user, self.request, HttpResponse()
-            )
+            user = self.mixin_instance.get_and_modify_owner(user_dict, self.request)
+            self.mixin_instance.login_owner(user, self.request, HttpResponse())
             mock_get_config.assert_any_call("github", "organizations")
             mock_get_config.assert_any_call("github", "teams")
             assert (
@@ -475,25 +467,19 @@ class LoginMixinTests(TestCase):
             assert exp.status_code == 401
         # No exception if user is in My Team
         user_dict["teams"] = [dict(name="My Team")]
-        user = self.mixin_instance.get_and_modify_user(user_dict, self.request)
-        self.mixin_instance.set_cookies_and_login_user(
-            user, self.request, HttpResponse()
-        )
+        user = self.mixin_instance.get_and_modify_owner(user_dict, self.request)
+        self.mixin_instance.login_owner(user, self.request, HttpResponse())
         mock_get_config.assert_any_call("github", "organizations")
         mock_get_config.assert_any_call("github", "teams")
 
     @override_settings(IS_ENTERPRISE=True)
     @patch("services.refresh.RefreshService.trigger_refresh", lambda *args: None)
     @patch(
-        "codecov_auth.views.base.LoginMixin._set_proper_cookies_and_session",
-        lambda *args: None,
-    )
-    @patch(
         "codecov_auth.views.base.LoginMixin._check_user_count_limitations",
         lambda *args: True,
     )
     @patch(
-        "codecov_auth.views.base.LoginMixin._get_or_create_user",
+        "codecov_auth.views.base.LoginMixin._get_or_create_owner",
         mock_get_or_create_owner,
     )
     @patch("codecov_auth.views.base.get_config")
@@ -512,10 +498,8 @@ class LoginMixinTests(TestCase):
             teams=[dict(name="My Team")],
         )
         # Don't raise exception if there's no team in the config
-        user = self.mixin_instance.get_and_modify_user(user_dict, self.request)
-        self.mixin_instance.set_cookies_and_login_user(
-            user, self.request, HttpResponse()
-        )
+        user = self.mixin_instance.get_and_modify_owner(user_dict, self.request)
+        self.mixin_instance.login_owner(user, self.request, HttpResponse())
         mock_get_config.assert_any_call("github", "organizations")
         mock_get_config.assert_any_call("github", "teams")
 
@@ -660,3 +644,60 @@ class LoginMixinTests(TestCase):
             )
         )
         assert redirect_url == url + f"/{default_org_username}"
+
+    @patch("services.refresh.RefreshService.trigger_refresh", lambda *args: None)
+    def test_login_unauthenticated_with_claimed_owner(self):
+        self.request.user = None
+        owner = OwnerFactory()
+        self.mixin_instance.login_owner(owner, self.request, HttpResponse())
+        assert self.request.user == owner.user
+
+    @patch("services.refresh.RefreshService.trigger_refresh", lambda *args: None)
+    def test_login_unauthenticated_with_unclaimed_owner(self):
+        self.request.user = None
+        owner = OwnerFactory(user=None)
+        self.mixin_instance.login_owner(owner, self.request, HttpResponse())
+        # creates new user
+        assert self.request.user == owner.user
+        assert self.request.user.email == owner.email
+        assert self.request.user.name == owner.name
+
+    @patch("services.refresh.RefreshService.trigger_refresh", lambda *args: None)
+    def test_login_authenticated_with_unclaimed_owner(self):
+        user = UserFactory()
+        owner = OwnerFactory(user=None)
+        self.request.user = user
+        self.mixin_instance.login_owner(owner, self.request, HttpResponse())
+        owner.refresh_from_db()
+        assert owner.user == user
+
+    @patch("services.refresh.RefreshService.trigger_refresh", lambda *args: None)
+    def test_login_authenticated_with_existing_service_owner(self):
+        user = UserFactory()
+        OwnerFactory(service="github", user=user)
+        owner = OwnerFactory(user=None, service="github")
+        self.request.user = user
+        self.mixin_instance.login_owner(owner, self.request, HttpResponse())
+        owner.refresh_from_db()
+
+        # logs in new user
+        assert self.request.user is not None
+        assert self.request.user != user
+
+        # and claims owner w/ that new user
+        assert owner.user is not None
+        assert owner.user != user
+
+    @patch("services.refresh.RefreshService.trigger_refresh", lambda *args: None)
+    def test_login_authenticated_with_claimed_owner(self):
+        user = UserFactory()
+        owner = OwnerFactory(service="github")
+        self.request.user = user
+        self.mixin_instance.login_owner(owner, self.request, HttpResponse())
+        owner.refresh_from_db()
+
+        assert self.request.user == owner.user
+
+        # does not re-claim owner
+        assert owner.user is not None
+        assert owner.user != user

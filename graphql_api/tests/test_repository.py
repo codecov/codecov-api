@@ -76,7 +76,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
     def fetch_repository(self, name, fields=None):
         data = self.gql_request(
             query_repository % (fields or default_fields),
-            user=self.user,
+            owner=self.owner,
             variables={"name": name},
         )
         return data["me"]["owner"]["repository"]
@@ -84,20 +84,20 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
     def fetch_repositories(self, repo_names, fields=None):
         data = self.gql_request(
             query_repositories % (fields or default_fields),
-            user=self.user,
+            owner=self.owner,
             variables={"repoNames": repo_names},
         )
         return [edge["node"] for edge in data["me"]["owner"]["repositories"]["edges"]]
 
     def setUp(self):
-        self.user = OwnerFactory(username="codecov-user")
+        self.owner = OwnerFactory(username="codecov-user")
         self.yaml = {"test": "test"}
 
     @freeze_time("2021-01-01")
     def test_when_repository_has_no_coverage(self):
 
         repo = RepositoryFactory(
-            author=self.user, active=True, private=True, name="a", yaml=self.yaml
+            author=self.owner, active=True, private=True, name="a", yaml=self.yaml
         )
         profiling_token = RepositoryTokenFactory(
             repository_id=repo.repoid, token_type="profiling"
@@ -129,7 +129,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
     @freeze_time("2021-01-01")
     def test_when_repository_has_coverage(self):
         repo = RepositoryFactory(
-            author=self.user,
+            author=self.owner,
             active=True,
             private=True,
             name="b",
@@ -178,7 +178,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
 
     @freeze_time("2021-01-01")
     def test_repositories_oldest_commit_at(self):
-        repo = RepositoryFactory(author=self.user)
+        repo = RepositoryFactory(author=self.owner)
 
         CommitFactory(repository=repo, totals={"c": 75})
         CommitFactory(repository=repo, totals={"c": 85})
@@ -191,7 +191,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         ]
 
     def test_repository_pulls(self):
-        repo = RepositoryFactory(author=self.user, active=True, private=True, name="a")
+        repo = RepositoryFactory(author=self.owner, active=True, private=True, name="a")
         PullFactory(repository=repo, pullid=2)
         PullFactory(repository=repo, pullid=3)
 
@@ -206,7 +206,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
 
         data = self.gql_request(
             query_repository % "profilingToken",
-            user=user,
+            owner=user,
             variables={"name": repo.name},
         )
         assert data["me"]["owner"]["repository"]["profilingToken"] == "random"
@@ -220,7 +220,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
 
         data = self.gql_request(
             query_repository % "staticAnalysisToken",
-            user=user,
+            owner=user,
             variables={"name": repo.name},
         )
         assert data["me"]["owner"]["repository"]["staticAnalysisToken"] == "random"
@@ -235,7 +235,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             CriticalFile("three"),
         ]
         repo = RepositoryFactory(
-            author=self.user,
+            author=self.owner,
             active=True,
             private=True,
         )
@@ -252,7 +252,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
 
         data = self.gql_request(
             query_repository % "graphToken",
-            user=user,
+            owner=user,
             variables={"name": repo.name},
         )
         assert data["me"]["owner"]["repository"]["graphToken"] == repo.image_token
@@ -262,7 +262,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         repo = RepositoryFactory(author=user, name="has_yaml", yaml=self.yaml)
         data = self.gql_request(
             query_repository % "yaml",
-            user=user,
+            owner=user,
             variables={"name": repo.name},
         )
         assert data["me"]["owner"]["repository"]["yaml"] == "test: test\n"
@@ -272,7 +272,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         repo = RepositoryFactory(author=user, name="no_yaml")
         data = self.gql_request(
             query_repository % "yaml",
-            user=user,
+            owner=user,
             variables={"name": repo.name},
         )
         assert data["me"]["owner"]["repository"]["yaml"] == None
@@ -283,7 +283,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         repo = RepositoryFactory(author=user, bot=bot)
         data = self.gql_request(
             query_repository % "bot {username}",
-            user=user,
+            owner=user,
             variables={"name": repo.name},
         )
         assert data["me"]["owner"]["repository"]["bot"]["username"] == "random_bot"
@@ -293,7 +293,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         repo = RepositoryFactory(author=user, activated=True)
         data = self.gql_request(
             query_repository % "activated",
-            user=user,
+            owner=user,
             variables={"name": repo.name},
         )
         assert data["me"]["owner"]["repository"]["activated"] == True
@@ -304,7 +304,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         repo = RepositoryFactory(author=user, activated=False)
         data = self.gql_request(
             query_repository % "activated",
-            user=user,
+            owner=user,
             variables={"name": repo.name},
         )
         assert data["me"]["owner"]["repository"]["activated"] == False
@@ -319,7 +319,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
                 flagsMeasurementsActive
                 flagsMeasurementsBackfilled
             """,
-            user=user,
+            owner=user,
             variables={"name": repo.name},
         )
         assert data["me"]["owner"]["repository"]["flagsMeasurementsActive"] == False
@@ -330,7 +330,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         mocked_useryaml.return_value = {"coverage": {"range": [60, 80]}}
 
         repo = RepositoryFactory(
-            author=self.user,
+            author=self.owner,
             active=True,
             private=True,
         )
@@ -338,7 +338,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(
             query_repository
             % "repositoryConfig { indicationRange { upperRange lowerRange } }",
-            user=self.user,
+            owner=self.owner,
             variables={"name": repo.name},
         )
 
@@ -358,27 +358,27 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
     @patch("services.activation.try_auto_activate")
     def test_repository_auto_activate(self, try_auto_activate):
         repo = RepositoryFactory(
-            author=self.user,
+            author=self.owner,
             active=True,
             private=True,
         )
 
         self.gql_request(
             query_repository % "name",
-            user=self.user,
+            owner=self.owner,
             variables={"name": repo.name},
         )
 
         try_auto_activate.assert_called_once_with(
-            self.user,
-            self.user,
+            self.owner,
+            self.owner,
         )
 
     @patch("services.activation.is_activated")
     @patch("services.activation.try_auto_activate")
     def test_repository_not_activated(self, try_auto_activate, is_activated):
         repo = RepositoryFactory(
-            author=self.user,
+            author=self.owner,
             active=True,
             private=True,
         )
@@ -387,7 +387,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
 
         data = self.gql_request(
             query_repository % "name",
-            user=self.user,
+            owner=self.owner,
             variables={"name": repo.name},
         )
         assert data["me"]["owner"]["repository"] == {
@@ -399,14 +399,14 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
     @patch("services.activation.try_auto_activate")
     def test_repository_not_activated_self_hosted(self, try_auto_activate):
         repo = RepositoryFactory(
-            author=self.user,
+            author=self.owner,
             active=True,
             private=True,
         )
 
         data = self.gql_request(
             query_repository % "name",
-            user=self.user,
+            owner=self.owner,
             variables={"name": repo.name},
         )
         assert data["me"]["owner"]["repository"] == {
@@ -417,7 +417,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
     def test_repository_not_found(self):
         data = self.gql_request(
             query_repository % "name",
-            user=self.user,
+            owner=self.owner,
             variables={"name": "nonexistent-repo-name"},
         )
         assert data["me"]["owner"]["repository"] == {

@@ -12,6 +12,7 @@ from codecov_auth.models import UserToken
 from codecov_auth.tests.factories import OwnerFactory, UserTokenFactory
 from core.tests.factories import BranchFactory, CommitFactory, RepositoryFactory
 from services.components import Component
+from utils.test_utils import APIClient
 
 
 def sample_report():
@@ -72,7 +73,7 @@ class ReportViewSetTestCase(TestCase):
         self.repo_name = "test-repo"
         self.org = OwnerFactory(username=self.username, service=self.service)
         self.repo = RepositoryFactory(author=self.org, name=self.repo_name, active=True)
-        self.user = OwnerFactory(
+        self.current_owner = OwnerFactory(
             username="codecov-user",
             service="github",
             organizations=[self.org.ownerid],
@@ -96,8 +97,13 @@ class ReportViewSetTestCase(TestCase):
         self.branch.head = self.commit3.commitid
         self.branch.save()
 
+        self.client = APIClient()
+        self.client.force_login_owner(self.current_owner)
+
     def _request_report(self, user_token=None, **params):
-        self.client.force_login(user=self.user)
+        if user_token:
+            self.client.logout()
+
         url = reverse(
             "api-v2-report-detail",
             kwargs={
@@ -116,7 +122,9 @@ class ReportViewSetTestCase(TestCase):
         )
 
     def _post_report(self, user_token=None, **params):
-        self.client.force_login(user=self.user)
+        if user_token:
+            self.client.logout()
+
         url = reverse(
             "api-v2-report-detail",
             kwargs={
@@ -817,7 +825,7 @@ class ReportViewSetTestCase(TestCase):
         mock_is_user_activated.return_value = True
         get_repo_permissions.return_value = (True, True)
         user_token = UserTokenFactory(
-            owner=self.user,
+            owner=self.current_owner,
         )
         res = self._request_report(user_token.token)
         assert res.status_code == 200

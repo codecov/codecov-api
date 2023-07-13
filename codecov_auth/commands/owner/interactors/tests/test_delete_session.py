@@ -17,15 +17,15 @@ def get_session(id):
 
 class DeleteSessionInteractorTest(TransactionTestCase):
     def setUp(self):
-        self.user = OwnerFactory(username="codecov-user")
-        self.session = SessionFactory(owner=self.user)
+        self.owner = OwnerFactory(username="codecov-user")
+        self.session = SessionFactory(owner=self.owner)
 
     async def test_when_unauthenticated_raise(self):
         with pytest.raises(Unauthenticated):
-            await DeleteSessionInteractor(AnonymousUser(), "github").execute(12)
+            await DeleteSessionInteractor(None, "github").execute(12)
 
     async def test_delete_session(self):
-        await DeleteSessionInteractor(self.user, "github").execute(
+        await DeleteSessionInteractor(self.owner, "github").execute(
             self.session.sessionid
         )
         with pytest.raises(Session.DoesNotExist):

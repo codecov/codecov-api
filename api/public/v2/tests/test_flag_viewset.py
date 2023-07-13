@@ -6,6 +6,7 @@ from rest_framework.reverse import reverse
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
 from reports.tests.factories import RepositoryFlagFactory
+from utils.test_utils import APIClient
 
 
 @patch("api.shared.repo.repository_accessors.RepoAccessors.get_repo_permissions")
@@ -13,7 +14,7 @@ class FlagViewSetTestCase(TestCase):
     def setUp(self):
         self.org = OwnerFactory(username="codecov", service="github")
         self.repo = RepositoryFactory(author=self.org, name="test-repo", active=True)
-        self.user = OwnerFactory(
+        self.current_owner = OwnerFactory(
             username="codecov-user",
             service="github",
             organizations=[self.org.ownerid],
@@ -23,8 +24,10 @@ class FlagViewSetTestCase(TestCase):
         self.flag2 = RepositoryFlagFactory(flag_name="bar", repository=self.repo)
         self.flag2 = RepositoryFlagFactory(flag_name="baz")
 
+        self.client = APIClient()
+        self.client.force_login_owner(self.current_owner)
+
     def _request_flags(self):
-        self.client.force_login(user=self.user)
         url = reverse(
             "api-v2-flags-list",
             kwargs={

@@ -1,6 +1,5 @@
 from datetime import datetime
 
-from django.contrib.auth.models import AnonymousUser
 from django.test import TestCase
 from django.utils import timezone
 
@@ -134,9 +133,7 @@ class RepositoryQuerySetTests(TestCase):
             assert deleted_repo.repoid not in repoids
 
         with self.subTest("when user not authed, returns only public"):
-            user = AnonymousUser()
-
-            repos = Repository.objects.viewable_repos(user)
+            repos = Repository.objects.viewable_repos(None)
             assert repos.count() == 1
 
             repoids = repos.values_list("repoid", flat=True)

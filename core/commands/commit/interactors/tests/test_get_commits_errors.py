@@ -23,25 +23,22 @@ class GetCommitErrorsInteractorTest(TransactionTestCase):
         )
 
     # helper to execute the interactor
-    def execute(self, user, commit, error_type):
-        service = user.service if user else "github"
-        current_user = user or AnonymousUser()
-        return GetCommitErrorsInteractor(current_user, service).execute(
-            commit, error_type
-        )
+    def execute(self, owner, commit, error_type):
+        service = owner.service if owner else "github"
+        return GetCommitErrorsInteractor(owner, service).execute(commit, error_type)
 
     def test_fetch_yaml_error(self):
         errors = async_to_sync(self.execute)(
-            user=self.owner,
+            owner=self.owner,
             commit=self.commit,
             error_type=CommitErrorGeneralType.yaml_error.value,
         )
-        assert len(errors) is 2
+        assert len(errors) == 2
 
     def test_fetch_bot_error(self):
         errors = async_to_sync(self.execute)(
-            user=self.owner,
+            owner=self.owner,
             commit=self.commit,
             error_type=CommitErrorGeneralType.bot_error.value,
         )
-        assert len(errors) is 1
+        assert len(errors) == 1

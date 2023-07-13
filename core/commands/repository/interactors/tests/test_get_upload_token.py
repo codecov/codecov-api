@@ -13,11 +13,11 @@ class GetUploadTokenInteractorTest(TransactionTestCase):
         self.org = OwnerFactory()
         self.repo_in_org = RepositoryFactory(author=self.org)
         self.random_repo = RepositoryFactory()
-        self.user = OwnerFactory(organizations=[self.org.ownerid])
+        self.owner = OwnerFactory(organizations=[self.org.ownerid])
 
     # helper to execute the interactor
     def execute(self, *args):
-        return GetUploadTokenInteractor(self.user, self.user.service).execute(*args)
+        return GetUploadTokenInteractor(self.owner, self.owner.service).execute(*args)
 
     async def test_fetch_upload_token_random_repo(self):
         token = await self.execute(self.random_repo)

@@ -3,27 +3,29 @@ from unittest.mock import MagicMock, patch
 from django.contrib.admin.sites import AdminSite
 from django.test import TestCase
 
-from codecov_auth.tests.factories import OwnerFactory
+from codecov_auth.tests.factories import UserFactory
 from core.admin import RepositoryAdmin
 from core.models import Repository
 from core.tests.factories import RepositoryFactory
+from utils.test_utils import Client
 
 
 class AdminTest(TestCase):
     def setUp(self):
-        self.user = OwnerFactory()
+        self.user = UserFactory()
         self.repo_admin = RepositoryAdmin(Repository, AdminSite)
+        self.client = Client()
 
     def test_staff_can_access_admin(self):
-        self.user.staff = True
+        self.user.is_staff = True
         self.user.save()
 
-        self.client.force_login(user=self.user)
+        self.client.force_login(self.user)
         response = self.client.get("/admin/")
         self.assertEqual(response.status_code, 200)
 
     def test_non_staff_cannot_access_admin(self):
-        self.client.force_login(user=self.user)
+        self.client.force_login(self.user)
         response = self.client.get("/admin/")
         self.assertEqual(response.status_code, 302)
 

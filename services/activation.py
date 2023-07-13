@@ -11,9 +11,9 @@ log = logging.getLogger(__name__)
 
 
 class BaseActivator(abc.ABC):
-    def __init__(self, org: Owner, user: Owner):
+    def __init__(self, org: Owner, owner: Owner):
         self.org = org
-        self.user = user
+        self.owner = owner
 
     @abc.abstractmethod
     def is_autoactivation_enabled(self) -> bool:
@@ -37,13 +37,13 @@ class CloudActivator(BaseActivator):
         return self.org.plan_auto_activate
 
     def can_activate_user(self) -> bool:
-        return self.org.can_activate_user(self.user)
+        return self.org.can_activate_user(self.owner)
 
     def activate_user(self):
-        self.org.activate_user(self.user)
+        self.org.activate_user(self.owner)
 
     def is_activated(self) -> bool:
-        return self.user.pk in self.org.plan_activated_users
+        return self.owner.pk in self.org.plan_activated_users
 
 
 class SelfHostedActivator(BaseActivator):
@@ -51,36 +51,35 @@ class SelfHostedActivator(BaseActivator):
         return self_hosted.is_autoactivation_enabled()
 
     def can_activate_user(self) -> bool:
-        return self_hosted.can_activate_owner(self.user)
+        return self_hosted.can_activate_owner(self.owner)
 
     def activate_user(self):
-        return self_hosted.activate_owner(self.user)
+        return self_hosted.activate_owner(self.owner)
 
     def is_activated(self) -> bool:
-        return self_hosted.is_activated_owner(self.user)
+        return self_hosted.is_activated_owner(self.owner)
 
 
-def _get_activator(org: Owner, user: Owner) -> BaseActivator:
+def _get_activator(org: Owner, owner: Owner) -> BaseActivator:
     if settings.IS_ENTERPRISE:
-        return SelfHostedActivator(org, user)
+        return SelfHostedActivator(org, owner)
     else:
-        return CloudActivator(org, user)
+        return CloudActivator(org, owner)
 
 
-def try_auto_activate(org: Owner, user: Owner) -> bool:
+def try_auto_activate(org: Owner, owner: Owner) -> bool:
     """
     Returns true iff the user was able to be activated, false otherwise.
     """
-
-    activator = _get_activator(org, user)
+    activator = _get_activator(org, owner)
 
     if activator.is_autoactivation_enabled():
-        log.info(f"Attemping to auto-activate user {user.ownerid} in {org.ownerid}")
+        log.info(f"Attemping to auto-activate user {owner.ownerid} in {org.ownerid}")
         if activator.can_activate_user():
             activator.activate_user()
             SegmentService().account_activated_user(
-                current_user_ownerid=user.ownerid,
-                ownerid_to_activate=user.ownerid,
+                current_user_ownerid=owner.ownerid,
+                ownerid_to_activate=owner.ownerid,
                 org_ownerid=org.ownerid,
                 auto_activated=True,
             )
@@ -90,6 +89,6 @@ def try_auto_activate(org: Owner, user: Owner) -> bool:
     return False
 
 
-def is_activated(org: Owner, user: Owner) -> bool:
-    activator = _get_activator(org, user)
+def is_activated(org: Owner, owner: Owner) -> bool:
+    activator = _get_activator(org, owner)
     return activator.is_activated()

@@ -24,6 +24,7 @@ from api.internal.chart.helpers import (
 from codecov.tests.base_test import InternalAPITest
 from core.models import Commit
 from core.tests.factories import OwnerFactory, RepositoryFactory
+from utils.test_utils import Client
 
 fake = faker.Faker()
 
@@ -849,12 +850,14 @@ class RepositoryCoverageChartTest(InternalAPITest):
         self.repo1_org1 = RepositoryFactory(author=self.org1)
         setup_commits(self.repo1_org1, 10, start_date="-4d")
 
-        self.user = OwnerFactory(
+        self.current_owner = OwnerFactory(
             service="github",
             organizations=[self.org1.ownerid],
             permission=[self.repo1_org1.repoid],
         )
-        self.client.force_login(user=self.user)
+
+        self.client = Client()
+        self.client.force_login_owner(self.current_owner)
 
     def test_no_permissions(self, mocked_get_permissions):
         data = {
@@ -952,7 +955,9 @@ class TestOrganizationChartHandler(InternalAPITest):
         self.org = OwnerFactory()
         self.repo1 = RepositoryFactory(author=self.org, active=True)
         self.repo2 = RepositoryFactory(author=self.org, active=True)
-        self.user = OwnerFactory(permission=[self.repo1.repoid, self.repo2.repoid])
+        self.current_owner = OwnerFactory(
+            permission=[self.repo1.repoid, self.repo2.repoid]
+        )
         self.commit1 = G(
             model=Commit,
             repository=self.repo1,
@@ -967,7 +972,8 @@ class TestOrganizationChartHandler(InternalAPITest):
             branch=self.repo2.branch,
             state="complete",
         )
-        self.client.force_login(user=self.user)
+        self.client = Client()
+        self.client.force_login_owner(self.current_owner)
 
     def _get(self, kwargs={}, data={}):
         return self.client.get(
