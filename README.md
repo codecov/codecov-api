@@ -81,3 +81,7 @@ You can run the linter using the command `make lint`.
 ### Migrations
 
 We leverage Django's migration system to keep the state of our models in sync with the state of our database. You can read more about how we work with migrations at https://codecovio.atlassian.net/wiki/spaces/ENG/pages/1696530442/Migrations
+
+## Contributing
+
+This repository, like all of Codecov's repositories, strives to follow our general [Contributing guidlines](https://github.com/codecov/contributing). If you're considering making a contribution to this repository, we encourage review of our Contributing guidelines first. 
