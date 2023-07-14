@@ -1,21 +1,28 @@
 import json
+from unittest.mock import MagicMock
 
 from shared.storage.exceptions import FileNotInStorageError
 
+from codecov.models import BaseCodecovModel
 from core.models import Commit
 from core.tests.factories import CommitFactory
 from utils.model_utils import ArchiveField, ArchiveFieldInterface
 
 
 class TestArchiveField(object):
-    class ClassWithArchiveField:
+    # class ClassWithArchiveField(BaseCodecovModel):
+    class ClassWithArchiveField(object):
+        # class Meta:
+        #     managed = False
+        #     db_table = "test_table"
+
         commit: Commit
         id = 1
         external_id = "external_id"
+        _meta = MagicMock(db_table="test_table")
 
         _archive_field = "db_field"
         _archive_field_storage_path = "archive_field_path"
-        archive_field = ArchiveField(default_value=None)
 
         def should_write_to_storage(self):
             return self.should_write_to_gcs
@@ -33,6 +40,10 @@ class TestArchiveField(object):
             self._archive_field = db_value
             self._archive_field_storage_path = archive_value
             self.should_write_to_gcs = should_write_to_gcs
+
+        archive_field = ArchiveField(
+            should_write_to_storage_fn=should_write_to_storage, default_value=None
+        )
 
     class ClassWithArchiveFieldMissingMethods:
         commit: Commit
@@ -125,7 +136,7 @@ class TestArchiveField(object):
         mock_read_file.assert_called_with("path/to/written/object")
         mock_write_file.assert_called_with(
             commit_id=commit.commitid,
-            model="ClassWithArchiveField",
+            table="test_table",
             field="archive_field",
             external_id=test_class.external_id,
             data=some_json,

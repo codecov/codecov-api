@@ -1,6 +1,7 @@
 import json
 import logging
 from functools import lru_cache
+from typing import Any, Callable
 
 from shared.storage.exceptions import FileNotInStorageError
 
@@ -11,9 +12,6 @@ log = logging.getLogger(__name__)
 
 
 class ArchiveFieldInterfaceMeta(type):
-    def __instancecheck__(cls, instance):
-        return cls.__subclasscheck__(type(instance))
-
     def __subclasscheck__(cls, subclass):
         return (
             hasattr(subclass, "get_repository")
@@ -26,23 +24,49 @@ class ArchiveFieldInterfaceMeta(type):
 
 
 class ArchiveFieldInterface(metaclass=ArchiveFieldInterfaceMeta):
+    """Any class that uses ArchiveField must implement this interface"""
+
     def get_repository(self) -> Repository:
         raise NotImplementedError()
 
     def get_commitid(self) -> str:
         raise NotImplementedError()
 
-    def should_write_to_storage(self) -> bool:
-        raise NotImplementedError()
-
 
 class ArchiveField:
-    """This is a helper class that transparently handles models' fields that are saved in GCS.
+    """This is a helper class that transparently handles models' fields that are saved in storage.
+    Classes that use the ArchiveField MUST implement ArchiveFieldInterface. It ill throw an error otherwise.
     It uses the Descriptor pattern: https://docs.python.org/3/howto/descriptor.html
+
+    Arguments:
+        should_write_to_storage_fn: Callable function that decides if data should be written to storage.
+        It should take 1 argument: the object instance.
+
+        rehydrate_fn: Callable function to allow you to decode your saved data into internal representations.
+        The default value does nothing.
+        Data retrieved both from DB and storage pass through this function to guarantee consistency.
+        It should take 2 arguments: the object instance and the encoded data.
+
+        default_value: Any value that will be returned if we can't save the data for whatever reason
+
+    Example:
+        archive_field = ArchiveField(
+            should_write_to_storage_fn=should_write_data,
+            rehydrate_fn=rehidrate_data,
+            default_value='default'
+        )
+    For a full example check utils/tests/unit/test_model_utils.py
     """
 
-    def __init__(self, default_value=None):
+    def __init__(
+        self,
+        should_write_to_storage_fn: Callable[[object], bool],
+        rehydrate_fn: Callable[[object, object], Any] = lambda self, x: x,
+        default_value=None,
+    ):
         self.default_value = default_value
+        self.rehydrate_fn = rehydrate_fn
+        self.should_write_to_storage_fn = should_write_to_storage_fn
 
     def __set_name__(self, owner, name):
         # Validate that the owner class has the methods we need
@@ -52,7 +76,7 @@ class ArchiveField:
         self.public_name = name
         self.db_field_name = "_" + name
         self.archive_field_name = "_" + name + "_storage_path"
-        self.class_name = owner.__name__
+        self.table_name = owner._meta.db_table
 
     @lru_cache(maxsize=1)
     def _get_value_from_archive(self, obj):
@@ -61,7 +85,7 @@ class ArchiveField:
         archive_field = getattr(obj, self.archive_field_name)
         try:
             file_str = archive_service.read_file(archive_field)
-            return json.loads(file_str)
+            return self.rehydrate_fn(obj, json.loads(file_str))
         except FileNotInStorageError:
             log.error(
                 "Archive enabled field not in storage",
@@ -76,18 +100,18 @@ class ArchiveField:
     def __get__(self, obj, objtype=None):
         db_field = getattr(obj, self.db_field_name)
         if db_field is not None:
-            return db_field
+            return self.rehydrate_fn(obj, db_field)
         return self._get_value_from_archive(obj)
 
     def __set__(self, obj, value):
         self._get_value_from_archive.cache_clear()
         # Set the new value
-        if obj.should_write_to_storage():
+        if self.should_write_to_storage_fn(obj):
             repository = obj.get_repository()
             archive_service = ArchiveService(repository=repository)
             path = archive_service.write_json_data_to_storage(
                 commit_id=obj.get_commitid(),
-                model=self.class_name,
+                table=self.table_name,
                 field=self.public_name,
                 external_id=obj.external_id,
                 data=value,

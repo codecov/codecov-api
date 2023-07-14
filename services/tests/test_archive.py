@@ -54,14 +54,14 @@ class TestWriteData(object):
         external_id = "some-uuid4-id"
         path = archive_service.write_json_data_to_storage(
             commit_id=commitid,
-            model="ReportDetails",
+            table="reports_reportsdetails",
             field="files_array",
             external_id=external_id,
             data=data,
         )
         assert (
             path
-            == f"v4/repos/{archive_service.storage_hash}/commits/{commitid}/json_data/ReportDetails/files_array/{external_id}.json"
+            == f"v4/repos/{archive_service.storage_hash}/commits/{commitid}/json_data/reports_reportsdetails/files_array/{external_id}.json"
         )
         mock_write_file.assert_called_with(
             archive_service.root,

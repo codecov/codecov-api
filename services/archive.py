@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 
 class MinioEndpoints(Enum):
     chunks = "{version}/repos/{repo_hash}/commits/{commitid}/chunks.txt"
-    json_data = "{version}/repos/{repo_hash}/commits/{commitid}/json_data/{model}/{field}/{external_id}.json"
+    json_data = "{version}/repos/{repo_hash}/commits/{commitid}/json_data/{table}/{field}/{external_id}.json"
     raw = "v4/raw/{date}/{repo_hash}/{commit_sha}/{reportid}.txt"
     raw_with_upload_id = (
         "v4/raw/{date}/{repo_hash}/{commit_sha}/{reportid}/{uploadid}.txt"
@@ -118,7 +118,7 @@ class ArchiveService(object):
     def write_json_data_to_storage(
         self,
         commit_id,
-        model: str,
+        table: str,
         field: str,
         external_id: str,
         data: dict,
@@ -129,7 +129,7 @@ class ArchiveService(object):
             version="v4",
             repo_hash=self.storage_hash,
             commitid=commit_id,
-            model=model,
+            table=table,
             field=field,
             external_id=external_id,
         )

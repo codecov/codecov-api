@@ -54,15 +54,20 @@ class ReportDetails(BaseCodecovModel):
         db_column="files_array_storage_path", null=True
     )
 
-    files_array = ArchiveField(default_value=[])
-
     def get_repository(self):
         return self.report.commit.repository
 
     def get_commitid(self):
         return self.report.commit.commitid
 
-    def should_write_to_storage(self):
+    def should_write_to_storage(self) -> bool:
+        if (
+            self.report is None
+            or self.report.commit is None
+            or self.report.commit.repository is None
+            or self.report.commit.repository.author is None
+        ):
+            return False
         report_builder_repo_ids = get_config(
             "setup", "save_report_data_in_storage", "repo_ids", default=[]
         )
@@ -85,6 +90,11 @@ class ReportDetails(BaseCodecovModel):
         return master_write_switch and (
             is_codecov_repo or is_in_allowed_repos or not only_codecov
         )
+
+    files_array = ArchiveField(
+        should_write_to_storage_fn=should_write_to_storage,
+        default_value=[],
+    )
 
 
 class ReportLevelTotals(AbstractTotals):
