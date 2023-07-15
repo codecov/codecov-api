@@ -50,7 +50,7 @@ def test_create_signed_value_wrong_version():
 
 def test_do_create_signed_value_v2_token_value():
     expected_result = "2|1:0|10:1557329312|15:bitbucket-token|48:OGY5YmM2Y2ItZmQxNC00M2JjLWJiYjUtYmUxZTdjOTQ4ZjM0|459669157b19d2e220f461e02c07c377a455bc532ad0c2b8b69b2648cfbe3914"
-    value = "8f9bc6cb-fd14-43bc-bbb5-be1e7c948f34"
+    value = "testaioo18t3vxsvs3afz7p5ckibqvv0ye0y"
     secret, name = "abc123", "bitbucket-token"
     res = do_create_signed_value_v2(secret, name, value, clock=lambda: 1557329312)
     assert decode_token_from_cookie(secret, res) == value

@@ -5,7 +5,7 @@ from rest_framework.test import APITestCase
 from api.internal.slack.views import GenerateAccessTokenView
 from codecov_auth.models import Owner, UserToken
 
-codecov_internal_token = "17603a9e-0463-45e1-883e-d649fccf4ae8"
+codecov_internal_token = "test3n4d079myhiy9fu7d3j7gsepz80df3da"
 
 
 class SlackViewSetTests(APITestCase):

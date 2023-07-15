@@ -37,7 +37,7 @@ def set_resolver_match(request, kwargs={}):
 class TestAuthentication(BaseTestCase):
     def test_auth_asd(self, db):
         github_token = "2|1:0|10:1557329312|15:bitbucket-token|48:OGY5YmM2Y2ItZmQxNC00M2JjLWJiYjUtYmUxZTdjOTQ4ZjM0|459669157b19d2e220f461e02c07c377a455bc532ad0c2b8b69b2648cfbe3914"
-        session = SessionFactory.create(token="8f9bc6cb-fd14-43bc-bbb5-be1e7c948f34")
+        session = SessionFactory.create(token="testaioo18t3vxsvs3afz7p5ckibqvv0ye0y")
         request_factory = APIRequestFactory()
         request_factory.cookies["github-token"] = github_token
         request = request_factory.post(
@@ -53,7 +53,7 @@ class TestAuthentication(BaseTestCase):
 
     def test_decode_token_from_cookie(self):
         val = "2|1:0|10:1557329312|15:bitbucket-token|48:OGY5YmM2Y2ItZmQxNC00M2JjLWJiYjUtYmUxZTdjOTQ4ZjM0|459669157b19d2e220f461e02c07c377a455bc532ad0c2b8b69b2648cfbe3914"
-        expected_response = "8f9bc6cb-fd14-43bc-bbb5-be1e7c948f34"
+        expected_response = "testaioo18t3vxsvs3afz7p5ckibqvv0ye0y"
         authenticator = CodecovTokenAuthentication()
         assert expected_response == authenticator.decode_token_from_cookie(val)
 
@@ -113,7 +113,7 @@ class TestAuthentication(BaseTestCase):
 
     def test_authenticate_updates_session(self, db, mocker):
         github_token = "2|1:0|10:1557329312|15:bitbucket-token|48:OGY5YmM2Y2ItZmQxNC00M2JjLWJiYjUtYmUxZTdjOTQ4ZjM0|459669157b19d2e220f461e02c07c377a455bc532ad0c2b8b69b2648cfbe3914"
-        session = SessionFactory.create(token="8f9bc6cb-fd14-43bc-bbb5-be1e7c948f34")
+        session = SessionFactory.create(token="testaioo18t3vxsvs3afz7p5ckibqvv0ye0y")
         request_factory = APIRequestFactory()
         request_factory.cookies["github-token"] = github_token
         request = request_factory.post(
@@ -133,7 +133,7 @@ class CodecovAuthMixinImpersonationTests(TestCase):
     def setUp(self):
         self.token = "2|1:0|10:1557329312|15:bitbucket-token|48:OGY5YmM2Y2ItZmQxNC00M2JjLWJiYjUtYmUxZTdjOTQ4ZjM0|459669157b19d2e220f461e02c07c377a455bc532ad0c2b8b69b2648cfbe3914"
         self.session = SessionFactory(
-            token="8f9bc6cb-fd14-43bc-bbb5-be1e7c948f34", owner=OwnerFactory(staff=True)
+            token="testaioo18t3vxsvs3afz7p5ckibqvv0ye0y", owner=OwnerFactory(staff=True)
         )
 
         self.user_to_impersonate = "codecov"
@@ -207,7 +207,7 @@ class CodecovSessionAuthenticationTests(TestCase):
 
     def test_cookie_auth_github(self):
         a = "2|1:0|10:1557329312|15:bitbucket-token|48:OGY5YmM2Y2ItZmQxNC00M2JjLWJiYjUtYmUxZTdjOTQ4ZjM0|459669157b19d2e220f461e02c07c377a455bc532ad0c2b8b69b2648cfbe3914"
-        session = SessionFactory.create(token="8f9bc6cb-fd14-43bc-bbb5-be1e7c948f34")
+        session = SessionFactory.create(token="testaioo18t3vxsvs3afz7p5ckibqvv0ye0y")
         authenticator = CodecovSessionAuthentication()
         request = self._build_request("github", a)
         result = authenticator.authenticate(request)
@@ -219,7 +219,7 @@ class CodecovSessionAuthenticationTests(TestCase):
     def test_cookie_auth_bitbucket(self):
         a = "2|1:0|10:1557329312|15:bitbucket-token|48:OGY5YmM2Y2ItZmQxNC00M2JjLWJiYjUtYmUxZTdjOTQ4ZjM0|459669157b19d2e220f461e02c07c377a455bc532ad0c2b8b69b2648cfbe3914"
         session = SessionFactory.create(
-            token="8f9bc6cb-fd14-43bc-bbb5-be1e7c948f34",
+            token="testaioo18t3vxsvs3afz7p5ckibqvv0ye0y",
             owner=OwnerFactory(service="bitbucket"),
         )
         request = self._build_request("bitbucket", a)
@@ -247,7 +247,7 @@ class UserTokenAuthenticationTests(TestCase):
     def test_bearer_token_auth_invalid_token(self):
         request_factory = APIRequestFactory()
         request = request_factory.get(
-            "", HTTP_AUTHORIZATION=f"Bearer 8f9bc6cb-fd14-43bc-bbb5-be1e7c948f34"
+            "", HTTP_AUTHORIZATION=f"Bearer testaioo18t3vxsvs3afz7p5ckibqvv0ye0y"
         )
 
         authenticator = UserTokenAuthentication()
@@ -284,9 +284,9 @@ class UserTokenAuthenticationTests(TestCase):
 
 
 class SuperTokenAuthenticationTests(TestCase):
-    @override_settings(SUPER_API_TOKEN="17603a9e-0463-45e1-883e-d649fccf4ae8")
+    @override_settings(SUPER_API_TOKEN="test3n4d079myhiy9fu7d3j7gsepz80df3da")
     def test_bearer_token_auth_if_token_is_super_token(self):
-        super_token = "17603a9e-0463-45e1-883e-d649fccf4ae8"
+        super_token = "test3n4d079myhiy9fu7d3j7gsepz80df3da"
 
         request_factory = APIRequestFactory()
         request = request_factory.get("", HTTP_AUTHORIZATION=f"Bearer {super_token}")
@@ -297,9 +297,9 @@ class SuperTokenAuthenticationTests(TestCase):
         assert isinstance(result[1], SuperToken)
         assert result[1].token == super_token
 
-    @override_settings(SUPER_API_TOKEN="17603a9e-0463-45e1-883e-d649fccf4ae8")
+    @override_settings(SUPER_API_TOKEN="test3n4d079myhiy9fu7d3j7gsepz80df3da")
     def test_bearer_token_auth_invalid_super_token(self):
-        super_token = "0ae68e58-79f8-4341-9531-55aada05a251"
+        super_token = "testfm0c0anrwlf1pp1xy2frxhqdolcq2171"
         request_factory = APIRequestFactory()
         request = request_factory.get("", HTTP_AUTHORIZATION=f"Bearer {super_token}")
 
@@ -308,7 +308,7 @@ class SuperTokenAuthenticationTests(TestCase):
         assert result == None
 
     def test_bearer_token_default_token_envar(self):
-        super_token = "0ae68e58-79f8-4341-9531-55aada05a251"
+        super_token = "testfm0c0anrwlf1pp1xy2frxhqdolcq2171"
         request_factory = APIRequestFactory()
         request = request_factory.get("", HTTP_AUTHORIZATION=f"Bearer {super_token}")
         authenticator = SuperTokenAuthentication()
@@ -328,9 +328,9 @@ class SuperTokenAuthenticationTests(TestCase):
 
 
 class InternalTokenAuthenticationTests(TestCase):
-    @override_settings(CODECOV_INTERNAL_TOKEN="17603a9e-0463-45e1-883e-d649fccf4ae8")
+    @override_settings(CODECOV_INTERNAL_TOKEN="test3n4d079myhiy9fu7d3j7gsepz80df3da")
     def test_bearer_token_auth_if_token_is_internal_token(self):
-        internal_token = "17603a9e-0463-45e1-883e-d649fccf4ae8"
+        internal_token = "test3n4d079myhiy9fu7d3j7gsepz80df3da"
 
         request_factory = APIRequestFactory()
         request = request_factory.get("", HTTP_AUTHORIZATION=f"Bearer {internal_token}")
@@ -341,7 +341,7 @@ class InternalTokenAuthenticationTests(TestCase):
         assert isinstance(result[1], InternalToken)
         assert result[1].token == internal_token
 
-    @override_settings(CODECOV_INTERNAL_TOKEN="17603a9e-0463-45e1-883e-d649fccf4ae8")
+    @override_settings(CODECOV_INTERNAL_TOKEN="test3n4d079myhiy9fu7d3j7gsepz80df3da")
     def test_bearer_token_auth_if_token_is_not_internal_token(self):
         internal_token = "random_token"
 
