@@ -34,10 +34,12 @@ def test_upload_completion_view_no_uploads(db, mocker):
     )
     response_json = response.json()
     assert response.status_code == 404
-    assert (
-        response_json.get("result")
-        == f"Couldn't find any uploads for your commit {commit.commitid[:7]}"
-    )
+    assert response_json == {
+        "uploads_total": 0,
+        "uploads_success": 0,
+        "uploads_processing": 0,
+        "uploads_error": 0,
+    }
 
 
 def test_upload_completion_view_processed_uploads(db, mocker):
@@ -74,10 +76,12 @@ def test_upload_completion_view_processed_uploads(db, mocker):
     )
     response_json = response.json()
     assert response.status_code == 200
-    assert (
-        response_json.get("result")
-        == "All uploads got processed successfully. Triggering notifications now"
-    )
+    assert response_json == {
+        "uploads_total": 2,
+        "uploads_success": 2,
+        "uploads_processing": 0,
+        "uploads_error": 0,
+    }
 
 
 def test_upload_completion_view_still_processing_uploads(db, mocker):
@@ -114,10 +118,12 @@ def test_upload_completion_view_still_processing_uploads(db, mocker):
     )
     response_json = response.json()
     assert response.status_code == 200
-    assert (
-        response_json.get("result")
-        == "1 out of 2 uploads are still being in process. We'll be sending you notifications once your uploads finish processing."
-    )
+    assert response_json == {
+        "uploads_total": 2,
+        "uploads_success": 1,
+        "uploads_processing": 1,
+        "uploads_error": 0,
+    }
 
 
 def test_upload_completion_view_errored_uploads(db, mocker):
@@ -154,10 +160,12 @@ def test_upload_completion_view_errored_uploads(db, mocker):
     )
     response_json = response.json()
     assert response.status_code == 200
-    assert (
-        response_json.get("result")
-        == "1 out of 2 uploads did not get processed successfully. Sending notifications based on the processed uploads."
-    )
+    assert response_json == {
+        "uploads_total": 2,
+        "uploads_success": 1,
+        "uploads_processing": 0,
+        "uploads_error": 1,
+    }
 
 
 def test_upload_completion_view_errored_and_processing_uploads(db, mocker):
@@ -194,7 +202,9 @@ def test_upload_completion_view_errored_and_processing_uploads(db, mocker):
     )
     response_json = response.json()
     assert response.status_code == 200
-    assert (
-        response_json.get("result")
-        == "1 out of 2 uploads did not get processed successfully, 1 out of 2 uploads are still being in process, we'll be sending you notifications once your uploads finish processing and based on the successfully processed ones."
-    )
+    assert response_json == {
+        "uploads_total": 2,
+        "uploads_success": 0,
+        "uploads_processing": 1,
+        "uploads_error": 1,
+    }

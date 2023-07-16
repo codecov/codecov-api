@@ -41,7 +41,10 @@ class UploadCompletionView(CreateAPIView, GetterMixin):
             )
             return Response(
                 data={
-                    "result": f"Couldn't find any uploads for your commit {commit.commitid[:7]}",
+                    "uploads_total": 0,
+                    "uploads_success": 0,
+                    "uploads_processing": 0,
+                    "uploads_error": 0,
                 },
                 status=status.HTTP_404_NOT_FOUND,
             )
@@ -55,20 +58,15 @@ class UploadCompletionView(CreateAPIView, GetterMixin):
             elif upload.state == "error":
                 errored_uploads += 1
 
-        response_txt = ""
-        if in_progress_uploads > 0 and errored_uploads > 0:
-            response_txt = f"{errored_uploads} out of {uploads_count} uploads did not get processed successfully, {in_progress_uploads} out of {uploads_count} uploads are still being in process, we'll be sending you notifications once your uploads finish processing and based on the successfully processed ones."
-        elif in_progress_uploads > 0:
-            response_txt = f"{in_progress_uploads} out of {uploads_count} uploads are still being in process. We'll be sending you notifications once your uploads finish processing."
-        elif errored_uploads > 0:
-            response_txt = f"{errored_uploads} out of {uploads_count} uploads did not get processed successfully. Sending notifications based on the processed uploads."
-
         # TODO trigger a task here that does the waiting and triggering the notifications
         return Response(
             data={
-                "result": response_txt
-                if response_txt
-                else "All uploads got processed successfully. Triggering notifications now"
+                "uploads_total": uploads_count,
+                "uploads_success": uploads_count
+                - in_progress_uploads
+                - errored_uploads,
+                "uploads_processing": in_progress_uploads,
+                "uploads_error": errored_uploads,
             },
             status=status.HTTP_200_OK,
         )
