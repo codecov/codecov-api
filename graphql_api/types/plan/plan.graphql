@@ -2,4 +2,11 @@ type Plan {
   trialStatus: TrialStatus!
   trialStartDate: DateTime
   trialEndDate: DateTime
+  trialTotalDays: Int
+  marketingName: String!
+  planName: String!
+  billingRate: String
+  baseUnitPrice: Int!
+  benefits: [String]!
+  monthlyUploadLimit: Int
 }
