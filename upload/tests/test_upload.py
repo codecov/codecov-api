@@ -81,7 +81,7 @@ class UploadHandlerHelpersTest(TestCase):
             "version": "v4",
             "commit": "3be5c52bd748c508a7e96993c02cf3518c816e84",
             "slug": "codecov/codecov-api",
-            "token": "testbtznwf3ooi3xlrsnetkddj5od731pap9",
+            "token": "4a24929b-9276-4784-8e85-a7a008a32037",
             "service": "circleci",
             "pull_request": "undefined",
             "flags": "this-is-a-flag,this-is-another-flag",
@@ -100,7 +100,7 @@ class UploadHandlerHelpersTest(TestCase):
             "slug": "codecov/codecov-api",
             "owner": "codecov",
             "repo": "codecov-api",
-            "token": "testbtznwf3ooi3xlrsnetkddj5od731pap9",
+            "token": "4a24929b-9276-4784-8e85-a7a008a32037",
             "service": "circleci",
             "pr": None,
             "pull_request": None,
@@ -122,7 +122,7 @@ class UploadHandlerHelpersTest(TestCase):
         request_params = {
             "version": "v5",
             "slug": "not-a-valid-slug",
-            "token": "testbtznwf3ooi3xlrsnetkddj5od731pap9",
+            "token": "4a24929b-9276-4784-8e85-a7a008a32037",
             "service": "circleci",
             "pr": 123,
             "flags": "not_a_valid_flag!!?!",
@@ -308,7 +308,7 @@ class UploadHandlerHelpersTest(TestCase):
             params = {
                 "version": "v4",
                 "using_global_token": False,
-                "token": "testbtznwf3ooi3xlrsnetkddj5od731pap9",
+                "token": "4a24929b-9276-4784-8e85-a7a008a32037",
             }
 
             with self.assertRaises(NotFound):
@@ -938,7 +938,7 @@ class UploadHandlerRouteTest(APITestCase):
             Repository,
             author=self.org,
             name="upload-test-repo",
-            upload_token="test27s4f3uz3ha9pi0foipg5bqojtrmbt67",
+            upload_token="a03e5d02-9495-4413-b0d8-05651bb2e842",
         )
 
     def test_get_request_returns_405(self):
@@ -995,7 +995,7 @@ class UploadHandlerRouteTest(APITestCase):
 
         query_params = {
             "commit": "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
-            "token": "test27s4f3uz3ha9pi0foipg5bqojtrmbt67",
+            "token": "a03e5d02-9495-4413-b0d8-05651bb2e842",
             "pr": "456",
             "branch": "",
             "flags": "",
@@ -1020,7 +1020,7 @@ class UploadHandlerRouteTest(APITestCase):
 
         assert mock_dispatch_upload.call_args[0][0] == {
             "commit": "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
-            "token": "test27s4f3uz3ha9pi0foipg5bqojtrmbt67",
+            "token": "a03e5d02-9495-4413-b0d8-05651bb2e842",
             "pr": "456",
             "version": "v2",
             "service": None,
@@ -1072,7 +1072,7 @@ class UploadHandlerRouteTest(APITestCase):
 
         query_params = {
             "commit": "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
-            "token": "test27s4f3uz3ha9pi0foipg5bqojtrmbt67",
+            "token": "a03e5d02-9495-4413-b0d8-05651bb2e842",
             "pr": "456",
             "branch": "",
             "flags": "",
@@ -1097,7 +1097,7 @@ class UploadHandlerRouteTest(APITestCase):
 
         assert mock_dispatch_upload.call_args[0][0] == {
             "commit": "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
-            "token": "test27s4f3uz3ha9pi0foipg5bqojtrmbt67",
+            "token": "a03e5d02-9495-4413-b0d8-05651bb2e842",
             "pr": "456",
             "version": "v2",
             "service": None,
@@ -1152,7 +1152,7 @@ class UploadHandlerRouteTest(APITestCase):
 
         query_params = {
             "commit": "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
-            "token": "test27s4f3uz3ha9pi0foipg5bqojtrmbt67",
+            "token": "a03e5d02-9495-4413-b0d8-05651bb2e842",
             "pr": "456",
             "branch": "",
             "flags": "",
@@ -1206,7 +1206,7 @@ class UploadHandlerRouteTest(APITestCase):
 
         query_params = {
             "commit": "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
-            "token": "test27s4f3uz3ha9pi0foipg5bqojtrmbt67",
+            "token": "a03e5d02-9495-4413-b0d8-05651bb2e842",
             "pr": "456",
             "branch": "",
             "flags": "",
@@ -1268,7 +1268,7 @@ class UploadHandlerRouteTest(APITestCase):
         mock_hash.return_value = "awawaw"
         query_params = {
             "commit": "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
-            "token": "test27s4f3uz3ha9pi0foipg5bqojtrmbt67",
+            "token": "a03e5d02-9495-4413-b0d8-05651bb2e842",
             "pr": "456",
             "branch": "",
             "flags": "",
@@ -1328,7 +1328,7 @@ class UploadHandlerRouteTest(APITestCase):
             kwargs={"version": "v4"},
             query=query_params,
             data="coverage report",
-            headers={"HTTP_X_UPLOAD_TOKEN": "test27s4f3uz3ha9pi0foipg5bqojtrmbt67"},
+            headers={"HTTP_X_UPLOAD_TOKEN": "a03e5d02-9495-4413-b0d8-05651bb2e842"},
         )
 
         assert response.status_code == 200
@@ -1377,7 +1377,7 @@ class UploadHandlerRouteTest(APITestCase):
         mock_hash.return_value = "awawaw"
         query_params = {
             "commit": "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
-            "token": "test27s4f3uz3ha9pi0foipg5bqojtrmbt67",
+            "token": "a03e5d02-9495-4413-b0d8-05651bb2e842",
             "pr": "456",
             "branch": "",
             "flags": "",
@@ -1445,7 +1445,7 @@ class UploadHandlerRouteTest(APITestCase):
         mock_hash.return_value = "awawaw"
         query_params = {
             "commit": "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
-            "token": "test27s4f3uz3ha9pi0foipg5bqojtrmbt67",
+            "token": "a03e5d02-9495-4413-b0d8-05651bb2e842",
             "pr": "456",
             "branch": "",
             "flags": "",
@@ -1526,7 +1526,7 @@ class UploadHandlerTravisTokenlessTest(TestCase):
             "slug": "codecov/codecov-api",
             "owner": "codecov",
             "repo": "codecov-api",
-            "token": "testbtznwf3ooi3xlrsnetkddj5od731pap9",
+            "token": "4a24929b-9276-4784-8e85-a7a008a32037",
             "service": "circleci",
             "pr": None,
             "pull_request": None,
@@ -1611,7 +1611,7 @@ class UploadHandlerTravisTokenlessTest(TestCase):
             "slug": "codecov/codecov-api",
             "owner": "codecov",
             "repo": "codecov-api",
-            "token": "testbtznwf3ooi3xlrsnetkddj5od731pap9",
+            "token": "4a24929b-9276-4784-8e85-a7a008a32037",
             "service": "circleci",
             "pr": None,
             "pull_request": None,
@@ -1693,7 +1693,7 @@ class UploadHandlerTravisTokenlessTest(TestCase):
             "slug": "codecov/codecov-api",
             "owner": "codecov",
             "repo": "codecov-api",
-            "token": "testbtznwf3ooi3xlrsnetkddj5od731pap9",
+            "token": "4a24929b-9276-4784-8e85-a7a008a32037",
             "service": "circleci",
             "pr": None,
             "pull_request": None,
@@ -1732,7 +1732,7 @@ class UploadHandlerTravisTokenlessTest(TestCase):
             "slug": "codecov/codecov-api",
             "owner": "codecov",
             "repo": "codecov-api",
-            "token": "testbtznwf3ooi3xlrsnetkddj5od731pap9",
+            "token": "4a24929b-9276-4784-8e85-a7a008a32037",
             "service": "circleci",
             "pr": None,
             "pull_request": None,
@@ -1771,7 +1771,7 @@ class UploadHandlerTravisTokenlessTest(TestCase):
             "slug": "codecov/codecov-api",
             "owner": "codecov",
             "repo": "codecov-api",
-            "token": "testbtznwf3ooi3xlrsnetkddj5od731pap9",
+            "token": "4a24929b-9276-4784-8e85-a7a008a32037",
             "service": "circleci",
             "pr": None,
             "pull_request": None,
@@ -1810,7 +1810,7 @@ class UploadHandlerTravisTokenlessTest(TestCase):
             "slug": "codecov/codecov-api",
             "owner": "codecov",
             "repo": "codecov-api",
-            "token": "testbtznwf3ooi3xlrsnetkddj5od731pap9",
+            "token": "4a24929b-9276-4784-8e85-a7a008a32037",
             "service": "circleci",
             "pr": None,
             "pull_request": None,
@@ -1892,7 +1892,7 @@ class UploadHandlerTravisTokenlessTest(TestCase):
             "slug": "codecov/codecov-api",
             "owner": "codecov",
             "repo": "codecov-api",
-            "token": "testbtznwf3ooi3xlrsnetkddj5od731pap9",
+            "token": "4a24929b-9276-4784-8e85-a7a008a32037",
             "service": "circleci",
             "pr": None,
             "pull_request": None,
@@ -1925,7 +1925,7 @@ class UploadHandlerTravisTokenlessTest(TestCase):
             "slug": "codecov/codecov-api",
             "owner": "codecov",
             "repo": "codecov-api",
-            "token": "testbtznwf3ooi3xlrsnetkddj5od731pap9",
+            "token": "4a24929b-9276-4784-8e85-a7a008a32037",
             "service": "circleci",
             "pr": None,
             "pull_request": None,
@@ -2007,7 +2007,7 @@ class UploadHandlerTravisTokenlessTest(TestCase):
             "slug": "codecov/codecov-api",
             "owner": "codecov",
             "repo": "codecov-api",
-            "token": "testbtznwf3ooi3xlrsnetkddj5od731pap9",
+            "token": "4a24929b-9276-4784-8e85-a7a008a32037",
             "service": "circleci",
             "pr": None,
             "pull_request": None,
@@ -2081,7 +2081,7 @@ class UploadHandlerTravisTokenlessTest(TestCase):
             "slug": "codecov/codecov-api",
             "owner": "codecov",
             "repo": "codecov-api",
-            "token": "testbtznwf3ooi3xlrsnetkddj5od731pap9",
+            "token": "4a24929b-9276-4784-8e85-a7a008a32037",
             "service": "circleci",
             "pr": None,
             "pull_request": None,
