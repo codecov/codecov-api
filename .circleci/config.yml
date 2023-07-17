@@ -193,11 +193,6 @@ jobs:
         command: |
           chmod +x codecov-alpine
           ./codecov-alpine -R . --url https://stage-web.codecov.dev -t $CODECOV_STAGING_TOKEN -F unit
-    - run:
-        name: codecov-v5
-        command: |
-          chmod +x codecov-alpine
-          ./codecov-alpine -R . --url https://v5-qa.codecov.dev -t $CODECOV_V5_TOKEN -F unit
   portable:
     executor: codecov-deploy
     steps:
