@@ -10,11 +10,7 @@ from utils.model_utils import ArchiveField, ArchiveFieldInterface
 
 
 class TestArchiveField(object):
-    # class ClassWithArchiveField(BaseCodecovModel):
     class ClassWithArchiveField(object):
-        # class Meta:
-        #     managed = False
-        #     db_table = "test_table"
 
         commit: Commit
         id = 1

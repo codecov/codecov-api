@@ -18,8 +18,6 @@ class ArchiveFieldInterfaceMeta(type):
             and callable(subclass.get_repository)
             and hasattr(subclass, "get_commitid")
             and callable(subclass.get_commitid)
-            and hasattr(subclass, "should_write_to_storage")
-            and callable(subclass.should_write_to_storage)
         )
 
 
