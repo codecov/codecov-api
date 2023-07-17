@@ -33,6 +33,12 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                     trialStatus
                     trialEndDate
                     trialStartDate
+                    marketingName
+                    planName
+                    billingRate
+                    baseUnitPrice
+                    benefits
+                    monthlyUploadLimit
                 }
             }
         }
@@ -41,7 +47,17 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         )
         data = self.gql_request(query, user=current_org)
         assert data["owner"]["plan"] == {
+            "trialStatus": "ONGOING",
             "trialEndDate": "2023-07-03T00:00:00",
             "trialStartDate": "2023-06-19T00:00:00",
-            "trialStatus": "ONGOING",
+            "marketingName": "Developer",
+            "planName": "users-basic",
+            "billingRate": None,
+            "baseUnitPrice": 0,
+            "benefits": [
+                "Up to 1 user",
+                "Unlimited public repositories",
+                "Unlimited private repositories",
+            ],
+            "monthlyUploadLimit": None,
         }

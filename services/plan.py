@@ -56,7 +56,7 @@ class TrialStatus(enum.Enum):
     NOT_STARTED = "not_started"
     ONGOING = "ongoing"
     EXPIRED = "expired"
-    NEVER_TRIALLED = "never_trialled"
+    CANNOT_TRIAL = "cannot_trial"
 
 
 @dataclass(repr=False)
@@ -329,7 +329,7 @@ class PlanService:
             # Scenario: A paid customer before the trial changes were introduced (they can never undergo trial for this org)
             # I have to comment this for now because it is currently affected by a Stripe webhook we wont be using in the future.
             # if self.current_org.stripe_customer_id:
-            #     return TrialStatus.NEVER_TRIALLED
+            #     return TrialStatus.CANNOT_TRIAL
             # else:
             return TrialStatus.NOT_STARTED
         # Scenario: An paid customer before the trial changes were introduced (they can never undergo trial for this org)
@@ -337,7 +337,7 @@ class PlanService:
         # we could ad some logic that to set both their start and end date to the exact same value and represent a customer that
         # was never able to trial after they cancel. Not 100% sold here but I think it works.
         elif trial_start_date == trial_end_date and self.current_org.stripe_customer_id:
-            return TrialStatus.NEVER_TRIALLED
+            return TrialStatus.CANNOT_TRIAL
         elif datetime.utcnow() > trial_end_date:
             return TrialStatus.EXPIRED
         else:
@@ -384,5 +384,5 @@ class PlanService:
         return self.plan.monthly_uploads_limit
 
     @property
-    def total_trial_days(self) -> Optional[TrialDaysAmount]:
+    def trial_total_days(self) -> Optional[TrialDaysAmount]:
         return self.plan.trial_days
