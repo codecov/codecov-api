@@ -1,0 +1,115 @@
+interactions:
+- request:
+    body: billing_address_collection=auto&payment_method_types[0]=card&payment_method_collection=if_required&client_reference_id=72&success_url=http%3A%2F%2Flocalhost%3A3000%2Fplan%2Fgh%2Fjohnmathews%3Fsuccess&cancel_url=http%3A%2F%2Flocalhost%3A3000%2Fplan%2Fgh%2Fjohnmathews%3Fcancel&subscription_data[items][0][plan]=price_1Mj1kYGlVGuVgOrk7jucaZAa&subscription_data[items][0][quantity]=12&subscription_data[payment_behavior]=allow_incomplete&subscription_data[metadata][service]=github&subscription_data[metadata][obo_organization]=72&subscription_data[metadata][username]=johnmathews&subscription_data[metadata][obo_name]=Joshua+Murray&subscription_data[metadata][obo_email]=phammatthew%40lynn.org&subscription_data[metadata][obo]=71&subscription_data[trial_period_days]=14&subscription_data[trial_settings][end_behavior][missing_payment_method]=cancel&customer_email=hollowaydeborah%40yahoo.com
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '889'
+      Content-Type:
+      - application/x-www-form-urlencoded
+      Idempotency-Key:
+      - 74f2d021-03a1-4843-baf9-901640e18259
+      User-Agent:
+      - Stripe/v1 PythonBindings/2.55.2
+      X-Stripe-Client-Telemetry:
+      - '{"last_request_metrics": {"request_id": "req_3UbPl8augcgjaw", "request_duration_ms":
+        428}}'
+      X-Stripe-Client-User-Agent:
+      - '{"bindings_version": "2.55.2", "lang": "python", "publisher": "stripe", "httplib":
+        "requests", "lang_version": "3.9.16", "platform": "Linux-5.15.49-linuxkit-pr-aarch64-with",
+        "uname": "Linux 7e5f26339edc 5.15.49-linuxkit-pr #1 SMP PREEMPT Thu May 25
+        07:27:39 UTC 2023 aarch64 "}'
+    method: POST
+    uri: https://api.stripe.com/v1/checkout/sessions
+  response:
+    body:
+      string: "{\n  \"id\": \"cs_test_a1L24ai3WCyYK7UzTMS6HE1Yfhnc28ng781GDaufn1rT6l23ouNABrCsBA\"\
+        ,\n  \"object\": \"checkout.session\",\n  \"after_expiration\": null,\n  \"\
+        allow_promotion_codes\": null,\n  \"amount_subtotal\": 0,\n  \"amount_total\"\
+        : 0,\n  \"automatic_tax\": {\n    \"enabled\": false,\n    \"status\": null\n\
+        \  },\n  \"billing_address_collection\": \"auto\",\n  \"cancel_url\": \"http://localhost:3000/plan/gh/johnmathews?cancel\"\
+        ,\n  \"client_reference_id\": \"72\",\n  \"consent\": null,\n  \"consent_collection\"\
+        : null,\n  \"created\": 1689601954,\n  \"currency\": \"usd\",\n  \"currency_conversion\"\
+        : null,\n  \"custom_fields\": [],\n  \"custom_text\": {\n    \"shipping_address\"\
+        : null,\n    \"submit\": null\n  },\n  \"customer\": null,\n  \"customer_creation\"\
+        : \"always\",\n  \"customer_details\": {\n    \"address\": null,\n    \"email\"\
+        : \"hollowaydeborah@yahoo.com\",\n    \"name\": null,\n    \"phone\": null,\n\
+        \    \"tax_exempt\": \"none\",\n    \"tax_ids\": null\n  },\n  \"customer_email\"\
+        : \"hollowaydeborah@yahoo.com\",\n  \"display_items\": [\n    {\n      \"\
+        amount\": 0,\n      \"currency\": \"usd\",\n      \"plan\": {\n        \"\
+        id\": \"price_1Mj1kYGlVGuVgOrk7jucaZAa\",\n        \"object\": \"plan\",\n\
+        \        \"active\": true,\n        \"aggregate_usage\": null,\n        \"\
+        amount\": null,\n        \"amount_decimal\": null,\n        \"billing_scheme\"\
+        : \"tiered\",\n        \"created\": 1678200262,\n        \"currency\": \"\
+        usd\",\n        \"interval\": \"month\",\n        \"interval_count\": 1,\n\
+        \        \"livemode\": false,\n        \"metadata\": {},\n        \"name\"\
+        : \"users-sentrym\",\n        \"nickname\": null,\n        \"product\": \"\
+        prod_NTzkoJuGDejxOc\",\n        \"statement_descriptor\": null,\n        \"\
+        tiers\": [\n          {\n            \"amount\": null,\n            \"flat_amount\"\
+        : 2900,\n            \"flat_amount_decimal\": \"2900\",\n            \"unit_amount_decimal\"\
+        : null,\n            \"up_to\": 5\n          },\n          {\n           \
+        \ \"amount\": 1200,\n            \"flat_amount\": null,\n            \"flat_amount_decimal\"\
+        : null,\n            \"unit_amount_decimal\": \"1200\",\n            \"up_to\"\
+        : null\n          }\n        ],\n        \"tiers_mode\": \"graduated\",\n\
+        \        \"transform_usage\": null,\n        \"trial_period_days\": 14,\n\
+        \        \"usage_type\": \"licensed\"\n      },\n      \"quantity\": 12,\n\
+        \      \"type\": \"plan\"\n    }\n  ],\n  \"expires_at\": 1689688353,\n  \"\
+        invoice\": null,\n  \"invoice_creation\": null,\n  \"livemode\": false,\n\
+        \  \"locale\": null,\n  \"metadata\": {},\n  \"mode\": \"subscription\",\n\
+        \  \"payment_intent\": null,\n  \"payment_link\": null,\n  \"payment_method_collection\"\
+        : \"if_required\",\n  \"payment_method_options\": null,\n  \"payment_method_types\"\
+        : [\n    \"card\"\n  ],\n  \"payment_status\": \"unpaid\",\n  \"phone_number_collection\"\
+        : {\n    \"enabled\": false\n  },\n  \"recovered_from\": null,\n  \"setup_intent\"\
+        : null,\n  \"shipping\": null,\n  \"shipping_address_collection\": null,\n\
+        \  \"shipping_options\": [],\n  \"shipping_rate\": null,\n  \"status\": \"\
+        open\",\n  \"submit_type\": null,\n  \"subscription\": null,\n  \"success_url\"\
+        : \"http://localhost:3000/plan/gh/johnmathews?success\",\n  \"total_details\"\
+        : {\n    \"amount_discount\": 0,\n    \"amount_shipping\": 0,\n    \"amount_tax\"\
+        : 0\n  },\n  \"url\": \"https://checkout.stripe.com/c/pay/cs_test_a1L24ai3WCyYK7UzTMS6HE1Yfhnc28ng781GDaufn1rT6l23ouNABrCsBA#fidkdWxOYHwnPyd1blpxYHZxWjA0MVZPUUpCaVNCcFNiSnduV2JtMn99dTZxVDJnXTFGXDN1a319cjN%2FV19fVmpBU3FQUG9Ed1VORjJqXWBgTGdPS0xGUXRWMk09PUNXY3Jfa1JIdm5VTn1qNTVnRGtwN2w8TCcpJ2N3amhWYHdzYHcnP3F3cGApJ2lkfGpwcVF8dWAnPyd2bGtiaWBabHFgaCcpJ2BrZGdpYFVpZGZgbWppYWB3dic%2FcXdwYHgl\"\
+        \n}"
+    headers:
+      Access-Control-Allow-Credentials:
+      - 'true'
+      Access-Control-Allow-Methods:
+      - GET, POST, HEAD, OPTIONS, DELETE
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - Request-Id, Stripe-Manage-Version, X-Stripe-External-Auth-Required, X-Stripe-Privileged-Session-Required
+      Access-Control-Max-Age:
+      - '300'
+      Cache-Control:
+      - no-cache, no-store
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '3342'
+      Content-Type:
+      - application/json
+      Date:
+      - Mon, 17 Jul 2023 13:52:34 GMT
+      Idempotency-Key:
+      - 74f2d021-03a1-4843-baf9-901640e18259
+      Original-Request:
+      - req_AaY8IvHbbSDcvz
+      Request-Id:
+      - req_AaY8IvHbbSDcvz
+      Server:
+      - nginx
+      Strict-Transport-Security:
+      - max-age=63072000; includeSubDomains; preload
+      Stripe-Should-Retry:
+      - 'false'
+      Stripe-Version:
+      - '2017-05-25'
+      X-Stripe-Routing-Context-Priority-Tier:
+      - api-testmode
+    status:
+      code: 200
+      message: OK
+version: 1

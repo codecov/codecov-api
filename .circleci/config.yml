@@ -127,25 +127,6 @@ jobs:
           name: Run Static Analysis
           command: |
             codecovcli static-analysis --token=$STATIC_TOKEN
-  iterativetesting:
-    executor: codecov-api
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - run:
-          name: Install CLI
-          command: |
-            apk add git build-base
-            pip install codecov-cli
-      - run:
-          name: Run Predictor Analysis
-          command: |
-            echo $(git merge-base HEAD^ master)
-            codecovcli label-analysis --token=$STATIC_TOKEN --base-sha=$(git merge-base HEAD^ master)
-      - run:
-          name: Upload onlysomelabels
-          command: |
-            codecovcli --codecov-yml-path=codecov_cli.yml do-upload --plugin pycoverage --plugin compress-pycoverage --flag smart-labels --fail-on-error
   test:
     executor: codecov-api
     working_directory: ~/repo
@@ -324,7 +305,7 @@ workflows:
             - build
           filters:
             branches:
-              only: master
+              only: main
             tags:
               only:
                 - /enterprise-.*/
@@ -340,13 +321,6 @@ workflows:
           context: "circleci google deploy context"
           requires:
             - codecovstartup
-          filters:
-            tags:
-              only: /.*/
-      - iterativetesting:
-          context: "circleci google deploy context"
-          requires:
-            - staticanalysis
           filters:
             tags:
               only: /.*/
@@ -376,7 +350,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - main
                 - /portable-.*/
       - staging:
           context: "circleci google deploy context"
@@ -396,7 +370,7 @@ workflows:
             - dive
           filters:
             branches:
-              only: master
+              only: main
       - dive-enterprise:
           context:
             - "circleci google deploy context"
@@ -408,7 +382,7 @@ workflows:
                 - /^qa-.*/
                 - /^enterprise-.*/
             branches:
-              only: master
+              only: main
       - enterprise:
           context:
             - "DockerHub Push Context"
@@ -424,7 +398,7 @@ workflows:
                 - /^qa-.*/
                 - /^enterprise-.*/
             branches:
-              only: master
+              only: main
       - hold:
           type: approval
           requires:
