@@ -1042,52 +1042,6 @@ class StripeServiceTests(TestCase):
         )
 
     @patch("services.billing.stripe.checkout.Session.create")
-    def test_create_checkout_session_with_email_and_no_stripe_customer_id(
-        self, create_checkout_session_mock
-    ):
-        email = "test-email@gmail.com"
-        stripe_customer_id = None
-        owner = OwnerFactory(
-            service=Service.GITHUB.value,
-            email=email,
-            stripe_customer_id=stripe_customer_id,
-        )
-        expected_id = "fkkgosd"
-        create_checkout_session_mock.return_value = {"id": expected_id}
-        desired_quantity = 25
-        desired_plan = {"value": "users-pr-inappm", "quantity": desired_quantity}
-
-        assert self.stripe.create_checkout_session(owner, desired_plan) == expected_id
-
-        create_checkout_session_mock.assert_called_once_with(
-            billing_address_collection="required",
-            payment_method_types=["card"],
-            payment_method_collection="if_required",
-            client_reference_id=owner.ownerid,
-            customer_email=owner.email,
-            customer=None,
-            success_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?success",
-            cancel_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?cancel",
-            subscription_data={
-                "items": [
-                    {
-                        "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                        "quantity": desired_quantity,
-                    }
-                ],
-                "payment_behavior": "allow_incomplete",
-                "metadata": {
-                    "service": owner.service,
-                    "obo_organization": owner.ownerid,
-                    "username": owner.username,
-                    "obo_name": self.user.name,
-                    "obo_email": self.user.email,
-                    "obo": self.user.ownerid,
-                },
-            },
-        )
-
-    @patch("services.billing.stripe.checkout.Session.create")
     def test_create_checkout_session_with_no_email_and_no_stripe_customer_id(
         self, create_checkout_session_mock
     ):
@@ -1111,7 +1065,6 @@ class StripeServiceTests(TestCase):
             payment_method_collection="if_required",
             client_reference_id=owner.ownerid,
             customer_email=owner.email,
-            customer=None,
             success_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?success",
             cancel_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?cancel",
             subscription_data={
@@ -1157,7 +1110,6 @@ class StripeServiceTests(TestCase):
             payment_method_collection="if_required",
             client_reference_id=owner.ownerid,
             customer=owner.stripe_customer_id,
-            customer_email=None,
             success_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?success",
             cancel_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?cancel",
             subscription_data={
@@ -1184,7 +1136,7 @@ class StripeServiceTests(TestCase):
         self, create_checkout_session_mock
     ):
         email = "test-email@gmail.com"
-        stripe_customer_id = "test-cus78723hb4@"
+        stripe_customer_id = "test-cusa78723hb4@"
         owner = OwnerFactory(
             service=Service.GITHUB.value,
             email=email,
@@ -1203,7 +1155,6 @@ class StripeServiceTests(TestCase):
             payment_method_collection="if_required",
             client_reference_id=owner.ownerid,
             customer=owner.stripe_customer_id,
-            customer_email=None,
             success_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?success",
             cancel_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?cancel",
             subscription_data={
@@ -1221,6 +1172,55 @@ class StripeServiceTests(TestCase):
                     "obo_name": self.user.name,
                     "obo_email": self.user.email,
                     "obo": self.user.ownerid,
+                },
+            },
+        )
+
+    @patch("services.billing.stripe.checkout.Session.create")
+    def test_create_checkout_session_with_trial(self, create_checkout_session_mock):
+        email = "test-email@gmail.com"
+        stripe_customer_id = None
+        owner = OwnerFactory(
+            service=Service.GITHUB.value,
+            email=email,
+            stripe_customer_id=stripe_customer_id,
+        )
+        expected_id = "fkkgosd"
+        create_checkout_session_mock.return_value = {"id": expected_id}
+        desired_quantity = 25
+        desired_plan = {"value": "users-sentrym", "quantity": desired_quantity}
+
+        assert self.stripe.create_checkout_session(owner, desired_plan) == expected_id
+
+        create_checkout_session_mock.assert_called_once_with(
+            billing_address_collection="auto",
+            payment_method_types=["card"],
+            payment_method_collection="if_required",
+            client_reference_id=owner.ownerid,
+            customer_email=owner.email,
+            success_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?success",
+            cancel_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?cancel",
+            subscription_data={
+                "items": [
+                    {
+                        "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                        "quantity": desired_quantity,
+                    }
+                ],
+                "payment_behavior": "allow_incomplete",
+                "metadata": {
+                    "service": owner.service,
+                    "obo_organization": owner.ownerid,
+                    "username": owner.username,
+                    "obo_name": self.user.name,
+                    "obo_email": self.user.email,
+                    "obo": self.user.ownerid,
+                },
+                "trial_period_days": 14,
+                "trial_settings": {
+                    "end_behavior": {
+                        "missing_payment_method": "cancel",
+                    },
                 },
             },
         )

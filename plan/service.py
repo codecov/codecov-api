@@ -6,6 +6,7 @@ from django.forms import ValidationError
 
 from codecov_auth.models import Owner
 from plan.constants import (
+    UNSUPPORTED_PLAN,
     USER_PLAN_REPRESENTATIONS,
     MonthlyUploadLimits,
     PlanBillingRate,
@@ -15,7 +16,6 @@ from plan.constants import (
     TrialDaysAmount,
     TrialStatus,
 )
-from services.segment import SegmentService
 
 log = logging.getLogger(__name__)
 
@@ -36,16 +36,16 @@ class PlanService:
         self.current_org = current_org
         # TODO: how to account for super archaic plan names like "v4-10y"
         if self.current_org.plan not in USER_PLAN_REPRESENTATIONS:
-            self.plan_data = None
+            self.plan_data = UNSUPPORTED_PLAN
         else:
             self.plan_data = USER_PLAN_REPRESENTATIONS[self.current_org.plan]
 
     def update_plan(self, name: PlanNames, user_count: int) -> None:
-        self.current_org.plan = name
-        self.current_org.plan_user_count = user_count
-        self.plan_data = USER_PLAN_REPRESENTATIONS[self.current_org.plan]
-        self.current_org.save()
-        return
+        if name in USER_PLAN_REPRESENTATIONS:
+            self.current_org.plan = name
+            self.current_org.plan_user_count = user_count
+            self.plan_data = USER_PLAN_REPRESENTATIONS[self.current_org.plan]
+            self.current_org.save()
 
     def set_default_plan_data(self) -> None:
         log.info(f"Setting plan to users-basic for owner {self.current_org.ownerid}")
@@ -110,10 +110,11 @@ class PlanService:
             days=TrialDaysAmount.CODECOV_SENTRY.value
         )
         self.current_org.plan_auto_activate = True
+        self.current_org.save()
         # TODO: uncomment these for ticket adding trial logic
         # self.current_org.plan = PlanNames.TRIAL_PLAN_NAME.value
         # self.current_org.trial_status = TrialStatus.ONGOING
-        self.current_org.save()
+
         # notifier_service.trial_started(
         #     org_ownerid=self.current_org.ownerid,
         #     trial_details={

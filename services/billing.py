@@ -11,6 +11,7 @@ from plan.constants import (
     PRO_PLANS,
     USER_PLAN_REPRESENTATIONS,
     PlanBillingRate,
+    TrialStatus,
 )
 from plan.service import PlanService
 from services.segment import SegmentService
@@ -399,33 +400,50 @@ class StripeService(AbstractPaymentService):
         success_url, cancel_url = self._get_success_and_cancel_url(owner)
         log.info("Creating Stripe Checkout Session for owner: {owner.ownerid}")
 
-        if not owner.stripe_customer_id:
-            customer_email = owner.email
-            customer = None
-        else:
-            customer = owner.stripe_customer_id
-            customer_email = None
+        billing_address_collection = "required"
+        subscription_data = {
+            "items": [
+                {
+                    "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    "quantity": desired_plan["quantity"],
+                }
+            ],
+            "payment_behavior": "allow_incomplete",
+            "metadata": self._get_checkout_session_and_subscription_metadata(owner),
+        }
 
-        session = stripe.checkout.Session.create(
-            billing_address_collection="required",
-            payment_method_types=["card"],
-            payment_method_collection="if_required",
-            client_reference_id=owner.ownerid,
-            success_url=success_url,
-            cancel_url=cancel_url,
-            customer=customer,
-            customer_email=customer_email,
-            subscription_data={
-                "items": [
-                    {
-                        "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                        "quantity": desired_plan["quantity"],
-                    }
-                ],
-                "payment_behavior": "allow_incomplete",
-                "metadata": self._get_checkout_session_and_subscription_metadata(owner),
-            },
-        )
+        plan_representation = USER_PLAN_REPRESENTATIONS[desired_plan["value"]]
+        trial_days = plan_representation.trial_days
+        plan_service = PlanService(current_org=owner)
+        if (
+            trial_days is not None
+            and plan_service.trial_status == TrialStatus.NOT_STARTED
+        ):
+            billing_address_collection = "auto"
+            subscription_data["trial_period_days"] = trial_days
+            subscription_data["trial_settings"] = {
+                "end_behavior": {
+                    # `customer.subscription.deleted` webhook will be triggered at the end of trial period
+                    "missing_payment_method": "cancel",
+                }
+            }
+
+        session = None
+
+        session_params = {
+            "billing_address_collection": billing_address_collection,
+            "payment_method_types": ["card"],
+            "payment_method_collection": "if_required",
+            "client_reference_id": owner.ownerid,
+            "success_url": success_url,
+            "cancel_url": cancel_url,
+            "subscription_data": subscription_data,
+        }
+        if not owner.stripe_customer_id:
+            session_params["customer_email"] = owner.email
+        else:
+            session_params["customer"] = owner.stripe_customer_id
+        session = stripe.checkout.Session.create(**session_params)
         log.info(
             f"Stripe Checkout Session created successfully for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
         )

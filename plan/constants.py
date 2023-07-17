@@ -23,16 +23,16 @@ class PlanMarketingName(enum.Enum):
 
 
 class PlanNames(enum.Enum):
-    GHM_PLAN_NAME = "users"
-    FREE_PLAN_NAME = "users-free"
-    TRIAL_PLAN_NAME = "users-trial"
     BASIC_PLAN_NAME = "users-basic"
-    CODECOV_PRO_MONTHLY_LEGACY = "users-inappm"
-    CODECOV_PRO_YEARLY_LEGACY = "users-inappy"
+    TRIAL_PLAN_NAME = "users-trial"
     CODECOV_PRO_MONTHLY = "users-pr-inappm"
     CODECOV_PRO_YEARLY = "users-pr-inappy"
     SENTRY_MONTHLY = "users-sentrym"
     SENTRY_YEARLY = "users-sentryy"
+    GHM_PLAN_NAME = "users"
+    FREE_PLAN_NAME = "users-free"
+    CODECOV_PRO_MONTHLY_LEGACY = "users-inappm"
+    CODECOV_PRO_YEARLY_LEGACY = "users-inappy"
     ENTERPRISE_CLOUD_MONTHLY = "users-enterprisem"
     ENTERPRISE_CLOUD_YEARLY = "users-enterprisey"
 
@@ -281,3 +281,16 @@ USER_PLAN_REPRESENTATIONS = {
     **PRO_PLANS,
     **TRIAL_PLANS,
 }
+
+
+UNSUPPORTED_PLAN = (
+    PlanData(
+        marketing_name=None,
+        value=None,
+        billing_rate=None,
+        base_unit_price=None,
+        benefits=None,
+        trial_days=None,
+        monthly_uploads_limit=None,
+    ),
+)
