@@ -155,7 +155,7 @@ class CodecovSessionAuthentication(
 
         We base64 decode it and obtain
 
-            test0uqtsj0yxsaw4kjsz34g1cz3vq6hrm7t
+            06ed406d-3fe5-4ff4-baba-349739732b6a
 
         Which is the final token
 
