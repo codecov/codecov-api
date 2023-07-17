@@ -249,9 +249,10 @@ class StripeService(AbstractPaymentService):
 
                 self._segment_modify_subscription(owner, desired_plan)
 
-                owner.plan = desired_plan["value"]
-                owner.plan_user_count = desired_plan["quantity"]
-                owner.save()
+                plan_service = PlanService(current_org=owner)
+                plan_service.update_plan(
+                    name=desired_plan["value"], user_count=desired_plan["quantity"]
+                )
 
                 log.info(
                     f"Stripe subscription modified successfully for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"

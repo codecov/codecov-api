@@ -27,9 +27,6 @@ def available_plans(user: Union[Owner, AnonymousUser]) -> List[dict]:
     """
     # these are available to everyone
     plans = []
-    # print("I'm here", FREE_PLAN_REPRESENTATIONS)
-    # print("I'm here", FREE_PLAN_REPRESENTATIONS.values())
-    # print("I'm here", FREE_PLAN_REPRESENTATIONS.values().toJSON())
     plans += list(FREE_PLAN_REPRESENTATIONS.values())
     plans += list(PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values())
 
@@ -39,5 +36,4 @@ def available_plans(user: Union[Owner, AnonymousUser]) -> List[dict]:
 
     # TODO: not sure if I need to add the trial plan here
     plans = [json.loads(plan.toJSON()) for plan in plans]
-    print("aaa", plans)
     return plans

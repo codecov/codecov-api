@@ -79,9 +79,7 @@ class StripeWebhookHandler(APIView):
             stripe_subscription_id=subscription.id,
         )
         plan_service = PlanService(current_org=owner)
-        print("le me here")
         plan_service.set_default_plan_data()
-        print("le me here 2")
         owner.repository_set.update(active=False, activated=False)
 
         self.segment_service.account_cancelled_subscription(
@@ -128,32 +126,33 @@ class StripeWebhookHandler(APIView):
         owner = Owner.objects.get(ownerid=subscription.metadata.obo_organization)
         subscription_data = subscription["items"]["data"][0]
         requesting_user_id = subscription.metadata.obo
+        plan_service = PlanService(current_org=owner)
 
         # Segment Analytics to see if user upgraded plan, increased or decreased users
         if (
-            owner.plan_user_count
-            and owner.plan_user_count > subscription_data["quantity"]
+            plan_service.plan_user_count
+            and plan_service.plan_user_count > subscription_data["quantity"]
         ):
             self.segment_service.account_decreased_users(
                 current_user_ownerid=requesting_user_id,
                 org_ownerid=owner.ownerid,
                 plan_details={
                     "new_quantity": subscription_data["quantity"],
-                    "old_quantity": owner.plan_user_count,
+                    "old_quantity": plan_service.plan_user_count,
                     "plan": subscription_data["plan"]["name"],
                 },
             )
 
         if (
-            owner.plan_user_count
-            and owner.plan_user_count < subscription_data["quantity"]
+            plan_service.plan_user_count
+            and plan_service.plan_user_count < subscription_data["quantity"]
         ):
             self.segment_service.account_increased_users(
                 current_user_ownerid=requesting_user_id,
                 org_ownerid=owner.ownerid,
                 plan_details={
                     "new_quantity": subscription_data["quantity"],
-                    "old_quantity": owner.plan_user_count,
+                    "old_quantity": plan_service.plan_user_count,
                     "plan": subscription_data["plan"]["name"],
                 },
             )

@@ -123,7 +123,7 @@ class PlanService:
         #     },
         # )
 
-    def expire_trial(self, notifier_service: SegmentService) -> None:
+    def expire_trial(self) -> None:
         if (
             self.trial_status == TrialStatus.NOT_STARTED
             or self.trial_status == TrialStatus.ONGOING
@@ -131,14 +131,14 @@ class PlanService:
             self.current_org.trial_end_date = datetime.utcnow()
             # self.current_org.trial_status = TrialStatus.EXPIRED
             self.current_org.save()
-            notifier_service.trial_ended(
-                org_ownerid=self.current_org.ownerid,
-                trial_details={
-                    "trial_plan_name": self.current_org.plan,
-                    "trial_start_date": self.current_org.trial_start_date,
-                    "trial_end_date": self.current_org.trial_end_date,
-                },
-            )
+            # notifier_service.trial_ended(
+            #     org_ownerid=self.current_org.ownerid,
+            #     trial_details={
+            #         "trial_plan_name": self.current_org.plan,
+            #         "trial_start_date": self.current_org.trial_start_date,
+            #         "trial_end_date": self.current_org.trial_end_date,
+            #     },
+            # )
 
     def expire_trial_preemptively(self) -> None:
         """

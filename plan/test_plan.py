@@ -104,6 +104,26 @@ class PlanServiceTests(TestCase):
             days=TrialDaysAmount.CODECOV_SENTRY.value
         )
 
+    def test_plan_service_expire_trial_for_ongoing_trial(
+        self,
+    ):
+        time_now = datetime.utcnow()
+        trial_start_date = time_now
+        trial_end_date = time_now + timedelta(days=TrialDaysAmount.CODECOV_SENTRY.value)
+        current_org = OwnerFactory(
+            plan=PlanNames.BASIC_PLAN_NAME.value,
+            trial_start_date=trial_start_date,
+            trial_end_date=trial_end_date,
+        )
+        plan_service = PlanService(current_org=current_org)
+        plan_service.expire_trial()
+
+        current_org.refresh_from_db()
+
+        assert plan_service.trial_end_date == time_now
+        # TODO: Uncomment when trial_status is derived from DB column
+        # assert plan_service.trial_status == TrialStatus.EXPIRED
+
     def test_plan_service_expire_trial_preemptively_fails_if_no_trial_end_date(
         self,
     ):
