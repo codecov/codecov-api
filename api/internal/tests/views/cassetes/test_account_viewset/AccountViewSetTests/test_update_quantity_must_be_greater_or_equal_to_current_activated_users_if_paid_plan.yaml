@@ -1,0 +1,71 @@
+interactions:
+- request:
+    body: billing_address_collection=required&payment_method_types[0]=card&payment_method_collection=if_required&client_reference_id=65&success_url=http%3A%2F%2Flocalhost%3A3000%2Fplan%2Fgh%2Fysantos%3Fsuccess&cancel_url=http%3A%2F%2Flocalhost%3A3000%2Fplan%2Fgh%2Fysantos%3Fcancel&subscription_data[items][0][plan]=plan_H6P16wij3lUuxg&subscription_data[items][0][quantity]=14&subscription_data[payment_behavior]=allow_incomplete&subscription_data[metadata][service]=github&subscription_data[metadata][obo_organization]=65&subscription_data[metadata][username]=ysantos&subscription_data[metadata][obo_name]=Matthew+Guzman&subscription_data[metadata][obo_email]=ybrown%40fitzgerald-cummings.org&subscription_data[metadata][obo]=65&customer=1000
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '733'
+      Content-Type:
+      - application/x-www-form-urlencoded
+      Idempotency-Key:
+      - 21e170c5-bf4a-47f7-9da5-262844bbdbf2
+      User-Agent:
+      - Stripe/v1 PythonBindings/2.55.2
+      X-Stripe-Client-User-Agent:
+      - '{"bindings_version": "2.55.2", "lang": "python", "publisher": "stripe", "httplib":
+        "requests", "lang_version": "3.9.16", "platform": "Linux-5.15.49-linuxkit-pr-aarch64-with",
+        "uname": "Linux 7e5f26339edc 5.15.49-linuxkit-pr #1 SMP PREEMPT Thu May 25
+        07:27:39 UTC 2023 aarch64 "}'
+    method: POST
+    uri: https://api.stripe.com/v1/checkout/sessions
+  response:
+    body:
+      string: "{\n  \"error\": {\n    \"code\": \"resource_missing\",\n    \"doc_url\"\
+        : \"https://stripe.com/docs/error-codes/resource-missing\",\n    \"message\"\
+        : \"No such customer: '1000'\",\n    \"param\": \"customer\",\n    \"request_log_url\"\
+        : \"https://dashboard.stripe.com/test/logs/req_vVNzxP8mblHEcJ?t=1689601951\"\
+        ,\n    \"type\": \"invalid_request_error\"\n  }\n}\n"
+    headers:
+      Access-Control-Allow-Credentials:
+      - 'true'
+      Access-Control-Allow-Methods:
+      - GET, POST, HEAD, OPTIONS, DELETE
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - Request-Id, Stripe-Manage-Version, X-Stripe-External-Auth-Required, X-Stripe-Privileged-Session-Required
+      Access-Control-Max-Age:
+      - '300'
+      Cache-Control:
+      - no-cache, no-store
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '325'
+      Content-Type:
+      - application/json
+      Date:
+      - Mon, 17 Jul 2023 13:52:31 GMT
+      Idempotency-Key:
+      - 21e170c5-bf4a-47f7-9da5-262844bbdbf2
+      Original-Request:
+      - req_vVNzxP8mblHEcJ
+      Request-Id:
+      - req_vVNzxP8mblHEcJ
+      Server:
+      - nginx
+      Strict-Transport-Security:
+      - max-age=63072000; includeSubDomains; preload
+      Stripe-Version:
+      - '2017-05-25'
+      X-Stripe-Routing-Context-Priority-Tier:
+      - api-testmode
+    status:
+      code: 400
+      message: Bad Request
+version: 1

@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
+import pytest
 from django.test import override_settings
 from rest_framework import status
 from rest_framework.reverse import reverse
@@ -60,6 +61,7 @@ class MockSchedule(object):
         return getattr(self, key)
 
 
+@pytest.mark.usefixtures("codecov_vcr")
 class AccountViewSetTests(APITestCase):
     def _retrieve(self, kwargs={}):
         if not kwargs:
