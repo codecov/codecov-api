@@ -1,0 +1,64 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - Stripe/v1 PythonBindings/2.55.2
+      X-Stripe-Client-Telemetry:
+      - '{"last_request_metrics": {"request_id": "req_vVNzxP8mblHEcJ", "request_duration_ms":
+        353}}'
+      X-Stripe-Client-User-Agent:
+      - '{"bindings_version": "2.55.2", "lang": "python", "publisher": "stripe", "httplib":
+        "requests", "lang_version": "3.9.16", "platform": "Linux-5.15.49-linuxkit-pr-aarch64-with",
+        "uname": "Linux 7e5f26339edc 5.15.49-linuxkit-pr #1 SMP PREEMPT Thu May 25
+        07:27:39 UTC 2023 aarch64 "}'
+    method: GET
+    uri: https://api.stripe.com/v1/subscriptions/djfos?expand%5B0%5D=latest_invoice&expand%5B1%5D=customer&expand%5B2%5D=customer.invoice_settings.default_payment_method
+  response:
+    body:
+      string: "{\n  \"error\": {\n    \"code\": \"resource_missing\",\n    \"doc_url\"\
+        : \"https://stripe.com/docs/error-codes/resource-missing\",\n    \"message\"\
+        : \"No such subscription: 'djfos'\",\n    \"param\": \"id\",\n    \"request_log_url\"\
+        : \"https://dashboard.stripe.com/test/logs/req_5JWnxFXQbAG4xJ?t=1689601951\"\
+        ,\n    \"type\": \"invalid_request_error\"\n  }\n}\n"
+    headers:
+      Access-Control-Allow-Credentials:
+      - 'true'
+      Access-Control-Allow-Methods:
+      - GET, POST, HEAD, OPTIONS, DELETE
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - Request-Id, Stripe-Manage-Version, X-Stripe-External-Auth-Required, X-Stripe-Privileged-Session-Required
+      Access-Control-Max-Age:
+      - '300'
+      Cache-Control:
+      - no-cache, no-store
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '324'
+      Content-Type:
+      - application/json
+      Date:
+      - Mon, 17 Jul 2023 13:52:31 GMT
+      Request-Id:
+      - req_5JWnxFXQbAG4xJ
+      Server:
+      - nginx
+      Strict-Transport-Security:
+      - max-age=63072000; includeSubDomains; preload
+      Stripe-Version:
+      - '2017-05-25'
+      X-Stripe-Routing-Context-Priority-Tier:
+      - api-testmode
+    status:
+      code: 404
+      message: Not Found
+version: 1
