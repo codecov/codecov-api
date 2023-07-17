@@ -305,7 +305,7 @@ workflows:
             - build
           filters:
             branches:
-              only: master
+              only: main
             tags:
               only:
                 - /enterprise-.*/
@@ -350,7 +350,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - main
                 - /portable-.*/
       - staging:
           context: "circleci google deploy context"
@@ -370,7 +370,7 @@ workflows:
             - dive
           filters:
             branches:
-              only: master
+              only: main
       - dive-enterprise:
           context:
             - "circleci google deploy context"
@@ -382,7 +382,7 @@ workflows:
                 - /^qa-.*/
                 - /^enterprise-.*/
             branches:
-              only: master
+              only: main
       - enterprise:
           context:
             - "DockerHub Push Context"
@@ -398,7 +398,7 @@ workflows:
                 - /^qa-.*/
                 - /^enterprise-.*/
             branches:
-              only: master
+              only: main
       - hold:
           type: approval
           requires:
