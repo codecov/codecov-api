@@ -1,11 +1,7 @@
 import enum
+import json
 from dataclasses import dataclass
-from datetime import datetime, timedelta
 from typing import List, Optional
-
-from django.forms import ValidationError
-
-from codecov_auth.models import Owner
 
 
 class MonthlyUploadLimits(enum.Enum):
@@ -23,11 +19,13 @@ class PlanMarketingName(enum.Enum):
     GITHUB_MARKETPLACE = "Github Marketplace"
     FREE = "Developer"
     BASIC = "Developer"
+    TRIAL = "Developer"
 
 
 class PlanNames(enum.Enum):
-    FREE_PLAN_NAME = "users-free"
     GHM_PLAN_NAME = "users"
+    FREE_PLAN_NAME = "users-free"
+    TRIAL_PLAN_NAME = "users-trial"
     BASIC_PLAN_NAME = "users-basic"
     CODECOV_PRO_MONTHLY_LEGACY = "users-inappm"
     CODECOV_PRO_YEARLY_LEGACY = "users-inappy"
@@ -49,6 +47,7 @@ class PlanPrice(enum.Enum):
     YEARLY = 10
     CODECOV_FREE = 0
     CODECOV_BASIC = 0
+    CODECOV_TRIAL = 0
     GHM_PRICE = 12
 
 
@@ -72,6 +71,9 @@ class PlanData:
     benefits: List[str]
     monthly_uploads_limit: Optional[MonthlyUploadLimits]
     trial_days: Optional[TrialDaysAmount]
+
+    def toJSON(self):
+        return json.dumps(self, default=lambda o: o.__dict__)
 
 
 NON_PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
@@ -247,141 +249,35 @@ FREE_PLAN_REPRESENTATIONS = {
     ),
 }
 
-USER_PLAN_REPRESENTATIONS = {
-    **FREE_PLAN_REPRESENTATIONS,
-    **NON_PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
+TRIAL_PLAN_REPRESENTATION = {
+    PlanNames.TRIAL_PLAN_NAME.value: PlanData(
+        marketing_name=PlanMarketingName.TRIAL.value,
+        value=PlanNames.TRIAL_PLAN_NAME.value,
+        billing_rate=None,
+        base_unit_price=PlanPrice.CODECOV_TRIAL.value,
+        benefits=[
+            "Configurable # of users",
+            "Unlimited public repositories",
+            "Unlimited private repositories",
+            "Priority Support",
+        ],
+        trial_days=None,
+        monthly_uploads_limit=None,
+    ),
+}
+
+PRO_PLANS = {
     **PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
     **SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
-    **GHM_PLAN_REPRESENTATION,
     **ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
 }
 
+TRIAL_PLANS = {**TRIAL_PLAN_REPRESENTATION}
 
-class PlanService:
-    def __init__(self, current_org: Owner):
-        """
-        Initializes a plan service object with a plan. The plan will be a trial plan
-        if applicable
-
-        Args:
-            current_org (Owner): this is selected organization entry. This is not the user that is sending the request.
-
-        Returns:
-            No value
-        """
-        self.current_org = current_org
-        self.plan = USER_PLAN_REPRESENTATIONS[self.current_org.plan]
-
-    def start_trial(self) -> None:
-        """
-        Method that starts trial on an organization if the trial_start_date
-        is not empty.
-
-        Returns:
-            No value
-
-        Raises:
-            ValidationError: if trial has already started
-        """
-        if self.trial_status != TrialStatus.NOT_STARTED:
-            raise ValidationError("Cannot start an existing trial")
-        start_date = datetime.utcnow()
-        self.current_org.trial_start_date = start_date
-        # TODO: make days here be the amount of days belonging to the plan
-        self.current_org.trial_end_date = start_date + timedelta(
-            days=TrialDaysAmount.CODECOV_SENTRY.value
-        )
-        self.current_org.save()
-
-    def expire_trial_preemptively(self) -> None:
-        """
-        Method that expires a trial upon demand. Usually trials will be considered
-        expired based on the 'trial_status' property above, but a user can decide to
-        cause that expiration premptively
-
-        Raises:
-            ValidationError: if trial hasnt started
-
-        Returns:
-            No value
-        """
-        # I initially wanted to raise a validation error if there wasnt a start date/end date, but this will
-        # be hard to apply for entries before this migration without start/end trial dates
-        if self.current_org.trial_end_date is None:
-            raise ValidationError("Cannot expire an unstarted trial")
-        self.current_org.trial_end_date = datetime.utcnow()
-        self.current_org.save()
-
-    @property
-    def trial_status(self) -> TrialStatus:
-        """
-        Property that determines the trial status based on the trial_start_date and
-        the trial_end_date.
-
-        Returns:
-            Any value from TrialStatus Enum
-        """
-        trial_start_date = self.current_org.trial_start_date
-        trial_end_date = self.current_org.trial_end_date
-
-        if trial_start_date is None and trial_end_date is None:
-            # Scenario: A paid customer before the trial changes were introduced (they can never undergo trial for this org)
-            # I have to comment this for now because it is currently affected by a Stripe webhook we wont be using in the future.
-            # if self.current_org.stripe_customer_id:
-            #     return TrialStatus.CANNOT_TRIAL
-            # else:
-            return TrialStatus.NOT_STARTED
-        # Scenario: An paid customer before the trial changes were introduced (they can never undergo trial for this org)
-        # This type of customer would have None for both the start and trial end date, but I was thinking, upon plan cancellation,
-        # we could ad some logic that to set both their start and end date to the exact same value and represent a customer that
-        # was never able to trial after they cancel. Not 100% sold here but I think it works.
-        elif trial_start_date == trial_end_date and self.current_org.stripe_customer_id:
-            return TrialStatus.CANNOT_TRIAL
-        elif datetime.utcnow() > trial_end_date:
-            return TrialStatus.EXPIRED
-        else:
-            return TrialStatus.ONGOING
-
-    @property
-    def trial_start_date(self) -> Optional[datetime]:
-        return self.current_org.trial_start_date
-
-    @property
-    def trial_end_date(self) -> Optional[datetime]:
-        return self.current_org.trial_end_date
-
-    @property
-    def marketing_name(self) -> PlanMarketingName:
-        return self.plan.marketing_name
-
-    @property
-    def plan_name(self) -> PlanNames:
-        return self.plan.value
-
-    @property
-    def billing_rate(self) -> Optional[PlanBillingRate]:
-        return self.plan.billing_rate
-
-    @property
-    def base_unit_price(self) -> PlanPrice:
-        return self.plan.base_unit_price
-
-    @property
-    def benefits(self) -> List[str]:
-        return self.plan.benefits
-
-    @property
-    def monthly_uploads_limit(self) -> Optional[MonthlyUploadLimits]:
-        """
-        Property that returns monthly uploads limit based on your trial status
-
-        Returns:
-            Optional number of uploads
-        """
-        if self.trial_status == TrialStatus.ONGOING:
-            return None
-        return self.plan.monthly_uploads_limit
-
-    @property
-    def trial_total_days(self) -> Optional[TrialDaysAmount]:
-        return self.plan.trial_days
+USER_PLAN_REPRESENTATIONS = {
+    **FREE_PLAN_REPRESENTATIONS,
+    **NON_PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
+    **GHM_PLAN_REPRESENTATION,
+    **PRO_PLANS,
+    **TRIAL_PLANS,
+}

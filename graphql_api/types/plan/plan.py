@@ -4,16 +4,15 @@ from typing import List, Optional
 from ariadne import ObjectType, convert_kwargs_to_snake_case
 
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
-from services.plan import (
+from plan.constants import (
     MonthlyUploadLimits,
     PlanBillingRate,
     PlanMarketingName,
     PlanNames,
     PlanPrice,
-    PlanService,
-    TrialDaysAmount,
     TrialStatus,
 )
+from plan.service import PlanService
 
 plan = ariadne_load_local_graphql(__file__, "plan.graphql")
 plan_bindable = ObjectType("Plan")

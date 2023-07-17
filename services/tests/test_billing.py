@@ -1,15 +1,13 @@
 import json
-from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
 
 from django.conf import settings
 from django.test import TestCase
-from freezegun import freeze_time
 from stripe.error import InvalidRequestError
 
-from billing.constants import BASIC_PLAN_NAME
 from codecov_auth.models import Service
 from codecov_auth.tests.factories import OwnerFactory
+from plan.constants import PlanNames
 from services.billing import AbstractPaymentService, BillingService, StripeService
 
 SCHEDULE_RELEASE_OFFSET = 10
@@ -290,7 +288,7 @@ class StripeServiceTests(TestCase):
 
         owner.refresh_from_db()
         assert owner.stripe_subscription_id == None
-        assert owner.plan == BASIC_PLAN_NAME
+        assert owner.plan == PlanNames.BASIC_PLAN_NAME.value
         assert owner.plan_activated_users == None
         assert owner.plan_user_count == 1
 
@@ -318,7 +316,7 @@ class StripeServiceTests(TestCase):
 
         owner.refresh_from_db()
         assert owner.stripe_subscription_id == None
-        assert owner.plan == BASIC_PLAN_NAME
+        assert owner.plan == PlanNames.BASIC_PLAN_NAME.value
         assert owner.plan_activated_users == None
         assert owner.plan_user_count == 1
 
@@ -1067,6 +1065,7 @@ class StripeServiceTests(TestCase):
             payment_method_collection="if_required",
             client_reference_id=owner.ownerid,
             customer_email=owner.email,
+            customer=None,
             success_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?success",
             cancel_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?cancel",
             subscription_data={
@@ -1112,6 +1111,7 @@ class StripeServiceTests(TestCase):
             payment_method_collection="if_required",
             client_reference_id=owner.ownerid,
             customer_email=owner.email,
+            customer=None,
             success_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?success",
             cancel_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?cancel",
             subscription_data={
@@ -1157,6 +1157,7 @@ class StripeServiceTests(TestCase):
             payment_method_collection="if_required",
             client_reference_id=owner.ownerid,
             customer=owner.stripe_customer_id,
+            customer_email=None,
             success_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?success",
             cancel_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?cancel",
             subscription_data={
@@ -1183,7 +1184,7 @@ class StripeServiceTests(TestCase):
         self, create_checkout_session_mock
     ):
         email = "test-email@gmail.com"
-        stripe_customer_id = "test-cusa78723hb4@"
+        stripe_customer_id = "test-cus78723hb4@"
         owner = OwnerFactory(
             service=Service.GITHUB.value,
             email=email,
@@ -1202,105 +1203,7 @@ class StripeServiceTests(TestCase):
             payment_method_collection="if_required",
             client_reference_id=owner.ownerid,
             customer=owner.stripe_customer_id,
-            success_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?success",
-            cancel_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?cancel",
-            subscription_data={
-                "items": [
-                    {
-                        "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                        "quantity": desired_quantity,
-                    }
-                ],
-                "payment_behavior": "allow_incomplete",
-                "metadata": {
-                    "service": owner.service,
-                    "obo_organization": owner.ownerid,
-                    "username": owner.username,
-                    "obo_name": self.user.name,
-                    "obo_email": self.user.email,
-                    "obo": self.user.ownerid,
-                },
-            },
-        )
-
-    @patch("services.billing.stripe.checkout.Session.create")
-    def test_create_checkout_session_with_trial(self, create_checkout_session_mock):
-        email = "test-email@gmail.com"
-        stripe_customer_id = None
-        owner = OwnerFactory(
-            service=Service.GITHUB.value,
-            email=email,
-            stripe_customer_id=stripe_customer_id,
-        )
-        expected_id = "fkkgosd"
-        create_checkout_session_mock.return_value = {"id": expected_id}
-        desired_quantity = 25
-        desired_plan = {"value": "users-sentrym", "quantity": desired_quantity}
-
-        assert self.stripe.create_checkout_session(owner, desired_plan) == expected_id
-
-        create_checkout_session_mock.assert_called_once_with(
-            billing_address_collection="auto",
-            payment_method_types=["card"],
-            payment_method_collection="if_required",
-            client_reference_id=owner.ownerid,
-            customer_email=owner.email,
-            success_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?success",
-            cancel_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?cancel",
-            subscription_data={
-                "items": [
-                    {
-                        "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                        "quantity": desired_quantity,
-                    }
-                ],
-                "payment_behavior": "allow_incomplete",
-                "metadata": {
-                    "service": owner.service,
-                    "obo_organization": owner.ownerid,
-                    "username": owner.username,
-                    "obo_name": self.user.name,
-                    "obo_email": self.user.email,
-                    "obo": self.user.ownerid,
-                },
-                "trial_period_days": 14,
-                "trial_settings": {
-                    "end_behavior": {
-                        "missing_payment_method": "cancel",
-                    },
-                },
-            },
-        )
-
-    @patch("services.billing.stripe.checkout.Session.create")
-    @freeze_time("2023-05-06")
-    def test_create_checkout_session_without_trial_if_trial_status_isnt_started(
-        self, create_checkout_session_mock
-    ):
-        email = "test-email@gmail.com"
-        stripe_customer_id = None
-        now = datetime.utcnow()
-        yesterday = datetime.utcnow() + timedelta(days=-1)
-        owner = OwnerFactory(
-            service=Service.GITHUB.value,
-            email=email,
-            stripe_customer_id=stripe_customer_id,
-            trial_start_date=now,
-            trial_end_date=yesterday,
-        )
-        expected_id = "fkkgosd"
-        create_checkout_session_mock.return_value = {"id": expected_id}
-        desired_quantity = 25
-        desired_plan = {"value": "users-sentrym", "quantity": desired_quantity}
-
-        assert self.stripe.create_checkout_session(owner, desired_plan) == expected_id
-
-        create_checkout_session_mock.assert_called_once_with(
-            billing_address_collection="required",
-            payment_method_types=["card"],
-            payment_method_collection="if_required",
-            client_reference_id=owner.ownerid,
-            customer_email=owner.email,
+            customer_email=None,
             success_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?success",
             cancel_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?cancel",
             subscription_data={
@@ -1531,7 +1434,7 @@ class BillingServiceTests(TestCase):
         self.billing_service.update_plan(owner, {"value": "users-basic"})
         delete_subscription_mock.assert_called_once_with(owner)
 
-    @patch("codecov_auth.models.Owner.set_basic_plan")
+    @patch("plan.service.PlanService.set_default_plan_data")
     @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
     @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
     @patch("services.tests.test_billing.MockPaymentService.delete_subscription")
@@ -1540,18 +1443,18 @@ class BillingServiceTests(TestCase):
         delete_subscription_mock,
         modify_subscription_mock,
         create_checkout_session_mock,
-        set_basic_plan_mock,
+        set_default_plan_data,
     ):
         owner = OwnerFactory()
         self.billing_service.update_plan(owner, {"value": "users-basic"})
 
-        set_basic_plan_mock.assert_called_once()
+        set_default_plan_data.assert_called_once()
 
         delete_subscription_mock.assert_not_called()
         modify_subscription_mock.assert_not_called()
         create_checkout_session_mock.assert_not_called()
 
-    @patch("codecov_auth.models.Owner.set_basic_plan")
+    @patch("plan.service.PlanService.set_default_plan_data")
     @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
     @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
     @patch("services.tests.test_billing.MockPaymentService.delete_subscription")
@@ -1560,7 +1463,7 @@ class BillingServiceTests(TestCase):
         delete_subscription_mock,
         modify_subscription_mock,
         create_checkout_session_mock,
-        set_basic_plan_mock,
+        set_default_plan_data,
     ):
         owner = OwnerFactory(stripe_subscription_id=10)
         desired_plan = {"value": "users-pr-inappy", "quantity": 10}
@@ -1568,11 +1471,11 @@ class BillingServiceTests(TestCase):
 
         modify_subscription_mock.assert_called_once_with(owner, desired_plan)
 
-        set_basic_plan_mock.assert_not_called()
+        set_default_plan_data.assert_not_called()
         delete_subscription_mock.assert_not_called()
         create_checkout_session_mock.assert_not_called()
 
-    @patch("codecov_auth.models.Owner.set_basic_plan")
+    @patch("plan.service.PlanService.set_default_plan_data")
     @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
     @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
     @patch("services.tests.test_billing.MockPaymentService.delete_subscription")
@@ -1581,7 +1484,7 @@ class BillingServiceTests(TestCase):
         delete_subscription_mock,
         modify_subscription_mock,
         create_checkout_session_mock,
-        set_basic_plan_mock,
+        set_default_plan_data,
     ):
         owner = OwnerFactory(stripe_subscription_id=None)
         desired_plan = {"value": "users-pr-inappy", "quantity": 10}
@@ -1589,11 +1492,11 @@ class BillingServiceTests(TestCase):
 
         create_checkout_session_mock.assert_called_once_with(owner, desired_plan)
 
-        set_basic_plan_mock.assert_not_called()
+        set_default_plan_data.assert_not_called()
         delete_subscription_mock.assert_not_called()
         modify_subscription_mock.assert_not_called()
 
-    @patch("codecov_auth.models.Owner.set_basic_plan")
+    @patch("plan.service.PlanService.set_default_plan_data")
     @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
     @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
     @patch("services.tests.test_billing.MockPaymentService.delete_subscription")
@@ -1602,13 +1505,13 @@ class BillingServiceTests(TestCase):
         delete_subscription_mock,
         modify_subscription_mock,
         create_checkout_session_mock,
-        set_basic_plan_mock,
+        set_default_plan_data,
     ):
         owner = OwnerFactory()
         desired_plan = {"value": "v4-50m"}
         self.billing_service.update_plan(owner, desired_plan)
 
-        set_basic_plan_mock.assert_not_called()
+        set_default_plan_data.assert_not_called()
         delete_subscription_mock.assert_not_called()
         modify_subscription_mock.assert_not_called()
         create_checkout_session_mock.assert_not_called()

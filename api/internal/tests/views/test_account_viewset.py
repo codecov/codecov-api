@@ -10,8 +10,9 @@ from rest_framework.test import APITestCase
 from stripe.error import StripeError
 
 from api.internal.tests.test_utils import GetAdminProviderAdapter
-from codecov_auth.models import Owner, Service
+from codecov_auth.models import Service
 from codecov_auth.tests.factories import OwnerFactory
+from plan.constants import PlanNames
 
 curr_path = os.path.dirname(__file__)
 
@@ -140,7 +141,7 @@ class AccountViewSetTests(APITestCase):
             "inactive_user_count": 1,
             "plan": {
                 "marketing_name": "Developer",
-                "value": "users-basic",
+                "value": PlanNames.BASIC_PLAN_NAME.value,
                 "billing_rate": None,
                 "base_unit_price": 0,
                 "benefits": [
@@ -216,7 +217,7 @@ class AccountViewSetTests(APITestCase):
             "inactive_user_count": 1,
             "plan": {
                 "marketing_name": "Developer",
-                "value": "users-basic",
+                "value": PlanNames.BASIC_PLAN_NAME.value,
                 "billing_rate": None,
                 "base_unit_price": 0,
                 "benefits": [
@@ -310,7 +311,7 @@ class AccountViewSetTests(APITestCase):
             "inactive_user_count": 1,
             "plan": {
                 "marketing_name": "Developer",
-                "value": "users-basic",
+                "value": PlanNames.BASIC_PLAN_NAME.value,
                 "billing_rate": None,
                 "base_unit_price": 0,
                 "benefits": [
@@ -376,7 +377,7 @@ class AccountViewSetTests(APITestCase):
             "inactive_user_count": 1,
             "plan": {
                 "marketing_name": "Developer",
-                "value": "users-basic",
+                "value": PlanNames.BASIC_PLAN_NAME.value,
                 "billing_rate": None,
                 "base_unit_price": 0,
                 "benefits": [
@@ -479,13 +480,13 @@ class AccountViewSetTests(APITestCase):
         }
 
     def test_account_with_paid_user_plan_billed_annually(self):
-        self.user.plan = "users-inappy"
+        self.user.plan = PlanNames.CODECOV_PRO_YEARLY_LEGACY.value
         self.user.save()
         response = self._retrieve()
         assert response.status_code == status.HTTP_200_OK
         assert response.data["plan"] == {
             "marketing_name": "Pro Team",
-            "value": "users-inappy",
+            "value": PlanNames.CODECOV_PRO_YEARLY_LEGACY.value,
             "billing_rate": "annually",
             "base_unit_price": 10,
             "benefits": [
@@ -610,19 +611,19 @@ class AccountViewSetTests(APITestCase):
         assert response.data["plan_auto_activate"] is False
 
     def test_update_can_set_plan_to_users_basic(self):
-        self.user.plan = "users-inappy"
+        self.user.plan = PlanNames.CODECOV_PRO_YEARLY_LEGACY.value
         self.user.save()
 
         response = self._update(
             kwargs={"service": self.user.service, "owner_username": self.user.username},
-            data={"plan": {"value": "users-basic"}},
+            data={"plan": {"value": PlanNames.BASIC_PLAN_NAME.value}},
         )
 
         assert response.status_code == status.HTTP_200_OK
 
         self.user.refresh_from_db()
 
-        assert self.user.plan == "users-basic"
+        assert self.user.plan == PlanNames.BASIC_PLAN_NAME.value
         assert self.user.plan_activated_users is None
         assert self.user.plan_user_count == 1
         assert response.data["plan_auto_activate"] is True
@@ -638,7 +639,9 @@ class AccountViewSetTests(APITestCase):
 
         response = self._update(
             kwargs={"service": self.user.service, "owner_username": self.user.username},
-            data={"plan": {"quantity": 25, "value": "users-pr-inappy"}},
+            data={
+                "plan": {"quantity": 25, "value": PlanNames.CODECOV_PRO_YEARLY.value}
+            },
         )
 
         create_checkout_session_mock.assert_called_once()
@@ -651,10 +654,10 @@ class AccountViewSetTests(APITestCase):
     def test_update_can_upgrade_to_paid_plan_for_existing_customer_and_set_plan_info(
         self, modify_subscription_mock, retrieve_subscription_mock
     ):
-        desired_plan = {"value": "users-pr-inappm", "quantity": 12}
+        desired_plan = {"value": PlanNames.CODECOV_PRO_MONTHLY.value, "quantity": 12}
         self.user.stripe_customer_id = "flsoe"
         self.user.stripe_subscription_id = "djfos"
-        self.user.plan = "users-pr-inappm"
+        self.user.plan = PlanNames.CODECOV_PRO_MONTHLY.value
         self.user.plan_user_count = 8
         self.user.save()
 
@@ -695,7 +698,7 @@ class AccountViewSetTests(APITestCase):
         assert self.user.plan_user_count == desired_plan["quantity"]
 
     def test_update_requires_quantity_if_updating_to_paid_plan(self):
-        desired_plan = {"value": "users-pr-inappy"}
+        desired_plan = {"value": PlanNames.CODECOV_PRO_YEARLY.value}
         response = self._update(
             kwargs={"service": self.user.service, "owner_username": self.user.username},
             data={"plan": desired_plan},
@@ -707,7 +710,7 @@ class AccountViewSetTests(APITestCase):
     ):
         self.user.plan_activated_users = [1] * 15
         self.user.save()
-        desired_plan = {"value": "users-pr-inappy", "quantity": 14}
+        desired_plan = {"value": PlanNames.CODECOV_PRO_YEARLY.value, "quantity": 14}
 
         response = self._update(
             kwargs={"service": self.user.service, "owner_username": self.user.username},
@@ -736,7 +739,7 @@ class AccountViewSetTests(APITestCase):
             OwnerFactory(student=True).ownerid,
         ]
         self.user.save()
-        desired_plan = {"value": "users-pr-inappy", "quantity": 8}
+        desired_plan = {"value": PlanNames.CODECOV_PRO_YEARLY.value, "quantity": 8}
 
         response = self._update(
             kwargs={"service": self.user.service, "owner_username": self.user.username},
@@ -760,7 +763,7 @@ class AccountViewSetTests(APITestCase):
             OwnerFactory(student=False).ownerid,
         ]
         self.user.save()
-        desired_plan = {"value": "users-pr-inappy", "quantity": 8}
+        desired_plan = {"value": PlanNames.CODECOV_PRO_YEARLY.value, "quantity": 8}
 
         response = self._update(
             kwargs={"service": self.user.service, "owner_username": self.user.username},
@@ -776,10 +779,10 @@ class AccountViewSetTests(APITestCase):
     def test_update_must_fail_if_quantity_and_plan_are_equal_to_the_owners_current_ones(
         self,
     ):
-        self.user.plan = "users-pr-inappy"
+        self.user.plan = PlanNames.CODECOV_PRO_YEARLY.value
         self.user.plan_user_count = 14
         self.user.save()
-        desired_plan = {"value": "users-pr-inappy", "quantity": 14}
+        desired_plan = {"value": PlanNames.CODECOV_PRO_YEARLY.value, "quantity": 14}
 
         response = self._update(
             kwargs={"service": self.user.service, "owner_username": self.user.username},
@@ -793,7 +796,7 @@ class AccountViewSetTests(APITestCase):
         )
 
     def test_update_quantity_must_be_at_least_2_if_paid_plan(self):
-        desired_plan = {"value": "users-pr-inappy", "quantity": 1}
+        desired_plan = {"value": PlanNames.CODECOV_PRO_YEARLY.value, "quantity": 1}
         response = self._update(
             kwargs={"service": self.user.service, "owner_username": self.user.username},
             data={"plan": desired_plan},
@@ -900,7 +903,7 @@ class AccountViewSetTests(APITestCase):
     @patch("services.billing.StripeService.modify_subscription")
     def test_update_handles_stripe_error(self, modify_sub_mock):
         code, message = 402, "Not right, wrong in fact"
-        desired_plan = {"value": "users-pr-inappm", "quantity": 12}
+        desired_plan = {"value": PlanNames.CODECOV_PRO_MONTHLY.value, "quantity": 12}
         self.user.stripe_customer_id = "flsoe"
         self.user.stripe_subscription_id = "djfos"
         self.user.save()
@@ -918,7 +921,7 @@ class AccountViewSetTests(APITestCase):
     @patch("api.internal.owner.serializers.send_sentry_webhook")
     @patch("services.billing.StripeService.modify_subscription")
     def test_update_sentry_plan_monthly(self, modify_sub_mock, send_sentry_webhook):
-        desired_plan = {"value": "users-sentrym", "quantity": 12}
+        desired_plan = {"value": PlanNames.SENTRY_MONTHLY.value, "quantity": 12}
         self.user.stripe_customer_id = "flsoe"
         self.user.stripe_subscription_id = "djfos"
         self.user.sentry_user_id = "sentry-user-id"
@@ -935,7 +938,7 @@ class AccountViewSetTests(APITestCase):
     def test_update_sentry_plan_monthly_with_users_org(
         self, modify_sub_mock, send_sentry_webhook
     ):
-        desired_plan = {"value": "users-sentrym", "quantity": 12}
+        desired_plan = {"value": PlanNames.SENTRY_MONTHLY.value, "quantity": 12}
         org = OwnerFactory(
             service=Service.GITHUB.value,
             service_id="923836740",
@@ -995,7 +998,7 @@ class AccountViewSetTests(APITestCase):
     def test_update_sentry_plan_non_sentry_user(
         self, modify_sub_mock, send_sentry_webhook
     ):
-        desired_plan = {"value": "users-sentrym", "quantity": 5}
+        desired_plan = {"value": PlanNames.SENTRY_MONTHLY.value, "quantity": 5}
         org = OwnerFactory(
             service=Service.GITHUB.value,
             service_id="923836740",
@@ -1077,7 +1080,7 @@ class AccountViewSetTests(APITestCase):
     ):
         coupon_create_mock.return_value = MagicMock(id="test-coupon-id")
 
-        self.user.plan = "users-inappy"
+        self.user.plan = PlanNames.CODECOV_PRO_YEARLY_LEGACY.value
         self.user.stripe_customer_id = "flsoe"
         self.user.stripe_subscription_id = "djfos"
         self.user.save()

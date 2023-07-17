@@ -1,18 +1,19 @@
 from unittest.mock import MagicMock, Mock
 
 from django.test import override_settings
-from django.urls import reverse
-from rest_framework.test import APIClient, APITestCase
+from rest_framework.test import APITestCase
 
-from billing.constants import BASIC_PLAN_NAME
 from core.tests.factories import CommitFactory, OwnerFactory, RepositoryFactory
+from plan.constants import PlanNames
 from reports.tests.factories import CommitReportFactory, UploadFactory
 from upload.throttles import UploadsPerCommitThrottle, UploadsPerWindowThrottle
 
 
 class ThrottlesUnitTests(APITestCase):
     def setUp(self):
-        self.owner = OwnerFactory(plan=BASIC_PLAN_NAME, max_upload_limit=150)
+        self.owner = OwnerFactory(
+            plan=PlanNames.BASIC_PLAN_NAME.value, max_upload_limit=150
+        )
 
     def request_should_not_throttle(self, commit):
         self.uploads_per_window_not_throttled(commit)
@@ -45,9 +46,11 @@ class ThrottlesUnitTests(APITestCase):
         assert throttle_class.allow_request(Mock(), view)
 
     @override_settings(UPLOAD_THROTTLING_ENABLED=False)
-    def test_check_commit_contraints_settings_disabled(self):
+    def test_check_commit_constraints_settings_disabled(self):
         repository = RepositoryFactory(
-            author__plan=BASIC_PLAN_NAME, private=True, author=self.owner
+            author__plan=PlanNames.BASIC_PLAN_NAME.value,
+            private=True,
+            author=self.owner,
         )
         first_commit = CommitFactory(repository=repository)
         second_commit = CommitFactory(repository=repository)
@@ -68,7 +71,7 @@ class ThrottlesUnitTests(APITestCase):
         self.request_should_not_throttle(unrelated_commit)
 
     @override_settings(UPLOAD_THROTTLING_ENABLED=True)
-    def test_check_commit_contraints_settings_enabled(self):
+    def test_check_commit_constraints_settings_enabled(self):
         author = self.owner
         first_commit = CommitFactory.create(repository__author=author)
 
@@ -88,7 +91,7 @@ class ThrottlesUnitTests(APITestCase):
 
         for i in range(300):
             UploadFactory.create(report__commit__repository=public_repository)
-        # ensuring public repos counts don't count torwards the quota
+        # ensuring public repos counts don't count towards the quota
         self.request_should_not_throttle(third_commit)
 
         for i in range(150):

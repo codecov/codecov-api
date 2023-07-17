@@ -9,13 +9,10 @@ from django.http import HttpRequest
 from django.shortcuts import redirect
 from django.utils.html import format_html
 
-from billing.constants import (
-    ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
-    USER_PLAN_REPRESENTATIONS,
-)
 from codecov.admin import AdminMixin
 from codecov_auth.models import OrganizationLevelToken, Owner, OwnerProfile
 from codecov_auth.services.org_level_token_service import OrgLevelTokenService
+from plan.constants import USER_PLAN_REPRESENTATIONS
 from services.task import TaskService
 from utils.services import get_short_service_name
 

@@ -6,13 +6,9 @@ from django.conf import settings
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 
-from billing.constants import (
-    ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
-    PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
-    SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
-)
 from billing.helpers import available_plans
 from codecov_auth.models import Owner
+from plan.constants import PRO_PLANS, SENTRY_PAID_USER_PLAN_REPRESENTATIONS
 from services.billing import BillingService
 from services.segment import SegmentService
 from services.sentry import send_user_webhook as send_sentry_webhook
@@ -138,12 +134,7 @@ class PlanSerializer(serializers.Serializer):
         owner = self.context["view"].owner
 
         # Validate quantity here because we need access to whole plan object
-        plans_of_interest = {
-            **PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
-            **ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
-            **SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
-        }
-        if plan["value"] in plans_of_interest:
+        if plan["value"] in PRO_PLANS:
             if "quantity" not in plan:
                 raise serializers.ValidationError(
                     f"Field 'quantity' required for updating to paid plans"
@@ -189,12 +180,7 @@ class StripeScheduledPhaseSerializer(serializers.Serializer):
         plan_name = list(stripe_plan_dict.keys())[
             list(stripe_plan_dict.values()).index(plan_id)
         ]
-        plans_of_interest = {
-            **PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
-            **ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
-            **SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
-        }
-        marketing_plan_name = plans_of_interest[plan_name]["billing_rate"]
+        marketing_plan_name = PRO_PLANS[plan_name].billing_rate
         return marketing_plan_name
 
     def get_quantity(self, phase):

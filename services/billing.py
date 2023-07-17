@@ -4,16 +4,15 @@ from abc import ABC, abstractmethod
 import stripe
 from django.conf import settings
 
-from billing.constants import (
-    ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
-    FREE_PLAN_REPRESENTATIONS,
-    PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
-    REMOVED_INVOICE_STATUSES,
-    SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
-    USER_PLAN_REPRESENTATIONS,
-)
+from billing.constants import REMOVED_INVOICE_STATUSES
 from codecov_auth.models import Owner
-from services.plan import PlanService, TrialStatus
+from plan.constants import (
+    FREE_PLAN_REPRESENTATIONS,
+    PRO_PLANS,
+    USER_PLAN_REPRESENTATIONS,
+    PlanBillingRate,
+)
+from plan.service import PlanService
 from services.segment import SegmentService
 
 log = logging.getLogger(__name__)
@@ -158,7 +157,8 @@ class StripeService(AbstractPaymentService):
                     extra=dict(ownerid=owner.ownerid),
                 )
                 stripe.SubscriptionSchedule.cancel(subscription_schedule_id)
-            owner.set_basic_plan()
+            plan_service = PlanService(current_org=owner)
+            plan_service.set_default_plan_data()
         else:
             log.info(
                 f"Downgrade to basic plan from user plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
@@ -352,9 +352,9 @@ class StripeService(AbstractPaymentService):
 
         return (
             current_plan_info
-            and current_plan_info["billing_rate"] == "monthly"
+            and current_plan_info.billing_rate == PlanBillingRate.MONTHLY.value
             and desired_plan_info
-            and desired_plan_info["billing_rate"] == "annually"
+            and desired_plan_info.billing_rate == PlanBillingRate.YEARLY.value
         )
 
     def _is_similar_plan(self, owner: Owner, desired_plan: dict) -> bool:
@@ -367,7 +367,7 @@ class StripeService(AbstractPaymentService):
         is_same_term = (
             current_plan_info
             and desired_plan_info
-            and current_plan_info["billing_rate"] == desired_plan_info["billing_rate"]
+            and current_plan_info.billing_rate == desired_plan_info.billing_rate
         )
 
         is_same_seats = (
@@ -398,50 +398,33 @@ class StripeService(AbstractPaymentService):
         success_url, cancel_url = self._get_success_and_cancel_url(owner)
         log.info("Creating Stripe Checkout Session for owner: {owner.ownerid}")
 
-        billing_address_collection = "required"
-        subscription_data = {
-            "items": [
-                {
-                    "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                    "quantity": desired_plan["quantity"],
-                }
-            ],
-            "payment_behavior": "allow_incomplete",
-            "metadata": self._get_checkout_session_and_subscription_metadata(owner),
-        }
-
-        plan_representation = USER_PLAN_REPRESENTATIONS[desired_plan["value"]]
-        trial_days = plan_representation.get("trial_days")
-        plan_service = PlanService(current_org=owner)
-        if (
-            trial_days is not None
-            and plan_service.trial_status == TrialStatus.NOT_STARTED
-        ):
-            billing_address_collection = "auto"
-            subscription_data["trial_period_days"] = trial_days
-            subscription_data["trial_settings"] = {
-                "end_behavior": {
-                    # `customer.subscription.deleted` webhook will be triggered at the end of trial period
-                    "missing_payment_method": "cancel",
-                }
-            }
-
-        session = None
-
-        session_params = {
-            "billing_address_collection": billing_address_collection,
-            "payment_method_types": ["card"],
-            "payment_method_collection": "if_required",
-            "client_reference_id": owner.ownerid,
-            "success_url": success_url,
-            "cancel_url": cancel_url,
-            "subscription_data": subscription_data,
-        }
         if not owner.stripe_customer_id:
-            session_params["customer_email"] = owner.email
+            customer_email = owner.email
+            customer = None
         else:
-            session_params["customer"] = owner.stripe_customer_id
-        session = stripe.checkout.Session.create(**session_params)
+            customer = owner.stripe_customer_id
+            customer_email = None
+
+        session = stripe.checkout.Session.create(
+            billing_address_collection="required",
+            payment_method_types=["card"],
+            payment_method_collection="if_required",
+            client_reference_id=owner.ownerid,
+            success_url=success_url,
+            cancel_url=cancel_url,
+            customer=customer,
+            customer_email=customer_email,
+            subscription_data={
+                "items": [
+                    {
+                        "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                        "quantity": desired_plan["quantity"],
+                    }
+                ],
+                "payment_behavior": "allow_incomplete",
+                "metadata": self._get_checkout_session_and_subscription_metadata(owner),
+            },
+        )
         log.info(
             f"Stripe Checkout Session created successfully for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
         )
@@ -472,12 +455,10 @@ class StripeService(AbstractPaymentService):
                 f"stripe_subscription_id is None, not applying cancellation coupon for owner {owner.ownerid}"
             )
             return
+        plan_service = PlanService(current_org=owner)
+        billing_rate = plan_service.billing_rate
 
-        billing_period = USER_PLAN_REPRESENTATIONS.get(owner.plan, {}).get(
-            "billing_rate"
-        )
-
-        if billing_period == "monthly" and not owner.stripe_coupon_id:
+        if billing_rate == PlanBillingRate.MONTHLY.value and not owner.stripe_coupon_id:
             log.info(f"Creating Stripe cancellation coupon for owner {owner.ownerid}")
             coupon = stripe.Coupon.create(
                 percent_off=30.0,
@@ -575,12 +556,9 @@ class BillingService:
             if owner.stripe_subscription_id is not None:
                 self.payment_service.delete_subscription(owner)
             else:
-                owner.set_basic_plan()
-        elif (
-            desired_plan["value"] in PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS
-            or desired_plan["value"] in ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS
-            or desired_plan["value"] in SENTRY_PAID_USER_PLAN_REPRESENTATIONS
-        ):
+                plan_service = PlanService(current_org=owner)
+                plan_service.set_default_plan_data()
+        elif desired_plan["value"] in PRO_PLANS:
             if owner.stripe_subscription_id is not None:
                 self.payment_service.modify_subscription(owner, desired_plan)
             else:
