@@ -74,7 +74,6 @@ class ArchiveField:
         self.public_name = name
         self.db_field_name = "_" + name
         self.archive_field_name = "_" + name + "_storage_path"
-        self.table_name = owner._meta.db_table
 
     @lru_cache(maxsize=1)
     def _get_value_from_archive(self, obj):
@@ -102,19 +101,23 @@ class ArchiveField:
         return self._get_value_from_archive(obj)
 
     def __set__(self, obj, value):
-        self._get_value_from_archive.cache_clear()
         # Set the new value
         if self.should_write_to_storage_fn(obj):
             repository = obj.get_repository()
             archive_service = ArchiveService(repository=repository)
+            old_file_path = getattr(obj, self.archive_field_name)
+            table_name = obj._meta.db_table
             path = archive_service.write_json_data_to_storage(
                 commit_id=obj.get_commitid(),
-                table=self.table_name,
+                table=table_name,
                 field=self.public_name,
                 external_id=obj.external_id,
                 data=value,
             )
+            if old_file_path is not None and path != old_file_path:
+                archive_service.delete_file(old_file_path)
             setattr(obj, self.archive_field_name, path)
             setattr(obj, self.db_field_name, None)
+            self._get_value_from_archive.cache_clear()
         else:
             setattr(obj, self.db_field_name, value)

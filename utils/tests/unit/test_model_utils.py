@@ -122,6 +122,10 @@ class TestArchiveField(object):
         assert test_class.archive_field == "db_value"
         assert mock_read_file.call_count == 0
 
+        # Pretend there was something in the path.
+        # This should happen, but it will help us test the deletion of old data saved
+        test_class._archive_field_storage_path = "path/to/old/data"
+
         # Now we write to the property
         test_class.archive_field = some_json
         assert test_class._archive_field == None
@@ -136,4 +140,7 @@ class TestArchiveField(object):
             field="archive_field",
             external_id=test_class.external_id,
             data=some_json,
+        )
+        mock_archive_service.return_value.delete_file.assert_called_with(
+            "path/to/old/data"
         )
