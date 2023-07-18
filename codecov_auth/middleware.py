@@ -31,7 +31,7 @@ class CurrentOwnerMiddleware(MiddlewareMixin):
     to load the "currently active" `Owner` for use in this request.
 
     If there's a `current_owner_id` value in the session then we use that.
-    If the current owner does match the request's `service` then we just pick the first
+    If the current owner does not match the request's `service` then we just pick the first
     of the user's owners with the matching service.
 
     This middleware is preferrable to accessing the session directly in views since
