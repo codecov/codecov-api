@@ -36,15 +36,15 @@ regexp_ci_skip = re.compile(r"\[(ci|skip| |-){3,}\]").search
 def _incr(name: str):
     """
     Increment a statsd counter. The passed-in counter will be prefixed with
-    "webhooks."
+    "webhooks.github."
     """
-    metrics.incr("webhooks." + name)
+    metrics.incr("webhooks.github." + name)
 
 
 def _incr_event(name: str):
     """
     Increment a statsd counter. The passed in counter will be prefixed with
-    "webhooks.received."
+    "webhooks.github.received."
     """
     _incr("received." + name)
 

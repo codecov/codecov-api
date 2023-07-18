@@ -102,7 +102,7 @@ class GithubWebhookHandlerTests(APITestCase):
                     event=event,
                     data={},
                 )
-                assert self.metrics["webhooks.received." + event] == 1
+                assert self.metrics["webhooks.github.received." + event] == 1
 
         # Repository event + actions
         for action in ["publicized", "privatized", "deleted"]:
@@ -117,7 +117,9 @@ class GithubWebhookHandlerTests(APITestCase):
                         },
                     },
                 )
-                assert self.metrics["webhooks.received.repository." + action] == 1
+                assert (
+                    self.metrics["webhooks.github.received.repository." + action] == 1
+                )
 
         # Delete event + ref_types
         for ref_type in ["branch", "other"]:
@@ -131,7 +133,7 @@ class GithubWebhookHandlerTests(APITestCase):
                         "repository": {"id": self.repo.service_id},
                     },
                 )
-                assert self.metrics["webhooks.received.delete." + ref_type] == 1
+                assert self.metrics["webhooks.github.received.delete." + ref_type] == 1
 
         # Push event + ref_types
         for ref_type, uri in [("branch", "refs/heads/"), ("tag", "refs/tags/")]:
@@ -144,7 +146,7 @@ class GithubWebhookHandlerTests(APITestCase):
                         "commits": [],
                     },
                 )
-                assert self.metrics["webhooks.received.push." + ref_type] == 1
+                assert self.metrics["webhooks.github.received.push." + ref_type] == 1
 
         # Organization event + actions
         for action in ["member_removed", "other"]:
@@ -157,7 +159,9 @@ class GithubWebhookHandlerTests(APITestCase):
                         "organization": {"id": -1},
                     },
                 )
-                assert self.metrics["webhooks.received.organization." + action] == 1
+                assert (
+                    self.metrics["webhooks.github.received.organization." + action] == 1
+                )
 
         # Member event + actions
         for action in ["removed", "other"]:
@@ -874,7 +878,7 @@ class GithubWebhookHandlerTests(APITestCase):
         )
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
-        assert self.metrics["webhooks.invalid_signature"] == 1
+        assert self.metrics["webhooks.github.invalid_signature"] == 1
 
         response = self.client.post(
             reverse("github-webhook"),
@@ -897,7 +901,7 @@ class GithubWebhookHandlerTests(APITestCase):
         )
 
         assert response.status_code == status.HTTP_200_OK
-        assert self.metrics["webhooks.received.total"] == 1
+        assert self.metrics["webhooks.github.received.total"] == 1
 
         response = self.client.post(
             reverse("github-webhook"),
@@ -920,7 +924,7 @@ class GithubWebhookHandlerTests(APITestCase):
         )
 
         assert response.status_code == status.HTTP_200_OK
-        assert self.metrics["webhooks.received.total"] == 2
+        assert self.metrics["webhooks.github.received.total"] == 2
 
     @patch("webhook_handlers.views.github.get_config")
     def test_signature_validation_with_string_key(self, get_config_mock):
