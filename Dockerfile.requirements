@@ -28,16 +28,6 @@ RUN             ssh-keyscan -H github.com >> /root/.ssh/known_hosts
 COPY            requirements.txt /
 WORKDIR         /pip-packages/
 
-# Cython 3.0 removed a function that pyyaml depends on, and pyyaml
-# doesn't provide prebuilt wheels for musl targets like Alpine.
-# Forcibly install pyyaml with an older version of Cython for now.
-#
-# For more background / followup:
-# https://github.com/yaml/pyyaml/issues/601
-# https://github.com/cython/cython/issues/4568
-# https://github.com/yaml/pyyaml/pull/670
-RUN             pip install "Cython<3.0" pyyaml --no-build-isolation
-
 RUN             --mount=type=ssh pip wheel -r /requirements.txt
 
 
