@@ -68,7 +68,7 @@ class RepoDetailsSerializer(RepoSerializer):
     def get_latest_commit(self, repo):
         commits_queryset = (
             repo.commits.filter(state=Commit.CommitStates.COMPLETE)
-            .defer("report")
+            .defer("_report")
             .order_by("-timestamp")
         )
 

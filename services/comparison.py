@@ -1027,7 +1027,7 @@ class PullRequestComparison(Comparison):
     @cached_property
     def base_commit(self):
         try:
-            return Commit.objects.defer("report").get(
+            return Commit.objects.defer("_report").get(
                 repository=self.pull.repository,
                 commitid=self.pull.compared_to
                 if self.is_pseudo_comparison
@@ -1039,7 +1039,7 @@ class PullRequestComparison(Comparison):
     @cached_property
     def head_commit(self):
         try:
-            return Commit.objects.defer("report").get(
+            return Commit.objects.defer("_report").get(
                 repository=self.pull.repository, commitid=self.pull.head
             )
         except Commit.DoesNotExist:
@@ -1267,6 +1267,6 @@ class CommitComparisonService:
         return (
             Commit.objects.filter(pk=commit_id)
             .prefetch_related(prefetch)
-            .defer("report")
+            .defer("_report")
             .first()
         )
