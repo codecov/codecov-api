@@ -282,6 +282,14 @@ USER_PLAN_REPRESENTATIONS = {
     **TRIAL_PLANS,
 }
 
+PLANS_THAT_CAN_TRIAL = [
+    PlanNames.BASIC_PLAN_NAME.value,
+    PlanNames.CODECOV_PRO_MONTHLY.value,
+    PlanNames.CODECOV_PRO_YEARLY.value,
+    PlanNames.SENTRY_MONTHLY.value,
+    PlanNames.SENTRY_YEARLY.value,
+    PlanNames.TRIAL_PLAN_NAME.value,
+]
 
 UNSUPPORTED_PLAN = (
     PlanData(
