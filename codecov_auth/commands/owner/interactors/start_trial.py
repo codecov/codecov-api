@@ -2,7 +2,7 @@ from codecov.commands.base import BaseInteractor
 from codecov.commands.exceptions import ValidationError
 from codecov.db import sync_to_async
 from codecov_auth.models import Owner
-from services.plan import PlanService, TrialStatus
+from services.plan import PlanService
 
 
 class StartTrialInteractor(BaseInteractor):
@@ -11,13 +11,13 @@ class StartTrialInteractor(BaseInteractor):
             raise ValidationError("Cannot find owner record in the database")
 
     def _start_trial(self, owner: Owner):
-        plan_service = PlanService(current_org=owner)
-        trial_status = plan_service.trial_status
-        if trial_status != TrialStatus.NOT_STARTED:
+        try:
+            plan_service = PlanService(current_org=owner)
+            plan_service.start_trial()
+        except:
             raise ValidationError(
                 "Cannot undergo trial for organizations with ongoing, expired or unavailable trials"
             )
-        plan_service.start_trial()
         return
 
     @sync_to_async

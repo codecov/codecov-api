@@ -3,11 +3,10 @@ from datetime import datetime, timedelta
 import pytest
 from asgiref.sync import async_to_sync
 from django.test import TransactionTestCase
-from django.utils import timezone
 from freezegun import freeze_time
 
 from codecov.commands.exceptions import ValidationError
-from codecov_auth.models import Owner, OwnerProfile
+from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
 from services.plan import TrialDaysAmount
 

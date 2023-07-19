@@ -22,7 +22,7 @@ class StartTrialMutationTest(GraphQLTestHelper, TransactionTestCase):
     def _request(self, user=None, org_username: str = None):
         return self.gql_request(
             query,
-            variables={"input": {"org_username": org_username}},
+            variables={"input": {"orgUsername": org_username}},
             user=user,
         )
 
