@@ -22,15 +22,15 @@ class SaveTermsAgreementInteractor(BaseInteractor):
 
     def update_terms_agreement(self, input: TermsAgreementInput):
         owner_profile, _ = OwnerProfile.objects.get_or_create(
-            owner=self.current_user,
+            owner=self.current_owner,
         )
         owner_profile.terms_agreement = input.terms_agreement
         owner_profile.terms_agreement_at = timezone.now()
         owner_profile.save()
 
         if input.business_email is not None and input.business_email != "":
-            self.current_user.business_email = input.business_email
-            self.current_user.save()
+            self.current_owner.business_email = input.business_email
+            self.current_owner.save()
 
     @sync_to_async
     def execute(self, input):

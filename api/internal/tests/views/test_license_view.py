@@ -8,12 +8,14 @@ from shared.license import LicenseInformation
 from api.internal.license.views import LicenseView
 from codecov.tests.base_test import InternalAPITest
 from codecov_auth.tests.factories import OwnerFactory
+from utils.test_utils import Client
 
 
 class LicenseViewTest(InternalAPITest):
     def setUp(self):
-        self.user = OwnerFactory()
-        self.client.force_login(user=self.user)
+        self.current_owner = OwnerFactory()
+        self.client = Client()
+        self.client.force_login_owner(self.current_owner)
 
     @patch("api.internal.license.views.get_current_license")
     def test_license_view(self, mocked_license):

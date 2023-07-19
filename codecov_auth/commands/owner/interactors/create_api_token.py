@@ -13,7 +13,7 @@ class CreateApiTokenInteractor(BaseInteractor):
 
     def create_token(self, name):
         type = Session.SessionType.API
-        return Session.objects.create(name=name, owner=self.current_user, type=type)
+        return Session.objects.create(name=name, owner=self.current_owner, type=type)
 
     @sync_to_async
     def execute(self, name):

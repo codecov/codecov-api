@@ -9,6 +9,7 @@ from core.tests.factories import RepositoryFactory
 from reports.tests.factories import RepositoryFlagFactory
 from timeseries.models import MeasurementName
 from timeseries.tests.factories import DatasetFactory, MeasurementFactory
+from utils.test_utils import APIClient
 
 
 @pytest.mark.skipif(
@@ -21,12 +22,15 @@ class CoverageViewSetTestCase(TestCase):
     def setUp(self):
         self.org = OwnerFactory(username="codecov", service="github")
         self.repo = RepositoryFactory(author=self.org, name="test-repo", active=True)
-        self.user = OwnerFactory(
+        self.current_owner = OwnerFactory(
             username="codecov-user",
             service="github",
             organizations=[self.org.ownerid],
             permission=[self.repo.repoid],
         )
+
+        self.client = APIClient()
+        self.client.force_login_owner(self.current_owner)
 
     @patch("timeseries.models.Dataset.is_backfilled")
     def test_repo_coverage(self, get_repo_permissions, is_backfilled):
@@ -75,7 +79,6 @@ class CoverageViewSetTestCase(TestCase):
             value=10.0,
         )
 
-        self.client.force_login(user=self.user)
         response = self.client.get(
             f"/api/v2/github/codecov/repos/{self.repo.name}/coverage?interval=1d&start_date=2022-08-18&end_date=2022-08-19"
         )
@@ -148,7 +151,6 @@ class CoverageViewSetTestCase(TestCase):
             value=10.0,
         )
 
-        self.client.force_login(user=self.user)
         response = self.client.get(
             f"/api/v2/github/codecov/repos/{self.repo.name}/coverage?interval=1d&start_date=2022-08-18&end_date=2022-08-19&branch=other"
         )
@@ -177,7 +179,6 @@ class CoverageViewSetTestCase(TestCase):
     def test_repo_coverage_no_interval(self, get_repo_permissions):
         get_repo_permissions.return_value = (True, True)
 
-        self.client.force_login(user=self.user)
         response = self.client.get(
             f"/api/v2/github/codecov/repos/{self.repo.name}/coverage"
         )
@@ -186,7 +187,6 @@ class CoverageViewSetTestCase(TestCase):
     def test_repo_coverage_invalid_interval(self, get_repo_permissions):
         get_repo_permissions.return_value = (True, True)
 
-        self.client.force_login(user=self.user)
         response = self.client.get(
             f"/api/v2/github/codecov/repos/{self.repo.name}/coverage?interval=wrong"
         )
@@ -259,7 +259,6 @@ class CoverageViewSetTestCase(TestCase):
             value=100.0,
         )
 
-        self.client.force_login(user=self.user)
         response = self.client.get(
             f"/api/v2/github/codecov/repos/{self.repo.name}/flags/{flag1.flag_name}/coverage?interval=1d&start_date=2022-08-18&end_date=2022-08-19"
         )
@@ -288,7 +287,6 @@ class CoverageViewSetTestCase(TestCase):
     def test_flag_coverage_missing_flag(self, get_repo_permissions):
         get_repo_permissions.return_value = (True, True)
 
-        self.client.force_login(user=self.user)
         response = self.client.get(
             f"/api/v2/github/codecov/repos/{self.repo.name}/flags/wrong-flag/coverage?interval=1d&start_date=2022-08-18&end_date=2022-08-19"
         )

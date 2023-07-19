@@ -628,6 +628,7 @@ class FileComparison:
 
 class Comparison(object):
     def __init__(self, user, base_commit, head_commit):
+        # TODO: rename to owner
         self.user = user
         self._base_commit = base_commit
         self._head_commit = head_commit
@@ -663,7 +664,7 @@ class Comparison(object):
 
         if with_src:
             adapter = RepoProviderService().get_adapter(
-                user=self.user, repo=self.base_commit.repository
+                owner=self.user, repo=self.base_commit.repository
             )
             file_content = async_to_sync(adapter.get_source)(
                 file_name, self.head_commit.commitid

@@ -52,14 +52,14 @@ class UserViewSet(
         permission_classes=[IsAuthenticated],
     )
     def current(self, request):
-        current_user = self.get_queryset().filter(pk=request.user.pk).first()
-        serializer = self.get_serializer(current_user)
+        current_owner = self.get_queryset().filter(pk=request.current_owner.pk).first()
+        serializer = self.get_serializer(current_owner)
         return Response(serializer.data)
 
     @current.mapping.patch
     def current_update(self, request):
-        current_user = self.get_queryset().filter(pk=request.user.pk).first()
-        serializer = self.get_serializer(current_user, data=request.data, partial=True)
+        current_owner = self.get_queryset().filter(pk=request.current_owner.pk).first()
+        serializer = self.get_serializer(current_owner, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)

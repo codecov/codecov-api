@@ -10,12 +10,12 @@ from ..is_syncing import IsSyncingInteractor
 
 class IsSyncingInteractorTest(TransactionTestCase):
     def setUp(self):
-        self.user = OwnerFactory(username="codecov-user")
+        self.owner = OwnerFactory(username="codecov-user")
 
     @patch("services.refresh.RefreshService.is_refreshing")
     @async_to_sync
     async def test_call_is_refreshing(self, mock_is_refreshing):
         mock_is_refreshing.return_value = True
-        res = await IsSyncingInteractor(self.user, "github").execute()
+        res = await IsSyncingInteractor(self.owner, "github").execute()
         assert res is True
         mock_is_refreshing.assert_called()

@@ -30,7 +30,7 @@ class RepoAccessors:
         if user == repo.author:
             return True, True
         return async_to_sync(
-            RepoProviderService().get_adapter(user=user, repo=repo).get_authenticated
+            RepoProviderService().get_adapter(owner=user, repo=repo).get_authenticated
         )()
 
     def get_repo_details(
@@ -57,7 +57,7 @@ class RepoAccessors:
         """
         # Try to fetch the repo from the git provider using shared.torngit
         adapter = RepoProviderService().get_by_name(
-            user=user,
+            owner=user,
             repo_name=repo_name,
             repo_owner_username=repo_owner_username,
             repo_owner_service=repo_owner_service,

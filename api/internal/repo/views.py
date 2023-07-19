@@ -93,7 +93,7 @@ class RepositoryViewSet(
 
     def destroy(self, request, *args, **kwargs):
         SegmentService().account_deleted_repository(
-            self.request.user.ownerid, self.get_object()
+            self.request.current_owner.ownerid, self.get_object()
         )
         return super().destroy(request, *args, **kwargs)
 
@@ -110,7 +110,9 @@ class RepositoryViewSet(
         repo = self.get_object()
         TaskService().delete_timeseries(repository_id=repo.repoid)
         TaskService().flush_repo(repository_id=repo.repoid)
-        SegmentService().account_erased_repository(self.request.user.ownerid, repo)
+        SegmentService().account_erased_repository(
+            self.request.current_owner.ownerid, repo
+        )
         return Response(RepoSerializer(repo).data)
 
     @action(detail=True, methods=["post"])
@@ -140,7 +142,9 @@ class RepositoryViewSet(
     @torngit_safe
     def reset_webhook(self, request, *args, **kwargs):
         repo = self.get_object()
-        repository_service = RepoProviderService().get_adapter(self.request.user, repo)
+        repository_service = RepoProviderService().get_adapter(
+            self.request.current_owner, repo
+        )
 
         if repo.hookid:
             delete_webhook_on_provider(repository_service, repo)

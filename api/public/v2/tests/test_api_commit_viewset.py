@@ -6,6 +6,7 @@ from shared.reports.types import ReportTotals
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
+from utils.test_utils import APIClient
 
 
 class MockCoverage(object):
@@ -51,7 +52,7 @@ class RepoCommitListTestCase(TestCase):
     def setUp(self):
         self.org = OwnerFactory(username="codecov", service="github")
         self.repo = RepositoryFactory(author=self.org, name="test-repo", active=True)
-        self.user = OwnerFactory(
+        self.current_owner = OwnerFactory(
             username="codecov-user",
             service="github",
             organizations=[self.org.ownerid],
@@ -76,6 +77,9 @@ class RepoCommitListTestCase(TestCase):
                 "diff": 0,
             },
         )
+
+        self.client = APIClient()
+        self.client.force_login_owner(self.current_owner)
 
     def test_commit_list_not_authenticated(self, get_repo_permissions):
         get_repo_permissions.return_value = (True, True)
@@ -102,7 +106,6 @@ class RepoCommitListTestCase(TestCase):
     def test_commit_list_authenticated(self, get_repo_permissions):
         get_repo_permissions.return_value = (True, True)
 
-        self.client.force_login(user=self.user)
         response = self.client.get(
             reverse(
                 "api-v2-commits-list",
@@ -159,7 +162,6 @@ class RepoCommitListTestCase(TestCase):
         self.commit.totals["c"] = None
         self.commit.save()
 
-        self.client.force_login(user=self.user)
         response = self.client.get(
             reverse(
                 "api-v2-commits-list",
@@ -216,7 +218,7 @@ class RepoCommitDetailTestCase(TestCase):
     def setUp(self):
         self.org = OwnerFactory(username="codecov", service="github")
         self.repo = RepositoryFactory(author=self.org, name="test-repo", active=True)
-        self.user = OwnerFactory(
+        self.current_owner = OwnerFactory(
             username="codecov-user",
             service="github",
             organizations=[self.org.ownerid],
@@ -241,6 +243,9 @@ class RepoCommitDetailTestCase(TestCase):
                 "diff": 0,
             },
         )
+
+        self.client = APIClient()
+        self.client.force_login_owner(self.current_owner)
 
     @patch("services.report.build_report_from_commit")
     def test_commit_detail_not_authenticated(
@@ -275,7 +280,6 @@ class RepoCommitDetailTestCase(TestCase):
         get_repo_permissions.return_value = (True, True)
         build_report_from_commit.return_value = MockReport()
 
-        self.client.force_login(user=self.user)
         response = self.client.get(
             reverse(
                 "api-v2-commits-detail",

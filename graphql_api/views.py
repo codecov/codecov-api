@@ -2,32 +2,21 @@ import json
 import logging
 import socket
 from asyncio import iscoroutine
-from contextlib import suppress
 
 from ariadne import format_error
-
-# from .ariadne.views import GraphQLView
 from ariadne_django.views import GraphQLAsyncView
 from django.conf import settings
-from django.contrib.auth.models import AnonymousUser
 from django.http import HttpResponseNotAllowed
 from sentry_sdk import capture_exception
 
 from codecov.commands.exceptions import BaseException
 from codecov.commands.executor import get_executor_from_request
 from codecov.db import sync_to_async
-from codecov_auth.authentication import CodecovTokenAuthentication
 from services import ServiceException
 
 from .schema import schema
 
 log = logging.getLogger(__name__)
-
-
-@sync_to_async
-def get_user(request):
-    with suppress(Exception):
-        return CodecovTokenAuthentication().authenticate(request)[0]
 
 
 class AsyncGraphqlView(GraphQLAsyncView):
@@ -41,6 +30,8 @@ class AsyncGraphqlView(GraphQLAsyncView):
         return HttpResponseNotAllowed(["POST"])
 
     async def post(self, request, *args, **kwargs):
+        await self._get_user(request)
+
         # get request body information
         req_body = json.loads(request.body.decode("utf-8")) if request.body else {}
 
@@ -57,7 +48,7 @@ class AsyncGraphqlView(GraphQLAsyncView):
         }
         log.info("GraphQL Request", extra=log_data)
 
-        request.user = await get_user(request) or AnonymousUser()
+        # request.user = await get_user(request) or AnonymousUser()
         return await super().post(request, *args, **kwargs)
 
     def context_value(self, request):
@@ -87,6 +78,13 @@ class AsyncGraphqlView(GraphQLAsyncView):
             log.error("GraphQL internal server error", exc_info=original_error)
             capture_exception(original_error)
         return formatted
+
+    @sync_to_async
+    def _get_user(self, request):
+        # force eager evaluation of `request.user` (a lazy object)
+        # while we're in a sync context
+        if request.user:
+            request.user.pk
 
 
 BaseAriadneView = AsyncGraphqlView.as_view(

@@ -32,7 +32,7 @@ class RegenerateOrgUploadToken(GraphQLTestHelper, TransactionTestCase):
         owner = OwnerFactory(name="rula")
         data = self.gql_request(
             query,
-            user=owner,
+            owner=owner,
             variables={"input": {"owner": "random"}},
         )
         assert (
@@ -42,7 +42,7 @@ class RegenerateOrgUploadToken(GraphQLTestHelper, TransactionTestCase):
     def test_when_authenticated_regenerate_token(self):
         data = self.gql_request(
             query,
-            user=self.owner,
+            owner=self.owner,
             variables={"input": {"owner": "codecov"}},
         )
         newToken = data["regenerateOrgUploadToken"]["orgUploadToken"]

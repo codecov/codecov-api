@@ -25,15 +25,14 @@ class MockedProviderAdapter:
 
 class GetFileContentInteractorTest(TransactionTestCase):
     def setUp(self):
-        self.user = OwnerFactory(username="codecov-user")
+        self.owner = OwnerFactory(username="codecov-user")
         self.repository = RepositoryFactory()
         self.commit = CommitFactory()
 
     # helper to execute the interactor
-    def execute(self, user, *args):
-        service = user.service if user else "github"
-        current_user = user or AnonymousUser()
-        return GetFileContentInteractor(current_user, service).execute(*args)
+    def execute(self, owner, *args):
+        service = owner.service if owner else "github"
+        return GetFileContentInteractor(owner, service).execute(*args)
 
     @patch("services.repo_providers.RepoProviderService.get_adapter")
     @async_to_sync

@@ -18,3 +18,13 @@ class LabelAnalysisRequest(BaseCodecovModel):
     )
     result = models.JSONField(null=True)
     processing_params = models.JSONField(null=True)
+
+
+class LabelAnalysisProcessingError(BaseCodecovModel):
+    label_analysis_request = models.ForeignKey(
+        "LabelAnalysisRequest",
+        related_name="errors",
+        on_delete=models.CASCADE,
+    )
+    error_code = models.CharField(max_length=100)
+    error_params = models.JSONField(default=dict)

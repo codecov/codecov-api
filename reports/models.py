@@ -1,16 +1,14 @@
-import json
 import logging
 
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.urls import reverse
-from django.utils.functional import cached_property
+from shared.config import get_config
 from shared.reports.enums import UploadState, UploadType
-from shared.storage.exceptions import FileNotInStorageError
 
 from codecov.models import BaseCodecovModel
-from services.archive import ArchiveService
 from upload.constants import ci
+from utils.model_utils import ArchiveField
 from utils.services import get_short_service_name
 
 log = logging.getLogger(__name__)
@@ -56,28 +54,47 @@ class ReportDetails(BaseCodecovModel):
         db_column="files_array_storage_path", null=True
     )
 
-    @cached_property
-    def files_array(self):
-        # Get files_array from the proper source
-        if self._files_array is not None:
-            return self._files_array
-        repository = self.report.commit.repository
-        archive_service = ArchiveService(repository=repository)
-        try:
-            file_str = archive_service.read_file(self._files_array_storage_path)
-            return json.loads(file_str)
-        except FileNotInStorageError:
-            log.error(
-                "files_array not in storage",
-                extra=dict(
-                    storage_path=self._files_array_storage_path,
-                    report_details=self.id,
-                    commit=self.report.commit,
-                ),
-            )
-            # Return empty array to be consistent with current behavior
-            # (instead of raising error)
-            return []
+    def get_repository(self):
+        return self.report.commit.repository
+
+    def get_commitid(self):
+        return self.report.commit.commitid
+
+    def should_write_to_storage(self) -> bool:
+        if (
+            self.report is None
+            or self.report.commit is None
+            or self.report.commit.repository is None
+            or self.report.commit.repository.author is None
+        ):
+            return False
+        report_builder_repo_ids = get_config(
+            "setup", "save_report_data_in_storage", "repo_ids", default=[]
+        )
+        master_write_switch = get_config(
+            "setup",
+            "save_report_data_in_storage",
+            "report_details_files_array",
+            default=False,
+        )
+        only_codecov = get_config(
+            "setup",
+            "save_report_data_in_storage",
+            "only_codecov",
+            default=True,
+        )
+        is_codecov_repo = self.report.commit.repository.author.username == "codecov"
+        is_in_allowed_repos = (
+            self.report.commit.repository.repoid in report_builder_repo_ids
+        )
+        return master_write_switch and (
+            is_codecov_repo or is_in_allowed_repos or not only_codecov
+        )
+
+    files_array = ArchiveField(
+        should_write_to_storage_fn=should_write_to_storage,
+        default_value=[],
+    )
 
 
 class ReportLevelTotals(AbstractTotals):

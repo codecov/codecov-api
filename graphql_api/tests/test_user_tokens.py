@@ -25,14 +25,14 @@ query {
 
 class UserTokensTestCase(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
-        self.user = OwnerFactory(username="codecov-user")
+        self.owner = OwnerFactory(username="codecov-user")
 
-        self.token1 = UserTokenFactory(owner=self.user, name="token1")
-        self.token2 = UserTokenFactory(owner=self.user, name="token2")
+        self.token1 = UserTokenFactory(owner=self.owner, name="token1")
+        self.token2 = UserTokenFactory(owner=self.owner, name="token2")
         self.token3 = UserTokenFactory(name="token3")
 
     def test_user_tokens(self):
-        data = self.gql_request(query, user=self.user)
+        data = self.gql_request(query, owner=self.owner)
         tokens = paginate_connection(data["me"]["tokens"])
         assert tokens == [
             {
