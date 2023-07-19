@@ -35,6 +35,7 @@ class ArianeViewTestCase(GraphQLTestHelper, TestCase):
 
         request.resolver_match = match
         request.user = None
+        request.current_owner = None
         res = await view(request, service="gh")
         return json.loads(res.content)
 

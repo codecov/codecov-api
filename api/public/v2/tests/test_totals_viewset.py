@@ -3,15 +3,15 @@ from unittest.mock import call, patch
 from urllib.parse import urlencode
 
 from django.conf import settings
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from rest_framework.reverse import reverse
 from shared.reports.resources import Report, ReportFile, ReportLine
 from shared.utils.sessions import Session
 
-from codecov_auth.models import UserToken
-from codecov_auth.tests.factories import OwnerFactory, UserTokenFactory
+from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import BranchFactory, CommitFactory, RepositoryFactory
 from services.components import Component
+from utils.test_utils import APIClient
 
 
 def sample_report():
@@ -72,7 +72,7 @@ class TotalsViewSetTestCase(TestCase):
         self.repo_name = "test-repo"
         self.org = OwnerFactory(username=self.username, service=self.service)
         self.repo = RepositoryFactory(author=self.org, name=self.repo_name, active=True)
-        self.user = OwnerFactory(
+        self.current_owner = OwnerFactory(
             username="codecov-user",
             service="github",
             organizations=[self.org.ownerid],
@@ -96,8 +96,13 @@ class TotalsViewSetTestCase(TestCase):
         self.branch.head = self.commit3.commitid
         self.branch.save()
 
+        self.client = APIClient()
+        self.client.force_login_owner(self.current_owner)
+
     def _request_report(self, user_token=None, **params):
-        self.client.force_login(user=self.user)
+        if user_token:
+            self.client.logout()
+
         url = reverse(
             "api-v2-totals-detail",
             kwargs={
@@ -116,7 +121,9 @@ class TotalsViewSetTestCase(TestCase):
         )
 
     def _post_report(self, user_token=None, **params):
-        self.client.force_login(user=self.user)
+        if user_token:
+            self.client.logout()
+
         url = reverse(
             "api-v2-totals-detail",
             kwargs={

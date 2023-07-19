@@ -1,21 +1,19 @@
 import logging
 import re
 import uuid
-from distutils.log import Log
 from functools import reduce
-from json import dumps
-from typing import Dict
 from urllib.parse import parse_qs, urlencode, urlparse
 
 from django.conf import settings
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
+from django.http.request import HttpRequest
+from django.http.response import HttpResponse
 from django.utils import timezone
 from shared.encryption.token import encode_token
 from shared.license import LICENSE_ERRORS_MESSAGES, get_current_license
 
-from codecov_auth.helpers import create_signed_value
-from codecov_auth.models import Owner, OwnerProfile, Service, Session
+from codecov_auth.models import Owner, OwnerProfile, User
 from services.redis_configuration import get_redis_connection
 from services.refresh import RefreshService
 from services.segment import SegmentService
@@ -122,7 +120,7 @@ class LoginMixin(object):
     segment_service = SegmentService()
 
     def modify_redirection_url_based_on_default_user_org(
-        self, url: str, user: Owner
+        self, url: str, owner: Owner
     ) -> str:
         if (
             url
@@ -133,8 +131,8 @@ class LoginMixin(object):
             return url
 
         owner_profile = None
-        if user:
-            owner_profile = OwnerProfile.objects.filter(owner_id=user.ownerid).first()
+        if owner:
+            owner_profile = OwnerProfile.objects.filter(owner_id=owner.ownerid).first()
         if owner_profile is not None and owner_profile.default_org is not None:
             url += f"/{owner_profile.default_org.username}"
         return url
@@ -145,17 +143,71 @@ class LoginMixin(object):
         )
         return owner
 
-    def set_cookies_and_login_user(self, user, request, response):
-        self._set_proper_cookies_and_session(user, request, response)
-        RefreshService().trigger_refresh(user.ownerid, user.username)
+    def login_owner(self, owner: Owner, request: HttpRequest, response: HttpResponse):
+        # if there's a currently authenticated user
+        if request.user is not None and not request.user.is_anonymous:
+            if owner.user is None:
+                # TEMPORARY: We have no mechanism in the UI for supporting multiple
+                # owners of the same service linked to the same user.  If the current
+                # user is already linked to an owner of the same service as this one then
+                # we'll logout the current user, create a new user and link the owner to
+                # that new user.  This is not ideal since it creates multiple user records
+                # for the same person that will need to be merged later on.
+                if request.user.owners.filter(service=owner.service).exists():
+                    logout(request)
+                    current_user = User.objects.create(
+                        email=owner.email,
+                        name=owner.name,
+                        is_staff=owner.staff,
+                    )
+                    owner.user = current_user
+                    owner.save()
+                    login(request, current_user)
+                else:
+                    # assign the owner to the currently authenticated user
+                    owner.user = request.user
+                    owner.save()
+                    log.info(
+                        "User claimed owner",
+                        extra=dict(user_id=request.user.pk, ownerid=owner.ownerid),
+                    )
+            elif request.user != owner.user:
+                log.warning(
+                    "Owner already linked to another user",
+                    extra=dict(user_id=request.user.pk, ownerid=owner.ownerid),
+                )
+                # TEMPORARY: We may want to handle this better in the future by indicating
+                # the issue to the user and letting them decide how to proceeed.  For now
+                # we'll just logout the current user and login the user that controls the owner
+                # that just OAuth-ed.
+                logout(request)
+                login(request, owner.user)
+                return
+        # else we do not have a currently authenticated user
+        else:
+            current_user = None
+            if owner.user is not None:
+                current_user = owner.user
+            else:
+                # no current user and owner has not already been assigned a user
+                current_user = User.objects.create(
+                    email=owner.email,
+                    name=owner.name,
+                    is_staff=owner.staff,
+                )
+                owner.user = current_user
+                owner.save()
 
-        # Login the user if staff via Django authentication. Allows staff users to access Django admin.
-        if user.is_staff:
-            login(request, user)
+            login(request, current_user)
+            log.info(
+                "User logged in",
+                extra=dict(user_id=request.user.pk, ownerid=owner.ownerid),
+            )
 
-        return log.info("User is logging in", extra=dict(ownerid=user.ownerid))
+        request.session["current_owner_id"] = owner.pk
+        RefreshService().trigger_refresh(owner.ownerid, owner.username)
 
-    def get_and_modify_user(self, user_dict, request) -> Owner:
+    def get_and_modify_owner(self, user_dict, request) -> Owner:
         user_orgs = user_dict["orgs"]
         formatted_orgs = [
             dict(username=org["username"], id=str(org["id"])) for org in user_orgs
@@ -167,69 +219,35 @@ class LoginMixin(object):
             upserted_orgs.append(self.get_or_create_org(org))
 
         self._check_user_count_limitations(user_dict["user"])
-        user, is_new_user = self._get_or_create_user(user_dict, request)
+        owner, is_new_user = self._get_or_create_owner(user_dict, request)
         fields_to_update = []
-        if user_dict.get("is_student") != user.student:
-            user.student = user_dict.get("is_student")
-            if user.student_created_at is None:
-                user.student_created_at = timezone.now()
-            user.student_updated_at = timezone.now()
+        if user_dict.get("is_student") != owner.student:
+            owner.student = user_dict.get("is_student")
+            if owner.student_created_at is None:
+                owner.student_created_at = timezone.now()
+            owner.student_updated_at = timezone.now()
             fields_to_update.extend(
                 ["student", "student_created_at", "student_updated_at"]
             )
 
         # Updated by the task `SyncTeams` that is called after login.
         # We will only set this for the initial "oranizations is none" login.
-        if user.organizations is None:
-            user.organizations = [o.ownerid for o in upserted_orgs]
+        if owner.organizations is None:
+            owner.organizations = [o.ownerid for o in upserted_orgs]
             fields_to_update.extend(["organizations"])
 
-        if user.bot is not None:
+        if owner.bot is not None:
             log.info(
                 "Clearing user bot field",
-                extra=dict(ownerid=user.ownerid, old_bot=user.bot),
+                extra=dict(ownerid=owner.ownerid, old_bot=owner.bot),
             )
-            user.bot = None
+            owner.bot = None
             fields_to_update.append("bot")
 
         if fields_to_update:
-            user.save(update_fields=fields_to_update + ["updatestamp"])
+            owner.save(update_fields=fields_to_update + ["updatestamp"])
 
-        return user
-
-    def _set_proper_cookies_and_session(self, user, request, response):
-        domain_to_use = settings.COOKIES_DOMAIN
-        Session.objects.filter(
-            owner_id=user.ownerid, type="login", ip=request.META.get("REMOTE_ADDR")
-        ).delete()
-        session = Session(
-            owner=user,
-            useragent=request.META.get("HTTP_USER_AGENT"),
-            ip=request.META.get("REMOTE_ADDR"),
-            lastseen=timezone.now(),
-            type="login",
-        )
-        session.save()
-        token = str(session.token)
-        signed_cookie_value = create_signed_value(
-            f"{self.service}-token", token, version=None
-        )
-        response.set_cookie(
-            f"{self.service}-token",
-            signed_cookie_value,
-            domain=domain_to_use,
-            httponly=True,
-            secure=True,
-            samesite=settings.COOKIE_SAME_SITE,
-        )
-        response.set_cookie(
-            f"{self.service}-username",
-            user.username,
-            domain=domain_to_use,
-            httponly=True,
-            secure=True,
-            samesite=settings.COOKIE_SAME_SITE,
-        )
+        return owner
 
     def _check_enterprise_organizations_membership(self, user_dict, orgs):
         """Checks if a user belongs to the restricted organizations (or teams if GitHub) allowed in settings."""
@@ -290,7 +308,7 @@ class LoginMixin(object):
                 if users_on_service_count > license.number_allowed_users:
                     raise PermissionDenied(LICENSE_ERRORS_MESSAGES["users-exceeded"])
 
-    def _get_or_create_user(self, user_dict, request):
+    def _get_or_create_owner(self, user_dict, request):
         fields_to_update = ["oauth_token", "private_access", "updatestamp"]
         login_data = user_dict["user"]
         owner, was_created = Owner.objects.get_or_create(

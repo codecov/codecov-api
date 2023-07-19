@@ -22,17 +22,16 @@ class GetUploadsNumberInteractorTest(TransactionTestCase):
         self.commit_with_upload.repository.save()
 
     # helper to execute the interactor
-    def execute(self, user, *args):
-        service = user.service if user else "github"
-        current_user = user or AnonymousUser()
-        return GetUploadsNumberInteractor(current_user, service).execute(*args)
+    def execute(self, owner, *args):
+        service = owner.service if owner else "github"
+        return GetUploadsNumberInteractor(owner, service).execute(*args)
 
     async def test_fetch_when_no_reports(self):
         uploads_number = await self.execute(None, self.commit_with_no_upload)
-        assert uploads_number is 0
+        assert uploads_number == 0
 
     def test_fetch_when_reports(self):
         # self.execute returns a lazy queryset so we need to wrap it with
         # async_to_sync
         uploads_number = async_to_sync(self.execute)(None, self.commit_with_upload)
-        assert uploads_number is 2
+        assert uploads_number == 2

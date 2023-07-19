@@ -13,7 +13,7 @@ class RegenerateOrgUploadTokenInteractor(BaseInteractor):
             raise Unauthenticated()
         if not owner_obj:
             raise ValidationError("Owner not found")
-        if not current_user_part_of_org(self.current_user, owner_obj):
+        if not current_user_part_of_org(self.current_owner, owner_obj):
             raise Unauthorized()
 
     @sync_to_async

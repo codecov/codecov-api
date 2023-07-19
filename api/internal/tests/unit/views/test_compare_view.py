@@ -41,7 +41,8 @@ def build_commits(client):
         parent_commit_id=parent_commit.commitid,
         repository=repo,
     )
-    client.force_login(user=repo.author)
+    client.session["current_owner_id"] = repo.author.pk
+    client.force_login(user=repo.author.user)
     return repo, commit_base, commit_head
 
 

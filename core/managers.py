@@ -29,7 +29,7 @@ class RepositoryQuerySet(QuerySet):
         """
         filters = Q(private=False) & ~Q(deleted=True)
 
-        if owner.is_authenticated:
+        if owner is not None:
             filters = filters | Q(author__ownerid=owner.ownerid)
             if owner.permission:
                 filters = filters | Q(repoid__in=owner.permission)

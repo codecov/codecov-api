@@ -21,7 +21,6 @@ from rest_framework.views import APIView
 from shared.metrics import metrics
 
 from codecov.db import sync_to_async
-from codecov_auth.authentication import CodecovTokenAuthentication
 from codecov_auth.commands.owner import OwnerCommands
 from core.commands.repository import RepositoryCommands
 from services.archive import ArchiveService
@@ -328,12 +327,6 @@ class UploadHandler(APIView):
 
 
 class UploadDownloadHandler(View):
-    @sync_to_async
-    def get_user(self, request):
-        with suppress(APIException, TypeError):
-            return CodecovTokenAuthentication().authenticate(request)[0]
-        return AnonymousUser()
-
     @classonlymethod
     def as_view(_, **initkwargs):
         view = super().as_view(**initkwargs)
@@ -341,13 +334,13 @@ class UploadDownloadHandler(View):
         return view
 
     async def get_repo(self):
-        owner = await OwnerCommands(self.request.user, self.service).fetch_owner(
-            self.owner_username
-        )
+        owner = await OwnerCommands(
+            self.request.current_owner, self.service
+        ).fetch_owner(self.owner_username)
         if owner is None:
             raise Http404("Requested report could not be found")
         repo = await RepositoryCommands(
-            self.request.user, self.service
+            self.request.current_owner, self.service
         ).fetch_repository(owner, self.repo_name)
         if repo is None:
             raise Http404("Requested report could not be found")
@@ -382,11 +375,19 @@ class UploadDownloadHandler(View):
                 raise
 
     async def get(self, request, *args, **kwargs):
+        await self._get_user(request)
+
         self.read_params()
         self.validate_path()
-        request.user = await self.get_user(request)
         repo = await self.get_repo()
 
         response = HttpResponse(status=302)
         response["Location"] = await self.get_presigned_url(repo)
         return response
+
+    @sync_to_async
+    def _get_user(self, request):
+        # force eager evaluation of `request.user` (a lazy object)
+        # while we're in a sync context
+        if request.user:
+            request.user.pk

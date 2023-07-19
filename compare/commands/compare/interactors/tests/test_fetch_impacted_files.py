@@ -277,10 +277,9 @@ class FetchImpactedFilesTest(TransactionTestCase):
         self.comparison = ComparisonReport(self.commit_comparison)
 
     # helper to execute the interactor
-    def execute(self, user, *args):
-        service = user.service if user else "github"
-        current_user = user or AnonymousUser()
-        return FetchImpactedFiles(current_user, service).execute(*args)
+    def execute(self, owner, *args):
+        service = owner.service if owner else "github"
+        return FetchImpactedFiles(owner, service).execute(*args)
 
     @patch("services.archive.ArchiveService.read_file")
     def test_impacted_file_sort_function(self, read_file):

@@ -28,7 +28,7 @@ class Migration(migrations.Migration):
                         db_column="bot",
                         null=True,
                         on_delete=django.db.models.deletion.SET_NULL,
-                        to=settings.AUTH_USER_MODEL,
+                        to="codecov_auth.owner",
                     ),
                 ),
             ],

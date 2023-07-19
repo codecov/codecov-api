@@ -20,6 +20,7 @@ from core.tests.factories import (
     RepositoryFactory,
 )
 from reports.tests.factories import RepositoryFlagFactory
+from utils.test_utils import Client
 
 
 class RepositoryViewSetTestSuite(InternalAPITest):
@@ -106,14 +107,15 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
 
         repos_with_permission = [self.repo1.repoid, self.repo2.repoid]
 
-        self.user = OwnerFactory(
+        self.current_owner = OwnerFactory(
             username="codecov-user",
             service="github",
             organizations=[self.org.ownerid],
             permission=repos_with_permission,
         )
 
-        self.client.force_login(user=self.user)
+        self.client = Client()
+        self.client.force_login_owner(self.current_owner)
 
     def test_can_retrieve_repo_list_if_not_authenticated(self):
         self.client.logout()
@@ -370,8 +372,8 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
 
     def test_returns_private_repos_if_user_has_permission(self):
         new_repo = RepositoryFactory(author=self.org, name="C")
-        self.user.permission.append(new_repo.repoid)
-        self.user.save()
+        self.current_owner.permission.append(new_repo.repoid)
+        self.current_owner.save()
 
         response = self._list()
 
@@ -379,10 +381,13 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         assert len(response.data["results"]) == 3
 
     def test_returns_private_repos_if_user_owns_repo(self):
-        new_repo = RepositoryFactory(author=self.user, name="C")
+        new_repo = RepositoryFactory(author=self.current_owner, name="C")
 
         response = self._list(
-            {"service": self.user.service, "owner_username": self.user.username}
+            {
+                "service": self.current_owner.service,
+                "owner_username": self.current_owner.username,
+            }
         )
 
         assert response.status_code == 200
@@ -547,14 +552,15 @@ class TestRepositoryViewSetExtraActions(RepositoryViewSetTestSuite):
 
         repos_with_permission = [self.repo1.repoid, self.repo2.repoid]
 
-        self.user = OwnerFactory(
+        self.current_owner = OwnerFactory(
             username="codecov-user",
             service="github",
             organizations=[self.org.ownerid],
             permission=repos_with_permission,
         )
 
-        self.client.force_login(user=self.user)
+        self.client = Client()
+        self.client.force_login_owner(self.current_owner)
 
 
 @patch("api.shared.repo.repository_accessors.RepoAccessors.get_repo_permissions")
@@ -571,11 +577,12 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
             service_id="201298242",
         )
 
-        self.user = OwnerFactory(
+        self.current_owner = OwnerFactory(
             username="codecov-user", service="github", organizations=[self.org.ownerid]
         )
 
-        self.client.force_login(user=self.user)
+        self.client = Client()
+        self.client.force_login_owner(self.current_owner)
 
     def test_can_retrieve_repo_if_not_authenticated(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, True
@@ -642,7 +649,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
 
     def test_destroy_repo_with_admin_rights_succeeds(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, True
-        self.org.admins = [self.user.ownerid]
+        self.org.admins = [self.current_owner.ownerid]
         self.org.save()
         response = self._destroy()
         assert response.status_code == 204
@@ -665,7 +672,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         mocked_get_provider.return_value = GetAdminProviderAdapter()
         mocked_get_permissions.return_value = True, True
 
-        assert self.user.ownerid not in self.org.admins
+        assert self.current_owner.ownerid not in self.org.admins
 
         response = self._destroy()
         assert response.status_code == 403
@@ -673,7 +680,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
 
     def test_destroy_repo_as_inactive_user_returns_403(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, True
-        self.org.admins = [self.user.ownerid]
+        self.org.admins = [self.current_owner.ownerid]
         self.org.plan = "users-inappy"
         self.org.plan_auto_activate = False
         self.org.save()
@@ -688,10 +695,12 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         self, account_deleted_repo_mock, mocked_get_permissions
     ):
         mocked_get_permissions.return_value = True, True
-        self.org.admins = [self.user.ownerid]
+        self.org.admins = [self.current_owner.ownerid]
         self.org.save()
         response = self._destroy()
-        account_deleted_repo_mock.assert_called_once_with(self.user.ownerid, self.repo)
+        account_deleted_repo_mock.assert_called_once_with(
+            self.current_owner.ownerid, self.repo
+        )
 
     def test_regenerate_upload_token_with_permissions_succeeds(
         self, mocked_get_permissions
@@ -758,7 +767,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         self, mocked_flush_repo, mocked_delete_timeseries, mocked_get_permissions
     ):
         mocked_get_permissions.return_value = True, True
-        self.org.admins = [self.user.ownerid]
+        self.org.admins = [self.current_owner.ownerid]
         self.org.save()
 
         response = self._erase()
@@ -774,7 +783,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         mocked_get_provider.return_value = GetAdminProviderAdapter()
         mocked_get_permissions.return_value = True, True
 
-        assert self.user.ownerid not in self.org.admins
+        assert self.current_owner.ownerid not in self.org.admins
 
         response = self._erase()
         assert response.status_code == 403
@@ -783,7 +792,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         mocked_get_permissions.return_value = True, True
         self.org.plan = "users-inappy"
         self.org.plan_auto_activate = False
-        self.org.admins = [self.user.ownerid]
+        self.org.admins = [self.current_owner.ownerid]
         self.org.save()
 
         response = self._erase()
@@ -802,9 +811,9 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         mocked_get_permissions,
     ):
         mocked_get_permissions.return_value = True, True
-        self.org.admins = [self.user.ownerid]
-        self.org.plan_activated_users = [self.user.ownerid]
-        self.user.organizations = [self.org.ownerid]
+        self.org.admins = [self.current_owner.ownerid]
+        self.org.plan_activated_users = [self.current_owner.ownerid]
+        self.current_owner.organizations = [self.org.ownerid]
         self.org.save()
         with self.settings(SEGMENT_ENABLED=True):
             response = self._erase()
@@ -859,12 +868,12 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
 
         response = self._update(data=activation_data)
         account_activated_repo_mock.assert_called_once_with(
-            self.user.ownerid, self.repo
+            self.current_owner.ownerid, self.repo
         )
 
         response = self._update(data=deactivation_data)
         account_deactivated_repo_mock.assert_called_once_with(
-            self.user.ownerid, self.repo
+            self.current_owner.ownerid, self.repo
         )
 
     def test_encode_returns_200_on_success(self, mocked_get_permissions):

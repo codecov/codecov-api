@@ -23,9 +23,11 @@ class TorngitInitializationFailed(Exception):
     pass
 
 
-def get_token_refresh_callback(user: Owner, service: Service) -> Callable[[Dict], None]:
+def get_token_refresh_callback(
+    owner: Owner, service: Service
+) -> Callable[[Dict], None]:
     """
-    Produces a callback function that will encode and update the oauth token of a user.
+    Produces a callback function that will encode and update the oauth token of an owner.
     This callback is passed to the TorngitAdapter for the service.
     """
     if service != Service.GITLAB and service != Service.GITLAB_ENTERPRISE:
@@ -35,16 +37,16 @@ def get_token_refresh_callback(user: Owner, service: Service) -> Callable[[Dict]
     def callback(new_token: Dict) -> None:
         log.info(
             "Saving new token after refresh",
-            extra=dict(owner=user.username, ownerid=user.ownerid),
+            extra=dict(owner=owner.username, ownerid=owner.ownerid),
         )
         string_to_save = encode_token(new_token)
-        user.oauth_token = encryptor.encode(string_to_save).decode()
-        user.save()
+        owner.oauth_token = encryptor.encode(string_to_save).decode()
+        owner.save()
 
     return callback
 
 
-def get_generic_adapter_params(user, service, use_ssl=False, token=None):
+def get_generic_adapter_params(owner: Owner, service, use_ssl=False, token=None):
     if use_ssl:
         verify_ssl = (
             get_config(service, "ssl_pem")
@@ -55,9 +57,9 @@ def get_generic_adapter_params(user, service, use_ssl=False, token=None):
         verify_ssl = None
 
     if token is None:
-        if user.is_authenticated and user.oauth_token is not None:
-            token = encryptor.decrypt_token(user.oauth_token)
-            token["username"] = user.username
+        if owner is not None and owner.oauth_token is not None:
+            token = encryptor.decrypt_token(owner.oauth_token)
+            token["username"] = owner.username
         else:
             token = {"key": getattr(settings, f"{service.upper()}_BOT_KEY")}
     return dict(
@@ -68,7 +70,7 @@ def get_generic_adapter_params(user, service, use_ssl=False, token=None):
             key=getattr(settings, f"{service.upper()}_CLIENT_ID", "unknown"),
             secret=getattr(settings, f"{service.upper()}_CLIENT_SECRET", "unknown"),
         ),
-        on_token_refresh=get_token_refresh_callback(user, service),
+        on_token_refresh=get_token_refresh_callback(owner, service),
     )
 
 
@@ -81,17 +83,17 @@ def get_provider(service, adapter_params):
 
 
 class RepoProviderService(object):
-    def get_adapter(self, user: Owner, repo: Repository, use_ssl=False, token=None):
+    def get_adapter(self, owner: Owner, repo: Repository, use_ssl=False, token=None):
         """
         Return the corresponding implementation for calling the repository provider
 
-        :param user: :class:`codecov_auth.models.Owner`
+        :param owner: :class:`codecov_auth.models.Owner`
         :param repo: :class:`core.models.Repository`
         :return:
         :raises: TorngitInitializationFailed
         """
         generic_adapter_params = get_generic_adapter_params(
-            user, repo.author.service, use_ssl, token
+            owner, repo.author.service, use_ssl, token
         )
         owner_and_repo_params = {
             "repo": {
@@ -111,18 +113,18 @@ class RepoProviderService(object):
             repo.author.service, {**generic_adapter_params, **owner_and_repo_params}
         )
 
-    def get_by_name(self, user, repo_name, repo_owner_username, repo_owner_service):
+    def get_by_name(self, owner, repo_name, repo_owner_username, repo_owner_service):
         """
         Return the corresponding implementation for calling the repository provider
 
-        :param user: Owner object of the user
+        :param owner: Owner object of the user
         :param repo_name: string, name of the repo
         :param owner: Owner, owner of the repo in question
         :repo_owner_service: 'github', 'gitlab' etc
         :return:
         :raises: TorngitInitializationFailed
         """
-        generic_adapter_params = get_generic_adapter_params(user, repo_owner_service)
+        generic_adapter_params = get_generic_adapter_params(owner, repo_owner_service)
         owner_and_repo_params = {
             "repo": {"name": repo_name},
             "owner": {"username": repo_owner_username},

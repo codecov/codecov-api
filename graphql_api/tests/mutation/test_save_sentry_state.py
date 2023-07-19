@@ -22,11 +22,11 @@ query = """
 
 @patch("services.sentry.save_sentry_state")
 class SaveSentryStateMutationTest(GraphQLTestHelper, TransactionTestCase):
-    def _request(self, user=None):
+    def _request(self, owner=None):
         return self.gql_request(
             query,
             variables={"input": {"state": "test-state"}},
-            user=user,
+            owner=owner,
         )
 
     def test_unauthenticated(self, save_sentry_state):
@@ -41,7 +41,7 @@ class SaveSentryStateMutationTest(GraphQLTestHelper, TransactionTestCase):
 
     def test_invalid_state(self, save_sentry_state):
         save_sentry_state.side_effect = SentryInvalidStateError()
-        assert self._request(user=OwnerFactory()) == {
+        assert self._request(owner=OwnerFactory()) == {
             "saveSentryState": {
                 "error": {
                     "__typename": "ValidationError",
@@ -52,7 +52,7 @@ class SaveSentryStateMutationTest(GraphQLTestHelper, TransactionTestCase):
 
     def test_sentry_user_already_exists(self, save_sentry_state):
         save_sentry_state.side_effect = SentryUserAlreadyExistsError()
-        assert self._request(user=OwnerFactory()) == {
+        assert self._request(owner=OwnerFactory()) == {
             "saveSentryState": {
                 "error": {
                     "__typename": "ValidationError",
@@ -63,6 +63,6 @@ class SaveSentryStateMutationTest(GraphQLTestHelper, TransactionTestCase):
 
     def test_authenticated(self, save_sentry_state):
         owner = OwnerFactory()
-        assert self._request(user=owner) == {"saveSentryState": None}
+        assert self._request(owner=owner) == {"saveSentryState": None}
 
         save_sentry_state.assert_called_once_with(owner, "test-state")

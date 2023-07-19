@@ -216,12 +216,12 @@ class ReportPaths:
         return results
 
 
-def provider_path_exists(path: str, commit: Commit, user: Owner):
+def provider_path_exists(path: str, commit: Commit, owner: Owner):
     """
     Check whether the given path exists on the provider.
     """
     try:
-        adapter = RepoProviderService().get_adapter(user, commit.repository)
+        adapter = RepoProviderService().get_adapter(owner, commit.repository)
         async_to_sync(adapter.list_files)(commit.commitid, path)
         return True
     except TorngitClientError as e:

@@ -1,3 +1,4 @@
+from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
 
 from codecov_auth.tests.factories import OwnerFactory
@@ -23,10 +24,10 @@ class GetUploadsNumberPerUserInteractorTest(TransactionTestCase):
 
     async def test_with_no_uploads(self):
         owner = self.user_with_no_uplaods
-        uploads = await GetUploadsNumberPerUserInteractor(self, owner).execute(owner)
+        uploads = await GetUploadsNumberPerUserInteractor(None, owner).execute(owner)
         assert uploads == 0
 
     async def test_with_number_of_uploads(self):
         owner = self.user_with_uplaods
-        uploads = await GetUploadsNumberPerUserInteractor(self, owner).execute(owner)
+        uploads = await GetUploadsNumberPerUserInteractor(None, owner).execute(owner)
         assert uploads == 150
