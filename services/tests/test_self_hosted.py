@@ -58,6 +58,7 @@ class SelfHostedTestCase(TestCase):
         assert is_admin_owner(owner1) == True
         assert is_admin_owner(owner2) == True
         assert is_admin_owner(owner3) == False
+        assert is_admin_owner(None) == False
 
     def test_activated_owners(self):
         user1 = OwnerFactory()

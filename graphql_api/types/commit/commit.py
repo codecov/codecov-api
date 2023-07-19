@@ -157,7 +157,7 @@ def resolve_path_contents(commit: Commit, info, path: str = None, filters=None):
     The is resolver results in a list that represent the tree with files
     and nested directories.
     """
-    user = info.context["request"].user
+    current_owner = info.context["request"].current_owner
 
     # TODO: Might need to add reports here filtered by flags in the future
     commit_report = report_service.build_report_from_commit(
@@ -180,7 +180,7 @@ def resolve_path_contents(commit: Commit, info, path: str = None, filters=None):
     if len(report_paths.paths) == 0:
         # we do not know about this path
 
-        if path_service.provider_path_exists(path, commit, user) is False:
+        if path_service.provider_path_exists(path, commit, current_owner) is False:
             # file doesn't exist
             return UnknownPath(f"path does not exist: {path}")
 
