@@ -162,9 +162,9 @@ def resolve_flag_comparisons(
 def resolve_component_comparisons(
     comparison_report: ComparisonReport, info
 ) -> List[ComponentComparison]:
-    user = info.context["request"].user
+    current_owner = info.context["request"].current_owner
     head_commit = comparison_report.commit_comparison.compare_commit
-    components = components_service.commit_components(head_commit, user)
+    components = components_service.commit_components(head_commit, current_owner)
 
     # store for child resolvers (needed to get the component name, for example)
     info.context["components"] = {
