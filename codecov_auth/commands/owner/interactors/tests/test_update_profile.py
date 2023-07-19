@@ -36,5 +36,6 @@ class UpdateProfileInteractorTest(TransactionTestCase):
         user = await UpdateProfileInteractor(self.owner, "github").execute(
             name="codecov brother", email="brother@codecov.io"
         )
+        assert user == self.owner
         assert user.email == "brother@codecov.io"
         assert user.name == "codecov brother"

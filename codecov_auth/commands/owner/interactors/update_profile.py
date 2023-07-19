@@ -23,12 +23,12 @@ class UpdateProfileInteractor(BaseInteractor):
         field = kwargs.get(field_name)
         if not field:
             return
-        setattr(self.current_user, field_name, field)
+        setattr(self.current_owner, field_name, field)
 
     @sync_to_async
     def execute(self, **kwargs):
         self.validate(**kwargs)
         self.update_field("email", **kwargs)
         self.update_field("name", **kwargs)
-        self.current_user.save()
-        return self.current_user
+        self.current_owner.save()
+        return self.current_owner
