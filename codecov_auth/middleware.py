@@ -92,9 +92,11 @@ class ImpersonationMiddleware(MiddlewareMixin):
                 )
                 raise exceptions.PermissionDenied()
 
-            request.current_owner = Owner.objects.filter(
-                pk=impersonating_ownerid
-            ).first()
+            request.current_owner = (
+                Owner.objects.filter(pk=impersonating_ownerid)
+                .prefetch_related("user")
+                .first()
+            )
             if request.current_owner is None:
                 log.warning(
                     "Impersonation unsuccessful",
