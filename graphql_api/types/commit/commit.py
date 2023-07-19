@@ -115,12 +115,12 @@ async def resolve_compare_with_parent(commit: Commit, info, **kwargs):
 
     if commit_comparison and commit_comparison.is_processed:
 
-        user = info.context["request"].user
+        current_owner = info.context["request"].current_owner
         parent_commit = await CommitLoader.loader(info, commit.repository_id).load(
             commit.parent_commit_id
         )
         comparison = Comparison(
-            user=user, base_commit=parent_commit, head_commit=commit
+            user=current_owner, base_commit=parent_commit, head_commit=commit
         )
         info.context["comparison"] = comparison
 

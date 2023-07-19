@@ -628,6 +628,7 @@ class FileComparison:
 
 class Comparison(object):
     def __init__(self, user, base_commit, head_commit):
+        # TODO: rename to owner
         self.user = user
         self._base_commit = base_commit
         self._head_commit = head_commit
