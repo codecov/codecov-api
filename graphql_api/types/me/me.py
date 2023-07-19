@@ -103,17 +103,17 @@ def resolve_tracking_data(current_user, _, **kwargs):
 
 @me_bindable.field("termsAgreement")
 @sync_to_async
-def resolve_terms_agreement(current_user: Owner, _, **kwargs) -> Optional[bool]:
+def resolve_terms_agreement(current_owner: Owner, _, **kwargs) -> Optional[bool]:
     try:
-        owner_profile = current_user.profile
+        owner_profile = current_owner.profile
         return owner_profile.terms_agreement
     except OwnerProfile.DoesNotExist:
         return None
 
 
 @me_bindable.field("businessEmail")
-def resolve_terms_agreement(current_user: Owner, _, **kwargs) -> Optional[str]:
-    return current_user.business_email
+def resolve_terms_agreement(current_owner: Owner, _, **kwargs) -> Optional[str]:
+    return current_owner.business_email
 
 
 @me_bindable.field("privateAccess")

@@ -16,18 +16,18 @@ mutation($input: RevokeUserTokenInput!) {
 
 class RevokeUserTokenTestCase(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
-        self.user = OwnerFactory(username="codecov-user")
+        self.owner = OwnerFactory(username="codecov-user")
 
     def test_unauthenticated(self):
         data = self.gql_request(query, variables={"input": {"tokenid": "testing"}})
         assert data["revokeUserToken"]["error"]["__typename"] == "UnauthenticatedError"
 
     def test_authenticated(self):
-        user_token = UserTokenFactory(owner=self.user)
+        user_token = UserTokenFactory(owner=self.owner)
         tokenid = str(user_token.external_id)
         data = self.gql_request(
-            query, user=self.user, variables={"input": {"tokenid": tokenid}}
+            query, owner=self.owner, variables={"input": {"tokenid": tokenid}}
         )
         assert data["revokeUserToken"] == None
-        deleted_user_token = self.user.user_tokens.filter(external_id=tokenid).first()
+        deleted_user_token = self.owner.user_tokens.filter(external_id=tokenid).first()
         assert deleted_user_token is None

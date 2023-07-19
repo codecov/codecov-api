@@ -117,13 +117,13 @@ class PlanSerializer(serializers.Serializer):
     quantity = serializers.IntegerField(required=False)
 
     def validate_value(self, value):
-        request_user = self.context["request"].user
-        plan_values = [plan["value"] for plan in available_plans(request_user)]
+        current_owner = self.context["request"].current_owner
+        plan_values = [plan["value"] for plan in available_plans(current_owner)]
         if value not in plan_values:
             if value in SENTRY_PAID_USER_PLAN_REPRESENTATIONS:
                 log.warning(
                     f"Non-Sentry user attempted to transition to Sentry plan",
-                    extra=dict(owner_id=request_user.pk, plan=value),
+                    extra=dict(owner_id=current_owner.pk, plan=value),
                 )
             raise serializers.ValidationError(
                 f"Invalid value for plan: {value}; " f"must be one of {plan_values}"
@@ -251,8 +251,8 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
         )
 
     def _get_billing(self):
-        current_user = self.context["request"].user
-        return BillingService(requesting_user=current_user)
+        current_owner = self.context["request"].current_owner
+        return BillingService(requesting_user=current_owner)
 
     def get_subscription_detail(self, owner):
         subscription_detail = self._get_billing().get_subscription(owner)
@@ -275,8 +275,8 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
             )
 
             if desired_plan["value"] in SENTRY_PAID_USER_PLAN_REPRESENTATIONS:
-                current_user = self.context["view"].request.user
-                send_sentry_webhook(current_user, instance)
+                current_owner = self.context["view"].request.current_owner
+                send_sentry_webhook(current_owner, instance)
 
             if checkout_session_id_or_none is not None:
                 self.context["checkout_session_id"] = checkout_session_id_or_none
@@ -315,14 +315,14 @@ class UserSerializer(serializers.ModelSerializer):
             ):
                 owner.activate_user(instance)
                 SegmentService().account_activated_user(
-                    current_user_ownerid=self.context["request"].user.ownerid,
+                    current_user_ownerid=self.context["request"].current_owner.ownerid,
                     ownerid_to_activate=instance.ownerid,
                     org_ownerid=owner.ownerid,
                 )
             elif validated_data["activated"] is False:
                 owner.deactivate_user(instance)
                 SegmentService().account_deactivated_user(
-                    current_user_ownerid=self.context["request"].user.ownerid,
+                    current_user_ownerid=self.context["request"].current_owner.ownerid,
                     ownerid_to_deactivate=instance.ownerid,
                     org_ownerid=owner.ownerid,
                 )

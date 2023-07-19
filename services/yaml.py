@@ -17,14 +17,14 @@ class YamlStates(enum.Enum):
     DEFAULT = "default"
 
 
-def fetch_commit_yaml(commit: Commit, user: Owner) -> Optional[Dict]:
+def fetch_commit_yaml(commit: Commit, owner: Owner) -> Optional[Dict]:
     """
     Fetches the codecov.yaml file for a particular commit from the service provider.
-    Service provider API request is made on behalf of the given `user`.
+    Service provider API request is made on behalf of the given `owner`.
     """
     try:
         repository_service = RepoProviderService().get_adapter(
-            user=user, repo=commit.repository
+            owner=owner, repo=commit.repository
         )
         yaml_str = async_to_sync(fetch_current_yaml_from_provider_via_reference)(
             commit.commitid, repository_service
@@ -41,11 +41,11 @@ def fetch_commit_yaml(commit: Commit, user: Owner) -> Optional[Dict]:
 
 @lru_cache()
 # TODO: make this use the Redis cache logic in 'shared' once it's there
-def final_commit_yaml(commit: Commit, user: Owner) -> UserYaml:
+def final_commit_yaml(commit: Commit, owner: Owner) -> UserYaml:
     return UserYaml.get_final_yaml(
         owner_yaml=commit.repository.author.yaml,
         repo_yaml=commit.repository.yaml,
-        commit_yaml=fetch_commit_yaml(commit, user),
+        commit_yaml=fetch_commit_yaml(commit, owner),
     )
 
 

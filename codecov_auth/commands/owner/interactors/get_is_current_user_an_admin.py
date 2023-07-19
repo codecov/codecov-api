@@ -31,23 +31,23 @@ def _is_admin_on_provider(owner, current_user):
 
 class GetIsCurrentUserAnAdminInteractor(BaseInteractor):
     @sync_to_async
-    def execute(self, owner, current_user):
+    def execute(self, owner, current_owner):
         if settings.IS_ENTERPRISE:
-            return self_hosted.is_admin_owner(current_user)
+            return self_hosted.is_admin_owner(current_owner)
         else:
             admins = owner.admins
-            if not hasattr(current_user, "ownerid"):
+            if not hasattr(current_owner, "ownerid"):
                 return False
-            if owner.ownerid == current_user.ownerid:
+            if owner.ownerid == current_owner.ownerid:
                 return True
             else:
                 try:
-                    isAdmin = async_to_sync(_is_admin_on_provider)(owner, current_user)
+                    isAdmin = async_to_sync(_is_admin_on_provider)(owner, current_owner)
                     if isAdmin:
                         # save admin provider in admins list
-                        owner.admins.append(current_user.ownerid)
+                        owner.admins.append(current_owner.ownerid)
                         owner.save()
-                    return isAdmin or (current_user.ownerid in admins)
+                    return isAdmin or (current_owner.ownerid in admins)
                 except Exception as error:
                     print("Error Calling Admin Provider " + repr(error))
                     return False

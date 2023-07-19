@@ -11,9 +11,9 @@ from ..pull import PullCommands
 
 class PullCommandsTest(TransactionTestCase):
     def setUp(self):
-        self.user = OwnerFactory(username="codecov-user")
+        self.owner = OwnerFactory(username="codecov-user")
         self.repository = RepositoryFactory()
-        self.command = PullCommands(self.user, "github")
+        self.command = PullCommands(self.owner, "github")
 
     @patch("core.commands.pull.pull.FetchPullRequestsInteractor.execute")
     def test_fetch_pull_requests_delegate_to_interactor(self, interactor_mock):

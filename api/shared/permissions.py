@@ -16,24 +16,24 @@ log = logging.getLogger(__name__)
 
 class RepositoryPermissionsService:
     @torngit_safe
-    def _fetch_provider_permissions(self, user, repo):
-        can_view, can_edit = RepoAccessors().get_repo_permissions(user, repo)
+    def _fetch_provider_permissions(self, owner, repo):
+        can_view, can_edit = RepoAccessors().get_repo_permissions(owner, repo)
 
         if can_view:
-            user.permission = user.permission or []
-            user.permission.append(repo.repoid)
-            user.save(update_fields=["permission"])
+            owner.permission = owner.permission or []
+            owner.permission.append(repo.repoid)
+            owner.save(update_fields=["permission"])
 
         return can_view, can_edit
 
-    def has_read_permissions(self, user, repo):
+    def has_read_permissions(self, owner, repo):
         return not repo.private or (
-            user.is_authenticated
+            owner is not None
             and (
-                repo.author.ownerid == user.ownerid
-                or user.permission
-                and repo.repoid in user.permission
-                or self._fetch_provider_permissions(user, repo)[0]
+                repo.author.ownerid == owner.ownerid
+                or owner.permission
+                and repo.repoid in owner.permission
+                or self._fetch_provider_permissions(owner, repo)[0]
             )
         )
 
@@ -43,16 +43,22 @@ class RepositoryPermissionsService:
             or self._fetch_provider_permissions(user, repo)[1]
         )
 
-    def user_is_activated(self, user, owner):
-        if user.ownerid == owner.ownerid:
+    def user_is_activated(self, current_owner, owner):
+        if current_owner.ownerid == owner.ownerid:
             return True
         if owner.has_legacy_plan:
             return True
-        if user.organizations is None or owner.ownerid not in user.organizations:
+        if (
+            current_owner.organizations is None
+            or owner.ownerid not in current_owner.organizations
+        ):
             return False
-        if owner.plan_activated_users and user.ownerid in owner.plan_activated_users:
+        if (
+            owner.plan_activated_users
+            and current_owner.ownerid in owner.plan_activated_users
+        ):
             return True
-        return try_auto_activate(owner, user)
+        return try_auto_activate(owner, current_owner)
 
 
 class RepositoryArtifactPermissions(BasePermission):
@@ -74,13 +80,17 @@ class RepositoryArtifactPermissions(BasePermission):
         if view.repo.private:
             user_activated_permissions = (
                 request.user.is_authenticated
-                and self.permissions_service.user_is_activated(request.user, view.owner)
+                and self.permissions_service.user_is_activated(
+                    request.current_owner, view.owner
+                )
             )
         else:
             user_activated_permissions = True
         has_read_permissions = (
             request.method in SAFE_METHODS
-            and self.permissions_service.has_read_permissions(request.user, view.repo)
+            and self.permissions_service.has_read_permissions(
+                request.current_owner, view.repo
+            )
         )
         if has_read_permissions and user_activated_permissions:
             return True
@@ -106,13 +116,15 @@ class ChartPermissions(BasePermission):
     def has_permission(self, request, view):
         log.info(
             f"Coverage chart has repositories {view.repositories}",
-            extra=dict(user=request.user),
+            extra=dict(user=request.current_owner),
         )
         for repo in view.repositories:
             # TODO: this can cause a provider-api request for every repo in the list,
             # can we just rely on our stored read permissions? In fact, it seems like
             # permissioning is built into api.internal.charts.filter.add_simple_filters
-            if not self.permissions_service.has_read_permissions(request.user, repo):
+            if not self.permissions_service.has_read_permissions(
+                request.current_owner, repo
+            ):
                 raise Http404
         return True
 
@@ -125,9 +137,13 @@ class UserIsAdminPermissions(BasePermission):
     """
 
     def has_permission(self, request, view):
-        return request.user.is_authenticated and (
-            view.owner.is_admin(request.user)
-            or self._is_admin_on_provider(request.user, view.owner)
+        return (
+            request.user.is_authenticated
+            and request.current_owner
+            and (
+                view.owner.is_admin(request.current_owner)
+                or self._is_admin_on_provider(request.current_owner, view.owner)
+            )
         )
 
     @torngit_safe
@@ -157,13 +173,17 @@ class MemberOfOrgPermissions(BasePermission):
     """
 
     def has_permission(self, request, view):
-        current_user = request.user
-        owner = view.owner
-        if not current_user.is_authenticated:
+        if not request.user.is_authenticated:
             return False
-        if current_user == owner:
+
+        current_owner = request.current_owner
+        if not current_owner:
+            return False
+
+        owner = view.owner
+        if current_owner == owner:
             return True
-        if owner.ownerid in (current_user.organizations or []):
+        if owner.ownerid in (current_owner.organizations or []):
             return True
         else:
             raise Http404("No Owner matches the given query.")

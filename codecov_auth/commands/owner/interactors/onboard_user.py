@@ -21,20 +21,20 @@ class OnboardUserInteractor(BaseInteractor):
     def validate(self, params):
         if not self.current_user.is_authenticated:
             raise Unauthenticated()
-        if self.current_user.onboarding_completed:
+        if not self.current_owner or self.current_owner.onboarding_completed:
             raise Unauthorized()
         form = OnboardForm(params)
         if not form.is_valid():
             raise ValidationError(form.errors.as_json())
 
     def create_profile(self, params):
-        self.current_user.onboarding_completed = True
-        self.current_user.business_email = params.get("business_email")
-        self.current_user.email = params.get("email")
-        self.current_user.save()
+        self.current_owner.onboarding_completed = True
+        self.current_owner.business_email = params.get("business_email")
+        self.current_owner.email = params.get("email")
+        self.current_owner.save()
 
         OwnerProfile.objects.update_or_create(
-            owner=self.current_user,
+            owner=self.current_owner,
             defaults={
                 "type_projects": params.get("type_projects", []),
                 "goals": params.get("goals", []),
@@ -43,10 +43,10 @@ class OnboardUserInteractor(BaseInteractor):
         )
 
         # refresh in case the profile was already preloaded
-        self.current_user.profile.refresh_from_db()
+        self.current_owner.profile.refresh_from_db()
 
     @sync_to_async
     def execute(self, params):
         self.validate(params)
         self.create_profile(params)
-        return self.current_user
+        return self.current_owner

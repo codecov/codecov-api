@@ -24,7 +24,7 @@ mutation($input: CreateUserTokenInput!) {
 
 class CreateApiTokenTestCase(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
-        self.user = OwnerFactory(username="codecov-user")
+        self.owner = OwnerFactory(username="codecov-user")
 
     def test_unauthenticated(self):
         data = self.gql_request(query, variables={"input": {"name": "test"}})
@@ -33,9 +33,9 @@ class CreateApiTokenTestCase(GraphQLTestHelper, TransactionTestCase):
     def test_authenticated(self):
         name = "test"
         data = self.gql_request(
-            query, user=self.user, variables={"input": {"name": name}}
+            query, owner=self.owner, variables={"input": {"name": name}}
         )
-        user_token = self.user.user_tokens.filter(name=name).first()
+        user_token = self.owner.user_tokens.filter(name=name).first()
         assert user_token
 
         assert data["createUserToken"] == {

@@ -44,7 +44,7 @@ class RegeneratRepositoryTokenTests(GraphQLTestHelper, TransactionTestCase):
         random_user = OwnerFactory(organizations=[self.org.ownerid])
         data = self.gql_request(
             query,
-            user=random_user,
+            owner=random_user,
             variables={
                 "input": {
                     "repoName": "gazebo",
@@ -65,7 +65,7 @@ class RegeneratRepositoryTokenTests(GraphQLTestHelper, TransactionTestCase):
         RepositoryTokenFactory(repository=self.repo, key="random")
         data = self.gql_request(
             query,
-            user=user,
+            owner=user,
             variables={
                 "input": {
                     "owner": "codecov",
@@ -87,7 +87,7 @@ class RegeneratRepositoryTokenTests(GraphQLTestHelper, TransactionTestCase):
         )
         data = self.gql_request(
             query,
-            user=user,
+            owner=user,
             variables={
                 "input": {
                     "owner": "codecov",
@@ -107,7 +107,7 @@ class RegeneratRepositoryTokenTests(GraphQLTestHelper, TransactionTestCase):
         RepositoryTokenFactory(repository=self.repo, key="random", token_type="upload")
         data = self.gql_request(
             query,
-            user=user,
+            owner=user,
             variables={
                 "input": {
                     "owner": "codecov",

@@ -35,7 +35,8 @@ class TestCompareFlagsView(InternalAPITest):
             repository=self.repo,
         )
 
-        self.client.force_login(self.repo.author)
+        self.client.session["current_owner_id"] = self.repo.author.pk
+        self.client.force_login(self.repo.author.user)
 
     def test_compare_flags___success(
         self, diff_totals_mock, read_chunks_mock, git_comparison_mock

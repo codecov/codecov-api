@@ -1,15 +1,12 @@
 from datetime import datetime
-from unittest.mock import Mock, patch
 
 from django.http.cookie import SimpleCookie
-from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
 from shared.torngit import GithubEnterprise
 from shared.torngit.exceptions import TorngitClientGeneralError
 
-from codecov_auth.helpers import decode_token_from_cookie
-from codecov_auth.models import Owner, Session
+from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
 
 
@@ -162,16 +159,8 @@ def test_get_ghe_already_with_code(client, mocker, db, mock_redis, settings):
     mock_redis.setex("oauth-state-abc", 300, "http://localhost:3000/ghe")
     res = client.get(url, {"code": "aaaaaaa", "state": "abc"})
     assert res.status_code == 302
-    assert "github_enterprise-token" in res.cookies
-    assert "github_enterprise-username" in res.cookies
-    token_cookie = res.cookies["github_enterprise-token"]
-    username_cookie = res.cookies["github_enterprise-username"]
-    cookie_token = decode_token_from_cookie(settings.COOKIE_SECRET, token_cookie.value)
-    assert username_cookie.value == "ThiagoCodecov"
-    assert username_cookie.get("domain") == ".simple.site"
-    assert token_cookie.get("domain") == ".simple.site"
-    session = Session.objects.get(token=cookie_token)
-    owner = session.owner
+
+    owner = Owner.objects.get(pk=client.session["current_owner_id"])
     assert owner.username == "ThiagoCodecov"
     assert owner.service_id == "44376991"
     assert owner.email is None
@@ -189,7 +178,7 @@ def test_get_ghe_already_with_code(client, mocker, db, mock_redis, settings):
     assert owner.cache is None
     assert owner.plan == "users-basic"
     assert owner.plan_provider is None
-    assert owner.plan_user_count is 1
+    assert owner.plan_user_count == 1
     assert owner.plan_auto_activate is True
     assert owner.plan_activated_users is None
     assert owner.did_trial is None
@@ -302,16 +291,8 @@ def test_get_ghe_already_with_code_with_email(client, mocker, db, mock_redis, se
     url = reverse("ghe-login")
     res = client.get(url, {"code": "aaaaaaa", "state": "abc"})
     assert res.status_code == 302
-    assert "github_enterprise-token" in res.cookies
-    assert "github_enterprise-username" in res.cookies
-    token_cookie = res.cookies["github_enterprise-token"]
-    username_cookie = res.cookies["github_enterprise-username"]
-    cookie_token = decode_token_from_cookie(settings.COOKIE_SECRET, token_cookie.value)
-    assert username_cookie.value == "ThiagoCodecov"
-    assert username_cookie.get("domain") == ".simple.site"
-    assert token_cookie.get("domain") == ".simple.site"
-    session = Session.objects.get(token=cookie_token)
-    owner = session.owner
+
+    owner = Owner.objects.get(pk=client.session["current_owner_id"])
     assert owner.username == "ThiagoCodecov"
     assert owner.service_id == "44376991"
     assert owner.email == "thiago@codecov.io"
@@ -374,16 +355,8 @@ def test_get_ghe_already_owner_already_exist(client, mocker, db, mock_redis, set
     mock_redis.setex("oauth-state-abc", 300, "http://localhost:3000/ghe")
     res = client.get(url, {"code": "aaaaaaa", "state": "abc"})
     assert res.status_code == 302
-    assert "github_enterprise-token" in res.cookies
-    assert "github_enterprise-username" in res.cookies
-    token_cookie = res.cookies["github_enterprise-token"]
-    username_cookie = res.cookies["github_enterprise-username"]
-    cookie_token = decode_token_from_cookie(settings.COOKIE_SECRET, token_cookie.value)
-    assert username_cookie.value == "ThiagoCodecov"
-    assert username_cookie.get("domain") == ".simple.site"
-    assert token_cookie.get("domain") == ".simple.site"
-    session = Session.objects.get(token=cookie_token)
-    owner = session.owner
+
+    owner = Owner.objects.get(pk=client.session["current_owner_id"])
     assert owner.username == "ThiagoCodecov"
     assert owner.ownerid == old_ownerid
     assert owner.bot is None

@@ -47,7 +47,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         """ % (
             current_org.username
         )
-        data = self.gql_request(query, user=current_org)
+        data = self.gql_request(query, owner=current_org)
         assert data["owner"]["plan"] == {
             "trialStatus": "ONGOING",
             "trialEndDate": "2023-07-03T00:00:00",

@@ -10,9 +10,9 @@ from ..branch import BranchCommands
 
 class BranchCommandsTest(TransactionTestCase):
     def setUp(self):
-        self.user = OwnerFactory(username="codecov-user")
+        self.owner = OwnerFactory(username="codecov-user")
         self.repository = RepositoryFactory()
-        self.command = BranchCommands(self.user, "github")
+        self.command = BranchCommands(self.owner, "github")
 
     @patch("core.commands.branch.branch.FetchBranchInteractor.execute")
     def test_fetch_branch_delegate_to_interactor(self, interactor_mock):
