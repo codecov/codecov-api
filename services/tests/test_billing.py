@@ -9,7 +9,7 @@ from stripe.error import InvalidRequestError
 
 from codecov_auth.models import Service
 from codecov_auth.tests.factories import OwnerFactory
-from plan.constants import PlanNames
+from plan.constants import PlanName
 from services.billing import AbstractPaymentService, BillingService, StripeService
 
 SCHEDULE_RELEASE_OFFSET = 10
@@ -290,7 +290,7 @@ class StripeServiceTests(TestCase):
 
         owner.refresh_from_db()
         assert owner.stripe_subscription_id == None
-        assert owner.plan == PlanNames.BASIC_PLAN_NAME.value
+        assert owner.plan == PlanName.BASIC_PLAN_NAME.value
         assert owner.plan_activated_users == None
         assert owner.plan_user_count == 1
 
@@ -318,7 +318,7 @@ class StripeServiceTests(TestCase):
 
         owner.refresh_from_db()
         assert owner.stripe_subscription_id == None
-        assert owner.plan == PlanNames.BASIC_PLAN_NAME.value
+        assert owner.plan == PlanName.BASIC_PLAN_NAME.value
         assert owner.plan_activated_users == None
         assert owner.plan_user_count == 1
 

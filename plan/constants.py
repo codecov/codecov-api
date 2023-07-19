@@ -1,6 +1,6 @@
 import enum
 import json
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import List, Optional
 
 
@@ -22,7 +22,7 @@ class PlanMarketingName(enum.Enum):
     TRIAL = "Developer"
 
 
-class PlanNames(enum.Enum):
+class PlanName(enum.Enum):
     BASIC_PLAN_NAME = "users-basic"
     TRIAL_PLAN_NAME = "users-trial"
     CODECOV_PRO_MONTHLY = "users-pr-inappm"
@@ -65,7 +65,7 @@ class PlanData:
     """
 
     marketing_name: PlanMarketingName
-    value: PlanNames
+    value: PlanName
     billing_rate: Optional[PlanBillingRate]
     base_unit_price: PlanPrice
     benefits: List[str]
@@ -73,13 +73,13 @@ class PlanData:
     trial_days: Optional[TrialDaysAmount]
 
     def toJSON(self):
-        return json.dumps(self, default=lambda o: o.__dict__)
+        return json.dumps(asdict(self))
 
 
 NON_PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
-    PlanNames.CODECOV_PRO_MONTHLY_LEGACY.value: PlanData(
+    PlanName.CODECOV_PRO_MONTHLY_LEGACY.value: PlanData(
         marketing_name=PlanMarketingName.CODECOV_PRO.value,
-        value=PlanNames.CODECOV_PRO_MONTHLY_LEGACY.value,
+        value=PlanName.CODECOV_PRO_MONTHLY_LEGACY.value,
         billing_rate=PlanBillingRate.MONTHLY.value,
         base_unit_price=PlanPrice.MONTHLY.value,
         benefits=[
@@ -91,9 +91,9 @@ NON_PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
         monthly_uploads_limit=None,
         trial_days=None,
     ),
-    PlanNames.CODECOV_PRO_YEARLY_LEGACY.value: PlanData(
+    PlanName.CODECOV_PRO_YEARLY_LEGACY.value: PlanData(
         marketing_name=PlanMarketingName.CODECOV_PRO.value,
-        value=PlanNames.CODECOV_PRO_YEARLY_LEGACY.value,
+        value=PlanName.CODECOV_PRO_YEARLY_LEGACY.value,
         billing_rate=PlanBillingRate.YEARLY.value,
         base_unit_price=PlanPrice.YEARLY.value,
         benefits=[
@@ -109,9 +109,9 @@ NON_PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
 
 
 PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
-    PlanNames.CODECOV_PRO_MONTHLY.value: PlanData(
+    PlanName.CODECOV_PRO_MONTHLY.value: PlanData(
         marketing_name=PlanMarketingName.CODECOV_PRO.value,
-        value=PlanNames.CODECOV_PRO_MONTHLY.value,
+        value=PlanName.CODECOV_PRO_MONTHLY.value,
         billing_rate=PlanBillingRate.MONTHLY.value,
         base_unit_price=PlanPrice.MONTHLY.value,
         benefits=[
@@ -123,9 +123,9 @@ PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
         monthly_uploads_limit=None,
         trial_days=None,
     ),
-    PlanNames.CODECOV_PRO_YEARLY.value: PlanData(
+    PlanName.CODECOV_PRO_YEARLY.value: PlanData(
         marketing_name=PlanMarketingName.CODECOV_PRO.value,
-        value=PlanNames.CODECOV_PRO_YEARLY.value,
+        value=PlanName.CODECOV_PRO_YEARLY.value,
         billing_rate=PlanBillingRate.YEARLY.value,
         base_unit_price=PlanPrice.YEARLY.value,
         benefits=[
@@ -140,9 +140,9 @@ PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
 }
 
 SENTRY_PAID_USER_PLAN_REPRESENTATIONS = {
-    PlanNames.SENTRY_MONTHLY.value: PlanData(
+    PlanName.SENTRY_MONTHLY.value: PlanData(
         marketing_name=PlanMarketingName.SENTRY_PRO.value,
-        value=PlanNames.SENTRY_MONTHLY.value,
+        value=PlanName.SENTRY_MONTHLY.value,
         billing_rate=PlanBillingRate.MONTHLY.value,
         base_unit_price=PlanPrice.MONTHLY.value,
         benefits=[
@@ -155,9 +155,9 @@ SENTRY_PAID_USER_PLAN_REPRESENTATIONS = {
         trial_days=TrialDaysAmount.CODECOV_SENTRY.value,
         monthly_uploads_limit=None,
     ),
-    PlanNames.SENTRY_YEARLY.value: PlanData(
+    PlanName.SENTRY_YEARLY.value: PlanData(
         marketing_name=PlanMarketingName.SENTRY_PRO.value,
-        value=PlanNames.SENTRY_YEARLY.value,
+        value=PlanName.SENTRY_YEARLY.value,
         billing_rate=PlanBillingRate.YEARLY.value,
         base_unit_price=PlanPrice.YEARLY.value,
         benefits=[
@@ -174,9 +174,9 @@ SENTRY_PAID_USER_PLAN_REPRESENTATIONS = {
 
 # TODO: Update these values
 ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS = {
-    PlanNames.ENTERPRISE_CLOUD_MONTHLY.value: PlanData(
+    PlanName.ENTERPRISE_CLOUD_MONTHLY.value: PlanData(
         marketing_name=PlanMarketingName.ENTERPRISE_CLOUD.value,
-        value=PlanNames.ENTERPRISE_CLOUD_MONTHLY.value,
+        value=PlanName.ENTERPRISE_CLOUD_MONTHLY.value,
         billing_rate=PlanBillingRate.MONTHLY.value,
         base_unit_price=PlanPrice.MONTHLY.value,
         benefits=[
@@ -188,9 +188,9 @@ ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS = {
         trial_days=None,
         monthly_uploads_limit=None,
     ),
-    PlanNames.ENTERPRISE_CLOUD_YEARLY.value: PlanData(
+    PlanName.ENTERPRISE_CLOUD_YEARLY.value: PlanData(
         marketing_name=PlanMarketingName.ENTERPRISE_CLOUD.value,
-        value=PlanNames.ENTERPRISE_CLOUD_YEARLY.value,
+        value=PlanName.ENTERPRISE_CLOUD_YEARLY.value,
         billing_rate=PlanBillingRate.YEARLY.value,
         base_unit_price=PlanPrice.YEARLY.value,
         benefits=[
@@ -205,9 +205,9 @@ ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS = {
 }
 
 GHM_PLAN_REPRESENTATION = {
-    PlanNames.GHM_PLAN_NAME.value: PlanData(
+    PlanName.GHM_PLAN_NAME.value: PlanData(
         marketing_name=PlanMarketingName.GITHUB_MARKETPLACE.value,
-        value=PlanNames.GHM_PLAN_NAME.value,
+        value=PlanName.GHM_PLAN_NAME.value,
         billing_rate=None,
         base_unit_price=PlanPrice.GHM_PRICE.value,
         benefits=[
@@ -221,9 +221,9 @@ GHM_PLAN_REPRESENTATION = {
 }
 
 FREE_PLAN_REPRESENTATIONS = {
-    PlanNames.FREE_PLAN_NAME.value: PlanData(
+    PlanName.FREE_PLAN_NAME.value: PlanData(
         marketing_name=PlanMarketingName.FREE.value,
-        value=PlanNames.FREE_PLAN_NAME.value,
+        value=PlanName.FREE_PLAN_NAME.value,
         billing_rate=None,
         base_unit_price=PlanPrice.CODECOV_FREE.value,
         benefits=[
@@ -234,9 +234,9 @@ FREE_PLAN_REPRESENTATIONS = {
         trial_days=None,
         monthly_uploads_limit=None,
     ),
-    PlanNames.BASIC_PLAN_NAME.value: PlanData(
+    PlanName.BASIC_PLAN_NAME.value: PlanData(
         marketing_name=PlanMarketingName.BASIC.value,
-        value=PlanNames.BASIC_PLAN_NAME.value,
+        value=PlanName.BASIC_PLAN_NAME.value,
         billing_rate=None,
         base_unit_price=PlanPrice.CODECOV_BASIC.value,
         benefits=[
@@ -250,9 +250,9 @@ FREE_PLAN_REPRESENTATIONS = {
 }
 
 TRIAL_PLAN_REPRESENTATION = {
-    PlanNames.TRIAL_PLAN_NAME.value: PlanData(
+    PlanName.TRIAL_PLAN_NAME.value: PlanData(
         marketing_name=PlanMarketingName.TRIAL.value,
-        value=PlanNames.TRIAL_PLAN_NAME.value,
+        value=PlanName.TRIAL_PLAN_NAME.value,
         billing_rate=None,
         base_unit_price=PlanPrice.CODECOV_TRIAL.value,
         benefits=[
@@ -283,22 +283,10 @@ USER_PLAN_REPRESENTATIONS = {
 }
 
 PLANS_THAT_CAN_TRIAL = [
-    PlanNames.BASIC_PLAN_NAME.value,
-    PlanNames.CODECOV_PRO_MONTHLY.value,
-    PlanNames.CODECOV_PRO_YEARLY.value,
-    PlanNames.SENTRY_MONTHLY.value,
-    PlanNames.SENTRY_YEARLY.value,
-    PlanNames.TRIAL_PLAN_NAME.value,
+    PlanName.BASIC_PLAN_NAME.value,
+    PlanName.CODECOV_PRO_MONTHLY.value,
+    PlanName.CODECOV_PRO_YEARLY.value,
+    PlanName.SENTRY_MONTHLY.value,
+    PlanName.SENTRY_YEARLY.value,
+    PlanName.TRIAL_PLAN_NAME.value,
 ]
-
-UNSUPPORTED_PLAN = (
-    PlanData(
-        marketing_name=None,
-        value=None,
-        billing_rate=None,
-        base_unit_price=None,
-        benefits=None,
-        trial_days=None,
-        monthly_uploads_limit=None,
-    ),
-)

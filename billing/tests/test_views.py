@@ -11,7 +11,7 @@ from rest_framework.test import APIRequestFactory, APITestCase
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
-from plan.constants import PlanNames, TrialDaysAmount
+from plan.constants import PlanName, TrialDaysAmount
 
 from ..constants import StripeHTTPHeaders
 
@@ -154,7 +154,7 @@ class StripeWebhookHandlerTests(APITestCase):
         )
         self.owner.refresh_from_db()
 
-        assert self.owner.plan == PlanNames.BASIC_PLAN_NAME.value
+        assert self.owner.plan == PlanName.BASIC_PLAN_NAME.value
         assert self.owner.plan_user_count == 1
         assert self.owner.plan_activated_users == None
         assert self.owner.stripe_subscription_id == None
@@ -348,7 +348,7 @@ class StripeWebhookHandlerTests(APITestCase):
     def test_customer_subscription_updated_does_not_change_subscription_if_not_paid_user_plan(
         self, upm_mock
     ):
-        self.owner.plan = PlanNames.BASIC_PLAN_NAME.value
+        self.owner.plan = None
         self.owner.plan_user_count = 0
         self.owner.plan_auto_activate = False
         self.owner.save()
@@ -372,7 +372,7 @@ class StripeWebhookHandlerTests(APITestCase):
         )
 
         self.owner.refresh_from_db()
-        assert self.owner.plan == PlanNames.BASIC_PLAN_NAME.value
+        assert self.owner.plan == None
         assert self.owner.plan_user_count == 0
         assert self.owner.plan_auto_activate == False
         upm_mock.assert_called_once_with(self.owner, "pm_1LhiRsGlVGuVgOrkQguJXdeV")
@@ -443,7 +443,7 @@ class StripeWebhookHandlerTests(APITestCase):
         )
         self.owner.refresh_from_db()
 
-        assert self.owner.plan == PlanNames.BASIC_PLAN_NAME.value
+        assert self.owner.plan == PlanName.BASIC_PLAN_NAME.value
         assert self.owner.plan_user_count == 1
         assert self.owner.plan_auto_activate == False
         assert self.owner.stripe_subscription_id == None

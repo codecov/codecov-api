@@ -6,12 +6,11 @@ from django.forms import ValidationError
 
 from codecov_auth.models import Owner
 from plan.constants import (
-    UNSUPPORTED_PLAN,
     USER_PLAN_REPRESENTATIONS,
     MonthlyUploadLimits,
     PlanBillingRate,
     PlanMarketingName,
-    PlanNames,
+    PlanName,
     PlanPrice,
     TrialDaysAmount,
     TrialStatus,
@@ -36,11 +35,11 @@ class PlanService:
         self.current_org = current_org
         # TODO: how to account for super archaic plan names like "v4-10y"
         if self.current_org.plan not in USER_PLAN_REPRESENTATIONS:
-            self.plan_data = UNSUPPORTED_PLAN
+            self.plan_data = None
         else:
             self.plan_data = USER_PLAN_REPRESENTATIONS[self.current_org.plan]
 
-    def update_plan(self, name: PlanNames, user_count: int) -> None:
+    def update_plan(self, name: PlanName, user_count: int) -> None:
         if name in USER_PLAN_REPRESENTATIONS:
             self.current_org.plan = name
             self.current_org.plan_user_count = user_count
@@ -49,14 +48,14 @@ class PlanService:
 
     def set_default_plan_data(self) -> None:
         log.info(f"Setting plan to users-basic for owner {self.current_org.ownerid}")
-        self.current_org.plan = PlanNames.BASIC_PLAN_NAME.value
+        self.current_org.plan = PlanName.BASIC_PLAN_NAME.value
         self.current_org.plan_activated_users = None
         self.current_org.plan_user_count = 1
         self.current_org.stripe_subscription_id = None
         self.current_org.save()
 
     @property
-    def plan_name(self) -> PlanNames:
+    def plan_name(self) -> PlanName:
         return self.current_org.plan
 
     @property
@@ -112,9 +111,8 @@ class PlanService:
         self.current_org.plan_auto_activate = True
         self.current_org.save()
         # TODO: uncomment these for ticket adding trial logic
-        # self.current_org.plan = PlanNames.TRIAL_PLAN_NAME.value
+        # self.current_org.plan = PlanName.TRIAL_PLAN_NAME.value
         # self.current_org.trial_status = TrialStatus.ONGOING
-
         # notifier_service.trial_started(
         #     org_ownerid=self.current_org.ownerid,
         #     trial_details={

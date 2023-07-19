@@ -8,7 +8,7 @@ from plan.constants import (
     MonthlyUploadLimits,
     PlanBillingRate,
     PlanMarketingName,
-    PlanNames,
+    PlanName,
     PlanPrice,
     TrialStatus,
 )
@@ -44,7 +44,7 @@ def resolve_marketing_name(plan_service: PlanService, info) -> PlanMarketingName
 
 @plan_bindable.field("planName")
 @convert_kwargs_to_snake_case
-def resolve_plan_name(plan_service: PlanService, info) -> PlanNames:
+def resolve_plan_name(plan_service: PlanService, info) -> PlanName:
     return plan_service.plan_name
 
 

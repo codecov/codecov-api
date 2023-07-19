@@ -2,6 +2,7 @@ import binascii
 import logging
 import os
 import uuid
+from dataclasses import asdict
 from datetime import datetime
 from hashlib import md5
 
@@ -20,7 +21,7 @@ from codecov_auth.constants import (
 from codecov_auth.helpers import get_gitlab_url
 from core.managers import RepositoryManager
 from core.models import DateTimeWithoutTZField, Repository
-from plan.constants import USER_PLAN_REPRESENTATIONS, PlanNames
+from plan.constants import USER_PLAN_REPRESENTATIONS, PlanName
 from utils.config import get_config
 
 from .managers import OwnerManager
@@ -105,7 +106,7 @@ class Owner(models.Model):
     cache = models.JSONField(null=True)
     # Really an ENUM in db
     plan = models.TextField(
-        null=True, default=PlanNames.BASIC_PLAN_NAME.value, blank=True
+        null=True, default=PlanName.BASIC_PLAN_NAME.value, blank=True
     )
     plan_provider = models.TextField(
         null=True, choices=PlanProviders.choices, blank=True
@@ -381,7 +382,7 @@ class Owner(models.Model):
     @property
     def pretty_plan(self):
         if self.plan in USER_PLAN_REPRESENTATIONS:
-            plan_details = USER_PLAN_REPRESENTATIONS[self.plan].__dict__.copy()
+            plan_details = asdict(USER_PLAN_REPRESENTATIONS[self.plan])
 
             # update with quantity they've purchased
             # allows api users to update the quantity

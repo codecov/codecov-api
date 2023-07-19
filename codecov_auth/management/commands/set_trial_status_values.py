@@ -9,7 +9,7 @@ from graphql_api.types import plan
 from plan.constants import (
     PLANS_THAT_CAN_TRIAL,
     SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
-    PlanNames,
+    PlanName,
     TrialStatus,
 )
 
@@ -28,15 +28,14 @@ class Command(BaseCommand):
         if options.get("starting_ownerid", {}):
             owners = owners.filter(pk__gte=options["starting_ownerid"])
 
-        owners_list: List[Owner] = list(owners)
-        for owner in owners_list:
+        for owner in owners.iterator():
             plan_name = owner.plan
             trial_start_date = owner.trial_start_date
             trial_end_date = owner.trial_end_date
             stripe_customer_id = owner.stripe_customer_id
 
             if (
-                plan_name == PlanNames.BASIC_PLAN_NAME.value
+                plan_name == PlanName.BASIC_PLAN_NAME.value
                 and trial_start_date is None
                 and trial_end_date is None
                 and not stripe_customer_id
@@ -57,7 +56,7 @@ class Command(BaseCommand):
                 and trial_end_date
                 and datetime.utcnow() > trial_end_date
             ) or (
-                plan_name == PlanNames.BASIC_PLAN_NAME.value
+                plan_name == PlanName.BASIC_PLAN_NAME.value
                 and trial_start_date
                 and trial_end_date
             ):

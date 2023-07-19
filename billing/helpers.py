@@ -12,6 +12,7 @@ from plan.constants import (
     FREE_PLAN_REPRESENTATIONS,
     PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
     SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
+    PlanData,
 )
 
 
@@ -26,7 +27,7 @@ def available_plans(user: Union[Owner, AnonymousUser]) -> List[dict]:
     Returns all plan representations available to the given owner.
     """
     # these are available to everyone
-    plans = []
+    plans: List[PlanData] = []
     plans += list(FREE_PLAN_REPRESENTATIONS.values())
     plans += list(PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values())
 

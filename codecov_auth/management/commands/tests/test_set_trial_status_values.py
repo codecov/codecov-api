@@ -7,7 +7,7 @@ from freezegun import freeze_time
 from codecov_auth.management.commands.set_trial_status_values import Command
 from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
-from plan.constants import PlanNames, TrialStatus
+from plan.constants import PlanName, TrialStatus
 
 
 @freeze_time("2023-07-17T00:00:00")
@@ -22,7 +22,7 @@ class OwnerCommandTestCase(TestCase):
         self.not_started_owner = OwnerFactory(
             username="one",
             service="github",
-            plan=PlanNames.BASIC_PLAN_NAME.value,
+            plan=PlanName.BASIC_PLAN_NAME.value,
             trial_start_date=None,
             trial_end_date=None,
             trial_status=None,
@@ -32,7 +32,7 @@ class OwnerCommandTestCase(TestCase):
         self.ongoing_owner = OwnerFactory(
             username="two",
             service="github",
-            plan=PlanNames.SENTRY_MONTHLY.value,
+            plan=PlanName.SENTRY_MONTHLY.value,
             trial_start_date=now,
             trial_end_date=later,
             trial_status=None,
@@ -41,7 +41,7 @@ class OwnerCommandTestCase(TestCase):
         self.expired_owner = OwnerFactory(
             username="three",
             service="github",
-            plan=PlanNames.SENTRY_MONTHLY.value,
+            plan=PlanName.SENTRY_MONTHLY.value,
             trial_start_date=much_before,
             trial_end_date=yesterday,
             trial_status=None,
@@ -53,7 +53,7 @@ class OwnerCommandTestCase(TestCase):
         self.previously_paid_customer = OwnerFactory(
             username="five",
             service="github",
-            plan=PlanNames.BASIC_PLAN_NAME.value,
+            plan=PlanName.BASIC_PLAN_NAME.value,
             stripe_customer_id="test-cus-123",
             stripe_subscription_id="test-sub-456",
             trial_start_date=None,

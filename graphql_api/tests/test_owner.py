@@ -9,7 +9,7 @@ from freezegun import freeze_time
 from codecov_auth.models import OwnerProfile
 from codecov_auth.tests.factories import GetAdminProviderAdapter, OwnerFactory
 from core.tests.factories import CommitFactory, OwnerFactory, RepositoryFactory
-from plan.constants import PlanNames
+from plan.constants import PlanName
 from reports.tests.factories import CommitReportFactory, UploadFactory
 
 from .helper import GraphQLTestHelper, paginate_connection
@@ -251,7 +251,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         }
         """
         repository = RepositoryFactory.create(
-            author__plan=PlanNames.BASIC_PLAN_NAME.value, author=self.user
+            author__plan=PlanName.BASIC_PLAN_NAME.value, author=self.user
         )
         first_commit = CommitFactory.create(repository=repository)
         first_report = CommitReportFactory.create(commit=first_commit)

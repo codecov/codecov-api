@@ -6,7 +6,7 @@ from freezegun import freeze_time
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import OwnerFactory
-from plan.constants import PlanNames
+from plan.constants import PlanName
 
 from .helper import GraphQLTestHelper
 
@@ -25,7 +25,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         current_org = OwnerFactory(
             username="random-plan-user",
             service="github",
-            plan=PlanNames.TRIAL_PLAN_NAME.value,
+            plan=PlanName.TRIAL_PLAN_NAME.value,
             trial_start_date=timezone.now(),
             trial_end_date=timezone.now() + timedelta(days=14),
         )
