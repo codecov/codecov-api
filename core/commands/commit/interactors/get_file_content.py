@@ -10,7 +10,7 @@ class GetFileContentInteractor(BaseInteractor):
     async def get_file_from_service(self, commit, path):
         try:
             repository_service = RepoProviderService().get_adapter(
-                user=self.current_owner, repo=commit.repository
+                owner=self.current_owner, repo=commit.repository
             )
             content = await repository_service.get_source(path, commit.commitid)
             return content.get("content").decode("utf-8")
