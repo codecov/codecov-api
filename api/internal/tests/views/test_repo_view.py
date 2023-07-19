@@ -1101,7 +1101,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         )
 
     @patch("services.archive.ArchiveService.read_chunks", lambda obj, _: "")
-    @patch("reports.models.ArchiveService")
+    @patch("utils.model_utils.ArchiveService")
     def test_retrieve_returns_latest_commit_data_report_details_from_storage(
         self, mocker_archive_service, mocked_get_permissions
     ):
