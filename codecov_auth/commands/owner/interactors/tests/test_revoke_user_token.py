@@ -17,15 +17,15 @@ def get_user_token(external_id):
 
 class RevokeUserTokenInteractorTest(TransactionTestCase):
     def setUp(self):
-        self.user = OwnerFactory(username="codecov-user")
-        self.user_token = UserTokenFactory(owner=self.user)
+        self.owner = OwnerFactory(username="codecov-user")
+        self.user_token = UserTokenFactory(owner=self.owner)
 
     async def test_unauthenticated(self):
         with pytest.raises(Unauthenticated):
-            await RevokeUserTokenInteractor(AnonymousUser(), "github").execute(123)
+            await RevokeUserTokenInteractor(None, "github").execute(123)
 
     async def test_revoke_user_token(self):
-        await RevokeUserTokenInteractor(self.user, "github").execute(
+        await RevokeUserTokenInteractor(self.owner, "github").execute(
             self.user_token.external_id
         )
         with pytest.raises(UserToken.DoesNotExist):

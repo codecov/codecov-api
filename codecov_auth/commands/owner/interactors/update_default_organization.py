@@ -18,8 +18,8 @@ class UpdateDefaultOrganizationInteractor(BaseInteractor):
             return
 
         if (
-            default_org.ownerid not in self.current_user.organizations
-            and default_org.ownerid != self.current_user.ownerid
+            default_org.ownerid not in self.current_owner.organizations
+            and default_org.ownerid != self.current_owner.ownerid
         ):
             raise ValidationError(
                 "Organization does not belong in current user's organization list"
@@ -27,7 +27,7 @@ class UpdateDefaultOrganizationInteractor(BaseInteractor):
 
     def update_default_organization(self, default_org: Optional[Owner]):
         owner_profile, _ = OwnerProfile.objects.get_or_create(
-            owner_id=self.current_user.ownerid
+            owner_id=self.current_owner.ownerid
         )
         owner_profile.default_org = default_org
         return owner_profile.save()

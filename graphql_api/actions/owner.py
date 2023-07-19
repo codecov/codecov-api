@@ -22,5 +22,5 @@ def get_owner_login_sessions(current_user):
     return current_user.session_set.filter(type="login").all()
 
 
-def get_user_tokens(user: Owner):
-    return user.user_tokens.all()
+def get_user_tokens(owner: Owner):
+    return owner.user_tokens.all()

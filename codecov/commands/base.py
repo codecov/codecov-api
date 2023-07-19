@@ -1,11 +1,16 @@
+from django.contrib.auth.models import AnonymousUser
+
+from codecov_auth.models import Owner
+
+
 class BaseCommand:
-    def __init__(self, current_user, service):
-        self.current_user = current_user
+    def __init__(self, current_owner: Owner, service: str):
+        self.current_owner = current_owner
         self.service = service
         self.executor = None
 
     def get_interactor(self, InteractorKlass):
-        return InteractorKlass(self.current_user, self.service)
+        return InteractorKlass(self.current_owner, self.service)
 
     def get_command(self, namespace):
         """
@@ -21,6 +26,9 @@ class BaseCommand:
 
 
 class BaseInteractor:
-    def __init__(self, current_user, service):
-        self.current_user = current_user
+    def __init__(self, current_owner: Owner, service: str):
+        self.current_owner = current_owner
         self.service = service
+        self.current_user = AnonymousUser()
+        if self.current_owner:
+            self.current_user = self.current_owner.user

@@ -9,8 +9,8 @@ from ..owner import OwnerCommands
 
 class OwnerCommandsTest(TransactionTestCase):
     def setUp(self):
-        self.user = OwnerFactory(username="codecov-user")
-        self.command = OwnerCommands(self.user, "github")
+        self.owner = OwnerFactory(username="codecov-user")
+        self.command = OwnerCommands(self.owner, "github")
 
     @patch("codecov_auth.commands.owner.owner.CreateApiTokenInteractor.execute")
     def test_create_api_token_delegate_to_interactor(self, interactor_mock):

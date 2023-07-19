@@ -33,7 +33,7 @@ class Migration(migrations.Migration):
                         db_column="ownerid",
                         on_delete=django.db.models.deletion.CASCADE,
                         related_name="organization_tokens",
-                        to=settings.AUTH_USER_MODEL,
+                        to="codecov_auth.owner",
                     ),
                 ),
             ],

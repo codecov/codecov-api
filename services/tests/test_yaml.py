@@ -22,7 +22,7 @@ class YamlServiceTest(TransactionTestCase):
           notify:
             require_ci_to_pass: no
         """
-        config = yaml.final_commit_yaml(self.commit, AnonymousUser())
+        config = yaml.final_commit_yaml(self.commit, None)
         assert config["codecov"]["require_ci_to_pass"] is False
 
     @patch("services.yaml.fetch_current_yaml_from_provider_via_reference")
@@ -30,5 +30,5 @@ class YamlServiceTest(TransactionTestCase):
         mock_fetch_yaml.side_effect = TorngitObjectNotFoundError(
             response_data=404, message="not found"
         )
-        config = yaml.final_commit_yaml(self.commit, AnonymousUser())
+        config = yaml.final_commit_yaml(self.commit, None)
         assert config["codecov"]["require_ci_to_pass"] is True

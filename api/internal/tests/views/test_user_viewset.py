@@ -12,30 +12,32 @@ from api.internal.tests.test_utils import GetAdminProviderAdapter
 from codecov_auth.tests.factories import OwnerFactory, SessionFactory
 from core.models import Pull, Repository
 from core.tests.factories import PullFactory, RepositoryFactory
+from utils.test_utils import APIClient
 
 
 class UserViewSetTests(APITransactionTestCase):
     def setUp(self):
         non_org_active_user = OwnerFactory()
-        self.owner = OwnerFactory(
+        self.current_owner = OwnerFactory(
             plan="users-free",
             plan_user_count=5,
             plan_activated_users=[non_org_active_user.ownerid],
         )
         self.users = [
             non_org_active_user,
-            OwnerFactory(organizations=[self.owner.ownerid]),
-            OwnerFactory(organizations=[self.owner.ownerid]),
-            OwnerFactory(organizations=[self.owner.ownerid]),
+            OwnerFactory(organizations=[self.current_owner.ownerid]),
+            OwnerFactory(organizations=[self.current_owner.ownerid]),
+            OwnerFactory(organizations=[self.current_owner.ownerid]),
         ]
 
-        self.client.force_login(user=self.owner)
+        self.client = APIClient()
+        self.client.force_login_owner(self.current_owner)
 
     def _list(self, kwargs={}, query_params={}):
         if not kwargs:
             kwargs = {
-                "service": self.owner.service,
-                "owner_username": self.owner.username,
+                "service": self.current_owner.service,
+                "owner_username": self.current_owner.username,
             }
         return self.client.get(reverse("users-list", kwargs=kwargs), data=query_params)
 
@@ -49,7 +51,7 @@ class UserViewSetTests(APITransactionTestCase):
             {
                 "name": user.name,
                 "is_admin": False,
-                "activated": user.ownerid in self.owner.plan_activated_users,
+                "activated": user.ownerid in self.current_owner.plan_activated_users,
                 "username": user.username,
                 "email": user.email,
                 "ownerid": user.ownerid,
@@ -61,8 +63,8 @@ class UserViewSetTests(APITransactionTestCase):
         self.assertCountEqual(response.data["results"], expected)
 
     def test_list_sets_activated(self):
-        self.owner.plan_activated_users = [self.users[0].ownerid]
-        self.owner.save()
+        self.current_owner.plan_activated_users = [self.users[0].ownerid]
+        self.current_owner.save()
 
         response = self._list()
 
@@ -79,8 +81,8 @@ class UserViewSetTests(APITransactionTestCase):
         }
 
     def test_list_sets_is_admin(self):
-        self.owner.admins = [self.users[1].ownerid]
-        self.owner.save()
+        self.current_owner.admins = [self.users[1].ownerid]
+        self.current_owner.save()
 
         response = self._list()
 
@@ -97,8 +99,8 @@ class UserViewSetTests(APITransactionTestCase):
         }
 
     def test_list_can_filter_by_activated(self):
-        self.owner.plan_activated_users = [self.users[0].ownerid]
-        self.owner.save()
+        self.current_owner.plan_activated_users = [self.users[0].ownerid]
+        self.current_owner.save()
 
         response = self._list(query_params={"activated": True})
 
@@ -117,8 +119,8 @@ class UserViewSetTests(APITransactionTestCase):
         ]
 
     def test_list_can_filter_by_is_admin(self):
-        self.owner.admins = [self.users[1].ownerid]
-        self.owner.save()
+        self.current_owner.admins = [self.users[1].ownerid]
+        self.current_owner.save()
 
         response = self._list(query_params={"is_admin": True})
 
@@ -372,8 +374,8 @@ class UserViewSetTests(APITransactionTestCase):
     def test_patch_with_ownerid(self):
         response = self._patch(
             kwargs={
-                "service": self.owner.service,
-                "owner_username": self.owner.username,
+                "service": self.current_owner.service,
+                "owner_username": self.current_owner.username,
                 "user_username_or_ownerid": self.users[0].ownerid,
             },
             data={"activated": True},
@@ -394,8 +396,8 @@ class UserViewSetTests(APITransactionTestCase):
     def test_patch_can_set_activated_to_true(self):
         response = self._patch(
             kwargs={
-                "service": self.owner.service,
-                "owner_username": self.owner.username,
+                "service": self.current_owner.service,
+                "owner_username": self.current_owner.username,
                 "user_username_or_ownerid": self.users[0].username,
             },
             data={"activated": True},
@@ -413,18 +415,18 @@ class UserViewSetTests(APITransactionTestCase):
             "last_pull_timestamp": None,
         }
 
-        self.owner.refresh_from_db()
-        assert self.users[0].ownerid in self.owner.plan_activated_users
+        self.current_owner.refresh_from_db()
+        assert self.users[0].ownerid in self.current_owner.plan_activated_users
 
     def test_patch_can_set_activated_to_false(self):
         # setup activated user
-        self.owner.plan_activated_users = [self.users[1].ownerid]
-        self.owner.save()
+        self.current_owner.plan_activated_users = [self.users[1].ownerid]
+        self.current_owner.save()
 
         response = self._patch(
             kwargs={
-                "service": self.owner.service,
-                "owner_username": self.owner.username,
+                "service": self.current_owner.service,
+                "owner_username": self.current_owner.username,
                 "user_username_or_ownerid": self.users[1].username,
             },
             data={"activated": False},
@@ -442,8 +444,8 @@ class UserViewSetTests(APITransactionTestCase):
             "last_pull_timestamp": None,
         }
 
-        self.owner.refresh_from_db()
-        assert self.users[1].ownerid not in self.owner.plan_activated_users
+        self.current_owner.refresh_from_db()
+        assert self.users[1].ownerid not in self.current_owner.plan_activated_users
 
     @patch("services.segment.SegmentService.account_deactivated_user")
     @patch("services.segment.SegmentService.account_activated_user")
@@ -452,40 +454,40 @@ class UserViewSetTests(APITransactionTestCase):
     ):
         response = self._patch(
             kwargs={
-                "service": self.owner.service,
-                "owner_username": self.owner.username,
+                "service": self.current_owner.service,
+                "owner_username": self.current_owner.username,
                 "user_username_or_ownerid": self.users[0].username,
             },
             data={"activated": True},
         )
 
         activated_event_mock.assert_called_once_with(
-            current_user_ownerid=self.owner.ownerid,
+            current_user_ownerid=self.current_owner.ownerid,
             ownerid_to_activate=self.users[0].ownerid,
-            org_ownerid=self.owner.ownerid,
+            org_ownerid=self.current_owner.ownerid,
         )
 
         response = self._patch(
             kwargs={
-                "service": self.owner.service,
-                "owner_username": self.owner.username,
+                "service": self.current_owner.service,
+                "owner_username": self.current_owner.username,
                 "user_username_or_ownerid": self.users[0].username,
             },
             data={"activated": False},
         )
 
         deactivated_event_mock.assert_called_once_with(
-            current_user_ownerid=self.owner.ownerid,
+            current_user_ownerid=self.current_owner.ownerid,
             ownerid_to_deactivate=self.users[0].ownerid,
-            org_ownerid=self.owner.ownerid,
+            org_ownerid=self.current_owner.ownerid,
         )
 
     @patch("codecov_auth.models.Owner.can_activate_user", lambda self, user: False)
     def test_patch_returns_403_if_cannot_activate_user(self):
         response = self._patch(
             kwargs={
-                "service": self.owner.service,
-                "owner_username": self.owner.username,
+                "service": self.current_owner.service,
+                "owner_username": self.current_owner.username,
                 "user_username_or_ownerid": self.users[0].username,
             },
             data={"activated": True},
@@ -496,8 +498,8 @@ class UserViewSetTests(APITransactionTestCase):
     def test_patch_can_set_is_admin_to_true(self):
         response = self._patch(
             kwargs={
-                "service": self.owner.service,
-                "owner_username": self.owner.username,
+                "service": self.current_owner.service,
+                "owner_username": self.current_owner.username,
                 "user_username_or_ownerid": self.users[2].username,
             },
             data={"is_admin": True},
@@ -515,17 +517,17 @@ class UserViewSetTests(APITransactionTestCase):
             "last_pull_timestamp": None,
         }
 
-        self.owner.refresh_from_db()
-        assert self.users[2].ownerid in self.owner.admins
+        self.current_owner.refresh_from_db()
+        assert self.users[2].ownerid in self.current_owner.admins
 
     def test_patch_can_set_is_admin_to_false(self):
-        self.owner.admins = [self.users[2].ownerid]
-        self.owner.save()
+        self.current_owner.admins = [self.users[2].ownerid]
+        self.current_owner.save()
 
         response = self._patch(
             kwargs={
-                "service": self.owner.service,
-                "owner_username": self.owner.username,
+                "service": self.current_owner.service,
+                "owner_username": self.current_owner.username,
                 "user_username_or_ownerid": self.users[2].username,
             },
             data={"is_admin": False},
@@ -543,5 +545,5 @@ class UserViewSetTests(APITransactionTestCase):
             "last_pull_timestamp": None,
         }
 
-        self.owner.refresh_from_db()
-        assert self.users[2].ownerid not in self.owner.admins
+        self.current_owner.refresh_from_db()
+        assert self.users[2].ownerid not in self.current_owner.admins

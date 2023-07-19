@@ -9,8 +9,7 @@ from django.utils import timezone
 from shared.torngit import Github
 from shared.torngit.exceptions import TorngitClientGeneralError
 
-from codecov_auth.helpers import decode_token_from_cookie
-from codecov_auth.models import Owner, Session
+from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
 from codecov_auth.views.github import GithubLoginView
 
@@ -139,16 +138,8 @@ def test_get_github_already_with_code(client, mocker, db, mock_redis, settings):
     mock_redis.setex("oauth-state-abc", 300, "http://localhost:3000/gh")
     res = client.get(url, {"code": "aaaaaaa", "state": "abc"})
     assert res.status_code == 302
-    assert "github-token" in res.cookies
-    assert "github-username" in res.cookies
-    token_cookie = res.cookies["github-token"]
-    username_cookie = res.cookies["github-username"]
-    cookie_token = decode_token_from_cookie(settings.COOKIE_SECRET, token_cookie.value)
-    assert username_cookie.value == "ThiagoCodecov"
-    assert username_cookie.get("domain") == ".simple.site"
-    assert token_cookie.get("domain") == ".simple.site"
-    session = Session.objects.get(token=cookie_token)
-    owner = session.owner
+
+    owner = Owner.objects.get(pk=client.session["current_owner_id"])
     assert owner.username == "ThiagoCodecov"
     assert owner.service_id == "44376991"
     assert owner.email is None
@@ -166,7 +157,7 @@ def test_get_github_already_with_code(client, mocker, db, mock_redis, settings):
     assert owner.cache is None
     assert owner.plan == "users-basic"
     assert owner.plan_provider is None
-    assert owner.plan_user_count is 1
+    assert owner.plan_user_count == 1
     assert owner.plan_auto_activate is True
     assert owner.plan_activated_users is None
     assert owner.did_trial is None
@@ -206,8 +197,8 @@ def test_get_github_already_with_code_github_error(
     url = reverse("github-login")
     res = client.get(url, {"code": "aaaaaaa", "state": "abc"})
     assert res.status_code == 302
-    assert "github-token" not in res.cookies
-    assert "github-username" not in res.cookies
+
+    assert "current_owner_id" not in client.session
     assert res.url == "/"
 
 
@@ -215,8 +206,7 @@ def test_state_not_known(client, mocker, db, mock_redis, settings):
     url = reverse("github-login")
     res = client.get(url, {"code": "aaaaaaa", "state": "doesnt exist"})
     assert res.status_code == 400
-    assert "github-token" not in res.cookies
-    assert "github-username" not in res.cookies
+    assert "current_owner_id" not in client.session
 
 
 def test_get_github_already_with_code_with_email(
@@ -260,16 +250,8 @@ def test_get_github_already_with_code_with_email(
     url = reverse("github-login")
     res = client.get(url, {"code": "aaaaaaa", "state": "abc"})
     assert res.status_code == 302
-    assert "github-token" in res.cookies
-    assert "github-username" in res.cookies
-    token_cookie = res.cookies["github-token"]
-    username_cookie = res.cookies["github-username"]
-    cookie_token = decode_token_from_cookie(settings.COOKIE_SECRET, token_cookie.value)
-    assert username_cookie.value == "ThiagoCodecov"
-    assert username_cookie.get("domain") == ".simple.site"
-    assert token_cookie.get("domain") == ".simple.site"
-    session = Session.objects.get(token=cookie_token)
-    owner = session.owner
+
+    owner = Owner.objects.get(pk=client.session["current_owner_id"])
     assert owner.username == "ThiagoCodecov"
     assert owner.service_id == "44376991"
     assert owner.email == "thiago@codecov.io"
@@ -317,17 +299,8 @@ def test_get_github_already_with_code_is_student(
     url = reverse("github-login")
     res = client.get(url, {"code": "aaaaaaa", "state": "abc"})
     assert res.status_code == 302
-    assert "github-token" in res.cookies
-    assert "github-username" in res.cookies
-    token_cookie = res.cookies["github-token"]
-    username_cookie = res.cookies["github-username"]
-    cookie_token = decode_token_from_cookie(settings.COOKIE_SECRET, token_cookie.value)
-    assert username_cookie.value == "ThiagoCodecov"
-    assert username_cookie.get("domain") == ".simple.site"
-    assert token_cookie.get("domain") == ".simple.site"
-    session = Session.objects.get(token=cookie_token)
-    owner = session.owner
-    owner.refresh_from_db()
+
+    owner = Owner.objects.get(pk=client.session["current_owner_id"])
     assert owner.username == "ThiagoCodecov"
     assert owner.email is None
     assert owner.service_id == "44376991"
@@ -382,16 +355,8 @@ def test_get_github_already_owner_already_exist(
     mock_redis.setex("oauth-state-abc", 300, "http://localhost:3000/gh")
     res = client.get(url, {"code": "aaaaaaa", "state": "abc"})
     assert res.status_code == 302
-    assert "github-token" in res.cookies
-    assert "github-username" in res.cookies
-    token_cookie = res.cookies["github-token"]
-    username_cookie = res.cookies["github-username"]
-    cookie_token = decode_token_from_cookie(settings.COOKIE_SECRET, token_cookie.value)
-    assert username_cookie.value == "ThiagoCodecov"
-    assert username_cookie.get("domain") == ".simple.site"
-    assert token_cookie.get("domain") == ".simple.site"
-    session = Session.objects.get(token=cookie_token)
-    owner = session.owner
+
+    owner = Owner.objects.get(pk=client.session["current_owner_id"])
     assert owner.username == "ThiagoCodecov"
     assert owner.ownerid == old_ownerid
     assert owner.bot is None

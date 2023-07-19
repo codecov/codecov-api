@@ -31,16 +31,19 @@ def impersonate_owner(self, request, queryset):
     response = redirect(
         f"{settings.CODECOV_URL}/{get_short_service_name(owner.service)}/"
     )
+
+    # this cookie is read by the `ImpersonationMiddleware` and
+    # will reset `request.current_owner` to the impersonated owner
     response.set_cookie(
         "staff_user",
-        owner.username,
+        owner.ownerid,
         domain=settings.COOKIES_DOMAIN,
         samesite=settings.COOKIE_SAME_SITE,
     )
     return response
 
 
-impersonate_owner.short_description = "Impersonate the selected user"
+impersonate_owner.short_description = "Impersonate the selected owner"
 
 
 class OwnerProfileInline(admin.TabularInline):

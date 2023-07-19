@@ -29,7 +29,7 @@ class Migration(migrations.Migration):
                         null=True,
                         on_delete=django.db.models.deletion.SET_NULL,
                         related_name="bot_repos",
-                        to=settings.AUTH_USER_MODEL,
+                        to="codecov_auth.owner",
                     ),
                 ),
             ],

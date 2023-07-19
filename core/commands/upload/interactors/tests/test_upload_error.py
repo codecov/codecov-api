@@ -22,10 +22,9 @@ class GetUploadErrorInteractorTest(TransactionTestCase):
         self.repo = RepositoryFactory(author=self.org, private=False)
 
     # helper to execute the interactor
-    def execute(self, user, *args):
-        service = user.service if user else "github"
-        current_user = user or AnonymousUser()
-        return GetUploadErrorInteractor(current_user, service).execute(*args)
+    def execute(self, owner, *args):
+        service = owner.service if owner else "github"
+        return GetUploadErrorInteractor(owner, service).execute(*args)
 
     def test_get_upload_errors(self):
         commit = CommitFactory(repository=self.repo)

@@ -12,4 +12,4 @@ class RevokeUserTokenInteractor(BaseInteractor):
     @sync_to_async
     def execute(self, tokenid):
         self.validate()
-        UserToken.objects.filter(external_id=tokenid, owner=self.current_user).delete()
+        UserToken.objects.filter(external_id=tokenid, owner=self.current_owner).delete()

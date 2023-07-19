@@ -6,6 +6,7 @@ from rest_framework.reverse import reverse
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
 from services.components import Component
+from utils.test_utils import APIClient
 
 
 @patch("api.shared.repo.repository_accessors.RepoAccessors.get_repo_permissions")
@@ -14,15 +15,17 @@ class ComponentViewSetTestCase(TestCase):
         self.org = OwnerFactory(username="codecov", service="github")
         self.repo = RepositoryFactory(author=self.org, name="test-repo", active=True)
         self.commit = CommitFactory(repository=self.repo)
-        self.user = OwnerFactory(
+        self.current_owner = OwnerFactory(
             username="codecov-user",
             service="github",
             organizations=[self.org.ownerid],
             permission=[self.repo.repoid],
         )
 
+        self.client = APIClient()
+        self.client.force_login_owner(self.current_owner)
+
     def _request_components(self):
-        self.client.force_login(user=self.user)
         url = reverse(
             "api-v2-components-list",
             kwargs={

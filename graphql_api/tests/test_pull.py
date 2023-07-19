@@ -79,17 +79,19 @@ query_pull_request_detail = """{
 
 class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
     def fetch_list_pull_request(self):
-        data = self.gql_request(query_list_pull_request, user=self.user)
+        data = self.gql_request(query_list_pull_request, owner=self.owner)
         return paginate_connection(data["me"]["owner"]["repository"]["pulls"])
 
     def fetch_one_pull_request(self, id, query=default_pull_request_detail_query):
-        data = self.gql_request(query_pull_request_detail % (id, query), user=self.user)
+        data = self.gql_request(
+            query_pull_request_detail % (id, query), owner=self.owner
+        )
         return data["me"]["owner"]["repository"]["pull"]
 
     def setUp(self):
-        self.user = OwnerFactory(username="test-pull-user")
+        self.owner = OwnerFactory(username="test-pull-user")
         self.repository = RepositoryFactory(
-            author=self.user, active=True, private=True, name="test-repo-for-pull"
+            author=self.owner, active=True, private=True, name="test-repo-for-pull"
         )
 
     def test_fetch_list_pull_request(self):
@@ -105,10 +107,10 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
         my_pull = PullFactory(
             repository=self.repository,
             title="test-null-base",
-            author=self.user,
+            author=self.owner,
             head=CommitFactory(
                 repository=self.repository,
-                author=self.user,
+                author=self.owner,
                 commitid="5672734ij1n234918231290j12nasdfioasud0f9",
             ).commitid,
             compared_to=None,
@@ -159,7 +161,7 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
         my_pull = PullFactory(
             repository=self.repository,
             title="test-null-head",
-            author=self.user,
+            author=self.owner,
             head=None,
         )
         pull = self.fetch_one_pull_request(my_pull.pullid)
@@ -183,7 +185,7 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
         pull = PullFactory(
             repository=self.repository,
             title="test-missing-head-commit",
-            author=self.user,
+            author=self.owner,
         )
         Commit.objects.filter(
             repository_id=self.repository.pk,
@@ -210,7 +212,7 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
     def test_with_complete_pull_request(self):
         head = CommitFactory(
             repository=self.repository,
-            author=self.user,
+            author=self.owner,
             commitid="5672734ij1n234918231290j12nasdfioasud0f9",
             totals={"c": "78.38", "diff": [0, 0, 0, 0, 0, "14"]},
         )
@@ -218,7 +220,7 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
         ReportLevelTotalsFactory(report=report, coverage=78.38)
         compared_to = CommitFactory(
             repository=self.repository,
-            author=self.user,
+            author=self.owner,
             commitid="9asd78fa7as8d8fa97s8d7fgagsd8fa9asd8f77s",
         )
         CommitComparisonFactory(
@@ -229,7 +231,7 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
         my_pull = PullFactory(
             repository=self.repository,
             title="test-pull-request",
-            author=self.user,
+            author=self.owner,
             head=head.commitid,
             compared_to=compared_to.commitid,
             behind_by=23,
@@ -256,7 +258,7 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
     def test_pull_no_patch_totals(self):
         head = CommitFactory(
             repository=self.repository,
-            author=self.user,
+            author=self.owner,
             commitid="5672734ij1n234918231290j12nasdfioasud0f9",
             totals=None,
         )
@@ -264,7 +266,7 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
         ReportLevelTotalsFactory(report=report, coverage=78.38)
         compared_to = CommitFactory(
             repository=self.repository,
-            author=self.user,
+            author=self.owner,
             commitid="9asd78fa7as8d8fa97s8d7fgagsd8fa9asd8f77s",
         )
         CommitComparisonFactory(
@@ -273,7 +275,7 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
         my_pull = PullFactory(
             repository=self.repository,
             title="test-pull-request",
-            author=self.user,
+            author=self.owner,
             head=head.commitid,
             compared_to=compared_to.commitid,
         )

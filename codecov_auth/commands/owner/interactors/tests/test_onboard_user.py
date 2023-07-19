@@ -10,8 +10,8 @@ from codecov_auth.tests.factories import OwnerFactory
 
 class OnboardUserInteractorTest(TransactionTestCase):
     def setUp(self):
-        self.user = OwnerFactory(username="codecov-user")
-        self.already_onboarded_user = OwnerFactory(
+        self.owner = OwnerFactory(username="codecov-user")
+        self.already_onboarded_owner = OwnerFactory(
             username="codecov-user", onboarding_completed=True
         )
         self.good_params = {
@@ -24,24 +24,23 @@ class OnboardUserInteractorTest(TransactionTestCase):
 
     async def test_when_unauthenticated_raise(self):
         with pytest.raises(Unauthenticated):
-            await OnboardUserInteractor(AnonymousUser(), "github").execute(
-                self.good_params
-            )
+            await OnboardUserInteractor(None, "github").execute(self.good_params)
 
     async def test_when_user_already_completed_onboarding(self):
         with pytest.raises(Unauthorized):
-            await OnboardUserInteractor(self.already_onboarded_user, "github").execute(
-                self.good_params
-            )
+            await OnboardUserInteractor(
+                self.already_onboarded_owner,
+                "github",
+            ).execute(self.good_params)
 
     async def test_when_params_arent_good(self):
         with pytest.raises(ValidationError):
-            await OnboardUserInteractor(self.user, "github").execute(
+            await OnboardUserInteractor(self.owner, "github").execute(
                 {**self.good_params, "email": "notgood"}
             )
 
     async def test_when_everything_is_good(self):
-        user = await OnboardUserInteractor(self.user, "github").execute(
+        user = await OnboardUserInteractor(self.owner, "github").execute(
             self.good_params
         )
         assert user.email == self.good_params["email"]

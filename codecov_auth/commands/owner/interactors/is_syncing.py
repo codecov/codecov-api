@@ -6,4 +6,4 @@ from services.refresh import RefreshService
 class IsSyncingInteractor(BaseInteractor):
     @sync_to_async
     def execute(self):
-        return RefreshService().is_refreshing(self.current_user.ownerid)
+        return RefreshService().is_refreshing(self.current_owner.ownerid)

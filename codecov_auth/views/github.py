@@ -101,12 +101,12 @@ class GithubLoginView(LoginMixin, StateMixin, View):
         except TorngitError:
             log.warning("Unable to log in due to problem on Github", exc_info=True)
             return redirect(self.error_redirection_page)
-        user = self.get_and_modify_user(user_dict, request)
+        owner = self.get_and_modify_owner(user_dict, request)
         redirection_url = self.modify_redirection_url_based_on_default_user_org(
-            redirection_url, user
+            redirection_url, owner
         )
         response = redirect(redirection_url)
-        self.set_cookies_and_login_user(user, request, response)
+        self.login_owner(owner, request, response)
         self.remove_state(state)
         return response
 

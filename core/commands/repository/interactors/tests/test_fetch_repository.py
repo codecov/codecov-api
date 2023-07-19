@@ -25,10 +25,9 @@ class FetchRepositoryInteractorTest(TransactionTestCase):
         )
 
     # helper to execute the interactor
-    def execute(self, user, *args):
-        service = user.service if user else "github"
-        current_user = user or AnonymousUser()
-        return FetchRepositoryInteractor(current_user, service).execute(*args)
+    def execute(self, owner, *args):
+        service = owner.service if owner else "github"
+        return FetchRepositoryInteractor(owner, service).execute(*args)
 
     async def test_fetch_public_repo_unauthenticated(self):
         repo = await self.execute(None, self.org, self.public_repo.name)
