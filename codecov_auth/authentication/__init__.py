@@ -64,3 +64,9 @@ class InternalTokenAuthentication(authentication.TokenAuthentication):
             return (InternalUser(), InternalToken(token=key))
 
         raise exceptions.AuthenticationFailed("Invalid token.")
+
+
+class SessionAuthentication(authentication.SessionAuthentication):
+    def enforce_csrf(self, request):
+        # disable CSRF for the REST API
+        pass
