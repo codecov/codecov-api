@@ -115,12 +115,12 @@ async def resolve_compare_with_parent(commit: Commit, info, **kwargs):
 
     if commit_comparison and commit_comparison.is_processed:
 
-        user = info.context["request"].user
+        current_owner = info.context["request"].current_owner
         parent_commit = await CommitLoader.loader(info, commit.repository_id).load(
             commit.parent_commit_id
         )
         comparison = Comparison(
-            user=user, base_commit=parent_commit, head_commit=commit
+            user=current_owner, base_commit=parent_commit, head_commit=commit
         )
         info.context["comparison"] = comparison
 
@@ -157,7 +157,7 @@ def resolve_path_contents(commit: Commit, info, path: str = None, filters=None):
     The is resolver results in a list that represent the tree with files
     and nested directories.
     """
-    user = info.context["request"].user
+    current_owner = info.context["request"].current_owner
 
     # TODO: Might need to add reports here filtered by flags in the future
     commit_report = report_service.build_report_from_commit(
@@ -180,7 +180,7 @@ def resolve_path_contents(commit: Commit, info, path: str = None, filters=None):
     if len(report_paths.paths) == 0:
         # we do not know about this path
 
-        if path_service.provider_path_exists(path, commit, user) is False:
+        if path_service.provider_path_exists(path, commit, current_owner) is False:
             # file doesn't exist
             return UnknownPath(f"path does not exist: {path}")
 

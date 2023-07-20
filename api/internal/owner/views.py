@@ -41,15 +41,15 @@ class InvoiceViewSet(
     pagination_class = None
 
     def get_queryset(self):
-        return BillingService(requesting_user=self.request.user).list_filtered_invoices(
-            self.owner, 100
-        )
+        return BillingService(
+            requesting_user=self.request.current_owner
+        ).list_filtered_invoices(self.owner, 100)
 
     def get_object(self):
         invoice_id = self.kwargs.get("pk")
-        invoice = BillingService(requesting_user=self.request.user).get_invoice(
-            self.owner, invoice_id
-        )
+        invoice = BillingService(
+            requesting_user=self.request.current_owner
+        ).get_invoice(self.owner, invoice_id)
         if not invoice:
             raise NotFound(f"Invoice {invoice_id} does not exist for that account")
         return invoice
@@ -67,14 +67,16 @@ class AccountDetailsViewSet(
 
     @stripe_safe
     def retrieve(self, *args, **kwargs):
-        return super().retrieve(*args, **kwargs)
+        res = super().retrieve(*args, **kwargs)
+        print("RETRIEVE", res.data)
+        return res
 
     @stripe_safe
     def update(self, *args, **kwargs):
         return super().update(*args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
-        if self.owner.ownerid != request.user.ownerid:
+        if self.owner.ownerid != request.current_owner.ownerid:
             raise PermissionDenied("You can only delete your own account")
 
         SegmentService().account_deleted(self.owner)
@@ -92,7 +94,7 @@ class AccountDetailsViewSet(
         if not payment_method:
             raise ValidationError(detail="No payment_method sent")
         owner = self.get_object()
-        billing = BillingService(requesting_user=request.user)
+        billing = BillingService(requesting_user=request.current_owner)
         billing.update_payment_method(owner, payment_method)
         return Response(self.get_serializer(owner).data)
 
@@ -160,5 +162,4 @@ class PlanViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
         return None
 
     def list(self, request, *args, **kwargs):
-        current_user = request.user
-        return Response(available_plans(current_user))
+        return Response(available_plans(request.current_owner))

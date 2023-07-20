@@ -13,28 +13,28 @@ from codecov_auth.tests.factories import (
     OrganizationLevelTokenFactory,
     OwnerFactory,
     OwnerProfileFactory,
+    UserFactory,
 )
 
 
 class OwnerAdminTest(TestCase):
     def setUp(self):
-        self.staff_user = OwnerFactory(staff=True)
+        self.staff_user = UserFactory(is_staff=True)
         self.client.force_login(user=self.staff_user)
         admin_site = AdminSite()
         admin_site.register(OrganizationLevelToken)
         self.owner_admin = OwnerAdmin(Owner, admin_site)
 
     def test_owner_admin_detail_page(self):
+        owner = OwnerFactory()
         response = self.client.get(
-            reverse(f"admin:codecov_auth_owner_change", args=[self.staff_user.ownerid])
+            reverse(f"admin:codecov_auth_owner_change", args=[owner.pk])
         )
         self.assertEqual(response.status_code, 200)
 
     def test_owner_admin_impersonate_owner(self):
-        user_to_impersonate = OwnerFactory(
-            username="impersonate_me", service=Service.BITBUCKET.value
-        )
-        other_user = OwnerFactory()
+        owner_to_impersonate = OwnerFactory(service="bitbucket")
+        other_owner = OwnerFactory()
 
         with self.subTest("more than one user selected"):
             response = self.client.post(
@@ -42,8 +42,8 @@ class OwnerAdminTest(TestCase):
                 {
                     "action": "impersonate_owner",
                     ACTION_CHECKBOX_NAME: [
-                        user_to_impersonate.ownerid,
-                        other_user.ownerid,
+                        owner_to_impersonate.pk,
+                        other_owner.pk,
                     ],
                 },
                 follow=True,
@@ -57,11 +57,14 @@ class OwnerAdminTest(TestCase):
                 reverse(f"admin:codecov_auth_owner_changelist"),
                 {
                     "action": "impersonate_owner",
-                    ACTION_CHECKBOX_NAME: [user_to_impersonate.ownerid],
+                    ACTION_CHECKBOX_NAME: [owner_to_impersonate.pk],
                 },
             )
             self.assertIn("/bb/", response.url)
-            self.assertEqual(response.cookies.get("staff_user").value, "impersonate_me")
+            self.assertEqual(
+                response.cookies.get("staff_user").value,
+                str(owner_to_impersonate.pk),
+            )
 
     @patch("codecov_auth.admin.TaskService.delete_owner")
     def test_delete_queryset(self, delete_mock):
@@ -124,12 +127,11 @@ class OwnerAdminTest(TestCase):
         ]
 
     def test_inline_orgwide_tokens_display(self):
-        request_url = reverse(
-            f"admin:codecov_auth_owner_change", args=[self.staff_user.ownerid]
-        )
+        owner = OwnerFactory()
+        request_url = reverse(f"admin:codecov_auth_owner_change", args=[owner.ownerid])
         request = RequestFactory().get(request_url)
         request.user = self.staff_user
-        inlines = self.owner_admin.get_inline_instances(request, self.staff_user)
+        inlines = self.owner_admin.get_inline_instances(request, owner)
         # Orgs in enterprise cloud have a token created automagically
         assert isinstance(inlines[0], OrgUploadTokenInline)
 
@@ -158,16 +160,15 @@ class OwnerAdminTest(TestCase):
     def test_inline_orgwide_add_token_permission_no_token_and_user_in_enterprise_cloud_plan(
         self,
     ):
-        assert self.staff_user.plan not in ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS
-        assert OrganizationLevelToken.objects.filter(owner=self.staff_user).count() == 0
-        request_url = reverse(
-            f"admin:codecov_auth_owner_change", args=[self.staff_user.ownerid]
-        )
+        owner = OwnerFactory()
+        assert owner.plan not in ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS
+        assert OrganizationLevelToken.objects.filter(owner=owner).count() == 0
+        request_url = reverse(f"admin:codecov_auth_owner_change", args=[owner.ownerid])
         request = RequestFactory().get(request_url)
         request.user = self.staff_user
-        inlines = self.owner_admin.get_inline_instances(request, self.staff_user)
+        inlines = self.owner_admin.get_inline_instances(request, owner)
         inline_instance = inlines[0]
-        assert inline_instance.has_add_permission(request, self.staff_user) == True
+        assert inline_instance.has_add_permission(request, owner) == True
 
     def test_inline_orgwide_add_token_permission_no_token_user_not_in_enterprise_cloud_plan(
         self,
@@ -187,12 +188,11 @@ class OwnerAdminTest(TestCase):
         assert inline_instance.has_add_permission(request, owner_in_cloud_plan) == True
 
     def test_inline_owner_profile_display(self):
-        request_url = reverse(
-            f"admin:codecov_auth_owner_change", args=[self.staff_user.ownerid]
-        )
+        owner = OwnerFactory()
+        request_url = reverse(f"admin:codecov_auth_owner_change", args=[owner.ownerid])
         request = RequestFactory().get(request_url)
         request.user = self.staff_user
-        inlines = self.owner_admin.get_inline_instances(request, self.staff_user)
+        inlines = self.owner_admin.get_inline_instances(request, owner)
         assert isinstance(inlines[1], OwnerProfileInline)
 
     def test_inline_owner_profile_permissions(self):

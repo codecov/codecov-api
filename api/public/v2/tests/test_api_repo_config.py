@@ -6,6 +6,7 @@ from freezegun import freeze_time
 from codecov.tests.base_test import InternalAPITest
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
+from utils.test_utils import APIClient
 
 
 @freeze_time("2022-01-01T00:00:00")
@@ -13,10 +14,12 @@ class RepoConfigViewTests(InternalAPITest):
     def setUp(self):
         self.org = OwnerFactory()
         self.repo = RepositoryFactory(author=self.org)
-        self.user = OwnerFactory(
+        self.current_owner = OwnerFactory(
             permission=[self.repo.repoid], organizations=[self.org.ownerid]
         )
-        self.client.force_login(user=self.user)
+
+        self.client = APIClient()
+        self.client.force_login_owner(self.current_owner)
 
     @patch("api.shared.repo.repository_accessors.RepoAccessors.get_repo_permissions")
     def test_get(self, get_repo_permissions):
@@ -41,8 +44,8 @@ class RepoConfigViewTests(InternalAPITest):
     def test_get_no_part_of_org(self, get_repo_permissions):
         get_repo_permissions.return_value = (True, True)
 
-        self.user.organizations = []
-        self.user.save()
+        self.current_owner.organizations = []
+        self.current_owner.save()
 
         res = self.client.get(
             reverse(

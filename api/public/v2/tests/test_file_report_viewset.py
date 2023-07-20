@@ -13,6 +13,7 @@ from codecov_auth.tests.factories import OwnerFactory, UserTokenFactory
 from core.models import Branch
 from core.tests.factories import BranchFactory, CommitFactory, RepositoryFactory
 from services.components import Component
+from utils.test_utils import APIClient
 
 
 def sample_report():
@@ -47,7 +48,7 @@ class FileReportViewSetTestCase(TestCase):
         self.repo_name = "test-repo"
         self.org = OwnerFactory(username=self.username, service=self.service)
         self.repo = RepositoryFactory(author=self.org, name=self.repo_name, active=True)
-        self.user = OwnerFactory(
+        self.current_owner = OwnerFactory(
             username="codecov-user",
             service="github",
             organizations=[self.org.ownerid],
@@ -71,8 +72,10 @@ class FileReportViewSetTestCase(TestCase):
         self.branch.head = self.commit3.commitid
         self.branch.save()
 
+        self.client = APIClient()
+        self.client.force_login_owner(self.current_owner)
+
     def _request_file_report(self, path=None, **params):
-        self.client.force_login(user=self.user)
         url = reverse(
             "api-v2-file-report-detail",
             kwargs={

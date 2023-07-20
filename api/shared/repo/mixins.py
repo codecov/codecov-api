@@ -31,7 +31,7 @@ class RepositoryViewSetMixin(
     def get_queryset(self):
         return (
             Repository.objects.filter(author=self.owner)
-            .viewable_repos(self.request.user)
+            .viewable_repos(self.request.current_owner)
             .select_related("author")
         )
 
@@ -48,16 +48,16 @@ class RepositoryViewSetMixin(
             # If the user is authenticated, we can fetch permissions from the provider
             # to determine write permissions.
             self.can_view, self.can_edit = self.accessors.get_repo_permissions(
-                self.request.user, repo
+                self.request.current_owner, repo
             )
 
         if repo.private and not RepositoryPermissionsService().user_is_activated(
-            self.request.user, self.owner
+            self.request.current_owner, self.owner
         ):
             log.info(
                 "An inactive user attempted to access a repo page",
                 extra=dict(
-                    user=self.request.user.username,
+                    user=self.request.current_owner.username,
                     owner=self.owner.username,
                     repo=repo.name,
                 ),
@@ -78,7 +78,7 @@ class RepositoryViewSetMixin(
         service = self.kwargs.get("service")
 
         repo = self.accessors.get_repo_details(
-            user=self.request.user,
+            user=self.request.current_owner,
             repo_name=repo_name,
             repo_owner_username=org_name,
             repo_owner_service=service,
@@ -86,7 +86,7 @@ class RepositoryViewSetMixin(
 
         if repo is None:
             repo = self.accessors.fetch_from_git_and_create_repo(
-                user=self.request.user,
+                user=self.request.current_owner,
                 repo_name=repo_name,
                 repo_owner_username=org_name,
                 repo_owner_service=service,

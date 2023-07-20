@@ -18,11 +18,11 @@ query = """
 
 
 class SaveSaveTermsAgreementMutationTest(GraphQLTestHelper, TransactionTestCase):
-    def _request(self, user=None):
+    def _request(self, owner=None):
         return self.gql_request(
             query,
             variables={"input": {"termsAgreement": True}},
-            user=user,
+            owner=owner,
         )
 
     def test_unauthenticated(self):
@@ -37,4 +37,4 @@ class SaveSaveTermsAgreementMutationTest(GraphQLTestHelper, TransactionTestCase)
 
     def test_authenticated(self):
         owner = OwnerFactory()
-        assert self._request(user=owner) == {"saveTermsAgreement": None}
+        assert self._request(owner=owner) == {"saveTermsAgreement": None}

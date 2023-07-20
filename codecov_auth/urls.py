@@ -9,7 +9,8 @@ from .views.gitlab_enterprise import GitlabEnterpriseLoginView
 from .views.logout import logout_view
 
 urlpatterns = [
-    path("logout/<str:service>", logout_view, name="logout"),
+    path("logout", logout_view, name="logout"),
+    path("logout/<str:service>", logout_view, name="logout-service"),
     path("login/github", GithubLoginView.as_view(), name="github-login"),
     path("login/gh", GithubLoginView.as_view(), name="gh-login"),
     path("login/gitlab", GitlabLoginView.as_view(), name="gitlab-login"),

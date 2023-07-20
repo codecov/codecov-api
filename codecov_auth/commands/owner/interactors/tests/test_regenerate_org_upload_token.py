@@ -17,24 +17,25 @@ class RegenerateOrgUploadTokenInteractorTest(TransactionTestCase):
             name="random", plan="users-enterprisem"
         )
 
-    def execute(self, user, owner=None):
-        current_user = user or AnonymousUser()
-        return RegenerateOrgUploadTokenInteractor(current_user, "github").execute(
-            owner=owner
+    def execute(self, owner, org_owner=None):
+        return RegenerateOrgUploadTokenInteractor(owner, "github").execute(
+            owner=org_owner
         )
 
     async def test_when_unauthenticated_raise(self):
         with pytest.raises(Unauthenticated):
-            await self.execute(user="")
+            await self.execute(owner="")
 
     async def test_when_validation_no_owner_found(self):
         with pytest.raises(ValidationError):
-            await self.execute(user=self.random_user)
+            await self.execute(owner=self.random_user)
 
     async def test_regenerate_org_upload_token_user_not_part_of_org(self):
         with pytest.raises(Unauthorized):
-            await self.execute(user=self.user_not_part_of_org, owner=self.owner.name)
+            await self.execute(
+                owner=self.user_not_part_of_org, org_owner=self.owner.name
+            )
 
     async def test_regenerate_org_upload_token(self):
-        token = await self.execute(user=self.owner, owner=self.owner.name)
+        token = await self.execute(owner=self.owner, org_owner=self.owner.name)
         assert token is not None

@@ -18,7 +18,7 @@ mutation($input: ActivateMeasurementsInput!) {
 
 class ActivateMeasurementsTestCase(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
-        self.user = OwnerFactory()
+        self.owner = OwnerFactory()
 
     def test_when_unauthenticated(self):
         data = self.gql_request(
@@ -42,7 +42,7 @@ class ActivateMeasurementsTestCase(GraphQLTestHelper, TransactionTestCase):
     def test_when_authenticated(self, execute):
         data = self.gql_request(
             query,
-            user=self.user,
+            owner=self.owner,
             variables={
                 "input": {
                     "owner": "codecov",

@@ -7,7 +7,8 @@ from shared.reports.resources import Report, ReportFile, ReportLine
 from shared.utils.sessions import Session
 
 from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import BranchFactory, CommitFactory, RepositoryFactory
+from core.tests.factories import CommitFactory, RepositoryFactory
+from utils.test_utils import APIClient
 
 
 def sample_report():
@@ -42,8 +43,8 @@ class ReportTreeTests(APITestCase):
         url = reverse(
             "api-v2-report-tree",
             kwargs={
-                "service": self.user.service,
-                "owner_username": self.user.username,
+                "service": self.current_owner.service,
+                "owner_username": self.current_owner.username,
                 "repo_name": self.repo.name,
             },
         )
@@ -54,14 +55,15 @@ class ReportTreeTests(APITestCase):
         return self.client.get(url)
 
     def setUp(self):
-        self.user = OwnerFactory()
-        self.repo = RepositoryFactory(author=self.user)
+        self.current_owner = OwnerFactory()
+        self.repo = RepositoryFactory(author=self.current_owner)
         self.commit = CommitFactory(
-            author=self.user,
+            author=self.current_owner,
             repository=self.repo,
         )
 
-        self.client.force_login(user=self.user)
+        self.client = APIClient()
+        self.client.force_login_owner(self.current_owner)
 
     @patch("services.report.build_report_from_commit")
     def test_tree(self, build_report_from_commit):

@@ -12,6 +12,7 @@ from api.shared.commit.serializers import ReportTotalsSerializer
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
 from services.report import SerializableReport
+from utils.test_utils import Client
 
 
 class MockSerializableReport(SerializableReport):
@@ -108,12 +109,13 @@ class TestCompareViewSetRetrieve(APITestCase):
             CommitFactory(repository=self.repo),
             CommitFactory(repository=self.repo),
         )
-        self.user = OwnerFactory(
+        self.current_owner = OwnerFactory(
             service=self.org.service,
             permission=[self.repo.repoid],
             organizations=[self.org.ownerid],
         )
-        self.client.force_login(user=self.user)
+        self.client = Client()
+        self.client.force_login_owner(self.current_owner)
 
         self.expected_files = [
             {

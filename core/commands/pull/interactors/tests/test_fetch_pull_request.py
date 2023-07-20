@@ -17,10 +17,9 @@ class FetchPullRequestInteractorTest(TransactionTestCase):
         self.pr = PullFactory(repository_id=self.repo.repoid)
 
     # helper to execute the interactor
-    def execute(self, user, *args):
-        service = user.service if user else "github"
-        current_user = user or AnonymousUser()
-        return FetchPullRequestInteractor(current_user, service).execute(*args)
+    def execute(self, owner, *args):
+        service = owner.service if owner else "github"
+        return FetchPullRequestInteractor(owner, service).execute(*args)
 
     async def test_fetch_when_pull_request_doesnt_exist(self):
         pr = await self.execute(None, self.repo, -12)

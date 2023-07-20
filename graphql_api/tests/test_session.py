@@ -27,9 +27,9 @@ query MySession {
 
 class SessionTestCase(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
-        self.user = OwnerFactory(username="codecov-user")
+        self.owner = OwnerFactory(username="codecov-user")
         self.session = SessionFactory(
-            owner=self.user,
+            owner=self.owner,
             type="login",
             name="test-123",
             lastseen="2021-01-01T00:00:00+00:00",
@@ -37,9 +37,9 @@ class SessionTestCase(GraphQLTestHelper, TransactionTestCase):
 
     @freeze_time("2021-01-01")
     def test_fetching_session(self):
-        data = self.gql_request(query, user=self.user)
+        data = self.gql_request(query, owner=self.owner)
         sessions = paginate_connection(data["me"]["sessions"])
-        current_session = self.user.session_set.filter(type="login").first()
+        current_session = self.owner.session_set.filter(type="login").first()
         assert sessions == [
             {
                 "name": current_session.name,
@@ -55,6 +55,6 @@ class SessionTestCase(GraphQLTestHelper, TransactionTestCase):
         random_user = OwnerFactory()
         for _ in range(5):
             SessionFactory(owner=random_user)
-        data = self.gql_request(query, user=self.user)
+        data = self.gql_request(query, owner=self.owner)
         sessions = paginate_connection(data["me"]["sessions"])
         assert len(sessions) == 1

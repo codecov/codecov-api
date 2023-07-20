@@ -22,6 +22,25 @@ class Migration(migrations.Migration):
     operations = [
         CITextExtension(),
         migrations.CreateModel(
+            name="User",
+            fields=[
+                ("id", models.BigAutoField(primary_key=True, serialize=False)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("email", django.contrib.postgres.fields.citext.CITextField(null=True)),
+                ("name", models.TextField(null=True)),
+                ("is_staff", models.BooleanField(default=False, null=True)),
+                ("is_superuser", models.BooleanField(default=False, null=True)),
+                (
+                    "external_id",
+                    models.UUIDField(default=uuid.uuid4, editable=False, unique=True),
+                ),
+            ],
+            options={
+                "db_table": "users",
+            },
+        ),
+        migrations.CreateModel(
             name="Owner",
             fields=[
                 ("ownerid", models.AutoField(primary_key=True, serialize=False)),
@@ -103,7 +122,7 @@ class Migration(migrations.Migration):
                         db_column="bot",
                         null=True,
                         on_delete=django.db.models.deletion.SET_NULL,
-                        to=settings.AUTH_USER_MODEL,
+                        to="codecov_auth.owner",
                     ),
                 ),
             ],
@@ -130,7 +149,7 @@ class Migration(migrations.Migration):
                     models.ForeignKey(
                         db_column="ownerid",
                         on_delete=django.db.models.deletion.CASCADE,
-                        to=settings.AUTH_USER_MODEL,
+                        to="codecov_auth.owner",
                     ),
                 ),
             ],

@@ -30,10 +30,10 @@ def list_repository_for_owner(current_user, owner, filters):
     return queryset
 
 
-def search_repos(current_user, filters):
-    authors_from = [current_user.ownerid] + (current_user.organizations or [])
+def search_repos(current_owner, filters):
+    authors_from = [current_owner.ownerid] + (current_owner.organizations or [])
     queryset = (
-        Repository.objects.viewable_repos(current_user)
+        Repository.objects.viewable_repos(current_owner)
         .with_recent_coverage()
         .with_cache_latest_commit_at()
         .filter(author__ownerid__in=authors_from)

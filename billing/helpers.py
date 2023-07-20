@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Optional
 
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
@@ -14,7 +14,7 @@ def on_enterprise_plan(owner: Owner) -> bool:
     )
 
 
-def available_plans(user: Union[Owner, AnonymousUser]) -> List[dict]:
+def available_plans(owner: Optional[Owner]) -> List[dict]:
     """
     Returns all plan representations available to the given owner.
     """
@@ -23,7 +23,7 @@ def available_plans(user: Union[Owner, AnonymousUser]) -> List[dict]:
     plans += list(constants.FREE_PLAN_REPRESENTATIONS.values())
     plans += list(constants.PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values())
 
-    if user.is_authenticated and sentry.is_sentry_user(user):
+    if owner and sentry.is_sentry_user(owner):
         # these are only available to Sentry users
         plans += list(constants.SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values())
 

@@ -1,37 +1,28 @@
 from unittest.mock import patch
 
-from codecov.db import sync_to_async
-from codecov_auth.tests.factories import SessionFactory
+from utils.test_utils import Client
 
 
 class GraphQLTestHelper:
-    @patch("codecov_auth.authentication.decode_token_from_cookie")
     def gql_request(
         self,
         query,
-        mock_decode_token_from_cookie,
         provider="gh",
-        user=None,
-        variables={},
+        owner=None,
+        variables=None,
         with_errors=False,
     ):
         url = f"/graphql/{provider}"
-        headers = {}
 
-        if user:
-            session = SessionFactory(owner=user)
-            headers["HTTP_TOKEN_TYPE"] = "github-token"
-            mock_decode_token_from_cookie.return_value = session.token
-            self.client.cookies["github-token"] = session.token
-            self.client.force_login(user)
+        if owner:
+            self.client = Client()
+            self.client.force_login_owner(owner)
 
         response = self.client.post(
             url,
-            {"query": query, "variables": variables},
+            {"query": query, "variables": variables or {}},
             content_type="application/json",
-            **headers,
         )
-
         return response.json() if with_errors else response.json()["data"]
 
 

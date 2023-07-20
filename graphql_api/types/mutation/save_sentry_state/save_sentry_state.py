@@ -14,9 +14,9 @@ from graphql_api.helpers.mutation import (
 @require_authenticated
 @sync_to_async
 def resolve_save_sentry_state(_, info, input):
-    current_user = info.context["request"].user
+    current_owner = info.context["request"].current_owner
     try:
-        sentry.save_sentry_state(current_user, input.get("state"))
+        sentry.save_sentry_state(current_owner, input.get("state"))
     except sentry.SentryInvalidStateError:
         raise ValidationError("Invalid state")
     except sentry.SentryUserAlreadyExistsError:

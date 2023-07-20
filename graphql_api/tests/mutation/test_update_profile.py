@@ -23,7 +23,7 @@ mutation($input: UpdateProfileInput!) {
 
 class UpdateProfileTestCase(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
-        self.user = OwnerFactory(username="codecov-user")
+        self.owner = OwnerFactory(username="codecov-user")
 
     def test_when_unauthenticated(self):
         data = self.gql_request(query, variables={"input": {"name": "yo"}})
@@ -32,6 +32,6 @@ class UpdateProfileTestCase(GraphQLTestHelper, TransactionTestCase):
     def test_when_authenticated(self):
         name = "yo"
         data = self.gql_request(
-            query, user=self.user, variables={"input": {"name": name}}
+            query, owner=self.owner, variables={"input": {"name": name}}
         )
         assert data["updateProfile"]["me"]["user"]["name"] == name

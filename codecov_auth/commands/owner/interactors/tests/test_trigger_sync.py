@@ -12,15 +12,15 @@ from ..trigger_sync import TriggerSyncInteractor
 
 class IsSyncingInteractorTest(TransactionTestCase):
     def setUp(self):
-        self.user = OwnerFactory(username="codecov-user")
+        self.owner = OwnerFactory(username="codecov-user")
 
     async def test_when_unauthenticated_raise(self):
         with pytest.raises(Unauthenticated):
-            await TriggerSyncInteractor(AnonymousUser(), "github").execute()
+            await TriggerSyncInteractor(None, "github").execute()
 
     @patch("services.refresh.RefreshService.trigger_refresh")
     async def test_call_is_refreshing(self, mock_trigger_refresh):
-        await TriggerSyncInteractor(self.user, "github").execute()
+        await TriggerSyncInteractor(self.owner, "github").execute()
         mock_trigger_refresh.assert_called_once_with(
-            self.user.ownerid, self.user.username, using_integration=False
+            self.owner.ownerid, self.owner.username, using_integration=False
         )

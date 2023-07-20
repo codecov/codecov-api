@@ -11,17 +11,17 @@ from ..create_api_token import CreateApiTokenInteractor
 
 class CreateApiTokenInteractorTest(TransactionTestCase):
     def setUp(self):
-        self.user = OwnerFactory(username="codecov-user")
+        self.owner = OwnerFactory(username="codecov-user")
 
     async def test_when_unauthenticated_raise(self):
         with pytest.raises(Unauthenticated):
-            await CreateApiTokenInteractor(AnonymousUser(), "github").execute("name")
+            await CreateApiTokenInteractor(None, "github").execute("name")
 
     async def test_when_no_name_raise(self):
         with pytest.raises(ValidationError):
-            await CreateApiTokenInteractor(self.user, "github").execute("")
+            await CreateApiTokenInteractor(self.owner, "github").execute("")
 
     async def test_create_token(self):
-        session = await CreateApiTokenInteractor(self.user, "github").execute("name")
+        session = await CreateApiTokenInteractor(self.owner, "github").execute("name")
         assert session is not None
-        assert session.owner is self.user
+        assert session.owner is self.owner
