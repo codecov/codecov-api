@@ -287,16 +287,11 @@ class Commit(models.Model):
         return self.commitid
 
     def should_write_to_storage(self) -> bool:
-        if (
-            self.report is None
-            or self.report.commit is None
-            or self.report.commit.repository is None
-            or self.report.commit.repository.author is None
-        ):
+        if self.repository is None or self.repository.author is None:
             return False
         is_codecov_repo = self.repository.author.username == "codecov"
         return should_write_data_to_storage_config_check(
-            "commit_report", is_codecov_repo, self.report.commit.repository.repoid
+            "commit_report", is_codecov_repo, self.repository.repoid
         )
 
     # Use custom JSON to properly serialize custom data classes on reports
