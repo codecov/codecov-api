@@ -29,6 +29,8 @@ from webhook_handlers.constants import (
 
 MockedSubscription = namedtuple("Subscription", ["status"])
 
+WEBHOOK_SECRET = b"testixik8qdauiab1yiffydimvi72ekq"
+
 
 class GithubWebhookHandlerTests(APITestCase):
     @pytest.fixture(autouse=True)
@@ -49,6 +51,19 @@ class GithubWebhookHandlerTests(APITestCase):
         mock_decr = mocker.patch("shared.metrics.metrics.decr")
         mock_decr.side_effect = decr
 
+    @pytest.fixture(autouse=True)
+    def mock_webhook_secret(self, mocker):
+        orig_get_config = get_config
+
+        def override(*args, default=None):
+            if args[0] == "github" and args[1] == "webhook_secret":
+                return WEBHOOK_SECRET
+
+            return orig_get_config(*args, default=default)
+
+        mock_get_config = mocker.patch("webhook_handlers.views.github.get_config")
+        mock_get_config.side_effect = override
+
     def _post_event_data(self, event, data={}):
         return self.client.post(
             reverse("github-webhook"),
@@ -57,11 +72,7 @@ class GithubWebhookHandlerTests(APITestCase):
                 GitHubHTTPHeaders.DELIVERY_TOKEN: uuid.UUID(int=5),
                 GitHubHTTPHeaders.SIGNATURE_256: "sha256="
                 + hmac.new(
-                    get_config(
-                        "github",
-                        "webhook_secret",
-                        default=b"testixik8qdauiab1yiffydimvi72ekq",
-                    ),
+                    WEBHOOK_SECRET,
                     json.dumps(data, separators=(",", ":")).encode("utf-8"),
                     digestmod=sha256,
                 ).hexdigest(),
@@ -887,11 +898,7 @@ class GithubWebhookHandlerTests(APITestCase):
                 GitHubHTTPHeaders.DELIVERY_TOKEN: uuid.UUID(int=5),
                 GitHubHTTPHeaders.SIGNATURE_256: "sha256="
                 + hmac.new(
-                    get_config(
-                        "github",
-                        "webhook_secret",
-                        default=b"testixik8qdauiab1yiffydimvi72ekq",
-                    ),
+                    WEBHOOK_SECRET,
                     json.dumps({}, separators=(",", ":")).encode("utf-8"),
                     digestmod=sha256,
                 ).hexdigest(),
@@ -910,11 +917,7 @@ class GithubWebhookHandlerTests(APITestCase):
                 GitHubHTTPHeaders.DELIVERY_TOKEN: uuid.UUID(int=5),
                 GitHubHTTPHeaders.SIGNATURE: "sha1="
                 + hmac.new(
-                    get_config(
-                        "github",
-                        "webhook_secret",
-                        default=b"testixik8qdauiab1yiffydimvi72ekq",
-                    ),
+                    WEBHOOK_SECRET,
                     json.dumps({}, separators=(",", ":")).encode("utf-8"),
                     digestmod=sha1,
                 ).hexdigest(),
@@ -928,8 +931,11 @@ class GithubWebhookHandlerTests(APITestCase):
 
     @patch("webhook_handlers.views.github.get_config")
     def test_signature_validation_with_string_key(self, get_config_mock):
-        # make get_config return string
-        get_config_mock.return_value = "testixik8qdauiab1yiffydimvi72ekq"
+        # The hmac function requires a bytestring, and we're creating hmacs
+        # throughout these tests so we've been using bytestrings. However,
+        # `get_config` normally returns a UTF-8 string; make sure that still
+        # works.
+        get_config_mock.return_value = WEBHOOK_SECRET.decode("utf-8")
         response = self._post_event_data(event="", data={})
         assert response.status_code == status.HTTP_200_OK
 
