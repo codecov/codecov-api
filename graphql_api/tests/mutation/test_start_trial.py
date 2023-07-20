@@ -1,6 +1,5 @@
 from django.test import TransactionTestCase
 
-from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
 from graphql_api.tests.helper import GraphQLTestHelper
 
@@ -19,11 +18,11 @@ query = """
 
 
 class StartTrialMutationTest(GraphQLTestHelper, TransactionTestCase):
-    def _request(self, user=None, org_username: str = None):
+    def _request(self, owner=None, org_username: str = None):
         return self.gql_request(
             query,
             variables={"input": {"orgUsername": org_username}},
-            user=user,
+            owner=owner,
         )
 
     def test_unauthenticated(self):
@@ -39,6 +38,6 @@ class StartTrialMutationTest(GraphQLTestHelper, TransactionTestCase):
     def test_authenticated(self):
         owner = OwnerFactory()
         owner.save()
-        assert self._request(user=owner, org_username=owner.username) == {
+        assert self._request(owner=owner, org_username=owner.username) == {
             "startTrial": None
         }

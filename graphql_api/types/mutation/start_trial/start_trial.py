@@ -1,9 +1,6 @@
-from dataclasses import dataclass
-
 from ariadne import UnionType
 
 from codecov_auth.commands.owner import OwnerCommands
-from codecov_auth.models import Owner
 from graphql_api.helpers.mutation import (
     require_authenticated,
     resolve_union_error_type,

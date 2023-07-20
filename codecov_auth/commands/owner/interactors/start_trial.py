@@ -14,10 +14,8 @@ class StartTrialInteractor(BaseInteractor):
         try:
             plan_service = PlanService(current_org=owner)
             plan_service.start_trial()
-        except:
-            raise ValidationError(
-                "Cannot undergo trial for organizations with ongoing, expired or unavailable trials"
-            )
+        except ValidationError as e_message:
+            raise ValidationError(e_message)
         return
 
     @sync_to_async

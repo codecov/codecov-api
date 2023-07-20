@@ -3,8 +3,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import List, Optional
 
-from django.forms import ValidationError
-
+from codecov.commands.exceptions import ValidationError
 from codecov_auth.models import Owner
 
 
@@ -291,25 +290,6 @@ class PlanService:
         self.current_org.trial_end_date = start_date + timedelta(
             days=TrialDaysAmount.CODECOV_SENTRY.value
         )
-        self.current_org.save()
-
-    def expire_trial_preemptively(self) -> None:
-        """
-        Method that expires a trial upon demand. Usually trials will be considered
-        expired based on the 'trial_status' property above, but a user can decide to
-        cause that expiration premptively
-
-        Raises:
-            ValidationError: if trial hasnt started
-
-        Returns:
-            No value
-        """
-        # I initially wanted to raise a validation error if there wasnt a start date/end date, but this will
-        # be hard to apply for entries before this migration without start/end trial dates
-        if self.current_org.trial_end_date is None:
-            raise ValidationError("Cannot expire an unstarted trial")
-        self.current_org.trial_end_date = datetime.utcnow()
         self.current_org.save()
 
     @property
