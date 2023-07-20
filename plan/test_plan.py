@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta
 
-from django.forms import ValidationError
 from django.test import TestCase
 from freezegun import freeze_time
 
+from codecov.commands.exceptions import ValidationError
 from codecov_auth.tests.factories import OwnerFactory
 from plan.constants import (
     FREE_PLAN_REPRESENTATIONS,
@@ -73,7 +73,7 @@ class PlanServiceTests(TestCase):
         plan_service = PlanService(current_org=current_org_with_paid_plan)
         assert plan_service.trial_status == TrialStatus.CANNOT_TRIAL
 
-    def test_plan_service_start_trial_errors_if_status_isnt_started(self):
+    def test_plan_service_start_trial_errors_if_status_is_not_started(self):
         trial_start_date = datetime.utcnow()
         trial_end_date = trial_start_date + timedelta(
             days=TrialDaysAmount.CODECOV_SENTRY.value
@@ -123,38 +123,6 @@ class PlanServiceTests(TestCase):
         assert plan_service.trial_end_date == time_now
         # TODO: Uncomment when trial_status is derived from DB column
         # assert plan_service.trial_status == TrialStatus.EXPIRED
-
-    def test_plan_service_expire_trial_preemptively_fails_if_no_trial_end_date(
-        self,
-    ):
-        trial_end_date = None
-        current_org = OwnerFactory(
-            plan=PlanName.BASIC_PLAN_NAME.value,
-            trial_end_date=trial_end_date,
-        )
-        plan_service = PlanService(current_org=current_org)
-
-        with self.assertRaises(ValidationError) as e:
-            plan_service.expire_trial_preemptively()
-
-    def test_plan_service_expire_trial_preemptively_succeeds_if_start_and_end_date(
-        self,
-    ):
-        time_now = datetime.utcnow()
-        time_in_three_days = time_now + timedelta(days=3)
-        trial_start_date = time_now
-        trial_end_date = time_now + timedelta(days=TrialDaysAmount.CODECOV_SENTRY.value)
-        current_org = OwnerFactory(
-            plan=PlanName.BASIC_PLAN_NAME.value,
-            trial_start_date=trial_start_date,
-            trial_end_date=trial_end_date,
-        )
-        plan_service = PlanService(current_org=current_org)
-
-        with freeze_time(time_in_three_days) as frozen_time:
-            plan_service.expire_trial_preemptively()
-            assert current_org.trial_start_date == time_now
-            assert current_org.trial_end_date == time_in_three_days
 
     def test_plan_service_returns_plan_data_for_basic_plan_non_trial(self):
         trial_start_date = None

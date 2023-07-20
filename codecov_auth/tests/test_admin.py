@@ -7,7 +7,11 @@ from django.urls import reverse
 
 from codecov_auth.admin import OrgUploadTokenInline, OwnerAdmin, OwnerProfileInline
 from codecov_auth.models import OrganizationLevelToken, Owner
-from codecov_auth.tests.factories import OrganizationLevelTokenFactory, OwnerFactory, UserFactory
+from codecov_auth.tests.factories import (
+    OrganizationLevelTokenFactory,
+    OwnerFactory,
+    UserFactory,
+)
 from plan.constants import ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS
 
 
@@ -21,7 +25,9 @@ class OwnerAdminTest(TestCase):
 
     def test_owner_admin_detail_page(self):
         owner = OwnerFactory()
-        response = self.client.get(reverse(f"admin:codecov_auth_owner_change", args=[owner.pk]))
+        response = self.client.get(
+            reverse(f"admin:codecov_auth_owner_change", args=[owner.pk])
+        )
         self.assertEqual(response.status_code, 200)
 
     def test_owner_admin_impersonate_owner(self):
@@ -40,7 +46,9 @@ class OwnerAdminTest(TestCase):
                 },
                 follow=True,
             )
-            self.assertIn("You must impersonate exactly one Owner.", str(response.content))
+            self.assertIn(
+                "You must impersonate exactly one Owner.", str(response.content)
+            )
 
         with self.subTest("one user selected"):
             response = self.client.post(
@@ -102,7 +110,9 @@ class OwnerAdminTest(TestCase):
         owner.staff = False
         form = MagicMock()
         form.changed_data = ["staff"]
-        self.owner_admin.save_model(request=MagicMock, new_obj=owner, form=form, change=True)
+        self.owner_admin.save_model(
+            request=MagicMock, new_obj=owner, form=form, change=True
+        )
         assert owner.changed_fields["staff"] == "prev value: True, new value: False"
 
         message = []
@@ -128,7 +138,9 @@ class OwnerAdminTest(TestCase):
         org_token = OrganizationLevelTokenFactory(owner=owner_in_cloud_plan)
         owner_in_cloud_plan.save()
         org_token.save()
-        request_url = reverse(f"admin:codecov_auth_owner_change", args=[owner_in_cloud_plan.ownerid])
+        request_url = reverse(
+            f"admin:codecov_auth_owner_change", args=[owner_in_cloud_plan.ownerid]
+        )
         request = RequestFactory().get(request_url)
         request.user = self.staff_user
         inlines = self.owner_admin.get_inline_instances(request, owner_in_cloud_plan)
@@ -136,8 +148,12 @@ class OwnerAdminTest(TestCase):
         assert (
             inline_instance.has_add_permission(request, owner_in_cloud_plan) == False
         )  # Should be false because it already has a token
-        assert inline_instance.has_delete_permission(request, owner_in_cloud_plan) == True
-        assert inline_instance.has_change_permission(request, owner_in_cloud_plan) == False
+        assert (
+            inline_instance.has_delete_permission(request, owner_in_cloud_plan) == True
+        )
+        assert (
+            inline_instance.has_change_permission(request, owner_in_cloud_plan) == False
+        )
 
     def test_inline_orgwide_add_token_permission_no_token_and_user_in_enterprise_cloud_plan(
         self,
@@ -156,8 +172,13 @@ class OwnerAdminTest(TestCase):
         self,
     ):
         owner_in_cloud_plan = OwnerFactory(plan="users-enterprisey")
-        assert OrganizationLevelToken.objects.filter(owner=owner_in_cloud_plan).count() == 0
-        request_url = reverse(f"admin:codecov_auth_owner_change", args=[owner_in_cloud_plan.ownerid])
+        assert (
+            OrganizationLevelToken.objects.filter(owner=owner_in_cloud_plan).count()
+            == 0
+        )
+        request_url = reverse(
+            f"admin:codecov_auth_owner_change", args=[owner_in_cloud_plan.ownerid]
+        )
         request = RequestFactory().get(request_url)
         request.user = self.staff_user
         inlines = self.owner_admin.get_inline_instances(request, owner_in_cloud_plan)
@@ -183,13 +204,19 @@ class OwnerAdminTest(TestCase):
         assert inline_instance.has_delete_permission(request, owner) == False
         assert inline_instance.has_change_permission(request, owner) == True
 
-    @patch("codecov_auth.services.org_level_token_service.OrgLevelTokenService.refresh_token")
-    def test_org_token_refresh_request_calls_service_to_refresh_token(self, mock_refresh):
+    @patch(
+        "codecov_auth.services.org_level_token_service.OrgLevelTokenService.refresh_token"
+    )
+    def test_org_token_refresh_request_calls_service_to_refresh_token(
+        self, mock_refresh
+    ):
         owner_in_cloud_plan = OwnerFactory(plan="users-enterprisey")
         org_token = OrganizationLevelTokenFactory(owner=owner_in_cloud_plan)
         owner_in_cloud_plan.save()
         org_token.save()
-        request_url = reverse(f"admin:codecov_auth_owner_change", args=[owner_in_cloud_plan.ownerid])
+        request_url = reverse(
+            f"admin:codecov_auth_owner_change", args=[owner_in_cloud_plan.ownerid]
+        )
         fake_data = {
             "staff": ["true"],
             "plan": ["users-enterprisem"],
@@ -216,13 +243,17 @@ class OwnerAdminTest(TestCase):
         response = self.client.post(request_url, data=fake_data)
         assert mock_refresh.called_with(str(org_token.id))
 
-    @patch("codecov_auth.services.org_level_token_service.OrgLevelTokenService.refresh_token")
+    @patch(
+        "codecov_auth.services.org_level_token_service.OrgLevelTokenService.refresh_token"
+    )
     def test_org_token_request_doesnt_call_service_to_refresh_token(self, mock_refresh):
         owner_in_cloud_plan = OwnerFactory(plan="users-enterprisey")
         org_token = OrganizationLevelTokenFactory(owner=owner_in_cloud_plan)
         owner_in_cloud_plan.save()
         org_token.save()
-        request_url = reverse(f"admin:codecov_auth_owner_change", args=[owner_in_cloud_plan.ownerid])
+        request_url = reverse(
+            f"admin:codecov_auth_owner_change", args=[owner_in_cloud_plan.ownerid]
+        )
         fake_data = {
             "staff": ["true"],
             "plan": ["users-enterprisem"],

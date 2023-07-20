@@ -41,9 +41,15 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
         self.owner = OwnerFactory(username="codecov-user", service="github")
         random_user = OwnerFactory(username="random-user", service="github")
-        RepositoryFactory(author=self.owner, active=True, activated=True, private=True, name="a")
-        RepositoryFactory(author=self.owner, active=False, private=False, activated=False, name="b")
-        RepositoryFactory(author=random_user, active=True, activated=False, private=True, name="not")
+        RepositoryFactory(
+            author=self.owner, active=True, activated=True, private=True, name="a"
+        )
+        RepositoryFactory(
+            author=self.owner, active=False, private=False, activated=False, name="b"
+        )
+        RepositoryFactory(
+            author=random_user, active=True, activated=False, private=True, name="not"
+        )
         RepositoryFactory(
             author=random_user,
             active=True,
@@ -185,7 +191,9 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
 
     def test_is_part_of_org_when_user_path_of_it(self):
         org = OwnerFactory(username="random_org_test", service="github")
-        user = OwnerFactory(username="random_org_user", service="github", organizations=[org.ownerid])
+        user = OwnerFactory(
+            username="random_org_user", service="github", organizations=[org.ownerid]
+        )
         query = query_repositories % (org.username, "", "")
         data = self.gql_request(query, owner=user)
         assert data["owner"]["isCurrentUserPartOfOrg"] is True
@@ -242,7 +250,9 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
             }
         }
         """
-        repository = RepositoryFactory.create(author__plan=PlanName.BASIC_PLAN_NAME.value, author=self.user)
+        repository = RepositoryFactory.create(
+            author__plan=PlanName.BASIC_PLAN_NAME.value, author=self.owner
+        )
         first_commit = CommitFactory.create(repository=repository)
         first_report = CommitReportFactory.create(commit=first_commit)
         for i in range(150):
@@ -264,7 +274,9 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, owner=user)
         assert data["owner"]["isAdmin"] is False
 
-    @patch("codecov_auth.commands.owner.interactors.get_is_current_user_an_admin.get_provider")
+    @patch(
+        "codecov_auth.commands.owner.interactors.get_is_current_user_an_admin.get_provider"
+    )
     def test_is_current_user_an_admin(self, mocked_get_adapter):
         query_current_user_is_admin = """{
             owner(username: "%s") {
@@ -273,7 +285,9 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         }
         """
         user = OwnerFactory(username="random_org_admin", service="github")
-        owner = OwnerFactory(username="random_org_test", service="github", admins=[user.ownerid])
+        owner = OwnerFactory(
+            username="random_org_test", service="github", admins=[user.ownerid]
+        )
         mocked_get_adapter.return_value = GetAdminProviderAdapter()
         query = query_current_user_is_admin % (owner.username)
         data = self.gql_request(query, owner=user)
@@ -314,7 +328,9 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
             service="github",
             organizations=[organization.ownerid],
         )
-        OwnerProfile.objects.filter(owner_id=owner.ownerid).update(default_org=organization)
+        OwnerProfile.objects.filter(owner_id=owner.ownerid).update(
+            default_org=organization
+        )
         query = """{
             owner(username: "%s") {
                 defaultOrgUsername
@@ -370,7 +386,9 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
 
     def test_is_current_user_activated(self):
         user = OwnerFactory(username="sample-user")
-        owner = OwnerFactory(username="sample-owner", plan_activated_users=[user.ownerid])
+        owner = OwnerFactory(
+            username="sample-owner", plan_activated_users=[user.ownerid]
+        )
         query = """{
             owner(username: "%s") {
                 isCurrentUserActivated

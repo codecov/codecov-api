@@ -2,8 +2,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import List, Optional
 
-from django.forms import ValidationError
-
+from codecov.commands.exceptions import ValidationError
 from codecov_auth.models import Owner
 from plan.constants import (
     USER_PLAN_REPRESENTATIONS,
@@ -35,7 +34,7 @@ class PlanService:
         self.current_org = current_org
         # TODO: how to account for super archaic plan names like "v4-10y"
         if self.current_org.plan not in USER_PLAN_REPRESENTATIONS:
-            self.plan_data = None
+            raise ValueError("Unsupported plan")
         else:
             self.plan_data = USER_PLAN_REPRESENTATIONS[self.current_org.plan]
 
@@ -90,7 +89,6 @@ class PlanService:
 
     # Trial Data
     def start_trial(self) -> None:
-        # def start_trial(self, notifier_service: SegmentService) -> None:
         """
         Method that starts trial on an organization if the trial_start_date
         is not empty.
@@ -138,25 +136,6 @@ class PlanService:
             #         "trial_end_date": self.current_org.trial_end_date,
             #     },
             # )
-
-    def expire_trial_preemptively(self) -> None:
-        """
-        Method that expires a trial upon demand. Usually trials will be considered
-        expired based on the 'trial_status' property above, but a user can decide to
-        cause that expiration preemptively
-
-        Raises:
-            ValidationError: if trial has not started
-
-        Returns:
-            No value
-        """
-        # I initially wanted to raise a validation error if there wasn't a start date/end date, but this will
-        # be hard to apply for entries before this migration without start/end trial dates
-        if self.current_org.trial_end_date is None:
-            raise ValidationError("Cannot expire an trial that has not started")
-        self.current_org.trial_end_date = datetime.utcnow()
-        self.current_org.save()
 
     @property
     def trial_status(self) -> TrialStatus:

@@ -141,40 +141,20 @@ class StripeService(AbstractPaymentService):
         subscription = stripe.Subscription.retrieve(owner.stripe_subscription_id)
         subscription_schedule_id = subscription.schedule
 
-        if owner.plan not in USER_PLAN_REPRESENTATIONS:
+        log.info(
+            f"Downgrade to basic plan from user plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
+            extra=dict(ownerid=owner.ownerid),
+        )
+        if subscription_schedule_id:
             log.info(
-                f"Downgrade to basic plan from legacy plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
+                f"Releasing subscription from schedule for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
                 extra=dict(ownerid=owner.ownerid),
             )
-            if not subscription_schedule_id:
-                log.info(
-                    f"Deleting stripe subscription for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
-                    extra=dict(ownerid=owner.ownerid),
-                )
-                stripe.Subscription.delete(owner.stripe_subscription_id, prorate=False)
-            else:
-                log.info(
-                    f"Cancelling schedule and deleting subscription for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
-                    extra=dict(ownerid=owner.ownerid),
-                )
-                stripe.SubscriptionSchedule.cancel(subscription_schedule_id)
-            plan_service = PlanService(current_org=owner)
-            plan_service.set_default_plan_data()
-        else:
-            log.info(
-                f"Downgrade to basic plan from user plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
-                extra=dict(ownerid=owner.ownerid),
-            )
-            if subscription_schedule_id:
-                log.info(
-                    f"Releasing subscription from schedule for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
-                    extra=dict(ownerid=owner.ownerid),
-                )
-                stripe.SubscriptionSchedule.release(subscription_schedule_id)
+            stripe.SubscriptionSchedule.release(subscription_schedule_id)
 
-            stripe.Subscription.modify(
-                owner.stripe_subscription_id, cancel_at_period_end=True, prorate=False
-            )
+        stripe.Subscription.modify(
+            owner.stripe_subscription_id, cancel_at_period_end=True, prorate=False
+        )
 
     @_log_stripe_error
     def get_subscription(self, owner):

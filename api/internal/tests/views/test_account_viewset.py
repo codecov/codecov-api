@@ -1,20 +1,20 @@
-from datetime import datetime
 import json
 import os
+from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
 from django.test import override_settings
-from api.internal.tests.test_utils import GetAdminProviderAdapter
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 from stripe.error import StripeError
 
+from api.internal.tests.test_utils import GetAdminProviderAdapter
 from codecov_auth.models import Service
 from codecov_auth.tests.factories import OwnerFactory, UserFactory
-from utils.test_utils import APIClient
 from plan.constants import PlanName
+from utils.test_utils import APIClient
 
 curr_path = os.path.dirname(__file__)
 
@@ -26,7 +26,9 @@ class MockSubscription(object):
         self.current_period_end = 1633512445
         self.latest_invoice = subscription_params["latest_invoice"]
         self.customer = {
-            "invoice_settings": {"default_payment_method": subscription_params["default_payment_method"]},
+            "invoice_settings": {
+                "default_payment_method": subscription_params["default_payment_method"]
+            },
             "id": "cus_LK&*Hli8YLIO",
             "discount": None,
         }
@@ -72,7 +74,9 @@ class AccountViewSetTests(APITestCase):
         return self.client.get(reverse("account_details-detail", kwargs=kwargs))
 
     def _update(self, kwargs, data):
-        return self.client.patch(reverse("account_details-detail", kwargs=kwargs), data=data, format="json")
+        return self.client.patch(
+            reverse("account_details-detail", kwargs=kwargs), data=data, format="json"
+        )
 
     def _destroy(self, kwargs):
         return self.client.delete(reverse("account_details-detail", kwargs=kwargs))
@@ -132,7 +136,9 @@ class AccountViewSetTests(APITestCase):
         owner = OwnerFactory(admins=[self.current_owner.ownerid])
         self.current_owner.organizations = [owner.ownerid]
         self.current_owner.save()
-        response = self._retrieve(kwargs={"service": owner.service, "owner_username": owner.username})
+        response = self._retrieve(
+            kwargs={"service": owner.service, "owner_username": owner.username}
+        )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == {
             "activated_user_count": 0,
@@ -169,7 +175,9 @@ class AccountViewSetTests(APITestCase):
     def test_retrieve_account_gets_account_fields_when_there_are_scheduled_details(
         self, mock_retrieve_subscription, mock_retrieve_schedule
     ):
-        owner = OwnerFactory(admins=[self.current_owner.ownerid], stripe_subscription_id="sub_123")
+        owner = OwnerFactory(
+            admins=[self.current_owner.ownerid], stripe_subscription_id="sub_123"
+        )
         self.current_owner.organizations = [owner.ownerid]
         self.current_owner.save()
 
@@ -204,7 +212,9 @@ class AccountViewSetTests(APITestCase):
 
         mock_retrieve_schedule.return_value = MockSchedule(schedule_params, phases)
 
-        response = self._retrieve(kwargs={"service": owner.service, "owner_username": owner.username})
+        response = self._retrieve(
+            kwargs={"service": owner.service, "owner_username": owner.username}
+        )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == {
             "activated_user_count": 0,
@@ -256,7 +266,9 @@ class AccountViewSetTests(APITestCase):
     def test_retrieve_account_returns_null_schedule_details_when_there_arent_two_scheduled_phases(
         self, mock_retrieve_subscription, mock_retrieve_schedule
     ):
-        owner = OwnerFactory(admins=[self.current_owner.ownerid], stripe_subscription_id="sub_2345687")
+        owner = OwnerFactory(
+            admins=[self.current_owner.ownerid], stripe_subscription_id="sub_2345687"
+        )
         self.current_owner.organizations = [owner.ownerid]
         self.current_owner.save()
 
@@ -294,7 +306,9 @@ class AccountViewSetTests(APITestCase):
 
         mock_retrieve_schedule.return_value = MockSchedule(schedule_params, phases)
 
-        response = self._retrieve(kwargs={"service": owner.service, "owner_username": owner.username})
+        response = self._retrieve(
+            kwargs={"service": owner.service, "owner_username": owner.username}
+        )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == {
             "activated_user_count": 0,
@@ -341,7 +355,9 @@ class AccountViewSetTests(APITestCase):
     def test_retrieve_account_gets_none_for_schedule_details_when_schedule_is_nonexistent(
         self, mock_retrieve_subscription
     ):
-        owner = OwnerFactory(admins=[self.current_owner.ownerid], stripe_subscription_id="sub_123")
+        owner = OwnerFactory(
+            admins=[self.current_owner.ownerid], stripe_subscription_id="sub_123"
+        )
         self.current_owner.organizations = [owner.ownerid]
         self.current_owner.save()
 
@@ -356,7 +372,9 @@ class AccountViewSetTests(APITestCase):
 
         mock_retrieve_subscription.return_value = MockSubscription(subscription_params)
 
-        response = self._retrieve(kwargs={"service": owner.service, "owner_username": owner.username})
+        response = self._retrieve(
+            kwargs={"service": owner.service, "owner_username": owner.username}
+        )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == {
             "activated_user_count": 0,
@@ -408,7 +426,9 @@ class AccountViewSetTests(APITestCase):
         self.current_owner.save()
         student_1 = OwnerFactory(organizations=[owner.ownerid], student=True)
         student_2 = OwnerFactory(organizations=[owner.ownerid], student=True)
-        response = self._retrieve(kwargs={"service": owner.service, "owner_username": owner.username})
+        response = self._retrieve(
+            kwargs={"service": owner.service, "owner_username": owner.username}
+        )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == {
             "activated_user_count": 0,
@@ -488,7 +508,9 @@ class AccountViewSetTests(APITestCase):
     def test_retrieve_account_returns_401_if_not_authenticated(self):
         owner = OwnerFactory()
         self.client.logout()
-        response = self._retrieve(kwargs={"service": owner.service, "owner_username": owner.username})
+        response = self._retrieve(
+            kwargs={"service": owner.service, "owner_username": owner.username}
+        )
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_retrieve_account_returns_401_if_no_current_owner(self):
@@ -496,12 +518,16 @@ class AccountViewSetTests(APITestCase):
         user = UserFactory()
         self.client.logout()
         self.client.force_login(user)
-        response = self._retrieve(kwargs={"service": owner.service, "owner_username": owner.username})
+        response = self._retrieve(
+            kwargs={"service": owner.service, "owner_username": owner.username}
+        )
         assert response.status_code == 403
 
     def test_retrieve_account_returns_404_if_user_not_member(self):
         owner = OwnerFactory()
-        response = self._retrieve(kwargs={"service": owner.service, "owner_username": owner.username})
+        response = self._retrieve(
+            kwargs={"service": owner.service, "owner_username": owner.username}
+        )
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     @patch("services.billing.stripe.Subscription.retrieve")
@@ -558,7 +584,9 @@ class AccountViewSetTests(APITestCase):
     @patch("services.billing.stripe.Subscription.retrieve")
     def test_retrieve_handles_stripe_error(self, mock_get_subscription):
         code, message = 404, "Didn't find that"
-        mock_get_subscription.side_effect = StripeError(message=message, http_status=code)
+        mock_get_subscription.side_effect = StripeError(
+            message=message, http_status=code
+        )
         self.current_owner.stripe_subscription_id = "djfos"
         self.current_owner.save()
 
@@ -728,7 +756,9 @@ class AccountViewSetTests(APITestCase):
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     @patch("services.billing.stripe.checkout.Session.create")
-    def test_update_must_validate_active_users_without_counting_active_students(self, create_checkout_session_mock):
+    def test_update_must_validate_active_users_without_counting_active_students(
+        self, create_checkout_session_mock
+    ):
         expected_id = "sample id"
         create_checkout_session_mock.return_value = {"id": expected_id}
         self.current_owner.stripe_subscription_id = None
@@ -821,7 +851,10 @@ class AccountViewSetTests(APITestCase):
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert response.data["plan"]["non_field_errors"][0] == "Quantity for paid plan must be greater than 1"
+        assert (
+            response.data["plan"]["non_field_errors"][0]
+            == "Quantity for paid plan must be greater than 1"
+        )
 
     def test_update_payment_method_without_body(self):
         kwargs = {
@@ -835,7 +868,9 @@ class AccountViewSetTests(APITestCase):
     @patch("services.billing.stripe.Subscription.retrieve")
     @patch("services.billing.stripe.PaymentMethod.attach")
     @patch("services.billing.stripe.Customer.modify")
-    def test_update_payment_method(self, modify_customer_mock, attach_payment_mock, retrieve_subscription_mock):
+    def test_update_payment_method(
+        self, modify_customer_mock, attach_payment_mock, retrieve_subscription_mock
+    ):
         self.current_owner.stripe_customer_id = "flsoe"
         self.current_owner.stripe_subscription_id = "djfos"
         self.current_owner.save()
@@ -871,7 +906,9 @@ class AccountViewSetTests(APITestCase):
         url = reverse("account_details-update-payment", kwargs=kwargs)
         response = self.client.patch(url, data=data, format="json")
         assert response.status_code == status.HTTP_200_OK
-        attach_payment_mock.assert_called_once_with(payment_method_id, customer=self.current_owner.stripe_customer_id)
+        attach_payment_mock.assert_called_once_with(
+            payment_method_id, customer=self.current_owner.stripe_customer_id
+        )
         modify_customer_mock.assert_called_once_with(
             self.current_owner.stripe_customer_id,
             invoice_settings={"default_payment_method": payment_method_id},
@@ -901,7 +938,9 @@ class AccountViewSetTests(APITestCase):
     def test_update_without_admin_permissions_returns_404(self, get_provider_mock):
         get_provider_mock.return_value = GetAdminProviderAdapter()
         owner = OwnerFactory()
-        response = self._update(kwargs={"service": owner.service, "owner_username": owner.username}, data={})
+        response = self._update(
+            kwargs={"service": owner.service, "owner_username": owner.username}, data={}
+        )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -958,11 +997,15 @@ class AccountViewSetTests(APITestCase):
             },
             data={"plan": desired_plan},
         )
-        send_sentry_webhook.assert_called_once_with(self.current_owner, self.current_owner)
+        send_sentry_webhook.assert_called_once_with(
+            self.current_owner, self.current_owner
+        )
 
     @patch("api.internal.owner.serializers.send_sentry_webhook")
     @patch("services.billing.StripeService.modify_subscription")
-    def test_update_sentry_plan_monthly_with_users_org(self, modify_sub_mock, send_sentry_webhook):
+    def test_update_sentry_plan_monthly_with_users_org(
+        self, modify_sub_mock, send_sentry_webhook
+    ):
         desired_plan = {"value": PlanName.SENTRY_MONTHLY.value, "quantity": 12}
         org = OwnerFactory(
             service=Service.GITHUB.value,
@@ -997,11 +1040,15 @@ class AccountViewSetTests(APITestCase):
             },
             data={"plan": desired_plan},
         )
-        send_sentry_webhook.assert_called_once_with(self.current_owner, self.current_owner)
+        send_sentry_webhook.assert_called_once_with(
+            self.current_owner, self.current_owner
+        )
 
     @patch("api.internal.owner.serializers.send_sentry_webhook")
     @patch("services.billing.StripeService.modify_subscription")
-    def test_update_sentry_plan_annual_with_users_org(self, modify_sub_mock, send_sentry_webhook):
+    def test_update_sentry_plan_annual_with_users_org(
+        self, modify_sub_mock, send_sentry_webhook
+    ):
         desired_plan = {"value": "users-sentryy", "quantity": 12}
         org = OwnerFactory(
             service=Service.GITHUB.value,
@@ -1021,7 +1068,9 @@ class AccountViewSetTests(APITestCase):
 
     @patch("api.internal.owner.serializers.send_sentry_webhook")
     @patch("services.billing.StripeService.modify_subscription")
-    def test_update_sentry_plan_non_sentry_user(self, modify_sub_mock, send_sentry_webhook):
+    def test_update_sentry_plan_non_sentry_user(
+        self, modify_sub_mock, send_sentry_webhook
+    ):
         desired_plan = {"value": PlanName.SENTRY_MONTHLY.value, "quantity": 5}
         org = OwnerFactory(
             service=Service.GITHUB.value,
@@ -1149,12 +1198,16 @@ class AccountViewSetTests(APITestCase):
 
     def test_destroy_not_own_account_returns_404(self):
         owner = OwnerFactory(admins=[self.current_owner.ownerid])
-        response = self._destroy(kwargs={"service": owner.service, "owner_username": owner.username})
+        response = self._destroy(
+            kwargs={"service": owner.service, "owner_username": owner.username}
+        )
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     @patch("services.segment.SegmentService.account_deleted")
     @patch("services.task.TaskService.delete_owner")
-    def test_destroy_triggers_segment_event(self, delete_owner_mock, segment_account_deleted_mock):
+    def test_destroy_triggers_segment_event(
+        self, delete_owner_mock, segment_account_deleted_mock
+    ):
         owner = OwnerFactory(admins=[self.current_owner.ownerid])
         self._destroy(
             kwargs={
@@ -1176,7 +1229,9 @@ class EnterpriseAccountViewSetTests(APITestCase):
         return self.client.get(reverse("account_details-detail", kwargs=kwargs))
 
     def _update(self, kwargs, data):
-        return self.client.patch(reverse("account_details-detail", kwargs=kwargs), data=data, format="json")
+        return self.client.patch(
+            reverse("account_details-detail", kwargs=kwargs), data=data, format="json"
+        )
 
     def _destroy(self, kwargs):
         return self.client.delete(reverse("account_details-detail", kwargs=kwargs))

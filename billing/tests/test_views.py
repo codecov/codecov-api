@@ -348,7 +348,7 @@ class StripeWebhookHandlerTests(APITestCase):
     def test_customer_subscription_updated_does_not_change_subscription_if_not_paid_user_plan(
         self, upm_mock
     ):
-        self.owner.plan = None
+        self.owner.plan = PlanName.BASIC_PLAN_NAME.value
         self.owner.plan_user_count = 0
         self.owner.plan_auto_activate = False
         self.owner.save()
@@ -372,7 +372,7 @@ class StripeWebhookHandlerTests(APITestCase):
         )
 
         self.owner.refresh_from_db()
-        assert self.owner.plan == None
+        assert self.owner.plan == PlanName.BASIC_PLAN_NAME.value
         assert self.owner.plan_user_count == 0
         assert self.owner.plan_auto_activate == False
         upm_mock.assert_called_once_with(self.owner, "pm_1LhiRsGlVGuVgOrkQguJXdeV")

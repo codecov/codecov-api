@@ -115,8 +115,12 @@ class Owner(models.Model):
         db_table = "owners"
         ordering = ["ownerid"]
         constraints = [
-            models.UniqueConstraint(fields=["service", "username"], name="owner_service_username"),
-            models.UniqueConstraint(fields=["service", "service_id"], name="owner_service_ids"),
+            models.UniqueConstraint(
+                fields=["service", "username"], name="owner_service_username"
+            ),
+            models.UniqueConstraint(
+                fields=["service", "service_id"], name="owner_service_ids"
+            ),
         ]
 
     REQUIRED_FIELDS = []
@@ -124,7 +128,9 @@ class Owner(models.Model):
 
     ownerid = models.AutoField(primary_key=True)
     service = models.TextField(choices=Service.choices)  # Really an ENUM in db
-    username = CITextField(unique=True, null=True)  # No actual unique constraint on this in the DB
+    username = CITextField(
+        unique=True, null=True
+    )  # No actual unique constraint on this in the DB
     email = models.TextField(null=True)
     business_email = models.TextField(null=True)
     name = models.TextField(null=True)
@@ -144,19 +150,25 @@ class Owner(models.Model):
     staff = models.BooleanField(null=True, default=False)
     cache = models.JSONField(null=True)
     # Really an ENUM in db
-    plan = models.TextField(null=True, default=PlanName.BASIC_PLAN_NAME.value, blank=True)
+    plan = models.TextField(
+        null=True, default=PlanName.BASIC_PLAN_NAME.value, blank=True
+    )
     plan_provider = models.TextField(
         null=True, choices=PlanProviders.choices, blank=True
     )  # postgres enum containing only "github"
     plan_user_count = models.SmallIntegerField(null=True, default=1, blank=True)
     plan_auto_activate = models.BooleanField(null=True, default=True)
-    plan_activated_users = ArrayField(models.IntegerField(null=True), null=True, blank=True)
+    plan_activated_users = ArrayField(
+        models.IntegerField(null=True), null=True, blank=True
+    )
     did_trial = models.BooleanField(null=True)
     trial_start_date = DateTimeWithoutTZField(null=True)
     trial_end_date = DateTimeWithoutTZField(null=True)
     # TODO: I want this column to be null at first, and then would run a script to populate customers with
     # not_started and cannot_trial, and then set default value to not_started.
-    trial_status = models.CharField(max_length=50, choices=TrialStatus.choices, null=True)
+    trial_status = models.CharField(
+        max_length=50, choices=TrialStatus.choices, null=True
+    )
     free = models.SmallIntegerField(default=0)
     invoice_details = models.TextField(null=True)
     delinquent = models.BooleanField(null=True)
@@ -166,7 +178,9 @@ class Owner(models.Model):
     admins = ArrayField(models.IntegerField(null=True), null=True, blank=True)
     integration_id = models.IntegerField(null=True, blank=True)
     permission = ArrayField(models.IntegerField(null=True), null=True)
-    bot = models.ForeignKey("Owner", db_column="bot", null=True, on_delete=models.SET_NULL, blank=True)
+    bot = models.ForeignKey(
+        "Owner", db_column="bot", null=True, on_delete=models.SET_NULL, blank=True
+    )
     student = models.BooleanField(default=False)
     student_created_at = DateTimeWithoutTZField(null=True)
     student_updated_at = DateTimeWithoutTZField(null=True)
@@ -233,13 +247,17 @@ class Owner(models.Model):
         if it exists, otherwise iterating through the parents and caches it in root_parent_service_id
         """
         if self.root_parent_service_id:
-            return Owner.objects.get(service_id=self.root_parent_service_id, service=self.service)
+            return Owner.objects.get(
+                service_id=self.root_parent_service_id, service=self.service
+            )
 
         root = None
         if self.service == "gitlab" and self.parent_service_id:
             root = self
             while root.parent_service_id is not None:
-                root = Owner.objects.get(service_id=root.parent_service_id, service=root.service)
+                root = Owner.objects.get(
+                    service_id=root.parent_service_id, service=root.service
+                )
             self.root_parent_service_id = root.service_id
             self.save()
         return root
@@ -264,19 +282,25 @@ class Owner(models.Model):
 
     @property
     def active_repos(self):
-        return Repository.objects.filter(active=True, author=self.ownerid).order_by("-updatestamp")
+        return Repository.objects.filter(active=True, author=self.ownerid).order_by(
+            "-updatestamp"
+        )
 
     @property
     def activated_user_count(self):
         if not self.plan_activated_users:
             return 0
-        return Owner.objects.filter(ownerid__in=self.plan_activated_users, student=False).count()
+        return Owner.objects.filter(
+            ownerid__in=self.plan_activated_users, student=False
+        ).count()
 
     @property
     def activated_student_count(self):
         if not self.plan_activated_users:
             return 0
-        return Owner.objects.filter(ownerid__in=self.plan_activated_users, student=True).count()
+        return Owner.objects.filter(
+            ownerid__in=self.plan_activated_users, student=True
+        ).count()
 
     @property
     def student_count(self):
@@ -284,10 +308,15 @@ class Owner(models.Model):
 
     @property
     def inactive_user_count(self):
-        return Owner.objects.users_of(self).filter(student=False).count() - self.activated_user_count
+        return (
+            Owner.objects.users_of(self).filter(student=False).count()
+            - self.activated_user_count
+        )
 
     def is_admin(self, owner):
-        return self.ownerid == owner.ownerid or (bool(self.admins) and owner.ownerid in self.admins)
+        return self.ownerid == owner.ownerid or (
+            bool(self.admins) and owner.ownerid in self.admins
+        )
 
     @property
     def is_authenticated(self):
@@ -300,7 +329,9 @@ class Owner(models.Model):
         if self.staff:
             domain = self.email.split("@")[1] if self.email else ""
             if domain != "codecov.io":
-                raise ValidationError("User not part of Codecov cannot be a staff member")
+                raise ValidationError(
+                    "User not part of Codecov cannot be a staff member"
+                )
         if not self.plan:
             self.plan = None
         if not self.stripe_customer_id:
@@ -311,18 +342,30 @@ class Owner(models.Model):
     @property
     def avatar_url(self, size=DEFAULT_AVATAR_SIZE):
         if self.service == SERVICE_GITHUB and self.service_id:
-            return "{}/u/{}?v=3&s={}".format(AVATAR_GITHUB_BASE_URL, self.service_id, size)
+            return "{}/u/{}?v=3&s={}".format(
+                AVATAR_GITHUB_BASE_URL, self.service_id, size
+            )
 
         elif self.service == SERVICE_GITHUB_ENTERPRISE and self.service_id:
-            return "{}/avatars/u/{}?v=3&s={}".format(get_config("github_enterprise", "url"), self.service_id, size)
+            return "{}/avatars/u/{}?v=3&s={}".format(
+                get_config("github_enterprise", "url"), self.service_id, size
+            )
 
         # Bitbucket
         elif self.service == SERVICE_BITBUCKET and self.username:
-            return "{}/account/{}/avatar/{}".format(BITBUCKET_BASE_URL, self.username, size)
+            return "{}/account/{}/avatar/{}".format(
+                BITBUCKET_BASE_URL, self.username, size
+            )
 
-        elif self.service == SERVICE_BITBUCKET_SERVER and self.service_id and self.username:
+        elif (
+            self.service == SERVICE_BITBUCKET_SERVER
+            and self.service_id
+            and self.username
+        ):
             if "U" in self.service_id:
-                return "{}/users/{}/avatar.png?s={}".format(get_config("bitbucket_server", "url"), self.username, size)
+                return "{}/users/{}/avatar.png?s={}".format(
+                    get_config("bitbucket_server", "url"), self.username, size
+                )
             else:
                 return "{}/projects/{}/avatar.png?s={}".format(
                     get_config("bitbucket_server", "url"), self.username, size
@@ -334,19 +377,29 @@ class Owner(models.Model):
 
         # Codecov config
         elif get_config("services", "gravatar") and self.email:
-            return "{}/avatar/{}?s={}".format(GRAVATAR_BASE_URL, md5(self.email.lower().encode()).hexdigest(), size)
+            return "{}/avatar/{}?s={}".format(
+                GRAVATAR_BASE_URL, md5(self.email.lower().encode()).hexdigest(), size
+            )
 
         elif get_config("services", "avatars.io") and self.email:
-            return "{}/avatar/{}/{}".format(AVATARIO_BASE_URL, md5(self.email.lower().encode()).hexdigest(), size)
+            return "{}/avatar/{}/{}".format(
+                AVATARIO_BASE_URL, md5(self.email.lower().encode()).hexdigest(), size
+            )
 
         elif self.ownerid:
-            return "{}/users/{}.png?size={}".format(get_config("setup", "codecov_url"), self.ownerid, size)
+            return "{}/users/{}.png?size={}".format(
+                get_config("setup", "codecov_url"), self.ownerid, size
+            )
 
         elif os.getenv("APP_ENV") == SERVICE_CODECOV_ENTERPRISE:
-            return "{}/media/images/gafsi/avatar.svg".format(get_config("setup", "codecov_url"))
+            return "{}/media/images/gafsi/avatar.svg".format(
+                get_config("setup", "codecov_url")
+            )
 
         else:
-            return "{}/media/images/gafsi/avatar.svg".format(get_config("setup", "media", "assets"))
+            return "{}/media/images/gafsi/avatar.svg".format(
+                get_config("setup", "media", "assets")
+            )
 
     @property
     def pretty_plan(self):
@@ -362,7 +415,9 @@ class Owner(models.Model):
             return plan_details
 
     def can_activate_user(self, user):
-        return user.student or self.activated_user_count < self.plan_user_count + self.free
+        return (
+            user.student or self.activated_user_count < self.plan_user_count + self.free
+        )
 
     def activate_user(self, user):
         log.info(f"Activating user {user.ownerid} in ownerid {self.ownerid}")
@@ -383,7 +438,9 @@ class Owner(models.Model):
         self.save()
 
     def add_admin(self, user):
-        log.info(f"Granting admin permissions to user {user.ownerid} within owner {self.ownerid}")
+        log.info(
+            f"Granting admin permissions to user {user.ownerid} within owner {self.ownerid}"
+        )
         if isinstance(self.admins, list):
             if user.ownerid not in self.admins:
                 self.admins.append(user.ownerid)
@@ -392,7 +449,9 @@ class Owner(models.Model):
         self.save()
 
     def remove_admin(self, user):
-        log.info(f"Revoking admin permissions for user {user.ownerid} within owner {self.ownerid}")
+        log.info(
+            f"Revoking admin permissions for user {user.ownerid} within owner {self.ownerid}"
+        )
         if isinstance(self.admins, list):
             try:
                 self.admins.remove(user.ownerid)
@@ -414,7 +473,9 @@ class OrganizationLevelToken(BaseCodecovModel):
     )
     token = models.UUIDField(unique=True, default=uuid.uuid4)
     valid_until = models.DateTimeField(blank=True, null=True)
-    token_type = models.CharField(max_length=50, choices=TokenTypeChoices.choices, default=TokenTypeChoices.UPLOAD)
+    token_type = models.CharField(
+        max_length=50, choices=TokenTypeChoices.choices, default=TokenTypeChoices.UPLOAD
+    )
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
@@ -434,11 +495,17 @@ class OwnerProfile(BaseCodecovModel):
         TEAM_REQUIREMENTS = "TEAM_REQUIREMENTS"
         OTHER = "OTHER"
 
-    owner = models.OneToOneField(Owner, on_delete=models.CASCADE, unique=True, related_name="profile")
-    type_projects = ArrayField(models.TextField(choices=ProjectType.choices), default=list)
+    owner = models.OneToOneField(
+        Owner, on_delete=models.CASCADE, unique=True, related_name="profile"
+    )
+    type_projects = ArrayField(
+        models.TextField(choices=ProjectType.choices), default=list
+    )
     goals = ArrayField(models.TextField(choices=Goal.choices), default=list)
     other_goal = models.TextField(null=True)
-    default_org = models.ForeignKey(Owner, on_delete=models.CASCADE, null=True, related_name="profiles_with_default")
+    default_org = models.ForeignKey(
+        Owner, on_delete=models.CASCADE, null=True, related_name="profiles_with_default"
+    )
     terms_agreement = models.BooleanField(null=True)
     terms_agreement_at = DateTimeWithoutTZField(null=True)
 
@@ -481,7 +548,9 @@ class RepositoryToken(BaseCodecovModel):
     )
     token_type = models.CharField(max_length=50, choices=TokenType.choices)
     valid_until = models.DateTimeField(blank=True, null=True)
-    key = models.CharField(max_length=40, unique=True, editable=False, default=_generate_key)
+    key = models.CharField(
+        max_length=40, unique=True, editable=False, default=_generate_key
+    )
 
     @classmethod
     def generate_key(cls):
@@ -501,4 +570,6 @@ class UserToken(BaseCodecovModel):
     )
     token = models.UUIDField(unique=True, default=uuid.uuid4)
     valid_until = models.DateTimeField(blank=True, null=True)
-    token_type = models.CharField(max_length=50, choices=TokenType.choices, default=TokenType.API)
+    token_type = models.CharField(
+        max_length=50, choices=TokenType.choices, default=TokenType.API
+    )

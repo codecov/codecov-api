@@ -1,11 +1,9 @@
 from datetime import datetime
-from typing import List
 
 from django.core.management.base import BaseCommand, CommandParser
-from django.db.models import QuerySet
+from django.db.models import Q
 
 from codecov_auth.models import Owner
-from graphql_api.types import plan
 from plan.constants import (
     PLANS_THAT_CAN_TRIAL,
     SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
@@ -18,67 +16,88 @@ class Command(BaseCommand):
     help = "Sets the initial trial status values for an owner"
 
     def add_arguments(self, parser: CommandParser) -> None:
-        # this can be used to retry if there's an error - restart the command
-        # from the last ID printed before failure
-        parser.add_argument("--starting_ownerid", type=int)
+        parser.add_argument("trial_status_type", type=str)
 
     def handle(self, *args, **options) -> None:
-        owners: QuerySet[Owner] = Owner.objects.all().order_by("ownerid")
+        trial_status_type = options.get("trial_status_type", {})
 
-        if options.get("starting_ownerid", {}):
-            owners = owners.filter(pk__gte=options["starting_ownerid"])
+        # NOT_STARTED
+        if trial_status_type == "all" or trial_status_type == "not_started":
+            Owner.objects.filter(
+                plan=PlanName.BASIC_PLAN_NAME.value,
+                stripe_customer_id=None,
+            ).update(trial_status=TrialStatus.NOT_STARTED.value)
 
-        for owner in owners.iterator():
-            plan_name = owner.plan
-            trial_start_date = owner.trial_start_date
-            trial_end_date = owner.trial_end_date
-            stripe_customer_id = owner.stripe_customer_id
+        # ONGOING
+        if trial_status_type == "all" or trial_status_type == "ongoing":
+            Owner.objects.filter(
+                plan__in=SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
+                trial_end_date__gt=datetime.utcnow(),
+            ).update(trial_status=TrialStatus.ONGOING.value)
 
-            if (
-                plan_name == PlanName.BASIC_PLAN_NAME.value
-                and trial_start_date is None
-                and trial_end_date is None
-                and not stripe_customer_id
-            ):
-                owner.trial_status = TrialStatus.NOT_STARTED.value
-
-            # Only applies to Sentry Paid plans that have started their trial within the last 14 days
-            elif (
-                plan_name in SENTRY_PAID_USER_PLAN_REPRESENTATIONS
-                and (trial_start_date and trial_end_date)
-                and (trial_end_date - trial_start_date).days <= 14
-            ):
-                owner.trial_status = TrialStatus.ONGOING.value
-
-            # Only applies to Sentry paid plans that underwent their trial, or sentry plans that have expired and are now back to basic plan
-            elif (
-                plan_name in SENTRY_PAID_USER_PLAN_REPRESENTATIONS
-                and trial_end_date
-                and datetime.utcnow() > trial_end_date
-            ) or (
-                plan_name == PlanName.BASIC_PLAN_NAME.value
-                and trial_start_date
-                and trial_end_date
-            ):
-                owner.trial_status = TrialStatus.EXPIRED.value
-            # Plans that don't offer trial or currently/previously paying customers that never trialed.
-            elif (
-                plan_name not in PLANS_THAT_CAN_TRIAL
-                # I can probably get rid of this condition and use the 'or' below instead?
-                or (
-                    stripe_customer_id
-                    and owner.stripe_subscription_id
-                    and trial_start_date == None
-                    and trial_end_date == None
+        # EXPIRED
+        if trial_status_type == "all" or trial_status_type == "expired":
+            Owner.objects.filter(
+                # Currently paying sentry customer with trial_end_date
+                Q(
+                    plan__in=SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
+                    stripe_customer_id__isnull=False,
+                    stripe_subscription_id__isnull=False,
+                    trial_end_date__lte=datetime.utcnow(),
                 )
-                or (
-                    stripe_customer_id
-                    and trial_start_date == None
-                    and trial_end_date == None
+                # Currently paying sentry customer without trial_end_date
+                | Q(
+                    plan__in=SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
+                    stripe_customer_id__isnull=False,
+                    stripe_subscription_id__isnull=False,
+                    trial_start_date__isnull=True,
+                    trial_end_date__isnull=True,
                 )
-            ):
-                owner.trial_status = TrialStatus.CANNOT_TRIAL.value
-            else:
-                pass
+                # Previously paid but now back to basic with trial start/end dates
+                | Q(
+                    plan=PlanName.BASIC_PLAN_NAME.value,
+                    stripe_customer_id__isnull=False,
+                    trial_start_date__isnull=False,
+                    trial_end_date__isnull=False,
+                )
+            ).update(trial_status=TrialStatus.EXPIRED.value)
 
-            owner.save()
+        # CANNOT_TRIAL
+        if trial_status_type == "all" or trial_status_type == "cannot_trial":
+            Owner.objects.filter(
+                # Plans that cannot trial
+                ~Q(plan__in=PLANS_THAT_CAN_TRIAL)
+                # Previously paid but now back to basic without trial start/end dates
+                | Q(
+                    plan=PlanName.BASIC_PLAN_NAME.value,
+                    stripe_customer_id__isnull=False,
+                    trial_start_date__isnull=True,
+                    trial_end_date__isnull=True,
+                )
+                # Currently paying customer that isn't a sentry plan (they would be expired)
+                | Q(
+                    ~Q(plan__in=SENTRY_PAID_USER_PLAN_REPRESENTATIONS),
+                    stripe_subscription_id__isnull=False,
+                    stripe_customer_id__isnull=False,
+                )
+            ).update(trial_status=TrialStatus.CANNOT_TRIAL.value)
+
+        # DELETE ALL - in case something gets messed up
+        if trial_status_type == "null_all_are_you_sure":
+            Owner.objects.all().update(trial_status=None)
+
+
+# Scenarios
+# basic plan, without stripe_id > not_started
+
+# sentry plan, stripe_id, with end date after today > ongoing
+
+# sentry plan, stripe_id, with end date before today > expired
+# sentry plan, stripe_id, subscription id > expired
+# basic plan, with stripe_id, with start/end dates > expired
+
+# unsupported trial plan > cannot_trial
+# supported paid plan, no end date > cannot_trial
+# basic plan, with stripe_id, no start/end dates > cannot_trial
+
+# supported paid plan, with end date > should currently not exist in the DB
