@@ -409,7 +409,6 @@ def test_simple_label_analysis_put_labels(db, mocker):
             "head_commit": commit.commitid,
         },
     )
-    print(response.json())
     assert response.status_code == 200
     assert response.json() == expected_response_json
 
@@ -455,5 +454,4 @@ def test_simple_label_analysis_put_labels_wrong_base_return_404(db, mocker):
             "head_commit": commit.commitid,
         },
     )
-    print(response.json())
     assert response.status_code == 404
