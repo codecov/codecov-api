@@ -233,21 +233,24 @@ class RepositoryQuerySet(QuerySet):
             ),
         )
 
-    def with_cache_latest_commit_at(self):
+    def with_latest_commit_at(self):
         """
-        Annotates queryset with latest commit based on a Repository's cache. We annotate:
-        - true_latest_commit_at as the real value from the cache
+        Annotates queryset with latest commit based on a Repository. We annotate:
+        - true_latest_commit_at as the real value from the table
         - latest_commit_at as the true_coverage except NULL are transformed to 1/1/1900
         This make sure when we order the repo with no commit appears last.
         """
-        latest_commit_at_from_cache = Cast(
-            KeyTextTransform("timestamp", KeyTextTransform("commit", "cache")),
-            output_field=DateTimeField(),
+        from core.models import Commit
+
+        latest_commit_at = Subquery(
+            Commit.objects.filter(repository_id=OuterRef("pk"))
+            .order_by("-timestamp")
+            .values("timestamp")[:1]
         )
         return self.annotate(
-            true_latest_commit_at=latest_commit_at_from_cache,
+            true_latest_commit_at=latest_commit_at,
             latest_commit_at=Coalesce(
-                latest_commit_at_from_cache, Value(datetime.datetime(1900, 1, 1))
+                latest_commit_at, Value(datetime.datetime(1900, 1, 1))
             ),
         )
 
