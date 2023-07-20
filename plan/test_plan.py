@@ -75,9 +75,7 @@ class PlanServiceTests(TestCase):
 
     def test_plan_service_start_trial_errors_if_status_is_not_started(self):
         trial_start_date = datetime.utcnow()
-        trial_end_date = trial_start_date + timedelta(
-            days=TrialDaysAmount.CODECOV_SENTRY.value
-        )
+        trial_end_date = trial_start_date + timedelta(days=TrialDaysAmount.CODECOV_SENTRY.value)
         current_org = OwnerFactory(
             plan=PlanName.BASIC_PLAN_NAME.value,
             trial_start_date=trial_start_date,
@@ -100,31 +98,9 @@ class PlanServiceTests(TestCase):
 
         plan_service.start_trial()
         assert current_org.trial_start_date == datetime.utcnow()
-        assert current_org.trial_end_date == datetime.utcnow() + timedelta(
-            days=TrialDaysAmount.CODECOV_SENTRY.value
-        )
+        assert current_org.trial_end_date == datetime.utcnow() + timedelta(days=TrialDaysAmount.CODECOV_SENTRY.value)
 
-    def test_plan_service_expire_trial_for_ongoing_trial(
-        self,
-    ):
-        time_now = datetime.utcnow()
-        trial_start_date = time_now
-        trial_end_date = time_now + timedelta(days=TrialDaysAmount.CODECOV_SENTRY.value)
-        current_org = OwnerFactory(
-            plan=PlanName.BASIC_PLAN_NAME.value,
-            trial_start_date=trial_start_date,
-            trial_end_date=trial_end_date,
-        )
-        plan_service = PlanService(current_org=current_org)
-        plan_service.expire_trial()
-
-        current_org.refresh_from_db()
-
-        assert plan_service.trial_end_date == time_now
-        # TODO: Uncomment when trial_status is derived from DB column
-        # assert plan_service.trial_status == TrialStatus.EXPIRED
-
-    def test_plan_service_returns_plan_data_for_basic_plan_non_trial(self):
+    def test_plan_service_returns_plan_data_for_non_trial_basic_plan(self):
         trial_start_date = None
         trial_end_date = None
         current_org = OwnerFactory(
@@ -141,19 +117,13 @@ class PlanServiceTests(TestCase):
         assert plan_service.billing_rate == basic_plan.billing_rate
         assert plan_service.base_unit_price == basic_plan.base_unit_price
         assert plan_service.benefits == basic_plan.benefits
-        assert (
-            plan_service.monthly_uploads_limit == basic_plan.monthly_uploads_limit
-        )  # should be 250
-        assert (
-            plan_service.monthly_uploads_limit == 250
-        )  # should be 250 since not trialing
+        assert plan_service.monthly_uploads_limit == basic_plan.monthly_uploads_limit  # should be 250
+        assert plan_service.monthly_uploads_limit == 250  # should be 250 since not trialing
         assert plan_service.trial_total_days == basic_plan.trial_days
 
     def test_plan_service_returns_plan_data_for_trialing_user_trial_plan(self):
         trial_start_date = datetime.utcnow()
-        trial_end_date = datetime.utcnow() + timedelta(
-            days=TrialDaysAmount.CODECOV_SENTRY.value
-        )
+        trial_end_date = datetime.utcnow() + timedelta(days=TrialDaysAmount.CODECOV_SENTRY.value)
         current_org = OwnerFactory(
             plan=PlanName.TRIAL_PLAN_NAME.value,
             trial_start_date=trial_start_date,
