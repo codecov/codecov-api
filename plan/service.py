@@ -19,6 +19,7 @@ log = logging.getLogger(__name__)
 
 
 # TODO: Change notifier_service type to Abstract Class for a NotifierService rather than SegmentService
+# TODO: Consider moving some of these methods to the billing directory as they overlap billing functionality
 class PlanService:
     def __init__(self, current_org: Owner):
         """
@@ -39,11 +40,12 @@ class PlanService:
             self.plan_data = USER_PLAN_REPRESENTATIONS[self.current_org.plan]
 
     def update_plan(self, name: PlanName, user_count: int) -> None:
-        if name in USER_PLAN_REPRESENTATIONS:
-            self.current_org.plan = name
-            self.current_org.plan_user_count = user_count
-            self.plan_data = USER_PLAN_REPRESENTATIONS[self.current_org.plan]
-            self.current_org.save()
+        if name not in USER_PLAN_REPRESENTATIONS:
+            raise ValueError("Unsupported plan")
+        self.current_org.plan = name
+        self.current_org.plan_user_count = user_count
+        self.plan_data = USER_PLAN_REPRESENTATIONS[self.current_org.plan]
+        self.current_org.save()
 
     def set_default_plan_data(self) -> None:
         log.info(f"Setting plan to users-basic for owner {self.current_org.ownerid}")

@@ -1,4 +1,4 @@
-import json
+from dataclasses import asdict
 from typing import List, Optional
 
 from django.conf import settings
@@ -34,5 +34,5 @@ def available_plans(owner: Optional[Owner]) -> List[dict]:
         plans += list(SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values())
 
     # TODO: not sure if I need to add the trial plan here
-    plans = [json.loads(plan.toJSON()) for plan in plans]
+    plans = [asdict(plan) for plan in plans]
     return plans

@@ -17,7 +17,9 @@ class StartTrialInteractor(BaseInteractor):
 
     @sync_to_async
     def execute(self, org_username: str) -> None:
-        owner = Owner.objects.filter(username=org_username, service=self.service).first()
+        owner = Owner.objects.filter(
+            username=org_username, service=self.service
+        ).first()
         self.validate(owner=owner)
         self._start_trial(owner=owner)
         return

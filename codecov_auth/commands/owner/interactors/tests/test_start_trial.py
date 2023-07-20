@@ -86,4 +86,6 @@ class StartTrialInteractorTest(TransactionTestCase):
 
         now = datetime.utcnow()
         assert current_user.trial_start_date == now
-        assert current_user.trial_end_date == now + timedelta(days=TrialDaysAmount.CODECOV_SENTRY.value)
+        assert current_user.trial_end_date == now + timedelta(
+            days=TrialDaysAmount.CODECOV_SENTRY.value
+        )

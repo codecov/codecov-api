@@ -72,9 +72,6 @@ class PlanData:
     monthly_uploads_limit: Optional[MonthlyUploadLimits]
     trial_days: Optional[TrialDaysAmount]
 
-    def toJSON(self):
-        return json.dumps(asdict(self))
-
 
 NON_PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
     PlanName.CODECOV_PRO_MONTHLY_LEGACY.value: PlanData(
