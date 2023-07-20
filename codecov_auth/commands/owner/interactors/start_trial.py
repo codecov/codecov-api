@@ -11,11 +11,8 @@ class StartTrialInteractor(BaseInteractor):
             raise ValidationError("Cannot find owner record in the database")
 
     def _start_trial(self, owner: Owner):
-        try:
-            plan_service = PlanService(current_org=owner)
-            plan_service.start_trial()
-        except ValidationError as e_message:
-            raise ValidationError(e_message)
+        plan_service = PlanService(current_org=owner)
+        plan_service.start_trial()
         return
 
     @sync_to_async
