@@ -5,19 +5,21 @@ from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 
 from codecov_auth.tests.factories import OwnerFactory
+from utils.test_utils import Client
 
 
 class PlansViewSetTests(APITestCase):
     def setUp(self):
-        self.user = OwnerFactory()
+        self.current_owner = OwnerFactory()
+        self.client = Client()
+        self.client.force_login_owner(self.current_owner)
 
     def test_list_plans_returns_200_and_plans(self):
-        self.client.force_login(user=self.user)
         response = self.client.get(reverse("plans-list"))
         assert response.status_code == status.HTTP_200_OK
         assert response.data == [
             {
-                "marketing_name": "Free",
+                "marketing_name": "Developer",
                 "value": "users-free",
                 "billing_rate": None,
                 "base_unit_price": 0,
@@ -28,7 +30,7 @@ class PlansViewSetTests(APITestCase):
                 ],
             },
             {
-                "marketing_name": "Basic",
+                "marketing_name": "Developer",
                 "value": "users-basic",
                 "billing_rate": None,
                 "base_unit_price": 0,
@@ -67,13 +69,13 @@ class PlansViewSetTests(APITestCase):
 
     @patch("services.sentry.is_sentry_user")
     def test_list_plans_sentry_user(self, is_sentry_user):
-        self.client.force_login(user=self.user)
         is_sentry_user.return_value = True
+
         response = self.client.get(reverse("plans-list"))
         assert response.status_code == status.HTTP_200_OK
         assert response.data == [
             {
-                "marketing_name": "Free",
+                "marketing_name": "Developer",
                 "value": "users-free",
                 "billing_rate": None,
                 "base_unit_price": 0,
@@ -84,7 +86,7 @@ class PlansViewSetTests(APITestCase):
                 ],
             },
             {
-                "marketing_name": "Basic",
+                "marketing_name": "Developer",
                 "value": "users-basic",
                 "billing_rate": None,
                 "base_unit_price": 0,
@@ -148,14 +150,16 @@ class PlansViewSetTests(APITestCase):
                 "trial_days": 14,
             },
         ]
-        is_sentry_user.assert_called_once_with(self.user)
+        is_sentry_user.assert_called_once_with(self.current_owner)
 
     def test_list_plans_anonymous_user(self):
+        self.client.logout()
+
         response = self.client.get(reverse("plans-list"))
         assert response.status_code == status.HTTP_200_OK
         assert response.data == [
             {
-                "marketing_name": "Free",
+                "marketing_name": "Developer",
                 "value": "users-free",
                 "billing_rate": None,
                 "base_unit_price": 0,
@@ -166,7 +170,7 @@ class PlansViewSetTests(APITestCase):
                 ],
             },
             {
-                "marketing_name": "Basic",
+                "marketing_name": "Developer",
                 "value": "users-basic",
                 "billing_rate": None,
                 "base_unit_price": 0,

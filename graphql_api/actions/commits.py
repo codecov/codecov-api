@@ -19,7 +19,7 @@ def pull_commits(pull: Pull) -> QuerySet[Commit]:
         .filter(deleted__isnot=True)
     )
 
-    return Commit.objects.filter(id__in=subquery).defer("report")
+    return Commit.objects.filter(id__in=subquery).defer("_report")
 
 
 def commit_uploads(commit: Commit) -> QuerySet[ReportSession]:
@@ -49,14 +49,14 @@ def repo_commits(
     # prefetch the CommitReport with the ReportLevelTotals and ReportDetails
     prefetch = Prefetch(
         "reports",
-        queryset=CommitReport.objects.select_related(
-            "reportleveltotals", "reportdetails"
-        ).defer("reportdetails___files_array"),
+        queryset=CommitReport.objects.filter(code=None)
+        .select_related("reportleveltotals", "reportdetails")
+        .defer("reportdetails___files_array"),
     )
 
     # We don't select the `report` column here b/c it can be many MBs of JSON
     # and can cause performance issues
-    queryset = repository.commits.defer("report").prefetch_related(prefetch).all()
+    queryset = repository.commits.defer("_report").prefetch_related(prefetch).all()
 
     # queryset filtering
     filters = filters or {}

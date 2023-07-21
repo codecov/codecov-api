@@ -2,4 +2,5 @@ enum TrialStatus {
   NOT_STARTED
   ONGOING
   EXPIRED
+  CANNOT_TRIAL
 }

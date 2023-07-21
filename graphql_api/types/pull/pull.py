@@ -58,8 +58,8 @@ async def resolve_compare_with_base(pull, info, **kwargs):
         return comparison_error
 
     if commit_comparison and commit_comparison.is_processed:
-        user = info.context["request"].user
-        comparison = PullRequestComparison(user, pull)
+        current_owner = info.context["request"].current_owner
+        comparison = PullRequestComparison(current_owner, pull)
         # store the comparison in the context - to be used in the `Comparison` resolvers
         info.context["comparison"] = comparison
 

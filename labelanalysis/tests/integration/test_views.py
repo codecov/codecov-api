@@ -9,7 +9,11 @@ from core.tests.factories import (
     RepositoryFactory,
     RepositoryTokenFactory,
 )
-from labelanalysis.models import LabelAnalysisRequest, LabelAnalysisRequestState
+from labelanalysis.models import (
+    LabelAnalysisProcessingError,
+    LabelAnalysisRequest,
+    LabelAnalysisRequestState,
+)
 from labelanalysis.tests.factories import LabelAnalysisRequestFactory
 from services.task import TaskService
 from staticanalysis.tests.factories import StaticAnalysisSuiteFactory
@@ -54,6 +58,7 @@ def test_simple_label_analysis_call_flow(db, mocker):
         "result": None,
         "state": "created",
         "external_id": str(produced_object.external_id),
+        "errors": [],
     }
     assert response_json == expected_response_json
     mocked_task_service.assert_called_with(
@@ -148,6 +153,7 @@ def test_simple_label_analysis_call_flow_with_fallback_on_base(db, mocker):
         "result": None,
         "state": "created",
         "external_id": str(produced_object.external_id),
+        "errors": [],
     }
     assert response_json == expected_response_json
     mocked_task_service.assert_called_with(
@@ -309,7 +315,13 @@ def test_simple_label_analysis_only_get(db, mocker):
         state_id=LabelAnalysisRequestState.FINISHED.db_id,
         result={"some": ["result"]},
     )
+    larq_processing_error = LabelAnalysisProcessingError(
+        label_analysis_request=label_analysis,
+        error_code="Missing FileSnapshot",
+        error_params={"message": "Something is wrong"},
+    )
     label_analysis.save()
+    larq_processing_error.save()
     client = APIClient()
     client.credentials(HTTP_AUTHORIZATION="repotoken " + token.key)
     assert LabelAnalysisRequest.objects.filter(head_commit=commit).count() == 1
@@ -322,6 +334,12 @@ def test_simple_label_analysis_only_get(db, mocker):
         "result": {"some": ["result"]},
         "state": "finished",
         "external_id": str(produced_object.external_id),
+        "errors": [
+            {
+                "error_code": "Missing FileSnapshot",
+                "error_params": {"message": "Something is wrong"},
+            }
+        ],
     }
     get_url = reverse(
         "view_label_analysis", kwargs=dict(external_id=produced_object.external_id)
@@ -377,6 +395,7 @@ def test_simple_label_analysis_put_labels(db, mocker):
         "result": None,
         "state": "created",
         "external_id": str(produced_object.external_id),
+        "errors": [],
     }
     patch_url = reverse(
         "view_label_analysis", kwargs=dict(external_id=produced_object.external_id)
@@ -390,7 +409,6 @@ def test_simple_label_analysis_put_labels(db, mocker):
             "head_commit": commit.commitid,
         },
     )
-    print(response.json())
     assert response.status_code == 200
     assert response.json() == expected_response_json
 
@@ -436,5 +454,4 @@ def test_simple_label_analysis_put_labels_wrong_base_return_404(db, mocker):
             "head_commit": commit.commitid,
         },
     )
-    print(response.json())
     assert response.status_code == 404

@@ -30,7 +30,7 @@ def test_get_bitbucket_redirect(client, settings, mocker):
     cookie = res.cookies["_oauth_request_token"]
     assert (
         cookie.value
-        == "Y3dVckVuQVY2S1pOVjhIOFE0|ZjRWNTY4TFc1OWc0Vkt3WjM5WDU1blFNSzVyc3FCVlk="
+        == "dGVzdHk2cjJvZjZhamttcnVi|dGVzdHppYnc1cTAxc2NwbDhxZWV1cHpoOHU5eXU4aHo="
     )
     assert cookie.get("domain") == settings.COOKIES_DOMAIN
     assert (
@@ -122,7 +122,7 @@ def test_get_bitbucket_already_token(client, settings, mocker, db, mock_redis):
     url = reverse("bitbucket-login")
     client.cookies = SimpleCookie(
         {
-            "_oauth_request_token": "test66me7mkczp7mmuzwc35k|YWRqTFVUVHZVcUduZVZ4cGN1aEpLRzhSVnJGdkw3c24="
+            "_oauth_request_token": "dGVzdDZ0bDNldnE3Yzh2dXlu|dGVzdGRtNjF0cHBiNXgwdGFtN25hZTNxYWpoY2Vweno="
         }
     )
     res = client.get(
@@ -137,7 +137,7 @@ def test_get_bitbucket_already_token(client, settings, mocker, db, mock_redis):
     assert cookie.value == ""
     assert cookie.get("domain") == settings.COOKIES_DOMAIN
     mocked_get.assert_called_with(
-        "test1daxl4jnhegoh4", "adjLUTTvUqGneVxpcuhJKG8RVrFvL7sn", "8519288973"
+        "test6tl3evq7c8vuyn", "testdm61tppb5x0tam7nae3qajhcepzz", "8519288973"
     )
     owner = Owner.objects.get(username="ThiagoCodecov", service="bitbucket")
     assert (

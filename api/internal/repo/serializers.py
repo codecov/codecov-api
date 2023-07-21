@@ -68,7 +68,7 @@ class RepoDetailsSerializer(RepoSerializer):
     def get_latest_commit(self, repo):
         commits_queryset = (
             repo.commits.filter(state=Commit.CommitStates.COMPLETE)
-            .defer("report")
+            .defer("_report")
             .order_by("-timestamp")
         )
 
@@ -98,11 +98,11 @@ class RepoDetailsSerializer(RepoSerializer):
         if "active" in validated_data:
             if validated_data["active"] and not instance.active:
                 segment.account_activated_repository(
-                    self.context["request"].user.ownerid, instance
+                    self.context["request"].current_owner.ownerid, instance
                 )
             elif not validated_data["active"] and instance.active:
                 segment.account_deactivated_repository(
-                    self.context["request"].user.ownerid, instance
+                    self.context["request"].current_owner.ownerid, instance
                 )
 
         return super().update(instance, validated_data)

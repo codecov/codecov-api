@@ -628,6 +628,7 @@ class FileComparison:
 
 class Comparison(object):
     def __init__(self, user, base_commit, head_commit):
+        # TODO: rename to owner
         self.user = user
         self._base_commit = base_commit
         self._head_commit = head_commit
@@ -663,7 +664,7 @@ class Comparison(object):
 
         if with_src:
             adapter = RepoProviderService().get_adapter(
-                user=self.user, repo=self.base_commit.repository
+                owner=self.user, repo=self.base_commit.repository
             )
             file_content = async_to_sync(adapter.get_source)(
                 file_name, self.head_commit.commitid
@@ -1027,7 +1028,7 @@ class PullRequestComparison(Comparison):
     @cached_property
     def base_commit(self):
         try:
-            return Commit.objects.defer("report").get(
+            return Commit.objects.defer("_report").get(
                 repository=self.pull.repository,
                 commitid=self.pull.compared_to
                 if self.is_pseudo_comparison
@@ -1039,7 +1040,7 @@ class PullRequestComparison(Comparison):
     @cached_property
     def head_commit(self):
         try:
-            return Commit.objects.defer("report").get(
+            return Commit.objects.defer("_report").get(
                 repository=self.pull.repository, commitid=self.pull.head
             )
         except Commit.DoesNotExist:
@@ -1260,13 +1261,13 @@ class CommitComparisonService:
     def _load_commit(self, commit_id: int) -> Optional[Commit]:
         prefetch = Prefetch(
             "reports",
-            queryset=CommitReport.objects.select_related("reportdetails").defer(
-                "reportdetails___files_array"
-            ),
+            queryset=CommitReport.objects.filter(code=None)
+            .select_related("reportdetails")
+            .defer("reportdetails___files_array"),
         )
         return (
             Commit.objects.filter(pk=commit_id)
             .prefetch_related(prefetch)
-            .defer("report")
+            .defer("_report")
             .first()
         )

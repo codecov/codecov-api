@@ -1,7 +1,11 @@
 from rest_framework import exceptions, serializers
 
 from core.models import Commit
-from labelanalysis.models import LabelAnalysisRequest, LabelAnalysisRequestState
+from labelanalysis.models import (
+    LabelAnalysisProcessingError,
+    LabelAnalysisRequest,
+    LabelAnalysisRequestState,
+)
 
 
 class CommitFromShaSerializerField(serializers.Field):
@@ -38,10 +42,28 @@ class CommitFromShaSerializerField(serializers.Field):
         )
 
 
+class LabelAnalysisProcessingErrorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LabelAnalysisProcessingError
+        fields = ("error_code", "error_params")
+        read_only_fields = ("error_code", "error_params")
+
+
+class ProcessingErrorList(serializers.ListField):
+    child = LabelAnalysisProcessingErrorSerializer()
+
+    def to_representation(self, data):
+        data = data.select_related(
+            "label_analysis_request",
+        ).all()
+        return super().to_representation(data)
+
+
 class LabelAnalysisRequestSerializer(serializers.ModelSerializer):
     base_commit = CommitFromShaSerializerField(required=True, accepts_fallback=True)
     head_commit = CommitFromShaSerializerField(required=True, accepts_fallback=False)
     state = serializers.SerializerMethodField()
+    errors = ProcessingErrorList(required=False)
 
     def validate(self, data):
         if data["base_commit"] == data["head_commit"]:
@@ -59,8 +81,9 @@ class LabelAnalysisRequestSerializer(serializers.ModelSerializer):
             "result",
             "state",
             "external_id",
+            "errors",
         )
-        read_only_fields = ("result", "external_id")
+        read_only_fields = ("result", "external_id", "errors")
 
     def get_state(self, obj):
         return LabelAnalysisRequestState.enum_from_int(obj.state_id).name.lower()

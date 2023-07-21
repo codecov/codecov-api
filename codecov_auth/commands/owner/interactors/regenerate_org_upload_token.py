@@ -1,9 +1,9 @@
 import uuid
 
-from billing.constants import ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS
 from codecov.commands.base import BaseInteractor
 from codecov.commands.exceptions import Unauthenticated, Unauthorized, ValidationError
 from codecov.db import sync_to_async
+from codecov_auth.helpers import current_user_part_of_org
 from codecov_auth.models import OrganizationLevelToken, Owner
 
 
@@ -13,7 +13,7 @@ class RegenerateOrgUploadTokenInteractor(BaseInteractor):
             raise Unauthenticated()
         if not owner_obj:
             raise ValidationError("Owner not found")
-        if not owner_obj.is_admin(self.current_user):
+        if not current_user_part_of_org(self.current_owner, owner_obj):
             raise Unauthorized()
 
     @sync_to_async

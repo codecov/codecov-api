@@ -93,7 +93,7 @@ def test_get_bbs_already_token(client, settings, mocker, db, mock_redis):
     url = reverse("bbs-login")
     client.cookies = SimpleCookie(
         {
-            "_oauth_request_token": "test66me7mkczp7mmuzwc35k|YWRqTFVUVHZVcUduZVZ4cGN1aEpLRzhSVnJGdkw3c24="
+            "_oauth_request_token": "dGVzdDZ0bDNldnE3Yzh2dXlu|dGVzdGRtNjF0cHBiNXgwdGFtN25hZTNxYWpoY2Vweno="
         }
     )
     res = client.get(

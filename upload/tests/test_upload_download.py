@@ -20,7 +20,7 @@ class UploadDownloadHelperTest(APITransactionTestCase):
             Repository,
             author=self.org,
             name="upload-test-repo",
-            upload_token="test27s4f3uz3ha9pi0foipg5bqojtrmbt67",
+            upload_token="a03e5d02-9495-4413-b0d8-05651bb2e842",
         )
         self.repo = G(
             Repository, author=self.org, name="private-upload-test-repo", private=True

@@ -22,13 +22,13 @@ class CommitLoader(BaseLoader):
         # prefetch the CommitReport with the ReportLevelTotals and ReportDetails
         prefetch = Prefetch(
             "reports",
-            queryset=CommitReport.objects.select_related(
-                "reportleveltotals", "reportdetails"
-            ).defer("reportdetails___files_array"),
+            queryset=CommitReport.objects.filter(code=None)
+            .select_related("reportleveltotals", "reportdetails")
+            .defer("reportdetails___files_array"),
         )
 
         return (
             Commit.objects.filter(commitid__in=keys, repository_id=self.repository_id)
-            .defer("report")
+            .defer("_report")
             .prefetch_related(prefetch)
         )

@@ -2,19 +2,16 @@ from django.test import override_settings
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 
-from api.internal.slack.views import GenerateAccessTokenView
-from codecov_auth.models import Owner, UserToken
+from codecov_auth.models import UserToken
+from codecov_auth.tests.factories import OwnerFactory
 
-codecov_internal_token = "17603a9e-0463-45e1-883e-d649fccf4ae8"
+codecov_internal_token = "test3n4d079myhiy9fu7d3j7gsepz80df3da"
 
 
 class SlackViewSetTests(APITestCase):
     def setUp(self):
-        self.owner = Owner.objects.create(
-            username="test", service="github", name="test"
-        )
+        self.owner = OwnerFactory()
         self.data = {"username": self.owner.username, "service": self.owner.service}
-        self.view = GenerateAccessTokenView.as_view()
 
     def test_generate_access_token_missing_headers(self):
         response = self.client.post(

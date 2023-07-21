@@ -74,7 +74,7 @@ class ReportDetailsTests(TestCase):
         },
     ]
 
-    @patch("reports.models.ArchiveService")
+    @patch("utils.model_utils.ArchiveService")
     def test_get_files_array_from_db(self, mock_archive):
         details = ReportDetailsFactory()
         mock_read_file = MagicMock()
@@ -88,7 +88,7 @@ class ReportDetailsTests(TestCase):
         mock_archive.assert_not_called()
         mock_read_file.assert_not_called()
 
-    @patch("reports.models.ArchiveService")
+    @patch("utils.model_utils.ArchiveService")
     def test_get_files_array_from_storage(self, mock_archive):
         details = ReportDetailsFactory()
         storage_path = "https://storage/path/files_array.json"
@@ -107,13 +107,21 @@ class ReportDetailsTests(TestCase):
         assert mock_archive.call_count == 1
         assert mock_read_file.call_count == 1
         # This one to help us understand caching across different instances
-        # of the same object. We see that cache is not propagated across
-        # different instances
+        # different instances if they are the same
         assert details.files_array == self.sample_files_array
+        assert mock_archive.call_count == 1
+        assert mock_read_file.call_count == 1
+        # Let's see for objects with different IDs
+        diff_details = ReportDetailsFactory()
+        storage_path = "https://storage/path/files_array.json"
+        diff_details._files_array = None
+        diff_details._files_array_storage_path = storage_path
+        diff_details.save()
+        assert diff_details.files_array == self.sample_files_array
         assert mock_archive.call_count == 2
         assert mock_read_file.call_count == 2
 
-    @patch("reports.models.ArchiveService")
+    @patch("utils.model_utils.ArchiveService")
     def test_get_files_array_from_storage_file_not_found(self, mock_archive):
         details = ReportDetailsFactory()
         storage_path = "https://storage/path/files_array.json"
@@ -128,6 +136,7 @@ class ReportDetailsTests(TestCase):
         details.save()
 
         fetched = ReportDetails.objects.get(id=details.id)
+        assert fetched._files_array_storage_path == storage_path
         assert fetched.files_array == []
         mock_archive.assert_called()
         mock_read_file.assert_called_with(storage_path)

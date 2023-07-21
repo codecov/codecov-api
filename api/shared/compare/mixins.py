@@ -24,7 +24,8 @@ class CompareViewSetMixin(CompareSlugMixin, viewsets.GenericViewSet):
 
         if "pull" in compare_data:
             comparison = PullRequestComparison(
-                user=self.request.user, pull=compare_data["pull"]
+                user=self.request.current_owner,
+                pull=compare_data["pull"],
             )
             try:
                 # make sure we have a base and head commit
@@ -34,7 +35,7 @@ class CompareViewSetMixin(CompareSlugMixin, viewsets.GenericViewSet):
                 raise NotFound("Sorry, we are missing a commit for that pull request.")
         else:
             comparison = Comparison(
-                user=self.request.user,
+                user=self.request.current_owner,
                 base_commit=compare_data["base"],
                 head_commit=compare_data["head"],
             )

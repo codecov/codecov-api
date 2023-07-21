@@ -75,9 +75,9 @@ class RepositoryChartHandler(APIView, RepositoriesMixin):
         # We don't use the "report" field in this endpoint and it can be many MBs of JSON choosing not to
         # fetch it for perf reasons
         queryset = apply_simple_filters(
-            apply_default_filters(Commit.objects.defer("report").all()),
+            apply_default_filters(Commit.objects.defer("_report").all()),
             request_params,
-            self.request.user,
+            self.request.current_owner,
         )
 
         annotated_queryset = annotate_commits_with_totals(queryset)
@@ -174,7 +174,7 @@ class OrganizationChartHandler(APIView):
     # this method is deprecated and will be removed
     def post(self, request, *args, **kwargs):
         query_runner = ChartQueryRunner(
-            user=request.user, request_params={**kwargs, **request.data}
+            user=request.current_owner, request_params={**kwargs, **request.data}
         )
         return Response(data={"coverage": query_runner.run_query()})
 
@@ -189,6 +189,6 @@ class OrganizationChartHandler(APIView):
             )
 
         query_runner = ChartQueryRunner(
-            user=request.user, request_params={**kwargs, **request_params_dict}
+            user=request.current_owner, request_params={**kwargs, **request_params_dict}
         )
         return Response(data={"coverage": query_runner.run_query()})

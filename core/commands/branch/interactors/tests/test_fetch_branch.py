@@ -15,10 +15,9 @@ class FetchBranchInteractorTest(TransactionTestCase):
         self.repo = self.branch.repository
 
     # helper to execute the interactor
-    def execute(self, user, *args):
-        service = user.service if user else "github"
-        current_user = user or AnonymousUser()
-        return FetchBranchInteractor(current_user, service).execute(*args)
+    def execute(self, owner, *args):
+        service = owner.service if owner else "github"
+        return FetchBranchInteractor(owner, service).execute(*args)
 
     async def test_fetch_branch(self):
         branch = await self.execute(None, self.repo, self.branch.name)

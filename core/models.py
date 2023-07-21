@@ -11,9 +11,12 @@ from django.db.models.functions import Lower, Substr, Upper
 from django.forms import ValidationError
 from django.utils import timezone
 from django.utils.functional import cached_property
+from shared.config import get_config
 from shared.reports.resources import Report
 
 from codecov.models import BaseCodecovModel
+from utils.config import should_write_data_to_storage_config_check
+from utils.model_utils import ArchiveField
 
 from .encoders import ReportJSONEncoder
 from .managers import RepositoryManager
@@ -201,8 +204,6 @@ class Commit(models.Model):
     )
     ci_passed = models.BooleanField(null=True)
     totals = models.JSONField(null=True)
-    # Use custom JSON to properly serialize custom data classes on reports
-    report = models.JSONField(null=True, encoder=ReportJSONEncoder)
     merged = models.BooleanField(null=True)
     deleted = models.BooleanField(null=True)
     notified = models.BooleanField(null=True)
@@ -227,6 +228,10 @@ class Commit(models.Model):
     @cached_property
     def commitreport(self):
         reports = list(self.reports.all())
+        # This is almost always prefetched w/ `filter(code=None)` and so the
+        # reports above have `code=None`.  In the case that the reports were not
+        # prefetched we'll filter again in memory.
+        reports = [report for report in reports if report.code is None]
         return reports[0] if reports else None
 
     @cached_property
@@ -274,6 +279,29 @@ class Commit(models.Model):
                 name="commit_message_gin_trgm",
             ),
         ]
+
+    def get_repository(self):
+        return self.repository
+
+    def get_commitid(self):
+        return self.commitid
+
+    def should_write_to_storage(self) -> bool:
+        if self.repository is None or self.repository.author is None:
+            return False
+        is_codecov_repo = self.repository.author.username == "codecov"
+        return should_write_data_to_storage_config_check(
+            "commit_report", is_codecov_repo, self.repository.repoid
+        )
+
+    # Use custom JSON to properly serialize custom data classes on reports
+    _report = models.JSONField(null=True, db_column="report", encoder=ReportJSONEncoder)
+    _report_storage_path = models.URLField(null=True, db_column="report_storage_path")
+    report = ArchiveField(
+        should_write_to_storage_fn=should_write_to_storage,
+        json_encoder=ReportJSONEncoder,
+        default_value={},
+    )
 
 
 class PullStates(models.TextChoices):

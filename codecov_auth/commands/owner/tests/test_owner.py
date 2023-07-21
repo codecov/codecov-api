@@ -9,8 +9,8 @@ from ..owner import OwnerCommands
 
 class OwnerCommandsTest(TransactionTestCase):
     def setUp(self):
-        self.user = OwnerFactory(username="codecov-user")
-        self.command = OwnerCommands(self.user, "github")
+        self.owner = OwnerFactory(username="codecov-user")
+        self.command = OwnerCommands(self.owner, "github")
 
     @patch("codecov_auth.commands.owner.owner.CreateApiTokenInteractor.execute")
     def test_create_api_token_delegate_to_interactor(self, interactor_mock):
@@ -54,6 +54,12 @@ class OwnerCommandsTest(TransactionTestCase):
         input_dict = {"email": "a@a.com", "termsAgreement": False}
         self.command.save_terms_agreement(input_dict)
         interactor_mock.assert_called_once_with(input_dict)
+
+    @patch("codecov_auth.commands.owner.owner.StartTrialInteractor.execute")
+    def test_start_trial_delegate_to_interactor(self, interactor_mock):
+        org_username = "random_org"
+        self.command.start_trial(org_username=org_username)
+        interactor_mock.assert_called_once_with(org_username=org_username)
 
     @patch(
         "codecov_auth.commands.owner.owner.UpdateDefaultOrganizationInteractor.execute"

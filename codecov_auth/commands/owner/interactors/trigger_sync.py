@@ -13,7 +13,7 @@ class TriggerSyncInteractor(BaseInteractor):
     def execute(self):
         self.validate()
         RefreshService().trigger_refresh(
-            self.current_user.ownerid,
-            self.current_user.username,
+            self.current_owner.ownerid,
+            self.current_owner.username,
             using_integration=False,
         )

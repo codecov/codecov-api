@@ -3,14 +3,12 @@ from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 
 from codecov_auth.tests.factories import OwnerFactory
+from utils.test_utils import APIClient
 
 
 class OwnerViewSetTests(APITestCase):
     def _retrieve(self, kwargs):
         return self.client.get(reverse("api-v2-owners-detail", kwargs=kwargs))
-
-    def setUp(self):
-        self.user = OwnerFactory(service="github", stripe_customer_id=1000)
 
     def test_retrieve_returns_owner_with_username(self):
         owner = OwnerFactory()
@@ -55,8 +53,9 @@ class UserViewSetTests(APITestCase):
 
     def setUp(self):
         self.org = OwnerFactory(service="github")
-        self.user = OwnerFactory(service="github", organizations=[self.org.pk])
-        self.client.force_authenticate(user=self.user)
+        self.current_owner = OwnerFactory(service="github", organizations=[self.org.pk])
+        self.client = APIClient()
+        self.client.force_login_owner(self.current_owner)
 
     def test_list(self):
         response = self._list(
@@ -70,11 +69,11 @@ class UserViewSetTests(APITestCase):
             "results": [
                 {
                     "service": "github",
-                    "username": self.user.username,
-                    "name": self.user.name,
+                    "username": self.current_owner.username,
+                    "name": self.current_owner.name,
                     "activated": False,
                     "is_admin": False,
-                    "email": self.user.email,
+                    "email": self.current_owner.email,
                 }
             ],
             "total_pages": 1,

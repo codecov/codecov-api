@@ -211,6 +211,7 @@ class StripeService(AbstractPaymentService):
         # invoice a user if the user increases the number of seats or if the plan changes from monthly to yearly.
         # An increase in seats and/or plan implies the user is upgrading, hence 'is_upgrading' is a consequence
         # of proration_behavior providing an invoice, in this case, != "none"
+        # TODO: change this to "self._is_upgrading_seats(owner, desired_plan) or self._is_extending_term(owner, desired_plan)"
         is_upgrading = True if proration_behavior != "none" else False
 
         # Divide logic bw immediate updates and scheduled updates

@@ -22,7 +22,7 @@ class ActivateMeasurementsInteractor(BaseInteractor):
     ):
         author = Owner.objects.filter(username=owner_name, service=self.service).first()
         repo = (
-            Repository.objects.viewable_repos(self.current_user)
+            Repository.objects.viewable_repos(self.current_owner)
             .filter(author=author, name=repo_name, active=True)
             .first()
         )

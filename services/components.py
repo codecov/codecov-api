@@ -12,13 +12,13 @@ from services.comparison import Comparison
 from services.yaml import final_commit_yaml
 
 
-def commit_components(commit: Commit, user: Owner) -> List[Component]:
+def commit_components(commit: Commit, owner: Owner) -> List[Component]:
     """
     Get the list of components for a commit.
-    A request is made to the provider on behalf of the given `user`
+    A request is made to the provider on behalf of the given `owner`
     to fetch the commit YAML (from which component config is parsed).
     """
-    yaml = final_commit_yaml(commit, user)
+    yaml = final_commit_yaml(commit, owner)
     return yaml.get_components()
 
 

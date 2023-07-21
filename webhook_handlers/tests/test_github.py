@@ -7,6 +7,7 @@ from unittest.mock import call, patch
 
 import pytest
 from rest_framework import status
+from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 
@@ -30,6 +31,24 @@ MockedSubscription = namedtuple("Subscription", ["status"])
 
 
 class GithubWebhookHandlerTests(APITestCase):
+    @pytest.fixture(autouse=True)
+    def mock_metrics(self, mocker):
+        from collections import defaultdict
+
+        self.metrics = defaultdict(int)
+
+        def incr(stat, count=1, rate=1):
+            self.metrics[stat] += count
+
+        def decr(stat, count=1, rate=1):
+            self.metrics[stat] -= count
+
+        mock_incr = mocker.patch("shared.metrics.metrics.incr")
+        mock_incr.side_effect = incr
+
+        mock_decr = mocker.patch("shared.metrics.metrics.decr")
+        mock_decr.side_effect = decr
+
     def _post_event_data(self, event, data={}):
         return self.client.post(
             reverse("github-webhook"),
@@ -57,6 +76,104 @@ class GithubWebhookHandlerTests(APITestCase):
             service_id=12345,
             active=True,
         )
+
+    @patch(
+        "webhook_handlers.views.github.GithubWebhookHandler._handle_installation_events",
+        lambda self, request, *args, **kwargs: Response(),
+    )
+    @patch(
+        "webhook_handlers.views.github.GithubWebhookHandler._handle_marketplace_events",
+        lambda self, request, *args, **kwargs: Response(),
+    )
+    def test_webhook_counters(self):
+        # Simple events
+        for event in [
+            "unhandled",
+            GitHubWebhookEvents.PING,
+            GitHubWebhookEvents.PUBLIC,
+            GitHubWebhookEvents.STATUS,
+            GitHubWebhookEvents.PULL_REQUEST,
+            GitHubWebhookEvents.INSTALLATION,
+            GitHubWebhookEvents.INSTALLATION_REPOSITORIES,
+            GitHubWebhookEvents.MARKETPLACE_PURCHASE,
+        ]:
+            with self.subTest("with event " + event):
+                _ = self._post_event_data(
+                    event=event,
+                    data={},
+                )
+                assert self.metrics["webhooks.github.received." + event] == 1
+
+        # Repository event + actions
+        for action in ["publicized", "privatized", "deleted"]:
+            with self.subTest("repository " + action):
+                _ = self._post_event_data(
+                    event=GitHubWebhookEvents.REPOSITORY,
+                    data={
+                        "action": action,
+                        "repository": {
+                            "id": self.repo.service_id,
+                            "owner": {"id": -1},
+                        },
+                    },
+                )
+                assert (
+                    self.metrics["webhooks.github.received.repository." + action] == 1
+                )
+
+        # Delete event + ref_types
+        for ref_type in ["branch", "other"]:
+            with self.subTest("delete " + ref_type):
+                branch = BranchFactory(repository=self.repo)
+                _ = self._post_event_data(
+                    event=GitHubWebhookEvents.DELETE,
+                    data={
+                        "ref": "refs/heads/" + branch.name,
+                        "ref_type": ref_type,
+                        "repository": {"id": self.repo.service_id},
+                    },
+                )
+                assert self.metrics["webhooks.github.received.delete." + ref_type] == 1
+
+        # Push event + ref_types
+        for ref_type, uri in [("branch", "refs/heads/"), ("tag", "refs/tags/")]:
+            with self.subTest("push " + ref_type):
+                _ = self._post_event_data(
+                    event=GitHubWebhookEvents.PUSH,
+                    data={
+                        "ref": uri + "unmerged",
+                        "repository": {"id": self.repo.service_id},
+                        "commits": [],
+                    },
+                )
+                assert self.metrics["webhooks.github.received.push." + ref_type] == 1
+
+        # Organization event + actions
+        for action in ["member_removed", "other"]:
+            with self.subTest("organization " + action):
+                _ = self._post_event_data(
+                    event=GitHubWebhookEvents.ORGANIZATION,
+                    data={
+                        "action": action,
+                        "membership": {"user": {"id": -1}},
+                        "organization": {"id": -1},
+                    },
+                )
+                assert (
+                    self.metrics["webhooks.github.received.organization." + action] == 1
+                )
+
+        # Member event + actions
+        for action in ["removed", "other"]:
+            with self.subTest("member " + action):
+                _ = self._post_event_data(
+                    event=GitHubWebhookEvents.MEMBER,
+                    data={
+                        "action": action,
+                        "member": {"id": -1},
+                        "repository": {"id": self.repo.service_id},
+                    },
+                )
 
     def test_get_repo_paths_dont_crash(self):
         with self.subTest("with ownerid success"):
@@ -154,6 +271,33 @@ class GithubWebhookHandlerTests(APITestCase):
         assert self.repo.deleted is True
         assert self.repo.active is False
         assert self.repo.activated is False
+
+    def test_repository_delete_renames_repo(self):
+        self.repo.name = "testing"
+        self.repo.save()
+        assert self.repo.deleted == False
+
+        other_repo = RepositoryFactory(
+            name="testing",
+            author=OwnerFactory(service=Service.GITHUB.value),
+            service_id=67890,
+            active=True,
+        )
+
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.REPOSITORY,
+            data={"action": "deleted", "repository": {"id": self.repo.service_id}},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        self.repo.refresh_from_db()
+        assert self.repo.deleted is True
+        assert self.repo.name == "testing-deleted"
+
+        # renaming the deleted repo allows the other repo to potentially be moved to a
+        # new owner (uniqueness constraints would have prevented this otherwise)
+        other_repo.author = self.repo.author
+        other_repo.save()
 
     def test_delete_event_deletes_branch(self):
         branch = BranchFactory(repository=self.repo)
@@ -734,6 +878,7 @@ class GithubWebhookHandlerTests(APITestCase):
         )
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert self.metrics["webhooks.github.invalid_signature"] == 1
 
         response = self.client.post(
             reverse("github-webhook"),
@@ -756,6 +901,7 @@ class GithubWebhookHandlerTests(APITestCase):
         )
 
         assert response.status_code == status.HTTP_200_OK
+        assert self.metrics["webhooks.github.received.total"] == 1
 
         response = self.client.post(
             reverse("github-webhook"),
@@ -778,6 +924,7 @@ class GithubWebhookHandlerTests(APITestCase):
         )
 
         assert response.status_code == status.HTTP_200_OK
+        assert self.metrics["webhooks.github.received.total"] == 2
 
     @patch("webhook_handlers.views.github.get_config")
     def test_signature_validation_with_string_key(self, get_config_mock):

@@ -12,17 +12,17 @@ from .helper import GraphQLTestHelper, paginate_connection
 
 class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
-        self.user = OwnerFactory(username="codecov-user")
-        random_user = OwnerFactory(username="random-user")
-        RepositoryFactory(author=self.user, active=True, private=True, name="a")
-        RepositoryFactory(author=self.user, active=True, private=True, name="b")
-        RepositoryFactory(author=random_user, active=True, private=True, name="not")
-        self.user.organizations = [
+        self.owner = OwnerFactory(username="codecov-user")
+        random_owner = OwnerFactory(username="random-user")
+        RepositoryFactory(author=self.owner, active=True, private=True, name="a")
+        RepositoryFactory(author=self.owner, active=True, private=True, name="b")
+        RepositoryFactory(author=random_owner, active=True, private=True, name="not")
+        self.owner.organizations = [
             OwnerFactory(username="codecov").ownerid,
             OwnerFactory(username="facebook").ownerid,
             OwnerFactory(username="spotify").ownerid,
         ]
-        self.user.save()
+        self.owner.save()
 
     def test_when_unauthenticated(self):
         query = "{ me { user { username }} }"
@@ -31,20 +31,20 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
 
     def test_when_authenticated(self):
         query = "{ me { user { username avatarUrl }} }"
-        data = self.gql_request(query, user=self.user)
+        data = self.gql_request(query, owner=self.owner)
         assert data == {
             "me": {
                 "user": {
-                    "username": self.user.username,
-                    "avatarUrl": self.user.avatar_url,
+                    "username": self.owner.username,
+                    "avatarUrl": self.owner.avatar_url,
                 }
             }
         }
 
     def test_when_tracking_metadata(self):
         query = "{ me { trackingMetadata { ownerid } } }"
-        data = self.gql_request(query, user=self.user)
-        assert data == {"me": {"trackingMetadata": {"ownerid": self.user.ownerid}}}
+        data = self.gql_request(query, owner=self.owner)
+        assert data == {"me": {"trackingMetadata": {"ownerid": self.owner.ownerid}}}
 
     def test_when_tracking_metadata_profile(self):
         query = """
@@ -57,14 +57,14 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             }
         }
         """
-        OwnerProfile.objects.filter(owner_id=self.user.ownerid).update(
+        OwnerProfile.objects.filter(owner_id=self.owner.ownerid).update(
             goals=["IMPROVE_COVERAGE"]
         )
-        data = self.gql_request(query, user=self.user)
+        data = self.gql_request(query, owner=self.owner)
         assert data == {
             "me": {
                 "trackingMetadata": {
-                    "ownerid": self.user.ownerid,
+                    "ownerid": self.owner.ownerid,
                     "profile": {"goals": ["IMPROVE_COVERAGE"]},
                 }
             }
@@ -81,11 +81,11 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             }
         }
         """
-        data = self.gql_request(query, user=self.user)
+        data = self.gql_request(query, owner=self.owner)
         assert data == {
             "me": {
                 "trackingMetadata": {
-                    "ownerid": self.user.ownerid,
+                    "ownerid": self.owner.ownerid,
                     "profile": {"goals": []},
                 }
             }
@@ -105,7 +105,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
         """
         owner = OwnerFactory(username="another-user")
         owner.profile.delete()
-        data = self.gql_request(query, user=owner)
+        data = self.gql_request(query, owner=owner)
         assert data == {
             "me": {
                 "trackingMetadata": {
@@ -123,7 +123,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             }
         }
         """
-        data = self.gql_request(query, user=current_user)
+        data = self.gql_request(query, owner=current_user)
         assert data == {"me": {"privateAccess": False}}
 
     def test_private_access_when_private_access_field_is_false(self):
@@ -134,7 +134,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             }
         }
         """
-        data = self.gql_request(query, user=current_user)
+        data = self.gql_request(query, owner=current_user)
         assert data == {"me": {"privateAccess": False}}
 
     def test_private_access_when_private_access_field_is_true(self):
@@ -145,7 +145,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             }
         }
         """
-        data = self.gql_request(query, user=current_user)
+        data = self.gql_request(query, owner=current_user)
         assert data == {"me": {"privateAccess": True}}
 
     def test_fetch_terms_agreement_and_business_email_when_owner_profile_is_not_null(
@@ -163,7 +163,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             }
         }
         """
-        data = self.gql_request(query, user=current_user)
+        data = self.gql_request(query, owner=current_user)
         assert data == {
             "me": {"businessEmail": "testEmail@gmail.com", "termsAgreement": True}
         }
@@ -178,7 +178,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             }
         }
         """
-        data = self.gql_request(query, user=current_user)
+        data = self.gql_request(query, owner=current_user)
         assert data == {"me": {"businessEmail": None, "termsAgreement": None}}
 
     def test_fetching_viewable_repositories(self):
@@ -209,7 +209,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             }
         }
         """
-        data = self.gql_request(query, user=current_user)
+        data = self.gql_request(query, owner=current_user)
         repos = paginate_connection(data["me"]["viewableRepositories"])
         repos_name = [repo["name"] for repo in repos]
         assert sorted(repos_name) == [
@@ -241,14 +241,14 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
 
         with self.subTest("No ordering (defaults to order by repoid)"):
             with self.subTest("no ordering Direction"):
-                data = self.gql_request(query, user=current_user)
+                data = self.gql_request(query, owner=current_user)
                 repos = paginate_connection(data["me"]["viewableRepositories"])
                 repos_name = [repo["name"] for repo in repos]
                 self.assertEqual(repos_name, ["A", "B", "C"])
 
             with self.subTest("ASC"):
                 data = self.gql_request(
-                    query, user=current_user, variables={"orderingDirection": "ASC"}
+                    query, owner=current_user, variables={"orderingDirection": "ASC"}
                 )
                 repos = paginate_connection(data["me"]["viewableRepositories"])
                 repos_name = [repo["name"] for repo in repos]
@@ -256,7 +256,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
 
             with self.subTest("DESC"):
                 data = self.gql_request(
-                    query, user=current_user, variables={"orderingDirection": "DESC"}
+                    query, owner=current_user, variables={"orderingDirection": "DESC"}
                 )
                 repos = paginate_connection(data["me"]["viewableRepositories"])
                 repos_name = [repo["name"] for repo in repos]
@@ -265,7 +265,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
         with self.subTest("NAME"):
             with self.subTest("no ordering Direction"):
                 data = self.gql_request(
-                    query, user=current_user, variables={"ordering": "NAME"}
+                    query, owner=current_user, variables={"ordering": "NAME"}
                 )
                 repos = paginate_connection(data["me"]["viewableRepositories"])
                 repos_name = [repo["name"] for repo in repos]
@@ -274,7 +274,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             with self.subTest("ASC"):
                 data = self.gql_request(
                     query,
-                    user=current_user,
+                    owner=current_user,
                     variables={"ordering": "NAME", "orderingDirection": "ASC"},
                 )
                 repos = paginate_connection(data["me"]["viewableRepositories"])
@@ -284,7 +284,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             with self.subTest("DESC"):
                 data = self.gql_request(
                     query,
-                    user=current_user,
+                    owner=current_user,
                     variables={"ordering": "NAME", "orderingDirection": "DESC"},
                 )
                 repos = paginate_connection(data["me"]["viewableRepositories"])
@@ -301,7 +301,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
 
             with self.subTest("no ordering Direction"):
                 data = self.gql_request(
-                    query, user=current_user, variables={"ordering": "COMMIT_DATE"}
+                    query, owner=current_user, variables={"ordering": "COMMIT_DATE"}
                 )
                 repos = paginate_connection(data["me"]["viewableRepositories"])
                 repos_name = [repo["name"] for repo in repos]
@@ -310,7 +310,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             with self.subTest("ASC"):
                 data = self.gql_request(
                     query,
-                    user=current_user,
+                    owner=current_user,
                     variables={"ordering": "COMMIT_DATE", "orderingDirection": "ASC"},
                 )
                 repos = paginate_connection(data["me"]["viewableRepositories"])
@@ -320,7 +320,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             with self.subTest("DESC"):
                 data = self.gql_request(
                     query,
-                    user=current_user,
+                    owner=current_user,
                     variables={"ordering": "COMMIT_DATE", "orderingDirection": "DESC"},
                 )
                 repos = paginate_connection(data["me"]["viewableRepositories"])
@@ -337,7 +337,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
 
             with self.subTest("no ordering Direction"):
                 data = self.gql_request(
-                    query, user=current_user, variables={"ordering": "COVERAGE"}
+                    query, owner=current_user, variables={"ordering": "COVERAGE"}
                 )
                 repos = paginate_connection(data["me"]["viewableRepositories"])
                 repos_name = [repo["name"] for repo in repos]
@@ -346,7 +346,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             with self.subTest("ASC"):
                 data = self.gql_request(
                     query,
-                    user=current_user,
+                    owner=current_user,
                     variables={"ordering": "COVERAGE", "orderingDirection": "ASC"},
                 )
                 repos = paginate_connection(data["me"]["viewableRepositories"])
@@ -356,7 +356,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             with self.subTest("DESC"):
                 data = self.gql_request(
                     query,
-                    user=current_user,
+                    owner=current_user,
                     variables={"ordering": "COVERAGE", "orderingDirection": "DESC"},
                 )
                 repos = paginate_connection(data["me"]["viewableRepositories"])
@@ -376,7 +376,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             }
         }
         """
-        data = self.gql_request(query, user=self.user)
+        data = self.gql_request(query, owner=self.owner)
         repos = paginate_connection(data["me"]["viewableRepositories"])
         assert repos == [{"name": "a"}]
 
@@ -393,7 +393,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             }
         }
         """
-        data = self.gql_request(query, user=self.user)
+        data = self.gql_request(query, owner=self.owner)
         repos = paginate_connection(data["me"]["viewableRepositories"])
         assert repos == [{"name": "a"}, {"name": "b"}]
 
@@ -410,7 +410,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             }
         }
         """
-        data = self.gql_request(query, user=self.user)
+        data = self.gql_request(query, owner=self.owner)
         orgs = paginate_connection(data["me"]["myOrganizations"])
         assert orgs == [
             {"username": "spotify"},
@@ -431,7 +431,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             }
         }
         """
-        data = self.gql_request(query, user=self.user)
+        data = self.gql_request(query, owner=self.owner)
         orgs = paginate_connection(data["me"]["myOrganizations"])
 
         assert orgs == [{"username": "spotify"}]
@@ -462,7 +462,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             }
         }
         """
-        data = self.gql_request(query, user=self.user)
+        data = self.gql_request(query, owner=self.owner)
         assert data["me"]["isSyncingWithGitProvider"] == True
         mutation = """
             mutation {
@@ -473,6 +473,6 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
               }
             }
         """
-        mutation_data = self.gql_request(mutation, user=self.user)
+        mutation_data = self.gql_request(mutation, owner=self.owner)
         assert mutation_data["syncWithGitProvider"]["error"] is None
         mock_trigger_refresh.assert_called()

@@ -3,24 +3,25 @@ from django.test import RequestFactory
 from django.urls import ResolverMatch
 
 from codecov_auth.commands.owner import OwnerCommands
+from codecov_auth.tests.factories import OwnerFactory
 
-from ..executor import Executor, get_executor_from_command, get_executor_from_request
+from ..executor import get_executor_from_command, get_executor_from_request
 
 
 def test_get_executor_from_request():
     request_factory = RequestFactory()
     request = request_factory.get("")
+    request.current_owner = None
     match = ResolverMatch(func=lambda: None, args=(), kwargs={"service": "gh"})
     request.resolver_match = match
     request.user = AnonymousUser()
     executor = get_executor_from_request(request)
     assert executor.service == "github"
-    assert executor.user == AnonymousUser()
+    assert executor.current_owner == None
 
 
 def test_get_executor_from_command():
-    current_user = AnonymousUser()
-    command = OwnerCommands(current_user, "github")
+    command = OwnerCommands(None, "github")
     executor = get_executor_from_command(command)
     assert executor.service == "github"
-    assert executor.user == current_user
+    assert executor.current_owner == None

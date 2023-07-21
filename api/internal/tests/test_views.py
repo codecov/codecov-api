@@ -13,6 +13,7 @@ from core.tests.factories import (
     PullFactory,
     RepositoryFactory,
 )
+from utils.test_utils import Client
 
 get_permissions_method = (
     "api.shared.repo.repository_accessors.RepoAccessors.get_repo_permissions"
@@ -30,7 +31,7 @@ class RepoPullList(InternalAPITest):
             author=other_org, name="otherRepoName", active=True
         )
         repo_with_permission = [self.repo.repoid]
-        self.user = OwnerFactory(
+        self.current_owner = OwnerFactory(
             username="codecov-user",
             service="github",
             organizations=[self.org.ownerid],
@@ -41,8 +42,12 @@ class RepoPullList(InternalAPITest):
             author=self.org,
             repository=self.repo,
             state="open",
-            head=CommitFactory(repository=self.repo, author=self.user).commitid,
-            base=CommitFactory(repository=self.repo, author=self.user).commitid,
+            head=CommitFactory(
+                repository=self.repo, author=self.current_owner
+            ).commitid,
+            base=CommitFactory(
+                repository=self.repo, author=self.current_owner
+            ).commitid,
         )
         PullFactory(pullid=11, author=self.org, repository=self.repo, state="closed")
         PullFactory(pullid=12, author=other_org, repository=other_repo)
@@ -56,6 +61,9 @@ class RepoPullList(InternalAPITest):
             "owner_username": "codecov",
             "repo_name": "otherRepoName",
         }
+
+        self.client = Client()
+        self.client.force_login_owner(self.current_owner)
 
     def test_can_get_public_repo_pulls_when_not_authenticated(self, mock_provider):
         self.client.logout()
@@ -77,7 +85,6 @@ class RepoPullList(InternalAPITest):
 
     def test_get_pulls(self, mock_provider):
         mock_provider.return_value = True, True
-        self.client.force_login(user=self.user)
         response = self.client.get(reverse("pulls-list", kwargs=self.correct_kwargs))
         self.assertEqual(response.status_code, 200)
         content = self.json_content(response)
@@ -89,15 +96,13 @@ class RepoPullList(InternalAPITest):
 
     def test_get_pulls_no_permissions(self, mock_provider):
         mock_provider.return_value = False, False
-        self.user.permission = []
-        self.user.save()
-        self.client.force_login(user=self.user)
+        self.current_owner.permission = []
+        self.current_owner.save()
         response = self.client.get(reverse("pulls-list", kwargs=self.correct_kwargs))
         self.assertEqual(response.status_code, 404)
 
     def test_get_pulls_filter_state(self, mock_provider):
         mock_provider.return_value = True, True
-        self.client.force_login(user=self.user)
         response = self.client.get(
             reverse("pulls-list", kwargs=self.correct_kwargs), data={"state": "open"}
         )
@@ -111,7 +116,6 @@ class RepoPullList(InternalAPITest):
 
     def test_get_pulls_ordered_by_pullid(self, mock_provider):
         mock_provider.return_value = True, True
-        self.client.force_login(user=self.user)
         # Test increasing ordering
         response = self.client.get(
             reverse("pulls-list", kwargs=self.correct_kwargs),
@@ -131,7 +135,6 @@ class RepoPullList(InternalAPITest):
 
     def test_get_pulls_default_ordering(self, mock_provider):
         mock_provider.return_value = True, True
-        self.client.force_login(user=self.user)
         # Test default ordering
         response = self.client.get(reverse("pulls-list", kwargs=self.correct_kwargs))
         content = self.json_content(response)
@@ -140,7 +143,6 @@ class RepoPullList(InternalAPITest):
 
     def test_get_pull_wrong_org(self, mock_provider):
         mock_provider.return_value = True, True
-        self.client.force_login(user=self.user)
         response = self.client.get(reverse("pulls-list", kwargs=self.incorrect_kwargs))
         content = self.json_content(response)
         self.assertEqual(
@@ -149,10 +151,12 @@ class RepoPullList(InternalAPITest):
 
     def test_pulls_list_returns_most_recent_commiter(self, mock_provider):
         mock_provider.return_value = True, True
-        self.client.force_login(user=self.user)
         response = self.client.get(reverse("pulls-list", kwargs=self.correct_kwargs))
 
-        assert response.data["results"][1]["most_recent_commiter"] == self.user.username
+        assert (
+            response.data["results"][1]["most_recent_commiter"]
+            == self.current_owner.username
+        )
 
     def test_get_pulls_null_head_author_doesnt_crash(self, mock_provider):
         mock_provider.return_value = True, True
@@ -169,7 +173,6 @@ class RepoPullList(InternalAPITest):
 
         new_owner.delete()
 
-        self.client.force_login(user=self.user)
         response = self.client.get(reverse("pulls-list", kwargs=self.correct_kwargs))
         assert response.status_code == status.HTTP_200_OK
 
@@ -182,10 +185,11 @@ class RepoPullList(InternalAPITest):
             repository=self.repo,
             state="open",
             head="",
-            base=CommitFactory(repository=self.repo, author=self.user).commitid,
+            base=CommitFactory(
+                repository=self.repo, author=self.current_owner
+            ).commitid,
         )
 
-        self.client.force_login(user=self.user)
         response = self.client.get(reverse("pulls-list", kwargs=self.correct_kwargs))
         assert response.status_code == status.HTTP_200_OK
         assert [p for p in response.data["results"] if p["pullid"] == 13][0][
@@ -201,10 +205,11 @@ class RepoPullList(InternalAPITest):
             repository=self.repo,
             state="open",
             base="",
-            head=CommitFactory(repository=self.repo, author=self.user).commitid,
+            head=CommitFactory(
+                repository=self.repo, author=self.current_owner
+            ).commitid,
         )
 
-        self.client.force_login(user=self.user)
         response = self.client.get(reverse("pulls-list", kwargs=self.correct_kwargs))
         assert response.status_code == status.HTTP_200_OK
         assert [p for p in response.data["results"] if p["pullid"] == 13][0][
@@ -215,7 +220,6 @@ class RepoPullList(InternalAPITest):
         self.org.plan = "users-inappm"
         self.org.plan_auto_activate = False
         self.org.save()
-        self.client.force_login(user=self.user)
         response = self.client.get(reverse("pulls-list", kwargs=self.correct_kwargs))
         assert response.status_code == 403
 
@@ -232,7 +236,6 @@ class RepoPullList(InternalAPITest):
         )
         user.save()
         mock_provider.return_value = True, True
-        self.client.force_login(user=user)
         pull = PullFactory.create(
             pullid=101,
             author=self.org,
@@ -338,7 +341,7 @@ class RepoPullDetail(InternalAPITest):
             author=other_org, name="otherRepoName", active=True
         )
         repo_with_permission = [repo.repoid]
-        self.user = OwnerFactory(
+        self.current_owner = OwnerFactory(
             username="codecov-user",
             service="github",
             organizations=[self.org.ownerid],
@@ -346,6 +349,9 @@ class RepoPullDetail(InternalAPITest):
         )
         PullFactory(pullid=10, author=self.org, repository=repo, state="open")
         PullFactory(pullid=11, author=self.org, repository=repo, state="closed")
+
+        self.client = Client()
+        self.client.force_login_owner(self.current_owner)
 
     def test_can_get_public_repo_pull_detail_when_not_authenticated(
         self, mock_provider
@@ -371,17 +377,15 @@ class RepoPullDetail(InternalAPITest):
 
     def test_get_pull(self, mock_provider):
         mock_provider.return_value = True, True
-        self.client.force_login(user=self.user)
         response = self.client.get("/internal/github/codecov/testRepoName/pulls/10/")
         self.assertEqual(response.status_code, 200)
         content = self.json_content(response)
         self.assertEqual(content["pullid"], 10)
 
     def test_get_pull_no_permissions(self, mock_provider):
-        self.user.permission = []
-        self.user.save()
+        self.current_owner.permission = []
+        self.current_owner.save()
         mock_provider.return_value = False, False
-        self.client.force_login(user=self.user)
         response = self.client.get("/internal/github/codecov/testRepoName/pulls/10/")
         self.assertEqual(response.status_code, 404)
 
@@ -390,7 +394,6 @@ class RepoPullDetail(InternalAPITest):
         self.org.plan = "users-inappm"
         self.org.plan_auto_activate = False
         self.org.save()
-        self.client.force_login(user=self.user)
         response = self.client.get("/internal/github/codecov/testRepoName/pulls/10/")
         assert response.status_code == 403
 
@@ -406,7 +409,7 @@ class RepoCommitList(InternalAPITest):
             author=other_org, name="otherRepoName", active=True
         )
         repo_with_permission = [self.repo.repoid]
-        self.user = OwnerFactory(
+        self.current_owner = OwnerFactory(
             username="codecov-user",
             service="github",
             organizations=[self.org.ownerid],
@@ -470,6 +473,9 @@ class RepoCommitList(InternalAPITest):
             },
         )
 
+        self.client = Client()
+        self.client.force_login_owner(self.current_owner)
+
     def test_can_get_public_repo_commits_if_not_authenticated(self, mocked_provider):
         mocked_provider.return_value = True, True
         self.client.logout()
@@ -490,7 +496,6 @@ class RepoCommitList(InternalAPITest):
     # TODO: Improve this test to not assert the pagination data
     def test_get_commits(self, mock_provider):
         mock_provider.return_value = True, True
-        self.client.force_login(user=self.user)
         response = self.client.get("/internal/github/codecov/testRepoName/commits/")
         self.assertEqual(response.status_code, 200)
         content = self.json_content(response)
@@ -582,7 +587,6 @@ class RepoCommitList(InternalAPITest):
         assert content == expected_result
 
     def test_get_commits_wrong_org(self, mock_provider):
-        self.client.force_login(user=self.user)
         response = self.client.get("/internal/github/codecov/otherRepoName/commits/")
         content = self.json_content(response)
         self.assertEqual(
@@ -591,9 +595,8 @@ class RepoCommitList(InternalAPITest):
 
     def test_filters_by_branch_name(self, mock_provider):
         mock_provider.return_value = True, True
-        self.client.force_login(user=self.user)
         repo = RepositoryFactory(
-            author=self.user, active=True, private=True, name="banana"
+            author=self.current_owner, active=True, private=True, name="banana"
         )
         CommitFactory.create(
             message="test_commits_base",
@@ -621,9 +624,8 @@ class RepoCommitList(InternalAPITest):
 
     def test_fetch_commits_no_permissions(self, mock_provider):
         mock_provider.return_value = False, False
-        self.user.permission = []
-        self.user.save()
-        self.client.force_login(user=self.user)
+        self.current_owner.permission = []
+        self.current_owner.save()
 
         response = self.client.get("/internal/github/codecov/testRepoName/commits/")
 
@@ -635,8 +637,6 @@ class RepoCommitList(InternalAPITest):
         self.org.plan_auto_activate = False
         self.org.save()
 
-        self.client.force_login(user=self.user)
-
         response = self.client.get("/internal/github/codecov/testRepoName/commits/")
 
         assert response.status_code == 403
@@ -647,7 +647,7 @@ class BranchViewSetTests(InternalAPITest):
     def setUp(self):
         self.org = OwnerFactory()
         self.repo = RepositoryFactory(author=self.org)
-        self.user = OwnerFactory(
+        self.current_owner = OwnerFactory(
             permission=[self.repo.repoid], organizations=[self.org.ownerid]
         )
         self.other_user = OwnerFactory(permission=[self.repo.repoid])
@@ -657,7 +657,8 @@ class BranchViewSetTests(InternalAPITest):
             BranchFactory(repository=self.repo, name="bar"),
         ]
 
-        self.client.force_login(user=self.user)
+        self.client = Client()
+        self.client.force_login_owner(self.current_owner)
 
     def _get_branches(self, kwargs={}, query={}):
         if not kwargs:
@@ -715,7 +716,9 @@ class BranchViewSetTests(InternalAPITest):
         self, mock_provider
     ):
         self.branches[0].head = CommitFactory(
-            repository=self.repo, author=self.user, branch=self.branches[0].name
+            repository=self.repo,
+            author=self.current_owner,
+            branch=self.branches[0].name,
         ).commitid
         self.branches[0].save()
         self.branches[1].head = CommitFactory(
@@ -729,7 +732,10 @@ class BranchViewSetTests(InternalAPITest):
             response.data["results"][0]["most_recent_commiter"]
             == self.other_user.username
         )
-        assert response.data["results"][1]["most_recent_commiter"] == self.user.username
+        assert (
+            response.data["results"][1]["most_recent_commiter"]
+            == self.current_owner.username
+        )
 
     def test_list_as_inactive_user_returns_403(self, mock_provider):
         self.org.plan = "users-inappy"

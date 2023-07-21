@@ -13,11 +13,9 @@ from sentry_sdk.integrations.redis import RedisIntegration
 
 from utils.config import SettingsModule, get_config, get_settings_module
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "*"  # Unused
+SECRET_KEY = get_config("django", "secret_key", default="*")
 
-
-AUTH_USER_MODEL = "codecov_auth.Owner"
+AUTH_USER_MODEL = "codecov_auth.User"
 
 # Application definition
 
@@ -59,10 +57,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-]
-
-AUTHENTICATION_BACKENDS = [
-    "codecov_auth.authentication.CodecovTokenAuthenticationBackend"
+    "codecov_auth.middleware.CurrentOwnerMiddleware",
+    "codecov_auth.middleware.ImpersonationMiddleware",
 ]
 
 ROOT_URLCONF = "codecov.urls"
@@ -261,10 +257,9 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticatedOrReadOnly",
     ),
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "codecov_auth.authentication.CodecovTokenAuthentication",
         "codecov_auth.authentication.UserTokenAuthentication",
         "rest_framework.authentication.BasicAuthentication",
-        "rest_framework.authentication.SessionAuthentication",
+        "codecov_auth.authentication.SessionAuthentication",
     ),
     "DEFAULT_PAGINATION_CLASS": "api.shared.pagination.StandardPageNumberPagination",
     "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
@@ -404,6 +399,7 @@ GITLAB_CLIENT_SECRET = get_config("gitlab", "client_secret")
 GITLAB_REDIRECT_URI = get_config(
     "gitlab", "redirect_uri", default="https://codecov.io/login/gitlab"
 )
+
 GITLAB_BOT_KEY = get_config("gitlab", "bot", "key")
 GITLAB_TOKENLESS_BOT_KEY = get_config(
     "gitlab", "bots", "tokenless", "key", default=GITLAB_BOT_KEY

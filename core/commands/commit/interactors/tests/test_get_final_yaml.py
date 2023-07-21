@@ -21,10 +21,9 @@ class GetFinalYamlInteractorTest(TransactionTestCase):
         asyncio.set_event_loop(asyncio.new_event_loop())
 
     # helper to execute the interactor
-    def execute(self, user, *args):
-        service = user.service if user else "github"
-        current_user = user or AnonymousUser()
-        return GetFinalYamlInteractor(current_user, service).execute(*args)
+    def execute(self, owner, *args):
+        service = owner.service if owner else "github"
+        return GetFinalYamlInteractor(owner, service).execute(*args)
 
     @patch("services.yaml.fetch_current_yaml_from_provider_via_reference")
     @async_to_sync

@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.urls import reverse
 
-from codecov_auth.tests.factories import OwnerFactory
+from codecov_auth.tests.factories import UserFactory
 
 from .factories import CommitComparisonFactory
 
@@ -11,7 +11,7 @@ class CompareAdminTest(TestCase):
         # Create a couple of comparison so the list has something to display
         CommitComparisonFactory()
         CommitComparisonFactory()
-        self.staff_user = OwnerFactory(staff=True)
+        self.staff_user = UserFactory(is_staff=True)
         self.client.force_login(user=self.staff_user)
 
     def test_compare_admin_detail_page(self):

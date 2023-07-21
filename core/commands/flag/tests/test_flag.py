@@ -18,15 +18,15 @@ from ..flag import FlagCommands
 
 class FlagCommandsTest(TransactionTestCase):
     def setUp(self):
-        self.user = OwnerFactory(username="test-user")
-        self.owner = OwnerFactory(username="test-org", admins=[self.user.pk])
-        self.repo = RepositoryFactory(author=self.owner)
-        self.command = FlagCommands(self.user, "github")
+        self.owner = OwnerFactory(username="test-user")
+        self.org = OwnerFactory(username="test-org", admins=[self.owner.pk])
+        self.repo = RepositoryFactory(author=self.org)
+        self.command = FlagCommands(self.owner, "github")
         self.flag = RepositoryFlagFactory(repository=self.repo, flag_name="test-flag")
 
     def test_delete_flag(self):
         self.command.delete_flag(
-            owner_username=self.owner.username,
+            owner_username=self.org.username,
             repo_name=self.repo.name,
             flag_name=self.flag.flag_name,
         )
@@ -35,11 +35,11 @@ class FlagCommandsTest(TransactionTestCase):
         assert self.flag.deleted is True
 
     def test_delete_flag_unauthenticated(self):
-        self.command.current_user = AnonymousUser()
+        self.command = FlagCommands(None, "github")
 
         with self.assertRaises(Unauthenticated):
             self.command.delete_flag(
-                owner_username=self.owner.username,
+                owner_username=self.org.username,
                 repo_name=self.repo.name,
                 flag_name=self.flag.flag_name,
             )
@@ -55,18 +55,18 @@ class FlagCommandsTest(TransactionTestCase):
     def test_delete_flag_repo_not_found(self):
         with self.assertRaises(ValidationError):
             self.command.delete_flag(
-                owner_username=self.owner.username,
+                owner_username=self.org.username,
                 repo_name="nonexistent",
                 flag_name=self.flag.flag_name,
             )
 
     def test_delete_flag_not_admin(self):
-        self.owner.admins = []
-        self.owner.save()
+        self.org.admins = []
+        self.org.save()
 
         with self.assertRaises(Unauthorized):
             self.command.delete_flag(
-                owner_username=self.owner.username,
+                owner_username=self.org.username,
                 repo_name=self.repo.name,
                 flag_name=self.flag.flag_name,
             )
@@ -74,7 +74,7 @@ class FlagCommandsTest(TransactionTestCase):
     def test_delete_flag_not_found(self):
         with self.assertRaises(NotFound):
             self.command.delete_flag(
-                owner_username=self.owner.username,
+                owner_username=self.org.username,
                 repo_name=self.repo.name,
                 flag_name="nonexistent",
             )

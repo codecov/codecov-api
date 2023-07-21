@@ -42,7 +42,8 @@ MockLineComparison = namedtuple(
 class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
     def _request(self, query):
         data = self.gql_request(
-            base_query % (self.repository.name, self.pull.pullid, query), user=self.user
+            base_query % (self.repository.name, self.pull.pullid, query),
+            owner=self.owner,
         )
         return data["me"]["owner"]["repository"]["pull"]
 
@@ -61,20 +62,20 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         self.base_report.return_value = None
         self.addCleanup(self.base_report_patcher.stop)
 
-        self.user = OwnerFactory()
+        self.owner = OwnerFactory()
         self.repository = RepositoryFactory(
-            author=self.user,
+            author=self.owner,
             active=True,
             private=True,
         )
         self.base_commit = CommitWithReportFactory(
             repository=self.repository,
-            author=self.user,
+            author=self.owner,
         )
         self.head_commit = CommitWithReportFactory(
             parent_commit_id=self.base_commit.commitid,
             repository=self.repository,
-            author=self.user,
+            author=self.owner,
         )
         self.commit_comparison = CommitComparisonFactory(
             base_commit=self.base_commit,
@@ -84,7 +85,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         self.pull = PullFactory(
             pullid=2,
             repository=self.repository,
-            author=self.user,
+            author=self.owner,
             head=self.head_commit.commitid,
             compared_to=self.base_commit.commitid,
         )
@@ -544,7 +545,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             }
         """
 
-        data = self.gql_request(query % (self.pull.pullid), user=self.user)
+        data = self.gql_request(query % (self.pull.pullid), owner=self.owner)
 
         assert data == {
             "me": {
@@ -945,7 +946,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
 
         res = self.gql_request(
             base_query % (self.repository.name, self.pull.pullid, query),
-            user=self.user,
+            owner=self.owner,
             with_errors=True,
         )
         assert res["errors"] is not None
@@ -976,7 +977,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
 
         res = self.gql_request(
             base_query % (self.repository.name, self.pull.pullid, query),
-            user=self.user,
+            owner=self.owner,
             with_errors=True,
         )
         assert res["errors"] is not None

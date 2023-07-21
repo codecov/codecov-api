@@ -35,7 +35,7 @@ class TestMeasurement(TransactionTestCase, GraphQLTestHelper):
                 }}
             }}
         """
-        data = self.gql_request(query, user=self.user, variables=variables)
+        data = self.gql_request(query, owner=self.owner, variables=variables)
         return data["owner"]["repository"]["measurements"]
 
     def setUp(self):
@@ -45,7 +45,7 @@ class TestMeasurement(TransactionTestCase, GraphQLTestHelper):
             author=self.org,
             private=True,
         )
-        self.user = OwnerFactory(permission=[self.repo.pk])
+        self.owner = OwnerFactory(permission=[self.repo.pk])
 
     @override_settings(TIMESERIES_ENABLED=True)
     def test_measurements_timeseries_enabled(

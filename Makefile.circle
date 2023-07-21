@@ -8,11 +8,13 @@ build_date ?= $(shell git show -s --date=iso8601-strict --pretty=format:%cd $$sh
 tag ?= $(shell echo $$(git rev-list --count HEAD)$$(git show -s --format=.%ad.%h --date=format:%Y-%m-%d))
 branch = $(shell git branch | grep \* | cut -f2 -d' ')
 docker_version = $(shell git describe --always --tags --dirty | sed 's/^v//')
-release_env = master
 dockerhub_image := codecov/self-hosted-api
+
+release_env = main
+
 SEMANTIC_VERSION := `cat VERSION`
 
-ifneq ($(branch), master)
+ifneq ($(branch), main)
 release_env = pr
 endif
 
@@ -189,7 +191,7 @@ circleci-local:
 # use locally to tag a new release version.
 # this will trigger a build/test/deployment on circle ci
 release:
-	git checkout master
+	git checkout main
 	git pull
 	git tag ${VERSION}
 	git push --tags
@@ -207,7 +209,7 @@ docker-deploy: docker-deploy-$(release_env)
 # CIRCLECI
 # job: portable
 # deploys tagged version of the portable container to dockerhub and updates the latest tag.
-docker-deploy-master: build-portable
+docker-deploy-main: build-portable
 	docker tag codecov/$(name) codecov/$(name):$(tag)
 	docker push codecov/$(name):latest
 	docker push codecov/$(name):$(tag)
