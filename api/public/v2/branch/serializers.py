@@ -23,7 +23,7 @@ class BranchDetailSerializer(BranchSerializer):
             Commit.objects.filter(
                 repository_id=branch.repository_id, commitid=branch.head
             )
-            .defer("report")
+            .defer("_report")
             .first()
         )
         return CommitDetailSerializer(commit).data

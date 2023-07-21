@@ -29,6 +29,6 @@ class CommitLoader(BaseLoader):
 
         return (
             Commit.objects.filter(commitid__in=keys, repository_id=self.repository_id)
-            .defer("report")
+            .defer("_report")
             .prefetch_related(prefetch)
         )
