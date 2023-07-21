@@ -85,12 +85,7 @@ class BitbucketWebhookHandler(APIView):
 
         for change in self.request.data["push"]["changes"]:
             if change["new"]:
-                if change["new"]["type"] == "branch" and (
-                    repo.cache and repo.cache.get("yaml")
-                ):
-                    return Response(data="Synchronize codecov.yml")
-                else:
-                    return Response(data="Synchronize codecov.yml skipped")
+                return Response(data="Synchronize codecov.yml skipped")
 
         return Response()
 
