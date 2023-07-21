@@ -110,3 +110,10 @@ class GetIsCurrentUserAnAdminInteractorTest(TransactionTestCase):
             GetIsCurrentUserAnAdminInteractor(owner, current_user).execute
         )(owner, current_user)
         assert is_admin == True
+
+    def test_is_admin_no_current_owner(self):
+        owner = OwnerFactory(ownerid=5)
+        res = async_to_sync(GetIsCurrentUserAnAdminInteractor(owner, None).execute)(
+            owner, None
+        )
+        assert res == False

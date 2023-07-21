@@ -1,6 +1,6 @@
 from decimal import Decimal
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from django.test import TestCase
 from shared.utils.sessions import SessionType
@@ -295,7 +295,7 @@ class ReportServiceTest(TestCase):
 
         # there are no associated `reports_*` records but we have `commits.report` populated
         commit = CommitFactory.create(
-            message="aaaaa", commitid="abf6d4d", report=report
+            message="aaaaa", commitid="abf6d4d", _report=report
         )
         res = build_report_from_commit(commit)
 
