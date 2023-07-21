@@ -187,6 +187,9 @@ def resolve_is_current_user_activated(owner, info):
         return False
 
     current_owner = info.context["request"].current_owner
+    if not current_owner:
+        return False
+
     if owner.ownerid == current_owner.ownerid or owner.is_admin(current_owner):
         return True
     if owner.plan_activated_users is None:

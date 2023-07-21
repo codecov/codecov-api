@@ -4,8 +4,8 @@ from functools import lru_cache
 from typing import Any, Callable
 
 from shared.storage.exceptions import FileNotInStorageError
+from shared.utils.ReportEncoder import ReportEncoder
 
-from core.models import Repository
 from services.archive import ArchiveService
 
 log = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ class ArchiveFieldInterfaceMeta(type):
 class ArchiveFieldInterface(metaclass=ArchiveFieldInterfaceMeta):
     """Any class that uses ArchiveField must implement this interface"""
 
-    def get_repository(self) -> Repository:
+    def get_repository(self):
         raise NotImplementedError()
 
     def get_commitid(self) -> str:
@@ -60,11 +60,13 @@ class ArchiveField:
         self,
         should_write_to_storage_fn: Callable[[object], bool],
         rehydrate_fn: Callable[[object, object], Any] = lambda self, x: x,
+        json_encoder=ReportEncoder,
         default_value=None,
     ):
         self.default_value = default_value
         self.rehydrate_fn = rehydrate_fn
         self.should_write_to_storage_fn = should_write_to_storage_fn
+        self.json_encoder = json_encoder
 
     def __set_name__(self, owner, name):
         # Validate that the owner class has the methods we need
@@ -80,19 +82,28 @@ class ArchiveField:
         repository = obj.get_repository()
         archive_service = ArchiveService(repository=repository)
         archive_field = getattr(obj, self.archive_field_name)
-        try:
-            file_str = archive_service.read_file(archive_field)
-            return self.rehydrate_fn(obj, json.loads(file_str))
-        except FileNotInStorageError:
-            log.error(
-                "Archive enabled field not in storage",
+        if archive_field:
+            try:
+                file_str = archive_service.read_file(archive_field)
+                return self.rehydrate_fn(obj, json.loads(file_str))
+            except FileNotInStorageError:
+                log.error(
+                    "Archive enabled field not in storage",
+                    extra=dict(
+                        storage_path=archive_field,
+                        object_id=obj.id,
+                        commit=obj.get_commitid(),
+                    ),
+                )
+        else:
+            log.info(
+                "Both db_field and archive_field are None",
                 extra=dict(
-                    storage_path=archive_field,
                     object_id=obj.id,
                     commit=obj.get_commitid(),
                 ),
             )
-            return self.default_value
+        return self.default_value
 
     def __get__(self, obj, objtype=None):
         db_field = getattr(obj, self.db_field_name)
@@ -113,6 +124,7 @@ class ArchiveField:
                 field=self.public_name,
                 external_id=obj.external_id,
                 data=value,
+                encoder=self.json_encoder,
             )
             if old_file_path is not None and path != old_file_path:
                 archive_service.delete_file(old_file_path)

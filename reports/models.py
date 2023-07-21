@@ -8,6 +8,7 @@ from shared.reports.enums import UploadState, UploadType
 
 from codecov.models import BaseCodecovModel
 from upload.constants import ci
+from utils.config import should_write_data_to_storage_config_check
 from utils.model_utils import ArchiveField
 from utils.services import get_short_service_name
 
@@ -68,27 +69,11 @@ class ReportDetails(BaseCodecovModel):
             or self.report.commit.repository.author is None
         ):
             return False
-        report_builder_repo_ids = get_config(
-            "setup", "save_report_data_in_storage", "repo_ids", default=[]
-        )
-        master_write_switch = get_config(
-            "setup",
-            "save_report_data_in_storage",
-            "report_details_files_array",
-            default=False,
-        )
-        only_codecov = get_config(
-            "setup",
-            "save_report_data_in_storage",
-            "only_codecov",
-            default=True,
-        )
         is_codecov_repo = self.report.commit.repository.author.username == "codecov"
-        is_in_allowed_repos = (
-            self.report.commit.repository.repoid in report_builder_repo_ids
-        )
-        return master_write_switch and (
-            is_codecov_repo or is_in_allowed_repos or not only_codecov
+        return should_write_data_to_storage_config_check(
+            master_switch_key="report_details_files_array",
+            is_codecov_repo=is_codecov_repo,
+            repoid=self.report.commit.repository.repoid,
         )
 
     files_array = ArchiveField(

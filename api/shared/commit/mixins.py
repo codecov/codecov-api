@@ -18,7 +18,7 @@ class CommitsViewSetMixin(
         # We don't use the "report" field in this endpoint since it can be many MBs of JSON.
         # Choosing not to fetch it for perf reasons.
         return (
-            self.repo.commits.defer("report")
+            self.repo.commits.defer("_report")
             .select_related("author")
             .order_by("-timestamp")
         )
