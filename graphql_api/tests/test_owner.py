@@ -8,7 +8,11 @@ from freezegun import freeze_time
 
 from billing.constants import BASIC_PLAN_NAME
 from codecov_auth.models import OwnerProfile
-from codecov_auth.tests.factories import GetAdminProviderAdapter, OwnerFactory
+from codecov_auth.tests.factories import (
+    GetAdminProviderAdapter,
+    OwnerFactory,
+    UserFactory,
+)
 from core.tests.factories import CommitFactory, OwnerFactory, RepositoryFactory
 from reports.tests.factories import CommitReportFactory, UploadFactory
 
@@ -382,6 +386,20 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
             owner.username
         )
         data = self.gql_request(query, owner=self.owner)
+        assert data["owner"]["isCurrentUserActivated"] == False
+
+    def test_is_current_user_not_activated_no_current_owner(self):
+        owner = OwnerFactory(username="sample-owner", service="github")
+        query = """{
+            owner(username: "%s") {
+                isCurrentUserActivated
+            }
+        }
+        """ % (
+            owner.username
+        )
+        self.client.force_login(user=UserFactory())
+        data = self.gql_request(query, owner=None)
         assert data["owner"]["isCurrentUserActivated"] == False
 
     def test_is_current_user_activated(self):

@@ -33,7 +33,7 @@ class CommitComparisonAdmin(admin.ModelAdmin):
         qs = super().get_queryset(request)
         return qs.select_related(
             "base_commit", "compare_commit", "base_commit__repository"
-        ).defer("base_commit__report", "compare_commit__report")
+        ).defer("base_commit___report", "compare_commit___report")
 
     def has_add_permission(self, *args, **kwargs):
         return False

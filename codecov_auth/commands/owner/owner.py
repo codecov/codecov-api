@@ -1,5 +1,4 @@
 from codecov.commands.base import BaseCommand
-from codecov_auth.models import Owner, Session
 
 from .interactors.create_api_token import CreateApiTokenInteractor
 from .interactors.create_user_token import CreateUserTokenInteractor
@@ -14,6 +13,7 @@ from .interactors.regenerate_org_upload_token import RegenerateOrgUploadTokenInt
 from .interactors.revoke_user_token import RevokeUserTokenInteractor
 from .interactors.save_terms_agreement import SaveTermsAgreementInteractor
 from .interactors.set_yaml_on_owner import SetYamlOnOwnerInteractor
+from .interactors.start_trial import StartTrialInteractor
 from .interactors.trigger_sync import TriggerSyncInteractor
 from .interactors.update_default_organization import UpdateDefaultOrganizationInteractor
 from .interactors.update_profile import UpdateProfileInteractor
@@ -71,3 +71,8 @@ class OwnerCommands(BaseCommand):
 
     def regenerate_org_upload_token(self, owner):
         return self.get_interactor(RegenerateOrgUploadTokenInteractor).execute(owner)
+
+    def start_trial(self, org_username: str) -> None:
+        return self.get_interactor(StartTrialInteractor).execute(
+            org_username=org_username
+        )

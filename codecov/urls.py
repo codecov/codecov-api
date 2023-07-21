@@ -13,6 +13,7 @@ urlpatterns = [
     path(INTERNAL_API_PREFIX, include("api.internal.urls")),
     re_path("^validate/?", include("validate.urls")),
     path("health/", views.health),
+    path("api_health/", views.health),
     path("", views.health),
     path("<str:service>/<str:owner_username>/<str:repo_name>/", include("graphs.urls")),
     path("upload/", include("upload.urls")),

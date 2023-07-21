@@ -136,6 +136,7 @@ class ReportDetailsTests(TestCase):
         details.save()
 
         fetched = ReportDetails.objects.get(id=details.id)
+        assert fetched._files_array_storage_path == storage_path
         assert fetched.files_array == []
         mock_archive.assert_called()
         mock_read_file.assert_called_with(storage_path)

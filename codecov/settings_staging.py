@@ -55,6 +55,8 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 15000000
 # Same site is set to none on Staging as we want to be able to call the API
 # From Netlify preview deploy
 COOKIE_SAME_SITE = "None"
+SESSION_COOKIE_SAMESITE = "None"
+SESSION_COOKIE_SECURE = True
 
 GRAPHQL_PLAYGROUND = True
 
