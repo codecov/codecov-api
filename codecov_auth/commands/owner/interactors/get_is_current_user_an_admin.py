@@ -35,6 +35,8 @@ class GetIsCurrentUserAnAdminInteractor(BaseInteractor):
         if settings.IS_ENTERPRISE:
             return self_hosted.is_admin_owner(current_owner)
         else:
+            if not current_owner:
+                return False
             admins = owner.admins
             if not hasattr(current_owner, "ownerid"):
                 return False
