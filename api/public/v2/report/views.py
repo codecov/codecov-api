@@ -19,7 +19,6 @@ from api.shared.mixins import RepoPropertyMixin
 from api.shared.permissions import RepositoryArtifactPermissions, SuperTokenPermissions
 from api.shared.report.serializers import TreeSerializer
 from codecov_auth.authentication import (
-    CodecovTokenAuthentication,
     SuperTokenAuthentication,
     UserTokenAuthentication,
 )
@@ -186,7 +185,6 @@ class TotalsViewSet(BaseReportViewSet):
 class ReportViewSet(BaseReportViewSet):
     authentication_classes = [
         SuperTokenAuthentication,
-        CodecovTokenAuthentication,
         UserTokenAuthentication,
         BasicAuthentication,
         SessionAuthentication,
@@ -294,7 +292,6 @@ class FileReportViewSet(
 ):
     authentication_classes = [
         SuperTokenAuthentication,
-        CodecovTokenAuthentication,
         UserTokenAuthentication,
         BasicAuthentication,
         SessionAuthentication,

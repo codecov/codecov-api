@@ -4,8 +4,7 @@ from django.urls import reverse
 from shared.torngit import Gitlab
 from shared.torngit.exceptions import TorngitClientGeneralError
 
-from codecov_auth.helpers import decode_token_from_cookie
-from codecov_auth.models import Session
+from codecov_auth.models import Owner
 from utils.encryption import encryptor
 
 
@@ -83,23 +82,15 @@ def test_get_gitlab_already_with_code(client, mocker, db, settings, mock_redis):
     mock_redis.setex("oauth-state-abc", 300, "http://localhost:3000/gl")
     res = client.get(url, {"code": "aaaaaaa", "state": "abc"})
     assert res.status_code == 302
-    assert "gitlab-token" in res.cookies
-    assert "gitlab-username" in res.cookies
-    token_cookie = res.cookies["gitlab-token"]
-    username_cookie = res.cookies["gitlab-username"]
-    cookie_token = decode_token_from_cookie(settings.COOKIE_SECRET, token_cookie.value)
-    assert username_cookie.value == "ThiagoCodecov"
-    assert username_cookie.get("domain") == ".simple.site"
-    assert token_cookie.get("domain") == ".simple.site"
-    session = Session.objects.get(token=cookie_token)
-    owner = session.owner
+
+    owner = Owner.objects.get(pk=client.session["current_owner_id"])
     assert owner.username == "ThiagoCodecov"
     assert owner.service_id == "3124507"
     assert res.url == "http://localhost:3000/gl"
     assert encryptor.decode(owner.oauth_token) == f"{access_token}: :{refresh_token}"
 
 
-def test_get_github_already_with_code_github_error(
+def test_get_github_already_with_code_gitlab_error(
     client, mocker, db, mock_redis, settings
 ):
     settings.COOKIES_DOMAIN = ".simple.site"
@@ -112,6 +103,6 @@ def test_get_github_already_with_code_github_error(
     mock_redis.setex("oauth-state-abc", 300, "http://localhost:3000/gl")
     res = client.get(url, {"code": "aaaaaaa", "state": "abc"})
     assert res.status_code == 302
-    assert "gitlab-token" not in res.cookies
-    assert "gitlab-username" not in res.cookies
+
+    assert "current_owner_id" not in client.session
     assert res.url == "/"

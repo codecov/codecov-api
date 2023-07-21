@@ -23,6 +23,7 @@ from services.plan import PlanService, TrialStatus
 from services.profiling import ProfilingSummary
 from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Interval, MeasurementSummary
+from utils.services import get_long_service_name
 
 owner = ariadne_load_local_graphql(__file__, "owner.graphql")
 owner = owner + build_connection_graphql("RepositoryConnection", "Repository")
@@ -39,8 +40,8 @@ def resolve_repositories(
     ordering_direction=OrderingDirection.ASC,
     **kwargs
 ):
-    current_user = info.context["request"].user
-    queryset = list_repository_for_owner(current_user, owner, filters)
+    current_owner = info.context["request"].current_owner
+    queryset = list_repository_for_owner(current_owner, owner, filters)
     return queryset_to_connection(
         queryset,
         ordering=(ordering, RepositoryOrdering.ID),
@@ -50,17 +51,18 @@ def resolve_repositories(
 
 
 @owner_bindable.field("isCurrentUserPartOfOrg")
+@sync_to_async
 def resolve_is_current_user_part_of_org(owner, info):
-    current_user = info.context["request"].user
-    return current_user_part_of_org(current_user, owner)
+    current_owner = info.context["request"].current_owner
+    return current_user_part_of_org(current_owner, owner)
 
 
 @owner_bindable.field("yaml")
 def resolve_yaml(owner, info):
-    current_user = info.context["request"].user
     if owner.yaml is None:
         return
-    if not current_user_part_of_org(current_user, owner):
+    current_owner = info.context["request"].current_owner
+    if not current_user_part_of_org(current_owner, owner):
         return
     return yaml.dump(owner.yaml)
 
@@ -85,10 +87,12 @@ async def resolve_repository(owner, info, name):
     if repository is None:
         return NotFoundError()
 
-    user = info.context["request"].user
+    current_owner = info.context["request"].current_owner
     if repository.private:
-        await sync_to_async(activation.try_auto_activate)(owner, user)
-        is_activated = await sync_to_async(activation.is_activated)(owner, user)
+        await sync_to_async(activation.try_auto_activate)(owner, current_owner)
+        is_activated = await sync_to_async(activation.is_activated)(
+            owner, current_owner
+        )
         if not is_activated:
             return OwnerNotActivatedError()
 
@@ -103,9 +107,9 @@ async def resolve_repository_deprecated(owner, info, name):
     repository: Optional[Repository] = await command.fetch_repository(owner, name)
 
     if repository is not None:
-        user = info.context["request"].user
+        current_owner = info.context["request"].current_owner
         if repository.private:
-            await sync_to_async(activation.try_auto_activate)(owner, user)
+            await sync_to_async(activation.try_auto_activate)(owner, current_owner)
 
         info.context["profiling_summary"] = ProfilingSummary(repository)
 
@@ -120,9 +124,9 @@ async def resolve_number_of_uploads(owner, info, **kwargs):
 
 @owner_bindable.field("isAdmin")
 def resolve_is_current_user_an_admin(owner, info):
-    current_user = info.context["request"].user
+    current_owner = info.context["request"].current_owner
     command = info.context["executor"].get_command("owner")
-    return command.get_is_current_user_an_admin(owner, current_user)
+    return command.get_is_current_user_an_admin(owner, current_owner)
 
 
 @owner_bindable.field("hashOwnerid")
@@ -153,9 +157,9 @@ def resolve_measurements(
     before: Optional[datetime] = None,
     repos: Optional[List[str]] = None,
 ) -> Iterable[MeasurementSummary]:
-    user = info.context["request"].user
+    current_owner = info.context["request"].current_owner
 
-    queryset = Repository.objects.filter(author=owner).viewable_repos(user)
+    queryset = Repository.objects.filter(author=owner).viewable_repos(current_owner)
     if repos is None:
         repo_ids = queryset.values_list("pk", flat=True)
     else:
@@ -176,16 +180,22 @@ def resolve_measurements(
 
 
 @owner_bindable.field("isCurrentUserActivated")
+@sync_to_async
 def resolve_is_current_user_activated(owner, info):
     current_user = info.context["request"].user
     if not current_user.is_authenticated:
         return False
-    if owner.ownerid == current_user.ownerid or owner.is_admin(current_user):
+
+    current_owner = info.context["request"].current_owner
+    if not current_owner:
+        return False
+
+    if owner.ownerid == current_owner.ownerid or owner.is_admin(current_owner):
         return True
     if owner.plan_activated_users is None:
         return False
 
     return (
         bool(owner.plan_activated_users)
-        and current_user.ownerid in owner.plan_activated_users
+        and current_owner.ownerid in owner.plan_activated_users
     )

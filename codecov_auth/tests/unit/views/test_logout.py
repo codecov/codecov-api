@@ -3,48 +3,37 @@ from unittest.mock import patch
 from django.core.exceptions import ObjectDoesNotExist
 from django.test import TransactionTestCase
 
-from codecov_auth.tests.factories import OwnerFactory, SessionFactory
+from codecov_auth.tests.factories import OwnerFactory
+from utils.test_utils import Client
 
 
 class LogoutViewTest(TransactionTestCase):
     def _get(self, url):
-        headers = {"HTTP_TOKEN_TYPE": "github-token"}
-        return self.client.get(url, content_type="application/json", **headers)
+        return self.client.get(url, content_type="application/json")
 
-    def _is_authenticated(self, token):
-        self.client.cookies["github-token"] = token
+    def _is_authenticated(self):
         response = self.client.post(
             "/graphql/gh",
             {"query": "{ me { user { username } } }"},
             content_type="application/json",
-            HTTP_TOKEN_TYPE="github-token",
         )
         return response.json()["data"]["me"] is not None
 
-    @patch("codecov_auth.authentication.decode_token_from_cookie")
-    def test_logout_when_unauthenticated(self, mock_decode_token_from_cookie):
+    def test_logout_when_unauthenticated(self):
         res = self._get("/logout/gh")
         assert res.status_code == 302
 
-    @patch("codecov_auth.authentication.decode_token_from_cookie")
-    @patch("codecov_auth.views.logout.decode_token_from_cookie")
-    def test_logout_when_authenticated(
-        self, mock_decode_token_from_cookie, mock_decode_token_from_cookie_2
-    ):
-        user = OwnerFactory()
-        session = SessionFactory(owner=user)
-        mock_decode_token_from_cookie.return_value = session.token
-        mock_decode_token_from_cookie_2.return_value = session.token
+    def test_logout_when_authenticated(self):
+        owner = OwnerFactory()
+        self.client = Client()
+        self.client.force_login_owner(owner)
 
         res = self._get("/graphql/gh/")
-        self.assertEqual(self._is_authenticated(session.token), True)
+        self.assertEqual(self._is_authenticated(), True)
 
         res = self._get("/logout/gh")
-        assert res.url is "/"
+        assert res.url == "/"
         self.assertEqual(res.status_code, 302)
-        with self.assertRaises(ObjectDoesNotExist):
-            # test if session is properly deleted
-            session.refresh_from_db()
 
         res = self._get("/graphql/gh/")
-        self.assertEqual(self._is_authenticated(session.token), False)
+        self.assertEqual(self._is_authenticated(), False)

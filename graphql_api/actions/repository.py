@@ -1,3 +1,4 @@
+from codecov_auth.models import Owner
 from core.models import Repository
 
 
@@ -19,9 +20,9 @@ def apply_filters_to_queryset(queryset, filters):
     return queryset
 
 
-def list_repository_for_owner(current_user, owner, filters):
+def list_repository_for_owner(current_owner: Owner, owner: Owner, filters):
     queryset = (
-        Repository.objects.viewable_repos(current_user)
+        Repository.objects.viewable_repos(current_owner)
         .with_recent_coverage()
         .with_cache_latest_commit_at()
         .filter(author=owner)
@@ -30,10 +31,10 @@ def list_repository_for_owner(current_user, owner, filters):
     return queryset
 
 
-def search_repos(current_user, filters):
-    authors_from = [current_user.ownerid] + (current_user.organizations or [])
+def search_repos(current_owner, filters):
+    authors_from = [current_owner.ownerid] + (current_owner.organizations or [])
     queryset = (
-        Repository.objects.viewable_repos(current_user)
+        Repository.objects.viewable_repos(current_owner)
         .with_recent_coverage()
         .with_cache_latest_commit_at()
         .filter(author__ownerid__in=authors_from)

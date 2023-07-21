@@ -26,33 +26,32 @@ class GetRepositoryTokenInteractorTest(TransactionTestCase):
         self.user = OwnerFactory(organizations=[self.org.ownerid])
         RepositoryTokenFactory(repository=self.active_repo, key="random")
 
-    def execute(self, user, repo, token_type="profiling"):
-        current_user = user or AnonymousUser()
-        return GetRepositoryTokenInteractor(current_user, "github").execute(
+    def execute(self, owner, repo, token_type="profiling"):
+        return GetRepositoryTokenInteractor(owner, "github").execute(
             repository=repo, token_type=token_type
         )
 
     async def test_when_unauthenticated_raise(self):
         with pytest.raises(Unauthenticated):
-            await self.execute(user="", repo=self.active_repo)
+            await self.execute(owner="", repo=self.active_repo)
 
     async def test_when_repo_inactive(self):
         with pytest.raises(ValidationError):
-            await self.execute(user=self.user, repo=self.inactive_repo)
+            await self.execute(owner=self.user, repo=self.inactive_repo)
 
     async def test_when_repo_has_no_token(self):
-        token = await self.execute(user=self.user, repo=self.repo_with_no_token)
+        token = await self.execute(owner=self.user, repo=self.repo_with_no_token)
         assert token is not None
         assert len(token) == 40
 
     async def test_get_profiling_token(self):
-        token = await self.execute(user=self.user, repo=self.active_repo)
+        token = await self.execute(owner=self.user, repo=self.active_repo)
         assert token is not None
         assert token == "random"
 
     async def test_get_static_analysis_token(self):
         token = await self.execute(
-            user=self.user, repo=self.active_repo, token_type="static_analysis"
+            owner=self.user, repo=self.active_repo, token_type="static_analysis"
         )
         assert token is not None
         assert len(token) == 40

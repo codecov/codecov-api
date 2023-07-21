@@ -7,7 +7,7 @@ from django.test import TransactionTestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from codecov_auth.tests.factories import OwnerFactory
+from codecov_auth.tests.factories import UserFactory
 from core.tests.factories import RepositoryFactory
 from timeseries.tests.factories import DatasetFactory
 
@@ -19,8 +19,8 @@ class DatasetAdminTest(TransactionTestCase):
     databases = {"default", "timeseries"}
 
     def setUp(self):
-        self.owner = OwnerFactory(staff=True)
-        self.client.force_login(user=self.owner)
+        self.user = UserFactory(is_staff=True)
+        self.client.force_login(user=self.user)
 
         self.repo1 = RepositoryFactory()
         self.repo2 = RepositoryFactory()

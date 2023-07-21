@@ -1,5 +1,5 @@
 from codecov.commands.base import BaseInteractor
-from codecov.commands.exceptions import Unauthenticated
+from codecov.commands.exceptions import Unauthenticated, Unauthorized
 from codecov.db import sync_to_async
 from codecov_auth.models import Session
 
@@ -12,4 +12,4 @@ class DeleteSessionInteractor(BaseInteractor):
     @sync_to_async
     def execute(self, sessionid):
         self.validate()
-        Session.objects.filter(sessionid=sessionid, owner=self.current_user).delete()
+        Session.objects.filter(sessionid=sessionid, owner=self.current_owner).delete()

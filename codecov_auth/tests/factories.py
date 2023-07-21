@@ -12,9 +12,17 @@ from codecov_auth.models import (
     Service,
     Session,
     TokenTypeChoices,
+    User,
     UserToken,
 )
 from utils.encryption import encryptor
+
+
+class UserFactory(DjangoModelFactory):
+    class Meta:
+        model = User
+
+    email = factory.Faker("email")
 
 
 class OwnerFactory(DjangoModelFactory):
@@ -38,6 +46,7 @@ class OwnerFactory(DjangoModelFactory):
     oauth_token = factory.LazyAttribute(
         lambda o: encryptor.encode(o.unencrypted_oauth_token).decode()
     )
+    user = factory.SubFactory(UserFactory)
 
 
 class OwnerProfileFactory(DjangoModelFactory):

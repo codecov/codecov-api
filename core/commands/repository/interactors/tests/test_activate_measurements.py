@@ -29,9 +29,8 @@ class ActivateMeasurementsInteractorTest(TransactionTestCase):
         self.user = OwnerFactory(permission=[self.repo.pk])
 
     @async_to_sync
-    def execute(self, user, repo_name=None, measurement_type=None):
-        current_user = user or AnonymousUser()
-        return ActivateMeasurementsInteractor(current_user, "github").execute(
+    def execute(self, owner, repo_name=None, measurement_type=None):
+        return ActivateMeasurementsInteractor(owner, "github").execute(
             repo_name=repo_name or "test-repo",
             owner_name="test-org",
             measurement_type=measurement_type or MeasurementName.FLAG_COVERAGE,
@@ -39,12 +38,12 @@ class ActivateMeasurementsInteractorTest(TransactionTestCase):
 
     def test_repo_not_found(self):
         with pytest.raises(ValidationError):
-            self.execute(user=self.user, repo_name="wrong")
+            self.execute(owner=self.user, repo_name="wrong")
 
     @override_settings(TIMESERIES_ENABLED=False)
     def test_timeseries_not_enabled(self):
         with pytest.raises(ValidationError):
-            self.execute(user=self.user)
+            self.execute(owner=self.user)
 
     @patch("services.task.TaskService.backfill_dataset")
     def test_creates_flag_dataset(self, backfill_dataset):
@@ -53,7 +52,7 @@ class ActivateMeasurementsInteractorTest(TransactionTestCase):
             repository_id=self.repo.pk,
         ).exists()
 
-        self.execute(user=self.user)
+        self.execute(owner=self.user)
 
         assert Dataset.objects.filter(
             name=MeasurementName.FLAG_COVERAGE.value,
@@ -68,7 +67,7 @@ class ActivateMeasurementsInteractorTest(TransactionTestCase):
         ).exists()
 
         self.execute(
-            user=self.user,
+            owner=self.user,
             repo_name="test-repo",
             measurement_type=MeasurementName.COMPONENT_COVERAGE,
         )
@@ -86,7 +85,7 @@ class ActivateMeasurementsInteractorTest(TransactionTestCase):
         ).exists()
 
         self.execute(
-            user=self.user,
+            owner=self.user,
             repo_name="test-repo",
             measurement_type=MeasurementName.COVERAGE,
         )
@@ -101,7 +100,7 @@ class ActivateMeasurementsInteractorTest(TransactionTestCase):
     def test_triggers_task(self, backfill_dataset):
         CommitFactory(repository=self.repo, timestamp=datetime(2000, 1, 1, 1, 1, 1))
         CommitFactory(repository=self.repo, timestamp=datetime(2021, 12, 31, 1, 1, 1))
-        self.execute(user=self.user)
+        self.execute(owner=self.user)
         dataset = Dataset.objects.filter(
             name=MeasurementName.FLAG_COVERAGE.value,
             repository_id=self.repo.pk,
@@ -114,5 +113,5 @@ class ActivateMeasurementsInteractorTest(TransactionTestCase):
 
     @patch("services.task.TaskService.backfill_dataset")
     def test_no_commits(self, backfill_dataset):
-        self.execute(user=self.user)
+        self.execute(owner=self.user)
         assert backfill_dataset.call_count == 0

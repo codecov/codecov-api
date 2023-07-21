@@ -1,7 +1,6 @@
 import logging
 
 from django.conf import settings
-from django.contrib.auth.backends import BaseBackend
 from django.utils import timezone
 from rest_framework import authentication, exceptions
 
@@ -11,185 +10,41 @@ from codecov_auth.authentication.types import (
     SuperToken,
     SuperUser,
 )
-from codecov_auth.helpers import decode_token_from_cookie
-from codecov_auth.models import Owner, Session, UserToken
-from utils.config import get_config
-from utils.services import get_long_service_name
+from codecov_auth.models import UserToken
 
 log = logging.getLogger(__name__)
-
-
-def get_session(token: str) -> Session:
-    return Session.objects.select_related("owner", "owner__profile").get(token=token)
-
-
-class CodecovAuthMixin:
-    def update_session(self, request, session):
-        session.lastseen = timezone.now()
-        session.useragent = request.META.get("User-Agent")
-        http_x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
-        if http_x_forwarded_for:
-            session.ip = http_x_forwarded_for.split(",")[0]
-        else:
-            session.ip = request.META.get("REMOTE_ADDR")
-        session.save(update_fields=["lastseen", "useragent", "ip"])
-
-    def get_user_and_session(self, token, request):
-        try:
-            session = get_session(token)
-        except Session.DoesNotExist:
-            raise exceptions.AuthenticationFailed("No such user")
-        if (
-            "staff_user" in request.COOKIES
-            and "service" in request.resolver_match.kwargs
-        ):
-            return self.attempt_impersonation(
-                user=session.owner,
-                username_to_impersonate=request.COOKIES["staff_user"],
-                service=request.resolver_match.kwargs["service"],
-            )
-        else:
-            self.update_session(request, session)
-        return (session.owner, session)
-
-    def attempt_impersonation(self, user, username_to_impersonate, service):
-        log.info(
-            (
-                f"Impersonation attempted --"
-                f" {user.username} impersonating {username_to_impersonate}"
-            )
-        )
-        service = get_long_service_name(service)
-        if not user.staff:
-            log.info(f"Impersonation attempted by non-staff user: {user.username}")
-            raise exceptions.PermissionDenied()
-
-        try:
-            impersonated_user = Owner.objects.get(
-                service=service, username=username_to_impersonate
-            )
-        except Owner.DoesNotExist:
-            log.warning(
-                (
-                    f"Unsuccessful impersonation of {username_to_impersonate}"
-                    f" on service {service}, user doesn't exist"
-                )
-            )
-            raise exceptions.AuthenticationFailed(
-                f"No such user to impersonate: {username_to_impersonate}"
-            )
-        log.info(
-            (
-                f"Request impersonated -- successful "
-                f"impersonation of {username_to_impersonate}, by {user.username}"
-            )
-        )
-        return (impersonated_user, None)
-
-    def decode_token_from_cookie(self, encoded_cookie):
-        secret = get_config("setup", "http", "cookie_secret")
-        return decode_token_from_cookie(secret, encoded_cookie)
-
-    def get_encoded_token_from_request(self, request):
-        # try with a token type header
-        token_type = request.META.get("HTTP_TOKEN_TYPE")
-        encoded_cookie = request.COOKIES.get(token_type)
-        if encoded_cookie:
-            return encoded_cookie
-        # try with the "service" arg from the route to get the cookie
-        service = request.resolver_match.kwargs.get("service")
-        return request.COOKIES.get(f"{get_long_service_name(service)}-token")
-
-
-class CodecovTokenAuthenticationBase(CodecovAuthMixin):
-    def authenticate(self, request):
-        encoded_cookie = self.get_encoded_token_from_request(request)
-
-        if not encoded_cookie:
-            return None
-
-        token = self.decode_token_from_cookie(encoded_cookie)
-
-        return self.get_user_and_session(token, request)
-
-
-class CodecovTokenAuthenticationBackend(CodecovTokenAuthenticationBase, BaseBackend):
-    def get_user(self, ownerid):
-        return Owner.objects.filter(ownerid=ownerid).first()
-
-
-class CodecovTokenAuthentication(
-    CodecovTokenAuthenticationBase, authentication.BaseAuthentication
-):
-    def authenticate_header(self, request):
-        return 'Bearer realm="api"'
-
-
-class CodecovSessionAuthentication(
-    authentication.SessionAuthentication, CodecovAuthMixin
-):
-    """Authenticates based on the user cookie from the old codecov.io tornado system
-
-    This Authenticator works based on the existing authentication method from the current/old
-        codecov.io codebase. On tornado, the `set_secure_cookie` writes a base64 encoded
-        value for the cookie, along with some metadata and a signature in the end.
-
-    In this context we are not interested in the signature, since it will require a lot of
-        code porting from tornado and it is not that beneficial for our code.
-
-    Steps:
-
-        The cookie comes in the format:
-
-            2|1:0|10:1546487835|12:github-token|48:MDZlZDQwNmQtM2ZlNS00ZmY0LWJhYmEtMzQ5NzM5NzMyYjZh|f520039bc6cfb111e4cfc5c3e44fc4fa5921402918547b54383939da803948f4
-
-        We first validate the string, to make sure the last field is the proper signature to the rest
-
-        We then parse it and take the 5th pipe-delimited value
-
-            48:MDZlZDQwNmQtM2ZlNS00ZmY0LWJhYmEtMzQ5NzM5NzMyYjZh
-
-        This is the length + the field itself
-
-            MDZlZDQwNmQtM2ZlNS00ZmY0LWJhYmEtMzQ5NzM5NzMyYjZh
-
-        We base64 decode it and obtain
-
-            06ed406d-3fe5-4ff4-baba-349739732b6a
-
-        Which is the final token
-
-    """
-
-    # TODO: When this handles the /profile route, we will have to
-    # add a 'service' url-param there
-    def authenticate(self, request):
-        encoded_cookie = self.get_encoded_token_from_request(request)
-
-        if not encoded_cookie:
-            return None
-
-        self.enforce_csrf(request)
-
-        token = self.decode_token_from_cookie(encoded_cookie)
-        return self.get_user_and_session(token, request)
 
 
 class UserTokenAuthentication(authentication.TokenAuthentication):
     keyword = "Bearer"
 
-    def authenticate_credentials(self, key):
-        try:
-            token = UserToken.objects.select_related("owner").get(token=key)
-        except UserToken.DoesNotExist:
+    def authenticate(self, request):
+        # we save the request here so that we can set `current_owner` below
+        self.request = request
+        res = super().authenticate(request)
+        self.request = None
+        return res
 
+    def authenticate_credentials(self, token):
+        try:
+            token = UserToken.objects.select_related("owner").get(token=token)
+        except UserToken.DoesNotExist:
             raise exceptions.AuthenticationFailed("Invalid token.")
 
         if token.valid_until is not None and token.valid_until <= timezone.now():
-
             raise exceptions.AuthenticationFailed("Invalid token.")
 
-        return (token.owner, token)  # TODO: might want to return some other object here
+        if self.request:
+            # some permissions checking relies on this being available
+            self.request.current_owner = token.owner
+
+        # NOTE: this is a bit unconventional in that it will result in
+        # `request.user` being an `Owner` instance instead of a `User`.
+        # If we returend `token.owner.user` here instead then we'd potentially
+        # break existing API clients with tokens being used on behalf of owners
+        # that have not logged into Codecov (and created a corresponding user record).
+        # i.e. `token.owner.user` could potentially be `None`
+        return (token.owner, token)
 
 
 class SuperTokenAuthentication(authentication.TokenAuthentication):
@@ -209,3 +64,9 @@ class InternalTokenAuthentication(authentication.TokenAuthentication):
             return (InternalUser(), InternalToken(token=key))
 
         raise exceptions.AuthenticationFailed("Invalid token.")
+
+
+class SessionAuthentication(authentication.SessionAuthentication):
+    def enforce_csrf(self, request):
+        # disable CSRF for the REST API
+        pass

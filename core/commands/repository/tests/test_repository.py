@@ -12,14 +12,14 @@ from ..repository import RepositoryCommands
 class RepositoryCommandsTest(TransactionTestCase):
     def setUp(self):
         self.user = AnonymousUser()
-        self.owner = OwnerFactory(username="codecov")
-        self.repo = RepositoryFactory(author=self.owner)
-        self.command = RepositoryCommands(self.user, "github")
+        self.org = OwnerFactory(username="codecov")
+        self.repo = RepositoryFactory(author=self.org)
+        self.command = RepositoryCommands(None, "github")
 
     @patch("core.commands.repository.repository.FetchRepositoryInteractor.execute")
     def test_fetch_repository_to_interactor(self, interactor_mock):
-        self.command.fetch_repository(self.owner, self.repo.name)
-        interactor_mock.assert_called_once_with(self.owner, self.repo.name)
+        self.command.fetch_repository(self.org, self.repo.name)
+        interactor_mock.assert_called_once_with(self.org, self.repo.name)
 
     @patch("core.commands.repository.repository.GetUploadTokenInteractor.execute")
     def test_get_upload_token_to_interactor(self, interactor_mock):

@@ -59,10 +59,10 @@ class OwnersViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
         except ValueError:
             raise NotFound(f"Service not found: {service}")
 
-        current_user = self.request.user
+        current_owner = self.request.current_owner
         return Owner.objects.filter(
-            Q(service=service, ownerid__in=current_user.organizations)
-            | Q(service=service, username=current_user.username)
+            Q(service=service, ownerid__in=current_owner.organizations)
+            | Q(service=service, username=current_owner.username)
         )
 
     @extend_schema(summary="Service owners")

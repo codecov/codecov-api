@@ -22,7 +22,7 @@ class SetYamlOnOwnerInteractor(BaseInteractor):
             raise Unauthenticated()
 
     def authorize(self):
-        if not current_user_part_of_org(self.current_user, self.owner):
+        if not current_user_part_of_org(self.current_owner, self.owner):
             raise Unauthorized()
 
     def get_owner(self, username):

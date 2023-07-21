@@ -22,12 +22,9 @@ class FetchRepoBranchesInteractorTest(TransactionTestCase):
             BranchFactory(repository=self.repo, head=self.head.commitid, name="test2"),
         ]
 
-    def execute(self, user, repository, filters):
-        service = user.service if user else "github"
-        current_user = user
-        return FetchRepoBranchesInteractor(current_user, service).execute(
-            repository, filters
-        )
+    def execute(self, owner, repository, filters):
+        service = owner.service if owner else "github"
+        return FetchRepoBranchesInteractor(owner, service).execute(repository, filters)
 
     def test_fetch_branches(self):
         repository = self.repo

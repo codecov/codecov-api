@@ -60,6 +60,51 @@ class PlanProviders(models.TextChoices):
     GITHUB = "github"
 
 
+class User(BaseCodecovModel):
+    email = CITextField(null=True)
+    name = models.TextField(null=True)
+    is_staff = models.BooleanField(null=True, default=False)
+    is_superuser = models.BooleanField(null=True, default=False)
+    external_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+
+    REQUIRED_FIELDS = []
+    USERNAME_FIELD = "external_id"
+
+    class Meta:
+        db_table = "users"
+
+    @property
+    def is_active(self):
+        # Required to implement django's user-model interface
+        return True
+
+    @property
+    def is_anonymous(self):
+        # Required to implement django's user-model interface
+        return False
+
+    @property
+    def is_authenticated(self):
+        # Required to implement django's user-model interface
+        return True
+
+    def has_perm(self, perm, obj=None):
+        # Required to implement django's user-model interface
+        return self.is_staff
+
+    def has_perms(self, *args, **kwargs):
+        # Required to implement django's user-model interface
+        return self.is_staff
+
+    def has_module_perms(self, package_name):
+        # Required to implement django's user-model interface
+        return self.is_staff
+
+    def get_username(self):
+        # Required to implement django's user-model interface
+        return self.external_id
+
+
 class Owner(models.Model):
     class Meta:
         db_table = "owners"
@@ -133,6 +178,14 @@ class Owner(models.Model):
 
     sentry_user_id = models.TextField(null=True, blank=True, unique=True)
     sentry_user_data = models.JSONField(null=True)
+
+    user = models.ForeignKey(
+        User,
+        null=True,
+        on_delete=models.SET_NULL,
+        blank=True,
+        related_name="owners",
+    )
 
     objects = OwnerManager()
 
@@ -253,43 +306,12 @@ class Owner(models.Model):
             bool(self.admins) and owner.ownerid in self.admins
         )
 
-    def get_username(self):
-        return self.username
-
-    @property
-    def is_active(self):
-        # Required to implement django's user-model interface
-        return True
-
-    @property
-    def is_anonymous(self):
-        # Required to implement django's user-model interface
-        return False
-
     @property
     def is_authenticated(self):
-        # Required to implement django's user-model interface for Django Admin
+        # NOTE: this is here to support `UserTokenAuthentication` which still returns
+        # an `Owner` as the authenticatable record.  Since there is code that calls
+        # `request.user.is_authenticated` we need to support that here.
         return True
-
-    @property
-    def is_staff(self):
-        # Required to implement django's user-model interface
-        return self.staff
-
-    def has_perm(self, perm, obj=None):
-        # TODO : Implement real permissioning system
-        # Required to implement django's user-model interface for Django Admin
-        return self.is_staff
-
-    def has_perms(self, *args, **kwargs):
-        # TODO : Implement real permissioning system
-        # Required to implement django's user-model interface
-        return True
-
-    def has_module_perms(self, package_name):
-        # TODO : Implement real permissioning system
-        # Required to implement django's user-model interface for Django Admin
-        return self.is_staff
 
     def clean(self):
         if self.staff:

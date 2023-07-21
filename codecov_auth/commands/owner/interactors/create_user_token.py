@@ -16,7 +16,7 @@ class CreateUserTokenInteractor(BaseInteractor):
     def create_token(self, name: str, token_type: str) -> UserToken:
         return UserToken.objects.create(
             name=name,
-            owner=self.current_user,
+            owner=self.current_owner,
             token_type=token_type,
         )
 
