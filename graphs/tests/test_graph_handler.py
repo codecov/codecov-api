@@ -433,7 +433,7 @@ class TestGraphHandler(APITestCase):
             repository=repo,
             author=gh_owner,
             parent_commit_id=commit_1.commitid,
-            report={
+            _report={
                 "files": {
                     "different/test_file.py": [
                         2,
