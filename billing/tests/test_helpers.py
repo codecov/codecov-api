@@ -1,9 +1,8 @@
-from django.conf import settings
 from django.test import TestCase, override_settings
 
-from billing.constants import ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS
 from billing.helpers import on_enterprise_plan
 from codecov_auth.tests.factories import OwnerFactory
+from plan.constants import ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS
 
 
 class HelpersTestCase(TestCase):

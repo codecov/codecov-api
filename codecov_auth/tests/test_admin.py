@@ -5,16 +5,14 @@ from django.contrib.admin.sites import AdminSite
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
-from billing.constants import ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS
 from codecov_auth.admin import OrgUploadTokenInline, OwnerAdmin, OwnerProfileInline
-from codecov_auth.models import OrganizationLevelToken, Owner, Service
-from codecov_auth.services.org_level_token_service import OrgLevelTokenService
+from codecov_auth.models import OrganizationLevelToken, Owner
 from codecov_auth.tests.factories import (
     OrganizationLevelTokenFactory,
     OwnerFactory,
-    OwnerProfileFactory,
     UserFactory,
 )
+from plan.constants import ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS
 
 
 class OwnerAdminTest(TestCase):

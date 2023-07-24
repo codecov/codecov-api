@@ -28,18 +28,21 @@ class PlansViewSetTests(APITestCase):
                     "Unlimited public repositories",
                     "Unlimited private repositories",
                 ],
+                "monthly_uploads_limit": None,
+                "trial_days": None,
             },
             {
                 "marketing_name": "Developer",
                 "value": "users-basic",
                 "billing_rate": None,
                 "base_unit_price": 0,
-                "monthly_uploads_limit": 250,
                 "benefits": [
                     "Up to 1 user",
                     "Unlimited public repositories",
                     "Unlimited private repositories",
                 ],
+                "monthly_uploads_limit": 250,
+                "trial_days": None,
             },
             {
                 "marketing_name": "Pro Team",
@@ -52,6 +55,8 @@ class PlansViewSetTests(APITestCase):
                     "Unlimited private repositories",
                     "Priority Support",
                 ],
+                "monthly_uploads_limit": None,
+                "trial_days": None,
             },
             {
                 "marketing_name": "Pro Team",
@@ -64,6 +69,8 @@ class PlansViewSetTests(APITestCase):
                     "Unlimited private repositories",
                     "Priority Support",
                 ],
+                "monthly_uploads_limit": None,
+                "trial_days": None,
             },
         ]
 
@@ -84,18 +91,21 @@ class PlansViewSetTests(APITestCase):
                     "Unlimited public repositories",
                     "Unlimited private repositories",
                 ],
+                "monthly_uploads_limit": None,
+                "trial_days": None,
             },
             {
                 "marketing_name": "Developer",
                 "value": "users-basic",
                 "billing_rate": None,
                 "base_unit_price": 0,
-                "monthly_uploads_limit": 250,
                 "benefits": [
                     "Up to 1 user",
                     "Unlimited public repositories",
                     "Unlimited private repositories",
                 ],
+                "monthly_uploads_limit": 250,
+                "trial_days": None,
             },
             {
                 "marketing_name": "Pro Team",
@@ -108,6 +118,8 @@ class PlansViewSetTests(APITestCase):
                     "Unlimited private repositories",
                     "Priority Support",
                 ],
+                "monthly_uploads_limit": None,
+                "trial_days": None,
             },
             {
                 "marketing_name": "Pro Team",
@@ -120,6 +132,8 @@ class PlansViewSetTests(APITestCase):
                     "Unlimited private repositories",
                     "Priority Support",
                 ],
+                "monthly_uploads_limit": None,
+                "trial_days": None,
             },
             {
                 "marketing_name": "Pro Team for Sentry",
@@ -133,6 +147,7 @@ class PlansViewSetTests(APITestCase):
                     "Unlimited private repositories",
                     "Priority Support",
                 ],
+                "monthly_uploads_limit": None,
                 "trial_days": 14,
             },
             {
@@ -147,6 +162,7 @@ class PlansViewSetTests(APITestCase):
                     "Unlimited private repositories",
                     "Priority Support",
                 ],
+                "monthly_uploads_limit": None,
                 "trial_days": 14,
             },
         ]
@@ -168,18 +184,21 @@ class PlansViewSetTests(APITestCase):
                     "Unlimited public repositories",
                     "Unlimited private repositories",
                 ],
+                "monthly_uploads_limit": None,
+                "trial_days": None,
             },
             {
                 "marketing_name": "Developer",
                 "value": "users-basic",
                 "billing_rate": None,
                 "base_unit_price": 0,
-                "monthly_uploads_limit": 250,
                 "benefits": [
                     "Up to 1 user",
                     "Unlimited public repositories",
                     "Unlimited private repositories",
                 ],
+                "monthly_uploads_limit": 250,
+                "trial_days": None,
             },
             {
                 "marketing_name": "Pro Team",
@@ -192,6 +211,8 @@ class PlansViewSetTests(APITestCase):
                     "Unlimited private repositories",
                     "Priority Support",
                 ],
+                "monthly_uploads_limit": None,
+                "trial_days": None,
             },
             {
                 "marketing_name": "Pro Team",
@@ -204,5 +225,7 @@ class PlansViewSetTests(APITestCase):
                     "Unlimited private repositories",
                     "Priority Support",
                 ],
+                "monthly_uploads_limit": None,
+                "trial_days": None,
             },
         ]
