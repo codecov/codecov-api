@@ -10,7 +10,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("codecov_auth", "0031_user_owner_user"),
+        ("codecov_auth", "0032_owner_trial_status"),
     ]
 
     operations = [
