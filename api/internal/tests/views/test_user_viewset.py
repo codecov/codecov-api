@@ -1,16 +1,14 @@
 from datetime import datetime
 from unittest.mock import patch
 
-import dateutil
 import pytest
 from ddf import G
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITransactionTestCase
 
-from api.internal.tests.test_utils import GetAdminProviderAdapter
-from codecov_auth.tests.factories import OwnerFactory, SessionFactory
-from core.models import Pull, Repository
+from codecov_auth.tests.factories import OwnerFactory
+from core.models import Pull
 from core.tests.factories import PullFactory, RepositoryFactory
 from utils.test_utils import APIClient
 

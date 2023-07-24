@@ -11,7 +11,7 @@ from rest_framework.test import APIRequestFactory, APITestCase
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
-from services.plan import TrialDaysAmount
+from plan.constants import PlanName, TrialDaysAmount
 
 from ..constants import StripeHTTPHeaders
 
@@ -135,8 +135,7 @@ class StripeWebhookHandlerTests(APITestCase):
         assert response.status_code == status.HTTP_204_NO_CONTENT
         assert self.owner.delinquent is True
 
-    @patch("codecov_auth.models.Owner.set_basic_plan")
-    def test_customer_subscription_deleted_sets_plan_to_free(self, set_basic_plan_mock):
+    def test_customer_subscription_deleted_sets_plan_to_free(self):
         self.owner.plan = "users-inappy"
         self.owner.plan_user_count = 20
         self.owner.save()
@@ -148,13 +147,17 @@ class StripeWebhookHandlerTests(APITestCase):
                     "object": {
                         "id": self.owner.stripe_subscription_id,
                         "customer": self.owner.stripe_customer_id,
-                        "plan": {"name": "users-inappm"},
+                        "plan": {"name": self.owner.plan},
                     }
                 },
             }
         )
+        self.owner.refresh_from_db()
 
-        set_basic_plan_mock.assert_called_once()
+        assert self.owner.plan == PlanName.BASIC_PLAN_NAME.value
+        assert self.owner.plan_user_count == 1
+        assert self.owner.plan_activated_users == None
+        assert self.owner.stripe_subscription_id == None
 
     def test_customer_subscription_deleted_deactivates_all_repos(self):
         RepositoryFactory(author=self.owner, activated=True, active=True)
@@ -342,10 +345,10 @@ class StripeWebhookHandlerTests(APITestCase):
         )
 
     @patch("services.billing.StripeService.update_payment_method")
-    def test_customer_subscription_updated_doesnt_change_subscription_if_not_paid_user_plan(
+    def test_customer_subscription_updated_does_not_change_subscription_if_not_paid_user_plan(
         self, upm_mock
     ):
-        self.owner.plan = None
+        self.owner.plan = PlanName.BASIC_PLAN_NAME.value
         self.owner.plan_user_count = 0
         self.owner.plan_auto_activate = False
         self.owner.save()
@@ -369,7 +372,7 @@ class StripeWebhookHandlerTests(APITestCase):
         )
 
         self.owner.refresh_from_db()
-        assert self.owner.plan == None
+        assert self.owner.plan == PlanName.BASIC_PLAN_NAME.value
         assert self.owner.plan_user_count == 0
         assert self.owner.plan_auto_activate == False
         upm_mock.assert_called_once_with(self.owner, "pm_1LhiRsGlVGuVgOrkQguJXdeV")
@@ -408,9 +411,8 @@ class StripeWebhookHandlerTests(APITestCase):
         upm_mock.assert_called_once_with(self.owner, "pm_1LhiRsGlVGuVgOrkQguJXdeV")
 
     @patch("services.billing.StripeService.update_payment_method")
-    @patch("codecov_auth.models.Owner.set_basic_plan")
     def test_customer_subscription_updated_sets_free_and_deactivates_all_repos_if_incomplete_expired(
-        self, set_basic_plan_mock, upm_mock
+        self, upm_mock
     ):
         self.owner.plan = "users-pr-inappy"
         self.owner.plan_user_count = 10
@@ -439,9 +441,12 @@ class StripeWebhookHandlerTests(APITestCase):
                 },
             }
         )
+        self.owner.refresh_from_db()
 
-        set_basic_plan_mock.assert_called_once()
-
+        assert self.owner.plan == PlanName.BASIC_PLAN_NAME.value
+        assert self.owner.plan_user_count == 1
+        assert self.owner.plan_auto_activate == False
+        assert self.owner.stripe_subscription_id == None
         assert (
             self.owner.repository_set.filter(active=True, activated=True).count() == 0
         )

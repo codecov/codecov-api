@@ -1,8 +1,6 @@
 import json
-from datetime import datetime
 from unittest.mock import Mock, patch
 
-import pytest
 from django.utils import timezone
 from rest_framework.reverse import reverse
 from shared.torngit.exceptions import TorngitClientGeneralError
@@ -13,13 +11,10 @@ from codecov.tests.base_test import InternalAPITest
 from codecov_auth.tests.factories import OwnerFactory
 from core.models import Repository
 from core.tests.factories import (
-    BranchFactory,
     CommitFactory,
     CommitWithReportFactory,
-    PullFactory,
     RepositoryFactory,
 )
-from reports.tests.factories import RepositoryFlagFactory
 from utils.test_utils import Client
 
 

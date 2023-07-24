@@ -8,7 +8,7 @@ from freezegun import freeze_time
 from codecov.commands.exceptions import ValidationError
 from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
-from services.plan import TrialDaysAmount
+from plan.constants import TrialDaysAmount
 
 from ..start_trial import StartTrialInteractor
 

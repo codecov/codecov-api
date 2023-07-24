@@ -2,6 +2,7 @@ import binascii
 import logging
 import os
 import uuid
+from dataclasses import asdict
 from datetime import datetime
 from hashlib import md5
 
@@ -10,11 +11,6 @@ from django.db import models
 from django.forms import ValidationError
 from django.utils import timezone
 
-from billing.constants import (
-    BASIC_PLAN_NAME,
-    ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
-    USER_PLAN_REPRESENTATIONS,
-)
 from codecov.models import BaseCodecovModel
 from codecov_auth.constants import (
     AVATAR_GITHUB_BASE_URL,
@@ -25,11 +21,12 @@ from codecov_auth.constants import (
 from codecov_auth.helpers import get_gitlab_url
 from core.managers import RepositoryManager
 from core.models import DateTimeWithoutTZField, Repository
+from plan.constants import USER_PLAN_REPRESENTATIONS, PlanName
 from utils.config import get_config
 
 from .managers import OwnerManager
 
-# Large number to represent Infinity as float('int') isnt JSON serializable
+# Large number to represent Infinity as float('int') is not JSON serializable
 INFINITY = 99999999
 
 SERVICE_GITHUB = "github"
@@ -58,6 +55,14 @@ class Service(models.TextChoices):
 
 class PlanProviders(models.TextChoices):
     GITHUB = "github"
+
+
+# Follow the shape of TrialStatus in plan folder
+class TrialStatus(models.TextChoices):
+    NOT_STARTED = "not_started"
+    ONGOING = "ongoing"
+    EXPIRED = "expired"
+    CANNOT_TRIAL = "cannot_trial"
 
 
 class User(BaseCodecovModel):
@@ -145,7 +150,9 @@ class Owner(models.Model):
     staff = models.BooleanField(null=True, default=False)
     cache = models.JSONField(null=True)
     # Really an ENUM in db
-    plan = models.TextField(null=True, default=BASIC_PLAN_NAME, blank=True)
+    plan = models.TextField(
+        null=True, default=PlanName.BASIC_PLAN_NAME.value, blank=True
+    )
     plan_provider = models.TextField(
         null=True, choices=PlanProviders.choices, blank=True
     )  # postgres enum containing only "github"
@@ -157,6 +164,11 @@ class Owner(models.Model):
     did_trial = models.BooleanField(null=True)
     trial_start_date = DateTimeWithoutTZField(null=True)
     trial_end_date = DateTimeWithoutTZField(null=True)
+    # TODO: I want this column to be null at first, and then would run a script to populate customers with
+    # not_started and cannot_trial, and then set default value to not_started.
+    trial_status = models.CharField(
+        max_length=50, choices=TrialStatus.choices, null=True
+    )
     free = models.SmallIntegerField(default=0)
     invoice_details = models.TextField(null=True)
     delinquent = models.BooleanField(null=True)
@@ -392,7 +404,7 @@ class Owner(models.Model):
     @property
     def pretty_plan(self):
         if self.plan in USER_PLAN_REPRESENTATIONS:
-            plan_details = USER_PLAN_REPRESENTATIONS[self.plan].copy()
+            plan_details = asdict(USER_PLAN_REPRESENTATIONS[self.plan])
 
             # update with quantity they've purchased
             # allows api users to update the quantity
@@ -445,14 +457,6 @@ class Owner(models.Model):
                 self.admins.remove(user.ownerid)
             except ValueError:
                 pass
-        self.save()
-
-    def set_basic_plan(self):
-        log.info(f"Setting plan to users-basic for owner {self.ownerid}")
-        self.plan = "users-basic"
-        self.plan_activated_users = None
-        self.plan_user_count = 1
-        self.stripe_subscription_id = None
         self.save()
 
 

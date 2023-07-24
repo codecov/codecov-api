@@ -9,8 +9,6 @@ from django.utils import timezone
 from rest_framework import exceptions
 from rest_framework.test import APIRequestFactory
 
-from billing.constants import FREE_PLAN_NAME
-from codecov.settings_base import IS_ENTERPRISE
 from codecov_auth.authentication.repo_auth import (
     GlobalTokenAuthentication,
     OrgLevelTokenAuthentication,

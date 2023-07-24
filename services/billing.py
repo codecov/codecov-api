@@ -4,16 +4,16 @@ from abc import ABC, abstractmethod
 import stripe
 from django.conf import settings
 
-from billing.constants import (
-    ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
-    FREE_PLAN_REPRESENTATIONS,
-    PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
-    REMOVED_INVOICE_STATUSES,
-    SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
-    USER_PLAN_REPRESENTATIONS,
-)
+from billing.constants import REMOVED_INVOICE_STATUSES
 from codecov_auth.models import Owner
-from services.plan import PlanService, TrialStatus
+from plan.constants import (
+    FREE_PLAN_REPRESENTATIONS,
+    PRO_PLANS,
+    USER_PLAN_REPRESENTATIONS,
+    PlanBillingRate,
+    TrialStatus,
+)
+from plan.service import PlanService
 from services.segment import SegmentService
 
 log = logging.getLogger(__name__)
@@ -141,39 +141,20 @@ class StripeService(AbstractPaymentService):
         subscription = stripe.Subscription.retrieve(owner.stripe_subscription_id)
         subscription_schedule_id = subscription.schedule
 
-        if owner.plan not in USER_PLAN_REPRESENTATIONS:
+        log.info(
+            f"Downgrade to basic plan from user plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
+            extra=dict(ownerid=owner.ownerid),
+        )
+        if subscription_schedule_id:
             log.info(
-                f"Downgrade to basic plan from legacy plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
+                f"Releasing subscription from schedule for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
                 extra=dict(ownerid=owner.ownerid),
             )
-            if not subscription_schedule_id:
-                log.info(
-                    f"Deleting stripe subscription for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
-                    extra=dict(ownerid=owner.ownerid),
-                )
-                stripe.Subscription.delete(owner.stripe_subscription_id, prorate=False)
-            else:
-                log.info(
-                    f"Cancelling schedule and deleting subscription for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
-                    extra=dict(ownerid=owner.ownerid),
-                )
-                stripe.SubscriptionSchedule.cancel(subscription_schedule_id)
-            owner.set_basic_plan()
-        else:
-            log.info(
-                f"Downgrade to basic plan from user plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
-                extra=dict(ownerid=owner.ownerid),
-            )
-            if subscription_schedule_id:
-                log.info(
-                    f"Releasing subscription from schedule for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
-                    extra=dict(ownerid=owner.ownerid),
-                )
-                stripe.SubscriptionSchedule.release(subscription_schedule_id)
+            stripe.SubscriptionSchedule.release(subscription_schedule_id)
 
-            stripe.Subscription.modify(
-                owner.stripe_subscription_id, cancel_at_period_end=True, prorate=False
-            )
+        stripe.Subscription.modify(
+            owner.stripe_subscription_id, cancel_at_period_end=True, prorate=False
+        )
 
     @_log_stripe_error
     def get_subscription(self, owner):
@@ -249,9 +230,10 @@ class StripeService(AbstractPaymentService):
 
                 self._segment_modify_subscription(owner, desired_plan)
 
-                owner.plan = desired_plan["value"]
-                owner.plan_user_count = desired_plan["quantity"]
-                owner.save()
+                plan_service = PlanService(current_org=owner)
+                plan_service.update_plan(
+                    name=desired_plan["value"], user_count=desired_plan["quantity"]
+                )
 
                 log.info(
                     f"Stripe subscription modified successfully for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
@@ -352,9 +334,9 @@ class StripeService(AbstractPaymentService):
 
         return (
             current_plan_info
-            and current_plan_info["billing_rate"] == "monthly"
+            and current_plan_info.billing_rate == PlanBillingRate.MONTHLY.value
             and desired_plan_info
-            and desired_plan_info["billing_rate"] == "annually"
+            and desired_plan_info.billing_rate == PlanBillingRate.YEARLY.value
         )
 
     def _is_similar_plan(self, owner: Owner, desired_plan: dict) -> bool:
@@ -367,7 +349,7 @@ class StripeService(AbstractPaymentService):
         is_same_term = (
             current_plan_info
             and desired_plan_info
-            and current_plan_info["billing_rate"] == desired_plan_info["billing_rate"]
+            and current_plan_info.billing_rate == desired_plan_info.billing_rate
         )
 
         is_same_seats = (
@@ -411,7 +393,7 @@ class StripeService(AbstractPaymentService):
         }
 
         plan_representation = USER_PLAN_REPRESENTATIONS[desired_plan["value"]]
-        trial_days = plan_representation.get("trial_days")
+        trial_days = plan_representation.trial_days
         plan_service = PlanService(current_org=owner)
         if (
             trial_days is not None
@@ -472,12 +454,10 @@ class StripeService(AbstractPaymentService):
                 f"stripe_subscription_id is None, not applying cancellation coupon for owner {owner.ownerid}"
             )
             return
+        plan_service = PlanService(current_org=owner)
+        billing_rate = plan_service.billing_rate
 
-        billing_period = USER_PLAN_REPRESENTATIONS.get(owner.plan, {}).get(
-            "billing_rate"
-        )
-
-        if billing_period == "monthly" and not owner.stripe_coupon_id:
+        if billing_rate == PlanBillingRate.MONTHLY.value and not owner.stripe_coupon_id:
             log.info(f"Creating Stripe cancellation coupon for owner {owner.ownerid}")
             coupon = stripe.Coupon.create(
                 percent_off=30.0,
@@ -575,12 +555,9 @@ class BillingService:
             if owner.stripe_subscription_id is not None:
                 self.payment_service.delete_subscription(owner)
             else:
-                owner.set_basic_plan()
-        elif (
-            desired_plan["value"] in PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS
-            or desired_plan["value"] in ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS
-            or desired_plan["value"] in SENTRY_PAID_USER_PLAN_REPRESENTATIONS
-        ):
+                plan_service = PlanService(current_org=owner)
+                plan_service.set_default_plan_data()
+        elif desired_plan["value"] in PRO_PLANS:
             if owner.stripe_subscription_id is not None:
                 self.payment_service.modify_subscription(owner, desired_plan)
             else:

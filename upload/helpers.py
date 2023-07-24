@@ -14,9 +14,9 @@ from rest_framework.exceptions import NotFound, Throttled, ValidationError
 from shared.reports.enums import UploadType
 from shared.torngit.exceptions import TorngitClientError, TorngitObjectNotFoundError
 
-from billing.constants import USER_PLAN_REPRESENTATIONS
 from codecov_auth.models import Owner
 from core.models import Commit, Repository
+from plan.constants import USER_PLAN_REPRESENTATIONS
 from reports.models import ReportSession
 from services.repo_providers import RepoProviderService
 from services.segment import SegmentService
@@ -412,17 +412,13 @@ def get_global_tokens():
 def check_commit_upload_constraints(commit: Commit):
     if settings.UPLOAD_THROTTLING_ENABLED and commit.repository.private:
         owner = _determine_responsible_owner(commit.repository)
-        limit = USER_PLAN_REPRESENTATIONS.get(owner.plan, {}).get(
-            "monthly_uploads_limit"
-        )
+        limit = USER_PLAN_REPRESENTATIONS.get(owner.plan, {}).monthly_uploads_limit
         if limit is not None:
             did_commit_uploads_start_already = ReportSession.objects.filter(
                 report__commit=commit
             ).exists()
             if not did_commit_uploads_start_already:
-                limit = USER_PLAN_REPRESENTATIONS[owner.plan].get(
-                    "monthly_uploads_limit"
-                )
+                limit = USER_PLAN_REPRESENTATIONS[owner.plan].monthly_uploads_limit
                 uploads_used = ReportSession.objects.filter(
                     report__commit__repository__author_id=owner.ownerid,
                     report__commit__repository__private=True,
