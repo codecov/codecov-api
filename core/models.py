@@ -107,6 +107,7 @@ class Repository(models.Model):
     image_token = models.TextField(null=True, default=_gen_image_token)
     using_integration = models.BooleanField(null=True)
     hookid = models.TextField(null=True)
+    webhook_secret = models.TextField(null=True)
     bot = models.ForeignKey(
         "codecov_auth.Owner",
         db_column="bot",

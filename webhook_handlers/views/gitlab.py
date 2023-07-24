@@ -1,5 +1,6 @@
 import logging
 
+from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
 from django.utils.crypto import constant_time_compare
 from rest_framework import status
@@ -31,16 +32,18 @@ class GitLabWebhookHandler(APIView):
 
         log.info("GitLab webhook message received", extra=dict(event=event))
 
-        self._validate_secret(request)
-
         project_id = request.data.get("project_id") or request.data.get(
             "object_attributes", {}
         ).get("target_project_id")
+        repo = None
         if project_id and request.data.get("event_name") != "project_create":
             # make sure the repo exists in the repos table
             repo = get_object_or_404(
                 Repository, author__service=self.service_name, service_id=project_id
             )
+
+        if repo is not None and repo.webhook_secret is not None:
+            self._validate_secret(request, repo.webhook_secret)
 
         if event == GitLabWebhookEvents.PUSH:
             return self._handle_push_event(repo)
@@ -227,16 +230,11 @@ class GitLabWebhookHandler(APIView):
 
         return Response(data=message)
 
-    def _validate_secret(self, request):
+    def _validate_secret(self, request: HttpRequest, webhook_secret: str):
         webhook_validation = bool(
             get_config(self.service_name, "webhook_validation", default=False)
         )
-        webhook_secret = get_config(
-            self.service_name,
-            "webhook_secret",
-            default=None,
-        )
-        if webhook_validation and webhook_secret is not None:
+        if webhook_validation:
             token = request.META.get(GitLabHTTPHeaders.TOKEN)
             if not constant_time_compare(webhook_secret, token):
                 raise PermissionDenied()
