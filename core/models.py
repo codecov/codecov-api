@@ -34,6 +34,18 @@ class Version(models.Model):
         db_table = "version"
 
 
+class Install(models.Model):
+    id = (
+        (
+            models.AutoField(
+                primary_key=True,
+            ),
+        ),
+    )
+    install_id = models.UUIDField(default=uuid.uuid4)
+    date_created = DateTimeWithoutTZField(default=datetime.now)
+
+
 def _gen_image_token():
     return "".join(
         random.choice(string.ascii_letters + string.digits) for _ in range(10)
