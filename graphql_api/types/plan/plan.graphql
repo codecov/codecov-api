@@ -1,5 +1,5 @@
 type Plan {
-  trialStatus: TrialStatus
+  trialStatus: TrialStatus!
   trialStartDate: DateTime
   trialEndDate: DateTime
   trialTotalDays: Int
