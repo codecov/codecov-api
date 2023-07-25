@@ -17,7 +17,7 @@ def pytest_configure(config):
     """
     pytest_configure is the canonical way to configure test server for entire testing suite
     """
-    print("called pytest_configure hook")
+    pass
 
 
 @pytest.fixture
