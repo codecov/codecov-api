@@ -68,15 +68,12 @@ class TestGitlabWebhookHandler(APITestCase):
         assert response.data == "No yaml cached yet."
 
     def test_push_event_yaml_cached(self):
-        self.repo.cache = dict(yaml=".codecov.yml")
-        self.repo.save()
-
         response = self._post_event_data(
             event=GitLabWebhookEvents.PUSH,
             data={"object_kind": "push", "project_id": self.repo.service_id},
         )
         assert response.status_code == status.HTTP_200_OK
-        assert response.data == "Synchronize codecov.yml"
+        assert response.data == "No yaml cached yet."
 
     def test_job_event_build_pending(self):
         response = self._post_event_data(

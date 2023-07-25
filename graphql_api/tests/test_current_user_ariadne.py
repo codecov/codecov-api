@@ -292,13 +292,6 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
                 self.assertEqual(repos_name, ["C", "B", "A"])
 
         with self.subTest("COMMIT_DATE"):
-            repo_1.cache = {"commit": {"timestamp": "2021-03-03T15:24:41"}}
-            repo_1.save()
-            repo_2.cache = {"commit": {"timestamp": "2021-03-04T15:24:41"}}
-            repo_2.save()
-            repo_3.cache = {"commit": {"timestamp": "2021-03-05T15:24:41"}}
-            repo_3.save()
-
             with self.subTest("no ordering Direction"):
                 data = self.gql_request(
                     query, owner=current_user, variables={"ordering": "COMMIT_DATE"}
