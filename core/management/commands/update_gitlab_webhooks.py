@@ -32,7 +32,6 @@ class Command(BaseCommand):
         webhook_secret = get_config("gitlab", "webhook_secret")
 
         for repo in repos:
-            print("repoid:", repo.pk)
 
             user = get_bot_user(repo)
             if user is None:

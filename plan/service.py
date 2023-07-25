@@ -104,7 +104,6 @@ class PlanService:
         Raises:
             ValidationError: if trial has already started
         """
-        print("im ghere", self.trial_status)
         if self.trial_status != TrialStatus.NOT_STARTED.value:
             raise ValidationError("Cannot start an existing trial")
         start_date = datetime.utcnow()
@@ -125,12 +124,6 @@ class PlanService:
                 "trial_start_date": self.current_org.trial_start_date,
                 "trial_end_date": self.current_org.trial_end_date,
             },
-        )
-
-    def can_trial_expire(self) -> None:
-        return (
-            self.trial_status == TrialStatus.NOT_STARTED
-            or self.trial_status == TrialStatus.ONGOING
         )
 
     def expire_trial_when_upgrading(self) -> None:
@@ -163,27 +156,6 @@ class PlanService:
     @property
     def trial_status(self) -> TrialStatus:
         return self.current_org.trial_status
-
-        # trial_start_date = self.current_org.trial_start_date
-        # trial_end_date = self.current_org.trial_end_date
-
-        # if trial_start_date is None and trial_end_date is None:
-        #     # Scenario: A paid customer before the trial changes were introduced (they can never undergo trial for this org)
-        #     # I have to comment this for now because it is currently affected by a Stripe webhook we wont be using in the future.
-        #     # if self.current_org.stripe_customer_id:
-        #     #     return TrialStatus.CANNOT_TRIAL
-        #     # else:
-        #     return TrialStatus.NOT_STARTED
-        # # Scenario: An paid customer before the trial changes were introduced (they can never undergo trial for this org)
-        # # This type of customer would have None for both the start and trial end date, but I was thinking, upon plan cancellation,
-        # # we could ad some logic that to set both their start and end date to the exact same value and represent a customer that
-        # # was never able to trial after they cancel. Not 100% sold here but I think it works.
-        # elif trial_start_date == trial_end_date and self.current_org.stripe_customer_id:
-        #     return TrialStatus.CANNOT_TRIAL
-        # elif datetime.utcnow() > trial_end_date:
-        #     return TrialStatus.EXPIRED
-        # else:
-        #     return TrialStatus.ONGOING
 
     @property
     def trial_start_date(self) -> Optional[datetime]:
