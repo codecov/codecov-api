@@ -458,6 +458,10 @@ SENTRY_USER_WEBHOOK_URL = get_config("setup", "sentry", "webhook_url", default=N
 SENTRY_OAUTH_CLIENT_ID = get_config("setup", "sentry", "oauth_client_id")
 SENTRY_OAUTH_CLIENT_SECRET = get_config("setup", "sentry", "oauth_client_secret")
 
+OKTA_OAUTH_CLIENT_ID = get_config("setup", "okta", "oauth_client_id")
+OKTA_OAUTH_CLIENT_SECRET = get_config("setup", "okta", "oauth_client_secret")
+OKTA_OAUTH_REDIRECT_URL = get_config("setup", "okta", "oauth_redirect_url")
+
 # list of repo IDs that will use the new-style report builder
 # TODO: we can eventually get rid of this once it's confirmed working well for many repos
 REPORT_BUILDER_REPO_IDS = get_config("setup", "report_builder", "repo_ids", default=[])
