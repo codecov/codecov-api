@@ -16,6 +16,7 @@ from api.internal.owner.views import (
 )
 from api.internal.pull.views import PullViewSet
 from api.internal.repo.views import RepositoryViewSet
+from api.internal.user.views import CurrentUserView
 from api.shared.error_views import not_found
 from utils.routers import OptionalTrailingSlashRouter, RetrieveUpdateDestroyRouter
 
@@ -55,6 +56,7 @@ if settings.IS_ENTERPRISE:
     urlpatterns += enterprise_urlpatterns
 
 urlpatterns += [
+    path("user", CurrentUserView.as_view(), name="current-user"),
     path("slack/", include("api.internal.slack.urls")),
     path("charts/", include("api.internal.chart.urls")),
     path("", include(plans_router.urls)),

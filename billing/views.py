@@ -7,14 +7,10 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from billing.constants import (
-    ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
-    PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
-    SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
-)
 from codecov_auth.models import Owner
+from plan.constants import PRO_PLANS, TrialStatus
+from plan.service import PlanService
 from services.billing import BillingService
-from services.plan import PlanService, TrialStatus
 from services.segment import SegmentService
 
 from .constants import StripeHTTPHeaders, StripeWebhookEvents
@@ -82,7 +78,8 @@ class StripeWebhookHandler(APIView):
             stripe_customer_id=subscription.customer,
             stripe_subscription_id=subscription.id,
         )
-        owner.set_basic_plan()
+        plan_service = PlanService(current_org=owner)
+        plan_service.set_default_plan_data()
         owner.repository_set.update(active=False, activated=False)
 
         self.segment_service.account_cancelled_subscription(
@@ -129,32 +126,33 @@ class StripeWebhookHandler(APIView):
         owner = Owner.objects.get(ownerid=subscription.metadata.obo_organization)
         subscription_data = subscription["items"]["data"][0]
         requesting_user_id = subscription.metadata.obo
+        plan_service = PlanService(current_org=owner)
 
         # Segment Analytics to see if user upgraded plan, increased or decreased users
         if (
-            owner.plan_user_count
-            and owner.plan_user_count > subscription_data["quantity"]
+            plan_service.plan_user_count
+            and plan_service.plan_user_count > subscription_data["quantity"]
         ):
             self.segment_service.account_decreased_users(
                 current_user_ownerid=requesting_user_id,
                 org_ownerid=owner.ownerid,
                 plan_details={
                     "new_quantity": subscription_data["quantity"],
-                    "old_quantity": owner.plan_user_count,
+                    "old_quantity": plan_service.plan_user_count,
                     "plan": subscription_data["plan"]["name"],
                 },
             )
 
         if (
-            owner.plan_user_count
-            and owner.plan_user_count < subscription_data["quantity"]
+            plan_service.plan_user_count
+            and plan_service.plan_user_count < subscription_data["quantity"]
         ):
             self.segment_service.account_increased_users(
                 current_user_ownerid=requesting_user_id,
                 org_ownerid=owner.ownerid,
                 plan_details={
                     "new_quantity": subscription_data["quantity"],
-                    "old_quantity": owner.plan_user_count,
+                    "old_quantity": plan_service.plan_user_count,
                     "plan": subscription_data["plan"]["name"],
                 },
             )
@@ -169,9 +167,10 @@ class StripeWebhookHandler(APIView):
                 },
             )
 
-        owner.plan = subscription.plan.name
-        owner.plan_user_count = subscription.quantity
-        owner.save()
+        plan_service = PlanService(current_org=owner)
+        plan_service.update_plan(
+            name=subscription.plan.name, user_count=subscription.quantity
+        )
 
         log.info(
             f"Stripe subscription modified successfully for owner {owner.ownerid} by user #{requesting_user_id}",
@@ -196,12 +195,7 @@ class StripeWebhookHandler(APIView):
             )
             return
 
-        pro_plans = {
-            **PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
-            **ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
-            **SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
-        }
-        if subscription.plan.name not in pro_plans:
+        if subscription.plan.name not in PRO_PLANS:
             log.warning(
                 f"Subscription creation requested for invalid plan "
                 f"'{subscription.plan.name}' -- doing nothing",
@@ -222,13 +216,19 @@ class StripeWebhookHandler(APIView):
             ),
         )
         owner = Owner.objects.get(ownerid=subscription.metadata.obo_organization)
-        owner.plan = subscription.plan.name
-        owner.plan_user_count = subscription.quantity
         owner.stripe_subscription_id = subscription.id
         owner.stripe_customer_id = subscription.customer
-
         owner.save()
 
+        plan_service = PlanService(current_org=owner)
+        plan_service.update_plan(
+            name=subscription.plan.name, user_count=subscription.quantity
+        )
+        # TODO: uncomment this when I'm porting new functionality
+        # plan_service.expire_trial(notifier_service=self.segment_service)
+
+        # TODO: replace all this with plan_service.expire_trial(notifier_service=self.segment_service)
+        # As we're no longer starting trials via stripe webhooks, only ending them
         if subscription.status == "trialing":
             self.segment_service.trial_started(
                 owner.ownerid,
@@ -262,6 +262,7 @@ class StripeWebhookHandler(APIView):
             billing.update_payment_method(owner, default_payment_method)
 
         subscription_schedule_id = subscription.schedule
+        plan_service = PlanService(current_org=owner)
 
         # Only update if there isn't a scheduled subscription
         if not subscription_schedule_id:
@@ -271,14 +272,12 @@ class StripeWebhookHandler(APIView):
                     f"to 'incomplete_expired' -- cancelling to free",
                     extra=dict(stripe_subscription_id=subscription.id),
                 )
-                owner.set_basic_plan()
+                plan_service.set_default_plan_data()
+                # TODO: think of how to create services for different objects/classes to delegate responsibilities that arent
+                # from the owner
                 owner.repository_set.update(active=False, activated=False)
                 return
-            pro_plans = {
-                **PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
-                **ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
-            }
-            if subscription.plan.name not in pro_plans:
+            if subscription.plan.name not in PRO_PLANS:
                 log.warning(
                     f"Subscription update requested with invalid plan "
                     f"{subscription.plan.name} -- doing nothing",
@@ -292,6 +291,8 @@ class StripeWebhookHandler(APIView):
                 extra=dict(stripe_subscription_id=subscription.id),
             )
 
+            # TODO: get rid of this as trial status wont change when a subscription is updated,
+            # only when it's deleted or created
             if (
                 self.event.data.get("previous_attributes", {}).get("status")
                 == "trialing"
@@ -306,10 +307,9 @@ class StripeWebhookHandler(APIView):
                     },
                 )
 
-            owner.plan = subscription.plan.name
-            owner.plan_user_count = subscription.quantity
-            owner.save()
-
+            plan_service.update_plan(
+                name=subscription.plan.name, user_count=subscription.quantity
+            )
             SegmentService().identify_user(owner)
             log.info("Successfully updated info for 1 customer")
 

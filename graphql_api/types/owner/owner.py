@@ -19,7 +19,8 @@ from graphql_api.helpers.connection import (
 )
 from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
-from services.plan import PlanService, TrialStatus
+from plan.constants import TrialStatus
+from plan.service import PlanService
 from services.profiling import ProfilingSummary
 from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Interval, MeasurementSummary

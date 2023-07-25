@@ -8,11 +8,9 @@ from django.utils import timezone
 from rest_framework.throttling import BaseThrottle
 from shared.reports.enums import UploadType
 
-from billing.constants import USER_PLAN_REPRESENTATIONS
-from core.models import Commit, Repository
+from plan.constants import USER_PLAN_REPRESENTATIONS
 from reports.models import ReportSession
 from upload.helpers import _determine_responsible_owner
-from utils.config import get_config
 
 log = logging.getLogger(__name__)
 
@@ -50,17 +48,17 @@ class UploadsPerWindowThrottle(BaseThrottle):
 
             if settings.UPLOAD_THROTTLING_ENABLED and repository.private:
                 owner = _determine_responsible_owner(repository)
-                limit = USER_PLAN_REPRESENTATIONS.get(owner.plan, {}).get(
-                    "monthly_uploads_limit"
-                )
+                limit = USER_PLAN_REPRESENTATIONS.get(
+                    owner.plan, {}
+                ).monthly_uploads_limit
                 if limit is not None:
                     did_commit_uploads_start_already = ReportSession.objects.filter(
                         report__commit=commit
                     ).exists()
                     if not did_commit_uploads_start_already:
-                        limit = USER_PLAN_REPRESENTATIONS[owner.plan].get(
-                            "monthly_uploads_limit"
-                        )
+                        limit = USER_PLAN_REPRESENTATIONS[
+                            owner.plan
+                        ].monthly_uploads_limit
                         uploads_used = ReportSession.objects.filter(
                             report__commit__repository__author_id=owner.ownerid,
                             report__commit__repository__private=True,

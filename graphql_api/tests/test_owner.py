@@ -6,7 +6,6 @@ from django.test import TransactionTestCase
 from django.utils import timezone
 from freezegun import freeze_time
 
-from billing.constants import BASIC_PLAN_NAME
 from codecov_auth.models import OwnerProfile
 from codecov_auth.tests.factories import (
     GetAdminProviderAdapter,
@@ -14,6 +13,7 @@ from codecov_auth.tests.factories import (
     UserFactory,
 )
 from core.tests.factories import CommitFactory, OwnerFactory, RepositoryFactory
+from plan.constants import PlanName
 from reports.tests.factories import CommitReportFactory, UploadFactory
 
 from .helper import GraphQLTestHelper, paginate_connection
@@ -255,7 +255,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         }
         """
         repository = RepositoryFactory.create(
-            author__plan=BASIC_PLAN_NAME, author=self.owner
+            author__plan=PlanName.BASIC_PLAN_NAME.value, author=self.owner
         )
         first_commit = CommitFactory.create(repository=repository)
         first_report = CommitReportFactory.create(commit=first_commit)
