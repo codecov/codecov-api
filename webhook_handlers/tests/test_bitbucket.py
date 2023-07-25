@@ -185,9 +185,6 @@ class TestBitbucketWebhookHandler(APITestCase):
         assert response.data == "Synchronize codecov.yml skipped"
 
     def test_repo_push_new_branch_sync_yaml(self):
-        self.repo.cache = {"yaml": "codecov.yaml"}
-        self.repo.save()
-
         response = self._post_event_data(
             event=BitbucketWebhookEvents.REPO_PUSH,
             data={
@@ -225,7 +222,7 @@ class TestBitbucketWebhookHandler(APITestCase):
             },
         )
         assert response.status_code == status.HTTP_200_OK
-        assert response.data == "Synchronize codecov.yml"
+        assert response.data == "Synchronize codecov.yml skipped"
 
     def test_repo_commit_status_change_wrong_context(self):
         response = self._post_event_data(
