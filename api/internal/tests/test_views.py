@@ -3,7 +3,6 @@ from unittest.mock import patch
 
 from rest_framework import status
 from rest_framework.reverse import reverse
-from rest_framework.settings import api_settings
 
 from codecov.tests.base_test import InternalAPITest
 from codecov_auth.tests.factories import OwnerFactory

@@ -15,6 +15,7 @@ from codecov_auth.models import (
     User,
     UserToken,
 )
+from plan.constants import TrialStatus
 from utils.encryption import encryptor
 
 
@@ -47,6 +48,7 @@ class OwnerFactory(DjangoModelFactory):
         lambda o: encryptor.encode(o.unencrypted_oauth_token).decode()
     )
     user = factory.SubFactory(UserFactory)
+    trial_status = TrialStatus.NOT_STARTED.value
 
 
 class OwnerProfileFactory(DjangoModelFactory):

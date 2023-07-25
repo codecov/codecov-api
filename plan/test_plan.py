@@ -8,6 +8,7 @@ from codecov_auth.tests.factories import OwnerFactory
 from plan.constants import (
     FREE_PLAN_REPRESENTATIONS,
     TRIAL_PLAN_REPRESENTATION,
+    TRIAL_PLAN_SEATS,
     PlanName,
     TrialDaysAmount,
     TrialStatus,
@@ -21,7 +22,7 @@ class PlanServiceTests(TestCase):
         current_org = OwnerFactory(plan=PlanName.BASIC_PLAN_NAME.value)
         plan_service = PlanService(current_org=current_org)
 
-        assert plan_service.trial_status == TrialStatus.NOT_STARTED
+        assert plan_service.trial_status == TrialStatus.NOT_STARTED.value
 
     def test_plan_service_trial_status_expired(self):
         trial_start_date = datetime.utcnow()
@@ -30,10 +31,11 @@ class PlanServiceTests(TestCase):
             plan=PlanName.BASIC_PLAN_NAME.value,
             trial_start_date=trial_start_date,
             trial_end_date=trial_end_date_expired,
+            trial_status=TrialStatus.EXPIRED.value,
         )
         plan_service = PlanService(current_org=current_org)
 
-        assert plan_service.trial_status == TrialStatus.EXPIRED
+        assert plan_service.trial_status == TrialStatus.EXPIRED.value
 
     def test_plan_service_trial_status_ongoing(self):
         trial_start_date = datetime.utcnow()
@@ -42,10 +44,11 @@ class PlanServiceTests(TestCase):
             plan=PlanName.BASIC_PLAN_NAME.value,
             trial_start_date=trial_start_date,
             trial_end_date=trial_end_date_ongoing,
+            trial_status=TrialStatus.ONGOING.value,
         )
         plan_service = PlanService(current_org=current_org)
 
-        assert plan_service.trial_status == TrialStatus.ONGOING
+        assert plan_service.trial_status == TrialStatus.ONGOING.value
 
     # TODO: uncomment this when trial_status logic is adjusted
     # def test_plan_service_trial_status_cannot_trial_if_current_paid_customer(self):
@@ -56,7 +59,7 @@ class PlanServiceTests(TestCase):
     #         stripe_customer_id="test_id_123123",
     #     )
     #     plan_service = PlanService(current_org=current_org_with_paid_plan)
-    #     assert plan_service.trial_status == TrialStatus.CANNOT_TRIAL
+    #     assert plan_service.trial_status == TrialStatus.CANNOT_TRIAL.value
 
     def test_plan_service_trial_status_never_started_if_it_used_to_be_paid_customer(
         self,
@@ -69,11 +72,12 @@ class PlanServiceTests(TestCase):
             trial_start_date=trial_start_date,
             trial_end_date=trial_end_date,
             stripe_customer_id="test_id_123123",
+            trial_status=TrialStatus.CANNOT_TRIAL.value,
         )
         plan_service = PlanService(current_org=current_org_with_paid_plan)
-        assert plan_service.trial_status == TrialStatus.CANNOT_TRIAL
+        assert plan_service.trial_status == TrialStatus.CANNOT_TRIAL.value
 
-    def test_plan_service_start_trial_errors_if_status_is_not_started(self):
+    def test_plan_service_start_trial_errors_if_status_is_not_not_started(self):
         trial_start_date = datetime.utcnow()
         trial_end_date = trial_start_date + timedelta(
             days=TrialDaysAmount.CODECOV_SENTRY.value
@@ -82,19 +86,21 @@ class PlanServiceTests(TestCase):
             plan=PlanName.BASIC_PLAN_NAME.value,
             trial_start_date=trial_start_date,
             trial_end_date=trial_end_date,
+            trial_status=TrialStatus.ONGOING.value,
         )
         plan_service = PlanService(current_org=current_org)
 
         with self.assertRaises(ValidationError) as e:
             plan_service.start_trial()
 
-    def test_plan_service_start_trial_succeeds_if_no_start_or_end_date(self):
+    def test_plan_service_start_trial_succeeds_if_trial_has_not_started(self):
         trial_start_date = None
         trial_end_date = None
         current_org = OwnerFactory(
             plan=PlanName.BASIC_PLAN_NAME.value,
             trial_start_date=trial_start_date,
             trial_end_date=trial_end_date,
+            trial_status=TrialStatus.NOT_STARTED.value,
         )
         plan_service = PlanService(current_org=current_org)
 
@@ -103,6 +109,10 @@ class PlanServiceTests(TestCase):
         assert current_org.trial_end_date == datetime.utcnow() + timedelta(
             days=TrialDaysAmount.CODECOV_SENTRY.value
         )
+        assert current_org.trial_status == TrialStatus.ONGOING.value
+        assert current_org.plan == PlanName.TRIAL_PLAN_NAME.value
+        assert current_org.plan_user_count == TRIAL_PLAN_SEATS
+        assert current_org.plan_auto_activate == True
 
     def test_plan_service_returns_plan_data_for_non_trial_basic_plan(self):
         trial_start_date = None
@@ -115,7 +125,7 @@ class PlanServiceTests(TestCase):
         plan_service = PlanService(current_org=current_org)
 
         basic_plan = FREE_PLAN_REPRESENTATIONS[PlanName.BASIC_PLAN_NAME.value]
-        assert plan_service.trial_status == TrialStatus.NOT_STARTED
+        assert plan_service.trial_status == TrialStatus.NOT_STARTED.value
         assert plan_service.marketing_name == basic_plan.marketing_name
         assert plan_service.plan_name == basic_plan.value
         assert plan_service.billing_rate == basic_plan.billing_rate
@@ -138,11 +148,12 @@ class PlanServiceTests(TestCase):
             plan=PlanName.TRIAL_PLAN_NAME.value,
             trial_start_date=trial_start_date,
             trial_end_date=trial_end_date,
+            trial_status=TrialStatus.ONGOING.value,
         )
         plan_service = PlanService(current_org=current_org)
 
         trial_plan = TRIAL_PLAN_REPRESENTATION[PlanName.TRIAL_PLAN_NAME.value]
-        assert plan_service.trial_status == TrialStatus.ONGOING
+        assert plan_service.trial_status == TrialStatus.ONGOING.value
         assert plan_service.marketing_name == trial_plan.marketing_name
         assert plan_service.plan_name == trial_plan.value
         assert plan_service.billing_rate == trial_plan.billing_rate

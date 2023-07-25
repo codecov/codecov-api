@@ -1,6 +1,5 @@
 import enum
-import json
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from typing import List, Optional
 
 
@@ -287,3 +286,5 @@ PLANS_THAT_CAN_TRIAL = [
     PlanName.SENTRY_YEARLY.value,
     PlanName.TRIAL_PLAN_NAME.value,
 ]
+
+TRIAL_PLAN_SEATS = 1000

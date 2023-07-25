@@ -33,7 +33,7 @@ def resolve_trial_end_date(plan_service: PlanService, info) -> Optional[datetime
 @plan_bindable.field("trialStatus")
 @convert_kwargs_to_snake_case
 def resolve_trial_status(plan_service: PlanService, info) -> TrialStatus:
-    return plan_service.trial_status
+    return TrialStatus(plan_service.trial_status)
 
 
 @plan_bindable.field("marketingName")

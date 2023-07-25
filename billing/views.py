@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from codecov_auth.models import Owner
-from plan.constants import PRO_PLANS, TrialStatus
+from plan.constants import PRO_PLANS
 from plan.service import PlanService
 from services.billing import BillingService
 from services.segment import SegmentService
@@ -221,29 +221,10 @@ class StripeWebhookHandler(APIView):
         owner.save()
 
         plan_service = PlanService(current_org=owner)
+        plan_service.expire_trial_when_upgrading()
         plan_service.update_plan(
             name=subscription.plan.name, user_count=subscription.quantity
         )
-        # TODO: uncomment this when I'm porting new functionality
-        # plan_service.expire_trial(notifier_service=self.segment_service)
-
-        # TODO: replace all this with plan_service.expire_trial(notifier_service=self.segment_service)
-        # As we're no longer starting trials via stripe webhooks, only ending them
-        if subscription.status == "trialing":
-            self.segment_service.trial_started(
-                owner.ownerid,
-                {
-                    "trial_plan_name": subscription.plan.name,
-                    "trial_plan_user_count": subscription.quantity,
-                    "trial_end_date": subscription.trial_end,
-                    "trial_start_date": subscription.trial_start,
-                },
-            )
-            # In a future initiative, every customer will go first through a trial so this logic will change. I'll set this piece
-            # to start the trial here for now. This will also be called in the onboarding mutation coming from the client.
-            plan_service = PlanService(current_org=owner)
-            if plan_service.trial_status == TrialStatus.NOT_STARTED:
-                plan_service.start_trial()
 
         self._log_updated(1)
 
@@ -273,10 +254,11 @@ class StripeWebhookHandler(APIView):
                     extra=dict(stripe_subscription_id=subscription.id),
                 )
                 plan_service.set_default_plan_data()
-                # TODO: think of how to create services for different objects/classes to delegate responsibilities that arent
+                # TODO: think of how to create services for different objects/classes to delegate responsibilities that are not
                 # from the owner
                 owner.repository_set.update(active=False, activated=False)
                 return
+            # TODO: pretty sure we can delete this in the near future
             if subscription.plan.name not in PRO_PLANS:
                 log.warning(
                     f"Subscription update requested with invalid plan "
@@ -290,22 +272,6 @@ class StripeWebhookHandler(APIView):
                 f"plan: {subscription.plan.name}, quantity: {subscription.quantity}",
                 extra=dict(stripe_subscription_id=subscription.id),
             )
-
-            # TODO: get rid of this as trial status wont change when a subscription is updated,
-            # only when it's deleted or created
-            if (
-                self.event.data.get("previous_attributes", {}).get("status")
-                == "trialing"
-            ):
-                self.segment_service.trial_ended(
-                    owner.ownerid,
-                    {
-                        "trial_plan_name": subscription.plan.name,
-                        "trial_plan_user_count": subscription.quantity,
-                        "trial_end_date": subscription.trial_end,
-                        "trial_start_date": subscription.trial_start,
-                    },
-                )
 
             plan_service.update_plan(
                 name=subscription.plan.name, user_count=subscription.quantity
