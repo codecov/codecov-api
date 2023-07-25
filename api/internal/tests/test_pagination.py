@@ -1,4 +1,5 @@
 import pytest
+from django.test import Client
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 
@@ -7,6 +8,7 @@ from codecov_auth.tests.factories import OwnerFactory
 
 class PageNumberPaginationTests(APITestCase):
     def setUp(self):
+        self.client = Client()
         self.owner = OwnerFactory(plan="users-free", plan_user_count=5)
         self.users = [
             OwnerFactory(organizations=[self.owner.ownerid]),
@@ -14,9 +16,9 @@ class PageNumberPaginationTests(APITestCase):
             OwnerFactory(organizations=[self.owner.ownerid]),
         ]
 
+    def test_pagination_returned_page_size(self):
         self.client.force_login(user=self.owner)
 
-    def test_pagination_returned_page_size(self):
         def _list(kwargs={}, query_params={}):
             if not kwargs:
                 kwargs = {
