@@ -47,15 +47,23 @@ class UploadViews(ListCreateAPIView, GetterMixin):
     ]
     throttle_classes = [UploadsPerCommitThrottle, UploadsPerWindowThrottle]
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: UploadSerializer):
         repository = self.get_repo()
         validate_activated_repo(repository)
         commit = self.get_commit(repository)
         report = self.get_report(commit)
         log.info(
             "Request to create new upload",
-            extra=dict(repo=repository.name, commit=commit.commitid),
+            extra=dict(
+                repo=repository.name,
+                commit=commit.commitid,
+                cli_version=serializer.validated_data["version"]
+                if "version" in serializer.validated_data
+                else None,
+            ),
         )
+        if "version" in serializer.validated_data:
+            metrics.incr("upload.cli." + f"{serializer.validated_data['version']}")
         archive_service = ArchiveService(repository)
         instance: ReportSession = serializer.save(
             report_id=report.id,
