@@ -139,7 +139,7 @@ class PlanService:
         if self.trial_status != TrialStatus.CANNOT_TRIAL.value:
             # Not adjusting the trial start/end dates here as some customers can
             # directly purchase a plan without trialing first
-            self.current_org.trial_status = TrialStatus.EXPIRED
+            self.current_org.trial_status = TrialStatus.EXPIRED.value
             self.current_org.plan_activated_users = None
             self.current_org.plan_user_count = 1
 

@@ -50,32 +50,22 @@ class PlanServiceTests(TestCase):
 
         assert plan_service.trial_status == TrialStatus.ONGOING.value
 
-    # TODO: uncomment this when trial_status logic is adjusted
-    # def test_plan_service_trial_status_cannot_trial_if_current_paid_customer(self):
-    #     current_org_with_paid_plan = OwnerFactory(
-    #         plan=PlanName.BASIC_PLAN_NAME.value,
-    #         trial_start_date=None,
-    #         trial_end_date=None,
-    #         stripe_customer_id="test_id_123123",
-    #     )
-    #     plan_service = PlanService(current_org=current_org_with_paid_plan)
-    #     assert plan_service.trial_status == TrialStatus.CANNOT_TRIAL.value
-
-    def test_plan_service_trial_status_never_started_if_it_used_to_be_paid_customer(
+    def test_plan_service_expire_trial_when_upgrading_successful_if_trial_is_ongoing(
         self,
     ):
-        now = datetime.utcnow()
-        trial_start_date = now
-        trial_end_date = now
-        current_org_with_paid_plan = OwnerFactory(
+        trial_start_date = datetime.utcnow()
+        trial_end_date_ongoing = trial_start_date + timedelta(days=5)
+        current_org_with_ongoing_trial = OwnerFactory(
             plan=PlanName.BASIC_PLAN_NAME.value,
             trial_start_date=trial_start_date,
-            trial_end_date=trial_end_date,
-            stripe_customer_id="test_id_123123",
-            trial_status=TrialStatus.CANNOT_TRIAL.value,
+            trial_end_date=trial_end_date_ongoing,
+            trial_status=TrialStatus.ONGOING.value,
         )
-        plan_service = PlanService(current_org=current_org_with_paid_plan)
-        assert plan_service.trial_status == TrialStatus.CANNOT_TRIAL.value
+        plan_service = PlanService(current_org=current_org_with_ongoing_trial)
+        plan_service.expire_trial_when_upgrading()
+        assert current_org_with_ongoing_trial.trial_status == TrialStatus.EXPIRED.value
+        assert current_org_with_ongoing_trial.plan_activated_users == None
+        assert current_org_with_ongoing_trial.plan_user_count == 1
 
     def test_plan_service_start_trial_errors_if_status_is_not_not_started(self):
         trial_start_date = datetime.utcnow()
