@@ -1,14 +1,14 @@
 import pytest
-from django.test import Client
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 
 from codecov_auth.tests.factories import OwnerFactory
+from utils.test_utils import APIClient
 
 
 class PageNumberPaginationTests(APITestCase):
     def setUp(self):
-        self.client = Client()
+        self.client = APIClient()
         self.owner = OwnerFactory(plan="users-free", plan_user_count=5)
         self.users = [
             OwnerFactory(organizations=[self.owner.ownerid]),
