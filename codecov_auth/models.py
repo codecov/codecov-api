@@ -460,6 +460,20 @@ class Owner(models.Model):
         self.save()
 
 
+class SentryUser(BaseCodecovModel):
+    user = models.ForeignKey(
+        User,
+        null=False,
+        on_delete=models.CASCADE,
+        related_name="sentry_user",
+    )
+    access_token = models.TextField(null=True)
+    refresh_token = models.TextField(null=True)
+    sentry_id = models.TextField(null=False, unique=True)
+    email = models.TextField(null=True)
+    name = models.TextField(null=True)
+
+
 class TokenTypeChoices(models.TextChoices):
     UPLOAD = "upload"
 

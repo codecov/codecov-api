@@ -24,7 +24,7 @@ def list_repository_for_owner(current_owner: Owner, owner: Owner, filters):
     queryset = (
         Repository.objects.viewable_repos(current_owner)
         .with_recent_coverage()
-        .with_cache_latest_commit_at()
+        .with_latest_commit_at()
         .filter(author=owner)
     )
     queryset = apply_filters_to_queryset(queryset, filters)
@@ -36,7 +36,7 @@ def search_repos(current_owner, filters):
     queryset = (
         Repository.objects.viewable_repos(current_owner)
         .with_recent_coverage()
-        .with_cache_latest_commit_at()
+        .with_latest_commit_at()
         .filter(author__ownerid__in=authors_from)
     )
     queryset = apply_filters_to_queryset(queryset, filters)

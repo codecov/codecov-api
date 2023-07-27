@@ -1,7 +1,11 @@
 Codecov API
 -----------
 
-A private Django REST Framework API intended to serve codecov's front end. 
+> We believe that everyone should have access to quality software (like Sentry), that’s why we have always offered Codecov for free to open source maintainers.
+>
+> By open sourcing Codecov, we’re not only joining the community that’s supported us from the start — but also want to make sure that every developer can contribute to and build on the Codecov experience.
+
+A private Django REST Framework API intended to serve Codecov's front end. 
 
 ## Getting Started
 

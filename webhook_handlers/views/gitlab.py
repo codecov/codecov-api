@@ -62,10 +62,7 @@ class GitLabWebhookHandler(APIView):
 
         https://docs.gitlab.com/ce/user/project/integrations/webhooks.html#push-events
         """
-        if not (repo.cache and repo.cache.get("yaml")):
-            message = "No yaml cached yet."
-        else:
-            message = "Synchronize codecov.yml"
+        message = "No yaml cached yet."
         return Response(data=message)
 
     def _handle_job_event(self, repo):
