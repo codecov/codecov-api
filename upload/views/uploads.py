@@ -1,6 +1,5 @@
 import logging
 
-from django.conf import settings
 from django.http import HttpRequest, HttpResponseNotAllowed
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
@@ -83,17 +82,7 @@ class UploadViews(ListCreateAPIView, GetterMixin):
         metrics.incr("uploads.accepted", 1)
         self.activate_repo(repository)
 
-        # We'll be returning this to the user as part of the response
-        self.destination_url = f"{settings.CODECOV_DASHBOARD_URL}/{repository.author.service}/{repository.author.username}/{repository.name}/commit/{commit.commitid}"
-
         return instance
-
-    def create(self, request, *args, **kwargs):
-        response = super().create(request, *args, **kwargs)
-        data = {"url": self.destination_url}
-        data.update(response.data)
-        response.data = data
-        return response
 
     def list(
         self,
