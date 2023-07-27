@@ -217,6 +217,11 @@ class BranchFactory(DjangoModelFactory):
     head = factory.LazyAttribute(lambda o: sha1(o.name.encode("utf-8")).hexdigest())
 
 
+class ConstantsFactory(DjangoModelFactory):
+    class Meta:
+        model = models.Constants
+
+
 class VersionFactory(DjangoModelFactory):
     class Meta:
         model = models.Version
