@@ -52,20 +52,6 @@ class RiskyAlterIndexTogether(migrations.AlterIndexTogether):
         super().database_backwards(app_label, schema_editor, from_state, to_state)
 
 
-class RiskyAlterField(migrations.AlterField):
-    def database_forwards(self, app_label, schema_editor, from_state, to_state):
-        if settings.SKIP_RISKY_MIGRATION_STEPS:
-            return
-
-        super().database_forwards(app_label, schema_editor, from_state, to_state)
-
-    def database_backwards(self, app_label, schema_editor, from_state, to_state):
-        if settings.SKIP_RISKY_MIGRATION_STEPS:
-            return
-
-        super().database_backwards(app_label, schema_editor, from_state, to_state)
-
-
 class RiskyAddIndex(migrations.AddIndex):
     def database_forwards(self, app_label, schema_editor, from_state, to_state):
         if settings.SKIP_RISKY_MIGRATION_STEPS:
