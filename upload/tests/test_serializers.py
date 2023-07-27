@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework.exceptions import ErrorDetail
 
 from codecov_auth.tests.factories import OwnerFactory
@@ -63,6 +64,7 @@ def test_upload_serializer_contains_expected_fields_no_flags(transactional_db, m
     )
     upload = get_fake_upload()
     serializer = UploadSerializer(instance=upload)
+    repo = upload.report.commit.repository
     expected_data = {
         "external_id": str(upload.external_id),
         "created_at": upload.created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
@@ -75,6 +77,7 @@ def test_upload_serializer_contains_expected_fields_no_flags(transactional_db, m
         "job_code": upload.job_code,
         "env": upload.env,
         "name": upload.name,
+        "url": f"{settings.CODECOV_DASHBOARD_URL}/{repo.author.service}/{repo.author.username}/{repo.name}/commit/{upload.report.commit.commitid}",
     }
     assert serializer.data == expected_data
 
@@ -88,6 +91,7 @@ def test_upload_serializer_contains_expected_fields_with_flags(
     )
     upload = get_fake_upload_with_flags()
     serializer = UploadSerializer(instance=upload)
+    repo = upload.report.commit.repository
     expected_data = {
         "external_id": str(upload.external_id),
         "created_at": upload.created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
@@ -100,6 +104,7 @@ def test_upload_serializer_contains_expected_fields_with_flags(
         "job_code": upload.job_code,
         "env": upload.env,
         "name": upload.name,
+        "url": f"{settings.CODECOV_DASHBOARD_URL}/{repo.author.service}/{repo.author.username}/{repo.name}/commit/{upload.report.commit.commitid}",
     }
     assert serializer.data == expected_data
 
