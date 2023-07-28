@@ -55,6 +55,7 @@ class ReportResultsView(
     permission_classes = [CanDoCoverageUploadsPermission]
     authentication_classes = [
         GlobalTokenAuthentication,
+        OrgLevelTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
     ]
 
@@ -62,9 +63,14 @@ class ReportResultsView(
         repository = self.get_repo()
         commit = self.get_commit(repository)
         report = self.get_report(commit)
-        instance = serializer.save(
-            report=report, state=ReportResults.ReportResultsStates.PENDING
-        )
+        instance = ReportResults.objects.filter(report=report).first()
+        if not instance:
+            instance = serializer.save(
+                report=report, state=ReportResults.ReportResultsStates.PENDING
+            )
+        else:
+            instance.state = ReportResults.ReportResultsStates.PENDING
+            instance.save()
         TaskService().create_report_results(
             commitid=commit.commitid,
             repoid=repository.repoid,
