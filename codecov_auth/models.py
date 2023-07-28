@@ -167,7 +167,10 @@ class Owner(models.Model):
     # TODO: I want this column to be null at first, and then would run a script to populate customers with
     # not_started and cannot_trial, and then set default value to not_started.
     trial_status = models.CharField(
-        max_length=50, choices=TrialStatus.choices, null=True
+        max_length=50,
+        choices=TrialStatus.choices,
+        null=True,
+        default=TrialStatus.NOT_STARTED.value,
     )
     free = models.SmallIntegerField(default=0)
     invoice_details = models.TextField(null=True)
