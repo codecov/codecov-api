@@ -80,6 +80,11 @@ class PlanService:
 
     @property
     def benefits(self) -> List[str]:
+        if self.plan_name == PlanName.BASIC_PLAN_NAME.value:
+            self.plan_data.benefits.append(
+                f"Up to {self.current_org.pretrial_users_count or 1} users",
+            )
+
         return self.plan_data.benefits
 
     @property
@@ -113,6 +118,7 @@ class PlanService:
         )
         self.current_org.trial_status = TrialStatus.ONGOING.value
         self.current_org.plan = PlanName.TRIAL_PLAN_NAME.value
+        self.current_org.pretrial_users_count = self.current_org.plan_user_count
         self.current_org.plan_user_count = TRIAL_PLAN_SEATS
         self.current_org.plan_auto_activate = True
         self.current_org.save()
@@ -141,7 +147,10 @@ class PlanService:
             # directly purchase a plan without trialing first
             self.current_org.trial_status = TrialStatus.EXPIRED.value
             self.current_org.plan_activated_users = None
-            self.current_org.plan_user_count = 1
+            self.current_org.plan_user_count = (
+                self.current_org.pretrial_users_count or 1
+            )
+            self.current_org.trial_end_date = datetime.utcnow()
 
             self.current_org.save()
             self.notifier_service.trial_ended(
