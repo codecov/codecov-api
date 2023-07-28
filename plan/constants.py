@@ -279,6 +279,7 @@ USER_PLAN_REPRESENTATIONS = {
 }
 
 PLANS_THAT_CAN_TRIAL = [
+    PlanName.FREE_PLAN_NAME.value,
     PlanName.BASIC_PLAN_NAME.value,
     PlanName.CODECOV_PRO_MONTHLY.value,
     PlanName.CODECOV_PRO_YEARLY.value,

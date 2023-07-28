@@ -645,13 +645,24 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
         assert user.permission == [1, 2, 3]
 
     def test_secret_validation(self):
+        owner = OwnerFactory(service="gitlab_enterprise")
+        repo = RepositoryFactory(
+            author=owner,
+            service_id=uuid.uuid4(),
+            webhook_secret=uuid.uuid4(),
+        )
+        owner.permission = [repo.repoid]
+        owner.save()
+
         response = self.client.post(
             reverse("gitlab_enterprise-webhook"),
             **{
                 GitLabHTTPHeaders.EVENT: "",
                 GitLabHTTPHeaders.TOKEN: "",
             },
-            data={},
+            data={
+                "project_id": repo.service_id,
+            },
             format="json",
         )
         assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -660,9 +671,11 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
             reverse("gitlab_enterprise-webhook"),
             **{
                 GitLabHTTPHeaders.EVENT: "",
-                GitLabHTTPHeaders.TOKEN: webhook_secret,
+                GitLabHTTPHeaders.TOKEN: repo.webhook_secret,
             },
-            data={},
+            data={
+                "project_id": repo.service_id,
+            },
             format="json",
         )
         assert response.status_code == status.HTTP_200_OK
