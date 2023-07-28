@@ -15,14 +15,10 @@ from webhook_handlers.constants import (
     WebhookHandlerErrorMessages,
 )
 
-webhook_secret = "test-46204fb3-374e-4cfc-8cae-d7ca43371096"
-
 
 def get_config_mock(*args, **kwargs):
     if args == ("setup", "enterprise_license"):
         return True
-    elif args == ("gitlab", "webhook_secret"):
-        return webhook_secret
     elif args == ("gitlab", "webhook_validation"):
         return True
     else:
@@ -37,7 +33,6 @@ class TestGitlabWebhookHandler(APITestCase):
             format="json",
             **{
                 GitLabHTTPHeaders.EVENT: event,
-                GitLabHTTPHeaders.TOKEN: webhook_secret,
             },
         )
 
@@ -614,13 +609,24 @@ class TestGitlabWebhookHandler(APITestCase):
         assert user.permission == [1, 2, 3]
 
     def test_secret_validation(self):
+        owner = OwnerFactory(service="gitlab")
+        repo = RepositoryFactory(
+            author=owner,
+            service_id=uuid.uuid4(),
+            webhook_secret=uuid.uuid4(),
+        )
+        owner.permission = [repo.repoid]
+        owner.save()
+
         response = self.client.post(
             reverse("gitlab-webhook"),
             **{
                 GitLabHTTPHeaders.EVENT: "",
                 GitLabHTTPHeaders.TOKEN: "",
             },
-            data={},
+            data={
+                "project_id": repo.service_id,
+            },
             format="json",
         )
         assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -629,9 +635,11 @@ class TestGitlabWebhookHandler(APITestCase):
             reverse("gitlab-webhook"),
             **{
                 GitLabHTTPHeaders.EVENT: "",
-                GitLabHTTPHeaders.TOKEN: webhook_secret,
+                GitLabHTTPHeaders.TOKEN: repo.webhook_secret,
             },
-            data={},
+            data={
+                "project_id": repo.service_id,
+            },
             format="json",
         )
         assert response.status_code == status.HTTP_200_OK
