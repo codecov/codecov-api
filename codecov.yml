@@ -14,3 +14,5 @@ flag_management:
 
 codecov:
   require_ci_to_pass: false
+  notify:
+    manual_trigger: true

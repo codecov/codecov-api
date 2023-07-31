@@ -178,6 +178,10 @@ jobs:
             --coverage-files-search-exclude-folder=graphql_api/types/** \
             --coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
     - run:
+        name: assign upload as completed to get notifications
+        command: |
+          codecovcli upload-completion
+    - run:
         name: codecov-staging
         command: |
           chmod +x codecov-alpine
