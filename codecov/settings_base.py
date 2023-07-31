@@ -457,6 +457,7 @@ SENTRY_JWT_SHARED_SECRET = get_config(
 SENTRY_USER_WEBHOOK_URL = get_config("setup", "sentry", "webhook_url", default=None)
 SENTRY_OAUTH_CLIENT_ID = get_config("setup", "sentry", "oauth_client_id")
 SENTRY_OAUTH_CLIENT_SECRET = get_config("setup", "sentry", "oauth_client_secret")
+SENTRY_OIDC_SHARED_SECRET = get_config("setup", "sentry", "oidc_shared_secret")
 
 # list of repo IDs that will use the new-style report builder
 # TODO: we can eventually get rid of this once it's confirmed working well for many repos
