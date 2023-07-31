@@ -172,14 +172,16 @@ def parse_params(data):
             ),
         },
         "name": {"type": "string"},
-        "package": {"type": "string"},
+        "package": {
+            "type": "string",
+            "regex": r"^(codecov-cli/|^(.+-)?uploader-)\d+.\d+.\d+$",
+        },
         "s3": {"type": "integer"},
         "yaml": {
             "type": "string"
         },  # file path to custom location of codecov.yml in repo
         "url": {"type": "string"},  # custom location where report is found
         "parent": {"type": "string"},
-        "package": {"type": "string"},
         "project": {"type": "string"},
         "server_uri": {"type": "string"},
         "root": {"type": "string"},  # deprecated
@@ -508,7 +510,6 @@ def validate_upload(upload_params, repository, redis):
         and not repository.activated
         and not bool(get_config("setup", "enterprise_license", default=False))
     ):
-
         owner = _determine_responsible_owner(repository)
 
         # If author is on per repo billing, check their repo credits
