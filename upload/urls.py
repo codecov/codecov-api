@@ -4,6 +4,7 @@ from upload.views.commits import CommitViews
 from upload.views.empty_upload import EmptyUploadView
 from upload.views.legacy import UploadDownloadHandler, UploadHandler
 from upload.views.reports import ReportResultsView, ReportViews
+from upload.views.upload_completion import UploadCompletionView
 from upload.views.uploads import UploadViews
 
 urlpatterns = [
@@ -33,6 +34,11 @@ urlpatterns = [
         "<str:service>/<str:repo>/commits/<str:commit_sha>/empty-upload",
         EmptyUploadView.as_view(),
         name="new_upload.empty_upload",
+    ),
+    path(
+        "<str:service>/<str:repo>/commits/<str:commit_sha>/upload-complete",
+        UploadCompletionView.as_view(),
+        name="new_upload.upload-complete",
     ),
     path(
         "<str:service>/<str:repo>/commits",
