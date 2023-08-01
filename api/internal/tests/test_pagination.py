@@ -1,9 +1,9 @@
 import pytest
-from django.test import Client
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 
 from codecov_auth.tests.factories import OwnerFactory
+from utils.test_utils import Client
 
 
 class PageNumberPaginationTests(APITestCase):
@@ -17,7 +17,7 @@ class PageNumberPaginationTests(APITestCase):
         ]
 
     def test_pagination_returned_page_size(self):
-        self.client.force_login(user=self.owner)
+        self.client.force_login_owner(self.owner)
 
         def _list(kwargs={}, query_params={}):
             if not kwargs:
