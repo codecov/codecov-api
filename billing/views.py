@@ -258,7 +258,7 @@ class StripeWebhookHandler(APIView):
                 # from the owner
                 owner.repository_set.update(active=False, activated=False)
                 return
-            # TODO: pretty sure we can delete this in the near future
+            # TODO: we can delete this if statement if we confirm there aren't any PRO_PLANS out there
             if subscription.plan.name not in PRO_PLANS:
                 log.warning(
                     f"Subscription update requested with invalid plan "

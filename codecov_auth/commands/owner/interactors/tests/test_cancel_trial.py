@@ -63,12 +63,12 @@ class CancelTrialInteractorTest(TransactionTestCase):
         now = datetime.utcnow()
         trial_start_date = now
         trial_end_date = now + timedelta(days=3)
-        # TODO: Add trial_status in CODE-3605-add-trial-logic
         current_user: Owner = OwnerFactory(
             username="random-user-123",
             service="github",
             trial_start_date=trial_start_date,
             trial_end_date=trial_end_date,
+            trial_status=TrialStatus.ONGOING.value,
         )
         self.execute(current_user=current_user, org_username=current_user.username)
         current_user.refresh_from_db()

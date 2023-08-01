@@ -73,13 +73,6 @@ def resolve_plan(owner: Owner, info) -> PlanService:
     return PlanService(current_org=owner)
 
 
-# TODO: deprecate + delete once client uses the plan resolver instead
-@owner_bindable.field("trialStatus")
-def resolve_trial_status(owner: Owner, info) -> TrialStatus:
-    plan_service = PlanService(current_org=owner)
-    return plan_service.trial_status
-
-
 @owner_bindable.field("repository")
 async def resolve_repository(owner, info, name):
     command = info.context["executor"].get_command("repository")

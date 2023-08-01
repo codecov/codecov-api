@@ -22,8 +22,6 @@ type Owner {
   orgUploadToken: String
   defaultOrgUsername: String
   isCurrentUserActivated: Boolean!
-  trialStatus: TrialStatus!
-    @deprecated(reason: "Use trial status inside plan resolver")
   measurements(
     interval: MeasurementInterval!
     after: DateTime
