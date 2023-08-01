@@ -60,7 +60,7 @@ def test_update_gitlab_webhook_command(mocker):
                 "pipeline_events": True,
                 "wiki_events": False,
             },
-            secret=uuid.UUID(repo2.webhook_secret),
+            secret=repo2.webhook_secret,
         ),
         mock.call(
             hookid="345",
@@ -77,6 +77,6 @@ def test_update_gitlab_webhook_command(mocker):
                 "pipeline_events": True,
                 "wiki_events": False,
             },
-            secret=uuid.UUID(repo3.webhook_secret),
+            secret=repo3.webhook_secret,
         ),
     ]
