@@ -13,7 +13,9 @@ from utils.config import get_config
 
 
 class LicenseException(ServiceException):
-    pass
+    def __init__(self, message: str):
+        self.message = message
+        super().__init__(message)
 
 
 def admin_owners() -> QuerySet:
