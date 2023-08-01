@@ -113,9 +113,7 @@ class PlanService:
             raise ValidationError("Cannot start an existing trial")
         start_date = datetime.utcnow()
         self.current_org.trial_start_date = start_date
-        self.current_org.trial_end_date = start_date + timedelta(
-            days=TrialDaysAmount.CODECOV_SENTRY.value
-        )
+        self.current_org.trial_end_date = start_date + timedelta(days=TrialDaysAmount.CODECOV_SENTRY.value)
         self.current_org.trial_status = TrialStatus.ONGOING.value
         self.current_org.plan = PlanName.TRIAL_PLAN_NAME.value
         self.current_org.pretrial_users_count = self.current_org.plan_user_count
@@ -132,6 +130,15 @@ class PlanService:
             },
         )
 
+    def cancel_trial(self) -> None:
+        # TODO: change this to TrialStatus.ONGOING.value in CODE-3605-add-trial-logic
+        if self.trial_status != TrialStatus.ONGOING:
+            raise ValidationError("Cannot cancel a trial that is not ongoing")
+        now = datetime.utcnow()
+        self.current_org.trial_status = TrialStatus.EXPIRED.value
+        self.current_org.trial_end_date = now
+        self.set_default_plan_data()
+
     def expire_trial_when_upgrading(self) -> None:
         """
         Method that expires trial on an organization based on it's current trial status.
@@ -147,9 +154,7 @@ class PlanService:
             # directly purchase a plan without trialing first
             self.current_org.trial_status = TrialStatus.EXPIRED.value
             self.current_org.plan_activated_users = None
-            self.current_org.plan_user_count = (
-                self.current_org.pretrial_users_count or 1
-            )
+            self.current_org.plan_user_count = self.current_org.pretrial_users_count or 1
             self.current_org.trial_end_date = datetime.utcnow()
 
             self.current_org.save()
