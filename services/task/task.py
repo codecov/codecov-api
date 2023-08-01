@@ -336,3 +336,16 @@ class TaskService(object):
             "app.tasks.flush_repo.FlushRepo",
             kwargs=dict(repoid=repository_id),
         ).apply_async()
+
+    def manual_upload_completion_trigger(
+        self, repoid, commitid, report_code=None, current_yaml=None
+    ):
+        self._create_signature(
+            "app.tasks.upload.ManualUploadCompletionTrigger",
+            kwargs=dict(
+                commitid=commitid,
+                repoid=repoid,
+                report_code=report_code,
+                current_yaml=current_yaml,
+            ),
+        ).apply_async()

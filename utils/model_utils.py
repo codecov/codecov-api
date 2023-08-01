@@ -118,6 +118,13 @@ class ArchiveField:
             archive_service = ArchiveService(repository=repository)
             old_file_path = getattr(obj, self.archive_field_name)
             table_name = obj._meta.db_table
+            # DEBUG https://github.com/codecov/platform-team/issues/119
+            # We don't expect this saving to be done here, actually
+            if table_name == "reports_reportdetails":
+                log.info(
+                    "Setting files_array from the API",
+                    extra=dict(commit=obj.get_commitid(), data=value),
+                )
             path = archive_service.write_json_data_to_storage(
                 commit_id=obj.get_commitid(),
                 table=table_name,
