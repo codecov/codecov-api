@@ -123,7 +123,6 @@ class PlanService:
         # )
 
     def cancel_trial(self) -> None:
-        print("trial_status_val", self.trial_status)
         # TODO: change this to TrialStatus.ONGOING.value in CODE-3605-add-trial-logic
         if self.trial_status != TrialStatus.ONGOING:
             raise ValidationError("Cannot cancel a trial that is not ongoing")
