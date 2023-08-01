@@ -51,7 +51,7 @@ class V1ValidateYamlHandler(APIView):
 
         except YAMLError as e:
             return HttpResponse(
-                f"{str(e)}\n",
+                "Can't parse YAML\n",
                 status=status.HTTP_400_BAD_REQUEST,
                 content_type="text/plain",
             )
