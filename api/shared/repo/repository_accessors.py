@@ -40,10 +40,14 @@ class RepoAccessors:
         Returns repo from DB, if it exists.
         """
         try:
-            return Repository.objects.get(
-                name=repo_name,
-                author__username=repo_owner_username,
-                author__service=repo_owner_service,
+            return (
+                Repository.objects.all()
+                .with_recent_coverage()
+                .get(
+                    name=repo_name,
+                    author__username=repo_owner_username,
+                    author__service=repo_owner_service,
+                )
             )
         except ObjectDoesNotExist:
             repo = None

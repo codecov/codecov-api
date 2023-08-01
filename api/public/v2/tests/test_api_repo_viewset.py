@@ -1,11 +1,13 @@
+from datetime import timedelta
 from unittest.mock import patch
 
 from django.urls import reverse
+from django.utils import timezone
 from freezegun import freeze_time
 
 from codecov.tests.base_test import InternalAPITest
 from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import RepositoryFactory
+from core.tests.factories import CommitFactory, RepositoryFactory
 from utils.test_utils import APIClient
 
 
@@ -14,6 +16,9 @@ class RepoViewsetTests(InternalAPITest):
     def setUp(self):
         self.org = OwnerFactory()
         self.repo = RepositoryFactory(author=self.org)
+        self.commit = CommitFactory(
+            repository=self.repo, timestamp=timezone.now() - timedelta(days=1)
+        )
         self.current_owner = OwnerFactory(
             permission=[self.repo.repoid], organizations=[self.org.ownerid]
         )
@@ -32,7 +37,13 @@ class RepoViewsetTests(InternalAPITest):
             )
         )
         assert res.status_code == 200
-        assert res.json() == {
+        data = res.json()
+
+        # there's a SQL trigger that updates this - not sure how to test the value
+        assert data["results"][0]["updatestamp"] is not None
+        del data["results"][0]["updatestamp"]
+
+        assert data == {
             "count": 1,
             "next": None,
             "previous": None,
@@ -40,7 +51,6 @@ class RepoViewsetTests(InternalAPITest):
                 {
                     "name": self.repo.name,
                     "private": True,
-                    "updatestamp": "2022-01-01T00:00:00Z",
                     "author": {
                         "service": self.org.service,
                         "username": self.org.username,
@@ -50,6 +60,21 @@ class RepoViewsetTests(InternalAPITest):
                     "branch": "master",
                     "active": False,
                     "activated": False,
+                    "totals": {
+                        "branches": 0,
+                        "complexity": 0.0,
+                        "complexity_ratio": 0,
+                        "complexity_total": 0.0,
+                        "coverage": 85.0,
+                        "diff": 0,
+                        "files": 3,
+                        "hits": 17,
+                        "lines": 20,
+                        "methods": 0,
+                        "misses": 3,
+                        "partials": 0,
+                        "sessions": 1,
+                    },
                 }
             ],
             "total_pages": 1,
@@ -70,10 +95,15 @@ class RepoViewsetTests(InternalAPITest):
             )
         )
         assert res.status_code == 200
-        assert res.json() == {
+        data = res.json()
+
+        # there's a SQL trigger that updates this - not sure how to test the value
+        assert data["updatestamp"] is not None
+        del data["updatestamp"]
+
+        assert data == {
             "name": self.repo.name,
             "private": True,
-            "updatestamp": "2022-01-01T00:00:00Z",
             "author": {
                 "service": self.org.service,
                 "username": self.org.username,
@@ -83,4 +113,19 @@ class RepoViewsetTests(InternalAPITest):
             "branch": "master",
             "active": False,
             "activated": False,
+            "totals": {
+                "branches": 0,
+                "complexity": 0.0,
+                "complexity_ratio": 0,
+                "complexity_total": 0.0,
+                "coverage": 85.0,
+                "diff": 0,
+                "files": 3,
+                "hits": 17,
+                "lines": 20,
+                "methods": 0,
+                "misses": 3,
+                "partials": 0,
+                "sessions": 1,
+            },
         }
