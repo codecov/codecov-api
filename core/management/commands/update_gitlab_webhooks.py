@@ -39,7 +39,7 @@ class Command(BaseCommand):
                 print("no bot user")
                 continue
 
-            webhook_secret = uuid.uuid4()
+            webhook_secret = str(uuid.uuid4())
             gitlab: Gitlab = RepoProviderService().get_adapter(user, repo)
 
             try:
