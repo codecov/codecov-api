@@ -19,6 +19,7 @@ type Owner {
   hashOwnerid: String!
   ownerid: Int!
   plan: Plan
+  pretrialPlan: PlanRepresentation
   orgUploadToken: String
   defaultOrgUsername: String
   isCurrentUserActivated: Boolean!

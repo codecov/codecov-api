@@ -19,6 +19,7 @@ from graphql_api.helpers.connection import (
 )
 from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
+from plan.constants import FREE_PLAN_REPRESENTATIONS, PlanData, PlanName
 from plan.service import PlanService
 from services.profiling import ProfilingSummary
 from timeseries.helpers import fill_sparse_measurements
@@ -69,6 +70,13 @@ def resolve_yaml(owner, info):
 @owner_bindable.field("plan")
 def resolve_plan(owner: Owner, info) -> PlanService:
     return PlanService(current_org=owner)
+
+
+@owner_bindable.field("pretrialPlan")
+@convert_kwargs_to_snake_case
+def resolve_plan_representation(owner: Owner, info) -> PlanData:
+    info.context["plan_service"] = PlanService(current_org=owner)
+    return FREE_PLAN_REPRESENTATIONS[PlanName.BASIC_PLAN_NAME.value]
 
 
 @owner_bindable.field("repository")
