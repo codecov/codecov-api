@@ -34,6 +34,14 @@ class Version(models.Model):
         db_table = "version"
 
 
+class Constants(models.Model):
+    key = models.CharField(primary_key=True)
+    value = models.CharField()
+
+    class Meta:
+        db_table = "constants"
+
+
 def _gen_image_token():
     return "".join(
         random.choice(string.ascii_letters + string.digits) for _ in range(10)

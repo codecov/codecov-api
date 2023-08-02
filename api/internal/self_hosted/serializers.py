@@ -26,7 +26,7 @@ class UserSerializer(serializers.ModelSerializer):
                 try:
                     self_hosted.activate_owner(instance)
                 except self_hosted.LicenseException as err:
-                    raise PermissionDenied(err)
+                    raise PermissionDenied(err.message)
             else:
                 self_hosted.deactivate_owner(instance)
 
