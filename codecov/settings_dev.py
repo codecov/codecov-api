@@ -9,8 +9,10 @@ ALLOWED_HOSTS = get_config(
 
 WEBHOOK_URL = ""  # NGROK TUNNEL HERE
 
-STRIPE_API_KEY = "sk_test_testurtke3v89d4udnesfxh413qnioseSuuwkdBMDvk4ZLesyoD4sSUoG4XDkPXsjN9MzRPaeylnqbgIOhnFI9Urg00BTUxkOh1"
-STRIPE_ENDPOINT_SECRET = "whsec_testv00ijzofmsvxcktfmna1duw9pn8b"
+STRIPE_API_KEY = get_config("services", "stripe", "api_key", default="default")
+STRIPE_ENDPOINT_SECRET = get_config(
+    "services", "stripe", "endpoint_secret", default="default"
+)
 STRIPE_PLAN_IDS = {
     "users-pr-inappm": "plan_H6P3KZXwmAbqPS",
     "users-pr-inappy": "plan_H6P16wij3lUuxg",
