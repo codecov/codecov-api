@@ -30,7 +30,7 @@ def resolve_marketing_name(plan_data: PlanData, info) -> PlanMarketingName:
 @plan_representation_bindable.field("planName")
 @convert_kwargs_to_snake_case
 def resolve_plan_name(plan_data: PlanData, info) -> PlanName:
-    return plan_data.plan_name
+    return plan_data.value
 
 
 @plan_representation_bindable.field("billingRate")

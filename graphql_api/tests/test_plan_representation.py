@@ -35,17 +35,13 @@ class TestPlanRepresentationsType(GraphQLTestHelper, TransactionTestCase):
         )
         query = """{
             owner(username: "%s") {
-                plan {
-                    trialStatus
-                    trialEndDate
-                    trialStartDate
+                pretrialPlan {
                     marketingName
                     planName
                     billingRate
                     baseUnitPrice
                     benefits
                     monthlyUploadLimit
-                    pretrialUsersCount
                 }
             }
         }
@@ -53,7 +49,7 @@ class TestPlanRepresentationsType(GraphQLTestHelper, TransactionTestCase):
             current_org.username
         )
         data = self.gql_request(query, owner=current_org)
-        assert data["owner"]["plan"] == {
+        assert data["owner"]["pretrialPlan"] == {
             "marketingName": "Developer",
             "planName": "users-basic",
             "billingRate": None,
@@ -63,5 +59,5 @@ class TestPlanRepresentationsType(GraphQLTestHelper, TransactionTestCase):
                 "Unlimited public repositories",
                 "Unlimited private repositories",
             ],
-            "monthlyUploadLimit": None,
+            "monthlyUploadLimit": 250,
         }
