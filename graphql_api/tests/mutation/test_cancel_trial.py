@@ -2,7 +2,7 @@ from django.test import TransactionTestCase
 
 from codecov_auth.tests.factories import OwnerFactory
 from graphql_api.tests.helper import GraphQLTestHelper
-from plan.constants import TrialStatus
+from plan.constants import PlanName, TrialStatus
 
 query = """
     mutation($input: CancelTrialInput!) {
@@ -38,7 +38,9 @@ class CancelTrialMutationTest(GraphQLTestHelper, TransactionTestCase):
 
     def test_authenticated(self):
         trial_status = TrialStatus.ONGOING.value
-        owner = OwnerFactory(trial_status=trial_status)
+        owner = OwnerFactory(
+            trial_status=trial_status, plan=PlanName.TRIAL_PLAN_NAME.value
+        )
         owner.save()
         assert self._request(owner=owner, org_username=owner.username) == {
             "cancelTrial": None

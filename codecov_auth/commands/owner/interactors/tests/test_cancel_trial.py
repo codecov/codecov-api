@@ -69,6 +69,7 @@ class CancelTrialInteractorTest(TransactionTestCase):
             trial_start_date=trial_start_date,
             trial_end_date=trial_end_date,
             trial_status=TrialStatus.ONGOING.value,
+            plan=PlanName.TRIAL_PLAN_NAME.value,
         )
         self.execute(current_user=current_user, org_username=current_user.username)
         current_user.refresh_from_db()

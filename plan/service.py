@@ -5,6 +5,7 @@ from typing import List, Optional
 from codecov.commands.exceptions import ValidationError
 from codecov_auth.models import Owner
 from plan.constants import (
+    FREE_PLAN_REPRESENTATIONS,
     TRIAL_PLAN_SEATS,
     USER_PLAN_REPRESENTATIONS,
     MonthlyUploadLimits,
@@ -59,11 +60,15 @@ class PlanService:
 
     @property
     def plan_name(self) -> PlanName:
-        return self.current_org.plan
+        return self.plan_data.value
 
     @property
     def plan_user_count(self) -> int:
         return self.current_org.plan_user_count
+
+    @property
+    def pretrial_users_count(self) -> int:
+        return self.current_org.pretrial_users_count or 1
 
     @property
     def marketing_name(self) -> PlanMarketingName:
@@ -79,11 +84,6 @@ class PlanService:
 
     @property
     def benefits(self) -> List[str]:
-        if self.plan_name == PlanName.BASIC_PLAN_NAME.value:
-            self.plan_data.benefits.append(
-                f"Up to {self.current_org.pretrial_users_count or 1} users",
-            )
-
         return self.plan_data.benefits
 
     @property
@@ -110,6 +110,8 @@ class PlanService:
         """
         if self.trial_status != TrialStatus.NOT_STARTED.value:
             raise ValidationError("Cannot start an existing trial")
+        if self.plan_name not in FREE_PLAN_REPRESENTATIONS:
+            raise ValidationError("Cannot trial from a paid plan")
         start_date = datetime.utcnow()
         self.current_org.trial_start_date = start_date
         self.current_org.trial_end_date = start_date + timedelta(
@@ -132,7 +134,7 @@ class PlanService:
         )
 
     def cancel_trial(self) -> None:
-        if self.trial_status != TrialStatus.ONGOING.value:
+        if not self.is_org_trialing:
             raise ValidationError("Cannot cancel a trial that is not ongoing")
         now = datetime.utcnow()
         self.current_org.trial_status = TrialStatus.EXPIRED.value
@@ -184,3 +186,10 @@ class PlanService:
     @property
     def trial_total_days(self) -> Optional[TrialDaysAmount]:
         return self.plan_data.trial_days
+
+    @property
+    def is_org_trialing(self) -> bool:
+        return (
+            self.trial_status == TrialStatus.ONGOING.value
+            and self.plan_name == PlanName.TRIAL_PLAN_NAME.value
+        )

@@ -61,9 +61,16 @@ def resolve_base_unit_price(plan_service: PlanService, info) -> PlanPrice:
 
 
 @plan_bindable.field("benefits")
-@convert_kwargs_to_snake_case
 def resolve_benefits(plan_service: PlanService, info) -> List[str]:
     return plan_service.benefits
+
+
+@plan_bindable.field("pretrialUsersCount")
+@convert_kwargs_to_snake_case
+def resolve_pretrial_users_count(plan_service: PlanService, info) -> Optional[int]:
+    if plan_service.is_org_trialing:
+        return plan_service.pretrial_users_count
+    return None
 
 
 @plan_bindable.field("monthlyUploadLimit")
