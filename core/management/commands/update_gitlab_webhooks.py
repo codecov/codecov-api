@@ -1,9 +1,10 @@
-from typing import Optional
+import uuid
 
 from asgiref.sync import async_to_sync
 from django.core.management.base import BaseCommand, CommandParser
 from django.db.models import Q
 from shared.config import get_config
+from shared.torngit.exceptions import TorngitClientError, TorngitRefreshTokenFailedError
 from shared.torngit.gitlab import Gitlab
 
 from codecov_auth.models import Owner
@@ -20,7 +21,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         repos = Repository.objects.filter(
-            Q(author__service="gitlab") & ~Q(hookid=None),
+            Q(author__service="gitlab") & ~Q(hookid=None) & Q(webhook_secret=None),
         ).order_by("repoid")
 
         if options["starting_repoid"]:
@@ -29,7 +30,6 @@ class Command(BaseCommand):
         webhook_url = get_config("setup", "webhook_url") or get_config(
             "setup", "codecov_url"
         )
-        webhook_secret = get_config("gitlab", "webhook_secret")
 
         for repo in repos:
             print("repoid:", repo.pk)
@@ -39,21 +39,32 @@ class Command(BaseCommand):
                 print("no bot user")
                 continue
 
+            webhook_secret = str(uuid.uuid4())
             gitlab: Gitlab = RepoProviderService().get_adapter(user, repo)
-            async_to_sync(gitlab.edit_webhook)(
-                hookid=repo.hookid,
-                name=None,
-                url=f"{webhook_url}/webhooks/gitlab",
-                events={
-                    "push_events": True,
-                    "issues_events": False,
-                    "merge_requests_events": True,
-                    "tag_push_events": False,
-                    "note_events": False,
-                    "job_events": False,
-                    "build_events": True,
-                    "pipeline_events": True,
-                    "wiki_events": False,
-                },
-                secret=webhook_secret,
-            )
+
+            try:
+                async_to_sync(gitlab.edit_webhook)(
+                    hookid=repo.hookid,
+                    name=None,
+                    url=f"{webhook_url}/webhooks/gitlab",
+                    events={
+                        "push_events": True,
+                        "issues_events": False,
+                        "merge_requests_events": True,
+                        "tag_push_events": False,
+                        "note_events": False,
+                        "job_events": False,
+                        "build_events": True,
+                        "pipeline_events": True,
+                        "wiki_events": False,
+                    },
+                    secret=webhook_secret,
+                )
+
+                repo.webhook_secret = webhook_secret
+                repo.save()
+            except TorngitClientError as e:
+                print("error making GitLab API call")
+                print(e)
+            except TorngitRefreshTokenFailedError:
+                print("refresh token failed")

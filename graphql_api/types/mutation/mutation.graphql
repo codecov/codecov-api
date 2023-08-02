@@ -4,6 +4,7 @@ type Mutation {
   revokeUserToken(input: RevokeUserTokenInput!): RevokeUserTokenPayload
   setYamlOnOwner(input: SetYamlOnOwnerInput!): SetYamlOnOwnerPayload
   startTrial(input: StartTrialInput!): StartTrialPayload
+  cancelTrial(input: CancelTrialInput!): CancelTrialPayload
   syncWithGitProvider: SyncWithGitProviderPayload
   updateProfile(input: UpdateProfileInput!): UpdateProfilePayload
   updateDefaultOrganization(

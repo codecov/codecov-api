@@ -6,6 +6,7 @@ from .activate_measurements import (
     error_activate_measurements,
     resolve_activate_measurements,
 )
+from .cancel_trial import error_cancel_trial, resolve_cancel_trial
 from .create_api_token import error_create_api_token, resolve_create_api_token
 from .create_user_token import error_create_user_token, resolve_create_user_token
 from .delete_flag import error_delete_flag, resolve_delete_flag
@@ -60,6 +61,7 @@ mutation_bindable.field("deleteFlag")(resolve_delete_flag)
 mutation_bindable.field("saveSentryState")(resolve_save_sentry_state)
 mutation_bindable.field("saveTermsAgreement")(resolve_save_terms_agreement)
 mutation_bindable.field("startTrial")(resolve_start_trial)
+mutation_bindable.field("cancelTrial")(resolve_cancel_trial)
 
 mutation_resolvers = [
     mutation_bindable,
@@ -79,4 +81,5 @@ mutation_resolvers = [
     error_save_sentry_state,
     error_save_terms_agreement,
     error_start_trial,
+    error_cancel_trial,
 ]

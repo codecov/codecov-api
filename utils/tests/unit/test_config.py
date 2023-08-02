@@ -9,7 +9,6 @@ from utils.config import should_write_data_to_storage_config_check
         (
             {
                 "repo_ids": [],
-                "only_codecov": True,
                 "report_details_files_array": True,
                 "commit_report": False,
             },
@@ -19,7 +18,6 @@ from utils.config import should_write_data_to_storage_config_check
         (
             {
                 "repo_ids": [],
-                "only_codecov": True,
                 "report_details_files_array": True,
                 "commit_report": False,
             },
@@ -29,7 +27,6 @@ from utils.config import should_write_data_to_storage_config_check
         (
             {
                 "repo_ids": [],
-                "only_codecov": True,
                 "report_details_files_array": True,
                 "commit_report": False,
             },
@@ -39,7 +36,6 @@ from utils.config import should_write_data_to_storage_config_check
         (
             {
                 "repo_ids": [1],
-                "only_codecov": True,
                 "report_details_files_array": True,
                 "commit_report": False,
             },
@@ -49,11 +45,46 @@ from utils.config import should_write_data_to_storage_config_check
         (
             {
                 "repo_ids": [1],
-                "only_codecov": True,
-                "report_details_files_array": True,
+                "report_details_files_array": True,  # True is the same as "codecov_access"
                 "commit_report": False,
             },
             ("report_details_files_array", False, 1),
+            False,
+        ),
+        (
+            {
+                "repo_ids": [1],
+                "report_details_files_array": "codecov_access",
+                "commit_report": False,
+            },
+            ("report_details_files_array", False, 1),
+            False,
+        ),
+        (
+            {
+                "repo_ids": [1],
+                "report_details_files_array": "codecov_access",
+                "commit_report": False,
+            },
+            ("report_details_files_array", True, 1),
+            True,
+        ),
+        (
+            {
+                "repo_ids": [],
+                "report_details_files_array": "general_access",
+                "commit_report": False,
+            },
+            ("report_details_files_array", False, 1),
+            True,
+        ),
+        (
+            {
+                "repo_ids": [1],
+                "report_details_files_array": "restricted_access",
+                "commit_report": False,
+            },
+            ("report_details_files_array", True, 1),
             True,
         ),
     ],

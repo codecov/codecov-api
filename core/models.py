@@ -34,6 +34,14 @@ class Version(models.Model):
         db_table = "version"
 
 
+class Constants(models.Model):
+    key = models.CharField(primary_key=True)
+    value = models.CharField()
+
+    class Meta:
+        db_table = "constants"
+
+
 def _gen_image_token():
     return "".join(
         random.choice(string.ascii_letters + string.digits) for _ in range(10)
@@ -107,6 +115,7 @@ class Repository(models.Model):
     image_token = models.TextField(null=True, default=_gen_image_token)
     using_integration = models.BooleanField(null=True)
     hookid = models.TextField(null=True)
+    webhook_secret = models.TextField(null=True)
     bot = models.ForeignKey(
         "codecov_auth.Owner",
         db_column="bot",

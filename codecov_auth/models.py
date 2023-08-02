@@ -164,11 +164,13 @@ class Owner(models.Model):
     did_trial = models.BooleanField(null=True)
     trial_start_date = DateTimeWithoutTZField(null=True)
     trial_end_date = DateTimeWithoutTZField(null=True)
-    # TODO: I want this column to be null at first, and then would run a script to populate customers with
-    # not_started and cannot_trial, and then set default value to not_started.
     trial_status = models.CharField(
-        max_length=50, choices=TrialStatus.choices, null=True
+        max_length=50,
+        choices=TrialStatus.choices,
+        null=True,
+        default=TrialStatus.NOT_STARTED.value,
     )
+    pretrial_users_count = models.SmallIntegerField(null=True, blank=True)
     free = models.SmallIntegerField(default=0)
     invoice_details = models.TextField(null=True)
     delinquent = models.BooleanField(null=True)

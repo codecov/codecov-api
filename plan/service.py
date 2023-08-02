@@ -122,6 +122,15 @@ class PlanService:
         #     },
         # )
 
+    def cancel_trial(self) -> None:
+        # TODO: change this to TrialStatus.ONGOING.value in CODE-3605-add-trial-logic
+        if self.trial_status != TrialStatus.ONGOING:
+            raise ValidationError("Cannot cancel a trial that is not ongoing")
+        now = datetime.utcnow()
+        self.current_org.trial_status = TrialStatus.EXPIRED.value
+        self.current_org.trial_end_date = now
+        self.set_default_plan_data()
+
     def expire_trial(self) -> None:
         if (
             self.trial_status == TrialStatus.NOT_STARTED

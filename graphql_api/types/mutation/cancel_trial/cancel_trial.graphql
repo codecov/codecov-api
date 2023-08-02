@@ -1,0 +1,5 @@
+union CancelTrialError = UnauthenticatedError | ValidationError
+
+type CancelTrialPayload {
+  error: CancelTrialError
+}
