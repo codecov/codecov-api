@@ -41,6 +41,9 @@ class RepositoryViewSet(
     serializer_class = RepoSerializer
     queryset = Repository.objects.none()
 
+    def get_queryset(self):
+        return super().get_queryset().with_recent_coverage()
+
     @extend_schema(summary="Repository list")
     def list(self, request, *args, **kwargs):
         """
