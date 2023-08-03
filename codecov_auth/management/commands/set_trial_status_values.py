@@ -5,7 +5,9 @@ from django.db.models import Q
 
 from codecov_auth.models import Owner
 from plan.constants import (
+    FREE_PLAN_REPRESENTATIONS,
     PLANS_THAT_CAN_TRIAL,
+    PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
     SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
     PlanName,
     TrialStatus,
@@ -23,8 +25,9 @@ class Command(BaseCommand):
 
         # NOT_STARTED
         if trial_status_type == "all" or trial_status_type == "not_started":
+            # Free plan customers
             Owner.objects.filter(
-                plan=PlanName.BASIC_PLAN_NAME.value,
+                plan__in=FREE_PLAN_REPRESENTATIONS,
                 stripe_customer_id=None,
             ).update(trial_status=TrialStatus.NOT_STARTED.value)
 
@@ -80,6 +83,12 @@ class Command(BaseCommand):
                     stripe_subscription_id__isnull=False,
                     stripe_customer_id__isnull=False,
                 )
+                # Invoiced customers without stripe info
+                | Q(
+                    Q(plan__in=PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS),
+                    stripe_subscription_id__isnull=True,
+                    stripe_customer_id__isnull=True,
+                )
             ).update(trial_status=TrialStatus.CANNOT_TRIAL.value)
 
         # DELETE ALL - in case something gets messed up
@@ -88,16 +97,17 @@ class Command(BaseCommand):
 
 
 # Scenarios
-# basic plan, without stripe_id > not_started
+# basic plan, without billing_info > not_started
 
-# sentry plan, stripe_id, with end date after today > ongoing
+# sentry plan, billing_info, with end date after today > ongoing
 
-# sentry plan, stripe_id, with end date before today > expired
-# sentry plan, stripe_id, subscription id > expired
-# basic plan, with stripe_id, with start/end dates > expired
+# sentry plan, billing_info, with end date before today > expired
+# sentry plan, billing_info, subscription id > expired
+# basic plan, with billing_info, with start/end dates > expired
 
 # unsupported trial plan > cannot_trial
 # supported paid plan, no end date > cannot_trial
-# basic plan, with stripe_id, no start/end dates > cannot_trial
+# basic plan, with billing_info, no start/end dates > cannot_trial
+# invoiced customers, pro plans, no billing_info > cannot_trial
 
 # supported paid plan, with end date > should currently not exist in the DB

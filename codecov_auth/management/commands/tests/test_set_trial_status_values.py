@@ -20,17 +20,24 @@ class OwnerCommandTestCase(TestCase):
         much_before = now + timedelta(days=-20)
 
         # NOT_STARTED
-        self.not_started_owner = OwnerFactory(
+        self.not_started_basic_owner = OwnerFactory(
             username="one",
             service="github",
             plan=PlanName.BASIC_PLAN_NAME.value,
             stripe_customer_id=None,
             trial_status=None,
         )
+        self.not_started_free_owner = OwnerFactory(
+            username="two",
+            service="github",
+            plan=PlanName.FREE_PLAN_NAME.value,
+            stripe_customer_id=None,
+            trial_status=None,
+        )
 
         # ONGOING
         self.sentry_plan_ongoing_owner = OwnerFactory(
-            username="two",
+            username="three",
             service="github",
             plan=PlanName.SENTRY_MONTHLY.value,
             trial_start_date=now,
@@ -40,7 +47,7 @@ class OwnerCommandTestCase(TestCase):
 
         # EXPIRED
         self.sentry_plan_expired_owner_with_trial_dates = OwnerFactory(
-            username="three",
+            username="four",
             service="github",
             plan=PlanName.SENTRY_MONTHLY.value,
             stripe_customer_id="test-cus-123",
@@ -50,7 +57,7 @@ class OwnerCommandTestCase(TestCase):
             trial_status=None,
         )
         self.sentry_expired_owner_without_trial_dates = OwnerFactory(
-            username="four",
+            username="five",
             service="github",
             plan=PlanName.SENTRY_YEARLY.value,
             stripe_customer_id="test-cus-123",
@@ -60,7 +67,7 @@ class OwnerCommandTestCase(TestCase):
             trial_status=None,
         )
         self.expired_owner_with_basic_plan_with_trial_dates = OwnerFactory(
-            username="five",
+            username="six",
             service="github",
             plan=PlanName.BASIC_PLAN_NAME.value,
             trial_start_date=much_before,
@@ -71,13 +78,13 @@ class OwnerCommandTestCase(TestCase):
 
         # CANNOT_TRIAL
         self.unsupported_trial_plan_owner = OwnerFactory(
-            username="six",
+            username="seven",
             service="github",
             plan=PlanName.ENTERPRISE_CLOUD_MONTHLY.value,
             trial_status=None,
         )
         self.currently_paid_owner_without_trial_dates = OwnerFactory(
-            username="seven",
+            username="eight",
             service="github",
             plan=PlanName.CODECOV_PRO_MONTHLY.value,
             stripe_customer_id="test-cus-123",
@@ -87,13 +94,27 @@ class OwnerCommandTestCase(TestCase):
             trial_status=None,
         )
         self.previously_paid_owner_that_is_now_basic = OwnerFactory(
-            username="eight",
+            username="nine",
             service="github",
             plan=PlanName.BASIC_PLAN_NAME.value,
             stripe_customer_id="test-cus-123",
             trial_start_date=None,
             trial_end_date=None,
             trial_status=None,
+        )
+        self.invoiced_customer_monthly_plan = OwnerFactory(
+            username="ten",
+            service="github",
+            plan=PlanName.CODECOV_PRO_MONTHLY.value,
+            stripe_customer_id=None,
+            stripe_subscription_id=None,
+        )
+        self.invoiced_customer_yearly_plan = OwnerFactory(
+            username="eleven",
+            service="github",
+            plan=PlanName.CODECOV_PRO_YEARLY.value,
+            stripe_customer_id=None,
+            stripe_subscription_id=None,
         )
 
     def test_set_trial_status_values(self):
@@ -107,11 +128,11 @@ class OwnerCommandTestCase(TestCase):
         )
         assert (
             all_owners.filter(username="two").first().trial_status
-            == TrialStatus.ONGOING.value
+            == TrialStatus.NOT_STARTED.value
         )
         assert (
             all_owners.filter(username="three").first().trial_status
-            == TrialStatus.EXPIRED.value
+            == TrialStatus.ONGOING.value
         )
         assert (
             all_owners.filter(username="four").first().trial_status
@@ -123,7 +144,7 @@ class OwnerCommandTestCase(TestCase):
         )
         assert (
             all_owners.filter(username="six").first().trial_status
-            == TrialStatus.CANNOT_TRIAL.value
+            == TrialStatus.EXPIRED.value
         )
         assert (
             all_owners.filter(username="seven").first().trial_status
@@ -131,5 +152,17 @@ class OwnerCommandTestCase(TestCase):
         )
         assert (
             all_owners.filter(username="eight").first().trial_status
+            == TrialStatus.CANNOT_TRIAL.value
+        )
+        assert (
+            all_owners.filter(username="nine").first().trial_status
+            == TrialStatus.CANNOT_TRIAL.value
+        )
+        assert (
+            all_owners.filter(username="ten").first().trial_status
+            == TrialStatus.CANNOT_TRIAL.value
+        )
+        assert (
+            all_owners.filter(username="eleven").first().trial_status
             == TrialStatus.CANNOT_TRIAL.value
         )
