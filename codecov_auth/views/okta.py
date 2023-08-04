@@ -20,11 +20,38 @@ from utils.services import get_short_service_name
 log = logging.getLogger(__name__)
 
 
+def validate_id_token(iss: str, id_token: str) -> dict:
+    res = requests.get(f"{iss}/oauth2/v1/keys")
+    jwks = res.json()
+
+    public_keys = {}
+    for jwk in jwks["keys"]:
+        kid = jwk["kid"]
+        public_keys[kid] = jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(jwk))
+
+    print(jwt.get_unverified_header(id_token))
+
+    kid = jwt.get_unverified_header(id_token)["kid"]
+    key = public_keys[kid]
+
+    id_payload = jwt.decode(
+        id_token,
+        key=key,
+        algorithms=["RS256"],
+        audience=settings.OKTA_OAUTH_CLIENT_ID,
+    )
+    assert id_payload["iss"] == iss
+    assert id_payload["aud"] == settings.OKTA_OAUTH_CLIENT_ID
+
+    return id_payload
+
+
+auth = HTTPBasicAuth(settings.OKTA_OAUTH_CLIENT_ID, settings.OKTA_OAUTH_CLIENT_SECRET)
+
+
 class OktaLoginView(LoginMixin, View):
     def _fetch_user_data(self, iss: str, code: str) -> Optional[Dict]:
-        auth = HTTPBasicAuth(
-            settings.OKTA_OAUTH_CLIENT_ID, settings.OKTA_OAUTH_CLIENT_SECRET
-        )
+
         res = requests.post(
             f"{iss}/oauth2/v1/token",
             auth=auth,
@@ -68,7 +95,8 @@ class OktaLoginView(LoginMixin, View):
         code = request.GET.get("code")
         iss = request.COOKIES.get("_okta_iss")
         if iss is None:
-            raise Exception("FIXME")
+            log.warning("Unable to log in due to missing Okta issuer", exc_info=True)
+            return redirect(f"{settings.CODECOV_DASHBOARD_URL}/login")
 
         user_data = self._fetch_user_data(iss, code)
         if user_data is None:
@@ -90,35 +118,11 @@ class OktaLoginView(LoginMixin, View):
         response.delete_cookie("_okta_iss")
         return response
 
-    def _validate_id_token(self, iss: str, id_token: str) -> dict:
-        # TODO: this can be cached (not sure how long)
-        res = requests.get(f"{iss}/oauth2/v1/keys")
-        jwks = res.json()
-
-        public_keys = {}
-        for jwk in jwks["keys"]:
-            kid = jwk["kid"]
-            public_keys[kid] = jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(jwk))
-
-        kid = jwt.get_unverified_header(id_token)["kid"]
-        key = public_keys[kid]
-
-        id_payload = jwt.decode(
-            id_token,
-            key=key,
-            algorithms=["RS256"],
-            audience=settings.OKTA_OAUTH_CLIENT_ID,
-        )
-        assert id_payload["iss"] == iss
-        assert id_payload["aud"] == settings.OKTA_OAUTH_CLIENT_ID
-
-        return id_payload
-
     def _login_user(self, request: HttpRequest, iss: str, user_data: dict):
         id_token = user_data[
             "id_token"
         ]  # this will be present since we requested the `oidc` scope
-        id_payload = self._validate_id_token(iss, id_token)
+        id_payload = validate_id_token(iss, id_token)
 
         okta_id = id_payload["sub"]
         user_email = id_payload["email"]
@@ -177,4 +181,7 @@ class OktaLoginView(LoginMixin, View):
             return self._perform_login(request)
         else:
             iss = request.GET.get("iss")
+            if not iss:
+                log.warning("Missing Okta issuer")
+                return redirect(f"{settings.CODECOV_DASHBOARD_URL}/login")
             return self._redirect_to_consent(iss=iss)
