@@ -168,7 +168,7 @@ def resolve_path_contents(commit: Commit, info, path: str = None, filters=None):
 
     if filters is None:
         filters = {}
-    search_value = filters.get("search_value")
+    search_value = filters.get("search_value").lower()
     display_type = filters.get("display_type")
 
     report_paths = ReportPaths(
