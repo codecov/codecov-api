@@ -1,6 +1,5 @@
 import json
 import logging
-from functools import lru_cache
 from typing import Any, Callable
 
 from shared.storage.exceptions import FileNotInStorageError
@@ -77,7 +76,6 @@ class ArchiveField:
         self.db_field_name = "_" + name
         self.archive_field_name = "_" + name + "_storage_path"
 
-    @lru_cache(maxsize=1)
     def _get_value_from_archive(self, obj):
         repository = obj.get_repository()
         archive_service = ArchiveService(repository=repository)
@@ -85,7 +83,9 @@ class ArchiveField:
         if archive_field:
             try:
                 file_str = archive_service.read_file(archive_field)
-                return self.rehydrate_fn(obj, json.loads(file_str))
+                value = self.rehydrate_fn(obj, json.loads(file_str))
+                setattr(obj, "__archive_field_cached_value", value)
+                return value
             except FileNotInStorageError:
                 log.error(
                     "Archive enabled field not in storage",
@@ -106,9 +106,14 @@ class ArchiveField:
         return self.default_value
 
     def __get__(self, obj, objtype=None):
+        cached_value = getattr(obj, "__archive_field_cached_value", None)
+        if cached_value:
+            return cached_value
         db_field = getattr(obj, self.db_field_name)
         if db_field is not None:
-            return self.rehydrate_fn(obj, db_field)
+            value = self.rehydrate_fn(obj, db_field)
+            setattr(obj, "__archive_field_cached_value", value)
+            return value
         return self._get_value_from_archive(obj)
 
     def __set__(self, obj, value):
@@ -118,13 +123,6 @@ class ArchiveField:
             archive_service = ArchiveService(repository=repository)
             old_file_path = getattr(obj, self.archive_field_name)
             table_name = obj._meta.db_table
-            # DEBUG https://github.com/codecov/platform-team/issues/119
-            # We don't expect this saving to be done here, actually
-            if table_name == "reports_reportdetails":
-                log.info(
-                    "Setting files_array from the API",
-                    extra=dict(commit=obj.get_commitid(), data=value),
-                )
             path = archive_service.write_json_data_to_storage(
                 commit_id=obj.get_commitid(),
                 table=table_name,
@@ -137,6 +135,6 @@ class ArchiveField:
                 archive_service.delete_file(old_file_path)
             setattr(obj, self.archive_field_name, path)
             setattr(obj, self.db_field_name, None)
-            self._get_value_from_archive.cache_clear()
         else:
             setattr(obj, self.db_field_name, value)
+        setattr(obj, "__archive_field_cached_value", value)
