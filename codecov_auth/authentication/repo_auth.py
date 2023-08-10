@@ -107,6 +107,7 @@ class RepositoryTokenAuthentication(authentication.TokenAuthentication):
     def authenticate_credentials(self, key):
         try:
             token = RepositoryToken.objects.select_related("repository").get(key=key)
+            print(token)
         except RepositoryToken.DoesNotExist:
             raise exceptions.AuthenticationFailed("Invalid token.")
 
@@ -114,6 +115,7 @@ class RepositoryTokenAuthentication(authentication.TokenAuthentication):
             raise exceptions.AuthenticationFailed("User inactive or deleted.")
         if token.valid_until is not None and token.valid_until <= timezone.now():
             raise exceptions.AuthenticationFailed("Invalid token.")
+        print(token.repository)
         return (
             RepositoryAsUser(token.repository),
             TableTokenRepositoryAuth(token.repository, token),
