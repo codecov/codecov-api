@@ -10,6 +10,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
+from shared.utils.test_utils import mock_config_helper, mock_metrics
 
 from codecov_auth.models import Owner, Service
 from codecov_auth.tests.factories import OwnerFactory
@@ -20,7 +21,6 @@ from core.tests.factories import (
     PullFactory,
     RepositoryFactory,
 )
-from shared.utils.test_utils import mock_config_helper, mock_metrics
 from utils.config import get_config
 from webhook_handlers.constants import (
     GitHubHTTPHeaders,

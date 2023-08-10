@@ -5,12 +5,12 @@ import pytest
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
+from shared.utils.test_utils import mock_config_helper
 
 from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
 from core.models import Commit, Pull, PullStates, Repository
 from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
-from shared.utils.test_utils import mock_config_helper
 from webhook_handlers.constants import (
     GitLabHTTPHeaders,
     GitLabWebhookEvents,
