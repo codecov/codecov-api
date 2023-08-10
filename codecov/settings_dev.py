@@ -22,8 +22,6 @@ STRIPE_PLAN_IDS = {
 
 CORS_ALLOW_CREDENTIALS = True
 
-GITHUB_CLIENT_ID = get_config("github", "client_id", default="Iv1.220bfc5d9b825038")
-
 CODECOV_URL = "localhost"
 BITBUCKET_REDIRECT_URI = "localhost:8000"
 CODECOV_DASHBOARD_URL = "http://localhost:3000"
