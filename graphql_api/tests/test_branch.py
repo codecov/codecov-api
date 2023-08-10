@@ -386,7 +386,6 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
         critical_files.return_value = [CriticalFile("folder/fileB.py")]
 
         data = self.gql_request(query_files, variables=variables)
-        print("dataaa", data)
 
         assert data == {
             "owner": {
