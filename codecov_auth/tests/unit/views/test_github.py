@@ -12,7 +12,6 @@ from codecov_auth.tests.factories import OwnerFactory
 from codecov_auth.views.github import GithubLoginView
 from shared.torngit import Github
 from shared.torngit.exceptions import TorngitClientGeneralError
-from shared.utils.test_utils import mock_config_helper
 
 
 def _get_state_from_redis(mock_redis):
