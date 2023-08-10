@@ -352,6 +352,7 @@ COOKIES_DOMAIN = get_config("setup", "http", "cookies_domain", default=".codecov
 SESSION_COOKIE_DOMAIN = get_config(
     "setup", "http", "cookies_domain", default=".codecov.io"
 )
+SESSION_COOKIE_SECURE = get_config("setup", "secure_cookie", default=True)
 # Defaulting to 'not found' as opposed to 'None' to avoid None somehow getting through as a bearer token. Token strings can't have spaces, hence 'not found' can never be forced as a header input value
 SUPER_API_TOKEN = os.getenv("SUPER_API_TOKEN", "not found")
 CODECOV_INTERNAL_TOKEN = os.getenv("CODECOV_INTERNAL_TOKEN", "not found")
