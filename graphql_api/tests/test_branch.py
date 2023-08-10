@@ -370,7 +370,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
         "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
     )
     @patch("services.report.build_report_from_commit")
-    def test_fetch_path_contents_with_files_and_search_value(
+    def test_fetch_path_contents_with_files_and_search_value_case_insensitive(
         self, report_mock, critical_files
     ):
         variables = {
@@ -386,6 +386,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
         critical_files.return_value = [CriticalFile("folder/fileB.py")]
 
         data = self.gql_request(query_files, variables=variables)
+        print("dataaa", data)
 
         assert data == {
             "owner": {
