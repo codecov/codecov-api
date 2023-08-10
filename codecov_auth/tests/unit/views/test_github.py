@@ -6,12 +6,12 @@ from django.http.cookie import SimpleCookie
 from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
+from shared.torngit import Github
+from shared.torngit.exceptions import TorngitClientGeneralError
 
 from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
 from codecov_auth.views.github import GithubLoginView
-from shared.torngit import Github
-from shared.torngit.exceptions import TorngitClientGeneralError
 
 
 def _get_state_from_redis(mock_redis):
