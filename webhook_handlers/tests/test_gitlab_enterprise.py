@@ -1,6 +1,7 @@
 import uuid
 from unittest.mock import patch
 
+import pytest
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
@@ -9,6 +10,7 @@ from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
 from core.models import Commit, Pull, PullStates, Repository
 from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
+from shared.utils.test_utils import mock_config_helper
 from webhook_handlers.constants import (
     GitLabHTTPHeaders,
     GitLabWebhookEvents,
@@ -18,18 +20,22 @@ from webhook_handlers.constants import (
 webhook_secret = "test-46204fb3-374e-4cfc-8cae-d7ca43371096"
 
 
-def get_config_mock(*args, **kwargs):
-    if args == ("setup", "enterprise_license"):
-        return True
-    elif args == ("gitlab_enterprise", "webhook_secret"):
-        return webhook_secret
-    elif args == ("gitlab_enterprise", "webhook_validation"):
-        return True
-    else:
-        return kwargs.get("default")
-
-
 class TestGitlabEnterpriseWebhookHandler(APITestCase):
+    @pytest.fixture(scope="function", autouse=True)
+    def inject_mocker(request, mocker):
+        request.mocker = mocker
+
+    @pytest.fixture(autouse=True)
+    def mock_config(self, mocker):
+        mock_config_helper(
+            mocker,
+            configs={
+                "setup.enterprise_license": True,
+                "gitlab_enterprise.webhook_secret": webhook_secret,
+                "gitlab_enterprise.webhook_validation": True,
+            },
+        )
+
     def _post_event_data(self, event, data={}):
         return self.client.post(
             reverse("gitlab_enterprise-webhook"),
@@ -42,18 +48,11 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
         )
 
     def setUp(self):
-        self.get_config_patcher = patch("webhook_handlers.views.gitlab.get_config")
-        self.get_config_mock = self.get_config_patcher.start()
-        self.get_config_mock.side_effect = get_config_mock
-
         self.repo = RepositoryFactory(
             author=OwnerFactory(service="gitlab_enterprise"),
             service_id=123,
             active=True,
         )
-
-    def tearDown(self):
-        self.get_config_patcher.stop()
 
     def test_unknown_repo(self):
         response = self._post_event_data(
@@ -254,15 +253,8 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
 
         pulls_sync_mock.assert_called_once_with(repoid=self.repo.repoid, pullid=pullid)
 
-    @patch("webhook_handlers.views.gitlab.get_config")
-    def test_handle_system_hook_not_enterprise(self, mock_get_config):
-        def side_effect(*args, **kwargs):
-            if args == ("setup", "enterprise_license"):
-                return None
-            else:
-                return kwargs.get("default")
-
-        mock_get_config.side_effect = side_effect
+    def test_handle_system_hook_not_enterprise(self):
+        mock_config_helper(self.mocker, configs={"setup.enterprise_license": None})
         username = "jsmith"
         project_id = 74
         owner = OwnerFactory(service="gitlab_enterprise", username=username)
@@ -290,10 +282,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
         ).first()
         assert new_repo is None
 
-    @patch("webhook_handlers.views.gitlab.get_config")
-    def test_handle_system_hook_project_create(self, mock_get_config):
-        mock_get_config.side_effect = get_config_mock
-
+    def test_handle_system_hook_project_create(self):
         username = "jsmith"
         project_id = 74
         owner = OwnerFactory(service="gitlab_enterprise", username=username)
@@ -323,9 +312,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
         assert new_repo.private is True
         assert new_repo.name == "storecloud"
 
-    @patch("webhook_handlers.views.gitlab.get_config")
-    def test_handle_system_hook_project_destroy(self, mock_get_config):
-        mock_get_config.side_effect = get_config_mock
+    def test_handle_system_hook_project_destroy(self):
         username = "jsmith"
         project_id = 73
         owner = OwnerFactory(service="gitlab_enterprise", username=username)
@@ -360,9 +347,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
         assert repo.activated is False
         assert repo.deleted is True
 
-    @patch("webhook_handlers.views.gitlab.get_config")
-    def test_handle_system_hook_project_rename(self, mock_get_config):
-        mock_get_config.side_effect = get_config_mock
+    def test_handle_system_hook_project_rename(self):
         username = "jsmith"
         project_id = 73
         owner = OwnerFactory(service="gitlab_enterprise", username=username)
@@ -397,9 +382,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
         repo.refresh_from_db()
         assert repo.name == "underscore"
 
-    @patch("webhook_handlers.views.gitlab.get_config")
-    def test_handle_system_hook_project_transfer(self, mock_get_config):
-        mock_get_config.side_effect = get_config_mock
+    def test_handle_system_hook_project_transfer(self):
         old_owner_username = "jsmith"
         new_owner_username = "scores"
         project_id = 73
@@ -441,9 +424,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
         assert repo.name == "underscore"
         assert repo.author == new_owner
 
-    @patch("webhook_handlers.views.gitlab.get_config")
-    def test_handle_system_hook_user_create(self, mock_get_config):
-        mock_get_config.side_effect = get_config_mock
+    def test_handle_system_hook_user_create(self):
         gl_user_id = 41
         response = self._post_event_data(
             event=GitLabWebhookEvents.SYSTEM,
@@ -465,11 +446,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
         assert new_user.email == "js@gitlabhq.com"
         assert new_user.username == "js"
 
-    @patch("webhook_handlers.views.gitlab.get_config")
-    def test_handle_system_hook_user_add_to_team_no_existing_permissions(
-        self, mock_get_config
-    ):
-        mock_get_config.side_effect = get_config_mock
+    def test_handle_system_hook_user_add_to_team_no_existing_permissions(self):
         gl_user_id = 41
         project_id = 74
         username = "johnsmith"
@@ -510,9 +487,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
         user.refresh_from_db()
         assert user.permission == [repo.repoid]
 
-    @patch("webhook_handlers.views.gitlab.get_config")
-    def test_handle_system_hook_user_add_to_team(self, mock_get_config):
-        mock_get_config.side_effect = get_config_mock
+    def test_handle_system_hook_user_add_to_team(self):
         gl_user_id = 41
         project_id = 74
         username = "johnsmith"
@@ -554,9 +529,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
         assert len(user.permission) == 5
         assert repo.repoid in user.permission
 
-    @patch("webhook_handlers.views.gitlab.get_config")
-    def test_handle_system_hook_user_add_to_team_repo_public(self, mock_get_config):
-        mock_get_config.side_effect = get_config_mock
+    def test_handle_system_hook_user_add_to_team_repo_public(self):
         gl_user_id = 41
         project_id = 74
         username = "johnsmith"
@@ -598,9 +571,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
 
         assert user.permission == [1, 2, 3, 100]  # no change
 
-    @patch("webhook_handlers.views.gitlab.get_config")
-    def test_handle_system_hook_user_remove_from_team(self, mock_get_config):
-        mock_get_config.side_effect = get_config_mock
+    def test_handle_system_hook_user_remove_from_team(self):
         gl_user_id = 41
         project_id = 74
         username = "johnsmith"

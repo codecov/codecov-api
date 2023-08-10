@@ -20,6 +20,7 @@ from core.tests.factories import (
     PullFactory,
     RepositoryFactory,
 )
+from shared.utils.test_utils import mock_config_helper, mock_metrics
 from utils.config import get_config
 from webhook_handlers.constants import (
     GitHubHTTPHeaders,
@@ -33,36 +34,13 @@ WEBHOOK_SECRET = b"testixik8qdauiab1yiffydimvi72ekq"
 
 
 class GithubWebhookHandlerTests(APITestCase):
-    @pytest.fixture(autouse=True)
-    def mock_metrics(self, mocker):
-        from collections import defaultdict
-
-        self.metrics = defaultdict(int)
-
-        def incr(stat, count=1, rate=1):
-            self.metrics[stat] += count
-
-        def decr(stat, count=1, rate=1):
-            self.metrics[stat] -= count
-
-        mock_incr = mocker.patch("shared.metrics.metrics.incr")
-        mock_incr.side_effect = incr
-
-        mock_decr = mocker.patch("shared.metrics.metrics.decr")
-        mock_decr.side_effect = decr
+    @pytest.fixture(scope="function", autouse=True)
+    def inject_mocker(request, mocker):
+        request.mocker = mocker
 
     @pytest.fixture(autouse=True)
     def mock_webhook_secret(self, mocker):
-        orig_get_config = get_config
-
-        def override(*args, default=None):
-            if args[0] == "github" and args[1] == "webhook_secret":
-                return WEBHOOK_SECRET
-
-            return orig_get_config(*args, default=default)
-
-        mock_get_config = mocker.patch("webhook_handlers.views.github.get_config")
-        mock_get_config.side_effect = override
+        mock_config_helper(mocker, configs={"github.webhook_secret": WEBHOOK_SECRET})
 
     def _post_event_data(self, event, data={}):
         return self.client.post(
@@ -97,6 +75,7 @@ class GithubWebhookHandlerTests(APITestCase):
         lambda self, request, *args, **kwargs: Response(),
     )
     def test_webhook_counters(self):
+        metrics = mock_metrics(self.mocker)
         # Simple events
         for event in [
             "unhandled",
@@ -113,7 +92,7 @@ class GithubWebhookHandlerTests(APITestCase):
                     event=event,
                     data={},
                 )
-                assert self.metrics["webhooks.github.received." + event] == 1
+                assert metrics.data["webhooks.github.received." + event] == 1
 
         # Repository event + actions
         for action in ["publicized", "privatized", "deleted"]:
@@ -129,7 +108,7 @@ class GithubWebhookHandlerTests(APITestCase):
                     },
                 )
                 assert (
-                    self.metrics["webhooks.github.received.repository." + action] == 1
+                    metrics.data["webhooks.github.received.repository." + action] == 1
                 )
 
         # Delete event + ref_types
@@ -144,7 +123,7 @@ class GithubWebhookHandlerTests(APITestCase):
                         "repository": {"id": self.repo.service_id},
                     },
                 )
-                assert self.metrics["webhooks.github.received.delete." + ref_type] == 1
+                assert metrics.data["webhooks.github.received.delete." + ref_type] == 1
 
         # Push event + ref_types
         for ref_type, uri in [("branch", "refs/heads/"), ("tag", "refs/tags/")]:
@@ -157,7 +136,7 @@ class GithubWebhookHandlerTests(APITestCase):
                         "commits": [],
                     },
                 )
-                assert self.metrics["webhooks.github.received.push." + ref_type] == 1
+                assert metrics.data["webhooks.github.received.push." + ref_type] == 1
 
         # Organization event + actions
         for action in ["member_removed", "other"]:
@@ -171,7 +150,7 @@ class GithubWebhookHandlerTests(APITestCase):
                     },
                 )
                 assert (
-                    self.metrics["webhooks.github.received.organization." + action] == 1
+                    metrics.data["webhooks.github.received.organization." + action] == 1
                 )
 
         # Member event + actions
@@ -877,6 +856,7 @@ class GithubWebhookHandlerTests(APITestCase):
         )
 
     def test_signature_validation(self):
+        metrics = mock_metrics(self.mocker)
         response = self.client.post(
             reverse("github-webhook"),
             **{
@@ -889,7 +869,7 @@ class GithubWebhookHandlerTests(APITestCase):
         )
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
-        assert self.metrics["webhooks.github.invalid_signature"] == 1
+        assert metrics.data["webhooks.github.invalid_signature"] == 1
 
         response = self.client.post(
             reverse("github-webhook"),
@@ -908,7 +888,7 @@ class GithubWebhookHandlerTests(APITestCase):
         )
 
         assert response.status_code == status.HTTP_200_OK
-        assert self.metrics["webhooks.github.received.total"] == 1
+        assert metrics.data["webhooks.github.received.total"] == 1
 
         response = self.client.post(
             reverse("github-webhook"),
@@ -927,7 +907,7 @@ class GithubWebhookHandlerTests(APITestCase):
         )
 
         assert response.status_code == status.HTTP_200_OK
-        assert self.metrics["webhooks.github.received.total"] == 2
+        assert metrics.data["webhooks.github.received.total"] == 2
 
     @patch("webhook_handlers.views.github.get_config")
     def test_signature_validation_with_string_key(self, get_config_mock):
