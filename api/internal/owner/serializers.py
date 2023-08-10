@@ -9,6 +9,7 @@ from rest_framework.exceptions import PermissionDenied
 from billing.helpers import available_plans
 from codecov_auth.models import Owner
 from plan.constants import PRO_PLANS, SENTRY_PAID_USER_PLAN_REPRESENTATIONS
+from plan.service import PlanService
 from services.billing import BillingService
 from services.segment import SegmentService
 from services.sentry import send_user_webhook as send_sentry_webhook
@@ -143,13 +144,18 @@ class PlanSerializer(serializers.Serializer):
                 raise serializers.ValidationError(
                     f"Quantity for paid plan must be greater than 1"
                 )
-            if plan["quantity"] < owner.activated_user_count:
+
+            plan_service = PlanService(current_org=owner)
+            is_org_trialing = plan_service.is_org_trialing
+
+            if plan["quantity"] < owner.activated_user_count and not is_org_trialing:
                 raise serializers.ValidationError(
                     f"Quantity cannot be lower than currently activated user count"
                 )
             if (
                 plan["quantity"] == owner.plan_user_count
                 and plan["value"] == owner.plan
+                and not is_org_trialing
             ):
                 raise serializers.ValidationError(
                     f"Quantity or plan for paid plan must be different from the existing one"

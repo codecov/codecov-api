@@ -19,12 +19,11 @@ from graphql_api.helpers.connection import (
 )
 from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
-from plan.constants import TrialStatus
+from plan.constants import FREE_PLAN_REPRESENTATIONS, PlanData, PlanName
 from plan.service import PlanService
 from services.profiling import ProfilingSummary
 from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Interval, MeasurementSummary
-from utils.services import get_long_service_name
 
 owner = ariadne_load_local_graphql(__file__, "owner.graphql")
 owner = owner + build_connection_graphql("RepositoryConnection", "Repository")
@@ -73,11 +72,11 @@ def resolve_plan(owner: Owner, info) -> PlanService:
     return PlanService(current_org=owner)
 
 
-# TODO: deprecate + delete once client uses the plan resolver instead
-@owner_bindable.field("trialStatus")
-def resolve_trial_status(owner: Owner, info) -> TrialStatus:
-    plan_service = PlanService(current_org=owner)
-    return plan_service.trial_status
+@owner_bindable.field("pretrialPlan")
+@convert_kwargs_to_snake_case
+def resolve_plan_representation(owner: Owner, info) -> PlanData:
+    info.context["plan_service"] = PlanService(current_org=owner)
+    return FREE_PLAN_REPRESENTATIONS[PlanName.BASIC_PLAN_NAME.value]
 
 
 @owner_bindable.field("repository")

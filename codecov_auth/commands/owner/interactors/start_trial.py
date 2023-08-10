@@ -10,7 +10,7 @@ class StartTrialInteractor(BaseInteractor):
         if not owner:
             raise ValidationError("Cannot find owner record in the database")
 
-    def _start_trial(self, owner: Owner):
+    def _start_trial(self, owner: Owner) -> None:
         plan_service = PlanService(current_org=owner)
         plan_service.start_trial()
         return
