@@ -1,0 +1,32 @@
+version: "3"
+
+services:
+  postgres:
+    hostname: postgres
+    image: postgres:14.4-alpine
+    volumes:
+      - postgres-volume:/var/lib/postgresql/data
+    networks:
+      - codecovapi
+    ports:
+      - "5436:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+  redis:
+    hostname: redis
+    image: redis:4.0-alpine
+    volumes:
+      - redis-volume:/data
+    networks:
+      - codecovapi
+    ports:
+      - "6400:6379"
+
+volumes:
+  postgres-volume:
+  redis-volume:
+
+networks:
+  codecovapi:
+    driver: bridge
