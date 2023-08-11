@@ -12,9 +12,9 @@ from ..regenerate_org_upload_token import RegenerateOrgUploadTokenInteractor
 class RegenerateOrgUploadTokenInteractorTest(TransactionTestCase):
     def setUp(self):
         self.random_user = OwnerFactory()
-        self.owner = OwnerFactory(name="codecovv", plan="users-enterprisem")
+        self.owner = OwnerFactory(username="codecovv", plan="users-enterprisem")
         self.user_not_part_of_org = OwnerFactory(
-            name="random", plan="users-enterprisem"
+            username="random", plan="users-enterprisem"
         )
 
     def execute(self, owner, org_owner=None):
