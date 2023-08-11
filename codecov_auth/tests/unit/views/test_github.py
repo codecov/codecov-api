@@ -19,29 +19,33 @@ def _get_state_from_redis(mock_redis):
     return key_redis.replace("oauth-state-", "")
 
 
-def test_get_github_redirect(client, mock_redis, settings):
+@override_settings(GITHUB_CLIENT_ID="testclientid")
+def test_get_github_redirect(client, mocker, mock_redis, settings):
     settings.IS_ENTERPRISE = False
+
     url = reverse("github-login")
     res = client.get(url)
     state = _get_state_from_redis(mock_redis)
     assert res.status_code == 302
     assert (
         res.url
-        == f"https://github.com/login/oauth/authorize?response_type=code&scope=user%3Aemail%2Cread%3Aorg%2Crepo%3Astatus%2Cwrite%3Arepo_hook&client_id=3d44be0e772666136a13&state={state}"
+        == f"https://github.com/login/oauth/authorize?response_type=code&scope=user%3Aemail%2Cread%3Aorg%2Crepo%3Astatus%2Cwrite%3Arepo_hook&client_id=testclientid&state={state}"
     )
 
 
-def test_get_github_redirect_with_ghpr_cookie(client, mock_redis, settings):
+@override_settings(GITHUB_CLIENT_ID="testclientid")
+def test_get_github_redirect_with_ghpr_cookie(client, mocker, mock_redis, settings):
     settings.COOKIES_DOMAIN = ".simple.site"
     settings.COOKIE_SECRET = "secret"
     client.cookies = SimpleCookie({"ghpr": "true"})
+
     url = reverse("github-login")
     res = client.get(url)
     state = _get_state_from_redis(mock_redis)
     assert res.status_code == 302
     assert (
         res.url
-        == f"https://github.com/login/oauth/authorize?response_type=code&scope=user%3Aemail%2Cread%3Aorg%2Crepo%3Astatus%2Cwrite%3Arepo_hook%2Crepo&client_id=3d44be0e772666136a13&state={state}"
+        == f"https://github.com/login/oauth/authorize?response_type=code&scope=user%3Aemail%2Cread%3Aorg%2Crepo%3Astatus%2Cwrite%3Arepo_hook%2Crepo&client_id=testclientid&state={state}"
     )
     assert "ghpr" in res.cookies
     ghpr_cooke = res.cookies["ghpr"]
@@ -49,16 +53,18 @@ def test_get_github_redirect_with_ghpr_cookie(client, mock_redis, settings):
     assert ghpr_cooke.get("domain") == ".simple.site"
 
 
-def test_get_github_redirect_with_private_url(client, mock_redis, settings):
+@override_settings(GITHUB_CLIENT_ID="testclientid")
+def test_get_github_redirect_with_private_url(client, mocker, mock_redis, settings):
     settings.COOKIES_DOMAIN = ".simple.site"
     settings.COOKIE_SECRET = "secret"
+
     url = reverse("github-login")
     res = client.get(url, {"private": "true"})
     state = _get_state_from_redis(mock_redis)
     assert res.status_code == 302
     assert (
         res.url
-        == f"https://github.com/login/oauth/authorize?response_type=code&scope=user%3Aemail%2Cread%3Aorg%2Crepo%3Astatus%2Cwrite%3Arepo_hook%2Crepo&client_id=3d44be0e772666136a13&state={state}"
+        == f"https://github.com/login/oauth/authorize?response_type=code&scope=user%3Aemail%2Cread%3Aorg%2Crepo%3Astatus%2Cwrite%3Arepo_hook%2Crepo&client_id=testclientid&state={state}"
     )
     assert "ghpr" in res.cookies
     ghpr_cooke = res.cookies["ghpr"]
