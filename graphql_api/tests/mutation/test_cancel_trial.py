@@ -1,10 +1,8 @@
-from datetime import datetime, timedelta
-
 from django.test import TransactionTestCase
 
 from codecov_auth.tests.factories import OwnerFactory
 from graphql_api.tests.helper import GraphQLTestHelper
-from plan.constants import TrialStatus
+from plan.constants import PlanName, TrialStatus
 
 query = """
     mutation($input: CancelTrialInput!) {
@@ -39,12 +37,9 @@ class CancelTrialMutationTest(GraphQLTestHelper, TransactionTestCase):
         }
 
     def test_authenticated(self):
-        now = datetime.utcnow()
-        trial_start_date = now
-        trial_end_date = now + timedelta(days=3)
-        # TODO: add trial status here in CODE-3605-add-trial-logic
+        trial_status = TrialStatus.ONGOING.value
         owner = OwnerFactory(
-            trial_start_date=trial_start_date, trial_end_date=trial_end_date
+            trial_status=trial_status, plan=PlanName.TRIAL_PLAN_NAME.value
         )
         owner.save()
         assert self._request(owner=owner, org_username=owner.username) == {
