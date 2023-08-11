@@ -9,10 +9,10 @@ services:
     networks:
       - codecovapi
     ports:
-      - "5436:5432"
+      - "5432:5432"
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_HOST_AUTH_METHOD: trust
+      - POSTGRES_PASSWORD: postgres
   redis:
     hostname: redis
     image: redis:4.0-alpine
@@ -21,7 +21,7 @@ services:
     networks:
       - codecovapi
     ports:
-      - "6400:6379"
+      - "6379:6379"
 
 volumes:
   postgres-volume:
