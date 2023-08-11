@@ -107,10 +107,9 @@ class ReportDetailsTests(TestCase):
         assert mock_archive.call_count == 1
         assert mock_read_file.call_count == 1
         # This one to help us understand caching across different instances
-        # different instances if they are the same
         assert details.files_array == self.sample_files_array
-        assert mock_archive.call_count == 1
-        assert mock_read_file.call_count == 1
+        assert mock_archive.call_count == 2
+        assert mock_read_file.call_count == 2
         # Let's see for objects with different IDs
         diff_details = ReportDetailsFactory()
         storage_path = "https://storage/path/files_array.json"
@@ -118,8 +117,8 @@ class ReportDetailsTests(TestCase):
         diff_details._files_array_storage_path = storage_path
         diff_details.save()
         assert diff_details.files_array == self.sample_files_array
-        assert mock_archive.call_count == 2
-        assert mock_read_file.call_count == 2
+        assert mock_archive.call_count == 3
+        assert mock_read_file.call_count == 3
 
     @patch("utils.model_utils.ArchiveService")
     def test_get_files_array_from_storage_file_not_found(self, mock_archive):

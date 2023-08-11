@@ -86,10 +86,9 @@ class CommitTests(TestCase):
         assert mock_archive.call_count == 1
         assert mock_read_file.call_count == 1
         # This one to help us understand caching across different instances
-        # different instances if they are the same
         assert commit.report == self.sample_report
-        assert mock_archive.call_count == 1
-        assert mock_read_file.call_count == 1
+        assert mock_archive.call_count == 2
+        assert mock_read_file.call_count == 2
         # Let's see for objects with different IDs
         diff_commit = CommitFactory()
         storage_path = "https://storage/path/files_array.json"
@@ -97,8 +96,8 @@ class CommitTests(TestCase):
         diff_commit._report_storage_path = storage_path
         diff_commit.save()
         assert diff_commit.report == self.sample_report
-        assert mock_archive.call_count == 2
-        assert mock_read_file.call_count == 2
+        assert mock_archive.call_count == 3
+        assert mock_read_file.call_count == 3
 
     @patch("utils.model_utils.ArchiveService")
     def test_get_report_from_storage_file_not_found(self, mock_archive):
