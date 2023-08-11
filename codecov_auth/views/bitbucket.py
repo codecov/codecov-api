@@ -104,7 +104,6 @@ class BitbucketLoginView(View, LoginMixin):
         return response
 
     def get(self, request):
-        print("********** HERE", request.user)
         try:
             if request.GET.get("oauth_verifier"):
                 log.info("Logging into bitbucket after authorization")

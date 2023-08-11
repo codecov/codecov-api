@@ -1,6 +1,5 @@
 import json
 import logging
-from functools import lru_cache
 from typing import Any, Callable
 
 from shared.storage.exceptions import FileNotInStorageError
@@ -76,8 +75,8 @@ class ArchiveField:
         self.public_name = name
         self.db_field_name = "_" + name
         self.archive_field_name = "_" + name + "_storage_path"
+        self.cached_value_property_name = f"__{self.public_name}_cached_value"
 
-    @lru_cache(maxsize=1)
     def _get_value_from_archive(self, obj):
         repository = obj.get_repository()
         archive_service = ArchiveService(repository=repository)
@@ -106,10 +105,16 @@ class ArchiveField:
         return self.default_value
 
     def __get__(self, obj, objtype=None):
+        cached_value = getattr(obj, self.cached_value_property_name, None)
+        if cached_value:
+            return cached_value
         db_field = getattr(obj, self.db_field_name)
         if db_field is not None:
-            return self.rehydrate_fn(obj, db_field)
-        return self._get_value_from_archive(obj)
+            value = self.rehydrate_fn(obj, db_field)
+        else:
+            value = self._get_value_from_archive(obj)
+        setattr(obj, self.cached_value_property_name, value)
+        return value
 
     def __set__(self, obj, value):
         # Set the new value
@@ -118,13 +123,6 @@ class ArchiveField:
             archive_service = ArchiveService(repository=repository)
             old_file_path = getattr(obj, self.archive_field_name)
             table_name = obj._meta.db_table
-            # DEBUG https://github.com/codecov/platform-team/issues/119
-            # We don't expect this saving to be done here, actually
-            if table_name == "reports_reportdetails":
-                log.info(
-                    "Setting files_array from the API",
-                    extra=dict(commit=obj.get_commitid(), data=value),
-                )
             path = archive_service.write_json_data_to_storage(
                 commit_id=obj.get_commitid(),
                 table=table_name,
@@ -137,6 +135,6 @@ class ArchiveField:
                 archive_service.delete_file(old_file_path)
             setattr(obj, self.archive_field_name, path)
             setattr(obj, self.db_field_name, None)
-            self._get_value_from_archive.cache_clear()
         else:
             setattr(obj, self.db_field_name, value)
+        setattr(obj, self.cached_value_property_name, value)

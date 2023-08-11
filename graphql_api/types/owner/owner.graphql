@@ -19,11 +19,10 @@ type Owner {
   hashOwnerid: String!
   ownerid: Int!
   plan: Plan
+  pretrialPlan: PlanRepresentation
   orgUploadToken: String
   defaultOrgUsername: String
   isCurrentUserActivated: Boolean!
-  trialStatus: TrialStatus!
-    @deprecated(reason: "Use trial status inside plan resolver")
   measurements(
     interval: MeasurementInterval!
     after: DateTime
