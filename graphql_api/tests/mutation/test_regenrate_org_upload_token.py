@@ -18,7 +18,7 @@ mutation($input: RegenerateOrgUploadTokenInput!) {
 class RegenerateOrgUploadToken(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
         self.owner = OwnerFactory(
-            name="codecov", plan="users-enterprisem", service="github"
+            username="codecov", plan="users-enterprisem", service="github"
         )
 
     def test_when_unauthenticated_error(self):
