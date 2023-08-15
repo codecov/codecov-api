@@ -111,7 +111,6 @@ class Repository(models.Model):
     branch = models.TextField(default="master")
     upload_token = models.UUIDField(unique=True, default=uuid.uuid4)
     yaml = models.JSONField(null=True)
-    cache = models.JSONField(null=True)
     image_token = models.TextField(null=True, default=_gen_image_token)
     using_integration = models.BooleanField(null=True)
     hookid = models.TextField(null=True)

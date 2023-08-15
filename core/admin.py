@@ -62,7 +62,6 @@ class RepositoryAdmin(AdminMixin, admin.ModelAdmin):
         "fork",
         "upload_token",
         "yaml",
-        "cache",
         "image_token",
         "hookid",
         "activated",
