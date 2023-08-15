@@ -18,6 +18,7 @@ from shared.torngit.exceptions import (
     TorngitClientGeneralError,
     TorngitObjectNotFoundError,
 )
+from shared.utils.test_utils import mock_metrics as utils_mock_metrics
 from simplejson import JSONDecodeError
 
 from codecov_auth.models import Owner
@@ -897,6 +898,10 @@ class UploadHandlerHelpersTest(TestCase):
 
 
 class UploadHandlerRouteTest(APITestCase):
+    @pytest.fixture(scope="function", autouse=True)
+    def inject_mocker(self, mocker):
+        self.mocker = mocker
+
     # Wrap client calls
     def _get(self, kwargs=None):
         return self.client.get(reverse("upload-handler", kwargs=kwargs))
@@ -958,36 +963,34 @@ class UploadHandlerRouteTest(APITestCase):
             == "Origin, Content-Type, Accept, X-User-Agent"
         )
 
-    @patch("shared.metrics.metrics.incr")
-    def test_invalid_request_params(self, mock_metrics):
+    def test_invalid_request_params(self):
+        metrics = utils_mock_metrics(self.mocker)
         query_params = {"pr": 9838, "flags": "flags!!!", "package": "codecov-cli/0.0.0"}
 
         response = self._post(kwargs={"version": "v5"}, query=query_params)
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        mock_metrics.assert_has_calls(
-            [call("upload.cli.0.0.0"), call("uploads.rejected", 1)]
-        )
+        assert metrics.data["upload.cli.0.0.0"] == 1
+        assert metrics.data["uploads.rejected"] == 1
 
-    @patch("shared.metrics.metrics.incr")
-    def test_invalid_request_params_uploader_package(self, mock_metrics):
+    def test_invalid_request_params_uploader_package(self):
+        metrics = utils_mock_metrics(self.mocker)
         query_params = {"pr": 9838, "flags": "flags!!!", "package": "uploader-0.0.0"}
 
         response = self._post(kwargs={"version": "v5"}, query=query_params)
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        mock_metrics.assert_has_calls(
-            [call("upload.uploader.0.0.0"), call("uploads.rejected", 1)]
-        )
+        assert metrics.data["upload.uploader.0.0.0"] == 1
+        assert metrics.data["uploads.rejected"] == 1
 
-    @patch("shared.metrics.metrics.incr")
-    def test_invalid_request_params_invalid_package(self, mock_metrics):
+    def test_invalid_request_params_invalid_package(self):
+        metrics = utils_mock_metrics(self.mocker)
         query_params = {"pr": 9838, "flags": "flags!!!", "package": ""}
 
         response = self._post(kwargs={"version": "v5"}, query=query_params)
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        mock_metrics.assert_has_calls([call("uploads.rejected", 1)])
+        assert metrics.data["uploads.rejected"] == 1
 
     @patch("shared.metrics.metrics.incr")
     @patch("upload.views.legacy.get_redis_connection")
