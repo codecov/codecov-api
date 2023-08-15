@@ -100,6 +100,10 @@ class PullsAdmin(AdminMixin, admin.ModelAdmin):
     )
     fields = readonly_fields + ("state",)
 
+    @admin.display(description="flare")
+    def flare(self, instance):
+        return instance.flare
+
     def has_delete_permission(self, request, obj=None):
         return False
 

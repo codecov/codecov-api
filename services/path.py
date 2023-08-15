@@ -160,7 +160,9 @@ class ReportPaths:
 
         if search_term:
             self._paths = [
-                path for path in self.paths if search_term in path.relative_path
+                path
+                for path in self.paths
+                if search_term.lower() in path.relative_path.lower()
             ]
 
     @property

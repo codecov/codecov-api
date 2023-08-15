@@ -26,7 +26,7 @@ class CommitFromShaSerializerField(serializers.Field):
             commitid=commit_sha,
         ).first()
         if commit is None:
-            raise exceptions.NotFound()
+            raise exceptions.NotFound("Commit not found.")
         return commit
 
 
