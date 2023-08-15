@@ -86,7 +86,7 @@ coverage==6.0.1
     # via
     #   codecovopentelem
     #   pytest-cov
-cryptography==40.0.2
+cryptography==41.0.3
     # via shared
 ddtrace==0.46
     # via -r requirements.in
