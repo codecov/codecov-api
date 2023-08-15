@@ -223,7 +223,7 @@ class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
             return None
         pull = Pull.objects.filter(pullid=pullid, repository_id=repo.repoid).first()
         if pull is not None:
-            if pull.flare is not None:
+            if pull._flare is not None or pull._flare_storage_path is not None:
                 return pull.flare
         return self.get_commit_flare()
 
