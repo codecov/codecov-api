@@ -67,9 +67,9 @@ class ArchiveField:
         should_write_to_storage_fn: Callable[[object], bool],
         rehydrate_fn: Callable[[object, object], Any] = lambda self, x: x,
         json_encoder=ReportEncoder,
-        default_value=None,
+        default_value_class=lambda: None,
     ):
-        self.default_value = default_value
+        self.default_value_class = default_value_class
         self.rehydrate_fn = rehydrate_fn
         self.should_write_to_storage_fn = should_write_to_storage_fn
         self.json_encoder = json_encoder
@@ -102,14 +102,14 @@ class ArchiveField:
                     ),
                 )
         else:
-            log.info(
+            log.debug(
                 "Both db_field and archive_field are None",
                 extra=dict(
                     object_id=obj.id,
                     commit=obj.get_commitid(),
                 ),
             )
-        return self.default_value
+        return self.default_value_class()
 
     def __get__(self, obj, objtype=None):
         cached_value = getattr(obj, self.cached_value_property_name, None)
