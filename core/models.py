@@ -313,7 +313,7 @@ class Commit(models.Model):
     report = ArchiveField(
         should_write_to_storage_fn=should_write_to_storage,
         json_encoder=ReportJSONEncoder,
-        default_value={},
+        default_value_class=dict,
     )
 
 
@@ -397,7 +397,7 @@ class Pull(models.Model):
     _flare = models.JSONField(db_column="flare", null=True)
     _flare_storage_path = models.URLField(db_column="flare_storage_path", null=True)
     flare = ArchiveField(
-        should_write_to_storage_fn=should_write_to_storage, default_value={}
+        should_write_to_storage_fn=should_write_to_storage, default_value_class=dict
     )
 
     def save(self, *args, **kwargs):
