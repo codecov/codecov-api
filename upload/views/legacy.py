@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 from contextlib import suppress
 from datetime import datetime
 from json import dumps
@@ -100,6 +101,20 @@ class UploadHandler(APIView):
             "HTTP_X_UPLOAD_TOKEN"
         )
 
+        package = request_params.get("package")
+        if package is not None:
+            package_format = r"((codecov-cli/)|((.+-)?uploader-))(\d+.\d+.\d+)"
+            match = re.fullmatch(package_format, package)
+            if match:
+                if match.group(2):  # Matches codecov-cli/
+                    metrics.incr(f"upload.cli.{match.group(5)}")
+                else:  # Matches (.+-)?uploader-
+                    metrics.incr(f"upload.uploader.{match.group(5)}")
+            else:
+                log.warning(
+                    "Package query parameter failed to match CLI or uploader format",
+                    extra=dict(package=package),
+                )
         try:
             # note: try to avoid mutating upload_params past this point, to make it easier to reason about the state of this variable
             upload_params = parse_params(request_params)
@@ -216,7 +231,6 @@ class UploadHandler(APIView):
         # v4 - generate presigned PUT url
         minio = get_config("services", "minio") or {}
         if minio and version == "v4":
-
             log.info(
                 "Started V4 upload",
                 extra=dict(
