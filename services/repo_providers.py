@@ -30,7 +30,7 @@ def get_token_refresh_callback(
     Produces a callback function that will encode and update the oauth token of an owner.
     This callback is passed to the TorngitAdapter for the service.
     """
-    if service != Service.GITLAB and service != Service.GITLAB_ENTERPRISE:
+    if service == Service.BITBUCKET or service == Service.BITBUCKET_SERVER:
         return None
 
     @sync_to_async
