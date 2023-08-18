@@ -198,8 +198,8 @@ class ScheduleDetailSerializer(serializers.Serializer):
     scheduled_phase = serializers.SerializerMethodField()
 
     def get_scheduled_phase(self, schedule):
-        if len(schedule["phases"]) == 2:
-            return StripeScheduledPhaseSerializer(schedule["phases"][1]).data
+        if len(schedule["phases"]) > 1:
+            return StripeScheduledPhaseSerializer(schedule["phases"][-1]).data
         else:
             # This error represents the phases object not having 2 phases; we are interested in the 2nd entry within phases
             # since it represents the scheduled phase
