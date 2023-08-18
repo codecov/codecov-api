@@ -1,6 +1,8 @@
 import asyncio
+import jwt
 import logging
 import re
+import uuid
 from datetime import timedelta
 from json import dumps
 
@@ -10,6 +12,7 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.utils import timezone
+from jwt import PyJWKClient, PyJWTError
 from rest_framework.exceptions import NotFound, Throttled, ValidationError
 from shared.reports.enums import UploadType
 from shared.torngit.exceptions import TorngitClientError, TorngitObjectNotFoundError
@@ -97,6 +100,7 @@ def parse_params(data):
             "type": "string",
             "anyof": [
                 {"regex": r"^[0-9a-f]{8}(-?[0-9a-f]{4}){3}-?[0-9a-f]{12}$"},
+                {"regex": r"(^[A-Za-z0-9-_]*\.[A-Za-z0-9-_]*\.[A-Za-z0-9-_]*$)"},
                 {"allowed": list(global_tokens.keys())},
             ],
         },
@@ -194,18 +198,61 @@ def parse_params(data):
     return v.document
 
 
+def get_repo_with_github_actions_oidc_token(token):
+    unverified_contents = jwt.decode(token, options={"verify_signature": False})
+    token_issuer = str(unverified_contents.get("iss"))
+    if token_issuer == "https://token.actions.githubusercontent.com":
+        service = "github"
+        jwks_url = "https://token.actions.githubusercontent.com/.well-known/jwks"
+    else:
+        service = "github_enterprise"
+        github_enterprise_url = get_config("github_enterprise", "url")
+        jwks_url = f"{github_enterprise_url}/_services/token/.well-known/jwks"
+    jwks_client = PyJWKClient(jwks_url)
+    signing_key = jwks_client.get_signing_key_from_jwt(token)
+    data = jwt.decode(
+        token,
+        signing_key.key,
+        algorithms=["RS256"],
+        audience=get_config("setup", "codecov_url")
+    )
+    repo = str(data.get("repository")).split("/")[-1]
+    repository = Repository.objects.get(
+        author__service=service,
+        name=repo,
+        author__username=data.get("repository_owner")
+    )
+    return repository
+
+
+def is_uuid(token):
+    try:
+        uuid.UUID(str(token))
+        return True
+    except ValueError:
+        return False
+
+
 def determine_repo_for_upload(upload_params):
     token = upload_params.get("token")
     using_global_token = upload_params.get("using_global_token")
     service = upload_params.get("service")
 
     if token and not using_global_token:
-        try:
-            repository = Repository.objects.get(upload_token=token)
-        except ObjectDoesNotExist:
-            raise NotFound(
-                f"Could not find a repository associated with upload token {token}"
-            )
+        if is_uuid(token):
+            try:
+                repository = Repository.objects.get(upload_token=token)
+            except ObjectDoesNotExist:
+                raise NotFound(
+                    f"Could not find a repository associated with upload token {token}"
+                )
+        elif service == "github-actions":
+            try:
+                repository = get_repo_with_github_actions_oidc_token(token)
+            except PyJWTError as e:
+                raise ValidationError(
+                    f"Could not validate upload request using Github token: {e}"
+                )
     elif service:
         if using_global_token:
             git_service = service
@@ -507,6 +554,7 @@ def validate_upload(upload_params, repository, redis):
         and not repository.activated
         and not bool(get_config("setup", "enterprise_license", default=False))
     ):
+
         owner = _determine_responsible_owner(repository)
 
         # If author is on per repo billing, check their repo credits
