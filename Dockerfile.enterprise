@@ -33,13 +33,6 @@ RUN rm /app/codecov/settings_staging.py
 RUN rm -rf /app/.github
 RUN rm -rf /app/.circleci
 
-# Remove and rewrite the settings module to the
-# enterprise variant. This removes all reference to
-# dev and prod settings.
-RUN rm /app/utils/config.py
-COPY enterprise/config.py /app/utils/config.py
-
-
 # execute Cython script in app dir 
 COPY enterprise/ldd /pyinstaller/ldd
 COPY enterprise/setup.py setup.py
