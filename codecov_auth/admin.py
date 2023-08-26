@@ -10,6 +10,7 @@ from django.shortcuts import redirect
 from django.utils.html import format_html
 
 from codecov.admin import AdminMixin
+from codecov_auth.helpers import History
 from codecov_auth.models import OrganizationLevelToken, Owner, OwnerProfile
 from codecov_auth.services.org_level_token_service import OrgLevelTokenService
 from plan.constants import USER_PLAN_REPRESENTATIONS
@@ -36,6 +37,11 @@ def impersonate_owner(self, request, queryset):
         owner.ownerid,
         domain=settings.COOKIES_DOMAIN,
         samesite=settings.COOKIE_SAME_SITE,
+    )
+    History.log(
+        Owner.objects.get(ownerid=owner.ownerid),
+        "Impersonation successful",
+        request.user,
     )
     return response
 

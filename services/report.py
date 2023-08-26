@@ -1,3 +1,4 @@
+import logging
 from typing import Optional
 
 from django.conf import settings
@@ -7,12 +8,15 @@ from shared.helpers.flag import Flag
 from shared.reports.readonly import ReadOnlyReport as SharedReadOnlyReport
 from shared.reports.resources import Report
 from shared.reports.types import ReportFileSummary, ReportTotals
+from shared.storage.exceptions import FileNotInStorageError
 from shared.utils.sessions import Session, SessionType
 
 from core.models import Commit
 from reports.models import AbstractTotals, CommitReport, ReportDetails, ReportSession
 from services.archive import ArchiveService
 from utils.config import RUN_ENV
+
+log = logging.getLogger(__name__)
 
 
 class ReportMixin:
@@ -86,9 +90,18 @@ def build_report_from_commit(commit: Commit, report_class=None):
         sessions = commit.report["sessions"]
         totals = commit.totals
 
-    chunks = ArchiveService(commit.repository).read_chunks(commit.commitid)
-
-    return build_report(chunks, files, sessions, totals, report_class=report_class)
+    try:
+        chunks = ArchiveService(commit.repository).read_chunks(commit.commitid)
+        return build_report(chunks, files, sessions, totals, report_class=report_class)
+    except FileNotInStorageError:
+        log.warning(
+            "File for chunks not found in storage",
+            extra=dict(
+                commit=commit.commitid,
+                repo=commit.repository_id,
+            ),
+        )
+        return None
 
 
 def fetch_commit_report(commit: Commit) -> Optional[CommitReport]:

@@ -62,7 +62,6 @@ class RepositoryAdmin(AdminMixin, admin.ModelAdmin):
         "fork",
         "upload_token",
         "yaml",
-        "cache",
         "image_token",
         "hookid",
         "activated",
@@ -99,6 +98,10 @@ class PullsAdmin(AdminMixin, admin.ModelAdmin):
         "flare",
     )
     fields = readonly_fields + ("state",)
+
+    @admin.display(description="flare")
+    def flare(self, instance):
+        return instance.flare
 
     def has_delete_permission(self, request, obj=None):
         return False

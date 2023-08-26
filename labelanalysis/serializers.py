@@ -22,7 +22,7 @@ class CommitFromShaSerializerField(serializers.Field):
             commitid=commit_sha,
         ).first()
         if commit is None:
-            raise exceptions.NotFound()
+            raise exceptions.NotFound(f"Commit {commit_sha[:7]} not found.")
         if commit.staticanalysissuite_set.exists():
             return commit
         if not self.accepts_fallback:

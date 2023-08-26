@@ -18,7 +18,7 @@ class RegenerateOrgUploadTokenInteractor(BaseInteractor):
 
     @sync_to_async
     def execute(self, owner):
-        owner_obj = Owner.objects.filter(name=owner, service=self.service).first()
+        owner_obj = Owner.objects.filter(username=owner, service=self.service).first()
 
         self.validate(owner_obj)
 

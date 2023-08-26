@@ -80,7 +80,6 @@ class ImpersonationMiddleware(MiddlewareMixin):
                     impersonating_ownerid=impersonating_ownerid,
                 ),
             )
-
             if not current_user.is_staff:
                 log.warning(
                     "Impersonation unsuccessful",

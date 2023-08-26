@@ -12,9 +12,9 @@ from ..regenerate_org_upload_token import RegenerateOrgUploadTokenInteractor
 class RegenerateOrgUploadTokenInteractorTest(TransactionTestCase):
     def setUp(self):
         self.random_user = OwnerFactory()
-        self.owner = OwnerFactory(name="codecovv", plan="users-enterprisem")
+        self.owner = OwnerFactory(username="codecovv", plan="users-enterprisem")
         self.user_not_part_of_org = OwnerFactory(
-            name="random", plan="users-enterprisem"
+            username="random", plan="users-enterprisem"
         )
 
     def execute(self, owner, org_owner=None):
@@ -33,9 +33,9 @@ class RegenerateOrgUploadTokenInteractorTest(TransactionTestCase):
     async def test_regenerate_org_upload_token_user_not_part_of_org(self):
         with pytest.raises(Unauthorized):
             await self.execute(
-                owner=self.user_not_part_of_org, org_owner=self.owner.name
+                owner=self.user_not_part_of_org, org_owner=self.owner.username
             )
 
     async def test_regenerate_org_upload_token(self):
-        token = await self.execute(owner=self.owner, org_owner=self.owner.name)
+        token = await self.execute(owner=self.owner, org_owner=self.owner.username)
         assert token is not None

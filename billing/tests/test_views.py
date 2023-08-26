@@ -298,12 +298,11 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.owner.plan == plan_name
 
     @freeze_time("2023-06-19")
+    @patch("plan.service.PlanService.expire_trial_when_upgrading")
     @patch("services.billing.StripeService.update_payment_method")
-    @patch("services.segment.SegmentService.trial_started")
-    def test_customer_subscription_created_can_trigger_identify_and_trialing_segment_events(
-        self, trial_started_mock, _
+    def test_customer_subscription_created_can_trigger_trial_expiration(
+        self, _, expire_trial_when_upgrading_mock
     ):
-        trial_start, trial_end = "ts", "te"
         stripe_subscription_id = "FOEKDCDEQ"
         stripe_customer_id = "sdo050493"
         plan_name = "users-pr-inappy"
@@ -319,30 +318,13 @@ class StripeWebhookHandlerTests(APITestCase):
                         "plan": {"id": "fieown4", "name": plan_name},
                         "metadata": {"obo_organization": self.owner.ownerid},
                         "quantity": quantity,
-                        "status": "trialing",
-                        "trial_start": trial_start,
-                        "trial_end": trial_end,
                         "default_payment_method": "blabla",
                     }
                 },
             }
         )
 
-        trial_started_mock.assert_called_once_with(
-            self.owner.ownerid,
-            {
-                "trial_plan_name": plan_name,
-                "trial_plan_user_count": quantity,
-                "trial_end_date": trial_end,
-                "trial_start_date": trial_start,
-            },
-        )
-
-        self.owner.refresh_from_db()
-        assert self.owner.trial_start_date == datetime.utcnow()
-        assert self.owner.trial_end_date == datetime.utcnow() + timedelta(
-            days=TrialDaysAmount.CODECOV_SENTRY.value
-        )
+        expire_trial_when_upgrading_mock.assert_called_once()
 
     @patch("services.billing.StripeService.update_payment_method")
     def test_customer_subscription_updated_does_not_change_subscription_if_not_paid_user_plan(
@@ -378,7 +360,7 @@ class StripeWebhookHandlerTests(APITestCase):
         upm_mock.assert_called_once_with(self.owner, "pm_1LhiRsGlVGuVgOrkQguJXdeV")
 
     @patch("services.billing.StripeService.update_payment_method")
-    def test_customer_subscription_updated_doesnt_change_subscription_if_there_is_a_schedule(
+    def test_customer_subscription_updated_does_not_change_subscription_if_there_is_a_schedule(
         self, upm_mock
     ):
         self.owner.plan = "users-pr-inappy"
@@ -483,44 +465,6 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.owner.plan == plan_name
         assert self.owner.plan_user_count == quantity
         assert self.owner.plan_auto_activate == True
-        upm_mock.assert_called_once_with(self.owner, "pm_1LhiRsGlVGuVgOrkQguJXdeV")
-
-    @patch("services.billing.StripeService.update_payment_method")
-    @patch("services.segment.SegmentService.trial_ended")
-    def test_customer_subscription_updated_triggers_segment_event_on_trial_end(
-        self, trial_ended_mock, upm_mock
-    ):
-        trial_start, trial_end = "ts", "te"
-        response = self._send_event(
-            payload={
-                "type": "customer.subscription.updated",
-                "data": {
-                    "object": {
-                        "id": self.owner.stripe_subscription_id,
-                        "customer": self.owner.stripe_customer_id,
-                        "plan": {"id": "fieown4", "name": "users-pr-inappm"},
-                        "metadata": {"obo_organization": self.owner.ownerid},
-                        "quantity": 10,
-                        "status": "active",
-                        "schedule": None,
-                        "trial_start": trial_start,
-                        "trial_end": trial_end,
-                        "default_payment_method": "pm_1LhiRsGlVGuVgOrkQguJXdeV",
-                    },
-                    "previous_attributes": {"status": "trialing"},
-                },
-            }
-        )
-
-        trial_ended_mock.assert_called_once_with(
-            self.owner.ownerid,
-            {
-                "trial_plan_name": "users-pr-inappm",
-                "trial_plan_user_count": 10,
-                "trial_end_date": trial_end,
-                "trial_start_date": trial_start,
-            },
-        )
         upm_mock.assert_called_once_with(self.owner, "pm_1LhiRsGlVGuVgOrkQguJXdeV")
 
     @patch("services.billing.stripe.Subscription.retrieve")

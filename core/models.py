@@ -111,7 +111,6 @@ class Repository(models.Model):
     branch = models.TextField(default="master")
     upload_token = models.UUIDField(unique=True, default=uuid.uuid4)
     yaml = models.JSONField(null=True)
-    cache = models.JSONField(null=True)
     image_token = models.TextField(null=True, default=_gen_image_token)
     using_integration = models.BooleanField(null=True)
     hookid = models.TextField(null=True)
@@ -295,6 +294,10 @@ class Commit(models.Model):
     def get_commitid(self):
         return self.commitid
 
+    @property
+    def external_id(self):
+        return self.commitid
+
     def should_write_to_storage(self) -> bool:
         if self.repository is None or self.repository.author is None:
             return False
@@ -309,7 +312,7 @@ class Commit(models.Model):
     report = ArchiveField(
         should_write_to_storage_fn=should_write_to_storage,
         json_encoder=ReportJSONEncoder,
-        default_value={},
+        default_value_class=dict,
     )
 
 
@@ -343,7 +346,6 @@ class Pull(models.Model):
     )
     updatestamp = DateTimeWithoutTZField(default=timezone.now)
     diff = models.JSONField(null=True)
-    flare = models.JSONField(null=True)
     behind_by = models.IntegerField(null=True)
     behind_by_commit = models.TextField(null=True)
 
@@ -370,6 +372,32 @@ class Pull(models.Model):
                 name="pulls_repoid_pullid_ts",
             ),
         ]
+
+    def get_repository(self):
+        return self.repository
+
+    def get_commitid(self):
+        return None
+
+    @property
+    def external_id(self):
+        return self.pullid
+
+    def should_write_to_storage(self) -> bool:
+        if self.repository is None or self.repository.author is None:
+            return False
+        is_codecov_repo = self.repository.author.username == "codecov"
+        return should_write_data_to_storage_config_check(
+            master_switch_key="pull_flare",
+            is_codecov_repo=is_codecov_repo,
+            repoid=self.repository.repoid,
+        )
+
+    _flare = models.JSONField(db_column="flare", null=True)
+    _flare_storage_path = models.URLField(db_column="flare_storage_path", null=True)
+    flare = ArchiveField(
+        should_write_to_storage_fn=should_write_to_storage, default_value_class=dict
+    )
 
     def save(self, *args, **kwargs):
         self.updatestamp = timezone.now()

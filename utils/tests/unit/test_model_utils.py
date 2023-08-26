@@ -37,9 +37,7 @@ class TestArchiveField(object):
             self._archive_field_storage_path = archive_value
             self.should_write_to_gcs = should_write_to_gcs
 
-        archive_field = ArchiveField(
-            should_write_to_storage_fn=should_write_to_storage, default_value=None
-        )
+        archive_field = ArchiveField(should_write_to_storage_fn=should_write_to_storage)
 
     class ClassWithArchiveFieldMissingMethods:
         commit: Commit
@@ -131,17 +129,8 @@ class TestArchiveField(object):
         assert test_class._archive_field == None
         assert test_class._archive_field_storage_path == "path/to/written/object"
         assert test_class.archive_field == some_json
-        # Writing cleans the cache
-        assert mock_read_file.call_count == 1
-        mock_read_file.assert_called_with("path/to/written/object")
-        mock_write_file.assert_called_with(
-            commit_id=commit.commitid,
-            table="test_table",
-            field="archive_field",
-            external_id=test_class.external_id,
-            data=some_json,
-            encoder=ReportEncoder,
-        )
+        # The cache is updated on write, so reading doesn't trigger another read
+        assert mock_read_file.call_count == 0
         mock_archive_service.return_value.delete_file.assert_called_with(
             "path/to/old/data"
         )

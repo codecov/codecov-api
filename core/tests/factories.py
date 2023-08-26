@@ -183,7 +183,7 @@ class PullFactory(DjangoModelFactory):
     commentid = factory.LazyAttribute(
         lambda o: sha1(o.title.encode("utf-8")).hexdigest()
     )
-    flare = {
+    _flare = {
         "name": "",
         "color": "#e05d44",
         "lines": 14,

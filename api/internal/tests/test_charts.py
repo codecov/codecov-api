@@ -7,7 +7,7 @@ from unittest.mock import patch
 import pytest
 from dateutil.relativedelta import relativedelta
 from ddf import G
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 from factory.faker import faker
 from pytz import UTC
@@ -546,6 +546,7 @@ class TestChartQueryRunnerQuery(TestCase):
             state="complete",
         )
 
+    @override_settings(GITHUB_CLIENT_ID="3d44be0e772666136a13")
     def test_query_aggregates_multiple_repository_totals(self):
         query_runner = ChartQueryRunner(
             user=self.user,
