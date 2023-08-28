@@ -70,7 +70,9 @@ def get_generic_adapter_params(owner: Owner, service, use_ssl=False, token=None)
             key=getattr(settings, f"{service.upper()}_CLIENT_ID", "unknown"),
             secret=getattr(settings, f"{service.upper()}_CLIENT_SECRET", "unknown"),
         ),
-        on_token_refresh=get_token_refresh_callback(owner, service),
+        on_token_refresh=(
+            get_token_refresh_callback(owner, service) if "username" in token else None
+        ),
     )
 
 
