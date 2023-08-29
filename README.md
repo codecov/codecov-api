@@ -62,7 +62,7 @@ To deploy to our staging environment it's crucial to follow these steps:
 2. If not, delete the current `staging` branch
 3. Create a new `staging` branch and merge your feature branch into it
 
-Steps 2 and 3 are important to limit interaction between features not yet merged into main. This approach was inspired by this document: https://codecovio.atlassian.net/wiki/spaces/ENG/pages/507445249/Branching+and+Continuous+Delivery+Strategy+Proposal
+Steps 2 and 3 are important to limit interaction between features not yet merged into `main`. This approach was inspired by this document: https://codecovio.atlassian.net/wiki/spaces/ENG/pages/507445249/Branching+and+Continuous+Delivery+Strategy+Proposal
 
 ### Secret and Credential Management
 

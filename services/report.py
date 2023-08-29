@@ -98,7 +98,7 @@ def build_report_from_commit(commit: Commit, report_class=None):
             "File for chunks not found in storage",
             extra=dict(
                 commit=commit.commitid,
-                repo=commit.repoid,
+                repo=commit.repository_id,
             ),
         )
         return None

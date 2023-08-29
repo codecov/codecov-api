@@ -1,7 +1,7 @@
 import time
 from datetime import datetime, timedelta
 from json import dumps, loads
-from unittest.mock import ANY, PropertyMock, patch
+from unittest.mock import ANY, PropertyMock, call, patch
 from urllib.parse import urlencode
 
 import pytest
@@ -18,6 +18,7 @@ from shared.torngit.exceptions import (
     TorngitClientGeneralError,
     TorngitObjectNotFoundError,
 )
+from shared.utils.test_utils import mock_metrics as utils_mock_metrics
 from simplejson import JSONDecodeError
 
 from codecov_auth.models import Owner
@@ -486,7 +487,6 @@ class UploadHandlerHelpersTest(TestCase):
     def test_determine_upload_commit_to_use(
         self, mock_repo_provider_service, mock_async
     ):
-
         mock_repo_provider_service.return_value = {
             "message": "Merge 1c78206f1a46dc6db8412a491fc770eb7d0f8a47 into 261aa931e8e3801ad95a31bbc3529de2bba436c8"
         }
@@ -709,7 +709,6 @@ class UploadHandlerHelpersTest(TestCase):
             ) == {"content_type": "text/plain", "reduced_redundancy": True}
 
     def test_store_report_in_redis(self):
-
         redis = MockRedis()
 
         with self.subTest("gzip encoding"):
@@ -899,6 +898,10 @@ class UploadHandlerHelpersTest(TestCase):
 
 
 class UploadHandlerRouteTest(APITestCase):
+    @pytest.fixture(scope="function", autouse=True)
+    def inject_mocker(self, mocker):
+        self.mocker = mocker
+
     # Wrap client calls
     def _get(self, kwargs=None):
         return self.client.get(reverse("upload-handler", kwargs=kwargs))
@@ -960,14 +963,34 @@ class UploadHandlerRouteTest(APITestCase):
             == "Origin, Content-Type, Accept, X-User-Agent"
         )
 
-    @patch("shared.metrics.metrics.incr")
-    def test_invalid_request_params(self, mock_metrics):
-        query_params = {"pr": 9838, "flags": "flags!!!"}
+    def test_invalid_request_params(self):
+        metrics = utils_mock_metrics(self.mocker)
+        query_params = {"pr": 9838, "flags": "flags!!!", "package": "codecov-cli/0.0.0"}
 
         response = self._post(kwargs={"version": "v5"}, query=query_params)
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        mock_metrics.assert_called_once_with("uploads.rejected", 1)
+        assert metrics.data["upload.cli.0.0.0"] == 1
+        assert metrics.data["uploads.rejected"] == 1
+
+    def test_invalid_request_params_uploader_package(self):
+        metrics = utils_mock_metrics(self.mocker)
+        query_params = {"pr": 9838, "flags": "flags!!!", "package": "uploader-0.0.0"}
+
+        response = self._post(kwargs={"version": "v5"}, query=query_params)
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert metrics.data["upload.uploader.0.0.0"] == 1
+        assert metrics.data["uploads.rejected"] == 1
+
+    def test_invalid_request_params_invalid_package(self):
+        metrics = utils_mock_metrics(self.mocker)
+        query_params = {"pr": 9838, "flags": "flags!!!", "package": ""}
+
+        response = self._post(kwargs={"version": "v5"}, query=query_params)
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert metrics.data["uploads.rejected"] == 1
 
     @patch("shared.metrics.metrics.incr")
     @patch("upload.views.legacy.get_redis_connection")
@@ -1000,6 +1023,7 @@ class UploadHandlerRouteTest(APITestCase):
             "branch": "",
             "flags": "",
             "build_url": "",
+            "package": "",
         }
 
         response = self._post(
@@ -1077,6 +1101,7 @@ class UploadHandlerRouteTest(APITestCase):
             "branch": "",
             "flags": "",
             "build_url": "",
+            "package": "",
         }
 
         response = self._post_slash(
@@ -1157,6 +1182,7 @@ class UploadHandlerRouteTest(APITestCase):
             "branch": "",
             "flags": "",
             "build_url": "",
+            "package": "",
         }
 
         response = self._post_slash(
@@ -1211,6 +1237,7 @@ class UploadHandlerRouteTest(APITestCase):
             "branch": "",
             "flags": "",
             "build_url": "",
+            "package": "",
         }
 
         response = self._post_slash(
@@ -1273,6 +1300,7 @@ class UploadHandlerRouteTest(APITestCase):
             "branch": "",
             "flags": "",
             "build_url": "",
+            "package": "",
         }
 
         response = self._post(
@@ -1322,6 +1350,7 @@ class UploadHandlerRouteTest(APITestCase):
             "branch": "",
             "flags": "",
             "build_url": "",
+            "package": "",
         }
 
         response = self._post(
@@ -1350,7 +1379,6 @@ class UploadHandlerRouteTest(APITestCase):
         mock_hash,
         mock_storage_put,
     ):
-
         mock_determine_repo_for_upload.side_effect = ValidationError(
             "Unable to determine repo and owner"
         )
@@ -1382,6 +1410,7 @@ class UploadHandlerRouteTest(APITestCase):
             "branch": "",
             "flags": "",
             "build_url": "",
+            "package": "",
         }
 
         response = self._post(
@@ -1418,7 +1447,6 @@ class UploadHandlerRouteTest(APITestCase):
         mock_hash,
         mock_storage_put,
     ):
-
         mock_determine_repo_for_upload.side_effect = MultipleObjectsReturned(
             "Found too many repos"
         )
@@ -1450,6 +1478,7 @@ class UploadHandlerRouteTest(APITestCase):
             "branch": "",
             "flags": "",
             "build_url": "",
+            "package": "",
         }
 
         response = self._post(

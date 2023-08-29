@@ -78,7 +78,7 @@ class ReportDetails(BaseCodecovModel):
 
     files_array = ArchiveField(
         should_write_to_storage_fn=should_write_to_storage,
-        default_value=[],
+        default_value_class=list,
     )
 
 
