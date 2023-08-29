@@ -11,7 +11,7 @@ from django.utils.html import format_html
 
 from codecov.admin import AdminMixin
 from codecov_auth.helpers import History
-from codecov_auth.models import OrganizationLevelToken, Owner, OwnerProfile
+from codecov_auth.models import OrganizationLevelToken, Owner, OwnerProfile, User
 from codecov_auth.services.org_level_token_service import OrgLevelTokenService
 from plan.constants import USER_PLAN_REPRESENTATIONS
 from services.task import TaskService
@@ -56,6 +56,44 @@ class OwnerProfileInline(admin.TabularInline):
 
     def has_change_permission(self, request, obj=None):
         return True
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(User)
+class UserAdmin(AdminMixin, admin.ModelAdmin):
+    list_display = (
+        "name",
+        "email",
+    )
+    readonly_fields = []
+    search_fields = (
+        "name__iexact",
+        "email__iexact",
+    )
+
+    readonly_fields = (
+        "id",
+        "external_id",
+    )
+
+    fields = readonly_fields + (
+        "name",
+        "email",
+        "is_staff",
+    )
+
+    def get_form(self, request, obj=None, change=False, **kwargs):
+        form = super().get_form(request, obj, change, **kwargs)
+
+        if not request.user.is_superuser:
+            form.base_fields["is_staff"].disabled = True
+
+        return form
+
+    def has_add_permission(self, _, obj=None):
+        return False
 
     def has_delete_permission(self, request, obj=None):
         return False

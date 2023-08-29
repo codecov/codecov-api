@@ -25,6 +25,7 @@ class UserFactory(DjangoModelFactory):
         model = User
 
     email = factory.Faker("email")
+    name = factory.Faker("name")
 
 
 class OwnerFactory(DjangoModelFactory):

@@ -5,8 +5,13 @@ from django.contrib.admin.sites import AdminSite
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
-from codecov_auth.admin import OrgUploadTokenInline, OwnerAdmin, OwnerProfileInline
-from codecov_auth.models import OrganizationLevelToken, Owner
+from codecov_auth.admin import (
+    OrgUploadTokenInline,
+    OwnerAdmin,
+    OwnerProfileInline,
+    UserAdmin,
+)
+from codecov_auth.models import OrganizationLevelToken, Owner, User
 from codecov_auth.tests.factories import (
     OrganizationLevelTokenFactory,
     OwnerFactory,
@@ -278,3 +283,29 @@ class OwnerAdminTest(TestCase):
         }
         response = self.client.post(request_url, data=fake_data)
         assert mock_refresh.not_called()
+
+
+class UserAdminTest(TestCase):
+    def setUp(self):
+        self.staff_user = UserFactory(is_staff=True)
+        self.client.force_login(user=self.staff_user)
+        admin_site = AdminSite()
+        admin_site.register(User)
+        self.owner_admin = UserAdmin(User, admin_site)
+
+    def test_user_admin_list_page(self):
+        user = UserFactory()
+        res = self.client.get(reverse(f"admin:codecov_auth_user_changelist"))
+        assert res.status_code == 200
+        assert user.name in res.content.decode("utf-8")
+        assert user.email in res.content.decode("utf-8")
+
+    def test_user_admin_detail_page(self):
+        user = UserFactory()
+        res = self.client.get(
+            reverse(f"admin:codecov_auth_user_change", args=[user.pk])
+        )
+        assert res.status_code == 200
+        assert user.name in res.content.decode("utf-8")
+        assert user.email in res.content.decode("utf-8")
+        assert str(user.external_id) in res.content.decode("utf-8")
