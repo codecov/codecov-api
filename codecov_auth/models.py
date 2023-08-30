@@ -71,6 +71,8 @@ class User(BaseCodecovModel):
     is_staff = models.BooleanField(null=True, default=False)
     is_superuser = models.BooleanField(null=True, default=False)
     external_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    terms_agreement = models.BooleanField(null=True, default=False)
+    terms_agreement_at = DateTimeWithoutTZField(null=True)
 
     REQUIRED_FIELDS = []
     USERNAME_FIELD = "external_id"

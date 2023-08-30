@@ -4,9 +4,9 @@ from typing import Optional
 from django.utils import timezone
 
 from codecov.commands.base import BaseInteractor
-from codecov.commands.exceptions import ValidationError
+from codecov.commands.exceptions import Unauthenticated, ValidationError
 from codecov.db import sync_to_async
-from codecov_auth.models import OwnerProfile
+from codecov_auth.models import OwnerProfile, User
 
 
 @dataclass
@@ -21,12 +21,23 @@ class SaveTermsAgreementInteractor(BaseInteractor):
             raise ValidationError("Terms of agreement cannot be null")
 
     def update_terms_agreement(self, input: TermsAgreementInput):
+        if not self.current_owner or not self.current_owner.user_id:
+            raise Unauthenticated()
+
+        ts = timezone.now()
+
         owner_profile, _ = OwnerProfile.objects.get_or_create(
             owner=self.current_owner,
         )
         owner_profile.terms_agreement = input.terms_agreement
-        owner_profile.terms_agreement_at = timezone.now()
+        owner_profile.terms_agreement_at = ts
         owner_profile.save()
+
+        # Store agreements in user table as well
+        user = User.objects.get(id=self.current_owner.user_id)
+        user.terms_agreement = input.terms_agreement
+        user.terms_agreement_at = ts
+        user.save()
 
         if input.business_email is not None and input.business_email != "":
             self.current_owner.business_email = input.business_email
