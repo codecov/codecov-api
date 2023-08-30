@@ -16,27 +16,26 @@ class TermsAgreementInput:
 
 
 class SaveTermsAgreementInteractor(BaseInteractor):
-    def validate(sel, input: TermsAgreementInput):
+    def validate(self, input: TermsAgreementInput):
         if input.terms_agreement is None:
             raise ValidationError("Terms of agreement cannot be null")
+        if not self.current_owner or not self.current_owner.user_id:
+            raise ValidationError("Owner does not have an associated user")
 
     def update_terms_agreement(self, input: TermsAgreementInput):
-        if not self.current_owner or not self.current_owner.user_id:
-            raise Unauthenticated()
-
-        ts = timezone.now()
+        now = timezone.now()
 
         owner_profile, _ = OwnerProfile.objects.get_or_create(
             owner=self.current_owner,
         )
         owner_profile.terms_agreement = input.terms_agreement
-        owner_profile.terms_agreement_at = ts
+        owner_profile.terms_agreement_at = now
         owner_profile.save()
 
         # Store agreements in user table as well
         user = User.objects.get(id=self.current_owner.user_id)
         user.terms_agreement = input.terms_agreement
-        user.terms_agreement_at = ts
+        user.terms_agreement_at = now
         user.save()
 
         if input.business_email is not None and input.business_email != "":
