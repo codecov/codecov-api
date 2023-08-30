@@ -6,6 +6,18 @@ import core.models
 
 
 class Migration(migrations.Migration):
+    """
+    BEGIN;
+    --
+    -- Add field terms_agreement to user
+    --
+    ALTER TABLE "users" ADD COLUMN "terms_agreement" boolean NULL;
+    --
+    -- Add field terms_agreement_at to user
+    --
+    ALTER TABLE "users" ADD COLUMN "terms_agreement_at" timestamp NULL;
+    COMMIT;
+    """
 
     dependencies = [
         ("codecov_auth", "0035_owner_pretrial_users_count"),
