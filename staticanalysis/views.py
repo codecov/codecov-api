@@ -24,6 +24,7 @@ class StaticAnalysisSuiteViewSet(mixins.CreateModelMixin, viewsets.GenericViewSe
 
     def get_queryset(self):
         repository = self.request.auth.get_repositories()[0]
+        log.info("hello world")
         return StaticAnalysisSuite.objects.filter(commit__repository=repository)
 
     def perform_create(self, serializer):
