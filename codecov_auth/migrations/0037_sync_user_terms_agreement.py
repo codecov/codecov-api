@@ -12,6 +12,10 @@ def sync_agreements(apps, schema):
             user.terms_agreement_at = owner.profile.terms_agreement_at
             user.save()
 
+def reverse_func(apps, schema):
+    # Only used for unit testing
+    pass
+
 
 class Migration(migrations.Migration):
 
@@ -19,4 +23,4 @@ class Migration(migrations.Migration):
         ("codecov_auth", "0036_add_user_terms_agreement"),
     ]
 
-    operations = [migrations.RunPython(sync_agreements)]
+    operations = [migrations.RunPython(sync_agreements, reverse_func)]
