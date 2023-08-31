@@ -4,9 +4,9 @@ from typing import Optional
 from django.utils import timezone
 
 from codecov.commands.base import BaseInteractor
-from codecov.commands.exceptions import Unauthenticated, ValidationError
+from codecov.commands.exceptions import ValidationError
 from codecov.db import sync_to_async
-from codecov_auth.models import OwnerProfile, User
+from codecov_auth.models import User
 
 
 @dataclass
@@ -23,19 +23,9 @@ class SaveTermsAgreementInteractor(BaseInteractor):
             raise ValidationError("Owner does not have an associated user")
 
     def update_terms_agreement(self, input: TermsAgreementInput):
-        now = timezone.now()
-
-        owner_profile, _ = OwnerProfile.objects.get_or_create(
-            owner=self.current_owner,
-        )
-        owner_profile.terms_agreement = input.terms_agreement
-        owner_profile.terms_agreement_at = now
-        owner_profile.save()
-
-        # Store agreements in user table as well
         user = User.objects.get(id=self.current_owner.user_id)
         user.terms_agreement = input.terms_agreement
-        user.terms_agreement_at = now
+        user.terms_agreement_at = timezone.now()
         user.save()
 
         if input.business_email is not None and input.business_email != "":

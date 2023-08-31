@@ -8,7 +8,6 @@ from django.urls import reverse
 from codecov_auth.admin import (
     OrgUploadTokenInline,
     OwnerAdmin,
-    OwnerProfileInline,
     UserAdmin,
 )
 from codecov_auth.models import OrganizationLevelToken, Owner, User
@@ -189,25 +188,6 @@ class OwnerAdminTest(TestCase):
         inlines = self.owner_admin.get_inline_instances(request, owner_in_cloud_plan)
         inline_instance = inlines[0]
         assert inline_instance.has_add_permission(request, owner_in_cloud_plan) == True
-
-    def test_inline_owner_profile_display(self):
-        owner = OwnerFactory()
-        request_url = reverse(f"admin:codecov_auth_owner_change", args=[owner.ownerid])
-        request = RequestFactory().get(request_url)
-        request.user = self.staff_user
-        inlines = self.owner_admin.get_inline_instances(request, owner)
-        assert isinstance(inlines[1], OwnerProfileInline)
-
-    def test_inline_owner_profile_permissions(self):
-        owner = OwnerFactory(name="test-owner", service="github")
-        owner.save()
-        request_url = reverse(f"admin:codecov_auth_owner_change", args=[owner.ownerid])
-        request = RequestFactory().get(request_url)
-        request.user = self.staff_user
-        inlines = self.owner_admin.get_inline_instances(request, owner)
-        inline_instance = inlines[1]
-        assert inline_instance.has_delete_permission(request, owner) == False
-        assert inline_instance.has_change_permission(request, owner) == True
 
     @patch(
         "codecov_auth.services.org_level_token_service.OrgLevelTokenService.refresh_token"

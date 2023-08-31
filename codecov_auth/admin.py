@@ -49,18 +49,6 @@ def impersonate_owner(self, request, queryset):
 impersonate_owner.short_description = "Impersonate the selected owner"
 
 
-class OwnerProfileInline(admin.TabularInline):
-    model = OwnerProfile
-    fk_name = "owner"
-    fields = ["terms_agreement", "terms_agreement_at"]
-
-    def has_change_permission(self, request, obj=None):
-        return True
-
-    def has_delete_permission(self, request, obj=None):
-        return False
-
-
 @admin.register(User)
 class UserAdmin(AdminMixin, admin.ModelAdmin):
     list_display = (
@@ -82,6 +70,8 @@ class UserAdmin(AdminMixin, admin.ModelAdmin):
         "name",
         "email",
         "is_staff",
+        "terms_agreement",
+        "terms_agreement_at",
     )
 
     def get_form(self, request, obj=None, change=False, **kwargs):
@@ -133,7 +123,7 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
     search_fields = ("username__iexact",)
     actions = [impersonate_owner]
     autocomplete_fields = ("bot",)
-    inlines = [OrgUploadTokenInline, OwnerProfileInline]
+    inlines = [OrgUploadTokenInline]
 
     readonly_fields = (
         "ownerid",
