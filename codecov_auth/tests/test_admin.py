@@ -5,11 +5,7 @@ from django.contrib.admin.sites import AdminSite
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
-from codecov_auth.admin import (
-    OrgUploadTokenInline,
-    OwnerAdmin,
-    UserAdmin,
-)
+from codecov_auth.admin import OrgUploadTokenInline, OwnerAdmin, UserAdmin
 from codecov_auth.models import OrganizationLevelToken, Owner, User
 from codecov_auth.tests.factories import (
     OrganizationLevelTokenFactory,
