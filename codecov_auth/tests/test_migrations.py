@@ -49,6 +49,19 @@ class Migration0037Test(TestMigrations):
             terms_agreement_at=None,
         )
 
+        self.owner_have_user_no_profile = owners.objects.create(
+            ownerid=5,
+            service_id=5,
+            service="github",
+            user=users.objects.create(),  # user's agreement fields defaults to (False,null)
+        )
+
+        self.owner_no_user_no_profile = owners.objects.create(
+            ownerid=6,
+            service_id=6,
+            service="github",
+        )
+
     def test_agreements_migrated(self):
         owners = self.apps.get_model("codecov_auth", "Owner")
 
@@ -84,4 +97,12 @@ class Migration0037Test(TestMigrations):
         owner = owners.objects.get(
             ownerid=self.profile_no_user_and_no_agreements.owner.ownerid
         )
+        assert owner.user == None
+
+        owner = owners.objects.get(ownerid=self.owner_have_user_no_profile.ownerid)
+        assert not hasattr(owner, "profile")
+        assert owner.user != None
+
+        owner = owners.objects.get(ownerid=self.owner_no_user_no_profile.ownerid)
+        assert not hasattr(owner, "profile")
         assert owner.user == None
