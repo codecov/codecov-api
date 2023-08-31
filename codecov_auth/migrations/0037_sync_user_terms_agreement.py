@@ -12,6 +12,7 @@ def sync_agreements(apps, schema):
             user.terms_agreement_at = owner.profile.terms_agreement_at
             user.save()
 
+
 def reverse_func(apps, schema):
     # Only used for unit testing
     pass

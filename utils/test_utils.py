@@ -35,7 +35,6 @@ class APIClient(ClientMixin, DjangoAPIClient):
 
 
 class TestMigrations(TestCase):
-
     @property
     def app(self):
         return apps.get_containing_app_config(type(self).__module__).name
@@ -44,8 +43,11 @@ class TestMigrations(TestCase):
     migrate_to = None
 
     def setUp(self):
-        assert self.migrate_from and self.migrate_to, \
-            "TestCase '{}' must define migrate_from and migrate_to properties".format(type(self).__name__)
+        assert (
+            self.migrate_from and self.migrate_to
+        ), "TestCase '{}' must define migrate_from and migrate_to properties".format(
+            type(self).__name__
+        )
         self.migrate_from = [(self.app, self.migrate_from)]
         self.migrate_to = [(self.app, self.migrate_to)]
         executor = MigrationExecutor(connection)

@@ -18,8 +18,8 @@ class Migration0037Test(TestMigrations):
             owner=owners.objects.create(
                 ownerid=1,
                 service_id=1,
-                service = "github",
-                user=users.objects.create()  # user's agreement fields defaults to (False,null)
+                service="github",
+                user=users.objects.create(),  # user's agreement fields defaults to (False,null)
             ),
             terms_agreement=True,
             terms_agreement_at=self.now,
@@ -28,28 +28,22 @@ class Migration0037Test(TestMigrations):
             owner=owners.objects.create(
                 ownerid=2,
                 service_id=2,
-                service = "github",
-                user=users.objects.create()  # user's agreement fields defaults to (False,null)
+                service="github",
+                user=users.objects.create(),  # user's agreement fields defaults to (False,null)
             ),
             terms_agreement=False,
             terms_agreement_at=None,
         )
         self.profile_no_user_and_have_agreements = profiles.objects.create(
             owner=owners.objects.create(
-                ownerid=3,
-                service_id=3,
-                service = "github",
-                user=None
+                ownerid=3, service_id=3, service="github", user=None
             ),
             terms_agreement=True,
             terms_agreement_at=self.now,
         )
         self.profile_no_user_and_no_agreements = profiles.objects.create(
             owner=owners.objects.create(
-                ownerid=4,
-                service_id=4,
-                service = "github",
-                user=None
+                ownerid=4, service_id=4, service="github", user=None
             ),
             terms_agreement=False,
             terms_agreement_at=None,
@@ -58,16 +52,36 @@ class Migration0037Test(TestMigrations):
     def test_agreements_migrated(self):
         owners = self.apps.get_model("codecov_auth", "Owner")
 
-        owner = owners.objects.get(ownerid=self.profile_have_user_and_have_agreements.owner.ownerid)
-        assert owner.user.terms_agreement == self.profile_have_user_and_have_agreements.terms_agreement
-        assert owner.user.terms_agreement_at == self.profile_have_user_and_have_agreements.terms_agreement_at
+        owner = owners.objects.get(
+            ownerid=self.profile_have_user_and_have_agreements.owner.ownerid
+        )
+        assert (
+            owner.user.terms_agreement
+            == self.profile_have_user_and_have_agreements.terms_agreement
+        )
+        assert (
+            owner.user.terms_agreement_at
+            == self.profile_have_user_and_have_agreements.terms_agreement_at
+        )
 
-        owner = owners.objects.get(ownerid=self.profile_have_user_and_no_agreements.owner.ownerid)
-        assert owner.user.terms_agreement == self.profile_have_user_and_no_agreements.terms_agreement
-        assert owner.user.terms_agreement_at == self.profile_have_user_and_no_agreements.terms_agreement_at
+        owner = owners.objects.get(
+            ownerid=self.profile_have_user_and_no_agreements.owner.ownerid
+        )
+        assert (
+            owner.user.terms_agreement
+            == self.profile_have_user_and_no_agreements.terms_agreement
+        )
+        assert (
+            owner.user.terms_agreement_at
+            == self.profile_have_user_and_no_agreements.terms_agreement_at
+        )
 
-        owner = owners.objects.get(ownerid=self.profile_no_user_and_have_agreements.owner.ownerid)
+        owner = owners.objects.get(
+            ownerid=self.profile_no_user_and_have_agreements.owner.ownerid
+        )
         assert owner.user == None
 
-        owner = owners.objects.get(ownerid=self.profile_no_user_and_no_agreements.owner.ownerid)
+        owner = owners.objects.get(
+            ownerid=self.profile_no_user_and_no_agreements.owner.ownerid
+        )
         assert owner.user == None
