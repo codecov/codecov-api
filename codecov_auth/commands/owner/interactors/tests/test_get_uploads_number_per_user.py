@@ -1,8 +1,12 @@
-from django.contrib.auth.models import AnonymousUser
+from datetime import datetime, timedelta
+
 from django.test import TransactionTestCase
+from django.utils import timezone
+from freezegun import freeze_time
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
+from plan.constants import TrialStatus
 from reports.tests.factories import CommitReportFactory, UploadFactory
 
 from ..get_uploads_number_per_user import GetUploadsNumberPerUserInteractor
@@ -10,24 +14,47 @@ from ..get_uploads_number_per_user import GetUploadsNumberPerUserInteractor
 
 class GetUploadsNumberPerUserInteractorTest(TransactionTestCase):
     def setUp(self):
-        self.user_with_no_uplaods = OwnerFactory()
-        self.user_with_uplaods = OwnerFactory()
-        repo = RepositoryFactory.create(author=self.user_with_uplaods, private=True)
-        public_repo = RepositoryFactory.create(
-            author=self.user_with_uplaods, private=False
-        )
+        self.user_with_no_uploads = OwnerFactory()
+        self.user_with_uploads = OwnerFactory()
+        repo = RepositoryFactory.create(author=self.user_with_uploads, private=True)
         commit = CommitFactory.create(repository=repo)
         report = CommitReportFactory.create(commit=commit)
-        for i in range(150):
+
+        # Reports all created today/within the last 30 days
+        for i in range(2):
             UploadFactory.create(report=report)
-            UploadFactory.create(report__commit__repository=public_repo)
+
+        report_within_40_days = UploadFactory.create(report=report)
+        report_within_40_days.created_at += timedelta(days=-40)
+        report_within_40_days.save()
+
+        # Trial Data
+        self.trial_owner = OwnerFactory(
+            trial_status=TrialStatus.EXPIRED.value,
+            trial_start_date=datetime.utcnow() + timedelta(days=-10),
+            trial_end_date=datetime.utcnow() + timedelta(days=-2),
+        )
+        trial_repo = RepositoryFactory.create(author=self.trial_owner, private=True)
+        trial_commit = CommitFactory.create(repository=trial_repo)
+        trial_report = CommitReportFactory.create(commit=trial_commit)
+
+        report_during_trial = UploadFactory.create(report=trial_report)
+        report_during_trial.created_at += timedelta(days=-5)
+        report_during_trial.save()
+
+        report_after_trial = UploadFactory.create(report=trial_report)
 
     async def test_with_no_uploads(self):
-        owner = self.user_with_no_uplaods
+        owner = self.user_with_no_uploads
         uploads = await GetUploadsNumberPerUserInteractor(None, owner).execute(owner)
         assert uploads == 0
 
     async def test_with_number_of_uploads(self):
-        owner = self.user_with_uplaods
+        owner = self.user_with_uploads
         uploads = await GetUploadsNumberPerUserInteractor(None, owner).execute(owner)
-        assert uploads == 150
+        assert uploads == 2
+
+    async def test_number_of_uploads_with_expired_trial_and_within_trial_window(self):
+        owner = self.trial_owner
+        uploads = await GetUploadsNumberPerUserInteractor(None, owner).execute(owner)
+        assert uploads == 1

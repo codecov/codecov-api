@@ -193,3 +193,13 @@ class PlanService:
             self.trial_status == TrialStatus.ONGOING.value
             and self.plan_name == PlanName.TRIAL_PLAN_NAME.value
         )
+
+    @property
+    def has_trial_dates(self) -> bool:
+        return bool(self.trial_start_date and self.trial_end_date)
+
+    def trial_duration_in_days(self) -> int:
+        if self.has_trial_dates:
+            delta = self.trial_end_date - self.trial_start_date
+            return delta.days
+        return 0
