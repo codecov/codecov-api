@@ -17,7 +17,9 @@ def sync_agreements(apps, schema):
                 user.terms_agreement_at = owner.profile.terms_agreement_at
                 user.save()
         except Exception as e:
-            print(f"Unknown error occurred for {owner.ownerid}. Skipping this owner.: {e}")
+            print(
+                f"Unknown error occurred for {owner.ownerid}. Skipping this owner.: {e}"
+            )
 
 
 def reverse_func(apps, schema):
