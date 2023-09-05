@@ -12,6 +12,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RunSQL(
             sql=migrations.RunSQL.noop,
+            reverse_sql=migrations.RunSQL.noop,
             state_operations=[
                 migrations.RemoveField(
                     model_name="ownerprofile",
@@ -22,5 +23,13 @@ class Migration(migrations.Migration):
                     name="terms_agreement_at",
                 ),
             ]
-        )
+        ),
+        migrations.RunSQL(
+            sql="ALTER TABLE public.codecov_auth_ownerprofile DROP COLUMN terms_agreement CASCADE",
+            reverse_sql=migrations.RunSQL.noop,
+        ),
+        migrations.RunSQL(
+            sql="ALTER TABLE public.codecov_auth_ownerprofile DROP COLUMN terms_agreement_at CASCADE",
+            reverse_sql=migrations.RunSQL.noop,
+        ),
     ]
