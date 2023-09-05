@@ -14,5 +14,4 @@ def create_owner_profile_when_owner_is_created(
     if created:
         return OwnerProfile.objects.create(
             owner_id=instance.ownerid,
-            terms_agreement=False,
         )

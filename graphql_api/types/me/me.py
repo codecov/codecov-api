@@ -3,7 +3,7 @@ from typing import Optional
 from ariadne import ObjectType, convert_kwargs_to_snake_case
 
 from codecov.db import sync_to_async
-from codecov_auth.models import Owner, OwnerProfile
+from codecov_auth.models import Owner, OwnerProfile, User
 from graphql_api.actions.owner import (
     get_owner_login_sessions,
     get_user_tokens,
@@ -105,9 +105,9 @@ def resolve_tracking_data(current_user, _, **kwargs):
 @sync_to_async
 def resolve_terms_agreement(current_owner: Owner, _, **kwargs) -> Optional[bool]:
     try:
-        owner_profile = current_owner.profile
-        return owner_profile.terms_agreement
-    except OwnerProfile.DoesNotExist:
+        user = current_owner.user
+        return user.terms_agreement
+    except User.DoesNotExist:
         return None
 
 
