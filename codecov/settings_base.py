@@ -453,11 +453,17 @@ UPLOAD_THROTTLING_ENABLED = True
 CANNY_SSO_PRIVATE_TOKEN = get_config("canny", "sso_private_token", default="")
 
 SENTRY_JWT_SHARED_SECRET = get_config(
-    "setup", "sentry", "jwt_shared_secret", default=None
+    "sentry", "jwt_shared_secret", default=None
+) or get_config("setup", "sentry", "jwt_shared_secret", default=None)
+SENTRY_USER_WEBHOOK_URL = get_config(
+    "sentry", "webhook_url", default=None
+) or get_config("setup", "sentry", "webhook_url", default=None)
+SENTRY_OAUTH_CLIENT_ID = get_config("sentry", "client_id") or get_config(
+    "setup", "sentry", "oauth_client_id"
 )
-SENTRY_USER_WEBHOOK_URL = get_config("setup", "sentry", "webhook_url", default=None)
-SENTRY_OAUTH_CLIENT_ID = get_config("setup", "sentry", "oauth_client_id")
-SENTRY_OAUTH_CLIENT_SECRET = get_config("setup", "sentry", "oauth_client_secret")
+SENTRY_OAUTH_CLIENT_SECRET = get_config("sentry", "client_secret") or get_config(
+    "setup", "sentry", "oauth_client_secret"
+)
 
 # list of repo IDs that will use the new-style report builder
 # TODO: we can eventually get rid of this once it's confirmed working well for many repos
