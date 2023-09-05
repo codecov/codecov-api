@@ -84,6 +84,8 @@ def main():
         "utils.config",
         "utils.encryption",
         "utils.logging_configuration",
+        "core.models",
+        "reports.models",
         "ariadne_django.apps",
         "whitenoise",
         "whitenoise.middleware",
