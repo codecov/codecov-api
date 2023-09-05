@@ -22,7 +22,7 @@ class Migration(migrations.Migration):
                     model_name="ownerprofile",
                     name="terms_agreement_at",
                 ),
-            ]
+            ],
         ),
         migrations.RunSQL(
             sql="ALTER TABLE public.codecov_auth_ownerprofile DROP COLUMN terms_agreement CASCADE",
