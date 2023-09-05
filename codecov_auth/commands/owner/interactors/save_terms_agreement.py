@@ -23,10 +23,9 @@ class SaveTermsAgreementInteractor(BaseInteractor):
             raise ValidationError("Owner does not have an associated user")
 
     def update_terms_agreement(self, input: TermsAgreementInput):
-        user = User.objects.get(id=self.current_owner.user_id)
-        user.terms_agreement = input.terms_agreement
-        user.terms_agreement_at = timezone.now()
-        user.save()
+        self.current_user.terms_agreement = input.terms_agreement
+        self.current_user.terms_agreement_at = timezone.now()
+        self.current_user.save()
 
         if input.business_email is not None and input.business_email != "":
             self.current_owner.business_email = input.business_email
