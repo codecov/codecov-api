@@ -40,7 +40,7 @@ class Command(BaseCommand):
             )
             return
 
-        commits = Commit.objects.all()
+        commits = Commit.objects.all().only("id", "commitid")
 
         # this stores the oldest commit id that has already been backfilled
         commit_id = storage_redis.get("backfill_commits_id")
