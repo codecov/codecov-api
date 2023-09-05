@@ -6,20 +6,15 @@ from django.db import migrations
 def sync_agreements(apps, schema):
     owners = apps.get_model("codecov_auth", "Owner")
     for owner in owners.objects.all():
-        try:
-            if not hasattr(owner, "profile") or owner.profile is None:
-                print(f"Owner ({owner.ownerid}) does not have associated OwnerProfile")
-            elif not hasattr(owner, "user") or owner.user is None:
-                print(f"Owner ({owner.ownerid}) does not have associated User")
-            else:
-                user = owner.user
-                user.terms_agreement = owner.profile.terms_agreement
-                user.terms_agreement_at = owner.profile.terms_agreement_at
-                user.save()
-        except Exception as e:
-            print(
-                f"Unknown error occurred for {owner.ownerid}. Skipping this owner.: {e}"
-            )
+        if not hasattr(owner, "profile") or owner.profile is None:
+            print(f"Owner ({owner.ownerid}) does not have associated OwnerProfile")
+        elif not hasattr(owner, "user") or owner.user is None:
+            print(f"Owner ({owner.ownerid}) does not have associated User")
+        else:
+            user = owner.user
+            user.terms_agreement = owner.profile.terms_agreement
+            user.terms_agreement_at = owner.profile.terms_agreement_at
+            user.save()
 
 
 def reverse_func(apps, schema):
