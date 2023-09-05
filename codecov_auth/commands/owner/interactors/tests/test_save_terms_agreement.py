@@ -52,7 +52,7 @@ class UpdateSaveTermsAgreementInteractorTest(TransactionTestCase):
         self.current_owner.business_email == before_refresh_business_email
 
     @freeze_time("2022-01-03T00:00:00")
-    def test_update_owner_and_user_when_email_isnt_empty(self):
+    def test_update_owner_and_user_when_email_is_not_empty(self):
         self.execute(
             current_owner=self.current_owner,
             input={"businessEmail": "something@email.com", "termsAgreement": True},
