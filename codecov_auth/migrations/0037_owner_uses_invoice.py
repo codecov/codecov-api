@@ -7,7 +7,7 @@ from utils.migrations import RiskyAddField
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("codecov_auth", "0035_owner_pretrial_users_count"),
+        ("codecov_auth", "0036_add_user_terms_agreement"),
     ]
 
     operations = [

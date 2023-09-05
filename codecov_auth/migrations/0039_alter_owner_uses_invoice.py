@@ -7,13 +7,13 @@ from utils.migrations import RiskyAlterField
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("codecov_auth", "0036_owner_uses_invoice"),
+        ("codecov_auth", "0038_alter_owner_uses_invoice"),
     ]
 
     operations = [
         RiskyAlterField(
             model_name="owner",
             name="uses_invoice",
-            field=models.BooleanField(default=False, null=True),
+            field=models.BooleanField(default=False, null=False),
         ),
     ]
