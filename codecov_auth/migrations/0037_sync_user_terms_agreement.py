@@ -3,29 +3,30 @@
 from django.db import migrations
 
 
-def sync_agreements(apps, schema):
-    owners = apps.get_model("codecov_auth", "Owner")
-    for owner in owners.objects.all():
-        if not hasattr(owner, "profile") or owner.profile is None:
-            print(f"Owner ({owner.ownerid}) does not have associated OwnerProfile")
-        elif not hasattr(owner, "user") or owner.user is None:
-            print(f"Owner ({owner.ownerid}) does not have associated User")
-        else:
-            user = owner.user
-            user.terms_agreement = owner.profile.terms_agreement
-            user.terms_agreement_at = owner.profile.terms_agreement_at
-            user.save()
-
-
-def reverse_func(apps, schema):
-    # Only used for unit testing
-    pass
-
-
 class Migration(migrations.Migration):
 
     dependencies = [
         ("codecov_auth", "0036_add_user_terms_agreement"),
     ]
 
-    operations = [migrations.RunPython(sync_agreements, reverse_func)]
+    operations = [
+        migrations.RunSQL(
+            sql="""
+            UPDATE users
+            SET
+                terms_agreement = subquery.terms_agreement,
+                terms_agreement_at = subquery.terms_agreement_at
+            FROM (
+                SELECT
+                    owners.user_id,
+                    codecov_auth_ownerprofile.terms_agreement,
+                    codecov_auth_ownerprofile.terms_agreement_at
+                FROM owners
+                INNER JOIN codecov_auth_ownerprofile
+                ON codecov_auth_ownerprofile.owner_id = owners.ownerid
+            ) subquery
+            WHERE subquery.user_id = users.id;
+            """,
+            reverse_sql=migrations.RunSQL.noop,
+        )
+    ]
