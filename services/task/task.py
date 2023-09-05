@@ -349,3 +349,11 @@ class TaskService(object):
                 current_yaml=current_yaml,
             ),
         ).apply_async()
+
+    def backfill_commit_data(self, commitid: str):
+        self._create_signature(
+            "app.tasks.archive.BackfillCommitDataToStorage",
+            kwargs=dict(
+                commitid=commitid,
+            ),
+        ).apply_async()
