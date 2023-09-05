@@ -26,10 +26,10 @@ class Migration(migrations.Migration):
         ),
         migrations.RunSQL(
             sql="ALTER TABLE public.codecov_auth_ownerprofile DROP COLUMN terms_agreement CASCADE",
-            reverse_sql=migrations.RunSQL.noop,
+            reverse_sql="ALTER TABLE public.codecov_auth_ownerprofile ADD COLUMN terms_agreement boolean NULL",
         ),
         migrations.RunSQL(
             sql="ALTER TABLE public.codecov_auth_ownerprofile DROP COLUMN terms_agreement_at CASCADE",
-            reverse_sql=migrations.RunSQL.noop,
+            reverse_sql="ALTER TABLE public.codecov_auth_ownerprofile ADD COLUMN terms_agreement_at timestamp NULL",
         ),
     ]
