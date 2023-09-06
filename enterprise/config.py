@@ -19,7 +19,7 @@ def get_config(*path, default=None):
 
 
 def should_write_data_to_storage_config_check(
-        master_switch_key: str, is_codecov_repo: bool, repoid: int
+    master_switch_key: str, is_codecov_repo: bool, repoid: int
 ) -> bool:
     master_write_switch = get_config(
         "setup",
