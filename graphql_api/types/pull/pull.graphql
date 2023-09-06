@@ -15,4 +15,5 @@ type Pull {
     last: Int
     before: String
   ): CommitConnection
+  firstPull: Boolean!
 }
