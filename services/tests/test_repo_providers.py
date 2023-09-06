@@ -50,6 +50,10 @@ class TestRepoProviderService(InternalAPITest):
     def get_owner_gl(self):
         return Owner.objects.filter(ownerid=self.repo_gl.author.ownerid).first()
 
+    @sync_to_async
+    def get_owner_gh(self):
+        return Owner.objects.filter(ownerid=self.repo_gh.author.ownerid).first()
+
     def test_get_torngit_with_names(self):
         provider = RepoProviderService().get_by_name(
             self.repo_gh.author,
@@ -88,6 +92,30 @@ class TestRepoProviderService(InternalAPITest):
         new_token = {"key": "00001023102301", "refresh_token": "20349230952"}
         await provider._on_token_refresh(new_token)
         owner = await self.get_owner_gl()
+        assert owner.username == "ThiagoCodecov"
+        saved_token = encryptor.decrypt_token(owner.oauth_token)
+        assert saved_token["key"] == "00001023102301"
+        assert saved_token["refresh_token"] == "20349230952"
+
+    @pytest.mark.asyncio
+    async def test_refresh_callback_github(self):
+        provider = RepoProviderService().get_by_name(
+            self.repo_gh.author,
+            self.repo_gh.name,
+            self.repo_gh.author,
+            self.repo_gh.author.service,
+        )
+        assert isinstance(Github(), type(provider))
+        assert provider._on_token_refresh is not None
+        assert inspect.isawaitable(provider._on_token_refresh())
+        owner = await self.get_owner_gh()
+        saved_token = encryptor.decrypt_token(owner.oauth_token)
+        assert saved_token["key"] == "testaaft3ituvli790m1yajovjv5eg0r4j0264iw"
+        assert "refresh_token" not in saved_token
+
+        new_token = {"key": "00001023102301", "refresh_token": "20349230952"}
+        await provider._on_token_refresh(new_token)
+        owner = await self.get_owner_gh()
         assert owner.username == "ThiagoCodecov"
         saved_token = encryptor.decrypt_token(owner.oauth_token)
         assert saved_token["key"] == "00001023102301"
