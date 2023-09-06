@@ -1631,6 +1631,32 @@ mocked_files_with_direct_and_indirect_changes = """
         },
         "added_diff_coverage": [],
         "unexpected_line_changes": [[[1, "h"], [1, "h"]]]
+    },
+    {
+        "head_name": "fileD",
+        "base_name": "fileD",
+        "head_coverage": {
+            "hits": 12,
+            "misses": 1,
+            "partials": 1,
+            "branches": 3,
+            "sessions": 0,
+            "complexity": 0,
+            "complexity_total": 0,
+            "methods": 5
+        },
+        "base_coverage": {
+            "hits": 5,
+            "misses": 6,
+            "partials": 1,
+            "branches": 2,
+            "sessions": 0,
+            "complexity": 0,
+            "complexity_total": 0,
+            "methods": 4
+        },
+        "added_diff_coverage": [],
+        "unexpected_line_changes": []
     }]
 }
 """
@@ -1683,7 +1709,11 @@ class ComparisonReportTest(TestCase):
     def test_impacted_files_filtered_by_direct_changes(self, read_file):
         read_file.return_value = mocked_files_with_direct_and_indirect_changes
         impacted_files = self.comparison_report.impacted_files_with_direct_changes
-        assert [file.head_name for file in impacted_files] == ["fileA", "fileB"]
+        assert [file.head_name for file in impacted_files] == [
+            "fileA",
+            "fileB",
+            "fileD",
+        ]
 
     def test_file_has_diff(self):
         file = ImpactedFile(
