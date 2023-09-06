@@ -260,29 +260,3 @@ class PlanServiceTests(TestCase):
         plan_service = PlanService(current_org=current_org)
 
         assert plan_service.has_trial_dates == True
-
-    def test_plan_service_returns_trial_dates_difference_in_days(self):
-        current_org = OwnerFactory(
-            plan=PlanName.CODECOV_PRO_MONTHLY.value,
-            trial_start_date=datetime.utcnow(),
-            trial_end_date=datetime.utcnow() + timedelta(days=12),
-        )
-        current_org.save()
-
-        plan_service = PlanService(current_org=current_org)
-
-        assert plan_service.trial_duration_in_days() == 12
-
-    def test_plan_service_returns_no_trial_dates_difference_in_days_if_no_trial_dates(
-        self,
-    ):
-        current_org = OwnerFactory(
-            plan=PlanName.CODECOV_PRO_MONTHLY.value,
-            trial_start_date=None,
-            trial_end_date=None,
-        )
-        current_org.save()
-
-        plan_service = PlanService(current_org=current_org)
-
-        assert plan_service.trial_duration_in_days() == 0

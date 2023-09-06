@@ -1,8 +1,6 @@
 from datetime import datetime, timedelta
 
 from django.test import TransactionTestCase
-from django.utils import timezone
-from freezegun import freeze_time
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
@@ -38,6 +36,10 @@ class GetUploadsNumberPerUserInteractorTest(TransactionTestCase):
         trial_commit = CommitFactory.create(repository=trial_repo)
         trial_report = CommitReportFactory.create(commit=trial_commit)
 
+        report_before_trial = UploadFactory.create(report=trial_report)
+        report_before_trial.created_at += timedelta(days=-12)
+        report_before_trial.save()
+
         report_during_trial = UploadFactory.create(report=trial_report)
         report_during_trial.created_at += timedelta(days=-5)
         report_during_trial.save()
@@ -54,7 +56,7 @@ class GetUploadsNumberPerUserInteractorTest(TransactionTestCase):
         uploads = await GetUploadsNumberPerUserInteractor(None, owner).execute(owner)
         assert uploads == 2
 
-    async def test_number_of_uploads_with_expired_trial_and_within_trial_window(self):
+    async def test_number_of_uploads_with_expired_trial(self):
         owner = self.trial_owner
         uploads = await GetUploadsNumberPerUserInteractor(None, owner).execute(owner)
-        assert uploads == 1
+        assert uploads == 2
