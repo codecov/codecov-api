@@ -1,33 +1,27 @@
-FROM codecov/api:latest as build
+ARG REQUIREMENTS_IMAGE=codecov/api:latest
 
-# Pyinstaller necessities
-# PyInstaller needs zlib-dev, gcc, libc-dev, and musl-dev
-RUN apk --update --no-cache add \
-    zlib-dev \
-    musl-dev \
-    libc-dev \
-    libffi-dev \
-    gcc \
-    g++ \
-    git \
-    pwgen \
-    && pip install --upgrade pip
+FROM $REQUIREMENTS_IMAGE as build
 
-RUN pip install pyinstaller==4.7
+COPY            . /app
+WORKDIR         /app
+
+
 RUN pip uninstall -y typing
-# install cython 
-RUN pip install cython==3.0a9
-RUN pip install tinyaes
 
 # set settings module
 ENV DJANGO_SETTINGS_MODULE "codecov.settings_enterprise"
 
 # Remove the settings dev and enterprise files.
 # These should *never* make it to enterprise.
-RUN rm /app/codecov/settings_dev.py
-RUN rm /app/codecov/settings_prod.py
-RUN rm /app/codecov/settings_test.py
-RUN rm /app/codecov/settings_staging.py
+RUN rm /app/codecov/settings_dev.py && \
+    rm /app/codecov/settings_prod.py && \
+    rm /app/codecov/settings_test.py && \
+    rm /app/codecov/settings_staging.py && \
+    rm /app/dev.sh && \
+    rm /app/prod.sh && \
+    rm /app/staging.sh && \
+    rm /app/production.yml && \
+    rm /app/development.yml
 
 # Remove unneeded folders
 RUN rm -rf /app/.github
@@ -39,47 +33,20 @@ RUN rm -rf /app/.circleci
 RUN rm /app/utils/config.py
 COPY enterprise/config.py /app/utils/config.py
 
-
-# execute Cython script in app dir 
-COPY enterprise/ldd /pyinstaller/ldd
-COPY enterprise/setup.py setup.py
-COPY enterprise/cythonize.sh /pyinstaller/cythonize_everything.sh
-
-
-COPY enterprise/pyi_rth_django.py /pyinstaller/pyi_rth_django.py
-COPY enterprise/generate_pyinstaller_args.py /pyinstaller/generate_pyinstaller_args.py
-
-#Copy Hooks
-COPY enterprise/hooks /hooks
-
-# Not the cleanest,  but this helps with layer caching.
-RUN chmod a+x /pyinstaller/*
-RUN ["/pyinstaller/cythonize_everything.sh"]
-
-COPY enterprise/package.sh /pyinstaller/package.sh
-RUN chmod a+x /pyinstaller/*
-RUN ["/pyinstaller/package.sh"]
-ENV RUN_ENV=ENTERPRISE
 # Create the codecov user to run the container as
 RUN addgroup -S application && adduser -S codecov -G application
 RUN mkdir -p /config && chown codecov:application /config
 
 # copy the enterprise settings module.
-WORKDIR     /home
-COPY ./enterprise.sh /home/enterprise.sh
-RUN chown codecov:application /home/enterprise.sh && \
-    chmod +x /home/enterprise.sh && \
-    chown codecov:application /home/api
+WORKDIR     /app
+RUN chmod +x enterprise.sh && \
+    chown codecov:application /app
 
-FROM alpine:3.16
-
-RUN         addgroup -S application && adduser -S codecov -G application && rm -rf /home/codecov
-USER        codecov
-COPY        --from=build /home/enterprise.sh /home/enterprise
-COPY        --from=build /home/api /home/api
 ARG         RELEASE_VERSION
+ENV         RUN_ENV ENTERPRISE
 ENV         RELEASE_VERSION $RELEASE_VERSION
 ENV         DJANGO_SETTINGS_MODULE "codecov.settings_enterprise"
 ENV         CODECOV_API_PORT=8000
-WORKDIR     /home
-ENTRYPOINT ["./enterprise"]
+
+ENTRYPOINT ["./enterprise.sh"]
+
