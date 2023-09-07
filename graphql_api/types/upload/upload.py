@@ -66,7 +66,8 @@ def resolve_ci_url(upload, info):
 @sync_to_async
 def resolve_download_url(upload, info):
     request = info.context["request"]
-    return request.build_absolute_uri(upload.download_url)
+    download_absolute_uri = request.build_absolute_uri(upload.download_url)
+    return download_absolute_uri.replace("http", "https", 1)
 
 
 @upload_bindable.field("name")

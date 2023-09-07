@@ -489,7 +489,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         uploads = paginate_connection(commit["uploads"])
         assert uploads == [
             {
-                "downloadUrl": f"http://testserver/upload/gh/{self.org.username}/{self.repo.name}/download?path={upload.storage_path}",
+                "downloadUrl": f"https://testserver/upload/gh/{self.org.username}/{self.repo.name}/download?path={upload.storage_path}",
             }
         ]
 
