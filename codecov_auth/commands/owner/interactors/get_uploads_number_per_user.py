@@ -25,14 +25,14 @@ class GetUploadsNumberPerUserInteractor(BaseInteractor):
                 report__commit__timestamp__gte=datetime.now() - timedelta(days=60),
                 upload_type="uploaded",
             )
-        if (
-            plan_service.trial_status == TrialStatus.EXPIRED.value
-            and plan_service.has_trial_dates
-        ):
-            queryset = queryset.filter(
-                Q(created_at__gte=plan_service.trial_end_date)
-                | Q(created_at__lte=plan_service.trial_start_date)
-            )
+            if (
+                plan_service.trial_status == TrialStatus.EXPIRED.value
+                and plan_service.has_trial_dates
+            ):
+                queryset = queryset.filter(
+                    Q(created_at__gte=plan_service.trial_end_date)
+                    | Q(created_at__lte=plan_service.trial_start_date)
+                )
 
         uploads_used = queryset[:monthly_limit].count()
         return uploads_used
