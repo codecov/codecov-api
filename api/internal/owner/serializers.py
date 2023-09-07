@@ -320,18 +320,8 @@ class UserSerializer(serializers.ModelSerializer):
                 instance
             ):
                 owner.activate_user(instance)
-                SegmentService().account_activated_user(
-                    current_user_ownerid=self.context["request"].current_owner.ownerid,
-                    ownerid_to_activate=instance.ownerid,
-                    org_ownerid=owner.ownerid,
-                )
             elif validated_data["activated"] is False:
                 owner.deactivate_user(instance)
-                SegmentService().account_deactivated_user(
-                    current_user_ownerid=self.context["request"].current_owner.ownerid,
-                    ownerid_to_deactivate=instance.ownerid,
-                    org_ownerid=owner.ownerid,
-                )
             else:
                 raise PermissionDenied(
                     f"Cannot activate user {instance.username} -- not enough seats left."

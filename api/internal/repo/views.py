@@ -91,12 +91,6 @@ class RepositoryViewSet(
                 raise PermissionDenied("Private repository limit reached.")
         return super().perform_update(serializer)
 
-    def destroy(self, request, *args, **kwargs):
-        SegmentService().account_deleted_repository(
-            self.request.current_owner.ownerid, self.get_object()
-        )
-        return super().destroy(request, *args, **kwargs)
-
     @action(detail=True, methods=["patch"], url_path="regenerate-upload-token")
     def regenerate_upload_token(self, request, *args, **kwargs):
         repo = self.get_object()
@@ -110,9 +104,6 @@ class RepositoryViewSet(
         repo = self.get_object()
         TaskService().delete_timeseries(repository_id=repo.repoid)
         TaskService().flush_repo(repository_id=repo.repoid)
-        SegmentService().account_erased_repository(
-            self.request.current_owner.ownerid, repo
-        )
         return Response(RepoSerializer(repo).data)
 
     @action(detail=True, methods=["post"])

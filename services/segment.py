@@ -71,39 +71,9 @@ def inject_segment_repository(method):
 class SegmentEvent(Enum):
     ACCOUNT_ACTIVATED_REPOSITORY_ON_UPLOAD = "Account Activated Repository On Upload"
     ACCOUNT_ACTIVATED_REPOSITORY = "Account Activated Repository"
-    ACCOUNT_ACTIVATED_USER = "Account Activated User"
-    ACCOUNT_ADDED_USER = "Account Added User"  # TODO: check with Jon how this is different from Account Activated User?
-    ACCOUNT_CANCELLED_SUBSCRIPTION = "Account Cancelled Subscription"
-    ACCOUNT_CHANGED_PLAN = "Account Changed Plan"
-    ACCOUNT_COMPLETED_CHECKOUT = "Account Completed Checkout"
-    ACCOUNT_CREATED = "Account Created"
-    ACCOUNT_DEACTIVATED_REPOSITORY = "Account Deactivated Repository"
-    ACCOUNT_DEACTIVATED_USER = "Account Deactivated User"
-    ACCOUNT_DECREASED_USERS = "Account Decreased Users"
-    ACCOUNT_DELETED_REPOSITORY = "Account Deleted Repository"
-    ACCOUNT_DELETED = "Account Deleted"
-    ACCOUNT_ERASED_REPOSITORY = "Account Erased Repository"
-    ACCOUNT_INCREASED_USERS = "Account Increased Users"
-    ACCOUNT_INSTALLED_SOURCE_CONTROL_APP = (
-        "Account Installed Source Control Service App"
-    )
-    ACCOUNT_PAID_SUBSCRIPTION = "Account Paid Subscription"
-    ACCOUNT_REMOVED_USER = "Account Removed User"  # TODO: check with Jon how this is different from Account Deactivated User?
-    ACCOUNT_UNINSTALLED_SOURCE_CONTROL_APP = (
-        "Account Uninstalled Source Control Service App"
-    )
     ACCOUNT_UPLOADED_COVERAGE_REPORT = "Account Uploaded Coverage Report"
-    TRIAL_ENDED = "Trial Ended"
-    TRIAL_STARTED = "Trial Started"
     USER_SIGNED_IN = "User Signed In"
-    USER_SIGNED_OUT = "User Signed Out"
     USER_SIGNED_UP = "User Signed Up"
-    IMPACT_ANALYSIS_PROFILING_COMMIT_CREATED = (
-        "Impact Analysis Profiling Commit Created"
-    )
-    IMPACT_ANALYSIS_PROFILING_UPLOAD_CREATED = (
-        "Impact Analysis Profiling Upload Created"
-    )
 
 
 class SegmentOwner:
@@ -303,14 +273,6 @@ class SegmentService:
         )
 
     @inject_segment_owner
-    def user_signed_out(self, segment_owner):
-        analytics.track(
-            segment_owner.user_id,
-            SegmentEvent.USER_SIGNED_OUT.value,
-            segment_owner.traits,
-        )
-
-    @inject_segment_owner
     def account_deleted(self, segment_owner):
         analytics.track(
             user_id=segment_owner.user_id,
@@ -328,164 +290,11 @@ class SegmentService:
         )
 
     @inject_segment_repository
-    def account_deactivated_repository(self, current_user_ownerid, segment_repository):
-        analytics.track(
-            user_id=current_user_ownerid,
-            event=SegmentEvent.ACCOUNT_DEACTIVATED_REPOSITORY.value,
-            properties=segment_repository.traits,
-            context={"groupId": segment_repository.repo.author.ownerid},
-        )
-
-    @inject_segment_repository
-    def account_erased_repository(self, current_user_ownerid, segment_repository):
-        analytics.track(
-            user_id=current_user_ownerid,
-            event=SegmentEvent.ACCOUNT_ERASED_REPOSITORY.value,
-            properties=segment_repository.traits,
-            context={"groupId": segment_repository.repo.author.ownerid},
-        )
-
-    @inject_segment_repository
-    def account_deleted_repository(self, current_user_ownerid, segment_repository):
-        analytics.track(
-            user_id=current_user_ownerid,
-            event=SegmentEvent.ACCOUNT_DELETED_REPOSITORY.value,
-            properties=segment_repository.traits,
-            context={"groupId": segment_repository.repo.author.ownerid},
-        )
-
-    @inject_segment_repository
     def account_activated_repository_on_upload(self, org_ownerid, segment_repository):
         analytics.track(
             user_id=BLANK_SEGMENT_USER_ID,
             event=SegmentEvent.ACCOUNT_ACTIVATED_REPOSITORY_ON_UPLOAD.value,
             properties=segment_repository.traits,
-            context={"groupId": org_ownerid},
-        )
-
-    @segment_enabled
-    def account_activated_user(
-        self,
-        current_user_ownerid,
-        ownerid_to_activate,
-        org_ownerid,
-        auto_activated=False,
-    ):
-        analytics.track(
-            user_id=current_user_ownerid,
-            event=SegmentEvent.ACCOUNT_ACTIVATED_USER.value,
-            properties={
-                "role": "admin",
-                "user": ownerid_to_activate,
-                "auto_activated": auto_activated,
-            },
-            context={"groupId": org_ownerid},
-        )
-
-    @segment_enabled
-    def account_deactivated_user(
-        self, current_user_ownerid, ownerid_to_deactivate, org_ownerid
-    ):
-        analytics.track(
-            user_id=current_user_ownerid,
-            event=SegmentEvent.ACCOUNT_DEACTIVATED_USER.value,
-            properties={"role": "admin", "user": ownerid_to_deactivate},
-            context={"groupId": org_ownerid},
-        )
-
-    @segment_enabled
-    def account_increased_users(self, current_user_ownerid, org_ownerid, plan_details):
-        analytics.track(
-            user_id=current_user_ownerid,
-            event=SegmentEvent.ACCOUNT_INCREASED_USERS.value,
-            properties=plan_details,
-            context={"groupId": org_ownerid},
-        )
-
-    @segment_enabled
-    def account_decreased_users(self, current_user_ownerid, org_ownerid, plan_details):
-        analytics.track(
-            user_id=current_user_ownerid,
-            event=SegmentEvent.ACCOUNT_DECREASED_USERS.value,
-            properties=plan_details,
-            context={"groupId": org_ownerid},
-        )
-
-    @segment_enabled
-    def account_paid_subscription(self, org_ownerid, stripe_subscription_details):
-        analytics.track(
-            user_id=BLANK_SEGMENT_USER_ID,
-            event=SegmentEvent.ACCOUNT_PAID_SUBSCRIPTION.value,
-            properties=stripe_subscription_details,
-            context={"groupId": org_ownerid},
-        )
-
-    @segment_enabled
-    def account_cancelled_subscription(self, org_ownerid, stripe_subscription_details):
-        analytics.track(
-            user_id=BLANK_SEGMENT_USER_ID,
-            event=SegmentEvent.ACCOUNT_CANCELLED_SUBSCRIPTION.value,
-            properties=stripe_subscription_details,
-            context={"groupId": org_ownerid},
-        )
-
-    @segment_enabled
-    def account_changed_plan(
-        self, current_user_ownerid, org_ownerid, plan_change_details
-    ):
-        analytics.track(
-            user_id=current_user_ownerid,
-            event=SegmentEvent.ACCOUNT_CHANGED_PLAN.value,
-            properties=plan_change_details,
-            context={"groupId": org_ownerid},
-        )
-
-    @segment_enabled
-    def account_completed_checkout(self, org_ownerid, checkout_session_details):
-        analytics.track(
-            user_id=BLANK_SEGMENT_USER_ID,
-            event=SegmentEvent.ACCOUNT_COMPLETED_CHECKOUT.value,
-            properties=checkout_session_details,
-            context={"groupId": org_ownerid},
-        )
-
-    @segment_enabled
-    def trial_started(self, org_ownerid, trial_details):
-        analytics.track(
-            user_id=BLANK_SEGMENT_USER_ID,
-            event=SegmentEvent.TRIAL_STARTED.value,
-            properties=trial_details,
-            context={"groupId": org_ownerid},
-        )
-
-    @segment_enabled
-    def trial_ended(self, org_ownerid, trial_details):
-        analytics.track(
-            user_id=BLANK_SEGMENT_USER_ID,
-            event=SegmentEvent.TRIAL_ENDED.value,
-            properties=trial_details,
-            context={"groupId": org_ownerid},
-        )
-
-    @segment_enabled
-    def account_installed_source_control_service_app(
-        self, user_ownerid, org_ownerid, app_details
-    ):
-        analytics.track(
-            user_id=user_ownerid,
-            event=SegmentEvent.ACCOUNT_INSTALLED_SOURCE_CONTROL_APP.value,
-            properties=app_details,
-            context={"groupId": org_ownerid},
-        )
-
-    @segment_enabled
-    def account_uninstalled_source_control_service_app(
-        self, user_ownerid, org_ownerid, app_details
-    ):
-        analytics.track(
-            user_id=org_ownerid,
-            event=SegmentEvent.ACCOUNT_UNINSTALLED_SOURCE_CONTROL_APP.value,
-            properties=app_details,
             context={"groupId": org_ownerid},
         )
 
@@ -496,22 +305,4 @@ class SegmentService:
             event=SegmentEvent.ACCOUNT_UPLOADED_COVERAGE_REPORT.value,
             properties=upload_details,
             context={"groupId": org_ownerid},
-        )
-
-    @segment_enabled
-    def impact_analysis_profiling_commit_created(self, repo):
-        analytics.track(
-            user_id=BLANK_SEGMENT_USER_ID,
-            event=SegmentEvent.IMPACT_ANALYSIS_PROFILING_COMMIT_CREATED.value,
-            properties={"repo_id": repo.repoid, "repo_owner_id": repo.author.ownerid},
-            context={"groupId": repo.author.ownerid},
-        )
-
-    @segment_enabled
-    def impact_analysis_profiling_upload_created(self, repo):
-        analytics.track(
-            user_id=BLANK_SEGMENT_USER_ID,
-            event=SegmentEvent.IMPACT_ANALYSIS_PROFILING_UPLOAD_CREATED.value,
-            properties={"repo_id": repo.repoid, "repo_owner_id": repo.author.ownerid},
-            context={"groupId": repo.author.ownerid},
         )

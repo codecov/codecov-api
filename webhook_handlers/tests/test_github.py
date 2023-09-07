@@ -983,48 +983,6 @@ class GithubWebhookHandlerTests(APITestCase):
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    @patch(
-        "services.segment.SegmentService.account_installed_source_control_service_app"
-    )
-    def test_installing_app_triggers_segment(self, segment_install_mock):
-        owner = OwnerFactory(service=Service.GITHUB.value)
-        response = self._post_event_data(
-            event=GitHubWebhookEvents.INSTALLATION,
-            data={
-                "installation": {
-                    "id": 11,
-                    "account": {"id": owner.service_id, "login": owner.username},
-                },
-                "action": "added",
-                "sender": {"type": "User"},
-            },
-        )
-
-        segment_install_mock.assert_called_once_with(
-            owner.ownerid, owner.ownerid, {"platform": "github"}
-        )
-
-    @patch(
-        "services.segment.SegmentService.account_uninstalled_source_control_service_app"
-    )
-    def test_installing_app_triggers_segment(self, segment_uninstall_mock):
-        owner = OwnerFactory(service=Service.GITHUB.value)
-        response = self._post_event_data(
-            event=GitHubWebhookEvents.INSTALLATION,
-            data={
-                "installation": {
-                    "id": 11,
-                    "account": {"id": owner.service_id, "login": owner.username},
-                },
-                "action": "deleted",
-                "sender": {"type": "User"},
-            },
-        )
-
-        segment_uninstall_mock.assert_called_once_with(
-            owner.ownerid, owner.ownerid, {"platform": "github"}
-        )
-
     def test_repo_not_found_when_owner_has_integration_creates_repo(self):
         owner = OwnerFactory(
             integration_id=4850403, service_id=97968493, service=Service.GITHUB.value

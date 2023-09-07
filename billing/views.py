@@ -47,9 +47,6 @@ class StripeWebhookHandler(APIView):
         owner.delinquent = False
         owner.save()
 
-        self.segment_service.account_paid_subscription(
-            owner.ownerid, {"plan": owner.plan}
-        )
         self._log_updated(1)
 
     def invoice_payment_failed(self, invoice):
@@ -82,9 +79,6 @@ class StripeWebhookHandler(APIView):
         plan_service.set_default_plan_data()
         owner.repository_set.update(active=False, activated=False)
 
-        self.segment_service.account_cancelled_subscription(
-            owner.ownerid, {"plan": subscription.plan.name}
-        )
         self._log_updated(1)
 
     def subscription_schedule_created(self, schedule):
@@ -124,48 +118,8 @@ class StripeWebhookHandler(APIView):
 
         subscription = stripe.Subscription.retrieve(schedule["released_subscription"])
         owner = Owner.objects.get(ownerid=subscription.metadata.obo_organization)
-        subscription_data = subscription["items"]["data"][0]
         requesting_user_id = subscription.metadata.obo
         plan_service = PlanService(current_org=owner)
-
-        # Segment Analytics to see if user upgraded plan, increased or decreased users
-        if (
-            plan_service.plan_user_count
-            and plan_service.plan_user_count > subscription_data["quantity"]
-        ):
-            self.segment_service.account_decreased_users(
-                current_user_ownerid=requesting_user_id,
-                org_ownerid=owner.ownerid,
-                plan_details={
-                    "new_quantity": subscription_data["quantity"],
-                    "old_quantity": plan_service.plan_user_count,
-                    "plan": subscription_data["plan"]["name"],
-                },
-            )
-
-        if (
-            plan_service.plan_user_count
-            and plan_service.plan_user_count < subscription_data["quantity"]
-        ):
-            self.segment_service.account_increased_users(
-                current_user_ownerid=requesting_user_id,
-                org_ownerid=owner.ownerid,
-                plan_details={
-                    "new_quantity": subscription_data["quantity"],
-                    "old_quantity": plan_service.plan_user_count,
-                    "plan": subscription_data["plan"]["name"],
-                },
-            )
-
-        if owner.plan != subscription_data["plan"]["name"]:
-            self.segment_service.account_changed_plan(
-                current_user_ownerid=requesting_user_id,
-                org_ownerid=owner.ownerid,
-                plan_details={
-                    "new_plan": subscription_data["plan"]["name"],
-                    "previous_plan": owner.plan,
-                },
-            )
 
         plan_service = PlanService(current_org=owner)
         plan_service.update_plan(
@@ -316,10 +270,6 @@ class StripeWebhookHandler(APIView):
                 "Could not find plan in checkout.session.completed event",
                 extra=dict(ownerid=checkout_session.client_reference_id),
             )
-
-        self.segment_service.account_completed_checkout(
-            owner.ownerid, segment_checkout_session_details
-        )
 
         self._log_updated(1)
 
