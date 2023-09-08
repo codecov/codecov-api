@@ -180,13 +180,10 @@ jobs:
     - run:
         name: codecov-staging
         command: |
-          curl -Os https://uploader.codecov.io/latest/alpine/codecov
-          curl -Os https://uploader.codecov.io/latest/alpine/codecov.SHA256SUM
-          curl -Os https://uploader.codecov.io/latest/alpine/codecov.SHA256SUM.sig
-          gpgv codecov.SHA256SUM.sig codecov.SHA256SUM
-          shasum -a 256 -c codecov.SHA256SUM
-          chmod +x codecov
-          ./codecov -R . --url https://stage-web.codecov.dev -t $CODECOV_STAGING_TOKEN -F unit
+          codecovcli  do-upload --flag unit-latest-uploader --flag unit -t ${$CODECOV_STAGING_TOKEN} \
+          --coverage-files-search-exclude-folder=graphql_api/types/** \
+          --coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
+
   portable:
     executor: codecov-deploy
     steps:
