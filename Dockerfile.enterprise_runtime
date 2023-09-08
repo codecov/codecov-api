@@ -7,9 +7,9 @@ FROM $CODECOV_ENTERPRISE_RELEASE
 USER        root
 ARG         RELEASE_VERSION
 ENV         RELEASE_VERSION=$RELEASE_VERSION
-ENV         DJANGO_SETTINGS_MODULE="codecov.settings_enterprise"
+ENV         DJANGO_SETTINGS_MODULE "codecov.settings_enterprise"
 ENV         CODECOV_API_PORT=8000
-ENV         RUN_ENV=ENTERPRISE
+ENV         RUN_ENV="ENTERPRISE"
 ARG         EXTERNAL_DEPS_FOLDER=./external_deps
 
 RUN         mkdir $EXTERNAL_DEPS_FOLDER
