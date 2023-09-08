@@ -35,7 +35,8 @@ build-requirements:
 	docker pull ${GCR_REPO}:${REQUIREMENTS_TAG} || DOCKER_BUILDKIT=1 docker build \
 		-f Dockerfile.requirements . \
 		-t ${GCR_REPO}:${REQUIREMENTS_TAG} \
-		--ssh default
+		--ssh default \
+	&& docker push ${GCR_REPO}:${REQUIREMENTS_TAG}; true
 
 # CIRCLECI
 # job: build
