@@ -46,7 +46,7 @@ RUN rm /app/utils/config.py
 COPY enterprise/config.py /app/utils/config.py
 
 
-# execute Cython script in app dir 
+# execute Cython script in app dir
 COPY enterprise/ldd /pyinstaller/ldd
 COPY enterprise/setup.py setup.py
 COPY enterprise/cythonize.sh /pyinstaller/cythonize_everything.sh
@@ -70,7 +70,7 @@ RUN addgroup -S application && adduser -S codecov -G application
 RUN mkdir -p /config && chown codecov:application /config
 
 # copy the enterprise settings module.
-WORKDIR     /home
+WORKDIR /home
 COPY ./enterprise.sh /home/enterprise.sh
 RUN chown codecov:application /home/enterprise.sh && \
     chmod +x /home/enterprise.sh && \
@@ -78,13 +78,13 @@ RUN chown codecov:application /home/enterprise.sh && \
 
 FROM alpine:3.16
 
-RUN         addgroup -S application && adduser -S codecov -G application && rm -rf /home/codecov
-USER        codecov
-COPY        --from=build /home/enterprise.sh /home/enterprise
-COPY        --from=build /home/api /home/api
-ARG         RELEASE_VERSION
-ENV         RELEASE_VERSION $RELEASE_VERSION
-ENV         DJANGO_SETTINGS_MODULE "codecov.settings_enterprise"
-ENV         CODECOV_API_PORT=8000
-WORKDIR     /home
+RUN addgroup -S application && adduser -S codecov -G application && rm -rf /home/codecov
+USER codecov
+COPY --from=build /home/enterprise.sh /home/enterprise
+COPY --from=build /home/api /home/api
+ARG RELEASE_VERSION
+ENV RELEASE_VERSION $RELEASE_VERSION
+ENV DJANGO_SETTINGS_MODULE "codecov.settings_enterprise"
+ENV CODECOV_API_PORT=8000
+WORKDIR /home
 ENTRYPOINT ["./enterprise"]

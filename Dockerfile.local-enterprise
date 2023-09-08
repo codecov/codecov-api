@@ -1,14 +1,13 @@
-FROM            codecov/baseapi
+FROM codecov/baseapi
 
-EXPOSE          8000
+EXPOSE 8000
 
-COPY            . /app
+COPY . /app
+WORKDIR /app
 
-WORKDIR         /app
-
-RUN             python manage.py collectstatic --no-input
-ENV         DJANGO_SETTINGS_MODULE "codecov.settings_enterprise"
-ENV         RUN_ENV=ENTERPRISE
+RUN python manage.py collectstatic --no-input
+ENV DJANGO_SETTINGS_MODULE "codecov.settings_enterprise"
+ENV RUN_ENV=ENTERPRISE
 RUN mkdir -p /config
 RUN rm /app/utils/config.py
 RUN rm /app/codecov/settings_dev.py
