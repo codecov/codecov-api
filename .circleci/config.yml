@@ -180,7 +180,7 @@ jobs:
     - run:
         name: codecov-staging
         command: |
-          codecovcli  do-upload --flag unit-latest-uploader --flag unit -t ${$CODECOV_STAGING_TOKEN} \
+          codecovcli  do-upload --flag unit-latest-uploader --flag unit -t ${CODECOV_STAGING_TOKEN} \
           --coverage-files-search-exclude-folder=graphql_api/types/** \
           --coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
 
