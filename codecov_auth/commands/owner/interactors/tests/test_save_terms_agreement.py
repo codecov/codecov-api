@@ -76,3 +76,17 @@ class UpdateSaveTermsAgreementInteractorTest(TransactionTestCase):
             self.execute(
                 current_owner=self.current_owner, input={"termsAgreement": None}
             )
+
+    def test_owner_has_no_user(self):
+        owner_without_user = OwnerFactory(
+            username="random-user-123",
+            service="github",
+            business_email="asdfasdfa@gmail.com",
+            user=None,
+        )
+        with pytest.raises(ValidationError) as e:
+            self.execute(
+                current_owner=owner_without_user,
+                input={"businessEmail": "something@email.com", "termsAgreement": True},
+            )
+        assert str(e.value) == "Owner does not have an associated user"

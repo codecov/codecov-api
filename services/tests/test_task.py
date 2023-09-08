@@ -317,3 +317,31 @@ def test_make_http_request_task(mocker):
         time_limit=None,
         headers=dict(created_timestamp="2023-06-13T10:01:01.000123"),
     )
+
+
+@freeze_time("2023-06-13T10:01:01.000123")
+def test_backfill_commit_data_task(mocker):
+    signature_mock = mocker.patch("services.task.task.signature")
+    mock_route_task = mocker.patch(
+        "services.task.task.route_task",
+        return_value={
+            "queue": "celery",
+            "extra_config": {"soft_timelimit": 300, "hard_timelimit": 400},
+        },
+    )
+    TaskService().backfill_commit_data("example-commitid")
+    mock_route_task.assert_called_with(
+        "app.tasks.archive.BackfillCommitDataToStorage",
+        args=None,
+        kwargs=dict(commitid="example-commitid"),
+    )
+    signature_mock.assert_called_with(
+        "app.tasks.archive.BackfillCommitDataToStorage",
+        args=None,
+        kwargs=dict(commitid="example-commitid"),
+        app=celery_app,
+        queue="celery",
+        soft_time_limit=300,
+        time_limit=400,
+        headers=dict(created_timestamp="2023-06-13T10:01:01.000123"),
+    )

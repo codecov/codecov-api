@@ -24,7 +24,7 @@ class RiskyAddField(migrations.AddField):
         super().database_backwards(app_label, schema_editor, from_state, to_state)
 
 
-class RiskyRemoveField(migrations.RemoveField):
+class RiskyAlterField(migrations.AlterField):
     def database_forwards(self, app_label, schema_editor, from_state, to_state):
         if settings.SKIP_RISKY_MIGRATION_STEPS:
             return
@@ -38,7 +38,7 @@ class RiskyRemoveField(migrations.RemoveField):
         super().database_backwards(app_label, schema_editor, from_state, to_state)
 
 
-class RiskyAddField(migrations.AddField):
+class RiskyRemoveField(migrations.RemoveField):
     def database_forwards(self, app_label, schema_editor, from_state, to_state):
         if settings.SKIP_RISKY_MIGRATION_STEPS:
             return
