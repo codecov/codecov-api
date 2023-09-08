@@ -1,11 +1,8 @@
-import random
-import uuid
-from hashlib import sha1
+from datetime import datetime
 
 import factory
 from factory.django import DjangoModelFactory
 
-from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
 from graphql_api.types.enums import UploadErrorEnum
 from reports import models
