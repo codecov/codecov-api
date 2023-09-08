@@ -248,3 +248,15 @@ class PlanServiceTests(TestCase):
         assert current_org.plan_user_count == 1
         assert current_org.plan_activated_users == None
         assert current_org.stripe_subscription_id == None
+
+    def test_plan_service_returns_if_owner_has_trial_dates(self):
+        current_org = OwnerFactory(
+            plan=PlanName.CODECOV_PRO_MONTHLY.value,
+            trial_start_date=datetime.utcnow(),
+            trial_end_date=datetime.utcnow() + timedelta(days=14),
+        )
+        current_org.save()
+
+        plan_service = PlanService(current_org=current_org)
+
+        assert plan_service.has_trial_dates == True

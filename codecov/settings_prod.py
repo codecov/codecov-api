@@ -26,6 +26,8 @@ STRIPE_PLAN_IDS = {
     "users-pr-inappy": "price_1Gv2COGlVGuVgOrkuOYVLIj7",
     "users-sentrym": "price_1MlY9yGlVGuVgOrkHluurBtJ",
     "users-sentryy": "price_1MlYAYGlVGuVgOrke9SdbBUn",
+    "users-enterprisey": "price_1LmjzwGlVGuVgOrkIwlM46EU",
+    "users-enterprisem": "price_1LmjypGlVGuVgOrkzKtNqhwW",
 }
 
 CORS_ALLOW_HEADERS += ["sentry-trace", "baggage"]

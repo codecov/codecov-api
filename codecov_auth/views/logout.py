@@ -4,7 +4,8 @@ from django.shortcuts import redirect
 
 
 def logout_view(request, **kwargs):
-    response = redirect("/")
+    redirect_url = request.GET.get("to", "/")
+    response = redirect(redirect_url)
     logout(request)
     kwargs_cookie = dict(
         domain=settings.COOKIES_DOMAIN, samesite=settings.COOKIE_SAME_SITE

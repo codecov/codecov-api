@@ -88,3 +88,10 @@ def resolve_behind_by(pull: Pull, info, **kwargs) -> int:
 @pull_bindable.field("behindByCommit")
 def resolve_behind_by_commit(pull: Pull, info, **kwargs) -> str:
     return pull.behind_by_commit
+
+
+@pull_bindable.field("firstPull")
+@sync_to_async
+def resolve_first_pull(pull: Pull, info) -> bool:
+    # returns true if this pull is/was the 1st for a repo
+    return pull.repository.pull_requests.order_by("id").first() == pull
