@@ -27,6 +27,8 @@ jobs:
   build:
     name: Build API
     runs-on: ubuntu-latest
+    env:
+      AR_REPO: ${{ secrets.CODECOV_API_IMAGE_V2 }}
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -49,19 +51,13 @@ jobs:
           echo ${{steps.auth.outputs.access_token}} | docker login -u oauth2accesstoken --password-stdin https://us-docker.pkg.dev
 
       - name: Build/pull requirements
-        env:
-          AR_REPO: ${{ secrets.CODECOV_API_IMAGE_V2 }}
         run: |
           make build.requirements
       - name: Push Requirements
         if: github.repository_owner == 'codecov'
-        env:
-          AR_REPO: ${{ secrets.CODECOV_API_IMAGE_V2 }}
         run: |
           make push.requirements
       - name: Build app
-        env:
-          AR_REPO: ${{ secrets.CODECOV_API_IMAGE_V2 }}
         run: |
           make build.app
           make save.app
@@ -74,6 +70,8 @@ jobs:
     name: Test
     needs: build
     runs-on: ubuntu-latest
+    env:
+      AR_REPO: ${{ secrets.CODECOV_API_IMAGE_V2 }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
