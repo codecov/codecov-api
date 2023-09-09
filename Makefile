@@ -5,17 +5,11 @@ branch = $(shell git branch | grep \* | cut -f2 -d' ')
 epoch := $(shell date +"%s")
 AR_REPO ?= codecov/self-hosted-api
 REQUIREMENTS_TAG := requirements-v1-$(shell sha1sum requirements.txt | cut -d ' ' -f 1)-$(shell sha1sum Dockerfile.requirements | cut -d ' ' -f 1)
+VERSION := release-$(shell git rev-parse --short=7 HEAD)
 export DOCKER_BUILDKIT=1
+export API_DOCKER_REPO=${AR_REPO}
+export API_DOCKER_VERSION=${VERSION}
 
-build.local:
-	DOCKER_BUILDKIT=1 docker build -f Dockerfile . -t codecov/api:latest --ssh default
-
-build.base:
-	DOCKER_BUILDKIT=1 docker build -f Dockerfile.requirements . -t codecov/baseapi:latest --ssh default
-
-build:
-	$(MAKE) build.base
-	$(MAKE) build.local
 
 build.enterprise_runtime:
 	# $(MAKE) build.enterprise
@@ -57,9 +51,6 @@ enterprise:
 check-for-migration-conflicts:
 	python manage.py check_for_migration_conflicts
 
-push.enterprise-private:
-	docker push codecov/enterprise-private-api:${release_version}-${sha}
-
 test:
 	python -m pytest --cov=./
 
@@ -71,7 +62,7 @@ test.integration:
 
 lint.install:
 	echo "Installing..."
-	pip3 install -Iv black==22.3.0 isort
+	pip install -Iv black==22.3.0 isort
 
 lint.run:
 	black .
@@ -88,8 +79,44 @@ build.requirements:
 	# requirements.txt.  Otherwise, build and push a version tagged
 	# with the hash of this requirements.txt
 	docker pull ${AR_REPO}:${REQUIREMENTS_TAG} || docker build \
-		-f Dockerfile.requirements . \
+		-f docker/Dockerfile.requirements . \
 		-t ${AR_REPO}:${REQUIREMENTS_TAG}
+
+build.app:
+	docker build \
+		-f docker/Dockerfile . \
+		-t ${AR_REPO}:latest \
+		-t ${AR_REPO}:${VERSION} \
+		--build-arg REQUIREMENTS_IMAGE=${AR_REPO}:${REQUIREMENTS_TAG}
+
+build:
+	make build.requirements
+	make build.app
+
+save.app:
+	docker save -o app.tar ${AR_REPO}:${VERSION}
 
 push.requirements:
 	docker push ${AR_REPO}:${REQUIREMENTS_TAG}
+
+test_env.up:
+	docker-compose -f docker-compose-test.yml up -d
+
+test_env.prepare:
+	docker-compose -f docker-compose-test.yml exec api make test_env.container_prepare
+
+test_env.container_prepare:
+	apk add -U curl git build-base
+	pip install codecov-cli
+	while ! nc -vz postgres 5432; do sleep 1; echo "waiting for postgres"; done
+	while ! nc -vz timescale 5432; do sleep 1; echo "waiting for timescale"; done
+
+test_env.run_unit:
+	docker-compose -f docker-compose-test.yml exec api make test.unit
+
+test_env.check-for-migration-conflicts:
+	docker-compose -f docker-compose-test.yml exec api python manage.py check_for_migration_conflicts
+
+test_env:
+	make test_env.up
+	docker-compose -f docker-compose-test.yml exec api make test_env.container_prepare
