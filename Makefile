@@ -83,8 +83,7 @@ build.requirements:
 		-t ${AR_REPO}:${REQUIREMENTS_TAG}
 
 build.app:
-	docker build \
-		-f docker/Dockerfile . \
+	docker build -f docker/Dockerfile . \
 		-t ${AR_REPO}:latest \
 		-t ${AR_REPO}:${VERSION} \
 		--build-arg REQUIREMENTS_IMAGE=${AR_REPO}:${REQUIREMENTS_TAG}
