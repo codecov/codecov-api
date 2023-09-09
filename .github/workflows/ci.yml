@@ -32,7 +32,7 @@ jobs:
         uses: actions/checkout@v4
 
       - id: "auth"
-        if: github.owner == codecov
+        if: github.owner == 'codecov'
         name: "Authenticate to Google Cloud"
         uses: "google-github-actions/auth@v1.1.1"
         with:
@@ -41,7 +41,7 @@ jobs:
           service_account: ${{ secrets.CODECOV_GCP_WIDSA }}
 
       - name: Docker configuration
-        if: github.owner == codecov
+        if: github.owner == 'codecov'
         run: |-
           echo ${{steps.auth.outputs.access_token}} | docker login -u oauth2accesstoken --password-stdin https://us-docker.pkg.dev
 
@@ -51,6 +51,6 @@ jobs:
         run: |
           make build.requirements
       - name: Push Requirements
-        if: github.owner == codecov
+        if: github.owner == 'codecov'
         run: |
           make push.requirements
