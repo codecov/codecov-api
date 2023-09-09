@@ -24,3 +24,33 @@ jobs:
       - name: Check
         run: |
           make lint.check
+  build:
+    name: Build API
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - id: "auth"
+        if: github.owner == codecov
+        name: "Authenticate to Google Cloud"
+        uses: "google-github-actions/auth@v1.1.1"
+        with:
+          token_format: "access_token"
+          workload_identity_provider: ${{ secrets.CODECOV_GCP_WIDP }}
+          service_account: ${{ secrets.CODECOV_GCP_WIDSA }}
+
+      - name: Docker configuration
+        if: github.owner == codecov
+        run: |-
+          echo ${{steps.auth.outputs.access_token}} | docker login -u oauth2accesstoken --password-stdin https://us-docker.pkg.dev
+
+      - name: Build/pull requirements
+        env:
+          AR_REPO: ${{ secrets.CODECOV_API_IMAGE_V2 }}
+        run: |
+          make build.requirements
+      - name: Push Requirements
+        if: github.owner == codecov
+        run: |
+          make push.requirements

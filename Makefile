@@ -3,7 +3,7 @@ release_version = `cat VERSION`
 build_date ?= $(shell git show -s --date=iso8601-strict --pretty=format:%cd $$sha)
 branch = $(shell git branch | grep \* | cut -f2 -d' ')
 epoch := $(shell date +"%s")
-
+AR_REPO ?= codecov/self-hosted-api
 REQUIREMENTS_TAG := requirements-v1-$(shell sha1sum requirements.txt | cut -d ' ' -f 1)-$(shell sha1sum Dockerfile.requirements | cut -d ' ' -f 1)
 export DOCKER_BUILDKIT=1
 
@@ -87,8 +87,9 @@ build.requirements:
 	# if docker pull succeeds, we have already build this version of
 	# requirements.txt.  Otherwise, build and push a version tagged
 	# with the hash of this requirements.txt
-	docker pull ${ACR_REPO}:${REQUIREMENTS_TAG} || docker build \
+	docker pull ${AR_REPO}:${REQUIREMENTS_TAG} || docker build \
 		-f Dockerfile.requirements . \
-		-t ${ACR_REPO}:${REQUIREMENTS_TAG} \
-		--ssh default \
-	&& docker push ${ACR_REPO}:${REQUIREMENTS_TAG}; true
+		-t ${AR_REPO}:${REQUIREMENTS_TAG}
+
+push.requirements:
+	docker push ${AR_REPO}:${REQUIREMENTS_TAG}
