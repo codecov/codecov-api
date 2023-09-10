@@ -322,7 +322,7 @@ jobs:
           make push.production
   self-hosted:
     name: Push Self Hosted Image
-    needs: [ build-enterprise, test ]
+    needs: [ build-self-hosted, test ]
     if: ${{ github.event.pull_request.merged == true && github.head_ref == 'main' && github.repository_owner == 'codecov' }}
     runs-on: ubuntu-latest
     steps:
