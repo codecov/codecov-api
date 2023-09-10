@@ -91,14 +91,15 @@ jobs:
         uses: addnab/docker-run-action@v3
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_ORG_TOKEN }}
+          COMMIT_SHA: ${{ github.sha }}
         with:
           image: ${{ secrets.CODECOV_API_IMAGE_V2 }}:latest
           options: -v ${{ github.workspace }}:/app -v ${{ github.workspace }}/.git:/app/.git
           run: |
             ls -a
             make test_env.container_prepare
-            codecovcli create-commit
-            codecovcli create-report
+            codecovcli create-commit -C $COMMIT_SHA
+            codecovcli create-report -C $COMMIT_SHA
   ats:
     name: ATS
     needs: [build, codecovstartup]
@@ -124,13 +125,14 @@ jobs:
         env:
           STATIC_TOKEN: ${{ secrets.STATIC_TOKEN }}
           CODECOV_TOKEN: ${{ secrets.CODECOV_ORG_TOKEN }}
+          COMMIT_SHA: ${{ github.sha }}
         with:
           image: ${{ secrets.CODECOV_API_IMAGE_V2 }}:latest
           options: -v ${{ github.workspace }}:/app
           run: |
             make test_env.container_prepare
             codecovcli static-analysis --token=$STATIC_TOKEN
-            codecovcli label-analysis --token=$STATIC_TOKEN --base-sha=$(git merge-base HEAD^ main)
+            codecovcli label-analysis --token=$STATIC_TOKEN --base-sha=$(git merge-base HEAD^ main) -C $COMMIT_SHA
             codecovcli --codecov-yml-path=codecov_cli.yml do-upload --plugin pycoverage --plugin compress-pycoverage --flag smart-labels --fail-on-error
   test:
     name: Test
@@ -169,14 +171,18 @@ jobs:
       ## Don't upload on forks for now.
       - name: upload using codecovcli
         if: github.repository_owner == 'codecov'
+        env:
+          COMMIT_SHA: ${{ github.sha }}
         run: |
-          codecovcli  do-upload --flag unit-latest-uploader --flag unit -t ${{ secrets.CODECOV_ORG_TOKEN }} \
+          codecovcli  do-upload --flag unit-latest-uploader --flag unit -t ${{ secrets.CODECOV_ORG_TOKEN }} -C $COMMIT_SHA \
             --coverage-files-search-exclude-folder=graphql_api/types/** \
             --coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
       - name: upload using codecovcli staging
         if: github.repository_owner == 'codecov'
+        env:
+          COMMIT_SHA: ${{ github.sha }}
         run: |
-          codecovcli  do-upload --flag unit-latest-uploader --flag unit -t ${{ secrets.CODECOV_ORG_TOKEN_STAGING }} \
+          codecovcli  do-upload --flag unit-latest-uploader --flag unit -t ${{ secrets.CODECOV_ORG_TOKEN_STAGING }} -C $COMMIT_SHA \
             --coverage-files-search-exclude-folder=graphql_api/types/** \
             --coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
 
