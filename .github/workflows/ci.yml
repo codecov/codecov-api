@@ -58,7 +58,7 @@ jobs:
           cache-name: cache-api-requirements
         with:
           path: |
-            requirements.tar.gz
+            requirements.tar
           key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-api-${{ env.cache-name }}-
@@ -70,13 +70,12 @@ jobs:
           cache-name: cache-api-app
         with:
           path: |
-            app.tar.gz
+            app.tar
           key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ github.run_id }}
 
       - name: Load requirements from cache
         if: ${{ steps.cache-requirements.outputs.cache-hit == 'true' }}
         run: |
-          gunzip requirements.tar.gz
           docker load --input requirements.tar
 
       - name: Build/pull requirements
@@ -110,11 +109,10 @@ jobs:
           cache-name: cache-api-app
         with:
           path: |
-            app.tar.gz
+            app.tar
           key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ github.run_id }}
       - name: Load built image
         run: |
-          gunzip app.tar.gz
           docker load --input app.tar
           make tag.latest
 
@@ -135,7 +133,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
       - name: Cache App
         id: cache-app
         uses: actions/cache@v3
@@ -143,11 +141,10 @@ jobs:
           cache-name: cache-api-app
         with:
           path: |
-            app.tar.gz
+            app.tar
           key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ github.run_id }}
       - name: Load built image
         run: |
-          gunzip app.tar.gz
           docker load --input app.tar
           make tag.latest
 
@@ -159,7 +156,7 @@ jobs:
           run: |
             make test_env.container_prepare
             codecovcli static-analysis --token=$STATIC_TOKEN
-            codecovcli label-analysis --token=$STATIC_TOKEN --base-sha=$(git merge-base HEAD^ main)
+            codecovcli label-analysis --token=$STATIC_TOKEN --base-sha=$(git merge-base HEAD main)
             codecovcli --codecov-yml-path=codecov_cli.yml do-upload --plugin pycoverage --plugin compress-pycoverage --flag smart-labels --fail-on-error -r ${{ github.repository }} --git-service=github
   test:
     name: Test
@@ -177,11 +174,10 @@ jobs:
           cache-name: cache-api-app
         with:
           path: |
-            app.tar.gz
+            app.tar
           key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ github.run_id }}
       - name: Load built image
         run: |
-          gunzip app.tar.gz
           docker load --input app.tar
       - name: Install docker compose
         run: |
@@ -202,16 +198,16 @@ jobs:
       ## Don't upload on forks for now.
       - name: upload using codecovcli
         if: github.repository_owner == 'codecov'
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_ORG_TOKEN }}
         run: |
-          codecovcli  do-upload --flag unit-latest-uploader --flag unit -t ${{ secrets.CODECOV_ORG_TOKEN }} -C ${{ github.sha }} -r ${{ github.repository }} --git-service=github \
-            --coverage-files-search-exclude-folder=graphql_api/types/** \
-            --coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
+          make test_env.upload_staging
       - name: upload using codecovcli staging
         if: github.repository_owner == 'codecov'
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_ORG_TOKEN_STAGING }}
         run: |
-          codecovcli  do-upload --flag unit-latest-uploader --flag unit -t ${{ secrets.CODECOV_ORG_TOKEN_STAGING }} -C ${{ github.sha }} -r ${{ github.repository }} --git-service=github \
-            --coverage-files-search-exclude-folder=graphql_api/types/** \
-            --coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
+          make test_env.upload_staging
 
   build-self-hosted:
     name: Build Self Hosted API
@@ -245,7 +241,7 @@ jobs:
           cache-name: cache-api-requirements
         with:
           path: |
-            requirements.tar.gz
+            requirements.tar
           key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-api-${{ env.cache-name }}-
@@ -257,14 +253,13 @@ jobs:
           cache-name: cache-api-self-hosted
         with:
           path: |
-            self-hosted-runtime.tar.gz
-            self-hosted.tar.gz
+            self-hosted-runtime.tar
+            self-hosted.tar
           key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ github.run_id }}
 
       - name: Load requirements from cache
         if: ${{ steps.cache-requirements.outputs.cache-hit == 'true' }}
         run: |
-          gunzip requirements.tar.gz
           docker load --input requirements.tar
 
       - name: Build/pull requirements
@@ -299,11 +294,10 @@ jobs:
           cache-name: cache-api-app
         with:
           path: |
-            app.tar.gz
+            app.tar
           key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ github.run_id }}
       - name: Load built image
         run: |
-          gunzip app.tar.gz
           docker load --input app.tar
       - name: Push staging
         run: |
@@ -334,11 +328,10 @@ jobs:
           cache-name: cache-api-app
         with:
           path: |
-            app.tar.gz
+            app.tar
           key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ github.run_id }}
       - name: Load built image
         run: |
-          gunzip app.tar.gz
           docker load --input app.tar
           docker image ls -a
       - name: Push production
@@ -370,13 +363,11 @@ jobs:
           cache-name: cache-api-self-hosted
         with:
           path: |
-            self-hosted-runtime.tar.gz
-            self-hosted.tar.gz
+            self-hosted-runtime.tar
+            self-hosted.tar
           key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ github.run_id }}
       - name: Load built image
         run: |
-          gunzip self-hosted-runtime.tar.gz
-          gunzip self-hosted.tar.gz
           docker load --input self-hosted-runtime.tar
           docker load --input self-hosted.tar
           docker image ls -a

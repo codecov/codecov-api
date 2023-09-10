@@ -1,4 +1,5 @@
 sha := $(shell git rev-parse --short=7 HEAD)
+long_sha := $(shell git rev-parse HEAD)
 release_version := `cat VERSION`
 build_date ?= $(shell git show -s --date=iso8601-strict --pretty=format:%cd $$sha)
 branch = $(shell git branch | grep \* | cut -f2 -d' ')
@@ -92,16 +93,16 @@ tag.self-hosted:
 	docker tag ${DOCKERHUB_REPO}:${VERSION} ${DOCKERHUB_REPO}:latest-calver
 
 save.app:
-	docker save ${AR_REPO}:${VERSION} | gzip > app.tar.gz
+	docker save -o app.tar ${AR_REPO}:${VERSION}
 
 save.requirements:
-	docker save ${AR_REPO}:${REQUIREMENTS_TAG} | gzip > requirements.tar.gz
+	docker save -o requirements.tar ${AR_REPO}:${REQUIREMENTS_TAG}
 
 save.self-hosted:
-	docker save ${DOCKERHUB_REPO}:${VERSION}-no-dependencies | gzip > self-hosted.tar.gz
+	docker save -o self-hosted.tar ${DOCKERHUB_REPO}:${VERSION}-no-dependencies
 
 save.self-hosted-runtime:
-	docker save ${DOCKERHUB_REPO}:${VERSION} | gzip > self-hosted-runtime.tar.gz
+	docker save -o self-hosted-runtime.tar ${DOCKERHUB_REPO}:${VERSION}
 
 push.staging:
 	docker push ${AR_REPO}:staging-${VERSION}
@@ -147,6 +148,22 @@ test_env.run_unit:
 
 test_env.check-for-migration-conflicts:
 	docker-compose -f docker-compose-test.yml exec api python manage.py check_for_migration_conflicts
+
+test_env.upload:
+	docker-compose -f docker-compose-test.yml exec api make test_env.container_upload
+
+test_env.upload_staging:
+	docker-compose -f docker-compose-test.yml exec api make test_env.container_upload_staging
+
+test_env.container_upload:
+	codecovcli  do-upload --flag unit-latest-uploader --flag unit -C ${long_sha} -r codecov-api --git-service=github \
+	--coverage-files-search-exclude-folder=graphql_api/types/** \
+	--coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
+
+test_env.container_upload_staging:
+	codecovcli  do-upload --flag unit-latest-uploader --flag unit --url=https://stage-api.codecov.dev -C ${long_sha} -r codecov-api --git-service=github \
+	--coverage-files-search-exclude-folder=graphql_api/types/** \
+	--coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
 
 test_env:
 	make test_env.up
