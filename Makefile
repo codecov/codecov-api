@@ -128,10 +128,10 @@ push.self-hosted-rolling:
 	docker push ${DOCKERHUB_REPO}:rolling
 
 test_env.up:
+	env | grep GITHUB > .testenv; true
 	docker-compose -f docker-compose-test.yml up -d
 
 test_env.prepare:
-	env | grep GITHUB > .githubenv
 	docker-compose -f docker-compose-test.yml exec api make test_env.container_prepare
 
 test_env.check_db:
