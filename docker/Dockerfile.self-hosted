@@ -2,8 +2,8 @@ ARG REQUIREMENTS_IMAGE=codecov/self-hosted-api:latest
 
 FROM $REQUIREMENTS_IMAGE as build
 
-COPY            . /app
-WORKDIR         /app
+COPY . /app
+WORKDIR /app
 
 
 RUN pip uninstall -y typing
@@ -32,15 +32,15 @@ RUN addgroup -S application && adduser -S codecov -G application
 RUN mkdir -p /config && chown codecov:application /config
 
 # copy the enterprise settings module.
-WORKDIR     /app
+WORKDIR /app
 RUN chmod +x enterprise.sh && \
     chown codecov:application /app
 
-ARG         RELEASE_VERSION
-ENV         RUN_ENV="ENTERPRISE"
-ENV         RELEASE_VERSION=$RELEASE_VERSION
-ENV         DJANGO_SETTINGS_MODULE="codecov.settings_enterprise"
-ENV         CODECOV_API_PORT=8000
+ARG RELEASE_VERSION
+ENV RUN_ENV="ENTERPRISE"
+ENV RELEASE_VERSION=$RELEASE_VERSION
+ENV DJANGO_SETTINGS_MODULE="codecov.settings_enterprise"
+ENV CODECOV_API_PORT=8000
 
 ENTRYPOINT ["./enterprise.sh"]
 

@@ -2,8 +2,6 @@ setup:
   codecov_url: https://codecov.io
   debug: no
   loglvl: INFO
-  timeseries:
-    enabled: true
   encryption_secret: "zp^P9*i8aR3"
   http:
     force_https: yes
