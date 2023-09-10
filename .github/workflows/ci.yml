@@ -297,6 +297,14 @@ jobs:
         run: |
           make tag.staging
           make push.staging
+      - name: Create Sentry release
+        uses: getsentry/action-release@v1
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.CODECOV_SENTRY_RELEASE_TOKEN }}
+          SENTRY_ORG: ${{ secrets.CODECOV_SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.CODECOV_API_SENTRY_PROJECT }}
+        with:
+          environment: staging
   production:
     name: Push Production Image
     needs: [ build, test ]
@@ -320,6 +328,14 @@ jobs:
         run: |
           make tag.production
           make push.production
+      - name: Create Sentry release
+        uses: getsentry/action-release@v1
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.CODECOV_SENTRY_RELEASE_TOKEN }}
+          SENTRY_ORG: ${{ secrets.CODECOV_SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.CODECOV_API_SENTRY_PROJECT }}
+        with:
+          environment: production
   self-hosted:
     name: Push Self Hosted Image
     needs: [ build-self-hosted, test ]

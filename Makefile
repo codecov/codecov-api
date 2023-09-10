@@ -95,7 +95,7 @@ save.app:
 	docker save -o app.tar ${AR_REPO}:${VERSION}
 
 save.requirements:
-	docker save -o requirements.tar ${AR_REPO}:${VERSION}
+	docker save -o requirements.tar ${AR_REPO}:${REQUIREMENTS_TAG}
 
 save.self-hosted:
 	docker save -o self-hosted.tar ${DOCKERHUB_REPO}:${VERSION}-no-dependencies
