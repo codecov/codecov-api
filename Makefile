@@ -92,6 +92,9 @@ build:
 	make build.requirements
 	make build.app
 
+tag.latest:
+	docker tag ${AR_REPO}:${VERSION} ${AR_REPO}:latest
+
 save.app:
 	docker save -o app.tar ${AR_REPO}:${VERSION}
 
@@ -104,9 +107,14 @@ test_env.up:
 test_env.prepare:
 	docker-compose -f docker-compose-test.yml exec api make test_env.container_prepare
 
+test_env.check_db:
+	docker-compose -f docker-compose-test.yml exec api make test_env.container_check_db
+
 test_env.container_prepare:
 	apk add -U curl git build-base
 	pip install codecov-cli
+
+test_env.container_check_db:
 	while ! nc -vz postgres 5432; do sleep 1; echo "waiting for postgres"; done
 	while ! nc -vz timescale 5432; do sleep 1; echo "waiting for timescale"; done
 
@@ -118,4 +126,7 @@ test_env.check-for-migration-conflicts:
 
 test_env:
 	make test_env.up
-	docker-compose -f docker-compose-test.yml exec api make test_env.container_prepare
+	make test_env.prepare
+	make test_env.check_db
+	make test_env.run_unit
+	make test_env.check-for-migration-conflicts

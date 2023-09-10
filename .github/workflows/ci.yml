@@ -10,6 +10,8 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
+env:
+  AR_REPO: ${{ secrets.CODECOV_API_IMAGE_V2 }}
 
 jobs:
   lint:
@@ -27,8 +29,6 @@ jobs:
   build:
     name: Build API
     runs-on: ubuntu-latest
-    env:
-      AR_REPO: ${{ secrets.CODECOV_API_IMAGE_V2 }}
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -66,12 +66,32 @@ jobs:
         with:
           name: app-image
           path: app.tar
+  ats:
+    name: ATS
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: app-image
+          path: /tmp
+      - name: Load built image
+        run: |
+          docker load --input /tmp/app.tar
+          docker image ls -a
+          make tag.latest
+
+      - name: Run ATS
+        uses: docker://${{ secrets.CODECOV_API_IMAGE_V2 }}:latest
+        run: |
+          make test_env.container_prepare
   test:
     name: Test
     needs: build
     runs-on: ubuntu-latest
-    env:
-      AR_REPO: ${{ secrets.CODECOV_API_IMAGE_V2 }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -100,3 +120,16 @@ jobs:
       - name: Check for migration conflicts
         run: |
           make test_env.check-for-migration-conflicts
+      ## Don't upload on forks for now.
+      - name: upload using codecovcli
+        if: github.repository_owner == 'codecov'
+        run: |
+          codecovcli  do-upload --flag unit-latest-uploader --flag unit -t ${{ secrets.CODECOV_ORG_TOKEN }} \
+            --coverage-files-search-exclude-folder=graphql_api/types/** \
+            --coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
+      - name: upload using codecovcli staging
+        if: github.repository_owner == 'codecov'
+        run: |
+          codecovcli  do-upload --flag unit-latest-uploader --flag unit -t ${{ secrets.CODECOV_ORG_TOKEN_STAGING }} \
+            --coverage-files-search-exclude-folder=graphql_api/types/** \
+            --coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
