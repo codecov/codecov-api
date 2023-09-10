@@ -59,8 +59,8 @@ build.app:
 
 build.self-hosted:
 	docker build -f docker/Dockerfile.self-hosted . \
-		-t ${AR_REPO}:latest-no-dependencies \
-		-t ${AR_REPO}:${VERSION}-no-dependencies \
+		-t ${DOCKERHUB_REPO}:latest-no-dependencies \
+		-t ${DOCKERHUB_REPO}:${VERSION}-no-dependencies \
 		--build-arg REQUIREMENTS_IMAGE=${AR_REPO}:${REQUIREMENTS_TAG} \
 		--build-arg RELEASE_VERSION=${VERSION}
 
@@ -68,7 +68,7 @@ build.self-hosted-runtime:
 	docker build -f Dockerfile.self-hosted-runtime . \
 		-t ${DOCKERHUB_REPO}:latest \
 		-t ${DOCKERHUB_REPO}:${VERSION} \
-		--build-arg CODECOV_ENTERPRISE_RELEASE=${DOCKERHUB_REPO}:${VERSION}-no-dependencies \
+		--build-arg CODECOV_SELF_HOSTED_RELEASE=${DOCKERHUB_REPO}:${VERSION}-no-dependencies \
         --build-arg RELEASE_VERSION=${VERSION}
 
 build:

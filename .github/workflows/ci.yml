@@ -111,6 +111,12 @@ jobs:
         run: |
           codecovcli create-commit
           codecovcli create-report
+      - name: Run Startup Staging
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_ORG_TOKEN_STAGING }}
+        run: |
+          codecovcli create-commit
+          codecovcli create-report
 
   ats:
     name: ATS
