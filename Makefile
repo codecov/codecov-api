@@ -10,6 +10,7 @@ REQUIREMENTS_TAG := requirements-v1-$(shell sha1sum requirements.txt | cut -d ' 
 VERSION := release-${sha}
 CODECOV_UPLOAD_TOKEN ?= "notset"
 CODECOV_STATIC_TOKEN ?= "notset"
+TIMESERIES_ENABLED ?= "true"
 export DOCKER_BUILDKIT=1
 export API_DOCKER_REPO=${AR_REPO}
 export API_DOCKER_VERSION=${VERSION}
@@ -130,7 +131,7 @@ push.self-hosted-rolling:
 
 test_env.up:
 	env | grep GITHUB > .testenv; true
-	docker-compose -f docker-compose-test.yml up -d
+	TIMESERIES_ENABLED=${TIMESERIES_ENABLED} docker-compose -f docker-compose-test.yml up -d
 
 test_env.prepare:
 	docker-compose -f docker-compose-test.yml exec api make test_env.container_prepare
@@ -168,7 +169,7 @@ test_env.container_upload:
 	--coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
 
 test_env.container_upload_staging:
-	codecovcli  do-upload --flag unit-latest-uploader --flag unit -u https://stage-api.codecov.dev \
+	codecovcli -u https://stage-api.codecov.dev do-upload --flag unit-latest-uploader --flag unit  \
 	--coverage-files-search-exclude-folder=graphql_api/types/** \
 	--coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
 
