@@ -148,10 +148,10 @@ jobs:
           make test_env.check_db
       - name: Run Static Analysis
         run: |
-          make test_env.static_analysis CODECOV_UPLOAD_TOKEN=${{ secrets.STATIC_TOKEN }}
+          make test_env.static_analysis CODECOV_STATIC_TOKEN=${{ secrets.STATIC_TOKEN }}
       - name: Run Label Analysis
         run: |
-          make test_env.label_analysis CODECOV_UPLOAD_TOKEN=${{ secrets.STATIC_TOKEN }}
+          make test_env.label_analysis CODECOV_STATIC_TOKEN=${{ secrets.STATIC_TOKEN }}
       - name: Run ATS
         run: |
           make test_env.ats CODECOV_UPLOAD_TOKEN=${{ secrets.CODECOV_ORG_TOKEN }}
