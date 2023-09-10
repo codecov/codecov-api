@@ -131,14 +131,18 @@ test_env.up:
 	docker-compose -f docker-compose-test.yml up -d
 
 test_env.prepare:
+	env | grep GITHUB > .githubenv
 	docker-compose -f docker-compose-test.yml exec api make test_env.container_prepare
 
 test_env.check_db:
 	docker-compose -f docker-compose-test.yml exec api make test_env.container_check_db
 
+test_env.install_cli:
+	pip install codecov-cli
+
 test_env.container_prepare:
 	apk add -U curl git build-base
-	pip install codecov-cli
+	make test_env.install_cli
 	git config --global --add safe.directory /app
 
 test_env.container_check_db:
@@ -158,12 +162,12 @@ test_env.upload_staging:
 	docker-compose -f docker-compose-test.yml exec api make test_env.container_upload_staging
 
 test_env.container_upload:
-	codecovcli  do-upload --flag unit-latest-uploader --flag unit -C ${long_sha} -r codecov-api --git-service=github \
+	codecovcli  do-upload --flag unit-latest-uploader --flag unit \
 	--coverage-files-search-exclude-folder=graphql_api/types/** \
 	--coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
 
 test_env.container_upload_staging:
-	codecovcli  do-upload --flag unit-latest-uploader --flag unit -u https://stage-api.codecov.dev -C ${long_sha} -r codecov-api --git-service=github \
+	codecovcli  do-upload --flag unit-latest-uploader --flag unit -u https://stage-api.codecov.dev \
 	--coverage-files-search-exclude-folder=graphql_api/types/** \
 	--coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
 

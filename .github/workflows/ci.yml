@@ -102,29 +102,16 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
-      - name: Cache App
-        id: cache-app
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-api-app
-        with:
-          path: |
-            app.tar
-          key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ github.run_id }}
-      - name: Load built image
+      - name: Install CLI
         run: |
-          docker load --input app.tar
-          make tag.latest
-
+          make test_env.install_cli
       - name: Run Startup
-        uses: addnab/docker-run-action@v3
-        with:
-          image: ${{ secrets.CODECOV_API_IMAGE_V2 }}:latest
-          options: -v ${{ github.workspace }}:/app -e CODECOV_TOKEN=${{ secrets.CODECOV_ORG_TOKEN }}
-          run: |
-            make test_env.container_prepare
-            codecovcli create-commit -C ${{ github.sha }} -r ${{ github.repository }} --git-service=github
-            codecovcli create-report -C ${{ github.sha }} -r ${{ github.repository }} --git-service=github
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_ORG_TOKEN }}
+        run: |
+          codecovcli create-commit
+          codecovcli create-report
+
   ats:
     name: ATS
     needs: [build, codecovstartup]
