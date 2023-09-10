@@ -8,8 +8,8 @@ AR_REPO ?= codecov/self-hosted-api
 DOCKERHUB_REPO ?= codecov/self-hosted-api
 REQUIREMENTS_TAG := requirements-v1-$(shell sha1sum requirements.txt | cut -d ' ' -f 1)-$(shell sha1sum docker/Dockerfile.requirements | cut -d ' ' -f 1)
 VERSION := release-${sha}
-CODECOV_UPLOAD_TOKEN="notset"
-CODECOV_STATIC_TOKEN="notset"
+CODECOV_UPLOAD_TOKEN ?= "notset"
+CODECOV_STATIC_TOKEN ?= "notset"
 export DOCKER_BUILDKIT=1
 export API_DOCKER_REPO=${AR_REPO}
 export API_DOCKER_VERSION=${VERSION}
@@ -157,10 +157,10 @@ test_env.check-for-migration-conflicts:
 	docker-compose -f docker-compose-test.yml exec api python manage.py check_for_migration_conflicts
 
 test_env.upload:
-	docker-compose -f docker-compose-test.yml exec api make test_env.container_upload
+	docker-compose -f docker-compose-test.yml exec api make test_env.container_upload CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN}
 
 test_env.upload_staging:
-	docker-compose -f docker-compose-test.yml exec api make test_env.container_upload_staging
+	docker-compose -f docker-compose-test.yml exec api make test_env.container_upload_staging CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN}
 
 test_env.container_upload:
 	codecovcli  do-upload --flag unit-latest-uploader --flag unit \
@@ -173,10 +173,10 @@ test_env.container_upload_staging:
 	--coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
 
 test_env.static_analysis:
-	docker-compose -f docker-compose-test.yml exec api make test_env.container_static_analysis CODECOV_STATIC_TOKEN=${CODECOV_UPLOAD_TOKEN}
+	docker-compose -f docker-compose-test.yml exec api make test_env.container_static_analysis CODECOV_STATIC_TOKEN=${CODECOV_STATIC_TOKEN}
 
 test_env.label_analysis:
-	docker-compose -f docker-compose-test.yml exec api make test_env.container_label_analysis CODECOV_STATIC_TOKEN=${CODECOV_UPLOAD_TOKEN}
+	docker-compose -f docker-compose-test.yml exec api make test_env.container_label_analysis CODECOV_STATIC_TOKEN=${CODECOV_STATIC_TOKEN}
 
 test_env.ats:
 	docker-compose -f docker-compose-test.yml exec api make test_env.container_ats CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN}
