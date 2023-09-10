@@ -92,16 +92,16 @@ tag.self-hosted:
 	docker tag ${DOCKERHUB_REPO}:${VERSION} ${DOCKERHUB_REPO}:latest-calver
 
 save.app:
-	docker save -o app.tar ${AR_REPO}:${VERSION}
+	docker save ${AR_REPO}:${VERSION} | gzip > app.tar.gz
 
 save.requirements:
-	docker save -o requirements.tar ${AR_REPO}:${REQUIREMENTS_TAG}
+	docker save ${AR_REPO}:${REQUIREMENTS_TAG} | gzip > requirements.tar.gz
 
 save.self-hosted:
-	docker save -o self-hosted.tar ${DOCKERHUB_REPO}:${VERSION}-no-dependencies
+	docker save ${DOCKERHUB_REPO}:${VERSION}-no-dependencies | gzip > self-hosted.tar.gz
 
 save.self-hosted-runtime:
-	docker save -o self-hosted-runtime.tar ${DOCKERHUB_REPO}:${VERSION}
+	docker save ${DOCKERHUB_REPO}:${VERSION} | gzip > self-hosted-runtime.tar.gz
 
 push.staging:
 	docker push ${AR_REPO}:staging-${VERSION}

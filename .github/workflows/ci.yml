@@ -58,7 +58,7 @@ jobs:
           cache-name: cache-api-requirements
         with:
           path: |
-            requirements.tar
+            requirements.tar.gz
           key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-api-${{ env.cache-name }}-
@@ -70,12 +70,13 @@ jobs:
           cache-name: cache-api-app
         with:
           path: |
-            app.tar
+            app.tar.gz
           key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ github.run_id }}
 
       - name: Build/pull requirements
         if: ${{ steps.cache-requirements.outputs.cache-hit == 'true' }}
         run: |
+          gunzip requirements.tar.gz
           docker load --input requirements.tar
 
       - name: Build/pull requirements
@@ -96,7 +97,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: app-image
-          path: app.tar
+          path: app.tar.gz
   codecovstartup:
     name: Codecov Startup
     needs: build
@@ -106,6 +107,15 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
+      - name: Cache App
+        id: cache-app
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-api-app
+        with:
+          path: |
+            app.tar.gz
+          key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ github.run_id }}
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
@@ -113,6 +123,7 @@ jobs:
           path: /tmp
       - name: Load built image
         run: |
+          gunzip /tmp/app.tar.gz
           docker load --input /tmp/app.tar
           make tag.latest
 
@@ -123,8 +134,8 @@ jobs:
           options: -v ${{ github.workspace }}:/app -e CODECOV_TOKEN=${{ secrets.CODECOV_ORG_TOKEN }}
           run: |
             make test_env.container_prepare
-            codecovcli create-commit -C ${{ github.sha }} -r ${{ github.repository }}
-            codecovcli create-report -C ${{ github.sha }} -r ${{ github.repository }}
+            codecovcli create-commit -C ${{ github.sha }} -r ${{ github.repository }} --git-service=github
+            codecovcli create-report -C ${{ github.sha }} -r ${{ github.repository }} --git-service=github
   ats:
     name: ATS
     needs: [build, codecovstartup]
@@ -141,6 +152,7 @@ jobs:
           path: /tmp
       - name: Load built image
         run: |
+          gunzip /tmp/app.tar.gz
           docker load --input /tmp/app.tar
           docker image ls -a
           make tag.latest
@@ -152,9 +164,9 @@ jobs:
           options: -v ${{ github.workspace }}:/app -e CODECOV_TOKEN=${{ secrets.CODECOV_ORG_TOKEN }} -e STATIC_TOKEN=${{ secrets.STATIC_TOKEN }}
           run: |
             make test_env.container_prepare
-            codecovcli static-analysis --token=$STATIC_TOKEN -C ${{ github.sha }} -r ${{ github.repository }}
-            codecovcli label-analysis --token=$STATIC_TOKEN --base-sha=$(git merge-base HEAD^ main) -C ${{ github.sha }} -r ${{ github.repository }}
-            codecovcli --codecov-yml-path=codecov_cli.yml do-upload --plugin pycoverage --plugin compress-pycoverage --flag smart-labels --fail-on-error
+            codecovcli static-analysis --token=$STATIC_TOKEN -C ${{ github.sha }} -r ${{ github.repository }} --git-service=github
+            codecovcli label-analysis --token=$STATIC_TOKEN --base-sha=$(git merge-base HEAD^ main) -C ${{ github.sha }} -r ${{ github.repository }} --git-service=github
+            codecovcli --codecov-yml-path=codecov_cli.yml do-upload --plugin pycoverage --plugin compress-pycoverage --flag smart-labels --fail-on-error -C ${{ github.sha }} -r ${{ github.repository }} --git-service=github
   test:
     name: Test
     needs: [build, codecovstartup]
@@ -171,6 +183,7 @@ jobs:
           path: /tmp
       - name: Load built image
         run: |
+          gunzip /tmp/app.tar.gz
           docker load --input /tmp/app.tar
           docker image ls -a
       - name: Install docker compose
@@ -193,13 +206,13 @@ jobs:
       - name: upload using codecovcli
         if: github.repository_owner == 'codecov'
         run: |
-          codecovcli  do-upload --flag unit-latest-uploader --flag unit -t ${{ secrets.CODECOV_ORG_TOKEN }} -C ${{ github.sha }} -r ${{ github.repository }} \
+          codecovcli  do-upload --flag unit-latest-uploader --flag unit -t ${{ secrets.CODECOV_ORG_TOKEN }} -C ${{ github.sha }} -r ${{ github.repository }} --git-service=github \
             --coverage-files-search-exclude-folder=graphql_api/types/** \
             --coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
       - name: upload using codecovcli staging
         if: github.repository_owner == 'codecov'
         run: |
-          codecovcli  do-upload --flag unit-latest-uploader --flag unit -t ${{ secrets.CODECOV_ORG_TOKEN_STAGING }} -C ${{ github.sha }} -r ${{ github.repository }} \
+          codecovcli  do-upload --flag unit-latest-uploader --flag unit -t ${{ secrets.CODECOV_ORG_TOKEN_STAGING }} -C ${{ github.sha }} -r ${{ github.repository }} --git-service=github \
             --coverage-files-search-exclude-folder=graphql_api/types/** \
             --coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
 
@@ -235,7 +248,7 @@ jobs:
           cache-name: cache-api-requirements
         with:
           path: |
-            requirements.tar
+            requirements.tar.gz
           key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-api-${{ env.cache-name }}-
@@ -243,6 +256,7 @@ jobs:
       - name: Build/pull requirements
         if: ${{ steps.cache-requirements.outputs.cache-hit == 'true' }}
         run: |
+          gunzip requirements.tar.gz
           docker load --input requirements.tar
 
       - name: Build/pull requirements
@@ -264,13 +278,13 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: self-hosted-runtime
-          path: self-hosted-runtime.tar
+          path: self-hosted-runtime.tar.gz
 
       - name: Upload self-hosted
         uses: actions/upload-artifact@v3
         with:
           name: self-hosted
-          path: self-hosted.tar
+          path: self-hosted.tar.gz
   staging:
     name: Push Staging Image
     needs: [build, test]
@@ -288,8 +302,8 @@ jobs:
           path: /tmp
       - name: Load built image
         run: |
+          gunzip /tmp/app.tar.gz
           docker load --input /tmp/app.tar
-          docker image ls -a
       - name: Push staging
         run: |
           make tag.staging
@@ -319,6 +333,7 @@ jobs:
           path: /tmp
       - name: Load built image
         run: |
+          gunzip /tmp/app.tar.gz
           docker load --input /tmp/app.tar
           docker image ls -a
       - name: Push production
@@ -355,6 +370,8 @@ jobs:
           path: /tmp
       - name: Load built image
         run: |
+          gunzip /tmp/self-hosted-runtime.tar.gz
+          gunzip /tmp/self-hosted.tar.gz
           docker load --input /tmp/self-hosted-runtime.tar
           docker load --input /tmp/self-hosted.tar
           docker image ls -a
