@@ -1,52 +1,16 @@
 sha := $(shell git rev-parse --short=7 HEAD)
-release_version = `cat VERSION`
+release_version := `cat VERSION`
 build_date ?= $(shell git show -s --date=iso8601-strict --pretty=format:%cd $$sha)
 branch = $(shell git branch | grep \* | cut -f2 -d' ')
 epoch := $(shell date +"%s")
 AR_REPO ?= codecov/self-hosted-api
-REQUIREMENTS_TAG := requirements-v1-$(shell sha1sum requirements.txt | cut -d ' ' -f 1)-$(shell sha1sum Dockerfile.requirements | cut -d ' ' -f 1)
+DOCKERHUB_REPO ?= codecov/self-hosted-api
+REQUIREMENTS_TAG := requirements-v1-$(shell sha1sum requirements.txt | cut -d ' ' -f 1)-$(shell sha1sum docker/Dockerfile.requirements | cut -d ' ' -f 1)
 VERSION := release-$(shell git rev-parse --short=7 HEAD)
 export DOCKER_BUILDKIT=1
 export API_DOCKER_REPO=${AR_REPO}
 export API_DOCKER_VERSION=${VERSION}
 
-
-build.enterprise_runtime:
-	# $(MAKE) build.enterprise
-	docker build -f Dockerfile.enterprise_runtime . -t codecov/api-enterprise-runtime:${release_version} \
-		--build-arg CODECOV_ENTERPRISE_RELEASE=codecov/enterprise-api:${release_version} \
-		--build-arg RELEASE_VERSION=${release_version} \
-		--label "org.label-schema.build-date"="$(build_date)" \
-		--label "org.label-schema.name"="Self-Hosted API" \
-		--label "org.label-schema.vendor"="Codecov" \
-		--label "org.label-schema.version"="${release_version}"
-	docker tag codecov/api-enterprise-runtime:${release_version} codecov/api-enterprise-runtime:latest-stable
-
-build.enterprise:
-	$(MAKE) build
-	docker build -f Dockerfile.enterprise . -t codecov/enterprise-api:${release_version} \
-		--label "org.label-schema.build-date"="$(build_date)" \
-		--label "org.label-schema.name"="Self-Hosted API (no dependencies)" \
-		--label "org.label-schema.vendor"="Codecov" \
-		--label "org.label-schema.version"="${release_version}"
-	docker tag codecov/enterprise-api:${release_version} codecov/enterprise-api:latest-stable
-
-
-
-build.enterprise-private:
-	docker build -f Dockerfile.enterprise . -t codecov/enterprise-private-api:${release_version}-${sha} \
-		--label "org.label-schema.build-date"="$(build_date)" \
-		--label "org.label-schema.name"="Self-Hosted API Private" \
-		--label "org.label-schema.vendor"="Codecov" \
-		--label "org.label-schema.version"="${release_version}-${sha}" \
-		--label "org.vcs-branch"="$(branch)"
-
-run.enterprise:
-	docker-compose -f docker-compose-enterprise.yml up -d
-
-enterprise:
-	$(MAKE) build.enterprise
-	$(MAKE) run.enterprise
 
 check-for-migration-conflicts:
 	python manage.py check_for_migration_conflicts
@@ -88,6 +52,20 @@ build.app:
 		-t ${AR_REPO}:${VERSION} \
 		--build-arg REQUIREMENTS_IMAGE=${AR_REPO}:${REQUIREMENTS_TAG}
 
+build.self-hosted:
+	docker build -f docker/Dockerfile.self-hosted . \
+		-t ${AR_REPO}:latest-no-dependencies \
+		-t ${AR_REPO}:${VERSION}-no-dependencies \
+		--build-arg REQUIREMENTS_IMAGE=${AR_REPO}:${REQUIREMENTS_TAG} \
+		--build-arg RELEASE_VERSION=${VERSION}
+
+build.self-hosted-runtime:
+	docker build -f Dockerfile.self-hosted-runtime . \
+		-t ${DOCKERHUB_REPO}:latest \
+		-t ${DOCKERHUB_REPO}:${VERSION} \
+		--build-arg CODECOV_ENTERPRISE_RELEASE=${DOCKERHUB_REPO}:${VERSION}-no-dependencies \
+        --build-arg RELEASE_VERSION=${VERSION}
+
 build:
 	make build.requirements
 	make build.app
@@ -101,8 +79,29 @@ tag.staging:
 tag.production:
 	docker tag ${AR_REPO}:${VERSION} ${AR_REPO}:production-${VERSION}
 
+tag.self-hosted-rolling:
+	docker tag ${DOCKERHUB_REPO}:${VERSION}-no-dependencies ${DOCKERHUB_REPO}:rolling_no_dependencies
+	docker tag ${DOCKERHUB_REPO}:${VERSION} ${DOCKERHUB_REPO}:rolling
+
+tag.self-hosted:
+	docker tag ${DOCKERHUB_REPO}:${VERSION}-no-dependencies ${DOCKERHUB_REPO}:${release_version}_no_dependencies
+	docker tag ${DOCKERHUB_REPO}:${VERSION}-no-dependencies ${DOCKERHUB_REPO}:latest_calver_no_dependencies
+	docker tag ${DOCKERHUB_REPO}:${VERSION}-no-dependencies ${DOCKERHUB_REPO}:latest_stable_no_dependencies
+	docker tag ${DOCKERHUB_REPO}:${VERSION} ${DOCKERHUB_REPO}:${release_version}
+	docker tag ${DOCKERHUB_REPO}:${VERSION} ${DOCKERHUB_REPO}:latest-stable
+	docker tag ${DOCKERHUB_REPO}:${VERSION} ${DOCKERHUB_REPO}:latest-calver
+
 save.app:
 	docker save -o app.tar ${AR_REPO}:${VERSION}
+
+save.requirements:
+	docker save -o requirements.tar ${AR_REPO}:${VERSION}
+
+save.self-hosted:
+	docker save -o self-hosted.tar ${DOCKERHUB_REPO}:${VERSION}-no-dependencies
+
+save.self-hosted-runtime:
+	docker save -o self-hosted-runtime.tar ${DOCKERHUB_REPO}:${VERSION}
 
 push.staging:
 	docker push ${AR_REPO}:staging-${VERSION}
@@ -112,6 +111,18 @@ push.production:
 
 push.requirements:
 	docker push ${AR_REPO}:${REQUIREMENTS_TAG}
+
+push.self-hosted:
+	docker push ${DOCKERHUB_REPO}:${release_version}_no_dependencies
+	docker push ${DOCKERHUB_REPO}:latest_calver_no_dependencies
+	docker push ${DOCKERHUB_REPO}:latest_stable_no_dependencies
+	docker push ${DOCKERHUB_REPO}:${release_version}
+	docker push ${DOCKERHUB_REPO}:latest-stable
+	docker push ${DOCKERHUB_REPO}:latest-calver
+
+push.self-hosted-rolling:
+	docker push ${DOCKERHUB_REPO}:rolling_no_dependencies
+	docker push ${DOCKERHUB_REPO}:rolling
 
 test_env.up:
 	docker-compose -f docker-compose-test.yml up -d
