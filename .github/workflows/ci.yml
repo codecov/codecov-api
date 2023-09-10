@@ -164,7 +164,7 @@ jobs:
           options: -v ${{ github.workspace }}:/app -e CODECOV_TOKEN=${{ secrets.CODECOV_ORG_TOKEN }} -e STATIC_TOKEN=${{ secrets.STATIC_TOKEN }}
           run: |
             make test_env.container_prepare
-            codecovcli static-analysis --token=$STATIC_TOKEN -C ${{ github.sha }} -r ${{ github.repository }} --git-service=github
+            codecovcli static-analysis --token=$STATIC_TOKEN -r ${{ github.repository }} --git-service=github
             codecovcli label-analysis --token=$STATIC_TOKEN --base-sha=$(git merge-base HEAD^ main) -C ${{ github.sha }} -r ${{ github.repository }} --git-service=github
             codecovcli --codecov-yml-path=codecov_cli.yml do-upload --plugin pycoverage --plugin compress-pycoverage --flag smart-labels --fail-on-error -C ${{ github.sha }} -r ${{ github.repository }} --git-service=github
   test:

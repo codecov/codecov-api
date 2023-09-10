@@ -136,6 +136,7 @@ test_env.check_db:
 test_env.container_prepare:
 	apk add -U curl git build-base
 	pip install codecov-cli
+	git config --global --add safe.directory /app
 
 test_env.container_check_db:
 	while ! nc -vz postgres 5432; do sleep 1; echo "waiting for postgres"; done
