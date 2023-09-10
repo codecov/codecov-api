@@ -95,8 +95,20 @@ build:
 tag.latest:
 	docker tag ${AR_REPO}:${VERSION} ${AR_REPO}:latest
 
+tag.staging:
+	docker tag ${AR_REPO}:${VERSION} ${AR_REPO}:staging-${VERSION}
+
+tag.production:
+	docker tag ${AR_REPO}:${VERSION} ${AR_REPO}:production-${VERSION}
+
 save.app:
 	docker save -o app.tar ${AR_REPO}:${VERSION}
+
+push.staging:
+	docker push ${AR_REPO}:staging-${VERSION}
+
+push.production:
+	docker push ${AR_REPO}:production-${VERSION}
 
 push.requirements:
 	docker push ${AR_REPO}:${REQUIREMENTS_TAG}

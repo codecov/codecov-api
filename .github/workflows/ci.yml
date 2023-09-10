@@ -3,7 +3,8 @@ name: API CI
 on:
   push:
     branches:
-      - master
+      - main
+      - staging
   pull_request:
 
 concurrency:
@@ -66,13 +67,46 @@ jobs:
         with:
           name: app-image
           path: app.tar
-  ats:
-    name: ATS
+  codecovstartup:
+    name: Codecov Startup
     needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: app-image
+          path: /tmp
+      - name: Load built image
+        run: |
+          docker load --input /tmp/app.tar
+          docker image ls -a
+          make tag.latest
+
+      - name: Run Startup
+        uses: addnab/docker-run-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_ORG_TOKEN }}
+        with:
+          image: ${{ secrets.CODECOV_API_IMAGE_V2 }}:latest
+          options: -v ${{ github.workspace }}:/app
+          run: |
+            make test_env.container_prepare
+            codecovcli create-commit
+            codecovcli create-report
+  ats:
+    name: ATS
+    needs: [build, codecovstartup]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
@@ -98,13 +132,17 @@ jobs:
             codecovcli label-analysis --token=$STATIC_TOKEN --base-sha=$(git merge-base HEAD^ main)
             codecovcli --codecov-yml-path=codecov_cli.yml do-upload --plugin pycoverage --plugin compress-pycoverage --flag smart-labels --fail-on-error
 
+
+
   test:
     name: Test
-    needs: build
+    needs: [build, codecovstartup]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
@@ -143,3 +181,50 @@ jobs:
           codecovcli  do-upload --flag unit-latest-uploader --flag unit -t ${{ secrets.CODECOV_ORG_TOKEN_STAGING }} \
             --coverage-files-search-exclude-folder=graphql_api/types/** \
             --coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
+
+  staging:
+    name: Push Staging Image
+    needs: [build, test]
+    if: ${{ github.event.pull_request.merged == true && github.head_ref == 'staging' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: app-image
+          path: /tmp
+      - name: Load built image
+        run: |
+          docker load --input /tmp/app.tar
+          docker image ls -a
+      - name: Push staging
+        run: |
+          make tag.staging
+          make push.staging
+  production:
+    name: Push Production Image
+    needs: [ build, test ]
+    if: ${{ github.event.pull_request.merged == true && github.head_ref == 'main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: app-image
+          path: /tmp
+      - name: Load built image
+        run: |
+          docker load --input /tmp/app.tar
+          docker image ls -a
+      - name: Push production
+        run: |
+          make tag.production
+          make push.production
