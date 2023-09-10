@@ -93,8 +93,9 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_ORG_TOKEN }}
         with:
           image: ${{ secrets.CODECOV_API_IMAGE_V2 }}:latest
-          options: -v ${{ github.workspace }}:/app
+          options: -v ${{ github.workspace }}:/app -v ${{ github.workspace }}/.git:/app/.git
           run: |
+            ls -a
             make test_env.container_prepare
             codecovcli create-commit
             codecovcli create-report
@@ -131,9 +132,6 @@ jobs:
             codecovcli static-analysis --token=$STATIC_TOKEN
             codecovcli label-analysis --token=$STATIC_TOKEN --base-sha=$(git merge-base HEAD^ main)
             codecovcli --codecov-yml-path=codecov_cli.yml do-upload --plugin pycoverage --plugin compress-pycoverage --flag smart-labels --fail-on-error
-
-
-
   test:
     name: Test
     needs: [build, codecovstartup]
