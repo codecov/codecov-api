@@ -172,13 +172,13 @@ test_env.container_upload_staging:
 	--coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
 
 test_env.static_analysis:
-	docker-compose -f docker-compose-test.yml exec api make test_env.container_static_analysis
+	docker-compose -f docker-compose-test.yml exec api make test_env.container_static_analysis CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN}
 
 test_env.label_analysis:
-	docker-compose -f docker-compose-test.yml exec api make test_env.container_label_analysis
+	docker-compose -f docker-compose-test.yml exec api make test_env.container_label_analysis CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN}
 
 test_env.ats:
-	docker-compose -f docker-compose-test.yml exec api make test_env.container_ats
+	docker-compose -f docker-compose-test.yml exec api make test_env.container_ats CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN}
 
 test_env.container_static_analysis:
 	codecovcli static-analysis
@@ -187,7 +187,7 @@ test_env.container_label_analysis:
 	codecovcli label-analysis --base-sha=$(shell git merge-base HEAD^ origin/main)
 
 test_env.container_ats:
-	codecovcli --codecov-yml-path=codecov_cli.yml do-upload --plugin pycoverage --plugin compress-pycoverage --flag smart-labels --fail-on-error -r ${{ github.repository }} --git-service=github
+	codecovcli --codecov-yml-path=codecov_cli.yml do-upload --plugin pycoverage --plugin compress-pycoverage --flag smart-labels --fail-on-error
 
 test_env:
 	make test_env.up
