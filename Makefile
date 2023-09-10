@@ -65,7 +65,7 @@ build.self-hosted:
 		--build-arg RELEASE_VERSION=${VERSION}
 
 build.self-hosted-runtime:
-	docker build -f Dockerfile.self-hosted-runtime . \
+	docker build -f docker/Dockerfile.self-hosted-runtime . \
 		-t ${DOCKERHUB_REPO}:latest \
 		-t ${DOCKERHUB_REPO}:${VERSION} \
 		--build-arg CODECOV_SELF_HOSTED_RELEASE=${DOCKERHUB_REPO}:${VERSION}-no-dependencies \
