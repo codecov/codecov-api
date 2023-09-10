@@ -7,7 +7,7 @@ epoch := $(shell date +"%s")
 AR_REPO ?= codecov/self-hosted-api
 DOCKERHUB_REPO ?= codecov/self-hosted-api
 REQUIREMENTS_TAG := requirements-v1-$(shell sha1sum requirements.txt | cut -d ' ' -f 1)-$(shell sha1sum docker/Dockerfile.requirements | cut -d ' ' -f 1)
-VERSION := release-$(shell git rev-parse --short=7 HEAD)
+VERSION := release-${sha}
 export DOCKER_BUILDKIT=1
 export API_DOCKER_REPO=${AR_REPO}
 export API_DOCKER_VERSION=${VERSION}
@@ -161,7 +161,7 @@ test_env.container_upload:
 	--coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
 
 test_env.container_upload_staging:
-	codecovcli  do-upload --flag unit-latest-uploader --flag unit --url=https://stage-api.codecov.dev -C ${long_sha} -r codecov-api --git-service=github \
+	codecovcli  do-upload --flag unit-latest-uploader --flag unit -u https://stage-api.codecov.dev -C ${long_sha} -r codecov-api --git-service=github \
 	--coverage-files-search-exclude-folder=graphql_api/types/** \
 	--coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
 

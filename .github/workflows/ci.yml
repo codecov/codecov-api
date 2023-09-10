@@ -156,7 +156,7 @@ jobs:
           run: |
             make test_env.container_prepare
             codecovcli static-analysis --token=$STATIC_TOKEN
-            codecovcli label-analysis --token=$STATIC_TOKEN --base-sha=$(git merge-base HEAD main)
+            codecovcli label-analysis --token=$STATIC_TOKEN --base-sha=$(git merge-base HEAD^ origin/main)
             codecovcli --codecov-yml-path=codecov_cli.yml do-upload --plugin pycoverage --plugin compress-pycoverage --flag smart-labels --fail-on-error -r ${{ github.repository }} --git-service=github
   test:
     name: Test
@@ -166,7 +166,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
       - name: Cache App
         id: cache-app
         uses: actions/cache@v3
@@ -201,7 +201,7 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_ORG_TOKEN }}
         run: |
-          make test_env.upload_staging
+          make test_env.upload
       - name: upload using codecovcli staging
         if: github.repository_owner == 'codecov'
         env:
