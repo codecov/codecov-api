@@ -59,7 +59,7 @@ jobs:
         with:
           path: |
             requirements.tar
-          key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ hashFiles('**/requirements.txt') }}
+          key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/docker/Dockerfile.requirements') }}
           restore-keys: |
             ${{ runner.os }}-api-${{ env.cache-name }}-
 
@@ -241,7 +241,7 @@ jobs:
         with:
           path: |
             requirements.tar
-          key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ hashFiles('**/requirements.txt') }}
+          key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/docker/Dockerfile.requirements') }}
           restore-keys: |
             ${{ runner.os }}-api-${{ env.cache-name }}-
 
