@@ -44,41 +44,8 @@ gcloud_auth_enterprise: &gcloud_auth_enterprise
     gcloud auth configure-docker
 
 jobs:
-  lint-isort:
-    docker:
-      - image: circleci/python:3.7.6
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - run:
-          name: Running black and isort
-          command: |
-            echo "Installing..."
-            pip3 install -Iv black==22.3.0 isort
-            echo "Linting..."
-            black --check .
-            echo "Sorting..."
-            isort --profile black --check .
-  build:
-    executor: codecov-deploy
-    steps:
-    - checkout
-    - setup_remote_docker:
-        version: 20.10.7
-    - run:
-        <<: *gcloud_auth
-    - run:
-        name: build container
-        command: |-
-          make -f Makefile.circle build-requirements
-          make -f Makefile.circle build VERSION=$CIRCLE_TAG
-          make -f Makefile.circle push
-          make -f Makefile.circle tag
-          make -f Makefile.circle save
-    - persist_to_workspace:
-        root: .
-        paths:
-          - .
+
+
   build-enterprise:
     executor: codecov-deploy
     steps:
@@ -95,118 +62,8 @@ jobs:
           make -f Makefile.circle build-enterprise-runtime VERSION=$CIRCLE_TAG
           make -f Makefile.circle push-enterprise
           make -f Makefile.circle tag-enterprise
-  codecovstartup:
-    executor: codecov-api
-    working_directory: ~/repo
-    steps:
-    - checkout
-    - run:
-        name: Install CLI
-        command: |
-          apk add git build-base
-          pip install codecov-cli
-    - run:
-        name: Save commit info 
-        command: |
-          codecovcli create-commit
-    - run: 
-        name: Create report
-        command: |
-          codecovcli create-report
-  ATS:
-    executor: codecov-api
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - run:
-          name: Install CLI
-          command: |
-            apk add git build-base
-            pip install codecov-cli
-      - run:
-          name: Run Static Analysis
-          command: |
-            codecovcli static-analysis --token=$STATIC_TOKEN
-      - run:
-          name: Run Label Analysis
-          command: |
-            codecovcli label-analysis --token=$STATIC_TOKEN --base-sha=$(git merge-base HEAD^ main)
-      - run:
-          name: Upload to Codecov
-          command: |
-            codecovcli --codecov-yml-path=codecov_cli.yml do-upload --plugin pycoverage --plugin compress-pycoverage --flag smart-labels --fail-on-error
-  test:
-    executor: codecov-api
-    working_directory: ~/repo
-    environment:
-      SETUP__TIMESERIES__ENABLED: true
-    steps:
-    - checkout
-    - run:
-        name: upgrade curl
-        command: |
-          apk update
-          apk add curl
-          apk add git
-          apk upgrade
-    - run:
-        name: verify postgres is up
-        command: |
-          while ! nc -vz postgres 5432; do sleep 1; echo "waiting for postgres"; done
-    - run:
-        name: verify timescale is up
-        command: |
-          while ! nc -vz timescale 5432; do sleep 1; echo "waiting for timescale"; done
-    - run:
-        name: run tests
-        command: |
-          make test.unit
-          # make test.integration
-    - run:
-        name: check for migration conflicts
-        command: |
-          make check-for-migration-conflicts
-    - run:
-          name: Install CLI
-          command: |
-            apk add git build-base
-            pip install codecov-cli
-    - run:
-        name: upload using codecovcli
-        command: |
-          codecovcli  do-upload --flag unit-latest-uploader --flag unit -t ${CODECOV_ORG_TOKEN} \
-            --coverage-files-search-exclude-folder=graphql_api/types/** \
-            --coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
-    - run:
-        name: codecov-staging
-        command: |
-          codecovcli  do-upload --flag unit-latest-uploader --flag unit -t ${CODECOV_STAGING_TOKEN} \
-          --coverage-files-search-exclude-folder=graphql_api/types/** \
-          --coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
 
-  portable:
-    executor: codecov-deploy
-    steps:
-      - checkout
-      - setup_remote_docker:
-          version: 20.10.7
-      - run:
-          <<: *gcloud_auth
-      - run: echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKER_USERNAME" --password-stdin
-      - run: make -f Makefile.circle docker-deploy
-  dive:
-      executor: codecov-deploy
-      steps:
-      - attach_workspace:
-          at: .
-      - setup_remote_docker:
-          version: 20.10.7
-      - run:
-          <<: *gcloud_auth
-      - run:
-          name: Dive image
-          command: |
-            make -f Makefile.circle dive
+
   staging:
     executor: codecov-deploy
     environment:
