@@ -148,16 +148,26 @@ jobs:
           docker load --input app.tar
           make tag.latest
 
+      - name: Install docker compose
+        run: |
+          sudo curl -SL https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+      - name: Bring test env up
+        run: |
+          make test_env.up
+      - name: Prepare for tests
+        run: |
+          make test_env.prepare
+      - name: Run Static Analysis
+        run: |
+          make test_env.static_analysis CODECOV_UPLOAD_TOKEN=${{ secrets.STATIC_TOKEN }}
+      - name: Run Label Analysis
+        run: |
+          make test_env.label_analysis CODECOV_UPLOAD_TOKEN=${{ secrets.STATIC_TOKEN }}
       - name: Run ATS
-        uses: addnab/docker-run-action@v3
-        with:
-          image: ${{ secrets.CODECOV_API_IMAGE_V2 }}:latest
-          options: -v ${{ github.workspace }}:/app -e CODECOV_TOKEN=${{ secrets.CODECOV_ORG_TOKEN }} -e STATIC_TOKEN=${{ secrets.STATIC_TOKEN }}
-          run: |
-            make test_env.container_prepare
-            codecovcli static-analysis --token=$STATIC_TOKEN
-            codecovcli label-analysis --token=$STATIC_TOKEN --base-sha=$(git merge-base HEAD^ origin/main)
-            codecovcli --codecov-yml-path=codecov_cli.yml do-upload --plugin pycoverage --plugin compress-pycoverage --flag smart-labels --fail-on-error -r ${{ github.repository }} --git-service=github
+        run: |
+          make test_env.ats CODECOV_UPLOAD_TOKEN=${{ secrets.CODECOV_ORG_TOKEN }}
+
   test:
     name: Test
     needs: [build, codecovstartup]
@@ -198,16 +208,12 @@ jobs:
       ## Don't upload on forks for now.
       - name: upload using codecovcli
         if: github.repository_owner == 'codecov'
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_ORG_TOKEN }}
         run: |
-          make test_env.upload
+          make test_env.upload CODECOV_UPLOAD_TOKEN=${{ secrets.CODECOV_ORG_TOKEN }}
       - name: upload using codecovcli staging
         if: github.repository_owner == 'codecov'
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_ORG_TOKEN_STAGING }}
         run: |
-          make test_env.upload_staging
+          make test_env.upload_staging CODECOV_UPLOAD_TOKEN=${{ secrets.CODECOV_ORG_TOKEN_STAGING }}
 
   build-self-hosted:
     name: Build Self Hosted API

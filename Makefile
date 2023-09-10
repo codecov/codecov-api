@@ -8,9 +8,11 @@ AR_REPO ?= codecov/self-hosted-api
 DOCKERHUB_REPO ?= codecov/self-hosted-api
 REQUIREMENTS_TAG := requirements-v1-$(shell sha1sum requirements.txt | cut -d ' ' -f 1)-$(shell sha1sum docker/Dockerfile.requirements | cut -d ' ' -f 1)
 VERSION := release-${sha}
+CODECOV_UPLOAD_TOKEN=${CODECOV_TOKEN}
 export DOCKER_BUILDKIT=1
 export API_DOCKER_REPO=${AR_REPO}
 export API_DOCKER_VERSION=${VERSION}
+export CODECOV_TOKEN=${CODECOV_UPLOAD_TOKEN}
 
 
 check-for-migration-conflicts:
@@ -164,6 +166,24 @@ test_env.container_upload_staging:
 	codecovcli  do-upload --flag unit-latest-uploader --flag unit -u https://stage-api.codecov.dev -C ${long_sha} -r codecov-api --git-service=github \
 	--coverage-files-search-exclude-folder=graphql_api/types/** \
 	--coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
+
+test_env.static_analysis:
+	docker-compose -f docker-compose-test.yml exec api make test_env.container_static_analysis
+
+test_env.label_analysis:
+	docker-compose -f docker-compose-test.yml exec api make test_env.container_label_analysis
+
+test_env.ats:
+	docker-compose -f docker-compose-test.yml exec api make test_env.container_ats
+
+test_env.container_static_analysis:
+	codecovcli static-analysis
+
+test_env.container_label_analysis:
+	codecovcli label-analysis --base-sha=$(shell git merge-base HEAD^ origin/main)
+
+test_env.container_ats:
+	codecovcli --codecov-yml-path=codecov_cli.yml do-upload --plugin pycoverage --plugin compress-pycoverage --flag smart-labels --fail-on-error -r ${{ github.repository }} --git-service=github
 
 test_env:
 	make test_env.up
