@@ -158,6 +158,7 @@ jobs:
       - name: Prepare for tests
         run: |
           make test_env.prepare
+          make test_env.check_db
       - name: Run Static Analysis
         run: |
           make test_env.static_analysis CODECOV_UPLOAD_TOKEN=${{ secrets.STATIC_TOKEN }}
@@ -199,6 +200,7 @@ jobs:
       - name: Prepare for tests
         run: |
           make test_env.prepare
+          make test_env.check_db
       - name: Run unit tests
         run: |
           make test_env.run_unit
