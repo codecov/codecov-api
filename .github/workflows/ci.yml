@@ -109,12 +109,9 @@ jobs:
 
       - name: Run Startup
         uses: addnab/docker-run-action@v3
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_ORG_TOKEN }}
-          COMMIT_SHA: ${{ github.sha }}
         with:
           image: ${{ secrets.CODECOV_API_IMAGE_V2 }}:latest
-          options: -v ${{ github.workspace }}:/app -v ${{ github.workspace }}/.git:/app/.git
+          options: -v ${{ github.workspace }}:/app -e COMMIT_SHA=${{ github.sha }} -e CODECOV_TOKEN=${{ secrets.CODECOV_ORG_TOKEN }}
           run: |
             ls -a
             make test_env.container_prepare
@@ -142,13 +139,9 @@ jobs:
 
       - name: Run ATS
         uses: addnab/docker-run-action@v3
-        env:
-          STATIC_TOKEN: ${{ secrets.STATIC_TOKEN }}
-          CODECOV_TOKEN: ${{ secrets.CODECOV_ORG_TOKEN }}
-          COMMIT_SHA: ${{ github.sha }}
         with:
           image: ${{ secrets.CODECOV_API_IMAGE_V2 }}:latest
-          options: -v ${{ github.workspace }}:/app
+          options: -v ${{ github.workspace }}:/app -e COMMIT_SHA=${{ github.sha }} -e CODECOV_TOKEN=${{ secrets.CODECOV_ORG_TOKEN }} -e STATIC_TOKEN=${{ secrets.STATIC_TOKEN }}
           run: |
             make test_env.container_prepare
             codecovcli static-analysis --token=$STATIC_TOKEN
