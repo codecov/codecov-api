@@ -63,6 +63,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-api-${{ env.cache-name }}-
 
+      - name: Cache App
+        id: cache-app
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-api-app
+        with:
+          path: |
+            app.tar
+          key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ github.run_id }}
+
       - name: Build/pull requirements
         if: ${{ steps.cache-requirements.outputs.cache-hit == 'true' }}
         run: |
@@ -75,7 +85,7 @@ jobs:
           make save.requirements
 
       - name: Push Requirements
-        if: github.repository_owner == 'codecov'
+        if: ${{ steps.cache-requirements.outputs.cache-hit != 'true' && github.repository_owner == 'codecov' }}
         run: |
           make push.requirements
       - name: Build app
@@ -104,19 +114,17 @@ jobs:
       - name: Load built image
         run: |
           docker load --input /tmp/app.tar
-          docker image ls -a
           make tag.latest
 
       - name: Run Startup
         uses: addnab/docker-run-action@v3
         with:
           image: ${{ secrets.CODECOV_API_IMAGE_V2 }}:latest
-          options: -v ${{ github.workspace }}:/app -e COMMIT_SHA=${{ github.sha }} -e CODECOV_TOKEN=${{ secrets.CODECOV_ORG_TOKEN }}
+          options: -v ${{ github.workspace }}:/app -e CODECOV_TOKEN=${{ secrets.CODECOV_ORG_TOKEN }}
           run: |
-            ls -a
             make test_env.container_prepare
-            codecovcli create-commit -C $COMMIT_SHA
-            codecovcli create-report -C $COMMIT_SHA
+            codecovcli create-commit -C ${{ github.sha }} -r ${{ github.repository }}
+            codecovcli create-report -C ${{ github.sha }} -r ${{ github.repository }}
   ats:
     name: ATS
     needs: [build, codecovstartup]
@@ -141,11 +149,11 @@ jobs:
         uses: addnab/docker-run-action@v3
         with:
           image: ${{ secrets.CODECOV_API_IMAGE_V2 }}:latest
-          options: -v ${{ github.workspace }}:/app -e COMMIT_SHA=${{ github.sha }} -e CODECOV_TOKEN=${{ secrets.CODECOV_ORG_TOKEN }} -e STATIC_TOKEN=${{ secrets.STATIC_TOKEN }}
+          options: -v ${{ github.workspace }}:/app -e CODECOV_TOKEN=${{ secrets.CODECOV_ORG_TOKEN }} -e STATIC_TOKEN=${{ secrets.STATIC_TOKEN }}
           run: |
             make test_env.container_prepare
-            codecovcli static-analysis --token=$STATIC_TOKEN
-            codecovcli label-analysis --token=$STATIC_TOKEN --base-sha=$(git merge-base HEAD^ main) -C $COMMIT_SHA
+            codecovcli static-analysis --token=$STATIC_TOKEN -C ${{ github.sha }} -r ${{ github.repository }}
+            codecovcli label-analysis --token=$STATIC_TOKEN --base-sha=$(git merge-base HEAD^ main) -C ${{ github.sha }} -r ${{ github.repository }}
             codecovcli --codecov-yml-path=codecov_cli.yml do-upload --plugin pycoverage --plugin compress-pycoverage --flag smart-labels --fail-on-error
   test:
     name: Test
@@ -184,18 +192,14 @@ jobs:
       ## Don't upload on forks for now.
       - name: upload using codecovcli
         if: github.repository_owner == 'codecov'
-        env:
-          COMMIT_SHA: ${{ github.sha }}
         run: |
-          codecovcli  do-upload --flag unit-latest-uploader --flag unit -t ${{ secrets.CODECOV_ORG_TOKEN }} -C $COMMIT_SHA \
+          codecovcli  do-upload --flag unit-latest-uploader --flag unit -t ${{ secrets.CODECOV_ORG_TOKEN }} -C ${{ github.sha }} -r ${{ github.repository }} \
             --coverage-files-search-exclude-folder=graphql_api/types/** \
             --coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
       - name: upload using codecovcli staging
         if: github.repository_owner == 'codecov'
-        env:
-          COMMIT_SHA: ${{ github.sha }}
         run: |
-          codecovcli  do-upload --flag unit-latest-uploader --flag unit -t ${{ secrets.CODECOV_ORG_TOKEN_STAGING }} -C $COMMIT_SHA \
+          codecovcli  do-upload --flag unit-latest-uploader --flag unit -t ${{ secrets.CODECOV_ORG_TOKEN_STAGING }} -C ${{ github.sha }} -r ${{ github.repository }} \
             --coverage-files-search-exclude-folder=graphql_api/types/** \
             --coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
 
