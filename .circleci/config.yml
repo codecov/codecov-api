@@ -135,6 +135,54 @@ jobs:
           name: Upload to Codecov
           command: |
             codecovcli --codecov-yml-path=codecov_cli.yml do-upload --plugin pycoverage --plugin compress-pycoverage --flag smart-labels --fail-on-error
+  test:
+    executor: codecov-api
+    working_directory: ~/repo
+    environment:
+      SETUP__TIMESERIES__ENABLED: true
+    steps:
+    - checkout
+    - run:
+        name: upgrade curl
+        command: |
+          apk update
+          apk add curl
+          apk add git
+          apk upgrade
+    - run:
+        name: verify postgres is up
+        command: |
+          while ! nc -vz postgres 5432; do sleep 1; echo "waiting for postgres"; done
+    - run:
+        name: verify timescale is up
+        command: |
+          while ! nc -vz timescale 5432; do sleep 1; echo "waiting for timescale"; done
+    - run:
+        name: run tests
+        command: |
+          make test.unit
+          # make test.integration
+    - run:
+        name: check for migration conflicts
+        command: |
+          make check-for-migration-conflicts
+    - run:
+          name: Install CLI
+          command: |
+            apk add git build-base
+            pip install codecov-cli
+    - run:
+        name: upload using codecovcli
+        command: |
+          codecovcli  do-upload --flag unit-latest-uploader --flag unit -t ${CODECOV_ORG_TOKEN} \
+            --coverage-files-search-exclude-folder=graphql_api/types/** \
+            --coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
+    - run:
+        name: codecov-staging
+        command: |
+          codecovcli  do-upload --flag unit-latest-uploader --flag unit -t ${CODECOV_STAGING_TOKEN} \
+          --coverage-files-search-exclude-folder=graphql_api/types/** \
+          --coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
 
   portable:
     executor: codecov-deploy
