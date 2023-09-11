@@ -37,9 +37,7 @@ class TestArchiveField(object):
             self._archive_field_storage_path = archive_value
             self.should_write_to_gcs = should_write_to_gcs
 
-        archive_field = ArchiveField(
-            should_write_to_storage_fn=should_write_to_storage, default_value=None
-        )
+        archive_field = ArchiveField(should_write_to_storage_fn=should_write_to_storage)
 
     class ClassWithArchiveFieldMissingMethods:
         commit: Commit

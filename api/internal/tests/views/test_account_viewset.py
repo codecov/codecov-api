@@ -263,7 +263,7 @@ class AccountViewSetTests(APITestCase):
 
     @patch("services.billing.stripe.SubscriptionSchedule.retrieve")
     @patch("services.billing.stripe.Subscription.retrieve")
-    def test_retrieve_account_returns_null_schedule_details_when_there_arent_two_scheduled_phases(
+    def test_retrieve_account_returns_last_phase_when_more_than_one_scheduled_phases(
         self, mock_retrieve_subscription, mock_retrieve_schedule
     ):
         owner = OwnerFactory(
@@ -290,9 +290,14 @@ class AccountViewSetTests(APITestCase):
             "quantity": 6,
         }
         phases = [
-            {},
-            {},
-            {},
+            {
+                "start_date": 123689126536,
+                "plans": [{"plan": "test_plan_123", "quantity": 4}],
+            },
+            {
+                "start_date": 123689126636,
+                "plans": [{"plan": "test_plan_456", "quantity": 5}],
+            },
             {
                 "start_date": schedule_params["start_date"],
                 "plans": [
@@ -348,7 +353,14 @@ class AccountViewSetTests(APITestCase):
             "plan_provider": owner.plan_provider,
             "activated_student_count": 0,
             "student_count": 0,
-            "schedule_detail": {"id": "123", "scheduled_phase": None},
+            "schedule_detail": {
+                "id": "123",
+                "scheduled_phase": {
+                    "plan": "monthly",
+                    "quantity": schedule_params["quantity"],
+                    "start_date": schedule_params["start_date"],
+                },
+            },
         }
 
     @patch("services.billing.stripe.Subscription.retrieve")

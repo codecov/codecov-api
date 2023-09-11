@@ -3,6 +3,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from django.test import TestCase
+from shared.storage.exceptions import FileNotInStorageError
 from shared.utils.sessions import SessionType
 
 from core.tests.factories import CommitFactory, CommitWithReportFactory
@@ -116,6 +117,12 @@ class ReportServiceTest(TestCase):
             0,
             0,
         ]
+
+    @patch("services.archive.ArchiveService.read_chunks")
+    def test_build_report_from_commit_file_not_in_storage(self, read_chunks_mock):
+        read_chunks_mock.side_effect = FileNotInStorageError()
+        commit = CommitWithReportFactory.create(message="aaaaa", commitid="abf6d4d")
+        assert build_report_from_commit(commit) == None
 
     @patch("services.archive.ArchiveService.read_chunks")
     def test_build_report_from_commit_cff_and_direct_uploads(self, read_chunks_mock):

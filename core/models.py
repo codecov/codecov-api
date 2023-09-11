@@ -111,7 +111,6 @@ class Repository(models.Model):
     branch = models.TextField(default="master")
     upload_token = models.UUIDField(unique=True, default=uuid.uuid4)
     yaml = models.JSONField(null=True)
-    cache = models.JSONField(null=True)
     image_token = models.TextField(null=True, default=_gen_image_token)
     using_integration = models.BooleanField(null=True)
     hookid = models.TextField(null=True)
@@ -313,7 +312,7 @@ class Commit(models.Model):
     report = ArchiveField(
         should_write_to_storage_fn=should_write_to_storage,
         json_encoder=ReportJSONEncoder,
-        default_value={},
+        default_value_class=dict,
     )
 
 
@@ -397,7 +396,7 @@ class Pull(models.Model):
     _flare = models.JSONField(db_column="flare", null=True)
     _flare_storage_path = models.URLField(db_column="flare_storage_path", null=True)
     flare = ArchiveField(
-        should_write_to_storage_fn=should_write_to_storage, default_value={}
+        should_write_to_storage_fn=should_write_to_storage, default_value_class=dict
     )
 
     def save(self, *args, **kwargs):
