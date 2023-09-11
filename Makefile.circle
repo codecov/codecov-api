@@ -54,9 +54,11 @@ build:
 build-enterprise:
 	docker pull ${GCR_REPO}:${REQUIREMENTS_TAG}
 	docker build \
-		-f Dockerfile.circle-enterprise . \
+		-f Dockerfile.enterprise . \
 		-t ${ENTERPRISE_GCR_REPO}:latest_no_dependencies \
-		--build-arg REQUIREMENTS_IMAGE=${GCR_REPO}:${REQUIREMENTS_TAG}
+		--build-arg REQUIREMENTS_IMAGE=${GCR_REPO}:${REQUIREMENTS_TAG} \
+		--build-arg RELEASE_VERSION=${VERSION}
+	docker push ${ENTERPRISE_GCR_REPO}:latest_no_dependencies
 
 # CIRCLECI
 # job: enterprise-runtime
@@ -65,7 +67,8 @@ build-enterprise-runtime:
 	docker build \
 		-f Dockerfile.enterprise_runtime . \
 		-t ${ENTERPRISE_GCR_REPO}:latest \
-		--build-arg CODECOV_ENTERPRISE_RELEASE=${ENTERPRISE_GCR_REPO}:latest_no_dependencies
+		--build-arg CODECOV_ENTERPRISE_RELEASE=${ENTERPRISE_GCR_REPO}:latest_no_dependencies \
+        --build-arg RELEASE_VERSION=${VERSION}
 
 # CIRCLECI
 # job: portable

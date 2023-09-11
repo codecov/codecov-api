@@ -348,3 +348,16 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
                 "totalCount": 3,
             }
         }
+
+    def test_fetch_first_pull(self):
+        pull1 = PullFactory(repository=self.repository)
+        assert self.fetch_one_pull_request(pull1.pullid, "firstPull") == {
+            "firstPull": True
+        }
+        pull2 = PullFactory(repository=self.repository)
+        assert self.fetch_one_pull_request(pull1.pullid, "firstPull") == {
+            "firstPull": True
+        }
+        assert self.fetch_one_pull_request(pull2.pullid, "firstPull") == {
+            "firstPull": False
+        }
