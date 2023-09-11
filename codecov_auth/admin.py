@@ -4,7 +4,7 @@ from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.admin.models import LogEntry
 from django.db.models.fields import BLANK_CHOICE_DASH
-from django.forms import Select
+from django.forms import CheckboxInput, Select
 from django.http import HttpRequest
 from django.shortcuts import redirect
 from django.utils.html import format_html
@@ -168,6 +168,7 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
         "plan_provider",
         "plan_user_count",
         "plan_activated_users",
+        "uses_invoice",
         "integration_id",
         "bot",
         "stripe_customer_id",
@@ -182,6 +183,7 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
         form.base_fields["plan"].widget = Select(
             choices=BLANK_CHOICE_DASH + PLANS_CHOICES
         )
+        form.base_fields["uses_invoice"].widget = CheckboxInput()
 
         is_superuser = request.user.is_superuser
 
