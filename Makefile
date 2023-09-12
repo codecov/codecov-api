@@ -117,6 +117,9 @@ save.self-hosted:
 save.self-hosted-runtime:
 	docker save -o self-hosted-runtime.tar ${DOCKERHUB_REPO}:${VERSION}
 
+push.latest:
+	docker push ${AR_REPO}:latest
+
 push.staging:
 	docker push ${AR_REPO}:staging-${VERSION}
 

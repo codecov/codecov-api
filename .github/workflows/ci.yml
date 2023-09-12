@@ -367,7 +367,9 @@ jobs:
       - name: Push production
         run: |
           make tag.production
+          make tag.latest
           make push.production
+          make push.latest
       - name: Create Sentry release
         uses: getsentry/action-release@v1
         env:
