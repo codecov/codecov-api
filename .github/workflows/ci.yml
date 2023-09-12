@@ -110,12 +110,12 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_ORG_TOKEN }}
         run: |
-          codecovcli create-commit
-          codecovcli create-report
+          codecovcli create-commit --fail-on-error
+          codecovcli create-report --fail-on-error
       - name: Run Startup Staging
         run: |
-          codecovcli -u https://stage-api.codecov.dev create-commit -t ${{ secrets.CODECOV_ORG_TOKEN_STAGING }}
-          codecovcli -u https://stage-api.codecov.dev create-report -t ${{ secrets.CODECOV_ORG_TOKEN_STAGING }}
+          codecovcli -u https://stage-api.codecov.dev create-commit -t ${{ secrets.CODECOV_ORG_TOKEN_STAGING }} --fail-on-error
+          codecovcli -u https://stage-api.codecov.dev create-report -t ${{ secrets.CODECOV_ORG_TOKEN_STAGING }} --fail-on-error
 
   ats:
     name: ATS
