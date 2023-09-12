@@ -171,7 +171,7 @@ class ReportPaths:
                 if search_term.lower() in path.relative_path.lower()
             ]
 
-    @property
+    @cached_property
     def files_accounting_flags(self) -> List[str]:
         if not self.filter_flags:
             return self.report.files
