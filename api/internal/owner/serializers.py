@@ -248,6 +248,7 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
             "plan",
             "plan_auto_activate",
             "plan_provider",
+            "uses_invoice",
             "repo_total_credits",
             "root_organization",
             "schedule_detail",
