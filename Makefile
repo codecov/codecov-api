@@ -16,6 +16,9 @@ export API_DOCKER_REPO=${AR_REPO}
 export API_DOCKER_VERSION=${VERSION}
 export CODECOV_TOKEN=${CODECOV_UPLOAD_TOKEN}
 
+build:
+	make build.requirements
+	make build.app
 
 check-for-migration-conflicts:
 	python manage.py check_for_migration_conflicts
@@ -70,10 +73,6 @@ build.self-hosted-runtime:
 		-t ${DOCKERHUB_REPO}:${VERSION} \
 		--build-arg CODECOV_SELF_HOSTED_RELEASE=${DOCKERHUB_REPO}:${VERSION}-no-dependencies \
         --build-arg RELEASE_VERSION=${VERSION}
-
-build:
-	make build.requirements
-	make build.app
 
 tag.latest:
 	docker tag ${AR_REPO}:${VERSION} ${AR_REPO}:latest

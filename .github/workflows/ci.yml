@@ -274,13 +274,16 @@ jobs:
       - name: Build self hosted runtime
         run: |
           make build.self-hosted-runtime
-          make save.self-hosted
+          make save.self-hosted-runtime
 
   staging:
     name: Push Staging Image
     needs: [build, test]
     #if: ${{ github.event.pull_request.merged == true && github.head_ref == 'staging' && github.repository_owner == 'codecov' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -327,6 +330,9 @@ jobs:
     needs: [ build, test ]
     #if: ${{ github.event.pull_request.merged == true && github.head_ref == 'main' && github.repository_owner == 'codecov' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -374,6 +380,9 @@ jobs:
     needs: [ build-self-hosted, test ]
     #if: ${{ github.event.pull_request.merged == true && github.head_ref == 'main' && github.repository_owner == 'codecov' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
