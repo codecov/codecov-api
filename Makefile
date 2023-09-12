@@ -4,7 +4,7 @@ release_version := `cat VERSION`
 build_date ?= $(shell git show -s --date=iso8601-strict --pretty=format:%cd $$sha)
 branch = $(shell git branch | grep \* | cut -f2 -d' ')
 epoch := $(shell date +"%s")
-AR_REPO ?= codecov/self-hosted-api
+AR_REPO ?= codecov/api
 DOCKERHUB_REPO ?= codecov/self-hosted-api
 REQUIREMENTS_TAG := requirements-v1-$(shell sha1sum requirements.txt | cut -d ' ' -f 1)-$(shell sha1sum docker/Dockerfile.requirements | cut -d ' ' -f 1)
 VERSION := release-${sha}
@@ -54,25 +54,35 @@ build.requirements:
 		-f docker/Dockerfile.requirements . \
 		-t ${AR_REPO}:${REQUIREMENTS_TAG}
 
+build.local:
+	docker build -f docker/Dockerfile . \
+		-t ${AR_REPO}:latest \
+		--build-arg REQUIREMENTS_IMAGE=${AR_REPO}:${REQUIREMENTS_TAG} \
+		--build-arg BUILD_ENV=local
+
 build.app:
 	docker build -f docker/Dockerfile . \
 		-t ${AR_REPO}:latest \
 		-t ${AR_REPO}:${VERSION} \
-		--build-arg REQUIREMENTS_IMAGE=${AR_REPO}:${REQUIREMENTS_TAG}
+		--build-arg REQUIREMENTS_IMAGE=${AR_REPO}:${REQUIREMENTS_TAG} \
+		--build-arg RELEASE_VERSION=${VERSION} \
+		--build-arg BUILD_ENV=cloud
 
 build.self-hosted:
-	docker build -f docker/Dockerfile.self-hosted . \
+	docker build -f docker/Dockerfile . \
 		-t ${DOCKERHUB_REPO}:latest-no-dependencies \
 		-t ${DOCKERHUB_REPO}:${VERSION}-no-dependencies \
 		--build-arg REQUIREMENTS_IMAGE=${AR_REPO}:${REQUIREMENTS_TAG} \
-		--build-arg RELEASE_VERSION=${VERSION}
+		--build-arg RELEASE_VERSION=${VERSION} \
+		--build-arg BUILD_ENV=self-hosted
 
 build.self-hosted-runtime:
-	docker build -f docker/Dockerfile.self-hosted-runtime . \
+	docker build -f docker/Dockerfile . \
 		-t ${DOCKERHUB_REPO}:latest \
 		-t ${DOCKERHUB_REPO}:${VERSION} \
-		--build-arg CODECOV_SELF_HOSTED_RELEASE=${DOCKERHUB_REPO}:${VERSION}-no-dependencies \
-        --build-arg RELEASE_VERSION=${VERSION}
+		--build-arg REQUIREMENTS_IMAGE=${AR_REPO}:${REQUIREMENTS_TAG} \
+        --build-arg RELEASE_VERSION=${VERSION} \
+        --build-arg BUILD_ENV=self-hosted-runtime
 
 tag.latest:
 	docker tag ${AR_REPO}:${VERSION} ${AR_REPO}:latest
