@@ -96,6 +96,7 @@ jobs:
   codecovstartup:
     name: Codecov Startup
     needs: build
+    if: github.repository_owner == 'codecov'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -113,8 +114,8 @@ jobs:
           codecovcli create-report
       - name: Run Startup Staging
         run: |
-          codecovcli create-commit -t ${{ secrets.CODECOV_ORG_TOKEN_STAGING }}
-          codecovcli create-report -t ${{ secrets.CODECOV_ORG_TOKEN_STAGING }}
+          codecovcli -u https://stage-api.codecov.dev create-commit -t ${{ secrets.CODECOV_ORG_TOKEN_STAGING }}
+          codecovcli -u https://stage-api.codecov.dev create-report -t ${{ secrets.CODECOV_ORG_TOKEN_STAGING }}
 
   ats:
     name: ATS
@@ -279,7 +280,7 @@ jobs:
   staging:
     name: Push Staging Image
     needs: [build, test]
-    #if: ${{ github.event.pull_request.merged == true && github.head_ref == 'staging' && github.repository_owner == 'codecov' }}
+    if: ${{ github.event.pull_request.merged == true && github.head_ref == 'staging' && github.repository_owner == 'codecov' }}
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
@@ -328,7 +329,7 @@ jobs:
   production:
     name: Push Production Image
     needs: [ build, test ]
-    #if: ${{ github.event.pull_request.merged == true && github.head_ref == 'main' && github.repository_owner == 'codecov' }}
+    if: ${{ github.event.pull_request.merged == true && github.head_ref == 'main' && github.repository_owner == 'codecov' }}
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
@@ -378,7 +379,7 @@ jobs:
   self-hosted:
     name: Push Self Hosted Image
     needs: [ build-self-hosted, test ]
-    #if: ${{ github.event.pull_request.merged == true && github.head_ref == 'main' && github.repository_owner == 'codecov' }}
+    if: ${{ github.event.pull_request.merged == true && github.head_ref == 'main' && github.repository_owner == 'codecov' }}
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
