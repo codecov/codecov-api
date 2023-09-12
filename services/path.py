@@ -155,12 +155,17 @@ class ReportPaths:
         filter_flags: List[str] = [],
     ):
         self.report = report
-        self.prefix = path or ""
+        self.unfiltered_report = report
         self.filter_flags = filter_flags
+        self.prefix = path or ""
+
+        # Filter report if flags exist
+        if self.filter_flags:
+            self.report = self.report.filter(flags=self.filter_flags)
 
         self._paths = [
             PrefixedPath(full_path=full_path, prefix=self.prefix)
-            for full_path in self.files_accounting_flags
+            for full_path in self.files
             if is_subpath(full_path, self.prefix)
         ]
 
@@ -172,14 +177,13 @@ class ReportPaths:
             ]
 
     @cached_property
-    def files_accounting_flags(self) -> List[str]:
-        if not self.filter_flags:
-            return self.report.files
-        files = report_service.files_belonging_to_flags(
-            commit_report=self.report, flags=self.filter_flags
-        )
-        self._filter_commit_report()
-        return files
+    def files(self) -> List[str]:
+        if self.filter_flags:
+            files = report_service.files_belonging_to_flags(
+                commit_report=self.unfiltered_report, flags=self.filter_flags
+            )
+            return files
+        return self.report.files
 
     def _filter_commit_report(self) -> None:
         self.report = self.report.filter(flags=self.filter_flags)

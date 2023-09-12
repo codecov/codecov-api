@@ -219,7 +219,7 @@ class TestReportPaths(TestCase):
         report_paths = ReportPaths(self.report, path="wrong")
         assert report_paths.paths == []
 
-    def test_files_accounting_flags(self):
+    def test_files(self):
         flags = ["flag-123"]
         report = Report()
         session_a_id, _ = report.add_session(Session(flags=["flag-123"]))
@@ -229,7 +229,7 @@ class TestReportPaths(TestCase):
         report.append(file_a)
 
         report_paths = ReportPaths(report=report, filter_flags=flags)
-        assert report_paths.files_accounting_flags == ["foo/file1.py"]
+        assert report_paths.files == ["foo/file1.py"]
 
 
 class TestReportPathsNested(TestCase):

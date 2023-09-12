@@ -227,17 +227,17 @@ def build_files(commit_report: CommitReport) -> dict[str, ReportFileSummary]:
 
 
 def files_belonging_to_flags(commit_report: Report, flags: List[str]) -> List[str]:
-    sessions_for_specific_flags = calculate_sessions_with_specific_flags(
+    sessions_for_specific_flags = sessions_with_specific_flags(
         commit_report=commit_report, flags=flags
     )
     session_ids = list(sessions_for_specific_flags.keys())
-    files_in_specific_sessions = calculate_files_in_sessions(
+    files_in_specific_sessions = files_in_sessions(
         commit_report=commit_report, session_ids=session_ids
     )
     return files_in_specific_sessions
 
 
-def calculate_sessions_with_specific_flags(
+def sessions_with_specific_flags(
     commit_report: Report, flags: List[str]
 ) -> dict[int, Session]:
     sessions = [
@@ -248,9 +248,7 @@ def calculate_sessions_with_specific_flags(
     return dict(sessions)
 
 
-def calculate_files_in_sessions(
-    commit_report: Report, session_ids: List[int]
-) -> List[str]:
+def files_in_sessions(commit_report: Report, session_ids: List[int]) -> List[str]:
     return [
         file.name
         for file in commit_report

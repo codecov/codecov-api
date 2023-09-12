@@ -2,7 +2,7 @@ input PathContentsFilters {
   searchValue: String
   displayType: PathContentDisplayType
   ordering: PathContentsOrdering
-  flags: [String]
+  flags: [String!]
 }
 
 input PathContentsOrdering {
