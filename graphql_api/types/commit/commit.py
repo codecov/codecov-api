@@ -21,6 +21,7 @@ from graphql_api.helpers.connection import (
 from graphql_api.types.comparison.comparison import MissingBaseCommit, MissingHeadReport
 from graphql_api.types.enums import OrderingDirection, PathContentDisplayType
 from graphql_api.types.errors import MissingCoverage, MissingHeadReport, UnknownPath
+from graphql_api.types.errors.errors import UnknownFlags
 from services.comparison import Comparison, ComparisonReport
 from services.components import Component
 from services.path import ReportPaths
@@ -170,11 +171,13 @@ def resolve_path_contents(commit: Commit, info, path: str = None, filters=None):
         filters = {}
     search_value = filters.get("search_value")
     display_type = filters.get("display_type")
+    flags = filters.get("flags") or []
+
+    if flags and not set(flags) & set(commit_report.flags):
+        return UnknownFlags()
 
     report_paths = ReportPaths(
-        report=commit_report,
-        path=path,
-        search_term=search_value,
+        report=commit_report, path=path, search_term=search_value, filter_flags=flags
     )
 
     if len(report_paths.paths) == 0:
