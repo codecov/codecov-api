@@ -96,7 +96,6 @@ jobs:
   codecovstartup:
     name: Codecov Startup
     needs: build
-    if: github.repository_owner == 'codecov'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -104,15 +103,18 @@ jobs:
         with:
           fetch-depth: 2
       - name: Install CLI
+        if: github.repository_owner == 'codecov'
         run: |
           make test_env.install_cli
       - name: Run Startup
+        if: github.repository_owner == 'codecov'
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_ORG_TOKEN }}
         run: |
           codecovcli create-commit --fail-on-error
           codecovcli create-report --fail-on-error
       - name: Run Startup Staging
+        if: github.repository_owner == 'codecov'
         run: |
           codecovcli -u https://stage-api.codecov.dev create-commit -t ${{ secrets.CODECOV_ORG_TOKEN_STAGING }} --fail-on-error
           codecovcli -u https://stage-api.codecov.dev create-report -t ${{ secrets.CODECOV_ORG_TOKEN_STAGING }} --fail-on-error
