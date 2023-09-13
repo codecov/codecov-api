@@ -2,26 +2,26 @@ version: 2.1
 executors:
   codecov-deploy:
     docker:
-    - image: $CODECOV_DEPLOY_IMAGE_LATEST
-      user: root
-      auth:
-        username: _json_key
-        password: $GCLOUD_SERVICE_KEY
+      - image: $CODECOV_DEPLOY_IMAGE_LATEST
+        user: root
+        auth:
+          username: _json_key
+          password: $GCLOUD_SERVICE_KEY
     working_directory: /work
   codecov-api:
     docker:
-    - image: $CODECOV_API_IMAGE_LATEST
-      user: root
-      auth:
-        username: _json_key
-        password: $GCLOUD_SERVICE_KEY
-    - image: cimg/postgres:14.4
-      name: postgres
-    - image: timescale/timescaledb-ha:pg14-latest
-      name: timescale
-      environment:
-        POSTGRES_HOST_AUTH_METHOD: trust
-        POSTGRES_PASSWORD: password
+      - image: $CODECOV_API_IMAGE_LATEST
+        user: root
+        auth:
+          username: _json_key
+          password: $GCLOUD_SERVICE_KEY
+      - image: cimg/postgres:14.4
+        name: postgres
+      - image: timescale/timescaledb-ha:pg14-latest
+        name: timescale
+        environment:
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_PASSWORD: password
     working_directory: /api
 
 
@@ -62,57 +62,57 @@ jobs:
   build:
     executor: codecov-deploy
     steps:
-    - checkout
-    - setup_remote_docker:
-        version: 20.10.7
-    - run:
-        <<: *gcloud_auth
-    - run:
-        name: build container
-        command: |-
-          make -f Makefile.circle build-requirements
-          make -f Makefile.circle build VERSION=$CIRCLE_TAG
-          make -f Makefile.circle push
-          make -f Makefile.circle tag
-          make -f Makefile.circle save
-    - persist_to_workspace:
-        root: .
-        paths:
-          - .
+      - checkout
+      - setup_remote_docker:
+          version: 20.10.7
+      - run:
+          <<: *gcloud_auth
+      - run:
+          name: build container
+          command: |-
+            make -f Makefile.circle build-requirements
+            make -f Makefile.circle build VERSION=$CIRCLE_TAG
+            make -f Makefile.circle push
+            make -f Makefile.circle tag
+            make -f Makefile.circle save
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
   build-enterprise:
     executor: codecov-deploy
     steps:
-    - checkout
-    - setup_remote_docker:
-        version: 20.10.7
-    - run:
-        <<: *gcloud_auth_enterprise
-    - run:
-        name: build container
-        command: |-
-          make -f Makefile.circle build-requirements
-          make -f Makefile.circle build-enterprise VERSION=$CIRCLE_TAG
-          make -f Makefile.circle build-enterprise-runtime VERSION=$CIRCLE_TAG
-          make -f Makefile.circle push-enterprise
-          make -f Makefile.circle tag-enterprise
+      - checkout
+      - setup_remote_docker:
+          version: 20.10.7
+      - run:
+          <<: *gcloud_auth_enterprise
+      - run:
+          name: build container
+          command: |-
+            make -f Makefile.circle build-requirements
+            make -f Makefile.circle build-enterprise VERSION=$CIRCLE_TAG
+            make -f Makefile.circle build-enterprise-runtime VERSION=$CIRCLE_TAG
+            make -f Makefile.circle push-enterprise
+            make -f Makefile.circle tag-enterprise
   codecovstartup:
     executor: codecov-api
     working_directory: ~/repo
     steps:
-    - checkout
-    - run:
-        name: Install CLI
-        command: |
-          apk add git build-base
-          pip install codecov-cli
-    - run:
-        name: Save commit info 
-        command: |
-          codecovcli create-commit
-    - run: 
-        name: Create report
-        command: |
-          codecovcli create-report
+      - checkout
+      - run:
+          name: Install CLI
+          command: |
+            apk add git build-base
+            pip install codecov-cli
+      - run:
+          name: Save commit info
+          command: |
+            codecovcli create-commit
+      - run:
+          name: Create report
+          command: |
+            codecovcli create-report
   ATS:
     executor: codecov-api
     working_directory: ~/repo
@@ -141,48 +141,48 @@ jobs:
     environment:
       SETUP__TIMESERIES__ENABLED: true
     steps:
-    - checkout
-    - run:
-        name: upgrade curl
-        command: |
-          apk update
-          apk add curl
-          apk add git
-          apk upgrade
-    - run:
-        name: verify postgres is up
-        command: |
-          while ! nc -vz postgres 5432; do sleep 1; echo "waiting for postgres"; done
-    - run:
-        name: verify timescale is up
-        command: |
-          while ! nc -vz timescale 5432; do sleep 1; echo "waiting for timescale"; done
-    - run:
-        name: run tests
-        command: |
-          make test.unit
-          # make test.integration
-    - run:
-        name: check for migration conflicts
-        command: |
-          make check-for-migration-conflicts
-    - run:
+      - checkout
+      - run:
+          name: upgrade curl
+          command: |
+            apk update
+            apk add curl
+            apk add git
+            apk upgrade
+      - run:
+          name: verify postgres is up
+          command: |
+            while ! nc -vz postgres 5432; do sleep 1; echo "waiting for postgres"; done
+      - run:
+          name: verify timescale is up
+          command: |
+            while ! nc -vz timescale 5432; do sleep 1; echo "waiting for timescale"; done
+      - run:
+          name: run tests
+          command: |
+            make test.unit
+            # make test.integration
+      - run:
+          name: check for migration conflicts
+          command: |
+            make check-for-migration-conflicts
+      - run:
           name: Install CLI
           command: |
             apk add git build-base
             pip install codecov-cli
-    - run:
-        name: upload using codecovcli 
-        command: |
-          codecovcli  do-upload --flag unit-latest-uploader --flag unit -t ${CODECOV_ORG_TOKEN} \
+      - run:
+          name: upload using codecovcli
+          command: |
+            codecovcli  do-upload --flag unit-latest-uploader --flag unit -t ${CODECOV_ORG_TOKEN} \
+              --coverage-files-search-exclude-folder=graphql_api/types/** \
+              --coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
+      - run:
+          name: codecov-staging
+          command: |
+            codecovcli  do-upload --flag unit-latest-uploader --flag unit -t ${CODECOV_STAGING_TOKEN} \
             --coverage-files-search-exclude-folder=graphql_api/types/** \
             --coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
-    - run:
-        name: codecov-staging
-        command: |
-          codecovcli  do-upload --flag unit-latest-uploader --flag unit -t ${CODECOV_STAGING_TOKEN} \
-          --coverage-files-search-exclude-folder=graphql_api/types/** \
-          --coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
 
   portable:
     executor: codecov-deploy
@@ -195,8 +195,8 @@ jobs:
       - run: echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKER_USERNAME" --password-stdin
       - run: make -f Makefile.circle docker-deploy
   dive:
-      executor: codecov-deploy
-      steps:
+    executor: codecov-deploy
+    steps:
       - attach_workspace:
           at: .
       - setup_remote_docker:
@@ -214,25 +214,25 @@ jobs:
       SENTRY_PROJECT: api
       SENTRY_ENVIRONMENT: staging
     steps:
-    - attach_workspace:
-        at: .
-    - setup_remote_docker:
-        version: 20.10.7
-    - run:
-        <<: *gcloud_auth
-    - run:
-        name: docker build, tag, and upload to staging
-        command: |
-          make -f Makefile.circle staging
-    - run:
-        name: Create release and notify Sentry of deploy
-        command: |
-          curl -sL https://sentry.io/get-cli/ | bash
-          export SENTRY_RELEASE=$SENTRY_ENVIRONMENT-release-$(git rev-parse --short=7 HEAD)
-          sentry-cli releases new -p $SENTRY_PROJECT $SENTRY_RELEASE
-          sentry-cli releases set-commits $SENTRY_RELEASE --auto
-          sentry-cli releases finalize $SENTRY_RELEASE
-          sentry-cli releases deploys $SENTRY_RELEASE new -e $SENTRY_ENVIRONMENT  
+      - attach_workspace:
+          at: .
+      - setup_remote_docker:
+          version: 20.10.7
+      - run:
+          <<: *gcloud_auth
+      - run:
+          name: docker build, tag, and upload to staging
+          command: |
+            make -f Makefile.circle staging
+      - run:
+          name: Create release and notify Sentry of deploy
+          command: |
+            curl -sL https://sentry.io/get-cli/ | bash
+            export SENTRY_RELEASE=$SENTRY_ENVIRONMENT-release-$(git rev-parse --short=7 HEAD)
+            sentry-cli releases new -p $SENTRY_PROJECT $SENTRY_RELEASE
+            sentry-cli releases set-commits $SENTRY_RELEASE --auto
+            sentry-cli releases finalize $SENTRY_RELEASE
+            sentry-cli releases deploys $SENTRY_RELEASE new -e $SENTRY_ENVIRONMENT
   production:
     executor: codecov-deploy
     environment:
@@ -240,25 +240,25 @@ jobs:
       SENTRY_PROJECT: api
       SENTRY_ENVIRONMENT: production
     steps:
-    - attach_workspace:
-        at: .
-    - setup_remote_docker:
-        version: 20.10.7
-    - run:
-        <<: *gcloud_auth
-    - run:
-        name: docker build, tag, and upload to production
-        command: |
-          make -f Makefile.circle production
-    - run:
-        name: Create release and notify Sentry of deploy
-        command: |
-          curl -sL https://sentry.io/get-cli/ | bash
-          export SENTRY_RELEASE=$SENTRY_ENVIRONMENT-release-$(git rev-parse --short=7 HEAD)
-          sentry-cli releases new -p $SENTRY_PROJECT $SENTRY_RELEASE
-          sentry-cli releases set-commits $SENTRY_RELEASE --auto
-          sentry-cli releases finalize $SENTRY_RELEASE
-          sentry-cli releases deploys $SENTRY_RELEASE new -e $SENTRY_ENVIRONMENT  
+      - attach_workspace:
+          at: .
+      - setup_remote_docker:
+          version: 20.10.7
+      - run:
+          <<: *gcloud_auth
+      - run:
+          name: docker build, tag, and upload to production
+          command: |
+            make -f Makefile.circle production
+      - run:
+          name: Create release and notify Sentry of deploy
+          command: |
+            curl -sL https://sentry.io/get-cli/ | bash
+            export SENTRY_RELEASE=$SENTRY_ENVIRONMENT-release-$(git rev-parse --short=7 HEAD)
+            sentry-cli releases new -p $SENTRY_PROJECT $SENTRY_RELEASE
+            sentry-cli releases set-commits $SENTRY_RELEASE --auto
+            sentry-cli releases finalize $SENTRY_RELEASE
+            sentry-cli releases deploys $SENTRY_RELEASE new -e $SENTRY_ENVIRONMENT
   enterprise:
     executor: codecov-deploy
     steps:
