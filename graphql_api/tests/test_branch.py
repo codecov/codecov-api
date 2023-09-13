@@ -57,6 +57,9 @@ query_files = """
                                 ... on UnknownPath {
                                     message
                                 }
+                                ... on UnknownFlags {
+                                    message
+                                }
                             }
                         }
                     }
@@ -94,6 +97,10 @@ class MockReport(object):
             "folder/subfolder/fileC.py",
             "folder/subfolder/fileD.py",
         ]
+
+    @property
+    def flags(self):
+        return ["flag-a"]
 
 
 class TestBranch(GraphQLTestHelper, TransactionTestCase):
@@ -577,6 +584,64 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                             "pathContents": {
                                 "__typename": "UnknownPath",
                                 "message": "path does not exist: invalid",
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    @patch("services.report.build_report_from_commit")
+    def test_fetch_path_contents_unknown_flags(self, report_mock):
+        report_mock.return_value = MockReport()
+
+        data = self.gql_request(
+            query_files,
+            variables={
+                "org": self.org.username,
+                "repo": self.repo.name,
+                "branch": self.branch.name,
+                "path": "",
+                "filters": {"flags": ["test-123"]},
+            },
+        )
+        assert data == {
+            "owner": {
+                "repository": {
+                    "branch": {
+                        "head": {
+                            "pathContents": {
+                                "__typename": "UnknownFlags",
+                                "message": "No coverage with chosen flags",
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    @patch("services.report.build_report_from_commit")
+    def test_fetch_path_contents_unknown_flags(self, report_mock):
+        report_mock.return_value = MockReport()
+
+        data = self.gql_request(
+            query_files,
+            variables={
+                "org": self.org.username,
+                "repo": self.repo.name,
+                "branch": self.branch.name,
+                "path": "",
+                "filters": {"flags": ["test-123"]},
+            },
+        )
+        assert data == {
+            "owner": {
+                "repository": {
+                    "branch": {
+                        "head": {
+                            "pathContents": {
+                                "__typename": "UnknownFlags",
+                                "message": "No coverage with chosen flags",
                             }
                         }
                     }
