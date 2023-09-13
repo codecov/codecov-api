@@ -57,6 +57,7 @@ build.requirements:
 build.local:
 	docker build -f docker/Dockerfile . \
 		-t ${AR_REPO}:latest \
+		-t ${AR_REPO}:${VERSION} \
 		--build-arg REQUIREMENTS_IMAGE=${AR_REPO}:${REQUIREMENTS_TAG} \
 		--build-arg BUILD_ENV=local
 
