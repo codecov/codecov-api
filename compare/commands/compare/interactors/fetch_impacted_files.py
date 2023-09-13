@@ -1,7 +1,16 @@
 import enum
+from typing import List, Optional, Union
+
+from shared.reports.resources import Report
 
 from codecov.commands.base import BaseInteractor
-from services.comparison import ImpactedFile
+from services.comparison import (
+    Comparison,
+    ComparisonReport,
+    ImpactedFile,
+    PullRequestComparison,
+)
+from services.report import files_belonging_to_flags
 
 
 class ImpactedFileParameter(enum.Enum):
@@ -13,13 +22,28 @@ class ImpactedFileParameter(enum.Enum):
 
 
 class FetchImpactedFiles(BaseInteractor):
-    def _apply_filters(self, impacted_files, filters):
+    def _apply_filters(
+        self,
+        impacted_files: Optional[List[ImpactedFile]],
+        comparison: Union[PullRequestComparison, Comparison],
+        filters,
+    ):
         parameter = filters.get("ordering", {}).get("parameter")
         direction = filters.get("ordering", {}).get("direction")
         if parameter and direction:
             impacted_files = self.sort_impacted_files(
                 impacted_files, parameter, direction
             )
+        flags = filters.get("flags", [])
+        if flags and comparison:
+            head_commit_report = comparison.head_report
+            if set(flags) & set(head_commit_report.flags):
+                files = files_belonging_to_flags(
+                    commit_report=head_commit_report, flags=flags
+                )
+                impacted_files = list(
+                    filter(lambda x: x.head_name in files, impacted_files)
+                )
         return impacted_files
 
     def get_attribute(
@@ -65,7 +89,12 @@ class FetchImpactedFiles(BaseInteractor):
         # Merge both lists together
         return files_with_coverage + files_without_coverage
 
-    def execute(self, comparison_report, filters):
+    def execute(
+        self,
+        comparison_report: ComparisonReport,
+        comparison: Union[PullRequestComparison, Comparison],
+        filters,
+    ):
         if filters is None:
             return comparison_report.impacted_files
 
@@ -79,4 +108,4 @@ class FetchImpactedFiles(BaseInteractor):
         else:
             impacted_files = comparison_report.impacted_files
 
-        return self._apply_filters(impacted_files, filters)
+        return self._apply_filters(impacted_files, comparison, filters)

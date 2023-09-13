@@ -14,6 +14,7 @@ from asgiref.sync import async_to_sync
 from django.db.models import Prefetch
 from django.utils.functional import cached_property
 from shared.helpers.yaml import walk
+from shared.reports.readonly import ReadOnlyReport
 from shared.reports.types import ReportTotals
 from shared.utils.merge import LineType, line_type
 
@@ -691,7 +692,9 @@ class Comparison(object):
     @cached_property
     def base_report(self):
         try:
-            return report_service.build_report_from_commit(self.base_commit)
+            return report_service.build_report_from_commit(
+                self.base_commit, report_class=ReadOnlyReport
+            )
         except minio.error.S3Error as e:
             if e.code == "NoSuchKey":
                 raise MissingComparisonReport("Missing base report")
@@ -701,7 +704,9 @@ class Comparison(object):
     @cached_property
     def head_report(self):
         try:
-            report = report_service.build_report_from_commit(self.head_commit)
+            report = report_service.build_report_from_commit(
+                self.head_commit, report_class=ReadOnlyReport
+            )
         except minio.error.S3Error as e:
             if e.code == "NoSuchKey":
                 raise MissingComparisonReport("Missing head report")

@@ -1,10 +1,11 @@
 from asyncio import gather
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
 
 import services.components as components_service
 from codecov.db import sync_to_async
+from compare.commands.compare.compare import CompareCommands
 from compare.models import ComponentComparison, FlagComparison
 from graphql_api.actions.flags import get_flag_comparisons
 from graphql_api.dataloader.commit import CommitLoader
@@ -21,6 +22,7 @@ from services.comparison import (
     ComparisonReport,
     ImpactedFile,
     MissingComparisonReport,
+    PullRequestComparison,
 )
 
 comparison_bindable = ObjectType("Comparison")
@@ -35,10 +37,14 @@ def resolve_state(comparison: ComparisonReport, info) -> str:
 @convert_kwargs_to_snake_case
 @sync_to_async
 def resolve_impacted_files(
-    comparison: ComparisonReport, info, filters=None
+    comparison_report: ComparisonReport, info, filters=None
 ) -> List[ImpactedFile]:
-    command = info.context["executor"].get_command("compare")
-    return command.fetch_impacted_files(comparison, filters)
+    command: CompareCommands = info.context["executor"].get_command("compare")
+    comparison: Union[PullRequestComparison, Comparison] = info.context.get(
+        "comparison", None
+    )
+
+    return command.fetch_impacted_files(comparison_report, comparison, filters)
 
 
 @comparison_bindable.field("impactedFilesCount")
