@@ -47,7 +47,7 @@ jobs:
           service_account: ${{ secrets.CODECOV_GCP_WIDSA }}
 
       - name: Docker configuration
-        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
+        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }} 
         run: |-
           echo ${{steps.auth.outputs.access_token}} | docker login -u oauth2accesstoken --password-stdin https://us-docker.pkg.dev
 
@@ -85,7 +85,7 @@ jobs:
           make save.requirements
 
       - name: Push Requirements
-        if: ${{ steps.cache-requirements.outputs.cache-hit != 'true' && !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
+        if: ${{ steps.cache-requirements.outputs.cache-hit != 'true' && github.repository_owner == 'codecov' }}
         run: |
           make push.requirements
       - name: Build app
@@ -300,7 +300,7 @@ jobs:
   staging:
     name: Push Staging Image
     needs: [build, test]
-    if: ${{ github.event.pull_request.merged == true && github.head_ref == 'staging' && !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
+    if: ${{ github.event.pull_request.merged == true && github.head_ref == 'staging' && github.repository_owner == 'codecov' }}
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
@@ -349,7 +349,7 @@ jobs:
   production:
     name: Push Production Image
     needs: [ build, test ]
-    if: ${{ github.event.pull_request.merged == true && github.head_ref == 'main' && !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
+    if: ${{ github.event.pull_request.merged == true && github.head_ref == 'main' && github.repository_owner == 'codecov' }}
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
@@ -401,7 +401,7 @@ jobs:
   self-hosted:
     name: Push Self Hosted Image
     needs: [ build-self-hosted, test ]
-    if: ${{ github.event.pull_request.merged == true && github.head_ref == 'main' && !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
+    if: ${{ github.event.pull_request.merged == true && github.head_ref == 'main' && github.repository_owner == 'codecov' }}
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'

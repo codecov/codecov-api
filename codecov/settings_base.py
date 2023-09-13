@@ -464,6 +464,9 @@ SENTRY_OAUTH_CLIENT_ID = get_config("sentry", "client_id") or get_config(
 SENTRY_OAUTH_CLIENT_SECRET = get_config("sentry", "client_secret") or get_config(
     "setup", "sentry", "oauth_client_secret"
 )
+SENTRY_OIDC_SHARED_SECRET = get_config("sentry", "oidc_shared_secret") or get_config(
+    "setup", "sentry", "oidc_shared_secret"
+)
 
 # list of repo IDs that will use the new-style report builder
 # TODO: we can eventually get rid of this once it's confirmed working well for many repos
