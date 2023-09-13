@@ -11,7 +11,7 @@ VERSION := release-${sha}
 CODECOV_UPLOAD_TOKEN ?= "notset"
 CODECOV_STATIC_TOKEN ?= "notset"
 TIMESERIES_ENABLED ?= "true"
-CODECOV_URL ?= ""
+CODECOV_URL ?= "https://api.codecov.io"
 export DOCKER_BUILDKIT=1
 export API_DOCKER_REPO=${AR_REPO}
 export API_DOCKER_VERSION=${VERSION}
@@ -178,17 +178,9 @@ test_env.check-for-migration-conflicts:
 	docker-compose -f docker-compose-test.yml exec api python manage.py check_for_migration_conflicts
 
 test_env.upload:
-	docker-compose -f docker-compose-test.yml exec api make test_env.container_upload CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN}
-
-test_env.upload_custom_url:
-	docker-compose -f docker-compose-test.yml exec api make test_env.container_upload_staging CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN} CODECOV_URL=${CODECOV_URL}
+	docker-compose -f docker-compose-test.yml exec api make test_env.container_upload CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN} CODECOV_URL=${CODECOV_URL}
 
 test_env.container_upload:
-	codecovcli  do-upload --flag unit-latest-uploader --flag unit \
-	--coverage-files-search-exclude-folder=graphql_api/types/** \
-	--coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
-
-test_env.container_upload_custom_url:
 	codecovcli -u ${CODECOV_URL} do-upload --flag unit-latest-uploader --flag unit  \
 	--coverage-files-search-exclude-folder=graphql_api/types/** \
 	--coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
