@@ -1,0 +1,44 @@
+version: "3"
+
+services:
+  api:
+    image: ${API_DOCKER_REPO}:${API_DOCKER_VERSION}
+    depends_on:
+      - postgres
+      - redis
+      - timescale
+    volumes:
+      - ./:/app
+      - ./docker/test.yml:/config/codecov.yml
+    entrypoint:
+      - ./dev.sh
+    environment:
+      - RUN_ENV=DEV
+      - SETUP__TIMESERIES__ENABLED=${TIMESERIES_ENABLED-true}
+    env_file:
+      - .testenv
+  postgres:
+    image: postgres:14.7-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_HOST_AUTH_METHOD=trust
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - type: tmpfs
+        target: /var/lib/postgresql/data
+        tmpfs:
+          size: 2048M
+  timescale:
+    image: timescale/timescaledb-ha:pg14-latest
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_HOST_AUTH_METHOD=trust
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - type: tmpfs
+        target: /var/lib/postgresql/data
+        tmpfs:
+          size: 2048M
+  redis:
+    image: redis:6-alpine
+

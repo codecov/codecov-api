@@ -1,0 +1,43 @@
+# syntax=docker/dockerfile:1.4
+ARG PYTHON_IMAGE=python:3.9.16-alpine3.17
+# BUILD STAGE - Download dependencies from GitHub that require SSH access
+FROM $PYTHON_IMAGE as build
+
+RUN apk add --update --no-cache \
+    git \
+    openssh \
+    postgresql-dev \
+    musl-dev \
+    libxslt-dev \
+    python3-dev \
+    libffi-dev \
+    gcc \
+    libcurl \
+    bash \
+    rust \
+    build-base \
+    cargo \
+    curl-dev \
+    && pip install --upgrade pip
+
+COPY requirements.txt /
+WORKDIR /pip-packages/
+RUN pip wheel -r /requirements.txt
+RUN rm -rf /pip-packages/src
+
+# RUNTIME STAGE - Copy packages from build stage and install runtime dependencies
+FROM $PYTHON_IMAGE
+
+RUN apk -U upgrade binutils busybox expat libretls && \
+    apk add --no-cache postgresql-libs && \
+    apk add --no-cache --virtual .build-deps gcc \
+    libxslt-dev \
+    libffi-dev \
+    make \
+    curl
+
+
+WORKDIR /pip-packages/
+COPY --from=build /pip-packages/ /pip-packages/
+
+RUN pip install --no-deps --no-index --find-links=/pip-packages/ /pip-packages/*
