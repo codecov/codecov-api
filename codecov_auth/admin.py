@@ -4,13 +4,14 @@ from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.admin.models import LogEntry
 from django.db.models.fields import BLANK_CHOICE_DASH
-from django.forms import Select
+from django.forms import CheckboxInput, Select
 from django.http import HttpRequest
 from django.shortcuts import redirect
 from django.utils.html import format_html
 
 from codecov.admin import AdminMixin
-from codecov_auth.models import OrganizationLevelToken, Owner, OwnerProfile
+from codecov_auth.helpers import History
+from codecov_auth.models import OrganizationLevelToken, Owner, OwnerProfile, User
 from codecov_auth.services.org_level_token_service import OrgLevelTokenService
 from plan.constants import USER_PLAN_REPRESENTATIONS
 from services.task import TaskService
@@ -37,6 +38,11 @@ def impersonate_owner(self, request, queryset):
         domain=settings.COOKIES_DOMAIN,
         samesite=settings.COOKIE_SAME_SITE,
     )
+    History.log(
+        Owner.objects.get(ownerid=owner.ownerid),
+        "Impersonation successful",
+        request.user,
+    )
     return response
 
 
@@ -50,6 +56,44 @@ class OwnerProfileInline(admin.TabularInline):
 
     def has_change_permission(self, request, obj=None):
         return True
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(User)
+class UserAdmin(AdminMixin, admin.ModelAdmin):
+    list_display = (
+        "name",
+        "email",
+    )
+    readonly_fields = []
+    search_fields = (
+        "name__iexact",
+        "email__iexact",
+    )
+
+    readonly_fields = (
+        "id",
+        "external_id",
+    )
+
+    fields = readonly_fields + (
+        "name",
+        "email",
+        "is_staff",
+    )
+
+    def get_form(self, request, obj=None, change=False, **kwargs):
+        form = super().get_form(request, obj, change, **kwargs)
+
+        if not request.user.is_superuser:
+            form.base_fields["is_staff"].disabled = True
+
+        return form
+
+    def has_add_permission(self, _, obj=None):
+        return False
 
     def has_delete_permission(self, request, obj=None):
         return False
@@ -124,6 +168,7 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
         "plan_provider",
         "plan_user_count",
         "plan_activated_users",
+        "uses_invoice",
         "integration_id",
         "bot",
         "stripe_customer_id",
@@ -138,6 +183,7 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
         form.base_fields["plan"].widget = Select(
             choices=BLANK_CHOICE_DASH + PLANS_CHOICES
         )
+        form.base_fields["uses_invoice"].widget = CheckboxInput()
 
         is_superuser = request.user.is_superuser
 

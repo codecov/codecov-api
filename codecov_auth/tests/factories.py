@@ -16,6 +16,7 @@ from codecov_auth.models import (
     User,
     UserToken,
 )
+from plan.constants import TrialStatus
 from utils.encryption import encryptor
 
 
@@ -24,6 +25,7 @@ class UserFactory(DjangoModelFactory):
         model = User
 
     email = factory.Faker("email")
+    name = factory.Faker("name")
 
 
 class OwnerFactory(DjangoModelFactory):
@@ -48,6 +50,7 @@ class OwnerFactory(DjangoModelFactory):
         lambda o: encryptor.encode(o.unencrypted_oauth_token).decode()
     )
     user = factory.SubFactory(UserFactory)
+    trial_status = TrialStatus.NOT_STARTED.value
 
 
 class SentryUserFactory(DjangoModelFactory):

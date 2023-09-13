@@ -4,6 +4,7 @@ from ariadne import InterfaceType, ObjectType, UnionType
 
 from codecov.db import sync_to_async
 from graphql_api.types.errors import MissingCoverage, MissingHeadReport, UnknownPath
+from graphql_api.types.errors.errors import UnknownFlags
 from services.path import Dir, File
 from services.profiling import ProfilingSummary
 
@@ -76,5 +77,7 @@ def resolve_path_contents_result_type(res, *_):
         return "MissingCoverage"
     elif isinstance(res, UnknownPath):
         return "UnknownPath"
+    elif isinstance(res, UnknownFlags):
+        return "UnknownFlags"
     if isinstance(res, type({"results": List[Union[File, Dir]]})):
         return "PathContents"

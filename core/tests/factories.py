@@ -183,7 +183,7 @@ class PullFactory(DjangoModelFactory):
     commentid = factory.LazyAttribute(
         lambda o: sha1(o.title.encode("utf-8")).hexdigest()
     )
-    flare = {
+    _flare = {
         "name": "",
         "color": "#e05d44",
         "lines": 14,
@@ -215,6 +215,11 @@ class BranchFactory(DjangoModelFactory):
     repository = factory.SubFactory(RepositoryFactory)
     name = factory.Faker("sentence", nb_words=1)
     head = factory.LazyAttribute(lambda o: sha1(o.name.encode("utf-8")).hexdigest())
+
+
+class ConstantsFactory(DjangoModelFactory):
+    class Meta:
+        model = models.Constants
 
 
 class VersionFactory(DjangoModelFactory):

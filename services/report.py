@@ -1,4 +1,5 @@
-from typing import Optional
+import logging
+from typing import List, Optional
 
 from django.conf import settings
 from django.db.models import Prefetch, Q
@@ -7,12 +8,15 @@ from shared.helpers.flag import Flag
 from shared.reports.readonly import ReadOnlyReport as SharedReadOnlyReport
 from shared.reports.resources import Report
 from shared.reports.types import ReportFileSummary, ReportTotals
+from shared.storage.exceptions import FileNotInStorageError
 from shared.utils.sessions import Session, SessionType
 
 from core.models import Commit
 from reports.models import AbstractTotals, CommitReport, ReportDetails, ReportSession
 from services.archive import ArchiveService
 from utils.config import RUN_ENV
+
+log = logging.getLogger(__name__)
 
 
 class ReportMixin:
@@ -86,9 +90,18 @@ def build_report_from_commit(commit: Commit, report_class=None):
         sessions = commit.report["sessions"]
         totals = commit.totals
 
-    chunks = ArchiveService(commit.repository).read_chunks(commit.commitid)
-
-    return build_report(chunks, files, sessions, totals, report_class=report_class)
+    try:
+        chunks = ArchiveService(commit.repository).read_chunks(commit.commitid)
+        return build_report(chunks, files, sessions, totals, report_class=report_class)
+    except FileNotInStorageError:
+        log.warning(
+            "File for chunks not found in storage",
+            extra=dict(
+                commit=commit.commitid,
+                repo=commit.repository_id,
+            ),
+        )
+        return None
 
 
 def fetch_commit_report(commit: Commit) -> Optional[CommitReport]:
@@ -211,3 +224,39 @@ def build_files(commit_report: CommitReport) -> dict[str, ReportFileSummary]:
         )
         for file in report_details.files_array
     }
+
+
+def files_belonging_to_flags(commit_report: Report, flags: List[str]) -> List[str]:
+    sessions_for_specific_flags = sessions_with_specific_flags(
+        commit_report=commit_report, flags=flags
+    )
+    session_ids = list(sessions_for_specific_flags.keys())
+    files_in_specific_sessions = files_in_sessions(
+        commit_report=commit_report, session_ids=session_ids
+    )
+    return files_in_specific_sessions
+
+
+def sessions_with_specific_flags(
+    commit_report: Report, flags: List[str]
+) -> dict[int, Session]:
+    sessions = [
+        (sid, session)
+        for sid, session in commit_report.sessions.items()
+        if set(session.flags) & set(flags)
+    ]
+    return dict(sessions)
+
+
+def files_in_sessions(commit_report: Report, session_ids: List[int]) -> List[str]:
+    return [
+        file.name
+        for file in commit_report
+        if any(
+            [
+                any([session.id in session_ids for session in line.sessions])
+                for line in file
+                if line
+            ]
+        )
+    ]

@@ -30,7 +30,7 @@ def get_token_refresh_callback(
     Produces a callback function that will encode and update the oauth token of an owner.
     This callback is passed to the TorngitAdapter for the service.
     """
-    if service != Service.GITLAB and service != Service.GITLAB_ENTERPRISE:
+    if service == Service.BITBUCKET or service == Service.BITBUCKET_SERVER:
         return None
 
     @sync_to_async
@@ -70,7 +70,11 @@ def get_generic_adapter_params(owner: Owner, service, use_ssl=False, token=None)
             key=getattr(settings, f"{service.upper()}_CLIENT_ID", "unknown"),
             secret=getattr(settings, f"{service.upper()}_CLIENT_SECRET", "unknown"),
         ),
-        on_token_refresh=get_token_refresh_callback(owner, service),
+        # By checking the "username" in token we can know if the token belongs to an Owner
+        # We only try to refresh user-to-server tokens (e.g. belongs to owner)
+        on_token_refresh=(
+            get_token_refresh_callback(owner, service) if "username" in token else None
+        ),
     )
 
 

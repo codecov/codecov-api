@@ -13,7 +13,7 @@ from codecov_auth.tests.factories import (
     UserFactory,
 )
 from core.tests.factories import CommitFactory, OwnerFactory, RepositoryFactory
-from plan.constants import PlanName
+from plan.constants import PlanName, TrialStatus
 from reports.tests.factories import CommitReportFactory, UploadFactory
 
 from .helper import GraphQLTestHelper, paginate_connection
@@ -471,31 +471,13 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         assert data["owner"]["isCurrentUserActivated"] == True
 
     @freeze_time("2023-06-19")
-    def test_owner_trial_is_expired(self):
-        current_org = OwnerFactory(
-            username="random-trial-user",
-            service="github",
-            trial_start_date=timezone.now(),
-            trial_end_date=timezone.now() + timedelta(days=-3),
-        )
-        query = """{
-            owner(username: "%s") {
-                trialStatus
-            }
-        }
-        """ % (
-            current_org.username
-        )
-        data = self.gql_request(query, owner=current_org)
-        assert data["owner"]["trialStatus"] == "EXPIRED"
-
-    @freeze_time("2023-06-19")
     def test_owner_plan_status(self):
         current_org = OwnerFactory(
             username="random-plan-user",
             service="github",
             trial_start_date=timezone.now(),
             trial_end_date=timezone.now() + timedelta(days=14),
+            trial_status=TrialStatus.ONGOING.value,
         )
         query = """{
             owner(username: "%s") {
@@ -510,4 +492,34 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, owner=current_org)
         assert data["owner"]["plan"] == {
             "trialStatus": "ONGOING",
+        }
+
+    @freeze_time("2023-06-19")
+    def test_owner_pretrial_plan_benefits(self):
+        current_org = OwnerFactory(
+            username="random-plan-user",
+            service="github",
+            trial_start_date=timezone.now(),
+            trial_end_date=timezone.now() + timedelta(days=14),
+            trial_status=TrialStatus.ONGOING.value,
+            plan=PlanName.TRIAL_PLAN_NAME.value,
+            pretrial_users_count=123,
+        )
+        query = """{
+            owner(username: "%s") {
+                pretrialPlan {
+                    benefits
+                }
+            }
+        }
+        """ % (
+            current_org.username
+        )
+        data = self.gql_request(query, owner=current_org)
+        assert data["owner"]["pretrialPlan"] == {
+            "benefits": [
+                "Up to 123 users",
+                "Unlimited public repositories",
+                "Unlimited private repositories",
+            ],
         }

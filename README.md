@@ -3,7 +3,7 @@ Codecov API
 
 > We believe that everyone should have access to quality software (like Sentry), that’s why we have always offered Codecov for free to open source maintainers.
 >
-> By open sourcing Codecov, we’re not only joining the community that’s supported us from the start — but also want to make sure that every developer can contribute to and build on the Codecov experience.
+> By making our code public, we’re not only joining the community that’s supported us from the start — but also want to make sure that every developer can contribute to and build on the Codecov experience.
 
 A private Django REST Framework API intended to serve Codecov's front end. 
 
@@ -62,7 +62,7 @@ To deploy to our staging environment it's crucial to follow these steps:
 2. If not, delete the current `staging` branch
 3. Create a new `staging` branch and merge your feature branch into it
 
-Steps 2 and 3 are important to limit interaction between features not yet merged into main. This approach was inspired by this document: https://codecovio.atlassian.net/wiki/spaces/ENG/pages/507445249/Branching+and+Continuous+Delivery+Strategy+Proposal
+Steps 2 and 3 are important to limit interaction between features not yet merged into `main`. This approach was inspired by this document: https://codecovio.atlassian.net/wiki/spaces/ENG/pages/507445249/Branching+and+Continuous+Delivery+Strategy+Proposal
 
 ### Secret and Credential Management
 

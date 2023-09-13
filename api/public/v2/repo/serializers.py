@@ -3,6 +3,7 @@ from cProfile import label
 from rest_framework import serializers
 
 from api.public.v2.owner.serializers import OwnerSerializer
+from api.shared.commit.serializers import CommitTotalsSerializer
 from core.models import Repository
 
 
@@ -19,6 +20,10 @@ class RepoSerializer(serializers.ModelSerializer):
         label="indicates whether the repository has been manually deactivated"
     )
     author = OwnerSerializer(label="repository owner")
+    totals = CommitTotalsSerializer(
+        label="recent commit totals on the default branch",
+        source="recent_commit_totals",
+    )
 
     class Meta:
         model = Repository
@@ -31,6 +36,7 @@ class RepoSerializer(serializers.ModelSerializer):
             "branch",
             "active",
             "activated",
+            "totals",
         )
         fields = read_only_fields
 
