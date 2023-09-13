@@ -1,3 +1,4 @@
+import jwt
 import pytest
 from django.conf import settings
 from django.contrib import auth
@@ -23,6 +24,13 @@ def mocked_sentry_request(mocker):
                         "email": "test@example.com",
                         "name": "Some User",
                     },
+                    "id_token": jwt.encode(
+                        {
+                            "iss": "https://sentry.io",
+                            "aud": "test-client-id",
+                        },
+                        key="test-oidc-shared-secret",
+                    ),
                 }
             ),
         ),
@@ -39,6 +47,10 @@ def test_sentry_redirect_to_consent(client):
     )
 
 
+@override_settings(
+    SENTRY_OAUTH_CLIENT_ID="test-client-id",
+    SENTRY_OIDC_SHARED_SECRET="test-oidc-shared-secret",
+)
 def test_sentry_perform_login(client, mocked_sentry_request, db):
     res = client.get(
         reverse("sentry-login"),
@@ -76,6 +88,10 @@ def test_sentry_perform_login(client, mocked_sentry_request, db):
     assert user == current_user
 
 
+@override_settings(
+    SENTRY_OAUTH_CLIENT_ID="test-client-id",
+    SENTRY_OIDC_SHARED_SECRET="test-oidc-shared-secret",
+)
 def test_sentry_perform_login_authenticated(client, mocked_sentry_request, db):
     user = UserFactory()
     client.force_login(user=user)
@@ -103,6 +119,10 @@ def test_sentry_perform_login_authenticated(client, mocked_sentry_request, db):
     assert user == current_user
 
 
+@override_settings(
+    SENTRY_OAUTH_CLIENT_ID="test-client-id",
+    SENTRY_OIDC_SHARED_SECRET="test-oidc-shared-secret",
+)
 def test_sentry_perform_login_existing_sentry_user(client, mocked_sentry_request, db):
     sentry_user = SentryUserFactory(sentry_id="test-id")
 
@@ -121,6 +141,10 @@ def test_sentry_perform_login_existing_sentry_user(client, mocked_sentry_request
     assert current_user == sentry_user.user
 
 
+@override_settings(
+    SENTRY_OAUTH_CLIENT_ID="test-client-id",
+    SENTRY_OIDC_SHARED_SECRET="test-oidc-shared-secret",
+)
 def test_sentry_perform_login_authenticated_existing_sentry_user(
     client, mocked_sentry_request, db
 ):
@@ -143,6 +167,10 @@ def test_sentry_perform_login_authenticated_existing_sentry_user(
     assert current_user == sentry_user.user
 
 
+@override_settings(
+    SENTRY_OAUTH_CLIENT_ID="test-client-id",
+    SENTRY_OIDC_SHARED_SECRET="test-oidc-shared-secret",
+)
 def test_sentry_perform_login_existing_sentry_user_existing_owner(
     client, mocked_sentry_request, db
 ):
@@ -165,6 +193,10 @@ def test_sentry_perform_login_existing_sentry_user_existing_owner(
     assert current_user == sentry_user.user
 
 
+@override_settings(
+    SENTRY_OAUTH_CLIENT_ID="test-client-id",
+    SENTRY_OIDC_SHARED_SECRET="test-oidc-shared-secret",
+)
 def test_sentry_perform_login_error(client, mocker):
     mocker.patch(
         "codecov_auth.views.sentry.requests.post",
@@ -182,3 +214,68 @@ def test_sentry_perform_login_error(client, mocker):
 
     assert res.status_code == 302
     assert res.url == f"{settings.CODECOV_DASHBOARD_URL}/login"
+
+
+@override_settings(
+    SENTRY_OAUTH_CLIENT_ID="test-client-id",
+    SENTRY_OIDC_SHARED_SECRET="invalid-oidc-shared-secret",
+)
+def test_sentry_perform_login_invalid_id_token(client, mocked_sentry_request, db):
+    res = client.get(
+        reverse("sentry-login"),
+        data={
+            "code": "test-code",
+        },
+    )
+
+    assert res.status_code == 302
+    assert res.url == f"{settings.CODECOV_DASHBOARD_URL}/login"
+
+    # does not login user
+    current_user = auth.get_user(client)
+    assert current_user.is_anonymous
+
+
+@override_settings(
+    SENTRY_OAUTH_CLIENT_ID="test-client-id",
+    SENTRY_OIDC_SHARED_SECRET="test-oidc-shared-secret",
+)
+def test_sentry_perform_login_invalid_id_token_issuer(client, mocker, db):
+    mocker.patch(
+        "codecov_auth.views.sentry.requests.post",
+        return_value=mocker.MagicMock(
+            status_code=200,
+            json=mocker.MagicMock(
+                return_value={
+                    "access_token": "test-access-token",
+                    "refresh_token": "test-refresh-token",
+                    "user": {
+                        "id": "test-id",
+                        "email": "test@example.com",
+                        "name": "Some User",
+                    },
+                    "id_token": jwt.encode(
+                        {
+                            "iss": "invalid-issuer",
+                            "aud": "test-client-id",
+                        },
+                        key="test-oidc-shared-secret",
+                    ),
+                }
+            ),
+        ),
+    )
+
+    res = client.get(
+        reverse("sentry-login"),
+        data={
+            "code": "test-code",
+        },
+    )
+
+    assert res.status_code == 302
+    assert res.url == f"{settings.CODECOV_DASHBOARD_URL}/login"
+
+    # does not login user
+    current_user = auth.get_user(client)
+    assert current_user.is_anonymous
