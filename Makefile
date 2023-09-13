@@ -11,6 +11,7 @@ VERSION := release-${sha}
 CODECOV_UPLOAD_TOKEN ?= "notset"
 CODECOV_STATIC_TOKEN ?= "notset"
 TIMESERIES_ENABLED ?= "true"
+CODECOV_URL ?= ""
 export DOCKER_BUILDKIT=1
 export API_DOCKER_REPO=${AR_REPO}
 export API_DOCKER_VERSION=${VERSION}
@@ -52,7 +53,8 @@ build.requirements:
 	# with the hash of this requirements.txt
 	docker pull ${AR_REPO}:${REQUIREMENTS_TAG} || docker build \
 		-f docker/Dockerfile.requirements . \
-		-t ${AR_REPO}:${REQUIREMENTS_TAG}
+		-t ${AR_REPO}:${REQUIREMENTS_TAG} \
+		-t codecov/worker-ci-requirements:${REQUIREMENTS_TAG}
 
 build.local:
 	docker build -f docker/Dockerfile . \
@@ -106,11 +108,16 @@ tag.self-hosted:
 	docker tag ${DOCKERHUB_REPO}:${VERSION} ${DOCKERHUB_REPO}:latest-stable
 	docker tag ${DOCKERHUB_REPO}:${VERSION} ${DOCKERHUB_REPO}:latest-calver
 
+load.requirements:
+	docker load --input requirements.tar
+	docker tag codecov/worker-ci-requirements:${REQUIREMENTS_TAG} ${AR_REPO}:${REQUIREMENTS_TAG}
+
 save.app:
 	docker save -o app.tar ${AR_REPO}:${VERSION}
 
 save.requirements:
-	docker save -o requirements.tar ${AR_REPO}:${REQUIREMENTS_TAG}
+	docker tag ${AR_REPO}:${REQUIREMENTS_TAG} codecov/worker-ci-requirements:${REQUIREMENTS_TAG}
+	docker save -o requirements.tar codecov/worker-ci-requirements:${REQUIREMENTS_TAG}
 
 save.self-hosted:
 	docker save -o self-hosted.tar ${DOCKERHUB_REPO}:${VERSION}-no-dependencies
@@ -173,16 +180,16 @@ test_env.check-for-migration-conflicts:
 test_env.upload:
 	docker-compose -f docker-compose-test.yml exec api make test_env.container_upload CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN}
 
-test_env.upload_staging:
-	docker-compose -f docker-compose-test.yml exec api make test_env.container_upload_staging CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN}
+test_env.upload_custom_url:
+	docker-compose -f docker-compose-test.yml exec api make test_env.container_upload_staging CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN} CODECOV_URL=${CODECOV_URL}
 
 test_env.container_upload:
 	codecovcli  do-upload --flag unit-latest-uploader --flag unit \
 	--coverage-files-search-exclude-folder=graphql_api/types/** \
 	--coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
 
-test_env.container_upload_staging:
-	codecovcli -u https://stage-api.codecov.dev do-upload --flag unit-latest-uploader --flag unit  \
+test_env.container_upload_custom_url:
+	codecovcli -u ${CODECOV_URL} do-upload --flag unit-latest-uploader --flag unit  \
 	--coverage-files-search-exclude-folder=graphql_api/types/** \
 	--coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
 
