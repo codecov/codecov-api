@@ -111,7 +111,6 @@ class GithubLoginView(LoginMixin, StateMixin, View):
         return response
 
     def get(self, request):
-        print("HERE", settings.DISABLE_GIT_BASED_LOGIN, request.user.is_anonymous)
         if settings.DISABLE_GIT_BASED_LOGIN and request.user.is_anonymous:
             return redirect(f"{settings.CODECOV_DASHBOARD_URL}/login")
 
