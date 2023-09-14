@@ -29,8 +29,6 @@ def validate_id_token(iss: str, id_token: str) -> dict:
         kid = jwk["kid"]
         public_keys[kid] = jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(jwk))
 
-    print(jwt.get_unverified_header(id_token))
-
     kid = jwt.get_unverified_header(id_token)["kid"]
     key = public_keys[kid]
 
