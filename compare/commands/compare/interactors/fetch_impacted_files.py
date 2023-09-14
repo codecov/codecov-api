@@ -1,15 +1,8 @@
 import enum
 from typing import List, Optional, Union
 
-from shared.reports.resources import Report
-
 from codecov.commands.base import BaseInteractor
-from services.comparison import (
-    Comparison,
-    ComparisonReport,
-    ImpactedFile,
-    PullRequestComparison,
-)
+from services.comparison import Comparison, ComparisonReport, ImpactedFile
 from services.report import files_belonging_to_flags
 
 
@@ -25,7 +18,7 @@ class FetchImpactedFiles(BaseInteractor):
     def _apply_filters(
         self,
         impacted_files: Optional[List[ImpactedFile]],
-        comparison: Union[PullRequestComparison, Comparison],
+        comparison: Comparison,
         filters,
     ):
         parameter = filters.get("ordering", {}).get("parameter")
@@ -41,9 +34,9 @@ class FetchImpactedFiles(BaseInteractor):
                 files = files_belonging_to_flags(
                     commit_report=head_commit_report, flags=flags
                 )
-                impacted_files = list(
-                    filter(lambda x: x.head_name in files, impacted_files)
-                )
+                impacted_files = [
+                    file for file in impacted_files if file.head_name in files
+                ]
         return impacted_files
 
     def get_attribute(
@@ -92,7 +85,7 @@ class FetchImpactedFiles(BaseInteractor):
     def execute(
         self,
         comparison_report: ComparisonReport,
-        comparison: Union[PullRequestComparison, Comparison],
+        comparison: Comparison,
         filters,
     ):
         if filters is None:

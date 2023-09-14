@@ -1,5 +1,5 @@
 from asyncio import gather
-from typing import List, Optional, Union
+from typing import List, Optional
 
 from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
 
@@ -22,7 +22,6 @@ from services.comparison import (
     ComparisonReport,
     ImpactedFile,
     MissingComparisonReport,
-    PullRequestComparison,
 )
 
 comparison_bindable = ObjectType("Comparison")
@@ -40,9 +39,7 @@ def resolve_impacted_files(
     comparison_report: ComparisonReport, info, filters=None
 ) -> List[ImpactedFile]:
     command: CompareCommands = info.context["executor"].get_command("compare")
-    comparison: Union[PullRequestComparison, Comparison] = info.context.get(
-        "comparison", None
-    )
+    comparison: Comparison = info.context.get("comparison", None)
 
     return command.fetch_impacted_files(comparison_report, comparison, filters)
 
