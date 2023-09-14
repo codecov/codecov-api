@@ -171,7 +171,7 @@ def resolve_path_contents(commit: Commit, info, path: str = None, filters=None):
         filters = {}
     search_value = filters.get("search_value")
     display_type = filters.get("display_type")
-    flags = filters.get("flags") or []
+    flags = filters.get("flags", [])
 
     if flags and not set(flags) & set(commit_report.flags):
         return UnknownFlags()
