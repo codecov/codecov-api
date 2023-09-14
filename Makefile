@@ -32,6 +32,10 @@ test.unit:
 test.integration:
 	python -m pytest --cov=./ -m "integration" --cov-report=xml:integration.coverage.xml
 
+lint:
+	make lint.install
+	make lint.run
+
 lint.install:
 	echo "Installing..."
 	pip install -Iv black==22.3.0 isort
