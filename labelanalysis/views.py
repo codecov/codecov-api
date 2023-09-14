@@ -33,6 +33,23 @@ class LabelAnalysisRequestDetailView(RetrieveAPIView, UpdateAPIView):
     # TODO Consider using a different permission scope
     required_scopes = ["static_analysis"]
 
+    def patch(self, request, *args, **kwargs):
+        # This is called by the CLI to patch the request_labels information after it's collected
+        # First we let rest_framework validate and update the larq object
+        response = super().patch(request, *args, **kwargs)
+        if response.status_code == 200:
+            # IF the larq update was successful
+            # we trigger the task again for the same larq to update the result saved
+            # The result saved is what we use to get metrics
+            uid = self.kwargs.get("external_id")
+            larq = LabelAnalysisRequest.objects.get(external_id=uid)
+            TaskService().schedule_task(
+                label_analysis_task_name,
+                kwargs=dict(request_id=larq.id),
+                apply_async_kwargs=dict(),
+            )
+        return response
+
     def get_object(self):
         uid = self.kwargs.get("external_id")
         try:

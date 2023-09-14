@@ -11,6 +11,7 @@ VERSION := release-${sha}
 CODECOV_UPLOAD_TOKEN ?= "notset"
 CODECOV_STATIC_TOKEN ?= "notset"
 TIMESERIES_ENABLED ?= "true"
+CODECOV_URL ?= "https://api.codecov.io"
 export DOCKER_BUILDKIT=1
 export API_DOCKER_REPO=${AR_REPO}
 export API_DOCKER_VERSION=${VERSION}
@@ -32,9 +33,13 @@ test.unit:
 test.integration:
 	python -m pytest --cov=./ -m "integration" --cov-report=xml:integration.coverage.xml
 
+lint:
+	make lint.install
+	make lint.run
+
 lint.install:
 	echo "Installing..."
-	pip install -Iv black==22.3.0 isort
+	pip3 install -Iv black==22.3.0 isort
 
 lint.run:
 	black .
@@ -52,7 +57,8 @@ build.requirements:
 	# with the hash of this requirements.txt
 	docker pull ${AR_REPO}:${REQUIREMENTS_TAG} || docker build \
 		-f docker/Dockerfile.requirements . \
-		-t ${AR_REPO}:${REQUIREMENTS_TAG}
+		-t ${AR_REPO}:${REQUIREMENTS_TAG} \
+		-t codecov/api-ci-requirements:${REQUIREMENTS_TAG}
 
 build.local:
 	docker build -f docker/Dockerfile . \
@@ -106,11 +112,16 @@ tag.self-hosted:
 	docker tag ${DOCKERHUB_REPO}:${VERSION} ${DOCKERHUB_REPO}:latest-stable
 	docker tag ${DOCKERHUB_REPO}:${VERSION} ${DOCKERHUB_REPO}:latest-calver
 
+load.requirements:
+	docker load --input requirements.tar
+	docker tag codecov/api-ci-requirements:${REQUIREMENTS_TAG} ${AR_REPO}:${REQUIREMENTS_TAG}
+
 save.app:
 	docker save -o app.tar ${AR_REPO}:${VERSION}
 
 save.requirements:
-	docker save -o requirements.tar ${AR_REPO}:${REQUIREMENTS_TAG}
+	docker tag ${AR_REPO}:${REQUIREMENTS_TAG} codecov/api-ci-requirements:${REQUIREMENTS_TAG}
+	docker save -o requirements.tar codecov/api-ci-requirements:${REQUIREMENTS_TAG}
 
 save.self-hosted:
 	docker save -o self-hosted.tar ${DOCKERHUB_REPO}:${VERSION}-no-dependencies
@@ -171,18 +182,10 @@ test_env.check-for-migration-conflicts:
 	docker-compose -f docker-compose-test.yml exec api python manage.py check_for_migration_conflicts
 
 test_env.upload:
-	docker-compose -f docker-compose-test.yml exec api make test_env.container_upload CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN}
-
-test_env.upload_staging:
-	docker-compose -f docker-compose-test.yml exec api make test_env.container_upload_staging CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN}
+	docker-compose -f docker-compose-test.yml exec api make test_env.container_upload CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN} CODECOV_URL=${CODECOV_URL}
 
 test_env.container_upload:
-	codecovcli  do-upload --flag unit-latest-uploader --flag unit \
-	--coverage-files-search-exclude-folder=graphql_api/types/** \
-	--coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
-
-test_env.container_upload_staging:
-	codecovcli -u https://stage-api.codecov.dev do-upload --flag unit-latest-uploader --flag unit  \
+	codecovcli -u ${CODECOV_URL} do-upload --flag unit-latest-uploader --flag unit  \
 	--coverage-files-search-exclude-folder=graphql_api/types/** \
 	--coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
 

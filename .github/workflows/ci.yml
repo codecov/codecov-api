@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  AR_REPO: ${{ secrets.CODECOV_API_IMAGE_V2 }}
+  AR_REPO: ${{ secrets.CODECOV_API_IMAGE_V2 || 'codecov/self-hosted-api' }}
 
 jobs:
   lint:
@@ -38,7 +38,7 @@ jobs:
         uses: actions/checkout@v4
 
       - id: "auth"
-        if: github.repository_owner == 'codecov'
+        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }} 
         name: "Authenticate to Google Cloud"
         uses: "google-github-actions/auth@v1.1.1"
         with:
@@ -47,7 +47,7 @@ jobs:
           service_account: ${{ secrets.CODECOV_GCP_WIDSA }}
 
       - name: Docker configuration
-        if: github.repository_owner == 'codecov'
+        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }} 
         run: |-
           echo ${{steps.auth.outputs.access_token}} | docker login -u oauth2accesstoken --password-stdin https://us-docker.pkg.dev
 
@@ -76,7 +76,7 @@ jobs:
       - name: Load requirements from cache
         if: ${{ steps.cache-requirements.outputs.cache-hit == 'true' }}
         run: |
-          docker load --input requirements.tar
+          make load.requirements
 
       - name: Build/pull requirements
         if: ${{ steps.cache-requirements.outputs.cache-hit != 'true' }}
@@ -85,7 +85,7 @@ jobs:
           make save.requirements
 
       - name: Push Requirements
-        if: ${{ steps.cache-requirements.outputs.cache-hit != 'true' && github.repository_owner == 'codecov' }}
+        if: ${{ steps.cache-requirements.outputs.cache-hit != 'true' && !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
         run: |
           make push.requirements
       - name: Build app
@@ -96,7 +96,6 @@ jobs:
   codecovstartup:
     name: Codecov Startup
     needs: build
-    if: github.repository_owner == 'codecov'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -104,23 +103,37 @@ jobs:
         with:
           fetch-depth: 2
       - name: Install CLI
+        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }} 
         run: |
           make test_env.install_cli
       - name: Run Startup
+        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }} 
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_ORG_TOKEN }}
         run: |
           codecovcli create-commit --fail-on-error
           codecovcli create-report --fail-on-error
       - name: Run Startup Staging
+        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
         run: |
-          codecovcli -u https://stage-api.codecov.dev create-commit -t ${{ secrets.CODECOV_ORG_TOKEN_STAGING }} --fail-on-error
-          codecovcli -u https://stage-api.codecov.dev create-report -t ${{ secrets.CODECOV_ORG_TOKEN_STAGING }} --fail-on-error
+          codecovcli -u ${{ secrets.CODECOV_STAGING_URL }} create-commit -t ${{ secrets.CODECOV_ORG_TOKEN_STAGING }} --fail-on-error
+          codecovcli -u ${{ secrets.CODECOV_STAGING_URL }} create-report -t ${{ secrets.CODECOV_ORG_TOKEN_STAGING }} --fail-on-error
+      - name: Run Startup QA
+        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
+        run: |
+          codecovcli -u ${{ secrets.CODECOV_QA_URL }} create-commit -t ${{ secrets.CODECOV_QA_TOKEN }} --fail-on-error
+          codecovcli -u ${{ secrets.CODECOV_QA_URL }} create-report -t ${{ secrets.CODECOV_QA_TOKEN }} --fail-on-error
+      - name: Run Startup Public QA
+        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
+        run: |
+          codecovcli -u ${{ secrets.CODECOV_PUBLIC_QA_URL }} create-commit -t ${{ secrets.CODECOV_PUBLIC_QA_TOKEN }} --fail-on-error
+          codecovcli -u ${{ secrets.CODECOV_PUBLIC_QA_URL }} create-report -t ${{ secrets.CODECOV_PUBLIC_QA_TOKEN }} --fail-on-error
 
   ats:
     name: ATS
     needs: [build, codecovstartup]
     runs-on: ubuntu-latest
+    if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }} 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -201,18 +214,27 @@ jobs:
           make test_env.check-for-migration-conflicts
       ## Don't upload on forks for now.
       - name: upload using codecovcli
-        if: github.repository_owner == 'codecov'
+        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }} 
         run: |
           make test_env.upload CODECOV_UPLOAD_TOKEN=${{ secrets.CODECOV_ORG_TOKEN }}
       - name: upload using codecovcli staging
-        if: github.repository_owner == 'codecov'
+        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }} 
         run: |
-          make test_env.upload_staging CODECOV_UPLOAD_TOKEN=${{ secrets.CODECOV_ORG_TOKEN_STAGING }}
+          make test_env.upload CODECOV_UPLOAD_TOKEN=${{ secrets.CODECOV_ORG_TOKEN_STAGING }} CODECOV_URL=${{ secrets.CODECOV_STAGING_URL }}
+      - name: upload using codecovcli qa
+        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
+        run: |
+          make test_env.upload CODECOV_UPLOAD_TOKEN=${{ secrets.CODECOV_QA_TOKEN }} CODECOV_URL=${{ secrets.CODECOV_QA_URL }}
+      - name: upload using codecovcli public qa
+        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
+        run: |
+          make test_env.upload CODECOV_UPLOAD_TOKEN=${{ secrets.CODECOV_PUBLIC_QA_TOKEN }} CODECOV_URL=${{ secrets.CODECOV_PUBLIC_QA_URL }}
 
   build-self-hosted:
     name: Build Self Hosted API
     runs-on: ubuntu-latest
     needs: [build, test]
+    if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }} 
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -221,7 +243,6 @@ jobs:
         uses: actions/checkout@v4
 
       - id: "auth"
-        if: github.repository_owner == 'codecov'
         name: "Authenticate to Google Cloud"
         uses: "google-github-actions/auth@v1.1.1"
         with:
@@ -230,7 +251,6 @@ jobs:
           service_account: ${{ secrets.CODECOV_GCP_WIDSA }}
 
       - name: Docker configuration
-        if: github.repository_owner == 'codecov'
         run: |-
           echo ${{steps.auth.outputs.access_token}} | docker login -u oauth2accesstoken --password-stdin https://us-docker.pkg.dev
 
@@ -260,7 +280,7 @@ jobs:
       - name: Load requirements from cache
         if: ${{ steps.cache-requirements.outputs.cache-hit == 'true' }}
         run: |
-          docker load --input requirements.tar
+          make load.requirements
 
       - name: Build/pull requirements
         if: ${{ steps.cache-requirements.outputs.cache-hit != 'true' }}
@@ -280,7 +300,7 @@ jobs:
   staging:
     name: Push Staging Image
     needs: [build, test]
-    if: ${{ github.event.pull_request.merged == true && github.head_ref == 'staging' && github.repository_owner == 'codecov' }}
+    if: ${{ github.event.pull_request.merged == true && github.head_ref == 'staging' && !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
@@ -329,7 +349,7 @@ jobs:
   production:
     name: Push Production Image
     needs: [ build, test ]
-    if: ${{ github.event.pull_request.merged == true && github.head_ref == 'main' && github.repository_owner == 'codecov' }}
+    if: ${{ github.event.pull_request.merged == true && github.head_ref == 'main' && !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
@@ -381,7 +401,7 @@ jobs:
   self-hosted:
     name: Push Self Hosted Image
     needs: [ build-self-hosted, test ]
-    if: ${{ github.event.pull_request.merged == true && github.head_ref == 'main' && github.repository_owner == 'codecov' }}
+    if: ${{ github.event.pull_request.merged == true && github.head_ref == 'main' && !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
