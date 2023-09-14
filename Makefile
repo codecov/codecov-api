@@ -38,7 +38,7 @@ lint:
 
 lint.install:
 	echo "Installing..."
-	pip install -Iv black==22.3.0 isort
+	pip3 install -Iv black==22.3.0 isort
 
 lint.run:
 	black .
