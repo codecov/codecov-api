@@ -5,8 +5,6 @@ repos:
     name: lint
     description: "Lint and sort"
     entry: make lint
-    args:
-        - lint
     pass_filenames: false
     require_serial: true
     language: system
