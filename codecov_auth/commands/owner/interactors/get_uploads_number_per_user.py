@@ -34,5 +34,5 @@ class GetUploadsNumberPerUserInteractor(BaseInteractor):
                     | Q(created_at__lte=plan_service.trial_start_date)
                 )
 
-        uploads_used = queryset[:monthly_limit].count()
-        return uploads_used
+            uploads_used = queryset[:monthly_limit].count()
+            return uploads_used
