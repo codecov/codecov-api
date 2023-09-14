@@ -17,7 +17,6 @@ from core.models import Branch, Commit, Pull, Repository
 from services.archive import ArchiveService
 from services.billing import BillingService
 from services.redis_configuration import get_redis_connection
-from services.segment import BLANK_SEGMENT_USER_ID, SegmentService
 from services.task import TaskService
 from utils.config import get_config
 from webhook_handlers.constants import (
@@ -59,7 +58,6 @@ class GithubWebhookHandler(APIView):
     permission_classes = [AllowAny]
     redis = get_redis_connection()
 
-    segment_service = SegmentService()
     service_name = "github"
 
     def validate_signature(self, request):

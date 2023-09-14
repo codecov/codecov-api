@@ -1215,20 +1215,6 @@ class AccountViewSetTests(APITestCase):
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    @patch("services.segment.SegmentService.account_deleted")
-    @patch("services.task.TaskService.delete_owner")
-    def test_destroy_triggers_segment_event(
-        self, delete_owner_mock, segment_account_deleted_mock
-    ):
-        owner = OwnerFactory(admins=[self.current_owner.ownerid])
-        self._destroy(
-            kwargs={
-                "service": self.current_owner.service,
-                "owner_username": self.current_owner.username,
-            }
-        )
-        segment_account_deleted_mock.assert_called_once_with(self.current_owner)
-
 
 @override_settings(IS_ENTERPRISE=True)
 class EnterpriseAccountViewSetTests(APITestCase):

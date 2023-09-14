@@ -24,9 +24,9 @@ from shared.metrics import metrics
 from codecov.db import sync_to_async
 from codecov_auth.commands.owner import OwnerCommands
 from core.commands.repository import RepositoryCommands
+from services.analytics import AnalyticsService
 from services.archive import ArchiveService
 from services.redis_configuration import get_redis_connection
-from services.segment import SegmentService
 from upload.helpers import (
     check_commit_upload_constraints,
     determine_repo_for_upload,
@@ -319,14 +319,14 @@ class UploadHandler(APIView):
         # Send task to worker
         dispatch_upload_task(task_arguments, repository, redis)
 
-        # Segment Tracking
-        segment_upload_data = upload_params.copy()
-        segment_upload_data["repository_id"] = repository.repoid
-        segment_upload_data["repository_name"] = repository.name
-        segment_upload_data["version"] = version
-        segment_upload_data["userid_type"] = "org"
-        SegmentService().account_uploaded_coverage_report(
-            owner.ownerid, segment_upload_data
+        # Analytics Tracking
+        analytics_upload_data = upload_params.copy()
+        analytics_upload_data["repository_id"] = repository.repoid
+        analytics_upload_data["repository_name"] = repository.name
+        analytics_upload_data["version"] = version
+        analytics_upload_data["userid_type"] = "org"
+        AnalyticsService().account_uploaded_coverage_report(
+            owner.ownerid, analytics_upload_data
         )
 
         if version == "v4":

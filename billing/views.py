@@ -11,7 +11,6 @@ from codecov_auth.models import Owner
 from plan.constants import PRO_PLANS
 from plan.service import PlanService
 from services.billing import BillingService
-from services.segment import SegmentService
 
 from .constants import StripeHTTPHeaders, StripeWebhookEvents
 
@@ -23,7 +22,6 @@ log = logging.getLogger(__name__)
 
 class StripeWebhookHandler(APIView):
     permission_classes = [AllowAny]
-    segment_service = SegmentService()
 
     def _log_updated(self, updated):
         if updated >= 1:
@@ -230,7 +228,6 @@ class StripeWebhookHandler(APIView):
             plan_service.update_plan(
                 name=subscription.plan.name, user_count=subscription.quantity
             )
-            SegmentService().identify_user(owner)
             log.info("Successfully updated info for 1 customer")
 
     def customer_updated(self, customer):

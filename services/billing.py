@@ -13,7 +13,6 @@ from plan.constants import (
     PlanBillingRate,
 )
 from plan.service import PlanService
-from services.segment import SegmentService
 
 log = logging.getLogger(__name__)
 

@@ -8,7 +8,6 @@ from codecov_auth.authentication.repo_auth import RepositoryTokenAuthentication
 from profiling.models import ProfilingCommit
 from profiling.serializers import ProfilingCommitSerializer, ProfilingUploadSerializer
 from services.archive import ArchiveService, MinioEndpoints
-from services.segment import SegmentService
 from services.task import TaskService
 
 log = logging.getLogger(__name__)

@@ -13,7 +13,6 @@ from api.shared.permissions import MemberOfOrgPermissions
 from billing.helpers import available_plans, on_enterprise_plan
 from services.billing import BillingService
 from services.decorators import stripe_safe
-from services.segment import SegmentService
 from services.task import TaskService
 
 from .serializers import (
@@ -77,8 +76,6 @@ class AccountDetailsViewSet(
     def destroy(self, request, *args, **kwargs):
         if self.owner.ownerid != request.current_owner.ownerid:
             raise PermissionDenied("You can only delete your own account")
-
-        SegmentService().account_deleted(self.owner)
 
         TaskService().delete_owner(self.owner.ownerid)
         return Response(status=status.HTTP_204_NO_CONTENT)
