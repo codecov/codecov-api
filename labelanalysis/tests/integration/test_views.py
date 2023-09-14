@@ -368,6 +368,7 @@ def test_simple_label_analysis_get_does_not_exist(db, mocker):
 
 
 def test_simple_label_analysis_put_labels(db, mocker):
+    mocked_task_service = mocker.patch.object(TaskService, "schedule_task")
     commit = CommitFactory.create(repository__active=True)
     StaticAnalysisSuiteFactory.create(commit=commit)
     base_commit = CommitFactory.create(repository=commit.repository)
@@ -411,9 +412,15 @@ def test_simple_label_analysis_put_labels(db, mocker):
     )
     assert response.status_code == 200
     assert response.json() == expected_response_json
+    mocked_task_service.assert_called_with(
+        label_analysis_task_name,
+        kwargs=dict(request_id=label_analysis.id),
+        apply_async_kwargs=dict(),
+    )
 
 
 def test_simple_label_analysis_put_labels_wrong_base_return_404(db, mocker):
+    mocked_task_service = mocker.patch.object(TaskService, "schedule_task")
     commit = CommitFactory.create(repository__active=True)
     StaticAnalysisSuiteFactory.create(commit=commit)
     base_commit = CommitFactory.create(repository=commit.repository)
@@ -455,3 +462,4 @@ def test_simple_label_analysis_put_labels_wrong_base_return_404(db, mocker):
         },
     )
     assert response.status_code == 404
+    mocked_task_service.assert_not_called()

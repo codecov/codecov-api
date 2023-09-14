@@ -1,20 +1,42 @@
 from decimal import Decimal
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from django.test import TestCase
+from shared.reports.resources import Report, ReportFile, ReportLine
 from shared.storage.exceptions import FileNotInStorageError
-from shared.utils.sessions import SessionType
+from shared.utils.sessions import Session
 
 from core.tests.factories import CommitFactory, CommitWithReportFactory
-from reports.tests.factories import (
-    UploadFactory,
-    UploadFlagMembershipFactory,
-    UploadLevelTotalsFactory,
+from reports.tests.factories import UploadFactory, UploadFlagMembershipFactory
+from services.report import (
+    build_report,
+    build_report_from_commit,
+    files_belonging_to_flags,
 )
-from services.report import build_report, build_report_from_commit
 
 current_file = Path(__file__)
+
+
+def flags_report():
+    report = Report()
+    session_a_id, _ = report.add_session(Session(flags=["flag-a"]))
+    session_b_id, _ = report.add_session(Session(flags=["flag-b"]))
+    session_c_id, _ = report.add_session(Session(flags=["flag-c"]))
+
+    file_a = ReportFile("foo/file1.py")
+    file_a.append(1, ReportLine.create(coverage=1, sessions=[[session_a_id, 1]]))
+    report.append(file_a)
+
+    file_b = ReportFile("bar/file2.py")
+    file_b.append(12, ReportLine.create(coverage=1, sessions=[[session_b_id, 1]]))
+    report.append(file_b)
+
+    file_c = ReportFile("another/file3.py")
+    file_c.append(12, ReportLine.create(coverage=1, sessions=[[session_c_id, 1]]))
+    report.append(file_c)
+
+    return report
 
 
 class ReportServiceTest(TestCase):
@@ -331,3 +353,31 @@ class ReportServiceTest(TestCase):
             0,
             [1, 2, 1, 1, 0, "50.00000", 0, 0, 0, 0, 0, 0, 0],
         ]
+
+    def test_files_belonging_to_flags_with_one_flag(self):
+        commit_report = flags_report()
+        flags = ["flag-a"]
+        files = files_belonging_to_flags(commit_report=commit_report, flags=flags)
+        assert len(files) == 1
+        assert files == ["foo/file1.py"]
+
+    def test_files_belonging_to_flags_with_all_flags(self):
+        commit_report = flags_report()
+        flags = ["flag-a", "flag-b", "flag-c"]
+        files = files_belonging_to_flags(commit_report=commit_report, flags=flags)
+        assert len(files) == 3
+        assert files == ["foo/file1.py", "bar/file2.py", "another/file3.py"]
+
+    def test_files_belonging_to_flags_with_known_and_unknown_flag(self):
+        commit_report = flags_report()
+        flags = ["flag-a", "flag-b", "random-value-123"]
+        files = files_belonging_to_flags(commit_report=commit_report, flags=flags)
+        assert len(files) == 2
+        assert files == ["foo/file1.py", "bar/file2.py"]
+
+    def test_files_belonging_to_flags_with_only_unknown_flag(self):
+        commit_report = flags_report()
+        flags = ["random-value-123"]
+        files = files_belonging_to_flags(commit_report=commit_report, flags=flags)
+        assert len(files) == 0
+        assert files == []
