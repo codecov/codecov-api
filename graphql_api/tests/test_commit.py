@@ -351,6 +351,10 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 "uploadType": "UPLOADED",
                 "flags": ["flag_a", "flag_b", "flag_c"],
             },
+            # TEMP: we're returning ALL uploads for now while we figure out a more
+            # performant way to make this query
+            {"id": 1, "uploadType": "CARRIEDFORWARD", "flags": ["flag_a"]},
+            {"id": 2, "uploadType": "CARRIEDFORWARD", "flags": ["flag_b"]},
             {"id": 3, "uploadType": "UPLOADED", "flags": ["flag_b"]},
             {"id": 4, "uploadType": "CARRIEDFORWARD", "flags": ["flag_d"]},
             {"id": 5, "uploadType": "UPLOADED", "flags": []},
@@ -485,7 +489,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         uploads = paginate_connection(commit["uploads"])
         assert uploads == [
             {
-                "downloadUrl": f"http://testserver/upload/gh/{self.org.username}/{self.repo.name}/download?path={upload.storage_path}",
+                "downloadUrl": f"https://testserver/upload/gh/{self.org.username}/{self.repo.name}/download?path={upload.storage_path}",
             }
         ]
 

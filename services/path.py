@@ -10,6 +10,7 @@ from shared.reports.resources import Report
 from shared.reports.types import ReportTotals
 from shared.torngit.exceptions import TorngitClientError
 
+import services.report as report_service
 from codecov_auth.models import Owner
 from core.models import Commit
 from services.repo_providers import RepoProviderService
@@ -147,21 +148,45 @@ class ReportPaths:
     """
 
     def __init__(
-        self, report: Report, path: PrefixedPath = None, search_term: str = None
+        self,
+        report: Report,
+        path: PrefixedPath = None,
+        search_term: str = None,
+        filter_flags: List[str] = [],
     ):
         self.report = report
+        self.unfiltered_report = report
+        self.filter_flags = filter_flags
         self.prefix = path or ""
+
+        # Filter report if flags exist
+        if self.filter_flags:
+            self.report = self.report.filter(flags=self.filter_flags)
 
         self._paths = [
             PrefixedPath(full_path=full_path, prefix=self.prefix)
-            for full_path in report.files
+            for full_path in self.files
             if is_subpath(full_path, self.prefix)
         ]
 
         if search_term:
             self._paths = [
-                path for path in self.paths if search_term in path.relative_path
+                path
+                for path in self.paths
+                if search_term.lower() in path.relative_path.lower()
             ]
+
+    @cached_property
+    def files(self) -> List[str]:
+        if self.filter_flags:
+            files = report_service.files_belonging_to_flags(
+                commit_report=self.unfiltered_report, flags=self.filter_flags
+            )
+            return files
+        return self.report.files
+
+    def _filter_commit_report(self) -> None:
+        self.report = self.report.filter(flags=self.filter_flags)
 
     @property
     def paths(self):

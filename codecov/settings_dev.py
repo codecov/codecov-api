@@ -9,8 +9,10 @@ ALLOWED_HOSTS = get_config(
 
 WEBHOOK_URL = ""  # NGROK TUNNEL HERE
 
-STRIPE_API_KEY = "sk_test_testurtke3v89d4udnesfxh413qnioseSuuwkdBMDvk4ZLesyoD4sSUoG4XDkPXsjN9MzRPaeylnqbgIOhnFI9Urg00BTUxkOh1"
-STRIPE_ENDPOINT_SECRET = "whsec_testv00ijzofmsvxcktfmna1duw9pn8b"
+STRIPE_API_KEY = get_config("services", "stripe", "api_key", default="default")
+STRIPE_ENDPOINT_SECRET = get_config(
+    "services", "stripe", "endpoint_secret", default="default"
+)
 STRIPE_PLAN_IDS = {
     "users-pr-inappm": "plan_H6P3KZXwmAbqPS",
     "users-pr-inappy": "plan_H6P16wij3lUuxg",
@@ -20,10 +22,7 @@ STRIPE_PLAN_IDS = {
 
 CORS_ALLOW_CREDENTIALS = True
 
-GITHUB_CLIENT_ID = "3d44be0e772666136a13"
-
 CODECOV_URL = "localhost"
-BITBUCKET_REDIRECT_URI = "localhost:8000"
 CODECOV_DASHBOARD_URL = "http://localhost:3000"
 
 CORS_ALLOWED_ORIGINS = [

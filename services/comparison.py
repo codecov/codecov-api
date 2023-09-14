@@ -14,6 +14,7 @@ from asgiref.sync import async_to_sync
 from django.db.models import Prefetch
 from django.utils.functional import cached_property
 from shared.helpers.yaml import walk
+from shared.reports.readonly import ReadOnlyReport
 from shared.reports.types import ReportTotals
 from shared.utils.merge import LineType, line_type
 
@@ -691,7 +692,9 @@ class Comparison(object):
     @cached_property
     def base_report(self):
         try:
-            return report_service.build_report_from_commit(self.base_commit)
+            return report_service.build_report_from_commit(
+                self.base_commit, report_class=ReadOnlyReport
+            )
         except minio.error.S3Error as e:
             if e.code == "NoSuchKey":
                 raise MissingComparisonReport("Missing base report")
@@ -701,7 +704,9 @@ class Comparison(object):
     @cached_property
     def head_report(self):
         try:
-            report = report_service.build_report_from_commit(self.head_commit)
+            report = report_service.build_report_from_commit(
+                self.head_commit, report_class=ReadOnlyReport
+            )
         except minio.error.S3Error as e:
             if e.code == "NoSuchKey":
                 raise MissingComparisonReport("Missing head report")
@@ -879,7 +884,10 @@ class ImpactedFile:
         """
         Returns `True` if the file has any unexpected changes
         """
-        return self.unexpected_line_changes and len(self.unexpected_line_changes) > 0
+        return (
+            self.unexpected_line_changes is not None
+            and len(self.unexpected_line_changes) > 0
+        )
 
     @cached_property
     def misses_count(self) -> int:
@@ -989,7 +997,7 @@ class ComparisonReport(object):
 
     @cached_property
     def impacted_files_with_direct_changes(self) -> List[ImpactedFile]:
-        return [file for file in self.files if file.has_diff]
+        return [file for file in self.files if file.has_diff or not file.has_changes]
 
     def _fetch_raw_comparison_data(self) -> dict:
         """

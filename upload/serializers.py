@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework import serializers
 
 from codecov_auth.models import Owner
@@ -16,6 +17,8 @@ class FlagListField(serializers.ListField):
 class UploadSerializer(serializers.ModelSerializer):
     flags = FlagListField(required=False)
     ci_url = serializers.CharField(source="build_url", required=False, allow_null=True)
+    version = serializers.CharField(write_only=True, required=False)
+    url = serializers.SerializerMethodField()
 
     class Meta:
         read_only_fields = (
@@ -25,6 +28,7 @@ class UploadSerializer(serializers.ModelSerializer):
             "state",
             "provider",
             "upload_type",
+            "url",
         )
         fields = read_only_fields + (
             "ci_url",
@@ -32,6 +36,7 @@ class UploadSerializer(serializers.ModelSerializer):
             "env",
             "name",
             "job_code",
+            "version",
         )
         model = ReportSession
 
@@ -42,9 +47,19 @@ class UploadSerializer(serializers.ModelSerializer):
         archive_service = ArchiveService(repo)
         return archive_service.create_presigned_put(obj.storage_path)
 
+    def get_url(self, obj: ReportSession):
+        repository = obj.report.commit.repository
+        commit = obj.report.commit
+        return f"{settings.CODECOV_DASHBOARD_URL}/{repository.author.service}/{repository.author.username}/{repository.name}/commit/{commit.commitid}"
+
     def create(self, validated_data):
         flag_names = (
             validated_data.pop("flags") if "flags" in validated_data.keys() else []
+        )
+        _ = (
+            validated_data.pop("version")
+            if "version" in validated_data.keys()
+            else None
         )
         upload = ReportSession.objects.create(**validated_data)
         flags = []

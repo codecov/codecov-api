@@ -1,0 +1,8 @@
+type PlanRepresentation {
+  marketingName: String!
+  planName: String!
+  billingRate: String
+  baseUnitPrice: Int!
+  benefits: [String!]!
+  monthlyUploadLimit: Int
+}

@@ -116,6 +116,43 @@ def test_reports_results_post_successful(client, db, mocker):
     mocked_task.assert_called_once()
 
 
+def test_reports_results_already_exists_post_successful(client, db, mocker):
+    mocked_task = mocker.patch("services.task.TaskService.create_report_results")
+    mocker.patch.object(
+        CanDoCoverageUploadsPermission, "has_permission", return_value=True
+    )
+    repository = RepositoryFactory(
+        name="the_repo", author__username="codecov", author__service="github"
+    )
+    commit = CommitFactory(repository=repository)
+    commit_report = CommitReport.objects.create(commit=commit, code="code")
+    report_results = ReportResults.objects.create(
+        report=commit_report, state=ReportResults.ReportResultsStates.COMPLETED
+    )
+    repository.save()
+    commit_report.save()
+    report_results.save()
+
+    owner = repository.author
+    client = APIClient()
+    client.force_authenticate(user=owner)
+    url = reverse(
+        "new_upload.reports_results",
+        args=["github", "codecov::::the_repo", commit.commitid, "code"],
+    )
+    response = client.post(url, content_type="application/json", data={})
+
+    assert (
+        url
+        == f"/upload/github/codecov::::the_repo/commits/{commit.commitid}/reports/code/results"
+    )
+    assert response.status_code == 201
+    assert ReportResults.objects.filter(
+        report_id=commit_report.id, state=ReportResults.ReportResultsStates.PENDING
+    ).exists()
+    mocked_task.assert_called_once()
+
+
 def test_report_results_get_successful(client, db, mocker):
     mocker.patch.object(
         CanDoCoverageUploadsPermission, "has_permission", return_value=True

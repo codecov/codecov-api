@@ -16,3 +16,5 @@ coverage.xml
 *.log
 .git
 service.json
+.github
+.circleci

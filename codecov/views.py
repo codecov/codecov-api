@@ -1,12 +1,12 @@
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect
 
-from core.models import Version
+from core.models import Constants
 
 
 def health(request):
-    version = Version.objects.last()
-    return HttpResponse("%s is live!" % version.version)
+    version = Constants.objects.get(key="version")
+    return HttpResponse("%s is live!" % version.value)
 
 
 def redirect_app(request):

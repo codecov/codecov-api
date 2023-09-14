@@ -508,7 +508,7 @@ class TestGraphHandler(APITestCase):
         pull = PullFactory(
             pullid=10,
             repository_id=repo.repoid,
-            flare=[
+            _flare=[
                 {
                     "name": "",
                     "color": "#e05d44",
@@ -599,7 +599,7 @@ class TestGraphHandler(APITestCase):
             branch="master",
         )
         commit = CommitWithReportFactory(repository=repo, author=gh_owner)
-        pull = PullFactory(pullid=10, repository_id=repo.repoid, flare=None)
+        pull = PullFactory(pullid=10, repository_id=repo.repoid, _flare=None)
 
         # test default precision
         response = self._get_pull(

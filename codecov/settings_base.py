@@ -352,6 +352,7 @@ COOKIES_DOMAIN = get_config("setup", "http", "cookies_domain", default=".codecov
 SESSION_COOKIE_DOMAIN = get_config(
     "setup", "http", "cookies_domain", default=".codecov.io"
 )
+SESSION_COOKIE_SECURE = get_config("setup", "secure_cookie", default=True)
 # Defaulting to 'not found' as opposed to 'None' to avoid None somehow getting through as a bearer token. Token strings can't have spaces, hence 'not found' can never be forced as a header input value
 SUPER_API_TOKEN = os.getenv("SUPER_API_TOKEN", "not found")
 CODECOV_INTERNAL_TOKEN = os.getenv("CODECOV_INTERNAL_TOKEN", "not found")
@@ -452,11 +453,20 @@ UPLOAD_THROTTLING_ENABLED = True
 CANNY_SSO_PRIVATE_TOKEN = get_config("canny", "sso_private_token", default="")
 
 SENTRY_JWT_SHARED_SECRET = get_config(
-    "setup", "sentry", "jwt_shared_secret", default=None
+    "sentry", "jwt_shared_secret", default=None
+) or get_config("setup", "sentry", "jwt_shared_secret", default=None)
+SENTRY_USER_WEBHOOK_URL = get_config(
+    "sentry", "webhook_url", default=None
+) or get_config("setup", "sentry", "webhook_url", default=None)
+SENTRY_OAUTH_CLIENT_ID = get_config("sentry", "client_id") or get_config(
+    "setup", "sentry", "oauth_client_id"
 )
-SENTRY_USER_WEBHOOK_URL = get_config("setup", "sentry", "webhook_url", default=None)
-SENTRY_OAUTH_CLIENT_ID = get_config("setup", "sentry", "oauth_client_id")
-SENTRY_OAUTH_CLIENT_SECRET = get_config("setup", "sentry", "oauth_client_secret")
+SENTRY_OAUTH_CLIENT_SECRET = get_config("sentry", "client_secret") or get_config(
+    "setup", "sentry", "oauth_client_secret"
+)
+SENTRY_OIDC_SHARED_SECRET = get_config("sentry", "oidc_shared_secret") or get_config(
+    "setup", "sentry", "oidc_shared_secret"
+)
 
 OKTA_OAUTH_CLIENT_ID = get_config("setup", "okta", "oauth_client_id")
 OKTA_OAUTH_CLIENT_SECRET = get_config("setup", "okta", "oauth_client_secret")

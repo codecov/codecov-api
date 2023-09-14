@@ -1,5 +1,10 @@
 repos:
--   repo: https://github.com/ambv/black
-    rev: 19.10b0
-    hooks:
-    - id: black
+- repo: local
+  hooks:
+  - id: lint
+    name: lint
+    description: "Lint and sort"
+    entry: make lint
+    pass_filenames: false
+    require_serial: true
+    language: system

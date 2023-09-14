@@ -33,6 +33,5 @@ def available_plans(owner: Optional[Owner]) -> List[dict]:
         # these are only available to Sentry users
         plans += list(SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values())
 
-    # TODO: not sure if I need to add the trial plan here
     plans = [asdict(plan) for plan in plans]
     return plans

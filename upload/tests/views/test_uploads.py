@@ -1,5 +1,5 @@
 import uuid
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 from django.conf import settings
@@ -227,7 +227,11 @@ def test_uploads_post(mock_metrics, db, mocker, mock_redis):
     )
     response = client.post(
         url,
-        {"state": "uploaded", "flags": ["flag1", "flag2"]},
+        {
+            "state": "uploaded",
+            "flags": ["flag1", "flag2"],
+            "version": "version",
+        },
     )
     response_json = response.json()
     upload = ReportSession.objects.filter(
@@ -267,7 +271,9 @@ def test_uploads_post(mock_metrics, db, mocker, mock_redis):
         report_session_id=upload.id, flag_id=flag2.id
     ).exists()
     assert [flag for flag in upload.flags.all()] == [flag1, flag2]
-    mock_metrics.assert_called_once_with("uploads.accepted", 1)
+    mock_metrics.assert_has_calls(
+        [call("upload.cli.version"), call("uploads.accepted", 1)]
+    )
 
     archive_service = ArchiveService(repository)
     assert upload.storage_path == MinioEndpoints.raw_with_upload_id.get_path(

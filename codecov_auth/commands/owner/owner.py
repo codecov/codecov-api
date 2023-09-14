@@ -1,5 +1,6 @@
 from codecov.commands.base import BaseCommand
 
+from .interactors.cancel_trial import CancelTrialInteractor
 from .interactors.create_api_token import CreateApiTokenInteractor
 from .interactors.create_user_token import CreateUserTokenInteractor
 from .interactors.delete_session import DeleteSessionInteractor
@@ -74,5 +75,10 @@ class OwnerCommands(BaseCommand):
 
     def start_trial(self, org_username: str) -> None:
         return self.get_interactor(StartTrialInteractor).execute(
+            org_username=org_username
+        )
+
+    def cancel_trial(self, org_username: str) -> None:
+        return self.get_interactor(CancelTrialInteractor).execute(
             org_username=org_username
         )

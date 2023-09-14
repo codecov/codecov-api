@@ -5,6 +5,8 @@ from typing import List, Optional
 from codecov.commands.exceptions import ValidationError
 from codecov_auth.models import Owner
 from plan.constants import (
+    FREE_PLAN_REPRESENTATIONS,
+    TRIAL_PLAN_SEATS,
     USER_PLAN_REPRESENTATIONS,
     MonthlyUploadLimits,
     PlanBillingRate,
@@ -14,13 +16,15 @@ from plan.constants import (
     TrialDaysAmount,
     TrialStatus,
 )
+from services.segment import SegmentService
 
 log = logging.getLogger(__name__)
 
 
-# TODO: Change notifier_service type to Abstract Class for a NotifierService rather than SegmentService
 # TODO: Consider moving some of these methods to the billing directory as they overlap billing functionality
 class PlanService:
+    notifier_service = SegmentService()
+
     def __init__(self, current_org: Owner):
         """
         Initializes a plan service object with a plan. The plan will be a trial plan
@@ -33,7 +37,6 @@ class PlanService:
             No value
         """
         self.current_org = current_org
-        # TODO: how to account for super archaic plan names like "v4-10y"
         if self.current_org.plan not in USER_PLAN_REPRESENTATIONS:
             raise ValueError("Unsupported plan")
         else:
@@ -57,11 +60,15 @@ class PlanService:
 
     @property
     def plan_name(self) -> PlanName:
-        return self.current_org.plan
+        return self.plan_data.value
 
     @property
     def plan_user_count(self) -> int:
         return self.current_org.plan_user_count
+
+    @property
+    def pretrial_users_count(self) -> int:
+        return self.current_org.pretrial_users_count or 1
 
     @property
     def marketing_name(self) -> PlanMarketingName:
@@ -101,73 +108,72 @@ class PlanService:
         Raises:
             ValidationError: if trial has already started
         """
-        if self.trial_status != TrialStatus.NOT_STARTED:
+        if self.trial_status != TrialStatus.NOT_STARTED.value:
             raise ValidationError("Cannot start an existing trial")
+        if self.plan_name not in FREE_PLAN_REPRESENTATIONS:
+            raise ValidationError("Cannot trial from a paid plan")
         start_date = datetime.utcnow()
         self.current_org.trial_start_date = start_date
         self.current_org.trial_end_date = start_date + timedelta(
             days=TrialDaysAmount.CODECOV_SENTRY.value
         )
+        self.current_org.trial_status = TrialStatus.ONGOING.value
+        self.current_org.plan = PlanName.TRIAL_PLAN_NAME.value
+        self.current_org.pretrial_users_count = self.current_org.plan_user_count
+        self.current_org.plan_user_count = TRIAL_PLAN_SEATS
         self.current_org.plan_auto_activate = True
         self.current_org.save()
-        # TODO: uncomment these for ticket adding trial logic
-        # self.current_org.plan = PlanName.TRIAL_PLAN_NAME.value
-        # self.current_org.trial_status = TrialStatus.ONGOING
-        # notifier_service.trial_started(
-        #     org_ownerid=self.current_org.ownerid,
-        #     trial_details={
-        #         "trial_plan_name": self.current_org.plan,
-        #         "trial_start_date": self.current_org.trial_start_date,
-        #         "trial_end_date": self.current_org.trial_end_date,
-        #     },
-        # )
 
-    def expire_trial(self) -> None:
-        if (
-            self.trial_status == TrialStatus.NOT_STARTED
-            or self.trial_status == TrialStatus.ONGOING
-        ):
+        self.notifier_service.trial_started(
+            org_ownerid=self.current_org.ownerid,
+            trial_details={
+                "trial_plan_name": self.current_org.plan,
+                "trial_start_date": self.current_org.trial_start_date,
+                "trial_end_date": self.current_org.trial_end_date,
+            },
+        )
+
+    def cancel_trial(self) -> None:
+        if not self.is_org_trialing:
+            raise ValidationError("Cannot cancel a trial that is not ongoing")
+        now = datetime.utcnow()
+        self.current_org.trial_status = TrialStatus.EXPIRED.value
+        self.current_org.trial_end_date = now
+        self.set_default_plan_data()
+
+    def expire_trial_when_upgrading(self) -> None:
+        """
+        Method that expires trial on an organization based on it's current trial status.
+
+
+        Returns:
+            No value
+        """
+        if self.trial_status == TrialStatus.EXPIRED.value:
+            return
+        if self.trial_status != TrialStatus.CANNOT_TRIAL.value:
+            # Not adjusting the trial start/end dates here as some customers can
+            # directly purchase a plan without trialing first
+            self.current_org.trial_status = TrialStatus.EXPIRED.value
+            self.current_org.plan_activated_users = None
+            self.current_org.plan_user_count = (
+                self.current_org.pretrial_users_count or 1
+            )
             self.current_org.trial_end_date = datetime.utcnow()
-            # self.current_org.trial_status = TrialStatus.EXPIRED
+
             self.current_org.save()
-            # notifier_service.trial_ended(
-            #     org_ownerid=self.current_org.ownerid,
-            #     trial_details={
-            #         "trial_plan_name": self.current_org.plan,
-            #         "trial_start_date": self.current_org.trial_start_date,
-            #         "trial_end_date": self.current_org.trial_end_date,
-            #     },
-            # )
+            self.notifier_service.trial_ended(
+                org_ownerid=self.current_org.ownerid,
+                trial_details={
+                    "trial_plan_name": self.current_org.plan,
+                    "trial_start_date": self.current_org.trial_start_date,
+                    "trial_end_date": self.current_org.trial_end_date,
+                },
+            )
 
     @property
     def trial_status(self) -> TrialStatus:
-        """
-        Property that determines the trial status based on the trial_start_date and
-        the trial_end_date.
-
-        Returns:
-            Any value from TrialStatus Enum
-        """
-        trial_start_date = self.current_org.trial_start_date
-        trial_end_date = self.current_org.trial_end_date
-
-        if trial_start_date is None and trial_end_date is None:
-            # Scenario: A paid customer before the trial changes were introduced (they can never undergo trial for this org)
-            # I have to comment this for now because it is currently affected by a Stripe webhook we wont be using in the future.
-            # if self.current_org.stripe_customer_id:
-            #     return TrialStatus.CANNOT_TRIAL
-            # else:
-            return TrialStatus.NOT_STARTED
-        # Scenario: An paid customer before the trial changes were introduced (they can never undergo trial for this org)
-        # This type of customer would have None for both the start and trial end date, but I was thinking, upon plan cancellation,
-        # we could ad some logic that to set both their start and end date to the exact same value and represent a customer that
-        # was never able to trial after they cancel. Not 100% sold here but I think it works.
-        elif trial_start_date == trial_end_date and self.current_org.stripe_customer_id:
-            return TrialStatus.CANNOT_TRIAL
-        elif datetime.utcnow() > trial_end_date:
-            return TrialStatus.EXPIRED
-        else:
-            return TrialStatus.ONGOING
+        return self.current_org.trial_status
 
     @property
     def trial_start_date(self) -> Optional[datetime]:
@@ -180,3 +186,14 @@ class PlanService:
     @property
     def trial_total_days(self) -> Optional[TrialDaysAmount]:
         return self.plan_data.trial_days
+
+    @property
+    def is_org_trialing(self) -> bool:
+        return (
+            self.trial_status == TrialStatus.ONGOING.value
+            and self.plan_name == PlanName.TRIAL_PLAN_NAME.value
+        )
+
+    @property
+    def has_trial_dates(self) -> bool:
+        return bool(self.trial_start_date and self.trial_end_date)

@@ -71,6 +71,8 @@ class User(BaseCodecovModel):
     is_staff = models.BooleanField(null=True, default=False)
     is_superuser = models.BooleanField(null=True, default=False)
     external_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    terms_agreement = models.BooleanField(null=True, default=False)
+    terms_agreement_at = DateTimeWithoutTZField(null=True)
 
     REQUIRED_FIELDS = []
     USERNAME_FIELD = "external_id"
@@ -164,13 +166,16 @@ class Owner(models.Model):
     did_trial = models.BooleanField(null=True)
     trial_start_date = DateTimeWithoutTZField(null=True)
     trial_end_date = DateTimeWithoutTZField(null=True)
-    # TODO: I want this column to be null at first, and then would run a script to populate customers with
-    # not_started and cannot_trial, and then set default value to not_started.
     trial_status = models.CharField(
-        max_length=50, choices=TrialStatus.choices, null=True
+        max_length=50,
+        choices=TrialStatus.choices,
+        null=True,
+        default=TrialStatus.NOT_STARTED.value,
     )
+    pretrial_users_count = models.SmallIntegerField(null=True, blank=True)
     free = models.SmallIntegerField(default=0)
     invoice_details = models.TextField(null=True)
+    uses_invoice = models.BooleanField(default=False, null=False)
     delinquent = models.BooleanField(null=True)
     yaml = models.JSONField(null=True)
     updatestamp = DateTimeWithoutTZField(default=datetime.now)
