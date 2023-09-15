@@ -31,3 +31,19 @@ class CurrentUserViewTests(APITestCase):
         assert self.owner1.ownerid in ownerids
         assert self.owner2.ownerid in ownerids
         assert self.owner3.ownerid not in ownerids
+
+
+class AuthenticatedViewTests(APITestCase):
+    def setUp(self):
+        self.user = UserFactory()
+
+    def test_unauthenticated(self):
+        res = self.client.get(reverse("authenticated"))
+        assert res.status_code == 200
+        assert res.data == {"authenticated": False}
+
+    def test_authenticated(self):
+        self.client.force_login(self.user)
+        res = self.client.get(reverse("authenticated"))
+        assert res.status_code == 200
+        assert res.data == {"authenticated": True}
