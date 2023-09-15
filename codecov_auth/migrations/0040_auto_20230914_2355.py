@@ -9,6 +9,10 @@ class Migration(migrations.Migration):
     # -- Raw SQL operation
     # --
     # ALTER TYPE plans ADD VALUE IF NOT EXISTS 'users-litem';
+    # --
+    # -- Raw SQL operation
+    # --
+    # ALTER TYPE plans ADD VALUE IF NOT EXISTS 'users-litey';
     # COMMIT;
 
     dependencies = [
@@ -17,4 +21,5 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RunSQL("ALTER TYPE plans ADD VALUE IF NOT EXISTS 'users-litem';"),
+        migrations.RunSQL("ALTER TYPE plans ADD VALUE IF NOT EXISTS 'users-litey';"),
     ]
