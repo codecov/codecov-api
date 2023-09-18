@@ -71,8 +71,8 @@ class User(BaseCodecovModel):
     is_staff = models.BooleanField(null=True, default=False)
     is_superuser = models.BooleanField(null=True, default=False)
     external_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    terms_agreement = models.BooleanField(null=True, default=False)
-    terms_agreement_at = DateTimeWithoutTZField(null=True)
+    terms_agreement = models.BooleanField(null=True, default=None, blank=True)
+    terms_agreement_at = DateTimeWithoutTZField(null=True, blank=True)
 
     REQUIRED_FIELDS = []
     USERNAME_FIELD = "external_id"
@@ -538,8 +538,6 @@ class OwnerProfile(BaseCodecovModel):
     default_org = models.ForeignKey(
         Owner, on_delete=models.CASCADE, null=True, related_name="profiles_with_default"
     )
-    terms_agreement = models.BooleanField(null=True)
-    terms_agreement_at = DateTimeWithoutTZField(null=True)
 
 
 class Session(models.Model):
