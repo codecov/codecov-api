@@ -97,7 +97,7 @@ class PlanService:
         return self.plan_data.monthly_uploads_limit
 
     # Trial Data
-    def start_trial(self) -> None:
+    def start_trial(self, current_owner) -> None:
         """
         Method that starts trial on an organization if the trial_start_date
         is not empty.
@@ -122,6 +122,7 @@ class PlanService:
         self.current_org.pretrial_users_count = self.current_org.plan_user_count
         self.current_org.plan_user_count = TRIAL_PLAN_SEATS
         self.current_org.plan_auto_activate = True
+        self.current_org.trial_fired_by = current_owner.ownerid
         self.current_org.save()
 
         self.notifier_service.trial_started(

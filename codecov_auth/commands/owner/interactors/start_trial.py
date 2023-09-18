@@ -12,7 +12,7 @@ class StartTrialInteractor(BaseInteractor):
 
     def _start_trial(self, owner: Owner) -> None:
         plan_service = PlanService(current_org=owner)
-        plan_service.start_trial()
+        plan_service.start_trial(current_owner=self.current_owner)
         return
 
     @sync_to_async
