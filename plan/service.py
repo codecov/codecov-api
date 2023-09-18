@@ -16,15 +16,12 @@ from plan.constants import (
     TrialDaysAmount,
     TrialStatus,
 )
-from services.segment import SegmentService
 
 log = logging.getLogger(__name__)
 
 
 # TODO: Consider moving some of these methods to the billing directory as they overlap billing functionality
 class PlanService:
-    notifier_service = SegmentService()
-
     def __init__(self, current_org: Owner):
         """
         Initializes a plan service object with a plan. The plan will be a trial plan

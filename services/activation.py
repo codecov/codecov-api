@@ -5,7 +5,6 @@ from django.conf import settings
 
 import services.self_hosted as self_hosted
 from codecov_auth.models import Owner
-from services.segment import SegmentService
 
 log = logging.getLogger(__name__)
 

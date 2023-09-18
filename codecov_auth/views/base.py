@@ -14,9 +14,9 @@ from shared.encryption.token import encode_token
 from shared.license import LICENSE_ERRORS_MESSAGES, get_current_license
 
 from codecov_auth.models import Owner, OwnerProfile, User
+from services.analytics import AnalyticsService
 from services.redis_configuration import get_redis_connection
 from services.refresh import RefreshService
-from services.segment import SegmentService
 from utils.config import get_config
 from utils.encryption import encryptor
 from utils.services import get_long_service_name, get_short_service_name
@@ -117,7 +117,7 @@ class StateMixin(object):
 
 
 class LoginMixin(object):
-    segment_service = SegmentService()
+    analytics_service = AnalyticsService()
 
     def modify_redirection_url_based_on_default_user_org(
         self, url: str, owner: Owner
@@ -332,14 +332,11 @@ class LoginMixin(object):
 
         owner.save(update_fields=fields_to_update)
 
-        ## Segment tracking
-        self.segment_service.identify_user(owner)
-        self.segment_service.group(owner)
         marketing_tags = self.retrieve_marketing_tags_from_cookie()
         if was_created:
-            self.segment_service.user_signed_up(owner, **marketing_tags)
+            self.analytics_service.user_signed_up(owner, **marketing_tags)
         else:
-            self.segment_service.user_signed_in(owner, **marketing_tags)
+            self.analytics_service.user_signed_in(owner, **marketing_tags)
 
         return (owner, was_created)
 

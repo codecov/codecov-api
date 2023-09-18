@@ -11,7 +11,6 @@ from codecov_auth.models import Owner
 from plan.constants import PRO_PLANS, SENTRY_PAID_USER_PLAN_REPRESENTATIONS
 from plan.service import PlanService
 from services.billing import BillingService
-from services.segment import SegmentService
 from services.sentry import send_user_webhook as send_sentry_webhook
 
 log = logging.getLogger(__name__)

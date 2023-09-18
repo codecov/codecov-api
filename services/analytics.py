@@ -3,72 +3,37 @@ import re
 from datetime import datetime
 from enum import Enum
 
-import analytics
 from django.conf import settings
-
-from codecov_auth.models import Owner
+from shared.analytics_tracking import analytics_manager
 
 log = logging.getLogger(__name__)
 
 
-BLANK_SEGMENT_USER_ID = "-1"
-
-
-def on_segment_error(error):
-    log.error(f"Segment error: {error}")
-
-
-if settings.SEGMENT_ENABLED:
-    if not settings.SEGMENT_API_KEY:
-        log.warning("Segment enabled but segment API key not set")
-    analytics.write_key = settings.SEGMENT_API_KEY
-    analytics.debug = settings.DEBUG
-    analytics.on_error = on_segment_error
-
-
-def segment_enabled(method):
+def inject_analytics_owner(method):
     """
-    Decorator: checks that Segment is enabled before executing decorated method.
-    Also ensures any exception that occurs during execution doesn't crash us.
+    Decorator: promotes type of 'owner' arg to 'AnalyticsOwner'.
     """
 
-    def exec_method(*args, **kwargs):
-        if settings.SEGMENT_ENABLED:
-            try:
-                return method(*args, **kwargs)
-            except Exception as e:
-                log.error(f"Segment raised an exception: {e}")
-
-    return exec_method
-
-
-def inject_segment_owner(method):
-    """
-    Decorator: promotes type of 'owner' arg to 'SegmentOwner'.
-    """
-
-    @segment_enabled
     def exec_method(self, owner, **kwargs):
-        segment_owner = SegmentOwner(owner, cookies=kwargs.get("cookies", {}))
-        return method(self, segment_owner, **kwargs)
+        analytics_owner = AnalyticsOwner(owner, cookies=kwargs.get("cookies", {}))
+        return method(self, analytics_owner, **kwargs)
 
     return exec_method
 
 
-def inject_segment_repository(method):
+def inject_analytics_repository(method):
     """
-    Decorator: promotes type of second parameter (a repository) to SegmentRepository
+    Decorator: promotes type of second parameter (a repository) to AnalyticsRepository
     """
 
-    @segment_enabled
     def exec_method(self, ownerid, repository):
-        segment_repository = SegmentRepository(repository)
-        return method(self, ownerid, segment_repository)
+        analytics_repository = AnalyticsRepository(repository)
+        return method(self, ownerid, analytics_repository)
 
     return exec_method
 
 
-class SegmentEvent(Enum):
+class AnalyticsEvent(Enum):
     ACCOUNT_ACTIVATED_REPOSITORY_ON_UPLOAD = "Account Activated Repository On Upload"
     ACCOUNT_ACTIVATED_REPOSITORY = "Account Activated Repository"
     ACCOUNT_UPLOADED_COVERAGE_REPORT = "Account Uploaded Coverage Report"
@@ -76,7 +41,7 @@ class SegmentEvent(Enum):
     USER_SIGNED_UP = "User Signed Up"
 
 
-class SegmentOwner:
+class AnalyticsOwner:
     """
     An object wrapper around 'Owner' that provides "user_id", "traits",
     and "context" properties.
@@ -184,9 +149,9 @@ class SegmentOwner:
         return context
 
 
-class SegmentRepository:
+class AnalyticsRepository:
     """
-    Wrapper object around Repository to provide a similar "traits" field as in SegmentOwner above.
+    Wrapper object around Repository to provide a similar "traits" field as in AnalyticsOwner above.
     """
 
     def __init__(self, repo):
@@ -213,39 +178,15 @@ class SegmentRepository:
         }
 
 
-class SegmentService:
+class AnalyticsService:
     """
     Various methods for emitting events related to user actions.
     """
 
-    @inject_segment_owner
-    def identify_user(self, segment_owner, cookies=None):
-        analytics.identify(
-            segment_owner.user_id,
-            segment_owner.traits,
-            segment_owner.context,
-            integrations={"Salesforce": True, "Marketo": False},
-        )
-
-    @segment_enabled
-    def group(self, owner):
-        if owner.organizations:
-            organizations = Owner.objects.filter(ownerid__in=owner.organizations)
-            for org in organizations:
-                segment_organization = SegmentOwner(
-                    org, owner_collection_type="accounts"
-                )
-                analytics.group(
-                    user_id=owner.ownerid,
-                    group_id=org.ownerid,
-                    traits=segment_organization.traits,
-                    context=segment_organization.context,
-                )
-
-    @inject_segment_owner
-    def user_signed_up(self, segment_owner, **kwargs):
+    @inject_analytics_owner
+    def user_signed_up(self, analytics_owner, **kwargs):
         event_properties = {
-            **segment_owner.traits,
+            **analytics_owner.traits,
             "signup_department": kwargs.get("utm_department") or "marketing",
             "signup_campaign": kwargs.get("utm_campaign") or "",
             "signup_medium": kwargs.get("utm_medium") or "",
@@ -253,14 +194,16 @@ class SegmentService:
             "signup_content": kwargs.get("utm_content") or "",
             "signup_term": kwargs.get("utm_term") or "",
         }
-        analytics.track(
-            segment_owner.user_id, SegmentEvent.USER_SIGNED_UP.value, event_properties
+        analytics_manager.track_event(
+            AnalyticsEvent.USER_SIGNED_UP.value,
+            is_enterprise=settings.IS_ENTERPRISE,
+            event_data=event_properties,
         )
 
-    @inject_segment_owner
-    def user_signed_in(self, segment_owner, **kwargs):
+    @inject_analytics_owner
+    def user_signed_in(self, analytics_owner, **kwargs):
         event_properties = {
-            **segment_owner.traits,
+            **analytics_owner.traits,
             "signup_department": kwargs.get("utm_department") or "marketing",
             "signup_campaign": kwargs.get("utm_campaign") or "",
             "signup_medium": kwargs.get("utm_medium") or "",
@@ -268,41 +211,38 @@ class SegmentService:
             "signup_content": kwargs.get("utm_content") or "",
             "signup_term": kwargs.get("utm_term") or "",
         }
-        analytics.track(
-            segment_owner.user_id, SegmentEvent.USER_SIGNED_IN.value, event_properties
+        analytics_manager.track_event(
+            AnalyticsEvent.USER_SIGNED_IN.value,
+            is_enterprise=settings.IS_ENTERPRISE,
+            event_data=event_properties,
         )
 
-    @inject_segment_owner
-    def account_deleted(self, segment_owner):
-        analytics.track(
-            user_id=segment_owner.user_id,
-            properties=segment_owner.traits,
-            context={"groupId": segment_owner.user_id},
+    @inject_analytics_repository
+    def account_activated_repository(self, current_user_ownerid, analytics_repository):
+        event_data = {
+            **analytics_repository.traits,
+            "user_id": current_user_ownerid,
+        }
+        analytics_manager.track_event(
+            AnalyticsEvent.ACCOUNT_ACTIVATED_REPOSITORY.value,
+            is_enterprise=settings.IS_ENTERPRISE,
+            event_data=event_data,
+            context={"groupId": analytics_repository.repo.author.ownerid},
         )
 
-    @inject_segment_repository
-    def account_activated_repository(self, current_user_ownerid, segment_repository):
-        analytics.track(
-            user_id=current_user_ownerid,
-            event=SegmentEvent.ACCOUNT_ACTIVATED_REPOSITORY.value,
-            properties=segment_repository.traits,
-            context={"groupId": segment_repository.repo.author.ownerid},
-        )
-
-    @inject_segment_repository
-    def account_activated_repository_on_upload(self, org_ownerid, segment_repository):
-        analytics.track(
-            user_id=BLANK_SEGMENT_USER_ID,
-            event=SegmentEvent.ACCOUNT_ACTIVATED_REPOSITORY_ON_UPLOAD.value,
-            properties=segment_repository.traits,
+    @inject_analytics_repository
+    def account_activated_repository_on_upload(self, org_ownerid, analytics_repository):
+        analytics_manager.track_event(
+            AnalyticsEvent.ACCOUNT_ACTIVATED_REPOSITORY_ON_UPLOAD.value,
+            is_enterprise=settings.IS_ENTERPRISE,
+            event_data=analytics_repository.traits,
             context={"groupId": org_ownerid},
         )
 
-    @segment_enabled
     def account_uploaded_coverage_report(self, org_ownerid, upload_details):
-        analytics.track(
-            user_id=BLANK_SEGMENT_USER_ID,
-            event=SegmentEvent.ACCOUNT_UPLOADED_COVERAGE_REPORT.value,
-            properties=upload_details,
+        analytics_manager.track_event(
+            AnalyticsEvent.ACCOUNT_UPLOADED_COVERAGE_REPORT.value,
+            is_enterprise=settings.IS_ENTERPRISE,
+            event_data=upload_details,
             context={"groupId": org_ownerid},
         )

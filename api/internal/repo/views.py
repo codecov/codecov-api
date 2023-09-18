@@ -13,7 +13,6 @@ from api.shared.repo.filter import RepositoryFilters
 from api.shared.repo.mixins import RepositoryViewSetMixin
 from services.decorators import torngit_safe
 from services.repo_providers import RepoProviderService
-from services.segment import SegmentService
 from services.task import TaskService
 
 from .repository_actions import create_webhook_on_provider, delete_webhook_on_provider
