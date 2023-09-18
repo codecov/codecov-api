@@ -874,7 +874,7 @@ class RepositoryCoverageChartTest(InternalAPITest):
         mocked_get_permissions.return_value = False
         response = self._retrieve(kwargs=kwargs, data=data)
 
-        # 404 for security to hide existance of repo
+        # 404 for security to hide existence of repo
         assert response.status_code == 404
 
     # when "grouping_unit" is commit we just return all the commits with no grouping/aggregation

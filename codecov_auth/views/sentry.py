@@ -2,6 +2,7 @@ import logging
 from typing import Dict, Optional
 from urllib.parse import urlencode
 
+import jwt
 import requests
 from django.conf import settings
 from django.contrib.auth import login, logout
@@ -51,6 +52,37 @@ class SentryLoginView(LoginMixin, View):
         self.store_to_cookie_utm_tags(response)
         return response
 
+    def _verify_id_token(self, id_token: str) -> bool:
+        try:
+            id_payload = jwt.decode(
+                id_token,
+                settings.SENTRY_OIDC_SHARED_SECRET,
+                algorithms=["HS256"],
+                audience=settings.SENTRY_OAUTH_CLIENT_ID,
+            )
+
+            if id_payload["iss"] != "https://sentry.io":
+                log.warning(
+                    "Invalid issuer of OIDC ID token",
+                    exc_info=True,
+                    extra=dict(
+                        id_payload=id_payload,
+                    ),
+                )
+                return False
+
+            return True
+        except jwt.exceptions.InvalidSignatureError:
+            id_payload = jwt.decode(id_token, options={"verify_signature": False})
+            log.warning(
+                "Unable to verify signature of OIDC ID token",
+                exc_info=True,
+                extra=dict(
+                    id_payload=id_payload,
+                ),
+            )
+            return False
+
     def _perform_login(self, request: HttpRequest) -> HttpResponse:
         code = request.GET.get("code")
         user_data = self._fetch_user_data(code)
@@ -58,7 +90,8 @@ class SentryLoginView(LoginMixin, View):
             log.warning("Unable to log in due to problem on Sentry", exc_info=True)
             return redirect(f"{settings.CODECOV_DASHBOARD_URL}/login")
 
-        # TODO: verify `id_token` by decoding the JWT using our shared secret
+        if not self._verify_id_token(user_data["id_token"]):
+            return redirect(f"{settings.CODECOV_DASHBOARD_URL}/login")
 
         current_user = self._login_user(request, user_data)
 

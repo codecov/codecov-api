@@ -2,6 +2,10 @@ class MissingHeadReport:
     message = "Missing head report"
 
 
+class UnknownFlags:
+    message = "No coverage with chosen flags"
+
+
 class MissingBaseCommit:
     message = "Invalid base commit"
 
