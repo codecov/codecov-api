@@ -21,6 +21,14 @@ build:
 	make build.requirements
 	make build.app
 
+build.dev:
+	make build.requirements
+	make build.local.dev
+
+build.dev.shared:
+	make build.requirements
+	make build.local.dev.shared
+
 check-for-migration-conflicts:
 	python manage.py check_for_migration_conflicts
 
@@ -66,6 +74,21 @@ build.local:
 		-t ${AR_REPO}:${VERSION} \
 		--build-arg REQUIREMENTS_IMAGE=${AR_REPO}:${REQUIREMENTS_TAG} \
 		--build-arg BUILD_ENV=local
+
+build.local.dev:
+	docker build -f docker/Dockerfile . \
+		-t ${AR_REPO}-dev:latest \
+		-t ${AR_REPO}-dev:${VERSION} \
+		--build-arg REQUIREMENTS_IMAGE=${AR_REPO}:${REQUIREMENTS_TAG} \
+		--build-arg BUILD_ENV=local
+
+build.local.dev.shared:
+	docker build -f docker/Dockerfile . \
+		-t ${AR_REPO}-dev:latest \
+		-t ${AR_REPO}-dev:${VERSION} \
+		--build-arg REQUIREMENTS_IMAGE=${AR_REPO}:${REQUIREMENTS_TAG} \
+		--build-arg BUILD_ENV=local \
+		--build-arg EDITABLE_SHARED=y
 
 build.app:
 	docker build -f docker/Dockerfile . \

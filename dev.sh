@@ -11,4 +11,7 @@ fi
 if [[ "$RUN_ENV" == "enterprise" ]]; then
   python manage.py migrate
 fi
-gunicorn codecov.wsgi:application --reload --bind 0.0.0.0:8000 --access-logfile '-' --timeout "${GUNICORN_TIMEOUT:-600}" $suffix
+if [ "$EDITABLE_SHARED" = "y" ]; then
+pip install -e ./shared
+fi
+watchmedo auto-restart --patterns="*.py;*.sh" --recursive --signal=SIGTERM sh gunicorn.sh

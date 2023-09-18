@@ -14,7 +14,6 @@ nosetests.xml
 coverage.xml
 *,cover
 *.log
-.git
 service.json
 .github
 .circleci

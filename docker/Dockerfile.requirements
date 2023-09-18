@@ -20,10 +20,12 @@ RUN apk add --update --no-cache \
     curl-dev \
     && pip install --upgrade pip
 
-COPY requirements.txt /
-WORKDIR /pip-packages/
-RUN pip wheel -r /requirements.txt
-RUN rm -rf /pip-packages/src
+COPY . /app
+WORKDIR /app
+# Only initialize submodules if they aren't already initialized.
+# Otherwise, this will blow away any local uncommitted updates of the submodule silently.
+RUN --mount=type=ssh git submodule status | grep '^-' > /dev/null && git submodule update --init --recursive || true
+RUN --mount=type=ssh pip wheel -r requirements.txt -w /pip-packages
 
 # RUNTIME STAGE - Copy packages from build stage and install runtime dependencies
 FROM $PYTHON_IMAGE

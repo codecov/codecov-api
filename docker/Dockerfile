@@ -11,6 +11,20 @@ WORKDIR /app
 RUN python manage.py collectstatic --no-input
 
 FROM app as local
+ARG EDITABLE_SHARED=n
+ENV EDITABLE_SHARED=$EDITABLE_SHARED
+RUN apk update \
+    apk add --upgrade --no-cache apk-tools && \
+    apk add --update --no-cache \
+    curl \
+    git \
+    openssh \
+    musl-dev \
+    rust \
+    cargo
+WORKDIR /app/shared
+RUN cargo update
+WORKDIR /app
 
 FROM app as cloud
 ARG RELEASE_VERSION
