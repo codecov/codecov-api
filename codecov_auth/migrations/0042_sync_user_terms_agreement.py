@@ -9,7 +9,7 @@ from utils.migrations import RiskyRunSQL
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("codecov_auth", "0040_oktauser"),
+        ("codecov_auth", "0041_auto_20230918_1825"),
     ]
 
     operations = [
