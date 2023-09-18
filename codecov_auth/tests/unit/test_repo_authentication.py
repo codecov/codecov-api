@@ -220,7 +220,7 @@ class TestGlobalTokenAuthentication(object):
 
 class TestOrgLevelTokenAuthentication(object):
     @override_settings(IS_ENTERPRISE=True)
-    def test_if_enterprise_return_none(self, mocker):
+    def test_enterprise_no_token_return_none(self, db, mocker):
         authentication = OrgLevelTokenAuthentication()
         token = uuid.uuid4()
         res = authentication.authenticate_credentials(token)
@@ -268,7 +268,45 @@ class TestOrgLevelTokenAuthentication(object):
 
         assert exp.match("Token is expired.")
 
+    @override_settings(IS_ENTERPRISE=False)
     def test_orgleveltoken_success_auth(self, db, mocker):
+        owner = OwnerFactory(plan="users-enterprisey")
+        owner.save()
+        week_from_now = datetime.now() + timedelta(days=7)
+        owner_token, _ = OrganizationLevelToken.objects.get_or_create(
+            owner=owner, valid_until=week_from_now
+        )
+        owner_token.save()
+        repository = RepositoryFactory(author=owner)
+        other_repo_from_owner = RepositoryFactory(author=owner)
+        random_repo = RepositoryFactory()
+        repository.save()
+        other_repo_from_owner.save()
+        random_repo.save()
+
+        request = APIRequestFactory().post(
+            "/endpoint", HTTP_AUTHORIZATION=f"Token {owner_token.token}"
+        )
+        authentication = OrgLevelTokenAuthentication()
+        res = authentication.authenticate(request)
+
+        assert res is not None
+        user, auth = res
+        assert user == owner
+        assert auth.get_repositories() == [other_repo_from_owner, repository]
+        assert auth._org == owner
+        get_repos_queryset = auth.get_repositories_queryset()
+        assert isinstance(get_repos_queryset, QuerySet)
+        # We can apply more filters to it
+        assert list(
+            get_repos_queryset.exclude(repoid=other_repo_from_owner.repoid).all()
+        ) == [repository]
+        assert auth.allows_repo(repository)
+        assert auth.allows_repo(other_repo_from_owner)
+        assert not auth.allows_repo(random_repo)
+
+    @override_settings(IS_ENTERPRISE=True)
+    def test_orgleveltoken_success_auth_enterprise(self, db, mocker):
         owner = OwnerFactory(plan="users-enterprisey")
         owner.save()
         week_from_now = datetime.now() + timedelta(days=7)

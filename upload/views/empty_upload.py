@@ -123,7 +123,7 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
                 f"Request client error",
                 extra=dict(
                     commit=commit.commitid,
-                    repoid=commit.repoid,
+                    repoid=commit.repository.repoid,
                 ),
                 exc_info=True,
             )
@@ -141,7 +141,7 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
                 f"Request client error",
                 extra=dict(
                     commit=commit.commitid,
-                    repoid=commit.repoid,
+                    repoid=commit.repository.repoid,
                 ),
                 exc_info=True,
             )

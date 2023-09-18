@@ -479,6 +479,19 @@ class SentryUser(BaseCodecovModel):
     name = models.TextField(null=True)
 
 
+class OktaUser(BaseCodecovModel):
+    user = models.ForeignKey(
+        User,
+        null=False,
+        on_delete=models.CASCADE,
+        related_name="okta_user",
+    )
+    access_token = models.TextField(null=True)
+    okta_id = models.TextField(null=False, unique=True)
+    email = models.TextField(null=True)
+    name = models.TextField(null=True)
+
+
 class TokenTypeChoices(models.TextChoices):
     UPLOAD = "upload"
 
