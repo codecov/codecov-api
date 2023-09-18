@@ -468,6 +468,15 @@ SENTRY_OIDC_SHARED_SECRET = get_config("sentry", "oidc_shared_secret") or get_co
     "setup", "sentry", "oidc_shared_secret"
 )
 
+OKTA_OAUTH_CLIENT_ID = get_config("setup", "okta", "oauth_client_id")
+OKTA_OAUTH_CLIENT_SECRET = get_config("setup", "okta", "oauth_client_secret")
+OKTA_OAUTH_REDIRECT_URL = get_config("setup", "okta", "oauth_redirect_url")
+OKTA_ISS = get_config("setup", "okta", "iss", default=None)
+
+DISABLE_GIT_BASED_LOGIN = IS_ENTERPRISE and get_config(
+    "setup", "disable_git_based_login", default=False
+)
+
 # list of repo IDs that will use the new-style report builder
 # TODO: we can eventually get rid of this once it's confirmed working well for many repos
 REPORT_BUILDER_REPO_IDS = get_config("setup", "report_builder", "repo_ids", default=[])

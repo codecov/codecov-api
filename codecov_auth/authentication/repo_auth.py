@@ -162,8 +162,6 @@ class GlobalTokenAuthentication(authentication.TokenAuthentication):
 
 class OrgLevelTokenAuthentication(authentication.TokenAuthentication):
     def authenticate_credentials(self, key):
-        if settings.IS_ENTERPRISE:
-            return None
         # Actual verification for org level tokens
         token = OrganizationLevelToken.objects.filter(token=key).first()
 

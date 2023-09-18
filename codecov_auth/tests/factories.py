@@ -5,6 +5,7 @@ from django.utils import timezone
 from factory.django import DjangoModelFactory
 
 from codecov_auth.models import (
+    OktaUser,
     OrganizationLevelToken,
     Owner,
     OwnerProfile,
@@ -62,6 +63,17 @@ class SentryUserFactory(DjangoModelFactory):
     sentry_id = factory.LazyFunction(lambda: uuid4().hex)
     access_token = factory.LazyFunction(lambda: uuid4().hex)
     refresh_token = factory.LazyFunction(lambda: uuid4().hex)
+    user = factory.SubFactory(UserFactory)
+
+
+class OktaUserFactory(DjangoModelFactory):
+    class Meta:
+        model = OktaUser
+
+    email = factory.Faker("email")
+    name = factory.Faker("name")
+    okta_id = factory.LazyFunction(lambda: uuid4().hex)
+    access_token = factory.LazyFunction(lambda: uuid4().hex)
     user = factory.SubFactory(UserFactory)
 
 

@@ -13,23 +13,28 @@ config_bindable = ObjectType("Config")
 @config_bindable.field("loginProviders")
 def resolve_login_providers(_, info):
     login_providers = []
-    if settings.GITHUB_CLIENT_ID:
-        login_providers.append(LoginProvider("github"))
 
-    if settings.GITHUB_ENTERPRISE_CLIENT_ID:
-        login_providers.append(LoginProvider("github_enterprise"))
+    if not settings.DISABLE_GIT_BASED_LOGIN:
+        if settings.GITHUB_CLIENT_ID:
+            login_providers.append(LoginProvider("github"))
 
-    if settings.GITLAB_CLIENT_ID:
-        login_providers.append(LoginProvider("gitlab"))
+        if settings.GITHUB_ENTERPRISE_CLIENT_ID:
+            login_providers.append(LoginProvider("github_enterprise"))
 
-    if settings.GITLAB_ENTERPRISE_CLIENT_ID:
-        login_providers.append(LoginProvider("gitlab_enterprise"))
+        if settings.GITLAB_CLIENT_ID:
+            login_providers.append(LoginProvider("gitlab"))
 
-    if settings.BITBUCKET_CLIENT_ID:
-        login_providers.append(LoginProvider("bitbucket"))
+        if settings.GITLAB_ENTERPRISE_CLIENT_ID:
+            login_providers.append(LoginProvider("gitlab_enterprise"))
 
-    if settings.BITBUCKET_SERVER_CLIENT_ID:
-        login_providers.append(LoginProvider("bitbucket_server"))
+        if settings.BITBUCKET_CLIENT_ID:
+            login_providers.append(LoginProvider("bitbucket"))
+
+        if settings.BITBUCKET_SERVER_CLIENT_ID:
+            login_providers.append(LoginProvider("bitbucket_server"))
+
+    if settings.OKTA_OAUTH_CLIENT_ID:
+        login_providers.append(LoginProvider("okta"))
 
     return login_providers
 
