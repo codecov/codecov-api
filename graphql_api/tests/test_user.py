@@ -1,53 +1,48 @@
-import datetime
-from unittest.mock import patch
+from datetime import timedelta
 
 from django.test import TransactionTestCase
+from django.utils import timezone
+from freezegun import freeze_time
 
 from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import CommitFactory, RepositoryFactory
 
-from .helper import GraphQLTestHelper, paginate_connection
+from .helper import GraphQLTestHelper
 
 
-class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
+@freeze_time("2023-06-19")
+class UserTestCase(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
-        self.owner = OwnerFactory(username="codecov-user", name="codecov-name")
-        self.owner2 = OwnerFactory(username="codecov-user", name=None)
+        self.service_id = 1
+        self.user = OwnerFactory(
+            username="codecov-user",
+            name="codecov-name",
+            service="github",
+            service_id=self.service_id,
+            student=True,
+            student_created_at=timezone.now(),
+            student_updated_at=timezone.now() + timedelta(days=1),
+        )
 
-        random_user = OwnerFactory(username="random-user")
-        RepositoryFactory(author=self.owner, active=True, private=True, name="a")
-        RepositoryFactory(author=self.owner, active=True, private=True, name="b")
-        RepositoryFactory(author=random_user, active=True, private=True, name="not")
-        self.owner.organizations = [
-            OwnerFactory(username="codecov").ownerid,
-            OwnerFactory(username="facebook").ownerid,
-            OwnerFactory(username="spotify").ownerid,
-        ]
-        self.owner.save()
-        self.owner2.save()
-
-    @patch("jwt.encode")
-    def test_canny_sso_token_gen_provided_name(self, mock_jwt):
-        user_data = {
-            "avatarURL": self.owner.avatar_url,
-            "email": self.owner.email,
-            "id": self.owner.ownerid,
-            "name": self.owner.name,
+    def test_query_user_resolver(self):
+        query = """{
+            me {
+                user {
+                    username
+                    name
+                    avatarUrl
+                    student
+                    studentCreatedAt
+                    studentUpdatedAt
+                }
+            }
         }
-
-        query = "{ me { user { cannySSOToken } } }"
-        data = self.gql_request(query, owner=self.owner)
-        mock_jwt.assert_called_once_with(user_data, "", algorithm="HS256")
-
-    @patch("jwt.encode")
-    def test_canny_sso_token_gen_no_name(self, mock_jwt):
-        user_data = {
-            "avatarURL": self.owner2.avatar_url,
-            "email": self.owner2.email,
-            "id": self.owner2.ownerid,
-            "name": self.owner2.username,
+        """
+        data = self.gql_request(query, owner=self.user)
+        assert data["me"]["user"] == {
+            "username": "codecov-user",
+            "name": "codecov-name",
+            "avatarUrl": f"https://avatars0.githubusercontent.com/u/{self.service_id}?v=3&s=55",
+            "student": True,
+            "studentCreatedAt": "2023-06-19T00:00:00",
+            "studentUpdatedAt": "2023-06-20T00:00:00",
         }
-
-        query = "{ me { user { cannySSOToken } } }"
-        data = self.gql_request(query, owner=self.owner2)
-        mock_jwt.assert_called_once_with(user_data, "", algorithm="HS256")
