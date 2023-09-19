@@ -843,7 +843,7 @@ class UploadHandlerHelpersTest(TestCase):
         commit = G(Commit)
 
         with patch(
-            "services.segment.SegmentService.account_activated_repository_on_upload"
+            "services.analytics.AnalyticsService.account_activated_repository_on_upload"
         ) as mock_segment_event:
             validate_upload({"commit": commit.commitid}, repo, redis)
             assert mock_segment_event.called
@@ -860,7 +860,7 @@ class UploadHandlerHelpersTest(TestCase):
         commit = G(Commit)
 
         with patch(
-            "services.segment.SegmentService.account_activated_repository_on_upload"
+            "services.analytics.AnalyticsService.account_activated_repository_on_upload"
         ) as mock_segment_event:
             validate_upload({"commit": commit.commitid}, repo, redis)
             assert not mock_segment_event.called
