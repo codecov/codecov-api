@@ -126,6 +126,9 @@ class ImpersonationMiddleware(MiddlewareMixin):
 class CorsMiddleware(BaseCorsMiddleware):
     def process_response(self, request, response):
         response = super().process_response(request, response)
+        if not self.is_enabled(request):
+            return response
+
         origin = request.META.get("HTTP_ORIGIN")
         if not origin:
             return response
