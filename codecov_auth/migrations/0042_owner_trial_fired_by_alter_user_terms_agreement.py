@@ -15,9 +15,4 @@ class Migration(migrations.Migration):
             name="trial_fired_by",
             field=models.IntegerField(null=True),
         ),
-        migrations.AlterField(
-            model_name="user",
-            name="terms_agreement",
-            field=models.BooleanField(default=False, null=True),
-        ),
     ]
