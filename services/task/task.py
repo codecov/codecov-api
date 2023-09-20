@@ -367,3 +367,15 @@ class TaskService(object):
                 report_code=report_code,
             ),
         )
+
+    def send_email(self, ownerid, template_name, from_addr, subject, **kwargs):
+        self._create_signature(
+            "app.tasks.send_email.SendEmail",
+            kwargs=dict(
+                ownerid=ownerid,
+                template_name=template_name,
+                from_addr=from_addr,
+                subject=subject,
+                **kwargs,
+            ),
+        ).apply_async()
