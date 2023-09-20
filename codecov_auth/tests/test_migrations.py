@@ -3,10 +3,10 @@ from datetime import datetime
 from utils.test_utils import TestMigrations
 
 
-class Migration0042Test(TestMigrations):
+class Migration0043Test(TestMigrations):
 
-    migrate_from = "0041_auto_20230918_1825"
-    migrate_to = "0042_sync_user_terms_agreement"
+    migrate_from = "0042_owner_trial_fired_by"
+    migrate_to = "0043_sync_user_terms_agreement"
 
     def setUpBeforeMigration(self, apps):
         owners = apps.get_model("codecov_auth", "Owner")
