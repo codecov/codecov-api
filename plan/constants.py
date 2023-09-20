@@ -289,3 +289,10 @@ PLANS_THAT_CAN_TRIAL = [
 ]
 
 TRIAL_PLAN_SEATS = 1000
+
+PRO_PLAN_NAMES = [
+    PlanName.CODECOV_PRO_MONTHLY.value,
+    PlanName.CODECOV_PRO_YEARLY.value,
+    PlanName.SENTRY_MONTHLY.value,
+    PlanName.SENTRY_YEARLY.value,
+]
