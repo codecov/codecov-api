@@ -125,19 +125,8 @@ class LoginMixinTests(TestCase):
         self.request.session = SessionStore()
         self.mixin_instance.request = self.request
 
-    @patch("services.segment.SegmentService.identify_user")
-    def test_get_or_create_owner_calls_segment_identify_user(self, identify_user_mock):
-        self.mixin_instance._get_or_create_owner(
-            {
-                "user": {"id": 12345, "key": "4567", "login": "testuser"},
-                "has_private_access": False,
-            },
-            self.request,
-        )
-        identify_user_mock.assert_called_once()
-
-    @patch("services.segment.SegmentService.user_signed_up")
-    def test_get_or_create_calls_segment_user_signed_up_when_owner_created(
+    @patch("services.analytics.AnalyticsService.user_signed_up")
+    def test_get_or_create_calls_analytics_user_signed_up_when_owner_created(
         self, user_signed_up_mock
     ):
         self.mixin_instance._get_or_create_owner(
@@ -149,8 +138,8 @@ class LoginMixinTests(TestCase):
         )
         user_signed_up_mock.assert_called_once()
 
-    @patch("services.segment.SegmentService.user_signed_in")
-    def test_get_or_create_calls_segment_user_signed_in_when_owner_not_created(
+    @patch("services.analytics.AnalyticsService.user_signed_in")
+    def test_get_or_create_calls_analytics_user_signed_in_when_owner_not_created(
         self, user_signed_in_mock
     ):
         owner = OwnerFactory(service_id=89, service="github")
@@ -168,7 +157,7 @@ class LoginMixinTests(TestCase):
         user_signed_in_mock.assert_called_once()
 
     @override_settings(IS_ENTERPRISE=False)
-    @patch("services.segment.SegmentService.user_signed_in")
+    @patch("services.analytics.AnalyticsService.user_signed_in")
     def test_set_marketing_tags_on_cookies(self, user_signed_in_mock):
         owner = OwnerFactory(service="github")
         self.request = RequestFactory().get(
@@ -209,7 +198,7 @@ class LoginMixinTests(TestCase):
         marketing_tags = self.mixin_instance.retrieve_marketing_tags_from_cookie()
         assert marketing_tags == {}
 
-    @patch("services.segment.SegmentService.user_signed_in")
+    @patch("services.analytics.AnalyticsService.user_signed_in")
     def test_use_marketing_tags_from_cookies(self, user_signed_in_mock):
         owner = OwnerFactory(service_id=89, service="github")
         self.request.COOKIES[
