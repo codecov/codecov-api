@@ -13,7 +13,6 @@ from plan.constants import (
     PlanBillingRate,
 )
 from plan.service import PlanService
-from services.segment import SegmentService
 
 log = logging.getLogger(__name__)
 
@@ -227,8 +226,6 @@ class StripeService(AbstractPaymentService):
                     proration_behavior=proration_behavior,
                 )
 
-                self._segment_modify_subscription(owner, desired_plan)
-
                 plan_service = PlanService(current_org=owner)
                 plan_service.update_plan(
                     name=desired_plan["value"], user_count=desired_plan["quantity"]
@@ -251,28 +248,6 @@ class StripeService(AbstractPaymentService):
                 self._modify_subscription_schedule(
                     owner, subscription, subscription_schedule_id, desired_plan
                 )
-
-    def _segment_modify_subscription(self, owner, desired_plan):
-        if owner.plan != desired_plan["value"]:
-            SegmentService().account_changed_plan(
-                current_user_ownerid=self.requesting_user.ownerid,
-                org_ownerid=owner.ownerid,
-                plan_details={
-                    "new_plan": desired_plan["value"],
-                    "previous_plan": owner.plan,
-                },
-            )
-
-        if owner.plan_user_count and owner.plan_user_count < desired_plan["quantity"]:
-            SegmentService().account_increased_users(
-                current_user_ownerid=self.requesting_user.ownerid,
-                org_ownerid=owner.ownerid,
-                plan_details={
-                    "new_quantity": desired_plan["quantity"],
-                    "old_quantity": owner.plan_user_count,
-                    "plan": desired_plan["value"],
-                },
-            )
 
     def _modify_subscription_schedule(
         self, owner, subscription, subscription_schedule_id, desired_plan

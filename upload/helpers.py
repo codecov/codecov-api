@@ -18,8 +18,8 @@ from codecov_auth.models import Owner
 from core.models import Commit, Repository
 from plan.constants import USER_PLAN_REPRESENTATIONS
 from reports.models import ReportSession
+from services.analytics import AnalyticsService
 from services.repo_providers import RepoProviderService
-from services.segment import SegmentService
 from services.task import TaskService
 from upload.tokenless.tokenless import TokenlessUploadHandler
 from utils.config import get_config
@@ -516,7 +516,7 @@ def validate_upload(upload_params, repository, redis):
             )
 
     if not repository.activated:
-        SegmentService().account_activated_repository_on_upload(
+        AnalyticsService().account_activated_repository_on_upload(
             repository.author.ownerid, repository
         )
 
