@@ -6,7 +6,7 @@ from api.internal.commit.serializers import (
 )
 from api.internal.owner.serializers import OwnerSerializer
 from core.models import Commit, Repository
-from services.segment import SegmentService
+from services.analytics import AnalyticsService
 
 
 class RepoSerializer(serializers.ModelSerializer):
@@ -93,15 +93,10 @@ class RepoDetailsSerializer(RepoSerializer):
         return rep
 
     def update(self, instance, validated_data):
-        # Segment tracking
-        segment = SegmentService()
+        analytics = AnalyticsService()
         if "active" in validated_data:
             if validated_data["active"] and not instance.active:
-                segment.account_activated_repository(
-                    self.context["request"].current_owner.ownerid, instance
-                )
-            elif not validated_data["active"] and instance.active:
-                segment.account_deactivated_repository(
+                analytics.account_activated_repository(
                     self.context["request"].current_owner.ownerid, instance
                 )
 
