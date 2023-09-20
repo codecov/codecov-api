@@ -23,7 +23,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="user",
             name="terms_agreement",
-            field=models.BooleanField(blank=True, default=None, null=True),
+            field=models.BooleanField(blank=True, default=False, null=True),
         ),
         migrations.AlterField(
             model_name="user",

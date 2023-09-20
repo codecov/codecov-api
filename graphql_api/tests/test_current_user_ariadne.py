@@ -179,7 +179,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
         }
         """
         data = self.gql_request(query, owner=current_user)
-        assert data == {"me": {"businessEmail": None, "termsAgreement": None}}
+        assert data == {"me": {"businessEmail": None, "termsAgreement": False}}
 
     def test_fetching_viewable_repositories(self):
         org_1 = OwnerFactory()
