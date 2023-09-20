@@ -28,6 +28,8 @@ class PlanName(enum.Enum):
     CODECOV_PRO_YEARLY = "users-pr-inappy"
     SENTRY_MONTHLY = "users-sentrym"
     SENTRY_YEARLY = "users-sentryy"
+    LITE_MONTHLY = "users-litem"
+    LITE_YEARLY = "users-litey"
     GHM_PLAN_NAME = "users"
     FREE_PLAN_NAME = "users-free"
     CODECOV_PRO_MONTHLY_LEGACY = "users-inappm"
@@ -270,6 +272,7 @@ PRO_PLANS = {
 
 TRIAL_PLANS = {**TRIAL_PLAN_REPRESENTATION}
 
+
 USER_PLAN_REPRESENTATIONS = {
     **FREE_PLAN_REPRESENTATIONS,
     **NON_PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
@@ -290,9 +293,27 @@ PLANS_THAT_CAN_TRIAL = [
 
 TRIAL_PLAN_SEATS = 1000
 
-PRO_PLAN_NAMES = [
+ENTERPRISE_TIER_PLAN_NAMES = [
+    PlanName.ENTERPRISE_CLOUD_MONTHLY.value,
+    PlanName.ENTERPRISE_CLOUD_YEARLY.value,
+]
+
+PRO_TIER_PLAN_NAMES = [
     PlanName.CODECOV_PRO_MONTHLY.value,
     PlanName.CODECOV_PRO_YEARLY.value,
     PlanName.SENTRY_MONTHLY.value,
     PlanName.SENTRY_YEARLY.value,
+    PlanName.CODECOV_PRO_MONTHLY_LEGACY.value,
+    PlanName.CODECOV_PRO_YEARLY_LEGACY.value,
+    PlanName.GHM_PLAN_NAME.value,
+]
+
+LITE_TIER_PLAN_NAMES = [
+    PlanName.LITE_MONTHLY.value,
+    PlanName.LITE_YEARLY.value,
+]
+
+BASIC_TIER_PLAN_NAMES = [
+    PlanName.BASIC_PLAN_NAME.value,
+    PlanName.FREE_PLAN_NAME.value,
 ]

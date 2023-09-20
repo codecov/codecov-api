@@ -16,7 +16,6 @@ from plan.constants import (
     TrialDaysAmount,
     TrialStatus,
 )
-from .features.service import Features
 from services.segment import SegmentService
 
 log = logging.getLogger(__name__)
@@ -42,7 +41,6 @@ class PlanService:
             raise ValueError("Unsupported plan")
         else:
             self.plan_data = USER_PLAN_REPRESENTATIONS[self.current_org.plan]
-        self.features = Features(plan=self.current_org.plan)
 
     def update_plan(self, name: PlanName, user_count: int) -> None:
         if name not in USER_PLAN_REPRESENTATIONS:
@@ -116,7 +114,9 @@ class PlanService:
             raise ValidationError("Cannot trial from a paid plan")
         start_date = datetime.utcnow()
         self.current_org.trial_start_date = start_date
-        self.current_org.trial_end_date = start_date + timedelta(days=TrialDaysAmount.CODECOV_SENTRY.value)
+        self.current_org.trial_end_date = start_date + timedelta(
+            days=TrialDaysAmount.CODECOV_SENTRY.value
+        )
         self.current_org.trial_status = TrialStatus.ONGOING.value
         self.current_org.plan = PlanName.TRIAL_PLAN_NAME.value
         self.current_org.pretrial_users_count = self.current_org.plan_user_count
@@ -156,7 +156,9 @@ class PlanService:
             # directly purchase a plan without trialing first
             self.current_org.trial_status = TrialStatus.EXPIRED.value
             self.current_org.plan_activated_users = None
-            self.current_org.plan_user_count = self.current_org.pretrial_users_count or 1
+            self.current_org.plan_user_count = (
+                self.current_org.pretrial_users_count or 1
+            )
             self.current_org.trial_end_date = datetime.utcnow()
 
             self.current_org.save()
@@ -187,7 +189,10 @@ class PlanService:
 
     @property
     def is_org_trialing(self) -> bool:
-        return self.trial_status == TrialStatus.ONGOING.value and self.plan_name == PlanName.TRIAL_PLAN_NAME.value
+        return (
+            self.trial_status == TrialStatus.ONGOING.value
+            and self.plan_name == PlanName.TRIAL_PLAN_NAME.value
+        )
 
     @property
     def has_trial_dates(self) -> bool:
