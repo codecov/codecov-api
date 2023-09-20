@@ -450,8 +450,6 @@ GRAPHQL_PLAYGROUND = False
 
 UPLOAD_THROTTLING_ENABLED = True
 
-CANNY_SSO_PRIVATE_TOKEN = get_config("canny", "sso_private_token", default="")
-
 SENTRY_JWT_SHARED_SECRET = get_config(
     "sentry", "jwt_shared_secret", default=None
 ) or get_config("setup", "sentry", "jwt_shared_secret", default=None)

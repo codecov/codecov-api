@@ -3,7 +3,6 @@ type User {
   name: String
   avatarUrl: String
   student: Boolean!
-  studentCreatedAt: DateTime,
-  studentUpdatedAt: DateTime,
-  cannySSOToken: String
+  studentCreatedAt: DateTime
+  studentUpdatedAt: DateTime
 }
