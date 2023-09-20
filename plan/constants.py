@@ -306,6 +306,7 @@ PRO_TIER_PLAN_NAMES = [
     PlanName.CODECOV_PRO_MONTHLY_LEGACY.value,
     PlanName.CODECOV_PRO_YEARLY_LEGACY.value,
     PlanName.GHM_PLAN_NAME.value,
+    PlanName.TRIAL_PLAN_NAME.value,
 ]
 
 LITE_TIER_PLAN_NAMES = [
