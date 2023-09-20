@@ -5,7 +5,6 @@ from django.conf import settings
 
 import services.self_hosted as self_hosted
 from codecov_auth.models import Owner
-from services.segment import SegmentService
 
 log = logging.getLogger(__name__)
 
@@ -77,12 +76,6 @@ def try_auto_activate(org: Owner, owner: Owner) -> bool:
         log.info(f"Attemping to auto-activate user {owner.ownerid} in {org.ownerid}")
         if activator.can_activate_user():
             activator.activate_user()
-            SegmentService().account_activated_user(
-                current_user_ownerid=owner.ownerid,
-                ownerid_to_activate=owner.ownerid,
-                org_ownerid=org.ownerid,
-                auto_activated=True,
-            )
             return True
         else:
             log.info("Auto-activation failed -- not enough seats remaining")

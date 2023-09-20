@@ -16,15 +16,12 @@ from plan.constants import (
     TrialDaysAmount,
     TrialStatus,
 )
-from services.segment import SegmentService
 
 log = logging.getLogger(__name__)
 
 
 # TODO: Consider moving some of these methods to the billing directory as they overlap billing functionality
 class PlanService:
-    notifier_service = SegmentService()
-
     def __init__(self, current_org: Owner):
         """
         Initializes a plan service object with a plan. The plan will be a trial plan
@@ -124,15 +121,6 @@ class PlanService:
         self.current_org.plan_auto_activate = True
         self.current_org.save()
 
-        self.notifier_service.trial_started(
-            org_ownerid=self.current_org.ownerid,
-            trial_details={
-                "trial_plan_name": self.current_org.plan,
-                "trial_start_date": self.current_org.trial_start_date,
-                "trial_end_date": self.current_org.trial_end_date,
-            },
-        )
-
     def cancel_trial(self) -> None:
         if not self.is_org_trialing:
             raise ValidationError("Cannot cancel a trial that is not ongoing")
@@ -162,14 +150,6 @@ class PlanService:
             self.current_org.trial_end_date = datetime.utcnow()
 
             self.current_org.save()
-            self.notifier_service.trial_ended(
-                org_ownerid=self.current_org.ownerid,
-                trial_details={
-                    "trial_plan_name": self.current_org.plan,
-                    "trial_start_date": self.current_org.trial_start_date,
-                    "trial_end_date": self.current_org.trial_end_date,
-                },
-            )
 
     @property
     def trial_status(self) -> TrialStatus:
