@@ -95,26 +95,6 @@ class StripeWebhookHandlerTests(APITestCase):
         assert response.status_code == status.HTTP_204_NO_CONTENT
         assert self.owner.delinquent is False
 
-    @patch("services.segment.SegmentService.account_paid_subscription")
-    def test_invoice_payment_succeeded_triggers_segment_event(
-        self, segment_paid_sub_mock
-    ):
-        response = self._send_event(
-            payload={
-                "type": "invoice.payment_succeeded",
-                "data": {
-                    "object": {
-                        "customer": self.owner.stripe_customer_id,
-                        "subscription": self.owner.stripe_subscription_id,
-                    }
-                },
-            }
-        )
-
-        segment_paid_sub_mock.assert_called_once_with(
-            self.owner.ownerid, {"plan": self.owner.plan}
-        )
-
     def test_invoice_payment_failed_sets_owner_delinquent_true(self):
         self.owner.delinquent = False
         self.owner.save()
@@ -183,27 +163,6 @@ class StripeWebhookHandlerTests(APITestCase):
 
         assert (
             self.owner.repository_set.filter(activated=True, active=True).count() == 0
-        )
-
-    @patch("services.segment.SegmentService.account_cancelled_subscription")
-    def test_customer_subscription_deleted_triggers_segment(
-        self, account_deleted_subscription_mock
-    ):
-        response = self._send_event(
-            payload={
-                "type": "customer.subscription.deleted",
-                "data": {
-                    "object": {
-                        "id": self.owner.stripe_subscription_id,
-                        "customer": self.owner.stripe_customer_id,
-                        "plan": {"name": "users-inappm"},
-                    }
-                },
-            }
-        )
-
-        account_deleted_subscription_mock.assert_called_once_with(
-            self.owner.ownerid, {"plan": "users-inappm"}
         )
 
     def test_customer_created_logs_and_doesnt_crash(self):
@@ -574,131 +533,6 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.owner.plan == original_plan
         assert self.owner.plan_user_count == original_quantity
 
-    @patch("services.segment.SegmentService.account_increased_users")
-    @patch("services.billing.stripe.Subscription.retrieve")
-    def test_subscription_schedule_released_calls_account_increased_users_segment(
-        self, retrieve_subscription_mock, account_increased_users_mock
-    ):
-        original_plan = "users-pr-inappy"
-        original_quantity = 20
-        self.owner.plan = original_plan
-        self.owner.plan_user_count = original_quantity
-        self.owner.save()
-
-        self.new_params = {
-            "new_plan": "users-pr-inappy",
-            "new_quantity": 30,
-            "subscription_id": None,
-        }
-
-        retrieve_subscription_mock.return_value = MockSubscription(
-            self.owner, self.new_params
-        )
-
-        self._send_event(
-            payload={
-                "type": "subscription_schedule.released",
-                "data": {
-                    "object": {
-                        "released_subscription": "sub_sched_1K8xfkGK49uVgOrkxvroyZdH"
-                    }
-                },
-            }
-        )
-
-        account_increased_users_mock.assert_called_once_with(
-            current_user_ownerid=15,
-            org_ownerid=self.owner.ownerid,
-            plan_details={
-                "new_quantity": self.new_params["new_quantity"],
-                "old_quantity": original_quantity,
-                "plan": self.new_params["new_plan"],
-            },
-        )
-
-    @patch("services.segment.SegmentService.account_decreased_users")
-    @patch("services.billing.stripe.Subscription.retrieve")
-    def test_subscription_schedule_released_calls_account_decreased_users_segment(
-        self, retrieve_subscription_mock, account_decreased_users_mock
-    ):
-        original_plan = "users-pr-inappy"
-        original_quantity = 18
-        self.owner.plan = original_plan
-        self.owner.plan_user_count = original_quantity
-        self.owner.save()
-
-        self.new_params = {
-            "new_plan": "users-pr-inappy",
-            "new_quantity": 13,
-            "subscription_id": None,
-        }
-
-        retrieve_subscription_mock.return_value = MockSubscription(
-            self.owner, self.new_params
-        )
-
-        self._send_event(
-            payload={
-                "type": "subscription_schedule.released",
-                "data": {
-                    "object": {
-                        "released_subscription": "sub_sched_1K8xfkGK49uVgOrkxvroyZdH"
-                    }
-                },
-            }
-        )
-
-        account_decreased_users_mock.assert_called_once_with(
-            current_user_ownerid=15,
-            org_ownerid=self.owner.ownerid,
-            plan_details={
-                "new_quantity": self.new_params["new_quantity"],
-                "old_quantity": original_quantity,
-                "plan": self.new_params["new_plan"],
-            },
-        )
-
-    @patch("services.segment.SegmentService.account_changed_plan")
-    @patch("services.billing.stripe.Subscription.retrieve")
-    def test_subscription_schedule_released_calls_account_changed_plan_segment(
-        self, retrieve_subscription_mock, account_changed_plan_mock
-    ):
-        original_plan = "users-pr-inappy"
-        original_quantity = 14
-        self.owner.plan = original_plan
-        self.owner.plan_user_count = original_quantity
-        self.owner.save()
-
-        self.new_params = {
-            "new_plan": "users-pr-inappm",
-            "new_quantity": 14,
-            "subscription_id": None,
-        }
-
-        retrieve_subscription_mock.return_value = MockSubscription(
-            self.owner, self.new_params
-        )
-
-        self._send_event(
-            payload={
-                "type": "subscription_schedule.released",
-                "data": {
-                    "object": {
-                        "released_subscription": "sub_sched_1K8xfkGK49uVgOrkxvroyZdH"
-                    }
-                },
-            }
-        )
-
-        account_changed_plan_mock.assert_called_once_with(
-            current_user_ownerid=15,
-            org_ownerid=self.owner.ownerid,
-            plan_details={
-                "new_plan": self.new_params["new_plan"],
-                "previous_plan": self.owner.plan,
-            },
-        )
-
     def test_checkout_session_completed_sets_stripe_customer_id(self):
         self.owner.stripe_customer_id = None
         self.owner.save()
@@ -719,28 +553,6 @@ class StripeWebhookHandlerTests(APITestCase):
 
         self.owner.refresh_from_db()
         assert self.owner.stripe_customer_id == expected_id
-
-    @patch("services.segment.SegmentService.account_completed_checkout")
-    def test_checkout_session_completed_triggers_segment_event(
-        self, account_co_completed_mock
-    ):
-        plan = "users-pr-inappy"
-        response = self._send_event(
-            payload={
-                "type": "checkout.session.completed",
-                "data": {
-                    "object": {
-                        "customer": "fhjtwoo40",
-                        "client_reference_id": str(self.owner.ownerid),
-                        "display_items": [{"plan": {"name": plan}}],
-                    }
-                },
-            }
-        )
-
-        account_co_completed_mock.assert_called_once_with(
-            self.owner.ownerid, {"plan": plan, "userid_type": "org"}
-        )
 
     @patch("billing.views.stripe.Subscription.modify")
     def test_customer_update_but_not_payment_method(self, subscription_modify_mock):
