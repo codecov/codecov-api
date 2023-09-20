@@ -12,14 +12,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name="ownerprofile",
-            name="terms_agreement",
-        ),
-        migrations.RemoveField(
-            model_name="ownerprofile",
-            name="terms_agreement_at",
-        ),
         migrations.AlterField(
             model_name="user",
             name="terms_agreement",
