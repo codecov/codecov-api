@@ -78,9 +78,8 @@ class StartTrialInteractorTest(TransactionTestCase):
             self.execute(current_user=current_user, org_username=current_user.username)
 
     @freeze_time("2022-01-01T00:00:00")
-    @patch("services.segment.SegmentService.trial_started")
     def test_start_trial_starts_trial_for_org_that_has_not_started_trial_before_and_calls_segment(
-        self, trial_started_mock
+        self,
     ):
         current_user: Owner = OwnerFactory(
             username="random-user-123",
@@ -101,13 +100,3 @@ class StartTrialInteractorTest(TransactionTestCase):
         assert current_user.plan == PlanName.TRIAL_PLAN_NAME.value
         assert current_user.plan_user_count == TRIAL_PLAN_SEATS
         assert current_user.plan_auto_activate == True
-
-        trial_started_mock.assert_called_once_with(
-            org_ownerid=current_user.ownerid,
-            trial_details={
-                "trial_plan_name": current_user.plan,
-                "trial_start_date": now,
-                "trial_end_date": now
-                + timedelta(days=TrialDaysAmount.CODECOV_SENTRY.value),
-            },
-        )

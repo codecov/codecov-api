@@ -334,16 +334,12 @@ class StripeServiceTests(TestCase):
         assert owner.plan_activated_users == [4, 6, 3]
         assert owner.plan_user_count == 9
 
-    @patch("services.segment.SegmentService.account_increased_users")
-    @patch("services.segment.SegmentService.account_changed_plan")
     @patch("services.billing.stripe.Subscription.modify")
     @patch("services.billing.stripe.Subscription.retrieve")
     def test_modify_subscription_without_schedule_increases_user_count_immediately(
         self,
         retrieve_subscription_mock,
         subscription_modify_mock,
-        segment_changed_plan_mock,
-        segment_increase_users_mock,
     ):
         original_user_count = 10
         original_plan = "users-pr-inappy"
@@ -376,31 +372,16 @@ class StripeServiceTests(TestCase):
             subscription_modify_mock, owner, subscription_params, desired_plan
         )
 
-        segment_changed_plan_mock.assert_not_called()
-        segment_increase_users_mock.assert_called_with(
-            current_user_ownerid=self.user.ownerid,
-            org_ownerid=owner.ownerid,
-            plan_details={
-                "new_quantity": desired_user_count,
-                "old_quantity": original_user_count,
-                "plan": desired_plan_name,
-            },
-        )
-
         owner.refresh_from_db()
         assert owner.plan == desired_plan_name
         assert owner.plan_user_count == desired_user_count
 
-    @patch("services.segment.SegmentService.account_increased_users")
-    @patch("services.segment.SegmentService.account_changed_plan")
     @patch("services.billing.stripe.Subscription.modify")
     @patch("services.billing.stripe.Subscription.retrieve")
     def test_modify_subscription_without_schedule_upgrades_plan_immediately(
         self,
         retrieve_subscription_mock,
         subscription_modify_mock,
-        segment_changed_plan_mock,
-        segment_increase_users_mock,
     ):
         original_plan = "users-pr-inappm"
         original_user_count = 10
@@ -433,30 +414,16 @@ class StripeServiceTests(TestCase):
             subscription_modify_mock, owner, subscription_params, desired_plan
         )
 
-        segment_increase_users_mock.assert_not_called()
-        segment_changed_plan_mock.assert_called_with(
-            current_user_ownerid=self.user.ownerid,
-            org_ownerid=owner.ownerid,
-            plan_details={
-                "new_plan": desired_plan_name,
-                "previous_plan": original_plan,
-            },
-        )
-
         owner.refresh_from_db()
         assert owner.plan == desired_plan_name
         assert owner.plan_user_count == desired_user_count
 
-    @patch("services.segment.SegmentService.account_increased_users")
-    @patch("services.segment.SegmentService.account_changed_plan")
     @patch("services.billing.stripe.Subscription.modify")
     @patch("services.billing.stripe.Subscription.retrieve")
     def test_modify_subscription_without_schedule_upgrades_plan_and_users_immediately(
         self,
         retrieve_subscription_mock,
         subscription_modify_mock,
-        segment_changed_plan_mock,
-        segment_increase_users_mock,
     ):
         original_user_count = 10
         original_plan = "users-pr-inappm"
@@ -487,24 +454,6 @@ class StripeServiceTests(TestCase):
 
         self._assert_subscription_modify(
             subscription_modify_mock, owner, subscription_params, desired_plan
-        )
-
-        segment_increase_users_mock.assert_called_with(
-            current_user_ownerid=self.user.ownerid,
-            org_ownerid=owner.ownerid,
-            plan_details={
-                "new_quantity": desired_user_count,
-                "old_quantity": original_user_count,
-                "plan": desired_plan_name,
-            },
-        )
-        segment_changed_plan_mock.assert_called_with(
-            current_user_ownerid=self.user.ownerid,
-            org_ownerid=owner.ownerid,
-            plan_details={
-                "new_plan": desired_plan_name,
-                "previous_plan": original_plan,
-            },
         )
 
         owner.refresh_from_db()

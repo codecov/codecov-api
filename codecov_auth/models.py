@@ -172,6 +172,7 @@ class Owner(models.Model):
         null=True,
         default=TrialStatus.NOT_STARTED.value,
     )
+    trial_fired_by = models.IntegerField(null=True)
     pretrial_users_count = models.SmallIntegerField(null=True, blank=True)
     free = models.SmallIntegerField(default=0)
     invoice_details = models.TextField(null=True)
@@ -475,6 +476,19 @@ class SentryUser(BaseCodecovModel):
     access_token = models.TextField(null=True)
     refresh_token = models.TextField(null=True)
     sentry_id = models.TextField(null=False, unique=True)
+    email = models.TextField(null=True)
+    name = models.TextField(null=True)
+
+
+class OktaUser(BaseCodecovModel):
+    user = models.ForeignKey(
+        User,
+        null=False,
+        on_delete=models.CASCADE,
+        related_name="okta_user",
+    )
+    access_token = models.TextField(null=True)
+    okta_id = models.TextField(null=False, unique=True)
     email = models.TextField(null=True)
     name = models.TextField(null=True)
 

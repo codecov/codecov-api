@@ -104,6 +104,9 @@ class BitbucketLoginView(View, LoginMixin):
         return response
 
     def get(self, request):
+        if settings.DISABLE_GIT_BASED_LOGIN and request.user.is_anonymous:
+            return redirect(f"{settings.CODECOV_DASHBOARD_URL}/login")
+
         try:
             if request.GET.get("oauth_verifier"):
                 log.info("Logging into bitbucket after authorization")

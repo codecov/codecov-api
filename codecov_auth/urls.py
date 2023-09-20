@@ -7,6 +7,7 @@ from .views.github_enterprise import GithubEnterpriseLoginView
 from .views.gitlab import GitlabLoginView
 from .views.gitlab_enterprise import GitlabEnterpriseLoginView
 from .views.logout import logout_view
+from .views.okta import OktaLoginView
 from .views.sentry import SentryLoginView
 
 urlpatterns = [
@@ -38,4 +39,5 @@ urlpatterns = [
     path("login/bbs", BitbucketServerLoginView.as_view(), name="bbs-login"),
     path("login/stash", BitbucketServerLoginView.as_view(), name="stash-login"),
     path("login/sentry", SentryLoginView.as_view(), name="sentry-login"),
+    path("login/okta", OktaLoginView.as_view(), name="okta-login"),
 ]
