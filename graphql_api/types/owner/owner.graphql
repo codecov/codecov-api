@@ -23,6 +23,7 @@ type Owner {
   orgUploadToken: String
   defaultOrgUsername: String
   isCurrentUserActivated: Boolean!
+  tier: TierName
   measurements(
     interval: MeasurementInterval!
     after: DateTime

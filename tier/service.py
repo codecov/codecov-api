@@ -41,11 +41,10 @@ class TierService:
     @property
     def tier(self) -> TierName:
         if self._is_enterprise_tier:
-            return TierName.ENTERPRISE.value
+            return TierName.ENTERPRISE
         if self._is_pro_tier:
-            return TierName.PRO.value
+            return TierName.PRO
         if self._is_lite_tier:
-            return TierName.LITE.value
+            return TierName.LITE
         if self._is_basic_tier:
-            return TierName.BASIC.value
-        return TierName.BASIC.value
+            return TierName.BASIC
