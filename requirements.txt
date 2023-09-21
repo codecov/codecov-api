@@ -375,7 +375,7 @@ sortedcontainers==2.4.0
     # via
     #   fakeredis
     #   intervaltree
-sqlparse==0.4.2
+sqlparse==0.4.4
     # via django
 starlette==0.27.0
     # via ariadne
@@ -400,7 +400,6 @@ typing-extensions==4.6.2
     # via
     #   ariadne
     #   shared
-    #   starlette
 uritemplate==4.1.1
     # via drf-spectacular
 urllib3==1.26.13
