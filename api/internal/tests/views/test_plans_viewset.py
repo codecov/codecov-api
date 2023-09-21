@@ -84,7 +84,6 @@ class PlansViewSetTests(APITestCase):
 
         response = self.client.get(reverse("plans-list"))
         assert response.status_code == status.HTTP_200_OK
-        print("asdfasdf", response.data)
         assert response.data == [
             {
                 "marketing_name": "Developer",
