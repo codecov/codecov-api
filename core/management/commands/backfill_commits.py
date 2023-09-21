@@ -15,7 +15,7 @@ def get_storage_redis():
 
 
 def get_celery_redis():
-    return Redis.from_url(get_config("serivces", "celery_broker"))
+    return Redis.from_url(get_config("services", "celery_broker"))
 
 
 class Command(BaseCommand):
