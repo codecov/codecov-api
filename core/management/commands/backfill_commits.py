@@ -15,12 +15,13 @@ def get_storage_redis():
 
 
 def get_celery_redis():
-    return Redis.from_url(get_config("serivces", "celery_broker"))
+    return Redis.from_url(get_config("services", "celery_broker"))
 
 
 class Command(BaseCommand):
     def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument("--batch-size", type=int)
+        parser.add_argument("--queue-name", type=str, default="archive")
 
     def handle(self, *args, **options):
         batch_size = options.get("batch_size", 1000)
@@ -28,7 +29,7 @@ class Command(BaseCommand):
         storage_redis = get_storage_redis()
         celery_redis = get_celery_redis()
 
-        queue_name = "backfill_commits"
+        queue_name = options.get("queue_name")
         queue_length = celery_redis.llen(queue_name)
 
         if queue_length > 0:

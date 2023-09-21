@@ -168,6 +168,7 @@ class AccountViewSetTests(APITestCase):
             "activated_student_count": 0,
             "student_count": 0,
             "schedule_detail": None,
+            "uses_invoice": False,
         }
 
     @patch("services.billing.stripe.SubscriptionSchedule.retrieve")
@@ -259,6 +260,7 @@ class AccountViewSetTests(APITestCase):
                     "start_date": schedule_params["start_date"],
                 },
             },
+            "uses_invoice": False,
         }
 
     @patch("services.billing.stripe.SubscriptionSchedule.retrieve")
@@ -361,6 +363,7 @@ class AccountViewSetTests(APITestCase):
                     "start_date": schedule_params["start_date"],
                 },
             },
+            "uses_invoice": False,
         }
 
     @patch("services.billing.stripe.Subscription.retrieve")
@@ -427,6 +430,7 @@ class AccountViewSetTests(APITestCase):
             "activated_student_count": 0,
             "student_count": 0,
             "schedule_detail": None,
+            "uses_invoice": False,
         }
 
     def test_retrieve_account_gets_account_students(self):
@@ -459,6 +463,7 @@ class AccountViewSetTests(APITestCase):
             "activated_student_count": 1,
             "student_count": 3,
             "schedule_detail": None,
+            "uses_invoice": False,
         }
 
     def test_account_with_free_user_plan(self):
@@ -1214,20 +1219,6 @@ class AccountViewSetTests(APITestCase):
             kwargs={"service": owner.service, "owner_username": owner.username}
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
-
-    @patch("services.segment.SegmentService.account_deleted")
-    @patch("services.task.TaskService.delete_owner")
-    def test_destroy_triggers_segment_event(
-        self, delete_owner_mock, segment_account_deleted_mock
-    ):
-        owner = OwnerFactory(admins=[self.current_owner.ownerid])
-        self._destroy(
-            kwargs={
-                "service": self.current_owner.service,
-                "owner_username": self.current_owner.username,
-            }
-        )
-        segment_account_deleted_mock.assert_called_once_with(self.current_owner)
 
 
 @override_settings(IS_ENTERPRISE=True)

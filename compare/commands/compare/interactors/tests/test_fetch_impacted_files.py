@@ -1,16 +1,18 @@
 import enum
-from unittest.mock import patch
+from unittest.mock import PropertyMock, patch
 
 from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
+from shared.reports.resources import Report, ReportFile, ReportLine
+from shared.utils.sessions import Session
 
 from codecov_auth.tests.factories import OwnerFactory
 from compare.commands.compare.interactors.fetch_impacted_files import (
     ImpactedFileParameter,
 )
 from compare.tests.factories import CommitComparisonFactory
-from core.tests.factories import CommitFactory
-from services.comparison import ComparisonReport
+from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
+from services.comparison import Comparison, ComparisonReport, PullRequestComparison
 
 from ..fetch_impacted_files import FetchImpactedFiles
 
@@ -274,7 +276,7 @@ class FetchImpactedFilesTest(TransactionTestCase):
             compare_commit=self.commit,
             report_storage_path="v4/test.json",
         )
-        self.comparison = ComparisonReport(self.commit_comparison)
+        self.comparison_report = ComparisonReport(self.commit_comparison)
 
     # helper to execute the interactor
     def execute(self, owner, *args):
@@ -287,7 +289,8 @@ class FetchImpactedFilesTest(TransactionTestCase):
         parameter = ImpactedFileParameter.CHANGE_COVERAGE
         direction = OrderingDirection.ASC
         filters = {"ordering": {"parameter": parameter, "direction": direction}}
-        sorted_files = self.execute(None, self.comparison, filters)
+        comparison = None
+        sorted_files = self.execute(None, self.comparison_report, comparison, filters)
         assert [file.head_name for file in sorted_files] == ["fileA", "fileB"]
 
     @patch("services.archive.ArchiveService.read_file")
@@ -296,7 +299,8 @@ class FetchImpactedFilesTest(TransactionTestCase):
         parameter = ImpactedFileParameter.MISSES_COUNT
         direction = OrderingDirection.ASC
         filters = {"ordering": {"parameter": parameter, "direction": direction}}
-        sorted_files = self.execute(None, self.comparison, filters)
+        comparison = None
+        sorted_files = self.execute(None, self.comparison_report, comparison, filters)
         assert [file.head_name for file in sorted_files] == ["fileA", "fileB"]
 
     @patch("services.archive.ArchiveService.read_file")
@@ -305,9 +309,10 @@ class FetchImpactedFilesTest(TransactionTestCase):
         parameter = "something else"
         direction = OrderingDirection.DESC
         filters = {"ordering": {"parameter": parameter, "direction": direction}}
+        comparison = None
 
         with self.assertRaises(ValueError) as ctx:
-            self.execute(None, self.comparison, filters)
+            self.execute(None, self.comparison_report, comparison, filters)
         self.assertEqual(
             "invalid impacted file parameter: something else", str(ctx.exception)
         )
@@ -321,7 +326,8 @@ class FetchImpactedFilesTest(TransactionTestCase):
                 "parameter": ImpactedFileParameter.CHANGE_COVERAGE,
             }
         }
-        impacted_files = self.execute(None, self.comparison, filters)
+        comparison = None
+        impacted_files = self.execute(None, self.comparison_report, comparison, filters)
         assert [file.head_name for file in impacted_files] == ["fileA", "fileB"]
 
     @patch("services.archive.ArchiveService.read_file")
@@ -333,7 +339,8 @@ class FetchImpactedFilesTest(TransactionTestCase):
                 "parameter": ImpactedFileParameter.CHANGE_COVERAGE,
             }
         }
-        impacted_files = self.execute(None, self.comparison, filters)
+        comparison = None
+        impacted_files = self.execute(None, self.comparison_report, comparison, filters)
         assert [file.head_name for file in impacted_files] == ["fileB", "fileA"]
 
     @patch("services.archive.ArchiveService.read_file")
@@ -345,7 +352,8 @@ class FetchImpactedFilesTest(TransactionTestCase):
                 "parameter": ImpactedFileParameter.HEAD_COVERAGE,
             }
         }
-        impacted_files = self.execute(None, self.comparison, filters)
+        comparison = None
+        impacted_files = self.execute(None, self.comparison_report, comparison, filters)
         assert [file.head_name for file in impacted_files] == ["fileA", "fileB"]
 
     @patch("services.archive.ArchiveService.read_file")
@@ -357,7 +365,8 @@ class FetchImpactedFilesTest(TransactionTestCase):
                 "parameter": ImpactedFileParameter.PATCH_COVERAGE,
             }
         }
-        impacted_files = self.execute(None, self.comparison, filters)
+        comparison = None
+        impacted_files = self.execute(None, self.comparison_report, comparison, filters)
         assert [file.head_name for file in impacted_files] == ["fileA", "fileB"]
 
     @patch("services.archive.ArchiveService.read_file")
@@ -369,7 +378,8 @@ class FetchImpactedFilesTest(TransactionTestCase):
                 "parameter": ImpactedFileParameter.PATCH_COVERAGE,
             }
         }
-        impacted_files = self.execute(None, self.comparison, filters)
+        comparison = None
+        impacted_files = self.execute(None, self.comparison_report, comparison, filters)
         assert [file.head_name for file in impacted_files] == ["fileB", "fileA"]
 
     @patch("services.archive.ArchiveService.read_file")
@@ -381,7 +391,8 @@ class FetchImpactedFilesTest(TransactionTestCase):
                 "parameter": ImpactedFileParameter.HEAD_COVERAGE,
             }
         }
-        impacted_files = self.execute(None, self.comparison, filters)
+        comparison = None
+        impacted_files = self.execute(None, self.comparison_report, comparison, filters)
         assert [file.head_name for file in impacted_files] == ["fileB", "fileA"]
 
     @patch("services.archive.ArchiveService.read_file")
@@ -393,7 +404,8 @@ class FetchImpactedFilesTest(TransactionTestCase):
                 "parameter": ImpactedFileParameter.FILE_NAME,
             }
         }
-        impacted_files = self.execute(None, self.comparison, filters)
+        comparison = None
+        impacted_files = self.execute(None, self.comparison_report, comparison, filters)
         assert [file.head_name for file in impacted_files] == ["fileA", "fileB"]
 
     @patch("services.archive.ArchiveService.read_file")
@@ -405,7 +417,8 @@ class FetchImpactedFilesTest(TransactionTestCase):
                 "parameter": ImpactedFileParameter.FILE_NAME,
             }
         }
-        impacted_files = self.execute(None, self.comparison, filters)
+        comparison = None
+        impacted_files = self.execute(None, self.comparison_report, comparison, filters)
         assert [file.head_name for file in impacted_files] == ["fileB", "fileA"]
 
     @patch("services.archive.ArchiveService.read_file")
@@ -417,7 +430,8 @@ class FetchImpactedFilesTest(TransactionTestCase):
                 "parameter": ImpactedFileParameter.MISSES_COUNT,
             }
         }
-        impacted_files = self.execute(None, self.comparison, filters)
+        comparison = None
+        impacted_files = self.execute(None, self.comparison_report, comparison, filters)
         assert [file.head_name for file in impacted_files] == ["fileA", "fileB"]
 
     @patch("services.archive.ArchiveService.read_file")
@@ -429,14 +443,16 @@ class FetchImpactedFilesTest(TransactionTestCase):
                 "parameter": ImpactedFileParameter.MISSES_COUNT,
             }
         }
-        impacted_files = self.execute(None, self.comparison, filters)
+        comparison = None
+        impacted_files = self.execute(None, self.comparison_report, comparison, filters)
         assert [file.head_name for file in impacted_files] == ["fileB", "fileA"]
 
     @patch("services.archive.ArchiveService.read_file")
     def test_impacted_files_without_filters(self, read_file):
         read_file.return_value = mock_data_from_archive
         filters = {}
-        impacted_files = self.execute(None, self.comparison, filters)
+        comparison = None
+        impacted_files = self.execute(None, self.comparison_report, comparison, filters)
         assert [file.head_name for file in impacted_files] == ["fileA", "fileB"]
 
     @patch("services.archive.ArchiveService.read_file")
@@ -449,7 +465,8 @@ class FetchImpactedFilesTest(TransactionTestCase):
                 "parameter": ImpactedFileParameter.FILE_NAME,
             },
         }
-        impacted_files = self.execute(None, self.comparison, filters)
+        comparison = None
+        impacted_files = self.execute(None, self.comparison_report, comparison, filters)
         assert [file.head_name for file in impacted_files] == ["fileA", "fileB"]
 
     @patch("services.archive.ArchiveService.read_file")
@@ -464,5 +481,79 @@ class FetchImpactedFilesTest(TransactionTestCase):
                 "parameter": ImpactedFileParameter.FILE_NAME,
             },
         }
-        impacted_files = self.execute(None, self.comparison, filters)
+        comparison = None
+        impacted_files = self.execute(None, self.comparison_report, comparison, filters)
         assert [file.head_name for file in impacted_files] == ["fileA", "fileB"]
+
+    @patch("services.comparison.Comparison.head_report", new_callable=PropertyMock)
+    @patch("services.archive.ArchiveService.read_file")
+    def test_impacted_files_filtered_by_flags_and_commit_comparison_for_pull(
+        self, read_file, build_report_from_commit_mock
+    ):
+        read_file.return_value = mocked_files_with_direct_and_indirect_changes
+
+        commit_report = Report()
+        session_a_id, _ = commit_report.add_session(Session(flags=["flag-123"]))
+        session_b_id, _ = commit_report.add_session(Session(flags=["flag-456"]))
+        file_a = ReportFile("fileA")
+        file_a.append(1, ReportLine.create(coverage=1, sessions=[[session_a_id, 1]]))
+        commit_report.append(file_a)
+        file_b = ReportFile("fileB")
+        file_b.append(1, ReportLine.create(coverage=1, sessions=[[session_b_id, 1]]))
+        commit_report.append(file_b)
+        build_report_from_commit_mock.return_value = commit_report
+
+        flags = ["flag-123"]
+        filters = {"flags": flags}
+
+        owner = OwnerFactory()
+        repo = RepositoryFactory(author=owner)
+        base, head, compared_to = (
+            CommitFactory(repository=repo),
+            CommitFactory(repository=repo),
+            CommitFactory(repository=repo),
+        )
+        pull = PullFactory(
+            repository=repo,
+            base=base.commitid,
+            head=head.commitid,
+            compared_to=compared_to.commitid,
+        )
+        comparison = PullRequestComparison(user=owner, pull=pull)
+
+        impacted_files = self.execute(None, self.comparison_report, comparison, filters)
+        assert len(impacted_files) == 1
+        assert impacted_files[0].head_name == "fileA"
+
+    @patch("services.comparison.Comparison.head_report", new_callable=PropertyMock)
+    @patch("services.archive.ArchiveService.read_file")
+    def test_impacted_files_filtered_by_flags_and_commit_comparison_for_parent_commit(
+        self, read_file, build_report_from_commit_mock
+    ):
+        read_file.return_value = mocked_files_with_direct_and_indirect_changes
+
+        commit_report = Report()
+        session_a_id, _ = commit_report.add_session(Session(flags=["flag-123"]))
+        session_b_id, _ = commit_report.add_session(Session(flags=["flag-456"]))
+        file_a = ReportFile("fileA")
+        file_a.append(1, ReportLine.create(coverage=1, sessions=[[session_a_id, 1]]))
+        commit_report.append(file_a)
+        file_b = ReportFile("fileB")
+        file_b.append(1, ReportLine.create(coverage=1, sessions=[[session_b_id, 1]]))
+        commit_report.append(file_b)
+        build_report_from_commit_mock.return_value = commit_report
+
+        flags = ["flag-123"]
+        filters = {"flags": flags}
+
+        owner = OwnerFactory()
+        repo = RepositoryFactory(author=owner)
+        base, head = (
+            CommitFactory(repository=repo),
+            CommitFactory(repository=repo),
+        )
+        comparison = Comparison(user=owner, base_commit=base, head_commit=head)
+
+        impacted_files = self.execute(None, self.comparison_report, comparison, filters)
+        assert len(impacted_files) == 1
+        assert impacted_files[0].head_name == "fileA"

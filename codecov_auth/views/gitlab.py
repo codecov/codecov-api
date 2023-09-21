@@ -80,6 +80,9 @@ class GitlabLoginView(LoginMixin, StateMixin, View):
         return response
 
     def get(self, request):
+        if settings.DISABLE_GIT_BASED_LOGIN and request.user.is_anonymous:
+            return redirect(f"{settings.CODECOV_DASHBOARD_URL}/login")
+
         if request.GET.get("code"):
             return self.actual_login_step(request)
         else:

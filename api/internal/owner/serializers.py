@@ -11,7 +11,6 @@ from codecov_auth.models import Owner
 from plan.constants import PRO_PLANS, SENTRY_PAID_USER_PLAN_REPRESENTATIONS
 from plan.service import PlanService
 from services.billing import BillingService
-from services.segment import SegmentService
 from services.sentry import send_user_webhook as send_sentry_webhook
 
 log = logging.getLogger(__name__)
@@ -248,6 +247,7 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
             "plan",
             "plan_auto_activate",
             "plan_provider",
+            "uses_invoice",
             "repo_total_credits",
             "root_organization",
             "schedule_detail",
@@ -320,18 +320,8 @@ class UserSerializer(serializers.ModelSerializer):
                 instance
             ):
                 owner.activate_user(instance)
-                SegmentService().account_activated_user(
-                    current_user_ownerid=self.context["request"].current_owner.ownerid,
-                    ownerid_to_activate=instance.ownerid,
-                    org_ownerid=owner.ownerid,
-                )
             elif validated_data["activated"] is False:
                 owner.deactivate_user(instance)
-                SegmentService().account_deactivated_user(
-                    current_user_ownerid=self.context["request"].current_owner.ownerid,
-                    ownerid_to_deactivate=instance.ownerid,
-                    org_ownerid=owner.ownerid,
-                )
             else:
                 raise PermissionDenied(
                     f"Cannot activate user {instance.username} -- not enough seats left."

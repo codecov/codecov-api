@@ -26,6 +26,10 @@ type UnknownPath implements ResolverError {
   message: String!
 }
 
+type UnknownFlags implements ResolverError {
+  message: String!
+}
+
 type ProviderError implements ResolverError {
   message: String!
 }

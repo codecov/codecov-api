@@ -685,18 +685,6 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         assert response.data["detail"] == "User not activated"
         assert Repository.objects.filter(name="repo1").exists()
 
-    @patch("services.segment.SegmentService.account_deleted_repository")
-    def test_destroy_triggers_segment_event(
-        self, account_deleted_repo_mock, mocked_get_permissions
-    ):
-        mocked_get_permissions.return_value = True, True
-        self.org.admins = [self.current_owner.ownerid]
-        self.org.save()
-        response = self._destroy()
-        account_deleted_repo_mock.assert_called_once_with(
-            self.current_owner.ownerid, self.repo
-        )
-
     def test_regenerate_upload_token_with_permissions_succeeds(
         self, mocked_get_permissions
     ):
@@ -795,25 +783,6 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         assert response.status_code == 403
         assert response.data["detail"] == "User not activated"
 
-    @patch("services.task.TaskService.delete_timeseries")
-    @patch("services.task.TaskService.flush_repo")
-    @patch("services.segment.analytics.track")
-    def test_erase_triggers_segment_event(
-        self,
-        analytics_track_mock,
-        mocked_flush_repo,
-        mocked_delete_timeseries,
-        mocked_get_permissions,
-    ):
-        mocked_get_permissions.return_value = True, True
-        self.org.admins = [self.current_owner.ownerid]
-        self.org.plan_activated_users = [self.current_owner.ownerid]
-        self.current_owner.organizations = [self.org.ownerid]
-        self.org.save()
-        with self.settings(SEGMENT_ENABLED=True):
-            response = self._erase()
-            analytics_track_mock.assert_called_once()
-
     def test_retrieve_returns_yaml(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, False
 
@@ -844,32 +813,6 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         response = self._update(data=activation_data)
 
         assert response.status_code == 403
-
-    @patch("services.segment.SegmentService.account_activated_repository")
-    @patch("services.segment.SegmentService.account_deactivated_repository")
-    def test_activation_and_deactivation_trigger_segment_events(
-        self,
-        account_deactivated_repo_mock,
-        account_activated_repo_mock,
-        mocked_get_permissions,
-    ):
-        mocked_get_permissions.return_value = True, True
-        self.repo.active = False
-        self.repo.save()
-        self.org.plan = "v4-10m"
-        self.org.save()
-
-        activation_data, deactivation_data = {"active": True}, {"active": False}
-
-        response = self._update(data=activation_data)
-        account_activated_repo_mock.assert_called_once_with(
-            self.current_owner.ownerid, self.repo
-        )
-
-        response = self._update(data=deactivation_data)
-        account_deactivated_repo_mock.assert_called_once_with(
-            self.current_owner.ownerid, self.repo
-        )
 
     def test_encode_returns_200_on_success(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, True

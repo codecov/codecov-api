@@ -2,8 +2,10 @@ from unittest.mock import patch
 
 from django.conf import settings
 from django.test import TestCase
+from shared.reports.resources import Report, ReportFile, ReportLine
 from shared.reports.types import ReportTotals
 from shared.torngit.exceptions import TorngitClientGeneralError
+from shared.utils.sessions import Session
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory
@@ -216,6 +218,18 @@ class TestReportPaths(TestCase):
     def test_invalid_path(self):
         report_paths = ReportPaths(self.report, path="wrong")
         assert report_paths.paths == []
+
+    def test_files(self):
+        flags = ["flag-123"]
+        report = Report()
+        session_a_id, _ = report.add_session(Session(flags=["flag-123"]))
+
+        file_a = ReportFile("foo/file1.py")
+        file_a.append(1, ReportLine.create(coverage=1, sessions=[[session_a_id, 1]]))
+        report.append(file_a)
+
+        report_paths = ReportPaths(report=report, filter_flags=flags)
+        assert report_paths.files == ["foo/file1.py"]
 
 
 class TestReportPathsNested(TestCase):

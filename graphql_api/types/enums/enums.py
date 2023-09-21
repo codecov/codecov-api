@@ -80,6 +80,7 @@ class LoginProvider(enum.Enum):
     GITLAB_ENTERPRISE = "gitlab_enterprise"
     BITBUCKET = "bitbucket"
     BITBUCKET_SERVER = "bitbucket_server"
+    OKTA = "okta"
 
 
 class CommitErrorGeneralType(enum.Enum):
