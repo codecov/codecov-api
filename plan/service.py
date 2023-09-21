@@ -94,7 +94,7 @@ class PlanService:
         return self.plan_data.monthly_uploads_limit
 
     # Trial Data
-    def start_trial(self, current_owner) -> None:
+    def start_trial(self, current_owner: Owner) -> None:
         """
         Method that starts trial on an organization if the trial_start_date
         is not empty.
