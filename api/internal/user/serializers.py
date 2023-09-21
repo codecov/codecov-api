@@ -14,6 +14,8 @@ class UserSerializer(serializers.ModelSerializer):
             "name",
             "external_id",
             "owners",
+            "terms_agreement",
+            "terms_agreement_at",
         )
 
         read_only_fields = fields
