@@ -13,6 +13,7 @@ from plan.constants import (
     PlanMarketingName,
     PlanName,
     PlanPrice,
+    TierName,
     TrialDaysAmount,
     TrialStatus,
 )
@@ -92,6 +93,10 @@ class PlanService:
             Optional number of monthly uploads
         """
         return self.plan_data.monthly_uploads_limit
+
+    @property
+    def tier_name(self) -> TierName:
+        return self.plan_data.tier_name
 
     # Trial Data
     def start_trial(self) -> None:

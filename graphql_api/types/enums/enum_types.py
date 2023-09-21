@@ -5,9 +5,8 @@ from compare.commands.compare.interactors.fetch_impacted_files import (
     ImpactedFileParameter,
 )
 from core.models import Commit
-from plan.constants import TrialStatus
+from plan.constants import TierName, TrialStatus
 from services.yaml import YamlStates
-from tier.constants import TierName
 from timeseries.models import Interval as MeasurementInterval
 from timeseries.models import MeasurementName
 

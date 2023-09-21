@@ -197,6 +197,7 @@ class PlanServiceTests(TestCase):
         assert plan_service.trial_status == TrialStatus.NOT_STARTED.value
         assert plan_service.marketing_name == basic_plan.marketing_name
         assert plan_service.plan_name == basic_plan.value
+        assert plan_service.tier_name == basic_plan.tier_name
         assert plan_service.billing_rate == basic_plan.billing_rate
         assert plan_service.base_unit_price == basic_plan.base_unit_price
         assert plan_service.benefits == basic_plan.benefits
@@ -225,6 +226,7 @@ class PlanServiceTests(TestCase):
         assert plan_service.trial_status == TrialStatus.ONGOING.value
         assert plan_service.marketing_name == trial_plan.marketing_name
         assert plan_service.plan_name == trial_plan.value
+        assert plan_service.tier_name == trial_plan.tier_name
         assert plan_service.billing_rate == trial_plan.billing_rate
         assert plan_service.base_unit_price == trial_plan.base_unit_price
         assert plan_service.benefits == trial_plan.benefits

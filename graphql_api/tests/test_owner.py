@@ -523,18 +523,3 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 "Unlimited private repositories",
             ],
         }
-
-    def test_fetching_owner_tier(self):
-        owner = OwnerFactory(
-            username="codecov-user", service="github", plan=PlanName.LITE_MONTHLY.value
-        )
-        query = """{
-            owner(username: "%s") {
-                tier
-            }
-        }
-        """ % (
-            owner.username
-        )
-        data = self.gql_request(query, owner=owner)
-        assert data == {"owner": {"tier": "LITE"}}

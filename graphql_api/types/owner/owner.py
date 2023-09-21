@@ -22,8 +22,6 @@ from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedErro
 from plan.constants import FREE_PLAN_REPRESENTATIONS, PlanData, PlanName
 from plan.service import PlanService
 from services.profiling import ProfilingSummary
-from tier.constants import TierName
-from tier.service import TierService
 from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Interval, MeasurementSummary
 
@@ -72,12 +70,6 @@ def resolve_yaml(owner, info):
 @owner_bindable.field("plan")
 def resolve_plan(owner: Owner, info) -> PlanService:
     return PlanService(current_org=owner)
-
-
-@owner_bindable.field("tier")
-def resolve_plan(owner: Owner, info) -> TierName:
-    tier_service = TierService(plan_name=owner.plan)
-    return tier_service.tier
 
 
 @owner_bindable.field("pretrialPlan")

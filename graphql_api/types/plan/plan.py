@@ -10,6 +10,7 @@ from plan.constants import (
     PlanMarketingName,
     PlanName,
     PlanPrice,
+    TierName,
     TrialStatus,
 )
 from plan.service import PlanService
@@ -46,6 +47,12 @@ def resolve_marketing_name(plan_service: PlanService, info) -> PlanMarketingName
 @convert_kwargs_to_snake_case
 def resolve_plan_name(plan_service: PlanService, info) -> PlanName:
     return plan_service.plan_name
+
+
+@plan_bindable.field("tierName")
+@convert_kwargs_to_snake_case
+def resolve_tier_name(plan_service: PlanService, info) -> TierName:
+    return plan_service.tier_name
 
 
 @plan_bindable.field("billingRate")

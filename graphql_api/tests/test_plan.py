@@ -41,6 +41,7 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
                     trialStartDate
                     marketingName
                     planName
+                    tierName
                     billingRate
                     baseUnitPrice
                     benefits
@@ -59,6 +60,7 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
             "trialStartDate": "2023-06-19T00:00:00",
             "marketingName": "Developer",
             "planName": "users-trial",
+            "tierName": "pro",
             "billingRate": None,
             "baseUnitPrice": 0,
             "benefits": [
