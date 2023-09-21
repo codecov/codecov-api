@@ -110,7 +110,7 @@ def resolve_terms_agreement(current_owner: Owner, _, **kwargs) -> Optional[bool]
 
 
 @me_bindable.field("businessEmail")
-def resolve_terms_agreement(current_owner: Owner, _, **kwargs) -> Optional[str]:
+def resolve_business_email(current_owner: Owner, _, **kwargs) -> Optional[str]:
     return current_owner.business_email
 
 
