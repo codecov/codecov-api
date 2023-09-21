@@ -27,6 +27,8 @@ class UserFactory(DjangoModelFactory):
 
     email = factory.Faker("email")
     name = factory.Faker("name")
+    terms_agreement = False
+    terms_agreement_at = None
 
 
 class OwnerFactory(DjangoModelFactory):
