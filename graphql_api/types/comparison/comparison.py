@@ -20,6 +20,7 @@ from reports.models import ReportLevelTotals
 from services.comparison import (
     Comparison,
     ComparisonReport,
+    FirstPullRequest,
     ImpactedFile,
     MissingComparisonReport,
 )
@@ -229,3 +230,5 @@ def resolve_comparison_result_type(obj, *_):
         return "MissingBaseReport"
     elif isinstance(obj, MissingHeadReport):
         return "MissingHeadReport"
+    elif isinstance(obj, FirstPullRequest):
+        return "FirstPullRequest"

@@ -133,18 +133,22 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
 
     @freeze_time("2021-02-02")
     def test_when_repository_has_null_author(self):
-        my_pull = PullFactory(
+        PullFactory(
+            repository=self.repository,
+            title="dummy-first-pr",
+        )
+        second_pr = PullFactory(
             repository=self.repository,
             title="test-null-author",
             author=None,
             head=None,
             compared_to=None,
         )
-        pull = self.fetch_one_pull_request(my_pull.pullid)
+        pull = self.fetch_one_pull_request(second_pr.pullid)
         assert pull == {
             "title": "test-null-author",
             "state": "OPEN",
-            "pullId": my_pull.pullid,
+            "pullId": second_pr.pullid,
             "updatestamp": "2021-02-02T00:00:00",
             "author": None,
             "head": None,
@@ -158,17 +162,22 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
 
     @freeze_time("2021-02-02")
     def test_when_repository_has_null_head(self):
-        my_pull = PullFactory(
+        PullFactory(
+            repository=self.repository,
+            title="dummy-first-pr",
+            author=self.owner,
+        )
+        second_pr = PullFactory(
             repository=self.repository,
             title="test-null-head",
             author=self.owner,
             head=None,
         )
-        pull = self.fetch_one_pull_request(my_pull.pullid)
+        pull = self.fetch_one_pull_request(second_pr.pullid)
         assert pull == {
             "title": "test-null-head",
             "state": "OPEN",
-            "pullId": my_pull.pullid,
+            "pullId": second_pr.pullid,
             "updatestamp": "2021-02-02T00:00:00",
             "author": {"username": "test-pull-user"},
             "head": None,
@@ -181,22 +190,51 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
         }
 
     @freeze_time("2021-02-02")
+    def test_when_pr_is_first_pr_in_repo(self):
+        first_pr = PullFactory(
+            repository=self.repository,
+            title="dummy-first-pr",
+            author=self.owner,
+        )
+
+        res = self.fetch_one_pull_request(first_pr.pullid)
+        assert res == {
+            "title": "dummy-first-pr",
+            "state": "OPEN",
+            "pullId": first_pr.pullid,
+            "updatestamp": "2021-02-02T00:00:00",
+            "author": {"username": "test-pull-user"},
+            "head": None,
+            "comparedTo": None,
+            "compareWithBase": {
+                "__typename": "FirstPullRequest",
+            },
+            "behindBy": None,
+            "behindByCommit": None,
+        }
+
+    @freeze_time("2021-02-02")
     def test_when_repository_has_missing_head_commit(self):
-        pull = PullFactory(
+        PullFactory(
             repository=self.repository,
             title="test-missing-head-commit",
             author=self.owner,
         )
+        second_pull = PullFactory(
+            repository=self.repository,
+            title="second-pr-so-it-doesn't-fetch-first-pr",
+            author=self.owner,
+        )
         Commit.objects.filter(
             repository_id=self.repository.pk,
-            commitid=pull.head,
+            commitid=second_pull.head,
         ).delete()
 
-        res = self.fetch_one_pull_request(pull.pullid)
+        res = self.fetch_one_pull_request(second_pull.pullid)
         assert res == {
-            "title": "test-missing-head-commit",
+            "title": "second-pr-so-it-doesn't-fetch-first-pr",
             "state": "OPEN",
-            "pullId": pull.pullid,
+            "pullId": second_pull.pullid,
             "updatestamp": "2021-02-02T00:00:00",
             "author": {"username": "test-pull-user"},
             "head": None,

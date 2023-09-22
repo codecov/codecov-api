@@ -1,4 +1,5 @@
 from ariadne import ObjectType
+from asgiref.sync import async_to_sync
 
 from codecov.db import sync_to_async
 from core.models import Pull
@@ -8,7 +9,11 @@ from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.comparison import ComparisonLoader
 from graphql_api.dataloader.owner import OwnerLoader
 from graphql_api.helpers.connection import queryset_to_connection_sync
-from graphql_api.types.comparison.comparison import MissingBaseCommit, MissingHeadCommit
+from graphql_api.types.comparison.comparison import (
+    FirstPullRequest,
+    MissingBaseCommit,
+    MissingHeadCommit,
+)
 from graphql_api.types.enums import OrderingDirection, PullRequestState
 from services.comparison import ComparisonReport, PullRequestComparison
 
@@ -42,8 +47,15 @@ def resolve_base(pull, info):
     return CommitLoader.loader(info, pull.repository_id).load(pull.compared_to)
 
 
+@sync_to_async
+def is_first_pull_request(pull: Pull):
+    return pull.repository.pull_requests.order_by("id").first() == pull
+
+
 @pull_bindable.field("compareWithBase")
 async def resolve_compare_with_base(pull, info, **kwargs):
+    if await is_first_pull_request(pull):
+        return FirstPullRequest()
     if not pull.compared_to:
         return MissingBaseCommit()
     if not pull.head:
