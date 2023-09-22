@@ -1,6 +1,13 @@
 import logging
 from typing import Optional
+from urllib.parse import urlparse
 
+from corsheaders.conf import conf as corsconf
+from corsheaders.middleware import (
+    ACCESS_CONTROL_ALLOW_CREDENTIALS,
+    ACCESS_CONTROL_ALLOW_ORIGIN,
+)
+from corsheaders.middleware import CorsMiddleware as BaseCorsMiddleware
 from django.http import HttpRequest
 from django.urls import resolve
 from django.utils.deprecation import MiddlewareMixin
@@ -114,3 +121,31 @@ class ImpersonationMiddleware(MiddlewareMixin):
                     impersonating_ownerid=impersonating_ownerid,
                 ),
             )
+
+
+class CorsMiddleware(BaseCorsMiddleware):
+    def process_response(self, request, response):
+        response = super().process_response(request, response)
+        if not self.is_enabled(request):
+            return response
+
+        origin = request.META.get("HTTP_ORIGIN")
+        if not origin:
+            return response
+
+        # we only allow credentials with CORS requests if the request
+        # is coming from one of our explicitly whitelisted domains
+        # (other domains will only be able to access public resources)
+        allow_credentials = False
+        if corsconf.CORS_ALLOW_CREDENTIALS:
+            url = urlparse(origin)
+            if self.origin_found_in_white_lists(origin, url):
+                allow_credentials = True
+
+        response.headers[ACCESS_CONTROL_ALLOW_ORIGIN] = origin
+        if allow_credentials:
+            response.headers[ACCESS_CONTROL_ALLOW_CREDENTIALS] = "true"
+        else:
+            del response.headers[ACCESS_CONTROL_ALLOW_CREDENTIALS]
+
+        return response

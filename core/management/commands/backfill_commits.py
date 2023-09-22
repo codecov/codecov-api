@@ -15,7 +15,7 @@ def get_storage_redis():
 
 
 def get_celery_redis():
-    return Redis.from_url(get_config("serivces", "celery_broker"))
+    return Redis.from_url(get_config("services", "celery_broker"))
 
 
 class Command(BaseCommand):
@@ -41,7 +41,7 @@ class Command(BaseCommand):
             )
             return
 
-        commits = Commit.objects.all().only("id", "commitid")
+        commits = Commit.objects.all().only("id")
 
         # this stores the oldest commit id that has already been backfilled
         commit_id = storage_redis.get("backfill_commits_id")
@@ -51,7 +51,7 @@ class Command(BaseCommand):
 
         commits = commits.order_by("-id")[:batch_size]
         for commit in commits:
-            TaskService().backfill_commit_data(commitid=commit.commitid)
+            TaskService().backfill_commit_data(commit_id=commit.id)
             if commit_id is None or commit.id < commit_id:
                 commit_id = commit.id
 
