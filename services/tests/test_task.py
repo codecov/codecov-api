@@ -329,16 +329,16 @@ def test_backfill_commit_data_task(mocker):
             "extra_config": {"soft_timelimit": 300, "hard_timelimit": 400},
         },
     )
-    TaskService().backfill_commit_data("example-commitid")
+    TaskService().backfill_commit_data(123)
     mock_route_task.assert_called_with(
         "app.tasks.archive.BackfillCommitDataToStorage",
         args=None,
-        kwargs=dict(commitid="example-commitid"),
+        kwargs=dict(commitid=123),
     )
     signature_mock.assert_called_with(
         "app.tasks.archive.BackfillCommitDataToStorage",
         args=None,
-        kwargs=dict(commitid="example-commitid"),
+        kwargs=dict(commitid=123),
         app=celery_app,
         queue="celery",
         soft_time_limit=300,

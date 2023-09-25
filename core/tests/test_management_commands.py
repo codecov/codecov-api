@@ -137,8 +137,8 @@ def test_backfill_commits_command(mocker):
     )
 
     assert backfill_commits.mock_calls == [
-        mock.call(commitid=commit3.commitid),
-        mock.call(commitid=commit2.commitid),
+        mock.call(commit_id=commit3.id),
+        mock.call(commit_id=commit2.id),
     ]
 
     backfill_commits.reset_mock()
@@ -153,7 +153,7 @@ def test_backfill_commits_command(mocker):
     )
 
     assert backfill_commits.mock_calls == [
-        mock.call(commitid=commit1.commitid),
+        mock.call(commit_id=commit1.id),
     ]
 
     backfill_commits.reset_mock()

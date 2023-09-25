@@ -59,6 +59,10 @@ class MissingComparisonReport(ComparisonException):
     pass
 
 
+class FirstPullRequest:
+    message = "This is the first pull request for this repository"
+
+
 class FileComparisonTraverseManager:
     """
     The FileComparisonTraverseManager uses the visitor-pattern to execute a series
