@@ -57,7 +57,7 @@ class PlanService:
         self.current_org.save()
 
     @property
-    def plan_name(self) -> PlanName:
+    def plan_name(self) -> str:
         return self.plan_data.value
 
     @property
@@ -69,15 +69,15 @@ class PlanService:
         return self.current_org.pretrial_users_count or 1
 
     @property
-    def marketing_name(self) -> PlanMarketingName:
+    def marketing_name(self) -> str:
         return self.plan_data.marketing_name
 
     @property
-    def billing_rate(self) -> Optional[PlanBillingRate]:
+    def billing_rate(self) -> Optional[str]:
         return self.plan_data.billing_rate
 
     @property
-    def base_unit_price(self) -> PlanPrice:
+    def base_unit_price(self) -> int:
         return self.plan_data.base_unit_price
 
     @property
@@ -85,7 +85,7 @@ class PlanService:
         return self.plan_data.benefits
 
     @property
-    def monthly_uploads_limit(self) -> Optional[MonthlyUploadLimits]:
+    def monthly_uploads_limit(self) -> Optional[int]:
         """
         Property that returns monthly uploads limit based on your trial status
 
@@ -95,7 +95,7 @@ class PlanService:
         return self.plan_data.monthly_uploads_limit
 
     @property
-    def tier_name(self) -> TierName:
+    def tier_name(self) -> str:
         return self.plan_data.tier_name
 
     # Trial Data
@@ -169,7 +169,7 @@ class PlanService:
         return self.current_org.trial_end_date
 
     @property
-    def trial_total_days(self) -> Optional[TrialDaysAmount]:
+    def trial_total_days(self) -> Optional[int]:
         return self.plan_data.trial_days
 
     @property
