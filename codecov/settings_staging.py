@@ -57,8 +57,6 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 15000000
 COOKIE_SAME_SITE = "None"
 SESSION_COOKIE_SAMESITE = "None"
 
-GRAPHQL_PLAYGROUND = True
-
 CSRF_TRUSTED_ORIGINS = [
     get_config("setup", "trusted_origin", default="https://*.codecov.dev")
 ]
