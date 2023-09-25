@@ -19,6 +19,7 @@ class PlanMarketingName(enum.Enum):
     FREE = "Developer"
     BASIC = "Developer"
     TRIAL = "Developer"
+    LITE = "Team"
 
 
 class PlanName(enum.Enum):
@@ -28,6 +29,8 @@ class PlanName(enum.Enum):
     CODECOV_PRO_YEARLY = "users-pr-inappy"
     SENTRY_MONTHLY = "users-sentrym"
     SENTRY_YEARLY = "users-sentryy"
+    LITE_MONTHLY = "users-litem"
+    LITE_YEARLY = "users-litey"
     GHM_PLAN_NAME = "users"
     FREE_PLAN_NAME = "users-free"
     CODECOV_PRO_MONTHLY_LEGACY = "users-inappm"
@@ -47,6 +50,8 @@ class PlanPrice(enum.Enum):
     CODECOV_FREE = 0
     CODECOV_BASIC = 0
     CODECOV_TRIAL = 0
+    LITE_MONTHLY = 6
+    LITE_YEARLY = 8
     GHM_PRICE = 12
 
 
@@ -55,6 +60,13 @@ class TrialStatus(enum.Enum):
     ONGOING = "ongoing"
     EXPIRED = "expired"
     CANNOT_TRIAL = "cannot_trial"
+
+
+class TierName(enum.Enum):
+    BASIC = "basic"
+    LITE = "lite"
+    PRO = "pro"
+    ENTERPRISE = "enterprise"
 
 
 @dataclass(repr=False)
@@ -68,6 +80,7 @@ class PlanData:
     billing_rate: Optional[PlanBillingRate]
     base_unit_price: PlanPrice
     benefits: List[str]
+    tier_name: TierName
     monthly_uploads_limit: Optional[MonthlyUploadLimits]
     trial_days: Optional[TrialDaysAmount]
 
@@ -84,6 +97,7 @@ NON_PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
             "Unlimited private repositories",
             "Priority Support",
         ],
+        tier_name=TierName.PRO.value,
         monthly_uploads_limit=None,
         trial_days=None,
     ),
@@ -98,6 +112,7 @@ NON_PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
             "Unlimited private repositories",
             "Priority Support",
         ],
+        tier_name=TierName.PRO.value,
         monthly_uploads_limit=None,
         trial_days=None,
     ),
@@ -116,6 +131,7 @@ PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
             "Unlimited private repositories",
             "Priority Support",
         ],
+        tier_name=TierName.PRO.value,
         monthly_uploads_limit=None,
         trial_days=None,
     ),
@@ -130,6 +146,7 @@ PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS = {
             "Unlimited private repositories",
             "Priority Support",
         ],
+        tier_name=TierName.PRO.value,
         monthly_uploads_limit=None,
         trial_days=None,
     ),
@@ -148,6 +165,7 @@ SENTRY_PAID_USER_PLAN_REPRESENTATIONS = {
             "Unlimited private repositories",
             "Priority Support",
         ],
+        tier_name=TierName.PRO.value,
         trial_days=TrialDaysAmount.CODECOV_SENTRY.value,
         monthly_uploads_limit=None,
     ),
@@ -163,6 +181,7 @@ SENTRY_PAID_USER_PLAN_REPRESENTATIONS = {
             "Unlimited private repositories",
             "Priority Support",
         ],
+        tier_name=TierName.PRO.value,
         trial_days=TrialDaysAmount.CODECOV_SENTRY.value,
         monthly_uploads_limit=None,
     ),
@@ -181,6 +200,7 @@ ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS = {
             "Unlimited private repositories",
             "Priority Support",
         ],
+        tier_name=TierName.ENTERPRISE.value,
         trial_days=None,
         monthly_uploads_limit=None,
     ),
@@ -195,6 +215,7 @@ ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS = {
             "Unlimited private repositories",
             "Priority Support",
         ],
+        tier_name=TierName.ENTERPRISE.value,
         trial_days=None,
         monthly_uploads_limit=None,
     ),
@@ -211,6 +232,7 @@ GHM_PLAN_REPRESENTATION = {
             "Unlimited public repositories",
             "Unlimited private repositories",
         ],
+        tier_name=TierName.PRO.value,
         trial_days=None,
         monthly_uploads_limit=None,
     )
@@ -227,6 +249,7 @@ FREE_PLAN_REPRESENTATIONS = {
             "Unlimited public repositories",
             "Unlimited private repositories",
         ],
+        tier_name=TierName.BASIC.value,
         trial_days=None,
         monthly_uploads_limit=None,
     ),
@@ -240,8 +263,40 @@ FREE_PLAN_REPRESENTATIONS = {
             "Unlimited public repositories",
             "Unlimited private repositories",
         ],
+        tier_name=TierName.BASIC.value,
         monthly_uploads_limit=MonthlyUploadLimits.CODECOV_BASIC_PLAN.value,
         trial_days=None,
+    ),
+}
+
+LITE_PLAN_REPRESENTATIONS = {
+    PlanName.LITE_MONTHLY.value: PlanData(
+        marketing_name=PlanMarketingName.LITE.value,
+        value=PlanName.LITE_MONTHLY.value,
+        billing_rate=PlanBillingRate.MONTHLY.value,
+        base_unit_price=PlanPrice.LITE_MONTHLY.value,
+        benefits=[
+            "Up to 10 users",
+            "Unlimited public repositories",
+            "Unlimited private repositories",
+        ],
+        tier_name=TierName.LITE.value,
+        trial_days=None,
+        monthly_uploads_limit=1000,
+    ),
+    PlanName.LITE_YEARLY.value: PlanData(
+        marketing_name=PlanMarketingName.LITE.value,
+        value=PlanName.LITE_YEARLY.value,
+        billing_rate=PlanBillingRate.YEARLY.value,
+        base_unit_price=PlanPrice.LITE_YEARLY.value,
+        benefits=[
+            "Up to 10 users",
+            "Unlimited public repositories",
+            "Unlimited private repositories",
+        ],
+        tier_name=TierName.LITE.value,
+        trial_days=None,
+        monthly_uploads_limit=1000,
     ),
 }
 
@@ -257,6 +312,7 @@ TRIAL_PLAN_REPRESENTATION = {
             "Unlimited private repositories",
             "Priority Support",
         ],
+        tier_name=TierName.PRO.value,
         trial_days=None,
         monthly_uploads_limit=None,
     ),
@@ -270,12 +326,16 @@ PRO_PLANS = {
 
 TRIAL_PLANS = {**TRIAL_PLAN_REPRESENTATION}
 
+LITE_PLANS = {**LITE_PLAN_REPRESENTATIONS}
+
+
 USER_PLAN_REPRESENTATIONS = {
     **FREE_PLAN_REPRESENTATIONS,
     **NON_PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
     **GHM_PLAN_REPRESENTATION,
     **PRO_PLANS,
     **TRIAL_PLANS,
+    **LITE_PLANS,
 }
 
 PLANS_THAT_CAN_TRIAL = [

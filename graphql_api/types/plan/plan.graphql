@@ -6,6 +6,7 @@ type Plan {
   pretrialUsersCount: Int
   marketingName: String!
   planName: String!
+  tierName: String!
   billingRate: String
   baseUnitPrice: Int!
   benefits: [String!]!
