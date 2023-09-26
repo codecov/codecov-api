@@ -1,0 +1,145 @@
+name: Self Hosted Build and Release
+on:
+  workflow_call:
+    inputs:
+      push_rolling:
+        type: boolean
+        default: false
+        description: 'Whether to push the rolling image'
+      push_release:
+        type: boolean
+        default: false
+        description: 'Whether to push the release image'
+
+jobs:
+  build-self-hosted:
+    name: Build Self Hosted API
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - id: "auth"
+        if: github.repository_owner == 'codecov'
+        name: "Authenticate to Google Cloud"
+        uses: "google-github-actions/auth@v1.1.1"
+        with:
+          token_format: "access_token"
+          workload_identity_provider: ${{ secrets.CODECOV_GCP_WIDP }}
+          service_account: ${{ secrets.CODECOV_GCP_WIDSA }}
+
+      - name: Docker configuration
+        if: github.repository_owner == 'codecov'
+        run: |-
+          echo ${{steps.auth.outputs.access_token}} | docker login -u oauth2accesstoken --password-stdin https://us-docker.pkg.dev
+
+      - name: Cache Requirements
+        id: cache-requirements
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-api-requirements
+        with:
+          path: |
+            requirements.tar
+          key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/docker/Dockerfile.requirements') }}
+          restore-keys: |
+            ${{ runner.os }}-api-${{ env.cache-name }}-
+
+      - name: Cache Self hosted
+        id: cache-self-hosted
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-api-self-hosted
+        with:
+          path: |
+            self-hosted-runtime.tar
+            self-hosted.tar
+          key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ github.run_id }}
+
+      - name: Load requirements from cache
+        if: ${{ steps.cache-requirements.outputs.cache-hit == 'true' }}
+        run: |
+          docker load --input requirements.tar
+
+      - name: Build/pull requirements
+        if: ${{ steps.cache-requirements.outputs.cache-hit != 'true' }}
+        run: |
+          make build.requirements      
+
+      - name: Build self hosted
+        run: |
+          make build.self-hosted
+          make save.self-hosted
+
+      - name: Build self hosted runtime
+        run: |
+          make build.self-hosted-runtime
+          make save.self-hosted-runtime
+  self-hosted:
+    name: Push Self Hosted Image
+    needs: [ build-self-hosted ]
+    if: inputs.push_rolling == true
+    runs-on: ubuntu-latest
+    environment: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Cache Self hosted
+        id: cache-self-hosted
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-api-self-hosted
+        with:
+          path: |
+            self-hosted-runtime.tar
+            self-hosted.tar
+          key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ github.run_id }}
+      - name: Load built image
+        run: |
+          docker load --input self-hosted-runtime.tar
+          docker load --input self-hosted.tar
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v1.14.1
+        with:
+          username: ${{ secrets.CODECOV_DEVOPS_DOCKER_USERNAME }}
+          password: ${{ secrets.CODECOV_DEVOPS_DOCKER_PASSWORD }}
+      - name: Push production
+        run: |
+          make tag.self-hosted-rolling
+          make push.self-hosted-rolling
+  self-hosted-release:
+    name: Push Self Hosted Release Image
+    needs: [ build-self-hosted ]
+    if: inputs.push_release == true
+    runs-on: ubuntu-latest
+    environment: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Cache Self hosted
+        id: cache-self-hosted
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-worker-self-hosted
+        with:
+          path: |
+            self-hosted-runtime.tar
+            self-hosted.tar
+          key: ${{ runner.os }}-worker-${{ env.cache-name }}-${{ github.run_id }}
+      - name: Load built image
+        run: |
+          docker load --input self-hosted-runtime.tar
+          docker load --input self-hosted.tar
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v1.14.1
+        with:
+          username: ${{ secrets.CODECOV_DEVOPS_DOCKER_USERNAME }}
+          password: ${{ secrets.CODECOV_DEVOPS_DOCKER_PASSWORD }}
+      - name: Push self hosted release
+        run: |
+          echo make tag.self-hosted
+          echo make push.self-hosted

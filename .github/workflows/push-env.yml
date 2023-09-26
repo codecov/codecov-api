@@ -1,0 +1,62 @@
+
+name: Push Image for Environment
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+
+jobs:
+  push-environment:
+    name: Push ${{ inputs.environment }} Image
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Cache App
+        id: cache-app
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-api-app
+        with:
+          path: |
+            app.tar
+          key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ github.run_id }}
+      - name: Load built image
+        run: |
+          docker load --input app.tar
+          docker image ls -a
+      - id: "auth"
+        name: "Authenticate to Google Cloud"
+        uses: "google-github-actions/auth@v1.1.1"
+        with:
+          token_format: "access_token"
+          workload_identity_provider: ${{ secrets.CODECOV_GCP_WIDP }}
+          service_account: ${{ secrets.CODECOV_GCP_WIDSA }}
+
+      - name: Docker configuration
+        run: |-
+          echo ${{steps.auth.outputs.access_token}} | docker login -u oauth2accesstoken --password-stdin https://us-docker.pkg.dev
+
+      - name: Push ${{ inputs.environment }}
+        run: |
+          make tag.${{ inputs.environment }}
+          make push.${{ inputs.environment }}
+      - name: Push latest
+        if: inputs.environment == 'production'
+        run: |
+          make tag.latest
+          make push.latest
+      - name: Create Sentry release
+        uses: getsentry/action-release@v1
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.CODECOV_SENTRY_RELEASE_TOKEN }}
+          SENTRY_ORG: ${{ secrets.CODECOV_SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.CODECOV_API_SENTRY_PROJECT }}
+        with:
+          environment: ${{ inputs.environment }}
