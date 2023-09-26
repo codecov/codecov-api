@@ -4,16 +4,12 @@ from unittest.mock import call, patch
 import pytest
 from django.test import TestCase
 from django.utils import timezone
+from shared.analytics_tracking.events import Events
 
 from codecov_auth.models import PlanProviders
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
-from services.analytics import (
-    AnalyticsEvent,
-    AnalyticsOwner,
-    AnalyticsRepository,
-    AnalyticsService,
-)
+from services.analytics import AnalyticsOwner, AnalyticsRepository, AnalyticsService
 
 
 class AnalyticsOwnerTests(TestCase):
@@ -37,28 +33,11 @@ class AnalyticsOwnerTests(TestCase):
     def test_traits(self):
         expected_traits = {
             "email": self.analytics_owner.owner.email,
-            "name": self.analytics_owner.owner.name,
             "username": self.analytics_owner.owner.username,
-            "avatar": self.analytics_owner.owner.avatar_url,
-            "createdAt": datetime(2014, 1, 1, 12, 0, 0),
-            "updatedAt": self.analytics_owner.owner.updatestamp.replace(
-                microsecond=0, tzinfo=None
-            ),
             "service": self.analytics_owner.owner.service,
             "service_id": self.analytics_owner.owner.service_id,
-            "private_access": self.analytics_owner.owner.private_access,
             "plan": self.analytics_owner.owner.plan,
-            "plan_provider": self.analytics_owner.owner.plan_provider,
-            "plan_user_count": self.analytics_owner.owner.plan_user_count,
-            "delinquent": self.analytics_owner.owner.delinquent,
-            "trial_start_date": self.analytics_owner.owner.trial_start_date,
-            "trial_end_date": self.analytics_owner.owner.trial_end_date,
-            "student": self.analytics_owner.owner.student,
-            "student_created_at": datetime(2017, 1, 1, 12, 0, 0),
-            "student_updated_at": datetime(2018, 1, 1, 12, 0, 0),
-            "staff": self.analytics_owner.owner.staff,
-            "bot": self.analytics_owner.owner.bot,
-            "has_yaml": self.analytics_owner.owner.yaml is not None,
+            "owner_id": self.analytics_owner.owner.ownerid,
         }
 
         assert self.analytics_owner.traits == expected_traits
@@ -159,47 +138,21 @@ class AnalyticsServiceTests(TestCase):
     @patch("shared.analytics_tracking.analytics_manager.track_event")
     def test_user_signed_up(self, track_mock):
         with self.settings(IS_ENTERPRISE=True):
-            expected_event_properties = {
-                **self.analytics_owner.traits,
-                "signup_department": "marketing",
-                "signup_campaign": "",
-                "signup_medium": "",
-                "signup_source": "direct",
-                "signup_content": "",
-                "signup_term": "",
-            }
             self.analytics_service.user_signed_up(self.owner)
             track_mock.assert_called_once_with(
-                AnalyticsEvent.USER_SIGNED_UP.value,
+                Events.USER_SIGNED_UP.value,
                 is_enterprise=True,
-                event_data=expected_event_properties,
+                event_data=self.analytics_owner.traits,
             )
 
     @patch("shared.analytics_tracking.analytics_manager.track_event")
     def test_user_signed_in(self, track_mock):
         with self.settings(IS_ENTERPRISE=False):
-            tracking_params = {
-                "utm_department": "sales",
-                "utm_campaign": "campaign",
-                "utm_medium": "medium",
-                "utm_source": "source",
-                "utm_content": "content",
-                "utm_term": "term",
-            }
-            expected_event_properties = {
-                **self.analytics_owner.traits,
-                "signup_department": "sales",
-                "signup_campaign": "campaign",
-                "signup_medium": "medium",
-                "signup_source": "source",
-                "signup_content": "content",
-                "signup_term": "term",
-            }
-            self.analytics_service.user_signed_in(self.owner, **tracking_params)
+            self.analytics_service.user_signed_in(self.owner)
             track_mock.assert_called_once_with(
-                AnalyticsEvent.USER_SIGNED_IN.value,
+                Events.USER_SIGNED_IN.value,
                 is_enterprise=False,
-                event_data=expected_event_properties,
+                event_data=self.analytics_owner.traits,
             )
 
     @patch("shared.analytics_tracking.analytics_manager.track_event")
@@ -213,7 +166,7 @@ class AnalyticsServiceTests(TestCase):
                 "user_id": owner.ownerid,
             }
             track_mock.assert_called_once_with(
-                AnalyticsEvent.ACCOUNT_ACTIVATED_REPOSITORY.value,
+                Events.ACCOUNT_ACTIVATED_REPOSITORY.value,
                 is_enterprise=False,
                 event_data=event_data,
                 context={"groupId": repo.author.ownerid},
@@ -228,7 +181,7 @@ class AnalyticsServiceTests(TestCase):
                 owner.ownerid, repo
             )
             track_mock.assert_called_once_with(
-                AnalyticsEvent.ACCOUNT_ACTIVATED_REPOSITORY_ON_UPLOAD.value,
+                Events.ACCOUNT_ACTIVATED_REPOSITORY_ON_UPLOAD.value,
                 is_enterprise=False,
                 event_data=AnalyticsRepository(repo).traits,
                 context={"groupId": repo.author.ownerid},
@@ -243,7 +196,7 @@ class AnalyticsServiceTests(TestCase):
                 owner.ownerid, upload_details
             )
             track_mock.assert_called_once_with(
-                AnalyticsEvent.ACCOUNT_UPLOADED_COVERAGE_REPORT.value,
+                Events.ACCOUNT_UPLOADED_COVERAGE_REPORT.value,
                 is_enterprise=False,
                 event_data=upload_details,
                 context={"groupId": owner.ownerid},
