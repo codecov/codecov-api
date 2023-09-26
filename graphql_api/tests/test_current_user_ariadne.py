@@ -1,10 +1,11 @@
 import datetime
+from http.cookies import SimpleCookie
 from unittest.mock import patch
 
 from django.test import TransactionTestCase
 
-from codecov_auth.models import OwnerProfile
-from codecov_auth.tests.factories import OwnerFactory, OwnerProfileFactory
+from codecov_auth.models import Owner, OwnerProfile
+from codecov_auth.tests.factories import OwnerFactory, UserFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
 
 from .helper import GraphQLTestHelper, paginate_connection
@@ -180,6 +181,27 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
         """
         data = self.gql_request(query, owner=current_user)
         assert data == {"me": {"businessEmail": None, "termsAgreement": False}}
+
+    def test_fetch_null_terms_agreement_for_user_without_owner(self):
+        # There is an edge where a owner without user can call the me endpoint
+        # via impersonation, in that case return null for terms agreement
+        owner_to_impersonate = OwnerFactory()
+        owner_to_impersonate.user.delete()
+        self.client.cookies = SimpleCookie({"staff_user": owner_to_impersonate.pk})
+        self.client.force_login(user=UserFactory(is_staff=True))
+
+        query = """{
+            me {
+                termsAgreement
+            }
+        }
+        """
+        res = self.client.post(
+            "/graphql/gh",
+            {"query": query},
+            content_type="application/json",
+        )
+        assert res.json()["data"]["me"] == {"termsAgreement": None}
 
     def test_fetching_viewable_repositories(self):
         org_1 = OwnerFactory()
