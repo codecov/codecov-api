@@ -1,10 +1,9 @@
 import logging
 import re
-from datetime import datetime
-from enum import Enum
 
 from django.conf import settings
 from shared.analytics_tracking import analytics_manager
+from shared.analytics_tracking.events import Events
 
 log = logging.getLogger(__name__)
 
@@ -33,14 +32,6 @@ def inject_analytics_repository(method):
     return exec_method
 
 
-class AnalyticsEvent(Enum):
-    ACCOUNT_ACTIVATED_REPOSITORY_ON_UPLOAD = "Account Activated Repository On Upload"
-    ACCOUNT_ACTIVATED_REPOSITORY = "Account Activated Repository"
-    ACCOUNT_UPLOADED_COVERAGE_REPORT = "Account Uploaded Coverage Report"
-    USER_SIGNED_IN = "User Signed In"
-    USER_SIGNED_UP = "User Signed Up"
-
-
 class AnalyticsOwner:
     """
     An object wrapper around 'Owner' that provides "user_id", "traits",
@@ -59,37 +50,12 @@ class AnalyticsOwner:
     @property
     def traits(self):
         return {
-            "avatar": self.owner.avatar_url,
             "service": self.owner.service,
             "service_id": self.owner.service_id,
             "plan": self.owner.plan,
-            "staff": self.owner.staff,
-            "has_yaml": self.owner.yaml is not None,
-            # Default values set to make the data readable by Salesforce
             "email": self.owner.email or "unknown@codecov.io",
-            "name": self.owner.name or "unknown",
             "username": self.owner.username or "unknown",
-            "student": self.owner.student or False,
-            "bot": self.owner.bot or False,
-            "delinquent": self.owner.delinquent or False,
-            "trial_start_date": self.owner.trial_start_date or None,
-            "trial_end_date": self.owner.trial_end_date or None,
-            "private_access": self.owner.private_access or False,
-            "plan_provider": self.owner.plan_provider or "",
-            "plan_user_count": self.owner.plan_user_count or 5,
-            # Set ms to 0 on dates to match date format required by Salesforce
-            "createdAt": self.owner.createstamp.replace(microsecond=0)
-            if self.owner.createstamp
-            else datetime(2014, 1, 1, 12, 0, 0),
-            "updatedAt": self.owner.updatestamp.replace(microsecond=0, tzinfo=None)
-            if self.owner.updatestamp
-            else datetime(2014, 1, 1, 12, 0, 0),
-            "student_created_at": self.owner.student_created_at.replace(microsecond=0)
-            if self.owner.student_created_at
-            else datetime(2014, 1, 1, 12, 0, 0),
-            "student_updated_at": self.owner.student_updated_at.replace(microsecond=0)
-            if self.owner.student_updated_at
-            else datetime(2014, 1, 1, 12, 0, 0),
+            "owner_id": self.owner.ownerid,
         }
 
     @property
@@ -185,36 +151,18 @@ class AnalyticsService:
 
     @inject_analytics_owner
     def user_signed_up(self, analytics_owner, **kwargs):
-        event_properties = {
-            **analytics_owner.traits,
-            "signup_department": kwargs.get("utm_department") or "marketing",
-            "signup_campaign": kwargs.get("utm_campaign") or "",
-            "signup_medium": kwargs.get("utm_medium") or "",
-            "signup_source": kwargs.get("utm_source") or "direct",
-            "signup_content": kwargs.get("utm_content") or "",
-            "signup_term": kwargs.get("utm_term") or "",
-        }
         analytics_manager.track_event(
-            AnalyticsEvent.USER_SIGNED_UP.value,
+            Events.USER_SIGNED_UP.value,
             is_enterprise=settings.IS_ENTERPRISE,
-            event_data=event_properties,
+            event_data=analytics_owner.traits,
         )
 
     @inject_analytics_owner
     def user_signed_in(self, analytics_owner, **kwargs):
-        event_properties = {
-            **analytics_owner.traits,
-            "signup_department": kwargs.get("utm_department") or "marketing",
-            "signup_campaign": kwargs.get("utm_campaign") or "",
-            "signup_medium": kwargs.get("utm_medium") or "",
-            "signup_source": kwargs.get("utm_source") or "direct",
-            "signup_content": kwargs.get("utm_content") or "",
-            "signup_term": kwargs.get("utm_term") or "",
-        }
         analytics_manager.track_event(
-            AnalyticsEvent.USER_SIGNED_IN.value,
+            Events.USER_SIGNED_IN.value,
             is_enterprise=settings.IS_ENTERPRISE,
-            event_data=event_properties,
+            event_data=analytics_owner.traits,
         )
 
     @inject_analytics_repository
@@ -224,7 +172,7 @@ class AnalyticsService:
             "user_id": current_user_ownerid,
         }
         analytics_manager.track_event(
-            AnalyticsEvent.ACCOUNT_ACTIVATED_REPOSITORY.value,
+            Events.ACCOUNT_ACTIVATED_REPOSITORY.value,
             is_enterprise=settings.IS_ENTERPRISE,
             event_data=event_data,
             context={"groupId": analytics_repository.repo.author.ownerid},
@@ -233,7 +181,7 @@ class AnalyticsService:
     @inject_analytics_repository
     def account_activated_repository_on_upload(self, org_ownerid, analytics_repository):
         analytics_manager.track_event(
-            AnalyticsEvent.ACCOUNT_ACTIVATED_REPOSITORY_ON_UPLOAD.value,
+            Events.ACCOUNT_ACTIVATED_REPOSITORY_ON_UPLOAD.value,
             is_enterprise=settings.IS_ENTERPRISE,
             event_data=analytics_repository.traits,
             context={"groupId": org_ownerid},
@@ -241,7 +189,7 @@ class AnalyticsService:
 
     def account_uploaded_coverage_report(self, org_ownerid, upload_details):
         analytics_manager.track_event(
-            AnalyticsEvent.ACCOUNT_UPLOADED_COVERAGE_REPORT.value,
+            Events.ACCOUNT_UPLOADED_COVERAGE_REPORT.value,
             is_enterprise=settings.IS_ENTERPRISE,
             event_data=upload_details,
             context={"groupId": org_ownerid},
