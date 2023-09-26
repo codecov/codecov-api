@@ -104,11 +104,13 @@ def resolve_tracking_data(current_user, _, **kwargs):
 @me_bindable.field("termsAgreement")
 @sync_to_async
 def resolve_terms_agreement(current_owner: Owner, _, **kwargs) -> Optional[bool]:
+    if current_owner.user is None:
+        return None
     return current_owner.user.terms_agreement
 
 
 @me_bindable.field("businessEmail")
-def resolve_terms_agreement(current_owner: Owner, _, **kwargs) -> Optional[str]:
+def resolve_business_email(current_owner: Owner, _, **kwargs) -> Optional[str]:
     return current_owner.business_email
 
 

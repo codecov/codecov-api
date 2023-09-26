@@ -9,7 +9,7 @@ from utils.migrations import RiskyRunSQL
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("codecov_auth", "0044_remove_owner_agreements_and_alter_user_agreements"),
+        ("codecov_auth", "0045_remove_ownerprofile_terms_agreement"),
     ]
 
     operations = [
