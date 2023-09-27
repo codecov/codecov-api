@@ -164,6 +164,7 @@ test_env.prepare:
 
 test_env.check_db:
 	docker-compose -f docker-compose-test.yml exec api make test_env.container_check_db
+	make test_env.check-for-migration-conflicts
 
 test_env.install_cli:
 	pip install codecov-cli
