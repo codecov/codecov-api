@@ -43,7 +43,7 @@ jobs:
     uses: codecov/gha-workflows/.github/workflows/run-ats.yml@main
     secrets: inherit
     with:
-      repo: ${{ needs.setup.outputs.AR_REPO }}
+      repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
 
   test:
     name: Test
@@ -51,7 +51,7 @@ jobs:
     uses: codecov/gha-workflows/.github/workflows/run-tests.yml@main
     secrets: inherit
     with:
-      repo: ${{ needs.setup.outputs.AR_REPO }}
+      repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
 
   build-self-hosted:
     name: Build Self Hosted API
@@ -59,7 +59,7 @@ jobs:
     uses: codecov/gha-workflows/.github/workflows/self-hosted.yml@main
     secrets: inherit
     with:
-      repo: ${{ needs.setup.outputs.AR_REPO }}
+      repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
 
   staging:
     name: Push Staging Image
@@ -69,7 +69,7 @@ jobs:
     secrets: inherit
     with:
       environment: staging
-      repo: ${{ needs.setup.outputs.AR_REPO }}
+      repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
 
   production:
     name: Push Production Image
@@ -79,7 +79,7 @@ jobs:
     secrets: inherit
     with:
       environment: production
-      repo: ${{ needs.setup.outputs.AR_REPO }}
+      repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
 
   self-hosted:
     name: Push Self Hosted Image
@@ -89,4 +89,4 @@ jobs:
     uses: codecov/gha-workflows/.github/workflows/self-hosted.yml@main
     with:
       push_rolling: true
-      repo: ${{ needs.setup.outputs.AR_REPO }}
+      repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
