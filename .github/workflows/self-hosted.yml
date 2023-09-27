@@ -10,6 +10,15 @@ on:
         type: boolean
         default: false
         description: 'Whether to push the release image'
+    secrets:
+      CODECOV_GCP_WIDSA:
+        required: false
+      CODECOV_GCP_WIDP:
+        required: false
+      CODECOV_DEVOPS_DOCKER_PASSWORD:
+        required: false
+      CODECOV_DEVOPS_DOCKER_USERNAME:
+        required: false
 
 jobs:
   build-self-hosted:
@@ -78,7 +87,7 @@ jobs:
   self-hosted:
     name: Push Self Hosted Image
     needs: [ build-self-hosted ]
-    if: inputs.push_rolling == true
+    if: inputs.push_rolling == true && github.repository_owner == 'codecov'
     runs-on: ubuntu-latest
     environment: self-hosted
     steps:
@@ -112,7 +121,7 @@ jobs:
   self-hosted-release:
     name: Push Self Hosted Release Image
     needs: [ build-self-hosted ]
-    if: inputs.push_release == true
+    if: inputs.push_release == true && github.repository_owner == 'codecov'
     runs-on: ubuntu-latest
     environment: self-hosted
     steps:

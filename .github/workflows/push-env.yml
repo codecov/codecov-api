@@ -7,12 +7,24 @@ on:
       environment:
         required: true
         type: string
+    secrets:
+      CODECOV_GCP_WIDSA:
+        required: true
+      CODECOV_GCP_WIDP:
+        required: true
+      CODECOV_API_SENTRY_PROJECT:
+        required: true
+      CODECOV_SENTRY_ORG:
+        required: true
+      CODECOV_SENTRY_RELEASE_TOKEN:
+        required: true
 
 jobs:
   push-environment:
     name: Push ${{ inputs.environment }} Image
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
+    if: github.repository_owner == 'codecov'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
