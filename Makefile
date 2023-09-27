@@ -39,8 +39,9 @@ lint:
 	make lint.run
 
 lint.install:
+	python -m pip install --upgrade pip
 	echo "Installing..."
-	pip3 install -Iv black==22.3.0 isort
+	pip install -Iv black==22.3.0 isort
 
 lint.run:
 	black .
