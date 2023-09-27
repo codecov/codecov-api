@@ -7,17 +7,9 @@ on:
       environment:
         required: true
         type: string
-    secrets:
-      CODECOV_GCP_WIDSA:
-        required: true
-      CODECOV_GCP_WIDP:
-        required: true
-      CODECOV_API_SENTRY_PROJECT:
-        required: true
-      CODECOV_SENTRY_ORG:
-        required: true
-      CODECOV_SENTRY_RELEASE_TOKEN:
-        required: true
+
+env:
+  AR_REPO: ${{ secrets.CODECOV_API_IMAGE_V2 || 'codecov/self-hosted-api' }}
 
 jobs:
   push-environment:

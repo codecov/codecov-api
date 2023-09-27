@@ -10,15 +10,9 @@ on:
         type: boolean
         default: false
         description: 'Whether to push the release image'
-    secrets:
-      CODECOV_GCP_WIDSA:
-        required: false
-      CODECOV_GCP_WIDP:
-        required: false
-      CODECOV_DEVOPS_DOCKER_PASSWORD:
-        required: false
-      CODECOV_DEVOPS_DOCKER_USERNAME:
-        required: false
+
+env:
+  AR_REPO: ${{ secrets.CODECOV_API_IMAGE_V2 || 'codecov/self-hosted-api' }}
 
 jobs:
   build-self-hosted:
@@ -68,7 +62,7 @@ jobs:
       - name: Load requirements from cache
         if: ${{ steps.cache-requirements.outputs.cache-hit == 'true' }}
         run: |
-          docker load --input requirements.tar
+          make load.requirements
 
       - name: Build/pull requirements
         if: ${{ steps.cache-requirements.outputs.cache-hit != 'true' }}
