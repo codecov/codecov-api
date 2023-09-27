@@ -11,33 +11,23 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
-env:
-  AR_REPO: ${{ secrets.CODECOV_API_IMAGE_V2 || 'codecov/self-hosted-api' }}
 
 permissions:
   contents: 'read'
   id-token: 'write'
 
 jobs:
-  setup:
-    name: Setup
-    runs-on: ubuntu-latest
-    outputs:
-      AR_REPO: ${{ steps.env-vars.outputs.AR_REPO }}
-    steps:
-      - id: env-vars
-        run: echo "AR_REPO=${{ env.AR_REPO }}" >> $GITHUB_OUTPUT
+
   lint:
     name: Run Lint
     uses: codecov/gha-workflows/.github/workflows/lint.yml@main
 
   build:
-    needs: setup
     name: Build API
     uses: codecov/gha-workflows/.github/workflows/build-app.yml@main
     secrets: inherit
     with:
-      repo: ${{ needs.setup.outputs.AR_REPO }}
+      repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
 
 
   codecovstartup:
