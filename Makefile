@@ -158,6 +158,7 @@ test_env.up:
 	TIMESERIES_ENABLED=${TIMESERIES_ENABLED} docker-compose -f docker-compose-test.yml up -d
 
 test_env.prepare:
+	pip install pytest-cov
 	docker-compose -f docker-compose-test.yml exec api make test_env.container_prepare
 
 test_env.check_db:
