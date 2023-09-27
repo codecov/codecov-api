@@ -37,6 +37,6 @@ jobs:
   push-image:
     needs: [create-release]
     if: ${{ github.event.pull_request.merged == true && startsWith(github.head_ref, 'release/') && github.repository_owner == 'codecov' }}
-    uses: ./.github/workflows/self-hosted.yml
+    uses: codecov/gha-workflows/.github/workflows/self-hosted.yml@main
     with:
       push_release: true

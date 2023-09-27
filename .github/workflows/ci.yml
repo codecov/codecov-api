@@ -234,7 +234,7 @@ jobs:
   build-self-hosted:
     name: Build Self Hosted API
     needs: [build, test]
-    uses: ./.github/workflows/self-hosted.yml
+    uses: codecov/gha-workflows/.github/workflows/self-hosted.yml@main
     secrets: inherit
 
   staging:
@@ -260,6 +260,6 @@ jobs:
     needs: [ build-self-hosted, test ]
     secrets: inherit
     if: ${{ github.event_name == 'push' && github.event.ref == 'refs/heads/main' && github.repository_owner == 'codecov' }}
-    uses: ./.github/workflows/self-hosted.yml
+    uses: codecov/gha-workflows/.github/workflows/self-hosted.yml@main
     with:
       push_rolling: true
