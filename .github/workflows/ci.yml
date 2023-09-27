@@ -235,6 +235,7 @@ jobs:
     name: Build Self Hosted API
     needs: [build, test]
     uses: ./.github/workflows/self-hosted.yml
+    secrets: inherit
 
   staging:
     name: Push Staging Image
