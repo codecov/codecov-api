@@ -39,7 +39,7 @@ jobs:
         uses: actions/checkout@v4
 
       - id: "auth"
-        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }} 
+        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
         name: "Authenticate to Google Cloud"
         uses: "google-github-actions/auth@v1.1.1"
         with:
@@ -48,7 +48,7 @@ jobs:
           service_account: ${{ secrets.CODECOV_GCP_WIDSA }}
 
       - name: Docker configuration
-        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }} 
+        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
         run: |-
           echo ${{steps.auth.outputs.access_token}} | docker login -u oauth2accesstoken --password-stdin https://us-docker.pkg.dev
 
@@ -104,11 +104,11 @@ jobs:
         with:
           fetch-depth: 2
       - name: Install CLI
-        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }} 
+        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
         run: |
           make test_env.install_cli
       - name: Run Startup
-        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }} 
+        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_ORG_TOKEN }}
         run: |
@@ -134,7 +134,7 @@ jobs:
     name: ATS
     needs: [build, codecovstartup]
     runs-on: ubuntu-latest
-    if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }} 
+    if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -165,21 +165,15 @@ jobs:
         run: |
           make test_env.prepare
           make test_env.check_db
-      - name: Run ATS
-        uses: codecov/codecov-ats@v0
-        env:
-          CODECOV_STATIC_TOKEN: ${{ secrets.STATIC_TOKEN }}
-          CODECOV_TOKEN: ${{ secrets.CODECOV_ORG_TOKEN }}
-      - name: Run tests and collect coverage
+      - name: Run Static Analysis
         run: |
-          make test_env.ats CODECOV_ATS_TESTS=${{ env.CODECOV_ATS_TESTS }}
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4-beta
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_ORG_TOKEN }}
-        with:
-          flags: smart-tests
-          plugins: pycoverage,compress-pycoverage
+          make test_env.static_analysis CODECOV_STATIC_TOKEN=${{ secrets.STATIC_TOKEN }}
+      - name: Run Label Analysis
+        run: |
+          make test_env.label_analysis CODECOV_STATIC_TOKEN=${{ secrets.STATIC_TOKEN }}
+      - name: Upload ATS Coverage
+        run: |
+          make test_env.ats CODECOV_UPLOAD_TOKEN=${{ secrets.CODECOV_ORG_TOKEN }}
 
   test:
     name: Test
@@ -221,11 +215,11 @@ jobs:
           make test_env.check-for-migration-conflicts
       ## Don't upload on forks for now.
       - name: upload using codecovcli
-        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }} 
+        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
         run: |
           make test_env.upload CODECOV_UPLOAD_TOKEN=${{ secrets.CODECOV_ORG_TOKEN }}
       - name: upload using codecovcli staging
-        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }} 
+        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
         run: |
           make test_env.upload CODECOV_UPLOAD_TOKEN=${{ secrets.CODECOV_ORG_TOKEN_STAGING }} CODECOV_URL=${{ secrets.CODECOV_STAGING_URL }}
       - name: upload using codecovcli qa

@@ -1,5 +1,6 @@
 sha := $(shell git rev-parse --short=7 HEAD)
 long_sha := $(shell git rev-parse HEAD)
+merge_sha := $(shell git merge-base HEAD^ origin/main)
 release_version := `cat VERSION`
 build_date ?= $(shell git show -s --date=iso8601-strict --pretty=format:%cd $$sha)
 branch = $(shell git branch | grep \* | cut -f2 -d' ')
@@ -158,7 +159,6 @@ test_env.up:
 	TIMESERIES_ENABLED=${TIMESERIES_ENABLED} docker-compose -f docker-compose-test.yml up -d
 
 test_env.prepare:
-	pip install pytest-cov
 	docker-compose -f docker-compose-test.yml exec api make test_env.container_prepare
 
 test_env.check_db:
@@ -203,7 +203,12 @@ test_env.container_static_analysis:
 	codecovcli static-analysis --token=${CODECOV_STATIC_TOKEN}
 
 test_env.container_label_analysis:
-	codecovcli label-analysis --base-sha=$(shell git merge-base HEAD^ origin/main) --token=${CODECOV_STATIC_TOKEN}
+	$(shell codecovcli label-analysis --base-sha=${merge_sha} --token=${CODECOV_STATIC_TOKEN} --dry-run > tests_to_run)
+	sed -i s/\"//g tests_to_run
+	sed -i s/ATS_TESTS_TO_RUN=//g tests_to_run
+	sed -i s/--cov-context=test//g tests_to_run
+	sed -i 's/\s\+/\n/g' tests_to_run
+	python -m pytest --cov=./ --cov-context=test $(cat tests_to_run)
 
 test_env.container_ats:
 	codecovcli --codecov-yml-path=codecov_cli.yml do-upload --plugin pycoverage --plugin compress-pycoverage --flag smart-labels --fail-on-error
