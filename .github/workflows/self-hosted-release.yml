@@ -6,9 +6,6 @@ on:
       - main
     types: [closed]
 
-env:
-  AR_REPO: ${{ secrets.CODECOV_API_IMAGE_V2 || 'codecov/self-hosted-api' }}
-
 jobs:
   create-release:
     name: Tag Release ${{ github.head_ref }} and Push Docker image to Docker Hub
@@ -23,4 +20,4 @@ jobs:
     secrets: inherit
     with:
       push_release: true
-      repo: ${{ env.AR_REPO }}
+      repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
