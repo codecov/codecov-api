@@ -208,7 +208,7 @@ test_env.container_label_analysis:
 	sed -i s/ATS_TESTS_TO_RUN=//g tests_to_run
 	sed -i s/--cov-context=test//g tests_to_run
 	sed -i 's/\s\+/\n/g' tests_to_run
-	python -m pytest --cov=./ --cov-context=test $(cat tests_to_run)
+	python -m pytest --cov=./ --cov-context=test `cat tests_to_run`
 
 test_env.container_ats:
 	codecovcli --codecov-yml-path=codecov_cli.yml do-upload --plugin pycoverage --plugin compress-pycoverage --flag smart-labels --fail-on-error
