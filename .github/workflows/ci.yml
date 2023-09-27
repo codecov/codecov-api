@@ -19,16 +19,25 @@ permissions:
   id-token: 'write'
 
 jobs:
+  setup:
+    name: Setup
+    runs-on: ubuntu-latest
+    outputs:
+      AR_REPO: ${{ steps.env-vars.outputs.AR_REPO }}
+    steps:
+      - id: env-vars
+        run: echo "AR_REPO=${{ env.AR_REPO }}" >> $GITHUB_OUTPUT
   lint:
     name: Run Lint
     uses: codecov/gha-workflows/.github/workflows/lint.yml@main
 
   build:
+    needs: setup
     name: Build API
     uses: codecov/gha-workflows/.github/workflows/build-app.yml@main
     secrets: inherit
     with:
-      repo: ${{ env.AR_REPO }}
+      repo: ${{ needs.setup.outputs.AR_REPO }}
 
 
   codecovstartup:
@@ -44,7 +53,7 @@ jobs:
     uses: codecov/gha-workflows/.github/workflows/run-ats.yml@main
     secrets: inherit
     with:
-      repo: ${{ env.AR_REPO }}
+      repo: ${{ needs.setup.outputs.AR_REPO }}
 
   test:
     name: Test
@@ -52,7 +61,7 @@ jobs:
     uses: codecov/gha-workflows/.github/workflows/run-tests.yml@main
     secrets: inherit
     with:
-      repo: ${{ env.AR_REPO }}
+      repo: ${{ needs.setup.outputs.AR_REPO }}
 
   build-self-hosted:
     name: Build Self Hosted API
@@ -60,7 +69,7 @@ jobs:
     uses: codecov/gha-workflows/.github/workflows/self-hosted.yml@main
     secrets: inherit
     with:
-      repo: ${{ env.AR_REPO }}
+      repo: ${{ needs.setup.outputs.AR_REPO }}
 
   staging:
     name: Push Staging Image
@@ -70,7 +79,7 @@ jobs:
     secrets: inherit
     with:
       environment: staging
-      repo: ${{ env.AR_REPO }}
+      repo: ${{ needs.setup.outputs.AR_REPO }}
 
   production:
     name: Push Production Image
@@ -80,7 +89,7 @@ jobs:
     secrets: inherit
     with:
       environment: production
-      repo: ${{ env.AR_REPO }}
+      repo: ${{ needs.setup.outputs.AR_REPO }}
 
   self-hosted:
     name: Push Self Hosted Image
@@ -90,4 +99,4 @@ jobs:
     uses: codecov/gha-workflows/.github/workflows/self-hosted.yml@main
     with:
       push_rolling: true
-      repo: ${{ env.AR_REPO }}
+      repo: ${{ needs.setup.outputs.AR_REPO }}
