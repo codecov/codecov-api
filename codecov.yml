@@ -1,7 +1,6 @@
 ignore:
   - "**tests**/test_*.py"
-comment:
-  show_critical_paths: true
+
 
 beta_groups:
   - "labels"
