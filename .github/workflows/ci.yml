@@ -11,426 +11,82 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
-env:
-  AR_REPO: ${{ secrets.CODECOV_API_IMAGE_V2 || 'codecov/self-hosted-api' }}
+
+permissions:
+  contents: 'read'
+  id-token: 'write'
 
 jobs:
+
   lint:
     name: Run Lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          make lint.install
-      - name: Check
-        run: |
-          make lint.check
+    uses: codecov/gha-workflows/.github/workflows/lint.yml@main
+
   build:
     name: Build API
-    runs-on: ubuntu-latest
-    permissions:
-      contents: 'read'
-      id-token: 'write'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    uses: codecov/gha-workflows/.github/workflows/build-app.yml@main
+    secrets: inherit
+    with:
+      repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
 
-      - id: "auth"
-        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }} 
-        name: "Authenticate to Google Cloud"
-        uses: "google-github-actions/auth@v1.1.1"
-        with:
-          token_format: "access_token"
-          workload_identity_provider: ${{ secrets.CODECOV_GCP_WIDP }}
-          service_account: ${{ secrets.CODECOV_GCP_WIDSA }}
-
-      - name: Docker configuration
-        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }} 
-        run: |-
-          echo ${{steps.auth.outputs.access_token}} | docker login -u oauth2accesstoken --password-stdin https://us-docker.pkg.dev
-
-      - name: Cache Requirements
-        id: cache-requirements
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-api-requirements
-        with:
-          path: |
-            requirements.tar
-          key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/docker/Dockerfile.requirements') }}
-          restore-keys: |
-            ${{ runner.os }}-api-${{ env.cache-name }}-
-
-      - name: Cache App
-        id: cache-app
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-api-app
-        with:
-          path: |
-            app.tar
-          key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ github.run_id }}
-
-      - name: Load requirements from cache
-        if: ${{ steps.cache-requirements.outputs.cache-hit == 'true' }}
-        run: |
-          make load.requirements
-
-      - name: Build/pull requirements
-        if: ${{ steps.cache-requirements.outputs.cache-hit != 'true' }}
-        run: |
-          make build.requirements
-          make save.requirements
-
-      - name: Push Requirements
-        if: ${{ steps.cache-requirements.outputs.cache-hit != 'true' && !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
-        run: |
-          make push.requirements
-      - name: Build app
-        run: |
-          make build.app
-          make save.app
 
   codecovstartup:
     name: Codecov Startup
     needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
-      - name: Install CLI
-        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }} 
-        run: |
-          make test_env.install_cli
-      - name: Run Startup
-        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }} 
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_ORG_TOKEN }}
-        run: |
-          codecovcli create-commit --fail-on-error
-          codecovcli create-report --fail-on-error
-      - name: Run Startup Staging
-        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
-        run: |
-          codecovcli -u ${{ secrets.CODECOV_STAGING_URL }} create-commit -t ${{ secrets.CODECOV_ORG_TOKEN_STAGING }} --fail-on-error
-          codecovcli -u ${{ secrets.CODECOV_STAGING_URL }} create-report -t ${{ secrets.CODECOV_ORG_TOKEN_STAGING }} --fail-on-error
-      - name: Run Startup QA
-        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
-        run: |
-          codecovcli -u ${{ secrets.CODECOV_QA_URL }} create-commit -t ${{ secrets.CODECOV_QA_TOKEN }} --fail-on-error
-          codecovcli -u ${{ secrets.CODECOV_QA_URL }} create-report -t ${{ secrets.CODECOV_QA_TOKEN }} --fail-on-error
-      - name: Run Startup Public QA
-        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
-        run: |
-          codecovcli -u ${{ secrets.CODECOV_PUBLIC_QA_URL }} create-commit -t ${{ secrets.CODECOV_PUBLIC_QA_TOKEN }} --fail-on-error
-          codecovcli -u ${{ secrets.CODECOV_PUBLIC_QA_URL }} create-report -t ${{ secrets.CODECOV_PUBLIC_QA_TOKEN }} --fail-on-error
+    uses: codecov/gha-workflows/.github/workflows/codecov-startup.yml@main
+    secrets: inherit
 
   ats:
     name: ATS
     needs: [build, codecovstartup]
-    runs-on: ubuntu-latest
-    if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }} 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Cache App
-        id: cache-app
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-api-app
-        with:
-          path: |
-            app.tar
-          key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ github.run_id }}
-      - name: Load built image
-        run: |
-          docker load --input app.tar
-          make tag.latest
-
-      - name: Install docker compose
-        run: |
-          sudo curl -SL https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
-      - name: Bring test env up
-        run: |
-          make test_env.up
-      - name: Prepare for tests
-        run: |
-          make test_env.prepare
-          make test_env.check_db
-      - name: Run Static Analysis
-        run: |
-          make test_env.static_analysis CODECOV_STATIC_TOKEN=${{ secrets.STATIC_TOKEN }}
-      - name: Run Label Analysis
-        run: |
-          make test_env.label_analysis CODECOV_STATIC_TOKEN=${{ secrets.STATIC_TOKEN }} TIMESERIES_ENABLED=false
-      - name: Run ATS
-        run: |
-          make test_env.ats CODECOV_UPLOAD_TOKEN=${{ secrets.CODECOV_ORG_TOKEN }}
+    if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
+    uses: codecov/gha-workflows/.github/workflows/run-ats.yml@main
+    secrets: inherit
+    with:
+      repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
 
   test:
     name: Test
     needs: [build, codecovstartup]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Cache App
-        id: cache-app
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-api-app
-        with:
-          path: |
-            app.tar
-          key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ github.run_id }}
-      - name: Load built image
-        run: |
-          docker load --input app.tar
-      - name: Install docker compose
-        run: |
-          sudo curl -SL https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
-      - name: Bring test env up
-        run: |
-          make test_env.up
-      - name: Prepare for tests
-        run: |
-          make test_env.prepare
-          make test_env.check_db
-      - name: Run unit tests
-        run: |
-          make test_env.run_unit
-      - name: Check for migration conflicts
-        run: |
-          make test_env.check-for-migration-conflicts
-      ## Don't upload on forks for now.
-      - name: upload using codecovcli
-        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }} 
-        run: |
-          make test_env.upload CODECOV_UPLOAD_TOKEN=${{ secrets.CODECOV_ORG_TOKEN }}
-      - name: upload using codecovcli staging
-        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }} 
-        run: |
-          make test_env.upload CODECOV_UPLOAD_TOKEN=${{ secrets.CODECOV_ORG_TOKEN_STAGING }} CODECOV_URL=${{ secrets.CODECOV_STAGING_URL }}
-      - name: upload using codecovcli qa
-        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
-        run: |
-          make test_env.upload CODECOV_UPLOAD_TOKEN=${{ secrets.CODECOV_QA_TOKEN }} CODECOV_URL=${{ secrets.CODECOV_QA_URL }}
-      - name: upload using codecovcli public qa
-        if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
-        run: |
-          make test_env.upload CODECOV_UPLOAD_TOKEN=${{ secrets.CODECOV_PUBLIC_QA_TOKEN }} CODECOV_URL=${{ secrets.CODECOV_PUBLIC_QA_URL }}
+    uses: codecov/gha-workflows/.github/workflows/run-tests.yml@main
+    secrets: inherit
+    with:
+      repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
 
   build-self-hosted:
     name: Build Self Hosted API
-    runs-on: ubuntu-latest
     needs: [build, test]
-    if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }} 
-    permissions:
-      contents: 'read'
-      id-token: 'write'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - id: "auth"
-        name: "Authenticate to Google Cloud"
-        uses: "google-github-actions/auth@v1.1.1"
-        with:
-          token_format: "access_token"
-          workload_identity_provider: ${{ secrets.CODECOV_GCP_WIDP }}
-          service_account: ${{ secrets.CODECOV_GCP_WIDSA }}
-
-      - name: Docker configuration
-        run: |-
-          echo ${{steps.auth.outputs.access_token}} | docker login -u oauth2accesstoken --password-stdin https://us-docker.pkg.dev
-
-      - name: Cache Requirements
-        id: cache-requirements
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-api-requirements
-        with:
-          path: |
-            requirements.tar
-          key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/docker/Dockerfile.requirements') }}
-          restore-keys: |
-            ${{ runner.os }}-api-${{ env.cache-name }}-
-
-      - name: Cache Self hosted
-        id: cache-self-hosted
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-api-self-hosted
-        with:
-          path: |
-            self-hosted-runtime.tar
-            self-hosted.tar
-          key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ github.run_id }}
-
-      - name: Load requirements from cache
-        if: ${{ steps.cache-requirements.outputs.cache-hit == 'true' }}
-        run: |
-          make load.requirements
-
-      - name: Build/pull requirements
-        if: ${{ steps.cache-requirements.outputs.cache-hit != 'true' }}
-        run: |
-          make build.requirements      
-
-      - name: Build self hosted
-        run: |
-          make build.self-hosted
-          make save.self-hosted
-
-      - name: Build self hosted runtime
-        run: |
-          make build.self-hosted-runtime
-          make save.self-hosted-runtime
+    uses: codecov/gha-workflows/.github/workflows/self-hosted.yml@main
+    secrets: inherit
+    with:
+      repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
 
   staging:
     name: Push Staging Image
     needs: [build, test]
-    if: ${{ github.event.pull_request.merged == true && github.head_ref == 'staging' && !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: 'read'
-      id-token: 'write'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Cache App
-        id: cache-app
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-api-app
-        with:
-          path: |
-            app.tar
-          key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ github.run_id }}
-      - name: Load built image
-        run: |
-          docker load --input app.tar
-      - id: "auth"
-        name: "Authenticate to Google Cloud"
-        uses: "google-github-actions/auth@v1.1.1"
-        with:
-          token_format: "access_token"
-          workload_identity_provider: ${{ secrets.CODECOV_GCP_WIDP }}
-          service_account: ${{ secrets.CODECOV_GCP_WIDSA }}
+    if: ${{ github.event_name == 'push' && github.event.ref == 'refs/heads/staging' && github.repository_owner == 'codecov' }}
+    uses: codecov/gha-workflows/.github/workflows/push-env.yml@main
+    secrets: inherit
+    with:
+      environment: staging
+      repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
 
-      - name: Docker configuration
-        run: |-
-          echo ${{steps.auth.outputs.access_token}} | docker login -u oauth2accesstoken --password-stdin https://us-docker.pkg.dev
-
-      - name: Push staging
-        run: |
-          make tag.staging
-          make push.staging
-      - name: Create Sentry release
-        uses: getsentry/action-release@v1
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.CODECOV_SENTRY_RELEASE_TOKEN }}
-          SENTRY_ORG: ${{ secrets.CODECOV_SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.CODECOV_API_SENTRY_PROJECT }}
-        with:
-          environment: staging
   production:
     name: Push Production Image
     needs: [ build, test ]
-    if: ${{ github.event.pull_request.merged == true && github.head_ref == 'main' && !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: 'read'
-      id-token: 'write'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Cache App
-        id: cache-app
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-api-app
-        with:
-          path: |
-            app.tar
-          key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ github.run_id }}
-      - name: Load built image
-        run: |
-          docker load --input app.tar
-          docker image ls -a
-      - id: "auth"
-        name: "Authenticate to Google Cloud"
-        uses: "google-github-actions/auth@v1.1.1"
-        with:
-          token_format: "access_token"
-          workload_identity_provider: ${{ secrets.CODECOV_GCP_WIDP }}
-          service_account: ${{ secrets.CODECOV_GCP_WIDSA }}
+    if: ${{ github.event_name == 'push' && github.event.ref == 'refs/heads/main' && github.repository_owner == 'codecov' }}
+    uses: codecov/gha-workflows/.github/workflows/push-env.yml@main
+    secrets: inherit
+    with:
+      environment: production
+      repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
 
-      - name: Docker configuration
-        run: |-
-          echo ${{steps.auth.outputs.access_token}} | docker login -u oauth2accesstoken --password-stdin https://us-docker.pkg.dev
-
-      - name: Push production
-        run: |
-          make tag.production
-          make tag.latest
-          make push.production
-          make push.latest
-      - name: Create Sentry release
-        uses: getsentry/action-release@v1
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.CODECOV_SENTRY_RELEASE_TOKEN }}
-          SENTRY_ORG: ${{ secrets.CODECOV_SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.CODECOV_API_SENTRY_PROJECT }}
-        with:
-          environment: production
   self-hosted:
     name: Push Self Hosted Image
     needs: [ build-self-hosted, test ]
-    if: ${{ github.event.pull_request.merged == true && github.head_ref == 'main' && !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: 'read'
-      id-token: 'write'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Cache Self hosted
-        id: cache-self-hosted
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-api-self-hosted
-        with:
-          path: |
-            self-hosted-runtime.tar
-            self-hosted.tar
-          key: ${{ runner.os }}-api-${{ env.cache-name }}-${{ github.run_id }}
-      - name: Load built image
-        run: |
-          docker load --input self-hosted-runtime.tar
-          docker load --input self-hosted.tar
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v1.14.1
-        with:
-          username: ${{ secrets.CODECOV_DEVOPS_DOCKER_USERNAME }}
-          password: ${{ secrets.CODECOV_DEVOPS_DOCKER_PASSWORD }}
-      - name: Push production
-        run: |
-          make tag.self-hosted-rolling
-          make push.self-hosted-rolling
+    secrets: inherit
+    if: ${{ github.event_name == 'push' && github.event.ref == 'refs/heads/main' && github.repository_owner == 'codecov' }}
+    uses: codecov/gha-workflows/.github/workflows/self-hosted.yml@main
+    with:
+      push_rolling: true
+      repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
