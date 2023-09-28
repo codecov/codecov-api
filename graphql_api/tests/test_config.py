@@ -13,6 +13,7 @@ class TestConfigType(GraphQLTestHelper, TestCase):
         GITLAB_ENTERPRISE_CLIENT_ID="Gitlab Enterprise",
         BITBUCKET_CLIENT_ID="Bitbucket",
         BITBUCKET_SERVER_CLIENT_ID="Bitbucket Server",
+        OKTA_OAUTH_CLIENT_ID="Okta",
     )
     def test_login_providers(self):
         data = self.gql_request("query { config { loginProviders }}")
@@ -25,6 +26,23 @@ class TestConfigType(GraphQLTestHelper, TestCase):
                     "GITLAB_ENTERPRISE",
                     "BITBUCKET",
                     "BITBUCKET_SERVER",
+                    "OKTA",
+                ],
+            },
+        }
+
+    @override_settings(
+        GITHUB_CLIENT_ID="Github",
+        GITHUB_ENTERPRISE_CLIENT_ID="Github Enterprise",
+        OKTA_OAUTH_CLIENT_ID="Okta",
+        DISABLE_GIT_BASED_LOGIN=True,
+    )
+    def test_login_providers_no_git(self):
+        data = self.gql_request("query { config { loginProviders }}")
+        assert data == {
+            "config": {
+                "loginProviders": [
+                    "OKTA",
                 ],
             },
         }

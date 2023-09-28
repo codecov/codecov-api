@@ -71,8 +71,8 @@ class User(BaseCodecovModel):
     is_staff = models.BooleanField(null=True, default=False)
     is_superuser = models.BooleanField(null=True, default=False)
     external_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    terms_agreement = models.BooleanField(null=True, default=False)
-    terms_agreement_at = DateTimeWithoutTZField(null=True)
+    terms_agreement = models.BooleanField(null=True, default=False, blank=True)
+    terms_agreement_at = DateTimeWithoutTZField(null=True, blank=True)
 
     REQUIRED_FIELDS = []
     USERNAME_FIELD = "external_id"
@@ -172,6 +172,7 @@ class Owner(models.Model):
         null=True,
         default=TrialStatus.NOT_STARTED.value,
     )
+    trial_fired_by = models.IntegerField(null=True)
     pretrial_users_count = models.SmallIntegerField(null=True, blank=True)
     free = models.SmallIntegerField(default=0)
     invoice_details = models.TextField(null=True)
@@ -479,6 +480,19 @@ class SentryUser(BaseCodecovModel):
     name = models.TextField(null=True)
 
 
+class OktaUser(BaseCodecovModel):
+    user = models.ForeignKey(
+        User,
+        null=False,
+        on_delete=models.CASCADE,
+        related_name="okta_user",
+    )
+    access_token = models.TextField(null=True)
+    okta_id = models.TextField(null=False, unique=True)
+    email = models.TextField(null=True)
+    name = models.TextField(null=True)
+
+
 class TokenTypeChoices(models.TextChoices):
     UPLOAD = "upload"
 
@@ -525,8 +539,6 @@ class OwnerProfile(BaseCodecovModel):
     default_org = models.ForeignKey(
         Owner, on_delete=models.CASCADE, null=True, related_name="profiles_with_default"
     )
-    terms_agreement = models.BooleanField(null=True)
-    terms_agreement_at = DateTimeWithoutTZField(null=True)
 
 
 class Session(models.Model):

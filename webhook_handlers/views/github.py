@@ -17,7 +17,6 @@ from core.models import Branch, Commit, Pull, Repository
 from services.archive import ArchiveService
 from services.billing import BillingService
 from services.redis_configuration import get_redis_connection
-from services.segment import BLANK_SEGMENT_USER_ID, SegmentService
 from services.task import TaskService
 from utils.config import get_config
 from webhook_handlers.constants import (
@@ -59,7 +58,6 @@ class GithubWebhookHandler(APIView):
     permission_classes = [AllowAny]
     redis = get_redis_connection()
 
-    segment_service = SegmentService()
     service_name = "github"
 
     def validate_signature(self, request):
@@ -408,13 +406,6 @@ class GithubWebhookHandler(APIView):
                 "Owner deleted app integration",
                 extra=dict(ownerid=owner.ownerid, github_webhook_event=self.event),
             )
-            self.segment_service.account_uninstalled_source_control_service_app(
-                owner.ownerid
-                if request.data["sender"]["type"] == "User"
-                else BLANK_SEGMENT_USER_ID,
-                owner.ownerid,
-                {"platform": "github"},
-            )
         else:
             if owner.integration_id is None:
                 owner.integration_id = request.data["installation"]["id"]
@@ -423,14 +414,6 @@ class GithubWebhookHandler(APIView):
             log.info(
                 "Triggering refresh task to sync repos",
                 extra=dict(ownerid=owner.ownerid, github_webhook_event=self.event),
-            )
-
-            self.segment_service.account_installed_source_control_service_app(
-                owner.ownerid
-                if request.data["sender"]["type"] == "User"
-                else BLANK_SEGMENT_USER_ID,
-                owner.ownerid,
-                {"platform": "github"},
             )
 
             TaskService().refresh(

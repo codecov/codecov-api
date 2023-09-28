@@ -36,8 +36,13 @@ type MissingHeadReport implements ResolverError {
   message: String!
 }
 
+type FirstPullRequest {
+  message: String!
+}
+
 union ComparisonResult =
     Comparison
+  | FirstPullRequest
   | MissingBaseCommit
   | MissingHeadCommit
   | MissingComparison

@@ -47,8 +47,7 @@ class GetIsCurrentUserAnAdminInteractor(BaseInteractor):
                     isAdmin = async_to_sync(_is_admin_on_provider)(owner, current_owner)
                     if isAdmin:
                         # save admin provider in admins list
-                        owner.admins.append(current_owner.ownerid)
-                        owner.save()
+                        owner.add_admin(current_owner)
                     return isAdmin or (current_owner.ownerid in admins)
                 except Exception as error:
                     print("Error Calling Admin Provider " + repr(error))

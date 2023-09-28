@@ -51,7 +51,7 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
-    "corsheaders.middleware.CorsMiddleware",
+    "codecov_auth.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -446,11 +446,9 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = get_config(
 CORS_ALLOWED_ORIGIN_REGEXES = []
 CORS_ALLOWED_ORIGINS = []
 
-GRAPHQL_PLAYGROUND = False
+GRAPHQL_PLAYGROUND = True
 
 UPLOAD_THROTTLING_ENABLED = True
-
-CANNY_SSO_PRIVATE_TOKEN = get_config("canny", "sso_private_token", default="")
 
 SENTRY_JWT_SHARED_SECRET = get_config(
     "sentry", "jwt_shared_secret", default=None
@@ -466,6 +464,15 @@ SENTRY_OAUTH_CLIENT_SECRET = get_config("sentry", "client_secret") or get_config
 )
 SENTRY_OIDC_SHARED_SECRET = get_config("sentry", "oidc_shared_secret") or get_config(
     "setup", "sentry", "oidc_shared_secret"
+)
+
+OKTA_OAUTH_CLIENT_ID = get_config("setup", "okta", "oauth_client_id")
+OKTA_OAUTH_CLIENT_SECRET = get_config("setup", "okta", "oauth_client_secret")
+OKTA_OAUTH_REDIRECT_URL = get_config("setup", "okta", "oauth_redirect_url")
+OKTA_ISS = get_config("setup", "okta", "iss", default=None)
+
+DISABLE_GIT_BASED_LOGIN = IS_ENTERPRISE and get_config(
+    "setup", "disable_git_based_login", default=False
 )
 
 # list of repo IDs that will use the new-style report builder

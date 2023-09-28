@@ -4,7 +4,7 @@ from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.admin.models import LogEntry
 from django.db.models.fields import BLANK_CHOICE_DASH
-from django.forms import CheckboxInput, Select
+from django.forms import Select
 from django.http import HttpRequest
 from django.shortcuts import redirect
 from django.utils.html import format_html
@@ -49,18 +49,6 @@ def impersonate_owner(self, request, queryset):
 impersonate_owner.short_description = "Impersonate the selected owner"
 
 
-class OwnerProfileInline(admin.TabularInline):
-    model = OwnerProfile
-    fk_name = "owner"
-    fields = ["terms_agreement", "terms_agreement_at"]
-
-    def has_change_permission(self, request, obj=None):
-        return True
-
-    def has_delete_permission(self, request, obj=None):
-        return False
-
-
 @admin.register(User)
 class UserAdmin(AdminMixin, admin.ModelAdmin):
     list_display = (
@@ -82,6 +70,8 @@ class UserAdmin(AdminMixin, admin.ModelAdmin):
         "name",
         "email",
         "is_staff",
+        "terms_agreement",
+        "terms_agreement_at",
     )
 
     def get_form(self, request, obj=None, change=False, **kwargs):
@@ -133,7 +123,7 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
     search_fields = ("username__iexact",)
     actions = [impersonate_owner]
     autocomplete_fields = ("bot",)
-    inlines = [OrgUploadTokenInline, OwnerProfileInline]
+    inlines = [OrgUploadTokenInline]
 
     readonly_fields = (
         "ownerid",
@@ -168,7 +158,6 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
         "plan_provider",
         "plan_user_count",
         "plan_activated_users",
-        "uses_invoice",
         "integration_id",
         "bot",
         "stripe_customer_id",
@@ -183,7 +172,6 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
         form.base_fields["plan"].widget = Select(
             choices=BLANK_CHOICE_DASH + PLANS_CHOICES
         )
-        form.base_fields["uses_invoice"].widget = CheckboxInput()
 
         is_superuser = request.user.is_superuser
 

@@ -1,5 +1,6 @@
 sha := $(shell git rev-parse --short=7 HEAD)
 long_sha := $(shell git rev-parse HEAD)
+merge_sha := $(shell git merge-base HEAD^ origin/main)
 release_version := `cat VERSION`
 build_date ?= $(shell git show -s --date=iso8601-strict --pretty=format:%cd $$sha)
 branch = $(shell git branch | grep \* | cut -f2 -d' ')
@@ -38,8 +39,9 @@ lint:
 	make lint.run
 
 lint.install:
+	python -m pip install --upgrade pip
 	echo "Installing..."
-	pip3 install -Iv black==22.3.0 isort
+	pip install -Iv black==22.3.0 isort
 
 lint.run:
 	black .
@@ -162,6 +164,7 @@ test_env.prepare:
 
 test_env.check_db:
 	docker-compose exec api make test_env.container_check_db
+	make test_env.check-for-migration-conflicts
 
 test_env.install_cli:
 	pip install codecov-cli
@@ -202,7 +205,10 @@ test_env.container_static_analysis:
 	codecovcli -u ${CODECOV_URL} static-analysis --token=${CODECOV_STATIC_TOKEN}
 
 test_env.container_label_analysis:
-	codecovcli -u ${CODECOV_URL} label-analysis --base-sha=$(shell git merge-base HEAD^ origin/main) --token=${CODECOV_STATIC_TOKEN}
+	$(shell codecovcli label-analysis --base-sha=${merge_sha} --token=${CODECOV_STATIC_TOKEN} --dry-run --dry-run-output-path=tests_to_run > /dev/null)
+	sed -i 's/--cov-context=test//g' tests_to_run
+	sed -i 's/\s\+/\n/g' tests_to_run
+	python -m pytest --cov=./ --cov-context=test `cat tests_to_run`
 
 test_env.container_ats:
 	codecovcli --codecov-yml-path=codecov_cli.yml do-upload --plugin pycoverage --plugin compress-pycoverage --flag smart-labels --fail-on-error

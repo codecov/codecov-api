@@ -1,4 +1,4 @@
-from django.test import override_settings
+from django.utils import timezone
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 
@@ -7,7 +7,7 @@ from codecov_auth.tests.factories import OwnerFactory, UserFactory
 
 class CurrentUserViewTests(APITestCase):
     def setUp(self):
-        self.user = UserFactory()
+        self.user = UserFactory(terms_agreement=True, terms_agreement_at=timezone.now())
         self.owner1 = OwnerFactory(user=self.user)
         self.owner2 = OwnerFactory(user=self.user)
         self.owner3 = OwnerFactory()
@@ -26,6 +26,10 @@ class CurrentUserViewTests(APITestCase):
             "email": self.user.email,
             "name": self.user.name,
             "external_id": str(self.user.external_id),
+            "terms_agreement": self.user.terms_agreement,
+            "terms_agreement_at": self.user.terms_agreement_at.strftime(
+                "%Y-%m-%dT%H:%M:%S.%fZ"
+            ),
         }
         assert len(ownerids) == 2
         assert self.owner1.ownerid in ownerids

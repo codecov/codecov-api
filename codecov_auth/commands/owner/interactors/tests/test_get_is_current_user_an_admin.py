@@ -17,6 +17,7 @@ class GetIsCurrentUserAnAdminInteractorTest(TransactionTestCase):
     def setUp(self):
         self.owner_has_admins = OwnerFactory(ownerid=0, admins=[2])
         self.owner_has_no_admins = OwnerFactory(ownerid=1, admins=[])
+        self.owner_null_admins = OwnerFactory(ownerid=9, admins=None)
 
     def test_user_admin_in_personal_org(self):
         current_user = self.owner_has_admins
@@ -77,6 +78,38 @@ class GetIsCurrentUserAnAdminInteractorTest(TransactionTestCase):
         isAdmin = async_to_sync(
             GetIsCurrentUserAnAdminInteractor(owner, current_user).execute
         )(owner, current_user)
+        assert current_user.ownerid in owner.admins
+        assert isAdmin == True
+
+    @patch(
+        "codecov_auth.commands.owner.interactors.get_is_current_user_an_admin.get_provider"
+    )
+    def test_is_admin_on_provider_only_once(self, mocked_get_adapter):
+        # Ensure duplicate ownerids won't be saved in admins upon multiple calls
+        current_user = OwnerFactory(ownerid=3)
+        owner = self.owner_has_no_admins
+        mocked_get_adapter.return_value = GetAdminProviderAdapter(result=True)
+        async_to_sync(GetIsCurrentUserAnAdminInteractor(owner, current_user).execute)(
+            owner, current_user
+        )
+        async_to_sync(GetIsCurrentUserAnAdminInteractor(owner, current_user).execute)(
+            owner, current_user
+        )
+        assert owner.admins == [3]
+        assert current_user.ownerid in owner.admins
+
+    @patch(
+        "codecov_auth.commands.owner.interactors.get_is_current_user_an_admin.get_provider"
+    )
+    def test_admin_on_provider_initially_is_null(self, mocked_get_adapter):
+        # Owner model defaults admins to null, check can handle first update
+        current_user = OwnerFactory(ownerid=3)
+        owner = self.owner_null_admins
+        mocked_get_adapter.return_value = GetAdminProviderAdapter(result=True)
+        isAdmin = async_to_sync(
+            GetIsCurrentUserAnAdminInteractor(owner, current_user).execute
+        )(owner, current_user)
+        assert owner.admins == [3]
         assert current_user.ownerid in owner.admins
         assert isAdmin == True
 

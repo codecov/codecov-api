@@ -13,18 +13,16 @@ from plan.constants import (
     PlanMarketingName,
     PlanName,
     PlanPrice,
+    TierName,
     TrialDaysAmount,
     TrialStatus,
 )
-from services.segment import SegmentService
 
 log = logging.getLogger(__name__)
 
 
 # TODO: Consider moving some of these methods to the billing directory as they overlap billing functionality
 class PlanService:
-    notifier_service = SegmentService()
-
     def __init__(self, current_org: Owner):
         """
         Initializes a plan service object with a plan. The plan will be a trial plan
@@ -59,7 +57,7 @@ class PlanService:
         self.current_org.save()
 
     @property
-    def plan_name(self) -> PlanName:
+    def plan_name(self) -> str:
         return self.plan_data.value
 
     @property
@@ -71,15 +69,15 @@ class PlanService:
         return self.current_org.pretrial_users_count or 1
 
     @property
-    def marketing_name(self) -> PlanMarketingName:
+    def marketing_name(self) -> str:
         return self.plan_data.marketing_name
 
     @property
-    def billing_rate(self) -> Optional[PlanBillingRate]:
+    def billing_rate(self) -> Optional[str]:
         return self.plan_data.billing_rate
 
     @property
-    def base_unit_price(self) -> PlanPrice:
+    def base_unit_price(self) -> int:
         return self.plan_data.base_unit_price
 
     @property
@@ -87,7 +85,7 @@ class PlanService:
         return self.plan_data.benefits
 
     @property
-    def monthly_uploads_limit(self) -> Optional[MonthlyUploadLimits]:
+    def monthly_uploads_limit(self) -> Optional[int]:
         """
         Property that returns monthly uploads limit based on your trial status
 
@@ -96,8 +94,12 @@ class PlanService:
         """
         return self.plan_data.monthly_uploads_limit
 
+    @property
+    def tier_name(self) -> str:
+        return self.plan_data.tier_name
+
     # Trial Data
-    def start_trial(self) -> None:
+    def start_trial(self, current_owner: Owner) -> None:
         """
         Method that starts trial on an organization if the trial_start_date
         is not empty.
@@ -122,16 +124,8 @@ class PlanService:
         self.current_org.pretrial_users_count = self.current_org.plan_user_count
         self.current_org.plan_user_count = TRIAL_PLAN_SEATS
         self.current_org.plan_auto_activate = True
+        self.current_org.trial_fired_by = current_owner.ownerid
         self.current_org.save()
-
-        self.notifier_service.trial_started(
-            org_ownerid=self.current_org.ownerid,
-            trial_details={
-                "trial_plan_name": self.current_org.plan,
-                "trial_start_date": self.current_org.trial_start_date,
-                "trial_end_date": self.current_org.trial_end_date,
-            },
-        )
 
     def cancel_trial(self) -> None:
         if not self.is_org_trialing:
@@ -162,14 +156,6 @@ class PlanService:
             self.current_org.trial_end_date = datetime.utcnow()
 
             self.current_org.save()
-            self.notifier_service.trial_ended(
-                org_ownerid=self.current_org.ownerid,
-                trial_details={
-                    "trial_plan_name": self.current_org.plan,
-                    "trial_start_date": self.current_org.trial_start_date,
-                    "trial_end_date": self.current_org.trial_end_date,
-                },
-            )
 
     @property
     def trial_status(self) -> TrialStatus:
@@ -184,7 +170,7 @@ class PlanService:
         return self.current_org.trial_end_date
 
     @property
-    def trial_total_days(self) -> Optional[TrialDaysAmount]:
+    def trial_total_days(self) -> Optional[int]:
         return self.plan_data.trial_days
 
     @property

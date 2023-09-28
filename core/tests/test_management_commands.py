@@ -115,9 +115,7 @@ def test_backfill_commits_command(mocker):
 
     # undrained queue
 
-    celery_redis.lpush(
-        "backfill_commits", "placeholder"
-    )  # mimic > 0 items in the queue
+    celery_redis.lpush("archive", "placeholder")  # mimic > 0 items in the queue
     call_command(
         "backfill_commits",
         stdout=StringIO(),
@@ -127,7 +125,7 @@ def test_backfill_commits_command(mocker):
 
     # noop - waits for queue to drain
     assert backfill_commits.mock_calls == []
-    celery_redis.delete("backfill_commits")
+    celery_redis.delete("archive")
 
     # 1st batch
 
@@ -139,8 +137,8 @@ def test_backfill_commits_command(mocker):
     )
 
     assert backfill_commits.mock_calls == [
-        mock.call(commitid=commit3.commitid),
-        mock.call(commitid=commit2.commitid),
+        mock.call(commit_id=commit3.id),
+        mock.call(commit_id=commit2.id),
     ]
 
     backfill_commits.reset_mock()
@@ -155,7 +153,7 @@ def test_backfill_commits_command(mocker):
     )
 
     assert backfill_commits.mock_calls == [
-        mock.call(commitid=commit1.commitid),
+        mock.call(commit_id=commit1.id),
     ]
 
     backfill_commits.reset_mock()
