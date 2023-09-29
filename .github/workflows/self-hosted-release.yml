@@ -10,13 +10,13 @@ jobs:
   create-release:
     name: Tag Release ${{ github.head_ref }} and Push Docker image to Docker Hub
     if: ${{ github.event.pull_request.merged == true && startsWith(github.head_ref, 'release/') && github.repository_owner == 'codecov' }}
-    uses: codecov/gha-workflows/.github/workflows/create-self-hosted-release.yml@main
+    uses: codecov/gha-workflows/.github/workflows/create-self-hosted-release.yml@v1.0.0
     secrets: inherit
 
   push-image:
     needs: [create-release]
     if: ${{ github.event.pull_request.merged == true && startsWith(github.head_ref, 'release/') && github.repository_owner == 'codecov' }}
-    uses: codecov/gha-workflows/.github/workflows/self-hosted.yml@main
+    uses: codecov/gha-workflows/.github/workflows/self-hosted.yml@v1.0.0
     secrets: inherit
     with:
       push_release: true

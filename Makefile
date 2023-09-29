@@ -78,6 +78,10 @@ build.app:
 		--build-arg BUILD_ENV=cloud
 
 build.self-hosted:
+	make build.self-hosted-base
+	make build.self-hosted-runtime
+
+build.self-hosted-base:
 	docker build -f docker/Dockerfile . \
 		-t ${DOCKERHUB_REPO}:latest-no-dependencies \
 		-t ${DOCKERHUB_REPO}:${VERSION}-no-dependencies \
@@ -106,7 +110,7 @@ tag.self-hosted-rolling:
 	docker tag ${DOCKERHUB_REPO}:${VERSION}-no-dependencies ${DOCKERHUB_REPO}:rolling_no_dependencies
 	docker tag ${DOCKERHUB_REPO}:${VERSION} ${DOCKERHUB_REPO}:rolling
 
-tag.self-hosted:
+tag.self-hosted-release:
 	docker tag ${DOCKERHUB_REPO}:${VERSION}-no-dependencies ${DOCKERHUB_REPO}:${release_version}_no_dependencies
 	docker tag ${DOCKERHUB_REPO}:${VERSION}-no-dependencies ${DOCKERHUB_REPO}:latest_calver_no_dependencies
 	docker tag ${DOCKERHUB_REPO}:${VERSION}-no-dependencies ${DOCKERHUB_REPO}:latest_stable_no_dependencies
@@ -118,6 +122,10 @@ load.requirements:
 	docker load --input requirements.tar
 	docker tag codecov/api-ci-requirements:${REQUIREMENTS_TAG} ${AR_REPO}:${REQUIREMENTS_TAG}
 
+load.self-hosted:
+	docker load --input self-hosted-runtime.tar
+	docker load --input self-hosted.tar
+
 save.app:
 	docker save -o app.tar ${AR_REPO}:${VERSION}
 
@@ -126,6 +134,10 @@ save.requirements:
 	docker save -o requirements.tar codecov/api-ci-requirements:${REQUIREMENTS_TAG}
 
 save.self-hosted:
+	make save.self-hosted-base
+	make save.self-hosted-runtime
+
+save.self-hosted-base:
 	docker save -o self-hosted.tar ${DOCKERHUB_REPO}:${VERSION}-no-dependencies
 
 save.self-hosted-runtime:
@@ -143,7 +155,7 @@ push.production:
 push.requirements:
 	docker push ${AR_REPO}:${REQUIREMENTS_TAG}
 
-push.self-hosted:
+push.self-hosted-release:
 	docker push ${DOCKERHUB_REPO}:${release_version}_no_dependencies
 	docker push ${DOCKERHUB_REPO}:latest_calver_no_dependencies
 	docker push ${DOCKERHUB_REPO}:latest_stable_no_dependencies
