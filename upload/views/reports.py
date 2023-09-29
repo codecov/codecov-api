@@ -40,6 +40,10 @@ class ReportViews(ListCreateAPIView, GetterMixin):
         instance = serializer.save(
             commit_id=commit.id,
         )
+        if repository.author.username == "codecov":
+            TaskService().preprocess_upload(
+                repository.repoid, commit.commitid, instance.code
+            )
         return instance
 
     def list(self, request: HttpRequest, service: str, repo: str, commit_sha: str):
