@@ -5,6 +5,7 @@ from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
 from reports.models import CommitReport, ReportResults
 from reports.tests.factories import ReportResultsFactory
+from services.task.task import TaskService
 from upload.views.uploads import CanDoCoverageUploadsPermission
 
 
@@ -19,6 +20,7 @@ def test_reports_get_not_allowed(client, mocker):
 
 
 def test_reports_post(client, db, mocker):
+    mocked_call = mocker.patch.object(TaskService, "preprocess_upload")
     repository = RepositoryFactory(
         name="the_repo", author__username="codecov", author__service="github"
     )
@@ -37,6 +39,7 @@ def test_reports_post(client, db, mocker):
     )
     assert response.status_code == 201
     assert CommitReport.objects.filter(commit_id=commit.id, code="code1").exists()
+    mocked_call.assert_called_with(repository.repoid, commit.commitid, "code1")
 
 
 def test_create_report_already_exists(client, db, mocker):
@@ -219,3 +222,23 @@ def test_report_results_get_unsuccessful(client, db, mocker):
     )
     assert response.status_code == 400
     assert response.json() == ["Report Results not found"]
+
+
+def test_not_called_preprocess_upload_task(client, db, mocker):
+    mocked_call = mocker.patch.object(TaskService, "preprocess_upload")
+    repository = RepositoryFactory(
+        name="the_repo", author__username="not_codecov", author__service="github"
+    )
+    commit = CommitFactory(repository=repository)
+    repository.save()
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION="token " + repository.upload_token)
+    url = reverse(
+        "new_upload.reports",
+        args=["github", "not_codecov::::the_repo", commit.commitid],
+    )
+    response = client.post(url, data={"code": "code1"})
+
+    assert response.status_code == 201
+    assert CommitReport.objects.filter(commit_id=commit.id, code="code1").exists()
+    mocked_call.assert_not_called()
