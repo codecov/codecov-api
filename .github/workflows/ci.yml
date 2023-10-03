@@ -38,6 +38,7 @@ jobs:
     with:
       repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
       codecov_cli_upload_args: '--plugin pycoverage --plugin compress-pycoverage --flag smart-labels'
+      app_container_name: api
 #  test:
 #    name: Test
 #    needs: [build]
