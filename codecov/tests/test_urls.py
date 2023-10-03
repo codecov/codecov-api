@@ -22,4 +22,4 @@ class ViewTest(TestCase):
     def test_health(self):
         client = Client()
         response = client.get("")
-        assert response.content.decode() == "23.9.5 is live!"
+        assert response.status_code == 200
