@@ -357,3 +357,13 @@ class TaskService(object):
                 commitid=commit_id,
             ),
         ).apply_async()
+
+    def preprocess_upload(self, repoid, commitid, report_code):
+        self._create_signature(
+            "app.tasks.upload.PreProcessUpload",
+            kwargs=dict(
+                repoid=repoid,
+                commitid=commitid,
+                report_code=report_code,
+            ),
+        )
