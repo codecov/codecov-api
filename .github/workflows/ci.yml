@@ -33,11 +33,11 @@ jobs:
     name: ATS
     needs: [build]
     if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
-    uses: codecov/gha-workflows/.github/workflows/run-ats.yml@v1.0.0
+    uses: codecov/gha-workflows/.github/workflows/run-ats.yml@feature/ats-action
     secrets: inherit
     with:
       repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
-
+      codecov_cli_upload_args: '--plugin pycoverage --plugin compress-pycoverage --flag smart-labels'
   test:
     name: Test
     needs: [build]
