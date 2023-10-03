@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+from django.core import signing
 from django.http.cookie import SimpleCookie
 from django.test import TestCase
 from django.urls import reverse
@@ -28,10 +29,7 @@ def test_get_bitbucket_redirect(client, settings, mocker):
     assert res.status_code == 302
     assert "_oauth_request_token" in res.cookies
     cookie = res.cookies["_oauth_request_token"]
-    assert (
-        cookie.value
-        == "dGVzdHk2cjJvZjZhamttcnVi|dGVzdHppYnc1cTAxc2NwbDhxZWV1cHpoOHU5eXU4aHo="
-    )
+    assert cookie.value
     assert cookie.get("domain") == settings.COOKIES_DOMAIN
     assert (
         res.url
@@ -122,7 +120,11 @@ def test_get_bitbucket_already_token(client, settings, mocker, db, mock_redis):
     url = reverse("bitbucket-login")
     client.cookies = SimpleCookie(
         {
-            "_oauth_request_token": "dGVzdDZ0bDNldnE3Yzh2dXlu|dGVzdGRtNjF0cHBiNXgwdGFtN25hZTNxYWpoY2Vweno="
+            "_oauth_request_token": signing.get_cookie_signer(
+                salt="_oauth_request_token"
+            ).sign(
+                "5XCHJ1AulIWMpL8j7/Rhh97fz67xFesXlIzqBHH6dh+f4/8DBKe6eeUTWLKLma3+kc6UPJYq2odDwrL/apsL0c6QZHlW7zyUfF0sQuVnb9t5q+KcJCaMFCRbcerY80Qz"
+            )
         }
     )
     res = client.get(
