@@ -1,7 +1,7 @@
 version: "3"
 
 services:
-  app:
+  api:
     image: ${API_DOCKER_REPO}:${API_DOCKER_VERSION}
     depends_on:
       - postgres
