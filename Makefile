@@ -182,7 +182,7 @@ test_env.install_cli:
 	pip install codecov-cli
 
 test_env.container_prepare:
-	apk add -U curl git build-base
+	apk add -U curl git build-base jq
 	make test_env.install_cli
 	git config --global --add safe.directory /app
 
@@ -217,12 +217,10 @@ test_env.container_static_analysis:
 	codecovcli static-analysis --token=${CODECOV_STATIC_TOKEN}
 
 test_env.container_label_analysis:
-	$(shell codecovcli label-analysis --base-sha=${merge_sha} --token=${CODECOV_STATIC_TOKEN} --dry-run > tests_to_run)
-	sed -i s/\"//g tests_to_run
-	sed -i s/ATS_TESTS_TO_RUN=//g tests_to_run
-	sed -i s/--cov-context=test//g tests_to_run
-	sed -i 's/\s\+/\n/g' tests_to_run
-	python -m pytest --cov=./ --cov-context=test `cat tests_to_run`
+	$(shell codecovcli label-analysis --base-sha=${merge_sha} --token=${CODECOV_STATIC_TOKEN} --dry-run --dry-run-output-path=tests_to_run > /dev/null)
+	jq -r '.ats_tests_to_run []' tests_to_run.json | sed s/\"//g > test_list
+	jq -r '.runner_options | join(" ")' tests_to_run.json | sed s/\"//g > args
+	python -m pytest --cov=./ `cat args` `cat test_list`
 
 test_env.container_ats:
 	codecovcli --codecov-yml-path=codecov_cli.yml do-upload --plugin pycoverage --plugin compress-pycoverage --flag smart-labels --fail-on-error
