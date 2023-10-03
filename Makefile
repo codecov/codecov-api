@@ -200,7 +200,7 @@ test_env.upload:
 	docker-compose -f docker-compose-test.yml exec api make test_env.container_upload CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN} CODECOV_URL=${CODECOV_URL}
 
 test_env.container_upload:
-	codecovcli -u ${CODECOV_URL} do-upload --flag unit-latest-uploader --flag unit  \
+	codecovcli -u ${CODECOV_URL} upload-process --flag unit-latest-uploader --flag unit  \
 	--coverage-files-search-exclude-folder=graphql_api/types/** \
 	--coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
 
@@ -223,7 +223,7 @@ test_env.container_label_analysis:
 	python -m pytest --cov=./ `cat args` `cat test_list`
 
 test_env.container_ats:
-	codecovcli --codecov-yml-path=codecov_cli.yml do-upload --plugin pycoverage --plugin compress-pycoverage --flag smart-labels --fail-on-error
+	codecovcli --codecov-yml-path=codecov_cli.yml upload-process --plugin pycoverage --plugin compress-pycoverage --flag smart-labels --fail-on-error
 
 test_env:
 	make test_env.up
