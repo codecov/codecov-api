@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, call, patch
 
 import pytest
 from django.conf import settings
+from django.test import override_settings
 from django.urls import reverse
 from rest_framework.exceptions import ValidationError
 from rest_framework.test import APIClient
@@ -231,6 +232,8 @@ def test_uploads_post(mock_metrics, db, mocker, mock_redis):
             "state": "uploaded",
             "flags": ["flag1", "flag2"],
             "version": "version",
+            # this cannot be passed in by default
+            "storage_path": "this/path/should/be/ingored.txt",
         },
     )
     response_json = response.json()
@@ -286,6 +289,60 @@ def test_uploads_post(mock_metrics, db, mocker, mock_redis):
     )
     presigned_put_mock.assert_called_with("archive", upload.storage_path, 10)
     upload_task_mock.assert_called()
+
+
+@override_settings(SHELTER_SHARED_SECRET="shelter-shared-secret")
+def test_uploads_post_shelter(db, mocker, mock_redis):
+    mocker.patch.object(
+        CanDoCoverageUploadsPermission, "has_permission", return_value=True
+    )
+    presigned_put_mock = mocker.patch(
+        "services.archive.StorageService.create_presigned_put",
+        return_value="presigned put",
+    )
+    upload_task_mock = mocker.patch(
+        "upload.views.uploads.UploadViews.trigger_upload_task", return_value=True
+    )
+
+    repository = RepositoryFactory(
+        name="the_repo", author__username="codecov", author__service="github"
+    )
+    commit = CommitFactory(repository=repository)
+    commit_report = CommitReport.objects.create(commit=commit, code="code")
+    repository.save()
+    commit_report.save()
+
+    owner = repository.author
+    client = APIClient()
+    client.force_authenticate(user=owner)
+    url = reverse(
+        "new_upload.uploads",
+        args=[
+            "github",
+            "codecov::::the_repo",
+            commit.commitid,
+            commit_report.code,
+        ],
+    )
+    response = client.post(
+        url,
+        {
+            "state": "uploaded",
+            "flags": ["flag1", "flag2"],
+            "version": "version",
+            "storage_path": "shelter/test/path.txt",
+        },
+        headers={
+            "X-Shelter-Token": "shelter-shared-secret",
+        },
+    )
+    upload = ReportSession.objects.filter(
+        report_id=commit_report.id, upload_extras={"format_version": "v1"}
+    ).first()
+    assert response.status_code == 201
+    archive_service = ArchiveService(repository)
+    assert upload.storage_path == "shelter/test/path.txt"
+    presigned_put_mock.assert_called_with("archive", upload.storage_path, 10)
 
 
 def test_deactivated_repo(db, mocker, mock_redis):
