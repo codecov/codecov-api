@@ -1,11 +1,9 @@
-import asyncio
-import jwt
 import logging
 import re
-import uuid
 from datetime import timedelta
 from json import dumps
 
+import jwt
 from asgiref.sync import async_to_sync
 from cerberus import Validator
 from django.conf import settings
@@ -25,6 +23,7 @@ from services.analytics import AnalyticsService
 from services.repo_providers import RepoProviderService
 from services.task import TaskService
 from upload.tokenless.tokenless import TokenlessUploadHandler
+from utils import is_uuid
 from utils.config import get_config
 from utils.encryption import encryptor
 
@@ -99,8 +98,8 @@ def parse_params(data):
         "token": {
             "type": "string",
             "anyof": [
-                {"regex": r"^[0-9a-f]{8}(-?[0-9a-f]{4}){3}-?[0-9a-f]{12}$"},
-                {"regex": r"(^[A-Za-z0-9-_]*\.[A-Za-z0-9-_]*\.[A-Za-z0-9-_]*$)"},
+                {"regex": r"^[0-9a-f]{8}(-?[0-9a-f]{4}){3}-?[0-9a-f]{12}$"},  # UUID
+                {"regex": r"(^[A-Za-z0-9-_]*\.[A-Za-z0-9-_]*\.[A-Za-z0-9-_]*$)"},  # JWT
                 {"allowed": list(global_tokens.keys())},
             ],
         },
@@ -214,23 +213,15 @@ def get_repo_with_github_actions_oidc_token(token):
         token,
         signing_key.key,
         algorithms=["RS256"],
-        audience=get_config("setup", "codecov_url")
+        audience=get_config("setup", "codecov_url"),
     )
     repo = str(data.get("repository")).split("/")[-1]
     repository = Repository.objects.get(
         author__service=service,
         name=repo,
-        author__username=data.get("repository_owner")
+        author__username=data.get("repository_owner"),
     )
     return repository
-
-
-def is_uuid(token):
-    try:
-        uuid.UUID(str(token))
-        return True
-    except ValueError:
-        return False
 
 
 def determine_repo_for_upload(upload_params):
