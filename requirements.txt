@@ -400,6 +400,7 @@ typing-extensions==4.6.2
     # via
     #   ariadne
     #   shared
+    #   starlette
 uritemplate==4.1.1
     # via drf-spectacular
 urllib3==1.26.13
