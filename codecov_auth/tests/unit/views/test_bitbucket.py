@@ -118,13 +118,14 @@ def test_get_bitbucket_already_token(client, settings, mocker, db, mock_redis):
     settings.CODECOV_DASHBOARD_URL = "dashboard.value"
     settings.COOKIE_SECRET = "aaaaa"
     url = reverse("bitbucket-login")
+    oauth_request_token = (
+        "dGVzdDZ0bDNldnE3Yzh2dXlu|dGVzdGRtNjF0cHBiNXgwdGFtN25hZTNxYWpoY2Vweno="
+    )
     client.cookies = SimpleCookie(
         {
             "_oauth_request_token": signing.get_cookie_signer(
                 salt="_oauth_request_token"
-            ).sign(
-                "5XCHJ1AulIWMpL8j7/Rhh97fz67xFesXlIzqBHH6dh+f4/8DBKe6eeUTWLKLma3+kc6UPJYq2odDwrL/apsL0c6QZHlW7zyUfF0sQuVnb9t5q+KcJCaMFCRbcerY80Qz"
-            )
+            ).sign(encryptor.encode(oauth_request_token).decode())
         }
     )
     res = client.get(
