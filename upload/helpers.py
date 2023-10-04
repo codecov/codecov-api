@@ -240,9 +240,9 @@ def determine_repo_for_upload(upload_params):
         elif service == "github-actions":
             try:
                 repository = get_repo_with_github_actions_oidc_token(token)
-            except PyJWTError as e:
+            except PyJWTError:
                 raise ValidationError(
-                    f"Could not validate upload request using Github token: {e}"
+                    "Could not validate upload request using Github token"
                 )
     elif service:
         if using_global_token:
