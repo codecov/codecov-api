@@ -20,11 +20,11 @@ jobs:
 
   lint:
     name: Run Lint
-    uses: codecov/gha-workflows/.github/workflows/lint.yml@v1.0.0
+    uses: codecov/gha-workflows/.github/workflows/lint.yml@v1.2.0
 
   build:
     name: Build API
-    uses: codecov/gha-workflows/.github/workflows/build-app.yml@v1.0.0
+    uses: codecov/gha-workflows/.github/workflows/build-app.yml@v1.2.0
     secrets: inherit
     with:
       repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
@@ -33,54 +33,54 @@ jobs:
     name: ATS
     needs: [build]
     if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
-    uses: codecov/gha-workflows/.github/workflows/run-ats.yml@feature/ats-action
+    uses: codecov/gha-workflows/.github/workflows/run-ats.yml@v1.2.0
     secrets: inherit
     with:
       repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
       codecov_cli_upload_args: '--plugin pycoverage --plugin compress-pycoverage --flag smart-labels'
       app_container_name: api
-#  test:
-#    name: Test
-#    needs: [build]
-#    uses: codecov/gha-workflows/.github/workflows/run-tests.yml@v1.0.0
-#    secrets: inherit
-#    with:
-#      repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
-#
-#  build-self-hosted:
-#    name: Build Self Hosted API
-#    needs: [build, test]
-#    uses: codecov/gha-workflows/.github/workflows/self-hosted.yml@v1.0.0
-#    secrets: inherit
-#    with:
-#      repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
-#
-#  staging:
-#    name: Push Staging Image
-#    needs: [build, test]
-#    if: ${{ github.event_name == 'push' && github.event.ref == 'refs/heads/staging' && github.repository_owner == 'codecov' }}
-#    uses: codecov/gha-workflows/.github/workflows/push-env.yml@v1.0.0
-#    secrets: inherit
-#    with:
-#      environment: staging
-#      repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
-#
-#  production:
-#    name: Push Production Image
-#    needs: [ build, test ]
-#    if: ${{ github.event_name == 'push' && github.event.ref == 'refs/heads/main' && github.repository_owner == 'codecov' }}
-#    uses: codecov/gha-workflows/.github/workflows/push-env.yml@v1.0.0
-#    secrets: inherit
-#    with:
-#      environment: production
-#      repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
-#
-#  self-hosted:
-#    name: Push Self Hosted Image
-#    needs: [ build-self-hosted, test ]
-#    secrets: inherit
-#    if: ${{ github.event_name == 'push' && github.event.ref == 'refs/heads/main' && github.repository_owner == 'codecov' }}
-#    uses: codecov/gha-workflows/.github/workflows/self-hosted.yml@v1.0.0
-#    with:
-#      push_rolling: true
-#      repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
+  test:
+    name: Test
+    needs: [build]
+    uses: codecov/gha-workflows/.github/workflows/run-tests.yml@v1.2.0
+    secrets: inherit
+    with:
+      repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
+
+  build-self-hosted:
+    name: Build Self Hosted API
+    needs: [build, test]
+    uses: codecov/gha-workflows/.github/workflows/self-hosted.yml@v1.2.0
+    secrets: inherit
+    with:
+      repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
+
+  staging:
+    name: Push Staging Image
+    needs: [build, test]
+    if: ${{ github.event_name == 'push' && github.event.ref == 'refs/heads/staging' && github.repository_owner == 'codecov' }}
+    uses: codecov/gha-workflows/.github/workflows/push-env.yml@v1.2.0
+    secrets: inherit
+    with:
+      environment: staging
+      repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
+
+  production:
+    name: Push Production Image
+    needs: [ build, test ]
+    if: ${{ github.event_name == 'push' && github.event.ref == 'refs/heads/main' && github.repository_owner == 'codecov' }}
+    uses: codecov/gha-workflows/.github/workflows/push-env.yml@v1.2.0
+    secrets: inherit
+    with:
+      environment: production
+      repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
+
+  self-hosted:
+    name: Push Self Hosted Image
+    needs: [ build-self-hosted, test ]
+    secrets: inherit
+    if: ${{ github.event_name == 'push' && github.event.ref == 'refs/heads/main' && github.repository_owner == 'codecov' }}
+    uses: codecov/gha-workflows/.github/workflows/self-hosted.yml@v1.2.0
+    with:
+      push_rolling: true
+      repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
