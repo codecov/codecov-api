@@ -1,12 +1,13 @@
 import hashlib
 from typing import List, Union
 
-from ariadne import ObjectType, convert_kwargs_to_snake_case
+from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
 from shared.reports.types import ReportTotals
 from shared.torngit.exceptions import TorngitClientError
 
 from codecov.db import sync_to_async
 from graphql_api.types.errors import ProviderError, UnknownPath
+from graphql_api.types.errors.errors import UnknownFlags
 from graphql_api.types.segment_comparison.segment_comparison import SegmentComparisons
 from services.comparison import Comparison, MissingComparisonReport, Segment
 from services.profiling import ProfilingSummary
@@ -138,3 +139,14 @@ def resolve_is_critical_file(impacted_file: ImpactedFile, info) -> bool:
         return base_name in critical_filenames or head_name in critical_filenames
     else:
         return False
+
+
+impacted_files_result_bindable = UnionType("ImpactedFilesResult")
+
+
+@impacted_files_result_bindable.type_resolver
+def resolve_files_result_type(res, *_):
+    if isinstance(res, UnknownFlags):
+        return "UnknownFlags"
+    elif isinstance(res, type({"results": List})):
+        return "ImpactedFiles"
