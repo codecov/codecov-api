@@ -39,7 +39,7 @@ class ReportMixin:
             service=service,
             owner=owner,
             repo=repo,
-            commit_sha=commit.commitid,
+            commit=commit,
         )
         return commit_file_url
 
