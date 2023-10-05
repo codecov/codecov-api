@@ -1,5 +1,6 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
+import pytest
 from django.conf import settings
 from django.test import TestCase
 from shared.reports.resources import Report, ReportFile, ReportLine
@@ -300,12 +301,16 @@ class TestProviderPath(TestCase):
         assert provider_path_exists("foo/bar", self.commit, self.owner) == None
 
 
+@pytest.mark.usefixtures("sample_report")
 class TestPathMisc(TestCase):
     def setUp(self):
         self.service = "gh"
         self.owner = "marquet"
         self.repo = "yios"
         self.commit_sha = "540feb1e8c5d39b714c43874d0aa9da02ad257b7"
+        self.commit = MagicMock(
+            commitid=self.commit_sha, full_report=self.sample_report
+        )
 
     def test_dashboard_commit_file_url_path_none(self):
         path = None
@@ -314,7 +319,7 @@ class TestPathMisc(TestCase):
             service=self.service,
             owner=self.owner,
             repo=self.repo,
-            commit_sha=self.commit_sha,
+            commit=self.commit,
         )
         assert (
             commit_file_url
@@ -328,91 +333,49 @@ class TestPathMisc(TestCase):
             service=self.service,
             owner=self.owner,
             repo=self.repo,
-            commit_sha=self.commit_sha,
+            commit=self.commit,
         )
         assert (
             commit_file_url
             == f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.owner}/{self.repo}/commit/{self.commit_sha}/tree/"
         )
 
-    def test_dashboard_commit_file_url_path_only_dirs(self):
-        path = "folder/to/subfolder"
+    def test_dashboard_commit_file_nonexistent_path(self):
+        path = "path/not/in/report"
         commit_file_url = dashboard_commit_file_url(
             path=path,
             service=self.service,
             owner=self.owner,
             repo=self.repo,
-            commit_sha=self.commit_sha,
+            commit=self.commit,
         )
         assert (
             commit_file_url
             == f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.owner}/{self.repo}/commit/{self.commit_sha}/tree/{path}"
         )
 
-    def test_dashboard_commit_file_url_path_incomplete_dirs(self):
-        path = "folder/to/subf"
+    def test_dashboard_commit_file_not_in_report(self):
+        path = "foo/file2.py"
         commit_file_url = dashboard_commit_file_url(
             path=path,
             service=self.service,
             owner=self.owner,
             repo=self.repo,
-            commit_sha=self.commit_sha,
+            commit=self.commit,
         )
         assert (
             commit_file_url
             == f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.owner}/{self.repo}/commit/{self.commit_sha}/tree/{path}"
         )
 
-    def test_dashboard_commit_file_url_path_hidden_dirs(self):
-        path = ".git/another-folder"
+    def test_dashboard_commit_file_in_report(self):
+        path = "foo/file1.py"
         commit_file_url = dashboard_commit_file_url(
             path=path,
             service=self.service,
             owner=self.owner,
             repo=self.repo,
-            commit_sha=self.commit_sha,
-        )
-        assert (
-            commit_file_url
-            == f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.owner}/{self.repo}/commit/{self.commit_sha}/tree/{path}"
-        )
-
-    def test_dashboard_commit_file_url_path_hidden_dirs_at_end_of_string(self):
-        path = ".git/another-folder/.another-hidden-folder"
-        commit_file_url = dashboard_commit_file_url(
-            path=path,
-            service=self.service,
-            owner=self.owner,
-            repo=self.repo,
-            commit_sha=self.commit_sha,
-        )
-        assert (
-            commit_file_url
-            == f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.owner}/{self.repo}/commit/{self.commit_sha}/tree/{path}"
-        )
-
-    def test_dashboard_commit_file_url_path_dir_and_filename(self):
-        path = "folder/to/subfolder/and/file.js"
-        commit_file_url = dashboard_commit_file_url(
-            path=path,
-            service=self.service,
-            owner=self.owner,
-            repo=self.repo,
-            commit_sha=self.commit_sha,
-        )
-        assert (
-            commit_file_url
-            == f"{settings.CODECOV_DASHBOARD_URL}/{self.service}/{self.owner}/{self.repo}/commit/{self.commit_sha}/blob/{path}"
-        )
-
-    def test_dashboard_commit_file_url_path_with_special_characters_and_filename(self):
-        path = "foo-asd/asdfe/hasd*1@^$/bar.js"
-        commit_file_url = dashboard_commit_file_url(
-            path=path,
-            service=self.service,
-            owner=self.owner,
-            repo=self.repo,
-            commit_sha=self.commit_sha,
+            commit=self.commit,
         )
         assert (
             commit_file_url
