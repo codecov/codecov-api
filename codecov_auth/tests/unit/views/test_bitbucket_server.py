@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 import pytest
+from django.core import signing
 from django.http.cookie import SimpleCookie
 from django.urls import reverse
 from shared.torngit.exceptions import TorngitClientGeneralError
@@ -91,9 +92,14 @@ def test_get_bbs_already_token(client, settings, mocker, db, mock_redis):
     )
 
     url = reverse("bbs-login")
+    oauth_request_token = (
+        "dGVzdDZ0bDNldnE3Yzh2dXlu|dGVzdGRtNjF0cHBiNXgwdGFtN25hZTNxYWpoY2Vweno="
+    )
     client.cookies = SimpleCookie(
         {
-            "_oauth_request_token": "dGVzdDZ0bDNldnE3Yzh2dXlu|dGVzdGRtNjF0cHBiNXgwdGFtN25hZTNxYWpoY2Vweno="
+            "_oauth_request_token": signing.get_cookie_signer(
+                salt="_oauth_request_token"
+            ).sign(encryptor.encode(oauth_request_token).decode())
         }
     )
     res = client.get(
