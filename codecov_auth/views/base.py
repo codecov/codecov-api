@@ -221,7 +221,10 @@ class LoginMixin(object):
         self._check_user_count_limitations(user_dict["user"])
         owner, is_new_user = self._get_or_create_owner(user_dict, request)
         fields_to_update = []
-        if user_dict.get("is_student") != owner.student:
+        if (
+            get_config(self.service, "student_disabled", default=False)
+            and user_dict.get("is_student") != owner.student
+        ):
             owner.student = user_dict.get("is_student")
             if owner.student_created_at is None:
                 owner.student_created_at = timezone.now()
