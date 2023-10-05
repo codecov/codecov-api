@@ -5,6 +5,7 @@ from datetime import timedelta
 from json import dumps
 
 from asgiref.sync import async_to_sync
+from celery import chain, signature
 from cerberus import Validator
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
@@ -597,14 +598,27 @@ def dispatch_upload_task(task_arguments, repository, redis):
         timezone.now().timestamp(),
     )
 
-    # Send task to worker
-    TaskService().upload(
+    upload_sig = TaskService().upload_signature(
         repoid=repository.repoid,
         commitid=task_arguments.get("commit"),
         report_code=task_arguments.get("report_code"),
-        countdown=max(
-            countdown, int(get_config("setup", "upload_processing_delay") or 0)
-        ),
+        # this prevents the results of the notify task (below) from being
+        # passed as args to this upload task
+        immutable=True,
+    )
+
+    # notify early with a "processing" indicator and then
+    # start processing the upload
+    TaskService().notify_signature(
+        repoid=repository.repoid,
+        commitid=task_arguments.get("commit"),
+        empty_upload="processing",
+    ).apply_async(
+        link=upload_sig.set(
+            countdown=max(
+                countdown, int(get_config("setup", "upload_processing_delay") or 0)
+            ),
+        )
     )
 
 
