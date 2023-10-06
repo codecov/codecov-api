@@ -1,9 +1,9 @@
 from django.contrib.auth.models import AnonymousUser
 
+from codecov.commands.exceptions import MissingService
 from core.commands.commit import CommitCommands
 
 from ..base import BaseCommand, BaseInteractor
-from codecov.commands.exceptions import MissingService
 
 
 def test_base_command():
