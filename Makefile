@@ -169,13 +169,13 @@ push.self-hosted-rolling:
 
 test_env.up:
 	env | grep GITHUB > .testenv; true
-	TIMESERIES_ENABLED=${TIMESERIES_ENABLED} docker-compose -f docker-compose-test.yml up -d
+	TIMESERIES_ENABLED=${TIMESERIES_ENABLED} docker-compose up -d
 
 test_env.prepare:
-	docker-compose -f docker-compose-test.yml exec api make test_env.container_prepare
+	docker-compose exec api make test_env.container_prepare
 
 test_env.check_db:
-	docker-compose -f docker-compose-test.yml exec api make test_env.container_check_db
+	docker-compose exec api make test_env.container_check_db
 	make test_env.check-for-migration-conflicts
 
 test_env.install_cli:
@@ -191,13 +191,13 @@ test_env.container_check_db:
 	while ! nc -vz timescale 5432; do sleep 1; echo "waiting for timescale"; done
 
 test_env.run_unit:
-	docker-compose -f docker-compose-test.yml exec api make test.unit
+	docker-compose exec api make test.unit
 
 test_env.check-for-migration-conflicts:
-	docker-compose -f docker-compose-test.yml exec api python manage.py check_for_migration_conflicts
+	docker-compose exec api python manage.py check_for_migration_conflicts
 
 test_env.upload:
-	docker-compose -f docker-compose-test.yml exec api make test_env.container_upload CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN} CODECOV_URL=${CODECOV_URL}
+	docker-compose exec api make test_env.container_upload CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN} CODECOV_URL=${CODECOV_URL}
 
 test_env.container_upload:
 	codecovcli -u ${CODECOV_URL} upload-process --flag unit-latest-uploader --flag unit  \
@@ -205,16 +205,16 @@ test_env.container_upload:
 	--coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
 
 test_env.static_analysis:
-	docker-compose -f docker-compose-test.yml exec api make test_env.container_static_analysis CODECOV_STATIC_TOKEN=${CODECOV_STATIC_TOKEN}
+	docker-compose exec api make test_env.container_static_analysis CODECOV_STATIC_TOKEN=${CODECOV_STATIC_TOKEN}
 
 test_env.label_analysis:
-	docker-compose -f docker-compose-test.yml exec api make test_env.container_label_analysis CODECOV_STATIC_TOKEN=${CODECOV_STATIC_TOKEN}
+	docker-compose exec api make test_env.container_label_analysis CODECOV_STATIC_TOKEN=${CODECOV_STATIC_TOKEN}
 
 test_env.ats:
-	docker-compose -f docker-compose-test.yml exec api make test_env.container_ats CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN}
+	docker-compose exec api make test_env.container_ats CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN}
 
 test_env.container_static_analysis:
-	codecovcli static-analysis --token=${CODECOV_STATIC_TOKEN}
+	codecovcli -u ${CODECOV_URL} static-analysis --token=${CODECOV_STATIC_TOKEN}
 
 test_env.container_label_analysis:
 	$(shell codecovcli label-analysis --base-sha=${merge_sha} --token=${CODECOV_STATIC_TOKEN} --dry-run --dry-run-output-path=tests_to_run > /dev/null)
