@@ -195,6 +195,7 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             repository=self.repository,
             title="dummy-first-pr",
             author=self.owner,
+            compared_to=None,
         )
 
         res = self.fetch_one_pull_request(first_pr.pullid)
