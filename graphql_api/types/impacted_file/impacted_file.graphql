@@ -14,3 +14,11 @@ type ImpactedFile {
   hashedPath: String!
   segments(filters: SegmentsFilters): SegmentsResult!
 }
+
+type ImpactedFiles {
+  results: [ImpactedFile]!
+}
+
+union ImpactedFilesResult =
+    ImpactedFiles
+  | UnknownFlags
