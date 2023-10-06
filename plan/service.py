@@ -1,22 +1,24 @@
 import logging
+from dataclasses import asdict
 from datetime import datetime, timedelta
 from typing import List, Optional
 
 from codecov.commands.exceptions import ValidationError
 from codecov_auth.models import Owner
 from plan.constants import (
+    BASIC_PLAN_REPRESENTATION,
     FREE_PLAN_REPRESENTATIONS,
+    LITE_PLAN_REPRESENTATIONS,
+    PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
+    SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
     TRIAL_PLAN_SEATS,
     USER_PLAN_REPRESENTATIONS,
-    MonthlyUploadLimits,
-    PlanBillingRate,
-    PlanMarketingName,
+    PlanData,
     PlanName,
-    PlanPrice,
-    TierName,
     TrialDaysAmount,
     TrialStatus,
 )
+from services import sentry
 
 log = logging.getLogger(__name__)
 
@@ -97,6 +99,26 @@ class PlanService:
     @property
     def tier_name(self) -> str:
         return self.plan_data.tier_name
+
+    @property
+    def available_plans(self) -> List[PlanData]:
+        available_plans = []
+        available_plans.append(BASIC_PLAN_REPRESENTATION)
+
+        if sentry.is_sentry_user(self.current_org):
+            available_plans += SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values()
+        else:
+            available_plans += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
+
+        # If you're trialing or have trialed and <= 10 users, or belong to the lite plan
+        if (
+            self.trial_status == TrialStatus.ONGOING.value
+            or self.trial_status == TrialStatus.EXPIRED.value
+            or self.plan_name in LITE_PLAN_REPRESENTATIONS
+        ) and self.plan_user_count <= 10:
+            available_plans += LITE_PLAN_REPRESENTATIONS.values()
+
+        return available_plans
 
     # Trial Data
     def start_trial(self, current_owner: Owner) -> None:
