@@ -54,10 +54,11 @@ def is_first_pull_request(pull: Pull):
 
 @pull_bindable.field("compareWithBase")
 async def resolve_compare_with_base(pull, info, **kwargs):
-    if await is_first_pull_request(pull):
-        return FirstPullRequest()
     if not pull.compared_to:
-        return MissingBaseCommit()
+        if await is_first_pull_request(pull):
+            return FirstPullRequest()
+        else:
+            return MissingBaseCommit()
     if not pull.head:
         return MissingHeadCommit()
 
