@@ -51,6 +51,7 @@ jobs:
     uses: codecov/gha-workflows/.github/workflows/run-tests.yml@v1.0.0
     secrets: inherit
     with:
+      run_integration: false
       repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
 
   build-self-hosted:
