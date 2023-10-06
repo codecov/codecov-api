@@ -23,6 +23,7 @@ class WrappedException:
             exceptions.Unauthorized: "UnauthorizedError",
             exceptions.NotFound: "NotFoundError",
             exceptions.ValidationError: "ValidationError",
+            exceptions.MissingService: "MissingServiceError",
         }
         type_exception = type(self.exception)
         return error_to_graphql_type.get(type_exception, None)

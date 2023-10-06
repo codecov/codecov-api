@@ -15,6 +15,7 @@ ALLOWED_SERVICES = [
     "gitlab_enterprise",
     "bbs",
     "bitbucket_server",
+    "",
 ]
 
 service_regex = "|".join(ALLOWED_SERVICES)

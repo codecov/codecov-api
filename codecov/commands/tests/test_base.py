@@ -3,6 +3,7 @@ from django.contrib.auth.models import AnonymousUser
 from core.commands.commit import CommitCommands
 
 from ..base import BaseCommand, BaseInteractor
+from codecov.commands.exceptions import MissingService
 
 
 def test_base_command():
@@ -18,3 +19,10 @@ def test_base_command():
     # test get_command
     command_command = command.get_command("commit")
     assert isinstance(command_command, CommitCommands)
+
+
+def test_base_interactor_with_missing_required_service():
+    try:
+        BaseInteractor(None, None)
+    except Exception as e:
+        assert isinstance(e, MissingService)
