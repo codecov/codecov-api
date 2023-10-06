@@ -121,25 +121,19 @@ def is_subpath(full_path: str, subpath: str):
     return full_path.startswith(f"{subpath}/") or full_path == subpath
 
 
-# Regex that separates string into 2 groups, taken from https://stackoverflow.com/a/33021907
-def calculate_path_file_and_dir_groups(path: str) -> tuple[str, str]:
-    result = re.search(r"((?:[^/]*/)*)(.*)", path)
-    return result.groups()
-
-
-def is_file(path) -> bool:
-    (path, filename) = calculate_path_file_and_dir_groups(path=path)
-    return True if "." in filename and filename[0] != "." else False
-
-
 def dashboard_commit_file_url(
-    path: Optional[str], service: str, owner: str, repo: str, commit_sha: str
+    path: Optional[str],
+    service: str,
+    owner: str,
+    repo: str,
+    commit: Commit,
 ) -> str:
     if path is None:
         path = ""
-    is_path_a_file = is_file(path=path)
-    commit_path = f"blob/{path}" if is_path_a_file else f"tree/{path}"
-    return f"{settings.CODECOV_DASHBOARD_URL}/{service}/{owner}/{repo}/commit/{commit_sha}/{commit_path}"
+    report = commit.full_report
+    is_file = report and path in report.files
+    commit_path = f"blob/{path}" if is_file else f"tree/{path}"
+    return f"{settings.CODECOV_DASHBOARD_URL}/{service}/{owner}/{repo}/commit/{commit.commitid}/{commit_path}"
 
 
 class ReportPaths:
