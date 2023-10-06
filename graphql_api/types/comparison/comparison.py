@@ -59,7 +59,9 @@ def resolve_impacted_files_new(
     if flags and set(flags).isdisjoint(set(comparison.head_report.flags)):
         return UnknownFlags()
 
-    return command.fetch_impacted_files(comparison_report, comparison, filters)
+    return {
+        "results": command.fetch_impacted_files(comparison_report, comparison, filters)
+    }
 
 
 @comparison_bindable.field("impactedFilesCount")
