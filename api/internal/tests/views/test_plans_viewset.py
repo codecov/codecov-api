@@ -1,4 +1,5 @@
 from unittest.mock import patch
+from plan.constants import TrialStatus
 
 from rest_framework import status
 from rest_framework.reverse import reverse
@@ -240,6 +241,101 @@ class PlansViewSetTests(APITestCase):
                 ],
                 "tier_name": "pro",
                 "monthly_uploads_limit": None,
+                "trial_days": None,
+            },
+        ]
+
+    def test_list_plans_lite_user(self):
+        current_owner = OwnerFactory(trial_status=TrialStatus.ONGOING.value, plan_user_count=4)
+        client = Client()
+        client.force_login_owner(current_owner)
+        response = client.get(reverse("plans-list"))
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == [
+            {
+                "marketing_name": "Developer",
+                "value": "users-free",
+                "billing_rate": None,
+                "base_unit_price": 0,
+                "benefits": [
+                    "Up to 1 user",
+                    "Unlimited public repositories",
+                    "Unlimited private repositories",
+                ],
+                "tier_name": "basic",
+                "monthly_uploads_limit": None,
+                "trial_days": None,
+            },
+            {
+                "marketing_name": "Developer",
+                "value": "users-basic",
+                "billing_rate": None,
+                "base_unit_price": 0,
+                "benefits": [
+                    "Up to 1 user",
+                    "Unlimited public repositories",
+                    "Unlimited private repositories",
+                ],
+                "tier_name": "basic",
+                "monthly_uploads_limit": 250,
+                "trial_days": None,
+            },
+            {
+                "marketing_name": "Pro Team",
+                "value": "users-pr-inappm",
+                "billing_rate": "monthly",
+                "base_unit_price": 12,
+                "benefits": [
+                    "Configurable # of users",
+                    "Unlimited public repositories",
+                    "Unlimited private repositories",
+                    "Priority Support",
+                ],
+                "tier_name": "pro",
+                "monthly_uploads_limit": None,
+                "trial_days": None,
+            },
+            {
+                "marketing_name": "Pro Team",
+                "value": "users-pr-inappy",
+                "billing_rate": "annually",
+                "base_unit_price": 10,
+                "benefits": [
+                    "Configurable # of users",
+                    "Unlimited public repositories",
+                    "Unlimited private repositories",
+                    "Priority Support",
+                ],
+                "tier_name": "pro",
+                "monthly_uploads_limit": None,
+                "trial_days": None,
+            },
+            {
+                "marketing_name": "Team",
+                "value": "users-litem",
+                "billing_rate": "monthly",
+                "base_unit_price": 6,
+                "benefits": [
+                    "Up to 10 users",
+                    "Unlimited public repositories",
+                    "Unlimited private repositories",
+                ],
+                "tier_name": "lite",
+                "monthly_uploads_limit": 1000,
+                "trial_days": None,
+            },
+            {
+                "marketing_name": "Team",
+                "value": "users-litey",
+                "billing_rate": "annually",
+                "base_unit_price": 8,
+                "benefits": [
+                    "Up to 10 users",
+                    "Unlimited public repositories",
+                    "Unlimited private repositories",
+                ],
+                "tier_name": "lite",
+                "monthly_uploads_limit": 1000,
                 "trial_days": None,
             },
         ]

@@ -1,12 +1,12 @@
 import logging
-from dataclasses import asdict
 from datetime import datetime, timedelta
 from typing import List, Optional
 
 from codecov.commands.exceptions import ValidationError
 from codecov_auth.models import Owner
 from plan.constants import (
-    BASIC_PLAN_REPRESENTATION,
+    BASIC_PLAN,
+    FREE_PLAN,
     FREE_PLAN_REPRESENTATIONS,
     LITE_PLAN_REPRESENTATIONS,
     PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
@@ -103,7 +103,10 @@ class PlanService:
     @property
     def available_plans(self) -> List[PlanData]:
         available_plans = []
-        available_plans.append(BASIC_PLAN_REPRESENTATION)
+        available_plans.append(BASIC_PLAN)
+
+        if self.plan_name == FREE_PLAN.value:
+            available_plans.append(FREE_PLAN)
 
         if sentry.is_sentry_user(self.current_org):
             available_plans += SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values()

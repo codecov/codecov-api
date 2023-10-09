@@ -8,16 +8,17 @@ from codecov_auth.models import Owner
 from plan.constants import (
     ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
     FREE_PLAN_REPRESENTATIONS,
+    LITE_PLAN_REPRESENTATIONS,
     PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
     SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
     PlanData,
+    TrialStatus,
 )
+from plan.service import PlanService
 
 
 def on_enterprise_plan(owner: Owner) -> bool:
-    return settings.IS_ENTERPRISE or (
-        owner.plan in ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS.keys()
-    )
+    return settings.IS_ENTERPRISE or (owner.plan in ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS.keys())
 
 
 def available_plans(owner: Optional[Owner]) -> List[dict]:
@@ -32,6 +33,16 @@ def available_plans(owner: Optional[Owner]) -> List[dict]:
     if owner and sentry.is_sentry_user(owner):
         # these are only available to Sentry users
         plans += list(SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values())
+
+    if owner:
+        plan_service = PlanService(current_org=owner)
+
+        if (
+            plan_service.trial_status == TrialStatus.ONGOING.value
+            or plan_service.trial_status == TrialStatus.EXPIRED.value
+            or plan_service.plan_name in LITE_PLAN_REPRESENTATIONS
+        ) and plan_service.plan_user_count <= 10:
+            plans += LITE_PLAN_REPRESENTATIONS.values()
 
     plans = [asdict(plan) for plan in plans]
     return plans

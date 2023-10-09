@@ -238,7 +238,7 @@ GHM_PLAN_REPRESENTATION = {
     )
 }
 
-BASIC_PLAN_REPRESENTATION = PlanData(
+BASIC_PLAN = PlanData(
     marketing_name=PlanMarketingName.BASIC.value,
     value=PlanName.BASIC_PLAN_NAME.value,
     billing_rate=None,
@@ -253,22 +253,24 @@ BASIC_PLAN_REPRESENTATION = PlanData(
     trial_days=None,
 )
 
+FREE_PLAN = PlanData(
+    marketing_name=PlanMarketingName.FREE.value,
+    value=PlanName.FREE_PLAN_NAME.value,
+    billing_rate=None,
+    base_unit_price=PlanPrice.CODECOV_FREE.value,
+    benefits=[
+        "Up to 1 user",
+        "Unlimited public repositories",
+        "Unlimited private repositories",
+    ],
+    tier_name=TierName.BASIC.value,
+    trial_days=None,
+    monthly_uploads_limit=None,
+)
+
 FREE_PLAN_REPRESENTATIONS = {
-    PlanName.FREE_PLAN_NAME.value: PlanData(
-        marketing_name=PlanMarketingName.FREE.value,
-        value=PlanName.FREE_PLAN_NAME.value,
-        billing_rate=None,
-        base_unit_price=PlanPrice.CODECOV_FREE.value,
-        benefits=[
-            "Up to 1 user",
-            "Unlimited public repositories",
-            "Unlimited private repositories",
-        ],
-        tier_name=TierName.BASIC.value,
-        trial_days=None,
-        monthly_uploads_limit=None,
-    ),
-    PlanName.BASIC_PLAN_NAME.value: BASIC_PLAN_REPRESENTATION,
+    PlanName.FREE_PLAN_NAME.value: FREE_PLAN,
+    PlanName.BASIC_PLAN_NAME.value: BASIC_PLAN,
 }
 
 LITE_PLAN_REPRESENTATIONS = {
