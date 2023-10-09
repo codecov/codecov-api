@@ -368,7 +368,9 @@ class TaskService(object):
             ),
         )
 
-    def send_email(self, ownerid, template_name, from_addr, subject, **kwargs):
+    def send_email(
+        self, ownerid, template_name: str, from_addr: str, subject: str, **kwargs
+    ):
         self._create_signature(
             "app.tasks.send_email.SendEmail",
             kwargs=dict(
