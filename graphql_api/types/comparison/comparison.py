@@ -55,7 +55,7 @@ def resolve_impacted_files_new(
     command: CompareCommands = info.context["executor"].get_command("compare")
     comparison: Comparison = info.context.get("comparison", None)
 
-    if filters:
+    if filters and comparison:
         flags = filters.get("flags", [])
         if flags and set(flags).isdisjoint(set(comparison.head_report.flags)):
             return UnknownFlags()
