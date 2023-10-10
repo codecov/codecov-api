@@ -325,6 +325,7 @@ class UploadHandler(APIView):
         analytics_upload_data["repository_name"] = repository.name
         analytics_upload_data["version"] = version
         analytics_upload_data["userid_type"] = "org"
+        analytics_upload_data["uploader_type"] = "node uploader"
         AnalyticsService().account_uploaded_coverage_report(
             owner.ownerid, analytics_upload_data
         )
