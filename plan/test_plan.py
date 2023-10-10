@@ -10,9 +10,9 @@ from plan.constants import (
     BASIC_PLAN,
     FREE_PLAN,
     FREE_PLAN_REPRESENTATIONS,
-    LITE_PLAN_REPRESENTATIONS,
     PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
     SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
+    TEAM_PLAN_REPRESENTATIONS,
     TRIAL_PLAN_REPRESENTATION,
     TRIAL_PLAN_SEATS,
     PlanName,
@@ -326,7 +326,7 @@ class AvailablePlansBeforeTrial(TestCase):
     def test_available_plans_for_lite_plan_non_trial(
         self,
     ):
-        self.current_org.plan = PlanName.LITE_MONTHLY.value
+        self.current_org.plan = PlanName.TEAM_MONTHLY.value
         self.current_org.save()
 
         plan_service = PlanService(current_org=self.current_org)
@@ -334,7 +334,7 @@ class AvailablePlansBeforeTrial(TestCase):
         expected_result = []
         expected_result.append(BASIC_PLAN)
         expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
-        expected_result += LITE_PLAN_REPRESENTATIONS.values()
+        expected_result += TEAM_PLAN_REPRESENTATIONS.values()
 
         assert plan_service.available_plans == expected_result
 
@@ -371,7 +371,7 @@ class AvailablePlansBeforeTrial(TestCase):
         self, is_sentry_user
     ):
         is_sentry_user.return_value = True
-        self.current_org.plan = PlanName.LITE_MONTHLY.value
+        self.current_org.plan = PlanName.TEAM_MONTHLY.value
         self.current_org.save()
 
         plan_service = PlanService(current_org=self.current_org)
@@ -379,7 +379,7 @@ class AvailablePlansBeforeTrial(TestCase):
         expected_result = []
         expected_result.append(BASIC_PLAN)
         expected_result += SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values()
-        expected_result += LITE_PLAN_REPRESENTATIONS.values()
+        expected_result += TEAM_PLAN_REPRESENTATIONS.values()
 
         assert plan_service.available_plans == expected_result
 
@@ -428,14 +428,14 @@ class AvailablePlansExpiredTrialLessThanTenUsers(TestCase):
         expected_result = []
         expected_result.append(BASIC_PLAN)
         expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
-        expected_result += LITE_PLAN_REPRESENTATIONS.values()
+        expected_result += TEAM_PLAN_REPRESENTATIONS.values()
 
         assert plan_service.available_plans == expected_result
 
     def test_available_plans_for_lite_plan_expired_trial_less_than_10_users(
         self,
     ):
-        self.current_org.plan = PlanName.LITE_MONTHLY.value
+        self.current_org.plan = PlanName.TEAM_MONTHLY.value
         self.current_org.save()
 
         plan_service = PlanService(current_org=self.current_org)
@@ -443,7 +443,7 @@ class AvailablePlansExpiredTrialLessThanTenUsers(TestCase):
         expected_result = []
         expected_result.append(BASIC_PLAN)
         expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
-        expected_result += LITE_PLAN_REPRESENTATIONS.values()
+        expected_result += TEAM_PLAN_REPRESENTATIONS.values()
 
         assert plan_service.available_plans == expected_result
 
@@ -456,7 +456,7 @@ class AvailablePlansExpiredTrialLessThanTenUsers(TestCase):
         expected_result = []
         expected_result.append(BASIC_PLAN)
         expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
-        expected_result += LITE_PLAN_REPRESENTATIONS.values()
+        expected_result += TEAM_PLAN_REPRESENTATIONS.values()
 
         assert plan_service.available_plans == expected_result
 
@@ -473,7 +473,7 @@ class AvailablePlansExpiredTrialLessThanTenUsers(TestCase):
         expected_result = []
         expected_result.append(BASIC_PLAN)
         expected_result += SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values()
-        expected_result += LITE_PLAN_REPRESENTATIONS.values()
+        expected_result += TEAM_PLAN_REPRESENTATIONS.values()
 
         assert plan_service.available_plans == expected_result
 
@@ -482,7 +482,7 @@ class AvailablePlansExpiredTrialLessThanTenUsers(TestCase):
         self, is_sentry_user
     ):
         is_sentry_user.return_value = True
-        self.current_org.plan = PlanName.LITE_MONTHLY.value
+        self.current_org.plan = PlanName.TEAM_MONTHLY.value
         self.current_org.save()
 
         plan_service = PlanService(current_org=self.current_org)
@@ -490,7 +490,7 @@ class AvailablePlansExpiredTrialLessThanTenUsers(TestCase):
         expected_result = []
         expected_result.append(BASIC_PLAN)
         expected_result += SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values()
-        expected_result += LITE_PLAN_REPRESENTATIONS.values()
+        expected_result += TEAM_PLAN_REPRESENTATIONS.values()
 
         assert plan_service.available_plans == expected_result
 
@@ -507,7 +507,7 @@ class AvailablePlansExpiredTrialLessThanTenUsers(TestCase):
         expected_result = []
         expected_result.append(BASIC_PLAN)
         expected_result += SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values()
-        expected_result += LITE_PLAN_REPRESENTATIONS.values()
+        expected_result += TEAM_PLAN_REPRESENTATIONS.values()
 
         assert plan_service.available_plans == expected_result
 
@@ -645,7 +645,7 @@ class AvailablePlansOngoingTrialLessThanTenUsers(TestCase):
         expected_result = []
         expected_result.append(BASIC_PLAN)
         expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
-        expected_result += LITE_PLAN_REPRESENTATIONS.values()
+        expected_result += TEAM_PLAN_REPRESENTATIONS.values()
 
         assert plan_service.available_plans == expected_result
 
@@ -662,6 +662,6 @@ class AvailablePlansOngoingTrialLessThanTenUsers(TestCase):
         expected_result = []
         expected_result.append(BASIC_PLAN)
         expected_result += SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values()
-        expected_result += LITE_PLAN_REPRESENTATIONS.values()
+        expected_result += TEAM_PLAN_REPRESENTATIONS.values()
 
         assert plan_service.available_plans == expected_result

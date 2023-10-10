@@ -8,9 +8,10 @@ from codecov_auth.models import Owner
 from plan.constants import (
     ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
     FREE_PLAN_REPRESENTATIONS,
-    LITE_PLAN_REPRESENTATIONS,
     PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
     SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
+    TEAM_PLAN_MAX_USERS,
+    TEAM_PLAN_REPRESENTATIONS,
     PlanData,
     TrialStatus,
 )
@@ -40,9 +41,9 @@ def available_plans(owner: Optional[Owner]) -> List[dict]:
         if (
             plan_service.trial_status == TrialStatus.ONGOING.value
             or plan_service.trial_status == TrialStatus.EXPIRED.value
-            or plan_service.plan_name in LITE_PLAN_REPRESENTATIONS
-        ) and plan_service.plan_user_count <= 10:
-            plans += LITE_PLAN_REPRESENTATIONS.values()
+            or plan_service.plan_name in TEAM_PLAN_REPRESENTATIONS
+        ) and plan_service.plan_user_count <= TEAM_PLAN_MAX_USERS:
+            plans += TEAM_PLAN_REPRESENTATIONS.values()
 
     plans = [asdict(plan) for plan in plans]
     return plans

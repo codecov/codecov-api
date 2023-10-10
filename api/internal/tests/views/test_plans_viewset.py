@@ -1,11 +1,11 @@
 from unittest.mock import patch
-from plan.constants import TrialStatus
 
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 
 from codecov_auth.tests.factories import OwnerFactory
+from plan.constants import TrialStatus
 from utils.test_utils import Client
 
 
@@ -245,8 +245,10 @@ class PlansViewSetTests(APITestCase):
             },
         ]
 
-    def test_list_plans_lite_user(self):
-        current_owner = OwnerFactory(trial_status=TrialStatus.ONGOING.value, plan_user_count=4)
+    def test_list_plans_team_user(self):
+        current_owner = OwnerFactory(
+            trial_status=TrialStatus.ONGOING.value, plan_user_count=4
+        )
         client = Client()
         client.force_login_owner(current_owner)
         response = client.get(reverse("plans-list"))
@@ -312,7 +314,7 @@ class PlansViewSetTests(APITestCase):
             },
             {
                 "marketing_name": "Team",
-                "value": "users-litem",
+                "value": "users-teamm",
                 "billing_rate": "monthly",
                 "base_unit_price": 6,
                 "benefits": [
@@ -320,13 +322,13 @@ class PlansViewSetTests(APITestCase):
                     "Unlimited public repositories",
                     "Unlimited private repositories",
                 ],
-                "tier_name": "lite",
+                "tier_name": "team",
                 "monthly_uploads_limit": 1000,
                 "trial_days": None,
             },
             {
                 "marketing_name": "Team",
-                "value": "users-litey",
+                "value": "users-teamy",
                 "billing_rate": "annually",
                 "base_unit_price": 8,
                 "benefits": [
@@ -334,7 +336,7 @@ class PlansViewSetTests(APITestCase):
                     "Unlimited public repositories",
                     "Unlimited private repositories",
                 ],
-                "tier_name": "lite",
+                "tier_name": "team",
                 "monthly_uploads_limit": 1000,
                 "trial_days": None,
             },

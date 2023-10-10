@@ -8,9 +8,10 @@ from plan.constants import (
     BASIC_PLAN,
     FREE_PLAN,
     FREE_PLAN_REPRESENTATIONS,
-    LITE_PLAN_REPRESENTATIONS,
     PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
     SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
+    TEAM_PLAN_MAX_USERS,
+    TEAM_PLAN_REPRESENTATIONS,
     TRIAL_PLAN_SEATS,
     USER_PLAN_REPRESENTATIONS,
     PlanData,
@@ -113,13 +114,13 @@ class PlanService:
         else:
             available_plans += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
 
-        # If you're trialing or have trialed and <= 10 users, or belong to the lite plan
+        # If you're trialing or have trialed and <= 10 users, or belong to the team plan
         if (
             self.trial_status == TrialStatus.ONGOING.value
             or self.trial_status == TrialStatus.EXPIRED.value
-            or self.plan_name in LITE_PLAN_REPRESENTATIONS
-        ) and self.plan_user_count <= 10:
-            available_plans += LITE_PLAN_REPRESENTATIONS.values()
+            or self.plan_name in TEAM_PLAN_REPRESENTATIONS
+        ) and self.plan_user_count <= TEAM_PLAN_MAX_USERS:
+            available_plans += TEAM_PLAN_REPRESENTATIONS.values()
 
         return available_plans
 
