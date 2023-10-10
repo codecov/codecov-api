@@ -19,7 +19,7 @@ class PlanMarketingName(enum.Enum):
     FREE = "Developer"
     BASIC = "Developer"
     TRIAL = "Developer"
-    LITE = "Team"
+    TEAM = "Team"
 
 
 class PlanName(enum.Enum):
@@ -29,8 +29,8 @@ class PlanName(enum.Enum):
     CODECOV_PRO_YEARLY = "users-pr-inappy"
     SENTRY_MONTHLY = "users-sentrym"
     SENTRY_YEARLY = "users-sentryy"
-    LITE_MONTHLY = "users-litem"
-    LITE_YEARLY = "users-litey"
+    TEAM_MONTHLY = "users-teamm"
+    TEAM_YEARLY = "users-teamy"
     GHM_PLAN_NAME = "users"
     FREE_PLAN_NAME = "users-free"
     CODECOV_PRO_MONTHLY_LEGACY = "users-inappm"
@@ -50,8 +50,8 @@ class PlanPrice(enum.Enum):
     CODECOV_FREE = 0
     CODECOV_BASIC = 0
     CODECOV_TRIAL = 0
-    LITE_MONTHLY = 6
-    LITE_YEARLY = 8
+    TEAM_MONTHLY = 6
+    TEAM_YEARLY = 8
     GHM_PRICE = 12
 
 
@@ -64,7 +64,7 @@ class TrialStatus(enum.Enum):
 
 class TierName(enum.Enum):
     BASIC = "basic"
-    LITE = "lite"
+    TEAM = "team"
     PRO = "pro"
     ENTERPRISE = "enterprise"
 
@@ -273,32 +273,32 @@ FREE_PLAN_REPRESENTATIONS = {
     PlanName.BASIC_PLAN_NAME.value: BASIC_PLAN,
 }
 
-LITE_PLAN_REPRESENTATIONS = {
-    PlanName.LITE_MONTHLY.value: PlanData(
-        marketing_name=PlanMarketingName.LITE.value,
-        value=PlanName.LITE_MONTHLY.value,
+TEAM_PLAN_REPRESENTATIONS = {
+    PlanName.TEAM_MONTHLY.value: PlanData(
+        marketing_name=PlanMarketingName.TEAM.value,
+        value=PlanName.TEAM_MONTHLY.value,
         billing_rate=PlanBillingRate.MONTHLY.value,
-        base_unit_price=PlanPrice.LITE_MONTHLY.value,
+        base_unit_price=PlanPrice.TEAM_MONTHLY.value,
         benefits=[
             "Up to 10 users",
             "Unlimited public repositories",
             "Unlimited private repositories",
         ],
-        tier_name=TierName.LITE.value,
+        tier_name=TierName.TEAM.value,
         trial_days=None,
         monthly_uploads_limit=1000,
     ),
-    PlanName.LITE_YEARLY.value: PlanData(
-        marketing_name=PlanMarketingName.LITE.value,
-        value=PlanName.LITE_YEARLY.value,
+    PlanName.TEAM_YEARLY.value: PlanData(
+        marketing_name=PlanMarketingName.TEAM.value,
+        value=PlanName.TEAM_YEARLY.value,
         billing_rate=PlanBillingRate.YEARLY.value,
-        base_unit_price=PlanPrice.LITE_YEARLY.value,
+        base_unit_price=PlanPrice.TEAM_YEARLY.value,
         benefits=[
             "Up to 10 users",
             "Unlimited public repositories",
             "Unlimited private repositories",
         ],
-        tier_name=TierName.LITE.value,
+        tier_name=TierName.TEAM.value,
         trial_days=None,
         monthly_uploads_limit=1000,
     ),
@@ -330,7 +330,7 @@ PRO_PLANS = {
 
 TRIAL_PLANS = {**TRIAL_PLAN_REPRESENTATION}
 
-LITE_PLANS = {**LITE_PLAN_REPRESENTATIONS}
+TEAM_PLANS = {**TEAM_PLAN_REPRESENTATIONS}
 
 
 USER_PLAN_REPRESENTATIONS = {
@@ -339,7 +339,7 @@ USER_PLAN_REPRESENTATIONS = {
     **GHM_PLAN_REPRESENTATION,
     **PRO_PLANS,
     **TRIAL_PLANS,
-    **LITE_PLANS,
+    **TEAM_PLANS,
 }
 
 PLANS_THAT_CAN_TRIAL = [
