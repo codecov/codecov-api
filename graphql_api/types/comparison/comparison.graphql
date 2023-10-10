@@ -14,7 +14,7 @@ type Comparison {
   hasDifferentNumberOfHeadAndBaseReports: Boolean!
   flagComparisonsCount: Int!
   componentComparisonsCount: Int!
-  impactedFilesNew(filters: ImpactedFilesFilters): ImpactedFilesResult
+  impactedFilesNew(filters: ImpactedFilesFilters): ImpactedFilesResult!
 }
 
 type MissingBaseCommit implements ResolverError {

@@ -16,7 +16,7 @@ type ImpactedFile {
 }
 
 type ImpactedFilesNew {
-  results: [ImpactedFile]!
+  results: [ImpactedFile]
 }
 
 union ImpactedFilesResult =
