@@ -17,6 +17,8 @@ from plan.constants import PlanName, TrialStatus
 from reports.tests.factories import CommitReportFactory, UploadFactory
 
 from .helper import GraphQLTestHelper, paginate_connection
+import pytest
+from codecov.commands.exceptions import MissingService
 
 query_repositories = """{
     owner(username: "%s") {
@@ -523,3 +525,24 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 "Unlimited private repositories",
             ],
         }
+
+    @freeze_time("2023-06-19")
+    def test_owner_query_with_no_service(self):
+        current_org = OwnerFactory(
+            username="random-plan-user",
+            service="github",
+        )
+        query = """{
+            owner(username: "%s") {
+                username
+            }
+        }
+        """ % (
+            current_org.username
+        )
+
+        try:
+            self.gql_request(query, provider="", owner=current_org)
+        except MissingService as e:
+            assert str(e) == "Missing service"
+            raise
