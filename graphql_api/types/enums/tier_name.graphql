@@ -1,6 +1,6 @@
 enum TierName {
-    BASIC
-    LITE
-    PRO
-    ENTERPRISE
+  BASIC
+  TEAM
+  PRO
+  ENTERPRISE
 }
