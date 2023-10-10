@@ -79,6 +79,13 @@ def resolve_plan_representation(owner: Owner, info) -> PlanData:
     return FREE_PLAN_REPRESENTATIONS[PlanName.BASIC_PLAN_NAME.value]
 
 
+@owner_bindable.field("availablePlans")
+@convert_kwargs_to_snake_case
+def resolve_available_plans(owner: Owner, info) -> List[PlanData]:
+    plan_service = PlanService(current_org=owner)
+    return plan_service.available_plans
+
+
 @owner_bindable.field("repository")
 async def resolve_repository(owner, info, name):
     command = info.context["executor"].get_command("repository")

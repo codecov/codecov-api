@@ -238,35 +238,39 @@ GHM_PLAN_REPRESENTATION = {
     )
 }
 
+BASIC_PLAN = PlanData(
+    marketing_name=PlanMarketingName.BASIC.value,
+    value=PlanName.BASIC_PLAN_NAME.value,
+    billing_rate=None,
+    base_unit_price=PlanPrice.CODECOV_BASIC.value,
+    benefits=[
+        "Up to 1 user",
+        "Unlimited public repositories",
+        "Unlimited private repositories",
+    ],
+    tier_name=TierName.BASIC.value,
+    monthly_uploads_limit=MonthlyUploadLimits.CODECOV_BASIC_PLAN.value,
+    trial_days=None,
+)
+
+FREE_PLAN = PlanData(
+    marketing_name=PlanMarketingName.FREE.value,
+    value=PlanName.FREE_PLAN_NAME.value,
+    billing_rate=None,
+    base_unit_price=PlanPrice.CODECOV_FREE.value,
+    benefits=[
+        "Up to 1 user",
+        "Unlimited public repositories",
+        "Unlimited private repositories",
+    ],
+    tier_name=TierName.BASIC.value,
+    trial_days=None,
+    monthly_uploads_limit=None,
+)
+
 FREE_PLAN_REPRESENTATIONS = {
-    PlanName.FREE_PLAN_NAME.value: PlanData(
-        marketing_name=PlanMarketingName.FREE.value,
-        value=PlanName.FREE_PLAN_NAME.value,
-        billing_rate=None,
-        base_unit_price=PlanPrice.CODECOV_FREE.value,
-        benefits=[
-            "Up to 1 user",
-            "Unlimited public repositories",
-            "Unlimited private repositories",
-        ],
-        tier_name=TierName.BASIC.value,
-        trial_days=None,
-        monthly_uploads_limit=None,
-    ),
-    PlanName.BASIC_PLAN_NAME.value: PlanData(
-        marketing_name=PlanMarketingName.BASIC.value,
-        value=PlanName.BASIC_PLAN_NAME.value,
-        billing_rate=None,
-        base_unit_price=PlanPrice.CODECOV_BASIC.value,
-        benefits=[
-            "Up to 1 user",
-            "Unlimited public repositories",
-            "Unlimited private repositories",
-        ],
-        tier_name=TierName.BASIC.value,
-        monthly_uploads_limit=MonthlyUploadLimits.CODECOV_BASIC_PLAN.value,
-        trial_days=None,
-    ),
+    PlanName.FREE_PLAN_NAME.value: FREE_PLAN,
+    PlanName.BASIC_PLAN_NAME.value: BASIC_PLAN,
 }
 
 TEAM_PLAN_REPRESENTATIONS = {
@@ -349,3 +353,4 @@ PLANS_THAT_CAN_TRIAL = [
 ]
 
 TRIAL_PLAN_SEATS = 1000
+TEAM_PLAN_MAX_USERS = 10
