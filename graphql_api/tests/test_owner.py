@@ -17,7 +17,6 @@ from plan.constants import PlanName, TrialStatus
 from reports.tests.factories import CommitReportFactory, UploadFactory
 
 from .helper import GraphQLTestHelper, paginate_connection
-import pytest
 from codecov.commands.exceptions import MissingService
 
 query_repositories = """{
