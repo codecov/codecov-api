@@ -25,6 +25,7 @@ from simplejson import JSONDecodeError
 from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
 from core.models import Commit, Repository
+from core.tests.factories import CommitFactory, CommitNotificationFactory
 from reports.tests.factories import CommitReportFactory, UploadFactory
 from upload.helpers import (
     determine_repo_for_upload,
@@ -933,6 +934,40 @@ def test_dispatch_upload_task_apply_async(self, apply_async):
             "task": "app.tasks.upload.Upload",
         }
     )
+
+    @patch("celery.canvas.Signaure.apply_async")
+    @patch("services.task.TaskService.notify_signature")
+    @patch("services.task.TaskService.upload_signature")
+    def test_dispatch_upload_task_already_notified(
+        self, mock_task_service_upload, mock_task_service_notify, mock_apply_async
+    ):
+        commit = CommitFactory()
+        commit_notification = CommitNotificationFactory(commit=commit)
+        repo = G(Repository)
+        task_arguments = {
+            "commit": commit.commitid,
+            "version": "v4",
+            "report_code": "local_report",
+        }
+
+        expected_key = f"uploads/{repo.repoid}/{commit.commitid}"
+
+        redis = MockRedis(
+            expected_task_key=expected_key,
+            expected_task_arguments=task_arguments,
+            expected_expire_time=86400,
+        )
+
+        dispatch_upload_task(task_arguments, repo, redis)
+        assert not mock_task_service_notify.called
+        assert mock_task_service_upload.called
+        mock_task_service_upload.assert_called_with(
+            repoid=repo.repoid,
+            commitid=task_arguments.get("commit"),
+            report_code="local_report",
+            immutable=True,
+        )
+        mock_apply_async.assert_called_once_with()
 
 
 class UploadHandlerRouteTest(APITestCase):

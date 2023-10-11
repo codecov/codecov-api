@@ -16,7 +16,7 @@ from shared.reports.enums import UploadType
 from shared.torngit.exceptions import TorngitClientError, TorngitObjectNotFoundError
 
 from codecov_auth.models import Owner
-from core.models import Commit, Repository
+from core.models import Commit, CommitNotification, Repository
 from plan.constants import USER_PLAN_REPRESENTATIONS
 from reports.models import ReportSession
 from services.analytics import AnalyticsService
@@ -598,28 +598,40 @@ def dispatch_upload_task(task_arguments, repository, redis):
         timezone.now().timestamp(),
     )
 
+    commitid = task_arguments.get("commit")
+
     upload_sig = TaskService().upload_signature(
         repoid=repository.repoid,
-        commitid=task_arguments.get("commit"),
+        commitid=commitid,
         report_code=task_arguments.get("report_code"),
         # this prevents the results of the notify task (below) from being
         # passed as args to this upload task
         immutable=True,
     )
 
-    # notify early with a "processing" indicator and then
-    # start processing the upload
-    TaskService().notify_signature(
-        repoid=repository.repoid,
-        commitid=task_arguments.get("commit"),
-        empty_upload="processing",
-    ).apply_async(
-        link=upload_sig.set(
-            countdown=max(
-                countdown, int(get_config("setup", "upload_processing_delay") or 0)
-            ),
+    notified = CommitNotification.objects.filter(commit__commitid=commitid).exists()
+    if notified:
+        # we've already notified on this commit - just process
+        # the upload
+        print("UPLOAD ONLY")
+        upload_sig.apply_async()
+    else:
+        print("NOTIFY AND UPLOAD")
+        # we have not notified yet
+        #
+        # notify early with a "processing" indicator and then
+        # start processing the upload
+        TaskService().notify_signature(
+            repoid=repository.repoid,
+            commitid=task_arguments.get("commit"),
+            empty_upload="processing",
+        ).apply_async(
+            link=upload_sig.set(
+                countdown=max(
+                    countdown, int(get_config("setup", "upload_processing_delay") or 0)
+                ),
+            )
         )
-    )
 
 
 def validate_activated_repo(repository):
