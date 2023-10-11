@@ -6,6 +6,7 @@ from urllib.parse import urlencode
 
 import pytest
 import requests
+from celery.canvas import Signature
 from ddf import G
 from django.core.exceptions import MultipleObjectsReturned
 from django.test import TestCase, override_settings
@@ -928,24 +929,24 @@ class UploadHandlerHelpersTest(TestCase):
         dispatch_upload_task(task_arguments, repo, redis)
         apply_async.assert_called_once_with(
             link={
+                "task": "app.tasks.upload.Upload",
                 "args": (),
-                "immutable": True,
                 "kwargs": {
+                    "repoid": repo.repoid,
                     "commitid": "commit123",
+                    "report_code": "local_report",
                     "debug": False,
                     "rebuild": False,
-                    "repoid": repo.repoid,
-                    "report_code": "local_report",
                 },
                 "options": {
-                    "countdown": 4,
+                    "queue": "uploads",
                     "headers": {"created_timestamp": "2023-01-01T00:00:00"},
-                    "queue": "celery",
-                    "soft_time_limit": None,
                     "time_limit": None,
+                    "soft_time_limit": None,
+                    "countdown": 4,
                 },
                 "subtask_type": None,
-                "task": "app.tasks.upload.Upload",
+                "immutable": True,
             }
         )
 
