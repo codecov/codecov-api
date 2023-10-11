@@ -2,46 +2,43 @@ version: "3"
 
 services:
   api:
-    image: codecov/api:latest
-    networks:
-      - codecovapi
-    ports:
-      - "5100:8000"
-    labels:
-      - "traefik.tags=api"
-      - "traefik.backend=api"
-      - "traefik.port=5100"
+    image: ${API_DOCKER_REPO}:${API_DOCKER_VERSION}
     depends_on:
       - postgres
       - redis
-    entrypoint:
-      - ./dev.sh
+      - timescale
     volumes:
       - ./:/app
+      - ./docker/test.yml:/config/codecov.yml
+    entrypoint:
+      - ./dev.sh
     environment:
       - RUN_ENV=DEV
+      - SETUP__TIMESERIES__ENABLED=${TIMESERIES_ENABLED-true}
+    env_file:
+      - .testenv
   postgres:
     image: postgres:14.7-alpine
-    volumes:
-      - postgres-volume:/var/lib/postgresql/data
-    networks:
-      - codecovapi
-    ports:
-      - "5436:5432"
     environment:
       - POSTGRES_USER=postgres
+      - POSTGRES_HOST_AUTH_METHOD=trust
       - POSTGRES_PASSWORD=password
-  redis:
-    image: redis:4.0-alpine
     volumes:
-      - redis-volume:/data
-    networks:
-      - codecovapi
+      - type: tmpfs
+        target: /var/lib/postgresql/data
+        tmpfs:
+          size: 2048M
+  timescale:
+    image: timescale/timescaledb-ha:pg14-latest
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_HOST_AUTH_METHOD=trust
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - type: tmpfs
+        target: /var/lib/postgresql/data
+        tmpfs:
+          size: 2048M
+  redis:
+    image: redis:6-alpine
 
-volumes:
-  postgres-volume:
-  redis-volume:
-
-networks:
-  codecovapi:
-    driver: bridge

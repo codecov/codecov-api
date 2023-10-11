@@ -280,7 +280,7 @@ pyasn1-modules==0.2.8
     # via google-auth
 pycparser==2.20
     # via cffi
-pyjwt==2.4.0
+pyjwt==2.8.0
     # via -r requirements.in
 pyparsing==2.4.7
     # via
@@ -398,6 +398,7 @@ typing-extensions==4.6.2
     # via
     #   ariadne
     #   shared
+    #   starlette
 uritemplate==4.1.1
     # via drf-spectacular
 urllib3==1.26.13
