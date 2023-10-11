@@ -652,10 +652,8 @@ def dispatch_upload_task(task_arguments, repository, redis):
     if notified:
         # we've already notified on this commit - just process
         # the upload
-        print("UPLOAD ONLY")
         upload_sig.apply_async()
     else:
-        print("NOTIFY AND UPLOAD")
         # we have not notified yet
         #
         # notify early with a "processing" indicator and then
