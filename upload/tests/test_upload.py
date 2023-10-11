@@ -907,43 +907,58 @@ class UploadHandlerHelpersTest(TestCase):
             immutable=True,
         )
 
-
-@freeze_time("2023-01-01T00:00:00")
-@patch("celery.canvas.Signaure.apply_async")
-def test_dispatch_upload_task_apply_async(self, apply_async):
-    apply_async.apply_async.assert_called_once()
-    apply_async.assert_called_with(
-        link={
-            "args": (),
-            "immutable": True,
-            "kwargs": {
-                "commitid": "commit123",
-                "debug": False,
-                "rebuild": False,
-                "repoid": 1,
-                "report_code": "local_report",
-            },
-            "options": {
-                "countdown": 4,
-                "headers": {"created_timestamp": "2023-01-01T00:00:00"},
-                "queue": "celery",
-                "soft_time_limit": None,
-                "time_limit": None,
-            },
-            "subtask_type": None,
-            "task": "app.tasks.upload.Upload",
+    @freeze_time("2023-01-01T00:00:00")
+    @patch("celery.canvas.Signature.apply_async")
+    def test_dispatch_upload_task_apply_async(self, apply_async):
+        repo = G(Repository)
+        task_arguments = {
+            "commit": "commit123",
+            "version": "v4",
+            "report_code": "local_report",
         }
-    )
 
-    @patch("celery.canvas.Signaure.apply_async")
+        expected_key = f"uploads/{repo.repoid}/commit123"
+
+        redis = MockRedis(
+            expected_task_key=expected_key,
+            expected_task_arguments=task_arguments,
+            expected_expire_time=86400,
+        )
+
+        dispatch_upload_task(task_arguments, repo, redis)
+        apply_async.assert_called_once_with(
+            link={
+                "args": (),
+                "immutable": True,
+                "kwargs": {
+                    "commitid": "commit123",
+                    "debug": False,
+                    "rebuild": False,
+                    "repoid": repo.repoid,
+                    "report_code": "local_report",
+                },
+                "options": {
+                    "countdown": 4,
+                    "headers": {"created_timestamp": "2023-01-01T00:00:00"},
+                    "queue": "celery",
+                    "soft_time_limit": None,
+                    "time_limit": None,
+                },
+                "subtask_type": None,
+                "task": "app.tasks.upload.Upload",
+            }
+        )
+
     @patch("services.task.TaskService.notify_signature")
     @patch("services.task.TaskService.upload_signature")
     def test_dispatch_upload_task_already_notified(
-        self, mock_task_service_upload, mock_task_service_notify, mock_apply_async
+        self,
+        mock_task_service_upload,
+        mock_task_service_notify,
     ):
-        commit = CommitFactory()
-        commit_notification = CommitNotificationFactory(commit=commit)
         repo = G(Repository)
+        commit = CommitFactory(repository=repo, author=repo.author)
+        CommitNotificationFactory(commit=commit)
         task_arguments = {
             "commit": commit.commitid,
             "version": "v4",
@@ -959,15 +974,15 @@ def test_dispatch_upload_task_apply_async(self, apply_async):
         )
 
         dispatch_upload_task(task_arguments, repo, redis)
+
         assert not mock_task_service_notify.called
-        assert mock_task_service_upload.called
+        mock_task_service_upload.assert_called_once()
         mock_task_service_upload.assert_called_with(
             repoid=repo.repoid,
             commitid=task_arguments.get("commit"),
             report_code="local_report",
             immutable=True,
         )
-        mock_apply_async.assert_called_once_with()
 
 
 class UploadHandlerRouteTest(APITestCase):
