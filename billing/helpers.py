@@ -19,7 +19,9 @@ from plan.service import PlanService
 
 
 def on_enterprise_plan(owner: Owner) -> bool:
-    return settings.IS_ENTERPRISE or (owner.plan in ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS.keys())
+    return settings.IS_ENTERPRISE or (
+        owner.plan in ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS.keys()
+    )
 
 
 def available_plans(owner: Optional[Owner]) -> List[dict]:
