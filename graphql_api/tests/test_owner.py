@@ -523,3 +523,28 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 "Unlimited private repositories",
             ],
         }
+
+    @freeze_time("2023-06-19")
+    def test_owner_available_plans(self):
+        current_org = OwnerFactory(
+            username="random-plan-user-123",
+            service="github",
+            plan=PlanName.CODECOV_PRO_MONTHLY.value,
+            pretrial_users_count=123,
+        )
+        query = """{
+            owner(username: "%s") {
+                availablePlans {
+                    planName
+                }
+            }
+        }
+        """ % (
+            current_org.username
+        )
+        data = self.gql_request(query, owner=current_org)
+        assert data["owner"]["availablePlans"] == [
+            {"planName": "users-basic"},
+            {"planName": "users-pr-inappm"},
+            {"planName": "users-pr-inappy"},
+        ]

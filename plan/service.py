@@ -5,18 +5,21 @@ from typing import List, Optional
 from codecov.commands.exceptions import ValidationError
 from codecov_auth.models import Owner
 from plan.constants import (
+    BASIC_PLAN,
+    FREE_PLAN,
     FREE_PLAN_REPRESENTATIONS,
+    PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
+    SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
+    TEAM_PLAN_MAX_USERS,
+    TEAM_PLAN_REPRESENTATIONS,
     TRIAL_PLAN_SEATS,
     USER_PLAN_REPRESENTATIONS,
-    MonthlyUploadLimits,
-    PlanBillingRate,
-    PlanMarketingName,
+    PlanData,
     PlanName,
-    PlanPrice,
-    TierName,
     TrialDaysAmount,
     TrialStatus,
 )
+from services import sentry
 
 log = logging.getLogger(__name__)
 
@@ -97,6 +100,29 @@ class PlanService:
     @property
     def tier_name(self) -> str:
         return self.plan_data.tier_name
+
+    @property
+    def available_plans(self) -> List[PlanData]:
+        available_plans = []
+        available_plans.append(BASIC_PLAN)
+
+        if self.plan_name == FREE_PLAN.value:
+            available_plans.append(FREE_PLAN)
+
+        if sentry.is_sentry_user(self.current_org):
+            available_plans += SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values()
+        else:
+            available_plans += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
+
+        # If you're trialing or have trialed and <= 10 users, or belong to the team plan
+        if (
+            self.trial_status == TrialStatus.ONGOING.value
+            or self.trial_status == TrialStatus.EXPIRED.value
+            or self.plan_name in TEAM_PLAN_REPRESENTATIONS
+        ) and self.plan_user_count <= TEAM_PLAN_MAX_USERS:
+            available_plans += TEAM_PLAN_REPRESENTATIONS.values()
+
+        return available_plans
 
     # Trial Data
     def start_trial(self, current_owner: Owner) -> None:
