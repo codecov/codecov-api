@@ -271,6 +271,38 @@ class TestImpactedFileFiltering(GraphQLTestHelper, TransactionTestCase):
         )
         self.comparison_report = ComparisonReport(self.comparison)
 
+        self.query_impacted_files = """
+            query ImpactedFilesNew(
+                $org: String!
+                $repo: String!
+                $commit: String!
+                $filters: ImpactedFilesFilters
+            ) {
+                owner(username: $org) {
+                    repository(name: $repo) {
+                        ... on Repository {
+                            commit(id: $commit) {
+                                compareWithParent {
+                                    ... on Comparison {
+                                        impactedFilesNew(filters: $filters) {
+                                            ... on ImpactedFilesNew {
+                                                results {
+                                                    fileName
+                                                }
+                                            }
+                                            ... on UnknownFlags {
+                                                message
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+
     @patch("services.report.build_report_from_commit")
     @patch("services.archive.ArchiveService.read_file")
     @patch("services.comparison.Comparison.git_comparison")
@@ -281,38 +313,6 @@ class TestImpactedFileFiltering(GraphQLTestHelper, TransactionTestCase):
         build_report_from_commit.return_value = sample_report()
         read_file.return_value = mock_data_from_archive
 
-        query_impacted_files = """
-        query ImpactedFilesNew(
-            $org: String!
-            $repo: String!
-            $commit: String!
-            $filters: ImpactedFilesFilters
-        ) {
-            owner(username: $org) {
-                repository(name: $repo) {
-                    ... on Repository {
-                        commit(id: $commit) {
-                            compareWithParent {
-                                ... on Comparison {
-                                    impactedFilesNew(filters: $filters) {
-                                        ... on ImpactedFilesNew {
-                                            results {
-                                                fileName
-                                            }
-                                        }
-                                        ... on UnknownFlags {
-									        message
-								        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        """
-
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
@@ -320,7 +320,7 @@ class TestImpactedFileFiltering(GraphQLTestHelper, TransactionTestCase):
             "filters": {"flags": ["flag1"]},
         }
 
-        data = self.gql_request(query_impacted_files, variables=variables)
+        data = self.gql_request(self.query_impacted_files, variables=variables)
         assert (
             "results"
             in data["owner"]["repository"]["commit"]["compareWithParent"][
@@ -338,38 +338,6 @@ class TestImpactedFileFiltering(GraphQLTestHelper, TransactionTestCase):
         build_report_from_commit.return_value = sample_report()
         read_file.return_value = mock_data_from_archive
 
-        query_impacted_files = """
-        query ImpactedFilesNew(
-            $org: String!
-            $repo: String!
-            $commit: String!
-            $filters: ImpactedFilesFilters
-        ) {
-            owner(username: $org) {
-                repository(name: $repo) {
-                    ... on Repository {
-                        commit(id: $commit) {
-                            compareWithParent {
-                                ... on Comparison {
-                                    impactedFilesNew(filters: $filters) {
-                                        ... on ImpactedFilesNew {
-                                            results {
-                                                fileName
-                                            }
-                                        }
-                                        ... on UnknownFlags {
-									        message
-								        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        """
-
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
@@ -377,7 +345,7 @@ class TestImpactedFileFiltering(GraphQLTestHelper, TransactionTestCase):
             "filters": {"flags": ["fake_flag"]},
         }
 
-        data = self.gql_request(query_impacted_files, variables=variables)
+        data = self.gql_request(self.query_impacted_files, variables=variables)
         assert data["owner"]["repository"]["commit"]["compareWithParent"][
             "impactedFilesNew"
         ] == {"message": "No coverage with chosen flags"}
