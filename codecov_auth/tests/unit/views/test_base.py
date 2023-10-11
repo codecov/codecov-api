@@ -310,7 +310,9 @@ class LoginMixinTests(TestCase):
         # This time it should not raise an exception because it's not in enterprise mode
         user = self.mixin_instance.get_and_modify_owner(user_dict, self.request)
         self.mixin_instance.login_owner(user, self.request, HttpResponse())
-        mock_get_config.assert_not_called()
+        mock_get_config.assert_called_once_with(
+            "github", "student_disabled", default=False
+        )
 
     @override_settings(IS_ENTERPRISE=False)
     @patch("codecov_auth.views.base.get_current_license")
@@ -430,11 +432,13 @@ class LoginMixinTests(TestCase):
     )
     @patch("codecov_auth.views.base.get_config")
     def test_github_teams_restrictions(self, mock_get_config: Mock):
-        def side_effect(*args):
+        def side_effect(*args, **kwargs):
             if len(args) == 2 and args[0] == "github" and args[1] == "organizations":
                 return ["my-org"]
             if len(args) == 2 and args[0] == "github" and args[1] == "teams":
                 return ["My Team"]
+            if len(args) == 2 and args[0] == "github" and args[1] == "student_disabled":
+                return False
 
         mock_get_config.side_effect = side_effect
         user_dict = dict(
@@ -460,6 +464,7 @@ class LoginMixinTests(TestCase):
         self.mixin_instance.login_owner(user, self.request, HttpResponse())
         mock_get_config.assert_any_call("github", "organizations")
         mock_get_config.assert_any_call("github", "teams")
+        mock_get_config.assert_any_call("github", "student_disabled", default=False)
 
     @override_settings(IS_ENTERPRISE=True)
     @patch("services.refresh.RefreshService.trigger_refresh", lambda *args: None)
@@ -473,11 +478,13 @@ class LoginMixinTests(TestCase):
     )
     @patch("codecov_auth.views.base.get_config")
     def test_github_teams_restrictions_no_teams_in_config(self, mock_get_config: Mock):
-        def side_effect(*args):
+        def side_effect(*args, **kwargs):
             if len(args) == 2 and args[0] == "github" and args[1] == "organizations":
                 return ["my-org"]
             if len(args) == 2 and args[0] == "github" and args[1] == "teams":
                 return []
+            if len(args) == 2 and args[0] == "github" and args[1] == "student_disabled":
+                return False
 
         mock_get_config.side_effect = side_effect
         user_dict = dict(
@@ -491,6 +498,7 @@ class LoginMixinTests(TestCase):
         self.mixin_instance.login_owner(user, self.request, HttpResponse())
         mock_get_config.assert_any_call("github", "organizations")
         mock_get_config.assert_any_call("github", "teams")
+        mock_get_config.assert_any_call("github", "student_disabled", default=False)
 
     def test_adjust_redirection_url_is_unchanged_if_url_is_different_from_base_url(
         self,
