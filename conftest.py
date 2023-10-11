@@ -26,16 +26,18 @@ def pytest_configure(config):
 def codecov_vcr(request):
     current_path = Path(request.node.fspath)
     current_path_name = current_path.name.replace(".py", "")
-    cls_name = request.node.cls.__name__
-    cassete_path = current_path.parent / "cassetes" / current_path_name / cls_name
+    cassette_path = current_path.parent / "cassetes" / current_path_name
+    if request.node.cls:
+        cls_name = request.node.cls.__name__
+        cassette_path = cassette_path / cls_name
     current_name = request.node.name
-    casset_file_path = str(cassete_path / f"{current_name}.yaml")
+    cassette_file_path = str(cassette_path / f"{current_name}.yaml")
     with vcr.use_cassette(
-        casset_file_path,
+        cassette_file_path,
         filter_headers=["authorization"],
         match_on=["method", "scheme", "host", "port", "path"],
-    ) as cassete_maker:
-        yield cassete_maker
+    ) as cassette_maker:
+        yield cassette_maker
 
 
 @pytest.fixture
