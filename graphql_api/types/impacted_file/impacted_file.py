@@ -149,4 +149,4 @@ def resolve_files_result_type(res, *_):
     if isinstance(res, UnknownFlags):
         return "UnknownFlags"
     elif isinstance(res, type({"results": List})):
-        return "ImpactedFilesNew"
+        return "ImpactedFiles"
