@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AnonymousUser
 
+from codecov.commands.exceptions import MissingService
 from codecov_auth.models import Owner
 
 
@@ -26,9 +27,15 @@ class BaseCommand:
 
 
 class BaseInteractor:
+    requires_service = True
+
     def __init__(self, current_owner: Owner, service: str):
         self.current_owner = current_owner
         self.service = service
+
+        if not self.service and self.requires_service:
+            raise MissingService()
+
         self.current_user = AnonymousUser()
         if self.current_owner:
             self.current_user = self.current_owner.user
