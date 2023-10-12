@@ -13,7 +13,11 @@ from .enums import enum_types, enums
 from .file import commit_file, file_bindable
 from .flag import flag, flag_bindable
 from .flag_comparison import flag_comparison, flag_comparison_bindable
-from .impacted_file import impacted_file, impacted_file_bindable
+from .impacted_file import (
+    impacted_file,
+    impacted_file_bindable,
+    impacted_files_result_bindable,
+)
 from .line_comparison import line_comparison, line_comparison_bindable
 from .me import me, me_bindable, tracking_metadata_bindable
 from .measurement import measurement, measurement_bindable
@@ -116,6 +120,7 @@ bindables = [
     datetime_scalar,
     profile_bindable,
     impacted_file_bindable,
+    impacted_files_result_bindable,
     config_bindable,
     user_token_bindable,
     *mutation_resolvers,

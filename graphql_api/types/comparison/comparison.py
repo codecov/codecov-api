@@ -16,6 +16,7 @@ from graphql_api.types.errors import (
     MissingHeadCommit,
     MissingHeadReport,
 )
+from graphql_api.types.errors.errors import UnknownFlags
 from reports.models import ReportLevelTotals
 from services.comparison import (
     Comparison,
@@ -43,6 +44,37 @@ def resolve_impacted_files(
     comparison: Comparison = info.context.get("comparison", None)
 
     return command.fetch_impacted_files(comparison_report, comparison, filters)
+
+
+@comparison_bindable.field("impactedFilesDeprecated")
+@convert_kwargs_to_snake_case
+@sync_to_async
+def resolve_impacted_files(
+    comparison_report: ComparisonReport, info, filters=None
+) -> List[ImpactedFile]:
+    command: CompareCommands = info.context["executor"].get_command("compare")
+    comparison: Comparison = info.context.get("comparison", None)
+
+    return command.fetch_impacted_files(comparison_report, comparison, filters)
+
+
+@comparison_bindable.field("impactedFilesNew")
+@convert_kwargs_to_snake_case
+@sync_to_async
+def resolve_impacted_files_new(
+    comparison_report: ComparisonReport, info, filters=None
+) -> List[ImpactedFile]:
+    command: CompareCommands = info.context["executor"].get_command("compare")
+    comparison: Comparison = info.context.get("comparison", None)
+
+    if filters and comparison:
+        flags = filters.get("flags", [])
+        if flags and set(flags).isdisjoint(set(comparison.head_report.flags)):
+            return UnknownFlags()
+
+    return {
+        "results": command.fetch_impacted_files(comparison_report, comparison, filters)
+    }
 
 
 @comparison_bindable.field("impactedFilesCount")
