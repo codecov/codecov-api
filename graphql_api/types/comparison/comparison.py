@@ -34,6 +34,18 @@ def resolve_state(comparison: ComparisonReport, info) -> str:
     return comparison.commit_comparison.state
 
 
+@comparison_bindable.field("impactedFiles")
+@convert_kwargs_to_snake_case
+@sync_to_async
+def resolve_impacted_files(
+    comparison_report: ComparisonReport, info, filters=None
+) -> List[ImpactedFile]:
+    command: CompareCommands = info.context["executor"].get_command("compare")
+    comparison: Comparison = info.context.get("comparison", None)
+
+    return command.fetch_impacted_files(comparison_report, comparison, filters)
+
+
 @comparison_bindable.field("impactedFilesDeprecated")
 @convert_kwargs_to_snake_case
 @sync_to_async
@@ -46,10 +58,10 @@ def resolve_impacted_files(
     return command.fetch_impacted_files(comparison_report, comparison, filters)
 
 
-@comparison_bindable.field("impactedFiles")
+@comparison_bindable.field("impactedFilesNew")
 @convert_kwargs_to_snake_case
 @sync_to_async
-def resolve_impacted_files(
+def resolve_impacted_files_new(
     comparison_report: ComparisonReport, info, filters=None
 ) -> List[ImpactedFile]:
     command: CompareCommands = info.context["executor"].get_command("compare")
