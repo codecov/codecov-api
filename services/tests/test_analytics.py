@@ -38,6 +38,7 @@ class AnalyticsOwnerTests(TestCase):
             "service_id": self.analytics_owner.owner.service_id,
             "plan": self.analytics_owner.owner.plan,
             "owner_id": self.analytics_owner.owner.ownerid,
+            "user_id": self.analytics_owner.owner.ownerid,
         }
 
         assert self.analytics_owner.traits == expected_traits

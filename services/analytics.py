@@ -56,6 +56,7 @@ class AnalyticsOwner:
             "email": self.owner.email or "unknown@codecov.io",
             "username": self.owner.username or "unknown",
             "owner_id": self.owner.ownerid,
+            "user_id": self.owner.ownerid,
         }
 
     @property
