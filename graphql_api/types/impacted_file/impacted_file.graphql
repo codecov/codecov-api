@@ -15,10 +15,10 @@ type ImpactedFile {
   segments(filters: SegmentsFilters): SegmentsResult!
 }
 
-type ImpactedFilesNew {
+type ImpactedFiles {
   results: [ImpactedFile]
 }
 
 union ImpactedFilesResult =
-    ImpactedFilesNew
+    ImpactedFiles
   | UnknownFlags
