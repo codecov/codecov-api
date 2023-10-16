@@ -1,3 +1,4 @@
+import pytest
 from django.contrib.auth.models import AnonymousUser
 
 from codecov.commands.exceptions import MissingService
@@ -22,7 +23,7 @@ def test_base_command():
 
 
 def test_base_interactor_with_missing_required_service():
-    try:
+    with pytest.raises(MissingService) as excinfo:
         BaseInteractor(None, None)
-    except Exception as e:
-        assert isinstance(e, MissingService)
+
+    assert excinfo.value.message == "Missing required service"

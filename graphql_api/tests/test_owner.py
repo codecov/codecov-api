@@ -2,6 +2,7 @@ import asyncio
 from datetime import timedelta
 from unittest.mock import patch
 
+import pytest
 from django.test import TransactionTestCase
 from django.utils import timezone
 from freezegun import freeze_time
@@ -564,8 +565,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
             current_org.username
         )
 
-        try:
-            self.gql_request(query, provider="", owner=current_org)
-        except MissingService as e:
-            assert str(e) == "Missing service"
-            raise
+        res = self.gql_request(query, provider="", with_errors=True)
+
+        assert res["errors"][0]["message"] == MissingService.message
+        assert res["data"]["owner"] is None
