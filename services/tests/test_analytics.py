@@ -184,14 +184,17 @@ class AnalyticsServiceTests(TestCase):
             track_mock.assert_called_once_with(
                 Events.ACCOUNT_ACTIVATED_REPOSITORY_ON_UPLOAD.value,
                 is_enterprise=False,
-                event_data=AnalyticsRepository(repo).traits,
+                event_data={
+                    **AnalyticsRepository(repo).traits,
+                    "user_id": owner.ownerid,
+                },
                 context={"groupId": repo.author.ownerid},
             )
 
     @patch("shared.analytics_tracking.analytics_manager.track_event")
     def test_account_uploaded_coverage_report(self, track_mock):
         owner = OwnerFactory()
-        upload_details = {"some": "dict"}
+        upload_details = {"some": "dict", "user_id": owner.ownerid}
         with self.settings(IS_ENTERPRISE=False):
             self.analytics_service.account_uploaded_coverage_report(
                 owner.ownerid, upload_details
