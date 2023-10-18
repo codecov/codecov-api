@@ -17,6 +17,8 @@ class TermsAgreementInput:
 
 
 class SaveTermsAgreementInteractor(BaseInteractor):
+    requires_service = False
+
     def validate(self, input: TermsAgreementInput):
         if input.terms_agreement is None:
             raise ValidationError("Terms of agreement cannot be null")

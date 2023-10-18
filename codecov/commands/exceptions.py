@@ -18,3 +18,7 @@ class Unauthorized(BaseException):
 
 class NotFound(BaseException):
     message = "Cant find the requested resource"
+
+
+class MissingService(BaseException):
+    message = "Missing required service"
