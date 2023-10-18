@@ -181,14 +181,19 @@ class AnalyticsService:
 
     @inject_analytics_repository
     def account_activated_repository_on_upload(self, org_ownerid, analytics_repository):
+        event_data = {
+            **analytics_repository.traits,
+            "user_id": org_ownerid,
+        }
         analytics_manager.track_event(
             Events.ACCOUNT_ACTIVATED_REPOSITORY_ON_UPLOAD.value,
             is_enterprise=settings.IS_ENTERPRISE,
-            event_data=analytics_repository.traits,
+            event_data=event_data,
             context={"groupId": org_ownerid},
         )
 
     def account_uploaded_coverage_report(self, org_ownerid, upload_details):
+        upload_details = {**upload_details, "user_id": org_ownerid}
         analytics_manager.track_event(
             Events.ACCOUNT_UPLOADED_COVERAGE_REPORT.value,
             is_enterprise=settings.IS_ENTERPRISE,
