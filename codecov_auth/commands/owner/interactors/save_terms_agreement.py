@@ -13,9 +13,12 @@ from codecov_auth.models import User
 class TermsAgreementInput:
     business_email: Optional[str] = None
     terms_agreement: bool = False
+    marketing_consent: bool = False
 
 
 class SaveTermsAgreementInteractor(BaseInteractor):
+    requires_service = False
+
     def validate(self, input: TermsAgreementInput):
         if input.terms_agreement is None:
             raise ValidationError("Terms of agreement cannot be null")
@@ -36,6 +39,7 @@ class SaveTermsAgreementInteractor(BaseInteractor):
         typed_input = TermsAgreementInput(
             business_email=input.get("businessEmail"),
             terms_agreement=input.get("termsAgreement"),
+            marketing_consent=input.get("marketingConsent"),
         )
         self.validate(typed_input)
         return self.update_terms_agreement(typed_input)

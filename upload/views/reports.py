@@ -40,7 +40,8 @@ class ReportViews(ListCreateAPIView, GetterMixin):
         instance = serializer.save(
             commit_id=commit.id,
         )
-        if repository.author.username == "codecov":
+        username = repository.author.username.lower()
+        if username == "codecov" or username == "getsentry":
             TaskService().preprocess_upload(
                 repository.repoid, commit.commitid, instance.code
             )

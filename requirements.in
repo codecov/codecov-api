@@ -16,7 +16,7 @@ factory-boy
 fakeredis
 freezegun
 https://github.com/codecov/opentelem-python/archive/refs/tags/v0.0.4a1.tar.gz#egg=codecovopentelem
-https://github.com/codecov/shared/archive/c8db8d447b259fab3359cfb0d48f169de7c791d2.tar.gz#egg=shared
+https://github.com/codecov/shared/archive/a4ccbbb66eef572719bf8f522b5c8805c72297a9.tar.gz#egg=shared
 gunicorn
 https://github.com/photocrowd/django-cursor-pagination/archive/f560902696b0c8509e4d95c10ba0d62700181d84.tar.gz
 minio
@@ -26,7 +26,7 @@ opentracing
 pre-commit
 psycopg2
 PyJWT
-pytest
+pytest>=7.2.0
 pytest-cov
 pytest-django
 pytest-mock

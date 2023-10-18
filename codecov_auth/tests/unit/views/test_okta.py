@@ -170,6 +170,16 @@ def test_okta_redirect_to_authorize_no_iss(client):
 
 @override_settings(
     OKTA_OAUTH_CLIENT_ID="test-client-id",
+    OKTA_OAUTH_REDIRECT_URL="https://localhost:8000/login/okta",
+)
+def test_okta_redirect_to_authorize_invalid_iss(client):
+    res = client.get(reverse("okta-login"), data={"iss": "https://non.okta.domain"})
+    assert res.status_code == 302
+    assert res.url == f"{settings.CODECOV_DASHBOARD_URL}/login"
+
+
+@override_settings(
+    OKTA_OAUTH_CLIENT_ID="test-client-id",
     OKTA_OAUTH_CLIENT_SECRE="test-client-secret",
     OKTA_OAUTH_REDIRECT_URL="https://localhost:8000/login/okta",
 )

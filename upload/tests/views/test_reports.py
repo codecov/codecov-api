@@ -43,6 +43,7 @@ def test_reports_post(client, db, mocker):
 
 
 def test_create_report_already_exists(client, db, mocker):
+    mocked_call = mocker.patch.object(TaskService, "preprocess_upload")
     repository = RepositoryFactory(
         name="the_repo", author__username="codecov", author__service="github"
     )
@@ -63,9 +64,11 @@ def test_create_report_already_exists(client, db, mocker):
     )
     assert response.status_code == 201
     assert CommitReport.objects.filter(commit_id=commit.id, code="code").exists()
+    mocked_call.assert_called_once()
 
 
 def test_reports_post_code_as_default(client, db, mocker):
+    mocked_call = mocker.patch.object(TaskService, "preprocess_upload")
     repository = RepositoryFactory(
         name="the_repo", author__username="codecov", author__service="github"
     )
@@ -84,6 +87,7 @@ def test_reports_post_code_as_default(client, db, mocker):
     )
     assert response.status_code == 201
     assert CommitReport.objects.filter(commit_id=commit.id, code=None).exists()
+    mocked_call.assert_called_once()
 
 
 def test_reports_results_post_successful(client, db, mocker):
@@ -222,23 +226,3 @@ def test_report_results_get_unsuccessful(client, db, mocker):
     )
     assert response.status_code == 400
     assert response.json() == ["Report Results not found"]
-
-
-def test_not_called_preprocess_upload_task(client, db, mocker):
-    mocked_call = mocker.patch.object(TaskService, "preprocess_upload")
-    repository = RepositoryFactory(
-        name="the_repo", author__username="not_codecov", author__service="github"
-    )
-    commit = CommitFactory(repository=repository)
-    repository.save()
-    client = APIClient()
-    client.credentials(HTTP_AUTHORIZATION="token " + repository.upload_token)
-    url = reverse(
-        "new_upload.reports",
-        args=["github", "not_codecov::::the_repo", commit.commitid],
-    )
-    response = client.post(url, data={"code": "code1"})
-
-    assert response.status_code == 201
-    assert CommitReport.objects.filter(commit_id=commit.id, code="code1").exists()
-    mocked_call.assert_not_called()

@@ -11,10 +11,13 @@ from shared.metrics import metrics
 from codecov_auth.authentication.repo_auth import (
     GlobalTokenAuthentication,
     OrgLevelTokenAuthentication,
+    OrgLevelTokenRepositoryAuth,
     RepositoryLegacyTokenAuthentication,
 )
+from codecov_auth.models import OrganizationLevelToken
 from core.models import Commit, Repository
 from reports.models import CommitReport, ReportSession
+from services.analytics import AnalyticsService
 from services.archive import ArchiveService, MinioEndpoints
 from services.redis_configuration import get_redis_connection
 from upload.helpers import dispatch_upload_task, validate_activated_repo
@@ -52,18 +55,21 @@ class UploadViews(ListCreateAPIView, GetterMixin):
         validate_activated_repo(repository)
         commit = self.get_commit(repository)
         report = self.get_report(commit)
+        version = (
+            serializer.validated_data["version"]
+            if "version" in serializer.validated_data
+            else None
+        )
         log.info(
             "Request to create new upload",
             extra=dict(
                 repo=repository.name,
                 commit=commit.commitid,
-                cli_version=serializer.validated_data["version"]
-                if "version" in serializer.validated_data
-                else None,
+                cli_version=version,
             ),
         )
-        if "version" in serializer.validated_data:
-            metrics.incr("upload.cli." + f"{serializer.validated_data['version']}")
+        if version:
+            metrics.incr("upload.cli." + f"{version}")
         archive_service = ArchiveService(repository)
         instance: ReportSession = serializer.save(
             report_id=report.id,
@@ -85,7 +91,7 @@ class UploadViews(ListCreateAPIView, GetterMixin):
         self.trigger_upload_task(repository, commit.commitid, instance, report)
         metrics.incr("uploads.accepted", 1)
         self.activate_repo(repository)
-
+        self.send_analytics_data(commit, instance, version)
         return instance
 
     def list(
@@ -126,6 +132,38 @@ class UploadViews(ListCreateAPIView, GetterMixin):
         repository.active = True
         repository.deleted = False
         repository.save(update_fields=["activated", "active", "deleted", "updatestamp"])
+
+    def send_analytics_data(self, commit: Commit, upload: ReportSession, version):
+        token = self.get_token(commit)
+        analytics_upload_data = {
+            "commit": commit.commitid,
+            "branch": commit.branch,
+            "pr": commit.pullid,
+            "repo": commit.repository.name,
+            "repository_name": commit.repository.name,
+            "repository_id": commit.repository.repoid,
+            "service": commit.repository.service,
+            "build": upload.build_code,
+            "build_url": upload.build_url,
+            "flags": ",".join(upload.flag_names),
+            "owner": commit.repository.author.ownerid,
+            "token": str(token),
+            "version": version,
+            "uploader_type": "CLI",
+        }
+        AnalyticsService().account_uploaded_coverage_report(
+            commit.repository.author.ownerid, analytics_upload_data
+        )
+
+    def get_token(self, commit: Commit):
+        repo = commit.repository
+        if isinstance(self.request.auth, OrgLevelTokenRepositoryAuth):
+            token = (
+                OrganizationLevelToken.objects.filter(owner=repo.author).first().token
+            )
+        else:
+            token = repo.upload_token
+        return token
 
     def get_repo(self) -> Repository:
         try:

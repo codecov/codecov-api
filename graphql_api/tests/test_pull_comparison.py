@@ -357,7 +357,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             pullId
             compareWithBase {
                 ... on Comparison {
-                    impactedFiles {
+                    impactedFilesDeprecated {
                         baseName
                         headName
                         isNewFile
@@ -421,7 +421,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         assert res == {
             "pullId": self.pull.pullid,
             "compareWithBase": {
-                "impactedFiles": [
+                "impactedFilesDeprecated": [
                     {
                         "baseName": "foo.py",
                         "headName": "bar.py",
@@ -474,7 +474,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             pullId
             compareWithBase {
                 ... on Comparison {
-                    impactedFiles {
+                    impactedFilesDeprecated {
                         baseName
                         headName
                         isCriticalFile
@@ -487,7 +487,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         assert res == {
             "pullId": self.pull.pullid,
             "compareWithBase": {
-                "impactedFiles": [
+                "impactedFilesDeprecated": [
                     {
                         "baseName": "foo.py",
                         "headName": "bar.py",
@@ -529,7 +529,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                         pullId
                                         compareWithBase {
                                             ... on Comparison {
-                                                impactedFiles {
+                                                impactedFilesDeprecated {
                                                     baseName
                                                     headName
                                                     isCriticalFile
@@ -557,7 +557,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                                     "pull": {
                                         "pullId": 2,
                                         "compareWithBase": {
-                                            "impactedFiles": [
+                                            "impactedFilesDeprecated": [
                                                 {
                                                     "baseName": "foo.py",
                                                     "headName": "bar.py",
@@ -673,7 +673,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             pullId
             compareWithBase {
                 ... on Comparison {
-                    impactedFiles {
+                    impactedFilesDeprecated {
                         segments {
                             ... on SegmentComparisons {
                                 results {
@@ -702,7 +702,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         assert res == {
             "pullId": self.pull.pullid,
             "compareWithBase": {
-                "impactedFiles": [
+                "impactedFilesDeprecated": [
                     {
                         "segments": {
                             "results": [
@@ -819,7 +819,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             pullId
             compareWithBase {
                 ... on Comparison {
-                    impactedFiles {
+                    impactedFilesDeprecated {
                         segments {
                             ... on SegmentComparisons {
                                 results {
@@ -844,7 +844,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         assert res == {
             "pullId": self.pull.pullid,
             "compareWithBase": {
-                "impactedFiles": [
+                "impactedFilesDeprecated": [
                     {
                         "segments": {
                             "results": [
@@ -889,7 +889,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                     headTotals {
                         percentCovered
                     }
-                    impactedFiles {
+                    impactedFilesDeprecated {
                         baseName
                         headName
                     }
@@ -904,7 +904,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                 "state": "pending",
                 "baseTotals": None,
                 "headTotals": None,
-                "impactedFiles": [],
+                "impactedFilesDeprecated": [],
             },
         }
 
@@ -937,7 +937,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             compareWithBase {
                 ... on Comparison {
                     state
-                    impactedFiles {
+                    impactedFilesDeprecated {
                         headName
                     }
                 }
@@ -953,7 +953,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         assert res["errors"][0]["message"] == "Missing head report"
         assert (
             res["data"]["me"]["owner"]["repository"]["pull"]["compareWithBase"][
-                "impactedFiles"
+                "impactedFilesDeprecated"
             ]
             is None
         )
@@ -968,7 +968,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             compareWithBase {
                 ... on Comparison {
                     state
-                    impactedFiles {
+                    impactedFilesDeprecated {
                         headName
                     }
                 }
@@ -984,7 +984,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         assert res["errors"][0]["message"] == "Missing base report"
         assert (
             res["data"]["me"]["owner"]["repository"]["pull"]["compareWithBase"][
-                "impactedFiles"
+                "impactedFilesDeprecated"
             ]
             is None
         )

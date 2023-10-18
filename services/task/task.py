@@ -366,4 +366,18 @@ class TaskService(object):
                 commitid=commitid,
                 report_code=report_code,
             ),
-        )
+        ).apply_async()
+
+    def send_email(
+        self, ownerid, template_name: str, from_addr: str, subject: str, **kwargs
+    ):
+        self._create_signature(
+            "app.tasks.send_email.SendEmail",
+            kwargs=dict(
+                ownerid=ownerid,
+                template_name=template_name,
+                from_addr=from_addr,
+                subject=subject,
+                **kwargs,
+            ),
+        ).apply_async()
