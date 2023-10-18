@@ -18,6 +18,9 @@ export API_DOCKER_REPO=${AR_REPO}
 export API_DOCKER_VERSION=${VERSION}
 export CODECOV_TOKEN=${CODECOV_UPLOAD_TOKEN}
 
+# Codecov CLI version to use
+CODECOV_CLI_VERSION := 0.3.8
+
 build:
 	make build.requirements
 	make build.app
@@ -179,7 +182,7 @@ test_env.check_db:
 	make test_env.check-for-migration-conflicts
 
 test_env.install_cli:
-	pip install codecov-cli
+	pip install codecov-cli==$(CODECOV_CLI_VERSION)
 
 test_env.container_prepare:
 	apk add -U curl git build-base jq
