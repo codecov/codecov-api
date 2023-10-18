@@ -7,4 +7,5 @@ type SaveTermsAgreementPayload {
 input SaveTermsAgreementInput {
   businessEmail: String
   termsAgreement: Boolean!
+  marketingConsent: Boolean
 }
