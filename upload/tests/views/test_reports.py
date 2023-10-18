@@ -43,6 +43,7 @@ def test_reports_post(client, db, mocker):
 
 
 def test_create_report_already_exists(client, db, mocker):
+    mocked_call = mocker.patch.object(TaskService, "preprocess_upload")
     repository = RepositoryFactory(
         name="the_repo", author__username="codecov", author__service="github"
     )
@@ -63,6 +64,7 @@ def test_create_report_already_exists(client, db, mocker):
     )
     assert response.status_code == 201
     assert CommitReport.objects.filter(commit_id=commit.id, code="code").exists()
+    mocked_call.assert_called_once()
 
 
 def test_reports_post_code_as_default(client, db, mocker):
