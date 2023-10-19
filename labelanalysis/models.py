@@ -1,11 +1,14 @@
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
+from django_prometheus.models import ExportModelOperationsMixin
 from shared.labelanalysis import LabelAnalysisRequestState
 
 from codecov.models import BaseCodecovModel
 
 
-class LabelAnalysisRequest(BaseCodecovModel):
+class LabelAnalysisRequest(
+    ExportModelOperationsMixin("labelanalysis.label_analysis_request"), BaseCodecovModel
+):
     base_commit = models.ForeignKey(
         "core.Commit", on_delete=models.CASCADE, related_name="label_requests_as_base"
     )
@@ -20,7 +23,10 @@ class LabelAnalysisRequest(BaseCodecovModel):
     processing_params = models.JSONField(null=True)
 
 
-class LabelAnalysisProcessingError(BaseCodecovModel):
+class LabelAnalysisProcessingError(
+    ExportModelOperationsMixin("labelanalysis.label_analysis_processing_error"),
+    BaseCodecovModel,
+):
     label_analysis_request = models.ForeignKey(
         "LabelAnalysisRequest",
         related_name="errors",
