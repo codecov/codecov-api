@@ -25,4 +25,5 @@ urlpatterns = [
     path("staticanalysis/", include("staticanalysis.urls")),
     path("labels/", include("labelanalysis.urls")),
     re_path(r"^redirect_app", views.redirect_app),
+    path("monitoring/", include("django_prometheus.urls")),
 ]

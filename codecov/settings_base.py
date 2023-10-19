@@ -255,7 +255,7 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-PROMETHEUS_METRICS_EXPORT_PORT_RANGE = range(8001, 8020)
+PROMETHEUS_EXPORT_MIGRATIONS = False
 
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": (
