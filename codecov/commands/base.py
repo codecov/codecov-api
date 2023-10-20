@@ -42,5 +42,5 @@ class BaseInteractor:
         if not self.service and self.requires_service:
             raise MissingService()
 
-        if self.current_owner and not self.current_user.is_authenticated:
-            self.current_user = self.current_owner
+        if self.current_owner:
+            self.current_user = self.current_owner.user
