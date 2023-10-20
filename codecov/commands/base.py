@@ -5,10 +5,8 @@ from codecov_auth.models import Owner, User
 
 
 class BaseCommand:
-    def __init__(
-        self, current_owner: Owner, service: str, current_user: User = AnonymousUser()
-    ):
-        self.current_user = current_user
+    def __init__(self, current_owner: Owner, service: str, current_user: User = None):
+        self.current_user = current_user or AnonymousUser()
         self.current_owner = current_owner
         self.service = service
         self.executor = None
@@ -36,10 +34,8 @@ class BaseCommand:
 class BaseInteractor:
     requires_service = True
 
-    def __init__(
-        self, current_owner: Owner, service: str, current_user: User = AnonymousUser()
-    ):
-        self.current_user = current_user
+    def __init__(self, current_owner: Owner, service: str, current_user: User = None):
+        self.current_user = current_user or AnonymousUser()
         self.current_owner = current_owner
         self.service = service
 
