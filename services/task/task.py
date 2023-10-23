@@ -386,7 +386,7 @@ class TaskService(object):
                 commitid=commitid,
                 report_code=report_code,
             ),
-        )
+        ).apply_async()
 
     def send_email(
         self, ownerid, template_name: str, from_addr: str, subject: str, **kwargs
