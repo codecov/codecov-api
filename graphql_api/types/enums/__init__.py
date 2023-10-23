@@ -1,4 +1,5 @@
 from .enums import (
+    CiProvider,
     CommitErrorCode,
     CommitErrorGeneralType,
     CoverageLine,

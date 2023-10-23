@@ -1,0 +1,3 @@
+enum CiProvider {
+    GITHUB_ACTIONS
+}

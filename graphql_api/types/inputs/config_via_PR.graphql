@@ -1,0 +1,5 @@
+input ConfigRepositoryViaPRInput {
+  owner: String!
+  repoName: String!
+  ciProvider: CiProvider!
+}
