@@ -4,7 +4,7 @@ repos:
   - id: lint
     name: lint
     description: "Lint and sort"
-    entry: make lint
+    entry: make lint.run
     pass_filenames: false
     require_serial: true
     language: system

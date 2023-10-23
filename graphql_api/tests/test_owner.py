@@ -2,10 +2,12 @@ import asyncio
 from datetime import timedelta
 from unittest.mock import patch
 
+import pytest
 from django.test import TransactionTestCase
 from django.utils import timezone
 from freezegun import freeze_time
 
+from codecov.commands.exceptions import MissingService
 from codecov_auth.models import OwnerProfile
 from codecov_auth.tests.factories import (
     GetAdminProviderAdapter,
@@ -548,3 +550,22 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
             {"planName": "users-pr-inappm"},
             {"planName": "users-pr-inappy"},
         ]
+
+    def test_owner_query_with_no_service(self):
+        current_org = OwnerFactory(
+            username="random-plan-user",
+            service="github",
+        )
+        query = """{
+            owner(username: "%s") {
+                username
+            }
+        }
+        """ % (
+            current_org.username
+        )
+
+        res = self.gql_request(query, provider="", with_errors=True)
+
+        assert res["errors"][0]["message"] == MissingService.message
+        assert res["data"]["owner"] is None

@@ -1,6 +1,6 @@
 import json
 import logging
-import uuid
+import re
 from typing import Dict, Optional
 from urllib.parse import urlencode
 
@@ -18,6 +18,7 @@ from codecov_auth.views.base import LoginMixin
 from utils.services import get_short_service_name
 
 log = logging.getLogger(__name__)
+iss_regex = re.compile(r"https://[\w\d\-\_]+.okta.com/?")
 
 
 def validate_id_token(iss: str, id_token: str) -> dict:
@@ -185,5 +186,8 @@ class OktaLoginView(LoginMixin, View):
             iss = settings.OKTA_ISS or request.GET.get("iss")
             if not iss:
                 log.warning("Missing Okta issuer")
+                return redirect(f"{settings.CODECOV_DASHBOARD_URL}/login")
+            if not iss_regex.match(iss):
+                log.warning("Invalid Okta issuer")
                 return redirect(f"{settings.CODECOV_DASHBOARD_URL}/login")
             return self._redirect_to_consent(iss=iss)
