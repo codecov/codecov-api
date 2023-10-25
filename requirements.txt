@@ -138,7 +138,6 @@ freezegun==1.1.0
     # via -r requirements.in
 google-api-core[grpc]==2.11.1
     # via
-    #   google-api-core
     #   google-cloud-core
     #   google-cloud-pubsub
     #   google-cloud-storage
@@ -352,9 +351,7 @@ requests==2.31.0
     #   google-cloud-storage
     #   stripe
 rfc3986[idna2008]==1.4.0
-    # via
-    #   httpx
-    #   rfc3986
+    # via httpx
 rsa==4.7.2
     # via google-auth
 s3transfer==0.5.0
@@ -415,8 +412,9 @@ typing-extensions==4.6.2
     #   shared
 uritemplate==4.1.1
     # via drf-spectacular
-urllib3==1.26.13
+urllib3==1.26.18
     # via
+    #   -r requirements.in
     #   botocore
     #   elastic-apm
     #   google-auth
