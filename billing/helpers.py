@@ -37,15 +37,5 @@ def available_plans(owner: Optional[Owner]) -> List[dict]:
         # these are only available to Sentry users
         plans += list(SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values())
 
-    if owner:
-        plan_service = PlanService(current_org=owner)
-
-        if (
-            plan_service.trial_status == TrialStatus.ONGOING.value
-            or plan_service.trial_status == TrialStatus.EXPIRED.value
-            or plan_service.plan_name in TEAM_PLAN_REPRESENTATIONS
-        ) and plan_service.plan_user_count <= TEAM_PLAN_MAX_USERS:
-            plans += TEAM_PLAN_REPRESENTATIONS.values()
-
     plans = [asdict(plan) for plan in plans]
     return plans

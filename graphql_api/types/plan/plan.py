@@ -84,3 +84,9 @@ def resolve_pretrial_users_count(plan_service: PlanService, info) -> Optional[in
 @convert_kwargs_to_snake_case
 def resolve_monthly_uploads_limit(plan_service: PlanService, info) -> Optional[int]:
     return plan_service.monthly_uploads_limit
+
+
+@plan_bindable.field("planUserCount")
+@convert_kwargs_to_snake_case
+def resolve_plan_user_count(plan_service: PlanService, info) -> int:
+    return plan_service.plan_user_count

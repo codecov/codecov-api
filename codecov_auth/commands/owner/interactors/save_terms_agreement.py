@@ -6,6 +6,7 @@ from django.utils import timezone
 from codecov.commands.base import BaseInteractor
 from codecov.commands.exceptions import Unauthenticated, ValidationError
 from codecov.db import sync_to_async
+from services.analytics import AnalyticsService
 
 
 @dataclass
@@ -32,6 +33,15 @@ class SaveTermsAgreementInteractor(BaseInteractor):
         if input.business_email is not None and input.business_email != "":
             self.current_user.email = input.business_email
             self.current_user.save()
+
+        if input.marketing_consent:
+            self.send_data_to_marketo()
+
+    def send_data_to_marketo(self):
+        event_data = {
+            "email": self.current_user.email,
+        }
+        AnalyticsService().opt_in_email(self.current_user.id, event_data)
 
     @sync_to_async
     def execute(self, input):
