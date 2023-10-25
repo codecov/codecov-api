@@ -17,7 +17,7 @@ from shared.reports.enums import UploadType
 from shared.torngit.exceptions import TorngitClientError, TorngitObjectNotFoundError
 
 from codecov_auth.models import Owner
-from core.models import Commit, CommitNotification, Repository
+from core.models import Commit, CommitNotification, Pull, Repository
 from plan.constants import USER_PLAN_REPRESENTATIONS
 from reports.models import ReportSession
 from services.analytics import AnalyticsService
@@ -649,7 +649,20 @@ def dispatch_upload_task(task_arguments, repository, redis):
         immutable=True,
     )
 
-    notified = CommitNotification.objects.filter(commit__commitid=commitid).exists()
+    # we have a CommitNotifications model for recording if a notification
+    # has been sent for a particular commit but we'd like this early notification
+    # (below) to only happen once for a PR.  Checking the `commentid` isn't strictly
+    # correct but works for now since the early notify is only for PR comments.
+
+    notified = False
+    commit = Commit.objects.filter(commitid=commitid).first()
+    if commit and commit.pullid is not None:
+        pull = Pull.objects.filter(
+            repository_id=commit.repository_id, pullid=commit.pullid
+        ).first()
+        if pull and pull.commentid:
+            notified = True
+
     if notified:
         # we've already notified on this commit - just process
         # the upload

@@ -26,7 +26,7 @@ from simplejson import JSONDecodeError
 from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
 from core.models import Commit, Repository
-from core.tests.factories import CommitFactory, CommitNotificationFactory
+from core.tests.factories import CommitFactory, PullFactory
 from reports.tests.factories import CommitReportFactory, UploadFactory
 from upload.helpers import (
     determine_repo_for_upload,
@@ -958,8 +958,8 @@ class UploadHandlerHelpersTest(TestCase):
         mock_task_service_notify,
     ):
         repo = G(Repository)
-        commit = CommitFactory(repository=repo, author=repo.author)
-        CommitNotificationFactory(commit=commit)
+        pull = PullFactory(repository=repo, commentid="something")
+        commit = CommitFactory(repository=repo, author=repo.author, pullid=pull.pullid)
         task_arguments = {
             "commit": commit.commitid,
             "version": "v4",
