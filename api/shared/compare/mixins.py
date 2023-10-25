@@ -13,7 +13,11 @@ from services.comparison import (
 )
 from services.decorators import torngit_safe
 
-from .serializers import FileComparisonSerializer, FlagComparisonSerializer
+from .serializers import (
+    FileComparisonSerializer,
+    FlagComparisonSerializer,
+    ImpactedFilesComparisonSerializer,
+)
 
 
 class CompareViewSetMixin(CompareSlugMixin, viewsets.GenericViewSet):
@@ -100,3 +104,12 @@ class CompareViewSetMixin(CompareSlugMixin, viewsets.GenericViewSet):
             for flag_name in comparison.non_carried_forward_flags
         ]
         return Response(FlagComparisonSerializer(flags, many=True).data)
+
+    @action(detail=False, methods=["get"])
+    @torngit_safe
+    def impacted_files(self, request, *args, **kwargs):
+        comparison = self.get_object()
+        try:
+            return Response(ImpactedFilesComparisonSerializer(comparison).data)
+        except MissingComparisonReport:
+            raise NotFound("Raw report not found for base or head reference.")

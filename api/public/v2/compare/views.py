@@ -12,6 +12,7 @@ from api.shared.compare.mixins import CompareViewSetMixin
 from api.shared.compare.serializers import (
     FileComparisonSerializer,
     FlagComparisonSerializer,
+    ImpactedFilesComparisonSerializer,
 )
 from core.models import Commit
 from services.components import ComponentComparison, commit_components
@@ -125,3 +126,15 @@ class CompareViewSet(
 
         serializer = ComponentComparisonSerializer(component_comparisons, many=True)
         return Response(serializer.data)
+
+    @extend_schema(
+        summary="Impacted files comparison",
+        parameters=comparison_parameters,
+        responses={200: ImpactedFilesComparisonSerializer},
+    )
+    @action(detail=False, methods=["get"])
+    def impacted_files(self, request, *args, **kwargs):
+        """
+        Returns pre-computed impacted files comparisons if available
+        """
+        return super().impacted_files(request, *args, **kwargs)
