@@ -653,7 +653,11 @@ def dispatch_upload_task(task_arguments, repository, redis):
     if notified:
         # we've already notified on this commit - just process
         # the upload
-        upload_sig.apply_async()
+        upload_sig.apply_async(
+            countdown=max(
+                countdown, int(get_config("setup", "upload_processing_delay") or 0)
+            ),
+        )
     else:
         # we have not notified yet
         #
