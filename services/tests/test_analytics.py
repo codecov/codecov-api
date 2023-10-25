@@ -7,7 +7,7 @@ from django.utils import timezone
 from shared.analytics_tracking.events import Events
 
 from codecov_auth.models import PlanProviders
-from codecov_auth.tests.factories import OwnerFactory
+from codecov_auth.tests.factories import OwnerFactory, UserFactory
 from core.tests.factories import RepositoryFactory
 from services.analytics import AnalyticsOwner, AnalyticsRepository, AnalyticsService
 
@@ -204,4 +204,19 @@ class AnalyticsServiceTests(TestCase):
                 is_enterprise=False,
                 event_data=upload_details,
                 context={"groupId": owner.ownerid},
+            )
+
+    @patch("shared.analytics_tracking.analytics_manager.track_event")
+    def test_opt_in_email(self, track_mock):
+        user = UserFactory()
+        data = {
+            "email": user.email,
+        }
+
+        with self.settings(IS_ENTERPRISE=False):
+            self.analytics_service.opt_in_email(user.id, data)
+            track_mock.assert_called_once_with(
+                Events.GDPR_OPT_IN.value,
+                is_enterprise=False,
+                event_data={**data, "user_id": user.id},
             )
