@@ -200,3 +200,11 @@ class AnalyticsService:
             event_data=upload_details,
             context={"groupId": org_ownerid},
         )
+
+    def opt_in_email(self, user_id, data: dict):
+        data = {**data, "user_id": user_id}
+        analytics_manager.track_event(
+            Events.GDPR_OPT_IN.value,
+            is_enterprise=settings.IS_ENTERPRISE,
+            event_data=data,
+        )
