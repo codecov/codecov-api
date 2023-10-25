@@ -11,4 +11,5 @@ type Plan {
   baseUnitPrice: Int!
   benefits: [String!]!
   monthlyUploadLimit: Int
+  planUserCount: Int
 }

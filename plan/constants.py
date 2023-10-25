@@ -5,6 +5,7 @@ from typing import List, Optional
 
 class MonthlyUploadLimits(enum.Enum):
     CODECOV_BASIC_PLAN = 250
+    CODECOV_TEAM_PLAN = 2500
 
 
 class TrialDaysAmount(enum.Enum):
@@ -51,7 +52,7 @@ class PlanPrice(enum.Enum):
     CODECOV_BASIC = 0
     CODECOV_TRIAL = 0
     TEAM_MONTHLY = 6
-    TEAM_YEARLY = 8
+    TEAM_YEARLY = 5
     GHM_PRICE = 12
 
 
@@ -281,8 +282,9 @@ TEAM_PLAN_REPRESENTATIONS = {
         base_unit_price=PlanPrice.TEAM_MONTHLY.value,
         benefits=[
             "Up to 10 users",
-            "Unlimited public repositories",
-            "Unlimited private repositories",
+            "Unlimited repositories",
+            "2500 repositories",
+            "Patch coverage analysis",
         ],
         tier_name=TierName.TEAM.value,
         trial_days=None,
@@ -295,8 +297,9 @@ TEAM_PLAN_REPRESENTATIONS = {
         base_unit_price=PlanPrice.TEAM_YEARLY.value,
         benefits=[
             "Up to 10 users",
-            "Unlimited public repositories",
-            "Unlimited private repositories",
+            "Unlimited repositories",
+            "2500 repositories",
+            "Patch coverage analysis",
         ],
         tier_name=TierName.TEAM.value,
         trial_days=None,
