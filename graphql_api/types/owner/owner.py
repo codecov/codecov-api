@@ -83,6 +83,7 @@ def resolve_plan_representation(owner: Owner, info) -> PlanData:
 @convert_kwargs_to_snake_case
 def resolve_available_plans(owner: Owner, info) -> List[PlanData]:
     plan_service = PlanService(current_org=owner)
+    info.context["plan_service"] = plan_service
     return plan_service.available_plans
 
 

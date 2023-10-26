@@ -71,12 +71,13 @@ class LabelAnalysisRequestSerializer(serializers.ModelSerializer):
     errors = ProcessingErrorList(required=False)
 
     def validate(self, data):
+        metrics.incr("label_analysis_request.count")
         if data["base_commit"] == data["head_commit"]:
             metrics.incr("label_analysis_request.errors.base_head_equal")
             raise serializers.ValidationError(
                 {"base_commit": "Base and head must be different commits"}
             )
-        metrics.incr("label_analysis_request.count")
+        metrics.incr("label_analysis_request.valid.count")
         return data
 
     class Meta:

@@ -3,7 +3,6 @@ from django.test import RequestFactory
 from django.urls import ResolverMatch
 
 from codecov_auth.commands.owner import OwnerCommands
-from codecov_auth.tests.factories import OwnerFactory
 
 from ..executor import get_executor_from_command, get_executor_from_request
 

@@ -4,9 +4,9 @@ from typing import Optional
 from django.utils import timezone
 
 from codecov.commands.base import BaseInteractor
-from codecov.commands.exceptions import ValidationError
+from codecov.commands.exceptions import Unauthenticated, ValidationError
 from codecov.db import sync_to_async
-from codecov_auth.models import User
+from services.analytics import AnalyticsService
 
 
 @dataclass
@@ -22,8 +22,8 @@ class SaveTermsAgreementInteractor(BaseInteractor):
     def validate(self, input: TermsAgreementInput):
         if input.terms_agreement is None:
             raise ValidationError("Terms of agreement cannot be null")
-        if not self.current_owner or not self.current_owner.user_id:
-            raise ValidationError("Owner does not have an associated user")
+        if not self.current_user.is_authenticated:
+            raise Unauthenticated()
 
     def update_terms_agreement(self, input: TermsAgreementInput):
         self.current_user.terms_agreement = input.terms_agreement
@@ -31,8 +31,17 @@ class SaveTermsAgreementInteractor(BaseInteractor):
         self.current_user.save()
 
         if input.business_email is not None and input.business_email != "":
-            self.current_owner.business_email = input.business_email
-            self.current_owner.save()
+            self.current_user.email = input.business_email
+            self.current_user.save()
+
+        if input.marketing_consent:
+            self.send_data_to_marketo()
+
+    def send_data_to_marketo(self):
+        event_data = {
+            "email": self.current_user.email,
+        }
+        AnalyticsService().opt_in_email(self.current_user.id, event_data)
 
     @sync_to_async
     def execute(self, input):
