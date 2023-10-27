@@ -1,18 +1,9 @@
-from datetime import datetime
 from typing import List, Optional
 
 from ariadne import ObjectType, convert_kwargs_to_snake_case
 
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
-from plan.constants import (
-    MonthlyUploadLimits,
-    PlanBillingRate,
-    PlanData,
-    PlanMarketingName,
-    PlanName,
-    PlanPrice,
-    TrialStatus,
-)
+from plan.constants import PlanData
 from plan.service import PlanService
 
 plan_representation = ariadne_load_local_graphql(
@@ -30,6 +21,11 @@ def resolve_marketing_name(plan_data: PlanData, info) -> str:
 @plan_representation_bindable.field("planName")
 @convert_kwargs_to_snake_case
 def resolve_plan_name(plan_data: PlanData, info) -> str:
+    return plan_data.value
+
+
+@plan_representation_bindable.field("value")
+def resolve_plan_value(plan_data: PlanData, info) -> str:
     return plan_data.value
 
 

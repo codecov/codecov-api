@@ -38,6 +38,7 @@ class TestPlanRepresentationsType(GraphQLTestHelper, TransactionTestCase):
                 pretrialPlan {
                     marketingName
                     planName
+                    value
                     billingRate
                     baseUnitPrice
                     benefits
@@ -52,6 +53,7 @@ class TestPlanRepresentationsType(GraphQLTestHelper, TransactionTestCase):
         assert data["owner"]["pretrialPlan"] == {
             "marketingName": "Developer",
             "planName": "users-basic",
+            "value": "users-basic",
             "billingRate": None,
             "baseUnitPrice": 0,
             "benefits": [
