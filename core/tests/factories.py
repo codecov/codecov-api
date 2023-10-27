@@ -242,3 +242,13 @@ class CommitErrorFactory(DjangoModelFactory):
 
     commit = factory.SubFactory(CommitFactory)
     error_code = factory.Faker("")
+
+
+class CommitNotificationFactory(DjangoModelFactory):
+    commit = factory.SubFactory(CommitFactory)
+    notification_type = models.CommitNotification.NotificationTypes.COMMENT
+    decoration_type = models.CommitNotification.DecorationTypes.STANDARD
+    state = models.CommitNotification.States.SUCCESS
+
+    class Meta:
+        model = models.CommitNotification

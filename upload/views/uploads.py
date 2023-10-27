@@ -5,6 +5,7 @@ from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListCreateAPIView
 from rest_framework.permissions import BasePermission
+from shared.config import get_config
 from shared.metrics import metrics
 
 from codecov_auth.authentication.repo_auth import (
@@ -74,16 +75,19 @@ class UploadViews(ListCreateAPIView, GetterMixin):
             report_id=report.id,
             upload_extras={"format_version": "v1"},
         )
-        path = MinioEndpoints.raw_with_upload_id.get_path(
-            version="v4",
-            date=timezone.now().strftime("%Y-%m-%d"),
-            repo_hash=archive_service.storage_hash,
-            commit_sha=commit.commitid,
-            reportid=report.external_id,
-            uploadid=instance.external_id,
-        )
-        instance.storage_path = path
-        instance.save()
+
+        # only Shelter requests are allowed to set their own `storage_path`
+        if instance.storage_path is None or not self.is_shelter_request():
+            path = MinioEndpoints.raw_with_upload_id.get_path(
+                version="v4",
+                date=timezone.now().strftime("%Y-%m-%d"),
+                repo_hash=archive_service.storage_hash,
+                commit_sha=commit.commitid,
+                reportid=report.external_id,
+                uploadid=instance.external_id,
+            )
+            instance.storage_path = path
+            instance.save()
         self.trigger_upload_task(repository, commit.commitid, instance, report)
         metrics.incr("uploads.accepted", 1)
         self.activate_repo(repository)
