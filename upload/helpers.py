@@ -5,6 +5,7 @@ from json import dumps
 
 import jwt
 from asgiref.sync import async_to_sync
+from celery import chain, signature
 from cerberus import Validator
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
@@ -16,7 +17,7 @@ from shared.reports.enums import UploadType
 from shared.torngit.exceptions import TorngitClientError, TorngitObjectNotFoundError
 
 from codecov_auth.models import Owner
-from core.models import Commit, Repository
+from core.models import Commit, CommitNotification, Pull, Repository
 from plan.constants import USER_PLAN_REPRESENTATIONS
 from reports.models import ReportSession
 from services.analytics import AnalyticsService
@@ -637,15 +638,55 @@ def dispatch_upload_task(task_arguments, repository, redis):
         timezone.now().timestamp(),
     )
 
-    # Send task to worker
-    TaskService().upload(
+    commitid = task_arguments.get("commit")
+
+    upload_sig = TaskService().upload_signature(
         repoid=repository.repoid,
-        commitid=task_arguments.get("commit"),
+        commitid=commitid,
         report_code=task_arguments.get("report_code"),
-        countdown=max(
-            countdown, int(get_config("setup", "upload_processing_delay") or 0)
-        ),
+        # this prevents the results of the notify task (below) from being
+        # passed as args to this upload task
+        immutable=True,
     )
+
+    # we have a CommitNotifications model for recording if a notification
+    # has been sent for a particular commit but we'd like this early notification
+    # (below) to only happen once for a PR.  Checking the `commentid` isn't strictly
+    # correct but works for now since the early notify is only for PR comments.
+
+    notified = False
+    commit = Commit.objects.filter(commitid=commitid).first()
+    if commit and commit.pullid is not None:
+        pull = Pull.objects.filter(
+            repository_id=commit.repository_id, pullid=commit.pullid
+        ).first()
+        if pull and pull.commentid:
+            notified = True
+
+    if notified:
+        # we've already notified on this commit - just process
+        # the upload
+        upload_sig.apply_async(
+            countdown=max(
+                countdown, int(get_config("setup", "upload_processing_delay") or 0)
+            ),
+        )
+    else:
+        # we have not notified yet
+        #
+        # notify early with a "processing" indicator and then
+        # start processing the upload
+        TaskService().notify_signature(
+            repoid=repository.repoid,
+            commitid=task_arguments.get("commit"),
+            empty_upload="processing",
+        ).apply_async(
+            link=upload_sig.set(
+                countdown=max(
+                    countdown, int(get_config("setup", "upload_processing_delay") or 0)
+                ),
+            )
+        )
 
 
 def validate_activated_repo(repository):
