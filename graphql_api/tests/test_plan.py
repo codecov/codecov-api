@@ -32,6 +32,7 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
             trial_end_date=later,
             trial_status=TrialStatus.ONGOING.value,
             pretrial_users_count=234,
+            plan_user_count=123,
         )
         query = """{
             owner(username: "%s") {
@@ -47,6 +48,7 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
                     benefits
                     monthlyUploadLimit
                     pretrialUsersCount
+                    planUserCount
                 }
             }
         }
@@ -71,4 +73,5 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
             ],
             "monthlyUploadLimit": None,
             "pretrialUsersCount": 234,
+            "planUserCount": 123,
         }
