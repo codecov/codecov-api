@@ -6,7 +6,7 @@ from freezegun import freeze_time
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import OwnerFactory
-from plan.constants import PlanMarketingName, PlanName, TrialStatus
+from plan.constants import PlanName, TrialStatus
 
 from .helper import GraphQLTestHelper
 
@@ -42,6 +42,7 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
                     trialStartDate
                     marketingName
                     planName
+                    value
                     tierName
                     billingRate
                     baseUnitPrice
@@ -62,6 +63,7 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
             "trialStartDate": "2023-06-19T00:00:00",
             "marketingName": "Developer",
             "planName": "users-trial",
+            "value": "users-trial",
             "tierName": "pro",
             "billingRate": None,
             "baseUnitPrice": 0,
