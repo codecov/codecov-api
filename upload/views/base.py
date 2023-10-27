@@ -1,5 +1,6 @@
 import logging
 
+from django.conf import settings
 from rest_framework.exceptions import ValidationError
 
 from codecov_auth.models import Service
@@ -10,7 +11,19 @@ from upload.views.helpers import get_repository_from_string
 log = logging.getLogger(__name__)
 
 
-class GetterMixin:
+class ShelterMixin:
+    def is_shelter_request(self) -> bool:
+        """
+        Returns true when the incoming request originated from a Shelter.
+        Shelter adds an `X-Shelter-Token` header which contains a shared secret.
+        Use of that shared secret allows certain priviledged functionality that normal
+        uploads cannot access.
+        """
+        shelter_token = self.request.META.get("HTTP_X_SHELTER_TOKEN")
+        return shelter_token and shelter_token == settings.SHELTER_SHARED_SECRET
+
+
+class GetterMixin(ShelterMixin):
     def get_repo(self) -> Repository:
         service = self.kwargs.get("service")
         repo_slug = self.kwargs.get("repo")

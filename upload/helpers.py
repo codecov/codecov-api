@@ -186,6 +186,7 @@ def parse_params(data):
         "project": {"type": "string"},
         "server_uri": {"type": "string"},
         "root": {"type": "string"},  # deprecated
+        "storage_path": {"type": "string"},
     }
 
     v = Validator(params_schema, allow_unknown=True)

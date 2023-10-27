@@ -476,6 +476,8 @@ DISABLE_GIT_BASED_LOGIN = IS_ENTERPRISE and get_config(
     "setup", "disable_git_based_login", default=False
 )
 
+SHELTER_SHARED_SECRET = get_config("setup", "shelter_shared_secret", default=None)
+
 # list of repo IDs that will use the new-style report builder
 # TODO: we can eventually get rid of this once it's confirmed working well for many repos
 REPORT_BUILDER_REPO_IDS = get_config("setup", "report_builder", "repo_ids", default=[])
