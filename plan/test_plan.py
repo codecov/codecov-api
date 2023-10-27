@@ -113,7 +113,9 @@ class PlanServiceTests(TestCase):
 
     def test_plan_service_start_trial_errors_if_status_is_ongoing(self):
         trial_start_date = datetime.utcnow()
-        trial_end_date = trial_start_date + timedelta(days=TrialDaysAmount.CODECOV_SENTRY.value)
+        trial_end_date = trial_start_date + timedelta(
+            days=TrialDaysAmount.CODECOV_SENTRY.value
+        )
         current_org = OwnerFactory(
             plan=PlanName.BASIC_PLAN_NAME.value,
             trial_start_date=trial_start_date,
@@ -183,7 +185,9 @@ class PlanServiceTests(TestCase):
 
         plan_service.start_trial(current_owner=current_owner)
         assert current_org.trial_start_date == datetime.utcnow()
-        assert current_org.trial_end_date == datetime.utcnow() + timedelta(days=TrialDaysAmount.CODECOV_SENTRY.value)
+        assert current_org.trial_end_date == datetime.utcnow() + timedelta(
+            days=TrialDaysAmount.CODECOV_SENTRY.value
+        )
         assert current_org.trial_status == TrialStatus.ONGOING.value
         assert current_org.plan == PlanName.TRIAL_PLAN_NAME.value
         assert current_org.pretrial_users_count == plan_user_count
@@ -209,13 +213,19 @@ class PlanServiceTests(TestCase):
         assert plan_service.billing_rate == basic_plan.billing_rate
         assert plan_service.base_unit_price == basic_plan.base_unit_price
         assert plan_service.benefits == basic_plan.benefits
-        assert plan_service.monthly_uploads_limit == basic_plan.monthly_uploads_limit  # should be 250
-        assert plan_service.monthly_uploads_limit == 250  # should be 250 since not trialing
+        assert (
+            plan_service.monthly_uploads_limit == basic_plan.monthly_uploads_limit
+        )  # should be 250
+        assert (
+            plan_service.monthly_uploads_limit == 250
+        )  # should be 250 since not trialing
         assert plan_service.trial_total_days == basic_plan.trial_days
 
     def test_plan_service_returns_plan_data_for_trialing_user_trial_plan(self):
         trial_start_date = datetime.utcnow()
-        trial_end_date = datetime.utcnow() + timedelta(days=TrialDaysAmount.CODECOV_SENTRY.value)
+        trial_end_date = datetime.utcnow() + timedelta(
+            days=TrialDaysAmount.CODECOV_SENTRY.value
+        )
         current_org = OwnerFactory(
             plan=PlanName.TRIAL_PLAN_NAME.value,
             trial_start_date=trial_start_date,
@@ -342,7 +352,9 @@ class AvailablePlansBeforeTrial(TestCase):
         assert plan_service.available_plans(owner=self.owner) == expected_result
 
     @patch("services.sentry.is_sentry_user")
-    def test_available_plans_for_sentry_customer_basic_plan_non_trial(self, is_sentry_user):
+    def test_available_plans_for_sentry_customer_basic_plan_non_trial(
+        self, is_sentry_user
+    ):
         is_sentry_user.return_value = True
         self.current_org.plan = PlanName.BASIC_PLAN_NAME.value
         self.current_org.save()
@@ -357,7 +369,9 @@ class AvailablePlansBeforeTrial(TestCase):
         assert plan_service.available_plans(owner=self.owner) == expected_result
 
     @patch("services.sentry.is_sentry_user")
-    def test_available_plans_for_sentry_customer_lite_plan_non_trial(self, is_sentry_user):
+    def test_available_plans_for_sentry_customer_lite_plan_non_trial(
+        self, is_sentry_user
+    ):
         is_sentry_user.return_value = True
         self.current_org.plan = PlanName.TEAM_MONTHLY.value
         self.current_org.save()
@@ -452,7 +466,9 @@ class AvailablePlansExpiredTrialLessThanTenUsers(TestCase):
         assert plan_service.available_plans(owner=self.owner) == expected_result
 
     @patch("services.sentry.is_sentry_user")
-    def test_available_plans_for_sentry_customer_basic_plan_expired_trial_less_than_10_users(self, is_sentry_user):
+    def test_available_plans_for_sentry_customer_basic_plan_expired_trial_less_than_10_users(
+        self, is_sentry_user
+    ):
         is_sentry_user.return_value = True
         self.current_org.plan = PlanName.BASIC_PLAN_NAME.value
         self.current_org.save()
@@ -468,7 +484,9 @@ class AvailablePlansExpiredTrialLessThanTenUsers(TestCase):
         assert plan_service.available_plans(owner=self.owner) == expected_result
 
     @patch("services.sentry.is_sentry_user")
-    def test_available_plans_for_sentry_customer_lite_plan_expired_trial_less_than_10_users(self, is_sentry_user):
+    def test_available_plans_for_sentry_customer_lite_plan_expired_trial_less_than_10_users(
+        self, is_sentry_user
+    ):
         is_sentry_user.return_value = True
         self.current_org.plan = PlanName.TEAM_MONTHLY.value
         self.current_org.save()
@@ -484,7 +502,9 @@ class AvailablePlansExpiredTrialLessThanTenUsers(TestCase):
         assert plan_service.available_plans(owner=self.owner) == expected_result
 
     @patch("services.sentry.is_sentry_user")
-    def test_available_plans_for_sentry_plan_expired_trial_less_than_10_users(self, is_sentry_user):
+    def test_available_plans_for_sentry_plan_expired_trial_less_than_10_users(
+        self, is_sentry_user
+    ):
         is_sentry_user.return_value = True
         self.current_org.plan = PlanName.SENTRY_MONTHLY.value
         self.current_org.save()
@@ -530,7 +550,9 @@ class AvailablePlansExpiredTrialMoreThanTenUsers(TestCase):
         assert plan_service.available_plans(owner=self.owner) == expected_result
 
     @patch("services.sentry.is_sentry_user")
-    def test_available_plans_for_sentry_customer_basic_plan_expired_trial_more_than_10_users(self, is_sentry_user):
+    def test_available_plans_for_sentry_customer_basic_plan_expired_trial_more_than_10_users(
+        self, is_sentry_user
+    ):
         is_sentry_user.return_value = True
         self.current_org.plan = PlanName.BASIC_PLAN_NAME.value
         self.current_org.save()
@@ -545,7 +567,9 @@ class AvailablePlansExpiredTrialMoreThanTenUsers(TestCase):
         assert plan_service.available_plans(owner=self.owner) == expected_result
 
     @patch("services.sentry.is_sentry_user")
-    def test_available_plans_for_sentry_plan_expired_trial_more_than_10_users(self, is_sentry_user):
+    def test_available_plans_for_sentry_plan_expired_trial_more_than_10_users(
+        self, is_sentry_user
+    ):
         is_sentry_user.return_value = True
         self.current_org.plan = PlanName.SENTRY_MONTHLY.value
         self.current_org.save()
