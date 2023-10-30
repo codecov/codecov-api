@@ -426,6 +426,7 @@ class CommitNotification(
         UPLOAD_LIMIT = "upload_limit"
         PASSING_EMPTY_UPLOAD = "passing_empty_upload"
         FAILING_EMPTY_UPLOAD = "failing_empty_upload"
+        PROCESSING_UPLOAD = "processing_upload"
 
     class States(models.TextChoices):
         PENDING = "pending"
