@@ -38,7 +38,7 @@ class ComparisonLoader(BaseLoader):
         return super().__init__(info, *args, **kwargs)
 
     def batch_queryset(self, keys):
-        return CommitComparisonService.fetch_precomputed(keys)
+        return CommitComparisonService.fetch_precomputed(self.repository_id, keys)
 
     async def batch_load_fn(self, keys):
         # flat list of all commits involved in all comparisons

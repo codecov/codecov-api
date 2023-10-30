@@ -1281,7 +1281,7 @@ class CommitComparisonService:
         )
 
     @classmethod
-    def fetch_precomputed(self, keys: List[Tuple]) -> QuerySet:
+    def fetch_precomputed(self, repo_id: int, keys: List[Tuple]) -> QuerySet:
         comparison_table = CommitComparison._meta.db_table
         commit_table = Commit._meta.db_table
         queryset = CommitComparison.objects.raw(
@@ -1292,9 +1292,9 @@ class CommitComparisonService:
                 compare_commit.commitid as compare_commitid
             from {comparison_table}
             inner join {commit_table} base_commit
-                on base_commit.id = {comparison_table}.base_commit_id and base_commit.repoid = {self.repository_id}
+                on base_commit.id = {comparison_table}.base_commit_id and base_commit.repoid = {repo_id}
             inner join {commit_table} compare_commit
-                on compare_commit.id = {comparison_table}.compare_commit_id and compare_commit.repoid = {self.repository_id}
+                on compare_commit.id = {comparison_table}.compare_commit_id and compare_commit.repoid = {repo_id}
             where (base_commit.commitid, compare_commit.commitid) in %s
         """,
             [tuple(keys)],

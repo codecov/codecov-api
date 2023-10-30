@@ -1,3 +1,7 @@
+import logging
+
+from typing import Optional
+
 from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied
@@ -5,8 +9,11 @@ from rest_framework.response import Response
 
 from api.shared.mixins import CompareSlugMixin
 from api.shared.permissions import RepositoryArtifactPermissions
+from compare.models import CommitComparison
 from services.comparison import (
+    CommitComparisonService,
     Comparison,
+    ComparisonReport,
     MissingComparisonCommit,
     MissingComparisonReport,
     PullRequestComparison,
@@ -16,9 +23,14 @@ from services.decorators import torngit_safe
 from .serializers import (
     FileComparisonSerializer,
     FlagComparisonSerializer,
+    ImpactedFileSegmentsSerializer,
     ImpactedFilesComparisonSerializer,
 )
 
+from services.task import TaskService
+
+
+log = logging.getLogger(__name__)
 
 class CompareViewSetMixin(CompareSlugMixin, viewsets.GenericViewSet):
     permission_classes = [RepositoryArtifactPermissions]
@@ -45,6 +57,30 @@ class CompareViewSetMixin(CompareSlugMixin, viewsets.GenericViewSet):
             )
 
         return comparison
+
+    def get_or_create_commit_comparison(self, comparison: Comparison) -> Optional[CommitComparison]:
+        """
+        Retrieves the pre-computed CommitComparison
+        if not found will create one and return None
+        """
+        commit_comparison = CommitComparisonService.fetch_precomputed(
+            comparison.head_commit.repository_id,
+            [(comparison.base_commit.commitid, comparison.head_commit.commitid)]
+        )
+
+        # Can't use pre-computed impacted files from CommitComparison
+        # first trigger a Celery task to create a comparison for this commit pair for the future
+        # then will fall back to retrieving and generating all files on the fly
+        if not commit_comparison:
+            new_comparison = CommitComparison(
+                base_commit=comparison.base_commit,
+                compare_commit=comparison.head_commit,
+            )
+            new_comparison.save()
+            TaskService().compute_comparison(new_comparison.pk)
+            log.info("CommitComparison not found, creating and request to compute new entry")
+            return None
+        return commit_comparison[0]
 
     @torngit_safe
     def retrieve(self, request, *args, **kwargs):
@@ -109,7 +145,24 @@ class CompareViewSetMixin(CompareSlugMixin, viewsets.GenericViewSet):
     @torngit_safe
     def impacted_files(self, request, *args, **kwargs):
         comparison = self.get_object()
-        try:
-            return Response(ImpactedFilesComparisonSerializer(comparison).data)
-        except MissingComparisonReport:
-            raise NotFound("Raw report not found for base or head reference.")
+
+        return Response(ImpactedFilesComparisonSerializer(
+            comparison,
+            context={"commit_comparison": self.get_or_create_commit_comparison(comparison)}
+        ).data)
+
+    @action(detail=False, methods=["get"])
+    @torngit_safe
+    def segments(self, request, *args, **kwargs):
+        file_path = file_path = kwargs.get("file_path")
+        comparison = self.get_object()
+        commit_comparison = self.get_or_create_commit_comparison(comparison)
+
+        if commit_comparison:
+            for file in ComparisonReport(commit_comparison).files:
+                if file.base_name == file_path:
+                    return Response(ImpactedFileSegmentsSerializer(
+                        file, context={"comparison": comparison}
+                    ).data)
+
+        return Response({"segments": []})

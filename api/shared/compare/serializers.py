@@ -10,6 +10,7 @@ from api.shared.commit.serializers import ReportTotalsSerializer
 from compare.models import CommitComparison
 from core.models import Commit
 from services.comparison import (
+    CommitComparisonService,
     Comparison,
     ComparisonReport,
     FileComparison,
@@ -133,6 +134,21 @@ class ImpactedFileSegmentSerializer(serializers.Serializer):
         return lines
 
 
+class ImpactedFileSegmentsSerializer(serializers.Serializer):
+    segments = serializers.SerializerMethodField()
+
+    def get_segments(
+        self, impacted_file: ImpactedFile
+    ) -> ImpactedFileSegmentSerializer:
+        file_comparison = self.context["comparison"].get_file_comparison(
+            impacted_file.head_name, with_src=True, bypass_max_diff=True
+        )
+        return [
+            ImpactedFileSegmentSerializer(segment).data
+            for segment in file_comparison.segments
+        ]
+
+
 class ImpactedFileSerializer(serializers.Serializer):
     file_name = serializers.SerializerMethodField()
     base_name = serializers.CharField()
@@ -145,8 +161,6 @@ class ImpactedFileSerializer(serializers.Serializer):
     patch_coverage = serializers.SerializerMethodField()
     change_coverage = serializers.SerializerMethodField()
     misses_count = serializers.SerializerMethodField()
-    hashed_path = serializers.SerializerMethodField()
-    # segments = serializers.SerializerMethodField()
 
     def get_base_coverage(self, impacted_file: ImpactedFile) -> serializers.JSONField:
         if impacted_file.base_coverage:
@@ -192,67 +206,20 @@ class ImpactedFileSerializer(serializers.Serializer):
     def get_misses_count(self, impacted_file: ImpactedFile) -> serializers.IntegerField:
         return impacted_file.misses_count
 
-    def get_hashed_path(self, impacted_file: ImpactedFile) -> serializers.CharField:
-        path = impacted_file.head_name
-        encoded_path = path.encode()
-        md5_path = hashlib.md5(encoded_path)
-        return md5_path.hexdigest()
-
-    # def get_segments(
-    #     self, impacted_file: ImpactedFile
-    # ) -> ImpactedFileSegmentSerializer:
-    #     file_comparison = self.context["comparison"].get_file_comparison(
-    #         impacted_file.head_name, with_src=True, bypass_max_diff=True
-    #     )
-    #     return [
-    #         ImpactedFileSegmentSerializer(segment).data
-    #         for segment in file_comparison.segments
-    #     ]
-
 
 class ImpactedFilesComparisonSerializer(ComparisonSerializer):
 
     files = serializers.SerializerMethodField()
 
     def get_files(self, comparison: Comparison) -> List[dict]:
-        comparison_table = CommitComparison._meta.db_table
-        commit_table = Commit._meta.db_table
-        commit_comparison = CommitComparison.objects.raw(
-            f"""
-            select
-                {comparison_table}.*,
-                base_commit.commitid as base_commitid,
-                compare_commit.commitid as compare_commitid
-            from {comparison_table}
-            inner join {commit_table} base_commit
-                on base_commit.id = {comparison_table}.base_commit_id and base_commit.repoid = {comparison.base_commit.repository_id}
-            inner join {commit_table} compare_commit
-                on compare_commit.id = {comparison_table}.compare_commit_id and compare_commit.repoid = {comparison.head_commit.repository_id}
-            where (base_commit.commitid, compare_commit.commitid) in %s
-        """,
-            [
-                tuple(
-                    [(comparison.base_commit.commitid, comparison.head_commit.commitid)]
-                )
-            ],
-        ).using("default")
+        commit_comparison = self.context["commit_comparison"]
 
-        # Can't use pre-computed impacted files from CommitComparison
-        # first trigger a Celery task to create a comparison for this commit pair for the future
-        # then will fall back to retrieving and generating all files on the fly
         if not commit_comparison:
-            new_comparison = CommitComparison(
-                base_commit=comparison.base_commit.commitid,
-                compare_commit=comparison.head_commit.commitid,
-            )
-            new_comparison.save()
-            TaskService().compute_comparison(new_comparison.pk)
-
-            return super().get_files()
+            return super().get_files(comparison)
 
         return [
             ImpactedFileSerializer(
                 impacted_file, context={"comparison": comparison}
             ).data
-            for impacted_file in ComparisonReport(commit_comparison[0]).files
+            for impacted_file in ComparisonReport(commit_comparison).files
         ]
