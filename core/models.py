@@ -371,6 +371,10 @@ class Pull(models.Model):
                 fields=["repository", "pullid", "updatestamp"],
                 name="pulls_repoid_pullid_ts",
             ),
+            models.Index(
+                fields=["repository", "id"],
+                name="pulls_repoid_id",
+            ),
         ]
 
     def get_repository(self):
