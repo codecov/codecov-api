@@ -44,6 +44,7 @@ def test_compute_comparison_task(mocker):
         soft_time_limit=None,
         time_limit=None,
         headers=dict(created_timestamp="2023-06-13T10:01:01.000123"),
+        immutable=False,
     )
 
 
@@ -129,6 +130,7 @@ def test_backfill_repo(mocker):
         soft_time_limit=None,
         time_limit=None,
         headers=dict(created_timestamp="2023-06-13T10:01:01.000123"),
+        immutable=False,
     )
     signature_mock.assert_any_call(
         celery_config.timeseries_backfill_task_name,
@@ -144,6 +146,7 @@ def test_backfill_repo(mocker):
         soft_time_limit=None,
         time_limit=None,
         headers=dict(created_timestamp="2023-06-13T10:01:01.000123"),
+        immutable=False,
     )
     signature_mock.assert_any_call(
         celery_config.timeseries_backfill_task_name,
@@ -159,6 +162,7 @@ def test_backfill_repo(mocker):
         soft_time_limit=None,
         time_limit=None,
         headers=dict(created_timestamp="2023-06-13T10:01:01.000123"),
+        immutable=False,
     )
 
     apply_async_mock.assert_called_once_with()
@@ -197,6 +201,7 @@ def test_backfill_dataset(mocker):
         soft_time_limit=None,
         time_limit=None,
         headers=dict(created_timestamp="2023-06-13T10:01:01.000123"),
+        immutable=False,
     )
     signature.apply_async.assert_called_once_with()
 
@@ -222,6 +227,7 @@ def test_timeseries_delete(mocker):
         soft_time_limit=None,
         time_limit=None,
         headers=dict(created_timestamp="2023-06-13T10:01:01.000123"),
+        immutable=False,
     )
 
 
@@ -246,6 +252,7 @@ def test_flush_repo(mocker):
         soft_time_limit=None,
         time_limit=None,
         headers=dict(created_timestamp="2023-06-13T10:01:01.000123"),
+        immutable=False,
     )
 
 
@@ -274,6 +281,7 @@ def test_update_commit_task(mocker):
         soft_time_limit=300,
         time_limit=400,
         headers=dict(created_timestamp="2023-06-13T10:01:01.000123"),
+        immutable=False,
     )
 
 
@@ -316,6 +324,7 @@ def test_make_http_request_task(mocker):
         soft_time_limit=None,
         time_limit=None,
         headers=dict(created_timestamp="2023-06-13T10:01:01.000123"),
+        immutable=False,
     )
 
 
@@ -344,4 +353,5 @@ def test_backfill_commit_data_task(mocker):
         soft_time_limit=300,
         time_limit=400,
         headers=dict(created_timestamp="2023-06-13T10:01:01.000123"),
+        immutable=False,
     )

@@ -101,24 +101,34 @@ class PlanService:
     def tier_name(self) -> str:
         return self.plan_data.tier_name
 
-    @property
-    def available_plans(self) -> List[PlanData]:
+    def available_plans(self, owner: Owner) -> List[PlanData]:
+        """
+        Returns the available plans for an owner and an organization
+
+        Args:
+            current_owner (Owner): this is the user that is sending the request.
+
+        Returns:
+            No value
+        """
         available_plans = []
         available_plans.append(BASIC_PLAN)
 
         if self.plan_name == FREE_PLAN.value:
             available_plans.append(FREE_PLAN)
 
-        if sentry.is_sentry_user(self.current_org):
+        available_plans += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
+
+        if owner and sentry.is_sentry_user(owner=owner):
             available_plans += SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values()
-        else:
-            available_plans += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
 
         # If you're trialing or have trialed and <= 10 users, or belong to the team plan
-        if (
+        has_ongoing_or_expired_trial = (
             self.trial_status == TrialStatus.ONGOING.value
             or self.trial_status == TrialStatus.EXPIRED.value
-            or self.plan_name in TEAM_PLAN_REPRESENTATIONS
+        )
+        if (
+            has_ongoing_or_expired_trial or self.plan_name in TEAM_PLAN_REPRESENTATIONS
         ) and self.plan_user_count <= TEAM_PLAN_MAX_USERS:
             available_plans += TEAM_PLAN_REPRESENTATIONS.values()
 

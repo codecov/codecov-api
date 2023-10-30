@@ -282,9 +282,9 @@ class AvailablePlansBeforeTrial(TestCase):
     - users-free, no trial -> users-pr-inappm/y, users-basic, users-free
     - users-litem/y, no trial -> users-pr-inappm/y, users-basic, users-litem/y
     - users-pr-inappm/y, no trial -> users-pr-inappm/y, users-basic
-    - sentry customer, users-basic, no trial -> users-sentrym/y, users-basic
-    - sentry customer, users-litem/y, no trial -> users-sentrym/y, users-basic, users-litem/y
-    - sentry customer, users-sentrym/y, no trial -> users-sentrym/y, users-basic
+    - sentry customer, users-basic, no trial -> users-pr-inappm/y, users-sentrym/y, users-basic
+    - sentry customer, users-litem/y, no trial -> users-pr-inappm/y, users-sentrym/y, users-basic, users-litem/y
+    - sentry customer, users-sentrym/y, no trial -> users-pr-inappm/y, users-sentrym/y, users-basic
     """
 
     def setUp(self):
@@ -293,6 +293,7 @@ class AvailablePlansBeforeTrial(TestCase):
             trial_end_date=None,
             trial_status=TrialStatus.NOT_STARTED.value,
         )
+        self.owner = OwnerFactory()
 
     def test_available_plans_for_basic_plan_non_trial(
         self,
@@ -306,7 +307,7 @@ class AvailablePlansBeforeTrial(TestCase):
         expected_result.append(BASIC_PLAN)
         expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
 
-        assert plan_service.available_plans == expected_result
+        assert plan_service.available_plans(owner=self.owner) == expected_result
 
     def test_available_plans_for_free_plan_non_trial(
         self,
@@ -321,7 +322,7 @@ class AvailablePlansBeforeTrial(TestCase):
         expected_result.append(FREE_PLAN)
         expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
 
-        assert plan_service.available_plans == expected_result
+        assert plan_service.available_plans(owner=self.owner) == expected_result
 
     def test_available_plans_for_lite_plan_non_trial(
         self,
@@ -336,7 +337,7 @@ class AvailablePlansBeforeTrial(TestCase):
         expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
         expected_result += TEAM_PLAN_REPRESENTATIONS.values()
 
-        assert plan_service.available_plans == expected_result
+        assert plan_service.available_plans(owner=self.owner) == expected_result
 
     def test_available_plans_for_pro_plan_non_trial(self):
         self.current_org.plan = PlanName.CODECOV_PRO_MONTHLY.value
@@ -348,7 +349,7 @@ class AvailablePlansBeforeTrial(TestCase):
         expected_result.append(BASIC_PLAN)
         expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
 
-        assert plan_service.available_plans == expected_result
+        assert plan_service.available_plans(owner=self.owner) == expected_result
 
     @patch("services.sentry.is_sentry_user")
     def test_available_plans_for_sentry_customer_basic_plan_non_trial(
@@ -362,9 +363,10 @@ class AvailablePlansBeforeTrial(TestCase):
 
         expected_result = []
         expected_result.append(BASIC_PLAN)
+        expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
         expected_result += SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values()
 
-        assert plan_service.available_plans == expected_result
+        assert plan_service.available_plans(owner=self.owner) == expected_result
 
     @patch("services.sentry.is_sentry_user")
     def test_available_plans_for_sentry_customer_lite_plan_non_trial(
@@ -378,10 +380,11 @@ class AvailablePlansBeforeTrial(TestCase):
 
         expected_result = []
         expected_result.append(BASIC_PLAN)
+        expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
         expected_result += SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values()
         expected_result += TEAM_PLAN_REPRESENTATIONS.values()
 
-        assert plan_service.available_plans == expected_result
+        assert plan_service.available_plans(owner=self.owner) == expected_result
 
     @patch("services.sentry.is_sentry_user")
     def test_available_plans_for_sentry_plan_non_trial(self, is_sentry_user):
@@ -393,9 +396,10 @@ class AvailablePlansBeforeTrial(TestCase):
 
         expected_result = []
         expected_result.append(BASIC_PLAN)
+        expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
         expected_result += SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values()
 
-        assert plan_service.available_plans == expected_result
+        assert plan_service.available_plans(owner=self.owner) == expected_result
 
 
 @freeze_time("2023-06-19")
@@ -404,9 +408,9 @@ class AvailablePlansExpiredTrialLessThanTenUsers(TestCase):
     - users-basic, has trialed, less than 10 users -> users-pr-inappm/y, users-basic, users-litem/y
     - users-litem/y, has trialed, less than 10 users -> users-pr-inappm/y, users-basic, users-litem/y
     - users-pr-inappm/y, has trialed, less than 10 users -> users-pr-inappm/y, users-basic, users-litem/y
-    - sentry customer, users-basic, has trialed, less than 10 users -> users-sentrym/y, users-basic, users-litem/y
-    - sentry customer, users-litem/y, has trialed, less than 10 users -> users-sentrym/y, users-basic, users-litem/y
-    - sentry customer, users-sentrym/y, has trialed, less than 10 users -> users-sentrym/y, users-basic, users-litem/y
+    - sentry customer, users-basic, has trialed, less than 10 users -> users-pr-inappm/y, users-sentrym/y, users-basic, users-litem/y
+    - sentry customer, users-litem/y, has trialed, less than 10 users -> users-pr-inappm/y, users-sentrym/y, users-basic, users-litem/y
+    - sentry customer, users-sentrym/y, has trialed, less than 10 users -> users-pr-inappm/y, users-sentrym/y, users-basic, users-litem/y
     """
 
     def setUp(self):
@@ -416,6 +420,7 @@ class AvailablePlansExpiredTrialLessThanTenUsers(TestCase):
             trial_status=TrialStatus.EXPIRED.value,
             plan_user_count=3,
         )
+        self.owner = OwnerFactory()
 
     def test_available_plans_for_basic_plan_expired_trial_less_than_10_users(
         self,
@@ -430,7 +435,7 @@ class AvailablePlansExpiredTrialLessThanTenUsers(TestCase):
         expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
         expected_result += TEAM_PLAN_REPRESENTATIONS.values()
 
-        assert plan_service.available_plans == expected_result
+        assert plan_service.available_plans(owner=self.owner) == expected_result
 
     def test_available_plans_for_lite_plan_expired_trial_less_than_10_users(
         self,
@@ -445,7 +450,7 @@ class AvailablePlansExpiredTrialLessThanTenUsers(TestCase):
         expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
         expected_result += TEAM_PLAN_REPRESENTATIONS.values()
 
-        assert plan_service.available_plans == expected_result
+        assert plan_service.available_plans(owner=self.owner) == expected_result
 
     def test_available_plans_for_pro_plan_expired_trial_less_than_10_users(self):
         self.current_org.plan = PlanName.CODECOV_PRO_MONTHLY.value
@@ -458,7 +463,7 @@ class AvailablePlansExpiredTrialLessThanTenUsers(TestCase):
         expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
         expected_result += TEAM_PLAN_REPRESENTATIONS.values()
 
-        assert plan_service.available_plans == expected_result
+        assert plan_service.available_plans(owner=self.owner) == expected_result
 
     @patch("services.sentry.is_sentry_user")
     def test_available_plans_for_sentry_customer_basic_plan_expired_trial_less_than_10_users(
@@ -472,10 +477,11 @@ class AvailablePlansExpiredTrialLessThanTenUsers(TestCase):
 
         expected_result = []
         expected_result.append(BASIC_PLAN)
+        expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
         expected_result += SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values()
         expected_result += TEAM_PLAN_REPRESENTATIONS.values()
 
-        assert plan_service.available_plans == expected_result
+        assert plan_service.available_plans(owner=self.owner) == expected_result
 
     @patch("services.sentry.is_sentry_user")
     def test_available_plans_for_sentry_customer_lite_plan_expired_trial_less_than_10_users(
@@ -489,10 +495,11 @@ class AvailablePlansExpiredTrialLessThanTenUsers(TestCase):
 
         expected_result = []
         expected_result.append(BASIC_PLAN)
+        expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
         expected_result += SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values()
         expected_result += TEAM_PLAN_REPRESENTATIONS.values()
 
-        assert plan_service.available_plans == expected_result
+        assert plan_service.available_plans(owner=self.owner) == expected_result
 
     @patch("services.sentry.is_sentry_user")
     def test_available_plans_for_sentry_plan_expired_trial_less_than_10_users(
@@ -506,18 +513,19 @@ class AvailablePlansExpiredTrialLessThanTenUsers(TestCase):
 
         expected_result = []
         expected_result.append(BASIC_PLAN)
+        expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
         expected_result += SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values()
         expected_result += TEAM_PLAN_REPRESENTATIONS.values()
 
-        assert plan_service.available_plans == expected_result
+        assert plan_service.available_plans(owner=self.owner) == expected_result
 
 
 @freeze_time("2023-06-19")
 class AvailablePlansExpiredTrialMoreThanTenUsers(TestCase):
     """
     - users-pr-inappm/y, has trialed, more than 10 users -> users-pr-inappm/y, users-basic
-    - sentry customer, users-basic, has trialed, more than 10 users -> users-sentrym/y, users-basic
-    - sentry customer, users-sentrym/y, has trialed, more than 10 users -> users-sentrym/y, users-basic
+    - sentry customer, users-basic, has trialed, more than 10 users -> users-pr-inappm/y, users-sentrym/y, users-basic
+    - sentry customer, users-sentrym/y, has trialed, more than 10 users -> users-pr-inappm/y, users-sentrym/y, users-basic
     """
 
     def setUp(self):
@@ -527,6 +535,7 @@ class AvailablePlansExpiredTrialMoreThanTenUsers(TestCase):
             trial_status=TrialStatus.EXPIRED.value,
             plan_user_count=13,
         )
+        self.owner = OwnerFactory()
 
     def test_available_plans_for_pro_plan_expired_trial_more_than_10_users(self):
         self.current_org.plan = PlanName.CODECOV_PRO_MONTHLY.value
@@ -538,7 +547,7 @@ class AvailablePlansExpiredTrialMoreThanTenUsers(TestCase):
         expected_result.append(BASIC_PLAN)
         expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
 
-        assert plan_service.available_plans == expected_result
+        assert plan_service.available_plans(owner=self.owner) == expected_result
 
     @patch("services.sentry.is_sentry_user")
     def test_available_plans_for_sentry_customer_basic_plan_expired_trial_more_than_10_users(
@@ -552,9 +561,10 @@ class AvailablePlansExpiredTrialMoreThanTenUsers(TestCase):
 
         expected_result = []
         expected_result.append(BASIC_PLAN)
+        expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
         expected_result += SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values()
 
-        assert plan_service.available_plans == expected_result
+        assert plan_service.available_plans(owner=self.owner) == expected_result
 
     @patch("services.sentry.is_sentry_user")
     def test_available_plans_for_sentry_plan_expired_trial_more_than_10_users(
@@ -568,16 +578,17 @@ class AvailablePlansExpiredTrialMoreThanTenUsers(TestCase):
 
         expected_result = []
         expected_result.append(BASIC_PLAN)
+        expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
         expected_result += SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values()
 
-        assert plan_service.available_plans == expected_result
+        assert plan_service.available_plans(owner=self.owner) == expected_result
 
 
 @freeze_time("2023-06-19")
 class AvailablePlansOngoingTrialMoreThanTenUsers(TestCase):
     """
     - users-trial, is trialing, more than 10 users -> users-pr-inappm/y, users-basic
-    - sentry-customer, users-trial, is trialing, more than 10 users -> users-sentrym/y, users-basic
+    - sentry-customer, users-trial, is trialing, more than 10 users -> users-pr-inappm/y, users-sentrym/y, users-basic
     """
 
     def setUp(self):
@@ -587,6 +598,7 @@ class AvailablePlansOngoingTrialMoreThanTenUsers(TestCase):
             trial_status=TrialStatus.ONGOING.value,
             plan_user_count=13,
         )
+        self.owner = OwnerFactory()
 
     def test_available_plans_for_users_trial_plan_ongoing_trial_more_than_10_users(
         self,
@@ -600,7 +612,7 @@ class AvailablePlansOngoingTrialMoreThanTenUsers(TestCase):
         expected_result.append(BASIC_PLAN)
         expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
 
-        assert plan_service.available_plans == expected_result
+        assert plan_service.available_plans(owner=self.owner) == expected_result
 
     @patch("services.sentry.is_sentry_user")
     def test_available_plans_for_sentry_customer_users_trial_plan_ongoing_trial_more_than_10_users(
@@ -614,16 +626,17 @@ class AvailablePlansOngoingTrialMoreThanTenUsers(TestCase):
 
         expected_result = []
         expected_result.append(BASIC_PLAN)
+        expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
         expected_result += SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values()
 
-        assert plan_service.available_plans == expected_result
+        assert plan_service.available_plans(owner=self.owner) == expected_result
 
 
 @freeze_time("2023-06-19")
 class AvailablePlansOngoingTrialLessThanTenUsers(TestCase):
     """
     - users-trial, is trialing, less than 10 users -> users-pr-inappm/y, users-basic, users-litem/y
-    - sentry-customer, users-trial, is trialing, less than 10 users -> users-sentrym/y, users-basic, users-litem/y
+    - sentry-customer, users-trial, is trialing, less than 10 users -> users-pr-inappm/y, users-sentrym/y, users-basic, users-litem/y
     """
 
     def setUp(self):
@@ -633,6 +646,7 @@ class AvailablePlansOngoingTrialLessThanTenUsers(TestCase):
             trial_status=TrialStatus.ONGOING.value,
             plan_user_count=3,
         )
+        self.owner = OwnerFactory()
 
     def test_available_plans_for_users_trial_plan_ongoing_trial_less_than_10_users(
         self,
@@ -647,7 +661,7 @@ class AvailablePlansOngoingTrialLessThanTenUsers(TestCase):
         expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
         expected_result += TEAM_PLAN_REPRESENTATIONS.values()
 
-        assert plan_service.available_plans == expected_result
+        assert plan_service.available_plans(owner=self.owner) == expected_result
 
     @patch("services.sentry.is_sentry_user")
     def test_available_plans_for_sentry_customer_users_trial_plan_ongoing_trial_less_than_10_users(
@@ -661,7 +675,8 @@ class AvailablePlansOngoingTrialLessThanTenUsers(TestCase):
 
         expected_result = []
         expected_result.append(BASIC_PLAN)
+        expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
         expected_result += SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values()
         expected_result += TEAM_PLAN_REPRESENTATIONS.values()
 
-        assert plan_service.available_plans == expected_result
+        assert plan_service.available_plans(owner=self.owner) == expected_result

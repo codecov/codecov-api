@@ -34,7 +34,7 @@ if settings.SENTRY_ENV:
 
 
 class TaskService(object):
-    def _create_signature(self, name, args=None, kwargs=None):
+    def _create_signature(self, name, args=None, kwargs=None, immutable=False):
         """
         Create Celery signature
         """
@@ -54,6 +54,7 @@ class TaskService(object):
             app=celery_app,
             queue=queue_name,
             headers=headers,
+            immutable=immutable,
             **celery_compatible_config,
         )
 
@@ -129,6 +130,27 @@ class TaskService(object):
             ),
         ).apply_async()
 
+    def upload_signature(
+        self,
+        repoid,
+        commitid,
+        report_code=None,
+        debug=False,
+        rebuild=False,
+        immutable=False,
+    ):
+        return self._create_signature(
+            "app.tasks.upload.Upload",
+            kwargs=dict(
+                repoid=repoid,
+                commitid=commitid,
+                report_code=report_code,
+                debug=debug,
+                rebuild=rebuild,
+            ),
+            immutable=immutable,
+        )
+
     def upload(
         self,
         repoid,
@@ -138,19 +160,12 @@ class TaskService(object):
         debug=False,
         rebuild=False,
     ):
-        self._create_signature(
-            "app.tasks.upload.Upload",
-            kwargs=dict(
-                repoid=repoid,
-                commitid=commitid,
-                report_code=report_code,
-                debug=debug,
-                rebuild=rebuild,
-            ),
+        return self.upload_signature(
+            repoid, commitid, report_code=report_code, debug=debug, rebuild=rebuild
         ).apply_async(countdown=countdown)
 
-    def notify(self, repoid, commitid, current_yaml=None, empty_upload=None):
-        self._create_signature(
+    def notify_signature(self, repoid, commitid, current_yaml=None, empty_upload=None):
+        return self._create_signature(
             "app.tasks.notify.Notify",
             kwargs=dict(
                 repoid=repoid,
@@ -158,6 +173,11 @@ class TaskService(object):
                 current_yaml=current_yaml,
                 empty_upload=empty_upload,
             ),
+        )
+
+    def notify(self, repoid, commitid, current_yaml=None, empty_upload=None):
+        self.notify_signature(
+            repoid, commitid, current_yaml=current_yaml, empty_upload=empty_upload
         ).apply_async()
 
     def pulls_sync(self, repoid, pullid):
