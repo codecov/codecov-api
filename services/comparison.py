@@ -6,12 +6,12 @@ import logging
 from collections import Counter
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import minio
 import pytz
 from asgiref.sync import async_to_sync
-from django.db.models import Prefetch
+from django.db.models import Prefetch, QuerySet
 from django.utils.functional import cached_property
 from shared.helpers.yaml import walk
 from shared.reports.readonly import ReadOnlyReport
@@ -1279,3 +1279,28 @@ class CommitComparisonService:
             .defer("_report")
             .first()
         )
+
+    @classmethod
+    def fetch_precomputed(self, keys: List[Tuple]) -> QuerySet:
+        comparison_table = CommitComparison._meta.db_table
+        commit_table = Commit._meta.db_table
+        queryset = CommitComparison.objects.raw(
+            f"""
+            select
+                {comparison_table}.*,
+                base_commit.commitid as base_commitid,
+                compare_commit.commitid as compare_commitid
+            from {comparison_table}
+            inner join {commit_table} base_commit
+                on base_commit.id = {comparison_table}.base_commit_id and base_commit.repoid = {self.repository_id}
+            inner join {commit_table} compare_commit
+                on compare_commit.id = {comparison_table}.compare_commit_id and compare_commit.repoid = {self.repository_id}
+            where (base_commit.commitid, compare_commit.commitid) in %s
+        """,
+            [tuple(keys)],
+        )
+
+        # we need to make sure we're performing the query against the primary database
+        # (and not the read replica) since we may have just inserted new comparisons
+        # that we'd like to ensure are returned here
+        return queryset.using("default")

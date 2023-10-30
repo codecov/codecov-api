@@ -38,26 +38,7 @@ class ComparisonLoader(BaseLoader):
         return super().__init__(info, *args, **kwargs)
 
     def batch_queryset(self, keys):
-        queryset = CommitComparison.objects.raw(
-            f"""
-            select
-                {comparison_table}.*,
-                base_commit.commitid as base_commitid,
-                compare_commit.commitid as compare_commitid
-            from {comparison_table}
-            inner join {commit_table} base_commit
-                on base_commit.id = {comparison_table}.base_commit_id and base_commit.repoid = {self.repository_id}
-            inner join {commit_table} compare_commit
-                on compare_commit.id = {comparison_table}.compare_commit_id and compare_commit.repoid = {self.repository_id}
-            where (base_commit.commitid, compare_commit.commitid) in %s
-        """,
-            [tuple(keys)],
-        )
-
-        # we need to make sure we're performing the query against the primary database
-        # (and not the read replica) since we may have just inserted new comparisons
-        # that we'd like to ensure are returned here
-        return queryset.using("default")
+        return CommitComparisonService.fetch_precomputed(keys)
 
     async def batch_load_fn(self, keys):
         # flat list of all commits involved in all comparisons

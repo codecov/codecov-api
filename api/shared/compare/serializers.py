@@ -146,7 +146,7 @@ class ImpactedFileSerializer(serializers.Serializer):
     change_coverage = serializers.SerializerMethodField()
     misses_count = serializers.SerializerMethodField()
     hashed_path = serializers.SerializerMethodField()
-    segments = serializers.SerializerMethodField()
+    # segments = serializers.SerializerMethodField()
 
     def get_base_coverage(self, impacted_file: ImpactedFile) -> serializers.JSONField:
         if impacted_file.base_coverage:
@@ -198,16 +198,16 @@ class ImpactedFileSerializer(serializers.Serializer):
         md5_path = hashlib.md5(encoded_path)
         return md5_path.hexdigest()
 
-    def get_segments(
-        self, impacted_file: ImpactedFile
-    ) -> ImpactedFileSegmentSerializer:
-        file_comparison = self.context["comparison"].get_file_comparison(
-            impacted_file.head_name, with_src=True, bypass_max_diff=True
-        )
-        return [
-            ImpactedFileSegmentSerializer(segment).data
-            for segment in file_comparison.segments
-        ]
+    # def get_segments(
+    #     self, impacted_file: ImpactedFile
+    # ) -> ImpactedFileSegmentSerializer:
+    #     file_comparison = self.context["comparison"].get_file_comparison(
+    #         impacted_file.head_name, with_src=True, bypass_max_diff=True
+    #     )
+    #     return [
+    #         ImpactedFileSegmentSerializer(segment).data
+    #         for segment in file_comparison.segments
+    #     ]
 
 
 class ImpactedFilesComparisonSerializer(ComparisonSerializer):
@@ -241,15 +241,12 @@ class ImpactedFilesComparisonSerializer(ComparisonSerializer):
         # first trigger a Celery task to create a comparison for this commit pair for the future
         # then will fall back to retrieving and generating all files on the fly
         if not commit_comparison:
-            try:
-                new_comparison = CommitComparison(
-                    base_commit=comparison.base_commit.commitid,
-                    compare_commit=comparison.head_commit.commitid,
-                )
-                new_comparison.save()
-                TaskService().compute_comparison(new_comparison.pk)
-            except Exception as e:
-                log.info("Failed to create new CommitComparison object: {e}")
+            new_comparison = CommitComparison(
+                base_commit=comparison.base_commit.commitid,
+                compare_commit=comparison.head_commit.commitid,
+            )
+            new_comparison.save()
+            TaskService().compute_comparison(new_comparison.pk)
 
             return super().get_files()
 
