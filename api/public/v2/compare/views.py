@@ -12,8 +12,8 @@ from api.shared.compare.mixins import CompareViewSetMixin
 from api.shared.compare.serializers import (
     FileComparisonSerializer,
     FlagComparisonSerializer,
-    ImpactedFileSegmentsSerializer,
     ImpactedFilesComparisonSerializer,
+    ImpactedFileSegmentsSerializer,
 )
 from core.models import Commit
 from services.components import ComponentComparison, commit_components

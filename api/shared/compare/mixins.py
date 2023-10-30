@@ -1,5 +1,4 @@
 import logging
-
 from typing import Optional
 
 from rest_framework import mixins, viewsets
@@ -19,18 +18,17 @@ from services.comparison import (
     PullRequestComparison,
 )
 from services.decorators import torngit_safe
+from services.task import TaskService
 
 from .serializers import (
     FileComparisonSerializer,
     FlagComparisonSerializer,
-    ImpactedFileSegmentsSerializer,
     ImpactedFilesComparisonSerializer,
+    ImpactedFileSegmentsSerializer,
 )
 
-from services.task import TaskService
-
-
 log = logging.getLogger(__name__)
+
 
 class CompareViewSetMixin(CompareSlugMixin, viewsets.GenericViewSet):
     permission_classes = [RepositoryArtifactPermissions]
@@ -58,14 +56,16 @@ class CompareViewSetMixin(CompareSlugMixin, viewsets.GenericViewSet):
 
         return comparison
 
-    def get_or_create_commit_comparison(self, comparison: Comparison) -> Optional[CommitComparison]:
+    def get_or_create_commit_comparison(
+        self, comparison: Comparison
+    ) -> Optional[CommitComparison]:
         """
         Retrieves the pre-computed CommitComparison
         if not found will create one and return None
         """
         commit_comparison = CommitComparisonService.fetch_precomputed(
             comparison.head_commit.repository_id,
-            [(comparison.base_commit.commitid, comparison.head_commit.commitid)]
+            [(comparison.base_commit.commitid, comparison.head_commit.commitid)],
         )
 
         # Can't use pre-computed impacted files from CommitComparison
@@ -78,7 +78,9 @@ class CompareViewSetMixin(CompareSlugMixin, viewsets.GenericViewSet):
             )
             new_comparison.save()
             TaskService().compute_comparison(new_comparison.pk)
-            log.info("CommitComparison not found, creating and request to compute new entry")
+            log.info(
+                "CommitComparison not found, creating and request to compute new entry"
+            )
             return None
         return commit_comparison[0]
 
@@ -146,10 +148,16 @@ class CompareViewSetMixin(CompareSlugMixin, viewsets.GenericViewSet):
     def impacted_files(self, request, *args, **kwargs):
         comparison = self.get_object()
 
-        return Response(ImpactedFilesComparisonSerializer(
-            comparison,
-            context={"commit_comparison": self.get_or_create_commit_comparison(comparison)}
-        ).data)
+        return Response(
+            ImpactedFilesComparisonSerializer(
+                comparison,
+                context={
+                    "commit_comparison": self.get_or_create_commit_comparison(
+                        comparison
+                    )
+                },
+            ).data
+        )
 
     @action(detail=False, methods=["get"])
     @torngit_safe
@@ -161,8 +169,10 @@ class CompareViewSetMixin(CompareSlugMixin, viewsets.GenericViewSet):
         if commit_comparison:
             for file in ComparisonReport(commit_comparison).files:
                 if file.base_name == file_path:
-                    return Response(ImpactedFileSegmentsSerializer(
-                        file, context={"comparison": comparison}
-                    ).data)
+                    return Response(
+                        ImpactedFileSegmentsSerializer(
+                            file, context={"comparison": comparison}
+                        ).data
+                    )
 
         return Response({"segments": []})
