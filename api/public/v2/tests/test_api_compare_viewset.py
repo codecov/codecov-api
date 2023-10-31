@@ -1040,18 +1040,24 @@ class TestImpactedFilesComparison(APITestCase):
         assert data["segments"][0]["has_unintended_changes"] == False
         assert len(data["segments"][0]["lines"]) > 0
 
+    @patch("services.task.TaskService.compute_comparison")
     @patch("services.comparison.Comparison.validate")
     @patch("services.comparison.PullRequestComparison.get_file_comparison")
     @patch("services.archive.ArchiveService.read_file")
     @patch("services.repo_providers.RepoProviderService.get_adapter")
     def test_impacted_file_segment_not_found(
-        self, adapter_mock, read_file, mock_get_file_comparison, mock_compare_validate
+        self,
+        adapter_mock,
+        read_file,
+        mock_get_file_comparison,
+        mock_compare_validate,
+        mock_task_service,
     ):
         adapter_mock.return_value = self.mocked_compare_adapter
         read_file.return_value = mock_data_from_archive
-
         mock_get_file_comparison.return_value = MockFileComparison()
         mock_compare_validate.return_value = True
+        mock_task_service.return_value = None
 
         self.comparison.delete()
 
@@ -1075,3 +1081,4 @@ class TestImpactedFilesComparison(APITestCase):
 
         assert response.status_code == status.HTTP_200_OK
         assert data["segments"] == []
+        assert mock_task_service.called
