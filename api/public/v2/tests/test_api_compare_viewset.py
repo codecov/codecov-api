@@ -1065,7 +1065,7 @@ class TestImpactedFilesComparison(APITestCase):
             "service": self.org.service,
             "owner_username": self.org.username,
             "repo_name": self.repo.name,
-            "file_path": "fileA",
+            "file_path": "notarealfile",
         }
         query_params = {
             "base": self.parent_commit.commitid,
@@ -1081,4 +1081,3 @@ class TestImpactedFilesComparison(APITestCase):
 
         assert response.status_code == status.HTTP_200_OK
         assert data["segments"] == []
-        assert mock_task_service.called

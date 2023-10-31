@@ -147,7 +147,6 @@ class CompareViewSetMixin(CompareSlugMixin, viewsets.GenericViewSet):
     @torngit_safe
     def impacted_files(self, request, *args, **kwargs):
         comparison = self.get_object()
-
         return Response(
             ImpactedFilesComparisonSerializer(
                 comparison,
@@ -164,15 +163,9 @@ class CompareViewSetMixin(CompareSlugMixin, viewsets.GenericViewSet):
     def segments(self, request, *args, **kwargs):
         file_path = file_path = kwargs.get("file_path")
         comparison = self.get_object()
-        commit_comparison = self.get_or_create_commit_comparison(comparison)
 
-        if commit_comparison:
-            for file in ComparisonReport(commit_comparison).files:
-                if file.base_name == file_path:
-                    return Response(
-                        ImpactedFileSegmentsSerializer(
-                            file, context={"comparison": comparison}
-                        ).data
-                    )
-
-        return Response({"segments": []})
+        return Response(
+            ImpactedFileSegmentsSerializer(
+                file_path, context={"comparison": comparison}
+            ).data
+        )

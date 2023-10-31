@@ -8,16 +8,13 @@ from rest_framework import serializers
 from api.internal.commit.serializers import CommitSerializer
 from api.shared.commit.serializers import ReportTotalsSerializer
 from compare.models import CommitComparison
-from core.models import Commit
 from services.comparison import (
-    CommitComparisonService,
     Comparison,
     ComparisonReport,
     FileComparison,
     ImpactedFile,
     Segment,
 )
-from services.task import TaskService
 
 log = logging.getLogger(__name__)
 
@@ -138,10 +135,10 @@ class ImpactedFileSegmentsSerializer(serializers.Serializer):
     segments = serializers.SerializerMethodField()
 
     def get_segments(
-        self, impacted_file: ImpactedFile
+        self, file_path: str
     ) -> ImpactedFileSegmentSerializer:
         file_comparison = self.context["comparison"].get_file_comparison(
-            impacted_file.head_name, with_src=True, bypass_max_diff=True
+            file_path, with_src=True, bypass_max_diff=True
         )
         return [
             ImpactedFileSegmentSerializer(segment).data
@@ -214,7 +211,7 @@ class ImpactedFilesComparisonSerializer(ComparisonSerializer):
     def get_files(self, comparison: Comparison) -> List[dict]:
         commit_comparison = self.context["commit_comparison"]
 
-        if not commit_comparison:
+        if not commit_comparison or commit_comparison.state == CommitComparison.CommitComparisonStates.PENDING:
             return super().get_files(comparison)
 
         return [
