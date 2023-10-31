@@ -257,6 +257,39 @@ class TestCompareViewSetRetrieve(APITestCase):
             content_type="application/json",
         )
 
+    def _get_impacted_files_comparison(self, kwargs={}, query_params={}):
+        if kwargs == {}:
+            kwargs = {
+                "service": self.org.service,
+                "owner_username": self.org.username,
+                "repo_name": self.repo.name,
+            }
+        if query_params == {}:
+            query_params = {"base": self.base.commitid, "head": self.head.commitid}
+
+        return self.client.get(
+            reverse("api-v2-compare-impacted-files", kwargs=kwargs),
+            data=query_params,
+            content_type="application/json",
+        )
+
+    def _get_segment_comparison(self, file_name="", kwargs={}, query_params={}):
+        if kwargs == {}:
+            kwargs = {
+                "service": self.org.service,
+                "owner_username": self.org.username,
+                "repo_name": self.repo.name,
+                "file_path": file_name or self.file_name,
+            }
+        if query_params == {}:
+            query_params = {"base": self.base.commitid, "head": self.head.commitid}
+
+        return self.client.get(
+            reverse("api-v2-compare-segments", kwargs=kwargs),
+            data=query_params,
+            content_type="application/json",
+        )
+
     def test_can_return_public_repo_comparison_with_not_authenticated(
         self, adapter_mock, base_report_mock, head_report_mock
     ):
@@ -293,6 +326,35 @@ class TestCompareViewSetRetrieve(APITestCase):
         assert response.status_code == status.HTTP_200_OK
         assert response.data["files"] == self.expected_files
         assert response.data["has_unmerged_base_commits"] is True
+
+    def test_impacted_files_returns_200_and_expected_files_on_success(
+        self, adapter_mock, base_report_mock, head_report_mock
+    ):
+        adapter_mock.return_value = self.mocked_compare_adapter
+        base_report_mock.return_value = self.base_report
+        head_report_mock.return_value = self.head_report
+
+        response = self._get_impacted_files_comparison()
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["files"] == self.expected_files
+        assert response.data["has_unmerged_base_commits"] is True
+
+    def test_segments_returns_200(
+        self, adapter_mock, base_report_mock, head_report_mock
+    ):
+        base_report_mock.return_value = self.base_report
+        head_report_mock.return_value = self.head_report
+
+        src = b"first\nfirst\nfirst\nfirst\nfirst\nfirst"
+
+        adapter_mock.return_value = MockedComparisonAdapter(
+            test_diff=self.mock_git_compare_data, test_lines=src
+        )
+
+        response = self._get_segment_comparison()
+
+        assert response.status_code == status.HTTP_200_OK
 
     def test_returns_404_if_base_or_head_references_not_found(
         self, adapter_mock, base_report_mock, head_report_mock
